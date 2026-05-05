@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import type { JsonValue } from '../ports.js';
-import { AiSdkOpenAiTransport } from '../openai/ai-sdk-transport.js';
+import { AiSdkOpenAiCompatibleTransport } from '../openai/ai-sdk-transport.js';
 import {
   appendOpenAiToolResultMessage,
   extractLastOpenAiAssistantText,
@@ -97,7 +97,7 @@ async function main(): Promise<void> {
     throw new Error('无法获取本地 smoke server 端口。');
   }
 
-  const transport = new AiSdkOpenAiTransport();
+  const transport = new AiSdkOpenAiCompatibleTransport();
   const config = {
     apiKey: 'test-key',
     model: 'test-openai-compatible',

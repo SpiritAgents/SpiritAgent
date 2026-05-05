@@ -1,6 +1,6 @@
 import { setTimeout as waitForDelay } from 'node:timers/promises';
 
-import { AiSdkOpenAiTransport } from '../openai/ai-sdk-transport.js';
+import { AiSdkOpenAiCompatibleTransport } from '../openai/ai-sdk-transport.js';
 import {
   appendOpenAiToolResultMessage,
   extractLastOpenAiAssistantText,
@@ -45,8 +45,8 @@ export function createAiSdkOpenAiSmokeConfig(): {
   };
 }
 
-export function createAiSdkOpenAiSmokeTransport(): AiSdkOpenAiTransport {
-  return new AiSdkOpenAiTransport();
+export function createAiSdkOpenAiSmokeTransport(): AiSdkOpenAiCompatibleTransport {
+  return new AiSdkOpenAiCompatibleTransport();
 }
 
 export function createAiSdkOpenAiDemoRuntime(options: {
@@ -149,7 +149,7 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     },
     {
       role: 'system',
-      content: '[TOOL_MEMORY]\nrequest: read_file path=packages/agent-core/src/openai/ai-sdk-transport.ts\nresult_snippet:\ncontains AiSdkOpenAiTransport and compactHistoryManual',
+      content: '[TOOL_MEMORY]\nrequest: read_file path=packages/agent-core/src/openai/ai-sdk-transport.ts\nresult_snippet:\ncontains AiSdkOpenAiCompatibleTransport and compactHistoryManual',
       imagePaths: [],
     },
     {

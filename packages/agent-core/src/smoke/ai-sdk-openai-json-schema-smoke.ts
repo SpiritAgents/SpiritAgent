@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import type { JsonValue } from '../ports.js';
-import { AiSdkOpenAiTransport } from '../openai/ai-sdk-transport.js';
+import { AiSdkOpenAiCompatibleTransport } from '../openai/ai-sdk-transport.js';
 import type { OpenAiJsonSchemaCompletionRequest } from '../openai/json-schema.js';
 
 import { printSmokeSection } from './ai-sdk-openai-shared.js';
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   }
 
   const baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}/v1`;
-  const transport = new AiSdkOpenAiTransport();
+  const transport = new AiSdkOpenAiCompatibleTransport();
   const request: OpenAiJsonSchemaCompletionRequest = {
     userPrompt: 'Return a JSON object with a commit message.',
     schemaName: 'structured_message',
