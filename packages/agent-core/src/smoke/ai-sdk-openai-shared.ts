@@ -1,6 +1,6 @@
 import { setTimeout as waitForDelay } from 'node:timers/promises';
 
-import { AiSdkOpenAiTransport } from '../openai/ai-sdk-transport.js';
+import { AiSdkOpenAiCompatibleTransport } from '../openai/ai-sdk-transport.js';
 import {
   appendOpenAiToolResultMessage,
   extractLastOpenAiAssistantText,
@@ -29,7 +29,7 @@ export function requireEnv(name: string, fallback?: string): string {
   return value;
 }
 
-export function createOpenAiSmokeConfig(): {
+export function createAiSdkOpenAiSmokeConfig(): {
   apiKey: string;
   model: string;
   baseUrl?: string;
@@ -45,17 +45,17 @@ export function createOpenAiSmokeConfig(): {
   };
 }
 
-export function createOpenAiSmokeTransport(): AiSdkOpenAiTransport {
-  return new AiSdkOpenAiTransport();
+export function createAiSdkOpenAiSmokeTransport(): AiSdkOpenAiCompatibleTransport {
+  return new AiSdkOpenAiCompatibleTransport();
 }
 
-export function createOpenAiDemoRuntime(options: {
+export function createAiSdkOpenAiDemoRuntime(options: {
   onEvent?: (event: RuntimeEvent<DemoToolRequest>) => void;
 } = {}) {
-  const smokeConfig = createOpenAiSmokeConfig();
+  const smokeConfig = createAiSdkOpenAiSmokeConfig();
   return new AgentRuntime({
     config: smokeConfig,
-    llmTransport: createOpenAiSmokeTransport(),
+    llmTransport: createAiSdkOpenAiSmokeTransport(),
     toolExecutor: new DemoToolExecutor(),
     createToolAgentState: (messages, userInput) =>
       startOpenAiToolAgentState(
@@ -103,7 +103,7 @@ export function demoLookupToolDefinition(): JsonValue[] {
       type: 'function',
       function: {
         name: 'demo_lookup',
-        description: 'Demo tool used to verify OpenAI tool-calling integration.',
+        description: 'Demo tool used to verify OpenAI-compatible tool-calling integration.',
         parameters: {
           type: 'object',
           properties: {
@@ -149,7 +149,7 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     },
     {
       role: 'system',
-      content: '[TOOL_MEMORY]\nrequest: read_file path=packages/agent-core/src/openai/ai-sdk-transport.ts\nresult_snippet:\ncontains AiSdkOpenAiTransport and compactHistoryManual',
+      content: '[TOOL_MEMORY]\nrequest: read_file path=packages/agent-core/src/openai/ai-sdk-transport.ts\nresult_snippet:\ncontains AiSdkOpenAiCompatibleTransport and compactHistoryManual',
       imagePaths: [],
     },
     {
