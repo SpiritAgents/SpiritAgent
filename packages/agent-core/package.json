@@ -30,6 +30,7 @@
     "smoke:openai:runtime": "npm run build && node dist/smoke/openai-runtime-smoke.js",
     "smoke:openai:transport-factory": "npm run build && node dist/smoke/openai-transport-factory-smoke.js",
     "smoke:ai-sdk:openai": "npm run build && node dist/smoke/openai-ai-sdk-smoke.js",
+    "smoke:ai-sdk:json-schema": "npm run build && node dist/smoke/openai-ai-sdk-json-schema-smoke.js",
     "smoke:ai-sdk:openai:streaming": "npm run build && node dist/smoke/openai-ai-sdk-streaming-smoke.js",
     "smoke:ai-sdk:openai:stream-reasoning-only": "npm run build && node dist/smoke/openai-ai-sdk-stream-reasoning-only-smoke.js",
     "smoke:ai-sdk:deepseek:streaming": "npm run build && node dist/smoke/openai-ai-sdk-deepseek-streaming-smoke.js",
