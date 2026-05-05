@@ -32,7 +32,6 @@ import {
   COMPACT_SUMMARY_PREFIX,
   buildToolAgentHostPrompt,
   cloneJsonValue,
-  extractLastAssistantText,
   isJsonObject,
   type ToolAgentState,
 } from '../tool-agent.js';
