@@ -240,6 +240,9 @@ export async function runDesktopDreamCollectorOnce(
         model: input.collectorModel,
         baseUrl: activeProfile?.apiBase ?? currentApiBase(input.config),
         workspaceRoot: input.workspaceRoot,
+        ...(activeProfile?.transportImplementation
+          ? { transportImplementation: activeProfile.transportImplementation }
+          : {}),
         ...(activeProfile?.provider ? { llmVendor: activeProfile.provider } : {}),
       },
       input.planMetadata,
