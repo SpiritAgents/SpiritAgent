@@ -4,7 +4,7 @@ import { cloneJsonValue } from '../tool-agent.js';
 /** 与宿主 `ModelProfile.provider` 对齐；用于在 OpenAI 形态 API 上附加厂商扩展字段。 */
 export type OpenAiLlmVendor = 'deepseek' | 'kimi' | 'minimax' | 'custom';
 
-/** 渐进迁移期的 runtime transport 选择；缺省保持 legacy openai-node。 */
+/** 渐进迁移期的 runtime transport 选择；缺省已切到 ai-sdk，仍保留 legacy openai-node 兜底。 */
 export type OpenAiTransportImplementation = 'openai-node' | 'ai-sdk';
 
 export interface OpenAiTransportConfig {
@@ -17,7 +17,7 @@ export interface OpenAiTransportConfig {
   workspaceRoot?: string;
   /**
    * 运行时对话 transport 的实现选择。
-   * 缺省或未知值均回退到 legacy `openai-node`，避免未显式切换时改变现有行为。
+    * 缺省或未知值均走 `ai-sdk`；显式设置为 `openai-node` 时才回退到 legacy 实现。
    */
   transportImplementation?: OpenAiTransportImplementation;
   /**
