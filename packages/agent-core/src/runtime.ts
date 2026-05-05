@@ -19,7 +19,6 @@ import {
   TOOL_MEMORY_MAX_ENTRIES,
 } from './runtime/constants.js';
 import {
-  applyDeferredUserGuidance,
   cloneHistory,
   createTurnContext,
   defaultToolMemoryFormatter,
