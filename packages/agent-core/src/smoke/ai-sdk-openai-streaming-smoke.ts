@@ -4,12 +4,9 @@ import type { AddressInfo } from 'node:net';
 
 import type { JsonValue } from '../ports.js';
 import { AiSdkOpenAiTransport } from '../openai/ai-sdk-transport.js';
-import {
-  extractLastOpenAiAssistantText,
-  startOpenAiToolAgentState,
-} from '../openai/tool-agent-helpers.js';
+import { startOpenAiToolAgentState } from '../openai/tool-agent-helpers.js';
 
-import { printSmokeSection } from './openai-shared.js';
+import { demoLookupToolDefinition, printSmokeSection } from './ai-sdk-openai-shared.js';
 
 async function main(): Promise<void> {
   const server = createServer((request, response) => {
@@ -27,7 +24,7 @@ async function main(): Promise<void> {
 
     const chunks = [
       {
-        id: 'chatcmpl-ai-sdk-reasoning-only',
+        id: 'chatcmpl-ai-sdk-stream',
         object: 'chat.completion.chunk',
         created: 0,
         model: 'test-openai-compatible',
@@ -35,14 +32,24 @@ async function main(): Promise<void> {
           {
             index: 0,
             delta: {
-              reasoning_content: '先想一下，',
+              tool_calls: [
+                {
+                  index: 0,
+                  id: 'call_ai_sdk_stream_1',
+                  type: 'function',
+                  function: {
+                    name: 'demo_lookup',
+                    arguments: '{"query"',
+                  },
+                },
+              ],
             },
             finish_reason: null,
           },
         ],
       },
       {
-        id: 'chatcmpl-ai-sdk-reasoning-only',
+        id: 'chatcmpl-ai-sdk-stream',
         object: 'chat.completion.chunk',
         created: 0,
         model: 'test-openai-compatible',
@@ -50,9 +57,29 @@ async function main(): Promise<void> {
           {
             index: 0,
             delta: {
-              reasoning_content: '最后直接把这段当结果返回。',
+              tool_calls: [
+                {
+                  index: 0,
+                  function: {
+                    arguments: ':"Spirit Agent streaming"}',
+                  },
+                },
+              ],
             },
-            finish_reason: 'stop',
+            finish_reason: null,
+          },
+        ],
+      },
+      {
+        id: 'chatcmpl-ai-sdk-stream',
+        object: 'chat.completion.chunk',
+        created: 0,
+        model: 'test-openai-compatible',
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: 'tool_calls',
           },
         ],
       },
@@ -77,7 +104,7 @@ async function main(): Promise<void> {
   const transport = new AiSdkOpenAiTransport();
   const state = startOpenAiToolAgentState(
     [],
-    '请测试 reasoning-only 流式输出。',
+    'Call demo_lookup exactly once.',
     process.cwd(),
     [],
     [],
@@ -91,31 +118,37 @@ async function main(): Promise<void> {
       baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
     },
     state,
-    [],
+    demoLookupToolDefinition(),
   );
 
   const events = await collectEvents(started.eventStream);
   const completion = await started.completion;
   server.close();
 
-  printSmokeSection('ai-sdk stream-reasoning-only smoke events', events);
-  printSmokeSection('ai-sdk stream-reasoning-only smoke completion', completion);
+  printSmokeSection('ai-sdk openai streaming smoke events', events);
+  printSmokeSection('ai-sdk openai streaming smoke completion', completion);
 
-  if (!events.some((event) => isJsonObject(event) && event.kind === 'thinking-chunk')) {
-    throw new Error('ai-sdk stream-reasoning-only smoke 未收到 thinking-chunk。');
+  if (!events.some((event) => isJsonObject(event) && event.kind === 'streaming-tool-preview')) {
+    throw new Error('ai-sdk openai streaming smoke 未收到 streaming-tool-preview 事件。');
   }
 
   if (events.some((event) => isJsonObject(event) && event.kind === 'error')) {
-    throw new Error('ai-sdk stream-reasoning-only smoke 不应收到 error 事件。');
+    throw new Error('ai-sdk openai streaming smoke 不应收到 error 事件。');
   }
 
-  if (completion.kind !== 'success' || completion.result.step.kind !== 'final-response-ready') {
-    throw new Error('ai-sdk stream-reasoning-only smoke 未进入预期的 final-response-ready。');
+  if (completion.kind !== 'success' || completion.result.step.kind !== 'tool-calls') {
+    throw new Error('ai-sdk openai streaming smoke 未进入预期的 tool-calls。');
   }
 
-  const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
-  if (assistantText !== '先想一下，最后直接把这段当结果返回。') {
-    throw new Error(`ai-sdk stream-reasoning-only smoke 未拿到 reasoning-only assistant 文本。实际: ${assistantText ?? '<empty>'}`);
+  const assistantMessage = completion.result.state.messages.at(-1);
+  if (!isJsonObject(assistantMessage) || assistantMessage.reasoning_content !== '') {
+    throw new Error('ai-sdk openai streaming smoke 未在 assistant tool_call message 上保留空 reasoning_content。');
+  }
+
+  const streamedToolCalls = Array.isArray(assistantMessage.tool_calls) ? assistantMessage.tool_calls : [];
+  const firstToolCall = streamedToolCalls[0];
+  if (!isJsonObject(firstToolCall) || firstToolCall.index !== 0) {
+    throw new Error('ai-sdk openai streaming smoke 未在流式 tool_call 上保留 index 字段。');
   }
 }
 
@@ -133,6 +166,6 @@ function isJsonObject(value: JsonValue | undefined): value is Record<string, Jso
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`openai ai-sdk stream-reasoning-only smoke failed: ${message}`);
+  console.error(`ai-sdk openai streaming smoke failed: ${message}`);
   process.exitCode = 1;
 });

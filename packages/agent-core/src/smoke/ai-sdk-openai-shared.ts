@@ -29,7 +29,7 @@ export function requireEnv(name: string, fallback?: string): string {
   return value;
 }
 
-export function createOpenAiSmokeConfig(): {
+export function createAiSdkOpenAiSmokeConfig(): {
   apiKey: string;
   model: string;
   baseUrl?: string;
@@ -45,17 +45,17 @@ export function createOpenAiSmokeConfig(): {
   };
 }
 
-export function createOpenAiSmokeTransport(): AiSdkOpenAiTransport {
+export function createAiSdkOpenAiSmokeTransport(): AiSdkOpenAiTransport {
   return new AiSdkOpenAiTransport();
 }
 
-export function createOpenAiDemoRuntime(options: {
+export function createAiSdkOpenAiDemoRuntime(options: {
   onEvent?: (event: RuntimeEvent<DemoToolRequest>) => void;
 } = {}) {
-  const smokeConfig = createOpenAiSmokeConfig();
+  const smokeConfig = createAiSdkOpenAiSmokeConfig();
   return new AgentRuntime({
     config: smokeConfig,
-    llmTransport: createOpenAiSmokeTransport(),
+    llmTransport: createAiSdkOpenAiSmokeTransport(),
     toolExecutor: new DemoToolExecutor(),
     createToolAgentState: (messages, userInput) =>
       startOpenAiToolAgentState(
@@ -103,7 +103,7 @@ export function demoLookupToolDefinition(): JsonValue[] {
       type: 'function',
       function: {
         name: 'demo_lookup',
-        description: 'Demo tool used to verify OpenAI tool-calling integration.',
+        description: 'Demo tool used to verify OpenAI-compatible tool-calling integration.',
         parameters: {
           type: 'object',
           properties: {
