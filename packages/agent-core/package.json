@@ -28,6 +28,10 @@
     "smoke:openai:stream-reasoning-only": "npm run build && node dist/smoke/openai-stream-reasoning-only-smoke.js",
     "smoke:openai:streaming": "npm run build && node dist/smoke/openai-streaming-smoke.js",
     "smoke:openai:runtime": "npm run build && node dist/smoke/openai-runtime-smoke.js",
+    "smoke:ai-sdk:openai": "npm run build && node dist/smoke/openai-ai-sdk-smoke.js",
+    "smoke:ai-sdk:openai:streaming": "npm run build && node dist/smoke/openai-ai-sdk-streaming-smoke.js",
+    "smoke:ai-sdk:openai:stream-reasoning-only": "npm run build && node dist/smoke/openai-ai-sdk-stream-reasoning-only-smoke.js",
+    "smoke:ai-sdk:openai:all": "npm run smoke:ai-sdk:openai && npm run smoke:ai-sdk:openai:streaming && npm run smoke:ai-sdk:openai:stream-reasoning-only",
     "smoke:runtime:parity": "npm run build && node dist/smoke/runtime-parity-smoke.js",
     "smoke:mcp:missing-env": "npm run build && node dist/smoke/mcp-missing-env-smoke.js",
     "smoke:openai:all": "npm run smoke:openai && npm run smoke:openai:roundtrip && npm run smoke:openai:compact && npm run smoke:openai:stream-empty && npm run smoke:openai:stream-reasoning-only && npm run smoke:openai:streaming && npm run smoke:openai:runtime",
@@ -40,7 +44,9 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.60",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "ai": "^6.0.175",
     "openai": "^6.34.0"
   }
 }
