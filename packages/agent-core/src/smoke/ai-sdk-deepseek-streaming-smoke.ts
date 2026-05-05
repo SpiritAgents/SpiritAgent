@@ -10,7 +10,7 @@ import {
   startOpenAiToolAgentState,
 } from '../openai/tool-agent-helpers.js';
 
-import { demoLookupToolDefinition, printSmokeSection } from './openai-shared.js';
+import { demoLookupToolDefinition, printSmokeSection } from './ai-sdk-openai-shared.js';
 
 async function main(): Promise<void> {
   let requestCount = 0;
@@ -276,6 +276,6 @@ function findLastAssistantWithToolCalls(requestBody: JsonValue | undefined): Jso
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`openai ai-sdk deepseek streaming smoke failed: ${message}`);
+  console.error(`ai-sdk deepseek streaming smoke failed: ${message}`);
   process.exitCode = 1;
 });
