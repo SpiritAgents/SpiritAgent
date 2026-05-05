@@ -182,6 +182,7 @@ import {
   parsePendingSubagentStatusText,
   restoreMessagesFromArchive,
   summarizeMessagesTailForOrderDebug,
+  toolMessageKey,
   truncateOneLineForDebug,
 } from './message-ordering.js';
 import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
@@ -1397,15 +1398,13 @@ class DesktopHostService {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
       const runtime = this.requireRuntime();
+      const pendingApproval = runtime.currentPendingApproval();
       const decision = parseApprovalDecision(message);
-      const state = this.requireState();
       if (decision.kind === 'guidance' && decision.userMessage.trim()) {
-        state.messages.push({
-          id: this.allocateMessageId(),
-          role: 'user',
-          content: decision.userMessage.trim(),
-          pending: false,
-        });
+        this.insertUserApprovalReplyMessage(
+          decision.userMessage.trim(),
+          pendingApproval ? toolMessageKey(pendingApproval) : undefined,
+        );
         this.resetStreamingPlacementState(false);
       }
       await runtime.continuePendingApproval(decision);
@@ -2741,6 +2740,38 @@ class DesktopHostService {
     const next = this.messageIdCounter;
     this.messageIdCounter += 1;
     return next;
+  }
+
+  private insertUserApprovalReplyMessage(content: string, pendingToolCallId?: string): void {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const state = this.requireState();
+    const nextMessage: ConversationMessageSnapshot = {
+      id: this.allocateMessageId(),
+      role: 'user',
+      content: trimmed,
+      pending: false,
+    };
+
+    if (!pendingToolCallId) {
+      state.messages.push(nextMessage);
+      return;
+    }
+
+    const toolIndex = state.messages.findIndex(
+      (message) => message.role === 'assistant' && message.tool?.toolCallId === pendingToolCallId,
+    );
+    if (toolIndex < 0) {
+      state.messages.push(nextMessage);
+      return;
+    }
+
+    const insertAt = toolIndex + 1;
+    this.assistantMessages.shiftStreamAssistantThinkingAnchorForInsertion(insertAt);
+    state.messages.splice(insertAt, 0, nextMessage);
   }
 
   /**
