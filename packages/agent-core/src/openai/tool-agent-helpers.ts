@@ -25,6 +25,7 @@ import {
   type ToolAgentState,
   type ToolAgentToolResult,
 } from '../tool-agent.js';
+import { userMessageContentMatchesInput } from '../runtime/user-turn-timestamp.js';
 
 export {
   buildActiveSkillsSystemMessage,
@@ -189,10 +190,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
 
   const userIndex = findLastMatchingIndex(
     retryState.messages,
-    (message) =>
-      isJsonObject(message) &&
-      message.role === 'user' &&
-      message.content === userInput,
+    (message) => isOpenAiUserMessageForInput(message, userInput),
   );
 
   if (userIndex < 0) {
@@ -206,6 +204,28 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     ...retryState.messages.slice(userIndex + 1).map((message) => cloneJsonValue(message)),
   );
   return rebuilt;
+}
+
+function isOpenAiUserMessageForInput(message: JsonValue, userInput: string): boolean {
+  if (!isJsonObject(message) || message.role !== 'user') {
+    return false;
+  }
+
+  if (typeof message.content === 'string') {
+    return userMessageContentMatchesInput(message.content, userInput);
+  }
+
+  if (!Array.isArray(message.content)) {
+    return false;
+  }
+
+  return message.content.some(
+    (part) =>
+      isJsonObject(part) &&
+      part.type === 'text' &&
+      typeof part.text === 'string' &&
+      userMessageContentMatchesInput(part.text, userInput),
+  );
 }
 
 export function llmHistoryToOpenAiMessages(
