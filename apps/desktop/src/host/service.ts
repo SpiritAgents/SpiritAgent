@@ -11,10 +11,11 @@ import {
   buildSkillsCatalogSystemMessage,
   buildToolAgentHostPrompt,
   createOpenAiCompatibleTransport,
+  createOpenAiJsonSchemaTransport,
   type OpenAiActiveSkill,
   type OpenAiCompatibleTransport,
   type OpenAiExtensionSystemPrompt,
-  OpenAiTransport,
+  type OpenAiJsonSchemaTransport,
   type AssistantAuxArchiveEntry,
   type ChatArchive,
   type OpenAiEnabledRule,
@@ -305,9 +306,8 @@ interface HostState {
 }
 
 class DesktopHostService {
-  private runtimeTransport: OpenAiCompatibleTransport = new OpenAiTransport();
-  // Structured JSON completion 仍走 legacy transport；Phase 3 仅切 runtime 对话链路。
-  private readonly jsonSchemaTransport = new OpenAiTransport();
+  private runtimeTransport: OpenAiCompatibleTransport = createOpenAiCompatibleTransport();
+  private jsonSchemaTransport: OpenAiJsonSchemaTransport = createOpenAiJsonSchemaTransport();
   private readonly extensionStateStore = createDesktopExtensionStateStore({
     spiritDataDir: spiritAgentDataDir(),
     hostKind: 'desktop',
@@ -1857,6 +1857,9 @@ class DesktopHostService {
     this.runtimeTransport = createOpenAiCompatibleTransport({
       transportImplementation: activeProfile?.transportImplementation,
     });
+    this.jsonSchemaTransport = createOpenAiJsonSchemaTransport({
+      transportImplementation: activeProfile?.transportImplementation,
+    });
     if (!apiKey) {
       this.runtime = undefined;
       this.lastRuntimeError = '未配置 API Key，请在设置中填写。';
@@ -1877,6 +1880,7 @@ class DesktopHostService {
       reasoningEffort: activeProfile?.reasoningEffort,
     };
     this.runtimeTransport = createOpenAiCompatibleTransport(runtimeTransportConfig);
+    this.jsonSchemaTransport = createOpenAiJsonSchemaTransport(runtimeTransportConfig);
 
     const runtime = this.createRuntime(
       runtimeTransportConfig,

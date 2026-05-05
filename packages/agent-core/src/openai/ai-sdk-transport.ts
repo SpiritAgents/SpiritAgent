@@ -10,6 +10,7 @@ import {
   type OpenAILanguageModelChatOptions,
 } from '@ai-sdk/openai';
 import {
+  generateObject,
   generateText,
   jsonSchema,
   streamText,
@@ -41,6 +42,13 @@ import {
   openAiVendorChatCompletionBodyExtras,
   type OpenAiTransportConfig,
 } from './openai-compat.js';
+import {
+  buildJsonSchemaCompletionMessages,
+  stringifyJsonSchemaCompletionOutput,
+  type OpenAiJsonSchemaCompletionRequest,
+  type OpenAiJsonSchemaCompletionResult,
+  type OpenAiJsonSchemaTransport,
+} from './json-schema.js';
 
 type AiSdkToolCall = {
   toolCallId: string;
@@ -69,8 +77,39 @@ interface Deferred<T> {
 }
 
 export class AiSdkOpenAiTransport
-  implements LlmTransport<OpenAiTransportConfig, ToolAgentState>
+  implements LlmTransport<OpenAiTransportConfig, ToolAgentState>, OpenAiJsonSchemaTransport
 {
+  async createJsonSchemaCompletion<T extends JsonValue = JsonValue>(
+    config: OpenAiTransportConfig,
+    request: OpenAiJsonSchemaCompletionRequest,
+  ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
+    const messages = normalizeMessagesForRequest(
+      buildJsonSchemaCompletionMessages(config, request),
+    );
+    const requestTrace = buildAiSdkRequestTrace(config, 1, messages, []);
+
+    try {
+      const result = await generateObject({
+        model: createAiSdkLanguageModel(config),
+        messages: openAiMessagesToAiSdkMessages(messages) as any,
+        allowSystemInMessages: true,
+        schema: jsonSchema(request.schema as Record<string, unknown>),
+        schemaName: request.schemaName,
+        providerOptions: buildAiSdkProviderOptions(config),
+        maxRetries: 0,
+      });
+      const output = cloneJsonValue(result.object as JsonValue) as T;
+
+      return {
+        output,
+        rawText: stringifyJsonSchemaCompletionOutput(output),
+        requestTrace,
+      };
+    } catch (error) {
+      throw new Error(renderAiSdkOpenAiError(error));
+    }
+  }
+
   async startToolAgentRound(
     config: OpenAiTransportConfig,
     state: ToolAgentState,
