@@ -13,7 +13,7 @@ export type OpenAiCompatibleTransport = LlmTransport<
 export function resolveOpenAiTransportImplementation(
   config?: Pick<OpenAiTransportConfig, 'transportImplementation'>,
 ): 'openai-node' | 'ai-sdk' {
-  return config?.transportImplementation === 'ai-sdk' ? 'ai-sdk' : 'openai-node';
+  return config?.transportImplementation === 'openai-node' ? 'openai-node' : 'ai-sdk';
 }
 
 export function createOpenAiCompatibleTransport(
