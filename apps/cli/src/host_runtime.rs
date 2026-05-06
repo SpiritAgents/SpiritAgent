@@ -84,6 +84,22 @@ fn question_count(request: &ToolUiRequest) -> usize {
         .unwrap_or(0)
 }
 
+fn strip_shell_reason_from_prompt(prompt: &str) -> (Option<String>, Vec<String>) {
+    let mut lines = prompt.lines();
+    let first = lines.next();
+    let reason = first
+        .and_then(|line| line.trim().strip_prefix("理由:"))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    let detail_lines = if reason.is_some() {
+        lines.map(|line| line.to_string()).collect::<Vec<_>>()
+    } else {
+        prompt.lines().map(|line| line.to_string()).collect::<Vec<_>>()
+    };
+    (reason, detail_lines)
+}
+
 fn truncate_for_preview(text: &str, max_chars: usize) -> String {
     let chars = text.chars().collect::<Vec<_>>();
     if chars.len() <= max_chars {
@@ -105,10 +121,17 @@ pub(crate) fn tool_approval_block(
     prompt: &str,
     supports_trust: bool,
 ) -> ToolUiBlock {
-    let mut detail_lines = prompt
-        .lines()
-        .map(|line| line.to_string())
-        .collect::<Vec<_>>();
+    let (shell_reason, mut detail_lines) = if tool_name == "run_shell_command" {
+        strip_shell_reason_from_prompt(prompt)
+    } else {
+        (
+            None,
+            prompt
+                .lines()
+                .map(|line| line.to_string())
+                .collect::<Vec<_>>(),
+        )
+    };
     detail_lines.push(if supports_trust {
         "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string()
     } else {
@@ -118,7 +141,7 @@ pub(crate) fn tool_approval_block(
         tool_call_id: tool_call_id.map(String::from),
         tool_name: tool_name.to_string(),
         phase: ToolUiPhase::PendingApproval,
-        headline: "待确认".to_string(),
+        headline: shell_reason.unwrap_or_else(|| "待确认".to_string()),
         detail_lines,
         args_excerpt: None,
         output_excerpt: None,
@@ -378,23 +401,26 @@ pub(crate) fn format_tool_ui_message(
 
 #[cfg(test)]
 mod tests {
-    use super::{ToolUiRequest, build_tool_result_block, tool_request_args_excerpt};
+    use super::{ToolUiRequest, build_tool_result_block, tool_approval_block, tool_request_args_excerpt};
     use serde_json::{Value, json};
 
     #[test]
-    fn shell_tool_args_excerpt_matches_flat_legacy_shape() {
+    fn shell_tool_args_excerpt_keeps_reason_field() {
         let excerpt = tool_request_args_excerpt(&ToolUiRequest::new(
             "run_shell_command",
-            json!({ "command": "echo 牛逼" }),
+            json!({ "command": "echo 牛逼", "reason": "确认终端输出" }),
         ));
         let parsed: Value = serde_json::from_str(&excerpt).expect("args excerpt json");
-        assert_eq!(parsed, json!({ "command": "echo 牛逼" }));
+        assert_eq!(parsed, json!({ "command": "echo 牛逼", "reason": "确认终端输出" }));
     }
 
     #[test]
     fn tool_result_block_keeps_tool_call_id_for_shell() {
         let block = build_tool_result_block(
-            &ToolUiRequest::new("run_shell_command", json!({ "command": "echo 牛逼" })),
+            &ToolUiRequest::new(
+                "run_shell_command",
+                json!({ "command": "echo 牛逼", "reason": "确认终端输出" }),
+            ),
             "run_shell_command",
             Some("call_00_demo"),
             "牛逼\n",
@@ -405,7 +431,28 @@ mod tests {
         assert_eq!(block.headline, "命令已执行");
         assert_eq!(
             block.args_excerpt.as_deref(),
-            Some("{\n  \"command\": \"echo 牛逼\"\n}")
+            Some("{\n  \"command\": \"echo 牛逼\",\n  \"reason\": \"确认终端输出\"\n}")
+        );
+    }
+
+    #[test]
+    fn tool_approval_block_uses_shell_reason_as_headline() {
+        let block = tool_approval_block(
+            "run_shell_command",
+            Some("call_00_demo"),
+            "理由: 查看构建输出\n高风险工具调用: shell\n终端: Command Prompt (cmd.exe)\n命令: echo hi",
+            true,
+        );
+
+        assert_eq!(block.headline, "查看构建输出");
+        assert_eq!(
+            block.detail_lines,
+            vec![
+                "高风险工具调用: shell".to_string(),
+                "终端: Command Prompt (cmd.exe)".to_string(),
+                "命令: echo hi".to_string(),
+                "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string(),
+            ]
         );
     }
 

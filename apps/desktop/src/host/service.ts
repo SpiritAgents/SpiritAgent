@@ -178,10 +178,12 @@ import {
 import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import { buildDesktopSnapshot } from './snapshot.js';
 import {
+  displayTitleForTool,
   messageOrderDebugLevel,
   messageIndexIsInCurrentTurn,
   parsePendingSubagentStatusText,
   restoreMessagesFromArchive,
+  stripReasonLineFromShellPrompt,
   summarizeMessagesTailForOrderDebug,
   toolMessageKey,
   truncateOneLineForDebug,
@@ -2176,8 +2178,14 @@ class DesktopHostService {
         ...(pendingApproval
           ? {
               pendingToolApproval: {
-                toolName: pendingApproval.toolName,
-                prompt: pendingApproval.prompt,
+                toolName: displayTitleForTool(
+                  pendingApproval.toolName,
+                  pendingApproval.request,
+                ),
+                prompt: stripReasonLineFromShellPrompt(
+                  pendingApproval.toolName,
+                  pendingApproval.prompt,
+                ),
                 ...(typeof pendingApproval.trustTarget === 'string'
                   ? { trustTarget: pendingApproval.trustTarget }
                   : {}),

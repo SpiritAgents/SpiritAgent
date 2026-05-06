@@ -12,12 +12,14 @@ import type { DesktopAssistantMessageStateMachine } from './assistant-message-st
 import type { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import {
   assistantPrefixBeforeFirstToolInCurrentTurn,
+  headlineForToolPhase,
   headlineForStreamingToolPreview,
   indexForThinkingInsertBeforeFirstToolAfterLastUser,
   lastAssistantPlainTextInHistory,
   latestUnsyncedAssistantTextInCurrentTurn,
   messageOrderDebugLevel,
   summarizeMessagesTailForOrderDebug,
+  stripReasonLineFromShellPrompt,
   toolMessageKey,
 } from './message-ordering.js';
 
@@ -182,9 +184,11 @@ export class DesktopRuntimeEventOrchestrator {
       if (event.kind !== 'streaming-tool-preview') {
         continue;
       }
+      let previewRequest: unknown;
       let argsExcerpt: string;
       try {
-        argsExcerpt = truncateJson(JSON.parse(event.argumentsJson) as unknown);
+        previewRequest = JSON.parse(event.argumentsJson) as unknown;
+        argsExcerpt = truncateJson(previewRequest);
       } catch {
         argsExcerpt = truncateText(event.argumentsJson, 4_000);
       }
@@ -192,7 +196,12 @@ export class DesktopRuntimeEventOrchestrator {
         toolCallId: event.toolCallId,
         toolName: event.toolName,
         phase: 'running',
-        headline: headlineForStreamingToolPreview(messages, event.toolCallId, event.toolName),
+        headline: headlineForStreamingToolPreview(
+          messages,
+          event.toolCallId,
+          event.toolName,
+          previewRequest,
+        ),
         detailLines: [],
         argsExcerpt,
       }, batchId);
@@ -364,8 +373,8 @@ export class DesktopRuntimeEventOrchestrator {
         toolCallId: toolMessageKey(approval),
         toolName: approval.toolName,
         phase: 'pending-approval',
-        headline: `等待确认: ${approval.toolName}`,
-        detailLines: [approval.prompt],
+        headline: headlineForToolPhase('pending-approval', approval.toolName, approval.request),
+        detailLines: [stripReasonLineFromShellPrompt(approval.toolName, approval.prompt)],
         argsExcerpt: truncateJson(approval.request),
       }, this.lastApplyEventBatchId);
     }
@@ -389,9 +398,11 @@ export class DesktopRuntimeEventOrchestrator {
         toolCallId: execution.toolCallId || `tool:${execution.toolName}`,
         toolName: execution.toolName,
         phase: execution.failed ? 'failed' : 'succeeded',
-        headline: execution.failed
-          ? `工具执行失败: ${execution.toolName}`
-          : `工具执行完成: ${execution.toolName}`,
+        headline: headlineForToolPhase(
+          execution.failed ? 'failed' : 'succeeded',
+          execution.toolName,
+          execution.request,
+        ),
         detailLines: [],
         argsExcerpt: truncateJson(execution.request),
         outputExcerpt: truncateText(execution.output, 4_000),
@@ -409,9 +420,7 @@ export class DesktopRuntimeEventOrchestrator {
       toolCallId: event.toolCallId,
       toolName: event.toolName,
       phase: denied ? 'failed' : 'running',
-      headline: denied
-        ? `已拒绝: ${event.toolName}`
-        : `调用中: ${event.toolName}`,
+      headline: headlineForToolPhase(denied ? 'failed' : 'running', event.toolName, event.request),
       detailLines: denied
         ? [
             event.decisionKind === 'guidance'
