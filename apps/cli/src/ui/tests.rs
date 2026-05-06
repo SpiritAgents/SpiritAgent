@@ -3,8 +3,9 @@ use crate::{
     model_registry::AppConfig,
     view::{
         AssistantAuxData, BottomFormFieldEditorView, BottomFormFieldView, BottomFormView,
-        MainInputMode, PendingAssistantAux, RewindPickerView, SubagentSessionDetailView,
-        SubagentSessionSummaryView,
+        MainInputMode, MarketplaceFlowStep, MarketplaceViewModel, PendingAssistantAux,
+        RewindPickerView, SlashFlowItemView, SlashFlowSearchView, SlashFlowView,
+        SubagentSessionDetailView, SubagentSessionSummaryView,
     },
 };
 use ratatui::{Terminal, backend::TestBackend};
@@ -289,12 +290,16 @@ fn sessions_picker_uses_inline_layout_without_footer_or_title() {
     let lines = render_ui_lines(&app, 80, 20);
 
     assert!(lines.iter().any(|line| line.contains("> session-1.json")));
-    assert!(!lines
-        .iter()
-        .any(|line| line.contains(t!("ui.picker.sessions").as_ref())));
-    assert!(!lines
-        .iter()
-        .any(|line| line.contains(t!("ui.footer.preview").as_ref())));
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.contains(t!("ui.picker.sessions").as_ref()))
+    );
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.contains(t!("ui.footer.preview").as_ref()))
+    );
 }
 
 #[test]
@@ -335,12 +340,73 @@ fn slash_suggestions_use_inline_layout_without_footer_or_title() {
     let lines = render_ui_lines(&app, 80, 20);
 
     assert!(lines.iter().any(|line| line.contains("> /model")));
-    assert!(!lines
-        .iter()
-        .any(|line| line.contains(t!("ui.suggestion.title.slash").as_ref())));
-    assert!(!lines
-        .iter()
-        .any(|line| line.contains(t!("ui.footer.preview").as_ref())));
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.contains(t!("ui.suggestion.title.slash").as_ref()))
+    );
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.contains(t!("ui.footer.preview").as_ref()))
+    );
+}
+
+#[test]
+fn marketplace_catalog_reuses_minimal_picker_with_search() {
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::User,
+        "/extensions marketplace",
+    ));
+    app.marketplace_view = Some(MarketplaceViewModel {
+        step: MarketplaceFlowStep::CatalogPicker,
+        query: "css".to_string(),
+        error: None,
+        catalog_items: Vec::new(),
+        selected_item: None,
+        detail: None,
+        slash: SlashFlowView {
+            title: "扩展".to_string(),
+            subtitle: None,
+            search: Some(SlashFlowSearchView {
+                value: "css".to_string(),
+                placeholder: "输入扩展名称、作者或关键词".to_string(),
+            }),
+            empty_text: "没有匹配的扩展。".to_string(),
+            selected_index: 1,
+            items: vec![
+                SlashFlowItemView {
+                    label: "System message demo".to_string(),
+                    summary: "This is an extension example.".to_string(),
+                    details: Vec::new(),
+                    disabled: false,
+                    muted: false,
+                },
+                SlashFlowItemView {
+                    label: "Void Desktop CSS".to_string(),
+                    summary: "Desktop CSS extension.".to_string(),
+                    details: Vec::new(),
+                    disabled: false,
+                    muted: false,
+                },
+            ],
+            compact_items: true,
+            footer_hint: "Enter 打开  Esc 关闭".to_string(),
+        },
+        readme_scroll: 0,
+    });
+
+    let lines = render_ui_lines(&app, 80, 20);
+
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("搜") && line.contains(":") && line.contains("css"))
+    );
+    assert!(lines.iter().any(|line| line.contains("> Void Desktop CSS")));
+    assert!(!lines.iter().any(|line| line.contains("扩展市场")));
+    assert!(!lines.iter().any(|line| line.contains("共 2 项")));
+    assert!(!lines.iter().any(|line| line.contains("Enter 打开")));
 }
 
 #[test]
@@ -352,7 +418,7 @@ fn single_slash_suggestion_details_align_with_usage_heading() {
     let lines = render_text_lines(build_suggestion_lines(&app, 5, 64));
     let usage_idx = lines
         .iter()
-        .position(|line| line == t!("ui.suggestion.usage.heading").as_ref())
+        .position(|line| line == "Usage")
         .expect("usage heading exists");
 
     assert_eq!(lines[usage_idx + 1], "/model list");
@@ -368,9 +434,11 @@ fn file_reference_suggestions_keep_panel_title() {
     let lines = render_ui_lines(&app, 80, 20);
 
     assert!(!suggestions_use_inline_picker(&app));
-    assert!(lines
-        .iter()
-        .any(|line| line.contains(t!("ui.suggestion.title.file_reference").as_ref())));
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains(t!("ui.suggestion.title.file_reference").as_ref()))
+    );
 }
 
 #[test]
