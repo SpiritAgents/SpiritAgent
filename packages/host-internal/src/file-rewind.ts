@@ -27,6 +27,7 @@ export interface HostToolRequestMetadata {
   toolName?: string;
   subagentSessionId?: string;
   subagentTitle?: string;
+  userInitiated?: boolean;
 }
 
 export interface HostRecordedFileChange {

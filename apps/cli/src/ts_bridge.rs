@@ -243,6 +243,50 @@ struct BridgeDrainEventsResult {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+enum BridgeManualToolCommandStartResult {
+    #[serde(rename = "completed")]
+    Completed {
+        request: Value,
+        #[serde(alias = "toolName")]
+        tool_name: String,
+        output: String,
+        failed: bool,
+        #[serde(alias = "backgroundExecution")]
+        background_execution: bool,
+    },
+    #[serde(rename = "started-background")]
+    StartedBackground {
+        request: Value,
+        #[serde(alias = "toolName")]
+        tool_name: String,
+        #[serde(alias = "statusText")]
+        status_text: Option<String>,
+    },
+    #[serde(rename = "started-user-turn")]
+    StartedUserTurn {
+        #[serde(alias = "userMessage")]
+        user_message: String,
+    },
+    #[serde(rename = "requires-approval")]
+    RequiresApproval {
+        approval: BridgePendingApproval,
+    },
+    #[serde(rename = "denied")]
+    Denied {
+        request: Value,
+        #[serde(alias = "toolName")]
+        tool_name: String,
+        message: String,
+    },
+    #[serde(rename = "failed")]
+    Failed {
+        error: String,
+        request: Option<Value>,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CliHostMetadataSnapshot {
     pub rule_entries: Vec<RuleEntry>,
@@ -1196,6 +1240,10 @@ impl TsBridgeRuntime {
         }
         if let Err(err) = self.sync_after_command() {
             self.handle_bridge_error(err);
+            return;
+        }
+        if let Err(err) = self.consume_completed_manual_tool_command_result() {
+            self.handle_bridge_error(err);
         }
     }
 
@@ -1399,7 +1447,8 @@ impl TsBridgeRuntime {
             params["argsJson"] = Value::String(args_json.to_string());
         }
 
-        self.call_bridge("runtime.startManualMcpTool", Some(params))?;
+        let value = self.call_bridge("runtime.startManualMcpTool", Some(params))?;
+        self.handle_manual_tool_command_bridge_response(&value)?;
         self.sync_after_command()?;
         Ok(())
     }
@@ -1409,13 +1458,24 @@ impl TsBridgeRuntime {
             return;
         }
         let decision = approval_decision_from_input(message);
-        let method = match self.pending_approval_kind {
+        let pending_kind = self.pending_approval_kind;
+        let method = match pending_kind {
             Some(PendingApprovalKind::Manual) => "runtime.continuePendingManualToolApproval",
             Some(PendingApprovalKind::Tool) => "runtime.respondToPendingApproval",
             None => return,
         };
 
-        if let Err(err) = self.call_bridge(method, Some(json!({ "decision": decision }))) {
+        let value = match self.call_bridge(method, Some(json!({ "decision": decision }))) {
+            Ok(value) => value,
+            Err(err) => {
+                self.handle_bridge_error(err);
+                return;
+            }
+        };
+
+        if pending_kind == Some(PendingApprovalKind::Manual)
+            && let Err(err) = self.handle_manual_tool_command_bridge_response(&value)
+        {
             self.handle_bridge_error(err);
             return;
         }
@@ -1450,10 +1510,18 @@ impl TsBridgeRuntime {
         if self.bridge_failed {
             return;
         }
-        if let Err(err) = self.call_bridge(
+        let value = match self.call_bridge(
             "runtime.startManualToolCommand",
             Some(json!({ "message": message })),
         ) {
+            Ok(value) => value,
+            Err(err) => {
+                self.handle_bridge_error(err);
+                return;
+            }
+        };
+
+        if let Err(err) = self.handle_manual_tool_command_bridge_response(&value) {
             self.handle_bridge_error(err);
             return;
         }
@@ -1781,6 +1849,17 @@ impl TsBridgeRuntime {
     fn sync_snapshot_only(&mut self) -> Result<()> {
         let value = self.call_bridge("runtime.snapshot", None)?;
         self.apply_snapshot(serde_json::from_value(value)?);
+        Ok(())
+    }
+
+    fn consume_completed_manual_tool_command_result(&mut self) -> Result<()> {
+        let value = self.call_bridge("runtime.takeCompletedManualToolCommandResult", None)?;
+        if value.is_null() {
+            return Ok(());
+        }
+
+        let result: BridgeManualToolCommandStartResult = serde_json::from_value(value)?;
+        self.handle_manual_tool_command_result(result);
         Ok(())
     }
 
@@ -2124,6 +2203,108 @@ impl TsBridgeRuntime {
                 tool_failed_block(tool_name, tool_call_id, "工具执行失败", error),
             ),
         );
+    }
+
+    fn handle_manual_tool_command_bridge_response(&mut self, value: &Value) -> Result<()> {
+        let Some(result_value) = value.get("result").cloned() else {
+            return Ok(());
+        };
+
+        let result: BridgeManualToolCommandStartResult = serde_json::from_value(result_value)?;
+        self.handle_manual_tool_command_result(result);
+        Ok(())
+    }
+
+    fn handle_manual_tool_command_result(&mut self, result: BridgeManualToolCommandStartResult) {
+        match result {
+            BridgeManualToolCommandStartResult::Completed {
+                request,
+                tool_name,
+                output,
+                failed,
+                background_execution: _,
+            } => self.push_manual_tool_command_message(request, &tool_name, &output, failed),
+            BridgeManualToolCommandStartResult::StartedBackground {
+                request: _,
+                tool_name: _,
+                status_text: _,
+            }
+            | BridgeManualToolCommandStartResult::StartedUserTurn { user_message: _ }
+            | BridgeManualToolCommandStartResult::RequiresApproval { approval: _ } => {}
+            BridgeManualToolCommandStartResult::Denied {
+                request: _,
+                tool_name: _,
+                message,
+            } => {
+                self.events
+                    .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
+                        MessageRole::Agent,
+                        message,
+                    )));
+            }
+            BridgeManualToolCommandStartResult::Failed { error, request } => {
+                self.push_manual_tool_command_failure(request, &error);
+            }
+        }
+    }
+
+    fn push_manual_tool_command_message(
+        &mut self,
+        request: Value,
+        tool_name: &str,
+        output: &str,
+        failed: bool,
+    ) {
+        match tool_request_from_host_value(request) {
+            Ok(request) => {
+                self.events.push_back(RuntimeEvent::PushMessage(
+                    ChatMessage::with_tool_block(
+                        MessageRole::Agent,
+                        if failed {
+                            format!("工具执行失败: {}", output)
+                        } else {
+                            format_tool_ui_message(&request, tool_name, output)
+                        },
+                        if failed {
+                            tool_failed_block(tool_name, None, "工具执行失败", output)
+                        } else {
+                            build_tool_result_block(&request, tool_name, None, output)
+                        },
+                    ),
+                ));
+            }
+            Err(err) => {
+                self.events.push_back(RuntimeEvent::PushMessage(ChatMessage::new(
+                    MessageRole::Agent,
+                    if failed {
+                        format!("工具执行失败（请求解析失败）: {}", output)
+                    } else {
+                        format!("工具执行完成（请求解析失败）: {}\n{}", err, output)
+                    },
+                )));
+            }
+        }
+    }
+
+    fn push_manual_tool_command_failure(&mut self, request: Option<Value>, error: &str) {
+        if let Some(request) = request
+            && let Ok(request) = tool_request_from_host_value(request)
+        {
+            self.events.push_back(RuntimeEvent::PushMessage(
+                ChatMessage::with_tool_block(
+                    MessageRole::Agent,
+                    format!("工具执行失败: {}", error),
+                    tool_failed_block(&request.name, None, "工具执行失败", error),
+                ),
+            ));
+            return;
+        }
+
+        self.events
+            .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
+                MessageRole::Agent,
+                format!("工具执行失败: {}", error),
+            )));
     }
 
     fn handle_bridge_error(&mut self, err: anyhow::Error) {
@@ -2485,7 +2666,8 @@ fn build_mcp_only_transport_config(workspace_root: &Path) -> Value {
 #[cfg(test)]
 mod tests {
     use super::{
-        BridgeRuntimeEvent, BridgeRuntimeSnapshot, BridgeToolExecution,
+        BridgeManualToolCommandStartResult, BridgeRuntimeEvent, BridgeRuntimeSnapshot,
+        BridgeToolExecution,
         ENV_RUNTIME_BACKEND_NODE_PATH, TsBridgeRuntime, resolve_bridge_script,
     };
     use crate::{
@@ -2866,6 +3048,59 @@ mod tests {
                     .tool_block
                     .as_ref()
                     .is_some_and(|block| block.tool_name == "web_fetch" && block.tool_call_id.as_deref() == Some("call_123"))
+        )));
+    }
+
+    #[test]
+    fn completed_manual_tool_result_appends_tool_message() {
+        let Some(mut runtime) = make_test_runtime() else {
+            return;
+        };
+
+        runtime.handle_manual_tool_command_result(BridgeManualToolCommandStartResult::Completed {
+            request: json!({
+                "name": "run_shell_command",
+                "command": "echo hello"
+            }),
+            tool_name: "run_shell_command".to_string(),
+            output: "hello".to_string(),
+            failed: false,
+            background_execution: false,
+        });
+
+        let events = runtime.drain_events();
+        assert!(events.iter().any(|event| matches!(
+            event,
+            RuntimeEvent::PushMessage(message)
+                if message
+                    .tool_block
+                    .as_ref()
+                    .is_some_and(|block| block.tool_name == "run_shell_command" && block.phase == crate::view::ToolUiPhase::Succeeded)
+        )));
+    }
+
+    #[test]
+    fn failed_manual_tool_result_with_request_appends_failure_message() {
+        let Some(mut runtime) = make_test_runtime() else {
+            return;
+        };
+
+        runtime.handle_manual_tool_command_result(BridgeManualToolCommandStartResult::Failed {
+            error: "boom".to_string(),
+            request: Some(json!({
+                "name": "run_shell_command",
+                "command": "echo hello"
+            })),
+        });
+
+        let events = runtime.drain_events();
+        assert!(events.iter().any(|event| matches!(
+            event,
+            RuntimeEvent::PushMessage(message)
+                if message
+                    .tool_block
+                    .as_ref()
+                    .is_some_and(|block| block.tool_name == "run_shell_command" && block.phase == crate::view::ToolUiPhase::Failed)
         )));
     }
 

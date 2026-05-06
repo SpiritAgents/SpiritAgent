@@ -20,6 +20,7 @@ interface HostToolRequestMetadata {
   toolName?: string;
   subagentSessionId?: string;
   subagentTitle?: string;
+  userInitiated?: boolean;
 }
 
 export interface LocalHostToolService {
@@ -29,6 +30,7 @@ export interface LocalHostToolService {
   authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>>;
   trust(target: string): Promise<void>;
   execute(request: JsonValue): Promise<string>;
+  attachRequestMetadata?(request: JsonValue, metadata: ToolRequestExecutionMetadata): JsonValue;
 }
 
 export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue> {
@@ -140,8 +142,19 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       return request;
     }
 
-    const existing = this.requestMetadata.get(request) ?? {};
-    this.requestMetadata.set(request, {
+    let target: JsonValue = request;
+    if (this.localHostService?.attachRequestMetadata) {
+      target = this.unwrapHostToolRequest(
+        this.localHostService.attachRequestMetadata(request, metadata),
+      );
+    }
+
+    if (!isJsonObject(target)) {
+      return target;
+    }
+
+    const existing = this.requestMetadata.get(target) ?? this.requestMetadata.get(request) ?? {};
+    this.requestMetadata.set(target, {
       ...existing,
       ...(typeof metadata.toolCallId === 'string' ? { toolCallId: metadata.toolCallId } : {}),
       ...(typeof metadata.toolName === 'string' ? { toolName: metadata.toolName } : {}),
@@ -151,8 +164,11 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       ...(typeof metadata.subagentTitle === 'string'
         ? { subagentTitle: metadata.subagentTitle }
         : {}),
+      ...(typeof metadata.userInitiated === 'boolean'
+        ? { userInitiated: metadata.userInitiated }
+        : {}),
     });
-    return request;
+    return target;
   }
 
   async continueAfterQuestions(
@@ -291,6 +307,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
         ...(typeof metadata.subagentTitle === 'string'
           ? { subagentTitle: metadata.subagentTitle }
           : {}),
+        ...(typeof metadata.userInitiated === 'boolean'
+          ? { userInitiated: metadata.userInitiated }
+          : {}),
       },
     };
   }
@@ -372,6 +391,9 @@ function hostToolRequestMetadata(request: JsonValue): HostToolRequestMetadata | 
       : {}),
     ...(typeof candidate.subagentTitle === 'string'
       ? { subagentTitle: candidate.subagentTitle }
+      : {}),
+    ...(typeof candidate.userInitiated === 'boolean'
+      ? { userInitiated: candidate.userInitiated }
       : {}),
   };
 }

@@ -58,6 +58,7 @@ export async function startManualToolCommand<
     request = await runtime.options.toolExecutor.parseCommand(message);
     request = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
       toolName: toolNameFromRequest(request),
+      userInitiated: true,
     }) ?? request;
   } catch (error) {
     return {
