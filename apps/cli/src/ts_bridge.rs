@@ -1985,6 +1985,7 @@ impl TsBridgeRuntime {
                                         &approval.tool_name,
                                         approval.tool_call_id.as_deref(),
                                         &approval.prompt,
+                                        approval.trust_target.is_some(),
                                     ),
                                 ),
                             ),
@@ -2008,6 +2009,7 @@ impl TsBridgeRuntime {
                                     &approval.tool_name,
                                     approval.tool_call_id.as_deref(),
                                     &approval.prompt,
+                                    approval.trust_target.is_some(),
                                 ),
                             ),
                         ));

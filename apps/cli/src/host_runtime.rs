@@ -103,11 +103,17 @@ pub(crate) fn tool_approval_block(
     tool_name: &str,
     tool_call_id: Option<&str>,
     prompt: &str,
+    supports_trust: bool,
 ) -> ToolUiBlock {
-    let detail_lines = prompt
+    let mut detail_lines = prompt
         .lines()
         .map(|line| line.to_string())
         .collect::<Vec<_>>();
+    detail_lines.push(if supports_trust {
+        "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string()
+    } else {
+        "快捷键: Y 允许一次 / N 拒绝".to_string()
+    });
     ToolUiBlock {
         tool_call_id: tool_call_id.map(String::from),
         tool_name: tool_name.to_string(),
