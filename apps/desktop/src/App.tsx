@@ -18,6 +18,7 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Plus,
   ShieldCheck,
   Square,
   X,
@@ -325,6 +326,8 @@ type ComposerSurfaceProps = {
   onPlanModeChange(planMode: boolean): void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   onKeyDown?(event: ReactKeyboardEvent<HTMLTextAreaElement>): void;
+  showFileReferenceButton?: boolean;
+  onOpenFileReferenceDialog?(): void;
 };
 
 function ComposerSurface({
@@ -346,6 +349,8 @@ function ComposerSurface({
   onPlanModeChange,
   textareaRef,
   onKeyDown,
+  showFileReferenceButton = false,
+  onOpenFileReferenceDialog,
 }: ComposerSurfaceProps) {
   const [modelFilter, setModelFilter] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -402,6 +407,20 @@ function ComposerSurface({
       <div className="flex justify-center px-3 pt-0.5 pb-2">
         <div className="flex w-full max-w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            {showFileReferenceButton ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="引用文件"
+                disabled={readOnly}
+                className="size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground"
+                title="引用文件"
+                onClick={onOpenFileReferenceDialog}
+              >
+                <Plus className="size-3.5" aria-hidden />
+              </Button>
+            ) : null}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -1238,6 +1257,7 @@ export default function App() {
   const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(420);
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(-1);
+  const [fileReferenceDialogOpen, setFileReferenceDialogOpen] = useState(false);
   const [commitDialogOpen, setCommitDialogOpen] = useState(false);
   const [commitMessageDraft, setCommitMessageDraft] = useState("");
   const [commitMode, setCommitMode] = useState<DesktopCommitMode>("commit");
@@ -1834,6 +1854,8 @@ export default function App() {
                     canAbort={conversationInterruptible}
                     busy={runtime.busyAction === "send" && !conversationInterruptible}
                     readOnly={activeSessionReadOnly}
+                    showFileReferenceButton
+                    onOpenFileReferenceDialog={() => setFileReferenceDialogOpen(true)}
                   />
                   {snapshot?.conversation.pendingQuestions ? (
                     <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
@@ -2035,6 +2057,19 @@ export default function App() {
               {commitMode === "commit-and-push" ? "提交并推送" : "提交"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={fileReferenceDialogOpen}
+        onOpenChange={(open) => {
+          setFileReferenceDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle>NOTING HERE.</DialogTitle>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
     </div>
