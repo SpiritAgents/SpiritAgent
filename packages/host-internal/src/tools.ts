@@ -108,7 +108,7 @@ export interface RunSubagentRequest {
 }
 
 export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
-  | { name: 'run_shell_command'; command: string }
+  | { name: 'run_shell_command'; command: string; reason: string }
   | { name: 'web_fetch'; url: string }
   | { name: 'list_directory_files'; path: string }
   | {
@@ -349,7 +349,11 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         if (!command) {
           throw new Error('用法: /tool shell <command>');
         }
-        return { name: 'run_shell_command', command };
+        return {
+          name: 'run_shell_command',
+          command,
+          reason: '用户手动执行',
+        };
       }
       case 'web':
         if (tokens.length < 2) {
@@ -396,6 +400,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'run_shell_command':
         return {
           name,
+          reason: requiredString(parsed, 'reason'),
           command: requiredString(parsed, 'command'),
         };
       case 'web_fetch':
@@ -555,7 +560,9 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         const shell = this.toolDefinitionEnvironment();
         return {
           kind: 'need-approval',
-          prompt: `高风险工具调用: shell\n终端: ${shell.shellDisplayName}\n命令: ${request.command}`,
+          prompt:
+            `理由: ${request.reason}\n` +
+            `高风险工具调用: shell\n终端: ${shell.shellDisplayName}\n命令: ${request.command}`,
           trustTarget: `shell:${request.command}`,
         };
       }

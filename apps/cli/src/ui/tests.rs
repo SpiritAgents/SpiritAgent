@@ -1075,6 +1075,36 @@ fn subagent_tool_card_shows_output_when_aux_details_expanded() {
 }
 
 #[test]
+fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
+    let app = build_view_model(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call_00_demo_reason".to_string()),
+            tool_name: "run_shell_command".to_string(),
+            phase: ToolUiPhase::PendingApproval,
+            headline: "查看构建输出".to_string(),
+            detail_lines: vec![
+                "高风险工具调用: shell".to_string(),
+                "命令: cargo test -p spirit-agent".to_string(),
+            ],
+            args_excerpt: None,
+            output_excerpt: None,
+        },
+    ));
+
+    let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
+
+    assert!(lines[0].contains("run_shell_command"));
+    assert!(
+        lines[0].contains(t!("ui.tool.phase.pending_approval").as_ref())
+    );
+    assert!(lines[0].contains("查看构建输出"));
+    assert!(!lines[0].contains("call_00_demo_reason"));
+    assert!(!lines.iter().any(|line| line == "  ▌ 查看构建输出"));
+}
+
+#[test]
 fn assistant_prefix_stays_with_first_wrapped_cjk_line() {
     let app = build_view_model(ChatMessage::new(
         MessageRole::Agent,

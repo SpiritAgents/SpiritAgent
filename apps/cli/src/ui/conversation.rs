@@ -725,6 +725,16 @@ pub(in crate::ui) fn render_tool_card_lines(
 
     let mut out = Vec::new();
 
+    let shell_pending_reason = if tool.tool_name == "run_shell_command"
+        && tool.phase == ToolUiPhase::PendingApproval
+        && !tool.headline.trim().is_empty()
+        && tool.headline != "待确认"
+    {
+        Some(tool.headline.clone())
+    } else {
+        None
+    };
+
     let mut title_spans = vec![
         Span::styled(message_prefix_text(), prefix_style),
         Span::styled(
@@ -764,7 +774,18 @@ pub(in crate::ui) fn render_tool_card_lines(
         title_spans.push(Span::raw(" "));
         title_spans.push(Span::styled(suffix, prefix_style));
     }
-    if let Some(ref id) = tool
+    if let Some(reason) = shell_pending_reason.as_ref() {
+        title_spans.push(Span::raw(" "));
+        title_spans.push(Span::styled(
+            reason.clone(),
+            patch_style_foreground(
+                Style::default()
+                    .fg(Color::Rgb(170, 170, 170))
+                    .add_modifier(Modifier::BOLD),
+                cli_ui_foreground_color(CliUiHookSlot::MessageTool),
+            ),
+        ));
+    } else if let Some(ref id) = tool
         .tool_call_id
         .as_ref()
         .filter(|id| !manual_shell::is_local_tool_call_id(id))
@@ -784,19 +805,21 @@ pub(in crate::ui) fn render_tool_card_lines(
     }
     out.push(Line::from(title_spans));
 
-    out.push(Line::from(vec![
-        Span::raw(indent),
-        Span::styled(rail_sym, rail),
-        Span::styled(
-            tool.headline.clone(),
-            patch_style_foreground(
-                Style::default()
-                    .fg(Color::Rgb(170, 170, 170))
-                    .add_modifier(Modifier::BOLD),
-                cli_ui_foreground_color(CliUiHookSlot::MessageTool),
+    if shell_pending_reason.is_none() {
+        out.push(Line::from(vec![
+            Span::raw(indent),
+            Span::styled(rail_sym, rail),
+            Span::styled(
+                tool.headline.clone(),
+                patch_style_foreground(
+                    Style::default()
+                        .fg(Color::Rgb(170, 170, 170))
+                        .add_modifier(Modifier::BOLD),
+                    cli_ui_foreground_color(CliUiHookSlot::MessageTool),
+                ),
             ),
-        ),
-    ]));
+        ]));
+    }
 
     for line in &tool.detail_lines {
         if line.is_empty() {

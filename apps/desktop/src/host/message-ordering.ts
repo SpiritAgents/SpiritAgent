@@ -77,6 +77,52 @@ export function truncateOneLineForDebug(s: string, max: number): string {
   return `${t.slice(0, max)}…`;
 }
 
+const SHELL_REASON_PREFIX = '理由:';
+
+export function reasonForShellTool(toolName: string, request: unknown): string | undefined {
+  if (toolName !== 'run_shell_command' || !request || typeof request !== 'object') {
+    return undefined;
+  }
+
+  const reason = (request as { reason?: unknown }).reason;
+  if (typeof reason !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = reason.trim();
+  return trimmed || undefined;
+}
+
+export function displayTitleForTool(toolName: string, request: unknown): string {
+  return reasonForShellTool(toolName, request) ?? toolName;
+}
+
+export function stripReasonLineFromShellPrompt(toolName: string, prompt: string): string {
+  if (toolName !== 'run_shell_command') {
+    return prompt;
+  }
+
+  const lines = prompt.split(/\r?\n/);
+  if (!lines[0]?.trim().startsWith(SHELL_REASON_PREFIX)) {
+    return prompt;
+  }
+
+  return lines.slice(1).join('\n').trim();
+}
+
+export function headlineForToolPhase(
+  phase: ToolBlockSnapshot['phase'],
+  toolName: string,
+  request: unknown,
+): string {
+  const shellReason = reasonForShellTool(toolName, request);
+  if (shellReason) {
+    return shellReason;
+  }
+
+  return defaultToolHeadline(phase, toolName);
+}
+
 /** 自 history 尾部向前找**最后一条**非空 `assistant` 正文（OpenAI 路径下 `historyStore` 常无 `role: tool`，需用此作待审批时的兜底）。 */
 export function lastAssistantPlainTextInHistory(
   hist: ReadonlyArray<{ role: string; content: string }>,
@@ -487,7 +533,13 @@ export function headlineForStreamingToolPreview(
   messages: ConversationMessageSnapshot[],
   toolCallId: string,
   toolName: string,
+  request?: unknown,
 ): string {
+  const shellReason = reasonForShellTool(toolName, request);
+  if (shellReason) {
+    return shellReason;
+  }
+
   return hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
     ? `排队中: ${toolName}`
     : `调用中: ${toolName}`;

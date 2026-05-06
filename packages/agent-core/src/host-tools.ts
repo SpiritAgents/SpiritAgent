@@ -25,12 +25,17 @@ export function buildBuiltinHostToolDefinitions(
     functionTool('run_shell_command', buildShellToolDescription(environment.shellDisplayName), {
       type: 'object',
       properties: {
+        reason: {
+          type: 'string',
+          description:
+            'Short imperative phrase describing the command action. Must be in imperative mood (e.g., "List directory contents", "Install dependencies"). Do not use user-centric framing like "User requested" or "As per user\'s instruction". Keep it terse — one short phrase, not a sentence.',
+        },
         command: {
           type: 'string',
           description: environment.shellCommandParameterDescription,
         },
       },
-      required: ['command'],
+      required: ['reason', 'command'],
       additionalProperties: false,
     }),
     functionTool(
@@ -386,7 +391,7 @@ export function buildDreamCollectorSystemMessage(): string {
 }
 
 function buildShellToolDescription(shellDisplayName: string): string {
-  return `Execute a shell command in the workspace directory using the current shell: ${shellDisplayName}. Do not assume Bash or generic Unix syntax unless this shell is actually POSIX compatible. This is high risk and may require user approval.`;
+  return `Execute a shell command in the workspace directory using the current shell: ${shellDisplayName}. Always provide a short user-facing reason explaining why the command is needed. Do not assume Bash or generic Unix syntax unless this shell is actually POSIX compatible. This is high risk and may require user approval.`;
 }
 
 function functionTool(name: string, description: string, parameters: JsonObject): JsonValue {
