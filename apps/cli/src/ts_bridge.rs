@@ -1783,12 +1783,7 @@ impl TsBridgeRuntime {
         params: Option<Value>,
     ) -> Result<Option<Value>> {
         match method {
-            "host.builtinToolDefinitionEnvironment"
-            | "host.parseCommand"
-            | "host.requestFromFunctionCall"
-            | "host.authorize"
-            | "host.trust"
-            | "host.execute" => Err(anyhow!(
+            method if is_retired_builtin_host_method(method) => Err(anyhow!(
                 "CLI TS bridge 已切换到 host-internal，本回调不应再被调用: {}",
                 method
             )),
@@ -1990,6 +1985,7 @@ impl TsBridgeRuntime {
                                         &approval.tool_name,
                                         approval.tool_call_id.as_deref(),
                                         &approval.prompt,
+                                        approval.trust_target.is_some(),
                                     ),
                                 ),
                             ),
@@ -2013,6 +2009,7 @@ impl TsBridgeRuntime {
                                     &approval.tool_name,
                                     approval.tool_call_id.as_deref(),
                                     &approval.prompt,
+                                    approval.trust_target.is_some(),
                                 ),
                             ),
                         ));
@@ -3169,6 +3166,28 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn retired_builtin_host_methods_stay_on_host_internal_side() {
+        for method in [
+            "host.builtinToolDefinitionEnvironment",
+            "host.parseCommand",
+            "host.requestFromFunctionCall",
+            "host.authorize",
+            "host.trust",
+            "host.execute",
+        ] {
+            assert!(
+                super::is_retired_builtin_host_method(method),
+                "{method} should not fall back to Rust CLI tool runtime"
+            );
+        }
+
+        assert!(!super::is_retired_builtin_host_method("host.addMcpServer"));
+        assert!(!super::is_retired_builtin_host_method(
+            "host.localToolExecuted"
+        ));
+    }
 }
 
 fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
@@ -3236,6 +3255,18 @@ fn tool_request_from_local_mcp(request: &LocalMcpToolRequest) -> ToolUiRequest {
             "tool_name": request.tool_name,
             "arguments": request.arguments,
         }),
+    )
+}
+
+fn is_retired_builtin_host_method(method: &str) -> bool {
+    matches!(
+        method,
+        "host.builtinToolDefinitionEnvironment"
+            | "host.parseCommand"
+            | "host.requestFromFunctionCall"
+            | "host.authorize"
+            | "host.trust"
+            | "host.execute"
     )
 }
 
