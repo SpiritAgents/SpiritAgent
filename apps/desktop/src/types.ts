@@ -169,6 +169,10 @@ export interface DesktopExtensionDesktopCssEntry {
   media?: string;
 }
 
+export interface DesktopExtensionDesktopSettingsPage {
+  title?: string;
+}
+
 export interface DesktopExtensionCliUiHookTokens {
   foreground?: string;
   border?: string;
@@ -230,6 +234,7 @@ export interface DesktopExtensionListItem {
   requestedCapabilities?: string[];
   contributedTools?: DesktopExtensionContributedTool[];
   desktopCss?: DesktopExtensionDesktopCssEntry[];
+  desktopSettingsPage?: DesktopExtensionDesktopSettingsPage;
   cliHooks?: DesktopExtensionCliUiHookEntry[];
   settingsSchema?: DesktopExtensionSettingDefinition[];
   settingsValues?: Record<string, DesktopExtensionSettingValue>;

@@ -116,8 +116,13 @@ export interface HostExtensionDesktopCssDefinition {
   media?: string;
 }
 
+export interface HostExtensionDesktopSettingsPageDefinition {
+  title?: string;
+}
+
 export interface HostExtensionDesktopContributionSet {
   css?: HostExtensionDesktopCssDefinition[];
+  settingsPage?: HostExtensionDesktopSettingsPageDefinition;
 }
 
 export const SUPPORTED_HOST_EXTENSION_CLI_UI_SLOTS = [
@@ -301,6 +306,8 @@ export interface HostExtensionToolExecutionContext<THostApi> {
   toolName: string;
   arguments: Record<string, unknown>;
   log(message: string): void;
+  settings: HostExtensionSettingsAccessor;
+  secrets: HostExtensionSecretsAccessor;
   toolCallId?: string;
   questionsResult?: unknown;
 }
@@ -810,7 +817,7 @@ export async function invokeExtensionTool<THostApi>(
     },
   });
 
-  const result = await invokeActivatedExtensionTool(entry, {
+  const result = await invokeActivatedExtensionTool(target, entry, stateStore, {
     host: request.host,
     toolName: tool.name,
     arguments: request.arguments,
@@ -1029,7 +1036,9 @@ function createRuntimeInfo(target: HostInstalledExtension): HostExtensionRuntime
 }
 
 async function invokeActivatedExtensionTool<THostApi>(
+  extension: HostInstalledExtension,
   entry: ActivatedExtensionCacheEntry,
+  stateStore: ExtensionStateStore,
   request: {
     host: THostApi;
     toolName: string;
@@ -1052,6 +1061,8 @@ async function invokeActivatedExtensionTool<THostApi>(
     log: (message) => {
       request.logger?.log(`[extension:${entry.id}] ${message}`);
     },
+    settings: createSettingsAccessor(extension, stateStore),
+    secrets: createSecretsAccessor(extension, stateStore),
     ...(request.toolCallId ? { toolCallId: request.toolCallId } : {}),
     ...(request.questionsResult !== undefined ? { questionsResult: request.questionsResult } : {}),
   };
@@ -1968,11 +1979,18 @@ function optionalDesktopContributionSetField(
   }
 
   const css = optionalDesktopCssDefinitionsField(value.css, `${fieldPrefix}.css`);
-  if (css.length === 0) {
+  const settingsPage = optionalDesktopSettingsPageDefinitionField(
+    value.settingsPage,
+    `${fieldPrefix}.settingsPage`,
+  );
+  if (css.length === 0 && !settingsPage) {
     return undefined;
   }
 
-  return { css };
+  return {
+    ...(css.length > 0 ? { css } : {}),
+    ...(settingsPage ? { settingsPage } : {}),
+  };
 }
 
 function optionalDesktopCssDefinitionsField(
@@ -2130,6 +2148,26 @@ function parseDesktopCssDefinition(
   return {
     path: cssPath,
     ...(media ? { media } : {}),
+  };
+}
+
+function optionalDesktopSettingsPageDefinitionField(
+  value: unknown,
+  fieldPrefix: string,
+): HostExtensionDesktopSettingsPageDefinition | undefined {
+  if (value === undefined || value === null || value === false) {
+    return undefined;
+  }
+  if (value === true) {
+    return {};
+  }
+  if (!isRecord(value)) {
+    throw new Error(`扩展字段 ${fieldPrefix} 必须是布尔值或对象。`);
+  }
+
+  const title = optionalStringField(value.title);
+  return {
+    ...(title ? { title } : {}),
   };
 }
 

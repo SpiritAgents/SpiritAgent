@@ -42,7 +42,13 @@ type SessionSidebarProps = {
   onBackToSessions?: () => void;
   marketplaceActive?: boolean;
   settingsTab?: SettingsSidebarTab;
+  extensionSettingsId?: string | null;
+  extensionSettingsItems?: Array<{
+    id: string;
+    label: string;
+  }>;
   onSettingsTabChange?: (tab: SettingsSidebarTab) => void;
+  onExtensionSettingsChange?: (extensionId: string) => void;
   hostStatus: string;
   mcpState: string | null;
   /** Windows 云母：侧栏需半透明+blur，避免透出窗后内容发花 */
@@ -174,7 +180,10 @@ export function SessionSidebar({
   onBackToSessions,
   marketplaceActive = false,
   settingsTab = "basic",
+  extensionSettingsId = null,
+  extensionSettingsItems = [],
   onSettingsTabChange,
+  onExtensionSettingsChange,
   hostStatus,
   mcpState,
   micaStyle,
@@ -295,7 +304,7 @@ export function SessionSidebar({
           {settingsMode ? (
             <nav className="flex min-w-0 flex-col gap-0.5 p-1.5" aria-label="设置页签">
               {settingsTabs.map((tab) => {
-                const selected = tab.id === settingsTab;
+                const selected = extensionSettingsId === null && tab.id === settingsTab;
                 const Icon = tab.icon;
                 return (
                   <button
@@ -319,6 +328,40 @@ export function SessionSidebar({
                   </button>
                 );
               })}
+              {extensionSettingsItems.length > 0 ? (
+                <>
+                  <div className="h-2" aria-hidden />
+                  {narrow ? null : (
+                    <p className="px-2.5 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
+                      扩展设置
+                    </p>
+                  )}
+                  {extensionSettingsItems.map((item) => {
+                    const selected = item.id === extensionSettingsId;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => onExtensionSettingsChange?.(item.id)}
+                        aria-current={selected ? "page" : undefined}
+                        title={narrow ? item.label : undefined}
+                        className={cn(
+                          buttonVariants({
+                            variant: selected ? "secondary" : "ghost",
+                            size: narrow ? "icon" : "sm",
+                          }),
+                          "text-xs text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+                          narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
+                        )}
+                      >
+                        <Package className="size-3.5" aria-hidden />
+                        <span className={cn("min-w-0 truncate", narrow && "sr-only")}>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </>
+              ) : null}
             </nav>
           ) : (
             <div className="min-w-0 px-1.5 pb-1.5">

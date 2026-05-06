@@ -1229,6 +1229,7 @@ export default function App() {
     "conversation",
   );
   const [settingsTab, setSettingsTab] = useState<SettingsSidebarTab>("basic");
+  const [extensionSettingsId, setExtensionSettingsId] = useState<string | null>(null);
   const [sessionSidebarOpen, setSessionSidebarOpen] = useState(true);
   const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(420);
@@ -1251,6 +1252,16 @@ export default function App() {
   const slashSuggestions = useMemo(
     () => buildSkillSlashSuggestions(slashQuery, snapshot?.skillsList ?? []),
     [slashQuery, snapshot?.skillsList],
+  );
+  const extensionSettingsItems = useMemo(
+    () =>
+      (snapshot?.extensionsList ?? [])
+        .filter((item) => item.desktopSettingsPage)
+        .map((item) => ({
+          id: item.id,
+          label: item.desktopSettingsPage?.title ?? item.displayName,
+        })),
+    [snapshot?.extensionsList],
   );
 
   useEffect(() => {
@@ -1458,7 +1469,13 @@ export default function App() {
               onBackToSessions={() => setActiveSurface(lastNonSettingsSurface)}
               marketplaceActive={marketplaceMode}
               settingsTab={settingsTab}
-              onSettingsTabChange={setSettingsTab}
+              extensionSettingsId={extensionSettingsId}
+              extensionSettingsItems={extensionSettingsItems}
+              onSettingsTabChange={(tab) => {
+                setExtensionSettingsId(null);
+                setSettingsTab(tab);
+              }}
+              onExtensionSettingsChange={(id) => setExtensionSettingsId(id)}
               hostStatus={runtime.summary.hostStatus}
               mcpState={mcpBadgeText(snapshot)}
               micaStyle={useMicaBackdrop}
@@ -1485,6 +1502,7 @@ export default function App() {
             />
             <SettingsView
               tab={settingsTab}
+              extensionSettingsId={extensionSettingsId}
               theme={theme}
               onThemeChange={setTheme}
               settings={runtime.settings}
