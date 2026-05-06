@@ -71,6 +71,15 @@ export async function buildDesktopExtensionListItems(
           })),
         }
       : {}),
+    ...(item.manifest.contributes?.desktop?.settingsPage
+      ? {
+          desktopSettingsPage: {
+            ...(item.manifest.contributes.desktop.settingsPage.title
+              ? { title: item.manifest.contributes.desktop.settingsPage.title }
+              : {}),
+          },
+        }
+      : {}),
     ...(item.manifest.contributes?.cli?.hooks?.length
       ? {
           cliHooks: item.manifest.contributes.cli.hooks.map((hook) => ({
