@@ -636,7 +636,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'search_files':
         return this.executeSearchFiles(request.query);
       case 'run_subagent':
-        throw new Error('run_subagent 应由 Agent runtime 接管，不应落到宿主 ToolRuntime::execute');
+        throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'ask_questions':
         throw new Error('ask_questions 应由运行时挂起并等待用户填写，不应直接执行');
       case 'extension_tool':
