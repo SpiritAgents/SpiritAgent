@@ -382,11 +382,9 @@ impl TuiViewModel {
     }
 
     pub fn is_rewind_selectable_message(&self, message_id: usize) -> bool {
-        self.rewind_picker.as_ref().is_some_and(|rewind_picker| {
-            rewind_picker
-                .selectable_message_ids
-                .contains(&message_id)
-        })
+        self.rewind_picker
+            .as_ref()
+            .is_some_and(|rewind_picker| rewind_picker.selectable_message_ids.contains(&message_id))
     }
 
     pub fn is_rewind_selected_message(&self, message_id: usize) -> bool {
@@ -466,11 +464,16 @@ pub struct SlashFlowItemView {
 }
 
 #[derive(Clone, Debug)]
+pub struct SlashFlowSearchView {
+    pub value: String,
+    pub placeholder: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct SlashFlowView {
     pub title: String,
     pub subtitle: Option<String>,
-    pub filter: String,
-    pub show_filter: bool,
+    pub search: Option<SlashFlowSearchView>,
     pub empty_text: String,
     pub selected_index: usize,
     pub items: Vec<SlashFlowItemView>,

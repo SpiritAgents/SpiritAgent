@@ -40,7 +40,7 @@ pub(in crate::ui) fn marketplace_panel_height(
     match view.step {
         crate::view::MarketplaceFlowStep::CatalogPicker => {
             let half = available.saturating_add(1) / 2;
-            available.min(half.max(10))
+            available.min(half.max(8))
         }
         _ => {
             let expanded = available.saturating_mul(4) / 5;
@@ -54,14 +54,12 @@ pub(in crate::ui) fn draw_marketplace_catalog_picker(
     area: Rect,
     view: &MarketplaceViewModel,
 ) {
-    let border_style = input_block_border_style(false, MainInputMode::Agent, false);
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(border_style)
-        .title(Line::from(Span::styled("扩展市场", border_style)));
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
-    draw_slash_flow_body(frame, inner, &view.slash, view.error.as_deref());
+    draw_slash_flow_body(
+        frame,
+        inline_picker_area(area),
+        &view.slash,
+        view.error.as_deref(),
+    );
 }
 
 pub(in crate::ui) fn draw_marketplace_detail_page(
@@ -242,8 +240,8 @@ pub(in crate::ui) fn draw_slash_flow_body(
 ) {
     let subtle_style = subtle_aux_text_style();
     let title_style = Style::default().fg(Color::Rgb(225, 225, 225));
-    let header_height = if flow.show_filter {
-        if error.is_some() { 4 } else { 3 }
+    let header_height = if flow.search.is_some() {
+        if error.is_some() { 3 } else { 2 }
     } else if error.is_some() {
         1
     } else {
@@ -251,32 +249,28 @@ pub(in crate::ui) fn draw_slash_flow_body(
     };
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(header_height),
-            Constraint::Min(1),
-            Constraint::Length(1),
-        ])
+        .constraints([Constraint::Length(header_height), Constraint::Min(1)])
         .split(area);
 
     if header_height > 0 {
         let mut header_lines = Vec::new();
-        if flow.show_filter {
+        if let Some(search) = flow.search.as_ref() {
             header_lines.push(Line::from(vec![
-                Span::styled("过滤 ", subtle_style),
+                Span::styled("搜索: ", subtle_style),
                 Span::styled(
-                    if flow.filter.trim().is_empty() {
-                        "（未输入，直接键入即可）".to_string()
+                    if search.value.trim().is_empty() {
+                        search.placeholder.clone()
                     } else {
-                        flow.filter.clone()
+                        search.value.clone()
                     },
-                    title_style,
+                    if search.value.trim().is_empty() {
+                        subtle_style.add_modifier(Modifier::DIM)
+                    } else {
+                        title_style
+                    },
                 ),
             ]));
-            header_lines.push(Line::from(vec![
-                Span::styled("共 ", subtle_style),
-                Span::styled(flow.items.len().to_string(), title_style),
-                Span::styled(" 项", subtle_style),
-            ]));
+            header_lines.push(Line::from(""));
         }
         if let Some(error) = error {
             header_lines.push(Line::from(Span::styled(
@@ -299,13 +293,6 @@ pub(in crate::ui) fn draw_slash_flow_body(
         Paragraph::new(body_lines).wrap(Wrap { trim: false }),
         chunks[1],
     );
-    frame.render_widget(
-        Paragraph::new(Line::from(Span::styled(
-            flow.footer_hint.clone(),
-            subtle_style,
-        ))),
-        chunks[2],
-    );
 }
 
 pub(in crate::ui) fn build_slash_flow_lines(
@@ -325,18 +312,17 @@ pub(in crate::ui) fn build_slash_flow_lines(
         .enumerate()
         .flat_map(|(index, item)| {
             let is_selected = index == flow.selected_index;
-            let marker = if is_selected { "▸ " } else { "  " };
             let label_style = if item.disabled {
                 Style::default().fg(Color::Rgb(125, 125, 125))
             } else if is_selected {
-                Style::default().fg(Color::Rgb(235, 235, 235))
+                inline_picker_text_style(true)
             } else if item.muted {
                 Style::default().fg(Color::Rgb(155, 155, 155))
             } else {
-                Style::default().fg(Color::Rgb(205, 205, 205))
+                inline_picker_text_style(false)
             };
             let mut lines = vec![Line::from(vec![
-                Span::styled(marker, label_style),
+                Span::styled(picker_selection_prefix(is_selected), label_style),
                 Span::styled(
                     truncate_to_width(&item.label, width.saturating_sub(2)),
                     label_style,
@@ -355,7 +341,7 @@ pub(in crate::ui) fn build_slash_flow_lines(
                     if item.disabled {
                         Style::default().fg(Color::Rgb(115, 115, 115))
                     } else {
-                        subtle_aux_text_style()
+                        inline_picker_meta_style(is_selected)
                     },
                 )));
             }

@@ -749,8 +749,10 @@ impl TuiShell {
             MarketplaceFlowStep::CatalogPicker => SlashFlowView {
                 title: "扩展".to_string(),
                 subtitle: None,
-                filter: self.marketplace.catalog_filter.clone(),
-                show_filter: true,
+                search: Some(crate::view::SlashFlowSearchView {
+                    value: self.marketplace.catalog_filter.clone(),
+                    placeholder: "输入扩展名称、作者或关键词".to_string(),
+                }),
                 empty_text: "没有匹配的扩展。".to_string(),
                 selected_index: self
                     .marketplace
@@ -774,8 +776,7 @@ impl TuiShell {
             MarketplaceFlowStep::DetailActions => SlashFlowView {
                 title: "操作".to_string(),
                 subtitle: None,
-                filter: self.marketplace.detail_action_filter.clone(),
-                show_filter: false,
+                search: None,
                 empty_text: "没有匹配的操作。".to_string(),
                 selected_index: self.marketplace.detail_action_selected_index,
                 items: self
@@ -836,8 +837,10 @@ impl TuiShell {
                 SlashFlowView {
                     title: "版本".to_string(),
                     subtitle: None,
-                    filter: self.marketplace.version_filter.clone(),
-                    show_filter: true,
+                    search: Some(crate::view::SlashFlowSearchView {
+                        value: self.marketplace.version_filter.clone(),
+                        placeholder: "输入版本、通道或状态".to_string(),
+                    }),
                     empty_text: "没有匹配的版本。".to_string(),
                     selected_index: self
                         .marketplace
@@ -853,8 +856,7 @@ impl TuiShell {
             MarketplaceFlowStep::UnverifiedConfirm => SlashFlowView {
                 title: "确认".to_string(),
                 subtitle: None,
-                filter: self.marketplace.confirm_filter.clone(),
-                show_filter: false,
+                search: None,
                 empty_text: "没有匹配的选项。".to_string(),
                 selected_index: self
                     .marketplace
