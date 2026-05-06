@@ -542,6 +542,11 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         }
         return { kind: 'allowed' };
       case 'run_shell_command': {
+        const metadata = this.requestMetadataFor(request);
+        if (metadata?.userInitiated) {
+          return { kind: 'allowed' };
+        }
+
         const permissions = await this.loadPermissions();
         if ((permissions.trusted_shell_commands ?? []).includes(request.command)) {
           return { kind: 'allowed' };

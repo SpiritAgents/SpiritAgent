@@ -1657,6 +1657,10 @@ peer.on('runtime.continuePendingManualToolApproval', async (rawParams) => {
   };
 });
 
+peer.on('runtime.takeCompletedManualToolCommandResult', async () => {
+  return requireRuntime().takeCompletedManualToolCommandResult() ?? null;
+});
+
 peer.on('runtime.startManualHistoryCompaction', async () => {
   await requireRuntime().startManualHistoryCompaction();
   return null;
