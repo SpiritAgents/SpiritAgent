@@ -555,14 +555,14 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         const shell = this.toolDefinitionEnvironment();
         return {
           kind: 'need-approval',
-          prompt: `高风险工具调用: shell\n终端: ${shell.shellDisplayName}\n命令: ${request.command}\n\n输入 y 允许一次，n 拒绝，t 信任并持久化。`,
+          prompt: `高风险工具调用: shell\n终端: ${shell.shellDisplayName}\n命令: ${request.command}`,
           trustTarget: `shell:${request.command}`,
         };
       }
       case 'web_fetch':
         return {
           kind: 'need-approval',
-          prompt: `高风险工具调用: 抓取网页\nURL: ${request.url}\n\n正文将进入对话；请确认来源可信，恶意页面可能提示词注入。\n\n输入 y 允许一次，n 拒绝。`,
+          prompt: `高风险工具调用: 抓取网页\nURL: ${request.url}\n\n正文将进入对话；请确认来源可信，恶意页面可能提示词注入。`,
         };
       case 'list_directory_files': {
         const canonical = await this.resolveExistingAbsoluteDirectory(request.path);
@@ -575,17 +575,17 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'create_file':
         return {
           kind: 'need-approval',
-          prompt: `高风险工具调用: 创建文件\n路径: ${request.path}\n内容长度: ${[...request.content].length} 字符\n\n输入 y 允许一次，n 拒绝。`,
+          prompt: `高风险工具调用: 创建文件\n路径: ${request.path}\n内容长度: ${[...request.content].length} 字符`,
         };
       case 'edit_file':
         return {
           kind: 'need-approval',
-          prompt: `高风险工具调用: 编辑文件（精确替换）\n路径: ${request.path}\n旧文本长度: ${[...request.old_text].length} 字符\n新文本长度: ${[...request.new_text].length} 字符\n\n输入 y 允许一次，n 拒绝。`,
+          prompt: `高风险工具调用: 编辑文件（精确替换）\n路径: ${request.path}\n旧文本长度: ${[...request.old_text].length} 字符\n新文本长度: ${[...request.new_text].length} 字符`,
         };
       case 'delete_file':
         return {
           kind: 'need-approval',
-          prompt: `高风险工具调用: 删除文件\n路径: ${request.path}\n\n输入 y 允许一次，n 拒绝。`,
+          prompt: `高风险工具调用: 删除文件\n路径: ${request.path}`,
         };
       case 'dream_list':
       case 'dream_read':
@@ -636,7 +636,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'search_files':
         return this.executeSearchFiles(request.query);
       case 'run_subagent':
-        throw new Error('run_subagent 应由 Agent runtime 接管，不应落到宿主 ToolRuntime::execute');
+        throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'ask_questions':
         throw new Error('ask_questions 应由运行时挂起并等待用户填写，不应直接执行');
       case 'extension_tool':
@@ -826,7 +826,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
     return {
       kind: 'need-approval',
-      prompt: `高风险工具调用: ${promptTitle}\n路径: ${canonical}\n\n输入 y 允许一次，n 拒绝，t 信任并持久化。`,
+      prompt: `高风险工具调用: ${promptTitle}\n路径: ${canonical}`,
       trustTarget: `external-read:${canonical}`,
     };
   }
@@ -1537,7 +1537,7 @@ function buildExtensionApprovalPrompt<QuestionSpec>(
   request: Extract<HostToolRequest<QuestionSpec>, { name: 'extension_tool' }>,
 ): string {
   const preview = truncateChars(JSON.stringify(request.arguments, null, 2), 1_200);
-  return `扩展工具需要确认\n扩展: ${request.extension_id}\n工具: ${request.tool_name}\n\n参数\n${preview}\n\n输入 y 允许一次，n 拒绝。`;
+  return `扩展工具需要确认\n扩展: ${request.extension_id}\n工具: ${request.tool_name}\n\n参数\n${preview}`;
 }
 
 function buildExtensionQuestionsAuthorization<QuestionSpec>(
