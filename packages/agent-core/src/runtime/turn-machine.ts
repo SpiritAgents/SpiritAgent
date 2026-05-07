@@ -11,6 +11,7 @@ import type {
 import { createLlmMessageContentFromText } from '../ports.js';
 import {
   applyDeferredUserGuidance,
+  enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   isCompatibleContinuedToolRequest,
   renderError,
@@ -646,6 +647,7 @@ export async function executeAuthorizedToolCall<
   };
   turn.toolExecutions.push(finished);
   runtime.emitEvent({ kind: 'tool-execution-finished', execution: finished });
+  enqueueDeferredToolOutputGuidance(turn, toolName, execution.output);
 
   const resumedState = runtime.options.appendToolResultMessage(
     state,
@@ -1035,6 +1037,7 @@ export async function processToolCallsAsync<
     };
     turn.toolExecutions.push(finished);
     runtime.emitEvent({ kind: 'tool-execution-finished', execution: finished });
+    enqueueDeferredToolOutputGuidance(turn, call.name, execution.output);
     currentState = runtime.options.appendToolResultMessage(
       currentState,
       call.id,

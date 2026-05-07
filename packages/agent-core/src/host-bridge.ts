@@ -9,6 +9,7 @@ import {
 import {
   appendOpenAiToolResultMessage,
   appendOpenAiUserMessage,
+  appendOpenAiUserLlmMessage,
   buildActiveSkillsSystemMessage,
   buildExtensionsSystemMessage,
   buildPlanSystemMessage,
@@ -141,13 +142,21 @@ interface CliHostInternalModule {
     workspaceRoot: string,
     text: string,
   ) => Promise<
-    Array<{
-      path: string;
-      totalChars: number;
-      truncated: boolean;
-      attachedAtUnixMs: number;
-      content: string;
-    }>
+    Array<
+      | {
+          kind: 'text';
+          path: string;
+          totalChars: number;
+          truncated: boolean;
+          attachedAtUnixMs: number;
+          content: string;
+        }
+      | {
+          kind: 'image';
+          path: string;
+          attachedAtUnixMs: number;
+        }
+    >
   >;
   collectHostExtensionContributedTools?: (
     extensions: Array<{
@@ -1234,6 +1243,7 @@ async function createRuntime(
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,
     appendUserMessage: appendOpenAiUserMessage,
+    appendUserLlmMessage: (state, message) => appendOpenAiUserLlmMessage(state, message, workspaceRoot),
     extractAssistantText: extractLastOpenAiAssistantText,
     truncateStateForContextRetry: truncateOpenAiToolAgentStateForContextRetry,
     truncateHistoryForCompaction: truncateOpenAiHistoryForCompaction,

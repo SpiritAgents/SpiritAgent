@@ -16,7 +16,7 @@ struct ChatFile {
     messages: Vec<StoredChatMessage>,
     #[serde(default)]
     assistant_aux: Vec<StoredAssistantAux>,
-    llm_history: Vec<StoredLlmMessage>,
+    llm_history: Vec<crate::ports::ArchivedLlmMessage>,
     #[serde(default)]
     subagent_sessions: Vec<StoredSubagentSession>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -48,15 +48,6 @@ struct StoredAssistantAux {
     compaction: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct StoredLlmMessage {
-    role: String,
-    content: String,
-    #[serde(default)]
-    image_paths: Vec<String>,
-}
-
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StoredDesktopMessage {
@@ -82,7 +73,7 @@ struct StoredDesktopMessageAux {
 struct StoredSubagentSession {
     summary: StoredSubagentSessionSummary,
     #[serde(default)]
-    llm_history: Vec<StoredLlmMessage>,
+    llm_history: Vec<crate::ports::ArchivedLlmMessage>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -109,7 +100,7 @@ struct SanitizedChatData {
 pub struct LoadedChat {
     pub messages: Vec<(String, String)>,
     pub assistant_aux: Vec<crate::ports::AssistantAuxArchiveEntry>,
-    pub llm_history: Vec<(String, String, Vec<String>)>,
+    pub llm_history: Vec<crate::ports::ArchivedLlmMessage>,
     pub subagent_sessions: Vec<crate::ports::SubagentSessionArchiveEntry>,
     pub rewind: Option<Value>,
 }
@@ -152,7 +143,7 @@ pub fn save_chat(
     path_arg: Option<&str>,
     messages: &[(String, String)],
     assistant_aux: &[crate::ports::AssistantAuxArchiveEntry],
-    llm_history: &[(String, String, Vec<String>)],
+    llm_history: &[crate::ports::ArchivedLlmMessage],
     subagent_sessions: &[crate::ports::SubagentSessionArchiveEntry],
     rewind: Option<&Value>,
 ) -> Result<PathBuf> {
@@ -169,14 +160,7 @@ pub fn save_chat(
         saved_at_unix_ms: current_unix_millis(),
         messages: sanitized.messages,
         assistant_aux: sanitized.assistant_aux,
-        llm_history: llm_history
-            .iter()
-            .map(|(role, content, image_paths)| StoredLlmMessage {
-                role: role.clone(),
-                content: content.clone(),
-                image_paths: image_paths.clone(),
-            })
-            .collect(),
+        llm_history: llm_history.to_vec(),
         subagent_sessions: subagent_sessions
             .iter()
             .map(|entry| StoredSubagentSession {
@@ -192,15 +176,7 @@ pub fn save_chat(
                     final_output: entry.summary.final_output.clone(),
                     error: entry.summary.error.clone(),
                 },
-                llm_history: entry
-                    .llm_history
-                    .iter()
-                    .map(|message| StoredLlmMessage {
-                        role: message.role.clone(),
-                        content: message.content.clone(),
-                        image_paths: message.image_paths.clone(),
-                    })
-                    .collect(),
+                llm_history: entry.llm_history.clone(),
             })
             .collect(),
         rewind: rewind.cloned(),
@@ -268,11 +244,7 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
                 compaction: entry.compaction,
             })
             .collect(),
-        llm_history: parsed
-            .llm_history
-            .into_iter()
-            .map(|m| (m.role, m.content, m.image_paths))
-            .collect(),
+        llm_history: parsed.llm_history,
         subagent_sessions: parsed
             .subagent_sessions
             .into_iter()
@@ -289,15 +261,7 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
                     final_output: entry.summary.final_output,
                     error: entry.summary.error,
                 },
-                llm_history: entry
-                    .llm_history
-                    .into_iter()
-                    .map(|message| crate::ports::ArchivedLlmMessage {
-                        role: message.role,
-                        content: message.content,
-                        image_paths: message.image_paths,
-                    })
-                    .collect(),
+                llm_history: entry.llm_history,
             })
             .collect(),
         rewind: parsed.rewind,
@@ -510,7 +474,11 @@ mod tests {
             thinking: Some("reasoning".to_string()),
             compaction: None,
         }];
-        let llm_history = vec![("user".to_string(), "hello".to_string(), Vec::new())];
+        let llm_history = vec![crate::ports::ArchivedLlmMessage::from_text_and_images(
+            "user".to_string(),
+            "hello".to_string(),
+            Vec::new(),
+        )];
 
         let saved = save_chat(
             Some(file_path.to_string_lossy().as_ref()),
@@ -529,6 +497,8 @@ mod tests {
         assert!(parsed.get("assistantAux").is_some());
         assert!(parsed.get("assistant_aux").is_none());
         assert!(parsed.get("llmHistory").is_some());
+        assert!(parsed["llmHistory"][0]["content"].is_array());
+        assert!(parsed["llmHistory"][0].get("imagePaths").is_none());
 
         let stored_messages = parsed["messages"].as_array().expect("messages array");
         assert_eq!(stored_messages.len(), 3);
@@ -549,6 +519,33 @@ mod tests {
         );
 
         let _ = fs::remove_file(saved);
+    }
+
+    #[test]
+    fn load_chat_upgrades_legacy_llm_history_shape() {
+        let file_path = test_file_path("legacy-llm-history");
+        let raw = json!({
+            "savedAtUnixMs": current_unix_millis(),
+            "messages": [{ "role": "user", "content": "hello" }],
+            "assistantAux": [],
+            "llmHistory": [
+                {
+                    "role": "user",
+                    "content": "hello",
+                    "imagePaths": ["demo.png"]
+                }
+            ],
+            "subagentSessions": [],
+        });
+        fs::write(&file_path, serde_json::to_string_pretty(&raw).expect("serialize legacy json"))
+            .expect("write legacy chat");
+
+        let loaded = load_chat(file_path.to_string_lossy().as_ref()).expect("load legacy chat");
+        assert_eq!(loaded.llm_history.len(), 1);
+        assert_eq!(loaded.llm_history[0].text_content(), "hello");
+        assert_eq!(loaded.llm_history[0].image_paths(), vec!["demo.png".to_string()]);
+
+        let _ = fs::remove_file(file_path);
     }
 
     fn test_file_path(label: &str) -> PathBuf {

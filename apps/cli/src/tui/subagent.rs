@@ -55,8 +55,10 @@ impl TuiShell {
             .llm_history
             .iter()
             .rev()
-            .find(|message| message.role == "assistant" && !message.content.trim().is_empty())
-            .map(|message| message.content.clone());
+            .find(|message| {
+                message.role == "assistant" && !message.text_content().trim().is_empty()
+            })
+            .map(|message| message.text_content());
 
         if let Some(output) = archive
             .summary

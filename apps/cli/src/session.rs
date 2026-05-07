@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
     llm_types::LlmMessage,
-    ports::{AssistantAuxArchiveEntry, ChatArchive},
+    ports::{ArchivedLlmMessage, AssistantAuxArchiveEntry, ChatArchive},
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -191,16 +191,16 @@ impl SessionModel {
         self.llm_history = archive
             .llm_history
             .iter()
-            .map(|(role, content, image_paths)| LlmMessage {
-                role: if role == "assistant" {
+            .map(|message| LlmMessage {
+                role: if message.role == "assistant" {
                     "assistant"
-                } else if role == "system" {
+                } else if message.role == "system" {
                     "system"
                 } else {
                     "user"
                 },
-                content: content.clone(),
-                image_paths: image_paths.clone(),
+                content: message.text_content(),
+                image_paths: message.image_paths(),
             })
             .collect();
         self.llm_api_trace.clear();
@@ -220,7 +220,13 @@ impl SessionModel {
             llm_history: self
                 .llm_history
                 .iter()
-                .map(|m| (m.role.to_string(), m.content.clone(), m.image_paths.clone()))
+                .map(|message| {
+                    ArchivedLlmMessage::from_text_and_images(
+                        message.role.to_string(),
+                        message.content.clone(),
+                        message.image_paths.clone(),
+                    )
+                })
                 .collect(),
             subagent_sessions: Vec::new(),
             rewind: None,

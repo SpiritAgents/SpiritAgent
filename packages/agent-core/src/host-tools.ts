@@ -72,7 +72,7 @@ export function buildBuiltinHostToolDefinitions(
     ),
     functionTool(
       'read_file',
-      'Read file contents. Files inside workspace are allowed directly, outside files may require user approval. Prefer reading larger chunks around 200 lines per call by default unless the user asked for a narrow range or you already know the exact lines you need.',
+      'Read file contents. Files inside workspace are allowed directly, outside files may require user approval. Prefer reading larger chunks around 200 lines per call by default unless the user asked for a narrow range or you already know the exact lines you need. When the target is a supported image file, the host may return an image reference plus a short text summary instead of numbered text lines.',
       {
         type: 'object',
         properties: {
@@ -90,7 +90,7 @@ export function buildBuiltinHostToolDefinitions(
             type: 'integer',
             minimum: 1,
             description:
-              '1-based inclusive end line. If omitted, the tool returns up to about 200 lines from start_line by default; when choosing ranges yourself, prefer about 200 lines unless a narrower range is clearly needed.',
+              '1-based inclusive end line. If omitted, the tool returns up to about 200 lines from start_line by default; when choosing ranges yourself, prefer about 200 lines unless a narrower range is clearly needed. For image files, line ranges may be ignored.',
           },
         },
         required: ['path'],

@@ -389,7 +389,7 @@ pub fn load_rewind_file_change(
 pub fn archive_before_last_user(archive: &ChatArchive) -> ChatArchive {
     let mut cloned = archive.clone();
     let message_index = find_last_index(&cloned.messages, |(role, _)| role == "user");
-    let history_index = find_last_index(&cloned.llm_history, |(role, _, _)| role == "user");
+    let history_index = find_last_index(&cloned.llm_history, |message| message.role == "user");
     if let Some(index) = message_index {
         cloned.messages.truncate(index);
         cloned

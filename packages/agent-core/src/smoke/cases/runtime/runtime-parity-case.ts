@@ -16,6 +16,7 @@ import type {
 import {
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
+  createLlmMessageContentFromTextAndImages,
   createToolExecutionTextOutput,
   llmMessageHasImages,
   llmMessageTextContent,
@@ -981,6 +982,101 @@ class FinalTextTransport implements LlmTransport<undefined, ScriptedState> {
       role: message.role,
       content: message.content,
     }));
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
+}
+
+class ToolImageProjectionTransport implements LlmTransport<undefined, ScriptedState> {
+  rounds = 0;
+
+  async startToolAgentRound(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    this.rounds += 1;
+
+    if (this.rounds === 1) {
+      return {
+        kind: 'success',
+        result: {
+          state: {
+            messages: [
+              ...state.messages,
+              { role: 'assistant', content: '先读取图片。' },
+            ],
+            steps: state.steps + 1,
+          },
+          step: {
+            kind: 'tool-calls',
+            calls: [{ id: 'call-read-image', name: 'read_file', argumentsJson: '{"path":"tool-image.png"}' }],
+          },
+          requestTrace: [{ round: 1 }],
+        },
+      };
+    }
+
+    const hasProjectedImageUserMessage = state.messages.some(
+      (message) =>
+        isJsonObject(message) &&
+        message.role === 'user' &&
+        typeof message.content === 'string' &&
+        message.content.includes('[read image]') &&
+        Array.isArray(message.image_paths) &&
+        message.image_paths.includes('tool-image.png'),
+    );
+    if (!hasProjectedImageUserMessage) {
+      throw new Error('tool image projection smoke 未把工具图片输出投影到下一拍 user 消息。');
+    }
+
+    const hasToolSummary = state.messages.some(
+      (message) =>
+        isJsonObject(message) &&
+        message.role === 'tool' &&
+        typeof message.content === 'string' &&
+        message.content.includes('[read image]'),
+    );
+    if (!hasToolSummary) {
+      throw new Error('tool image projection smoke 未保留工具结果摘要。');
+    }
+
+    return {
+      kind: 'success',
+      result: {
+        state: {
+          messages: [...state.messages, { role: 'assistant', content: 'TOOL_IMAGE_PROJECTION_OK' }],
+          steps: state.steps + 1,
+        },
+        step: { kind: 'final-response-ready' },
+        requestTrace: [{ round: 2 }],
+      },
+    };
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes('context');
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return historyAsPlainApiMessages(history);
   }
 
   llmSystemPromptsForExport(): JsonValue {
@@ -2226,6 +2322,20 @@ class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 }
 
+class ToolImageProjectionExecutor extends HostExecutor {
+  override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
+    if (request.name !== 'read_file') {
+      return super.execute(request);
+    }
+
+    const summaryText = '[read image]\npath: tool-image.png\n\n图像文件已作为图片输入返回。';
+    return {
+      summaryText,
+      content: createLlmMessageContentFromTextAndImages(summaryText, ['tool-image.png']),
+    };
+  }
+}
+
 class SubagentExecutor extends HostExecutor {
   executedSubagentCalls = 0;
 
@@ -2894,7 +3004,12 @@ export async function runRuntimeParitySmoke(): Promise<void> {
     }
 
     const largeFile = referencedFiles.find((file) => file.path === 'large.txt');
-    if (!largeFile || !largeFile.truncated || !largeFile.content.endsWith('...<文件内容已截断>')) {
+    if (
+      !largeFile ||
+      largeFile.kind !== 'text' ||
+      !largeFile.truncated ||
+      !largeFile.content.endsWith('...<文件内容已截断>')
+    ) {
       throw new Error('workspace file helper smoke 未按预期截断超长文件。');
     }
 
@@ -2935,6 +3050,25 @@ export async function runRuntimeParitySmoke(): Promise<void> {
     };
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
+  }
+
+  const toolImageProjectionRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: new ToolImageProjectionTransport(),
+    toolExecutor: new ToolImageProjectionExecutor(),
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    appendUserLlmMessage: appendScriptedUserLlmMessage,
+    extractAssistantText: extractScriptedAssistantText,
+  });
+
+  const toolImageProjectionResult = await toolImageProjectionRuntime.submitUserTurn('请读取图片后继续分析。');
+  if (
+    toolImageProjectionResult.kind !== 'completed' ||
+    toolImageProjectionResult.assistantText !== 'TOOL_IMAGE_PROJECTION_OK'
+  ) {
+    throw new Error('tool image projection smoke 未完成闭环。');
   }
 
   const streamingRuntime = new AgentRuntime({
@@ -3339,6 +3473,7 @@ export async function runRuntimeParitySmoke(): Promise<void> {
   printSmokeSection('mcp resource smoke', resourceResult);
   printSmokeSection('archive restore smoke', archive);
   printSmokeSection('workspace file context smoke', workspaceFileSmoke);
+  printSmokeSection('tool image projection smoke', toolImageProjectionResult);
   printSmokeSection('streaming final smoke events', drainedStreamingEvents);
   printSmokeSection('stream timeout smoke events', drainedTimeoutEvents);
   printSmokeSection('streaming failure smoke events', drainedStreamingFailureEvents);
@@ -3387,6 +3522,26 @@ function appendScriptedToolResult(
 function appendScriptedUserMessage(state: ScriptedState, content: string): ScriptedState {
   return {
     messages: [...state.messages, { role: 'user', content }],
+    steps: state.steps,
+  };
+}
+
+function appendScriptedUserLlmMessage(state: ScriptedState, message: LlmMessage): ScriptedState {
+  return {
+    messages: [
+      ...state.messages,
+      {
+        role: 'user',
+        content: llmMessageTextContent(message.content),
+        ...(llmMessageHasImages(message.content)
+          ? {
+              image_paths: message.content
+                .filter((part): part is { type: 'image'; path: string } => part.type === 'image')
+                .map((part) => part.path),
+            }
+          : {}),
+      },
+    ],
     steps: state.steps,
   };
 }
