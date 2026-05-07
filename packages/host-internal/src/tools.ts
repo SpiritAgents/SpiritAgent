@@ -1,4 +1,5 @@
 import { exec as execCallback } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
   lstat,
@@ -32,6 +33,7 @@ import {
   type HostDreamStore,
   type HostDreamSourceSessionRef,
 } from './dreams.js';
+import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
 
 const exec = promisify(execCallback);
 
@@ -40,6 +42,9 @@ const MAX_READ_LINES_DEFAULT = 200;
 const MAX_DIRECTORY_LIST_RESULTS = 4000;
 const MAX_WEB_FETCH_OUTPUT_CHARS = 24_000;
 const WEB_FETCH_TIMEOUT_MS = 20_000;
+const WEB_FETCH_IMAGE_CACHE_DIR = 'tool-web-fetch-images';
+const WEB_FETCH_IMAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
+const WEB_FETCH_IMAGE_CACHE_MAX_FILES = 128;
 const MAX_COMMAND_OUTPUT_CHARS = 16_000;
 const MAX_SEARCH_RESULTS = 80;
 const MAX_SEARCH_MATCHES_PER_FILE = 3;
@@ -71,6 +76,34 @@ export type HostJsonValue = HostJsonPrimitive | HostJsonObject | HostJsonValue[]
 
 export interface HostJsonObject {
   [key: string]: HostJsonValue;
+}
+
+export interface HostToolTextContentPart {
+  type: 'text';
+  text: string;
+}
+
+export interface HostToolImageContentPart {
+  type: 'image';
+  path: string;
+}
+
+export type HostToolContentPart = HostToolTextContentPart | HostToolImageContentPart;
+
+export interface HostToolModelCapabilities {
+  vision?: true;
+  audioInput?: true;
+  videoInput?: true;
+}
+
+export interface HostToolModelCompatibilityProfile {
+  hasExplicitCapabilities: boolean;
+  capabilities: HostToolModelCapabilities;
+}
+
+export interface HostToolExecutionOutput {
+  content: HostToolContentPart[];
+  summaryText: string;
 }
 
 export interface HostBuiltinToolDefinitionEnvironment {
@@ -165,13 +198,30 @@ export interface HostMcpStatusSnapshot {
   lastError?: string;
 }
 
+function createHostToolTextOutput(text: string): HostToolExecutionOutput {
+  return createHostToolOutput(text);
+}
+
+function createHostToolOutput(
+  summaryText: string,
+  extraContent: HostToolContentPart[] = [],
+): HostToolExecutionOutput {
+  return {
+    content: [
+      ...(summaryText.length > 0 ? [{ type: 'text', text: summaryText } satisfies HostToolTextContentPart] : []),
+      ...extraContent,
+    ],
+    summaryText,
+  };
+}
+
 export interface HostBuiltinToolService<QuestionSpec = HostAskQuestionsQuestionSpec> {
   toolDefinitionEnvironment(): HostBuiltinToolDefinitionEnvironment;
   parseCommand(message: string): Promise<HostToolRequest<QuestionSpec>>;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<HostToolRequest<QuestionSpec>>;
   authorize(request: HostToolRequest<QuestionSpec>): Promise<HostAuthorizationDecision<QuestionSpec>>;
   trust(target: string): Promise<void>;
-  execute(request: HostToolRequest<QuestionSpec>): Promise<string>;
+  execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string>;
   attachRequestMetadata?(
     request: HostToolRequest<QuestionSpec>,
     metadata: HostToolRequestMetadata,
@@ -214,6 +264,15 @@ export interface HostExtensionRuntimeBinding<THostApi> {
   manager: HostExtensionManager;
   getHost(): THostApi;
   logger?: Pick<Console, 'error' | 'log'>;
+}
+
+export interface NodeHostToolServiceOptions {
+  mcp?: HostMcpAdapter;
+  fileChangeObserver?: HostFileChangeObserver;
+  extensions?: HostExtensionRuntimeBinding<unknown>;
+  dreamScope?: HostDreamScope;
+  dreamSourceSession?: HostDreamSourceSessionRef;
+  getModelCompatibilityProfile?: () => HostToolModelCompatibilityProfile | undefined;
 }
 
 interface ToolPermissionStore {
@@ -305,13 +364,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
   constructor(
     private readonly context: InstructionDiscoveryContext,
-    options: {
-      mcp?: HostMcpAdapter;
-      fileChangeObserver?: HostFileChangeObserver;
-      extensions?: HostExtensionRuntimeBinding<unknown>;
-      dreamScope?: HostDreamScope;
-      dreamSourceSession?: HostDreamSourceSessionRef;
-    } = {},
+    options: NodeHostToolServiceOptions = {},
   ) {
     this.workspaceRoot = path.resolve(context.workspaceRoot);
     this.spiritDataDir = path.resolve(context.spiritDataDir);
@@ -323,7 +376,12 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       ? createHostDreamStore({ spiritDataDir: this.spiritDataDir, scope: options.dreamScope })
       : undefined;
     this.dreamSourceSession = options.dreamSourceSession;
+    this.getModelCompatibilityProfile = options.getModelCompatibilityProfile;
   }
+
+  private readonly getModelCompatibilityProfile:
+    | (() => HostToolModelCompatibilityProfile | undefined)
+    | undefined;
 
   toolDefinitionEnvironment(): HostBuiltinToolDefinitionEnvironment {
     return detectShellForTools();
@@ -630,7 +688,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     throw new Error(`未知 trust target: ${target}`);
   }
 
-  async execute(request: HostToolRequest<QuestionSpec>): Promise<string> {
+  async execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string> {
     switch (request.name) {
       case 'run_shell_command':
         return this.executeShell(request.command);
@@ -957,14 +1015,33 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     inputPath: string,
     startLine?: number,
     endLine?: number,
-  ): Promise<string> {
+  ): Promise<HostToolExecutionOutput> {
     const canonical = await this.resolveExistingFilePath(inputPath);
     const st = await lstat(canonical);
     if (!st.isFile()) {
       throw new Error(`目标不是文件: ${canonical}`);
     }
 
-    const content = await readFile(canonical, 'utf8');
+    const bytes = await readFile(canonical);
+    const image = detectSupportedImageFile(canonical, bytes);
+    if (image) {
+      return this.createImageToolOutput(
+        '[read image]',
+        `path: ${canonical}`,
+        canonical,
+        image.mimeType,
+      );
+    }
+
+    if (hasSupportedImageExtension(canonical)) {
+      throw new Error(`图片文件校验失败: ${canonical}`);
+    }
+
+    if (bytes.includes(0)) {
+      throw new Error(`暂不支持以文本方式读取二进制文件: ${canonical}`);
+    }
+
+    const content = bytes.toString('utf8');
     const start = startLine ?? 1;
     if (start === 0) {
       throw new Error('line 从 1 开始');
@@ -985,7 +1062,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       const line = lines[index - 1] ?? '';
       out += `${String(index).padStart(6, ' ')} | ${line}\n`;
     }
-    return out;
+    return createHostToolTextOutput(out);
   }
 
   private async executeSearchFiles(query: string): Promise<string> {
@@ -1048,7 +1125,6 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
       return true;
     };
-
     const walk = async (dir: string): Promise<void> => {
       if (hits.length >= MAX_SEARCH_RESULTS) {
         return;
@@ -1132,7 +1208,79 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     return combined;
   }
 
-  private async executeWebFetch(url: string): Promise<string> {
+  private createImageToolOutput(
+    header: string,
+    locationLine: string,
+    imagePath: string,
+    mimeType: string,
+    extraLines: string[] = [],
+  ): HostToolExecutionOutput {
+    const summaryLines = [header, locationLine, ...extraLines, `mime_type: ${mimeType}`];
+    const compatibilityProfile = this.getModelCompatibilityProfile?.();
+    if (isVisionInputBlocked(compatibilityProfile)) {
+      return createHostToolTextOutput([
+        ...summaryLines,
+        '',
+        '该模型不支持 Vision，图像文件无法作为图片输入返回。',
+      ].join('\n'));
+    }
+
+    return createHostToolOutput([
+      ...summaryLines,
+      '',
+      '图像文件已作为图片输入返回。',
+    ].join('\n'), [{ type: 'image', path: imagePath }]);
+  }
+
+  private async persistWebFetchedImage(bytes: Uint8Array, extension: string): Promise<string> {
+    const cacheDir = path.join(this.spiritDataDir, WEB_FETCH_IMAGE_CACHE_DIR);
+    await mkdir(cacheDir, { recursive: true });
+
+    const filePath = path.join(cacheDir, `${Date.now()}-${randomUUID()}${extension}`);
+    await writeFile(filePath, bytes);
+    await this.prunePersistedWebFetchedImages(cacheDir);
+    return filePath;
+  }
+
+  private async prunePersistedWebFetchedImages(cacheDir: string): Promise<void> {
+    try {
+      const entries = await readdir(cacheDir);
+      const now = Date.now();
+      const retained: Array<{ path: string; mtimeMs: number }> = [];
+
+      for (const entry of entries) {
+        const filePath = path.join(cacheDir, entry);
+        try {
+          const metadata = await lstat(filePath);
+          if (!metadata.isFile()) {
+            continue;
+          }
+
+          if (now - metadata.mtimeMs > WEB_FETCH_IMAGE_RETENTION_MS) {
+            await unlink(filePath);
+            continue;
+          }
+
+          retained.push({ path: filePath, mtimeMs: metadata.mtimeMs });
+        } catch {
+          // 清理失败不应影响本次工具结果。
+        }
+      }
+
+      retained.sort((left, right) => right.mtimeMs - left.mtimeMs);
+      for (const stale of retained.slice(WEB_FETCH_IMAGE_CACHE_MAX_FILES)) {
+        try {
+          await unlink(stale.path);
+        } catch {
+          // 清理失败不应影响本次工具结果。
+        }
+      }
+    } catch {
+      // 清理失败不应影响本次工具结果。
+    }
+  }
+
+  private async executeWebFetch(url: string): Promise<HostToolExecutionOutput> {
     const parsedUrl = parseWebFetchUrl(url);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), WEB_FETCH_TIMEOUT_MS);
@@ -1148,15 +1296,46 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         },
       });
       const status = response.status;
-      const finalUrl = response.url;
+      const finalUrl = response.url || parsedUrl;
       const contentType = response.headers.get('content-type') ?? 'unknown';
+      const imageExtension = inferSupportedImageExtensionFromWebResponse(finalUrl, contentType);
+      const normalizedMimeType = normalizeMimeType(contentType);
+
+      if (imageExtension || normalizedMimeType.startsWith('image/')) {
+        if (!imageExtension) {
+          throw new Error(`暂不支持作为图片抓取该网页响应: ${contentType}`);
+        }
+
+        const bytes = Buffer.from(await response.arrayBuffer());
+        const image = detectSupportedImageFile(`web-fetch${imageExtension}`, bytes);
+        if (!image) {
+          throw new Error(`网页图片校验失败: ${finalUrl}`);
+        }
+
+        const cachedImagePath = await this.persistWebFetchedImage(bytes, imageExtension);
+        return this.createImageToolOutput(
+          '[web image]',
+          `url: ${parsedUrl}`,
+          cachedImagePath,
+          image.mimeType,
+          [
+            `final_url: ${finalUrl}`,
+            `status: ${status}`,
+            `content_type: ${contentType}`,
+            `path: ${cachedImagePath}`,
+          ],
+        );
+      }
+
       const raw = await response.text();
       const extracted = extractWebText(raw, contentType);
       const normalized = normalizeWebText(extracted);
       const preview = truncateChars(normalized, MAX_WEB_FETCH_OUTPUT_CHARS);
       const totalChars = [...normalized].length;
       const truncated = totalChars > MAX_WEB_FETCH_OUTPUT_CHARS;
-      return `[web]\nurl: ${parsedUrl}\nfinal_url: ${finalUrl}\nstatus: ${status}\ncontent_type: ${contentType}\nuser_agent: ${BROWSER_USER_AGENT}\ncontent_chars: ${totalChars}\ntruncated: ${truncated ? 'true' : 'false'}\n\ncontent\n${preview}${truncated ? '\n\n...<网页内容已截断>' : ''}`;
+      return createHostToolTextOutput(
+        `[web]\nurl: ${parsedUrl}\nfinal_url: ${finalUrl}\nstatus: ${status}\ncontent_type: ${contentType}\nuser_agent: ${BROWSER_USER_AGENT}\ncontent_chars: ${totalChars}\ntruncated: ${truncated ? 'true' : 'false'}\n\ncontent\n${preview}${truncated ? '\n\n...<网页内容已截断>' : ''}`,
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -1389,6 +1568,12 @@ function optionalBoolean(obj: HostJsonObject, key: string): boolean | undefined 
   return typeof value === 'boolean' ? value : undefined;
 }
 
+function isVisionInputBlocked(
+  profile: HostToolModelCompatibilityProfile | undefined,
+): boolean {
+  return profile?.hasExplicitCapabilities === true && profile.capabilities.vision !== true;
+}
+
 function optionalStringArrayStrict(obj: HostJsonObject, key: string): string[] {
   if (!(key in obj) || obj[key] === null) {
     return [];
@@ -1538,6 +1723,38 @@ function parseWebFetchUrl(url: string): string {
     throw new Error(`web_fetch 仅支持 http/https，当前 scheme: ${parsed.protocol.replace(':', '')}`);
   }
   return parsed.toString();
+}
+
+function normalizeMimeType(contentType: string): string {
+  return contentType.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+}
+
+function inferSupportedImageExtensionFromWebResponse(
+  finalUrl: string,
+  contentType: string,
+): string | undefined {
+  const mimeType = normalizeMimeType(contentType);
+  switch (mimeType) {
+    case 'image/bmp':
+      return '.bmp';
+    case 'image/gif':
+      return '.gif';
+    case 'image/jpeg':
+      return '.jpg';
+    case 'image/png':
+      return '.png';
+    case 'image/webp':
+      return '.webp';
+    default:
+      break;
+  }
+
+  try {
+    const extension = path.extname(new URL(finalUrl).pathname).toLowerCase();
+    return hasSupportedImageExtension(`file${extension}`) ? extension : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function buildExtensionApprovalPrompt<QuestionSpec>(

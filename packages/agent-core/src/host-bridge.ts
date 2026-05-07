@@ -3,12 +3,15 @@ import { pathToFileURL } from 'node:url';
 
 import {
   createOpenAiCompatibleTransport,
+  resolveOpenAiModelCompatibilityProfile,
   type OpenAiCompatibleTransport,
+  type OpenAiModelCompatibilityProfile,
   type OpenAiTransportConfig,
 } from './openai/index.js';
 import {
   appendOpenAiToolResultMessage,
   appendOpenAiUserMessage,
+  appendOpenAiUserLlmMessage,
   buildActiveSkillsSystemMessage,
   buildExtensionsSystemMessage,
   buildPlanSystemMessage,
@@ -82,6 +85,7 @@ const ENV_HOST_INTERNAL_MODULE_PATH = 'SPIRIT_HOST_INTERNAL_MODULE_PATH';
 const ENV_HOST_INTERNAL_SPIRIT_DATA_DIR = 'SPIRIT_HOST_INTERNAL_SPIRIT_DATA_DIR';
 let runtime: HostRuntime | undefined;
 let transportConfig: OpenAiTransportConfig | undefined;
+let currentHostToolModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
 let enabledRules: OpenAiEnabledRule[] = [];
 let enabledSkillCatalog: OpenAiEnabledSkillCatalogEntry[] = [];
 let activeSkills: OpenAiActiveSkill[] = [];
@@ -98,6 +102,7 @@ interface CliHostInternalModule {
         getHost: () => unknown;
         logger?: Pick<Console, 'error' | 'log'>;
       };
+      getModelCompatibilityProfile?: () => OpenAiModelCompatibilityProfile | undefined;
     },
   ) => LocalHostToolService;
   createNoopMcpAdapter?: () => unknown;
@@ -141,13 +146,21 @@ interface CliHostInternalModule {
     workspaceRoot: string,
     text: string,
   ) => Promise<
-    Array<{
-      path: string;
-      totalChars: number;
-      truncated: boolean;
-      attachedAtUnixMs: number;
-      content: string;
-    }>
+    Array<
+      | {
+          kind: 'text';
+          path: string;
+          totalChars: number;
+          truncated: boolean;
+          attachedAtUnixMs: number;
+          content: string;
+        }
+      | {
+          kind: 'image';
+          path: string;
+          attachedAtUnixMs: number;
+        }
+    >
   >;
   collectHostExtensionContributedTools?: (
     extensions: Array<{
@@ -605,6 +618,7 @@ async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInte
           },
         }
       : {}),
+    getModelCompatibilityProfile: () => currentHostToolModelCompatibilityProfile,
   };
   const service = new module.NodeHostToolService(
     { workspaceRoot, spiritDataDir },
@@ -1193,6 +1207,7 @@ async function createRuntime(
   config: OpenAiTransportConfig,
   history: LlmMessage[] = [],
 ): Promise<HostRuntime> {
+  currentHostToolModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config);
   const workspaceRoot = config.workspaceRoot ?? process.cwd();
   await toolExecutor.refreshCaches();
   logBridge('createRuntime', {
@@ -1234,6 +1249,7 @@ async function createRuntime(
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,
     appendUserMessage: appendOpenAiUserMessage,
+    appendUserLlmMessage: (state, message) => appendOpenAiUserLlmMessage(state, message, workspaceRoot),
     extractAssistantText: extractLastOpenAiAssistantText,
     truncateStateForContextRetry: truncateOpenAiToolAgentStateForContextRetry,
     truncateHistoryForCompaction: truncateOpenAiHistoryForCompaction,

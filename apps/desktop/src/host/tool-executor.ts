@@ -1,12 +1,19 @@
 import {
   type AskQuestionsResult,
+  type OpenAiModelCompatibilityProfile,
+  type OpenAiTransportConfig,
+  resolveOpenAiModelCompatibilityProfile,
+  createLlmImageContentPart,
+  createLlmTextContentPart,
   buildBuiltinHostToolDefinitions,
   buildDreamHostToolDefinitions,
   AuthorizationDecision,
+  createToolExecutionTextOutput,
   JsonValue,
   McpService,
   McpStatusSnapshot,
   type McpToolRequest,
+  type ToolExecutionOutput,
   ToolRequestExecutionMetadata,
   ToolExecutor,
 } from '@spirit-agent/agent-core';
@@ -30,6 +37,7 @@ export class DesktopToolExecutor
   private readonly mcp: McpService;
   private readonly dreamToolDefinitions: JsonValue[];
   private extensionToolDefinitions: JsonValue[];
+  private activeModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
 
   constructor(
     private readonly workspaceRoot: string,
@@ -49,11 +57,16 @@ export class DesktopToolExecutor
       spiritDataDir: spiritAgentDataDir(),
     }, {
       mcp: createNoopMcpAdapter(),
+      getModelCompatibilityProfile: () => this.activeModelCompatibilityProfile,
       ...(options.fileChangeObserver ? { fileChangeObserver: options.fileChangeObserver } : {}),
       ...(options.extensions ? { extensions: options.extensions } : {}),
       ...(options.dreamScope ? { dreamScope: options.dreamScope } : {}),
       ...(options.dreamSourceSession ? { dreamSourceSession: options.dreamSourceSession } : {}),
     });
+  }
+
+  setActiveTransportConfig(config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>): void {
+    this.activeModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config);
   }
 
   toolDefinitionsJson(): JsonValue {
@@ -98,11 +111,26 @@ export class DesktopToolExecutor
     await this.tools.trust(target);
   }
 
-  async execute(request: DesktopToolRequest): Promise<string> {
+  async execute(request: DesktopToolRequest): Promise<ToolExecutionOutput> {
     if (this.mcp.isToolRequest(request as JsonValue)) {
-      return this.mcp.executeToolRequest(request as unknown as McpToolRequest);
+      return createToolExecutionTextOutput(
+        await this.mcp.executeToolRequest(request as unknown as McpToolRequest),
+      );
     }
-    return this.tools.execute(request);
+
+    const output = await this.tools.execute(request);
+    if (typeof output === 'string') {
+      return createToolExecutionTextOutput(output);
+    }
+
+    return {
+      summaryText: output.summaryText,
+      content: output.content.map((part) =>
+        part.type === 'text'
+          ? createLlmTextContentPart(part.text)
+          : createLlmImageContentPart(part.path),
+      ),
+    };
   }
 
   attachRequestMetadata(

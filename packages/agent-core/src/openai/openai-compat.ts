@@ -4,6 +4,28 @@ import { cloneJsonValue } from '../tool-agent.js';
 /** 与宿主 `ModelProfile.provider` 对齐；用于在 OpenAI 形态 API 上附加厂商扩展字段。 */
 export type OpenAiLlmVendor = 'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'custom';
 
+export interface OpenAiModelCapabilities {
+  vision?: true;
+  audioInput?: true;
+  videoInput?: true;
+}
+
+export interface OpenAiModelCompatibilityProfile {
+  /**
+   * 仅当这里为 `true` 时，compat 层才会主动按 capabilities 裁剪请求。
+   *
+   * 这里不能只依赖 AI SDK 的 warning：
+   * 1. warning 发生在请求已经构造并发出之后，拦截时机太晚；
+   * 2. provider 返回的 `file` 能力告警过于宽泛，无法稳定映射到自己的 image/audio/video 输入语义；
+   * 3. 一旦不受支持的内容留在历史里，后续每轮请求都会重复触发同类告警。
+   *
+   * 所以对已知兼容性敏感的 provider/model，维护显式 capabilities 表，
+   * 在序列化前就做前置裁剪；未知模型则保持现状，不做武断降级。
+   */
+  hasExplicitCapabilities: boolean;
+  capabilities: OpenAiModelCapabilities;
+}
+
 export interface OpenAiTransportConfig {
   apiKey: string;
   model: string;
@@ -41,6 +63,31 @@ export interface OpenAiRequestTrace extends JsonObject {
   tools?: JsonValue[];
   /** 与 SDK 请求体一并发送的真正厂商扩展（若有），例如 DeepSeek/Kimi 的 `thinking`。 */
   vendorExtras?: JsonValue;
+}
+
+export function resolveOpenAiModelCompatibilityProfile(
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>,
+): OpenAiModelCompatibilityProfile {
+  if (config.llmVendor === 'deepseek') {
+    return {
+      hasExplicitCapabilities: true,
+      capabilities: {},
+    };
+  }
+
+  if (config.llmVendor === 'kimi') {
+    return {
+      hasExplicitCapabilities: true,
+      capabilities: isKimiVisionModel(config.model)
+        ? { vision: true }
+        : {},
+    };
+  }
+
+  return {
+    hasExplicitCapabilities: false,
+    capabilities: {},
+  };
 }
 
 /**
@@ -104,6 +151,22 @@ function isKimiReasoningEffortModel(
 ): boolean {
   return config.llmVendor === 'kimi';
 }
+
+function isKimiVisionModel(model: string): boolean {
+  const normalizedModel = normalizeCompatibleModelId(model);
+  return KIMI_VISION_MODEL_PREFIXES.some(
+    (prefix) => normalizedModel === prefix || normalizedModel.startsWith(`${prefix}-`),
+  );
+}
+
+function normalizeCompatibleModelId(model: string): string {
+  return model.trim().toLowerCase();
+}
+
+const KIMI_VISION_MODEL_PREFIXES = [
+  'kimi-k2.5',
+  'kimi-k2.6',
+] as const;
 
 /**
  * DeepSeek / Kimi 等网关常在 OpenAI 兼容路径上接受顶层 `thinking` 字段以开关思考链输出。

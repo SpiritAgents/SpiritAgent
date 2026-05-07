@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { extname, isAbsolute, resolve } from 'node:path';
 
-import type { JsonObject, JsonValue, LlmMessage } from '../ports.js';
+import {
+  llmMessageHasImages,
+  llmMessageImagePaths,
+  llmMessageTextContent,
+  type JsonObject,
+  type JsonValue,
+  type LlmMessage,
+} from '../ports.js';
 import {
   appendToolResultMessage,
   appendToolResultMessages,
@@ -138,6 +145,24 @@ export function appendOpenAiUserMessage(
   return appendUserMessage(state, content);
 }
 
+export function appendOpenAiUserLlmMessage(
+  state: OpenAiToolAgentState,
+  message: LlmMessage,
+  assetRoot = process.cwd(),
+): OpenAiToolAgentState {
+  if (message.role !== 'user') {
+    throw new Error('appendOpenAiUserLlmMessage 仅支持 user message。');
+  }
+
+  return {
+    messages: [
+      ...state.messages.map((item) => cloneJsonValue(item)),
+      llmMessageToOpenAiMessage(message, assetRoot),
+    ],
+    steps: state.steps,
+  };
+}
+
 export function extractLastOpenAiAssistantText(
   state: OpenAiToolAgentState,
 ): string | undefined {
@@ -236,20 +261,23 @@ export function llmHistoryToOpenAiMessages(
 }
 
 function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonValue {
-  if (message.role === 'user' && (message.imagePaths?.length ?? 0) > 0) {
+  if (message.role === 'user' && llmMessageHasImages(message.content)) {
     const parts: JsonValue[] = [];
 
-    if (message.content.trim()) {
-      parts.push({ type: 'text', text: message.content });
-    }
+    for (const part of message.content) {
+      if (part.type === 'text' && part.text.length > 0) {
+        parts.push({ type: 'text', text: part.text });
+        continue;
+      }
 
-    for (const imagePath of message.imagePaths ?? []) {
-      parts.push({
-        type: 'image_url',
-        image_url: {
-          url: pathToImageUrl(imagePath, assetRoot),
-        },
-      });
+      if (part.type === 'image') {
+        parts.push({
+          type: 'image_url',
+          image_url: {
+            url: pathToImageUrl(part.path, assetRoot),
+          },
+        });
+      }
     }
 
     if (parts.length === 0) {
@@ -264,7 +292,7 @@ function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): Json
 
   return {
     role: message.role,
-    content: message.content,
+    content: llmMessageTextContent(message.content),
   };
 }
 
