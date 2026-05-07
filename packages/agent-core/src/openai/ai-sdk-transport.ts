@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { extname, isAbsolute, resolve } from 'node:path';
 
 import {
+  createAlibaba,
+} from '@ai-sdk/alibaba';
+import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
@@ -388,7 +391,7 @@ function buildAiSdkRequestTrace(
   stream = false,
 ): JsonValue[] {
   const requestTrace = buildOpenAiRequestTrace(config, stepIndex, messages, tools, stream);
-  if (!isDeepSeekOfficialAiSdkProvider(config)) {
+  if (!isDeepSeekOfficialAiSdkProvider(config) && !isAlibabaOfficialAiSdkProvider(config)) {
     return requestTrace;
   }
 
@@ -400,16 +403,24 @@ function buildAiSdkRequestTrace(
   return [
     {
       ...firstTrace,
-      kind: 'deepseek_sdk_chat_completions',
+      kind: isDeepSeekOfficialAiSdkProvider(config)
+        ? 'deepseek_sdk_chat_completions'
+        : 'alibaba_sdk_chat_completions',
     },
     ...requestTrace.slice(1),
   ];
 }
 
 function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
-  return isDeepSeekOfficialAiSdkProvider(config)
-    ? createAiSdkDeepSeekProvider(config).chat(config.model)
-    : createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
+  if (isDeepSeekOfficialAiSdkProvider(config)) {
+    return createAiSdkDeepSeekProvider(config).chat(config.model);
+  }
+
+  if (isAlibabaOfficialAiSdkProvider(config)) {
+    return createAiSdkAlibabaProvider(config).chatModel(config.model);
+  }
+
+  return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
 function createAiSdkOpenAiCompatibleProvider(config: OpenAiTransportConfig) {
@@ -471,6 +482,13 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     ...(fetchWrapper ? { fetch: fetchWrapper } : {}),
+  });
+}
+
+function createAiSdkAlibabaProvider(config: OpenAiTransportConfig) {
+  return createAlibaba({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
   });
 }
 
@@ -1224,6 +1242,10 @@ function normalizeMessagesForRequest(messages: JsonValue[]): JsonValue[] {
 
 function isDeepSeekOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'deepseek';
+}
+
+function isAlibabaOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'alibaba';
 }
 
 function renderAiSdkOpenAiError(error: unknown): string {
