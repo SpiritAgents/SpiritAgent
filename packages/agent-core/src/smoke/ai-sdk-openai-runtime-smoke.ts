@@ -1,14 +1,110 @@
+import { once } from 'node:events';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+
 import {
   createAiSdkOpenAiDemoRuntime,
   printSmokeSection,
 } from './ai-sdk-openai-shared.js';
 
 async function main(): Promise<void> {
-  const runtime = createAiSdkOpenAiDemoRuntime();
+  let requestCount = 0;
+  const server = createServer(async (request, response) => {
+    if (request.method !== 'POST' || request.url !== '/v1/chat/completions') {
+      response.statusCode = 404;
+      response.end('not found');
+      return;
+    }
+
+    requestCount += 1;
+    response.writeHead(200, {
+      'content-type': 'application/json',
+    });
+
+    if (requestCount === 1) {
+      response.end(
+        JSON.stringify({
+          id: 'chatcmpl-ai-sdk-runtime-tool-call',
+          object: 'chat.completion',
+          created: 0,
+          model: 'test-openai-compatible',
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: null,
+                tool_calls: [
+                  {
+                    id: 'call_ai_sdk_runtime_1',
+                    type: 'function',
+                    function: {
+                      name: 'demo_lookup',
+                      arguments: '{"query":"Spirit Agent migration"}',
+                    },
+                  },
+                ],
+              },
+              finish_reason: 'tool_calls',
+            },
+          ],
+          usage: {
+            prompt_tokens: 1,
+            completion_tokens: 1,
+            total_tokens: 2,
+          },
+        }),
+      );
+      return;
+    }
+
+    response.end(
+      JSON.stringify({
+        id: 'chatcmpl-ai-sdk-runtime-final',
+        object: 'chat.completion',
+        created: 0,
+        model: 'test-openai-compatible',
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: 'RUNTIME_OK',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: {
+          prompt_tokens: 1,
+          completion_tokens: 1,
+          total_tokens: 2,
+        },
+      }),
+    );
+  });
+
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    server.close();
+    throw new Error('无法获取本地 runtime smoke server 端口。');
+  }
+
+  const runtime = createAiSdkOpenAiDemoRuntime({
+    config: {
+      apiKey: 'test-key',
+      model: 'test-openai-compatible',
+      baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
+    },
+  });
 
   const result = await runtime.submitUserTurn(
     'First call demo_lookup exactly once with query "Spirit Agent migration". After the tool result is returned, answer with exactly "RUNTIME_OK" and nothing else.',
   );
+
+  server.close();
 
   printSmokeSection('ai-sdk openai runtime smoke result', result);
 
