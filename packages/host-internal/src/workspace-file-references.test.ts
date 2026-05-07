@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import {
   clearWorkspaceFileReferenceIndexCache,
   collectWorkspaceFileReferenceIndex,
+  listCachedWorkspaceFileReferenceSuggestions,
   resolveWorkspaceFileReferenceAttachmentsFromInput,
 } from './workspace-file-references.js';
 import {
@@ -85,11 +86,37 @@ test('collect workspace file index respects root gitignore and default ignored d
     await writeFile(join(workspaceRoot, 'node_modules', 'pkg', 'index.js'), 'module.exports = {};\n');
     await writeFile(join(workspaceRoot, 'ignored-dir', 'secret.txt'), 'hidden\n');
 
-    clearWorkspaceFileReferenceIndexCache(workspaceRoot);
+    await clearWorkspaceFileReferenceIndexCache(workspaceRoot);
     const files = await collectWorkspaceFileReferenceIndex(workspaceRoot);
     assert.deepEqual(files, ['.gitignore', 'README.md', 'src/main.ts']);
   } finally {
-    clearWorkspaceFileReferenceIndexCache(workspaceRoot);
+    await clearWorkspaceFileReferenceIndexCache(workspaceRoot);
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('cached workspace file suggestions do not block on cold index', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-file-ref-cached-'));
+  try {
+    await writeFile(join(workspaceRoot, 'README.md'), '# hello\n');
+
+    await clearWorkspaceFileReferenceIndexCache(workspaceRoot);
+    const cold = await listCachedWorkspaceFileReferenceSuggestions(
+      workspaceRoot,
+      '@README',
+      Array.from('@README').length,
+    );
+    assert.deepEqual(cold?.suggestions, []);
+
+    await collectWorkspaceFileReferenceIndex(workspaceRoot);
+    const warm = await listCachedWorkspaceFileReferenceSuggestions(
+      workspaceRoot,
+      '@README',
+      Array.from('@README').length,
+    );
+    assert.deepEqual(warm?.suggestions, ['README.md']);
+  } finally {
+    await clearWorkspaceFileReferenceIndexCache(workspaceRoot);
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });

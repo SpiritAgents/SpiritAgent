@@ -17,7 +17,12 @@ const DEFAULT_MAX_CONTENT_CHARS = 24_000;
 const DEFAULT_IGNORED_DIRECTORY_NAMES = new Set(['.git', 'target', 'node_modules', 'bin', 'obj']);
 const IGNORE_FILE_NAMES = ['.gitignore', '.ignore'] as const;
 
-const workspaceFileIndexCache = new Map<string, Promise<string[]>>();
+interface WorkspaceFileIndexCacheEntry {
+  promise: Promise<string[]>;
+  files?: string[];
+}
+
+const workspaceFileIndexCache = new Map<string, WorkspaceFileIndexCacheEntry>();
 
 export interface WorkspaceFileReferenceAttachment {
   path: string;
@@ -53,33 +58,86 @@ export async function listWorkspaceFileReferenceSuggestions(
   };
 }
 
-export async function collectWorkspaceFileReferenceIndex(workspaceRoot: string): Promise<string[]> {
-  const root = await canonicalWorkspaceRoot(workspaceRoot);
-  const cached = workspaceFileIndexCache.get(root);
-  if (cached) {
-    return [...(await cached)];
+export async function listCachedWorkspaceFileReferenceSuggestions(
+  workspaceRoot: string,
+  input: string,
+  cursorChars: number,
+): Promise<WorkspaceFileReferenceSuggestionsResult | undefined> {
+  const query = currentWorkspaceFileReferenceQuery(input, cursorChars);
+  if (!query) {
+    return undefined;
   }
 
+  const files = await cachedWorkspaceFileReferenceIndex(workspaceRoot);
+  if (!files) {
+    void primeWorkspaceFileReferenceIndexCache(workspaceRoot).catch(() => undefined);
+    return {
+      query,
+      suggestions: [],
+    };
+  }
+
+  return {
+    query,
+    suggestions: computeWorkspaceFileReferenceSuggestions(query.raw, files),
+  };
+}
+
+export async function collectWorkspaceFileReferenceIndex(workspaceRoot: string): Promise<string[]> {
+  const root = await canonicalWorkspaceRoot(workspaceRoot);
+  const entry = ensureWorkspaceFileReferenceIndexCacheEntry(root);
+  return [...(await entry.promise)];
+}
+
+export async function primeWorkspaceFileReferenceIndexCache(workspaceRoot: string): Promise<void> {
+  const root = await canonicalWorkspaceRoot(workspaceRoot);
+  const entry = ensureWorkspaceFileReferenceIndexCacheEntry(root);
+  entry.promise.catch(() => undefined);
+}
+
+export async function clearWorkspaceFileReferenceIndexCache(workspaceRoot?: string): Promise<void> {
+  if (!workspaceRoot) {
+    workspaceFileIndexCache.clear();
+    return;
+  }
+
+  const resolved = resolve(workspaceRoot);
+  workspaceFileIndexCache.delete(resolved);
+  try {
+    workspaceFileIndexCache.delete(await realpath(resolved));
+  } catch {
+    // 与 canonicalWorkspaceRoot 一致：路径不存在时 resolved 就是缓存 key。
+  }
+}
+
+async function cachedWorkspaceFileReferenceIndex(workspaceRoot: string): Promise<string[] | undefined> {
+  const root = await canonicalWorkspaceRoot(workspaceRoot);
+  const entry = workspaceFileIndexCache.get(root);
+  return entry?.files ? [...entry.files] : undefined;
+}
+
+function ensureWorkspaceFileReferenceIndexCacheEntry(root: string): WorkspaceFileIndexCacheEntry {
+  const cached = workspaceFileIndexCache.get(root);
+  if (cached) {
+    return cached;
+  }
+
+  const entry: WorkspaceFileIndexCacheEntry = {
+    promise: Promise.resolve([]),
+  };
   const pending = collectWorkspaceFileReferenceIndexUncached(root)
     .then((files) => {
       files.sort((left, right) => left.localeCompare(right));
+      entry.files = files;
       return files;
     })
     .catch((error) => {
       workspaceFileIndexCache.delete(root);
       throw error;
     });
-  workspaceFileIndexCache.set(root, pending);
-  return [...(await pending)];
-}
-
-export function clearWorkspaceFileReferenceIndexCache(workspaceRoot?: string): void {
-  if (!workspaceRoot) {
-    workspaceFileIndexCache.clear();
-    return;
-  }
-
-  workspaceFileIndexCache.delete(resolve(workspaceRoot));
+  entry.promise = pending;
+  workspaceFileIndexCache.set(root, entry);
+  return entry;
 }
 
 export async function resolveWorkspaceFileReferenceAttachmentsFromInput(

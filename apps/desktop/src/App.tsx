@@ -1301,9 +1301,16 @@ export default function App() {
     () => codeUnitIndexToCharCount(runtime.composer, composerCursorCodeUnits),
     [composerCursorCodeUnits, runtime.composer],
   );
-  const fileReferenceQueryKey = useMemo(
-    () => `${runtime.composer}\u0000${composerCursorChars}`,
+  const fileReferenceQuery = useMemo(
+    () => currentWorkspaceFileReferenceQuery(runtime.composer, composerCursorChars),
     [composerCursorChars, runtime.composer],
+  );
+  const fileReferenceQueryKey = useMemo(
+    () =>
+      fileReferenceQuery
+        ? `${fileReferenceQuery.start}\u0000${fileReferenceQuery.end}\u0000${fileReferenceQuery.raw}`
+        : "",
+    [fileReferenceQuery],
   );
   const fileReferenceRequestIdRef = useRef(0);
   const extensionSettingsItems = useMemo(
@@ -1322,8 +1329,7 @@ export default function App() {
   }, [slashQuery]);
 
   useEffect(() => {
-    const localQuery = currentWorkspaceFileReferenceQuery(runtime.composer, composerCursorChars);
-    if (!localQuery || dismissedFileReferenceKey === fileReferenceQueryKey) {
+    if (!fileReferenceQuery || dismissedFileReferenceKey === fileReferenceQueryKey) {
       setFileReferenceSuggestions(null);
       setFileReferenceSelectedIndex(-1);
       return;
@@ -1331,24 +1337,36 @@ export default function App() {
 
     const requestId = fileReferenceRequestIdRef.current + 1;
     fileReferenceRequestIdRef.current = requestId;
-    void runtime
-      .listWorkspaceFileReferenceSuggestions({
-        input: runtime.composer,
-        cursorChars: composerCursorChars,
-      })
-      .then((result) => {
-        if (fileReferenceRequestIdRef.current !== requestId) {
-          return;
-        }
-        setFileReferenceSuggestions(result);
-      })
-      .catch(() => {
-        if (fileReferenceRequestIdRef.current !== requestId) {
-          return;
-        }
-        setFileReferenceSuggestions(null);
-      });
-  }, [composerCursorChars, dismissedFileReferenceKey, fileReferenceQueryKey, runtime, runtime.composer]);
+    const input = runtime.composer;
+    const cursorChars = composerCursorChars;
+    const timeout = window.setTimeout(() => {
+      void runtime
+        .listWorkspaceFileReferenceSuggestions({
+          input,
+          cursorChars,
+        })
+        .then((result) => {
+          if (fileReferenceRequestIdRef.current !== requestId) {
+            return;
+          }
+          setFileReferenceSuggestions(result);
+        })
+        .catch(() => {
+          if (fileReferenceRequestIdRef.current !== requestId) {
+            return;
+          }
+          setFileReferenceSuggestions(null);
+        });
+    }, 90);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    dismissedFileReferenceKey,
+    fileReferenceQueryKey,
+    runtime,
+  ]);
 
   useEffect(() => {
     if (slashSuggestions.length === 0) {
