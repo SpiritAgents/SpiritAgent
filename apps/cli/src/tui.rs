@@ -16,7 +16,7 @@ use crate::{
     host_runtime::{RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message},
     locale, logging,
     mcp_types::{ManagedMcpServer, McpDiscoveredPrompt},
-    model_registry::{AppConfig, DEFAULT_API_BASE, ModelProfile, ModelProvider},
+    model_registry::{DEFAULT_API_BASE, ModelProfile, ModelProvider},
     openai_models_list,
     plan::{self, PlanMetadata},
     ports::{
@@ -113,13 +113,7 @@ impl TuiShell {
         let secret_store: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore);
         let config_store: Box<dyn ConfigStore> = Box::new(JsonConfigStore);
         let chat_repository: Box<dyn ChatRepository> = Box::new(JsonChatRepository);
-        let config = config_store.load().unwrap_or_else(|err| {
-            logging::log_event(&format!(
-                "[config] 读取失败，已回退到内置默认模型（{}）。原因: {err:#}",
-                AppConfig::default().active_model
-            ));
-            AppConfig::default()
-        });
+        let config = config_store.load().context("读取 CLI 配置失败")?;
         locale::apply_ui_locale(&config);
         let workspace_root = app_paths.workspace_root();
         let mut runtime = RuntimeHandle::new(
