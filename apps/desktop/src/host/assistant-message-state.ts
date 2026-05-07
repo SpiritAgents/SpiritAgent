@@ -81,9 +81,17 @@ export class DesktopAssistantMessageStateMachine {
     batchId: number,
   ): ConversationMessageSnapshot {
     const messages = this.messages();
-    const existing = messages.find(
-      (message) => message.tool?.toolCallId === toolCallId,
-    );
+    let existing: ConversationMessageSnapshot | undefined;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (!messageIndexIsInCurrentTurn(messages, index)) {
+        break;
+      }
+      if (message?.tool?.toolCallId === toolCallId) {
+        existing = message;
+        break;
+      }
+    }
 
     if (existing) {
       const previousTool = existing.tool;

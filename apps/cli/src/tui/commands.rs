@@ -366,21 +366,22 @@ impl TuiShell {
     pub(crate) fn handle_image_slash(&mut self, message: &str) {
         let tail = message.strip_prefix("/image").map(str::trim).unwrap_or("");
 
+        if tail == "clear" {
+            let cleared = self.runtime.clear_pending_images();
+            self.messages.push(ChatMessage {
+                role: MessageRole::Agent,
+                content: format!("已清空待发送图片队列（{} 张）。", cleared),
+                tool_block: None,
+            });
+            return;
+        }
+
         if tail.is_empty() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
                 content:
                     "用法: /image <path> [prompt] | /image pick | /image clear。若不带 prompt，会把图片加入待发送队列。"
                         .to_string(),
-                tool_block: None});
-            return;
-        }
-
-        if tail == "clear" {
-            let cleared = self.runtime.clear_pending_images();
-            self.messages.push(ChatMessage {
-                role: MessageRole::Agent,
-                content: format!("已清空待发送图片队列（{} 张）。", cleared),
                 tool_block: None,
             });
             return;

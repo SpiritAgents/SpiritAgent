@@ -21,6 +21,10 @@ import {
   type TextStreamPart,
 } from 'ai';
 
+import {
+  llmMessageHasImages,
+  llmMessageTextContent,
+} from '../ports.js';
 import type {
   JsonObject,
   JsonValue,
@@ -42,6 +46,7 @@ import {
   buildOpenAiRequestTrace,
   openAiReasoningEffort,
   openAiVendorChatCompletionBodyExtras,
+  resolveOpenAiModelCompatibilityProfile,
   type OpenAiTransportConfig,
 } from './openai-compat.js';
 import {
@@ -88,6 +93,7 @@ export class AiSdkOpenAiCompatibleTransport
     request: OpenAiJsonSchemaCompletionRequest,
   ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
     const messages = normalizeMessagesForRequest(
+      config,
       buildJsonSchemaCompletionMessages(config, request),
     );
     const requestTrace = buildAiSdkRequestTrace(config, 1, messages, []);
@@ -124,7 +130,7 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
-    const requestMessages = normalizeMessagesForRequest(nextState.messages);
+    const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const tracedRequest = buildAiSdkRequestTrace(
       config,
@@ -199,7 +205,7 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
-    const requestMessages = normalizeMessagesForRequest(nextState.messages);
+    const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAiSdkRequestTrace(
       config,
@@ -284,7 +290,11 @@ export class AiSdkOpenAiCompatibleTransport
       {
         role: 'user',
         content: history
-          .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+          .map((message) => {
+            const text = llmMessageTextContent(message.content);
+            const imageNote = llmMessageHasImages(message.content) ? '\n[images attached]' : '';
+            return `${message.role.toUpperCase()}: ${text}${imageNote}`;
+          })
           .join('\n\n'),
       },
     ]);
@@ -344,8 +354,7 @@ export class AiSdkOpenAiCompatibleTransport
 
     history.splice(0, history.length, {
       role: 'system',
-      content: `${COMPACT_SUMMARY_PREFIX}\n${normalizedSummary}`,
-      imagePaths: [],
+      content: [{ type: 'text', text: `${COMPACT_SUMMARY_PREFIX}\n${normalizedSummary}` }],
     });
 
     return {
@@ -357,8 +366,15 @@ export class AiSdkOpenAiCompatibleTransport
 
   compactSummaryText(history: LlmMessage[]): string | undefined {
     return history
-      .find((message) => message.role === 'system' && message.content.startsWith(COMPACT_SUMMARY_PREFIX))
-      ?.content.slice(COMPACT_SUMMARY_PREFIX.length)
+      .find(
+        (message) =>
+          message.role === 'system' && llmMessageTextContent(message.content).startsWith(COMPACT_SUMMARY_PREFIX),
+      )
+      ?.content
+      .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+      .map((part) => part.text)
+      .join('')
+      .slice(COMPACT_SUMMARY_PREFIX.length)
       .trim() || undefined;
   }
 
@@ -1161,20 +1177,23 @@ function llmHistoryToOpenAiMessages(
 }
 
 function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonValue {
-  if (message.role === 'user' && (message.imagePaths?.length ?? 0) > 0) {
+  if (message.role === 'user' && llmMessageHasImages(message.content)) {
     const parts: JsonValue[] = [];
 
-    if (message.content.trim()) {
-      parts.push({ type: 'text', text: message.content });
-    }
+    for (const part of message.content) {
+      if (part.type === 'text' && part.text.length > 0) {
+        parts.push({ type: 'text', text: part.text });
+        continue;
+      }
 
-    for (const imagePath of message.imagePaths ?? []) {
-      parts.push({
-        type: 'image_url',
-        image_url: {
-          url: pathToImageUrl(imagePath, assetRoot),
-        },
-      });
+      if (part.type === 'image') {
+        parts.push({
+          type: 'image_url',
+          image_url: {
+            url: pathToImageUrl(part.path, assetRoot),
+          },
+        });
+      }
     }
 
     if (parts.length === 0) {
@@ -1189,7 +1208,7 @@ function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): Json
 
   return {
     role: message.role,
-    content: message.content,
+    content: llmMessageTextContent(message.content),
   };
 }
 
@@ -1238,8 +1257,37 @@ function guessImageMimeFromPath(path: string): string {
   }
 }
 
-function normalizeMessagesForRequest(messages: JsonValue[]): JsonValue[] {
-  return messages.map((message) => cloneJsonValue(message));
+function normalizeMessagesForRequest(
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>,
+  messages: JsonValue[],
+): JsonValue[] {
+  const profile = resolveOpenAiModelCompatibilityProfile(config);
+  return messages.map((message) => sanitizeMessageForCompatibility(message, profile));
+}
+
+function sanitizeMessageForCompatibility(
+  message: JsonValue,
+  profile: ReturnType<typeof resolveOpenAiModelCompatibilityProfile>,
+): JsonValue {
+  const cloned = cloneJsonValue(message);
+  if (!isJsonObject(cloned) || cloned.role !== 'user' || !Array.isArray(cloned.content)) {
+    return cloned;
+  }
+
+  if (profile.hasExplicitCapabilities && !profile.capabilities.vision) {
+    const textParts = cloned.content.filter(
+      (part) => isJsonObject(part) && part.type === 'text' && typeof part.text === 'string',
+    );
+    return {
+      ...cloned,
+      content:
+        textParts.length > 0
+          ? textParts
+          : '',
+    };
+  }
+
+  return cloned;
 }
 
 function isDeepSeekOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {

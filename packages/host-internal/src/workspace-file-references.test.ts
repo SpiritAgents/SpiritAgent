@@ -132,10 +132,38 @@ test('resolve workspace file attachments truncates oversized content and ignores
       '@README.md @missing.txt',
     );
     assert.equal(attachments.length, 1);
+    assert.equal(attachments[0]?.kind, 'text');
     assert.equal(attachments[0]?.path, 'README.md');
-    assert.equal(attachments[0]?.totalChars, oversizedText.length);
-    assert.equal(attachments[0]?.truncated, true);
-    assert.match(attachments[0]?.content ?? '', /文件内容已截断/u);
+    if (!attachments[0] || attachments[0].kind !== 'text') {
+      throw new Error('README.md 应返回 text 附件。');
+    }
+    assert.equal(attachments[0].totalChars, oversizedText.length);
+    assert.equal(attachments[0].truncated, true);
+    assert.match(attachments[0].content, /文件内容已截断/u);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('resolve workspace file attachments keeps validated images and ignores fake image extensions', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-image-attachment-'));
+  try {
+    await writeFile(
+      join(workspaceRoot, 'diagram.png'),
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zp1cAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    );
+    await writeFile(join(workspaceRoot, 'fake.webp'), 'not really a webp');
+
+    const attachments = await resolveWorkspaceFileReferenceAttachmentsFromInput(
+      workspaceRoot,
+      '@diagram.png @fake.webp',
+    );
+    assert.equal(attachments.length, 1);
+    assert.equal(attachments[0]?.kind, 'image');
+    assert.equal(attachments[0]?.path, 'diagram.png');
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }

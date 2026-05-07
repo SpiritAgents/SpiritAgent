@@ -1,4 +1,4 @@
-import type { LlmMessage } from '../ports.js';
+import { createLlmMessageContentFromTextAndImages, type LlmMessage } from '../ports.js';
 
 import {
   formatPendingMcpResourceContext,
@@ -36,14 +36,24 @@ export async function prepareSubmittedUserTurn<
   runtime: ContextRuntime<Config, State, ToolRequest, TrustTarget>,
   userInput: string,
   explicitImages: string[],
+  explicitWorkspaceFiles: PendingWorkspaceFile[] = [],
 ): Promise<State> {
   const images = explicitImages.length > 0 ? [...explicitImages] : runtime.takePendingImages();
-  const workspaceFiles: PendingWorkspaceFile[] = runtime.options.resolveWorkspaceFilesFromInput
-    ? await runtime.options.resolveWorkspaceFilesFromInput(userInput)
-    : [];
+  const workspaceFiles: PendingWorkspaceFile[] = [
+    ...explicitWorkspaceFiles,
+    ...(runtime.options.resolveWorkspaceFilesFromInput
+      ? await runtime.options.resolveWorkspaceFilesFromInput(userInput)
+      : []),
+  ];
   const resources = runtime.takePendingMcpResources();
+  const imagePaths = new Set(images);
 
   for (const file of workspaceFiles) {
+    if (file.kind === 'image') {
+      imagePaths.add(file.path);
+      continue;
+    }
+
     runtime.recordContextMessage('system', formatPendingWorkspaceFileContext(file));
   }
   for (const resource of resources) {
@@ -53,8 +63,7 @@ export async function prepareSubmittedUserTurn<
   const contentForLlm = formatUserMessageContentForLlm(userInput);
   runtime.historyStore.push({
     role: 'user',
-    content: contentForLlm,
-    imagePaths: images,
+    content: createLlmMessageContentFromTextAndImages(contentForLlm, [...imagePaths]),
   });
   runtime.pendingUserTurnStore = userInput;
   return runtime.options.createToolAgentState(runtime.historyStore, userInput);

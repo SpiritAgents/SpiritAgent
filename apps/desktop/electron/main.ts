@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,6 +33,7 @@ import { syncWindowsImmersiveDarkMode } from './win-dwm.js';
 
 /** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
+const LOCAL_IMAGE_PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -507,6 +509,31 @@ app.whenReady().then(async () => {
     return result.filePaths[0] ?? null;
   });
 
+  ipcMain.handle('desktop:read-local-image-preview', async (_event, payload: { filePath?: string }) => {
+    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
+    if (!filePath) {
+      return null;
+    }
+
+    const extension = path.extname(filePath).toLowerCase();
+    const mimeType = imagePreviewMimeType(extension);
+    if (!mimeType) {
+      return null;
+    }
+
+    try {
+      const metadata = await stat(filePath);
+      if (!metadata.isFile() || metadata.size > LOCAL_IMAGE_PREVIEW_MAX_BYTES) {
+        return null;
+      }
+
+      const bytes = await readFile(filePath);
+      return `data:${mimeType};base64,${bytes.toString('base64')}`;
+    } catch {
+      return null;
+    }
+  });
+
   ipcMain.handle(
     'desktop:application-menu-popup',
     (
@@ -517,6 +544,7 @@ app.whenReady().then(async () => {
       if (!win) {
         return;
       }
+
       popupApplicationMenuSection(win, payload.section, payload.clientX, payload.clientY);
     },
   );
@@ -583,6 +611,24 @@ app.on('before-quit', (event) => {
     app.quit();
   });
 });
+
+function imagePreviewMimeType(extension: string): string | undefined {
+  switch (extension) {
+    case '.bmp':
+      return 'image/bmp';
+    case '.gif':
+      return 'image/gif';
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.png':
+      return 'image/png';
+    case '.webp':
+      return 'image/webp';
+    default:
+      return undefined;
+  }
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

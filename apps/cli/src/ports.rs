@@ -1,7 +1,7 @@
 use anyhow::Result;
 #[cfg(feature = "tui")]
 use rust_i18n::t;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::path::PathBuf;
 
 use crate::model_registry::AppConfig;
@@ -39,12 +39,95 @@ pub struct SubagentSessionSummary {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum LlmContentPart {
+    Text { text: String },
+    Image { path: String },
+}
+
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArchivedLlmMessage {
     pub role: String,
-    pub content: String,
-    #[serde(default)]
-    pub image_paths: Vec<String>,
+    pub content: Vec<LlmContentPart>,
+}
+
+impl ArchivedLlmMessage {
+    pub fn from_text_and_images(role: String, content: String, image_paths: Vec<String>) -> Self {
+        let mut parts = Vec::new();
+        if !content.is_empty() {
+            parts.push(LlmContentPart::Text { text: content });
+        }
+        for path in image_paths {
+            parts.push(LlmContentPart::Image { path });
+        }
+        Self {
+            role,
+            content: parts,
+        }
+    }
+
+    pub fn text_content(&self) -> String {
+        self.content
+            .iter()
+            .filter_map(|part| match part {
+                LlmContentPart::Text { text } => Some(text.as_str()),
+                LlmContentPart::Image { .. } => None,
+            })
+            .collect::<String>()
+    }
+
+    pub fn image_paths(&self) -> Vec<String> {
+        self.content
+            .iter()
+            .filter_map(|part| match part {
+                LlmContentPart::Image { path } => Some(path.clone()),
+                LlmContentPart::Text { .. } => None,
+            })
+            .collect()
+    }
+}
+
+impl<'de> Deserialize<'de> for ArchivedLlmMessage {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct CurrentArchivedLlmMessage {
+            role: String,
+            content: Vec<LlmContentPart>,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct LegacyArchivedLlmMessage {
+            role: String,
+            content: String,
+            #[serde(default)]
+            image_paths: Vec<String>,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum ArchivedLlmMessageRepr {
+            Current(CurrentArchivedLlmMessage),
+            Legacy(LegacyArchivedLlmMessage),
+        }
+
+        match ArchivedLlmMessageRepr::deserialize(deserializer)? {
+            ArchivedLlmMessageRepr::Current(message) => Ok(Self {
+                role: message.role,
+                content: message.content,
+            }),
+            ArchivedLlmMessageRepr::Legacy(message) => Ok(Self::from_text_and_images(
+                message.role,
+                message.content,
+                message.image_paths,
+            )),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -60,7 +143,7 @@ pub struct SubagentSessionArchiveEntry {
 pub struct ChatArchive {
     pub messages: Vec<(String, String)>,
     pub assistant_aux: Vec<AssistantAuxArchiveEntry>,
-    pub llm_history: Vec<(String, String, Vec<String>)>,
+    pub llm_history: Vec<ArchivedLlmMessage>,
     #[serde(default)]
     pub subagent_sessions: Vec<SubagentSessionArchiveEntry>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

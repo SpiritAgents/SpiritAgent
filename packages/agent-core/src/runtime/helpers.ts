@@ -1,7 +1,19 @@
 import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, relative, resolve } from 'node:path';
 
-import type { JsonValue, LlmMessage } from '../ports.js';
+import {
+  cloneLlmMessageContent,
+  createLlmMessageContentFromText,
+  createLlmMessageContentFromTextAndImages,
+  llmMessageHasImages,
+  llmMessageImagePaths,
+  llmMessageTextContent,
+  normalizeStoredLlmMessage,
+  type JsonValue,
+  type LlmMessage,
+  type LlmMessageContent,
+  type ToolExecutionOutput,
+} from '../ports.js';
 
 import {
   PENDING_WORKSPACE_FILE_MAX_CHARS,
@@ -13,6 +25,7 @@ import type {
   AgentRuntimeOptions,
   PendingMcpResource,
   PendingWorkspaceFile,
+  PendingWorkspaceTextFile,
   RuntimeTurnContext,
 } from './types.js';
 
@@ -29,7 +42,7 @@ export function createTurnContext<ToolRequest>(): RuntimeTurnContext<ToolRequest
 interface DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget = string> {
   options: Pick<
     AgentRuntimeOptions<unknown, State, ToolRequest, TrustTarget>,
-    'appendUserMessage' | 'createToolAgentState'
+    'appendUserLlmMessage' | 'appendUserMessage' | 'createToolAgentState'
   >;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
@@ -38,6 +51,7 @@ interface DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget = string> 
 export function enqueueDeferredUserGuidance<ToolRequest>(
   turn: RuntimeTurnContext<ToolRequest>,
   userMessage: string,
+  historyContent?: LlmMessageContent,
 ): void {
   const trimmed = userMessage.trim();
   if (!trimmed) {
@@ -47,7 +61,26 @@ export function enqueueDeferredUserGuidance<ToolRequest>(
   turn.deferredUserGuidances.push({
     userMessage: trimmed,
     contentForLlm: formatUserMessageContentForLlm(trimmed),
+    ...(historyContent ? { historyContent: cloneLlmMessageContent(historyContent) } : {}),
   });
+}
+
+export function enqueueDeferredToolOutputGuidance<ToolRequest>(
+  turn: RuntimeTurnContext<ToolRequest>,
+  toolName: string,
+  output: ToolExecutionOutput,
+): void {
+  const imagePaths = llmMessageImagePaths(output.content);
+  if (imagePaths.length === 0) {
+    return;
+  }
+
+  const guidanceMessage = output.summaryText.trim() || `[tool output] ${toolName} returned images.`;
+  enqueueDeferredUserGuidance(
+    turn,
+    guidanceMessage,
+    createLlmMessageContentFromTextAndImages(formatUserMessageContentForLlm(guidanceMessage), imagePaths),
+  );
 }
 
 export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = string>(
@@ -65,20 +98,41 @@ export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = stri
 
   let nextState = state;
   let nextPendingUserInput = pendingUserInput;
+  let requiresStateRebuild = !runtime.options.appendUserMessage;
   for (const item of deferred) {
-    runtime.historyStore.push({
+    const historyContent = item.historyContent
+      ? cloneLlmMessageContent(item.historyContent)
+      : createLlmMessageContentFromText(item.contentForLlm);
+    const historyMessage: LlmMessage = {
       role: 'user',
-      content: item.contentForLlm,
-      imagePaths: [],
-    });
+      content: historyContent,
+    };
+
+    runtime.historyStore.push(historyMessage);
     nextPendingUserInput = item.userMessage;
+
+    if (item.historyContent) {
+      if (runtime.options.appendUserLlmMessage) {
+        nextState = runtime.options.appendUserLlmMessage(nextState, historyMessage);
+        continue;
+      }
+
+      requiresStateRebuild = true;
+      continue;
+    }
+
+    if (!runtime.options.appendUserMessage) {
+      requiresStateRebuild = true;
+      continue;
+    }
+
     if (runtime.options.appendUserMessage) {
       nextState = runtime.options.appendUserMessage(nextState, item.contentForLlm);
     }
   }
 
   runtime.pendingUserTurnStore = nextPendingUserInput;
-  if (!runtime.options.appendUserMessage) {
+  if (requiresStateRebuild) {
     nextState = runtime.options.createToolAgentState(runtime.historyStore, nextPendingUserInput);
   }
 
@@ -91,15 +145,15 @@ export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = stri
 export function cloneHistory(history: LlmMessage[]): LlmMessage[] {
   return history.map((message) => ({
     role: message.role,
-    content: message.content,
-    imagePaths: [...(message.imagePaths ?? [])],
+    content: cloneLlmMessageContent(message.content),
   }));
 }
 
 export function pruneToolMemories(history: LlmMessage[], maxEntries: number): void {
   let seen = 0;
   const total = history.filter(
-    (message) => message.role === 'system' && message.content.startsWith(TOOL_MEMORY_PREFIX),
+    (message) =>
+      message.role === 'system' && llmMessageTextContent(message.content).startsWith(TOOL_MEMORY_PREFIX),
   ).length;
 
   if (total <= maxEntries) {
@@ -108,7 +162,10 @@ export function pruneToolMemories(history: LlmMessage[], maxEntries: number): vo
 
   const removeCount = total - maxEntries;
   const pruned = history.filter((message) => {
-    if (message.role === 'system' && message.content.startsWith(TOOL_MEMORY_PREFIX)) {
+    if (
+      message.role === 'system' &&
+      llmMessageTextContent(message.content).startsWith(TOOL_MEMORY_PREFIX)
+    ) {
       seen += 1;
       return seen > removeCount;
     }
@@ -177,7 +234,7 @@ export async function pendingWorkspaceFilesFromInput(
   return files;
 }
 
-export function formatPendingWorkspaceFileContext(file: PendingWorkspaceFile): string {
+export function formatPendingWorkspaceFileContext(file: PendingWorkspaceTextFile): string {
   return [
     '[WORKSPACE_FILE]',
     `path: ${file.path}`,
@@ -268,11 +325,10 @@ export function promptMessagesFromValue(value: JsonValue): LlmMessage[] {
       throw new Error('MCP prompt message 格式异常');
     }
 
-    return {
+    return normalizeStoredLlmMessage({
       role: normalizePromptRole(typeof message.role === 'string' ? message.role : 'user'),
       content: promptContentToText(message.content),
-      imagePaths: [],
-    };
+    });
   });
 }
 
@@ -367,6 +423,18 @@ async function pendingWorkspaceFileFromPath(
   }
 
   const bytes = await readFile(target);
+  if (detectPendingWorkspaceImageFile(target, bytes)) {
+    return {
+      kind: 'image',
+      path: relativeTarget.replace(/\\/gu, '/'),
+      attachedAtUnixMs: Date.now(),
+    };
+  }
+
+  if (hasPendingWorkspaceImageExtension(target)) {
+    throw new Error(`图片文件校验失败: ${referencePath}`);
+  }
+
   if (bytes.includes(0)) {
     throw new Error(`暂不支持引用二进制文件: ${referencePath}`);
   }
@@ -379,12 +447,63 @@ async function pendingWorkspaceFileFromPath(
     : text;
 
   return {
+    kind: 'text',
     path: relativeTarget.replace(/\\/gu, '/'),
     totalChars: chars.length,
     truncated,
     attachedAtUnixMs: Date.now(),
     content,
   };
+}
+
+function hasPendingWorkspaceImageExtension(filePath: string): boolean {
+  const extension = filePath.toLowerCase();
+  return (
+    extension.endsWith('.bmp') ||
+    extension.endsWith('.png') ||
+    extension.endsWith('.jpg') ||
+    extension.endsWith('.jpeg') ||
+    extension.endsWith('.gif') ||
+    extension.endsWith('.webp')
+  );
+}
+
+function detectPendingWorkspaceImageFile(filePath: string, bytes: Uint8Array): boolean {
+  if (!hasPendingWorkspaceImageExtension(filePath)) {
+    return false;
+  }
+
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith('.bmp')) {
+    return hasAsciiBytePrefix(bytes, 'BM');
+  }
+  if (lower.endsWith('.png')) {
+    return hasBytePrefix(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  }
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+    return hasBytePrefix(bytes, [0xff, 0xd8, 0xff]);
+  }
+  if (lower.endsWith('.gif')) {
+    return hasAsciiBytePrefix(bytes, 'GIF87a') || hasAsciiBytePrefix(bytes, 'GIF89a');
+  }
+  if (lower.endsWith('.webp')) {
+    return hasAsciiBytePrefix(bytes, 'RIFF') && hasAsciiBytePrefix(bytes.slice(8), 'WEBP');
+  }
+
+  return false;
+}
+
+function hasBytePrefix(bytes: Uint8Array, prefix: readonly number[]): boolean {
+  if (bytes.length < prefix.length) {
+    return false;
+  }
+
+  return prefix.every((value, index) => bytes[index] === value);
+}
+
+function hasAsciiBytePrefix(bytes: Uint8Array, prefix: string): boolean {
+  const expected = Array.from(prefix, (char) => char.charCodeAt(0));
+  return hasBytePrefix(bytes, expected);
 }
 
 function normalizePromptRole(role: string): 'system' | 'user' | 'assistant' {

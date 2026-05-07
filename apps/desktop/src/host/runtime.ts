@@ -1,5 +1,7 @@
 import {
   AgentRuntime,
+  appendOpenAiUserLlmMessage,
+  normalizeStoredLlmMessage,
   type OpenAiCompatibleTransport,
   appendOpenAiToolResultMessage,
   appendOpenAiUserMessage,
@@ -71,6 +73,7 @@ export function createDesktopRuntime(input: {
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,
     appendUserMessage: appendOpenAiUserMessage,
+    appendUserLlmMessage: (state, message) => appendOpenAiUserLlmMessage(state, message, input.workspaceRoot),
     extractAssistantText: extractLastOpenAiAssistantText,
     truncateStateForContextRetry: truncateOpenAiToolAgentStateForContextRetry,
     truncateHistoryForCompaction: truncateOpenAiHistoryForCompaction,
@@ -89,11 +92,7 @@ export function createDesktopRuntime(input: {
       ),
     resolveWorkspaceFilesFromInput: (userInput) =>
       resolveWorkspaceFileReferenceAttachmentsFromInput(input.workspaceRoot, userInput),
-  }, input.history.map((message) => ({
-    role: message.role,
-    content: message.content,
-    imagePaths: [...message.imagePaths],
-  })));
+  }, input.history.map((message) => normalizeStoredLlmMessage(message)));
 }
 
 export function cloneActiveSkills(skills: OpenAiActiveSkill[]): OpenAiActiveSkill[] {
