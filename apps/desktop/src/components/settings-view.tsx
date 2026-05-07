@@ -91,6 +91,7 @@ type SettingsViewProps = {
   onAddProviderModels: (request: AddProviderModelsRequest) => Promise<void>;
   onPreviewModels: (request: PreviewModelsRequest) => Promise<PreviewModelsResponse>;
   onRemoveModel: (name: string) => Promise<void>;
+  onRemoveProviderModels: (provider: DesktopModelProvider) => Promise<void>;
   onAddMcpServer: (request: AddMcpServerRequest) => Promise<void>;
   onImportExtension: (request: ImportExtensionRequest) => Promise<void>;
   onDeleteExtension: (request: DeleteExtensionRequest) => Promise<void>;
@@ -1630,6 +1631,7 @@ function ModelsSettingsPanel({
   onAddProviderModels,
   onPreviewModels,
   onRemoveModel,
+  onRemoveProviderModels,
 }: Pick<
   SettingsViewProps,
   | "snapshot"
@@ -1639,6 +1641,7 @@ function ModelsSettingsPanel({
   | "onAddProviderModels"
   | "onPreviewModels"
   | "onRemoveModel"
+  | "onRemoveProviderModels"
 >) {
   const [providerDialogOpen, setProviderDialogOpen] = useState(false);
   const [providerQuery, setProviderQuery] = useState("");
@@ -1651,9 +1654,26 @@ function ModelsSettingsPanel({
     "single",
   );
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<DesktopModelProvider | null>(null);
 
   const models = snapshot?.config.models ?? [];
   const activeModel = snapshot?.config.activeModel ?? "";
+
+  const providerGroups = new Map<DesktopModelProvider, typeof models>();
+  const standaloneModels: typeof models = [];
+  for (const model of models) {
+    if (model.provider && model.provider !== "custom") {
+      const group = providerGroups.get(model.provider) ?? [];
+      group.push(model);
+      providerGroups.set(model.provider, group);
+    } else {
+      standaloneModels.push(model);
+    }
+  }
+
+  function providerLabel(provider: DesktopModelProvider): string {
+    return PROVIDER_PICKER_ROWS.find((row) => row.id === provider)?.label ?? provider;
+  }
 
   const resetConnectWizard = () => {
     setConnectApiKey("");
@@ -1755,49 +1775,119 @@ function ModelsSettingsPanel({
         </Button>
       </div>
 
-      <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
+      <div className="space-y-3">
         {models.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">暂无已保存模型</p>
+          <div className="rounded-lg border border-border/40 bg-background/80 px-4 py-10 text-center">
+            <p className="text-sm text-muted-foreground">暂无已保存模型</p>
+          </div>
         ) : (
-          models.map((model) => {
-            const isActive = model.name === activeModel;
-            return (
-              <div
-                key={model.name}
-                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-              >
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{model.name}</span>
-                    {isActive ? (
-                      <Badge variant="secondary" className="text-muted-foreground">
-                        当前
-                      </Badge>
-                    ) : null}
-                    {model.keyConfigured ? (
-                      <Badge variant="secondary" className="text-muted-foreground">
-                        已存密钥
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground" title={model.apiBase}>
-                    {model.apiBase}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="shrink-0 self-start sm:self-center"
-                  disabled={modelsBusy || modelsPreviewBusy || isActive}
-                  title={isActive ? "不能删除当前模型" : undefined}
-                  onClick={() => setDeleteTarget(model.name)}
+          <>
+            {Array.from(providerGroups.entries()).map(([provider, groupModels]) => {
+              const groupHasActive = groupModels.some((m) => m.name === activeModel);
+              const groupHasKey = groupModels.some((m) => m.keyConfigured);
+              return (
+                <div
+                  key={provider}
+                  className="rounded-lg border border-border/40 bg-background/80"
                 >
-                  删除
-                </Button>
+                  <div className="flex items-center justify-between gap-3 border-b border-border/35 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">
+                        {providerLabel(provider)}
+                      </span>
+                      <Badge variant="secondary" className="text-muted-foreground shrink-0">
+                        {groupModels.length} 个模型
+                      </Badge>
+                      {groupHasKey ? (
+                        <Badge variant="secondary" className="text-muted-foreground shrink-0">
+                          已存密钥
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={modelsBusy || modelsPreviewBusy || groupHasActive}
+                      title={
+                        groupHasActive ? "不能删除包含当前模型的提供商组" : undefined
+                      }
+                      onClick={() => setDeleteGroupTarget(provider)}
+                    >
+                      删除整组
+                    </Button>
+                  </div>
+                  <div className="divide-y divide-border/35">
+                    {groupModels.map((model) => {
+                      const isActive = model.name === activeModel;
+                      return (
+                        <div
+                          key={model.name}
+                          className="flex items-center gap-2 px-4 py-2.5"
+                        >
+                          <span className="text-sm text-foreground">{model.name}</span>
+                          {isActive ? (
+                            <Badge variant="secondary" className="text-muted-foreground">
+                              当前
+                            </Badge>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {standaloneModels.length > 0 && (
+              <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
+                {standaloneModels.map((model) => {
+                  const isActive = model.name === activeModel;
+                  return (
+                    <div
+                      key={model.name}
+                      className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">
+                            {model.name}
+                          </span>
+                          {isActive ? (
+                            <Badge variant="secondary" className="text-muted-foreground">
+                              当前
+                            </Badge>
+                          ) : null}
+                          {model.keyConfigured ? (
+                            <Badge variant="secondary" className="text-muted-foreground">
+                              已存密钥
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p
+                          className="truncate text-xs text-muted-foreground"
+                          title={model.apiBase}
+                        >
+                          {model.apiBase}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="shrink-0 self-start sm:self-center"
+                        disabled={modelsBusy || modelsPreviewBusy || isActive}
+                        title={isActive ? "不能删除当前模型" : undefined}
+                        onClick={() => setDeleteTarget(model.name)}
+                      >
+                        删除
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
 
@@ -1848,6 +1938,59 @@ function ModelsSettingsPanel({
             >
               {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               删除
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteGroupTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteGroupTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>删除提供商模型组</DialogTitle>
+            <DialogDescription>
+              确定删除「{deleteGroupTarget ? providerLabel(deleteGroupTarget) : ""}」下的全部模型？
+              配置与密钥将一并移除。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteGroupTarget(null)}
+              disabled={modelsBusy}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={modelsBusy || !deleteGroupTarget}
+              onClick={() => {
+                const provider = deleteGroupTarget;
+                if (!provider) {
+                  return;
+                }
+                void (async () => {
+                  try {
+                    await onRemoveProviderModels(provider);
+                    setDeleteGroupTarget(null);
+                  } catch {
+                    /* runtimeError */
+                  }
+                })();
+              }}
+            >
+              {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+              删除整组
             </Button>
           </div>
         </DialogContent>
@@ -2303,6 +2446,7 @@ export function SettingsView({
   onAddProviderModels,
   onPreviewModels,
   onRemoveModel,
+  onRemoveProviderModels,
   onAddMcpServer,
   onImportExtension,
   onDeleteExtension,
@@ -2368,6 +2512,7 @@ export function SettingsView({
                 onAddProviderModels={onAddProviderModels}
                 onPreviewModels={onPreviewModels}
                 onRemoveModel={onRemoveModel}
+                onRemoveProviderModels={onRemoveProviderModels}
               />
             ) : tab === "skills" ? (
               <SkillsSettingsPanel

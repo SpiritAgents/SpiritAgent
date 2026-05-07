@@ -2,6 +2,7 @@ import rawImport from './model-provider-presets.json' with { type: 'json' };
 
 /** 与 `config.json` / CLI `ModelProvider` 小写字符串对齐（须与 `pickerOrder` 一致）。 */
 export type ModelProviderId = 'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'custom';
+export type PresetModelProviderId = Exclude<ModelProviderId, 'custom'>;
 
 const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'deepseek',
@@ -10,6 +11,11 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'alibaba',
   'custom',
 ];
+
+const MODEL_PROVIDER_ID_SET: ReadonlySet<ModelProviderId> = new Set(CANONICAL_PICKER_ORDER);
+const PRESET_PROVIDER_PICKER_ORDER = CANONICAL_PICKER_ORDER.filter(
+  (id): id is PresetModelProviderId => id !== 'custom',
+);
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -115,6 +121,41 @@ export const PROVIDER_PICKER_ROWS: Array<{ id: ModelProviderId; label: string }>
 
 /** 分组排序等与 `pickerOrder` 一致。 */
 export const MODEL_PROVIDER_PICKER_ORDER: readonly ModelProviderId[] = CANONICAL_PICKER_ORDER;
+export const PRESET_MODEL_PROVIDER_PICKER_ORDER: readonly PresetModelProviderId[] = PRESET_PROVIDER_PICKER_ORDER;
+
+export function isModelProviderId(value: unknown): value is ModelProviderId {
+  return typeof value === 'string' && MODEL_PROVIDER_ID_SET.has(value as ModelProviderId);
+}
+
+export function parseModelProviderId(value: unknown): ModelProviderId | undefined {
+  return isModelProviderId(value) ? value : undefined;
+}
+
+export function isPresetModelProviderId(value: unknown): value is PresetModelProviderId {
+  return typeof value === 'string' && value !== 'custom' && MODEL_PROVIDER_ID_SET.has(value as ModelProviderId);
+}
+
+export function parsePresetModelProviderId(value: unknown): PresetModelProviderId | undefined {
+  return isPresetModelProviderId(value) ? value : undefined;
+}
+
+export function partitionModelsByProvider<Model extends { provider?: ModelProviderId }>(
+  models: readonly Model[],
+  provider: ModelProviderId,
+): { matched: Model[]; unmatched: Model[] } {
+  const matched: Model[] = [];
+  const unmatched: Model[] = [];
+
+  for (const model of models) {
+    if (model.provider === provider) {
+      matched.push(model);
+    } else {
+      unmatched.push(model);
+    }
+  }
+
+  return { matched, unmatched };
+}
 
 export function resolveConnectApiBase(
   provider: ModelProviderId,

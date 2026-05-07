@@ -7,7 +7,6 @@ import type {
 import type {
   AskQuestionsResult,
   DesktopDreamCollectorSnapshot,
-  DesktopModelProvider,
   DesktopWebHostSnapshot,
   PendingQuestionsSnapshot,
 } from '../types.js';
@@ -206,9 +205,3 @@ export function formatYamlScalarForSkillFrontmatter(value: string): string {
   return `"${flat.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"')}"`;
 }
 
-export function parseAddModelProvider(value: unknown): DesktopModelProvider | undefined {
-  if (value === 'deepseek' || value === 'kimi' || value === 'minimax' || value === 'alibaba' || value === 'custom') {
-    return value;
-  }
-  return undefined;
-}

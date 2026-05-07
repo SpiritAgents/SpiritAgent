@@ -17,6 +17,7 @@ import type {
   DesktopMarketplacePreparedInstall,
   DeleteSkillRequest,
   DesktopMcpServerInspection,
+  DesktopModelProvider,
   DesktopSnapshot,
   ImportExtensionRequest,
   InstallMarketplaceExtensionRequest,
@@ -49,6 +50,7 @@ declare global {
     addProviderModels(request: AddProviderModelsRequest): Promise<DesktopSnapshot>;
     previewModels(request: PreviewModelsRequest): Promise<PreviewModelsResponse>;
     removeModel(name: string): Promise<DesktopSnapshot>;
+    removeProviderModels(provider: DesktopModelProvider): Promise<DesktopSnapshot>;
     addMcpServer(request: AddMcpServerRequest): Promise<DesktopSnapshot>;
     deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot>;
     inspectMcpServer(name: string): Promise<DesktopMcpServerInspection>;

@@ -34,6 +34,7 @@ import type {
   SubmitCreateSkillSlashRequest,
   SubmitSkillSlashRequest,
   UpdateConfigRequest,
+  DesktopModelProvider,
 } from '../types';
 
 const DEFAULT_HOST_URL =
@@ -69,6 +70,9 @@ export function createWebHostApi(): HostApi {
     },
     removeModel(name: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/models/remove', { name });
+    },
+    removeProviderModels(provider: DesktopModelProvider) {
+      return post<DesktopSnapshot>(baseUrl, '/api/models/remove-provider', { provider });
     },
     addMcpServer(request: AddMcpServerRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/mcps', request);

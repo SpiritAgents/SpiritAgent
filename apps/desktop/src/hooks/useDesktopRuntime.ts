@@ -46,6 +46,7 @@ import type {
   WorkspaceFileReferenceSuggestionsResponse,
   WorkspaceReadTextFileResult,
   WriteWorkspaceTextFileRequest,
+  DesktopModelProvider,
 } from "@/types";
 
 type BusyAction =
@@ -655,6 +656,28 @@ export function useDesktopRuntime() {
       setBusyAction("models");
       try {
         const next = await api.removeModel(name);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        const message = describeError(error);
+        setRuntimeError(message);
+        throw new Error(message);
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const removeProviderModels = useCallback(
+    async (provider: DesktopModelProvider) => {
+      if (!api) {
+        return;
+      }
+
+      setBusyAction("models");
+      try {
+        const next = await api.removeProviderModels(provider);
         applySnapshot(next);
         setRuntimeError("");
       } catch (error) {
@@ -1435,6 +1458,7 @@ export function useDesktopRuntime() {
     addProviderModels,
     previewModels,
     removeModel,
+    removeProviderModels,
     addMcpServer,
     importExtension,
     listMarketplaceExtensions,

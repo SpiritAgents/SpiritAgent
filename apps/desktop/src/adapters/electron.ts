@@ -33,6 +33,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     removeModel(name) {
       return bridge.removeModel(name);
     },
+    removeProviderModels(provider) {
+      return bridge.removeProviderModels(provider);
+    },
     addMcpServer(request) {
       return bridge.addMcpServer(request);
     },
