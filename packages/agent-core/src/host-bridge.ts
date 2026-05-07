@@ -126,6 +126,17 @@ interface CliHostInternalModule {
       }
     | undefined
   >;
+  listCachedWorkspaceFileReferenceSuggestions?: (
+    workspaceRoot: string,
+    input: string,
+    cursorChars: number,
+  ) => Promise<
+    | {
+        query: { start: number; end: number; raw: string };
+        suggestions: string[];
+      }
+    | undefined
+  >;
   resolveWorkspaceFileReferenceAttachmentsFromInput?: (
     workspaceRoot: string,
     text: string,
@@ -1398,6 +1409,16 @@ peer.on('hostInternal.listWorkspaceFileReferenceSuggestions', async (rawParams) 
   const hostInternal = await requireCliHostInternal();
   if (!hostInternal.module.listWorkspaceFileReferenceSuggestions) {
     return null;
+  }
+
+  if (hostInternal.module.listCachedWorkspaceFileReferenceSuggestions) {
+    return (
+      (await hostInternal.module.listCachedWorkspaceFileReferenceSuggestions(
+        hostInternal.workspaceRoot,
+        typeof params.input === 'string' ? params.input : '',
+        typeof params.cursorChars === 'number' ? params.cursorChars : 0,
+      )) ?? null
+    );
   }
 
   return (
