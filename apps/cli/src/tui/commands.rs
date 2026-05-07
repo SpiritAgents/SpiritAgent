@@ -5,6 +5,25 @@ use super::mcp_actions::{PromptTail, classify_prompt_tail, non_empty_opt};
 use super::*;
 
 impl TuiShell {
+    pub(crate) fn active_model_supports_vision_input(&self) -> bool {
+        self.runtime
+            .config()
+            .active_model_profile()
+            .map(|profile| profile.supports_vision_input())
+            .unwrap_or(true)
+    }
+
+    pub(crate) fn push_image_command_blocked_message(&mut self) {
+        self.messages.push(ChatMessage {
+            role: MessageRole::Agent,
+            content: format!(
+                "当前模型 {} 不支持图片输入，无法使用 /image。请先切换到支持 Vision 的模型。",
+                self.runtime.config().active_model
+            ),
+            tool_block: None,
+        });
+    }
+
     pub(crate) fn handle_model_slash(&mut self, args: &[&str]) {
         match args {
             [] => self.open_model_picker(),
@@ -366,21 +385,27 @@ impl TuiShell {
     pub(crate) fn handle_image_slash(&mut self, message: &str) {
         let tail = message.strip_prefix("/image").map(str::trim).unwrap_or("");
 
+        if tail == "clear" {
+            let cleared = self.runtime.clear_pending_images();
+            self.messages.push(ChatMessage {
+                role: MessageRole::Agent,
+                content: format!("已清空待发送图片队列（{} 张）。", cleared),
+                tool_block: None,
+            });
+            return;
+        }
+
+        if !self.active_model_supports_vision_input() {
+            self.push_image_command_blocked_message();
+            return;
+        }
+
         if tail.is_empty() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
                 content:
                     "用法: /image <path> [prompt] | /image pick | /image clear。若不带 prompt，会把图片加入待发送队列。"
                         .to_string(),
-                tool_block: None});
-            return;
-        }
-
-        if tail == "clear" {
-            let cleared = self.runtime.clear_pending_images();
-            self.messages.push(ChatMessage {
-                role: MessageRole::Agent,
-                content: format!("已清空待发送图片队列（{} 张）。", cleared),
                 tool_block: None,
             });
             return;
