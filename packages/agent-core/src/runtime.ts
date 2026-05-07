@@ -32,6 +32,7 @@ import {
   cloneHistory,
   createTurnContext,
   defaultToolMemoryFormatter,
+  enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   formatPendingMcpResourceContext,
   formatPendingWorkspaceFileContext,
@@ -875,6 +876,7 @@ export class AgentRuntime<
       };
       pending.turn.toolExecutions.push(finished);
       this.emitEvent({ kind: 'tool-execution-finished', execution: finished });
+      enqueueDeferredToolOutputGuidance(pending.turn, pending.toolName, execution.output);
 
       const resumedState = this.options.appendToolResultMessage(
         pending.state,
@@ -1155,6 +1157,7 @@ export class AgentRuntime<
       };
       pending.turn.toolExecutions.push(finished);
       this.emitEvent({ kind: 'tool-execution-finished', execution: finished });
+      enqueueDeferredToolOutputGuidance(pending.turn, pending.toolName, execution.output);
 
       const resumedStateWithToolOutput = this.options.appendToolResultMessage(
         resumedState,
