@@ -52,9 +52,14 @@ export function createAiSdkOpenAiSmokeTransport(): AiSdkOpenAiCompatibleTranspor
 }
 
 export function createAiSdkOpenAiDemoRuntime(options: {
+  config?: {
+    apiKey: string;
+    model: string;
+    baseUrl?: string;
+  };
   onEvent?: (event: RuntimeEvent<DemoToolRequest>) => void;
 } = {}) {
-  const smokeConfig = createAiSdkOpenAiSmokeConfig();
+  const smokeConfig = options.config ?? createAiSdkOpenAiSmokeConfig();
   return new AgentRuntime({
     config: smokeConfig,
     llmTransport: createAiSdkOpenAiSmokeTransport(),
