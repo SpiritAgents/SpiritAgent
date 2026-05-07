@@ -3,7 +3,9 @@ import { pathToFileURL } from 'node:url';
 
 import {
   createOpenAiCompatibleTransport,
+  resolveOpenAiModelCompatibilityProfile,
   type OpenAiCompatibleTransport,
+  type OpenAiModelCompatibilityProfile,
   type OpenAiTransportConfig,
 } from './openai/index.js';
 import {
@@ -83,6 +85,7 @@ const ENV_HOST_INTERNAL_MODULE_PATH = 'SPIRIT_HOST_INTERNAL_MODULE_PATH';
 const ENV_HOST_INTERNAL_SPIRIT_DATA_DIR = 'SPIRIT_HOST_INTERNAL_SPIRIT_DATA_DIR';
 let runtime: HostRuntime | undefined;
 let transportConfig: OpenAiTransportConfig | undefined;
+let currentHostToolModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
 let enabledRules: OpenAiEnabledRule[] = [];
 let enabledSkillCatalog: OpenAiEnabledSkillCatalogEntry[] = [];
 let activeSkills: OpenAiActiveSkill[] = [];
@@ -99,6 +102,7 @@ interface CliHostInternalModule {
         getHost: () => unknown;
         logger?: Pick<Console, 'error' | 'log'>;
       };
+      getModelCompatibilityProfile?: () => OpenAiModelCompatibilityProfile | undefined;
     },
   ) => LocalHostToolService;
   createNoopMcpAdapter?: () => unknown;
@@ -614,6 +618,7 @@ async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInte
           },
         }
       : {}),
+    getModelCompatibilityProfile: () => currentHostToolModelCompatibilityProfile,
   };
   const service = new module.NodeHostToolService(
     { workspaceRoot, spiritDataDir },
@@ -1202,6 +1207,7 @@ async function createRuntime(
   config: OpenAiTransportConfig,
   history: LlmMessage[] = [],
 ): Promise<HostRuntime> {
+  currentHostToolModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config);
   const workspaceRoot = config.workspaceRoot ?? process.cwd();
   await toolExecutor.refreshCaches();
   logBridge('createRuntime', {

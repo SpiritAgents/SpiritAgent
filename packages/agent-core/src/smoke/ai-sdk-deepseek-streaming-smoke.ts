@@ -1,11 +1,17 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import type { JsonValue } from '../ports.js';
+import { createLlmMessageContentFromTextAndImages } from '../ports.js';
 import { AiSdkOpenAiCompatibleTransport } from '../openai/ai-sdk-transport.js';
+import { resolveOpenAiModelCompatibilityProfile } from '../openai/openai-compat.js';
 import {
   appendOpenAiToolResultMessage,
+  continueOpenAiToolAgentState,
   extractLastOpenAiAssistantText,
   startOpenAiToolAgentState,
 } from '../openai/tool-agent-helpers.js';
@@ -241,6 +247,193 @@ async function main(): Promise<void> {
   if (!isJsonObject(traceEntry) || traceEntry.kind !== 'deepseek_sdk_chat_completions') {
     throw new Error('ai-sdk deepseek streaming smoke 未标记 DeepSeek 专用 request trace kind。');
   }
+
+  await runDeepSeekVisionCapabilitySmoke();
+  verifyKnownModelCapabilityTable();
+}
+
+async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
+  const requestBodies: JsonValue[] = [];
+  const warnings: JsonValue[] = [];
+  const server = createServer(async (request, response) => {
+    if (request.method !== 'POST' || request.url !== '/v1/chat/completions') {
+      response.statusCode = 404;
+      response.end('not found');
+      return;
+    }
+
+    requestBodies.push(await readJsonBody(request));
+    response.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+    });
+    response.write(`data: ${JSON.stringify({
+      id: 'chatcmpl-deepseek-vision-capability',
+      object: 'chat.completion.chunk',
+      created: 0,
+      model: 'deepseek-v4-pro',
+      choices: [
+        {
+          index: 0,
+          delta: { content: 'AI_SDK_DEEPSEEK_VISION_FILTER_OK' },
+          finish_reason: null,
+        },
+      ],
+    })}\n\n`);
+    response.write(`data: ${JSON.stringify({
+      id: 'chatcmpl-deepseek-vision-capability',
+      object: 'chat.completion.chunk',
+      created: 0,
+      model: 'deepseek-v4-pro',
+      choices: [
+        {
+          index: 0,
+          delta: {},
+          finish_reason: 'stop',
+        },
+      ],
+    })}\n\n`);
+    response.write('data: [DONE]\n\n');
+    response.end();
+  });
+
+  const tempDir = await mkdtemp(join(tmpdir(), 'spirit-deepseek-vision-capability-'));
+  const imagePath = join(tempDir, 'vision-test.png');
+  await writeFile(
+    imagePath,
+    Buffer.from(
+      '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000188f53d5d0000000049454e44ae426082',
+      'hex',
+    ),
+  );
+
+  const warningHost = globalThis as typeof globalThis & {
+    AI_SDK_LOG_WARNINGS: false | DeepSeekSmokeWarningLogger | undefined;
+  };
+  const previousWarningLogger = warningHost.AI_SDK_LOG_WARNINGS;
+  warningHost.AI_SDK_LOG_WARNINGS = (options: DeepSeekSmokeWarningOptions) => {
+    warnings.push(options as unknown as JsonValue);
+  };
+
+  try {
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      throw new Error('无法获取 DeepSeek vision capability smoke server 端口。');
+    }
+
+    const transport = new AiSdkOpenAiCompatibleTransport();
+    const state = continueOpenAiToolAgentState(
+      [
+        {
+          role: 'user',
+          content: createLlmMessageContentFromTextAndImages('请看图。', [imagePath]),
+        },
+      ],
+      process.cwd(),
+      [],
+      [],
+      [],
+      'deepseek-v4-pro',
+    );
+
+    const started = await transport.startToolAgentRoundStreaming(
+      {
+        apiKey: 'test-key',
+        model: 'deepseek-v4-pro',
+        baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
+        llmVendor: 'deepseek',
+      },
+      state,
+      demoLookupToolDefinition(),
+    );
+
+    const events = await collectEvents(started.eventStream);
+    const completion = await started.completion;
+
+    printSmokeSection('ai-sdk deepseek vision capability smoke request bodies', requestBodies);
+    printSmokeSection('ai-sdk deepseek vision capability smoke events', events);
+    printSmokeSection('ai-sdk deepseek vision capability smoke completion', completion);
+
+    if (completion.kind !== 'success' || completion.result.step.kind !== 'final-response-ready') {
+      throw new Error('DeepSeek vision capability smoke 未进入预期 final-response-ready。');
+    }
+
+    const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
+    if (assistantText !== 'AI_SDK_DEEPSEEK_VISION_FILTER_OK') {
+      throw new Error(`DeepSeek vision capability smoke 最终 assistant 文本异常: ${assistantText ?? '<empty>'}`);
+    }
+
+    if (warnings.length > 0) {
+      throw new Error('DeepSeek vision capability smoke 仍然收到了 AI SDK warning，说明前置裁剪未生效。');
+    }
+
+    const requestBody = requestBodies[0];
+    const userMessage = findLastUserMessage(requestBody);
+    if (!isJsonObject(userMessage)) {
+      throw new Error('DeepSeek vision capability smoke 未找到 user message。');
+    }
+
+    if (Array.isArray(userMessage.content)) {
+      const hasNonTextPart = userMessage.content.some(
+        (part) => isJsonObject(part) && part.type !== 'text',
+      );
+      if (hasNonTextPart) {
+        throw new Error('DeepSeek vision capability smoke 仍向 provider 发送了非文本 user part。');
+      }
+    }
+  } finally {
+    warningHost.AI_SDK_LOG_WARNINGS = previousWarningLogger;
+    server.close();
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+interface DeepSeekSmokeWarningOptions {
+  warnings: unknown[];
+  provider: string;
+  model: string;
+}
+
+type DeepSeekSmokeWarningLogger = (options: DeepSeekSmokeWarningOptions) => void;
+
+function verifyKnownModelCapabilityTable(): void {
+  const deepSeek = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: 'deepseek',
+    model: 'deepseek-v4-pro',
+  });
+  if (!deepSeek.hasExplicitCapabilities || deepSeek.capabilities.vision) {
+    throw new Error('DeepSeek capabilities 表异常：应显式声明且不支持 vision。');
+  }
+
+  const kimi25 = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: 'kimi',
+    model: 'kimi-k2.5',
+  });
+  const kimi26Variant = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: 'kimi',
+    model: 'kimi-k2.6-thinking',
+  });
+  const kimiK26Variant = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: 'kimi',
+    model: 'kimi-k2.6-high',
+  });
+  const kimiOther = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: 'kimi',
+    model: 'kimi-k2-turbo-preview',
+  });
+
+  if (
+    !kimi25.capabilities.vision ||
+    !kimi26Variant.capabilities.vision ||
+    !kimiK26Variant.capabilities.vision ||
+    kimiOther.capabilities.vision
+  ) {
+    throw new Error('Kimi capabilities 表异常：仅 kimi-k2.5 / kimi-k2.6 应支持 vision。');
+  }
 }
 
 async function collectEvents(stream: AsyncIterable<{ kind: string } & Record<string, unknown>>): Promise<JsonValue[]> {
@@ -272,6 +465,16 @@ function findLastAssistantWithToolCalls(requestBody: JsonValue | undefined): Jso
   return [...requestBody.messages]
     .reverse()
     .find((message) => isJsonObject(message) && message.role === 'assistant' && Array.isArray(message.tool_calls));
+}
+
+function findLastUserMessage(requestBody: JsonValue | undefined): JsonValue | undefined {
+  if (!isJsonObject(requestBody) || !Array.isArray(requestBody.messages)) {
+    return undefined;
+  }
+
+  return [...requestBody.messages]
+    .reverse()
+    .find((message) => isJsonObject(message) && message.role === 'user');
 }
 
 main().catch((error: unknown) => {

@@ -2163,6 +2163,7 @@ class DesktopHostService {
     llmTransport: OpenAiCompatibleTransport = createOpenAiCompatibleTransport(transportConfig),
   ): DesktopRuntime {
     const workspaceRoot = transportConfig.workspaceRoot ?? this.requireState().workspaceRoot;
+    toolExecutor.setActiveTransportConfig(transportConfig);
     return createDesktopRuntime({
       transportConfig,
       history,

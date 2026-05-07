@@ -46,6 +46,7 @@ import {
   buildOpenAiRequestTrace,
   openAiReasoningEffort,
   openAiVendorChatCompletionBodyExtras,
+  resolveOpenAiModelCompatibilityProfile,
   type OpenAiTransportConfig,
 } from './openai-compat.js';
 import {
@@ -92,6 +93,7 @@ export class AiSdkOpenAiCompatibleTransport
     request: OpenAiJsonSchemaCompletionRequest,
   ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
     const messages = normalizeMessagesForRequest(
+      config,
       buildJsonSchemaCompletionMessages(config, request),
     );
     const requestTrace = buildAiSdkRequestTrace(config, 1, messages, []);
@@ -128,7 +130,7 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
-    const requestMessages = normalizeMessagesForRequest(nextState.messages);
+    const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const tracedRequest = buildAiSdkRequestTrace(
       config,
@@ -203,7 +205,7 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
-    const requestMessages = normalizeMessagesForRequest(nextState.messages);
+    const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAiSdkRequestTrace(
       config,
@@ -1255,8 +1257,37 @@ function guessImageMimeFromPath(path: string): string {
   }
 }
 
-function normalizeMessagesForRequest(messages: JsonValue[]): JsonValue[] {
-  return messages.map((message) => cloneJsonValue(message));
+function normalizeMessagesForRequest(
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>,
+  messages: JsonValue[],
+): JsonValue[] {
+  const profile = resolveOpenAiModelCompatibilityProfile(config);
+  return messages.map((message) => sanitizeMessageForCompatibility(message, profile));
+}
+
+function sanitizeMessageForCompatibility(
+  message: JsonValue,
+  profile: ReturnType<typeof resolveOpenAiModelCompatibilityProfile>,
+): JsonValue {
+  const cloned = cloneJsonValue(message);
+  if (!isJsonObject(cloned) || cloned.role !== 'user' || !Array.isArray(cloned.content)) {
+    return cloned;
+  }
+
+  if (profile.hasExplicitCapabilities && !profile.capabilities.vision) {
+    const textParts = cloned.content.filter(
+      (part) => isJsonObject(part) && part.type === 'text' && typeof part.text === 'string',
+    );
+    return {
+      ...cloned,
+      content:
+        textParts.length > 0
+          ? textParts
+          : '',
+    };
+  }
+
+  return cloned;
 }
 
 function isDeepSeekOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
