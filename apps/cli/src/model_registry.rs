@@ -68,6 +68,19 @@ pub struct ModelProfile {
     pub extra: Map<String, Value>,
 }
 
+impl ModelProfile {
+    pub fn supports_vision_input(&self) -> bool {
+        match self.provider {
+            Some(ModelProvider::Deepseek) => false,
+            Some(ModelProvider::Kimi) => is_kimi_vision_model(&self.name),
+            Some(ModelProvider::Minimax)
+            | Some(ModelProvider::Alibaba)
+            | Some(ModelProvider::Custom)
+            | None => true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub models: Vec<ModelProfile>,
@@ -229,6 +242,14 @@ fn normalize_optional_string(value: Option<String>) -> Option<String> {
     }
 }
 
+fn is_kimi_vision_model(model: &str) -> bool {
+    let normalized = model.trim().to_ascii_lowercase();
+    normalized == "kimi-k2.5"
+        || normalized.starts_with("kimi-k2.5-")
+        || normalized == "kimi-k2.6"
+        || normalized.starts_with("kimi-k2.6-")
+}
+
 #[cfg(test)]
 mod tests {
     use super::{deserialize_config, serialize_config};
@@ -330,9 +351,46 @@ mod tests {
         );
     }
 
-        #[test]
-        fn deserializes_alibaba_provider_from_desktop_config() {
-                let config = r#"
+    #[test]
+    fn model_profile_supports_vision_only_for_kimi_k2_and_non_explicit_providers() {
+        let kimi_k2 = super::ModelProfile {
+            name: "kimi-k2.6".to_string(),
+            api_base: "https://api.moonshot.cn/v1".to_string(),
+            provider: Some(super::ModelProvider::Kimi),
+            reasoning_effort: None,
+            extra: serde_json::Map::new(),
+        };
+        let kimi_other = super::ModelProfile {
+            name: "kimi-k2-turbo-preview".to_string(),
+            api_base: "https://api.moonshot.cn/v1".to_string(),
+            provider: Some(super::ModelProvider::Kimi),
+            reasoning_effort: None,
+            extra: serde_json::Map::new(),
+        };
+        let deepseek = super::ModelProfile {
+            name: "deepseek-v4-pro".to_string(),
+            api_base: "https://api.deepseek.com/v1".to_string(),
+            provider: Some(super::ModelProvider::Deepseek),
+            reasoning_effort: None,
+            extra: serde_json::Map::new(),
+        };
+        let custom = super::ModelProfile {
+            name: "my-custom-model".to_string(),
+            api_base: "https://example.invalid/v1".to_string(),
+            provider: Some(super::ModelProvider::Custom),
+            reasoning_effort: None,
+            extra: serde_json::Map::new(),
+        };
+
+        assert!(kimi_k2.supports_vision_input());
+        assert!(!kimi_other.supports_vision_input());
+        assert!(!deepseek.supports_vision_input());
+        assert!(custom.supports_vision_input());
+    }
+
+    #[test]
+    fn deserializes_alibaba_provider_from_desktop_config() {
+        let config = r#"
 {
     "models": [
         {
@@ -346,12 +404,12 @@ mod tests {
 }
 "#;
 
-                let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
-                let active = parsed.active_model_profile().expect("active model");
+    let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+    let active = parsed.active_model_profile().expect("active model");
 
-                assert_eq!(active.provider, Some(super::ModelProvider::Alibaba));
-                assert_eq!(active.reasoning_effort.as_deref(), Some("medium"));
-        }
+    assert_eq!(active.provider, Some(super::ModelProvider::Alibaba));
+    assert_eq!(active.reasoning_effort.as_deref(), Some("medium"));
+    }
 }
 
 pub fn keyring_entry() -> Result<keyring::Entry> {
