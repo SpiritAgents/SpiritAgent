@@ -2,6 +2,7 @@ import type {
   AskQuestionsRequest,
   JsonValue,
   LlmMessage,
+  LlmMessageContent,
   LlmStreamEvent,
   LlmTransport,
   SubagentSessionArchiveEntry,
@@ -29,6 +30,7 @@ export interface RuntimeCompactionRecord {
 export interface DeferredUserGuidance {
   userMessage: string;
   contentForLlm: string;
+  historyContent?: LlmMessageContent;
 }
 
 export interface RuntimeStatePreparationResult<State> {
@@ -166,13 +168,22 @@ export interface PendingMcpResource {
   content: string;
 }
 
-export interface PendingWorkspaceFile {
+export interface PendingWorkspaceTextFile {
+  kind: 'text';
   path: string;
   totalChars: number;
   truncated: boolean;
   attachedAtUnixMs: number;
   content: string;
 }
+
+export interface PendingWorkspaceImageFile {
+  kind: 'image';
+  path: string;
+  attachedAtUnixMs: number;
+}
+
+export type PendingWorkspaceFile = PendingWorkspaceTextFile | PendingWorkspaceImageFile;
 
 export type AssistantAuxKind = 'thinking' | 'compressing';
 
@@ -302,6 +313,7 @@ export interface AgentRuntimeOptions<
   createContinuationState?: (history: LlmMessage[]) => State;
   appendToolResultMessage: (state: State, toolCallId: string, content: string) => State;
   appendUserMessage?: (state: State, content: string) => State;
+  appendUserLlmMessage?: (state: State, message: LlmMessage) => State;
   extractAssistantText: (state: State) => string | undefined;
   formatToolMemory?: (request: ToolRequest, output: string) => string | undefined;
   isVisionUnsupportedError?: (error: string) => boolean;

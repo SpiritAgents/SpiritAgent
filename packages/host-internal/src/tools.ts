@@ -32,6 +32,7 @@ import {
   type HostDreamStore,
   type HostDreamSourceSessionRef,
 } from './dreams.js';
+import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
 
 const exec = promisify(execCallback);
 
@@ -71,6 +72,23 @@ export type HostJsonValue = HostJsonPrimitive | HostJsonObject | HostJsonValue[]
 
 export interface HostJsonObject {
   [key: string]: HostJsonValue;
+}
+
+export interface HostToolTextContentPart {
+  type: 'text';
+  text: string;
+}
+
+export interface HostToolImageContentPart {
+  type: 'image';
+  path: string;
+}
+
+export type HostToolContentPart = HostToolTextContentPart | HostToolImageContentPart;
+
+export interface HostToolExecutionOutput {
+  content: HostToolContentPart[];
+  summaryText: string;
 }
 
 export interface HostBuiltinToolDefinitionEnvironment {
@@ -165,13 +183,30 @@ export interface HostMcpStatusSnapshot {
   lastError?: string;
 }
 
+function createHostToolTextOutput(text: string): HostToolExecutionOutput {
+  return createHostToolOutput(text);
+}
+
+function createHostToolOutput(
+  summaryText: string,
+  extraContent: HostToolContentPart[] = [],
+): HostToolExecutionOutput {
+  return {
+    content: [
+      ...(summaryText.length > 0 ? [{ type: 'text', text: summaryText } satisfies HostToolTextContentPart] : []),
+      ...extraContent,
+    ],
+    summaryText,
+  };
+}
+
 export interface HostBuiltinToolService<QuestionSpec = HostAskQuestionsQuestionSpec> {
   toolDefinitionEnvironment(): HostBuiltinToolDefinitionEnvironment;
   parseCommand(message: string): Promise<HostToolRequest<QuestionSpec>>;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<HostToolRequest<QuestionSpec>>;
   authorize(request: HostToolRequest<QuestionSpec>): Promise<HostAuthorizationDecision<QuestionSpec>>;
   trust(target: string): Promise<void>;
-  execute(request: HostToolRequest<QuestionSpec>): Promise<string>;
+  execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string>;
   attachRequestMetadata?(
     request: HostToolRequest<QuestionSpec>,
     metadata: HostToolRequestMetadata,
@@ -630,7 +665,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     throw new Error(`未知 trust target: ${target}`);
   }
 
-  async execute(request: HostToolRequest<QuestionSpec>): Promise<string> {
+  async execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string> {
     switch (request.name) {
       case 'run_shell_command':
         return this.executeShell(request.command);
@@ -957,14 +992,36 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     inputPath: string,
     startLine?: number,
     endLine?: number,
-  ): Promise<string> {
+  ): Promise<HostToolExecutionOutput> {
     const canonical = await this.resolveExistingFilePath(inputPath);
     const st = await lstat(canonical);
     if (!st.isFile()) {
       throw new Error(`目标不是文件: ${canonical}`);
     }
 
-    const content = await readFile(canonical, 'utf8');
+    const bytes = await readFile(canonical);
+    const image = detectSupportedImageFile(canonical, bytes);
+    if (image) {
+      const summaryText = [
+        '[read image]',
+        `path: ${canonical}`,
+        `mime_type: ${image.mimeType}`,
+        '',
+        '图像文件已作为图片输入返回。',
+      ].join('\n');
+
+      return createHostToolOutput(summaryText, [{ type: 'image', path: canonical }]);
+    }
+
+    if (hasSupportedImageExtension(canonical)) {
+      throw new Error(`图片文件校验失败: ${canonical}`);
+    }
+
+    if (bytes.includes(0)) {
+      throw new Error(`暂不支持以文本方式读取二进制文件: ${canonical}`);
+    }
+
+    const content = bytes.toString('utf8');
     const start = startLine ?? 1;
     if (start === 0) {
       throw new Error('line 从 1 开始');
@@ -985,7 +1042,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       const line = lines[index - 1] ?? '';
       out += `${String(index).padStart(6, ' ')} | ${line}\n`;
     }
-    return out;
+    return createHostToolTextOutput(out);
   }
 
   private async executeSearchFiles(query: string): Promise<string> {

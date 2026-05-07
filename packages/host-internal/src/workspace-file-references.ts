@@ -8,6 +8,7 @@ import {
   referencedWorkspaceFilePathsFromInput,
   type WorkspaceFileReferenceSuggestionsResult,
 } from './workspace-file-reference-query.js';
+import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
 
 const createIgnore = ignore as unknown as (options?: {
   allowRelativePaths?: boolean;
@@ -24,13 +25,24 @@ interface WorkspaceFileIndexCacheEntry {
 
 const workspaceFileIndexCache = new Map<string, WorkspaceFileIndexCacheEntry>();
 
-export interface WorkspaceFileReferenceAttachment {
+export interface WorkspaceFileReferenceTextAttachment {
+  kind: 'text';
   path: string;
   totalChars: number;
   truncated: boolean;
   attachedAtUnixMs: number;
   content: string;
 }
+
+export interface WorkspaceFileReferenceImageAttachment {
+  kind: 'image';
+  path: string;
+  attachedAtUnixMs: number;
+}
+
+export type WorkspaceFileReferenceAttachment =
+  | WorkspaceFileReferenceTextAttachment
+  | WorkspaceFileReferenceImageAttachment;
 
 export interface ResolveWorkspaceFileReferenceAttachmentsOptions {
   maxContentChars?: number;
@@ -170,6 +182,19 @@ export async function workspaceFileReferenceAttachmentFromPath(
   }
 
   const bytes = await readFile(absolutePath);
+  const image = detectSupportedImageFile(absolutePath, bytes);
+  if (image) {
+    return {
+      kind: 'image',
+      path: relativePath,
+      attachedAtUnixMs: Date.now(),
+    };
+  }
+
+  if (hasSupportedImageExtension(absolutePath)) {
+    throw new Error(`图片文件校验失败: ${referencePath}`);
+  }
+
   if (bytes.includes(0)) {
     throw new Error(`暂不支持引用二进制文件: ${referencePath}`);
   }
@@ -183,6 +208,7 @@ export async function workspaceFileReferenceAttachmentFromPath(
     : text;
 
   return {
+    kind: 'text',
     path: relativePath,
     totalChars: chars.length,
     truncated,

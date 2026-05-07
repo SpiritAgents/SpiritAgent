@@ -1,5 +1,6 @@
 import {
   AgentRuntime,
+  appendOpenAiUserLlmMessage,
   normalizeStoredLlmMessage,
   type OpenAiCompatibleTransport,
   appendOpenAiToolResultMessage,
@@ -72,6 +73,7 @@ export function createDesktopRuntime(input: {
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,
     appendUserMessage: appendOpenAiUserMessage,
+    appendUserLlmMessage: (state, message) => appendOpenAiUserLlmMessage(state, message, input.workspaceRoot),
     extractAssistantText: extractLastOpenAiAssistantText,
     truncateStateForContextRetry: truncateOpenAiToolAgentStateForContextRetry,
     truncateHistoryForCompaction: truncateOpenAiHistoryForCompaction,

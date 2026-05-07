@@ -1,5 +1,7 @@
 import {
   type AskQuestionsResult,
+  createLlmImageContentPart,
+  createLlmTextContentPart,
   buildBuiltinHostToolDefinitions,
   buildDreamHostToolDefinitions,
   AuthorizationDecision,
@@ -107,7 +109,19 @@ export class DesktopToolExecutor
       );
     }
 
-    return createToolExecutionTextOutput(await this.tools.execute(request));
+    const output = await this.tools.execute(request);
+    if (typeof output === 'string') {
+      return createToolExecutionTextOutput(output);
+    }
+
+    return {
+      summaryText: output.summaryText,
+      content: output.content.map((part) =>
+        part.type === 'text'
+          ? createLlmTextContentPart(part.text)
+          : createLlmImageContentPart(part.path),
+      ),
+    };
   }
 
   attachRequestMetadata(

@@ -145,6 +145,24 @@ export function appendOpenAiUserMessage(
   return appendUserMessage(state, content);
 }
 
+export function appendOpenAiUserLlmMessage(
+  state: OpenAiToolAgentState,
+  message: LlmMessage,
+  assetRoot = process.cwd(),
+): OpenAiToolAgentState {
+  if (message.role !== 'user') {
+    throw new Error('appendOpenAiUserLlmMessage 仅支持 user message。');
+  }
+
+  return {
+    messages: [
+      ...state.messages.map((item) => cloneJsonValue(item)),
+      llmMessageToOpenAiMessage(message, assetRoot),
+    ],
+    steps: state.steps,
+  };
+}
+
 export function extractLastOpenAiAssistantText(
   state: OpenAiToolAgentState,
 ): string | undefined {

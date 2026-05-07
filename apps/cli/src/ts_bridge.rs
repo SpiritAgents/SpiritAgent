@@ -151,7 +151,7 @@ struct BridgeExportState {
 struct BridgeChatArchive {
     messages: Vec<BridgeChatMessage>,
     assistant_aux: Vec<BridgeAssistantAuxEntry>,
-    llm_history: Vec<BridgeLlmMessage>,
+    llm_history: Vec<ArchivedLlmMessage>,
     #[serde(default)]
     subagent_sessions: Vec<BridgeSubagentSessionArchiveEntry>,
     #[serde(default)]
@@ -178,7 +178,7 @@ struct BridgeSubagentSessionSummary {
 struct BridgeSubagentSessionArchiveEntry {
     summary: BridgeSubagentSessionSummary,
     #[serde(default)]
-    llm_history: Vec<BridgeLlmMessage>,
+    llm_history: Vec<ArchivedLlmMessage>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -194,14 +194,6 @@ struct BridgeAssistantAuxEntry {
     message_index: usize,
     thinking: Option<String>,
     compaction: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct BridgeLlmMessage {
-    role: String,
-    content: String,
-    image_paths: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1004,11 +996,7 @@ impl TsBridgeRuntime {
                     compaction: entry.compaction,
                 })
                 .collect(),
-            llm_history: bridge_archive
-                .llm_history
-                .into_iter()
-                .map(|message| (message.role, message.content, message.image_paths))
-                .collect(),
+            llm_history: bridge_archive.llm_history,
             subagent_sessions: bridge_archive
                 .subagent_sessions
                 .into_iter()
@@ -1025,15 +1013,7 @@ impl TsBridgeRuntime {
                         final_output: entry.summary.final_output,
                         error: entry.summary.error,
                     },
-                    llm_history: entry
-                        .llm_history
-                        .into_iter()
-                        .map(|message| ArchivedLlmMessage {
-                            role: message.role,
-                            content: message.content,
-                            image_paths: message.image_paths,
-                        })
-                        .collect(),
+                    llm_history: entry.llm_history,
                 })
                 .collect(),
             rewind: Some(self.rewind.as_json()),
@@ -1164,15 +1144,7 @@ impl TsBridgeRuntime {
                 final_output: archive.summary.final_output,
                 error: archive.summary.error,
             },
-            llm_history: archive
-                .llm_history
-                .into_iter()
-                .map(|message| ArchivedLlmMessage {
-                    role: message.role,
-                    content: message.content,
-                    image_paths: message.image_paths,
-                })
-                .collect(),
+            llm_history: archive.llm_history,
         }))
     }
 
@@ -2648,14 +2620,19 @@ fn read_framed_message(reader: &mut dyn BufRead) -> Result<Vec<u8>> {
 fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
     history
         .iter()
-        .map(|message| {
-            json!({
-                "role": message.role,
-                "content": message.content,
-                "imagePaths": message.image_paths,
-            })
-        })
+        .map(|message| archived_llm_message_to_json(&ArchivedLlmMessage::from_text_and_images(
+            message.role.to_string(),
+            message.content.clone(),
+            message.image_paths.clone(),
+        )))
         .collect()
+}
+
+fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
+    json!({
+        "role": message.role,
+        "content": message.content,
+    })
 }
 
 fn write_message_to_stdin(stdin: &Arc<Mutex<ChildStdin>>, payload: &Value) -> Result<()> {
@@ -3242,13 +3219,7 @@ fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
                 "compaction": entry.compaction,
             })
         }).collect::<Vec<_>>(),
-        "llmHistory": archive.llm_history.iter().map(|(role, content, image_paths)| {
-            json!({
-                "role": role,
-                "content": content,
-                "imagePaths": image_paths,
-            })
-        }).collect::<Vec<_>>(),
+        "llmHistory": archive.llm_history.iter().map(archived_llm_message_to_json).collect::<Vec<_>>(),
         "subagentSessions": archive.subagent_sessions.iter().map(|entry| {
             json!({
                 "summary": {
@@ -3263,13 +3234,7 @@ fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
                     "finalOutput": entry.summary.final_output,
                     "error": entry.summary.error,
                 },
-                "llmHistory": entry.llm_history.iter().map(|message| {
-                    json!({
-                        "role": message.role,
-                        "content": message.content,
-                        "imagePaths": message.image_paths,
-                    })
-                }).collect::<Vec<_>>(),
+                "llmHistory": entry.llm_history.iter().map(archived_llm_message_to_json).collect::<Vec<_>>(),
             })
         }).collect::<Vec<_>>(),
     });
