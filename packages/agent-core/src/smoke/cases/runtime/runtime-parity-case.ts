@@ -19,6 +19,7 @@ import {
   createLlmMessageContentFromTextAndImages,
   createToolExecutionTextOutput,
   llmMessageHasImages,
+  llmMessageImagePaths,
   llmMessageTextContent,
 } from '../../../ports.js';
 import { isOpenAiVisionUnsupportedError } from '../../../openai/tool-agent-helpers.js';
@@ -447,45 +448,45 @@ class CompactTransport implements LlmTransport<undefined, ScriptedState> {
     };
   }
 
-  async compactHistoryManual(
-    _config: undefined,
-    history: LlmMessage[],
-  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
-    const beforeLength = history.length;
-    const lastUser = [...history].reverse().find((message) => message.role === 'user');
-    history.splice(
-      0,
-      history.length,
-      {
-        role: 'system',
-        content: createLlmMessageContentFromText('[SPIRIT_COMPACT_SUMMARY] compacted history'),
-      },
-      ...(lastUser ? [lastUser] : []),
-    );
+    async compactHistoryManual(
+      _config: undefined,
+      history: LlmMessage[],
+    ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+      const beforeLength = history.length;
+      const lastUser = [...history].reverse().find((message) => message.role === 'user');
+      history.splice(
+        0,
+        history.length,
+        {
+          role: 'system',
+          content: createLlmMessageContentFromText('[SPIRIT_COMPACT_SUMMARY] compacted history'),
+        },
+        ...(lastUser ? [lastUser] : []),
+      );
 
-    return {
-      droppedMessages: Math.max(beforeLength - history.length, 0),
-      beforeLength,
-      afterLength: history.length,
-    };
-  }
+      return {
+        droppedMessages: Math.max(beforeLength - history.length, 0),
+        beforeLength,
+        afterLength: history.length,
+      };
+    }
 
-  compactSummaryText(history: LlmMessage[]): string | undefined {
-    return compactSummaryFromHistory(history);
-  }
+    compactSummaryText(history: LlmMessage[]): string | undefined {
+      return compactSummaryFromHistory(history);
+    }
 
-  isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
-  }
+    isContextOverflowError(error: string): boolean {
+      return error.includes('context overflow');
+    }
 
-  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
-    return historyAsPlainApiMessages(history);
-  }
+    llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+      return historyAsPlainApiMessages(history);
+    }
 
-  llmSystemPromptsForExport(): JsonValue {
-    return {};
+    llmSystemPromptsForExport(): JsonValue {
+      return {};
+    }
   }
-}
 
 class PollingCompactTransport extends CompactTransport {
   private resolveCompaction: (() => void) | undefined;
@@ -1914,6 +1915,189 @@ class StreamingApprovalTransport implements LlmTransport<undefined, ScriptedStat
   }
 }
 
+class StreamingApprovalImageExecutor extends StreamingApprovalExecutor {
+  override async authorize(request: ScriptedToolRequest): Promise<AuthorizationDecision> {
+    if (request.name === 'read_file') {
+      return {
+        kind: 'need-approval',
+        prompt: '读取图片需要审批。',
+      };
+    }
+
+    return { kind: 'allowed' };
+  }
+
+  override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
+    this.executedCalls += 1;
+    if (request.name !== 'read_file') {
+      return createToolExecutionTextOutput(`approved output for ${request.name}`);
+    }
+
+    const summaryText = '[read image]\npath: approved-image.png\n\n图像文件已作为图片输入返回。';
+    return {
+      summaryText,
+      content: createLlmMessageContentFromTextAndImages(summaryText, ['approved-image.png']),
+    };
+  }
+}
+
+class StreamingApprovalImageTransport implements LlmTransport<undefined, ScriptedState> {
+  rounds = 0;
+
+  async startToolAgentRound(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    return {
+      kind: 'success',
+      result: {
+        state: {
+          messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_IMAGE_SYNC_FALLBACK' }],
+          steps: state.steps + 1,
+        },
+        step: { kind: 'final-response-ready' },
+        requestTrace: [{ mode: 'streaming-approval-image-sync-fallback' }],
+      },
+    };
+  }
+
+  async startToolAgentRoundStreaming(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<StartedToolAgentRound<ScriptedState>> {
+    this.rounds += 1;
+
+    if (this.rounds === 1) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'success',
+          result: {
+            state: {
+              messages: [
+                ...state.messages,
+                {
+                  role: 'assistant',
+                  content: '先申请读取图片权限。',
+                  tool_calls: [
+                    {
+                      id: 'call-stream-approval-image',
+                      type: 'function',
+                      function: {
+                        name: 'read_file',
+                        arguments: '{"path":"approved-image.png"}',
+                      },
+                    },
+                  ],
+                },
+              ],
+              steps: state.steps + 1,
+            },
+            step: {
+              kind: 'tool-calls',
+              calls: [
+                {
+                  id: 'call-stream-approval-image',
+                  name: 'read_file',
+                  argumentsJson: '{"path":"approved-image.png"}',
+                },
+              ],
+            },
+            requestTrace: [{ mode: 'streaming-approval-image-round-1' }],
+          },
+        }),
+      };
+    }
+
+    const hasApprovedToolResult = state.messages.some(
+      (message) =>
+        isJsonObject(message) &&
+        message.role === 'tool' &&
+        typeof message.content === 'string' &&
+        message.content.includes('[read image]') &&
+        message.content.includes('approved-image.png'),
+    );
+    if (!hasApprovedToolResult) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'failure',
+          error: 'streaming approval image resume 未写回图片 tool result。',
+          requestTrace: [{ mode: 'streaming-approval-image-round-2-missing-tool-result' }],
+        }),
+      };
+    }
+
+    const hasProjectedImageUserMessage = state.messages.some(
+      (message) =>
+        isJsonObject(message) &&
+        message.role === 'user' &&
+        typeof message.content === 'string' &&
+        message.content.includes('[read image]') &&
+        Array.isArray(message.image_paths) &&
+        message.image_paths.includes('approved-image.png'),
+    );
+    if (!hasProjectedImageUserMessage) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'failure',
+          error: 'streaming approval image resume 未把图片工具输出投影到下一拍 user 消息。',
+          requestTrace: [{ mode: 'streaming-approval-image-round-2-missing-projection' }],
+        }),
+      };
+    }
+
+    return {
+      eventStream: streamFromEvents([
+        { kind: 'assistant-chunk', text: 'STREAM_APPROVAL_IMAGE_' },
+        { kind: 'assistant-chunk', text: 'OK' },
+        { kind: 'done' },
+      ]),
+      completion: Promise.resolve({
+        kind: 'success',
+        result: {
+          state: {
+            messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_IMAGE_OK' }],
+            steps: state.steps + 1,
+          },
+          step: { kind: 'final-response-ready' },
+          requestTrace: [{ mode: 'streaming-approval-image-round-2' }],
+        },
+      }),
+    };
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes('context overflow');
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return history.map((message) => ({ role: message.role, content: message.content }));
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
+}
+
 
 class StreamingApprovalGuidanceTransport implements LlmTransport<undefined, ScriptedState> {
   rounds = 0;
@@ -2376,6 +2560,7 @@ export async function runRuntimeParitySmoke(): Promise<void> {
   const streamingBackgroundEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingCompactionEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingApprovalEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
+  const streamingApprovalImageEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingGuidanceEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const timeoutEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingFailureEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
@@ -3249,6 +3434,84 @@ export async function runRuntimeParitySmoke(): Promise<void> {
     throw new Error('streaming approval smoke 错误退回到了非流式 round。');
   }
 
+  const streamingApprovalImageExecutor = new StreamingApprovalImageExecutor();
+  const streamingApprovalImageRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: new StreamingApprovalImageTransport(),
+    toolExecutor: streamingApprovalImageExecutor,
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    appendUserLlmMessage: appendScriptedUserLlmMessage,
+    extractAssistantText: extractScriptedAssistantText,
+    onEvent: (event) => streamingApprovalImageEvents.push(event),
+  });
+
+  await streamingApprovalImageRuntime.startUserTurnStreaming('请审批后读取图片');
+  await flushMicrotasks(4);
+  await streamingApprovalImageRuntime.poll();
+  if (!streamingApprovalImageRuntime.hasPendingApproval()) {
+    throw new Error('streaming approval image smoke 未进入待审批状态。');
+  }
+
+  await streamingApprovalImageRuntime.continuePendingApproval({ kind: 'allow' });
+  for (let index = 0; index < 12 && streamingApprovalImageRuntime.isBusy(); index += 1) {
+    await flushMicrotasks(4);
+    await streamingApprovalImageRuntime.poll();
+  }
+  if (streamingApprovalImageRuntime.isBusy()) {
+    throw new Error('streaming approval image smoke 未在预期轮次内完成。');
+  }
+
+  const drainedStreamingApprovalImageEvents = streamingApprovalImageRuntime.drainEvents();
+  if (
+    drainedStreamingApprovalImageEvents.filter((event) => event.kind === 'begin-assistant-response').length < 2
+  ) {
+    throw new Error('streaming approval image smoke 应包含审批前后两次 begin event。');
+  }
+  if (
+    !drainedStreamingApprovalImageEvents.some(
+      (event) => event.kind === 'approval-requested' && event.approval.toolName === 'read_file',
+    )
+  ) {
+    throw new Error('streaming approval image smoke 缺少 approval-requested 事件。');
+  }
+  if (
+    !drainedStreamingApprovalImageEvents.some(
+      (event) => event.kind === 'assistant-chunk' && event.text === 'STREAM_APPROVAL_IMAGE_',
+    )
+  ) {
+    throw new Error('streaming approval image smoke 缺少审批恢复后的流式 chunk。');
+  }
+  if (streamingApprovalImageExecutor.executedCalls !== 1) {
+    throw new Error('streaming approval image smoke 工具执行次数不正确。');
+  }
+  const streamingApprovalImageTrace = streamingApprovalImageRuntime.requestTrace();
+  if (
+    !streamingApprovalImageTrace.some(
+      (trace) => isJsonObject(trace) && trace.mode === 'streaming-approval-image-round-2',
+    )
+  ) {
+    throw new Error('streaming approval image smoke 缺少审批恢复后的 streaming trace。');
+  }
+  if (
+    streamingApprovalImageTrace.some(
+      (trace) => isJsonObject(trace) && trace.mode === 'streaming-approval-image-sync-fallback',
+    )
+  ) {
+    throw new Error('streaming approval image smoke 错误退回到了非流式 round。');
+  }
+  if (
+    !streamingApprovalImageRuntime.history().some(
+      (message) =>
+        message.role === 'user' &&
+        llmMessageTextContent(message.content).includes('[read image]') &&
+        llmMessageImagePaths(message.content).includes('approved-image.png'),
+    )
+  ) {
+    throw new Error('streaming approval image smoke 未把图片投影写入历史。');
+  }
+
   const streamingGuidanceExecutor = new StreamingApprovalExecutor();
   const streamingGuidanceRuntime = new AgentRuntime({
     config: undefined,
@@ -3478,6 +3741,7 @@ export async function runRuntimeParitySmoke(): Promise<void> {
   printSmokeSection('stream timeout smoke events', drainedTimeoutEvents);
   printSmokeSection('streaming failure smoke events', drainedStreamingFailureEvents);
   printSmokeSection('streaming approval smoke events', drainedStreamingApprovalEvents);
+  printSmokeSection('streaming approval image smoke events', drainedStreamingApprovalImageEvents);
   printSmokeSection('streaming guidance smoke events', drainedStreamingGuidanceEvents);
   printSmokeSection('manual compaction smoke events', drainedManualCompactionEvents);
   printSmokeSection('streaming background smoke events', drainedStreamingBackgroundEvents);
