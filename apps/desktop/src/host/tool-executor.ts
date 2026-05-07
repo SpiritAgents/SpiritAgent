@@ -1,5 +1,8 @@
 import {
   type AskQuestionsResult,
+  type OpenAiModelCompatibilityProfile,
+  type OpenAiTransportConfig,
+  resolveOpenAiModelCompatibilityProfile,
   createLlmImageContentPart,
   createLlmTextContentPart,
   buildBuiltinHostToolDefinitions,
@@ -34,6 +37,7 @@ export class DesktopToolExecutor
   private readonly mcp: McpService;
   private readonly dreamToolDefinitions: JsonValue[];
   private extensionToolDefinitions: JsonValue[];
+  private activeModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
 
   constructor(
     private readonly workspaceRoot: string,
@@ -53,11 +57,16 @@ export class DesktopToolExecutor
       spiritDataDir: spiritAgentDataDir(),
     }, {
       mcp: createNoopMcpAdapter(),
+      getModelCompatibilityProfile: () => this.activeModelCompatibilityProfile,
       ...(options.fileChangeObserver ? { fileChangeObserver: options.fileChangeObserver } : {}),
       ...(options.extensions ? { extensions: options.extensions } : {}),
       ...(options.dreamScope ? { dreamScope: options.dreamScope } : {}),
       ...(options.dreamSourceSession ? { dreamSourceSession: options.dreamSourceSession } : {}),
     });
+  }
+
+  setActiveTransportConfig(config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>): void {
+    this.activeModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config);
   }
 
   toolDefinitionsJson(): JsonValue {

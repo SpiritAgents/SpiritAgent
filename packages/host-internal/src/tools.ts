@@ -86,6 +86,17 @@ export interface HostToolImageContentPart {
 
 export type HostToolContentPart = HostToolTextContentPart | HostToolImageContentPart;
 
+export interface HostToolModelCapabilities {
+  vision?: true;
+  audioInput?: true;
+  videoInput?: true;
+}
+
+export interface HostToolModelCompatibilityProfile {
+  hasExplicitCapabilities: boolean;
+  capabilities: HostToolModelCapabilities;
+}
+
 export interface HostToolExecutionOutput {
   content: HostToolContentPart[];
   summaryText: string;
@@ -251,6 +262,15 @@ export interface HostExtensionRuntimeBinding<THostApi> {
   logger?: Pick<Console, 'error' | 'log'>;
 }
 
+export interface NodeHostToolServiceOptions {
+  mcp?: HostMcpAdapter;
+  fileChangeObserver?: HostFileChangeObserver;
+  extensions?: HostExtensionRuntimeBinding<unknown>;
+  dreamScope?: HostDreamScope;
+  dreamSourceSession?: HostDreamSourceSessionRef;
+  getModelCompatibilityProfile?: () => HostToolModelCompatibilityProfile | undefined;
+}
+
 interface ToolPermissionStore {
   trusted_shell_commands?: string[];
   trusted_external_read_paths?: string[];
@@ -340,13 +360,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
   constructor(
     private readonly context: InstructionDiscoveryContext,
-    options: {
-      mcp?: HostMcpAdapter;
-      fileChangeObserver?: HostFileChangeObserver;
-      extensions?: HostExtensionRuntimeBinding<unknown>;
-      dreamScope?: HostDreamScope;
-      dreamSourceSession?: HostDreamSourceSessionRef;
-    } = {},
+    options: NodeHostToolServiceOptions = {},
   ) {
     this.workspaceRoot = path.resolve(context.workspaceRoot);
     this.spiritDataDir = path.resolve(context.spiritDataDir);
@@ -358,7 +372,12 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       ? createHostDreamStore({ spiritDataDir: this.spiritDataDir, scope: options.dreamScope })
       : undefined;
     this.dreamSourceSession = options.dreamSourceSession;
+    this.getModelCompatibilityProfile = options.getModelCompatibilityProfile;
   }
+
+  private readonly getModelCompatibilityProfile:
+    | (() => HostToolModelCompatibilityProfile | undefined)
+    | undefined;
 
   toolDefinitionEnvironment(): HostBuiltinToolDefinitionEnvironment {
     return detectShellForTools();
@@ -1002,6 +1021,19 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     const bytes = await readFile(canonical);
     const image = detectSupportedImageFile(canonical, bytes);
     if (image) {
+      const compatibilityProfile = this.getModelCompatibilityProfile?.();
+      if (isVisionInputBlocked(compatibilityProfile)) {
+        const summaryText = [
+          '[read image]',
+          `path: ${canonical}`,
+          `mime_type: ${image.mimeType}`,
+          '',
+          '该模型不支持 Vision，图像文件无法作为图片输入返回。',
+        ].join('\n');
+
+        return createHostToolTextOutput(summaryText);
+      }
+
       const summaryText = [
         '[read image]',
         `path: ${canonical}`,
@@ -1009,7 +1041,6 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         '',
         '图像文件已作为图片输入返回。',
       ].join('\n');
-
       return createHostToolOutput(summaryText, [{ type: 'image', path: canonical }]);
     }
 
@@ -1105,7 +1136,6 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
       return true;
     };
-
     const walk = async (dir: string): Promise<void> => {
       if (hits.length >= MAX_SEARCH_RESULTS) {
         return;
@@ -1444,6 +1474,12 @@ function optionalPositiveInt(obj: HostJsonObject, key: string): number | undefin
 function optionalBoolean(obj: HostJsonObject, key: string): boolean | undefined {
   const value = obj[key];
   return typeof value === 'boolean' ? value : undefined;
+}
+
+function isVisionInputBlocked(
+  profile: HostToolModelCompatibilityProfile | undefined,
+): boolean {
+  return profile?.hasExplicitCapabilities === true && profile.capabilities.vision !== true;
 }
 
 function optionalStringArrayStrict(obj: HostJsonObject, key: string): string[] {
