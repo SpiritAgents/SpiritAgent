@@ -5,6 +5,12 @@ import {
   modelReasoningEffortLabel,
   type ModelReasoningEffort,
 } from "@spirit-agent/host-internal/reasoning-effort";
+import {
+  charCountToCodeUnitIndex,
+  codeUnitIndexToCharCount,
+  currentWorkspaceFileReferenceQuery,
+  replaceWorkspaceFileReferenceQuery,
+} from "@spirit-agent/host-internal/workspace-file-reference-query";
 
 import {
   ArrowUp,
@@ -18,6 +24,7 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Plus,
   ShieldCheck,
   Square,
   X,
@@ -60,6 +67,7 @@ import { MarkdownMessage } from "@/components/markdown-message";
 import { MarketplaceView } from "@/components/marketplace-view";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
+import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useTheme } from "@/hooks/useTheme";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
@@ -90,6 +98,7 @@ import type {
   DesktopSnapshot,
   MessageRewindDraftState,
   ToolBlockSnapshot,
+  WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
 
 function mcpStateVariant(
@@ -325,6 +334,9 @@ type ComposerSurfaceProps = {
   onPlanModeChange(planMode: boolean): void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   onKeyDown?(event: ReactKeyboardEvent<HTMLTextAreaElement>): void;
+  onSelectionChange?(selectionStart: number | null): void;
+  showFileReferenceButton?: boolean;
+  onInsertFileReferenceTrigger?(): void;
 };
 
 function ComposerSurface({
@@ -346,6 +358,9 @@ function ComposerSurface({
   onPlanModeChange,
   textareaRef,
   onKeyDown,
+  onSelectionChange,
+  showFileReferenceButton = false,
+  onInsertFileReferenceTrigger,
 }: ComposerSurfaceProps) {
   const [modelFilter, setModelFilter] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -382,7 +397,13 @@ function ComposerSurface({
       <Textarea
         ref={textareaRef}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          onChange(event.target.value);
+          onSelectionChange?.(event.target.selectionStart);
+        }}
+        onSelect={(event) => {
+          onSelectionChange?.(event.currentTarget.selectionStart);
+        }}
         disabled={readOnly}
         placeholder={placeholder}
         className="spirit-scroll block max-h-[12rem] min-h-[3rem] w-full resize-none overflow-y-auto rounded-none border-0 bg-transparent px-3 pt-3 pb-1.5 text-sm leading-relaxed shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none dark:bg-transparent dark:disabled:bg-transparent md:min-h-[3.5rem]"
@@ -402,6 +423,20 @@ function ComposerSurface({
       <div className="flex justify-center px-3 pt-0.5 pb-2">
         <div className="flex w-full max-w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            {showFileReferenceButton ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="引用文件"
+                disabled={readOnly}
+                className="size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground"
+                title="引用文件"
+                onClick={onInsertFileReferenceTrigger}
+              >
+                <Plus className="size-3.5" aria-hidden />
+              </Button>
+            ) : null}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -1237,7 +1272,12 @@ export default function App() {
   const [sessionSidebarOpen, setSessionSidebarOpen] = useState(true);
   const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(420);
+  const [composerCursorCodeUnits, setComposerCursorCodeUnits] = useState(0);
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(-1);
+  const [fileReferenceSuggestions, setFileReferenceSuggestions] =
+    useState<WorkspaceFileReferenceSuggestionsResponse>(null);
+  const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
+  const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
   const [commitDialogOpen, setCommitDialogOpen] = useState(false);
   const [commitMessageDraft, setCommitMessageDraft] = useState("");
   const [commitMode, setCommitMode] = useState<DesktopCommitMode>("commit");
@@ -1257,6 +1297,22 @@ export default function App() {
     () => buildSkillSlashSuggestions(slashQuery, snapshot?.skillsList ?? []),
     [slashQuery, snapshot?.skillsList],
   );
+  const composerCursorChars = useMemo(
+    () => codeUnitIndexToCharCount(runtime.composer, composerCursorCodeUnits),
+    [composerCursorCodeUnits, runtime.composer],
+  );
+  const fileReferenceQuery = useMemo(
+    () => currentWorkspaceFileReferenceQuery(runtime.composer, composerCursorChars),
+    [composerCursorChars, runtime.composer],
+  );
+  const fileReferenceQueryKey = useMemo(
+    () =>
+      fileReferenceQuery
+        ? `${fileReferenceQuery.start}\u0000${fileReferenceQuery.end}\u0000${fileReferenceQuery.raw}`
+        : "",
+    [fileReferenceQuery],
+  );
+  const fileReferenceRequestIdRef = useRef(0);
   const extensionSettingsItems = useMemo(
     () =>
       (snapshot?.extensionsList ?? [])
@@ -1273,6 +1329,46 @@ export default function App() {
   }, [slashQuery]);
 
   useEffect(() => {
+    if (!fileReferenceQuery || dismissedFileReferenceKey === fileReferenceQueryKey) {
+      setFileReferenceSuggestions(null);
+      setFileReferenceSelectedIndex(-1);
+      return;
+    }
+
+    const requestId = fileReferenceRequestIdRef.current + 1;
+    fileReferenceRequestIdRef.current = requestId;
+    const input = runtime.composer;
+    const cursorChars = composerCursorChars;
+    const timeout = window.setTimeout(() => {
+      void runtime
+        .listWorkspaceFileReferenceSuggestions({
+          input,
+          cursorChars,
+        })
+        .then((result) => {
+          if (fileReferenceRequestIdRef.current !== requestId) {
+            return;
+          }
+          setFileReferenceSuggestions(result);
+        })
+        .catch(() => {
+          if (fileReferenceRequestIdRef.current !== requestId) {
+            return;
+          }
+          setFileReferenceSuggestions(null);
+        });
+    }, 90);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    dismissedFileReferenceKey,
+    fileReferenceQueryKey,
+    runtime,
+  ]);
+
+  useEffect(() => {
     if (slashSuggestions.length === 0) {
       if (slashSelectedIndex !== -1) {
         setSlashSelectedIndex(-1);
@@ -1283,6 +1379,20 @@ export default function App() {
       setSlashSelectedIndex(-1);
     }
   }, [slashSelectedIndex, slashSuggestions.length]);
+
+  useEffect(() => {
+    const suggestionCount = fileReferenceSuggestions?.suggestions.length ?? 0;
+    if (suggestionCount === 0) {
+      if (fileReferenceSelectedIndex !== -1) {
+        setFileReferenceSelectedIndex(-1);
+      }
+      return;
+    }
+
+    if (fileReferenceSelectedIndex >= suggestionCount) {
+      setFileReferenceSelectedIndex(-1);
+    }
+  }, [fileReferenceSelectedIndex, fileReferenceSuggestions?.suggestions.length]);
 
   useEffect(() => {
     if (!rewindDraft) {
@@ -1327,7 +1437,91 @@ export default function App() {
     });
   };
 
-  const handleComposerSlashKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+  const applyFileReferenceSuggestion = (path: string) => {
+    const query = fileReferenceSuggestions?.query;
+    if (!query) {
+      return;
+    }
+
+    const next = replaceWorkspaceFileReferenceQuery(runtime.composer, query, path, true);
+    const nextCursorCodeUnits = charCountToCodeUnitIndex(next.text, next.cursorChars);
+    runtime.setComposer(next.text);
+    setComposerCursorCodeUnits(nextCursorCodeUnits);
+    setFileReferenceSelectedIndex(-1);
+    setDismissedFileReferenceKey(null);
+    queueMicrotask(() => {
+      const textarea = composerTextareaRef.current;
+      textarea?.focus();
+      textarea?.setSelectionRange(nextCursorCodeUnits, nextCursorCodeUnits);
+    });
+  };
+
+  const insertFileReferenceTrigger = () => {
+    const textarea = composerTextareaRef.current;
+    const selectionStart = textarea?.selectionStart ?? composerCursorCodeUnits;
+    const selectionEnd = textarea?.selectionEnd ?? selectionStart;
+    const nextValue =
+      `${runtime.composer.slice(0, selectionStart)}@${runtime.composer.slice(selectionEnd)}`;
+    const nextCursorCodeUnits = selectionStart + 1;
+    runtime.setComposer(nextValue);
+    setComposerCursorCodeUnits(nextCursorCodeUnits);
+    setDismissedFileReferenceKey(null);
+    queueMicrotask(() => {
+      const nextTextarea = composerTextareaRef.current;
+      nextTextarea?.focus();
+      nextTextarea?.setSelectionRange(nextCursorCodeUnits, nextCursorCodeUnits);
+    });
+  };
+
+  const handleComposerSuggestionKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    const fileReferenceItems = fileReferenceSuggestions?.suggestions ?? [];
+    if (fileReferenceItems.length > 0) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setFileReferenceSelectedIndex((current) => {
+          if (current < 0) {
+            return 0;
+          }
+          return (current + 1) % fileReferenceItems.length;
+        });
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setFileReferenceSelectedIndex((current) =>
+          current <= 0 ? fileReferenceItems.length - 1 : current - 1,
+        );
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDismissedFileReferenceKey(fileReferenceQueryKey);
+        setFileReferenceSelectedIndex(-1);
+        setFileReferenceSuggestions(null);
+        return;
+      }
+
+      if (event.key === "Tab") {
+        event.preventDefault();
+        const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
+        if (selected) {
+          applyFileReferenceSuggestion(selected);
+        }
+        return;
+      }
+
+      if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        event.preventDefault();
+        const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
+        if (selected) {
+          applyFileReferenceSuggestion(selected);
+        }
+        return;
+      }
+    }
+
     if (!slashQuery || slashSuggestions.length === 0) {
       return;
     }
@@ -1802,7 +1996,19 @@ export default function App() {
                   </Card>
                 ) : null}
 
-                <div className="grid gap-1.5">
+                <div className="relative grid gap-1.5">
+                  {fileReferenceSuggestions ? (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 pb-2">
+                      <div className="pointer-events-auto">
+                        <WorkspaceFileReferenceMenu
+                          suggestions={fileReferenceSuggestions.suggestions}
+                          selectedIndex={fileReferenceSelectedIndex}
+                          onSelectIndex={setFileReferenceSelectedIndex}
+                          onApplySuggestion={applyFileReferenceSuggestion}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                   {slashQuery ? (
                     <SkillSlashMenu
                       suggestions={slashSuggestions}
@@ -1829,11 +2035,18 @@ export default function App() {
                       void runtime.saveSettingsPatch({ planMode });
                     }}
                     textareaRef={composerTextareaRef}
-                    onKeyDown={handleComposerSlashKeyDown}
+                    onKeyDown={handleComposerSuggestionKeyDown}
+                    onSelectionChange={(selectionStart) => {
+                      if (selectionStart !== null) {
+                        setComposerCursorCodeUnits(selectionStart);
+                      }
+                    }}
                     canSend={composerCanSend}
                     canAbort={conversationInterruptible}
                     busy={runtime.busyAction === "send" && !conversationInterruptible}
                     readOnly={activeSessionReadOnly}
+                    showFileReferenceButton
+                    onInsertFileReferenceTrigger={insertFileReferenceTrigger}
                   />
                   {snapshot?.conversation.pendingQuestions ? (
                     <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
@@ -2037,6 +2250,7 @@ export default function App() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
