@@ -492,6 +492,21 @@ app.whenReady().then(async () => {
     return result.filePaths[0] ?? null;
   });
 
+  ipcMain.handle('desktop:pick-local-file', async (event) => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender);
+    const result = targetWindow
+      ? await dialog.showOpenDialog(targetWindow, {
+          properties: ['openFile'],
+        })
+      : await dialog.showOpenDialog({
+          properties: ['openFile'],
+        });
+    if (result.canceled) {
+      return null;
+    }
+    return result.filePaths[0] ?? null;
+  });
+
   ipcMain.handle(
     'desktop:application-menu-popup',
     (

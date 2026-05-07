@@ -90,6 +90,7 @@ declare global {
     readWorkspaceTextFile(relativePath: string): Promise<WorkspaceReadTextFileResult>;
     writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void>;
     pickWorkspaceDirectory(): Promise<string | null>;
+    pickLocalFile(): Promise<string | null>;
     syncWindowFrame(request: {
       dark: boolean;
       nativeTheme: 'system' | 'light' | 'dark';
