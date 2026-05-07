@@ -91,6 +91,7 @@ export interface HostApi {
   readWorkspaceTextFile(relativePath: string): Promise<WorkspaceReadTextFileResult>;
   writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void>;
   pickWorkspaceDirectory?(): Promise<string | null>;
+  pickLocalFile?(): Promise<string | null>;
   pairWebHost?(code: string): Promise<void>;
 }
 

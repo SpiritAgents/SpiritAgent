@@ -24,7 +24,6 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  Plus,
   ShieldCheck,
   Square,
   X,
@@ -65,6 +64,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownMessage } from "@/components/markdown-message";
 import { MarketplaceView } from "@/components/marketplace-view";
+import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
@@ -158,6 +158,22 @@ function deriveWorkspaceLabel(workspaceRoot: string): string {
   const normalized = workspaceRoot.replace(/\\/g, "/").replace(/\/+$/g, "");
   const lastSlash = normalized.lastIndexOf("/");
   return lastSlash >= 0 ? normalized.slice(lastSlash + 1) || normalized : normalized;
+}
+
+function normalizeSlashPath(value: string): string {
+  return value.replace(/\\/g, "/").replace(/\/+$/g, "");
+}
+
+function relativePathFromWorkspaceRoot(workspaceRoot: string, filePath: string): string | null {
+  const normalizedRoot = normalizeSlashPath(workspaceRoot);
+  const normalizedFile = normalizeSlashPath(filePath);
+  const lowerRoot = normalizedRoot.toLowerCase();
+  const lowerFile = normalizedFile.toLowerCase();
+  const prefix = `${lowerRoot}/`;
+  if (!lowerFile.startsWith(prefix)) {
+    return null;
+  }
+  return normalizedFile.slice(normalizedRoot.length + 1);
 }
 
 type EmptyStateWorkspaceSelectorProps = {
@@ -335,8 +351,11 @@ type ComposerSurfaceProps = {
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   onKeyDown?(event: ReactKeyboardEvent<HTMLTextAreaElement>): void;
   onSelectionChange?(selectionStart: number | null): void;
-  showFileReferenceButton?: boolean;
-  onInsertFileReferenceTrigger?(): void;
+  showInsertButton?: boolean;
+  canPickLocalFile?: boolean;
+  onInsertWorkspaceFileReferenceTrigger?(): void;
+  onPickLocalFile?(): void | Promise<void>;
+  onInsertSkillTrigger?(): void;
 };
 
 function ComposerSurface({
@@ -359,8 +378,11 @@ function ComposerSurface({
   textareaRef,
   onKeyDown,
   onSelectionChange,
-  showFileReferenceButton = false,
-  onInsertFileReferenceTrigger,
+  showInsertButton = false,
+  canPickLocalFile = false,
+  onInsertWorkspaceFileReferenceTrigger,
+  onPickLocalFile,
+  onInsertSkillTrigger,
 }: ComposerSurfaceProps) {
   const [modelFilter, setModelFilter] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -423,19 +445,14 @@ function ComposerSurface({
       <div className="flex justify-center px-3 pt-0.5 pb-2">
         <div className="flex w-full max-w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            {showFileReferenceButton ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="引用文件"
+            {showInsertButton ? (
+              <ComposerInsertMenu
                 disabled={readOnly}
-                className="size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground"
-                title="引用文件"
-                onClick={onInsertFileReferenceTrigger}
-              >
-                <Plus className="size-3.5" aria-hidden />
-              </Button>
+                canPickLocalFile={canPickLocalFile}
+                onInsertWorkspaceReference={() => onInsertWorkspaceFileReferenceTrigger?.()}
+                onPickLocalFile={() => onPickLocalFile?.()}
+                onInsertSkillTrigger={() => onInsertSkillTrigger?.()}
+              />
             ) : null}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1456,20 +1473,46 @@ export default function App() {
     });
   };
 
-  const insertFileReferenceTrigger = () => {
+  const insertComposerText = (text: string) => {
     const textarea = composerTextareaRef.current;
     const selectionStart = textarea?.selectionStart ?? composerCursorCodeUnits;
     const selectionEnd = textarea?.selectionEnd ?? selectionStart;
-    const nextValue =
-      `${runtime.composer.slice(0, selectionStart)}@${runtime.composer.slice(selectionEnd)}`;
-    const nextCursorCodeUnits = selectionStart + 1;
+    const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
+    const nextCursorCodeUnits = selectionStart + text.length;
     runtime.setComposer(nextValue);
     setComposerCursorCodeUnits(nextCursorCodeUnits);
+    setSlashSelectedIndex(-1);
+    setFileReferenceSelectedIndex(-1);
+    setFileReferenceSuggestions(null);
     setDismissedFileReferenceKey(null);
     queueMicrotask(() => {
       const nextTextarea = composerTextareaRef.current;
       nextTextarea?.focus();
       nextTextarea?.setSelectionRange(nextCursorCodeUnits, nextCursorCodeUnits);
+    });
+  };
+
+  const insertFileReferenceTrigger = () => {
+    insertComposerText("@");
+  };
+
+  const insertSkillTriggerFromPalette = () => {
+    insertComposerText("/");
+  };
+
+  const pickLocalFileFromPalette = () => {
+    void runtime.pickLocalFile().then((filePath) => {
+      if (!filePath) {
+        return;
+      }
+      const relativePath = snapshot?.workspaceRoot
+        ? relativePathFromWorkspaceRoot(snapshot.workspaceRoot, filePath)
+        : null;
+      if (relativePath) {
+        insertComposerText(`@${relativePath} `);
+        return;
+      }
+      insertComposerText(`"${normalizeSlashPath(filePath)}" `);
     });
   };
 
@@ -2046,8 +2089,11 @@ export default function App() {
                     canAbort={conversationInterruptible}
                     busy={runtime.busyAction === "send" && !conversationInterruptible}
                     readOnly={activeSessionReadOnly}
-                    showFileReferenceButton
-                    onInsertFileReferenceTrigger={insertFileReferenceTrigger}
+                    showInsertButton
+                    canPickLocalFile={runtime.hostKind === "electron"}
+                    onInsertWorkspaceFileReferenceTrigger={insertFileReferenceTrigger}
+                    onPickLocalFile={pickLocalFileFromPalette}
+                    onInsertSkillTrigger={insertSkillTriggerFromPalette}
                   />
                   {snapshot?.conversation.pendingQuestions ? (
                     <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">

@@ -360,6 +360,20 @@ export function useDesktopRuntime() {
     }
   }, [api]);
 
+  const pickLocalFile = useCallback(async (): Promise<string | null> => {
+    if (!api?.pickLocalFile) {
+      setRuntimeError("当前宿主不支持选择本地文件。");
+      return null;
+    }
+
+    try {
+      return await api.pickLocalFile();
+    } catch (error) {
+      setRuntimeError(describeError(error));
+      return null;
+    }
+  }, [api]);
+
   const commitChanges = useCallback(
     async (request: CommitChangesRequest): Promise<boolean> => {
       if (!api) {
@@ -1453,6 +1467,7 @@ export function useDesktopRuntime() {
     switchWorkspaceRoot,
     rememberWorkspaceRoot,
     pickWorkspaceDirectory,
+    pickLocalFile,
     commitChanges,
     addModel,
     addProviderModels,

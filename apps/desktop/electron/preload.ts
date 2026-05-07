@@ -143,6 +143,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   pickWorkspaceDirectory() {
     return ipcRenderer.invoke('desktop:pick-workspace-directory');
   },
+  pickLocalFile() {
+    return ipcRenderer.invoke('desktop:pick-local-file');
+  },
   syncWindowFrame(request: {
     dark: boolean;
     nativeTheme: 'system' | 'light' | 'dark';

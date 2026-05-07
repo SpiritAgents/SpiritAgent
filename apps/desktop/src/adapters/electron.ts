@@ -141,5 +141,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     pickWorkspaceDirectory() {
       return bridge.pickWorkspaceDirectory();
     },
+    pickLocalFile() {
+      return bridge.pickLocalFile();
+    },
   };
 }
