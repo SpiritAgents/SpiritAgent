@@ -8,6 +8,8 @@ import {
 } from 'node:http';
 import path from 'node:path';
 
+import { parseModelProviderId, parsePresetModelProviderId } from '@spirit-agent/host-internal/model-provider-presets';
+
 import type { HostCommandName } from '../src/host/contracts.js';
 
 export const DEFAULT_DESKTOP_WEB_HOST = '127.0.0.1';
@@ -338,14 +340,7 @@ async function handleApiRequest({
     const modelIds = Array.isArray(jsonBody?.modelIds)
       ? jsonBody.modelIds.filter((id: unknown): id is string => typeof id === 'string')
       : [];
-    const providerRaw = jsonBody?.provider;
-    const provider =
-      providerRaw === 'deepseek' ||
-      providerRaw === 'kimi' ||
-      providerRaw === 'minimax' ||
-      providerRaw === 'custom'
-        ? providerRaw
-        : undefined;
+    const provider = parseModelProviderId(jsonBody?.provider);
     writeJson(
       request,
       response,
@@ -370,6 +365,21 @@ async function handleApiRequest({
   if (request.method === 'POST' && pathname === '/api/models/remove') {
     const name = typeof jsonBody?.name === 'string' ? jsonBody.name : '';
     writeJson(request, response, 200, await runHostCommand('removeModel', { request: { name } }));
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/models/remove-provider') {
+    const provider = parsePresetModelProviderId(jsonBody?.provider);
+    if (!provider) {
+      writeJson(request, response, 400, { error: '无效的提供商参数。' });
+      return;
+    }
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('removeProviderModels', { request: { provider } }),
+    );
     return;
   }
 

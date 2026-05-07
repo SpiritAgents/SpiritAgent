@@ -94,6 +94,10 @@ export interface RemoveModelRequest {
   name: string;
 }
 
+export interface RemoveProviderModelsRequest {
+  provider: DesktopModelProvider;
+}
+
 export interface DesktopMcpCapabilityToggles {
   tools: boolean;
   resources: boolean;

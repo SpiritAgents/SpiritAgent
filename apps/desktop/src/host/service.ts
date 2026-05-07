@@ -32,6 +32,9 @@ import {
   defaultModelReasoningEffort,
   listWorkspaceFileReferenceSuggestions as listWorkspaceFileReferenceSuggestionsFromHostInternal,
   listOpenAiCompatibleModelIds,
+  parseModelProviderId,
+  parsePresetModelProviderId,
+  partitionModelsByProvider,
   resolveModelReasoningEffortForContext,
   restoreHostFileChanges,
   type ModelReasoningEffort,
@@ -75,6 +78,7 @@ import type {
   RewindAndSubmitMessageRequest,
   RememberWorkspaceRequest,
   RemoveModelRequest,
+  RemoveProviderModelsRequest,
   QueryWorkspaceFileReferenceSuggestionsRequest,
   SessionListItem,
   ImportExtensionRequest,
@@ -173,7 +177,6 @@ import {
   currentApiBase,
   mapPendingQuestions,
   normalizeGeneratedCommitMessage,
-  parseAddModelProvider,
   sameDreamCollectorSnapshot,
   sameWorkspaceRoot,
   toRuntimeAskQuestionsResult,
@@ -262,6 +265,7 @@ type CommandPayloads = {
   addProviderModels: { request: AddProviderModelsRequest };
   previewModels: { request: PreviewModelsRequest };
   removeModel: { request: RemoveModelRequest };
+  removeProviderModels: { request: RemoveProviderModelsRequest };
   addMcpServer: { request: AddMcpServerRequest };
   deleteMcpServer: { request: DeleteMcpServerRequest };
   inspectMcpServer: { name: string };
@@ -577,7 +581,7 @@ class DesktopHostService {
         throw new Error('API Key 不能为空。');
       }
 
-      const provider = parseAddModelProvider(request.provider);
+      const provider = parseModelProviderId(request.provider);
       const rawIds = request.modelIds.map((id) => id.trim()).filter((id) => id.length > 0);
       const uniqueIds = [...new Set(rawIds)];
       if (uniqueIds.length === 0) {
@@ -664,7 +668,7 @@ class DesktopHostService {
         throw new Error(`模型已存在: ${name}`);
       }
 
-      const provider = parseAddModelProvider(request.provider);
+      const provider = parseModelProviderId(request.provider);
       const profile: {
         name: string;
         apiBase: string;
@@ -712,12 +716,48 @@ class DesktopHostService {
         throw new Error(`模型不存在: ${name}`);
       }
 
-      await saveConfig(state.config);
-      await removeModelApiKey(name);
-      await this.refreshModelKeyPresence();
-      await this.persistCurrentSessionIfNeeded();
-      return this.buildSnapshot();
+      return this.finalizeModelRemoval(state, [name]);
     });
+  }
+
+  async removeProviderModels(request: RemoveProviderModelsRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized();
+      const state = this.requireState();
+
+      const provider = parsePresetModelProviderId(request.provider);
+      if (!provider) {
+        throw new Error('仅支持按预设提供商删除模型组。');
+      }
+
+      const { matched: targets, unmatched } = partitionModelsByProvider(state.config.models, provider);
+      if (targets.length === 0) {
+        throw new Error('该提供商下没有模型。');
+      }
+
+      const active = state.config.activeModel;
+      const hasActive = targets.some((model) => model.name === active);
+      if (hasActive) {
+        throw new Error('不能删除包含当前模型的提供商组，请先切换到其他模型。');
+      }
+
+      const namesToRemove = targets.map((model) => model.name);
+      state.config.models = unmatched;
+      return this.finalizeModelRemoval(state, namesToRemove);
+    });
+  }
+
+  private async finalizeModelRemoval(
+    state: HostState,
+    namesToRemove: readonly string[],
+  ): Promise<DesktopSnapshot> {
+    await saveConfig(state.config);
+    for (const name of namesToRemove) {
+      await removeModelApiKey(name);
+    }
+    await this.refreshModelKeyPresence();
+    await this.persistCurrentSessionIfNeeded();
+    return this.buildSnapshot();
   }
 
   async createSkill(request: CreateSkillRequest): Promise<DesktopSnapshot> {
@@ -1654,6 +1694,10 @@ class DesktopHostService {
       case 'removeModel': {
         const typedPayload = payload as CommandPayloads['removeModel'];
         return this.removeModel(typedPayload.request);
+      }
+      case 'removeProviderModels': {
+        const typedPayload = payload as CommandPayloads['removeProviderModels'];
+        return this.removeProviderModels(typedPayload.request);
       }
       case 'addMcpServer': {
         const typedPayload = payload as CommandPayloads['addMcpServer'];

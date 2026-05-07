@@ -16,6 +16,7 @@ import {
   type ExtensionSettingValue,
   type ExtensionStateStore,
   loadHostInstructionMetadata,
+  parseModelProviderId,
   resolveModelReasoningEffortForContext,
   resolveInstructionPaths,
   type HostInstructionMetadataSummary,
@@ -389,13 +390,6 @@ export function defaultDreamConfig(): DesktopDreamConfigFile {
   };
 }
 
-function parsePersistedModelProvider(value: unknown): DesktopModelProvider | undefined {
-  if (value === 'deepseek' || value === 'kimi' || value === 'minimax' || value === 'alibaba' || value === 'custom') {
-    return value;
-  }
-  return undefined;
-}
-
 function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
   const models = Array.isArray(raw.models)
     ? raw.models
@@ -404,7 +398,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             typeof model?.name === 'string' && model.name.trim().length > 0,
         )
         .map((model) => {
-          const provider = parsePersistedModelProvider(model.provider);
+          const provider = parseModelProviderId(model.provider);
           return {
             name: model.name.trim(),
             apiBase: model.apiBase?.trim() || DEFAULT_API_BASE,

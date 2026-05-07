@@ -1720,6 +1720,7 @@ export default function App() {
               onAddProviderModels={runtime.addProviderModels}
               onPreviewModels={runtime.previewModels}
               onRemoveModel={runtime.removeModel}
+              onRemoveProviderModels={runtime.removeProviderModels}
               onAddMcpServer={runtime.addMcpServer}
               onImportExtension={runtime.importExtension}
               onDeleteExtension={runtime.deleteExtension}
