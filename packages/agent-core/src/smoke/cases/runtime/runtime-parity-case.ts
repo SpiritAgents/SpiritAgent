@@ -31,7 +31,7 @@ import {
 } from '../../../runtime.js';
 import { userMessageContentMatchesInput } from '../../../runtime/user-turn-timestamp.js';
 
-import { printSmokeSection } from '../../ai-sdk-openai-shared.js';
+import { printSmokeSection } from '../../shared/print.js';
 
 interface ScriptedState {
   messages: JsonValue[];
