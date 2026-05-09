@@ -70,6 +70,10 @@ pub struct ModelProfile {
 
 impl ModelProfile {
     pub fn supports_vision_input(&self) -> bool {
+        if let Some(capabilities) = self.explicit_capabilities() {
+            return capabilities.iter().any(|capability| capability == "vision");
+        }
+
         match self.provider {
             Some(ModelProvider::Deepseek) => false,
             Some(ModelProvider::Kimi) => is_kimi_vision_model(&self.name),
@@ -77,6 +81,22 @@ impl ModelProfile {
             | Some(ModelProvider::Alibaba)
             | Some(ModelProvider::Custom)
             | None => true,
+        }
+    }
+
+    fn explicit_capabilities(&self) -> Option<Vec<String>> {
+        let raw = self.extra.get("capabilities")?.as_array()?;
+        let capabilities = raw
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+            .collect::<Vec<_>>();
+        if capabilities.is_empty() {
+            None
+        } else {
+            Some(capabilities)
         }
     }
 }
@@ -386,6 +406,33 @@ mod tests {
         assert!(!kimi_other.supports_vision_input());
         assert!(!deepseek.supports_vision_input());
         assert!(custom.supports_vision_input());
+    }
+
+    #[test]
+    fn explicit_capabilities_override_provider_vision_inference() {
+        let mut deepseek = super::ModelProfile {
+            name: "deepseek-v4-pro".to_string(),
+            api_base: "https://api.deepseek.com/v1".to_string(),
+            provider: Some(super::ModelProvider::Deepseek),
+            reasoning_effort: None,
+            extra: serde_json::Map::new(),
+        };
+        deepseek.extra.insert(
+            "capabilities".to_string(),
+            serde_json::json!(["chat", "vision"]),
+        );
+
+        let mut custom = super::ModelProfile {
+            name: "my-custom-model".to_string(),
+            api_base: "https://example.invalid/v1".to_string(),
+            provider: Some(super::ModelProvider::Custom),
+            reasoning_effort: None,
+            extra: serde_json::Map::new(),
+        };
+        custom.extra.insert("capabilities".to_string(), serde_json::json!(["chat"]));
+
+        assert!(deepseek.supports_vision_input());
+        assert!(!custom.supports_vision_input());
     }
 
     #[test]

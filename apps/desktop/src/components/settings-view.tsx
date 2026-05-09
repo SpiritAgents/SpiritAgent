@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { LoaderCircle, RefreshCw, Sparkles } from "lucide-react";
+import { ChevronsUpDown, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 
 import { DreamGraphCard } from "@/components/dream-graph-card";
 import type { SettingsSidebarTab } from "@/components/session-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,6 +51,7 @@ import type {
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
   DesktopModelProvider,
+  DesktopModelCapability,
   DesktopSkillListItem,
   DesktopSkillRootKind,
   DesktopSnapshot,
@@ -151,6 +158,132 @@ const defaultMcpCapabilities: DesktopMcpCapabilityToggles = {
   resources: true,
   prompts: true,
 };
+
+const defaultCustomModelCapabilities: DesktopModelCapability[] = ["chat", "vision"];
+
+const modelCapabilityOptions: Array<{
+  value: DesktopModelCapability;
+  label: string;
+  summary: string;
+}> = [
+  { value: "chat", label: "Chat", summary: "对话与工具编排" },
+  { value: "vision", label: "Vision", summary: "读取图片输入" },
+  { value: "imageGeneration", label: "Image generation", summary: "生成图片输出" },
+];
+
+function modelCapabilityLabel(value: DesktopModelCapability): string {
+  return modelCapabilityOptions.find((option) => option.value === value)?.label ?? value;
+}
+
+function normalizeModelCapabilitySelection(
+  values: readonly DesktopModelCapability[],
+): DesktopModelCapability[] {
+  const allowed = new Set(modelCapabilityOptions.map((option) => option.value));
+  const seen = new Set<DesktopModelCapability>();
+  const normalized: DesktopModelCapability[] = [];
+  for (const value of values) {
+    if (!allowed.has(value) || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    normalized.push(value);
+  }
+  return normalized.length > 0 ? normalized : [...defaultCustomModelCapabilities];
+}
+
+function ModelCapabilitiesCombobox({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: DesktopModelCapability[];
+  disabled?: boolean;
+  onChange: (value: DesktopModelCapability[]) => void;
+}) {
+  const selected = normalizeModelCapabilitySelection(value);
+  const selectedOptions = modelCapabilityOptions.filter((option) =>
+    selected.includes(option.value),
+  );
+  const selectedSet = new Set(selected);
+
+  const toggleCapability = (capability: DesktopModelCapability, checked: boolean) => {
+    const next = checked
+      ? [...selected, capability]
+      : selected.filter((item) => item !== capability);
+    onChange(normalizeModelCapabilitySelection(next));
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <button
+          type="button"
+          disabled={disabled}
+          className={cn(
+            "flex min-h-8 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-input bg-transparent py-1 pr-2.5 pl-1.5 text-sm shadow-xs transition-colors outline-none dark:bg-input/30",
+            "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+          )}
+        >
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+            {selectedOptions.length > 0 ? (
+              selectedOptions.map((option) => (
+                <span
+                  key={option.value}
+                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-xs text-foreground"
+                >
+                  <span className="truncate">{option.label}</span>
+                  <span
+                    role="button"
+                    tabIndex={-1}
+                    aria-label={`移除 ${option.label}`}
+                    className="rounded-sm text-muted-foreground hover:text-foreground"
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      toggleCapability(option.value, false);
+                    }}
+                  >
+                    <X className="size-3" aria-hidden />
+                  </span>
+                </span>
+              ))
+            ) : (
+              <span className="px-1 text-muted-foreground">选择能力</span>
+            )}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 opacity-60" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={6}
+        className="w-[var(--radix-dropdown-menu-trigger-width)]"
+      >
+        {modelCapabilityOptions.map((option) => (
+          <DropdownMenuCheckboxItem
+            key={option.value}
+            checked={selectedSet.has(option.value)}
+            onCheckedChange={(checked) => toggleCapability(option.value, checked)}
+            onSelect={(event) => event.preventDefault()}
+            className="items-start gap-2 py-2"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm">{option.label}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {option.summary}
+              </span>
+            </span>
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function mcpTransportTypeLabel(type: DesktopMcpTransportType): string {
   return type === "http" ? "HTTP" : "Stdio";
@@ -1650,6 +1783,9 @@ function ModelsSettingsPanel({
   const [connectApiKey, setConnectApiKey] = useState("");
   const [connectName, setConnectName] = useState("");
   const [connectApiBase, setConnectApiBase] = useState("");
+  const [connectCapabilities, setConnectCapabilities] = useState<DesktopModelCapability[]>(
+    defaultCustomModelCapabilities,
+  );
   const [customConnectMode, setCustomConnectMode] = useState<"single" | "bulk">(
     "single",
   );
@@ -1679,6 +1815,7 @@ function ModelsSettingsPanel({
     setConnectApiKey("");
     setConnectName("");
     setConnectApiBase("");
+    setConnectCapabilities(defaultCustomModelCapabilities);
     setCustomConnectMode("single");
     setSelectedProvider(null);
   };
@@ -1694,6 +1831,7 @@ function ModelsSettingsPanel({
     setConnectApiKey("");
     setConnectName("");
     setConnectApiBase("");
+    setConnectCapabilities(defaultCustomModelCapabilities);
     setCustomConnectMode("single");
     setConnectDialogOpen(true);
   };
@@ -1754,6 +1892,7 @@ function ModelsSettingsPanel({
       apiBase,
       apiKey: connectApiKey,
       provider: "custom",
+      capabilities: normalizeModelCapabilitySelection(connectCapabilities),
     });
     setConnectDialogOpen(false);
     resetConnectWizard();
@@ -1832,6 +1971,11 @@ function ModelsSettingsPanel({
                               当前
                             </Badge>
                           ) : null}
+                          {model.capabilities?.map((capability) => (
+                            <Badge key={capability} variant="outline" className="text-muted-foreground">
+                              {modelCapabilityLabel(capability)}
+                            </Badge>
+                          ))}
                         </div>
                       );
                     })}
@@ -1863,6 +2007,11 @@ function ModelsSettingsPanel({
                               已存密钥
                             </Badge>
                           ) : null}
+                          {model.capabilities?.map((capability) => (
+                            <Badge key={capability} variant="outline" className="text-muted-foreground">
+                              {modelCapabilityLabel(capability)}
+                            </Badge>
+                          ))}
                         </div>
                         <p
                           className="truncate text-xs text-muted-foreground"
@@ -2109,6 +2258,16 @@ function ModelsSettingsPanel({
                   onChange={(e) => setConnectName(e.target.value)}
                   placeholder="例如 my-model"
                   autoComplete="off"
+                />
+              </div>
+            ) : null}
+            {selectedProvider === "custom" && customConnectMode === "single" ? (
+              <div className="grid gap-2">
+                <Label>模型能力</Label>
+                <ModelCapabilitiesCombobox
+                  value={connectCapabilities}
+                  disabled={modelsBusy || modelsPreviewBusy}
+                  onChange={setConnectCapabilities}
                 />
               </div>
             ) : null}

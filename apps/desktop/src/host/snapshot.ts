@@ -62,6 +62,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
         name: model.name,
         apiBase: model.apiBase,
         reasoningEffort: model.reasoningEffort,
+        ...(model.capabilities ? { capabilities: [...model.capabilities] } : {}),
         ...(model.provider ? { provider: model.provider } : {}),
         keyConfigured: input.modelKeyPresence[model.name] ?? false,
       })),

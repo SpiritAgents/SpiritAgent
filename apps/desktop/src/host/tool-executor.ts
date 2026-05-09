@@ -65,7 +65,9 @@ export class DesktopToolExecutor
     });
   }
 
-  setActiveTransportConfig(config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>): void {
+  setActiveTransportConfig(
+    config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'modelCapabilities'>,
+  ): void {
     this.activeModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config);
   }
 

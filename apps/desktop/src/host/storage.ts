@@ -26,6 +26,7 @@ import {
 
 import type {
   ConversationMessageSnapshot,
+  DesktopModelCapability,
   DesktopModelProvider,
   ModelProfileSnapshot,
   SessionListItem,
@@ -41,6 +42,8 @@ const APP_DATA_DIR_NAME = 'SpiritAgent';
 const CONFIG_FILE_NAME = 'config.json';
 const CHATS_DIR_NAME = 'chats';
 const MAX_RECENT_WORKSPACES = 20;
+const MODEL_CAPABILITIES = ['chat', 'vision', 'imageGeneration'] as const;
+const DEFAULT_CUSTOM_MODEL_CAPABILITIES: DesktopModelCapability[] = ['chat', 'vision'];
 
 export interface DesktopConfigFile {
   models: ModelProfileSnapshot[];
@@ -399,6 +402,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
         )
         .map((model) => {
           const provider = parseModelProviderId(model.provider);
+          const capabilities = normalizeModelCapabilities(model.capabilities);
           return {
             name: model.name.trim(),
             apiBase: model.apiBase?.trim() || DEFAULT_API_BASE,
@@ -406,6 +410,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
               ...(provider ? { provider } : {}),
               model: model.name,
             }),
+            ...(capabilities ? { capabilities } : {}),
             ...(provider ? { provider } : {}),
           };
         })
@@ -428,6 +433,35 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
     webHost: normalizeWebHostConfig(raw.webHost),
     dreams: normalizeDreamConfig(raw.dreams),
   };
+}
+
+export function normalizeModelCapabilities(
+  value: unknown,
+): DesktopModelCapability[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const allowed = new Set<string>(MODEL_CAPABILITIES);
+  const seen = new Set<DesktopModelCapability>();
+  const normalized: DesktopModelCapability[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || !allowed.has(item)) {
+      continue;
+    }
+    const capability = item as DesktopModelCapability;
+    if (seen.has(capability)) {
+      continue;
+    }
+    seen.add(capability);
+    normalized.push(capability);
+  }
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+export function defaultCustomModelCapabilities(): DesktopModelCapability[] {
+  return [...DEFAULT_CUSTOM_MODEL_CAPABILITIES];
 }
 
 export function normalizeDreamConfig(
