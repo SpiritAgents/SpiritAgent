@@ -89,7 +89,11 @@ function validateCandidate(value: unknown): void {
     requireNonEmptyString(value, field);
   }
 
-  if (!Array.isArray(value.artifactPaths) || value.artifactPaths.some((entry) => typeof entry !== 'string' || !entry.trim())) {
+  if (
+    !Array.isArray(value.artifactPaths) ||
+    value.artifactPaths.length === 0 ||
+    value.artifactPaths.some((entry) => typeof entry !== 'string' || !entry.trim())
+  ) {
     throw new Error(`Eval run candidate ${String(value.id)} artifactPaths must be a non-empty string array.`);
   }
 
