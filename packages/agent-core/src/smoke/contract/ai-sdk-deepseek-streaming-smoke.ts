@@ -434,6 +434,19 @@ function verifyKnownModelCapabilityTable(): void {
   ) {
     throw new Error('Kimi capabilities 表异常：仅 kimi-k2.5 / kimi-k2.6 应支持 vision。');
   }
+
+  const explicitCustom = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: 'custom',
+    model: 'custom-image-model',
+    modelCapabilities: { chat: true, vision: true, imageGeneration: true },
+  });
+  if (
+    !explicitCustom.hasExplicitCapabilities ||
+    !explicitCustom.capabilities.vision ||
+    !explicitCustom.capabilities.imageGeneration
+  ) {
+    throw new Error('显式 modelCapabilities 未覆盖 provider/model 推断。');
+  }
 }
 
 async function collectEvents(stream: AsyncIterable<{ kind: string } & Record<string, unknown>>): Promise<JsonValue[]> {

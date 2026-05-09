@@ -5,9 +5,11 @@ import { cloneJsonValue } from '../tool-agent.js';
 export type OpenAiLlmVendor = 'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'custom';
 
 export interface OpenAiModelCapabilities {
+  chat?: true;
   vision?: true;
   audioInput?: true;
   videoInput?: true;
+  imageGeneration?: true;
 }
 
 export interface OpenAiModelCompatibilityProfile {
@@ -39,6 +41,11 @@ export interface OpenAiTransportConfig {
    */
   llmVendor?: OpenAiLlmVendor;
   /**
+   * User-configured explicit model capabilities. When provided, these override
+   * provider/model inference for compatibility decisions such as vision input.
+   */
+  modelCapabilities?: OpenAiModelCapabilities;
+  /**
    * 抽象推理强度；`default` 表示不指定，交给上游或模型默认行为。
    * 非 `default` 时直接走 OpenAI chat.completions 官方字段 `reasoning_effort`。
    */
@@ -66,8 +73,15 @@ export interface OpenAiRequestTrace extends JsonObject {
 }
 
 export function resolveOpenAiModelCompatibilityProfile(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>,
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'modelCapabilities'>,
 ): OpenAiModelCompatibilityProfile {
+  if (config.modelCapabilities !== undefined) {
+    return {
+      hasExplicitCapabilities: true,
+      capabilities: { ...config.modelCapabilities },
+    };
+  }
+
   if (config.llmVendor === 'deepseek') {
     return {
       hasExplicitCapabilities: true,

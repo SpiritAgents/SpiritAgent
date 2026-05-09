@@ -53,6 +53,8 @@ export type DesktopModelProvider = ModelProviderId;
 /** 模型推理强度（与 `packages/host-internal` 中 `ModelReasoningEffort` 同源）。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
+export type DesktopModelCapability = 'chat' | 'vision' | 'imageGeneration';
+
 /** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */
 export interface PreviewModelsRequest {
   apiBase: string;
@@ -88,6 +90,7 @@ export interface AddModelRequest {
   apiKey: string;
   /** 缺省时不写入配置（与旧版三字段一致）。 */
   provider?: DesktopModelProvider;
+  capabilities?: DesktopModelCapability[];
 }
 
 export interface RemoveModelRequest {
@@ -559,6 +562,7 @@ export interface ModelProfileSnapshot {
   name: string;
   apiBase: string;
   reasoningEffort: DesktopModelReasoningEffort;
+  capabilities?: DesktopModelCapability[];
   /** 持久化来源；缺省表示历史自定义配置。 */
   provider?: DesktopModelProvider;
   /** 宿主快照：该模型是否在系统钥匙串中有专属 API Key 条目（与 CLI 一致；不含环境变量与全局回退）。 */

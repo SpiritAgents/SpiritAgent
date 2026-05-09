@@ -1258,7 +1258,7 @@ function guessImageMimeFromPath(path: string): string {
 }
 
 function normalizeMessagesForRequest(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model'>,
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'modelCapabilities'>,
   messages: JsonValue[],
 ): JsonValue[] {
   const profile = resolveOpenAiModelCompatibilityProfile(config);

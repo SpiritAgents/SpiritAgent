@@ -69,6 +69,7 @@ import type {
   DesktopMarketplacePreparedInstall,
   DesktopGitSnapshot,
   DesktopDreamCollectorSnapshot,
+  DesktopModelCapability,
   DesktopModelProvider,
   DeleteSkillRequest,
   DesktopSnapshot,
@@ -134,7 +135,9 @@ import {
   saveStoredSession,
   listStoredSessions,
   spiritAgentDataDir,
+  defaultCustomModelCapabilities,
   normalizeDreamConfig,
+  normalizeModelCapabilities,
   normalizeWebHostConfig,
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
@@ -695,6 +698,7 @@ class DesktopHostService {
         apiBase: string;
         reasoningEffort: ModelReasoningEffort;
         provider?: DesktopModelProvider;
+        capabilities?: DesktopModelCapability[];
       } = {
         name,
         apiBase,
@@ -705,6 +709,12 @@ class DesktopHostService {
       };
       if (provider !== undefined) {
         profile.provider = provider;
+      }
+      const capabilities = normalizeModelCapabilities(request.capabilities);
+      if (capabilities) {
+        profile.capabilities = capabilities;
+      } else if (provider === 'custom') {
+        profile.capabilities = defaultCustomModelCapabilities();
       }
       state.config.models.push(profile);
       state.config.activeModel = name;
@@ -1983,6 +1993,9 @@ class DesktopHostService {
       baseUrl: currentApiBase(state.config),
       workspaceRoot: state.workspaceRoot,
       ...(llmVendor ? { llmVendor } : {}),
+      ...(activeProfile?.capabilities
+        ? { modelCapabilities: modelCapabilitiesFromConfig(activeProfile.capabilities) }
+        : {}),
       reasoningEffort: activeProfile?.reasoningEffort,
     };
     this.runtimeTransport = createOpenAiCompatibleTransport(runtimeTransportConfig);
@@ -2981,5 +2994,15 @@ function normalizeApprovalDecision(
     default:
       throw new Error('审批结果无效。');
   }
+}
+
+function modelCapabilitiesFromConfig(
+  capabilities: readonly DesktopModelCapability[],
+): OpenAiTransportConfig['modelCapabilities'] {
+  return {
+    ...(capabilities.includes('chat') ? { chat: true } : {}),
+    ...(capabilities.includes('vision') ? { vision: true } : {}),
+    ...(capabilities.includes('imageGeneration') ? { imageGeneration: true } : {}),
+  };
 }
 
