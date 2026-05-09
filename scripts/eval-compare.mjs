@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFile as execFileCallback } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { cp, mkdir, mkdtemp, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -13,6 +14,7 @@ import { evalScenarios } from '../packages/agent-core/dist/eval/scenarios.js';
 import { validateEvalRunArtifact } from '../packages/agent-core/dist/eval/artifacts.js';
 
 const execFile = promisify(execFileCallback);
+const require = createRequire(import.meta.url);
 const DEFAULT_SCENARIO_ID = 'tool-heavy-code-edit';
 
 async function main() {
@@ -73,7 +75,7 @@ async function main() {
         artifactsDir,
         baselineRef,
         stagedDiffFingerprint,
-        autoApprove: !options.requireApprovals,
+        autoApprove: options.autoApprove,
       }),
       runCandidate({
         candidateId: 'candidate',
@@ -87,7 +89,7 @@ async function main() {
         artifactsDir,
         baselineRef,
         stagedDiffFingerprint,
-        autoApprove: !options.requireApprovals,
+        autoApprove: options.autoApprove,
       }),
     ]);
 
@@ -149,9 +151,9 @@ function parseArgs(argv) {
     llmVendor: undefined,
     reasoningEffort: undefined,
     workspaceSource: undefined,
+    autoApprove: false,
     keepWorkspaces: false,
     noCleanupPrompt: false,
-    requireApprovals: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -194,6 +196,9 @@ function parseArgs(argv) {
       case '--workspace-source':
         options.workspaceSource = path.resolve(requiredArgValue(argv, ++index, '--workspace-source'));
         break;
+      case '--auto-approve':
+        options.autoApprove = true;
+        break;
       case '--keep-workspaces':
         options.keepWorkspaces = true;
         break;
@@ -201,7 +206,7 @@ function parseArgs(argv) {
         options.noCleanupPrompt = true;
         break;
       case '--require-approvals':
-        options.requireApprovals = true;
+        options.autoApprove = false;
         break;
       default:
         throw new Error(`未知参数: ${arg}`);
@@ -550,7 +555,7 @@ class EvalHostToolExecutor {
       return decision;
     }
 
-    // TODO: 首版 compare runner 默认跳过风险审批，只为先把真实 RLHF 观察链路跑通；后续必须补宿主级安全阀，避免真实工具调用失控。
+    // TODO: 当前 compare runner 只支持“阻塞”或“自动放行”两种审批模式；后续可补交互式 y/n 审批或更细粒度 allowlist。
     this.tracker.recordApprovalBypass(request.name, decision.prompt);
     return { kind: 'allowed' };
   }
@@ -822,12 +827,7 @@ async function createIsolatedWorkspaceSnapshot(repoRoot, workspacePath, ref) {
   const archivePath = path.join(path.dirname(workspacePath), `${path.basename(workspacePath)}.tar`);
   try {
     await git(repoRoot, ['archive', '--format=tar', '-o', archivePath, ref]);
-    await execFile('tar', ['-xf', archivePath, '-C', workspacePath], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      maxBuffer: 32 * 1024 * 1024,
-      windowsHide: true,
-    });
+    await extractArchiveWithNodeTar(repoRoot, archivePath, workspacePath);
   } finally {
     await rm(archivePath, { force: true });
   }
@@ -840,6 +840,26 @@ async function createEmptyExecutionWorkspace(workspacePath) {
   await git(workspacePath, ['init', '--quiet']);
   await git(workspacePath, ['config', 'user.name', 'Spirit Eval']);
   await git(workspacePath, ['config', 'user.email', 'spirit-eval@example.invalid']);
+}
+
+async function extractArchiveWithNodeTar(repoRoot, archivePath, workspacePath) {
+  const tarPackagePath = path.join(repoRoot, 'packages', 'host-internal', 'node_modules', 'tar');
+  if (!existsSync(tarPackagePath)) {
+    throw new Error(
+      `缺少 Node tar 依赖，无法解包 git archive: ${tarPackagePath}。请先运行 npm --prefix packages/host-internal install。`,
+    );
+  }
+
+  const tar = require(tarPackagePath);
+  if (!tar || typeof tar.x !== 'function') {
+    throw new Error(`无法从 ${tarPackagePath} 加载 tar.x()，compare runner 无法解包快照。`);
+  }
+
+  await tar.x({
+    file: archivePath,
+    cwd: workspacePath,
+    strict: true,
+  });
 }
 
 async function linkWorkspaceNodeModules(repoRoot, workspacePath) {
@@ -1048,9 +1068,9 @@ function printHelp() {
   console.log('  --llm-vendor <vendor>    例如 deepseek / kimi / custom');
   console.log('  --reasoning-effort <v>   例如 low / medium / high');
   console.log('  --workspace-source <dir> 复制指定工作区目录到临时目录；默认使用空工作区');
+  console.log('  --auto-approve           显式自动放行高风险工具审批；默认阻塞并将结果记入 artifact');
   console.log('  --keep-workspaces        运行后直接保留临时工作区，不询问删除');
   console.log('  --no-cleanup-prompt      运行后不弹删除确认，直接保留');
-  console.log('  --require-approvals      关闭默认自动批准，保留审批阻塞');
 }
 
 void main();
