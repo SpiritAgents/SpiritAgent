@@ -838,6 +838,32 @@ pub(in crate::ui) fn render_tool_card_lines(
         ]));
     }
 
+    for path in tool
+        .image_paths
+        .iter()
+        .filter(|value| !value.trim().is_empty())
+    {
+        let prefixed = format!("路径: {}", path);
+        if tool
+            .detail_lines
+            .iter()
+            .any(|line| line.trim() == prefixed)
+        {
+            continue;
+        }
+        out.push(Line::from(vec![
+            Span::raw(indent),
+            Span::styled(rail_sym, rail),
+            Span::styled(
+                prefixed,
+                patch_style_foreground(
+                    Style::default().fg(Color::Rgb(190, 195, 205)),
+                    cli_ui_foreground_color(CliUiHookSlot::MessageTool),
+                ),
+            ),
+        ]));
+    }
+
     if expand_details {
         if let Some(ref args) = tool.args_excerpt {
             if !args.trim().is_empty() {

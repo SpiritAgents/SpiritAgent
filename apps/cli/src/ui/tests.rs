@@ -560,6 +560,7 @@ fn rewind_picker_deemphasizes_tool_messages() {
             phase: ToolUiPhase::Succeeded,
             headline: "读取了一个文件".to_string(),
             detail_lines: vec!["/tmp/demo.txt".to_string()],
+            image_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1042,6 +1043,7 @@ fn subagent_tool_card_hides_output_when_aux_details_collapsed() {
         phase: ToolUiPhase::Succeeded,
         headline: "搜索完成".to_string(),
         detail_lines: vec!["查询: 最近变更".to_string()],
+        image_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
         output_excerpt: Some("命中 3 个结果。".to_string()),
     };
@@ -1062,6 +1064,7 @@ fn subagent_tool_card_shows_output_when_aux_details_expanded() {
         phase: ToolUiPhase::Succeeded,
         headline: "搜索完成".to_string(),
         detail_lines: vec!["查询: 最近变更".to_string()],
+        image_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
         output_excerpt: Some("命中 3 个结果。".to_string()),
     };
@@ -1088,6 +1091,7 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
                 "高风险工具调用: shell".to_string(),
                 "命令: cargo test -p spirit-agent".to_string(),
             ],
+            image_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1102,6 +1106,37 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
     assert!(lines[0].contains("查看构建输出"));
     assert!(!lines[0].contains("call_00_demo_reason"));
     assert!(!lines.iter().any(|line| line == "  ▌ 查看构建输出"));
+}
+
+#[test]
+fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
+    let mut app = build_view_model(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call-image-1".to_string()),
+            tool_name: "generate_image".to_string(),
+            phase: ToolUiPhase::Succeeded,
+            headline: "图片生成完成".to_string(),
+            detail_lines: Vec::new(),
+            image_paths: vec![
+                "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"
+                    .to_string(),
+            ],
+            args_excerpt: Some("{\n  \"prompt\": \"画一张图\"\n}".to_string()),
+            output_excerpt: Some("[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png".to_string()),
+        },
+    ));
+    app.show_aux_details = false;
+
+    let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
+
+    assert!(lines.iter().any(|line| line.contains("图片生成完成")));
+    assert!(lines.iter().any(|line| {
+        line.contains("路径: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png")
+    }));
+    assert!(lines.iter().all(|line| !line.contains("\"prompt\": \"画一张图\"")));
+    assert!(lines.iter().all(|line| !line.contains("[generated image]")));
 }
 
 #[test]

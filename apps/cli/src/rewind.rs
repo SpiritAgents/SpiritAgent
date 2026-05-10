@@ -182,6 +182,8 @@ pub struct ToolBlockSnapshot {
     pub phase: ToolBlockSnapshotPhase,
     pub headline: String,
     pub detail_lines: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub image_paths: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub args_excerpt: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -801,6 +803,7 @@ fn tool_snapshot_from_block(block: &ToolUiBlock) -> ToolBlockSnapshot {
         },
         headline: block.headline.clone(),
         detail_lines: block.detail_lines.clone(),
+        image_paths: block.image_paths.clone(),
         args_excerpt: block.args_excerpt.clone(),
         output_excerpt: block.output_excerpt.clone(),
     }
@@ -818,6 +821,7 @@ fn tool_block_from_snapshot(snapshot: &ToolBlockSnapshot) -> ToolUiBlock {
         },
         headline: snapshot.headline.clone(),
         detail_lines: snapshot.detail_lines.clone(),
+        image_paths: snapshot.image_paths.clone(),
         args_excerpt: snapshot.args_excerpt.clone(),
         output_excerpt: snapshot.output_excerpt.clone(),
     }
