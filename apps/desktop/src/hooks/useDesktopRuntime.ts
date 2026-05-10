@@ -1068,7 +1068,19 @@ export function useDesktopRuntime() {
       }
 
       const prev = settingsRef.current;
-      const s = { ...prev, ...patch };
+      const nextActiveModel = patch.activeModel ?? prev.activeModel;
+      const resolvedApiBase =
+        patch.apiBase ??
+        (patch.activeModel !== undefined
+          ? snapshotRef.current?.config.models.find((model) => model.name === nextActiveModel)?.apiBase ??
+            prev.apiBase
+          : prev.apiBase);
+      const s = {
+        ...prev,
+        ...patch,
+        activeModel: nextActiveModel,
+        apiBase: resolvedApiBase,
+      };
       const webHostEndpointChanged =
         s.webHostHost !== prev.webHostHost || s.webHostPort !== prev.webHostPort;
       settingsRef.current = s;
