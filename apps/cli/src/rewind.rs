@@ -399,6 +399,10 @@ pub fn archive_before_last_user(archive: &ChatArchive) -> ChatArchive {
     if let Some(index) = history_index {
         cloned.llm_history.truncate(index);
     }
+    if let Some(messages) = cloned.desktop_messages.take() {
+        let trimmed = conversation_before_last_user(&messages);
+        cloned.desktop_messages = (!trimmed.is_empty()).then_some(trimmed);
+    }
     cloned
 }
 
