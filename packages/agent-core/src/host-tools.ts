@@ -99,11 +99,20 @@ export function buildBuiltinHostToolDefinitions(
     ),
     functionTool(
       'search_files',
-      'Search text in files under the workspace directory only. Use list_directory_files when you need a directory inventory instead of shell ls or dir.',
+      'Search text in files under the workspace directory only. By default query is matched as case-insensitive literal text; set is_regexp to true to interpret query as a regular expression. Use list_directory_files when you need a directory inventory instead of shell ls or dir.',
       {
         type: 'object',
         properties: {
-          query: { type: 'string' },
+          query: {
+            type: 'string',
+            description:
+              'Literal text to search for, or a regular expression pattern when is_regexp is true.',
+          },
+          is_regexp: {
+            type: 'boolean',
+            description:
+              'When true, treat query as a regular expression. Regex searches are case-insensitive by default.',
+          },
         },
         required: ['query'],
         additionalProperties: false,

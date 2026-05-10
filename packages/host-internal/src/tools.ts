@@ -163,7 +163,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       start_line?: number;
       end_line?: number;
     }
-  | { name: 'search_files'; query: string }
+  | { name: 'search_files'; query: string; is_regexp?: boolean }
   | {
       name: 'run_subagent';
       task: string;
@@ -455,11 +455,19 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         };
       }
       case 'search': {
-        const query = raw.slice('search'.length).trim();
+        const searchInput = raw.slice('search'.length).trim();
+        const usesRegexp = searchInput.startsWith('--regexp ') || searchInput.startsWith('--regex ');
+        const query = usesRegexp
+          ? searchInput.replace(/^--regex(p)?\s+/u, '').trim()
+          : searchInput;
         if (!query) {
-          throw new Error('用法: /tool search <query>');
+          throw new Error('用法: /tool search [--regexp] <query>');
         }
-        return { name: 'search_files', query };
+        return {
+          name: 'search_files',
+          query,
+          ...(usesRegexp ? { is_regexp: true } : {}),
+        };
       }
       default:
         throw new Error(`未知 /tool 子命令: ${subcommand}\n可用: shell | web | list | read | search`);
@@ -501,10 +509,14 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         };
         }
       case 'search_files':
-        return {
-          name,
-          query: requiredString(parsed, 'query'),
-        };
+        {
+          const isRegexp = optionalBoolean(parsed, 'is_regexp');
+          return {
+            name,
+            query: requiredString(parsed, 'query'),
+            ...(isRegexp !== undefined ? { is_regexp: isRegexp } : {}),
+          };
+        }
       case 'run_subagent':
         {
           const successCriteria = optionalStringStrict(parsed, 'success_criteria');
@@ -727,7 +739,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'read_file':
         return this.executeReadFile(request.path, request.start_line, request.end_line);
       case 'search_files':
-        return this.executeSearchFiles(request.query);
+        return this.executeSearchFiles(request.query, request.is_regexp ?? false);
       case 'run_subagent':
         throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'generate_image':
@@ -1108,13 +1120,14 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     return createHostToolTextOutput(out);
   }
 
-  private async executeSearchFiles(query: string): Promise<string> {
+  private async executeSearchFiles(query: string, isRegexp = false): Promise<string> {
     const needle = query.trim();
     if (!needle) {
       throw new Error('search query 不能为空');
     }
 
-    const needleLower = needle.toLowerCase();
+    const searchMode = isRegexp ? '正则' : '文本';
+    const matchesLine = createSearchLineMatcher(needle, isRegexp);
     const files = new Set<string>();
     const hits: string[] = [];
 
@@ -1152,7 +1165,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
       for (let index = 0; index < lines.length; index += 1) {
         const line = lines[index] ?? '';
-        if (!line.toLowerCase().includes(needleLower)) {
+        if (!matchesLine(line)) {
           continue;
         }
 
@@ -1203,10 +1216,10 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     await walk(this.workspaceRoot);
 
     if (files.size === 0) {
-      return `[tool] 搜索: ${query}\n未搜索到文件`;
+      return `[tool] 搜索(${searchMode}): ${query}\n未搜索到文件`;
     }
 
-    let out = `[tool] 搜索: ${query}\n命中片段\n`;
+    let out = `[tool] 搜索(${searchMode}): ${query}\n命中片段\n`;
     for (const hit of hits) {
       out += `${hit}\n`;
     }
@@ -1609,6 +1622,22 @@ function optionalPositiveInt(obj: HostJsonObject, key: string): number | undefin
 function optionalBoolean(obj: HostJsonObject, key: string): boolean | undefined {
   const value = obj[key];
   return typeof value === 'boolean' ? value : undefined;
+}
+
+function createSearchLineMatcher(query: string, isRegexp: boolean): (line: string) => boolean {
+  if (!isRegexp) {
+    const needleLower = query.toLowerCase();
+    return (line: string) => line.toLowerCase().includes(needleLower);
+  }
+
+  let regexp: RegExp;
+  try {
+    regexp = new RegExp(query, 'i');
+  } catch (error) {
+    throw new Error(`无效正则: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  return (line: string) => regexp.test(line);
 }
 
 function isVisionInputBlocked(
