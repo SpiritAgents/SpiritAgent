@@ -10,7 +10,7 @@ use crate::{
 };
 use ratatui::{Terminal, backend::TestBackend};
 use rust_i18n::t;
-use std::collections::HashMap;
+use std::{collections::HashMap, env, fs};
 
 fn render_text_lines(lines: Vec<Line<'static>>) -> Vec<String> {
     lines
@@ -25,6 +25,14 @@ fn render_text_lines(lines: Vec<Line<'static>>) -> Vec<String> {
 }
 
 fn render_ui_lines(app: &TuiViewModel, width: u16, height: u16) -> Vec<String> {
+    render_ui_snapshot(app, width, height).0
+}
+
+fn render_ui_snapshot(
+    app: &TuiViewModel,
+    width: u16,
+    height: u16,
+) -> (Vec<String>, ratatui::buffer::Buffer) {
     let backend = TestBackend::new(width, height);
     let mut terminal = Terminal::new(backend).expect("test terminal initializes");
     let mut runtime = UiRuntimeState::default();
@@ -34,8 +42,8 @@ fn render_ui_lines(app: &TuiViewModel, width: u16, height: u16) -> Vec<String> {
         })
         .expect("ui renders");
 
-    let buffer = terminal.backend().buffer();
-    (0..height)
+    let buffer = terminal.backend().buffer().clone();
+    let lines = (0..height)
         .map(|y| {
             let mut line = String::new();
             for x in 0..width {
@@ -43,7 +51,19 @@ fn render_ui_lines(app: &TuiViewModel, width: u16, height: u16) -> Vec<String> {
             }
             line
         })
-        .collect()
+        .collect();
+
+    (lines, buffer)
+}
+
+fn test_image_path(label: &str) -> std::path::PathBuf {
+    let unique = uuid::Uuid::new_v4().simple().to_string();
+    let short = &unique[..8];
+    env::current_dir()
+        .expect("workspace cwd")
+        .join("target")
+        .join("ui-tests")
+        .join(format!("{}-{}.png", label, short))
 }
 
 fn build_view_model(message: ChatMessage) -> TuiViewModel {
@@ -1138,6 +1158,77 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
     }));
     assert!(lines.iter().all(|line| !line.contains("\"prompt\": \"画一张图\"")));
     assert!(lines.iter().all(|line| !line.contains("[generated image]")));
+}
+
+#[test]
+fn generate_image_history_render_reserves_image_block() {
+    let app = build_view_model(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call-image-range".to_string()),
+            tool_name: "generate_image".to_string(),
+            phase: ToolUiPhase::Succeeded,
+            headline: "图片生成完成".to_string(),
+            detail_lines: vec!["路径: demo.png".to_string()],
+            image_paths: vec!["demo.png".to_string()],
+            args_excerpt: None,
+            output_excerpt: None,
+        },
+    ));
+
+    let render = build_history_render_result(&app, 80);
+
+    assert_eq!(render.image_blocks.len(), 1);
+    assert!(render.image_blocks[0].reserved_rows >= 6);
+    assert!(render.image_blocks[0].x_offset > 0);
+}
+
+#[test]
+fn generate_image_ui_renders_halfblock_preview_from_local_file() {
+    let file_path = test_image_path("halfblock-preview");
+    if let Some(parent) = file_path.parent() {
+        fs::create_dir_all(parent).expect("create ui test image dir");
+    }
+    let image = image::RgbaImage::from_pixel(16, 16, image::Rgba([255, 0, 0, 255]));
+    image.save(&file_path).expect("save temp image");
+
+    let app = build_view_model(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call-image-render".to_string()),
+            tool_name: "generate_image".to_string(),
+            phase: ToolUiPhase::Succeeded,
+            headline: "图片生成完成".to_string(),
+            detail_lines: vec![format!("路径: {}", file_path.display())],
+            image_paths: vec![file_path.to_string_lossy().to_string()],
+            args_excerpt: None,
+            output_excerpt: None,
+        },
+    ));
+
+    let (lines, buffer) = render_ui_snapshot(&app, 80, 36);
+    let file_name = file_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .expect("temp image file name");
+    let path_index = lines
+        .iter()
+        .position(|line| line.contains(file_name))
+        .expect("path line exists");
+
+    let has_red_pixels = ((path_index + 1) as u16..=(path_index + 12) as u16).any(|y| {
+        (0..80).any(|x| {
+            let cell = &buffer[(x, y)];
+            cell.fg == ratatui::style::Color::Rgb(255, 0, 0)
+                || cell.bg == ratatui::style::Color::Rgb(255, 0, 0)
+        })
+    });
+
+    assert!(has_red_pixels, "expected colored image pixels below generated path");
+
+    let _ = fs::remove_file(file_path);
 }
 
 #[test]
