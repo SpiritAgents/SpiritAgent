@@ -1061,7 +1061,7 @@ fn subagent_pending_aux_detail_is_visible_when_aux_details_expanded() {
 fn subagent_tool_card_hides_output_when_aux_details_collapsed() {
     let tool = ToolUiBlock {
         tool_call_id: Some("call-1".to_string()),
-        tool_name: "search_files".to_string(),
+        tool_name: "grep".to_string(),
         phase: ToolUiPhase::Succeeded,
         headline: "搜索完成".to_string(),
         detail_lines: vec!["查询: 最近变更".to_string()],
@@ -1082,7 +1082,7 @@ fn subagent_tool_card_hides_output_when_aux_details_collapsed() {
 fn subagent_tool_card_shows_output_when_aux_details_expanded() {
     let tool = ToolUiBlock {
         tool_call_id: Some("call-1".to_string()),
-        tool_name: "search_files".to_string(),
+        tool_name: "grep".to_string(),
         phase: ToolUiPhase::Succeeded,
         headline: "搜索完成".to_string(),
         detail_lines: vec!["查询: 最近变更".to_string()],

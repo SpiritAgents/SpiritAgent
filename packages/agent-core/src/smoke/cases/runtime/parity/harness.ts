@@ -173,7 +173,7 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
                     id: 'call-search',
                     type: 'function',
                     function: {
-                      name: 'search_files',
+                      name: 'grep',
                       arguments: '{"query":"should-not-run"}',
                     },
                   },
@@ -192,7 +192,7 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
               },
               {
                 id: 'call-search',
-                name: 'search_files',
+                name: 'grep',
                 argumentsJson: '{"query":"should-not-run"}',
               },
             ],
@@ -385,7 +385,7 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
                     id: 'call-search',
                     type: 'function',
                     function: {
-                      name: 'search_files',
+                      name: 'grep',
                       arguments: '{"query":"runtime parity"}',
                     },
                   },
@@ -399,7 +399,7 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
             calls: [
               {
                 id: 'call-search',
-                name: 'search_files',
+                name: 'grep',
                 argumentsJson: '{"query":"runtime parity"}',
               },
             ],
@@ -606,11 +606,11 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   shouldExecuteInBackground(request: ScriptedToolRequest): boolean {
-    return request.name === 'search_files';
+    return request.name === 'grep';
   }
 
   backgroundStatusText(request: ScriptedToolRequest): string | undefined {
-    return request.name === 'search_files' ? '搜索中: runtime parity' : undefined;
+    return request.name === 'grep' ? '搜索中: runtime parity' : undefined;
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -707,7 +707,7 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
                     id: 'call-background-search',
                     type: 'function',
                     function: {
-                      name: 'search_files',
+                      name: 'grep',
                       arguments: '{"query":"runtime parity"}',
                     },
                   },
@@ -721,7 +721,7 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
             calls: [
               {
                 id: 'call-background-search',
-                name: 'search_files',
+                name: 'grep',
                 argumentsJson: '{"query":"runtime parity"}',
               },
             ],
@@ -1535,7 +1535,7 @@ export class StreamingToolRoundTransport implements LlmTransport<undefined, Scri
           calls: [
             {
               id: 'call-stream-tool',
-              name: 'search_files',
+              name: 'grep',
               argumentsJson: '{"query":"later"}',
             },
           ],
@@ -1618,7 +1618,7 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
                       id: 'call-stream-background',
                       type: 'function',
                       function: {
-                        name: 'search_files',
+                        name: 'grep',
                         arguments: '{"query":"runtime parity"}',
                       },
                     },
@@ -1632,7 +1632,7 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
               calls: [
                 {
                   id: 'call-stream-background',
-                  name: 'search_files',
+                  name: 'grep',
                   argumentsJson: '{"query":"runtime parity"}',
                 },
               ],
@@ -2150,7 +2150,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
                       id: 'call-stream-guidance-search',
                       type: 'function',
                       function: {
-                        name: 'search_files',
+                        name: 'grep',
                         arguments: '{"query":"should-not-run"}',
                       },
                     },
@@ -2169,7 +2169,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
                 },
                 {
                   id: 'call-stream-guidance-search',
-                  name: 'search_files',
+                  name: 'grep',
                   argumentsJson: '{"query":"should-not-run"}',
                 },
               ],
@@ -2201,7 +2201,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
         message.role === 'tool' &&
         message.tool_call_id === 'call-stream-guidance-search' &&
         typeof message.content === 'string' &&
-        message.content === 'approved output for search_files',
+        message.content === 'approved output for grep',
     );
 
     if (!hasGuidance || !hasDeniedToolResult || !hasQueuedToolResult) {
@@ -2387,7 +2387,7 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
     }
 
     if (message.includes('search')) {
-      return { name: 'search_files', argumentsJson: '{"query":"runtime parity"}' };
+      return { name: 'grep', argumentsJson: '{"query":"runtime parity"}' };
     }
 
     if (message.includes('read')) {
@@ -2422,11 +2422,11 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   shouldExecuteInBackground(request: ScriptedToolRequest): boolean {
-    return request.name === 'search_files';
+    return request.name === 'grep';
   }
 
   backgroundStatusText(request: ScriptedToolRequest): string | undefined {
-    if (request.name === 'search_files') {
+    if (request.name === 'grep') {
       return '搜索中: runtime parity';
     }
 
@@ -2535,7 +2535,7 @@ export class PollingManualBackgroundExecutor extends HostExecutor {
   private readonly deferred = createDeferred<ToolExecutionOutput>();
 
   async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
-    if (request.name === 'search_files') {
+    if (request.name === 'grep') {
       return this.deferred.promise;
     }
 

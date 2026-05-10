@@ -155,7 +155,7 @@ test('web_fetch returns blocked-vision text without image part for remote image 
   }
 });
 
-test('search_files supports case-insensitive regular expression queries', async () => {
+test('grep supports case-insensitive regular expression queries', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-regexp-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
 
@@ -166,7 +166,7 @@ test('search_files supports case-insensitive regular expression queries', async 
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'search_files',
+      name: 'grep',
       query: 'runtime\\s+parity',
       is_regexp: true,
     });
@@ -180,7 +180,7 @@ test('search_files supports case-insensitive regular expression queries', async 
   }
 });
 
-test('search_files rejects invalid regular expressions with a clear error', async () => {
+test('grep rejects invalid regular expressions with a clear error', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-regexp-error-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
 
@@ -191,7 +191,7 @@ test('search_files rejects invalid regular expressions with a clear error', asyn
     await assert.rejects(
       () =>
         service.execute({
-          name: 'search_files',
+          name: 'grep',
           query: '(',
           is_regexp: true,
         }),
@@ -202,7 +202,7 @@ test('search_files rejects invalid regular expressions with a clear error', asyn
   }
 });
 
-test('requestFromFunctionCall parses search_files is_regexp flag', async () => {
+test('requestFromFunctionCall parses grep is_regexp flag', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-parse-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
 
@@ -211,12 +211,12 @@ test('requestFromFunctionCall parses search_files is_regexp flag', async () => {
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const request = await service.requestFromFunctionCall(
-      'search_files',
+      'grep',
       '{"query":"runtime\\\\s+parity","is_regexp":true}',
     );
 
     assert.deepEqual(request, {
-      name: 'search_files',
+      name: 'grep',
       query: 'runtime\\s+parity',
       is_regexp: true,
     });

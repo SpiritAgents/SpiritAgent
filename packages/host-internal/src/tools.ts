@@ -163,7 +163,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       start_line?: number;
       end_line?: number;
     }
-  | { name: 'search_files'; query: string; is_regexp?: boolean }
+  | { name: 'grep'; query: string; is_regexp?: boolean }
   | {
       name: 'run_subagent';
       task: string;
@@ -464,7 +464,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           throw new Error('用法: /tool search [--regexp] <query>');
         }
         return {
-          name: 'search_files',
+          name: 'grep',
           query,
           ...(usesRegexp ? { is_regexp: true } : {}),
         };
@@ -508,7 +508,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           ...(endLine !== undefined ? { end_line: endLine } : {}),
         };
         }
-      case 'search_files':
+      case 'grep':
         {
           const isRegexp = optionalBoolean(parsed, 'is_regexp');
           return {
@@ -618,7 +618,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     request: HostToolRequest<QuestionSpec>,
   ): Promise<HostAuthorizationDecision<QuestionSpec>> {
     switch (request.name) {
-      case 'search_files':
+      case 'grep':
       case 'run_subagent':
       case 'generate_image':
         return { kind: 'allowed' };
@@ -738,7 +738,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         return this.executeListDirectory(request.path);
       case 'read_file':
         return this.executeReadFile(request.path, request.start_line, request.end_line);
-      case 'search_files':
+      case 'grep':
         return this.executeSearchFiles(request.query, request.is_regexp ?? false);
       case 'run_subagent':
         throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');

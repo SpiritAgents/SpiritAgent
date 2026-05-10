@@ -88,7 +88,7 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('manual background smoke 在后台工具完成前不应产出结果。');
   }
 
-  manualBackgroundExecutor.finish('manual output for search_files');
+  manualBackgroundExecutor.finish('manual output for grep');
   let manualBackgroundCompleted;
   for (let index = 0; index < 8; index += 1) {
     await flushMicrotasks(4);
@@ -100,7 +100,7 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
   }
   if (
     !manualBackgroundCompleted ||
-    manualBackgroundCompleted.output !== 'manual output for search_files' ||
+    manualBackgroundCompleted.output !== 'manual output for grep' ||
     !manualBackgroundCompleted.backgroundExecution ||
     manualBackgroundCompleted.failed
   ) {
