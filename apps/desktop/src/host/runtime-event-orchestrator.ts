@@ -453,18 +453,18 @@ export class DesktopRuntimeEventOrchestrator {
     batchId: number,
   ): void {
     const denied = event.decisionKind === 'deny' || event.decisionKind === 'guidance';
+    if (denied) {
+      this.activeGenerateImageTools.delete(event.toolCallId);
+      this.options.assistantMessages.removeToolMessage(event.toolCallId);
+      return;
+    }
+
     this.options.assistantMessages.upsertToolMessage(event.toolCallId, {
       toolCallId: event.toolCallId,
       toolName: event.toolName,
-      phase: denied ? 'failed' : 'running',
-      headline: headlineForToolPhase(denied ? 'failed' : 'running', event.toolName, event.request),
-      detailLines: denied
-        ? [
-            event.decisionKind === 'guidance'
-              ? '用户拒绝了该工具调用，并提供了后续指示。'
-              : '用户拒绝了该工具调用。',
-          ]
-        : [],
+      phase: 'running',
+      headline: headlineForToolPhase('running', event.toolName, event.request),
+      detailLines: [],
       argsExcerpt: truncateJson(event.request),
     }, batchId);
   }
