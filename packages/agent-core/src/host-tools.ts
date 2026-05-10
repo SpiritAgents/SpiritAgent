@@ -98,7 +98,7 @@ export function buildBuiltinHostToolDefinitions(
       },
     ),
     functionTool(
-      'search_files',
+      'grep',
       'Search text in files under the workspace directory only. By default query is matched as case-insensitive literal text; set is_regexp to true to interpret query as a regular expression. Use list_directory_files when you need a directory inventory instead of shell ls or dir.',
       {
         type: 'object',

@@ -246,7 +246,7 @@ pub(crate) fn build_tool_result_block(
                 output_excerpt: None,
             }
         }
-        "search_files" => ToolUiBlock {
+        "grep" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
@@ -396,7 +396,7 @@ pub(crate) fn format_tool_ui_message(
                 end
             )
         }
-        "search_files" => output.to_string(),
+        "grep" => output.to_string(),
         "run_subagent" => format!(
             "[tool] SubAgent 已完成任务: {}\n{}",
             string_arg(request, "task").unwrap_or("<unknown>"),
