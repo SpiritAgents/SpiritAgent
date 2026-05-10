@@ -82,9 +82,10 @@ export class DesktopAssistantMessageStateMachine {
   ): ConversationMessageSnapshot {
     const messages = this.messages();
     let existing: ConversationMessageSnapshot | undefined;
+    const allowCrossUserLookup = isStableRuntimeToolCallId(toolCallId);
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
-      if (!messageIndexIsInCurrentTurn(messages, index)) {
+      if (!allowCrossUserLookup && !messageIndexIsInCurrentTurn(messages, index)) {
         break;
       }
       if (message?.tool?.toolCallId === toolCallId) {
@@ -115,6 +116,20 @@ export class DesktopAssistantMessageStateMachine {
     messages.push(message);
     this.logMessageOrderToolPreviewNew(tool.toolName, pushAt);
     return message;
+  }
+
+  removeToolMessage(toolCallId: string): boolean {
+    const messages = this.messages();
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (message?.role !== 'assistant' || message.tool?.toolCallId !== toolCallId) {
+        continue;
+      }
+      this.handleMessageRemoved(index, message.id, `remove-tool:${toolCallId}`);
+      messages.splice(index, 1);
+      return true;
+    }
+    return false;
   }
 
   appendAssistantMessage(content: string, aux?: MessageAuxSnapshot): void {
@@ -609,4 +624,8 @@ export class DesktopAssistantMessageStateMachine {
     }
     console.log(`[desktop-host][msg-order] tool-preview-new ${toolName} push@${pushAt}`);
   }
+}
+
+function isStableRuntimeToolCallId(toolCallId: string): boolean {
+  return !toolCallId.startsWith('pending:') && !toolCallId.startsWith('tool:');
 }
