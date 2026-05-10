@@ -3321,6 +3321,7 @@ dependencies = [
  "comrak",
  "crossterm",
  "ignore",
+ "image",
  "keyring",
  "ratatui",
  "ratatui-image",

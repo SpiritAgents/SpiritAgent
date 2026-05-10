@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use image::ImageReader;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -5,6 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
 use ratatui_image::picker::{Picker, ProtocolType};
+use ratatui_image::{Resize, StatefulImage, protocol::StatefulProtocol};
 use rust_i18n::t;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
@@ -74,9 +78,15 @@ pub enum ImageRenderBackend {
     HalfblocksFallback,
 }
 
+enum CachedRenderedImage {
+    Ready(StatefulProtocol),
+    Failed,
+}
+
 pub struct ImageRenderState {
     picker: Picker,
     backend: ImageRenderBackend,
+    cache: HashMap<String, CachedRenderedImage>,
 }
 
 impl ImageRenderState {
@@ -87,6 +97,7 @@ impl ImageRenderState {
                 Self {
                     picker,
                     backend: ImageRenderBackend::QueriedProtocol,
+                    cache: HashMap::new(),
                 }
             }
             Err(err) => {
@@ -104,6 +115,7 @@ impl ImageRenderState {
         Self {
             picker,
             backend: ImageRenderBackend::HalfblocksFallback,
+            cache: HashMap::new(),
         }
     }
 
@@ -117,6 +129,70 @@ impl ImageRenderState {
 
     pub fn picker_mut(&mut self) -> &mut Picker {
         &mut self.picker
+    }
+
+    pub fn render_path_in_area(
+        &mut self,
+        frame: &mut ratatui::Frame<'_>,
+        path: &str,
+        area: Rect,
+    ) {
+        if area.width == 0 || area.height == 0 || path.trim().is_empty() {
+            return;
+        }
+
+        if !self.cache.contains_key(path) {
+            self.cache.insert(
+                path.to_string(),
+                load_cached_rendered_image(path, &self.picker),
+            );
+        }
+
+        let mut encoding_error = None;
+        if let Some(CachedRenderedImage::Ready(protocol)) = self.cache.get_mut(path) {
+            frame.render_stateful_widget(
+                StatefulImage::default().resize(Resize::Fit(None)),
+                area,
+                protocol,
+            );
+            encoding_error = protocol
+                .last_encoding_result()
+                .and_then(Result::err)
+                .map(|err| format!("{err:#}"));
+        }
+
+        if let Some(err) = encoding_error {
+            logging::log_event(&format!(
+                "[ui:image] rendering failed for {}: {}",
+                path, err
+            ));
+            self.cache
+                .insert(path.to_string(), CachedRenderedImage::Failed);
+        }
+    }
+}
+
+fn load_cached_rendered_image(path: &str, picker: &Picker) -> CachedRenderedImage {
+    match ImageReader::open(path) {
+        Ok(reader) => match reader.decode() {
+            Ok(image) => CachedRenderedImage::Ready(picker.new_resize_protocol(image)),
+            Err(err) => {
+                let message = format!("decode failed: {err:#}");
+                logging::log_event(&format!(
+                    "[ui:image] failed to decode {}: {}",
+                    path, message
+                ));
+                CachedRenderedImage::Failed
+            }
+        },
+        Err(err) => {
+            let message = format!("open failed: {err:#}");
+            logging::log_event(&format!(
+                "[ui:image] failed to open {}: {}",
+                path, message
+            ));
+            CachedRenderedImage::Failed
+        }
     }
 }
 
@@ -151,7 +227,7 @@ impl UiRuntimeState {
 pub fn draw_ui(
     frame: &mut ratatui::Frame<'_>,
     app: &TuiViewModel,
-    _runtime: &mut UiRuntimeState,
+    runtime: &mut UiRuntimeState,
 ) -> UiRenderFeedback {
     let mut feedback = UiRenderFeedback::default();
     set_active_cli_ui_hooks(app.cli_ui_hooks.clone());
@@ -245,7 +321,10 @@ pub fn draw_ui(
 
     let history_render =
         build_history_render_result(&app, chunks[0].width.saturating_sub(1) as usize);
+    let history_image_blocks = history_render.image_blocks.clone();
+    let history_message_ranges = history_render.message_ranges.clone();
     let history_lines = history_render.lines;
+    let history_lines_for_images = history_lines.clone();
     // 对话区无边框，内容与命中区域占满 chunks[0]。
     let inner_x = chunks[0].x;
     let inner_y = chunks[0].y;
@@ -269,6 +348,16 @@ pub fn draw_ui(
         .collect();
     let history = Paragraph::new(visible);
     frame.render_widget(history, chunks[0]);
+    render_history_tool_images(
+        frame,
+        chunks[0],
+        &history_lines_for_images,
+        w,
+        history_scroll,
+        history_view_height,
+        &history_image_blocks,
+        runtime,
+    );
     feedback.conversation_panel = Some(ConversationPanelRenderFeedback {
         hit: ConversationPanelHit {
             x: inner_x,
@@ -279,7 +368,7 @@ pub fn draw_ui(
             total_lines: total_visual_lines,
         },
         plain_rows: plain,
-        message_ranges: history_render.message_ranges,
+        message_ranges: history_message_ranges,
         history_offset_from_bottom: offset_bottom,
     });
 
@@ -428,6 +517,60 @@ pub fn draw_ui(
 
     clear_active_cli_ui_hooks();
     feedback
+}
+
+fn render_history_tool_images(
+    frame: &mut ratatui::Frame<'_>,
+    history_area: Rect,
+    history_lines: &[Line<'static>],
+    wrap_width: u16,
+    history_scroll: usize,
+    history_view_height: usize,
+    image_blocks: &[HistoryImageRenderBlock],
+    runtime: &mut UiRuntimeState,
+) {
+    for block in image_blocks {
+        let visual_top = visual_row_index_for_logical_line(history_lines, wrap_width, block.logical_top_line);
+        let visual_bottom = visual_top.saturating_add(block.reserved_rows as usize);
+        let view_bottom = history_scroll.saturating_add(history_view_height);
+        if visual_top < history_scroll || visual_bottom > view_bottom {
+            continue;
+        }
+
+        let local_top = visual_top.saturating_sub(history_scroll) as u16;
+        let x_offset = block.x_offset.min(history_area.width);
+        let render_width = history_area.width.saturating_sub(x_offset);
+        if render_width == 0 {
+            continue;
+        }
+
+        let render_area = Rect {
+            x: history_area.x.saturating_add(x_offset),
+            y: history_area.y.saturating_add(local_top),
+            width: render_width,
+            height: block.reserved_rows.min(history_area.height.saturating_sub(local_top)),
+        };
+        runtime
+            .image_render_mut()
+            .render_path_in_area(frame, &block.path, render_area);
+    }
+}
+
+fn visual_row_index_for_logical_line(
+    logical_lines: &[Line<'static>],
+    wrap_width: u16,
+    logical_line: usize,
+) -> usize {
+    if logical_line == 0 {
+        return 0;
+    }
+
+    let prefix = logical_lines
+        .iter()
+        .take(logical_line)
+        .cloned()
+        .collect::<Vec<_>>();
+    flatten_wrapped_history(prefix, wrap_width, None).0.len()
 }
 
 #[cfg(test)]
