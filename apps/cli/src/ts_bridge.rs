@@ -1014,6 +1014,7 @@ impl TsBridgeRuntime {
                     llm_history: entry.llm_history,
                 })
                 .collect(),
+            desktop_messages: None,
             rewind: Some(self.rewind.as_json()),
         })
     }
