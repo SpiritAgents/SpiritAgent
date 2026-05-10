@@ -680,6 +680,14 @@ mod tests {
                 .tool_name,
             "generate_image"
         );
+        assert_eq!(
+            desktop_messages[1]
+                .tool
+                .as_ref()
+                .expect("tool snapshot")
+                .image_paths,
+            vec!["C:\\Users\\pc\\AppData\\Roaming\\SpiritAgent\\generated-images\\demo.png"]
+        );
 
         let _ = fs::remove_file(file_path);
     }
