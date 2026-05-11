@@ -88,3 +88,52 @@ test('assistant text splits around tool rows inside a segment', () => {
     'assistant:Done.',
   ]);
 });
+
+test('hydrated messages can open a continuation segment without reordering restored rows', () => {
+  let nextMessageId = 4;
+  const timeline = DesktopMessageTimeline.fromMessages([
+    {
+      id: 1,
+      role: 'user',
+      content: 'inspect this file',
+      pending: false,
+    },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      aux: { thinking: 'restored reasoning' },
+      pending: false,
+    },
+    {
+      id: 3,
+      role: 'assistant',
+      content: '',
+      tool: toolBlock('call-1', 'succeeded'),
+      pending: false,
+      canContinue: true,
+    },
+  ], {
+    allocateMessageId: () => nextMessageId++,
+    reserveMessageId: (messageId) => {
+      if (messageId >= nextMessageId) {
+        nextMessageId = messageId + 1;
+      }
+    },
+  });
+
+  assert.equal(timeline.latestContinuableAssistantMessage()?.id, 3);
+
+  timeline.beginAssistantSegment('continuation');
+  timeline.finalizeThinkingSegment('continued reasoning');
+  timeline.upsertToolMessage('call-2', toolBlock('call-2', 'running'));
+  timeline.removePendingAssistantText();
+
+  assert.deepEqual(timeline.toMessages().map(rowToken), [
+    'user:inspect this file',
+    'thinking:restored reasoning',
+    'tool:call-1:succeeded',
+    'thinking:continued reasoning',
+    'tool:call-2:running',
+  ]);
+});
