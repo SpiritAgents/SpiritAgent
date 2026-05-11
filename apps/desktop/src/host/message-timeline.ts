@@ -418,13 +418,33 @@ export class DesktopMessageTimeline {
   }
 
   markLatestRenderableAssistantRowContinuableInActiveTurn(): ConversationMessageSnapshot | undefined {
-    this.clearContinuationMarkers();
     const turn = this.activeTurn();
     if (!turn) {
       return undefined;
     }
-    const rows = this.rowsForTurn(turn).filter(isRenderableAssistantRow);
-    const row = rows[rows.length - 1];
+    return this.markLatestRenderableAssistantRowContinuableFromRows(this.rowsForTurn(turn));
+  }
+
+  markLatestRenderableAssistantRowContinuable(input: { content?: string } = {}): ConversationMessageSnapshot | undefined {
+    return this.markLatestRenderableAssistantRowContinuableFromRows(this.allRows(), input);
+  }
+
+  private markLatestRenderableAssistantRowContinuableFromRows(
+    rows: DesktopTimelineRow[],
+    input: { content?: string } = {},
+  ): ConversationMessageSnapshot | undefined {
+    this.clearContinuationMarkers();
+    const normalized = input.content?.trim() ?? '';
+    const candidates = rows.filter((row) => {
+      if (!isRenderableAssistantRow(row)) {
+        return false;
+      }
+      if (!normalized) {
+        return true;
+      }
+      return row.kind === 'assistant-text' && row.content.trim() === normalized;
+    });
+    const row = candidates[candidates.length - 1];
     if (!row) {
       return undefined;
     }

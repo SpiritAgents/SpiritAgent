@@ -1324,6 +1324,7 @@ class DesktopHostService {
       }
 
       runtime.abort();
+  this.requireState().messageTimeline.abortActiveAssistantSegment();
       this.currentTurnSkills = [];
       this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
       this.runtimeEvents.consumeCompletedTurnResult();
@@ -2750,6 +2751,18 @@ class DesktopHostService {
     this.clearAssistantContinuationMarkers();
 
     const messages = this.requireState().messages;
+    const timelineMessage = this.requireState().messageTimeline.markLatestRenderableAssistantRowContinuable({
+      content: normalized,
+    });
+    if (timelineMessage) {
+      const cachedMessage = messages.find((message) => message.id === timelineMessage.id);
+      if (cachedMessage) {
+        cachedMessage.canContinue = true;
+      }
+      this.logContinuationMarker('marked', cachedMessage ?? timelineMessage, normalized, messages);
+      return;
+    }
+
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index]!;
       const hasRenderableAux = Boolean(
@@ -2798,6 +2811,16 @@ class DesktopHostService {
     this.clearAssistantContinuationMarkers();
 
     const messages = this.requireState().messages;
+    const timelineMessage = this.requireState().messageTimeline.markLatestRenderableAssistantRowContinuableInActiveTurn();
+    if (timelineMessage) {
+      const cachedMessage = messages.find((message) => message.id === timelineMessage.id);
+      if (cachedMessage) {
+        cachedMessage.canContinue = true;
+      }
+      this.logContinuationMarker('marked-fallback', cachedMessage ?? timelineMessage, '', messages);
+      return;
+    }
+
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index]!;
       if (!messageIndexIsInCurrentTurn(messages, index)) {
