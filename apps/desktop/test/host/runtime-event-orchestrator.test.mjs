@@ -137,7 +137,7 @@ test('runtime events are mirrored into continuation timeline segments', () => {
 
 test('completed turn result reuses the finalized assistant text row instead of duplicating it', () => {
   const harness = createHarness();
-  harness.pushUser('Hi DeepSeek');
+  harness.pushUser('Hi');
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: 'begin-assistant-response' },

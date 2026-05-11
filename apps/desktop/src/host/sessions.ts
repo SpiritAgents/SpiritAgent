@@ -116,11 +116,10 @@ export function restoreStoredSessionState(input: {
   const messages = input.loaded.desktopMessages
     ? cloneConversationMessages(input.loaded.desktopMessages)
     : cloneConversationMessages(input.fallbackMessages);
+  const desktopMessageTimeline = tryCloneDesktopMessageTimeline(input.loaded.desktopMessageTimeline);
   return {
     messages,
-    ...(input.loaded.desktopMessageTimeline
-      ? { desktopMessageTimeline: cloneDesktopMessageTimeline(input.loaded.desktopMessageTimeline) }
-      : {}),
+    ...(desktopMessageTimeline ? { desktopMessageTimeline } : {}),
     activeSession: {
       filePath: path.resolve(input.filePath),
       displayName: input.loaded.sessionDisplayName ?? deriveDisplayNameFromMessages(messages),
@@ -225,6 +224,19 @@ function cloneConversationMessages(
   messages: ConversationMessageSnapshot[],
 ): ConversationMessageSnapshot[] {
   return messages.map((message) => ({ ...message }));
+}
+
+function tryCloneDesktopMessageTimeline(
+  timeline: DesktopTimelineTurnSnapshot[] | undefined,
+): DesktopTimelineTurnSnapshot[] | undefined {
+  if (!timeline) {
+    return undefined;
+  }
+  try {
+    return cloneDesktopMessageTimeline(timeline);
+  } catch {
+    return undefined;
+  }
 }
 
 function cloneDesktopMessageTimeline(

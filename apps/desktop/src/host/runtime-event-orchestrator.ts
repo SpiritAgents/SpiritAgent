@@ -120,11 +120,13 @@ export class DesktopRuntimeEventOrchestrator {
           );
         const pendingAssistant = this.options.assistantMessages.beginAssistantResponse(insertAt, batchId);
         const timeline = this.options.messageTimeline?.();
-        if (timeline) {
-          timeline.beginAssistantSegment(this.options.takeNextAssistantSegmentKind?.() ?? 'initial');
-        }
+        const timelinePendingAssistant = timeline
+          ? timeline.beginAssistantSegment(this.options.takeNextAssistantSegmentKind?.() ?? 'initial')
+          : undefined;
         if (shouldReanchorStandalonePendingAux) {
-          this.options.conversationSnapshotView.reanchorPersistedStandalonePendingAux(pendingAssistant.id);
+          this.options.conversationSnapshotView.reanchorPersistedStandalonePendingAux(
+            timelinePendingAssistant?.id ?? pendingAssistant.id,
+          );
         }
         continue;
       }

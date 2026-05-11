@@ -1325,7 +1325,7 @@ class DesktopHostService {
       }
 
       runtime.abort();
-  this.requireState().messageTimeline.abortActiveAssistantSegment();
+      this.requireState().messageTimeline.abortActiveAssistantSegment();
       this.currentTurnSkills = [];
       this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
       this.runtimeEvents.consumeCompletedTurnResult();
@@ -2863,7 +2863,7 @@ class DesktopHostService {
       }
 
       message.canContinue = true;
-  this.requireState().messageTimeline.markRowContinuable(message.id);
+      this.requireState().messageTimeline.markRowContinuable(message.id);
       this.logContinuationMarker('marked-fallback', message, '', messages);
       return;
     }
