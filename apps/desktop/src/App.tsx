@@ -2449,14 +2449,18 @@ export default function App() {
                     </div>
                   ) : null}
                   {slashQuery ? (
-                    <SkillSlashMenu
-                      suggestions={slashSuggestions}
-                      selectedIndex={slashSelectedIndex}
-                      onSelectIndex={setSlashSelectedIndex}
-                      onApplySuggestion={(suggestion) => {
-                        applySlashSuggestion(`${suggestion.alias} `);
-                      }}
-                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 pb-2">
+                      <div className="pointer-events-auto">
+                        <SkillSlashMenu
+                          suggestions={slashSuggestions}
+                          selectedIndex={slashSelectedIndex}
+                          onSelectIndex={setSlashSelectedIndex}
+                          onApplySuggestion={(suggestion) => {
+                            applySlashSuggestion(`${suggestion.alias} `);
+                          }}
+                        />
+                      </div>
+                    </div>
                   ) : null}
                   <ComposerSurface
                     value={runtime.composer}
