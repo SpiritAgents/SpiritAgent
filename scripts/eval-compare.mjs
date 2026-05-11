@@ -30,16 +30,9 @@ async function main() {
   assertRequiredOptions(options);
 
   const scenario = resolveScenario(options);
-  const modelConfig = resolveModelConfig(options);
   const repoRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-
-  const baselineRef = (await git(repoRoot, ['rev-parse', 'HEAD'])).stdout.trim();
-  const stagedPatch = (await git(repoRoot, ['diff', '--cached', '--binary', '--no-ext-diff'])).stdout;
-  if (!stagedPatch.trim()) {
-    throw new Error('暂存区为空。先把候选改动加入 staged，再运行 compare runner。');
-  }
-
-  const stagedDiffFingerprint = sha256(stagedPatch);
+  const comparison = await resolveComparison(repoRoot, options);
+  const modelConfig = resolveModelConfig(options);
   const runId = `eval-${new Date().toISOString().replace(/[.:]/gu, '-')}-${randomUUID().slice(0, 8)}`;
   const outputDir = await prepareOutputDirectory(options.outputDir);
   const artifactsDir = path.join(outputDir, 'artifacts');
@@ -51,11 +44,13 @@ async function main() {
   await mkdir(artifactsDir, { recursive: true });
 
   try {
-    await createRuntimeSourceSnapshot(repoRoot, baselineRuntimeSource, baselineRef);
-    await createRuntimeSourceSnapshot(repoRoot, candidateRuntimeSource, baselineRef);
+    await createRuntimeSourceSnapshot(repoRoot, baselineRuntimeSource, comparison.baselineRuntimeRef);
+    await createRuntimeSourceSnapshot(repoRoot, candidateRuntimeSource, comparison.candidateRuntimeRef);
     await linkWorkspaceNodeModules(repoRoot, baselineRuntimeSource);
     await linkWorkspaceNodeModules(repoRoot, candidateRuntimeSource);
-    await applyPatchToWorkspace(candidateRuntimeSource, stagedPatch);
+    if (comparison.mode === 'staged') {
+      await applyPatchToWorkspace(candidateRuntimeSource, comparison.patchText);
+    }
 
     await createExecutionWorkspace(options.workspaceSource, baselineWorkspace);
     await createExecutionWorkspace(options.workspaceSource, candidateWorkspace);
@@ -72,8 +67,7 @@ async function main() {
         scenario,
         modelConfig,
         artifactsDir,
-        baselineRef,
-        stagedDiffFingerprint,
+        comparison,
         autoApprove: options.autoApprove,
       }),
       runCandidate({
@@ -86,19 +80,22 @@ async function main() {
         scenario,
         modelConfig,
         artifactsDir,
-        baselineRef,
-        stagedDiffFingerprint,
+        comparison,
         autoApprove: options.autoApprove,
       }),
     ]);
 
     const artifact = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       runId,
       createdAtUnixMs: startedAtUnixMs,
       scenario,
-      baselineRef,
-      stagedDiffFingerprint,
+      comparison: {
+        mode: comparison.mode,
+        baselineRef: comparison.baselineRef,
+        ...(comparison.candidateRef ? { candidateRef: comparison.candidateRef } : {}),
+        diffFingerprint: comparison.diffFingerprint,
+      },
       ...(options.workspaceSource ? { workspaceSource: options.workspaceSource } : {}),
       candidates: [baselineResult.record, candidateResult.record],
       humanReview: {
@@ -120,7 +117,14 @@ async function main() {
     console.log(`修改前工作区: ${baselineWorkspace}`);
     console.log(`修改后工作区: ${candidateWorkspace}`);
     console.log(`评审产物: ${artifactPath}`);
-    console.log(`暂存区指纹: ${stagedDiffFingerprint}`);
+    console.log(`比较来源: ${renderComparisonMode(comparison.mode)}`);
+    console.log(`基线 ref: ${comparison.baselineRef}`);
+    console.log(
+      comparison.candidateRef
+        ? `候选 ref: ${comparison.candidateRef}`
+        : `候选来源: 基于 ${comparison.baselineRef} 的 staged diff`,
+    );
+    console.log(`差异指纹: ${comparison.diffFingerprint}`);
   } catch (error) {
     console.error('Compare 运行失败。');
     console.error(renderError(error));
@@ -144,6 +148,9 @@ function parseArgs(argv) {
     reasoningEffort: undefined,
     outputDir: undefined,
     workspaceSource: undefined,
+    commit: undefined,
+    baselineRef: undefined,
+    candidateRef: undefined,
     autoApprove: false,
   };
 
@@ -190,6 +197,15 @@ function parseArgs(argv) {
       case '--workspace-source':
         options.workspaceSource = path.resolve(requiredArgValue(argv, ++index, '--workspace-source'));
         break;
+      case '--commit':
+        options.commit = requiredArgValue(argv, ++index, '--commit');
+        break;
+      case '--baseline-ref':
+        options.baselineRef = requiredArgValue(argv, ++index, '--baseline-ref');
+        break;
+      case '--candidate-ref':
+        options.candidateRef = requiredArgValue(argv, ++index, '--candidate-ref');
+        break;
       case '--auto-approve':
         options.autoApprove = true;
         break;
@@ -208,6 +224,94 @@ function assertRequiredOptions(options) {
   if (!options.outputDir) {
     throw new Error('缺少输出目录。请通过 --output-dir 指定本次 compare 的产物目录，例如 d:\\eval-runs\\spirit-eval-compare-001。');
   }
+}
+
+async function resolveComparison(repoRoot, options) {
+  if (options.commit && (options.baselineRef || options.candidateRef)) {
+    throw new Error('--commit 不能与 --baseline-ref / --candidate-ref 同时使用。');
+  }
+
+  if (options.baselineRef || options.candidateRef) {
+    if (!options.baselineRef || !options.candidateRef) {
+      throw new Error('--baseline-ref 与 --candidate-ref 必须一起使用。');
+    }
+    return resolveGitRefComparison(repoRoot, options.baselineRef, options.candidateRef);
+  }
+
+  if (options.commit) {
+    return resolveCommitComparison(repoRoot, options.commit);
+  }
+
+  return resolveStagedComparison(repoRoot);
+}
+
+async function resolveStagedComparison(repoRoot) {
+  const baselineRef = await resolveGitRef(repoRoot, 'HEAD');
+  const patchText = (await git(repoRoot, ['diff', '--cached', '--binary', '--no-ext-diff'])).stdout;
+  if (!patchText.trim()) {
+    throw new Error('暂存区为空。先把候选改动加入 staged，再运行 compare runner。');
+  }
+
+  return {
+    mode: 'staged',
+    baselineRef,
+    diffFingerprint: sha256(patchText),
+    baselineRuntimeRef: baselineRef,
+    candidateRuntimeRef: baselineRef,
+    patchText,
+  };
+}
+
+async function resolveGitRefComparison(repoRoot, rawBaselineRef, rawCandidateRef) {
+  const baselineRef = await resolveGitRef(repoRoot, rawBaselineRef);
+  const candidateRef = await resolveGitRef(repoRoot, rawCandidateRef);
+  const diffText = (await git(repoRoot, [
+    'diff',
+    '--binary',
+    '--no-ext-diff',
+    baselineRef,
+    candidateRef,
+  ])).stdout;
+  if (!diffText.trim()) {
+    throw new Error(`指定的 git refs 没有差异: ${rawBaselineRef} -> ${rawCandidateRef}`);
+  }
+
+  return {
+    mode: 'git-ref',
+    baselineRef,
+    candidateRef,
+    diffFingerprint: sha256(diffText),
+    baselineRuntimeRef: baselineRef,
+    candidateRuntimeRef: candidateRef,
+  };
+}
+
+async function resolveCommitComparison(repoRoot, rawCommitRef) {
+  const candidateRef = await resolveGitCommitRef(repoRoot, rawCommitRef);
+  const parents = await listGitCommitParents(repoRoot, candidateRef);
+  if (parents.length === 0) {
+    throw new Error('--commit 当前仅支持有父提交的 commit；root commit 请改用 --baseline-ref / --candidate-ref。');
+  }
+
+  if (parents.length > 1) {
+    console.warn(`--commit ${rawCommitRef} 是 merge commit，默认使用 first-parent ${parents[0]} 作为 baseline。`);
+  }
+
+  return resolveGitRefComparison(repoRoot, parents[0], candidateRef);
+}
+
+async function resolveGitRef(repoRoot, ref) {
+  return (await git(repoRoot, ['rev-parse', ref])).stdout.trim();
+}
+
+async function resolveGitCommitRef(repoRoot, ref) {
+  return (await git(repoRoot, ['rev-parse', `${ref}^{commit}`])).stdout.trim();
+}
+
+async function listGitCommitParents(repoRoot, ref) {
+  const line = (await git(repoRoot, ['rev-list', '--parents', '-n', '1', ref])).stdout.trim();
+  const parts = line.split(/\s+/u).filter(Boolean);
+  return parts.slice(1);
 }
 
 async function prepareOutputDirectory(outputDir) {
@@ -241,9 +345,9 @@ function requiredArgValue(argv, index, flag) {
 function resolveScenario(options) {
   if (options.prompt) {
     return {
-      id: 'custom-staged-diff-compare',
-      title: options.title ?? 'Custom staged diff compare',
-      description: options.objective ?? 'Compare baseline and staged candidate behavior in isolated artifact workspaces.',
+      id: 'custom-runtime-compare',
+      title: options.title ?? 'Custom runtime compare',
+      description: options.objective ?? 'Compare baseline and candidate behavior in isolated artifact workspaces.',
       userPrompt: options.prompt,
       expectedDeliverables: ['workspace diff', 'assistant output', 'review artifact'],
       rubric: {
@@ -281,7 +385,7 @@ function resolveScenario(options) {
         ],
       },
       metadata: {
-        tags: ['custom', 'staged-diff', 'compare'],
+        tags: ['custom', 'runtime-compare'],
         decisionPrompt: 'Compare baseline and candidate outputs for this scenario. Pick the better user experience, or tie if neither is meaningfully better.',
       },
     };
@@ -466,12 +570,9 @@ async function runCandidate(params) {
     record: {
       id: params.candidateId,
       label: params.label,
-      sourceRef:
-        params.candidateId === 'baseline'
-          ? `HEAD:${params.baselineRef}`
-          : `HEAD:${params.baselineRef}+staged:${params.stagedDiffFingerprint.slice(0, 12)}`,
+      sourceRef: formatCandidateSourceRef(params.comparison, params.candidateId),
       ...(params.candidateId === 'candidate'
-        ? { patchFingerprint: params.stagedDiffFingerprint }
+        ? { diffFingerprint: params.comparison.diffFingerprint }
         : {}),
       modelConfigFingerprint: sha256(stableJsonStringify(redactModelConfig(params.modelConfig))),
       systemPromptFingerprint: sha256(stableJsonStringify(initialState.messages[0] ?? null)),
@@ -1036,12 +1137,18 @@ function printScenarioList() {
 function printHelp() {
   console.log('用法: npm run eval:compare -- [options]');
   console.log('');
+  console.log('默认比较来源: 当前 HEAD 与 staged diff。');
+  console.log('也可通过 --commit 或 --baseline-ref/--candidate-ref 显式指定 before / after。');
+  console.log('');
   console.log('选项:');
   console.log('  --list-scenarios          列出内建场景');
   console.log('  --scenario <id>          选择内建场景，默认 tool-heavy-code-edit');
   console.log('  --prompt <text>          直接指定自定义用户提示词');
   console.log('  --title <text>           自定义场景标题，仅配合 --prompt 使用');
   console.log('  --objective <text>       自定义场景目标，仅配合 --prompt 使用');
+  console.log('  --commit <ref>           比较指定 commit 与其 first-parent');
+  console.log('  --baseline-ref <ref>     显式指定基线 git ref；必须与 --candidate-ref 一起使用');
+  console.log('  --candidate-ref <ref>    显式指定候选 git ref；必须与 --baseline-ref 一起使用');
   console.log('  --api-key <key>          覆盖 OPENAI_API_KEY');
   console.log('  --base-url <url>         覆盖 OPENAI_BASE_URL');
   console.log('  --model <id>             覆盖 OPENAI_MODEL；未传时直接读取环境变量');
@@ -1050,6 +1157,22 @@ function printHelp() {
   console.log('  --output-dir <dir>       必填；本次 compare 的输出根目录，必须是一个不存在的新路径');
   console.log('  --workspace-source <dir> 复制指定工作区目录到输出目录；默认使用空工作区');
   console.log('  --auto-approve           显式自动放行高风险工具审批；默认阻塞并将结果记入 artifact');
+}
+
+function renderComparisonMode(mode) {
+  return mode === 'git-ref' ? 'explicit git refs' : 'HEAD + staged diff';
+}
+
+function formatCandidateSourceRef(comparison, candidateId) {
+  if (candidateId === 'baseline') {
+    return `git:${comparison.baselineRef}`;
+  }
+
+  if (comparison.mode === 'git-ref') {
+    return `git:${comparison.candidateRef}`;
+  }
+
+  return `git:${comparison.baselineRef}+staged:${comparison.diffFingerprint.slice(0, 12)}`;
 }
 
 void main();

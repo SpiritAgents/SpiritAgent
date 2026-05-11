@@ -6,6 +6,7 @@ export interface EvalRunArtifactCandidate {
   id: string;
   label: string;
   sourceRef: string;
+  diffFingerprint?: string;
   patchFingerprint?: string;
   modelConfigFingerprint: string;
   systemPromptFingerprint: string;
@@ -24,7 +25,14 @@ export interface EvalRunArtifactCandidate {
   metadata?: Record<string, JsonValue>;
 }
 
-export interface EvalRunArtifact {
+export interface EvalRunArtifactComparison {
+  mode: 'staged' | 'git-ref';
+  baselineRef: string;
+  candidateRef?: string;
+  diffFingerprint: string;
+}
+
+export interface EvalRunArtifactV1 {
   schemaVersion: 1;
   runId: string;
   createdAtUnixMs: number;
@@ -39,18 +47,39 @@ export interface EvalRunArtifact {
   };
 }
 
+export interface EvalRunArtifactV2 {
+  schemaVersion: 2;
+  runId: string;
+  createdAtUnixMs: number;
+  scenario: unknown;
+  comparison: EvalRunArtifactComparison;
+  workspaceSource?: string;
+  candidates: EvalRunArtifactCandidate[];
+  humanReview: {
+    status: 'pending-human-review' | 'completed';
+    [key: string]: JsonValue;
+  };
+}
+
+export type EvalRunArtifact = EvalRunArtifactV1 | EvalRunArtifactV2;
+
 export function validateEvalRunArtifact(value: unknown): asserts value is EvalRunArtifact {
   if (!isRecord(value)) {
     throw new Error('Eval run artifact must be an object.');
   }
 
-  if (value.schemaVersion !== 1) {
-    throw new Error('Eval run artifact schemaVersion must be 1.');
+  if (value.schemaVersion !== 1 && value.schemaVersion !== 2) {
+    throw new Error('Eval run artifact schemaVersion must be 1 or 2.');
   }
 
   requireNonEmptyString(value, 'runId');
-  requireNonEmptyString(value, 'baselineRef');
-  requireNonEmptyString(value, 'stagedDiffFingerprint');
+
+  if (value.schemaVersion === 1) {
+    requireNonEmptyString(value, 'baselineRef');
+    requireNonEmptyString(value, 'stagedDiffFingerprint');
+  } else {
+    validateComparison(value.comparison);
+  }
 
   if (typeof value.createdAtUnixMs !== 'number' || !Number.isFinite(value.createdAtUnixMs)) {
     throw new Error('Eval run artifact createdAtUnixMs must be a finite number.');
@@ -68,6 +97,23 @@ export function validateEvalRunArtifact(value: unknown): asserts value is EvalRu
 
   if (!isRecord(value.humanReview) || typeof value.humanReview.status !== 'string') {
     throw new Error('Eval run artifact humanReview.status is required.');
+  }
+}
+
+function validateComparison(value: unknown): void {
+  if (!isRecord(value)) {
+    throw new Error('Eval run artifact comparison must be an object.');
+  }
+
+  if (value.mode !== 'staged' && value.mode !== 'git-ref') {
+    throw new Error('Eval run artifact comparison.mode must be staged or git-ref.');
+  }
+
+  requireNonEmptyString(value, 'baselineRef');
+  requireNonEmptyString(value, 'diffFingerprint');
+
+  if (value.mode === 'git-ref') {
+    requireNonEmptyString(value, 'candidateRef');
   }
 }
 
