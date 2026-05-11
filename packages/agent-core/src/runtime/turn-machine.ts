@@ -1235,12 +1235,9 @@ async function runEarlyToolExecution<
     return { kind: 'deferred', reason: 'questions-required' };
   }
 
-  runtime.emitEvent({
-    kind: 'tool-call-started',
-    toolCallId: call.id,
-    toolName: call.name,
-    request,
-  });
+  if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
+    return { kind: 'deferred', reason: 'background-required' };
+  }
 
   const internal = await runtime.tryPerformEarlyInternalToolCall?.(
     request,
@@ -1250,6 +1247,13 @@ async function runEarlyToolExecution<
   if (internal?.kind === 'defer-to-formal') {
     return { kind: 'deferred', reason: 'internal-deferred' };
   }
+
+  runtime.emitEvent({
+    kind: 'tool-call-started',
+    toolCallId: call.id,
+    toolName: call.name,
+    request,
+  });
 
   const external = internal === undefined
     ? await runtime.performToolExecution(request, call.name)
