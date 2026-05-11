@@ -43,6 +43,7 @@ export type PendingEarlyToolExecutionOutcome<ToolRequest> =
       reason:
         | 'schema-error'
         | 'authorization-error'
+        | 'background-required'
         | 'approval-required'
         | 'questions-required'
         | 'internal-deferred';
