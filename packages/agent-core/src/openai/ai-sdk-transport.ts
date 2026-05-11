@@ -66,6 +66,7 @@ import {
 } from './json-schema.js';
 
 const DEFAULT_OPENAI_COMPATIBLE_BASE_URL = 'https://api.openai.com/v1';
+const STREAMING_TOOL_CALL_PLACEHOLDER_PREFIX = 'stream-tool-call-';
 
 type AiSdkToolCall = {
   toolCallId: string;
@@ -1092,6 +1093,7 @@ function accumulateStreamingToolCallProgressFromRawChunk(
       if (
         current.functionName &&
         !current.readyPreviewEmitted &&
+        !isGeneratedStreamingToolCallId(current.id) &&
         hostToolArgumentsReadyForPreview(current.functionName, current.functionArguments)
       ) {
         const previewLine = buildToolProgressPreview(current.functionName, current.functionArguments);
@@ -1602,6 +1604,10 @@ function hasNonEmptyToolCallId(value: unknown): value is string {
 
 function nonEmptyToolCallIdOrUndefined(value: unknown): string | undefined {
   return hasNonEmptyToolCallId(value) ? value : undefined;
+}
+
+function isGeneratedStreamingToolCallId(value: string): boolean {
+  return value.startsWith(STREAMING_TOOL_CALL_PLACEHOLDER_PREFIX);
 }
 
 function saturatingSub(value: number, delta: number): number {
