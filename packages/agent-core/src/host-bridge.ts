@@ -1262,6 +1262,7 @@ async function createRuntime(
       config.model,
       planMetadata,
       extensionSystemPrompts,
+      undefined,
       basicInfo,
     );
   const llmTransport: OpenAiCompatibleTransport = createOpenAiCompatibleTransport(config);
@@ -1281,6 +1282,7 @@ async function createRuntime(
         config.model,
         planMetadata,
         extensionSystemPrompts,
+        undefined,
         basicInfo,
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,
@@ -1301,6 +1303,7 @@ async function createRuntime(
         config.model,
         planMetadata,
         extensionSystemPrompts,
+        undefined,
         basicInfo,
       ),
     generateImage: (request) =>

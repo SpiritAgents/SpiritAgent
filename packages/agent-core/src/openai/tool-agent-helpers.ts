@@ -14,6 +14,7 @@ import {
   appendToolResultMessages,
   appendUserMessage,
   buildBasicInfoSystemMessage,
+  buildDreamsSystemMessage,
   buildToolAgentMessages,
   buildToolAgentSystemMessage,
   cloneJsonValue,
@@ -22,6 +23,7 @@ import {
   findLastMatchingIndex,
   findSpiritSystemMessageContent,
   hasBasicInfoSystemMessage,
+  hasDreamsSystemMessage,
   isJsonObject,
   startToolAgentState,
   truncateHistoryForCompaction,
@@ -40,6 +42,7 @@ import { userMessageContentMatchesInput } from '../runtime/user-turn-timestamp.j
 export {
   buildActiveSkillsSystemMessage,
   buildBasicInfoSystemMessage,
+  buildDreamsSystemMessage,
   buildExtensionsSystemMessage,
   buildPlanSystemMessage,
   buildRulesSystemMessage,
@@ -67,6 +70,7 @@ export function startOpenAiToolAgentState(
   model: string,
   planMetadata?: OpenAiPlanMetadata,
   extensionSystemPrompts: OpenAiExtensionSystemPrompt[] = [],
+  dreamsContextText?: string,
   basicInfo?: OpenAiToolAgentBasicInfo,
 ): OpenAiToolAgentState {
   return startToolAgentState(
@@ -79,6 +83,7 @@ export function startOpenAiToolAgentState(
       model,
       planMetadata,
       extensionSystemPrompts,
+      dreamsContextText,
       basicInfo,
     ),
     userInput,
@@ -94,6 +99,7 @@ export function continueOpenAiToolAgentState(
   model: string,
   planMetadata?: OpenAiPlanMetadata,
   extensionSystemPrompts: OpenAiExtensionSystemPrompt[] = [],
+  dreamsContextText?: string,
   basicInfo?: OpenAiToolAgentBasicInfo,
 ): OpenAiToolAgentState {
   return continueToolAgentState(
@@ -106,6 +112,7 @@ export function continueOpenAiToolAgentState(
       model,
       planMetadata,
       extensionSystemPrompts,
+      dreamsContextText,
       basicInfo,
     ),
   );
@@ -120,6 +127,7 @@ function buildOpenAiToolAgentMessages(
   model: string,
   planMetadata: OpenAiPlanMetadata | undefined,
   extensionSystemPrompts: OpenAiExtensionSystemPrompt[],
+  dreamsContextText: string | undefined,
   basicInfo: OpenAiToolAgentBasicInfo | undefined,
 ): JsonValue[] {
   return buildToolAgentMessages({
@@ -130,6 +138,7 @@ function buildOpenAiToolAgentMessages(
     model,
     ...(planMetadata === undefined ? {} : { planMetadata }),
     extensionSystemPrompts,
+    ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
     ...(basicInfo === undefined ? {} : { basicInfo }),
   });
 }
@@ -203,6 +212,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
   model: string,
   planMetadata?: OpenAiPlanMetadata,
   extensionSystemPrompts: OpenAiExtensionSystemPrompt[] = [],
+  dreamsContextText?: string,
   basicInfo?: OpenAiToolAgentBasicInfo,
 ): OpenAiToolAgentState {
   const preservedSpiritSystemMessage = findSpiritSystemMessageContent(retryState.messages);
@@ -216,15 +226,18 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     model,
     preservedSpiritSystemMessage === undefined ? planMetadata : undefined,
     preservedSpiritSystemMessage === undefined ? extensionSystemPrompts : [],
+    preservedSpiritSystemMessage === undefined ? dreamsContextText : undefined,
     basicInfo,
   );
   if (preservedSpiritSystemMessage !== undefined) {
+    const preservedDreams = hasDreamsSystemMessage(preservedSpiritSystemMessage);
     const preservedBasicInfo = hasBasicInfoSystemMessage(preservedSpiritSystemMessage);
     rebuilt.messages[0] = {
       role: 'system',
       content: buildToolAgentSystemMessage(
         model,
         preservedSpiritSystemMessage,
+        preservedDreams ? undefined : buildDreamsSystemMessage(dreamsContextText),
         preservedBasicInfo ? undefined : buildBasicInfoSystemMessage(basicInfo),
       ),
     };
