@@ -1606,10 +1606,12 @@ export default function App() {
   const activeFilePath = snapshot?.activeSession?.filePath ?? null;
   const canOpenCommitDialog = snapshot?.git.isRepository === true;
   const commitBusy = runtime.busyAction === "git";
+  const sessionNavigationBusy = runtime.busyAction === "session";
+  const newSessionBusy = runtime.busyAction === "reset";
   const commitActionDisabled =
     !canOpenCommitDialog ||
     snapshot?.git.hasChanges !== true ||
-    Boolean(runtime.busyAction);
+    commitBusy;
   const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previousPlanModifiedAtRef = useRef<number | undefined>(undefined);
   const previousPlanExistsRef = useRef<boolean | undefined>(undefined);
@@ -2112,11 +2114,8 @@ export default function App() {
               hostStatus={runtime.summary.hostStatus}
               mcpState={mcpBadgeText(snapshot)}
               micaStyle={useMicaBackdrop}
-              busy={
-                runtime.busyAction === "session" ||
-                runtime.busyAction === "reset" ||
-                runtime.busyAction === "models"
-              }
+              newSessionBusy={newSessionBusy}
+              sessionNavigationBusy={sessionNavigationBusy}
             />
           </div>
         </div>
