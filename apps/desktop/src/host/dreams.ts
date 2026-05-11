@@ -9,6 +9,10 @@ import type {
   OpenAiTransportConfig,
 } from '@spirit-agent/agent-core';
 import {
+  llmMessageTextContent,
+  normalizeStoredLlmMessage,
+} from '@spirit-agent/agent-core';
+import {
   createHostDreamStore,
   DREAM_RETENTION_MS as HOST_DREAM_RETENTION_MS,
   dreamLogsDirPath,
@@ -437,15 +441,20 @@ function normalizeDreamCollectorMessages(
   archive: StoredDesktopSession,
 ): DreamCollectorNormalizedMessage[] {
   const source = archive.llmHistory.length > 0
-    ? archive.llmHistory
+    ? archive.llmHistory.map((message) => {
+        const normalized = normalizeStoredLlmMessage(message);
+        return {
+          role: normalized.role,
+          content: llmMessageTextContent(normalized.content),
+        };
+      })
     : archive.messages.map((message) => ({
         role: message.role,
         content: message.content,
-        imagePaths: [],
       }));
   return source
     .filter(
-      (message): message is { role: 'user' | 'assistant'; content: string; imagePaths: string[] } =>
+      (message): message is { role: 'user' | 'assistant'; content: string } =>
         message.role === 'user' || message.role === 'assistant',
     )
     .filter((message) => message.content.trim().length > 0)
