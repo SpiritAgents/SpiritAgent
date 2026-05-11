@@ -29,6 +29,33 @@ export interface RuntimeToolExecution<ToolRequest> {
   artifacts?: RuntimeToolArtifact[];
 }
 
+export type PendingEarlyToolExecutionOutcome<ToolRequest> =
+  | {
+      kind: 'completed';
+      request: ToolRequest;
+      execution: RuntimeToolExecution<ToolRequest>;
+      output: ToolExecutionOutput;
+      enqueueDeferredGuidance: boolean;
+      fatalError?: string;
+    }
+  | {
+      kind: 'deferred';
+      reason:
+        | 'schema-error'
+        | 'authorization-error'
+        | 'approval-required'
+        | 'questions-required'
+        | 'internal-deferred';
+    };
+
+export interface PendingEarlyToolExecution<ToolRequest> {
+  toolCallId: string;
+  toolName: string;
+  argumentsJson: string;
+  canonicalArgumentsJson: string;
+  outcome: Promise<PendingEarlyToolExecutionOutcome<ToolRequest>>;
+}
+
 export interface RuntimeCompactionRecord {
   droppedMessages: number;
   beforeLength: number;
@@ -390,6 +417,7 @@ export interface PendingStreamingRound<State, ToolRequest> {
   pendingUserInput: string;
   turn: RuntimeTurnContext<ToolRequest>;
   rawEvents: LlmStreamEvent[];
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>;
   completion: ToolAgentRoundCompletion<State> | undefined;
   completionHandled: boolean;
   streamEnded: boolean;
