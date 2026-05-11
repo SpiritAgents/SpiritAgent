@@ -45,7 +45,7 @@ export function ComposerInsertMenu({
       {
         id: 'skill-trigger',
         icon: <SlashBadge />,
-        label: '引用 Skill',
+        label: '斜杠命令',
         onSelect: onInsertSkillTrigger,
       },
     ],
