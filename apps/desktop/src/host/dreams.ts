@@ -46,7 +46,7 @@ const DREAM_COLLECTOR_INCREMENTAL_CONTEXT_MAX_CHARS = 8_000;
 const DREAM_COLLECTOR_ANCHOR_CONTEXT_MAX_CHARS = 4_000;
 const DREAM_COLLECTOR_ANCHOR_MESSAGE_COUNT = 4;
 const DREAM_COLLECTOR_SESSION_COOLDOWN_MS = 2 * 60 * 1000;
-const DREAM_COMMIT_CONTEXT_MAX_CHARS = 6_000;
+const DREAM_CONTEXT_MAX_CHARS = 6_000;
 
 type DesktopRuntime = AgentRuntime<
   OpenAiTransportConfig,
@@ -55,7 +55,7 @@ type DesktopRuntime = AgentRuntime<
   string
 >;
 
-export async function buildDreamCommitContext(input: {
+export async function buildDreamContextText(input: {
   workspaceRoot: string;
   gitBranch?: string;
 }): Promise<string> {
@@ -87,7 +87,14 @@ export async function buildDreamCommitContext(input: {
     ].filter(Boolean);
     return lines.join('\n');
   }).join('\n\n');
-  return truncateText(rendered, DREAM_COMMIT_CONTEXT_MAX_CHARS);
+  return truncateText(rendered, DREAM_CONTEXT_MAX_CHARS);
+}
+
+export async function buildDreamCommitContext(input: {
+  workspaceRoot: string;
+  gitBranch?: string;
+}): Promise<string> {
+  return buildDreamContextText(input);
 }
 
 export function buildCommitMessageGenerationPrompt(input: {

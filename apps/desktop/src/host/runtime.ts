@@ -40,6 +40,7 @@ export function createDesktopRuntime(input: {
   enabledSkillCatalog: OpenAiEnabledSkillCatalogEntry[];
   planMetadata: OpenAiPlanMetadata;
   extensionSystemPrompts: OpenAiExtensionSystemPrompt[];
+  dreamsContextText?: string;
   toolExecutor: DesktopToolExecutor;
   llmTransport: OpenAiCompatibleTransport;
   activeSkills: OpenAiActiveSkill[];
@@ -61,6 +62,7 @@ export function createDesktopRuntime(input: {
         input.transportConfig.model,
         input.planMetadata,
         input.extensionSystemPrompts,
+        input.dreamsContextText,
         input.basicInfo,
       ),
     createContinuationState: (messages) =>
@@ -73,6 +75,7 @@ export function createDesktopRuntime(input: {
         input.transportConfig.model,
         input.planMetadata,
         input.extensionSystemPrompts,
+        input.dreamsContextText,
         input.basicInfo,
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,
@@ -93,6 +96,7 @@ export function createDesktopRuntime(input: {
         input.transportConfig.model,
         input.planMetadata,
         input.extensionSystemPrompts,
+        input.dreamsContextText,
         input.basicInfo,
       ),
     resolveWorkspaceFilesFromInput: (userInput) =>

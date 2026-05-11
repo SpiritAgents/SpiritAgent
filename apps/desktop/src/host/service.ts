@@ -6,6 +6,7 @@ import {
   buildActiveSkillsSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamCollectorSystemMessage,
+  buildDreamsSystemMessage,
   buildExtensionsSystemMessage,
   buildPlanSystemMessage,
   buildRulesSystemMessage,
@@ -155,6 +156,7 @@ import {
 } from './runtime.js';
 import {
   buildCommitMessageGenerationPrompt,
+  buildDreamContextText,
   buildDreamCommitContext,
   clearDreamCollectorIssue,
   DREAM_COLLECTOR_BACKOFF_MS,
@@ -1249,6 +1251,12 @@ class DesktopHostService {
       const planSystemPrompt = buildPlanSystemMessage(state.metadata.planMetadata);
       const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(this.currentTurnSkills);
       const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);
+      const dreamsSystemPrompt = buildDreamsSystemMessage(
+        await buildDreamContextText({
+          workspaceRoot: state.workspaceRoot,
+          gitBranch: state.git.branch,
+        }),
+      );
       const basicInfoSystemPrompt = buildBasicInfoSystemMessage(
         this.buildRuntimeBasicInfo(state.workspaceRoot, this.requireToolExecutor()),
       );
@@ -1275,6 +1283,7 @@ class DesktopHostService {
             ? {}
             : { activeSkills: activeSkillsSystemPrompt }),
           ...(extensionsSystemPrompt === undefined ? {} : { extensions: extensionsSystemPrompt }),
+          ...(dreamsSystemPrompt === undefined ? {} : { dreams: dreamsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
         },
         note: 'messages: 内存 llm_history 的 API 形态。api_request_trace: 每步模型推理均为一次 tool_agent_chat_completions，stream=true，含 tools；多轮工具时会有多条 trace（每轮一次 HTTP），失败轮次也会保留最后一次请求体。system_prompts 为 transport 导出的 system 文案（如 tool_agent），供调试与导出。',
@@ -2157,6 +2166,10 @@ class DesktopHostService {
       state.metadata.skills.enabledSkillCatalog,
       state.metadata.planMetadata,
       extensionSystemPrompts,
+      await buildDreamContextText({
+        workspaceRoot: state.workspaceRoot,
+        gitBranch: state.git.branch,
+      }),
       undefined,
       this.runtimeTransport,
     );
@@ -2279,6 +2292,7 @@ class DesktopHostService {
             content: buildDreamCollectorSystemMessage(),
           },
         ],
+        undefined,
         toolExecutor,
       ),
       getStatus: () => this.dreamCollectorStatus,
@@ -2295,6 +2309,18 @@ class DesktopHostService {
       })
       .finally(() => {
         this.dreamCollectorRunning = false;
+        void this.runSerialized(async () => {
+          if (!this.initialized || !this.state) {
+            return;
+          }
+          if (this.runtime?.isBusy()) {
+            this.deferredRuntimeRefreshWhileBusy = true;
+            return;
+          }
+          this.deferredRuntimeRefreshWhileBusy = false;
+          await this.refreshRuntime();
+          this.lastRuntimeError = '';
+        });
       });
   }
 
@@ -2362,6 +2388,7 @@ class DesktopHostService {
     enabledSkillCatalog: OpenAiEnabledSkillCatalogEntry[],
     planMetadata: OpenAiPlanMetadata,
     extensionSystemPrompts: OpenAiExtensionSystemPrompt[],
+    dreamsContextText?: string,
     toolExecutor: DesktopToolExecutor = this.requireToolExecutor(),
     llmTransport: OpenAiCompatibleTransport = createOpenAiCompatibleTransport(transportConfig),
   ): DesktopRuntime {
@@ -2374,6 +2401,7 @@ class DesktopHostService {
       enabledSkillCatalog,
       planMetadata,
       extensionSystemPrompts,
+      ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
       toolExecutor,
       llmTransport,
       activeSkills: this.currentTurnSkills,

@@ -16,6 +16,7 @@ const SKILLS_CATALOG_SECTION_PREFIX = '[SPIRIT_SKILLS_CATALOG]';
 const PLAN_SECTION_PREFIX = '[SPIRIT_PLAN]';
 const ACTIVE_SKILLS_SECTION_PREFIX = '[SPIRIT_ACTIVE_SKILLS]';
 const EXTENSIONS_SECTION_PREFIX = '[SPIRIT_EXTENSIONS]';
+const DREAMS_SECTION_PREFIX = '[SPIRIT_DREAMS]';
 const BASIC_INFO_SECTION_PREFIX = '[SPIRIT_BASIC_INFO]';
 const TOOL_MEMORY_PREFIX = '[TOOL_MEMORY]';
 
@@ -130,6 +131,7 @@ export function buildToolAgentMessages(input: {
   model: string;
   planMetadata?: ToolAgentPlanMetadata;
   extensionSystemPrompts?: ToolAgentExtensionSystemPrompt[];
+  dreamsContextText?: string;
   basicInfo?: ToolAgentBasicInfo;
 }): JsonValue[] {
   const rulesSystemMessage = buildRulesSystemMessage(input.enabledRules ?? []);
@@ -137,6 +139,7 @@ export function buildToolAgentMessages(input: {
   const planSystemMessage = buildPlanSystemMessage(input.planMetadata);
   const activeSkillsSystemMessage = buildActiveSkillsSystemMessage(input.activeSkills ?? []);
   const extensionsSystemMessage = buildExtensionsSystemMessage(input.extensionSystemPrompts ?? []);
+  const dreamsSystemMessage = buildDreamsSystemMessage(input.dreamsContextText);
   const basicInfoSystemMessage = buildBasicInfoSystemMessage(input.basicInfo);
 
   return [
@@ -149,6 +152,7 @@ export function buildToolAgentMessages(input: {
         planSystemMessage,
         activeSkillsSystemMessage,
         extensionsSystemMessage,
+        dreamsSystemMessage,
         basicInfoSystemMessage,
       ),
     },
@@ -472,6 +476,26 @@ export function buildExtensionsSystemMessage(
   ].join('\n');
 }
 
+export function buildDreamsSystemMessage(
+  dreamsContextText?: string,
+): string | undefined {
+  const trimmed = dreamsContextText?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  return [
+    DREAMS_SECTION_PREFIX,
+    'Dream summaries',
+    '',
+    'These are short-lived host-provided summaries of recent work movement for the current workspace and Git branch.',
+    'Treat them as background continuity, not as authoritative current state.',
+    'Prefer the current user request, visible conversation, and tool results when they conflict with these summaries.',
+    '',
+    trimmed,
+  ].join('\n');
+}
+
 export function buildBasicInfoSystemMessage(
   basicInfo?: ToolAgentBasicInfo,
 ): string | undefined {
@@ -505,6 +529,10 @@ export function buildBasicInfoSystemMessage(
   return lines.join('\n').trimEnd();
 }
 
+export function hasDreamsSystemMessage(content: string): boolean {
+  return content.includes(DREAMS_SECTION_PREFIX);
+}
+
 export function hasBasicInfoSystemMessage(content: string): boolean {
   return content.includes(BASIC_INFO_SECTION_PREFIX);
 }
@@ -522,6 +550,7 @@ export function findSpiritSystemMessageContent(messages: JsonValue[]): string | 
         PLAN_SECTION_PREFIX,
         ACTIVE_SKILLS_SECTION_PREFIX,
         EXTENSIONS_SECTION_PREFIX,
+        DREAMS_SECTION_PREFIX,
         BASIC_INFO_SECTION_PREFIX,
       ]
         .map((prefix) => content.indexOf(prefix))
