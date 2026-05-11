@@ -19,6 +19,7 @@ import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
+  createToolExecutionTextOutput,
   llmMessageContentWithoutImages,
   llmMessageHasImages,
   llmMessageImagePaths,
@@ -103,6 +104,7 @@ import type {
   AssistantAuxKind,
   PendingAutoHistoryCompaction,
   PendingAssistantAux,
+  PendingEarlyToolExecution,
   PendingApprovalState,
   PendingBackgroundToolExecution,
   PendingHistoryCompaction,
@@ -132,7 +134,7 @@ import type {
 } from './runtime/types.js';
 import type { ContextRuntime } from './runtime/context.js';
 import type { ManualToolsRuntime } from './runtime/manual-tools.js';
-import type { TurnMachineRuntime } from './runtime/turn-machine.js';
+import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './runtime/turn-machine.js';
 import type { BackgroundToolsRuntime } from './runtime/background-tools.js';
 import type { CompactionRuntime } from './runtime/compaction.js';
 import type { StreamingRuntime } from './runtime/streaming.js';
@@ -1611,6 +1613,7 @@ export class AgentRuntime<
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): Promise<void> {
     return processToolCallsAsyncInternal(
       this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -1620,6 +1623,7 @@ export class AgentRuntime<
       turn,
       resumeAsStreaming,
       streamingEmitBeginResponse,
+      earlyToolExecutions,
     );
   }
 
@@ -2079,6 +2083,45 @@ export class AgentRuntime<
       request,
       toolName,
     );
+  }
+
+  private async tryPerformEarlyInternalToolCall(
+    request: ToolRequest,
+    _toolCallId: string,
+    _toolName: string,
+  ): Promise<EarlyInternalToolCallResult | undefined> {
+    const imageRequest = extractGenerateImageRequest(request);
+    if (imageRequest !== undefined) {
+      try {
+        if (!this.options.generateImage) {
+          throw new Error('No image generation executor is configured.');
+        }
+
+        const output = await this.options.generateImage(imageRequest);
+        this.persistToolExecutionMemory(request, output.summaryText);
+        return {
+          kind: 'completed',
+          output,
+          failed: false,
+          enqueueDeferredGuidance: false,
+        };
+      } catch (error) {
+        const message = renderError(error);
+        return {
+          kind: 'completed',
+          output: createToolExecutionTextOutput(`generate_image failed: ${message}`),
+          failed: true,
+          enqueueDeferredGuidance: false,
+          fatalError: message,
+        };
+      }
+    }
+
+    if (extractRunSubagentRequest(request) !== undefined) {
+      return { kind: 'defer-to-formal' };
+    }
+
+    return undefined;
   }
 
   private persistToolExecutionMemory(request: ToolRequest, output: string): void {
