@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { extname, isAbsolute, resolve } from 'node:path';
+import { basename, extname, isAbsolute, resolve } from 'node:path';
 
 import {
   createAlibaba,
@@ -93,6 +93,52 @@ interface Deferred<T> {
   reject(error: unknown): void;
 }
 
+const MANAGED_GENERATED_IMAGE_PROTOCOL = 'spirit-image:';
+const MANAGED_GENERATED_IMAGE_HOST = 'generated';
+
+export function normalizeGeneratedImageMarkdownRef(markdownRef: string): string {
+  const trimmed = markdownRef.trim();
+  if (!trimmed) {
+    throw new Error('Host returned an empty generated image markdownRef.');
+  }
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new Error('Host returned an invalid generated image markdownRef.');
+  }
+
+  if (
+    url.protocol.toLowerCase() !== MANAGED_GENERATED_IMAGE_PROTOCOL ||
+    url.hostname.toLowerCase() !== MANAGED_GENERATED_IMAGE_HOST ||
+    url.search.length > 0 ||
+    url.hash.length > 0
+  ) {
+    throw new Error('Host returned an invalid generated image markdownRef.');
+  }
+
+  let imageId: string;
+  try {
+    imageId = decodeURIComponent(url.pathname.replace(/^\/+/, '')).trim();
+  } catch {
+    throw new Error('Host returned an invalid generated image markdownRef.');
+  }
+
+  if (
+    !imageId ||
+    imageId !== basename(imageId) ||
+    imageId === '.' ||
+    imageId === '..' ||
+    imageId.includes('/') ||
+    imageId.includes('\\')
+  ) {
+    throw new Error('Host returned an invalid generated image markdownRef.');
+  }
+
+  return `spirit-image://generated/${encodeURIComponent(imageId)}`;
+}
+
 export class AiSdkOpenAiCompatibleTransport
   implements LlmTransport<OpenAiTransportConfig, ToolAgentState>, OpenAiJsonSchemaTransport
 {
@@ -135,12 +181,15 @@ export class AiSdkOpenAiCompatibleTransport
 
     logAiSdkImageGenerationSuccess(imageConfig, requestUrl, saved);
 
-    const summaryText = [
-      '[generated image]',
-      `path: ${saved.path}`,
-      `mime_type: ${saved.mimeType}`,
-      `model: ${imageConfig.model}`,
-    ].join('\n');
+    const summaryLines = ['[generated image]'];
+    const markdownRef = normalizeGeneratedImageMarkdownRef(saved.markdownRef);
+    summaryLines.push(
+      `image_ref: ${markdownRef}`,
+      `read_file_path: ${markdownRef}`,
+      `embed_markdown: ![Generated image](${markdownRef})`,
+    );
+    summaryLines.push(`mime_type: ${saved.mimeType}`, `model: ${imageConfig.model}`);
+    const summaryText = summaryLines.join('\n');
 
     return {
       content: createLlmMessageContentFromTextAndImages(summaryText, [saved.path]),
