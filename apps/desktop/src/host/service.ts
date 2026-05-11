@@ -2392,6 +2392,7 @@ class DesktopHostService {
     const pendingApproval = this.runtime?.currentPendingApproval();
     const pendingQuestions = this.runtime?.currentPendingQuestions();
     const pendingAux = this.runtime?.pendingAuxState();
+    const rawConversationMessages = this.desktopMessages();
     const standaloneAnchorState = this.assistantMessages.standaloneAnchorState();
     this.conversationSnapshotView.syncStandalonePendingAux({
       livePendingAux: pendingAux,
@@ -2403,16 +2404,19 @@ class DesktopHostService {
         pendingAux.kind,
         pendingAux.detailText ?? pendingAux.statusText,
       );
+      state.messageTimeline.updatePendingAssistantAux(
+        pendingAux.kind,
+        pendingAux.detailText ?? pendingAux.statusText,
+      );
     }
-    this.assistantMessages.pruneEmptyAssistantMessages('buildSnapshot');
 
     const conversationMessages = this.conversationSnapshotView.buildMessagesWithPendingAssistant({
-      messages: state.messages,
+      messages: rawConversationMessages,
       livePendingAux: pendingAux,
       rewind: state.rewind,
     });
     this.logContinuationSnapshotState({
-      rawMessages: state.messages,
+      rawMessages: rawConversationMessages,
       visibleMessages: conversationMessages,
       isBusy: this.runtime?.isBusy() ?? false,
       pendingAux,
@@ -2697,11 +2701,15 @@ class DesktopHostService {
   }
 
   private archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {
-    return buildArchiveMessagesFromConversation(this.requireState().messages);
+    return buildArchiveMessagesFromConversation(this.desktopMessages());
   }
 
   private archiveAssistantAux(): AssistantAuxArchiveEntry[] {
-    return buildArchiveAssistantAuxFromConversation(this.requireState().messages);
+    return buildArchiveAssistantAuxFromConversation(this.desktopMessages());
+  }
+
+  private desktopMessages(): ConversationMessageSnapshot[] {
+    return this.requireState().messageTimeline.toMessages();
   }
 
   private createMessageTimelineFromMessages(
@@ -2768,6 +2776,10 @@ class DesktopHostService {
   }
 
   private latestContinuableAssistantMessage(): ConversationMessageSnapshot | undefined {
+    const timelineContinuable = this.requireState().messageTimeline.latestContinuableAssistantMessage();
+    if (timelineContinuable) {
+      return timelineContinuable;
+    }
     const messages = this.requireState().messages;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index]!;
@@ -2935,12 +2947,12 @@ class DesktopHostService {
     messageId: number,
     beforeUserCheckpoint?: DesktopRewindCheckpointSnapshot,
   ): Promise<void> {
-    this.assistantMessages.pruneEmptyAssistantMessages('recordRewindCheckpoint');
     const state = this.requireState();
     if (!state.activeSession) {
       return;
     }
-    const messageIndex = state.messages.findIndex((message) => message.id === messageId);
+    const desktopMessages = this.desktopMessages();
+    const messageIndex = desktopMessages.findIndex((message) => message.id === messageId);
     if (messageIndex < 0) {
       return;
     }
@@ -2964,7 +2976,7 @@ class DesktopHostService {
       checkpoint.id,
       {
         archive,
-        desktopMessages: sanitizeConversationMessagesForPersistence(state.messages),
+        desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
         ...(beforeUserCheckpoint
           ? {
               beforeArchive: cloneChatArchive(beforeUserCheckpoint.archive),
@@ -2978,8 +2990,8 @@ class DesktopHostService {
   }
 
   private buildRewindCheckpointSnapshot(): DesktopRewindCheckpointSnapshot {
-    this.assistantMessages.pruneEmptyAssistantMessages('buildRewindCheckpointSnapshot');
     const state = this.requireState();
+    const desktopMessages = this.desktopMessages();
     const archive = this.runtime
       ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
       : {
@@ -2990,7 +3002,7 @@ class DesktopHostService {
         } satisfies ChatArchive;
     return {
       archive,
-      desktopMessages: sanitizeConversationMessagesForPersistence(state.messages),
+      desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
     };
   }
 
@@ -3003,14 +3015,13 @@ class DesktopHostService {
     const desktopMessages = snapshot.beforeDesktopMessages ?? snapshot.desktopMessages.slice(0, -1);
 
     state.messages = desktopMessages.map((message) => ({ ...message }));
-  state.messageTimeline = this.createMessageTimelineFromMessages(state.messages);
+    state.messageTimeline = this.createMessageTimelineFromMessages(state.messages);
     state.archiveHistory = cloneArchiveHistory(archive.llmHistory);
     state.archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
     pruneRewindMetadataAfterCheckpoint(state.rewind, checkpointSequence);
     this.pendingUnboundFileChangeIds = [];
     this.messageIdCounter = nextMessageIdFromMessages(state.messages);
     this.resetStreamingPlacementState(true);
-    this.assistantMessages.pruneEmptyAssistantMessages('restoreBeforeRewindCheckpoint');
     this.requireRuntime().replaceFromArchive(archive);
   }
 
@@ -3019,8 +3030,6 @@ class DesktopHostService {
     if (!state.activeSession || state.activeSession.kind === 'ephemeral' || this.runtime?.isBusy()) {
       return;
     }
-
-    this.assistantMessages.pruneEmptyAssistantMessages('persistCurrentSessionIfNeeded');
 
     const archive = this.runtime
       ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
@@ -3036,7 +3045,7 @@ class DesktopHostService {
       sessionDisplayName: state.activeSession.displayName,
       workspaceRoot: state.workspaceRoot,
       gitBranch: state.git.branch,
-      desktopMessages: state.messages,
+      desktopMessages: this.desktopMessages(),
       rewind: state.rewind,
     });
     state.activeSession.filePath = await saveStoredSession(state.activeSession.filePath, stored);
