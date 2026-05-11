@@ -5,6 +5,7 @@ import type {
   AuthorizationDecision,
   JsonValue,
   LlmMessage,
+  ToolExecutionOutput,
   ToolAgentRoundCompletion,
   ToolCallRequest,
 } from '../ports.js';
@@ -20,6 +21,8 @@ import {
 import type { ToolExecutionResult } from './tool-execution.js';
 import type {
   AgentRuntimeOptions,
+  PendingEarlyToolExecution,
+  PendingEarlyToolExecutionOutcome,
   PendingApprovalState,
   PendingQuestionsState,
   PendingToolAgentRound,
@@ -32,6 +35,16 @@ import type {
   RuntimeTurnContext,
   RuntimeTurnResult,
 } from './types.js';
+
+export type EarlyInternalToolCallResult =
+  | {
+      kind: 'completed';
+      output: ToolExecutionOutput;
+      failed: boolean;
+      enqueueDeferredGuidance?: boolean;
+      fatalError?: string;
+    }
+  | { kind: 'defer-to-formal' };
 
 export interface InternalToolCallRuntime<
   Config,
@@ -61,6 +74,11 @@ export interface InternalToolCallRuntime<
     resumeAsStreaming?: boolean,
     streamingEmitBeginResponse?: boolean,
   ) => Promise<boolean>;
+  tryPerformEarlyInternalToolCall?: (
+    request: ToolRequest,
+    toolCallId: string,
+    toolName: string,
+  ) => Promise<EarlyInternalToolCallResult | undefined>;
 }
 
 export interface TurnMachineRuntime<
@@ -638,20 +656,13 @@ export async function executeAuthorizedToolCall<
   }
 
   const execution = await runtime.performToolExecution(request, toolName);
-  const artifacts = toolArtifactsFromOutput(execution.output);
-
-  const finished: RuntimeToolExecution<ToolRequest> = {
+  commitToolExecutionOutput(runtime, turn, {
     toolCallId,
     toolName,
     request,
-    output: execution.output.summaryText,
+    output: execution.output,
     failed: execution.failed,
-    ...(artifacts ? { artifacts } : {}),
-  };
-  turn.toolExecutions.push(finished);
-  runtime.emitEvent({ kind: 'tool-execution-finished', execution: finished });
-  enqueueDeferredToolOutputGuidance(turn, toolName, execution.output);
-
+  });
   const resumedState = runtime.options.appendToolResultMessage(
     state,
     toolCallId,
@@ -880,6 +891,7 @@ export async function processToolCallsAsync<
   turn: RuntimeTurnContext<ToolRequest>,
   resumeAsStreaming = false,
   streamingEmitBeginResponse = true,
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
 ): Promise<void> {
   let currentState = state;
   const remaining = [...calls];
@@ -888,6 +900,35 @@ export async function processToolCallsAsync<
     const call = remaining.shift();
     if (!call) {
       break;
+    }
+
+    const earlyOutcome = await matchingEarlyToolExecutionOutcome(call, earlyToolExecutions);
+    if (earlyOutcome?.kind === 'completed') {
+      commitPreparedToolExecution(
+        runtime,
+        turn,
+        earlyOutcome.execution,
+        earlyOutcome.output,
+        false,
+        earlyOutcome.enqueueDeferredGuidance,
+      );
+      if (earlyOutcome.fatalError !== undefined) {
+        runtime.completeTurn({
+          kind: 'failed',
+          error: earlyOutcome.fatalError,
+          state: currentState,
+          requestTrace: [...turn.requestTrace],
+          toolExecutions: [...turn.toolExecutions],
+          compactions: [...turn.compactions],
+        });
+        return;
+      }
+      currentState = runtime.options.appendToolResultMessage(
+        currentState,
+        call.id,
+        earlyOutcome.output.summaryText,
+      );
+      continue;
     }
 
     let request: ToolRequest;
@@ -1031,18 +1072,13 @@ export async function processToolCallsAsync<
     }
 
     const execution = await runtime.performToolExecution(request, call.name);
-    const artifacts = toolArtifactsFromOutput(execution.output);
-    const finished: RuntimeToolExecution<ToolRequest> = {
+    commitToolExecutionOutput(runtime, turn, {
       toolCallId: call.id,
       toolName: call.name,
       request,
-      output: execution.output.summaryText,
+      output: execution.output,
       failed: execution.failed,
-      ...(artifacts ? { artifacts } : {}),
-    };
-    turn.toolExecutions.push(finished);
-    runtime.emitEvent({ kind: 'tool-execution-finished', execution: finished });
-    enqueueDeferredToolOutputGuidance(turn, call.name, execution.output);
+    });
     currentState = runtime.options.appendToolResultMessage(
       currentState,
       call.id,
@@ -1061,6 +1097,228 @@ export async function processToolCallsAsync<
   }
 
   startToolAgentRoundAsync(runtime, currentState, pendingUserInput, turn);
+}
+
+export interface CommitToolExecutionOutputOptions<ToolRequest> {
+  toolCallId: string;
+  toolName: string;
+  request: ToolRequest;
+  output: ToolExecutionOutput;
+  failed: boolean;
+}
+
+export function buildRuntimeToolExecution<ToolRequest>(
+  options: CommitToolExecutionOutputOptions<ToolRequest>,
+): RuntimeToolExecution<ToolRequest> {
+  const artifacts = toolArtifactsFromOutput(options.output);
+  return {
+    toolCallId: options.toolCallId,
+    toolName: options.toolName,
+    request: options.request,
+    output: options.output.summaryText,
+    failed: options.failed,
+    ...(artifacts ? { artifacts } : {}),
+  };
+}
+
+export function commitToolExecutionOutput<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, 'emitEvent'>,
+  turn: RuntimeTurnContext<ToolRequest>,
+  options: CommitToolExecutionOutputOptions<ToolRequest>,
+): RuntimeToolExecution<ToolRequest> {
+  const finished = buildRuntimeToolExecution(options);
+  return commitPreparedToolExecution(runtime, turn, finished, options.output, true);
+}
+
+export function commitPreparedToolExecution<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, 'emitEvent'>,
+  turn: RuntimeTurnContext<ToolRequest>,
+  execution: RuntimeToolExecution<ToolRequest>,
+  output: ToolExecutionOutput,
+  emitFinishedEvent: boolean,
+  enqueueDeferredGuidance = true,
+): RuntimeToolExecution<ToolRequest> {
+  if (!turn.toolExecutions.some((item) => item.toolCallId === execution.toolCallId)) {
+    turn.toolExecutions.push(execution);
+  }
+  if (emitFinishedEvent) {
+    runtime.emitEvent({ kind: 'tool-execution-finished', execution });
+  }
+  if (enqueueDeferredGuidance) {
+    enqueueDeferredToolOutputGuidance(turn, execution.toolName, output);
+  }
+  return execution;
+}
+
+export function canonicalizeToolArguments(argumentsJson: string): string | undefined {
+  try {
+    return JSON.stringify(stableJsonValue(JSON.parse(argumentsJson) as JsonValue));
+  } catch {
+    return undefined;
+  }
+}
+
+export function startEarlyToolExecution<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  call: ToolCallRequest,
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+): PendingEarlyToolExecution<ToolRequest> | undefined {
+  if (earlyToolExecutions.has(call.id)) {
+    return earlyToolExecutions.get(call.id);
+  }
+
+  const canonicalArgumentsJson = canonicalizeToolArguments(call.argumentsJson);
+  if (canonicalArgumentsJson === undefined) {
+    return undefined;
+  }
+
+  const record: PendingEarlyToolExecution<ToolRequest> = {
+    toolCallId: call.id,
+    toolName: call.name,
+    argumentsJson: call.argumentsJson,
+    canonicalArgumentsJson,
+    outcome: runEarlyToolExecution(runtime, call),
+  };
+  earlyToolExecutions.set(call.id, record);
+  return record;
+}
+
+async function runEarlyToolExecution<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  call: ToolCallRequest,
+): Promise<PendingEarlyToolExecutionOutcome<ToolRequest>> {
+  let request: ToolRequest;
+  try {
+    request = await runtime.options.toolExecutor.requestFromFunctionCall(
+      call.name,
+      call.argumentsJson,
+    );
+    request = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+      toolCallId: call.id,
+      toolName: call.name,
+    }) ?? request;
+  } catch {
+    return { kind: 'deferred', reason: 'schema-error' };
+  }
+
+  let authorization: AuthorizationDecision<TrustTarget>;
+  try {
+    authorization = await runtime.options.toolExecutor.authorize(request);
+  } catch {
+    return { kind: 'deferred', reason: 'authorization-error' };
+  }
+
+  if (authorization.kind === 'need-approval') {
+    return { kind: 'deferred', reason: 'approval-required' };
+  }
+  if (authorization.kind === 'need-questions') {
+    return { kind: 'deferred', reason: 'questions-required' };
+  }
+
+  if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
+    return { kind: 'deferred', reason: 'background-required' };
+  }
+
+  const internal = await runtime.tryPerformEarlyInternalToolCall?.(
+    request,
+    call.id,
+    call.name,
+  );
+  if (internal?.kind === 'defer-to-formal') {
+    return { kind: 'deferred', reason: 'internal-deferred' };
+  }
+
+  runtime.emitEvent({
+    kind: 'tool-call-started',
+    toolCallId: call.id,
+    toolName: call.name,
+    request,
+  });
+
+  const external = internal === undefined
+    ? await runtime.performToolExecution(request, call.name)
+    : undefined;
+  const output = internal?.kind === 'completed'
+    ? internal.output
+    : external?.output;
+  const failed = internal?.kind === 'completed'
+    ? internal.failed
+    : external?.failed;
+  if (!output || failed === undefined) {
+    return { kind: 'deferred', reason: 'internal-deferred' };
+  }
+  const fatalError = internal?.kind === 'completed' ? internal.fatalError : undefined;
+  const enqueueDeferredGuidance = internal?.kind === 'completed'
+    ? internal.enqueueDeferredGuidance ?? true
+    : true;
+  const execution = buildRuntimeToolExecution({
+    toolCallId: call.id,
+    toolName: call.name,
+    request,
+    output,
+    failed,
+  });
+  runtime.emitEvent({ kind: 'tool-execution-finished', execution });
+  return {
+    kind: 'completed',
+    request,
+    execution,
+    output,
+    enqueueDeferredGuidance,
+    ...(fatalError !== undefined ? { fatalError } : {}),
+  };
+}
+
+async function matchingEarlyToolExecutionOutcome<ToolRequest>(
+  call: ToolCallRequest,
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>> | undefined,
+): Promise<PendingEarlyToolExecutionOutcome<ToolRequest> | undefined> {
+  const early = earlyToolExecutions?.get(call.id);
+  if (!early || early.toolName !== call.name) {
+    return undefined;
+  }
+
+  const canonicalArgumentsJson = canonicalizeToolArguments(call.argumentsJson);
+  if (canonicalArgumentsJson === undefined || canonicalArgumentsJson !== early.canonicalArgumentsJson) {
+    return undefined;
+  }
+
+  const outcome = await early.outcome;
+  return outcome.kind === 'completed' ? outcome : undefined;
+}
+
+function stableJsonValue(value: JsonValue): JsonValue {
+  if (Array.isArray(value)) {
+    return value.map(stableJsonValue);
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, stableJsonValue(item)]),
+    );
+  }
+  return value;
 }
 
 export async function waitForCompletedTurnResult<

@@ -3,6 +3,7 @@ import {
   type LlmMessage,
   type LlmStreamEvent,
   type ToolAgentRoundCompletion,
+  type ToolCallRequest,
 } from '../ports.js';
 
 import { STREAM_EVENT_BUDGET_PER_POLL, STREAM_STALL_TIMEOUT_MS } from './constants.js';
@@ -10,6 +11,7 @@ import { applyDeferredUserGuidance, cloneHistory, renderError } from './helpers.
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
+  PendingEarlyToolExecution,
   PendingBackgroundToolExecution,
   PendingHistoryCompaction,
   PendingStreamingRound,
@@ -18,6 +20,9 @@ import type {
   RuntimeTurnResult,
   RuntimeTurnContext,
 } from './types.js';
+import type { ToolExecutionResult } from './tool-execution.js';
+import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './turn-machine.js';
+import { startEarlyToolExecution } from './turn-machine.js';
 
 export interface StreamingRuntime<
   Config,
@@ -57,11 +62,21 @@ export interface StreamingRuntime<
   processToolCallsAsync(
     state: State,
     pendingUserInput: string,
-    calls: import('../ports.js').ToolCallRequest[],
+    calls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming?: boolean,
     streamingEmitBeginResponse?: boolean,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): Promise<void>;
+  performToolExecution(
+    request: ToolRequest,
+    toolName: string,
+  ): Promise<ToolExecutionResult>;
+  tryPerformEarlyInternalToolCall?(
+    request: ToolRequest,
+    toolCallId: string,
+    toolName: string,
+  ): Promise<EarlyInternalToolCallResult | undefined>;
 }
 
 export function handleStreamStallTimeout<
@@ -133,6 +148,7 @@ export async function startStreamingRound<
     pendingUserInput,
     turn,
     rawEvents: [],
+    earlyToolExecutions: new Map(),
     completion: undefined,
     completionHandled: false,
     streamEnded: false,
@@ -381,6 +397,15 @@ export async function handlePendingStreamEvent<
       toolName: event.toolName,
       argumentsJson: event.argumentsJson,
     });
+    startEarlyToolExecution(
+      runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      {
+        id: event.toolCallId,
+        name: event.toolName,
+        argumentsJson: event.argumentsJson,
+      },
+      pending.earlyToolExecutions,
+    );
     mergeToolProgressIntoThinking(runtime, event.previewLine);
     runtime.emitEvent({
       kind: 'update-pending-assistant-thinking',
@@ -445,6 +470,7 @@ export async function handlePendingStreamEvent<
           pending.turn,
           true,
           true,
+          pending.earlyToolExecutions,
         );
         return true;
       }
@@ -627,6 +653,7 @@ export async function handlePendingStreamingCompletion<
       pending.turn,
       true,
       true,
+      pending.earlyToolExecutions,
     );
     return;
   }

@@ -35,7 +35,7 @@ async function main(): Promise<void> {
               tool_calls: [
                 {
                   index: 0,
-                  id: 'call_ai_sdk_stream_1',
+                  id: '',
                   type: 'function',
                   function: {
                     name: 'demo_lookup',
@@ -63,7 +63,7 @@ async function main(): Promise<void> {
                   id: '',
                   type: 'function',
                   function: {
-                    arguments: ':"Spirit Agent ',
+                    arguments: ':"Spirit Agent streaming"}',
                   },
                 },
               ],
@@ -84,11 +84,9 @@ async function main(): Promise<void> {
               tool_calls: [
                 {
                   index: 0,
-                  id: '',
+                  id: 'call_ai_sdk_stream_1',
                   type: 'function',
-                  function: {
-                    arguments: 'streaming"}',
-                  },
+                  function: {},
                 },
               ],
             },
@@ -154,13 +152,19 @@ async function main(): Promise<void> {
   printSmokeSection('ai-sdk openai streaming smoke events', events);
   printSmokeSection('ai-sdk openai streaming smoke completion', completion);
 
-  if (!events.some((event) => isJsonObject(event) && event.kind === 'streaming-tool-preview')) {
+  const previewEvents = events.filter(
+    (event) => isJsonObject(event) && event.kind === 'streaming-tool-preview',
+  );
+  if (previewEvents.length === 0) {
     throw new Error('ai-sdk openai streaming smoke 未收到 streaming-tool-preview 事件。');
   }
+  if (previewEvents.length !== 1) {
+    throw new Error('ai-sdk openai streaming smoke 不应为同一 tool call 重复发出 preview 事件。');
+  }
 
-  const previewEvent = events.find((event) => isJsonObject(event) && event.kind === 'streaming-tool-preview');
+  const previewEvent = previewEvents[0];
   if (!isJsonObject(previewEvent) || previewEvent.toolCallId !== 'call_ai_sdk_stream_1') {
-    throw new Error('ai-sdk openai streaming smoke 未在 preview 事件上保留首个非空 toolCallId。');
+    throw new Error('ai-sdk openai streaming smoke 未等待真实 toolCallId 后再发出 preview 事件。');
   }
 
   if (events.some((event) => isJsonObject(event) && event.kind === 'error')) {

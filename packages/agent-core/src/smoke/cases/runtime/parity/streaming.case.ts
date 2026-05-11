@@ -15,6 +15,7 @@ import {
   StreamingFinalTransport,
   StreamingTimeoutTransport,
   StreamingToolRoundTransport,
+  SubagentExecutor,
   appendScriptedToolResult,
   appendScriptedUserLlmMessage,
   appendScriptedUserMessage,
@@ -22,17 +23,27 @@ import {
   createScriptedState,
   extractScriptedAssistantText,
   flushMicrotasks,
+  historyAsPlainApiMessages,
   isJsonObject,
   llmMessageImagePaths,
   llmMessageTextContent,
   rebuildScriptedStateAfterCompaction,
+  streamFromEvents,
   truncateScriptedHistoryForCompaction,
   truncateScriptedStateForContextRetry,
   type LlmMessage,
   type RuntimeEvent,
   type RuntimeParityCaseResult,
+  type ScriptedState,
   type ScriptedToolRequest,
 } from './harness.js';
+import type {
+  JsonValue,
+  LlmTransport,
+  StartedToolAgentRound,
+  ToolAgentRoundCompletion,
+  ToolExecutionOutput,
+} from '../../../../ports.js';
 
 export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   const streamingEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
@@ -43,6 +54,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   const streamingGuidanceEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const timeoutEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingFailureEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
+  const previewEarlyExecutionEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
+  const previewBackgroundDeferredEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
+  const previewSubagentDeferredEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
 
   const streamingRuntime = new AgentRuntime({
     config: undefined,
@@ -83,6 +97,164 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   }
   if (!drainedStreamingEvents.some((event) => event.kind === 'assistant-response-completed')) {
     throw new Error('streaming final smoke 缺少 completed event。');
+  }
+
+  const previewEarlyExecutionTransport = new PreviewEarlyExecutionTransport();
+  const previewEarlyExecutionExecutor = new CountingReadFileExecutor();
+  const previewEarlyExecutionRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: previewEarlyExecutionTransport,
+    toolExecutor: previewEarlyExecutionExecutor,
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    extractAssistantText: extractScriptedAssistantText,
+    onEvent: (event) => previewEarlyExecutionEvents.push(event),
+  });
+
+  await previewEarlyExecutionRuntime.startUserTurnStreaming('请预览后读取文件');
+  for (let index = 0; index < 8 && previewEarlyExecutionExecutor.executedCalls === 0; index += 1) {
+    await flushMicrotasks(4);
+    await previewEarlyExecutionRuntime.poll();
+  }
+  if (previewEarlyExecutionExecutor.executedCalls !== 1) {
+    throw new Error('preview early execution smoke 未在正式 tool-calls completion 前执行工具。');
+  }
+  if (previewEarlyExecutionTransport.toolCallRoundResolved) {
+    throw new Error('preview early execution smoke 在正式 tool-calls completion 前不应已 resolve。');
+  }
+  if (
+    !previewEarlyExecutionEvents.some(
+      (event) => event.kind === 'tool-execution-finished' && event.execution.toolCallId === 'call-preview-read',
+    )
+  ) {
+    throw new Error('preview early execution smoke 未在 preview 后发出工具完成事件。');
+  }
+
+  previewEarlyExecutionTransport.resolveToolCallRound();
+  for (let index = 0; index < 16 && previewEarlyExecutionRuntime.isBusy(); index += 1) {
+    await flushMicrotasks(4);
+    await previewEarlyExecutionRuntime.poll();
+  }
+  if (previewEarlyExecutionRuntime.isBusy()) {
+    throw new Error('preview early execution smoke 未在预期轮次内完成。');
+  }
+  const previewEarlyExecutionResult = previewEarlyExecutionRuntime.takeCompletedTurnResult();
+  if (
+    !previewEarlyExecutionResult ||
+    previewEarlyExecutionResult.kind !== 'completed' ||
+    previewEarlyExecutionResult.assistantText !== 'PREVIEW_EARLY_OK'
+  ) {
+    throw new Error('preview early execution smoke 未完成最终 assistant 轮次。');
+  }
+  if (previewEarlyExecutionExecutor.executedCalls !== 1) {
+    throw new Error('preview early execution smoke 重复执行了工具。');
+  }
+  const previewToolExecutions = previewEarlyExecutionResult.toolExecutions.filter(
+    (execution) => execution.toolCallId === 'call-preview-read',
+  );
+  if (previewToolExecutions.length !== 1) {
+    throw new Error('preview early execution smoke 未复用预览阶段工具结果。');
+  }
+
+  const previewBackgroundTransport = new PreviewBackgroundDeferredTransport();
+  const previewBackgroundExecutor = new CountingBackgroundExecutor();
+  const previewBackgroundRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: previewBackgroundTransport,
+    toolExecutor: previewBackgroundExecutor,
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    extractAssistantText: extractScriptedAssistantText,
+    onEvent: (event) => previewBackgroundDeferredEvents.push(event),
+  });
+
+  await previewBackgroundRuntime.startUserTurnStreaming('请预览后后台搜索');
+  for (let index = 0; index < 8; index += 1) {
+    await flushMicrotasks(4);
+    await previewBackgroundRuntime.poll();
+  }
+  if (previewBackgroundExecutor.executedCalls !== 0) {
+    throw new Error('preview background smoke 不应在正式 tool-calls completion 前启动后台工具。');
+  }
+  if (
+    previewBackgroundDeferredEvents.some(
+      (event) => event.kind === 'tool-call-started' && event.toolCallId === 'call-preview-background',
+    )
+  ) {
+    throw new Error('preview background smoke 不应在 formal path 前发出 tool-call-started。');
+  }
+  if (
+    previewBackgroundDeferredEvents.some(
+      (event) => event.kind === 'background-tool-status' && event.toolName === 'grep',
+    )
+  ) {
+    throw new Error('preview background smoke 不应在 formal path 前发出后台状态事件。');
+  }
+
+  previewBackgroundTransport.resolveToolCallRound();
+  for (let index = 0; index < 20 && previewBackgroundRuntime.isBusy(); index += 1) {
+    await flushMicrotasks(4);
+    await previewBackgroundRuntime.poll();
+  }
+  if (previewBackgroundRuntime.isBusy()) {
+    throw new Error('preview background smoke 未在预期轮次内完成。');
+  }
+  if (Number(previewBackgroundExecutor.executedCalls) !== 1) {
+    throw new Error('preview background smoke 应只在 formal path 执行一次后台工具。');
+  }
+  if (
+    previewBackgroundDeferredEvents.filter(
+      (event) => event.kind === 'tool-call-started' && event.toolCallId === 'call-preview-background',
+    ).length !== 1
+  ) {
+    throw new Error('preview background smoke formal path 的 tool-call-started 次数不正确。');
+  }
+
+  const previewSubagentTransport = new PreviewSubagentDeferredTransport();
+  const previewSubagentExecutor = new SubagentExecutor();
+  const previewSubagentRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: previewSubagentTransport,
+    toolExecutor: previewSubagentExecutor,
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    extractAssistantText: extractScriptedAssistantText,
+    onEvent: (event) => previewSubagentDeferredEvents.push(event),
+  });
+
+  await previewSubagentRuntime.startUserTurnStreaming('请预览后委托子代理');
+  for (let index = 0; index < 8; index += 1) {
+    await flushMicrotasks(4);
+    await previewSubagentRuntime.poll();
+  }
+  if (
+    previewSubagentDeferredEvents.some(
+      (event) => event.kind === 'tool-call-started' && event.toolCallId === 'call-preview-subagent',
+    )
+  ) {
+    throw new Error('preview subagent smoke 不应在 defer-to-formal 前发出 tool-call-started。');
+  }
+
+  previewSubagentTransport.resolveToolCallRound();
+  for (let index = 0; index < 24 && previewSubagentRuntime.isBusy(); index += 1) {
+    await flushMicrotasks(4);
+    await previewSubagentRuntime.poll();
+  }
+  if (previewSubagentRuntime.isBusy()) {
+    throw new Error('preview subagent smoke 未在预期轮次内完成。');
+  }
+  if (previewSubagentExecutor.executedSubagentCalls !== 0) {
+    throw new Error('preview subagent smoke 错误落到了宿主 execute。');
+  }
+  if (
+    previewSubagentDeferredEvents.filter(
+      (event) => event.kind === 'tool-call-started' && event.toolCallId === 'call-preview-subagent',
+    ).length !== 1
+  ) {
+    throw new Error('preview subagent smoke 的 tool-call-started 不应重复。');
   }
 
   const timeoutRuntime = new AgentRuntime({
@@ -510,5 +682,508 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   await flushMicrotasks();
   await noTimeoutRuntime.poll();
 
-  return { drainedStreamingEvents, drainedTimeoutEvents, drainedStreamingFailureEvents, drainedStreamingApprovalEvents, drainedStreamingApprovalImageEvents, drainedStreamingGuidanceEvents, drainedStreamingBackgroundEvents, drainedStreamingCompactionEvents };
+  return { drainedStreamingEvents, previewEarlyExecutionEvents, drainedTimeoutEvents, drainedStreamingFailureEvents, drainedStreamingApprovalEvents, drainedStreamingApprovalImageEvents, drainedStreamingGuidanceEvents, drainedStreamingBackgroundEvents, drainedStreamingCompactionEvents };
+}
+
+class PreviewEarlyExecutionTransport implements LlmTransport<undefined, ScriptedState> {
+  private rounds = 0;
+  private firstRoundState: ScriptedState | undefined;
+  private resolveFirstRound: ((completion: ToolAgentRoundCompletion<ScriptedState>) => void) | undefined;
+  toolCallRoundResolved = false;
+
+  async startToolAgentRound(
+    _config: undefined,
+    _state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    throw new Error('preview early execution smoke 应走 streaming transport。');
+  }
+
+  async startToolAgentRoundStreaming(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<StartedToolAgentRound<ScriptedState>> {
+    this.rounds += 1;
+
+    if (this.rounds === 1) {
+      this.firstRoundState = state;
+      return {
+        eventStream: streamFromEvents([
+          {
+            kind: 'streaming-tool-preview',
+            toolCallId: 'call-preview-read',
+            toolName: 'read_file',
+            argumentsJson: '{"path":"preview.txt"}',
+            previewLine: '准备调用工具: read_file',
+          },
+        ]),
+        completion: new Promise((resolve) => {
+          this.resolveFirstRound = resolve;
+        }),
+      };
+    }
+
+    if (this.rounds === 2) {
+      return {
+        eventStream: streamFromEvents([
+          { kind: 'assistant-chunk', text: 'PREVIEW_EARLY_' },
+          { kind: 'assistant-chunk', text: 'OK' },
+          { kind: 'done' },
+        ]),
+        completion: Promise.resolve(this.buildFinalRound(state)),
+      };
+    }
+
+    return {
+      eventStream: streamFromEvents([]),
+      completion: Promise.resolve({
+        kind: 'failure',
+        error: 'preview early execution smoke 不应进入额外轮次。',
+        requestTrace: [{ mode: 'preview-early-extra-round' }],
+      }),
+    };
+  }
+
+  resolveToolCallRound(): void {
+    if (!this.firstRoundState || !this.resolveFirstRound) {
+      throw new Error('preview early execution smoke 未准备好正式 tool-calls completion。');
+    }
+    this.toolCallRoundResolved = true;
+    this.resolveFirstRound(this.buildToolCallRound(this.firstRoundState));
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes('context');
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return historyAsPlainApiMessages(history);
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
+
+  private buildToolCallRound(state: ScriptedState): ToolAgentRoundCompletion<ScriptedState> {
+    return {
+      kind: 'success',
+      result: {
+        state: {
+          messages: [
+            ...state.messages,
+            {
+              role: 'assistant',
+              content: '准备读取文件。',
+              tool_calls: [
+                {
+                  id: 'call-preview-read',
+                  type: 'function',
+                  function: {
+                    name: 'read_file',
+                    arguments: '{"path":"preview.txt"}',
+                  },
+                },
+              ],
+            },
+          ],
+          steps: state.steps + 1,
+        },
+        step: {
+          kind: 'tool-calls',
+          calls: [
+            {
+              id: 'call-preview-read',
+              name: 'read_file',
+              argumentsJson: '{"path":"preview.txt"}',
+            },
+          ],
+        },
+        requestTrace: [{ mode: 'preview-early-tool-round' }],
+      },
+    };
+  }
+
+  private buildFinalRound(state: ScriptedState): ToolAgentRoundCompletion<ScriptedState> {
+    return {
+      kind: 'success',
+      result: {
+        state: {
+          messages: [...state.messages, { role: 'assistant', content: 'PREVIEW_EARLY_OK' }],
+          steps: state.steps + 1,
+        },
+        step: { kind: 'final-response-ready' },
+        requestTrace: [{ mode: 'preview-early-final-round' }],
+      },
+    };
+  }
+}
+
+class CountingReadFileExecutor extends HostExecutor {
+  executedCalls: number = 0;
+
+  override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
+    this.executedCalls += 1;
+    return super.execute(request);
+  }
+}
+
+class PreviewBackgroundDeferredTransport implements LlmTransport<undefined, ScriptedState> {
+  private rounds = 0;
+  private firstRoundState: ScriptedState | undefined;
+  private resolveFirstRound: ((completion: ToolAgentRoundCompletion<ScriptedState>) => void) | undefined;
+
+  async startToolAgentRound(
+    _config: undefined,
+    _state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    throw new Error('preview background smoke 应走 streaming transport。');
+  }
+
+  async startToolAgentRoundStreaming(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<StartedToolAgentRound<ScriptedState>> {
+    this.rounds += 1;
+
+    if (this.rounds === 1) {
+      this.firstRoundState = state;
+      return {
+        eventStream: streamFromEvents([
+          {
+            kind: 'streaming-tool-preview',
+            toolCallId: 'call-preview-background',
+            toolName: 'grep',
+            argumentsJson: '{"query":"runtime parity"}',
+            previewLine: '准备调用工具: grep',
+          },
+        ]),
+        completion: new Promise((resolve) => {
+          this.resolveFirstRound = resolve;
+        }),
+      };
+    }
+
+    if (this.rounds === 2) {
+      return {
+        eventStream: streamFromEvents([
+          { kind: 'assistant-chunk', text: 'PREVIEW_BACKGROUND_' },
+          { kind: 'assistant-chunk', text: 'OK' },
+          { kind: 'done' },
+        ]),
+        completion: Promise.resolve({
+          kind: 'success',
+          result: {
+            state: {
+              messages: [...state.messages, { role: 'assistant', content: 'PREVIEW_BACKGROUND_OK' }],
+              steps: state.steps + 1,
+            },
+            step: { kind: 'final-response-ready' },
+            requestTrace: [{ mode: 'preview-background-final-round' }],
+          },
+        }),
+      };
+    }
+
+    return {
+      eventStream: streamFromEvents([]),
+      completion: Promise.resolve({
+        kind: 'failure',
+        error: 'preview background smoke 不应进入额外轮次。',
+        requestTrace: [{ mode: 'preview-background-extra-round' }],
+      }),
+    };
+  }
+
+  resolveToolCallRound(): void {
+    if (!this.firstRoundState || !this.resolveFirstRound) {
+      throw new Error('preview background smoke 未准备好正式 tool-calls completion。');
+    }
+    this.resolveFirstRound({
+      kind: 'success',
+      result: {
+        state: {
+          messages: [
+            ...this.firstRoundState.messages,
+            {
+              role: 'assistant',
+              content: '准备后台搜索。',
+              tool_calls: [
+                {
+                  id: 'call-preview-background',
+                  type: 'function',
+                  function: {
+                    name: 'grep',
+                    arguments: '{"query":"runtime parity"}',
+                  },
+                },
+              ],
+            },
+          ],
+          steps: this.firstRoundState.steps + 1,
+        },
+        step: {
+          kind: 'tool-calls',
+          calls: [
+            {
+              id: 'call-preview-background',
+              name: 'grep',
+              argumentsJson: '{"query":"runtime parity"}',
+            },
+          ],
+        },
+        requestTrace: [{ mode: 'preview-background-tool-round' }],
+      },
+    });
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes('context');
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return historyAsPlainApiMessages(history);
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
+}
+
+class CountingBackgroundExecutor extends BackgroundExecutor {
+  executedCalls: number = 0;
+
+  override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
+    this.executedCalls += 1;
+    return super.execute(request);
+  }
+}
+
+class PreviewSubagentDeferredTransport implements LlmTransport<undefined, ScriptedState> {
+  private rounds = 0;
+  private firstRoundState: ScriptedState | undefined;
+  private resolveFirstRound: ((completion: ToolAgentRoundCompletion<ScriptedState>) => void) | undefined;
+
+  async startToolAgentRound(
+    _config: undefined,
+    _state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    throw new Error('preview subagent smoke 应走 streaming transport。');
+  }
+
+  async startToolAgentRoundStreaming(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<StartedToolAgentRound<ScriptedState>> {
+    this.rounds += 1;
+
+    if (this.rounds === 1) {
+      this.firstRoundState = state;
+      return {
+        eventStream: streamFromEvents([
+          {
+            kind: 'streaming-tool-preview',
+            toolCallId: 'call-preview-subagent',
+            toolName: 'run_subagent',
+            argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+            previewLine: '准备调用工具: run_subagent',
+          },
+        ]),
+        completion: new Promise((resolve) => {
+          this.resolveFirstRound = resolve;
+        }),
+      };
+    }
+
+    if (this.rounds === 2) {
+      const delegatedPromptPresent = state.messages.some(
+        (message) =>
+          isJsonObject(message)
+          && message.role === 'user'
+          && typeof message.content === 'string'
+          && message.content.includes('You are already inside the delegated child session.'),
+      );
+      if (!delegatedPromptPresent) {
+        return {
+          eventStream: streamFromEvents([]),
+          completion: Promise.resolve({
+            kind: 'failure',
+            error: 'preview subagent child round 未收到委托后的 user turn。',
+            requestTrace: [{ mode: 'preview-subagent-child-round-missing-user-turn' }],
+          }),
+        };
+      }
+
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'success',
+          result: {
+            state: {
+              messages: [...state.messages, { role: 'assistant', content: '好的，我是 SubAgent，哈哈哈' }],
+              steps: state.steps + 1,
+            },
+            step: { kind: 'final-response-ready' },
+            requestTrace: [{ mode: 'preview-subagent-child-round' }],
+          },
+        }),
+      };
+    }
+
+    const toolResultMessage = state.messages.find(
+      (message) =>
+        isJsonObject(message)
+        && message.role === 'tool'
+        && message.tool_call_id === 'call-preview-subagent'
+        && typeof message.content === 'string',
+    );
+    if (
+      !toolResultMessage
+      || !isJsonObject(toolResultMessage)
+      || typeof toolResultMessage.content !== 'string'
+      || !toolResultMessage.content.includes('好的，我是 SubAgent，哈哈哈')
+    ) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'failure',
+          error: 'preview subagent parent round 未收到子代理结果。',
+          requestTrace: [{ mode: 'preview-subagent-parent-round-missing-tool-result' }],
+        }),
+      };
+    }
+
+    if (this.rounds === 3) {
+      return {
+        eventStream: streamFromEvents([
+          { kind: 'assistant-chunk', text: 'PREVIEW_SUBAGENT_' },
+          { kind: 'assistant-chunk', text: 'OK' },
+          { kind: 'done' },
+        ]),
+        completion: Promise.resolve({
+          kind: 'success',
+          result: {
+            state: {
+              messages: [...state.messages, { role: 'assistant', content: 'PREVIEW_SUBAGENT_OK' }],
+              steps: state.steps + 1,
+            },
+            step: { kind: 'final-response-ready' },
+            requestTrace: [{ mode: 'preview-subagent-parent-round-2' }],
+          },
+        }),
+      };
+    }
+
+    return {
+      eventStream: streamFromEvents([]),
+      completion: Promise.resolve({
+        kind: 'failure',
+        error: 'preview subagent smoke 不应进入额外轮次。',
+        requestTrace: [{ mode: 'preview-subagent-extra-round' }],
+      }),
+    };
+  }
+
+  resolveToolCallRound(): void {
+    if (!this.firstRoundState || !this.resolveFirstRound) {
+      throw new Error('preview subagent smoke 未准备好正式 tool-calls completion。');
+    }
+    this.resolveFirstRound({
+      kind: 'success',
+      result: {
+        state: {
+          messages: [
+            ...this.firstRoundState.messages,
+            {
+              role: 'assistant',
+              content: '准备委托子代理。',
+              tool_calls: [
+                {
+                  id: 'call-preview-subagent',
+                  type: 'function',
+                  function: {
+                    name: 'run_subagent',
+                    arguments: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+                  },
+                },
+              ],
+            },
+          ],
+          steps: this.firstRoundState.steps + 1,
+        },
+        step: {
+          kind: 'tool-calls',
+          calls: [
+            {
+              id: 'call-preview-subagent',
+              name: 'run_subagent',
+              argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+            },
+          ],
+        },
+        requestTrace: [{ mode: 'preview-subagent-parent-round-1' }],
+      },
+    });
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes('context');
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return historyAsPlainApiMessages(history);
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
 }
