@@ -53,7 +53,8 @@ type SessionSidebarProps = {
   mcpState: string | null;
   /** Windows 云母：侧栏需半透明+blur，避免透出窗后内容发花 */
   micaStyle?: boolean;
-  busy?: boolean;
+  newSessionBusy?: boolean;
+  sessionNavigationBusy?: boolean;
   disabled?: boolean;
 };
 
@@ -166,6 +167,15 @@ const settingsTabs: Array<{
   },
 ];
 
+const sidebarInteractionMotionClass =
+  "!transition-[opacity,transform,box-shadow] duration-150";
+
+const sidebarMenuHoverClass =
+  "hover:!bg-accent hover:!text-accent-foreground focus-visible:!bg-accent focus-visible:!text-accent-foreground";
+
+const sidebarSelectedHoverClass =
+  "hover:!bg-secondary hover:!text-secondary-foreground";
+
 export function SessionSidebar({
   className,
   narrow,
@@ -187,7 +197,8 @@ export function SessionSidebar({
   hostStatus,
   mcpState,
   micaStyle,
-  busy,
+  newSessionBusy = false,
+  sessionNavigationBusy = false,
   disabled,
 }: SessionSidebarProps) {
   const settingsMode = mode === "settings";
@@ -229,7 +240,9 @@ export function SessionSidebar({
             variant="ghost"
             size={narrow ? "icon" : "sm"}
             className={cn(
-              "text-xs text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+              "text-xs text-sidebar-foreground/90",
+              sidebarInteractionMotionClass,
+              sidebarMenuHoverClass,
               narrow ? "size-8" : "h-8 w-full justify-start gap-2",
             )}
             onClick={onBackToSessions}
@@ -256,12 +269,14 @@ export function SessionSidebar({
             variant="ghost"
             size={narrow ? "icon" : "sm"}
             className={cn(
-              "text-xs text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+              "text-xs text-sidebar-foreground/90",
+              sidebarInteractionMotionClass,
+              sidebarMenuHoverClass,
               narrow
                 ? "size-8 shrink-0"
                 : "h-8 w-full justify-start gap-2",
             )}
-            disabled={disabled || busy}
+            disabled={disabled || newSessionBusy}
             onClick={onNewSession}
           >
             <Plus className="size-3.5" aria-hidden />
@@ -274,12 +289,14 @@ export function SessionSidebar({
             title={narrow ? "扩展" : undefined}
             aria-current={marketplaceActive ? "page" : undefined}
             className={cn(
-              "text-xs text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+              "text-xs text-sidebar-foreground/90",
+              sidebarInteractionMotionClass,
+              marketplaceActive ? sidebarSelectedHoverClass : sidebarMenuHoverClass,
               narrow
                 ? "size-8 shrink-0"
                 : "h-8 w-full justify-start gap-2",
             )}
-            disabled={disabled || busy}
+            disabled={disabled}
             onClick={onOpenMarketplace}
           >
             <Package className="size-3.5" aria-hidden />
@@ -319,7 +336,9 @@ export function SessionSidebar({
                         variant: selected ? "secondary" : "ghost",
                         size: narrow ? "icon" : "sm",
                       }),
-                      "text-xs text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+                      "text-xs text-sidebar-foreground/90",
+                      sidebarInteractionMotionClass,
+                      selected ? sidebarSelectedHoverClass : sidebarMenuHoverClass,
                       narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
                     )}
                   >
@@ -351,7 +370,9 @@ export function SessionSidebar({
                             variant: selected ? "secondary" : "ghost",
                             size: narrow ? "icon" : "sm",
                           }),
-                          "text-xs text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+                          "text-xs text-sidebar-foreground/90",
+                          sidebarInteractionMotionClass,
+                          selected ? sidebarSelectedHoverClass : sidebarMenuHoverClass,
                           narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
                         )}
                       >
@@ -374,15 +395,17 @@ export function SessionSidebar({
                     <div key={group.id} className="min-w-0">
                       <button
                         type="button"
-                        disabled={disabled || busy}
+                        disabled={disabled || sessionNavigationBusy}
                         aria-expanded={expanded}
                         aria-controls={panelId}
                         onClick={() => toggleWorkspaceGroup(group.id)}
                         className={cn(
                           "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
-                          "outline-none transition-[color,background,box-shadow] duration-150",
+                          "outline-none",
+                          sidebarInteractionMotionClass,
                           "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-                          "text-sidebar-foreground/90 hover:bg-foreground/[0.05] hover:text-sidebar-foreground dark:hover:bg-foreground/10",
+                          "text-sidebar-foreground/90",
+                          sidebarMenuHoverClass,
                         )}
                         title={group.rootPath ?? group.label}
                       >
@@ -410,18 +433,19 @@ export function SessionSidebar({
                               <button
                                 key={session.path}
                                 type="button"
-                                disabled={disabled || busy}
+                                disabled={disabled || sessionNavigationBusy}
                                 aria-current={sessionRowSelected ? "true" : undefined}
                                 onClick={() => onSelectSession(session.path)}
                                 className={cn(
                                   "group flex w-full min-w-0 items-center overflow-hidden rounded-md py-2 pr-2.5 pl-8 text-left text-sm",
-                                  "outline-none transition-[color,background,box-shadow] duration-150",
+                                  "outline-none",
+                                  sidebarInteractionMotionClass,
                                   "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
                                   sessionRowSelected
-                                    ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                    ? "bg-secondary text-secondary-foreground hover:!bg-secondary hover:!text-secondary-foreground"
                                     : cn(
                                         "text-sidebar-list-foreground",
-                                        "hover:bg-foreground/[0.05] hover:text-sidebar-foreground dark:hover:bg-foreground/10",
+                                        sidebarMenuHoverClass,
                                       ),
                                 )}
                               >
@@ -457,7 +481,9 @@ export function SessionSidebar({
             variant="ghost"
             size={narrow ? "icon" : "sm"}
             className={cn(
-              "text-sidebar-foreground/90 hover:bg-foreground/[0.05] dark:hover:bg-foreground/10",
+              "text-sidebar-foreground/90",
+              sidebarInteractionMotionClass,
+              sidebarMenuHoverClass,
               narrow ? "size-8" : "h-8 w-full justify-start gap-2",
             )}
             onClick={onOpenSettings}
