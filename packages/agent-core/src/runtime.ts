@@ -115,6 +115,7 @@ import type {
   PendingWorkspaceFile,
   PendingManualApprovalState,
   PendingStreamingRound,
+  PendingToolCallContinuation,
   PendingToolCallBackgroundToolExecution,
   PendingToolAgentRound,
   RuntimeApprovalDecision,
@@ -214,6 +215,9 @@ export class AgentRuntime<
     | undefined;
   private pendingStreamingRound: PendingStreamingRound<State, ToolRequest> | undefined;
   private pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
+  private pendingToolCallContinuation:
+    | PendingToolCallContinuation<State, ToolRequest>
+    | undefined;
   private pendingBackgroundToolExecution:
     | PendingBackgroundToolExecution<State, ToolRequest>
     | undefined;
@@ -521,6 +525,7 @@ export class AgentRuntime<
     return (
       this.pendingStreamingRound !== undefined ||
       this.pendingToolAgentRound !== undefined ||
+      this.pendingToolCallContinuation !== undefined ||
       this.pendingBackgroundToolExecution !== undefined ||
       this.pendingHistoryCompaction !== undefined ||
       this.pendingSubagentExecution !== undefined ||
@@ -797,6 +802,7 @@ export class AgentRuntime<
   }
 
   async poll(): Promise<void> {
+    await this.pollPendingToolCallContinuation();
     await this.pollPendingStreamingRound();
     await this.pollPendingToolAgentRound();
     await this.pollPendingHistoryCompaction();
@@ -871,6 +877,7 @@ export class AgentRuntime<
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
+          pending.earlyToolExecutions,
         );
         return;
       }
@@ -896,13 +903,14 @@ export class AgentRuntime<
       );
 
       if (pending.remainingCalls.length > 0) {
-        await this.processToolCallsAsync(
+        this.queuePendingToolCallContinuation(
           resumedState,
           pending.pendingUserInput,
           pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
+          pending.earlyToolExecutions,
         );
         return;
       }
@@ -934,13 +942,14 @@ export class AgentRuntime<
 
       if (!guidanceMessage) {
         if (pending.remainingCalls.length > 0) {
-          await this.processToolCallsAsync(
+          this.queuePendingToolCallContinuation(
             resumedState,
             pending.pendingUserInput,
             pending.remainingCalls,
             pending.turn,
             pending.resumeAsStreaming,
             pending.streamingEmitBeginResponse,
+            pending.earlyToolExecutions,
           );
           return;
         }
@@ -962,13 +971,14 @@ export class AgentRuntime<
       enqueueDeferredUserGuidance(pending.turn, guidanceMessage);
 
       if (pending.remainingCalls.length > 0) {
-        await this.processToolCallsAsync(
+        this.queuePendingToolCallContinuation(
           resumedState,
           pending.pendingUserInput,
           pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
+          pending.earlyToolExecutions,
         );
         return;
       }
@@ -997,13 +1007,14 @@ export class AgentRuntime<
     );
 
     if (pending.remainingCalls.length > 0) {
-      await this.processToolCallsAsync(
+      this.queuePendingToolCallContinuation(
         resumedState,
         pending.pendingUserInput,
         pending.remainingCalls,
         pending.turn,
         pending.resumeAsStreaming,
         pending.streamingEmitBeginResponse,
+        pending.earlyToolExecutions,
       );
       return;
     }
@@ -1127,6 +1138,7 @@ export class AgentRuntime<
           turn: pending.turn,
           resumeAsStreaming: pending.resumeAsStreaming,
           streamingEmitBeginResponse: pending.streamingEmitBeginResponse,
+          ...(pending.earlyToolExecutions ? { earlyToolExecutions: pending.earlyToolExecutions } : {}),
         };
         this.emitEvent({
           kind: 'approval-requested',
@@ -1154,6 +1166,7 @@ export class AgentRuntime<
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
+          pending.earlyToolExecutions,
         );
         return;
       }
@@ -1179,13 +1192,14 @@ export class AgentRuntime<
       );
 
       if (pending.remainingCalls.length > 0) {
-        await this.processToolCallsAsync(
+        this.queuePendingToolCallContinuation(
           resumedStateWithToolOutput,
           pending.pendingUserInput,
           pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
+          pending.earlyToolExecutions,
         );
         return;
       }
@@ -1226,13 +1240,14 @@ export class AgentRuntime<
     );
 
     if (pending.remainingCalls.length > 0) {
-      await this.processToolCallsAsync(
+      this.queuePendingToolCallContinuation(
         resumedState,
         pending.pendingUserInput,
         pending.remainingCalls,
         pending.turn,
         pending.resumeAsStreaming,
         pending.streamingEmitBeginResponse,
+        pending.earlyToolExecutions,
       );
       return;
     }
@@ -1464,7 +1479,7 @@ export class AgentRuntime<
       }
 
       if (remainingCalls.length > 0) {
-        await this.processToolCallsAsync(
+        this.queuePendingToolCallContinuation(
           imageResult.state,
           pendingUserInput,
           remainingCalls,
@@ -1544,7 +1559,7 @@ export class AgentRuntime<
       parentToolResultText,
     );
     if (remainingCalls.length > 0) {
-      await this.processToolCallsAsync(
+      this.queuePendingToolCallContinuation(
         resumedState,
         pendingUserInput,
         remainingCalls,
@@ -1627,6 +1642,26 @@ export class AgentRuntime<
     );
   }
 
+  private queuePendingToolCallContinuation(
+    state: State,
+    pendingUserInput: string,
+    calls: ToolCallRequest[],
+    turn: RuntimeTurnContext<ToolRequest>,
+    resumeAsStreaming = false,
+    streamingEmitBeginResponse = true,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  ): void {
+    this.pendingToolCallContinuation = {
+      pendingUserInput,
+      state,
+      calls: [...calls],
+      turn,
+      resumeAsStreaming,
+      streamingEmitBeginResponse,
+      ...(earlyToolExecutions ? { earlyToolExecutions } : {}),
+    };
+  }
+
   private startBackgroundToolExecutionAsync(
     pendingUserInput: string,
     state: State,
@@ -1637,6 +1672,7 @@ export class AgentRuntime<
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): void {
     startBackgroundToolExecutionAsyncInternal(
       this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -1649,6 +1685,25 @@ export class AgentRuntime<
       turn,
       resumeAsStreaming,
       streamingEmitBeginResponse,
+      earlyToolExecutions,
+    );
+  }
+
+  private async pollPendingToolCallContinuation(): Promise<void> {
+    const pending = this.pendingToolCallContinuation;
+    if (!pending) {
+      return;
+    }
+
+    this.pendingToolCallContinuation = undefined;
+    await this.processToolCallsAsync(
+      pending.state,
+      pending.pendingUserInput,
+      pending.calls,
+      pending.turn,
+      pending.resumeAsStreaming,
+      pending.streamingEmitBeginResponse,
+      pending.earlyToolExecutions,
     );
   }
 
@@ -1936,6 +1991,7 @@ export class AgentRuntime<
 
   private clearPendingNonStreamingState(): void {
     this.pendingToolAgentRound = undefined;
+    this.pendingToolCallContinuation = undefined;
     this.pendingBackgroundToolExecution = undefined;
     this.pendingHistoryCompaction = undefined;
     this.pendingQuestions = undefined;

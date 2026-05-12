@@ -392,6 +392,7 @@ export interface PendingApprovalState<State, ToolRequest, TrustTarget> {
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
   streamingEmitBeginResponse: boolean;
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
 }
 
 export interface PendingQuestionsState<State, ToolRequest> {
@@ -405,6 +406,17 @@ export interface PendingQuestionsState<State, ToolRequest> {
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
   streamingEmitBeginResponse: boolean;
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
+}
+
+export interface PendingToolCallContinuation<State, ToolRequest> {
+  pendingUserInput: string;
+  state: State;
+  calls: ToolCallRequest[];
+  turn: RuntimeTurnContext<ToolRequest>;
+  resumeAsStreaming: boolean;
+  streamingEmitBeginResponse: boolean;
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
 }
 
 export interface PendingManualApprovalState<ToolRequest, TrustTarget> {
@@ -445,6 +457,7 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
   streamingEmitBeginResponse: boolean;
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
   statusText: string | undefined;
   output: string | undefined;
   failed: boolean | undefined;

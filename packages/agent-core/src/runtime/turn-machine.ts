@@ -112,6 +112,7 @@ export interface TurnMachineRuntime<
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming?: boolean,
     streamingEmitBeginResponse?: boolean,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): void;
   startHistoryCompactionAsync(
     retryState: State,
@@ -128,6 +129,15 @@ export interface TurnMachineRuntime<
     turn: RuntimeTurnContext<ToolRequest>,
     emitBeginResponse: boolean,
   ): Promise<void>;
+  queuePendingToolCallContinuation(
+    state: State,
+    pendingUserInput: string,
+    calls: ToolCallRequest[],
+    turn: RuntimeTurnContext<ToolRequest>,
+    resumeAsStreaming?: boolean,
+    streamingEmitBeginResponse?: boolean,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  ): void;
   takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined;
   tryFallbackToTextOnlyAndBuildRetryState(error: string, pendingUserInput: string): State | undefined;
   compactHistoryImmediate(): Promise<RuntimeCompactionRecord>;
@@ -928,6 +938,18 @@ export async function processToolCallsAsync<
         call.id,
         earlyOutcome.output.summaryText,
       );
+      if (queueRemainingToolCallsAsync(
+        runtime,
+        currentState,
+        pendingUserInput,
+        remaining,
+        turn,
+        resumeAsStreaming,
+        streamingEmitBeginResponse,
+        earlyToolExecutions,
+      )) {
+        return;
+      }
       continue;
     }
 
@@ -953,6 +975,18 @@ export async function processToolCallsAsync<
         call.id,
         `[tool schema error] ${renderError(error)}`,
       );
+      if (queueRemainingToolCallsAsync(
+        runtime,
+        currentState,
+        pendingUserInput,
+        remaining,
+        turn,
+        resumeAsStreaming,
+        streamingEmitBeginResponse,
+        earlyToolExecutions,
+      )) {
+        return;
+      }
       continue;
     }
 
@@ -965,6 +999,18 @@ export async function processToolCallsAsync<
         call.id,
         `[authorization error] ${renderError(error)}`,
       );
+      if (queueRemainingToolCallsAsync(
+        runtime,
+        currentState,
+        pendingUserInput,
+        remaining,
+        turn,
+        resumeAsStreaming,
+        streamingEmitBeginResponse,
+        earlyToolExecutions,
+      )) {
+        return;
+      }
       continue;
     }
 
@@ -990,6 +1036,7 @@ export async function processToolCallsAsync<
         turn,
         resumeAsStreaming,
         streamingEmitBeginResponse,
+        ...(earlyToolExecutions ? { earlyToolExecutions } : {}),
       };
 
       if (resumeAsStreaming) {
@@ -1022,6 +1069,7 @@ export async function processToolCallsAsync<
         turn,
         resumeAsStreaming,
         streamingEmitBeginResponse,
+        ...(earlyToolExecutions ? { earlyToolExecutions } : {}),
       };
 
       if (resumeAsStreaming) {
@@ -1052,6 +1100,7 @@ export async function processToolCallsAsync<
         turn,
         resumeAsStreaming,
         streamingEmitBeginResponse,
+        earlyToolExecutions,
       );
       return;
     }
@@ -1084,6 +1133,18 @@ export async function processToolCallsAsync<
       call.id,
       execution.output.summaryText,
     );
+    if (queueRemainingToolCallsAsync(
+      runtime,
+      currentState,
+      pendingUserInput,
+      remaining,
+      turn,
+      resumeAsStreaming,
+      streamingEmitBeginResponse,
+      earlyToolExecutions,
+    )) {
+      return;
+    }
   }
 
   if (resumeAsStreaming) {
@@ -1229,6 +1290,7 @@ async function runEarlyToolExecution<
   }
 
   if (authorization.kind === 'need-approval') {
+    // TODO: preview 已拿到稳定 toolCallId 和参数时，应直接暴露待审批状态，避免正式 tool-calls 阶段前审批表单仍未打开。
     return { kind: 'deferred', reason: 'approval-required' };
   }
   if (authorization.kind === 'need-questions') {
@@ -1382,4 +1444,35 @@ function createQuestions<ToolRequest>(
     toolName,
     questions,
   };
+}
+
+function queueRemainingToolCallsAsync<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  state: State,
+  pendingUserInput: string,
+  remaining: ToolCallRequest[],
+  turn: RuntimeTurnContext<ToolRequest>,
+  resumeAsStreaming: boolean,
+  streamingEmitBeginResponse: boolean,
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>> | undefined,
+): boolean {
+  if (remaining.length === 0) {
+    return false;
+  }
+
+  runtime.queuePendingToolCallContinuation(
+    state,
+    pendingUserInput,
+    remaining,
+    turn,
+    resumeAsStreaming,
+    streamingEmitBeginResponse,
+    earlyToolExecutions,
+  );
+  return true;
 }

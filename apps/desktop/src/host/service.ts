@@ -1627,7 +1627,6 @@ class DesktopHostService {
         this.resetStreamingPlacementState(false);
       }
       await runtime.continuePendingApproval(runtimeDecision);
-      await runtime.poll();
       this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
       this.runtimeEvents.consumeCompletedTurnResult();
       this.runtimeEvents.syncPendingToolStates();
@@ -1645,7 +1644,6 @@ class DesktopHostService {
       await this.ensureInitialized(undefined, { fastPath: true });
       const runtime = this.requireRuntime();
       await runtime.continuePendingQuestions(toRuntimeAskQuestionsResult(result));
-      await runtime.poll();
       this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
       this.runtimeEvents.consumeCompletedTurnResult();
       this.runtimeEvents.syncPendingToolStates();
