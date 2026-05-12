@@ -51,6 +51,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   const streamingCompactionEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingApprovalEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingApprovalImageEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
+  const streamingApprovalThenImageEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingGuidanceEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const timeoutEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
   const streamingFailureEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
@@ -472,6 +473,128 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('streaming approval image smoke 未把图片投影写入历史。');
   }
 
+  const streamingApprovalThenImageExecutor = new StreamingApprovalExecutor();
+  let generateImageStarted: number = 0;
+  let resolveApprovedImage: ((output: ToolExecutionOutput) => void) | undefined;
+  const approvedImageOutput = new Promise<ToolExecutionOutput>((resolve) => {
+    resolveApprovedImage = resolve;
+  });
+  const streamingApprovalThenImageRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: new StreamingApprovalThenGenerateImageTransport(),
+    toolExecutor: streamingApprovalThenImageExecutor,
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    extractAssistantText: extractScriptedAssistantText,
+    generateImage: async () => {
+      generateImageStarted += 1;
+      return approvedImageOutput;
+    },
+    onEvent: (event) => streamingApprovalThenImageEvents.push(event),
+  });
+
+  await streamingApprovalThenImageRuntime.startUserTurnStreaming('请审批后继续生成图片');
+  await flushMicrotasks(4);
+  await streamingApprovalThenImageRuntime.poll();
+  if (!streamingApprovalThenImageRuntime.hasPendingApproval()) {
+    throw new Error('streaming approval then image smoke 未进入待审批状态。');
+  }
+
+  let approvalReturned = false;
+  const continueApprovalPromise = streamingApprovalThenImageRuntime
+    .continuePendingApproval({ kind: 'allow' })
+    .then(() => {
+      approvalReturned = true;
+    });
+  await flushMicrotasks(4);
+  if (!approvalReturned) {
+    throw new Error('streaming approval then image smoke 不应等待 generate_image 完成后才结束审批恢复。');
+  }
+  await continueApprovalPromise;
+  if (streamingApprovalThenImageRuntime.hasPendingApproval()) {
+    throw new Error('streaming approval then image smoke 审批恢复后应立即清空待审批状态。');
+  }
+  if (!streamingApprovalThenImageRuntime.isBusy()) {
+    throw new Error('streaming approval then image smoke 审批恢复后应继续保持 busy。');
+  }
+  if (generateImageStarted !== 0) {
+    throw new Error('streaming approval then image smoke 不应在 continuePendingApproval 内直接启动 generate_image。');
+  }
+
+  const drainedApprovalThenImageEvents = streamingApprovalThenImageRuntime.drainEvents();
+  if (
+    !drainedApprovalThenImageEvents.some(
+      (event) => event.kind === 'approval-resolved' && event.toolName === 'create_file',
+    )
+  ) {
+    throw new Error('streaming approval then image smoke 缺少 approval-resolved 事件。');
+  }
+  if (
+    !drainedApprovalThenImageEvents.some(
+      (event) =>
+        event.kind === 'tool-execution-finished' &&
+        event.execution.toolName === 'create_file' &&
+        event.execution.output.includes('approved output for create_file'),
+    )
+  ) {
+    throw new Error('streaming approval then image smoke 缺少已审批工具的完成事件。');
+  }
+  if (
+    drainedApprovalThenImageEvents.some(
+      (event) => event.kind === 'tool-execution-finished' && event.execution.toolName === 'generate_image',
+    )
+  ) {
+    throw new Error('streaming approval then image smoke 不应在审批恢复事件批次里提前完成 generate_image。');
+  }
+
+  let continuationPollReturned = false;
+  const continuationPoll = streamingApprovalThenImageRuntime.poll().then(() => {
+    continuationPollReturned = true;
+  });
+  await flushMicrotasks(4);
+  if (Number(generateImageStarted) !== 1) {
+    throw new Error('streaming approval then image smoke 下一拍 poll 应启动 generate_image。');
+  }
+  if (continuationPollReturned) {
+    throw new Error('streaming approval then image smoke generate_image 未完成前 continuation poll 不应提前返回。');
+  }
+
+  resolveApprovedImage?.({
+    content: createLlmMessageContentFromText('[generated image] approval-follow-up ready'),
+    summaryText: '[generated image] approval-follow-up ready',
+  });
+  await continuationPoll;
+
+  for (let index = 0; index < 12 && streamingApprovalThenImageRuntime.isBusy(); index += 1) {
+    await flushMicrotasks(4);
+    await streamingApprovalThenImageRuntime.poll();
+  }
+  if (streamingApprovalThenImageRuntime.isBusy()) {
+    throw new Error('streaming approval then image smoke 未在预期轮次内完成。');
+  }
+
+  const streamingApprovalThenImageResult = streamingApprovalThenImageRuntime.takeCompletedTurnResult();
+  if (
+    !streamingApprovalThenImageResult ||
+    streamingApprovalThenImageResult.kind !== 'completed' ||
+    streamingApprovalThenImageResult.assistantText !== 'STREAM_APPROVAL_THEN_IMAGE_OK'
+  ) {
+    throw new Error('streaming approval then image smoke 未完成最终回复。');
+  }
+  if (streamingApprovalThenImageExecutor.executedCalls !== 1) {
+    throw new Error('streaming approval then image smoke 宿主工具执行次数不正确。');
+  }
+  if (
+    !streamingApprovalThenImageResult.toolExecutions.some(
+      (execution) =>
+        execution.toolName === 'generate_image' &&
+        execution.output.includes('[generated image] approval-follow-up ready'),
+    )
+  ) {
+    throw new Error('streaming approval then image smoke 未记录 generate_image 结果。');
+  }
+
   const streamingGuidanceExecutor = new StreamingApprovalExecutor();
   const streamingGuidanceRuntime = new AgentRuntime({
     config: undefined,
@@ -682,7 +805,176 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   await flushMicrotasks();
   await noTimeoutRuntime.poll();
 
-  return { drainedStreamingEvents, previewEarlyExecutionEvents, drainedTimeoutEvents, drainedStreamingFailureEvents, drainedStreamingApprovalEvents, drainedStreamingApprovalImageEvents, drainedStreamingGuidanceEvents, drainedStreamingBackgroundEvents, drainedStreamingCompactionEvents };
+  return { drainedStreamingEvents, previewEarlyExecutionEvents, drainedTimeoutEvents, drainedStreamingFailureEvents, drainedStreamingApprovalEvents, drainedStreamingApprovalImageEvents, drainedStreamingGuidanceEvents, drainedStreamingBackgroundEvents, drainedStreamingCompactionEvents, drainedApprovalThenImageEvents };
+}
+
+class StreamingApprovalThenGenerateImageTransport implements LlmTransport<undefined, ScriptedState> {
+  private rounds = 0;
+
+  async startToolAgentRound(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    return {
+      kind: 'success',
+      result: {
+        state: {
+          messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_THEN_IMAGE_SYNC_FALLBACK' }],
+          steps: state.steps + 1,
+        },
+        step: { kind: 'final-response-ready' },
+        requestTrace: [{ mode: 'streaming-approval-then-image-sync-fallback' }],
+      },
+    };
+  }
+
+  async startToolAgentRoundStreaming(
+    _config: undefined,
+    state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<StartedToolAgentRound<ScriptedState>> {
+    this.rounds += 1;
+
+    if (this.rounds === 1) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'success',
+          result: {
+            state: {
+              messages: [
+                ...state.messages,
+                {
+                  role: 'assistant',
+                  content: '先审批写文件，再继续生成图片。',
+                  tool_calls: [
+                    {
+                      id: 'call-stream-approval-then-image-file',
+                      type: 'function',
+                      function: {
+                        name: 'create_file',
+                        arguments: '{"path":"demo.txt","content":"hello"}',
+                      },
+                    },
+                    {
+                      id: 'call-stream-approval-then-image-generate',
+                      type: 'function',
+                      function: {
+                        name: 'generate_image',
+                        arguments: '{"prompt":"approval follow-up poster","size":"1024x1024"}',
+                      },
+                    },
+                  ],
+                },
+              ],
+              steps: state.steps + 1,
+            },
+            step: {
+              kind: 'tool-calls',
+              calls: [
+                {
+                  id: 'call-stream-approval-then-image-file',
+                  name: 'create_file',
+                  argumentsJson: '{"path":"demo.txt","content":"hello"}',
+                },
+                {
+                  id: 'call-stream-approval-then-image-generate',
+                  name: 'generate_image',
+                  argumentsJson: '{"prompt":"approval follow-up poster","size":"1024x1024"}',
+                },
+              ],
+            },
+            requestTrace: [{ mode: 'streaming-approval-then-image-round-1' }],
+          },
+        }),
+      };
+    }
+
+    const hasApprovedToolResult = state.messages.some(
+      (message) =>
+        isJsonObject(message) &&
+        message.role === 'tool' &&
+        message.tool_call_id === 'call-stream-approval-then-image-file' &&
+        typeof message.content === 'string' &&
+        message.content.includes('approved output for create_file'),
+    );
+    if (!hasApprovedToolResult) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'failure',
+          error: 'streaming approval then image resume 未写回审批工具结果。',
+          requestTrace: [{ mode: 'streaming-approval-then-image-round-2-missing-approved-tool' }],
+        }),
+      };
+    }
+
+    const hasImageToolResult = state.messages.some(
+      (message) =>
+        isJsonObject(message) &&
+        message.role === 'tool' &&
+        message.tool_call_id === 'call-stream-approval-then-image-generate' &&
+        typeof message.content === 'string' &&
+        message.content.includes('[generated image] approval-follow-up ready'),
+    );
+    if (!hasImageToolResult) {
+      return {
+        eventStream: streamFromEvents([]),
+        completion: Promise.resolve({
+          kind: 'failure',
+          error: 'streaming approval then image resume 未写回 generate_image 结果。',
+          requestTrace: [{ mode: 'streaming-approval-then-image-round-2-missing-image-tool' }],
+        }),
+      };
+    }
+
+    return {
+      eventStream: streamFromEvents([
+        { kind: 'assistant-chunk', text: 'STREAM_APPROVAL_THEN_IMAGE_' },
+        { kind: 'assistant-chunk', text: 'OK' },
+        { kind: 'done' },
+      ]),
+      completion: Promise.resolve({
+        kind: 'success',
+        result: {
+          state: {
+            messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_THEN_IMAGE_OK' }],
+            steps: state.steps + 1,
+          },
+          step: { kind: 'final-response-ready' },
+          requestTrace: [{ mode: 'streaming-approval-then-image-round-2' }],
+        },
+      }),
+    };
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes('context');
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return historyAsPlainApiMessages(history);
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
 }
 
 class PreviewEarlyExecutionTransport implements LlmTransport<undefined, ScriptedState> {

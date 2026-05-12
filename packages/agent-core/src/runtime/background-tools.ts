@@ -4,6 +4,7 @@ import { createToolExecutionTextOutput } from '../ports.js';
 import { renderError } from './helpers.js';
 import type {
   AgentRuntimeOptions,
+  PendingEarlyToolExecution,
   PendingBackgroundToolExecution,
   PendingManualBackgroundToolExecution,
   PendingToolCallBackgroundToolExecution,
@@ -40,6 +41,15 @@ export interface BackgroundToolsRuntime<
     turn: RuntimeTurnContext<ToolRequest>,
     emitBeginResponse: boolean,
   ): Promise<void>;
+  queuePendingToolCallContinuation(
+    state: State,
+    pendingUserInput: string,
+    calls: ToolCallRequest[],
+    turn: RuntimeTurnContext<ToolRequest>,
+    resumeAsStreaming?: boolean,
+    streamingEmitBeginResponse?: boolean,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  ): void;
   processToolCallsAsync(
     state: State,
     pendingUserInput: string,
@@ -66,6 +76,7 @@ export function startBackgroundToolExecutionAsync<
   turn: RuntimeTurnContext<ToolRequest>,
   resumeAsStreaming = false,
   streamingEmitBeginResponse = true,
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
 ): void {
   const statusText = runtime.options.toolExecutor.backgroundStatusText?.(request);
   runtime.pendingBackgroundToolStatusStore = statusText;
@@ -88,6 +99,7 @@ export function startBackgroundToolExecutionAsync<
     turn,
     resumeAsStreaming,
     streamingEmitBeginResponse,
+    ...(earlyToolExecutions ? { earlyToolExecutions } : {}),
     statusText,
     output: undefined,
     failed: undefined,
@@ -209,13 +221,14 @@ export async function pollPendingBackgroundToolExecution<
     pending.output,
   );
   if (pending.remainingCalls.length > 0) {
-    await runtime.processToolCallsAsync(
+    runtime.queuePendingToolCallContinuation(
       resumedState,
       pending.pendingUserInput,
       pending.remainingCalls,
       pending.turn,
       pending.resumeAsStreaming,
       pending.streamingEmitBeginResponse,
+      pending.earlyToolExecutions,
     );
     return;
   }
