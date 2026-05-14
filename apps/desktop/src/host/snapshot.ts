@@ -65,6 +65,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
         reasoningEffort: model.reasoningEffort,
         ...(model.capabilities ? { capabilities: [...model.capabilities] } : {}),
         ...(model.provider ? { provider: model.provider } : {}),
+        ...(model.transportKind ? { transportKind: model.transportKind } : {}),
         keyConfigured: input.modelKeyPresence[model.name] ?? false,
       })),
       activeModel: input.config.activeModel,
@@ -108,13 +109,17 @@ export function buildModelCatalogHints(config: DesktopConfigFile): DesktopModelC
   const hints: DesktopModelCatalogHint[] = [];
   for (const model of config.models) {
     const base = model.apiBase.trim() || DEFAULT_API_BASE;
-    if (seen.has(base)) {
+    const transportKind = model.transportKind ?? (model.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+    const cacheKey = `${model.provider ?? 'custom'}::${transportKind}::${base}`;
+    if (seen.has(cacheKey)) {
       continue;
     }
-    seen.add(base);
-    const hit = readModelCatalogCacheSync(base);
+    seen.add(cacheKey);
+    const hit = readModelCatalogCacheSync(base, model.provider, transportKind);
     if (hit && hit.modelIds.length > 0) {
       hints.push({
+        ...(hit.provider ? { provider: hit.provider } : {}),
+        ...(hit.transportKind ? { transportKind: hit.transportKind } : {}),
         apiBase: hit.apiBase,
         modelIds: hit.modelIds,
         fetchedAtUnixMs: hit.fetchedAtUnixMs,

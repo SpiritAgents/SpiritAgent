@@ -4,9 +4,10 @@ import path from 'node:path';
 
 import type {
   AgentRuntime,
-  OpenAiPlanMetadata,
-  OpenAiToolAgentState,
-  OpenAiTransportConfig,
+  LlmModelCapabilities,
+  LlmPlanMetadata,
+  LlmToolAgentState,
+  LlmTransportConfig,
 } from '@spirit-agent/agent-core';
 import {
   llmMessageTextContent,
@@ -22,6 +23,8 @@ import {
 
 import type {
   ConversationMessageSnapshot,
+  DesktopModelCapability,
+  DesktopModelReasoningEffort,
   DesktopDreamCollectorSnapshot,
   SessionListItem,
 } from '../types.js';
@@ -54,8 +57,8 @@ const DREAM_COLLECTOR_SESSION_COOLDOWN_MS = 2 * 60 * 1000;
 const DREAM_CONTEXT_MAX_CHARS = 6_000;
 
 type DesktopRuntime = AgentRuntime<
-  OpenAiTransportConfig,
-  OpenAiToolAgentState,
+  LlmTransportConfig,
+  LlmToolAgentState,
   DesktopToolRequest,
   string
 >;
@@ -124,8 +127,8 @@ export async function buildDreamCommitContext(input: {
 }
 
 export function buildDreamCollectorPlanMetadata(
-  planMetadata: OpenAiPlanMetadata,
-): OpenAiPlanMetadata {
+  planMetadata: LlmPlanMetadata,
+): LlmPlanMetadata {
   const { planModeHostInstructions: _planModeHostInstructions, ...rest } = planMetadata;
   return {
     ...rest,
@@ -175,13 +178,13 @@ export interface RunDesktopDreamCollectorOnceInput {
   gitBranch: string;
   collectorModel: string;
   config: DesktopConfigFile;
-  planMetadata: OpenAiPlanMetadata;
+  planMetadata: LlmPlanMetadata;
 }
 
 export interface RunDesktopDreamCollectorOnceDeps {
   createRuntime(
-    transportConfig: OpenAiTransportConfig,
-    planMetadata: OpenAiPlanMetadata,
+    transportConfig: LlmTransportConfig,
+    planMetadata: LlmPlanMetadata,
     toolExecutor: DesktopToolExecutor,
   ): DesktopRuntime;
   getStatus(): DesktopDreamCollectorSnapshot;
@@ -279,13 +282,13 @@ export async function runDesktopDreamCollectorOnce(
       },
     });
     const runtime = deps.createRuntime(
-      {
+      buildDreamCollectorTransportConfig({
         apiKey,
         model: input.collectorModel,
         baseUrl: activeProfile?.apiBase ?? currentApiBase(input.config),
         workspaceRoot: input.workspaceRoot,
-        ...(activeProfile?.provider ? { llmVendor: activeProfile.provider } : {}),
-      },
+        profile: activeProfile,
+      }),
       input.planMetadata,
       toolExecutor,
     );
@@ -675,6 +678,72 @@ export function clearDreamCollectorIssue(
 ): DesktopDreamCollectorSnapshot {
   const { lastError: _lastError, backoffUntilUnixMs: _backoffUntilUnixMs, ...clean } = snapshot;
   return clean;
+}
+
+function buildDreamCollectorTransportConfig(input: {
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+  workspaceRoot: string;
+  profile?: DesktopConfigFile['models'][number];
+}): LlmTransportConfig {
+  const transportKind = input.profile?.transportKind
+    ?? (input.profile?.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+  if (transportKind === 'anthropic') {
+    const anthropicEffort = dreamCollectorAnthropicEffort(input.profile?.reasoningEffort);
+    return {
+      transportKind: 'anthropic',
+      apiKey: input.apiKey,
+      model: input.model,
+      baseUrl: input.baseUrl,
+      workspaceRoot: input.workspaceRoot,
+      ...(input.profile?.capabilities
+        ? { modelCapabilities: dreamCollectorModelCapabilities(input.profile.capabilities) }
+        : {}),
+      ...(anthropicEffort ? { effort: anthropicEffort } : {}),
+    };
+  }
+
+  const llmVendor = input.profile?.provider && input.profile.provider !== 'anthropic'
+    ? input.profile.provider
+    : undefined;
+  return {
+    apiKey: input.apiKey,
+    model: input.model,
+    baseUrl: input.baseUrl,
+    workspaceRoot: input.workspaceRoot,
+    ...(llmVendor ? { llmVendor } : {}),
+    ...(input.profile?.capabilities
+      ? { modelCapabilities: dreamCollectorModelCapabilities(input.profile.capabilities) }
+      : {}),
+    ...(input.profile?.reasoningEffort ? { reasoningEffort: input.profile.reasoningEffort } : {}),
+  };
+}
+
+function dreamCollectorModelCapabilities(
+  capabilities: readonly DesktopModelCapability[],
+): LlmModelCapabilities {
+  return {
+    ...(capabilities.includes('chat') ? { chat: true } : {}),
+    ...(capabilities.includes('vision') ? { vision: true } : {}),
+    ...(capabilities.includes('imageGeneration') ? { imageGeneration: true } : {}),
+  };
+}
+
+function dreamCollectorAnthropicEffort(
+  effort: DesktopModelReasoningEffort | undefined,
+): 'low' | 'medium' | 'high' | undefined {
+  switch (effort) {
+    case 'low':
+    case 'medium':
+    case 'high':
+      return effort;
+    case 'xhigh':
+    case 'max':
+      return 'high';
+    default:
+      return undefined;
+  }
 }
 
 function truncateText(value: string, maxChars: number): string {

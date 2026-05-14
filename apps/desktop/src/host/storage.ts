@@ -28,6 +28,7 @@ import type {
   ConversationMessageSnapshot,
   DesktopModelCapability,
   DesktopModelProvider,
+  DesktopTransportKind,
   ModelProfileSnapshot,
   SessionListItem,
 } from '../types.js';
@@ -406,6 +407,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
         )
         .map((model) => {
           const provider = parseModelProviderId(model.provider);
+          const transportKind = normalizeDesktopTransportKind(model.transportKind, provider);
           const capabilities = normalizeModelCapabilities(model.capabilities);
           return {
             name: model.name.trim(),
@@ -416,6 +418,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             }),
             ...(capabilities ? { capabilities } : {}),
             ...(provider ? { provider } : {}),
+            ...(transportKind ? { transportKind } : {}),
           };
         })
     : [];
@@ -456,6 +459,17 @@ function normalizeImageGenerationModel(
 
 function modelSupportsImageGeneration(model: ModelProfileSnapshot): boolean {
   return model.capabilities?.includes('imageGeneration') === true;
+}
+
+function normalizeDesktopTransportKind(
+  value: unknown,
+  provider?: DesktopModelProvider,
+): DesktopTransportKind | undefined {
+  if (value === 'openai-compatible' || value === 'anthropic') {
+    return value;
+  }
+
+  return provider === 'anthropic' ? 'anthropic' : undefined;
 }
 
 export function normalizeModelCapabilities(
