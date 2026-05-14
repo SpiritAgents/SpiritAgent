@@ -52,6 +52,16 @@ const KIMI_REASONING_EFFORT_OPTIONS: Array<{
   { value: 'high', label: 'High' },
 ];
 
+const ANTHROPIC_REASONING_EFFORT_OPTIONS: Array<{
+  value: ModelReasoningEffort;
+  label: string;
+}> = [
+  { value: 'default', label: 'Default' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+];
+
 const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(['deepseek-v4-pro', 'deepseek-v4-flash']);
 
 const MODEL_REASONING_EFFORT_SET = new Set<ModelReasoningEffort>(
@@ -86,6 +96,10 @@ export function defaultModelReasoningEffort(
     return 'default';
   }
 
+  if (isAnthropicReasoningEffortModel(context)) {
+    return 'default';
+  }
+
   return DEFAULT_MODEL_REASONING_EFFORT;
 }
 
@@ -96,6 +110,8 @@ export function modelReasoningEffortOptions(
     ? DEEPSEEK_V4_REASONING_EFFORT_OPTIONS
     : isKimiReasoningEffortModel(context)
       ? KIMI_REASONING_EFFORT_OPTIONS
+      : isAnthropicReasoningEffortModel(context)
+        ? ANTHROPIC_REASONING_EFFORT_OPTIONS
     : MODEL_REASONING_EFFORT_OPTIONS;
 }
 
@@ -121,6 +137,12 @@ export function isKimiReasoningEffortModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
   return context?.provider === 'kimi';
+}
+
+export function isAnthropicReasoningEffortModel(
+  context?: ModelReasoningEffortContext,
+): boolean {
+  return context?.provider === 'anthropic';
 }
 
 function normalizeModelId(value: unknown): string {
@@ -154,6 +176,19 @@ function resolveCompatibleModelReasoningEffort(
       case 'none':
         return 'default';
       case 'xhigh':
+        return 'high';
+      default:
+        return normalized;
+    }
+  }
+
+  if (isAnthropicReasoningEffortModel(context)) {
+    switch (normalized) {
+      case 'none':
+      case 'minimal':
+        return 'default';
+      case 'xhigh':
+      case 'max':
         return 'high';
       default:
         return normalized;
