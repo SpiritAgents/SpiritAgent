@@ -51,6 +51,8 @@ export interface DesktopDreamConfigUpdate {
 /** 模型提供方（与 `packages/host-internal` 中 `ModelProviderId` 同源）。 */
 export type DesktopModelProvider = ModelProviderId;
 
+export type DesktopTransportKind = 'openai-compatible' | 'anthropic';
+
 /** 模型推理强度（与 `packages/host-internal` 中 `ModelReasoningEffort` 同源）。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
@@ -60,6 +62,8 @@ export type DesktopModelCapability = 'chat' | 'vision' | 'imageGeneration';
 export interface PreviewModelsRequest {
   apiBase: string;
   apiKey: string;
+  provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
   /** 为 true 时忽略 TTL，强制请求上游。 */
   forceRefresh?: boolean;
 }
@@ -75,10 +79,13 @@ export interface AddProviderModelsRequest {
   apiKey: string;
   modelIds: string[];
   provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
 }
 
 /** 快照附带：某 apiBase 在本地 `model-catalog-cache` 中的最近一次列模型结果（供主界面分组与排序）。 */
 export interface DesktopModelCatalogHint {
+  provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
   apiBase: string;
   modelIds: string[];
   fetchedAtUnixMs: number;
@@ -91,6 +98,7 @@ export interface AddModelRequest {
   apiKey: string;
   /** 缺省时不写入配置（与旧版三字段一致）。 */
   provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
   capabilities?: DesktopModelCapability[];
 }
 
@@ -567,6 +575,8 @@ export interface ModelProfileSnapshot {
   capabilities?: DesktopModelCapability[];
   /** 持久化来源；缺省表示历史自定义配置。 */
   provider?: DesktopModelProvider;
+  /** 传输族；当前主要用于区分 Anthropic 与 OpenAI-compatible。 */
+  transportKind?: DesktopTransportKind;
   /** 宿主快照：该模型是否在系统钥匙串中有专属 API Key 条目（与 CLI 一致；不含环境变量与全局回退）。 */
   keyConfigured?: boolean;
 }

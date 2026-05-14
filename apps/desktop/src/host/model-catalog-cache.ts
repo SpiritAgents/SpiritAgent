@@ -5,6 +5,8 @@ import path from 'node:path';
 
 import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal';
 
+import type { DesktopModelProvider, DesktopTransportKind } from '../types.js';
+
 import { spiritAgentDataDir } from './storage.js';
 
 /** 模型目录缓存 TTL（24h）。 */
@@ -21,13 +23,30 @@ function modelCatalogCacheDir(): string {
   return path.join(spiritAgentDataDir(), CACHE_DIR_NAME);
 }
 
-function modelCatalogCacheFilePath(apiBase: string): string {
+function modelCatalogCacheKey(
+  apiBase: string,
+  provider?: DesktopModelProvider,
+  transportKind?: DesktopTransportKind,
+): string {
   const normalized = normalizeOpenAiApiBase(apiBase);
-  const hash = createHash('sha256').update(normalized, 'utf8').digest('hex').slice(0, 32);
+  return `${provider ?? 'custom'}::${transportKind ?? 'openai-compatible'}::${normalized}`;
+}
+
+function modelCatalogCacheFilePath(
+  apiBase: string,
+  provider?: DesktopModelProvider,
+  transportKind?: DesktopTransportKind,
+): string {
+  const hash = createHash('sha256')
+    .update(modelCatalogCacheKey(apiBase, provider, transportKind), 'utf8')
+    .digest('hex')
+    .slice(0, 32);
   return path.join(modelCatalogCacheDir(), `${hash}.json`);
 }
 
 export interface ModelCatalogCacheEntry {
+  provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
   apiBase: string;
   fetchedAtUnixMs: number;
   modelIds: string[];
@@ -59,10 +78,20 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   const fpRaw = obj.apiKeyFingerprint;
   const apiKeyFingerprint =
     typeof fpRaw === 'string' && fpRaw.length > 0 ? fpRaw : undefined;
+  const provider =
+    typeof obj.provider === 'string' && obj.provider.trim().length > 0
+      ? (obj.provider.trim() as DesktopModelProvider)
+      : undefined;
+  const transportKind =
+    obj.transportKind === 'openai-compatible' || obj.transportKind === 'anthropic'
+      ? obj.transportKind
+      : undefined;
   return {
     apiBase: base.trim(),
     fetchedAtUnixMs: fetchedAt,
     modelIds: ids,
+    ...(provider !== undefined ? { provider } : {}),
+    ...(transportKind !== undefined ? { transportKind } : {}),
     ...(apiKeyFingerprint !== undefined ? { apiKeyFingerprint } : {}),
   };
 }
@@ -73,9 +102,11 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
 export async function readModelCatalogCache(
   apiBase: string,
   apiKey?: string,
+  provider?: DesktopModelProvider,
+  transportKind?: DesktopTransportKind,
 ): Promise<ModelCatalogCacheEntry | undefined> {
   try {
-    const raw = await readFile(modelCatalogCacheFilePath(apiBase), 'utf8');
+    const raw = await readFile(modelCatalogCacheFilePath(apiBase, provider, transportKind), 'utf8');
     const entry = parseCacheEntry(raw);
     if (!entry) {
       return undefined;
@@ -94,9 +125,13 @@ export async function readModelCatalogCache(
 }
 
 /** 同步读取（仅宿主线程用于快照拼装）。 */
-export function readModelCatalogCacheSync(apiBase: string): ModelCatalogCacheEntry | undefined {
+export function readModelCatalogCacheSync(
+  apiBase: string,
+  provider?: DesktopModelProvider,
+  transportKind?: DesktopTransportKind,
+): ModelCatalogCacheEntry | undefined {
   try {
-    const raw = readFileSync(modelCatalogCacheFilePath(apiBase), 'utf8');
+    const raw = readFileSync(modelCatalogCacheFilePath(apiBase, provider, transportKind), 'utf8');
     return parseCacheEntry(raw);
   } catch {
     return undefined;
@@ -107,6 +142,8 @@ export async function writeModelCatalogCache(
   apiBase: string,
   modelIds: string[],
   apiKey: string,
+  provider?: DesktopModelProvider,
+  transportKind?: DesktopTransportKind,
 ): Promise<void> {
   const dir = modelCatalogCacheDir();
   await mkdir(dir, { recursive: true });
@@ -116,8 +153,10 @@ export async function writeModelCatalogCache(
     fetchedAtUnixMs: Date.now(),
     modelIds: [...modelIds],
     apiKeyFingerprint: modelCatalogApiKeyFingerprint(apiKey),
+    ...(provider ? { provider } : {}),
+    ...(transportKind ? { transportKind } : {}),
   };
-  const filePath = modelCatalogCacheFilePath(apiBase);
+  const filePath = modelCatalogCacheFilePath(apiBase, provider, transportKind);
   const tempPath = `${filePath}.${String(process.pid)}.${String(Math.random()).slice(2)}.tmp`;
   await writeFile(tempPath, `${JSON.stringify(entry)}\n`, 'utf8');
   await rename(tempPath, filePath);
