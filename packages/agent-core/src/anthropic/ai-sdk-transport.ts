@@ -83,6 +83,8 @@ type AnthropicToolCallDeltaPart = {
   argsTextDelta: string;
 };
 
+const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = '[HOST_CONTEXT_FROM_SYSTEM]';
+
 export class AiSdkAnthropicTransport
   implements LlmTransport<AnthropicTransportConfig, ToolAgentState>, JsonSchemaTransport
 {
@@ -102,12 +104,13 @@ export class AiSdkAnthropicTransport
       { model: config.model },
       request,
     );
-    const requestTrace = buildAnthropicRequestTrace(config, 1, messages, []);
+    const normalizedMessages = normalizeMessagesForAnthropicPrompt(messages);
+    const requestTrace = buildAnthropicRequestTrace(config, 1, normalizedMessages, []);
 
     try {
       const result = await generateObject({
         model: createAnthropicLanguageModel(config),
-        messages: toolStateMessagesToAiSdkMessages(messages) as any,
+        messages: toolStateMessagesToAiSdkMessages(normalizedMessages) as any,
         allowSystemInMessages: true,
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
@@ -137,18 +140,19 @@ export class AiSdkAnthropicTransport
     };
 
     const requestMessages = nextState.messages.map((message) => cloneJsonValue(message));
+    const normalizedRequestMessages = normalizeMessagesForAnthropicPrompt(requestMessages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAnthropicRequestTrace(
       config,
       nextState.steps,
-      requestMessages,
+      normalizedRequestMessages,
       normalizedTools,
     );
 
     try {
       const result: any = await generateText({
         model: createAnthropicLanguageModel(config),
-        messages: toolStateMessagesToAiSdkMessages(requestMessages) as any,
+        messages: toolStateMessagesToAiSdkMessages(normalizedRequestMessages) as any,
         allowSystemInMessages: true,
         ...(normalizedTools.length === 0
           ? {}
@@ -209,11 +213,12 @@ export class AiSdkAnthropicTransport
     };
 
     const requestMessages = nextState.messages.map((message) => cloneJsonValue(message));
+    const normalizedRequestMessages = normalizeMessagesForAnthropicPrompt(requestMessages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAnthropicRequestTrace(
       config,
       nextState.steps,
-      requestMessages,
+      normalizedRequestMessages,
       normalizedTools,
       true,
     );
@@ -222,7 +227,7 @@ export class AiSdkAnthropicTransport
     try {
       const result: any = streamText({
         model: createAnthropicLanguageModel(config),
-        messages: toolStateMessagesToAiSdkMessages(requestMessages) as any,
+        messages: toolStateMessagesToAiSdkMessages(normalizedRequestMessages) as any,
         allowSystemInMessages: true,
         ...(normalizedTools.length === 0
           ? {}
@@ -391,7 +396,7 @@ export class AiSdkAnthropicTransport
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
-    return llmHistoryToToolStateMessages(history);
+    return normalizeMessagesForAnthropicPrompt(llmHistoryToToolStateMessages(history));
   }
 
   llmSystemPromptsForExport(): JsonValue {
@@ -468,6 +473,51 @@ function toolStateMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<s
         return [];
     }
   });
+}
+
+function normalizeMessagesForAnthropicPrompt(messages: JsonValue[]): JsonValue[] {
+  const normalizedMessages: JsonValue[] = [];
+  let sawNonSystemMessage = false;
+
+  for (const message of messages) {
+    if (!isJsonObject(message) || typeof message.role !== 'string') {
+      continue;
+    }
+
+    if (message.role === 'system') {
+      if (!sawNonSystemMessage) {
+        normalizedMessages.push(cloneJsonValue(message));
+      } else {
+        const projected = projectSeparatedSystemMessageForAnthropic(message);
+        if (projected !== undefined) {
+          normalizedMessages.push(projected);
+        }
+      }
+      continue;
+    }
+
+    sawNonSystemMessage = true;
+    normalizedMessages.push(cloneJsonValue(message));
+  }
+
+  return normalizedMessages;
+}
+
+function projectSeparatedSystemMessageForAnthropic(message: JsonObject): JsonValue | undefined {
+  if (typeof message.content !== 'string' || message.content.trim().length === 0) {
+    return undefined;
+  }
+
+  return {
+    role: 'user',
+    content: [
+      ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX,
+      'The host is providing additional context that was originally stored as a system message after the conversation had already started.',
+      'Treat it as reference context for continuity, not as a new user request.',
+      '',
+      message.content,
+    ].join('\n'),
+  } satisfies JsonObject;
 }
 
 function userContentToAiSdkContent(

@@ -17,6 +17,7 @@ import { demoLookupToolDefinition, printSmokeSection } from '../shared/index.js'
 const ANTHROPIC_REASONING_TEXT = '先想一下，再查工具。';
 const ANTHROPIC_REASONING_SIGNATURE = 'sig_anthropic_stream_1';
 const ANTHROPIC_TOOL_USE_ID = 'toolu_anthropic_stream_1';
+const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = '[HOST_CONTEXT_FROM_SYSTEM]';
 
 async function main(): Promise<void> {
   let requestCount = 0;
@@ -284,6 +285,138 @@ async function main(): Promise<void> {
   if (!requestIncludesReplayedThinking(requestBodies[1], ANTHROPIC_REASONING_TEXT, ANTHROPIC_REASONING_SIGNATURE)) {
     throw new Error('ai-sdk anthropic streaming smoke 未把带 signature 的 thinking block 回灌到第二轮请求。');
   }
+
+  await runSeparatedSystemProjectionSmoke();
+}
+
+async function runSeparatedSystemProjectionSmoke(): Promise<void> {
+  const requestBodies: JsonValue[] = [];
+  const server = createServer(async (request, response) => {
+    if (request.method !== 'POST' || request.url !== '/v1/messages') {
+      response.statusCode = 404;
+      response.end('not found');
+      return;
+    }
+
+    requestBodies.push(await readJsonBody(request));
+    response.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+    });
+    response.write(`data: ${JSON.stringify({
+      type: 'message_start',
+      message: {
+        id: 'msg_anthropic_system_projection',
+        model: 'deepseek-v4-pro',
+        usage: { input_tokens: 9 },
+      },
+    })}\n\n`);
+    response.write(`data: ${JSON.stringify({
+      type: 'content_block_start',
+      index: 0,
+      content_block: {
+        type: 'text',
+        text: '',
+      },
+    })}\n\n`);
+    response.write(`data: ${JSON.stringify({
+      type: 'content_block_delta',
+      index: 0,
+      delta: {
+        type: 'text_delta',
+        text: 'AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK',
+      },
+    })}\n\n`);
+    response.write(`data: ${JSON.stringify({
+      type: 'content_block_stop',
+      index: 0,
+    })}\n\n`);
+    response.write(`data: ${JSON.stringify({
+      type: 'message_delta',
+      delta: {
+        stop_reason: 'end_turn',
+        stop_sequence: null,
+      },
+      usage: {
+        output_tokens: 7,
+      },
+    })}\n\n`);
+    response.write('data: {"type":"message_stop"}\n\n');
+    response.write('data: [DONE]\n\n');
+    response.end();
+  });
+
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    server.close();
+    throw new Error('无法获取 separated system projection smoke server 端口。');
+  }
+
+  const transport = new AiSdkAnthropicTransport();
+  const state = startToolAgentState(
+    buildToolAgentMessages({
+      historyMessages: [
+        {
+          role: 'user',
+          content: '[用户消息时间 2026-05-14T16:11:27.803+08:00]\nHi DeepSeek',
+        },
+        {
+          role: 'assistant',
+          content: '你好！我是 Spirit Agent。',
+        },
+        {
+          role: 'system',
+          content: '[TOOL_MEMORY]\nrequest: {"name":"read_file","path":"D:\\SpiritAgent\\README.md"}\nresult_snippet:\n[read] README has 11 lines',
+        },
+        {
+          role: 'assistant',
+          content: 'README 很短，目前没有安装说明。',
+        },
+      ],
+      model: 'deepseek-v4-pro',
+    }),
+    'XSWL',
+  );
+
+  const started = await transport.startToolAgentRoundStreaming(
+    {
+      transportKind: 'anthropic',
+      apiKey: 'test-key',
+      model: 'deepseek-v4-pro',
+      baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
+      thinking: { type: 'enabled', budgetTokens: 1024 },
+    },
+    state,
+    [],
+  );
+
+  const events = await collectEvents(started.eventStream);
+  const completion = await started.completion;
+  server.close();
+
+  printSmokeSection('ai-sdk anthropic separated-system smoke events', events);
+  printSmokeSection('ai-sdk anthropic separated-system smoke completion', completion);
+
+  if (completion.kind !== 'success' || completion.result.step.kind !== 'final-response-ready') {
+    throw new Error('ai-sdk anthropic separated-system smoke 未进入预期的 final-response-ready。');
+  }
+
+  const finalText = extractLastAssistantText(completion.result.state)?.trim();
+  if (finalText !== 'AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK') {
+    throw new Error(`ai-sdk anthropic separated-system smoke 未拿到预期文本。实际: ${finalText ?? '<empty>'}`);
+  }
+
+  if (requestBodies.length !== 1) {
+    throw new Error('ai-sdk anthropic separated-system smoke 未成功发出 HTTP 请求，疑似仍在 Anthropic prompt 转换阶段失败。');
+  }
+
+  if (!requestIncludesProjectedSystemContext(requestBodies[0])) {
+    throw new Error('ai-sdk anthropic separated-system smoke 未把中途 system message 投影成 user host context。');
+  }
 }
 
 async function collectEvents(
@@ -368,6 +501,27 @@ function requestIncludesReplayedThinking(
     );
 
     return hasThinking && hasToolUse;
+  });
+}
+
+function requestIncludesProjectedSystemContext(requestBody: JsonValue | undefined): boolean {
+  if (!isJsonObject(requestBody) || !Array.isArray(requestBody.messages)) {
+    return false;
+  }
+
+  return requestBody.messages.some((message) => {
+    if (!isJsonObject(message) || message.role !== 'user' || !Array.isArray(message.content)) {
+      return false;
+    }
+
+    return message.content.some(
+      (part) =>
+        isJsonObject(part) &&
+        part.type === 'text' &&
+        typeof part.text === 'string' &&
+        part.text.includes(ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX) &&
+        part.text.includes('[TOOL_MEMORY]'),
+    );
   });
 }
 
