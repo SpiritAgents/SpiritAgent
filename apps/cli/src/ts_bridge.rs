@@ -1639,55 +1639,78 @@ impl TsBridgeRuntime {
 
         let api_base = env::var(ENV_API_BASE).unwrap_or_else(|_| active.api_base.clone());
 
-        let mut transport = serde_json::json!({
-            "apiKey": api_key,
-            "model": active.name,
-            "baseUrl": api_base,
-            "workspaceRoot": self.workspace_root,
-        });
-        if let Some(provider) = active.provider {
-            if let Some(obj) = transport.as_object_mut() {
-                obj.insert(
-                    "llmVendor".to_string(),
-                    json!(model_provider_vendor(provider)),
-                );
-            }
-        }
+        let mut transport = if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
+            serde_json::json!({
+                "transportKind": "anthropic",
+                "apiKey": api_key,
+                "model": active.name,
+                "baseUrl": api_base,
+                "workspaceRoot": self.workspace_root,
+            })
+        } else {
+            serde_json::json!({
+                "apiKey": api_key,
+                "model": active.name,
+                "baseUrl": api_base,
+                "workspaceRoot": self.workspace_root,
+            })
+        };
+
         if let Some(model_capabilities) = model_capabilities_json(active) {
             if let Some(obj) = transport.as_object_mut() {
                 obj.insert("modelCapabilities".to_string(), model_capabilities);
             }
         }
-        if let Some(reasoning_effort) = active.reasoning_effort.as_deref() {
-            if let Some(obj) = transport.as_object_mut() {
-                obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
+
+        if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
+            if let Some(effort) = anthropic_effort_value(active.reasoning_effort.as_deref()) {
+                if let Some(obj) = transport.as_object_mut() {
+                    obj.insert("effort".to_string(), json!(effort));
+                }
             }
-        }
-        if let Some(image_profile) = config.image_generation_model_profile() {
-            if image_profile.supports_image_generation() {
-                if let Some(image_api_key) =
-                    self.resolve_optional_key_from_store(&image_profile.name)?
+        } else {
+            if let Some(provider) = active.provider {
+                if let Some(obj) = transport.as_object_mut() {
+                    obj.insert(
+                        "llmVendor".to_string(),
+                        json!(model_provider_vendor(provider)),
+                    );
+                }
+            }
+            if let Some(reasoning_effort) = active.reasoning_effort.as_deref() {
+                if let Some(obj) = transport.as_object_mut() {
+                    obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
+                }
+            }
+            if let Some(image_profile) = config.image_generation_model_profile() {
+                if image_profile.supports_image_generation()
+                    && image_profile.transport_kind()
+                        == crate::model_registry::ModelTransportKind::OpenAiCompatible
                 {
-                    let mut image_generation = serde_json::json!({
-                        "apiKey": image_api_key,
-                        "model": image_profile.name,
-                        "baseUrl": image_profile.api_base,
-                    });
-                    if let Some(provider) = image_profile.provider {
-                        if let Some(obj) = image_generation.as_object_mut() {
-                            obj.insert(
-                                "llmVendor".to_string(),
-                                json!(model_provider_vendor(provider)),
-                            );
+                    if let Some(image_api_key) =
+                        self.resolve_optional_key_from_store(&image_profile.name)?
+                    {
+                        let mut image_generation = serde_json::json!({
+                            "apiKey": image_api_key,
+                            "model": image_profile.name,
+                            "baseUrl": image_profile.api_base,
+                        });
+                        if let Some(provider) = image_profile.provider {
+                            if let Some(obj) = image_generation.as_object_mut() {
+                                obj.insert(
+                                    "llmVendor".to_string(),
+                                    json!(model_provider_vendor(provider)),
+                                );
+                            }
                         }
-                    }
-                    if let Some(model_capabilities) = model_capabilities_json(image_profile) {
-                        if let Some(obj) = image_generation.as_object_mut() {
-                            obj.insert("modelCapabilities".to_string(), model_capabilities);
+                        if let Some(model_capabilities) = model_capabilities_json(image_profile) {
+                            if let Some(obj) = image_generation.as_object_mut() {
+                                obj.insert("modelCapabilities".to_string(), model_capabilities);
+                            }
                         }
-                    }
-                    if let Some(obj) = transport.as_object_mut() {
-                        obj.insert("imageGeneration".to_string(), image_generation);
+                        if let Some(obj) = transport.as_object_mut() {
+                            obj.insert("imageGeneration".to_string(), image_generation);
+                        }
                     }
                 }
             }
@@ -1714,6 +1737,17 @@ impl TsBridgeRuntime {
         if self
             .config
             .active_model_profile()
+            .map(|profile| profile.transport_kind())
+            != config
+                .active_model_profile()
+                .map(|profile| profile.transport_kind())
+        {
+            return true;
+        }
+
+        if self
+            .config
+            .active_model_profile()
             .and_then(|profile| profile.reasoning_effort.as_deref())
             != config
                 .active_model_profile()
@@ -1730,12 +1764,14 @@ impl TsBridgeRuntime {
             (
                 profile.api_base.as_str(),
                 profile.provider,
+                profile.transport_kind(),
                 profile.supports_image_generation(),
             )
         }) != config.image_generation_model_profile().map(|profile| {
             (
                 profile.api_base.as_str(),
                 profile.provider,
+                profile.transport_kind(),
                 profile.supports_image_generation(),
             )
         }) {
@@ -2734,7 +2770,17 @@ fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Kimi => "kimi",
         ModelProvider::Minimax => "minimax",
         ModelProvider::Alibaba => "alibaba",
+        ModelProvider::Anthropic => unreachable!("Anthropic 不应映射到 openai-compatible llmVendor"),
         ModelProvider::Custom => "custom",
+    }
+}
+
+fn anthropic_effort_value(value: Option<&str>) -> Option<&'static str> {
+    match value.map(str::trim) {
+        Some("low") => Some("low"),
+        Some("medium") => Some("medium"),
+        Some("high") | Some("xhigh") | Some("max") => Some("high"),
+        _ => None,
     }
 }
 
@@ -3045,6 +3091,39 @@ mod tests {
     }
 
     #[test]
+    fn resolve_transport_config_json_uses_anthropic_union_shape() {
+        let Some(runtime) = make_test_runtime() else {
+            return;
+        };
+
+        let mut next = runtime.config().clone();
+        let active = next
+            .active_model_profile_mut()
+            .expect("active model should exist");
+        active.provider = Some(ModelProvider::Anthropic);
+        active.reasoning_effort = Some("high".to_string());
+        active.extra.insert(
+            "transportKind".to_string(),
+            json!("anthropic"),
+        );
+
+        let transport = runtime
+            .resolve_transport_config_json_for(&next)
+            .expect("resolve transport config");
+
+        assert_eq!(
+            transport.get("transportKind").and_then(Value::as_str),
+            Some("anthropic")
+        );
+        assert_eq!(transport.get("llmVendor"), None);
+        assert_eq!(
+            transport.get("effort").and_then(Value::as_str),
+            Some("high")
+        );
+        assert_eq!(transport.get("imageGeneration"), None);
+    }
+
+    #[test]
     fn transport_config_change_detects_model_knobs() {
         let Some(runtime) = make_test_runtime() else {
             return;
@@ -3054,6 +3133,13 @@ mod tests {
         next.active_model_profile_mut()
             .expect("active model should exist")
             .provider = Some(ModelProvider::Custom);
+        assert!(runtime.transport_config_will_change(&next));
+
+        let mut next = runtime.config().clone();
+        next.active_model_profile_mut()
+            .expect("active model should exist")
+            .extra
+            .insert("transportKind".to_string(), json!("anthropic"));
         assert!(runtime.transport_config_will_change(&next));
 
         let mut next = runtime.config().clone();
