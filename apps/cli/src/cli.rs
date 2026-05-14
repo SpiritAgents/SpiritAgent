@@ -8,7 +8,10 @@ use crate::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
         user_mcp_config_path,
     },
-    model_registry::{AppConfig, DEFAULT_API_BASE, ModelProfile, ModelProvider},
+    model_provider_presets::model_add_default_custom_api_base,
+    model_registry::{
+        AppConfig, DEFAULT_API_BASE, ModelProfile, ModelProvider, ModelTransportKind,
+    },
     ports::{AppPaths, ConfigStore, SecretStore},
     ts_bridge::TsBridgeRuntime,
 };
@@ -21,6 +24,7 @@ pub enum ModelCommand {
         name: String,
         api_base: Option<String>,
         provider: Option<String>,
+        transport_kind: Option<String>,
         reasoning_effort: Option<String>,
         capabilities: Vec<String>,
         key: Option<String>,
@@ -138,6 +142,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             name,
             api_base,
             provider,
+            transport_kind,
             reasoning_effort,
             capabilities,
             key,
@@ -145,8 +150,14 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             if cfg.has_model(&name) {
                 println!("模型已存在: {}", name);
             } else {
-                let api_base = api_base.unwrap_or_else(|| DEFAULT_API_BASE.to_string());
                 let provider = parse_model_provider(provider)?;
+                let transport_kind = parse_model_transport_kind(transport_kind, provider)?;
+                let api_base = api_base.unwrap_or_else(|| match transport_kind {
+                    ModelTransportKind::Anthropic => {
+                        model_add_default_custom_api_base(ModelTransportKind::Anthropic)
+                    }
+                    ModelTransportKind::OpenAiCompatible => DEFAULT_API_BASE.to_string(),
+                });
                 let reasoning_effort = normalize_choice_arg(reasoning_effort);
                 let capabilities = normalize_model_capabilities(capabilities);
                 let key_value = match key {
@@ -161,6 +172,12 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 let mut extra = serde_json::Map::new();
                 if !capabilities.is_empty() {
                     extra.insert("capabilities".to_string(), serde_json::json!(capabilities));
+                }
+                if transport_kind == ModelTransportKind::Anthropic {
+                    extra.insert(
+                        "transportKind".to_string(),
+                        serde_json::json!(transport_kind.as_str()),
+                    );
                 }
 
                 cfg.add_model(ModelProfile {
@@ -326,6 +343,34 @@ fn parse_model_provider(value: Option<String>) -> Result<Option<ModelProvider>> 
             .map(Some)
             .map_err(|err: String| anyhow!(err)),
         None => Ok(None),
+    }
+}
+
+fn parse_model_transport_kind(
+    value: Option<String>,
+    provider: Option<ModelProvider>,
+) -> Result<ModelTransportKind> {
+    let parsed = match normalize_choice_arg(value) {
+        Some(transport_kind) => transport_kind
+            .parse()
+            .map_err(|err: String| anyhow!(err))?,
+        None => match provider {
+            Some(ModelProvider::Anthropic) => ModelTransportKind::Anthropic,
+            _ => ModelTransportKind::OpenAiCompatible,
+        },
+    };
+
+    match (provider, parsed) {
+        (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible) => {
+            Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible"))
+        }
+        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic) => {
+            Err(anyhow!("只有 provider=custom 或 anthropic 时可以选择 anthropic transport-kind"))
+        }
+        (None, ModelTransportKind::Anthropic) => {
+            Err(anyhow!("transport-kind=anthropic 需要同时指定 --provider custom 或 --provider anthropic"))
+        }
+        _ => Ok(parsed),
     }
 }
 

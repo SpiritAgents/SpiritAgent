@@ -20,6 +20,7 @@ pub enum ModelProvider {
     Kimi,
     Minimax,
     Alibaba,
+    Anthropic,
     Custom,
 }
 
@@ -30,6 +31,7 @@ impl ModelProvider {
             Self::Kimi => "kimi",
             Self::Minimax => "minimax",
             Self::Alibaba => "alibaba",
+            Self::Anthropic => "anthropic",
             Self::Custom => "custom",
         }
     }
@@ -44,8 +46,36 @@ impl FromStr for ModelProvider {
             "kimi" => Ok(Self::Kimi),
             "minimax" => Ok(Self::Minimax),
             "alibaba" => Ok(Self::Alibaba),
+            "anthropic" => Ok(Self::Anthropic),
             "custom" => Ok(Self::Custom),
             other => Err(format!("不支持的 provider: {other}")),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModelTransportKind {
+    OpenAiCompatible,
+    Anthropic,
+}
+
+impl ModelTransportKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::OpenAiCompatible => "openai-compatible",
+            Self::Anthropic => "anthropic",
+        }
+    }
+}
+
+impl FromStr for ModelTransportKind {
+    type Err = String;
+
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "openai-compatible" => Ok(Self::OpenAiCompatible),
+            "anthropic" => Ok(Self::Anthropic),
+            other => Err(format!("不支持的 transport kind: {other}")),
         }
     }
 }
@@ -69,6 +99,18 @@ pub struct ModelProfile {
 }
 
 impl ModelProfile {
+    pub fn transport_kind(&self) -> ModelTransportKind {
+        self.extra
+            .get("transportKind")
+            .and_then(Value::as_str)
+            .or_else(|| self.extra.get("transport_kind").and_then(Value::as_str))
+            .and_then(|value| value.parse().ok())
+            .unwrap_or_else(|| match self.provider {
+                Some(ModelProvider::Anthropic) => ModelTransportKind::Anthropic,
+                _ => ModelTransportKind::OpenAiCompatible,
+            })
+    }
+
     pub fn supports_vision_input(&self) -> bool {
         if let Some(capabilities) = self.explicit_capabilities() {
             return capabilities.iter().any(|capability| capability == "vision");
@@ -79,6 +121,7 @@ impl ModelProfile {
             Some(ModelProvider::Kimi) => is_kimi_vision_model(&self.name),
             Some(ModelProvider::Minimax)
             | Some(ModelProvider::Alibaba)
+            | Some(ModelProvider::Anthropic)
             | Some(ModelProvider::Custom)
             | None => true,
         }
@@ -275,6 +318,20 @@ fn normalize_config(cfg: &mut AppConfig) {
         model.reasoning_effort = normalize_optional_string(model.reasoning_effort.take());
         model.extra.remove("transportImplementation");
         model.extra.remove("transport_implementation");
+        normalize_transport_kind(model);
+    }
+}
+
+fn normalize_transport_kind(model: &mut ModelProfile) {
+    let transport_kind = model.transport_kind();
+    model.extra.remove("transportKind");
+    model.extra.remove("transport_kind");
+
+    if transport_kind == ModelTransportKind::Anthropic {
+        model.extra.insert(
+            "transportKind".to_string(),
+            Value::String(ModelTransportKind::Anthropic.as_str().to_string()),
+        );
     }
 }
 
@@ -533,6 +590,34 @@ mod tests {
 
         assert_eq!(active.provider, Some(super::ModelProvider::Alibaba));
         assert_eq!(active.reasoning_effort.as_deref(), Some("medium"));
+    }
+
+    #[test]
+    fn deserializes_anthropic_transport_kind_from_desktop_config() {
+        let config = r#"
+{
+    "models": [
+        {
+            "name": "claude-sonnet-4-5",
+            "apiBase": "https://api.anthropic.com/v1",
+            "provider": "anthropic",
+            "transportKind": "anthropic",
+            "reasoningEffort": "high"
+        }
+    ],
+    "activeModel": "claude-sonnet-4-5"
+}
+"#;
+
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        let active = parsed.active_model_profile().expect("active model");
+
+        assert_eq!(active.provider, Some(super::ModelProvider::Anthropic));
+        assert_eq!(
+            active.transport_kind(),
+            super::ModelTransportKind::Anthropic
+        );
+        assert_eq!(active.reasoning_effort.as_deref(), Some("high"));
     }
 }
 
