@@ -391,7 +391,9 @@ fn parse_model_reasoning_effort(
     };
 
     let allowed: &[&str] = match transport_kind {
-        ModelTransportKind::Anthropic => &["default", "low", "medium", "high"][..],
+        ModelTransportKind::Anthropic => {
+            &["default", "low", "medium", "high", "xhigh", "max"][..]
+        }
         ModelTransportKind::OpenAiCompatible => match provider {
             Some(ModelProvider::Deepseek) if is_deepseek_v4_reasoning_model(model_name) => {
                 &["default", "high", "max"]

@@ -18,6 +18,10 @@ export {
   truncateOpenAiHistoryForCompaction as truncateLlmHistoryForCompaction,
   truncateOpenAiToolAgentStateForContextRetry as truncateLlmToolAgentStateForContextRetry,
 } from './openai/tool-agent-helpers.js';
+export {
+  assistantToolCallMessageFromState,
+  assistantToolCallMessageFromState as assistantToolCallMessageFromLlmState,
+} from './tool-agent.js';
 
 export type {
   OpenAiActiveSkill as LlmActiveSkill,

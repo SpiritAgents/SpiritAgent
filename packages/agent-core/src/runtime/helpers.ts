@@ -2,6 +2,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, relative, resolve } from 'node:path';
 
 import {
+  cloneLlmProviderState,
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
   createLlmMessageContentFromTextAndImages,
@@ -165,6 +166,9 @@ export function cloneHistory(history: LlmMessage[]): LlmMessage[] {
             argumentsJson: toolCall.argumentsJson,
           })),
         }
+      : {}),
+    ...(message.providerState !== undefined
+      ? { providerState: cloneLlmProviderState(message.providerState) }
       : {}),
   }));
 }

@@ -349,6 +349,10 @@ export interface AgentRuntimeOptions<
   createToolAgentState: (history: LlmMessage[], userInput: string) => State;
   createContinuationState?: (history: LlmMessage[]) => State;
   appendToolResultMessage: (state: State, toolCallId: string, content: string) => State;
+  assistantToolCallMessageFromState?: (
+    state: State,
+    calls: ToolCallRequest[],
+  ) => LlmMessage | undefined;
   appendUserMessage?: (state: State, content: string) => State;
   appendUserLlmMessage?: (state: State, message: LlmMessage) => State;
   extractAssistantText: (state: State) => string | undefined;

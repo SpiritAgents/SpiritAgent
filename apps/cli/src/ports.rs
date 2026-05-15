@@ -2,6 +2,7 @@ use anyhow::Result;
 #[cfg(feature = "tui")]
 use rust_i18n::t;
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use std::path::PathBuf;
 
 use crate::model_registry::AppConfig;
@@ -62,6 +63,8 @@ pub struct ArchivedLlmMessage {
     pub tool_call_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ArchivedLlmToolCall>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_state: Option<Value>,
 }
 
 impl ArchivedLlmMessage {
@@ -78,6 +81,7 @@ impl ArchivedLlmMessage {
             content: parts,
             tool_call_id: None,
             tool_calls: None,
+            provider_state: None,
         }
     }
 
@@ -88,6 +92,11 @@ impl ArchivedLlmMessage {
 
     pub fn with_tool_calls(mut self, tool_calls: Option<Vec<ArchivedLlmToolCall>>) -> Self {
         self.tool_calls = tool_calls;
+        self
+    }
+
+    pub fn with_provider_state(mut self, provider_state: Option<Value>) -> Self {
+        self.provider_state = provider_state;
         self
     }
 
@@ -126,6 +135,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
             tool_call_id: Option<String>,
             #[serde(default, alias = "toolCalls")]
             tool_calls: Option<Vec<ArchivedLlmToolCall>>,
+            #[serde(default, alias = "providerState")]
+            provider_state: Option<Value>,
         }
 
         #[derive(Deserialize)]
@@ -139,6 +150,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
             tool_call_id: Option<String>,
             #[serde(default, alias = "toolCalls")]
             tool_calls: Option<Vec<ArchivedLlmToolCall>>,
+            #[serde(default, alias = "providerState")]
+            provider_state: Option<Value>,
         }
 
         #[derive(Deserialize)]
@@ -154,6 +167,7 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
                 content: message.content,
                 tool_call_id: message.tool_call_id,
                 tool_calls: message.tool_calls,
+                provider_state: message.provider_state,
             }),
             ArchivedLlmMessageRepr::Legacy(message) => Ok(Self::from_text_and_images(
                 message.role,
@@ -161,7 +175,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
                 message.image_paths,
             )
             .with_tool_call_id(message.tool_call_id)
-            .with_tool_calls(message.tool_calls)),
+            .with_tool_calls(message.tool_calls)
+            .with_provider_state(message.provider_state)),
         }
     }
 }

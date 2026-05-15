@@ -23,6 +23,7 @@ export interface AnthropicTransportConfig {
   modelCapabilities?: LlmModelCapabilities;
   thinking?: AnthropicThinkingConfig;
   effort?: AnthropicEffort;
+  supportedEfforts?: readonly AnthropicEffort[];
   sendReasoning?: boolean;
   disableParallelToolUse?: boolean;
   structuredOutputMode?: AnthropicStructuredOutputMode;
@@ -39,10 +40,14 @@ export interface AnthropicRequestTrace extends JsonObject {
 }
 
 export function resolveAnthropicThinkingConfig(
-  config: Pick<AnthropicTransportConfig, 'model' | 'thinking'>,
+  config: Pick<AnthropicTransportConfig, 'model' | 'thinking' | 'effort' | 'supportedEfforts'>,
 ): AnthropicThinkingConfig {
   if (config.thinking !== undefined) {
     return config.thinking;
+  }
+
+  if (Array.isArray(config.supportedEfforts) && config.supportedEfforts.length === 0) {
+    return { type: 'disabled' };
   }
 
   const normalizedModel = config.model.trim().toLowerCase();
@@ -58,7 +63,11 @@ export function resolveAnthropicThinkingConfig(
     return { type: 'adaptive' };
   }
 
-  return { type: 'enabled', budgetTokens: 12_000 };
+  if (config.effort !== undefined || (Array.isArray(config.supportedEfforts) && config.supportedEfforts.length > 0)) {
+    return { type: 'enabled', budgetTokens: 12_000 };
+  }
+
+  return { type: 'disabled' };
 }
 
 export function buildAnthropicProviderOptions(
@@ -67,6 +76,7 @@ export function buildAnthropicProviderOptions(
     | 'model'
     | 'thinking'
     | 'effort'
+    | 'supportedEfforts'
     | 'sendReasoning'
     | 'disableParallelToolUse'
     | 'structuredOutputMode'

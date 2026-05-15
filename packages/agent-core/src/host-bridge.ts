@@ -7,6 +7,7 @@ import {
   type OpenAiModelCompatibilityProfile,
 } from './openai/index.js';
 import {
+  assistantToolCallMessageFromLlmState,
   appendLlmToolResultMessage,
   appendLlmUserMessage,
   appendLlmUserLlmMessage,
@@ -1286,6 +1287,7 @@ async function createRuntime(
         basicInfo,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
+    assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
     appendUserMessage: appendLlmUserMessage,
     appendUserLlmMessage: (state, message) => appendLlmUserLlmMessage(state, message, workspaceRoot),
     extractAssistantText: extractLastLlmAssistantText,

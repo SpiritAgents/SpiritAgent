@@ -3,7 +3,10 @@ import type {
   ChatArchive,
   RuntimePendingQuestions,
 } from '@spirit-agent/agent-core';
-import { cloneLlmMessageContent } from '@spirit-agent/agent-core';
+import {
+  cloneLlmMessageContent,
+  cloneLlmProviderState,
+} from '@spirit-agent/agent-core';
 
 import type {
   AskQuestionsResult,
@@ -142,6 +145,11 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
               })),
             }
           : {}),
+        ...('providerState' in message
+          && typeof message.providerState === 'object'
+          && message.providerState !== null
+          ? { providerState: cloneLlmProviderState(message.providerState) }
+          : {}),
       };
     }
 
@@ -160,6 +168,11 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
               argumentsJson: toolCall.argumentsJson,
             })),
           }
+        : {}),
+      ...('providerState' in message
+        && typeof message.providerState === 'object'
+        && message.providerState !== null
+        ? { providerState: cloneLlmProviderState(message.providerState) }
         : {}),
     };
   });

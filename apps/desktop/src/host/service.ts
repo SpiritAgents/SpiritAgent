@@ -3483,6 +3483,9 @@ function buildPrimaryTransportConfig(input: {
 }): LlmTransportConfig {
   const transportKind = resolveDesktopTransportKind(input.profile);
   if (transportKind === 'anthropic') {
+    const supportedAnthropicEfforts = normalizeAnthropicSupportedEfforts(
+      input.profile?.supportedReasoningEfforts,
+    );
     const anthropicEffort = resolveAnthropicTransportReasoningEffortForContext(
       input.profile?.reasoningEffort,
       {
@@ -3502,6 +3505,9 @@ function buildPrimaryTransportConfig(input: {
       workspaceRoot: input.workspaceRoot,
       ...(input.profile?.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
+        : {}),
+      ...(supportedAnthropicEfforts !== undefined
+        ? { supportedEfforts: supportedAnthropicEfforts }
         : {}),
       ...(anthropicEffort ? { effort: anthropicEffort } : {}),
     };
@@ -3530,6 +3536,22 @@ function buildPrimaryTransportConfig(input: {
       : {}),
     ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
   };
+}
+
+function normalizeAnthropicSupportedEfforts(
+  efforts?: readonly string[],
+): AnthropicTransportConfig['supportedEfforts'] {
+  if (efforts === undefined) {
+    return undefined;
+  }
+
+  return efforts.filter((effort): effort is NonNullable<AnthropicTransportConfig['supportedEfforts']>[number] => (
+    effort === 'low'
+    || effort === 'medium'
+    || effort === 'high'
+    || effort === 'xhigh'
+    || effort === 'max'
+  ));
 }
 
 function supportsImageGeneration(model: { capabilities?: readonly DesktopModelCapability[] }): boolean {

@@ -9,7 +9,11 @@ import type {
   ToolAgentRoundCompletion,
   ToolCallRequest,
 } from '../ports.js';
-import { createLlmMessageContentFromText } from '../ports.js';
+import {
+  cloneLlmMessageContent,
+  cloneLlmProviderState,
+  createLlmMessageContentFromText,
+} from '../ports.js';
 import {
   applyDeferredUserGuidance,
   enqueueDeferredToolOutputGuidance,
@@ -518,7 +522,7 @@ export async function processToolCalls<
   let currentState = state;
   const remaining = [...calls];
 
-  persistAssistantToolCalls(runtime.historyStore, calls);
+  persistAssistantToolCalls(runtime, state, calls);
 
   while (remaining.length > 0) {
     const call = remaining.shift();
@@ -923,7 +927,7 @@ export async function processToolCallsAsync<
   let currentState = state;
   const remaining = [...calls];
 
-  persistAssistantToolCalls(runtime.historyStore, calls);
+  persistAssistantToolCalls(runtime, state, calls);
 
   while (remaining.length > 0) {
     const call = remaining.shift();
@@ -1203,12 +1207,45 @@ export function buildRuntimeToolExecution<ToolRequest>(
   };
 }
 
-function persistAssistantToolCalls(historyStore: LlmMessage[], calls: ToolCallRequest[]): void {
+function persistAssistantToolCalls<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: Pick<
+    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    'historyStore' | 'options'
+  >,
+  state: State,
+  calls: ToolCallRequest[],
+): void {
   if (calls.length === 0) {
     return;
   }
 
-  historyStore.push({
+  const preservedMessage = runtime.options.assistantToolCallMessageFromState?.(state, calls);
+  if (preservedMessage) {
+    runtime.historyStore.push({
+      role: 'assistant',
+      content: cloneLlmMessageContent(preservedMessage.content),
+      ...(preservedMessage.toolCalls !== undefined
+        ? {
+            toolCalls: preservedMessage.toolCalls.map((toolCall) => ({
+              id: toolCall.id,
+              name: toolCall.name,
+              argumentsJson: toolCall.argumentsJson,
+            })),
+          }
+        : {}),
+      ...(preservedMessage.providerState !== undefined
+        ? { providerState: cloneLlmProviderState(preservedMessage.providerState) }
+        : {}),
+    });
+    return;
+  }
+
+  runtime.historyStore.push({
     role: 'assistant',
     content: [],
     toolCalls: calls.map((call) => ({

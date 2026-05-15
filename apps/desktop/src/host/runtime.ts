@@ -1,5 +1,6 @@
 import {
   AgentRuntime,
+  assistantToolCallMessageFromLlmState,
   appendLlmUserLlmMessage,
   normalizeStoredLlmMessage,
   type SpiritLlmTransport,
@@ -79,6 +80,7 @@ export function createDesktopRuntime(input: {
         input.basicInfo,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
+    assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
     appendUserMessage: appendLlmUserMessage,
     appendUserLlmMessage: (state, message) => appendLlmUserLlmMessage(state, message, input.workspaceRoot),
     extractAssistantText: extractLastLlmAssistantText,
