@@ -518,6 +518,8 @@ export async function processToolCalls<
   let currentState = state;
   const remaining = [...calls];
 
+  persistAssistantToolCalls(runtime.historyStore, calls);
+
   while (remaining.length > 0) {
     const call = remaining.shift();
     if (!call) {
@@ -921,6 +923,8 @@ export async function processToolCallsAsync<
   let currentState = state;
   const remaining = [...calls];
 
+  persistAssistantToolCalls(runtime.historyStore, calls);
+
   while (remaining.length > 0) {
     const call = remaining.shift();
     if (!call) {
@@ -1197,6 +1201,22 @@ export function buildRuntimeToolExecution<ToolRequest>(
     failed: options.failed,
     ...(artifacts ? { artifacts } : {}),
   };
+}
+
+function persistAssistantToolCalls(historyStore: LlmMessage[], calls: ToolCallRequest[]): void {
+  if (calls.length === 0) {
+    return;
+  }
+
+  historyStore.push({
+    role: 'assistant',
+    content: [],
+    toolCalls: calls.map((call) => ({
+      id: call.id,
+      name: call.name,
+      argumentsJson: call.argumentsJson,
+    })),
+  });
 }
 
 function commitSyntheticToolExecutionFailure<

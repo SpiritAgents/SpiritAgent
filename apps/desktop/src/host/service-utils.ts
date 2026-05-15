@@ -133,6 +133,15 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
         ...('toolCallId' in message && typeof message.toolCallId === 'string'
           ? { toolCallId: message.toolCallId }
           : {}),
+        ...('toolCalls' in message && Array.isArray(message.toolCalls)
+          ? {
+              toolCalls: message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                name: toolCall.name,
+                argumentsJson: toolCall.argumentsJson,
+              })),
+            }
+          : {}),
       };
     }
 
@@ -142,6 +151,15 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
       imagePaths: [...(('imagePaths' in message ? message.imagePaths : []) ?? [])],
       ...('toolCallId' in message && typeof message.toolCallId === 'string'
         ? { toolCallId: message.toolCallId }
+        : {}),
+      ...('toolCalls' in message && Array.isArray(message.toolCalls)
+        ? {
+            toolCalls: message.toolCalls.map((toolCall) => ({
+              id: toolCall.id,
+              name: toolCall.name,
+              argumentsJson: toolCall.argumentsJson,
+            })),
+          }
         : {}),
     };
   });

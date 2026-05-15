@@ -35,6 +35,11 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
   }, [
     {
+      role: 'assistant',
+      content: [],
+      toolCalls: [{ id: 'call-old-compact', name: 'read_file', argumentsJson: '{}' }],
+    },
+    {
       role: 'tool',
       toolCallId: 'call-old-compact',
       content: createLlmMessageContentFromText('old tool output\n' + 'x'.repeat(5000)),
@@ -70,6 +75,11 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     maxAutoCompactRetries: 2,
     onEvent: (event) => pollingCompactEvents.push(event),
   }, [
+    {
+      role: 'assistant',
+      content: [],
+      toolCalls: [{ id: 'call-old-compact', name: 'read_file', argumentsJson: '{}' }],
+    },
     {
       role: 'tool',
       toolCallId: 'call-old-compact',

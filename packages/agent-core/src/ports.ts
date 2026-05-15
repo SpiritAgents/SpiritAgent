@@ -7,6 +7,12 @@ export interface JsonObject {
 
 export type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
 
+export interface LlmToolCall {
+  id: string;
+  name: string;
+  argumentsJson: string;
+}
+
 export interface LlmTextContentPart extends JsonObject {
   type: 'text';
   text: string;
@@ -24,6 +30,7 @@ export interface LlmMessage {
   role: ChatRole;
   content: LlmMessageContent;
   toolCallId?: string;
+  toolCalls?: LlmToolCall[];
 }
 
 export interface LegacyLlmMessageArchiveEntry {
@@ -31,12 +38,22 @@ export interface LegacyLlmMessageArchiveEntry {
   content: string;
   imagePaths?: string[];
   toolCallId?: string;
+  toolCalls?: LlmToolCall[];
 }
 
 export interface StoredLlmMessageArchiveEntry {
   role: ChatRole;
   content: LlmMessageContent;
   toolCallId?: string;
+  toolCalls?: LlmToolCall[];
+}
+
+function cloneLlmToolCalls(toolCalls: readonly LlmToolCall[]): LlmToolCall[] {
+  return toolCalls.map((toolCall) => ({
+    id: toolCall.id,
+    name: toolCall.name,
+    argumentsJson: toolCall.argumentsJson,
+  }));
 }
 
 export interface ToolExecutionOutput {
@@ -145,12 +162,19 @@ export function normalizeStoredLlmMessage(
       : 'tool_call_id' in message && typeof message.tool_call_id === 'string'
         ? message.tool_call_id
         : undefined;
+  const toolCalls =
+    'toolCalls' in message && Array.isArray(message.toolCalls)
+      ? cloneLlmToolCalls(message.toolCalls)
+      : 'tool_calls' in message && Array.isArray(message.tool_calls)
+        ? cloneLlmToolCalls(message.tool_calls)
+        : undefined;
 
   if (Array.isArray(message.content)) {
     return {
       role: message.role,
       content: cloneLlmMessageContent(message.content),
       ...(toolCallId !== undefined ? { toolCallId } : {}),
+      ...(toolCalls !== undefined ? { toolCalls } : {}),
     };
   }
 
@@ -161,6 +185,7 @@ export function normalizeStoredLlmMessage(
       'imagePaths' in message ? message.imagePaths ?? [] : [],
     ),
     ...(toolCallId !== undefined ? { toolCallId } : {}),
+    ...(toolCalls !== undefined ? { toolCalls } : {}),
   };
 }
 

@@ -286,6 +286,15 @@ export function truncateHistoryForCompaction(
         role: message.role,
         content: cloneLlmMessageContent(message.content),
         ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+        ...(message.toolCalls !== undefined
+          ? {
+              toolCalls: message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                name: toolCall.name,
+                argumentsJson: toolCall.argumentsJson,
+              })),
+            }
+          : {}),
       };
     }
 
@@ -299,6 +308,15 @@ export function truncateHistoryForCompaction(
         role: message.role,
         content: cloneLlmMessageContent(message.content),
         ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+        ...(message.toolCalls !== undefined
+          ? {
+              toolCalls: message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                name: toolCall.name,
+                argumentsJson: toolCall.argumentsJson,
+              })),
+            }
+          : {}),
       };
     }
 
@@ -307,6 +325,15 @@ export function truncateHistoryForCompaction(
       role: message.role,
       content: createLlmMessageContentFromText(replacement),
       ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+      ...(message.toolCalls !== undefined
+        ? {
+            toolCalls: message.toolCalls.map((toolCall) => ({
+              id: toolCall.id,
+              name: toolCall.name,
+              argumentsJson: toolCall.argumentsJson,
+            })),
+          }
+        : {}),
     };
   });
 

@@ -609,6 +609,15 @@ export class AgentRuntime<
         role: message.role,
         content: cloneLlmMessageContent(message.content),
         ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+        ...(message.toolCalls !== undefined
+          ? {
+              toolCalls: message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                name: toolCall.name,
+                argumentsJson: toolCall.argumentsJson,
+              })),
+            }
+          : {}),
       })),
       subagentSessions: this.childSessionsStore.map((entry) => ({
         summary: { ...entry.summary },
@@ -616,6 +625,15 @@ export class AgentRuntime<
           role: message.role,
           content: cloneLlmMessageContent(message.content),
           ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+          ...(message.toolCalls !== undefined
+            ? {
+                toolCalls: message.toolCalls.map((toolCall) => ({
+                  id: toolCall.id,
+                  name: toolCall.name,
+                  argumentsJson: toolCall.argumentsJson,
+                })),
+              }
+            : {}),
         })),
       })),
     };

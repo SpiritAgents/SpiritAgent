@@ -31,8 +31,8 @@ use crate::{
     model_registry::{AppConfig, ModelProvider},
     plan::PlanMetadata,
     ports::{
-        ArchivedLlmMessage, AssistantAuxArchiveEntry, ChatArchive, McpStatusSnapshot, SecretStore,
-        SubagentSessionArchiveEntry, SubagentSessionSummary,
+        ArchivedLlmMessage, ArchivedLlmToolCall, AssistantAuxArchiveEntry, ChatArchive,
+        McpStatusSnapshot, SecretStore, SubagentSessionArchiveEntry, SubagentSessionSummary,
     },
     rewind::{self, DesktopRewindCheckpointSnapshot, RewindRestoreOutcome},
     rules::{EnabledRule, RuleEntry},
@@ -2723,7 +2723,17 @@ fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
                 message.content.clone(),
                 message.image_paths.clone(),
             )
-            .with_tool_call_id(message.tool_call_id.clone()))
+            .with_tool_call_id(message.tool_call_id.clone())
+            .with_tool_calls(message.tool_calls.as_ref().map(|tool_calls| {
+                tool_calls
+                    .iter()
+                    .map(|tool_call| ArchivedLlmToolCall {
+                        id: tool_call.id.clone(),
+                        name: tool_call.name.clone(),
+                        arguments_json: tool_call.arguments_json.clone(),
+                    })
+                    .collect()
+            })))
         })
         .collect()
 }
@@ -2737,6 +2747,15 @@ fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
     if let Some(tool_call_id) = &message.tool_call_id {
         if let Some(object) = value.as_object_mut() {
             object.insert("toolCallId".to_string(), Value::String(tool_call_id.clone()));
+        }
+    }
+
+    if let Some(tool_calls) = &message.tool_calls {
+        if let Some(object) = value.as_object_mut() {
+            object.insert(
+                "toolCalls".to_string(),
+                serde_json::to_value(tool_calls).unwrap_or(Value::Null),
+            );
         }
     }
 

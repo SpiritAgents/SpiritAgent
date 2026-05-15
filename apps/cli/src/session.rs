@@ -3,8 +3,8 @@ use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
-    llm_types::LlmMessage,
-    ports::{ArchivedLlmMessage, AssistantAuxArchiveEntry, ChatArchive},
+    llm_types::{LlmMessage, LlmToolCall},
+    ports::{ArchivedLlmMessage, ArchivedLlmToolCall, AssistantAuxArchiveEntry, ChatArchive},
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -169,6 +169,7 @@ impl SessionModel {
             content,
             image_paths: vec![],
             tool_call_id: None,
+            tool_calls: None,
         });
     }
 
@@ -178,6 +179,7 @@ impl SessionModel {
             content: text,
             image_paths: images,
             tool_call_id: None,
+            tool_calls: None,
         });
     }
 
@@ -187,6 +189,7 @@ impl SessionModel {
             content: text,
             image_paths: vec![],
             tool_call_id: None,
+            tool_calls: None,
         });
     }
 
@@ -207,6 +210,16 @@ impl SessionModel {
                 content: message.text_content(),
                 image_paths: message.image_paths(),
                 tool_call_id: message.tool_call_id.clone(),
+                tool_calls: message.tool_calls.as_ref().map(|tool_calls| {
+                    tool_calls
+                        .iter()
+                        .map(|tool_call| LlmToolCall {
+                            id: tool_call.id.clone(),
+                            name: tool_call.name.clone(),
+                            arguments_json: tool_call.arguments_json.clone(),
+                        })
+                        .collect()
+                }),
             })
             .collect();
         self.llm_api_trace.clear();
@@ -233,6 +246,16 @@ impl SessionModel {
                         message.image_paths.clone(),
                     )
                     .with_tool_call_id(message.tool_call_id.clone())
+                    .with_tool_calls(message.tool_calls.as_ref().map(|tool_calls| {
+                        tool_calls
+                            .iter()
+                            .map(|tool_call| ArchivedLlmToolCall {
+                                id: tool_call.id.clone(),
+                                name: tool_call.name.clone(),
+                                arguments_json: tool_call.arguments_json.clone(),
+                            })
+                            .collect()
+                    }))
                 })
                 .collect(),
             subagent_sessions: Vec::new(),

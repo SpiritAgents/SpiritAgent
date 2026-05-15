@@ -130,6 +130,11 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => manualCompactionEvents.push(event),
   }, [
     {
+      role: 'assistant',
+      content: [],
+      toolCalls: [{ id: 'call-old-manual', name: 'read_file', argumentsJson: '{}' }],
+    },
+    {
       role: 'tool',
       toolCallId: 'call-old-manual',
       content: createLlmMessageContentFromText('old tool output\n' + 'x'.repeat(5000)),
