@@ -1188,6 +1188,7 @@ function llmMessageToToolStateMessage(message: LlmMessage, assetRoot: string): J
   return {
     role: message.role,
     content: llmMessageTextContent(message.content),
+    ...(message.toolCallId !== undefined ? { tool_call_id: message.toolCallId } : {}),
   };
 }
 

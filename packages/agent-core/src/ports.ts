@@ -23,17 +23,20 @@ export type LlmMessageContent = LlmContentPart[];
 export interface LlmMessage {
   role: ChatRole;
   content: LlmMessageContent;
+  toolCallId?: string;
 }
 
 export interface LegacyLlmMessageArchiveEntry {
   role: ChatRole;
   content: string;
   imagePaths?: string[];
+  toolCallId?: string;
 }
 
 export interface StoredLlmMessageArchiveEntry {
   role: ChatRole;
   content: LlmMessageContent;
+  toolCallId?: string;
 }
 
 export interface ToolExecutionOutput {
@@ -136,10 +139,18 @@ export function llmMessageContentWithoutImages(
 export function normalizeStoredLlmMessage(
   message: StoredLlmMessageArchiveEntry | LegacyLlmMessageArchiveEntry,
 ): LlmMessage {
+  const toolCallId =
+    'toolCallId' in message && typeof message.toolCallId === 'string'
+      ? message.toolCallId
+      : 'tool_call_id' in message && typeof message.tool_call_id === 'string'
+        ? message.tool_call_id
+        : undefined;
+
   if (Array.isArray(message.content)) {
     return {
       role: message.role,
       content: cloneLlmMessageContent(message.content),
+      ...(toolCallId !== undefined ? { toolCallId } : {}),
     };
   }
 
@@ -149,6 +160,7 @@ export function normalizeStoredLlmMessage(
       message.content,
       'imagePaths' in message ? message.imagePaths ?? [] : [],
     ),
+    ...(toolCallId !== undefined ? { toolCallId } : {}),
   };
 }
 

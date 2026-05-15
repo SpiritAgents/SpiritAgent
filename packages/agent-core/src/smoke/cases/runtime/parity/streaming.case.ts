@@ -737,8 +737,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingCompactionEvents.push(event),
   }, [
     {
-      role: 'system',
-      content: createLlmMessageContentFromText('[TOOL_MEMORY]\nrequest: old\nresult_snippet:\n' + 'x'.repeat(5000)),
+      role: 'tool',
+      toolCallId: 'call-old-streaming',
+      content: createLlmMessageContentFromText('old tool output\n' + 'x'.repeat(5000)),
     },
     {
       role: 'assistant',

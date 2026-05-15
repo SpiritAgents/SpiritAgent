@@ -352,7 +352,6 @@ export interface AgentRuntimeOptions<
   appendUserMessage?: (state: State, content: string) => State;
   appendUserLlmMessage?: (state: State, message: LlmMessage) => State;
   extractAssistantText: (state: State) => string | undefined;
-  formatToolMemory?: (request: ToolRequest, output: string) => string | undefined;
   isVisionUnsupportedError?: (error: string) => boolean;
   generateImage?: (request: ImageGenerationRequest) => Promise<ToolExecutionOutput>;
   truncateStateForContextRetry?: (state: State) => RuntimeStatePreparationResult<State>;
@@ -365,7 +364,6 @@ export interface AgentRuntimeOptions<
     retryState: State,
   ) => State;
   maxAutoCompactRetries?: number;
-  maxToolMemoryEntries?: number;
   onEvent?: (event: RuntimeEvent<ToolRequest>) => void;
   resolveWorkspaceFilesFromInput?: (
     userInput: string,
@@ -459,7 +457,7 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   streamingEmitBeginResponse: boolean;
   earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
   statusText: string | undefined;
-  output: string | undefined;
+  output: ToolExecutionOutput | undefined;
   failed: boolean | undefined;
 }
 
@@ -468,7 +466,7 @@ export interface PendingManualBackgroundToolExecution<ToolRequest> {
   request: ToolRequest;
   toolName: string;
   statusText: string | undefined;
-  output: string | undefined;
+  output: ToolExecutionOutput | undefined;
   failed: boolean | undefined;
 }
 

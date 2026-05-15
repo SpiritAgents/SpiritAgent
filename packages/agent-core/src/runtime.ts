@@ -29,19 +29,16 @@ import {
 import {
   STREAM_EVENT_BUDGET_PER_POLL,
   STREAM_STALL_TIMEOUT_MS,
-  TOOL_MEMORY_MAX_ENTRIES,
 } from './runtime/constants.js';
 import {
   cloneHistory,
   createTurnContext,
-  defaultToolMemoryFormatter,
   enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   formatPendingMcpResourceContext,
   formatPendingWorkspaceFileContext,
   pendingMcpResourceFromReadResult,
   promptMessagesFromValue,
-  pruneToolMemories,
   renderError,
   isCompatibleContinuedToolRequest,
   shortLabelForPendingMcpResource,
@@ -97,7 +94,7 @@ import {
 } from './runtime/streaming.js';
 import {
   performToolExecution as performToolExecutionInternal,
-  persistToolExecutionMemory as persistToolExecutionMemoryInternal,
+  persistToolExecutionResult as persistToolExecutionResultInternal,
 } from './runtime/tool-execution.js';
 import type {
   AgentRuntimeOptions,
@@ -611,12 +608,14 @@ export class AgentRuntime<
       llmHistory: this.historyStore.map((message) => ({
         role: message.role,
         content: cloneLlmMessageContent(message.content),
+        ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
       })),
       subagentSessions: this.childSessionsStore.map((entry) => ({
         summary: { ...entry.summary },
         llmHistory: entry.llmHistory.map((message) => ({
           role: message.role,
           content: cloneLlmMessageContent(message.content),
+          ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
         })),
       })),
     };
@@ -882,7 +881,11 @@ export class AgentRuntime<
         return;
       }
 
-      const execution = await this.performToolExecution(pending.request, pending.toolName);
+      const execution = await this.performToolExecution(
+        pending.request,
+        pending.toolName,
+        pending.toolCallId,
+      );
       const artifacts = toolArtifactsFromOutput(execution.output);
       const finished: RuntimeToolExecution<ToolRequest> = {
         toolCallId: pending.toolCallId,
@@ -1171,7 +1174,11 @@ export class AgentRuntime<
         return;
       }
 
-      const execution = await this.performToolExecution(continuedRequest, pending.toolName);
+      const execution = await this.performToolExecution(
+        continuedRequest,
+        pending.toolName,
+        pending.toolCallId,
+      );
       const artifacts = toolArtifactsFromOutput(execution.output);
       const finished: RuntimeToolExecution<ToolRequest> = {
         toolCallId: pending.toolCallId,
@@ -2129,6 +2136,7 @@ export class AgentRuntime<
   private async performToolExecution(
     request: ToolRequest,
     toolName: string,
+    toolCallId?: string,
   ): Promise<{
     output: ToolExecutionOutput;
     failed: boolean;
@@ -2138,12 +2146,13 @@ export class AgentRuntime<
       this as unknown as ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
       request,
       toolName,
+      toolCallId,
     );
   }
 
   private async tryPerformEarlyInternalToolCall(
     request: ToolRequest,
-    _toolCallId: string,
+    toolCallId: string,
     _toolName: string,
   ): Promise<EarlyInternalToolCallResult | undefined> {
     const imageRequest = extractGenerateImageRequest(request);
@@ -2154,7 +2163,7 @@ export class AgentRuntime<
         }
 
         const output = await this.options.generateImage(imageRequest);
-        this.persistToolExecutionMemory(request, output.summaryText);
+        this.persistToolExecutionResult(output, toolCallId);
         return {
           kind: 'completed',
           output,
@@ -2180,11 +2189,11 @@ export class AgentRuntime<
     return undefined;
   }
 
-  private persistToolExecutionMemory(request: ToolRequest, output: string): void {
-    persistToolExecutionMemoryInternal(
+  private persistToolExecutionResult(output: ToolExecutionOutput, toolCallId?: string): void {
+    persistToolExecutionResultInternal(
       this as unknown as ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
-      request,
       output,
+      toolCallId,
     );
   }
 
@@ -2260,7 +2269,7 @@ export class AgentRuntime<
         turn,
         toolArtifactsFromOutput(output),
       );
-      this.persistToolExecutionMemory(request, output.summaryText);
+      this.persistToolExecutionResult(output, toolCallId);
 
       return {
         kind: 'completed',

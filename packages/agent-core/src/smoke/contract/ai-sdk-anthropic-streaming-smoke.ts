@@ -18,6 +18,7 @@ const ANTHROPIC_REASONING_TEXT = '先想一下，再查工具。';
 const ANTHROPIC_REASONING_SIGNATURE = 'sig_anthropic_stream_1';
 const ANTHROPIC_TOOL_USE_ID = 'toolu_anthropic_stream_1';
 const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = '[HOST_CONTEXT_FROM_SYSTEM]';
+const ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE = '[WORKSPACE_FILE]\npath: D:\\SpiritAgent\\README.md\nchars: 11';
 
 async function main(): Promise<void> {
   let requestCount = 0;
@@ -370,7 +371,7 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
         },
         {
           role: 'system',
-          content: '[TOOL_MEMORY]\nrequest: {"name":"read_file","path":"D:\\SpiritAgent\\README.md"}\nresult_snippet:\n[read] README has 11 lines',
+          content: ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE,
         },
         {
           role: 'assistant',
@@ -520,7 +521,7 @@ function requestIncludesProjectedSystemContext(requestBody: JsonValue | undefine
         part.type === 'text' &&
         typeof part.text === 'string' &&
         part.text.includes(ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX) &&
-        part.text.includes('[TOOL_MEMORY]'),
+        part.text.includes(ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE),
     );
   });
 }
