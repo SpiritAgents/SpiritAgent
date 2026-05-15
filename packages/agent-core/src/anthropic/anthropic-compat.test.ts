@@ -35,6 +35,15 @@ test('resolveAnthropicThinkingConfig keeps known adaptive defaults', () => {
   );
 });
 
+test('resolveAnthropicThinkingConfig leaves unknown models undefined', () => {
+  assert.equal(
+    resolveAnthropicThinkingConfig({
+      model: 'custom-anthropic-compatible-model',
+    }),
+    undefined,
+  );
+});
+
 test('buildAnthropicProviderOptions emits disabled thinking for unsupported models', () => {
   assert.deepEqual(
     buildAnthropicProviderOptions({
@@ -44,6 +53,19 @@ test('buildAnthropicProviderOptions emits disabled thinking for unsupported mode
     {
       anthropic: {
         thinking: { type: 'disabled' },
+        toolStreaming: true,
+      },
+    },
+  );
+});
+
+test('buildAnthropicProviderOptions omits thinking for unknown models', () => {
+  assert.deepEqual(
+    buildAnthropicProviderOptions({
+      model: 'custom-anthropic-compatible-model',
+    }),
+    {
+      anthropic: {
         toolStreaming: true,
       },
     },

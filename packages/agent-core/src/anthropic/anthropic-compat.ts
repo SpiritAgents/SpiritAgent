@@ -41,7 +41,7 @@ export interface AnthropicRequestTrace extends JsonObject {
 
 export function resolveAnthropicThinkingConfig(
   config: Pick<AnthropicTransportConfig, 'model' | 'thinking' | 'effort' | 'supportedEfforts'>,
-): AnthropicThinkingConfig {
+): AnthropicThinkingConfig | undefined {
   if (config.thinking !== undefined) {
     return config.thinking;
   }
@@ -67,7 +67,7 @@ export function resolveAnthropicThinkingConfig(
     return { type: 'enabled', budgetTokens: 12_000 };
   }
 
-  return { type: 'disabled' };
+  return undefined;
 }
 
 export function buildAnthropicProviderOptions(
@@ -82,9 +82,10 @@ export function buildAnthropicProviderOptions(
     | 'structuredOutputMode'
   >,
 ): Record<string, JsonObject> {
+  const thinking = resolveAnthropicThinkingConfig(config);
   const options: JsonObject = {
-    thinking: resolveAnthropicThinkingConfig(config) as unknown as JsonValue,
     toolStreaming: true,
+    ...(thinking !== undefined ? { thinking: thinking as unknown as JsonValue } : {}),
   };
 
   if (config.effort !== undefined) {
