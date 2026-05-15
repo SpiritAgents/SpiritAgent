@@ -2191,7 +2191,7 @@ function ModelsSettingsPanel({
                         <button
                           key={model.name}
                           type="button"
-                          className="flex w-full appearance-none flex-col gap-3 bg-transparent px-4 py-3 text-left transition-colors outline-none enabled:cursor-pointer enabled:hover:bg-foreground/[0.06] dark:enabled:hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                          className="flex w-full appearance-none flex-col gap-3 bg-transparent px-4 py-3 text-left outline-none enabled:cursor-pointer enabled:hover:bg-foreground/[0.06] dark:enabled:hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                           disabled={modelsBusy || modelsPreviewBusy}
                           title={defaultActionLabel}
                           aria-label={`${defaultActionLabel}：${model.name}`}
@@ -2247,7 +2247,7 @@ function ModelsSettingsPanel({
                       title={defaultActionLabel}
                       aria-label={`${defaultActionLabel}：${model.name}`}
                       className={cn(
-                        "flex flex-col gap-3 px-4 py-4 transition-colors outline-none sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+                        "flex flex-col gap-3 px-4 py-4 outline-none sm:flex-row sm:items-center sm:justify-between sm:gap-4",
                         !isStandaloneModelDisabled &&
                           "cursor-pointer hover:bg-foreground/[0.06] dark:hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50",
                       )}
