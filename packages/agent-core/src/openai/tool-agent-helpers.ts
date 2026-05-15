@@ -324,6 +324,7 @@ function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): Json
   return {
     role: message.role,
     content: llmMessageTextContent(message.content),
+    ...(message.toolCallId !== undefined ? { tool_call_id: message.toolCallId } : {}),
   };
 }
 

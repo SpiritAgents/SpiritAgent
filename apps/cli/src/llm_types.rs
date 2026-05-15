@@ -3,4 +3,5 @@ pub struct LlmMessage {
     pub role: &'static str,
     pub content: String,
     pub image_paths: Vec<String>,
+    pub tool_call_id: Option<String>,
 }

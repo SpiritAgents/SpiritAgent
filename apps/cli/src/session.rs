@@ -168,6 +168,7 @@ impl SessionModel {
             role,
             content,
             image_paths: vec![],
+            tool_call_id: None,
         });
     }
 
@@ -176,6 +177,7 @@ impl SessionModel {
             role: "user",
             content: text,
             image_paths: images,
+            tool_call_id: None,
         });
     }
 
@@ -184,6 +186,7 @@ impl SessionModel {
             role: "assistant",
             content: text,
             image_paths: vec![],
+            tool_call_id: None,
         });
     }
 
@@ -196,11 +199,14 @@ impl SessionModel {
                     "assistant"
                 } else if message.role == "system" {
                     "system"
+                } else if message.role == "tool" {
+                    "tool"
                 } else {
                     "user"
                 },
                 content: message.text_content(),
                 image_paths: message.image_paths(),
+                tool_call_id: message.tool_call_id.clone(),
             })
             .collect();
         self.llm_api_trace.clear();
@@ -226,6 +232,7 @@ impl SessionModel {
                         message.content.clone(),
                         message.image_paths.clone(),
                     )
+                    .with_tool_call_id(message.tool_call_id.clone())
                 })
                 .collect(),
             subagent_sessions: Vec::new(),

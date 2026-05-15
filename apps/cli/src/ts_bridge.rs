@@ -2722,16 +2722,25 @@ fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
                 message.role.to_string(),
                 message.content.clone(),
                 message.image_paths.clone(),
-            ))
+            )
+            .with_tool_call_id(message.tool_call_id.clone()))
         })
         .collect()
 }
 
 fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
-    json!({
+    let mut value = json!({
         "role": message.role,
         "content": message.content,
-    })
+    });
+
+    if let Some(tool_call_id) = &message.tool_call_id {
+        if let Some(object) = value.as_object_mut() {
+            object.insert("toolCallId".to_string(), Value::String(tool_call_id.clone()));
+        }
+    }
+
+    value
 }
 
 fn write_message_to_stdin(stdin: &Arc<Mutex<ChildStdin>>, payload: &Value) -> Result<()> {

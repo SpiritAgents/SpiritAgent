@@ -50,6 +50,8 @@ pub enum LlmContentPart {
 pub struct ArchivedLlmMessage {
     pub role: String,
     pub content: Vec<LlmContentPart>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
 }
 
 impl ArchivedLlmMessage {
@@ -64,7 +66,13 @@ impl ArchivedLlmMessage {
         Self {
             role,
             content: parts,
+            tool_call_id: None,
         }
+    }
+
+    pub fn with_tool_call_id(mut self, tool_call_id: Option<String>) -> Self {
+        self.tool_call_id = tool_call_id;
+        self
     }
 
     pub fn text_content(&self) -> String {
@@ -98,6 +106,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
         struct CurrentArchivedLlmMessage {
             role: String,
             content: Vec<LlmContentPart>,
+            #[serde(default, alias = "tool_call_id")]
+            tool_call_id: Option<String>,
         }
 
         #[derive(Deserialize)]
@@ -107,6 +117,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
             content: String,
             #[serde(default)]
             image_paths: Vec<String>,
+            #[serde(default, alias = "tool_call_id")]
+            tool_call_id: Option<String>,
         }
 
         #[derive(Deserialize)]
@@ -120,12 +132,14 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
             ArchivedLlmMessageRepr::Current(message) => Ok(Self {
                 role: message.role,
                 content: message.content,
+                tool_call_id: message.tool_call_id,
             }),
             ArchivedLlmMessageRepr::Legacy(message) => Ok(Self::from_text_and_images(
                 message.role,
                 message.content,
                 message.image_paths,
-            )),
+            )
+            .with_tool_call_id(message.tool_call_id)),
         }
     }
 }

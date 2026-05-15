@@ -8,7 +8,6 @@ import {
 } from './ports.js';
 
 const TOOL_OUTPUT_RETRY_MAX_CHARS = 12_000;
-const TOOL_MEMORY_RETRY_MAX_CHARS = 4_000;
 const TOOL_TRUNCATION_HEAD_RATIO_NUM = 2;
 const TOOL_TRUNCATION_HEAD_RATIO_DEN = 3;
 const RULES_SECTION_PREFIX = '[SPIRIT_RULES]';
@@ -18,7 +17,6 @@ const ACTIVE_SKILLS_SECTION_PREFIX = '[SPIRIT_ACTIVE_SKILLS]';
 const EXTENSIONS_SECTION_PREFIX = '[SPIRIT_EXTENSIONS]';
 const DREAMS_SECTION_PREFIX = '[SPIRIT_DREAMS]';
 const BASIC_INFO_SECTION_PREFIX = '[SPIRIT_BASIC_INFO]';
-const TOOL_MEMORY_PREFIX = '[TOOL_MEMORY]';
 
 export const COMPACT_SUMMARY_PREFIX = '[SPIRIT_COMPACT_SUMMARY]';
 
@@ -283,22 +281,24 @@ export function truncateHistoryForCompaction(
   let changed = false;
   const nextHistory = history.map((message) => {
     const contentText = llmMessageTextContent(message.content);
-    if (message.role !== 'system' || !contentText.startsWith(TOOL_MEMORY_PREFIX)) {
+    if (message.role !== 'tool') {
       return {
         role: message.role,
         content: cloneLlmMessageContent(message.content),
+        ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
       };
     }
 
     const replacement = buildContextRetryExcerpt(
       contentText,
-      TOOL_MEMORY_RETRY_MAX_CHARS,
-      '[tool memory truncated for context retry]',
+      TOOL_OUTPUT_RETRY_MAX_CHARS,
+      '[tool output truncated for context retry]',
     );
     if (replacement === undefined) {
       return {
         role: message.role,
         content: cloneLlmMessageContent(message.content),
+        ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
       };
     }
 
@@ -306,6 +306,7 @@ export function truncateHistoryForCompaction(
     return {
       role: message.role,
       content: createLlmMessageContentFromText(replacement),
+      ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
     };
   });
 
@@ -621,14 +622,6 @@ function truncateMessageContentForRetry(
       content,
       TOOL_OUTPUT_RETRY_MAX_CHARS,
       '[tool output truncated for context retry]',
-    );
-  }
-
-  if (role === 'system' && content.startsWith(TOOL_MEMORY_PREFIX)) {
-    return buildContextRetryExcerpt(
-      content,
-      TOOL_MEMORY_RETRY_MAX_CHARS,
-      '[tool memory truncated for context retry]',
     );
   }
 

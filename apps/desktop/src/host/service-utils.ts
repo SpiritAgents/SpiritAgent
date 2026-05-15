@@ -130,6 +130,9 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
       return {
         role: message.role,
         content: cloneLlmMessageContent(message.content),
+        ...('toolCallId' in message && typeof message.toolCallId === 'string'
+          ? { toolCallId: message.toolCallId }
+          : {}),
       };
     }
 
@@ -137,6 +140,9 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
       role: message.role,
       content: message.content,
       imagePaths: [...(('imagePaths' in message ? message.imagePaths : []) ?? [])],
+      ...('toolCallId' in message && typeof message.toolCallId === 'string'
+        ? { toolCallId: message.toolCallId }
+        : {}),
     };
   });
 }

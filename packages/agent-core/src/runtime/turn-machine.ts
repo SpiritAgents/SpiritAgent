@@ -101,6 +101,7 @@ export interface TurnMachineRuntime<
   performToolExecution(
     request: ToolRequest,
     toolName: string,
+    toolCallId?: string,
   ): Promise<ToolExecutionResult>;
   startBackgroundToolExecutionAsync(
     pendingUserInput: string,
@@ -665,7 +666,7 @@ export async function executeAuthorizedToolCall<
     return internal;
   }
 
-  const execution = await runtime.performToolExecution(request, toolName);
+  const execution = await runtime.performToolExecution(request, toolName, toolCallId);
   commitToolExecutionOutput(runtime, turn, {
     toolCallId,
     toolName,
@@ -1120,7 +1121,7 @@ export async function processToolCallsAsync<
       return;
     }
 
-    const execution = await runtime.performToolExecution(request, call.name);
+    const execution = await runtime.performToolExecution(request, call.name, call.id);
     commitToolExecutionOutput(runtime, turn, {
       toolCallId: call.id,
       toolName: call.name,
@@ -1318,7 +1319,7 @@ async function runEarlyToolExecution<
   });
 
   const external = internal === undefined
-    ? await runtime.performToolExecution(request, call.name)
+    ? await runtime.performToolExecution(request, call.name, call.id)
     : undefined;
   const output = internal?.kind === 'completed'
     ? internal.output
