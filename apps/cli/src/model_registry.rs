@@ -315,7 +315,12 @@ fn normalize_config(cfg: &mut AppConfig) {
         if model.api_base.trim().is_empty() {
             model.api_base = DEFAULT_API_BASE.to_string();
         }
-        model.reasoning_effort = normalize_optional_string(model.reasoning_effort.take());
+        model.reasoning_effort = normalize_reasoning_effort_value(
+            normalize_optional_string(model.reasoning_effort.take()),
+            model.provider,
+            model.transport_kind(),
+            &model.name,
+        );
         model.extra.remove("transportImplementation");
         model.extra.remove("transport_implementation");
         normalize_transport_kind(model);
@@ -333,6 +338,47 @@ fn normalize_transport_kind(model: &mut ModelProfile) {
             Value::String(ModelTransportKind::Anthropic.as_str().to_string()),
         );
     }
+}
+
+pub(crate) fn normalize_reasoning_effort_value(
+    value: Option<String>,
+    provider: Option<ModelProvider>,
+    transport_kind: ModelTransportKind,
+    model_name: &str,
+) -> Option<String> {
+    let normalized = normalize_optional_string(value)?.to_ascii_lowercase();
+
+    Some(match transport_kind {
+        ModelTransportKind::Anthropic => match normalized.as_str() {
+            "default" | "low" | "medium" | "high" => normalized,
+            "none" | "minimal" => "default".to_string(),
+            "xhigh" | "max" => "high".to_string(),
+            _ => "default".to_string(),
+        },
+        ModelTransportKind::OpenAiCompatible => match provider {
+            Some(ModelProvider::Deepseek) if is_deepseek_v4_reasoning_model(model_name) => {
+                match normalized.as_str() {
+                    "default" | "high" | "max" => normalized,
+                    "low" | "medium" => "high".to_string(),
+                    "xhigh" => "max".to_string(),
+                    "none" | "minimal" => "default".to_string(),
+                    _ => "default".to_string(),
+                }
+            }
+            Some(ModelProvider::Kimi) => match normalized.as_str() {
+                "default" | "minimal" | "low" | "medium" | "high" => normalized,
+                "none" => "default".to_string(),
+                "xhigh" | "max" => "high".to_string(),
+                _ => "default".to_string(),
+            },
+            _ => match normalized.as_str() {
+                "default" | "none" | "low" | "medium" | "high" | "xhigh" => normalized,
+                "minimal" => "default".to_string(),
+                "max" => "xhigh".to_string(),
+                _ => "medium".to_string(),
+            },
+        },
+    })
 }
 
 fn normalize_image_generation_model(
@@ -355,6 +401,11 @@ fn normalize_optional_string(value: Option<String>) -> Option<String> {
     } else {
         Some(trimmed)
     }
+}
+
+fn is_deepseek_v4_reasoning_model(model: &str) -> bool {
+    let normalized = model.trim().to_ascii_lowercase();
+    normalized == "deepseek-v4-pro" || normalized == "deepseek-v4-flash"
 }
 
 fn is_kimi_vision_model(model: &str) -> bool {
@@ -428,7 +479,7 @@ mod tests {
                 .and_then(|models| models.first())
                 .and_then(|model| model.get("reasoningEffort"))
                 .and_then(Value::as_str),
-            Some("minimal")
+            Some("default")
         );
         assert_eq!(
             json.get("imageGenerationModel").and_then(Value::as_str),
@@ -617,6 +668,52 @@ mod tests {
             active.transport_kind(),
             super::ModelTransportKind::Anthropic
         );
+        assert_eq!(active.reasoning_effort.as_deref(), Some("high"));
+    }
+
+    #[test]
+    fn normalizes_custom_openai_reasoning_effort_to_generic_values() {
+        let config = r#"
+{
+    "models": [
+        {
+            "name": "custom-openai-model",
+            "apiBase": "https://example.invalid/v1",
+            "provider": "custom",
+            "reasoningEffort": "minimal"
+        }
+    ],
+    "activeModel": "custom-openai-model"
+}
+"#;
+
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        let active = parsed.active_model_profile().expect("active model");
+
+        assert_eq!(active.reasoning_effort.as_deref(), Some("default"));
+    }
+
+    #[test]
+    fn normalizes_custom_anthropic_reasoning_effort_to_anthropic_values() {
+        let config = r#"
+{
+    "models": [
+        {
+            "name": "claude-custom",
+            "apiBase": "https://api.anthropic.com/v1",
+            "provider": "custom",
+            "transportKind": "anthropic",
+            "reasoningEffort": "max"
+        }
+    ],
+    "activeModel": "claude-custom"
+}
+"#;
+
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        let active = parsed.active_model_profile().expect("active model");
+
+        assert_eq!(active.transport_kind(), super::ModelTransportKind::Anthropic);
         assert_eq!(active.reasoning_effort.as_deref(), Some("high"));
     }
 }

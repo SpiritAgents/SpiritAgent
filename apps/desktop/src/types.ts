@@ -53,7 +53,7 @@ export type DesktopModelProvider = ModelProviderId;
 
 export type DesktopTransportKind = 'openai-compatible' | 'anthropic';
 
-/** 模型推理强度（与 `packages/host-internal` 中 `ModelReasoningEffort` 同源）。 */
+/** 模型推理强度字符串；具体允许值由 provider / transportKind 在 host-internal 中约束。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
 export type DesktopModelCapability = 'chat' | 'vision' | 'imageGeneration';

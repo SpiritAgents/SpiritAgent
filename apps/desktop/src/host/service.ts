@@ -26,6 +26,7 @@ import {
   type LlmPlanMetadata,
   type LlmToolAgentBasicInfo,
   type LlmTransportConfig,
+  type OpenAiTransportConfig,
   type RuntimeApprovalDecision,
   type PendingWorkspaceFile,
   type RuntimeToolExecution,
@@ -547,6 +548,7 @@ class DesktopHostService {
           existing.reasoningEffort = resolveModelReasoningEffortForContext(reasoningEffort, {
             ...(existing.provider ? { provider: existing.provider } : {}),
             model: existing.name,
+            ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
           });
         }
       } else {
@@ -3447,6 +3449,15 @@ function buildPrimaryTransportConfig(input: {
   }
 
   const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
+  const normalizedReasoningEffort = input.profile?.reasoningEffort
+    ? openAiCompatibleReasoningEffortFromModelReasoningEffort(
+        resolveModelReasoningEffortForContext(input.profile.reasoningEffort, {
+          ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
+          ...(input.profile?.transportKind ? { transportKind: input.profile.transportKind } : {}),
+          model: input.model,
+        }),
+      )
+    : undefined;
   return {
     apiKey: input.apiKey,
     model: input.model,
@@ -3456,8 +3467,26 @@ function buildPrimaryTransportConfig(input: {
     ...(input.profile?.capabilities
       ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
       : {}),
-    ...(input.profile?.reasoningEffort ? { reasoningEffort: input.profile.reasoningEffort } : {}),
+    ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
   };
+}
+
+function openAiCompatibleReasoningEffortFromModelReasoningEffort(
+  effort: ModelReasoningEffort,
+): OpenAiTransportConfig['reasoningEffort'] | undefined {
+  switch (effort) {
+    case 'default':
+    case 'none':
+    case 'low':
+    case 'medium':
+    case 'high':
+    case 'xhigh':
+    case 'minimal':
+    case 'max':
+      return effort;
+    default:
+      return undefined;
+  }
 }
 
 function anthropicEffortFromReasoningEffort(

@@ -100,10 +100,7 @@ enum ModelAction {
         provider: Option<String>,
         #[arg(long, value_parser = ["openai-compatible", "anthropic"])]
         transport_kind: Option<String>,
-        #[arg(
-            long,
-            value_parser = ["default", "minimal", "none", "low", "medium", "high", "xhigh", "max"]
-        )]
+        #[arg(long)]
         reasoning_effort: Option<String>,
         #[arg(long = "capability", value_parser = ["chat", "vision", "imageGeneration"])]
         capabilities: Vec<String>,

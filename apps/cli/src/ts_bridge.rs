@@ -28,7 +28,7 @@ use crate::{
         ManagedMcpServer, McpDiscoveredPrompt, McpDiscoveredResource, McpDiscoveredTool,
         McpServerInspection,
     },
-    model_registry::{AppConfig, ModelProvider},
+    model_registry::{AppConfig, ModelProvider, normalize_reasoning_effort_value},
     plan::PlanMetadata,
     ports::{
         ArchivedLlmMessage, ArchivedLlmToolCall, AssistantAuxArchiveEntry, ChatArchive,
@@ -1639,6 +1639,13 @@ impl TsBridgeRuntime {
 
         let api_base = env::var(ENV_API_BASE).unwrap_or_else(|_| active.api_base.clone());
 
+        let normalized_reasoning_effort = normalize_reasoning_effort_value(
+            active.reasoning_effort.clone(),
+            active.provider,
+            active.transport_kind(),
+            &active.name,
+        );
+
         let mut transport = if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
             serde_json::json!({
                 "transportKind": "anthropic",
@@ -1663,7 +1670,7 @@ impl TsBridgeRuntime {
         }
 
         if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
-            if let Some(effort) = anthropic_effort_value(active.reasoning_effort.as_deref()) {
+            if let Some(effort) = anthropic_effort_value(normalized_reasoning_effort.as_deref()) {
                 if let Some(obj) = transport.as_object_mut() {
                     obj.insert("effort".to_string(), json!(effort));
                 }
@@ -1677,7 +1684,7 @@ impl TsBridgeRuntime {
                     );
                 }
             }
-            if let Some(reasoning_effort) = active.reasoning_effort.as_deref() {
+            if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref() {
                 if let Some(obj) = transport.as_object_mut() {
                     obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
                 }
@@ -3056,7 +3063,7 @@ mod tests {
         assert!(transport.get("transportImplementation").is_none());
         assert_eq!(
             transport.get("reasoningEffort").and_then(Value::as_str),
-            Some("minimal")
+            Some("default")
         );
     }
 

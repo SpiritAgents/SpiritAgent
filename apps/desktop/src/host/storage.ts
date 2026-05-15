@@ -415,6 +415,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             reasoningEffort: resolveModelReasoningEffortForContext(model.reasoningEffort, {
               ...(provider ? { provider } : {}),
               model: model.name,
+              ...(transportKind ? { transportKind } : {}),
             }),
             ...(capabilities ? { capabilities } : {}),
             ...(provider ? { provider } : {}),
