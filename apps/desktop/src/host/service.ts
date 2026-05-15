@@ -138,6 +138,11 @@ import {
   writeModelCatalogCache,
 } from './model-catalog-cache.js';
 import {
+  previewCatalogMapForTransport,
+  previewModelCatalogForTransport,
+  usesAnthropicModelCatalogMetadata,
+} from './model-catalog-metadata.js';
+import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
   discoverWorkspaceRoot,
@@ -671,21 +676,18 @@ class DesktopHostService {
     if (!apiKey) {
       throw new Error('API Key 不能为空。');
     }
-    const forceRefresh = request.forceRefresh === true;
-    const cached = await readModelCatalogCache(apiBase, apiKey, provider, transportKind);
-    const now = Date.now();
-    if (cached && isModelCatalogCacheFresh(cached, now, forceRefresh)) {
-      return {
-        modelIds: cached.modelIds,
-        ...(cached.modelCatalog ? { models: cached.modelCatalog } : {}),
-        fromCache: true,
-      };
-    }
-    const listedModels = await listProviderModels({ provider, transportKind, baseUrl: apiBase, apiKey });
-    const modelCatalog = previewModelCatalogForProvider(provider, listedModels);
-    const modelIds = listedModels.map((entry) => entry.id);
-    await writeModelCatalogCache(apiBase, modelIds, apiKey, modelCatalog, provider, transportKind);
-    return { modelIds, ...(modelCatalog ? { models: modelCatalog } : {}), fromCache: false };
+    const result = await loadPreviewModelsForTransport({
+      provider,
+      transportKind,
+      apiBase,
+      apiKey,
+      forceRefresh: request.forceRefresh === true,
+    });
+    return {
+      modelIds: result.modelIds,
+      ...(result.modelCatalog ? { models: result.modelCatalog } : {}),
+      fromCache: result.fromCache,
+    };
   }
 
   async addProviderModels(request: AddProviderModelsRequest): Promise<DesktopSnapshot> {
@@ -724,7 +726,7 @@ class DesktopHostService {
         provider?: DesktopModelProvider;
         transportKind?: DesktopTransportKind;
       };
-      const catalogEntries = previewCatalogMapForAddProviderRequest(request, provider);
+      const catalogEntries = previewCatalogMapForAddProviderRequest(request, provider, transportKind);
       const toAdd: NewProfile[] = [];
       for (const name of uniqueIds) {
         if (state.config.models.some((model) => model.name === name)) {
@@ -819,6 +821,15 @@ class DesktopHostService {
         throw new Error(`模型已存在: ${name}`);
       }
 
+      const catalogEntry = await findCatalogEntryForModel({
+        provider,
+        transportKind,
+        apiBase,
+        apiKey,
+        model: name,
+      });
+      const requestedCapabilities = normalizeModelCapabilities(request.capabilities);
+
       const profile: {
         name: string;
         apiBase: string;
@@ -835,19 +846,27 @@ class DesktopHostService {
             ? { provider: reasoningProviderForTransport(provider, transportKind) }
             : {}),
           model: name,
+          ...(catalogEntry?.supportedReasoningEfforts !== undefined
+            ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
+            : {}),
         }),
       };
+      if (catalogEntry?.supportedReasoningEfforts !== undefined) {
+        profile.supportedReasoningEfforts = catalogEntry.supportedReasoningEfforts;
+      }
       if (provider !== undefined) {
         profile.provider = provider;
         if (transportKind === 'anthropic') {
           profile.transportKind = 'anthropic';
         }
       }
-      const capabilities = normalizeModelCapabilities(request.capabilities);
+      const capabilities = resolveAddedModelCapabilities({
+        provider,
+        requestedCapabilities,
+        catalogEntry,
+      });
       if (capabilities) {
         profile.capabilities = capabilities;
-      } else if (provider === 'custom') {
-        profile.capabilities = defaultCustomModelCapabilities();
       }
       state.config.models.push(profile);
       state.config.activeModel = name;
@@ -3517,65 +3536,122 @@ function supportsImageGeneration(model: { capabilities?: readonly DesktopModelCa
   return model.capabilities?.includes('imageGeneration') === true;
 }
 
-function previewModelCatalogForProvider(
-  provider: DesktopModelProvider | undefined,
-  listedModels: readonly ProviderListedModelEntry[],
-): PreviewModelCatalogEntry[] | undefined {
-  if (provider !== 'anthropic') {
-    return undefined;
+interface LoadedPreviewModelsResult {
+  modelIds: string[];
+  modelCatalog?: PreviewModelCatalogEntry[];
+  fromCache: boolean;
+}
+
+async function loadPreviewModelsForTransport(input: {
+  provider?: DesktopModelProvider;
+  transportKind: DesktopTransportKind;
+  apiBase: string;
+  apiKey: string;
+  forceRefresh: boolean;
+}): Promise<LoadedPreviewModelsResult> {
+  const cached = await readModelCatalogCache(
+    input.apiBase,
+    input.apiKey,
+    input.provider,
+    input.transportKind,
+  );
+  const now = Date.now();
+  if (cached && isModelCatalogCacheFresh(cached, now, input.forceRefresh)) {
+    return {
+      modelIds: cached.modelIds,
+      ...(cached.modelCatalog ? { modelCatalog: cached.modelCatalog } : {}),
+      fromCache: true,
+    };
   }
 
-  return listedModels.map((entry) => ({
-    id: entry.id,
-    capabilities: entry.supportsVision === true ? ['chat', 'vision'] : ['chat'],
-    ...(entry.supportedReasoningEfforts !== undefined
-      ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
-      : {}),
-  }));
+  const listedModels = await listProviderModels({
+    provider: input.provider,
+    transportKind: input.transportKind,
+    baseUrl: input.apiBase,
+    apiKey: input.apiKey,
+  });
+  const modelCatalog = previewModelCatalogForProvider(input.provider, input.transportKind, listedModels);
+  const modelIds = listedModels.map((entry) => entry.id);
+  await writeModelCatalogCache(
+    input.apiBase,
+    modelIds,
+    input.apiKey,
+    modelCatalog,
+    input.provider,
+    input.transportKind,
+  );
+  return {
+    modelIds,
+    ...(modelCatalog ? { modelCatalog } : {}),
+    fromCache: false,
+  };
+}
+
+function previewModelCatalogForProvider(
+  provider: DesktopModelProvider | undefined,
+  transportKind: DesktopTransportKind,
+  listedModels: readonly ProviderListedModelEntry[],
+): PreviewModelCatalogEntry[] | undefined {
+  return previewModelCatalogForTransport({ provider, transportKind, listedModels });
 }
 
 function previewCatalogMapForAddProviderRequest(
   request: AddProviderModelsRequest,
   provider: DesktopModelProvider | undefined,
+  transportKind: DesktopTransportKind,
 ): Map<string, PreviewModelCatalogEntry> {
-  if (provider !== 'anthropic' || !Array.isArray(request.modelCatalog)) {
-    return new Map();
-  }
-
-  const normalized: Array<[string, PreviewModelCatalogEntry]> = [];
-  for (const entry of request.modelCatalog) {
-    const id = entry.id.trim();
-    if (!id) {
-      continue;
-    }
-    normalized.push([
-      id,
-      {
-        id,
-        ...(entry.capabilities ? { capabilities: entry.capabilities } : {}),
-        ...(entry.supportedReasoningEfforts !== undefined
-          ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
-          : {}),
-      },
-    ]);
-  }
-
-  return new Map(normalized);
+  return previewCatalogMapForTransport({
+    provider,
+    transportKind,
+    modelCatalog: request.modelCatalog,
+  });
 }
 
-function normalizePreviewSupportedReasoningEfforts(
-  values: readonly DesktopModelReasoningEffort[],
-): DesktopModelReasoningEffort[] {
-  const seen = new Set<string>();
-  const normalized: DesktopModelReasoningEffort[] = [];
-  for (const value of values) {
-    const effort = value.trim().toLowerCase();
-    if (!effort || effort === 'default' || seen.has(effort)) {
-      continue;
-    }
-    seen.add(effort);
-    normalized.push(effort);
+async function findCatalogEntryForModel(input: {
+  provider?: DesktopModelProvider;
+  transportKind: DesktopTransportKind;
+  apiBase: string;
+  apiKey: string;
+  model: string;
+}): Promise<PreviewModelCatalogEntry | undefined> {
+  if (!usesAnthropicModelCatalogMetadata(input)) {
+    return undefined;
   }
-  return normalized;
+
+  try {
+    const preview = await loadPreviewModelsForTransport({
+      provider: input.provider,
+      transportKind: input.transportKind,
+      apiBase: input.apiBase,
+      apiKey: input.apiKey,
+      forceRefresh: false,
+    });
+    return preview.modelCatalog?.find((entry) => entry.id === input.model);
+  } catch {
+    return undefined;
+  }
+}
+
+function resolveAddedModelCapabilities(input: {
+  provider?: DesktopModelProvider;
+  requestedCapabilities?: DesktopModelCapability[];
+  catalogEntry?: PreviewModelCatalogEntry;
+}): DesktopModelCapability[] | undefined {
+  if (input.catalogEntry?.capabilities) {
+    const merged = [...input.catalogEntry.capabilities];
+    if (
+      input.requestedCapabilities?.includes('imageGeneration') === true
+      && !merged.includes('imageGeneration')
+    ) {
+      merged.push('imageGeneration');
+    }
+    return merged;
+  }
+
+  if (input.requestedCapabilities) {
+    return input.requestedCapabilities;
+  }
+
+  return input.provider === 'custom' ? defaultCustomModelCapabilities() : undefined;
 }
 
