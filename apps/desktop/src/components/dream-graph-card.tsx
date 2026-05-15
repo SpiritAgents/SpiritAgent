@@ -48,6 +48,19 @@ type DreamLogoNodeData = {
   iconSrc: string;
 };
 
+type DreamFlowNode = Node<DreamNodeData | DreamLogoNodeData>;
+
+const DREAM_GRAPH_MIN_HEIGHT_PX = 320;
+const DREAM_GRAPH_ITEM_X = 555;
+const DREAM_GRAPH_ITEM_BASE_Y = 18;
+const DREAM_GRAPH_ITEM_VERTICAL_STEP_PX = 110;
+const DREAM_GRAPH_ITEM_ESTIMATED_HEIGHT_PX = 72;
+const DREAM_GRAPH_CONTEXT_Y = 130;
+const DREAM_GRAPH_CONTEXT_ESTIMATED_HEIGHT_PX = 72;
+const DREAM_GRAPH_LOGO_Y = 108;
+const DREAM_GRAPH_LOGO_SIZE_PX = 112;
+const DREAM_GRAPH_DEFAULT_ANCHOR_CENTER_Y = DREAM_GRAPH_LOGO_Y + DREAM_GRAPH_LOGO_SIZE_PX / 2;
+
 function deriveWorkspaceLabel(workspaceRoot?: string): string {
   const trimmed = workspaceRoot?.trim();
   if (!trimmed) {
@@ -261,17 +274,17 @@ const nodeTypes: NodeTypes = {
 function buildGraph(
   items: DesktopDreamOverviewItem[],
   iconSrc: string,
-  selectedDreamId: string | null,
-  onDreamOpenChange: (open: boolean, dreamId?: string) => void,
   workspaceRoot?: string,
   gitBranch?: string,
 ) {
-  const visibleItems = items.slice(0, 3);
-  const nodes: Array<Node<DreamNodeData | DreamLogoNodeData>> = [
+  const visibleItems = items;
+  const slots = buildDreamItemSlots(visibleItems.length);
+  const anchorCenterY = dreamGraphAnchorCenterY(slots);
+  const nodes: DreamFlowNode[] = [
     {
       id: "context",
       type: "dreamInfo",
-      position: { x: 28, y: 130 },
+      position: { x: 28, y: anchorCenterY - DREAM_GRAPH_CONTEXT_ESTIMATED_HEIGHT_PX / 2 },
       draggable: true,
       data: {
         label: "当前作用域正在沉淀近期工作动向",
@@ -281,17 +294,11 @@ function buildGraph(
     {
       id: "logo",
       type: "dreamLogo",
-      position: { x: 300, y: 108 },
+      position: { x: 300, y: anchorCenterY - DREAM_GRAPH_LOGO_SIZE_PX / 2 },
       draggable: true,
       selectable: false,
       data: { iconSrc },
     },
-  ];
-
-  const slots = [
-    { x: 555, y: 18 },
-    { x: 555, y: 128 },
-    { x: 555, y: 238 },
   ];
 
   for (const [index, item] of visibleItems.entries()) {
@@ -304,8 +311,6 @@ function buildGraph(
         label: item.summary,
         subtitle: buildDreamSubtitle(item.workspaceRoot, item.gitBranch),
         dream: item,
-        open: item.id === selectedDreamId,
-        onOpenChange: onDreamOpenChange,
         interactive: true,
       },
     });
@@ -336,6 +341,99 @@ function buildGraph(
   return { nodes, edges };
 }
 
+function mergeGraphNodes(
+  currentNodes: DreamFlowNode[],
+  nextNodes: DreamFlowNode[],
+  pinnedNodeIds: ReadonlySet<string>,
+): DreamFlowNode[] {
+  const currentById = new Map(currentNodes.map((node) => [node.id, node]));
+
+  return nextNodes.map((nextNode) => {
+    const currentNode = currentById.get(nextNode.id);
+    if (!currentNode) {
+      return nextNode;
+    }
+
+    return {
+      ...nextNode,
+      position: pinnedNodeIds.has(nextNode.id) ? currentNode.position : nextNode.position,
+      ...(currentNode.measured !== undefined ? { measured: currentNode.measured } : {}),
+      ...(currentNode.width !== undefined ? { width: currentNode.width } : {}),
+      ...(currentNode.height !== undefined ? { height: currentNode.height } : {}),
+      ...(currentNode.selected !== undefined ? { selected: currentNode.selected } : {}),
+      ...(currentNode.dragging !== undefined ? { dragging: currentNode.dragging } : {}),
+    };
+  });
+}
+
+function applyDreamNodeUiState(
+  nodes: DreamFlowNode[],
+  selectedDreamId: string | null,
+  onDreamOpenChange: (open: boolean, dreamId?: string) => void,
+): DreamFlowNode[] {
+  return nodes.map((node) => {
+    if (node.type !== "dreamInfo") {
+      return node;
+    }
+
+    const data = node.data as DreamNodeData;
+    const dreamId = data.dream?.id;
+    return {
+      ...node,
+      data: {
+        ...data,
+        open: dreamId !== undefined && dreamId === selectedDreamId,
+        onOpenChange: dreamId !== undefined ? onDreamOpenChange : undefined,
+      },
+    };
+  });
+}
+
+function buildDreamItemSlots(count: number): Array<{ x: number; y: number }> {
+  if (count <= 0) {
+    return [];
+  }
+
+  const centerIndex = (count - 1) / 2;
+  const defaultTopY =
+    DREAM_GRAPH_DEFAULT_ANCHOR_CENTER_Y
+    - DREAM_GRAPH_ITEM_ESTIMATED_HEIGHT_PX / 2
+    - centerIndex * DREAM_GRAPH_ITEM_VERTICAL_STEP_PX;
+  const offsetY = Math.max(0, DREAM_GRAPH_ITEM_BASE_Y - defaultTopY);
+
+  return Array.from({ length: count }, (_value, index) => ({
+    x: DREAM_GRAPH_ITEM_X,
+    y:
+      DREAM_GRAPH_DEFAULT_ANCHOR_CENTER_Y
+      - DREAM_GRAPH_ITEM_ESTIMATED_HEIGHT_PX / 2
+      + (index - centerIndex) * DREAM_GRAPH_ITEM_VERTICAL_STEP_PX
+      + offsetY,
+  }));
+}
+
+function dreamGraphAnchorCenterY(slots: Array<{ x: number; y: number }>): number {
+  if (slots.length === 0) {
+    return DREAM_GRAPH_DEFAULT_ANCHOR_CENTER_Y;
+  }
+
+  const firstCenterY = slots[0]!.y + DREAM_GRAPH_ITEM_ESTIMATED_HEIGHT_PX / 2;
+  const lastCenterY = slots[slots.length - 1]!.y + DREAM_GRAPH_ITEM_ESTIMATED_HEIGHT_PX / 2;
+  return Math.max(DREAM_GRAPH_DEFAULT_ANCHOR_CENTER_Y, (firstCenterY + lastCenterY) / 2);
+}
+
+function dreamGraphHeightPx(count: number): number {
+  if (count <= 0) {
+    return DREAM_GRAPH_MIN_HEIGHT_PX;
+  }
+
+  return Math.max(
+    DREAM_GRAPH_MIN_HEIGHT_PX,
+    DREAM_GRAPH_ITEM_BASE_Y
+      + (count - 1) * DREAM_GRAPH_ITEM_VERTICAL_STEP_PX
+      + DREAM_GRAPH_ITEM_ESTIMATED_HEIGHT_PX,
+  );
+}
+
 function DreamGraphCanvas({
   items,
   theme,
@@ -348,8 +446,23 @@ function DreamGraphCanvas({
   gitBranch?: string;
 }) {
   const [selectedDreamId, setSelectedDreamId] = useState<string | null>(null);
+  const [pinnedNodeIds, setPinnedNodeIds] = useState<string[]>([]);
   const iconSrc = theme === "light" ? "/spirit-agent-icon-light.png" : "/spirit-agent-icon.png";
   const itemIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
+  const graphNodeIds = useMemo(() => new Set(["context", "logo", ...items.map((item) => item.id)]), [items]);
+  const pinnedNodeIdSet = useMemo(() => new Set(pinnedNodeIds), [pinnedNodeIds]);
+  const handleDreamOpenChange = (open: boolean, dreamId?: string) => {
+    setSelectedDreamId(open ? dreamId ?? null : null);
+  };
+
+  const handleNodeDragStop = (_event: unknown, node: DreamFlowNode) => {
+    setPinnedNodeIds((current) => {
+      if (current.includes(node.id)) {
+        return current;
+      }
+      return [...current, node.id];
+    });
+  };
 
   useEffect(() => {
     if (selectedDreamId && !itemIds.has(selectedDreamId)) {
@@ -357,27 +470,43 @@ function DreamGraphCanvas({
     }
   }, [itemIds, selectedDreamId]);
 
+  useEffect(() => {
+    setPinnedNodeIds((current) => current.filter((id) => graphNodeIds.has(id)));
+  }, [graphNodeIds]);
+
   const graph = useMemo(
     () =>
       buildGraph(
         items,
         iconSrc,
-        selectedDreamId,
-        (open, dreamId) => {
-          setSelectedDreamId(open ? dreamId ?? null : null);
-        },
         workspaceRoot,
         gitBranch,
       ),
-    [gitBranch, iconSrc, items, selectedDreamId, workspaceRoot],
+    [gitBranch, iconSrc, items, workspaceRoot],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(graph.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(graph.edges);
 
   useEffect(() => {
-    setNodes(graph.nodes);
+    setNodes((currentNodes) => {
+      return mergeGraphNodes(
+        currentNodes as DreamFlowNode[],
+        graph.nodes,
+        pinnedNodeIdSet,
+      );
+    });
     setEdges(graph.edges);
-  }, [graph, setEdges, setNodes]);
+  }, [graph, pinnedNodeIdSet, setEdges, setNodes]);
+
+  useEffect(() => {
+    setNodes((currentNodes) =>
+      applyDreamNodeUiState(
+        currentNodes as DreamFlowNode[],
+        selectedDreamId,
+        handleDreamOpenChange,
+      ),
+    );
+  }, [graph.nodes, selectedDreamId, setNodes]);
 
   return (
     <ReactFlow
@@ -386,6 +515,7 @@ function DreamGraphCanvas({
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
+      onNodeDragStop={handleNodeDragStop}
       onPaneClick={() => setSelectedDreamId(null)}
       fitView={false}
       defaultViewport={{ x: 0, y: 0, zoom: 1 }}
@@ -426,10 +556,11 @@ export function DreamGraphCard({
           dreamEnabled,
           debugMode,
         });
+  const graphHeight = dreamGraphHeightPx(graphItems.length);
 
   return (
     <div className="overflow-hidden rounded-lg border border-border/40 bg-background/80">
-      <div className="relative h-[20rem] w-full">
+      <div className="relative w-full" style={{ height: `${String(graphHeight)}px` }}>
         {loading ? (
           <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-border/50 bg-background/75 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
