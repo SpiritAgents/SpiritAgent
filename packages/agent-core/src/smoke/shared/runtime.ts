@@ -69,6 +69,13 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     {
       role: 'assistant',
       content: createLlmMessageContentFromText('我先列一下 packages/agent-core。'),
+      toolCalls: [
+        {
+          id: 'call-list-agent-core',
+          name: 'list_dir',
+          argumentsJson: '{"path":"packages/agent-core"}',
+        },
+      ],
     },
     {
       role: 'tool',
@@ -94,6 +101,13 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     {
       role: 'assistant',
       content: createLlmMessageContentFromText('我再读一下 openai transport 实现。'),
+      toolCalls: [
+        {
+          id: 'call-read-openai-transport',
+          name: 'read_file',
+          argumentsJson: '{"filePath":"packages/agent-core/src/openai/ai-sdk-transport.ts"}',
+        },
+      ],
     },
     {
       role: 'tool',

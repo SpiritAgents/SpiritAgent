@@ -45,6 +45,14 @@ pub enum LlmContentPart {
     Image { path: String },
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ArchivedLlmToolCall {
+    pub id: String,
+    pub name: String,
+    pub arguments_json: String,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ArchivedLlmMessage {
@@ -52,6 +60,8 @@ pub struct ArchivedLlmMessage {
     pub content: Vec<LlmContentPart>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_call_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<ArchivedLlmToolCall>>,
 }
 
 impl ArchivedLlmMessage {
@@ -67,11 +77,17 @@ impl ArchivedLlmMessage {
             role,
             content: parts,
             tool_call_id: None,
+            tool_calls: None,
         }
     }
 
     pub fn with_tool_call_id(mut self, tool_call_id: Option<String>) -> Self {
         self.tool_call_id = tool_call_id;
+        self
+    }
+
+    pub fn with_tool_calls(mut self, tool_calls: Option<Vec<ArchivedLlmToolCall>>) -> Self {
+        self.tool_calls = tool_calls;
         self
     }
 
@@ -108,6 +124,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
             content: Vec<LlmContentPart>,
             #[serde(default, alias = "tool_call_id")]
             tool_call_id: Option<String>,
+            #[serde(default, alias = "toolCalls")]
+            tool_calls: Option<Vec<ArchivedLlmToolCall>>,
         }
 
         #[derive(Deserialize)]
@@ -119,6 +137,8 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
             image_paths: Vec<String>,
             #[serde(default, alias = "tool_call_id")]
             tool_call_id: Option<String>,
+            #[serde(default, alias = "toolCalls")]
+            tool_calls: Option<Vec<ArchivedLlmToolCall>>,
         }
 
         #[derive(Deserialize)]
@@ -133,13 +153,15 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
                 role: message.role,
                 content: message.content,
                 tool_call_id: message.tool_call_id,
+                tool_calls: message.tool_calls,
             }),
             ArchivedLlmMessageRepr::Legacy(message) => Ok(Self::from_text_and_images(
                 message.role,
                 message.content,
                 message.image_paths,
             )
-            .with_tool_call_id(message.tool_call_id)),
+            .with_tool_call_id(message.tool_call_id)
+            .with_tool_calls(message.tool_calls)),
         }
     }
 }

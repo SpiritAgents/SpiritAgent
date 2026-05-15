@@ -320,12 +320,43 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   if (
     !authorizationFailureRuntime.history().some(
       (message) =>
+        message.role === 'assistant' &&
+        message.toolCalls?.some(
+          (toolCall) =>
+            toolCall.id === 'call-stream-auth-fail' &&
+            toolCall.name === 'read_file' &&
+            toolCall.argumentsJson === '{"path":"D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs"}',
+        ),
+    )
+  ) {
+    throw new Error('authorization failure smoke 未把 assistant tool call 父消息写入 llmHistory。');
+  }
+  if (
+    !authorizationFailureRuntime.history().some(
+      (message) =>
         message.role === 'tool' &&
         message.toolCallId === 'call-stream-auth-fail' &&
         llmMessageTextContent(message.content).includes('[authorization error]'),
     )
   ) {
     throw new Error('authorization failure smoke 未把失败工具结果写入 llmHistory。');
+  }
+
+  if (
+    !authorizationFailureRuntime.toArchive([], []).llmHistory.some(
+      (message) =>
+        message.role === 'assistant' &&
+        'toolCalls' in message &&
+        Array.isArray(message.toolCalls) &&
+        message.toolCalls.some(
+          (toolCall) =>
+            toolCall.id === 'call-stream-auth-fail' &&
+            toolCall.name === 'read_file' &&
+            toolCall.argumentsJson === '{"path":"D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs"}',
+        ),
+    )
+  ) {
+    throw new Error('authorization failure smoke 未把 assistant tool call 父消息写入 archive。');
   }
 
   const timeoutRuntime = new AgentRuntime({
@@ -806,6 +837,11 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     maxAutoCompactRetries: 2,
     onEvent: (event) => streamingCompactionEvents.push(event),
   }, [
+    {
+      role: 'assistant',
+      content: [],
+      toolCalls: [{ id: 'call-old-streaming', name: 'read_file', argumentsJson: '{}' }],
+    },
     {
       role: 'tool',
       toolCallId: 'call-old-streaming',
