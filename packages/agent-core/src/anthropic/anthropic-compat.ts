@@ -58,7 +58,7 @@ export function resolveAnthropicThinkingConfig(
   if (
     normalizedModel.includes('claude-opus-4-6') ||
     normalizedModel.includes('claude-sonnet-4-6') ||
-    normalizedModel.includes('claude-haiku-4-6')
+    normalizedModel.includes('claude-haiku-4-5')
   ) {
     return { type: 'adaptive' };
   }
