@@ -257,6 +257,7 @@ export async function resumePendingQuestions<
       return continueAfterQuestionsFailure(
         runtime,
         pending,
+        pending.request,
         '[continueAfterQuestions error] continued request must stay on the same tool.',
       );
     }
@@ -268,6 +269,7 @@ export async function resumePendingQuestions<
       return continueAfterQuestionsFailure(
         runtime,
         pending,
+        continuedRequest,
         `[authorization error] ${renderError(error)}`,
       );
     }
@@ -313,6 +315,7 @@ export async function resumePendingQuestions<
       return continueAfterQuestionsFailure(
         runtime,
         pending,
+        continuedRequest,
         '[continueAfterQuestions error] continued request cannot require questions again.',
       );
     }
@@ -550,10 +553,12 @@ export async function processToolCalls<
     try {
       authorization = await runtime.options.toolExecutor.authorize(request);
     } catch (error) {
+      const output = `[authorization error] ${renderError(error)}`;
+      commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
       currentState = runtime.options.appendToolResultMessage(
         currentState,
         call.id,
-        `[authorization error] ${renderError(error)}`,
+        output,
       );
       continue;
     }
@@ -694,8 +699,17 @@ async function continueAfterQuestionsFailure<
 >(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   pending: PendingQuestionsState<State, ToolRequest>,
+  request: ToolRequest,
   output: string,
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  commitSyntheticToolExecutionFailure(
+    runtime,
+    pending.turn,
+    request,
+    pending.toolCallId,
+    pending.toolName,
+    output,
+  );
   const resumedState = runtime.options.appendToolResultMessage(
     pending.state,
     pending.toolCallId,
@@ -995,10 +1009,12 @@ export async function processToolCallsAsync<
     try {
       authorization = await runtime.options.toolExecutor.authorize(request);
     } catch (error) {
+      const output = `[authorization error] ${renderError(error)}`;
+      commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
       currentState = runtime.options.appendToolResultMessage(
         currentState,
         call.id,
-        `[authorization error] ${renderError(error)}`,
+        output,
       );
       if (queueRemainingToolCallsAsync(
         runtime,
@@ -1181,6 +1197,41 @@ export function buildRuntimeToolExecution<ToolRequest>(
     failed: options.failed,
     ...(artifacts ? { artifacts } : {}),
   };
+}
+
+function commitSyntheticToolExecutionFailure<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: Pick<
+    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    'emitEvent' | 'historyStore'
+  >,
+  turn: RuntimeTurnContext<ToolRequest>,
+  request: ToolRequest,
+  toolCallId: string,
+  toolName: string,
+  outputText: string,
+): RuntimeToolExecution<ToolRequest> {
+  const content = createLlmMessageContentFromText(outputText);
+  runtime.historyStore.push({
+    role: 'tool',
+    toolCallId,
+    content,
+  });
+
+  return commitToolExecutionOutput(runtime, turn, {
+    toolCallId,
+    toolName,
+    request,
+    output: {
+      content,
+      summaryText: outputText,
+    },
+    failed: true,
+  });
 }
 
 export function commitToolExecutionOutput<
