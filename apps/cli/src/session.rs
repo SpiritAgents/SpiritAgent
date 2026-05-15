@@ -170,6 +170,7 @@ impl SessionModel {
             image_paths: vec![],
             tool_call_id: None,
             tool_calls: None,
+            provider_state: None,
         });
     }
 
@@ -180,6 +181,7 @@ impl SessionModel {
             image_paths: images,
             tool_call_id: None,
             tool_calls: None,
+            provider_state: None,
         });
     }
 
@@ -190,6 +192,7 @@ impl SessionModel {
             image_paths: vec![],
             tool_call_id: None,
             tool_calls: None,
+            provider_state: None,
         });
     }
 
@@ -220,6 +223,7 @@ impl SessionModel {
                         })
                         .collect()
                 }),
+                    provider_state: message.provider_state.clone(),
             })
             .collect();
         self.llm_api_trace.clear();
@@ -255,7 +259,8 @@ impl SessionModel {
                                 arguments_json: tool_call.arguments_json.clone(),
                             })
                             .collect()
-                    }))
+                            }))
+                            .with_provider_state(message.provider_state.clone())
                 })
                 .collect(),
             subagent_sessions: Vec::new(),

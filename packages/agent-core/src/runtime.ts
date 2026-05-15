@@ -17,6 +17,7 @@ import type {
 } from './ports.js';
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
+  cloneLlmProviderState,
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
   createToolExecutionTextOutput,
@@ -618,6 +619,9 @@ export class AgentRuntime<
               })),
             }
           : {}),
+        ...(message.providerState !== undefined
+          ? { providerState: cloneLlmProviderState(message.providerState) }
+          : {}),
       })),
       subagentSessions: this.childSessionsStore.map((entry) => ({
         summary: { ...entry.summary },
@@ -633,6 +637,9 @@ export class AgentRuntime<
                   argumentsJson: toolCall.argumentsJson,
                 })),
               }
+            : {}),
+          ...(message.providerState !== undefined
+            ? { providerState: cloneLlmProviderState(message.providerState) }
             : {}),
         })),
       })),

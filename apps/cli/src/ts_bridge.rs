@@ -2725,22 +2725,25 @@ fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
     history
         .iter()
         .map(|message| {
-            archived_llm_message_to_json(&ArchivedLlmMessage::from_text_and_images(
-                message.role.to_string(),
-                message.content.clone(),
-                message.image_paths.clone(),
+            archived_llm_message_to_json(
+                &ArchivedLlmMessage::from_text_and_images(
+                    message.role.to_string(),
+                    message.content.clone(),
+                    message.image_paths.clone(),
+                )
+                .with_tool_call_id(message.tool_call_id.clone())
+                .with_tool_calls(message.tool_calls.as_ref().map(|tool_calls| {
+                    tool_calls
+                        .iter()
+                        .map(|tool_call| ArchivedLlmToolCall {
+                            id: tool_call.id.clone(),
+                            name: tool_call.name.clone(),
+                            arguments_json: tool_call.arguments_json.clone(),
+                        })
+                        .collect()
+                }))
+                .with_provider_state(message.provider_state.clone()),
             )
-            .with_tool_call_id(message.tool_call_id.clone())
-            .with_tool_calls(message.tool_calls.as_ref().map(|tool_calls| {
-                tool_calls
-                    .iter()
-                    .map(|tool_call| ArchivedLlmToolCall {
-                        id: tool_call.id.clone(),
-                        name: tool_call.name.clone(),
-                        arguments_json: tool_call.arguments_json.clone(),
-                    })
-                    .collect()
-            })))
         })
         .collect()
 }
@@ -2763,6 +2766,12 @@ fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
                 "toolCalls".to_string(),
                 serde_json::to_value(tool_calls).unwrap_or(Value::Null),
             );
+        }
+    }
+
+    if let Some(provider_state) = &message.provider_state {
+        if let Some(object) = value.as_object_mut() {
+            object.insert("providerState".to_string(), provider_state.clone());
         }
     }
 
@@ -2814,7 +2823,9 @@ fn anthropic_effort_value(value: Option<&str>) -> Option<&'static str> {
     match value.map(str::trim) {
         Some("low") => Some("low"),
         Some("medium") => Some("medium"),
-        Some("high") | Some("xhigh") | Some("max") => Some("high"),
+        Some("high") => Some("high"),
+        Some("xhigh") => Some("xhigh"),
+        Some("max") => Some("max"),
         _ => None,
     }
 }
@@ -3136,7 +3147,7 @@ mod tests {
             .active_model_profile_mut()
             .expect("active model should exist");
         active.provider = Some(ModelProvider::Anthropic);
-        active.reasoning_effort = Some("high".to_string());
+        active.reasoning_effort = Some("max".to_string());
         active.extra.insert(
             "transportKind".to_string(),
             json!("anthropic"),
@@ -3153,7 +3164,7 @@ mod tests {
         assert_eq!(transport.get("llmVendor"), None);
         assert_eq!(
             transport.get("effort").and_then(Value::as_str),
-            Some("high")
+            Some("max")
         );
         assert_eq!(transport.get("imageGeneration"), None);
     }

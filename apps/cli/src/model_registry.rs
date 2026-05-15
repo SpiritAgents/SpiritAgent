@@ -350,9 +350,8 @@ pub(crate) fn normalize_reasoning_effort_value(
 
     Some(match transport_kind {
         ModelTransportKind::Anthropic => match normalized.as_str() {
-            "default" | "low" | "medium" | "high" => normalized,
+            "default" | "low" | "medium" | "high" | "xhigh" | "max" => normalized,
             "none" | "minimal" => "default".to_string(),
-            "xhigh" | "max" => "high".to_string(),
             _ => "default".to_string(),
         },
         ModelTransportKind::OpenAiCompatible => match provider {
@@ -714,7 +713,7 @@ mod tests {
         let active = parsed.active_model_profile().expect("active model");
 
         assert_eq!(active.transport_kind(), super::ModelTransportKind::Anthropic);
-        assert_eq!(active.reasoning_effort.as_deref(), Some("high"));
+        assert_eq!(active.reasoning_effort.as_deref(), Some("max"));
     }
 }
 

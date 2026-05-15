@@ -31,6 +31,7 @@ export interface LlmMessage {
   content: LlmMessageContent;
   toolCallId?: string;
   toolCalls?: LlmToolCall[];
+  providerState?: JsonObject;
 }
 
 export interface LegacyLlmMessageArchiveEntry {
@@ -39,6 +40,7 @@ export interface LegacyLlmMessageArchiveEntry {
   imagePaths?: string[];
   toolCallId?: string;
   toolCalls?: LlmToolCall[];
+  providerState?: JsonObject;
 }
 
 export interface StoredLlmMessageArchiveEntry {
@@ -46,6 +48,7 @@ export interface StoredLlmMessageArchiveEntry {
   content: LlmMessageContent;
   toolCallId?: string;
   toolCalls?: LlmToolCall[];
+  providerState?: JsonObject;
 }
 
 function cloneLlmToolCalls(toolCalls: readonly LlmToolCall[]): LlmToolCall[] {
@@ -54,6 +57,22 @@ function cloneLlmToolCalls(toolCalls: readonly LlmToolCall[]): LlmToolCall[] {
     name: toolCall.name,
     argumentsJson: toolCall.argumentsJson,
   }));
+}
+
+export function cloneLlmProviderState(providerState: JsonObject): JsonObject {
+  return Object.fromEntries(
+    Object.entries(providerState).map(([key, value]) => [key, cloneJsonValue(value)]),
+  );
+}
+
+function cloneJsonValue(value: JsonValue): JsonValue {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneJsonValue(item));
+  }
+  if (typeof value === 'object' && value !== null) {
+    return cloneLlmProviderState(value);
+  }
+  return value;
 }
 
 export interface ToolExecutionOutput {
@@ -168,6 +187,14 @@ export function normalizeStoredLlmMessage(
       : 'tool_calls' in message && Array.isArray(message.tool_calls)
         ? cloneLlmToolCalls(message.tool_calls)
         : undefined;
+  const providerState =
+    'providerState' in message && typeof message.providerState === 'object' && message.providerState !== null
+      ? cloneLlmProviderState(message.providerState)
+      : 'provider_state' in message
+          && typeof message.provider_state === 'object'
+          && message.provider_state !== null
+        ? cloneLlmProviderState(message.provider_state as JsonObject)
+        : undefined;
 
   if (Array.isArray(message.content)) {
     return {
@@ -175,6 +202,7 @@ export function normalizeStoredLlmMessage(
       content: cloneLlmMessageContent(message.content),
       ...(toolCallId !== undefined ? { toolCallId } : {}),
       ...(toolCalls !== undefined ? { toolCalls } : {}),
+      ...(providerState !== undefined ? { providerState } : {}),
     };
   }
 
@@ -186,6 +214,7 @@ export function normalizeStoredLlmMessage(
     ),
     ...(toolCallId !== undefined ? { toolCallId } : {}),
     ...(toolCalls !== undefined ? { toolCalls } : {}),
+    ...(providerState !== undefined ? { providerState } : {}),
   };
 }
 
