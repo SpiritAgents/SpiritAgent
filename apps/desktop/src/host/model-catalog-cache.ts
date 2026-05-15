@@ -5,7 +5,13 @@ import path from 'node:path';
 
 import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal';
 
-import type { DesktopModelProvider, DesktopTransportKind } from '../types.js';
+import type {
+  DesktopModelCapability,
+  DesktopModelProvider,
+  DesktopModelReasoningEffort,
+  DesktopTransportKind,
+  PreviewModelCatalogEntry,
+} from '../types.js';
 
 import { spiritAgentDataDir } from './storage.js';
 
@@ -50,6 +56,7 @@ export interface ModelCatalogCacheEntry {
   apiBase: string;
   fetchedAtUnixMs: number;
   modelIds: string[];
+  modelCatalog?: PreviewModelCatalogEntry[];
   /** 写入时 API Key 的指纹；缺省为旧版缓存条目。 */
   apiKeyFingerprint?: string;
 }
@@ -67,6 +74,7 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   const obj = parsed as Record<string, unknown>;
   const fetchedAt = obj.fetchedAtUnixMs;
   const modelIds = obj.modelIds;
+  const modelCatalog = normalizePreviewModelCatalog(obj.modelCatalog);
   const base = obj.apiBase;
   if (typeof fetchedAt !== 'number' || !Array.isArray(modelIds)) {
     return undefined;
@@ -90,6 +98,7 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
     apiBase: base.trim(),
     fetchedAtUnixMs: fetchedAt,
     modelIds: ids,
+    ...(modelCatalog !== undefined ? { modelCatalog } : {}),
     ...(provider !== undefined ? { provider } : {}),
     ...(transportKind !== undefined ? { transportKind } : {}),
     ...(apiKeyFingerprint !== undefined ? { apiKeyFingerprint } : {}),
@@ -142,6 +151,7 @@ export async function writeModelCatalogCache(
   apiBase: string,
   modelIds: string[],
   apiKey: string,
+  modelCatalog?: PreviewModelCatalogEntry[],
   provider?: DesktopModelProvider,
   transportKind?: DesktopTransportKind,
 ): Promise<void> {
@@ -152,6 +162,7 @@ export async function writeModelCatalogCache(
     apiBase: normalized,
     fetchedAtUnixMs: Date.now(),
     modelIds: [...modelIds],
+    ...(modelCatalog !== undefined ? { modelCatalog: clonePreviewModelCatalog(modelCatalog) } : {}),
     apiKeyFingerprint: modelCatalogApiKeyFingerprint(apiKey),
     ...(provider ? { provider } : {}),
     ...(transportKind ? { transportKind } : {}),
@@ -171,4 +182,86 @@ export function isModelCatalogCacheFresh(
     return false;
   }
   return nowMs - entry.fetchedAtUnixMs < MODEL_CATALOG_CACHE_TTL_MS;
+}
+
+function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const normalized: PreviewModelCatalogEntry[] = [];
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) {
+      continue;
+    }
+    const record = item as Record<string, unknown>;
+    const id = typeof record.id === 'string' && record.id.trim().length > 0 ? record.id.trim() : undefined;
+    if (!id) {
+      continue;
+    }
+    const capabilities = normalizeCachedCapabilities(record.capabilities);
+    const supportedReasoningEfforts = normalizeCachedSupportedReasoningEfforts(record.supportedReasoningEfforts);
+    normalized.push({
+      id,
+      ...(capabilities !== undefined ? { capabilities } : {}),
+      ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
+    });
+  }
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeCachedCapabilities(value: unknown): DesktopModelCapability[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const allowed = new Set<DesktopModelCapability>(['chat', 'vision', 'imageGeneration']);
+  const seen = new Set<DesktopModelCapability>();
+  const normalized: DesktopModelCapability[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string' || !allowed.has(item as DesktopModelCapability)) {
+      continue;
+    }
+    const capability = item as DesktopModelCapability;
+    if (seen.has(capability)) {
+      continue;
+    }
+    seen.add(capability);
+    normalized.push(capability);
+  }
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeCachedSupportedReasoningEfforts(
+  value: unknown,
+): DesktopModelReasoningEffort[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const seen = new Set<string>();
+  const normalized: DesktopModelReasoningEffort[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') {
+      continue;
+    }
+    const effort = item.trim().toLowerCase();
+    if (!effort || seen.has(effort)) {
+      continue;
+    }
+    seen.add(effort);
+    normalized.push(effort);
+  }
+  return normalized;
+}
+
+function clonePreviewModelCatalog(
+  entries: readonly PreviewModelCatalogEntry[],
+): PreviewModelCatalogEntry[] {
+  return entries.map((entry) => ({
+    id: entry.id,
+    ...(entry.capabilities ? { capabilities: [...entry.capabilities] } : {}),
+    ...(entry.supportedReasoningEfforts !== undefined
+      ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }
+      : {}),
+  }));
 }

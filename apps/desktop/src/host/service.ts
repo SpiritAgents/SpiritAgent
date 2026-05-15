@@ -46,7 +46,7 @@ import {
   createHostDreamStore,
   localFileAttachmentFromPath,
   listWorkspaceFileReferenceSuggestions as listWorkspaceFileReferenceSuggestionsFromHostInternal,
-  listProviderModelIds,
+  listProviderModels,
   parseModelProviderId,
   parsePresetModelProviderId,
   partitionModelsByProvider,
@@ -56,6 +56,7 @@ import {
   type HostExtensionMarketplaceManager,
   type HostExtensionEvent,
   type HostRecordedFileChange,
+  type ProviderListedModelEntry,
 } from '@spirit-agent/host-internal';
 
 import type {
@@ -84,9 +85,11 @@ import type {
   DesktopDreamCollectorSnapshot,
   DesktopModelCapability,
   DesktopModelProvider,
+  DesktopModelReasoningEffort,
   DesktopTransportKind,
   ModelProfileSnapshot,
   PlanSnapshot,
+  PreviewModelCatalogEntry,
   DeleteSkillRequest,
   DesktopSnapshot,
   FileRewindWarning,
@@ -553,6 +556,9 @@ class DesktopHostService {
             ...(existing.provider ? { provider: existing.provider } : {}),
             model: existing.name,
             ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
+            ...(existing.supportedReasoningEfforts !== undefined
+              ? { supportedEfforts: existing.supportedReasoningEfforts }
+              : {}),
           });
         }
       } else {
@@ -669,11 +675,17 @@ class DesktopHostService {
     const cached = await readModelCatalogCache(apiBase, apiKey, provider, transportKind);
     const now = Date.now();
     if (cached && isModelCatalogCacheFresh(cached, now, forceRefresh)) {
-      return { modelIds: cached.modelIds, fromCache: true };
+      return {
+        modelIds: cached.modelIds,
+        ...(cached.modelCatalog ? { models: cached.modelCatalog } : {}),
+        fromCache: true,
+      };
     }
-    const modelIds = await listProviderModelIds({ provider, transportKind, baseUrl: apiBase, apiKey });
-    await writeModelCatalogCache(apiBase, modelIds, apiKey, provider, transportKind);
-    return { modelIds, fromCache: false };
+    const listedModels = await listProviderModels({ provider, transportKind, baseUrl: apiBase, apiKey });
+    const modelCatalog = previewModelCatalogForProvider(provider, listedModels);
+    const modelIds = listedModels.map((entry) => entry.id);
+    await writeModelCatalogCache(apiBase, modelIds, apiKey, modelCatalog, provider, transportKind);
+    return { modelIds, ...(modelCatalog ? { models: modelCatalog } : {}), fromCache: false };
   }
 
   async addProviderModels(request: AddProviderModelsRequest): Promise<DesktopSnapshot> {
@@ -707,14 +719,18 @@ class DesktopHostService {
         name: string;
         apiBase: string;
         reasoningEffort: ModelReasoningEffort;
+        supportedReasoningEfforts?: DesktopModelReasoningEffort[];
+        capabilities?: DesktopModelCapability[];
         provider?: DesktopModelProvider;
         transportKind?: DesktopTransportKind;
       };
+      const catalogEntries = previewCatalogMapForAddProviderRequest(request, provider);
       const toAdd: NewProfile[] = [];
       for (const name of uniqueIds) {
         if (state.config.models.some((model) => model.name === name)) {
           continue;
         }
+        const catalogEntry = catalogEntries.get(name);
         const profile: NewProfile = {
           name,
           apiBase,
@@ -723,8 +739,17 @@ class DesktopHostService {
               ? { provider: reasoningProviderForTransport(provider, transportKind) }
               : {}),
             model: name,
+            ...(catalogEntry?.supportedReasoningEfforts !== undefined
+              ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
+              : {}),
           }),
         };
+        if (catalogEntry?.supportedReasoningEfforts !== undefined) {
+          profile.supportedReasoningEfforts = catalogEntry.supportedReasoningEfforts;
+        }
+        if (catalogEntry?.capabilities) {
+          profile.capabilities = catalogEntry.capabilities;
+        }
         if (provider !== undefined) {
           profile.provider = provider;
           if (transportKind === 'anthropic') {
@@ -798,6 +823,7 @@ class DesktopHostService {
         name: string;
         apiBase: string;
         reasoningEffort: ModelReasoningEffort;
+        supportedReasoningEfforts?: DesktopModelReasoningEffort[];
         provider?: DesktopModelProvider;
         transportKind?: DesktopTransportKind;
         capabilities?: DesktopModelCapability[];
@@ -3433,7 +3459,7 @@ function buildPrimaryTransportConfig(input: {
   workspaceRoot: string;
   profile?: Pick<
     ModelProfileSnapshot,
-    'provider' | 'transportKind' | 'capabilities' | 'reasoningEffort'
+    'provider' | 'transportKind' | 'capabilities' | 'reasoningEffort' | 'supportedReasoningEfforts'
   >;
 }): LlmTransportConfig {
   const transportKind = resolveDesktopTransportKind(input.profile);
@@ -3443,6 +3469,9 @@ function buildPrimaryTransportConfig(input: {
       {
         ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
         ...(input.profile?.transportKind ? { transportKind: input.profile.transportKind } : {}),
+        ...(input.profile?.supportedReasoningEfforts !== undefined
+          ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+          : {}),
         model: input.model,
       },
     );
@@ -3465,6 +3494,9 @@ function buildPrimaryTransportConfig(input: {
     {
       ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
       ...(input.profile?.transportKind ? { transportKind: input.profile.transportKind } : {}),
+      ...(input.profile?.supportedReasoningEfforts !== undefined
+        ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+        : {}),
       model: input.model,
     },
   );
@@ -3483,5 +3515,67 @@ function buildPrimaryTransportConfig(input: {
 
 function supportsImageGeneration(model: { capabilities?: readonly DesktopModelCapability[] }): boolean {
   return model.capabilities?.includes('imageGeneration') === true;
+}
+
+function previewModelCatalogForProvider(
+  provider: DesktopModelProvider | undefined,
+  listedModels: readonly ProviderListedModelEntry[],
+): PreviewModelCatalogEntry[] | undefined {
+  if (provider !== 'anthropic') {
+    return undefined;
+  }
+
+  return listedModels.map((entry) => ({
+    id: entry.id,
+    capabilities: entry.supportsVision === true ? ['chat', 'vision'] : ['chat'],
+    ...(entry.supportedReasoningEfforts !== undefined
+      ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
+      : {}),
+  }));
+}
+
+function previewCatalogMapForAddProviderRequest(
+  request: AddProviderModelsRequest,
+  provider: DesktopModelProvider | undefined,
+): Map<string, PreviewModelCatalogEntry> {
+  if (provider !== 'anthropic' || !Array.isArray(request.modelCatalog)) {
+    return new Map();
+  }
+
+  const normalized: Array<[string, PreviewModelCatalogEntry]> = [];
+  for (const entry of request.modelCatalog) {
+    const id = entry.id.trim();
+    if (!id) {
+      continue;
+    }
+    normalized.push([
+      id,
+      {
+        id,
+        ...(entry.capabilities ? { capabilities: entry.capabilities } : {}),
+        ...(entry.supportedReasoningEfforts !== undefined
+          ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
+          : {}),
+      },
+    ]);
+  }
+
+  return new Map(normalized);
+}
+
+function normalizePreviewSupportedReasoningEfforts(
+  values: readonly DesktopModelReasoningEffort[],
+): DesktopModelReasoningEffort[] {
+  const seen = new Set<string>();
+  const normalized: DesktopModelReasoningEffort[] = [];
+  for (const value of values) {
+    const effort = value.trim().toLowerCase();
+    if (!effort || effort === 'default' || seen.has(effort)) {
+      continue;
+    }
+    seen.add(effort);
+    normalized.push(effort);
+  }
+  return normalized;
 }
 

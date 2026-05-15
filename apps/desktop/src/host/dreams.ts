@@ -699,6 +699,9 @@ function buildDreamCollectorTransportConfig(input: {
       {
         ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
         ...(input.profile?.transportKind ? { transportKind: input.profile.transportKind } : {}),
+        ...(input.profile?.supportedReasoningEfforts !== undefined
+          ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+          : {}),
         model: input.model,
       },
     );
@@ -723,6 +726,9 @@ function buildDreamCollectorTransportConfig(input: {
     {
       ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
       ...(input.profile?.transportKind ? { transportKind: input.profile.transportKind } : {}),
+      ...(input.profile?.supportedReasoningEfforts !== undefined
+        ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+        : {}),
       model: input.model,
     },
   );

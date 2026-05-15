@@ -20,7 +20,7 @@ export type DeepSeekV4ReasoningEffort = 'default' | 'high' | 'max';
 
 export type KimiReasoningEffort = 'default' | 'minimal' | 'low' | 'medium' | 'high';
 
-export type AnthropicReasoningEffort = 'default' | 'low' | 'medium' | 'high';
+export type AnthropicReasoningEffort = 'default' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface ModelReasoningEffortOption<T extends string = string> {
   value: T;
@@ -31,6 +31,7 @@ export interface ModelReasoningEffortContext {
   provider?: ModelReasoningProvider;
   model?: string;
   transportKind?: ModelReasoningTransportKind;
+  supportedEfforts?: readonly ModelReasoningEffort[];
 }
 
 export const DEFAULT_MODEL_REASONING_EFFORT: OpenAiCompatibleReasoningEffort = 'medium';
@@ -71,6 +72,8 @@ export const ANTHROPIC_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
+  { value: 'xhigh', label: 'Xhigh' },
+  { value: 'max', label: 'Max' },
 ];
 
 const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(['deepseek-v4-pro', 'deepseek-v4-flash']);
@@ -149,6 +152,9 @@ export function modelReasoningEffortOptions(
   }
 
   if (isAnthropicReasoningEffortModel(context)) {
+    if (context?.supportedEfforts !== undefined) {
+      return anthropicReasoningEffortOptionsForSupportedEfforts(context.supportedEfforts);
+    }
     return ANTHROPIC_REASONING_EFFORT_OPTIONS;
   }
 
@@ -200,6 +206,8 @@ export function resolveAnthropicTransportReasoningEffortForContext(
     case 'low':
     case 'medium':
     case 'high':
+    case 'xhigh':
+    case 'max':
       return normalized;
     default:
       return undefined;
@@ -275,17 +283,13 @@ function resolveCompatibleModelReasoningEffort(
   }
 
   if (isAnthropicReasoningEffortModel(context)) {
+    const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     switch (normalized) {
       case 'none':
       case 'minimal':
         return 'default';
-      case 'xhigh':
-      case 'max':
-        return 'high';
       default:
-        return ANTHROPIC_REASONING_EFFORT_VALUES.has(normalized)
-          ? normalized
-          : 'default';
+        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
     }
   }
 
@@ -317,4 +321,45 @@ function dedupeReasoningEffortOptions(
   }
 
   return deduped;
+}
+
+function anthropicReasoningEffortValueForContext(
+  normalized: ModelReasoningEffort,
+  supportedEfforts?: ReadonlySet<string>,
+): ModelReasoningEffort | undefined {
+  if (!ANTHROPIC_REASONING_EFFORT_VALUES.has(normalized)) {
+    return undefined;
+  }
+  if (!supportedEfforts) {
+    return normalized;
+  }
+  return normalized === 'default' || supportedEfforts.has(normalized)
+    ? normalized
+    : undefined;
+}
+
+function anthropicReasoningEffortOptionsForSupportedEfforts(
+  supportedEfforts: readonly ModelReasoningEffort[],
+): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
+  const supported = normalizeSupportedReasoningEfforts(supportedEfforts) ?? new Set<string>();
+  return ANTHROPIC_REASONING_EFFORT_OPTIONS.filter(
+    (option) => option.value === 'default' || supported.has(option.value),
+  );
+}
+
+function normalizeSupportedReasoningEfforts(
+  values: readonly ModelReasoningEffort[] | undefined,
+): ReadonlySet<string> | undefined {
+  if (!values) {
+    return undefined;
+  }
+  const normalized = new Set<string>();
+  for (const value of values) {
+    const effort = normalizeModelReasoningEffort(value);
+    if (!effort || effort === 'default') {
+      continue;
+    }
+    normalized.add(effort);
+  }
+  return normalized;
 }

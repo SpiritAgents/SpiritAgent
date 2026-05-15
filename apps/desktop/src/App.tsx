@@ -858,6 +858,9 @@ function ComposerSurface({
                                     {modelReasoningEffortOptions({
                                       provider: model.provider,
                                       model: model.name,
+                                      ...(model.supportedReasoningEfforts !== undefined
+                                        ? { supportedEfforts: model.supportedReasoningEfforts }
+                                        : {}),
                                       transportKind: model.transportKind,
                                     }).map((option) => (
                                       <DropdownMenuItem

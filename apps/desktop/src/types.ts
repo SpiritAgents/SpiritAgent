@@ -58,6 +58,12 @@ export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
 export type DesktopModelCapability = 'chat' | 'vision' | 'imageGeneration';
 
+export interface PreviewModelCatalogEntry {
+  id: string;
+  capabilities?: DesktopModelCapability[];
+  supportedReasoningEfforts?: DesktopModelReasoningEffort[];
+}
+
 /** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */
 export interface PreviewModelsRequest {
   apiBase: string;
@@ -70,6 +76,7 @@ export interface PreviewModelsRequest {
 
 export interface PreviewModelsResponse {
   modelIds: string[];
+  models?: PreviewModelCatalogEntry[];
   fromCache: boolean;
 }
 
@@ -78,6 +85,7 @@ export interface AddProviderModelsRequest {
   apiBase: string;
   apiKey: string;
   modelIds: string[];
+  modelCatalog?: PreviewModelCatalogEntry[];
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
 }
@@ -572,6 +580,7 @@ export interface ModelProfileSnapshot {
   name: string;
   apiBase: string;
   reasoningEffort: DesktopModelReasoningEffort;
+  supportedReasoningEfforts?: DesktopModelReasoningEffort[];
   capabilities?: DesktopModelCapability[];
   /** 持久化来源；缺省表示历史自定义配置。 */
   provider?: DesktopModelProvider;
