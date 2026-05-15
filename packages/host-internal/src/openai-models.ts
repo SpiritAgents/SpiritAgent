@@ -6,6 +6,12 @@ import type { ModelProviderId } from './model-provider-presets.js';
 
 export type ProviderModelTransportKind = 'openai-compatible' | 'anthropic';
 
+export interface ProviderListedModelEntry {
+  id: string;
+  supportsVision?: boolean;
+  supportedReasoningEfforts?: string[];
+}
+
 export const OPENAI_MODELS_PATH = '/models';
 export const ANTHROPIC_MODELS_PATH = '/models';
 const ANTHROPIC_VERSION = '2023-06-01';
@@ -50,6 +56,10 @@ export function parseOpenAiModelsPayload(body: unknown): string[] {
 }
 
 export function parseAnthropicModelsPayload(body: unknown): string[] {
+  return parseAnthropicModelEntriesPayload(body).map((entry) => entry.id);
+}
+
+export function parseAnthropicModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
   }
@@ -57,17 +67,27 @@ export function parseAnthropicModelsPayload(body: unknown): string[] {
   if (!Array.isArray(raw)) {
     return [];
   }
-  const ids: string[] = [];
+  const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
     if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
       continue;
     }
-    const id = (entry as { id?: unknown }).id;
+    const record = entry as Record<string, unknown>;
+    const id = record.id;
     if (typeof id === 'string' && id.trim().length > 0) {
-      ids.push(id.trim());
+      const modelEntry: ProviderListedModelEntry = { id: id.trim() };
+      const supportsVision = anthropicModelSupportsVision(record.capabilities);
+      if (supportsVision !== undefined) {
+        modelEntry.supportsVision = supportsVision;
+      }
+      const supportedReasoningEfforts = anthropicSupportedReasoningEfforts(record.capabilities);
+      if (supportedReasoningEfforts !== undefined) {
+        modelEntry.supportedReasoningEfforts = supportedReasoningEfforts;
+      }
+      entries.push(modelEntry);
     }
   }
-  return ids;
+  return entries;
 }
 
 export interface ListOpenAiCompatibleModelIdsOptions {
@@ -152,6 +172,13 @@ export async function listOpenAiCompatibleModelIds(
 export async function listAnthropicModelIds(
   options: ListAnthropicModelIdsOptions,
 ): Promise<string[]> {
+  const entries = await listAnthropicModels(options);
+  return entries.map((entry) => entry.id);
+}
+
+export async function listAnthropicModels(
+  options: ListAnthropicModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
   const url = anthropicModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
@@ -204,16 +231,82 @@ export async function listAnthropicModelIds(
     );
   }
 
-  const ids = parseAnthropicModelsPayload(json);
-  return [...new Set(ids)].sort((a, b) => a.localeCompare(b));
+  const entries = parseAnthropicModelEntriesPayload(json);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function listProviderModels(
+  options: ListProviderModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  if (options.transportKind === 'anthropic' || options.provider === 'anthropic') {
+    return listAnthropicModels(options);
+  }
+
+  return (await listOpenAiCompatibleModelIds(options)).map((id) => ({ id }));
 }
 
 export async function listProviderModelIds(
   options: ListProviderModelIdsOptions,
 ): Promise<string[]> {
-  if (options.transportKind === 'anthropic' || options.provider === 'anthropic') {
-    return listAnthropicModelIds(options);
+  return (await listProviderModels(options)).map((entry) => entry.id);
+}
+
+function anthropicModelSupportsVision(value: unknown): boolean | undefined {
+  const capabilities = asRecord(value);
+  if (!capabilities) {
+    return undefined;
+  }
+  return capabilitySupported(capabilities.image_input);
+}
+
+function anthropicSupportedReasoningEfforts(value: unknown): string[] | undefined {
+  const capabilities = asRecord(value);
+  if (!capabilities) {
+    return undefined;
+  }
+  const effort = asRecord(capabilities.effort);
+  if (!effort) {
+    return undefined;
   }
 
-  return listOpenAiCompatibleModelIds(options);
+  if (capabilitySupported(effort) !== true) {
+    return [];
+  }
+
+  return ANTHROPIC_REASONING_LEVELS.filter((level) => capabilitySupported(effort[level]) === true);
 }
+
+function capabilitySupported(value: unknown): boolean | undefined {
+  const record = asRecord(value);
+  if (!record || typeof record.supported !== 'boolean') {
+    return undefined;
+  }
+  return record.supported;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined;
+}
+
+function dedupeProviderListedModelEntries(
+  entries: readonly ProviderListedModelEntry[],
+): ProviderListedModelEntry[] {
+  const seen = new Set<string>();
+  const deduped: ProviderListedModelEntry[] = [];
+  for (const entry of entries) {
+    if (seen.has(entry.id)) {
+      continue;
+    }
+    seen.add(entry.id);
+    deduped.push({
+      id: entry.id,
+      ...(entry.supportsVision !== undefined ? { supportsVision: entry.supportsVision } : {}),
+      ...(entry.supportedReasoningEfforts !== undefined
+        ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }
+        : {}),
+    });
+  }
+  return deduped;
+}
+
+const ANTHROPIC_REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;

@@ -39,6 +39,25 @@ test('anthropic models normalize max to high transport effort', () => {
       provider: 'anthropic',
       transportKind: 'anthropic',
     }),
-    'high',
+    'max',
+  );
+});
+
+test('anthropic supported efforts restrict unavailable levels', () => {
+  assert.equal(
+    resolveAnthropicTransportReasoningEffortForContext('xhigh', {
+      provider: 'anthropic',
+      transportKind: 'anthropic',
+      supportedEfforts: ['low', 'medium', 'high'],
+    }),
+    undefined,
+  );
+  assert.equal(
+    resolveAnthropicTransportReasoningEffortForContext('xhigh', {
+      provider: 'anthropic',
+      transportKind: 'anthropic',
+      supportedEfforts: ['low', 'medium', 'high', 'xhigh'],
+    }),
+    'xhigh',
   );
 });

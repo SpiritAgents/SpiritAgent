@@ -2085,6 +2085,7 @@ function ModelsSettingsPanel({
       apiBase: effectiveApiBase,
       apiKey: connectApiKey,
       modelIds: res.modelIds,
+      ...(res.models ? { modelCatalog: res.models } : {}),
       provider: selectedProvider,
       ...(selectedProvider === "custom" ? { transportKind: customConnectTransportKind } : {}),
     };

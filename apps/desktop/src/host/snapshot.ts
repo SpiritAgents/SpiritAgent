@@ -63,6 +63,9 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
         name: model.name,
         apiBase: model.apiBase,
         reasoningEffort: model.reasoningEffort,
+        ...(model.supportedReasoningEfforts !== undefined
+          ? { supportedReasoningEfforts: [...model.supportedReasoningEfforts] }
+          : {}),
         ...(model.capabilities ? { capabilities: [...model.capabilities] } : {}),
         ...(model.provider ? { provider: model.provider } : {}),
         ...(model.transportKind ? { transportKind: model.transportKind } : {}),
