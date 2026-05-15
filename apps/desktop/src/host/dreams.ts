@@ -8,6 +8,7 @@ import type {
   LlmPlanMetadata,
   LlmToolAgentState,
   LlmTransportConfig,
+  OpenAiTransportConfig,
 } from '@spirit-agent/agent-core';
 import {
   llmMessageTextContent,
@@ -17,6 +18,7 @@ import {
   createHostDreamStore,
   DREAM_RETENTION_MS as HOST_DREAM_RETENTION_MS,
   dreamLogsDirPath,
+  resolveModelReasoningEffortForContext,
   type HostDreamRecord,
   type HostDreamSessionProgress,
 } from '@spirit-agent/host-internal';
@@ -707,6 +709,15 @@ function buildDreamCollectorTransportConfig(input: {
   const llmVendor = input.profile?.provider && input.profile.provider !== 'anthropic'
     ? input.profile.provider
     : undefined;
+  const normalizedReasoningEffort = input.profile?.reasoningEffort
+    ? openAiCompatibleReasoningEffortFromModelReasoningEffort(
+        resolveModelReasoningEffortForContext(input.profile.reasoningEffort, {
+          ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
+          ...(input.profile?.transportKind ? { transportKind: input.profile.transportKind } : {}),
+          model: input.model,
+        }),
+      )
+    : undefined;
   return {
     apiKey: input.apiKey,
     model: input.model,
@@ -716,8 +727,26 @@ function buildDreamCollectorTransportConfig(input: {
     ...(input.profile?.capabilities
       ? { modelCapabilities: dreamCollectorModelCapabilities(input.profile.capabilities) }
       : {}),
-    ...(input.profile?.reasoningEffort ? { reasoningEffort: input.profile.reasoningEffort } : {}),
+    ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
   };
+}
+
+function openAiCompatibleReasoningEffortFromModelReasoningEffort(
+  effort: DesktopModelReasoningEffort,
+): OpenAiTransportConfig['reasoningEffort'] | undefined {
+  switch (effort) {
+    case 'default':
+    case 'none':
+    case 'low':
+    case 'medium':
+    case 'high':
+    case 'xhigh':
+    case 'minimal':
+    case 'max':
+      return effort;
+    default:
+      return undefined;
+  }
 }
 
 function dreamCollectorModelCapabilities(

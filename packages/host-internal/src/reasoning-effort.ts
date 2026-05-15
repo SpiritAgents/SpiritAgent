@@ -1,18 +1,39 @@
 import type { ModelProviderId } from './model-provider-presets.js';
 
-export type ModelReasoningEffort = 'default' | 'minimal' | 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export type ModelReasoningEffort = string;
+
+export type ModelReasoningTransportKind = 'openai-compatible' | 'anthropic';
+
+export type OpenAiCompatibleReasoningEffort =
+  | 'default'
+  | 'none'
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'xhigh';
+
+export type DeepSeekV4ReasoningEffort = 'default' | 'high' | 'max';
+
+export type KimiReasoningEffort = 'default' | 'minimal' | 'low' | 'medium' | 'high';
+
+export type AnthropicReasoningEffort = 'default' | 'low' | 'medium' | 'high';
+
+export interface ModelReasoningEffortOption<T extends string = string> {
+  value: T;
+  label: string;
+}
 
 export interface ModelReasoningEffortContext {
   provider?: ModelProviderId;
   model?: string;
+  transportKind?: ModelReasoningTransportKind;
 }
 
-export const DEFAULT_MODEL_REASONING_EFFORT: ModelReasoningEffort = 'medium';
+export const DEFAULT_MODEL_REASONING_EFFORT: OpenAiCompatibleReasoningEffort = 'medium';
 
-export const MODEL_REASONING_EFFORT_OPTIONS: Array<{
-  value: ModelReasoningEffort;
-  label: string;
-}> = [
+export const OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<OpenAiCompatibleReasoningEffort>
+> = [
   { value: 'default', label: 'Default' },
   { value: 'none', label: 'None' },
   { value: 'low', label: 'Low' },
@@ -21,30 +42,17 @@ export const MODEL_REASONING_EFFORT_OPTIONS: Array<{
   { value: 'xhigh', label: 'Xhigh' },
 ];
 
-const MODEL_REASONING_EFFORT_LABELS: Record<ModelReasoningEffort, string> = {
-  default: 'Default',
-  minimal: 'Minimal',
-  none: 'None',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  xhigh: 'Xhigh',
-  max: 'Max',
-};
-
-const DEEPSEEK_V4_REASONING_EFFORT_OPTIONS: Array<{
-  value: ModelReasoningEffort;
-  label: string;
-}> = [
+export const DEEPSEEK_V4_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<DeepSeekV4ReasoningEffort>
+> = [
   { value: 'default', label: 'Default' },
   { value: 'high', label: 'High' },
   { value: 'max', label: 'Max' },
 ];
 
-const KIMI_REASONING_EFFORT_OPTIONS: Array<{
-  value: ModelReasoningEffort;
-  label: string;
-}> = [
+export const KIMI_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<KimiReasoningEffort>
+> = [
   { value: 'default', label: 'Default' },
   { value: 'minimal', label: 'Minimal' },
   { value: 'low', label: 'Low' },
@@ -52,10 +60,9 @@ const KIMI_REASONING_EFFORT_OPTIONS: Array<{
   { value: 'high', label: 'High' },
 ];
 
-const ANTHROPIC_REASONING_EFFORT_OPTIONS: Array<{
-  value: ModelReasoningEffort;
-  label: string;
-}> = [
+export const ANTHROPIC_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<AnthropicReasoningEffort>
+> = [
   { value: 'default', label: 'Default' },
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
@@ -64,8 +71,31 @@ const ANTHROPIC_REASONING_EFFORT_OPTIONS: Array<{
 
 const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(['deepseek-v4-pro', 'deepseek-v4-flash']);
 
-const MODEL_REASONING_EFFORT_SET = new Set<ModelReasoningEffort>(
-  Object.keys(MODEL_REASONING_EFFORT_LABELS) as ModelReasoningEffort[],
+const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
+  ...OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS,
+  ...DEEPSEEK_V4_REASONING_EFFORT_OPTIONS,
+  ...KIMI_REASONING_EFFORT_OPTIONS,
+  ...ANTHROPIC_REASONING_EFFORT_OPTIONS,
+]);
+
+const ALL_REASONING_EFFORT_VALUES = new Set<string>(
+  ALL_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+);
+
+const OPENAI_COMPATIBLE_REASONING_EFFORT_VALUES = new Set<string>(
+  OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+);
+
+const DEEPSEEK_V4_REASONING_EFFORT_VALUES = new Set<string>(
+  DEEPSEEK_V4_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+);
+
+const KIMI_REASONING_EFFORT_VALUES = new Set<string>(
+  KIMI_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+);
+
+const ANTHROPIC_REASONING_EFFORT_VALUES = new Set<string>(
+  ANTHROPIC_REASONING_EFFORT_OPTIONS.map((option) => option.value),
 );
 
 export function normalizeModelReasoningEffort(value: unknown): ModelReasoningEffort | undefined {
@@ -73,8 +103,8 @@ export function normalizeModelReasoningEffort(value: unknown): ModelReasoningEff
     return undefined;
   }
   const trimmed = value.trim().toLowerCase();
-  return MODEL_REASONING_EFFORT_SET.has(trimmed as ModelReasoningEffort)
-    ? (trimmed as ModelReasoningEffort)
+  return ALL_REASONING_EFFORT_VALUES.has(trimmed)
+    ? trimmed
     : undefined;
 }
 
@@ -105,14 +135,20 @@ export function defaultModelReasoningEffort(
 
 export function modelReasoningEffortOptions(
   context?: ModelReasoningEffortContext,
-): Array<{ value: ModelReasoningEffort; label: string }> {
-  return isDeepSeekV4ReasoningEffortModel(context)
-    ? DEEPSEEK_V4_REASONING_EFFORT_OPTIONS
-    : isKimiReasoningEffortModel(context)
-      ? KIMI_REASONING_EFFORT_OPTIONS
-      : isAnthropicReasoningEffortModel(context)
-        ? ANTHROPIC_REASONING_EFFORT_OPTIONS
-    : MODEL_REASONING_EFFORT_OPTIONS;
+): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
+  if (isDeepSeekV4ReasoningEffortModel(context)) {
+    return DEEPSEEK_V4_REASONING_EFFORT_OPTIONS;
+  }
+
+  if (isKimiReasoningEffortModel(context)) {
+    return KIMI_REASONING_EFFORT_OPTIONS;
+  }
+
+  if (isAnthropicReasoningEffortModel(context)) {
+    return ANTHROPIC_REASONING_EFFORT_OPTIONS;
+  }
+
+  return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
 }
 
 export function resolveModelReasoningEffortForContext(
@@ -123,7 +159,7 @@ export function resolveModelReasoningEffortForContext(
 }
 
 export function modelReasoningEffortLabel(value: ModelReasoningEffort): string {
-  return MODEL_REASONING_EFFORT_LABELS[value] ?? 'Medium';
+  return ALL_REASONING_EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? 'Medium';
 }
 
 export function isDeepSeekV4ReasoningEffortModel(
@@ -142,7 +178,7 @@ export function isKimiReasoningEffortModel(
 export function isAnthropicReasoningEffortModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
-  return context?.provider === 'anthropic';
+  return context?.transportKind === 'anthropic' || context?.provider === 'anthropic';
 }
 
 function normalizeModelId(value: unknown): string {
@@ -165,9 +201,14 @@ function resolveCompatibleModelReasoningEffort(
       case 'max':
         return 'max';
       case 'none':
+      case 'minimal':
         return 'default';
       case 'default':
         return 'default';
+      default:
+        return DEEPSEEK_V4_REASONING_EFFORT_VALUES.has(normalized)
+          ? normalized
+          : 'default';
     }
   }
 
@@ -176,9 +217,12 @@ function resolveCompatibleModelReasoningEffort(
       case 'none':
         return 'default';
       case 'xhigh':
+      case 'max':
         return 'high';
       default:
-        return normalized;
+        return KIMI_REASONING_EFFORT_VALUES.has(normalized)
+          ? normalized
+          : 'default';
     }
   }
 
@@ -191,13 +235,38 @@ function resolveCompatibleModelReasoningEffort(
       case 'max':
         return 'high';
       default:
-        return normalized;
+        return ANTHROPIC_REASONING_EFFORT_VALUES.has(normalized)
+          ? normalized
+          : 'default';
     }
+  }
+
+  if (normalized === 'minimal') {
+    return 'default';
   }
 
   if (normalized === 'max') {
     return 'xhigh';
   }
 
-  return normalized;
+  return OPENAI_COMPATIBLE_REASONING_EFFORT_VALUES.has(normalized)
+    ? normalized
+    : DEFAULT_MODEL_REASONING_EFFORT;
+}
+
+function dedupeReasoningEffortOptions(
+  options: ReadonlyArray<ModelReasoningEffortOption<string>>,
+): ModelReasoningEffortOption<string>[] {
+  const seen = new Set<string>();
+  const deduped: ModelReasoningEffortOption<string>[] = [];
+
+  for (const option of options) {
+    if (seen.has(option.value)) {
+      continue;
+    }
+    seen.add(option.value);
+    deduped.push(option);
+  }
+
+  return deduped;
 }

@@ -152,13 +152,18 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             } else {
                 let provider = parse_model_provider(provider)?;
                 let transport_kind = parse_model_transport_kind(transport_kind, provider)?;
+                let reasoning_effort = parse_model_reasoning_effort(
+                    &name,
+                    reasoning_effort,
+                    provider,
+                    transport_kind,
+                )?;
                 let api_base = api_base.unwrap_or_else(|| match transport_kind {
                     ModelTransportKind::Anthropic => {
                         model_add_default_custom_api_base(ModelTransportKind::Anthropic)
                     }
                     ModelTransportKind::OpenAiCompatible => DEFAULT_API_BASE.to_string(),
                 });
-                let reasoning_effort = normalize_choice_arg(reasoning_effort);
                 let capabilities = normalize_model_capabilities(capabilities);
                 let key_value = match key {
                     Some(v) => v,
@@ -374,6 +379,39 @@ fn parse_model_transport_kind(
     }
 }
 
+fn parse_model_reasoning_effort(
+    model_name: &str,
+    value: Option<String>,
+    provider: Option<ModelProvider>,
+    transport_kind: ModelTransportKind,
+) -> Result<Option<String>> {
+    let normalized = match normalize_choice_arg(value) {
+        Some(reasoning_effort) => reasoning_effort.to_ascii_lowercase(),
+        None => return Ok(None),
+    };
+
+    let allowed: &[&str] = match transport_kind {
+        ModelTransportKind::Anthropic => &["default", "low", "medium", "high"][..],
+        ModelTransportKind::OpenAiCompatible => match provider {
+            Some(ModelProvider::Deepseek) if is_deepseek_v4_reasoning_model(model_name) => {
+                &["default", "high", "max"]
+            }
+            Some(ModelProvider::Kimi) => &["default", "minimal", "low", "medium", "high"],
+            _ => &["default", "none", "low", "medium", "high", "xhigh"],
+        },
+    };
+
+    if allowed.iter().any(|candidate| *candidate == normalized) {
+        return Ok(Some(normalized));
+    }
+
+    let expected = allowed.join("|");
+    Err(anyhow!(
+        "当前模型只支持 reasoning-effort={expected}，收到: {}",
+        normalized
+    ))
+}
+
 fn normalize_choice_arg(value: Option<String>) -> Option<String> {
     let trimmed = value?.trim().to_string();
     if trimmed.is_empty() {
@@ -381,6 +419,11 @@ fn normalize_choice_arg(value: Option<String>) -> Option<String> {
     } else {
         Some(trimmed)
     }
+}
+
+fn is_deepseek_v4_reasoning_model(model_name: &str) -> bool {
+    let normalized = model_name.trim().to_ascii_lowercase();
+    normalized == "deepseek-v4-pro" || normalized == "deepseek-v4-flash"
 }
 
 fn format_model_provider(provider: Option<ModelProvider>) -> &'static str {
