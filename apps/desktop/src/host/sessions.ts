@@ -38,6 +38,7 @@ export interface RestoredSessionState {
   archiveHistory: ChatArchive['llmHistory'];
   archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
   rewind: StoredDesktopRewindMetadata;
+  loopEnabled: boolean;
 }
 
 export function isEphemeralCommitSessionPath(filePath: string): boolean {
@@ -105,6 +106,7 @@ export function restoreEphemeralSessionState(record: EphemeralSessionRecord): Re
     archiveHistory: cloneArchiveHistory(record.llmHistory),
     archiveSubagentSessions: [],
     rewind: createDesktopRewindMetadata(),
+    loopEnabled: false,
   };
 }
 
@@ -128,6 +130,7 @@ export function restoreStoredSessionState(input: {
     archiveHistory: cloneArchiveHistory(input.loaded.llmHistory),
     archiveSubagentSessions: cloneSubagentSessions(input.loaded.subagentSessions ?? []),
     rewind: input.loaded.rewind ?? createDesktopRewindMetadata(),
+    loopEnabled: input.loaded.loopEnabled === true,
   };
 }
 
@@ -140,9 +143,11 @@ export function buildStoredDesktopSession(input: {
   desktopMessages: ConversationMessageSnapshot[];
   desktopMessageTimeline?: DesktopTimelineTurnSnapshot[];
   rewind: StoredDesktopRewindMetadata;
+  loopEnabled: boolean;
 }): StoredDesktopSession {
   return {
     ...input.archive,
+    loopEnabled: input.loopEnabled,
     savedAtUnixMs: input.savedAtUnixMs ?? Date.now(),
     sessionDisplayName: input.sessionDisplayName,
     workspaceRoot: input.workspaceRoot,
