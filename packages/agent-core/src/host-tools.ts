@@ -22,6 +22,20 @@ export function buildBuiltinHostToolDefinitions(
   environment: BuiltinHostToolDefinitionEnvironment,
 ): JsonValue[] {
   return [
+    functionTool(
+      'finish_task',
+      'Mark the current user task as fully complete. When Loop is enabled, ordinary assistant replies do not stop the loop; call this tool only when the task is done and no further work is needed.',
+      {
+        type: 'object',
+        properties: {
+          summary: {
+            type: 'string',
+            description: 'Optional short completion summary for the user.',
+          },
+        },
+        additionalProperties: false,
+      },
+    ),
     functionTool('run_shell_command', buildShellToolDescription(environment.shellDisplayName), {
       type: 'object',
       properties: {

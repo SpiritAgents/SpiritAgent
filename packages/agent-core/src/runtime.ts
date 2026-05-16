@@ -237,6 +237,7 @@ export class AgentRuntime<
   private pendingLastEventAtStore: number | undefined;
   private streamChunkCounterStore: number;
   private thinkingSpinnerIndexStore: number;
+  private loopEnabledStore: boolean;
   private readonly runtimeDepthStore: number;
   private childSessionCounterStore: number;
 
@@ -257,6 +258,7 @@ export class AgentRuntime<
     this.childSessionsStore = [];
     this.streamChunkCounterStore = 0;
     this.thinkingSpinnerIndexStore = 0;
+    this.loopEnabledStore = false;
     this.runtimeDepthStore = runtimeDepth;
     this.childSessionCounterStore = 0;
   }
@@ -271,6 +273,14 @@ export class AgentRuntime<
 
   childSessions(): readonly RuntimeSubagentSessionSummary[] {
     return this.childSessionsStore.map((entry) => ({ ...entry.summary }));
+  }
+
+  loopEnabled(): boolean {
+    return this.loopEnabledStore;
+  }
+
+  setLoopEnabled(enabled: boolean): void {
+    this.loopEnabledStore = enabled;
   }
 
   childSessionArchives(): readonly RuntimeSubagentSessionArchiveEntry[] {
@@ -583,6 +593,7 @@ export class AgentRuntime<
 
   replaceFromArchive(archive: ChatArchive): void {
     this.historyStore = archive.llmHistory.map((message) => normalizeStoredLlmMessage(message));
+    this.loopEnabledStore = archive.loopEnabled === true;
     this.requestTraceStore = [];
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
@@ -640,9 +651,10 @@ export class AgentRuntime<
             : {}),
           ...(message.providerState !== undefined
             ? { providerState: cloneLlmProviderState(message.providerState) }
-            : {}),
+          : {}),
         })),
       })),
+      loopEnabled: this.loopEnabledStore,
     };
   }
 
@@ -1394,6 +1406,11 @@ export class AgentRuntime<
     remainingCalls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
   ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined> {
+    const finishSummary = extractFinishTaskSummary(request);
+    if (finishSummary !== undefined) {
+      return this.completeFinishTaskToolCall(state, request, toolCallId, finishSummary, turn);
+    }
+
     const imageResult = await this.tryExecuteGenerateImageTool(
       request,
       toolCallId,
@@ -1497,6 +1514,18 @@ export class AgentRuntime<
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
   ): Promise<boolean> {
+    const finishSummary = extractFinishTaskSummary(request);
+    if (finishSummary !== undefined) {
+      this.completeTurn(this.completeFinishTaskToolCall(
+        state,
+        request,
+        toolCallId,
+        finishSummary,
+        turn,
+      ));
+      return true;
+    }
+
     const imageResult = await this.tryExecuteGenerateImageTool(
       request,
       toolCallId,
@@ -1614,6 +1643,48 @@ export class AgentRuntime<
 
     this.startToolAgentRoundAsync(resumedState, pendingUserInput, turn);
     return true;
+  }
+
+  private completeFinishTaskToolCall(
+    state: State,
+    request: ToolRequest,
+    toolCallId: string,
+    summary: string,
+    turn: RuntimeTurnContext<ToolRequest>,
+  ): RuntimeTurnResult<State, ToolRequest, TrustTarget> {
+    const output = summary.trim() || 'Task marked complete.';
+    const content = createLlmMessageContentFromText(output);
+    this.historyStore.push({
+      role: 'tool',
+      toolCallId,
+      content,
+    });
+    turn.toolExecutions.push({
+      toolCallId,
+      toolName: 'finish_task',
+      request,
+      output,
+      failed: false,
+    });
+    this.emitEvent({
+      kind: 'tool-execution-finished',
+      execution: {
+        toolCallId,
+        toolName: 'finish_task',
+        request,
+        output,
+        failed: false,
+      },
+    });
+    this.pendingUserTurnStore = undefined;
+    return {
+      kind: 'completed',
+      assistantText: output,
+      state,
+      requestTrace: [...turn.requestTrace],
+      toolExecutions: [...turn.toolExecutions],
+      compactions: [...turn.compactions],
+    };
   }
 
   private appendTrace(trace: JsonValue[], turn: RuntimeTurnContext<ToolRequest>): void {
@@ -2180,6 +2251,10 @@ export class AgentRuntime<
     toolCallId: string,
     _toolName: string,
   ): Promise<EarlyInternalToolCallResult | undefined> {
+    if (extractFinishTaskSummary(request) !== undefined) {
+      return { kind: 'defer-to-formal' };
+    }
+
     const imageRequest = extractGenerateImageRequest(request);
     if (imageRequest !== undefined) {
       try {
@@ -2744,6 +2819,14 @@ function extractGenerateImageRequest<ToolRequest>(request: ToolRequest): ImageGe
     prompt,
     size: readOptionalStringField(value, 'size') ?? DEFAULT_IMAGE_GENERATION_SIZE,
   };
+}
+
+function extractFinishTaskSummary<ToolRequest>(request: ToolRequest): string | undefined {
+  if (!isJsonObject(request) || readOptionalStringField(request, 'name') !== 'finish_task') {
+    return undefined;
+  }
+
+  return readOptionalStringField(request, 'summary') ?? '';
 }
 
 function extractRunSubagentRequest<ToolRequest>(request: ToolRequest): RunSubagentRequest | undefined {

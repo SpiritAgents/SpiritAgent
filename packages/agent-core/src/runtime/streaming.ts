@@ -78,6 +78,7 @@ export interface StreamingRuntime<
     toolCallId: string,
     toolName: string,
   ): Promise<EarlyInternalToolCallResult | undefined>;
+  loopEnabled(): boolean;
 }
 
 export function handleStreamStallTimeout<
@@ -478,6 +479,11 @@ export async function handlePendingStreamEvent<
 
       const assistantText = runtime.options.extractAssistantText(round.state)?.trim();
       if (assistantText) {
+        if (runtime.loopEnabled()) {
+          clearPendingStreamingState(runtime);
+          await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, true);
+          return true;
+        }
         runtime.storeCompletedTurnResult({
           kind: 'completed',
           assistantText,
@@ -683,6 +689,10 @@ export async function handlePendingStreamingCompletion<
     });
     runtime.pendingUserTurnStore = undefined;
     clearPendingStreamingState(runtime);
+    if (runtime.loopEnabled()) {
+      await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, true);
+      return;
+    }
     runtime.storeCompletedTurnResult(completedResult);
     runtime.emitEvent({ kind: 'assistant-response-completed' });
     return;
@@ -690,6 +700,10 @@ export async function handlePendingStreamingCompletion<
 
   if (pending.streamEnded) {
     clearPendingStreamingState(runtime);
+    if (runtime.loopEnabled()) {
+      await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, true);
+      return;
+    }
     runtime.storeCompletedTurnResult(completedResult);
   }
 }
