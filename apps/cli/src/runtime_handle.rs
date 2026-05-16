@@ -208,6 +208,14 @@ impl RuntimeHandle {
         self.runtime.is_busy()
     }
 
+    pub fn loop_enabled(&self) -> bool {
+        self.runtime.loop_enabled()
+    }
+
+    pub fn set_loop_enabled(&mut self, enabled: bool) -> Result<()> {
+        self.runtime.set_loop_enabled(enabled)
+    }
+
     pub fn abort(&mut self) {
         self.runtime.abort()
     }

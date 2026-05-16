@@ -40,6 +40,7 @@ export type HostCommandName =
   | 'submitStartImplementing'
   | 'exportSessionLog'
   | 'submitUserTurn'
+  | 'setLoopEnabled'
   | 'abortConversation'
   | 'continueAssistantCompletion'
   | 'poll'

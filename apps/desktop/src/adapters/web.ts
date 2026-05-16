@@ -133,6 +133,9 @@ export function createWebHostApi(): HostApi {
     submitUserTurn(request) {
       return post<DesktopSnapshot>(baseUrl, '/api/submit', request);
     },
+    setLoopEnabled(enabled: boolean) {
+      return post<DesktopSnapshot>(baseUrl, '/api/loop', { enabled });
+    },
     abortConversation() {
       return post<DesktopSnapshot>(baseUrl, '/api/abort');
     },

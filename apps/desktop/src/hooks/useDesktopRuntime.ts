@@ -1296,6 +1296,23 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, refreshSessions]);
 
+  const setLoopEnabled = useCallback(async (enabled: boolean): Promise<boolean> => {
+    if (!api) {
+      return false;
+    }
+
+    try {
+      const next = await api.setLoopEnabled(enabled);
+      applySnapshot(next);
+      setRuntimeError("");
+      void refreshSessions();
+      return true;
+    } catch (error) {
+      setRuntimeError(describeError(error));
+      return false;
+    }
+  }, [api, applySnapshot, refreshSessions]);
+
   const continueAssistantCompletion = useCallback(
     async (messageId: number): Promise<boolean> => {
       if (!api) {
@@ -1574,6 +1591,7 @@ export function useDesktopRuntime() {
     deleteSkill,
     inspectMcpServer,
     abortConversation,
+    setLoopEnabled,
     continueAssistantCompletion,
     openSession,
     listWorkspaceFileReferenceSuggestions,

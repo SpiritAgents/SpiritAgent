@@ -7,7 +7,12 @@ import {
 } from '../ports.js';
 
 import { STREAM_EVENT_BUDGET_PER_POLL, STREAM_STALL_TIMEOUT_MS } from './constants.js';
-import { applyDeferredUserGuidance, cloneHistory, renderError } from './helpers.js';
+import {
+  applyDeferredUserGuidance,
+  appendLoopContinuationGuidance,
+  cloneHistory,
+  renderError,
+} from './helpers.js';
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
@@ -78,6 +83,7 @@ export interface StreamingRuntime<
     toolCallId: string,
     toolName: string,
   ): Promise<EarlyInternalToolCallResult | undefined>;
+  loopEnabled(): boolean;
 }
 
 export function handleStreamStallTimeout<
@@ -478,6 +484,16 @@ export async function handlePendingStreamEvent<
 
       const assistantText = runtime.options.extractAssistantText(round.state)?.trim();
       if (assistantText) {
+        if (runtime.loopEnabled()) {
+          clearPendingStreamingState(runtime);
+          const continuationState = appendLoopContinuationGuidance(
+            runtime,
+            round.state,
+            pending.pendingUserInput,
+          );
+          await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
+          return true;
+        }
         runtime.storeCompletedTurnResult({
           kind: 'completed',
           assistantText,
@@ -683,6 +699,15 @@ export async function handlePendingStreamingCompletion<
     });
     runtime.pendingUserTurnStore = undefined;
     clearPendingStreamingState(runtime);
+    if (runtime.loopEnabled()) {
+      const continuationState = appendLoopContinuationGuidance(
+        runtime,
+        round.state,
+        pending.pendingUserInput,
+      );
+      await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
+      return;
+    }
     runtime.storeCompletedTurnResult(completedResult);
     runtime.emitEvent({ kind: 'assistant-response-completed' });
     return;
@@ -690,6 +715,15 @@ export async function handlePendingStreamingCompletion<
 
   if (pending.streamEnded) {
     clearPendingStreamingState(runtime);
+    if (runtime.loopEnabled()) {
+      const continuationState = appendLoopContinuationGuidance(
+        runtime,
+        round.state,
+        pending.pendingUserInput,
+      );
+      await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
+      return;
+    }
     runtime.storeCompletedTurnResult(completedResult);
   }
 }

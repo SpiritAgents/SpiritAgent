@@ -135,6 +135,8 @@ struct BridgeRuntimeSnapshot {
     child_sessions: Vec<BridgeSubagentSessionSummary>,
     current_pending_questions: Option<BridgePendingQuestions>,
     is_busy: bool,
+    #[serde(default)]
+    loop_enabled: bool,
     background_tool_status: Option<String>,
 }
 
@@ -152,6 +154,8 @@ struct BridgeChatArchive {
     messages: Vec<BridgeChatMessage>,
     assistant_aux: Vec<BridgeAssistantAuxEntry>,
     llm_history: Vec<ArchivedLlmMessage>,
+    #[serde(default)]
+    loop_enabled: bool,
     #[serde(default)]
     subagent_sessions: Vec<BridgeSubagentSessionArchiveEntry>,
     #[serde(default)]
@@ -995,6 +999,7 @@ impl TsBridgeRuntime {
                 })
                 .collect(),
             llm_history: bridge_archive.llm_history,
+            loop_enabled: bridge_archive.loop_enabled,
             subagent_sessions: bridge_archive
                 .subagent_sessions
                 .into_iter()
@@ -1192,6 +1197,24 @@ impl TsBridgeRuntime {
 
     pub fn is_busy(&self) -> bool {
         self.is_busy_cache
+    }
+
+    pub fn loop_enabled(&self) -> bool {
+        self.session.loop_enabled()
+    }
+
+    pub fn set_loop_enabled(&mut self, enabled: bool) -> Result<()> {
+        if self.bridge_failed {
+            return Err(anyhow!("TS bridge 已处于失败状态。"));
+        }
+        let value = self.call_bridge(
+            "runtime.setLoopEnabled",
+            Some(json!({
+                "enabled": enabled,
+            })),
+        )?;
+        self.apply_snapshot(serde_json::from_value(value)?);
+        Ok(())
     }
 
     pub fn abort(&mut self) {
@@ -1611,6 +1634,7 @@ impl TsBridgeRuntime {
                 "enabledRules": self.enabled_rules,
                 "enabledSkillCatalog": self.enabled_skill_catalog,
                 "planMetadata": self.plan_metadata,
+                "loopEnabled": self.session.loop_enabled(),
             })),
         )?;
         self.apply_snapshot(serde_json::from_value(snapshot)?);
@@ -1646,22 +1670,23 @@ impl TsBridgeRuntime {
             &active.name,
         );
 
-        let mut transport = if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
-            serde_json::json!({
-                "transportKind": "anthropic",
-                "apiKey": api_key,
-                "model": active.name,
-                "baseUrl": api_base,
-                "workspaceRoot": self.workspace_root,
-            })
-        } else {
-            serde_json::json!({
-                "apiKey": api_key,
-                "model": active.name,
-                "baseUrl": api_base,
-                "workspaceRoot": self.workspace_root,
-            })
-        };
+        let mut transport =
+            if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
+                serde_json::json!({
+                    "transportKind": "anthropic",
+                    "apiKey": api_key,
+                    "model": active.name,
+                    "baseUrl": api_base,
+                    "workspaceRoot": self.workspace_root,
+                })
+            } else {
+                serde_json::json!({
+                    "apiKey": api_key,
+                    "model": active.name,
+                    "baseUrl": api_base,
+                    "workspaceRoot": self.workspace_root,
+                })
+            };
 
         if let Some(model_capabilities) = model_capabilities_json(active) {
             if let Some(obj) = transport.as_object_mut() {
@@ -1999,6 +2024,7 @@ impl TsBridgeRuntime {
         self.session.clear_pending_user_turn();
         self.session.clear_pending_images();
         self.session.clear_pending_mcp_resources();
+        self.session.set_loop_enabled(snapshot.loop_enabled);
         if let Some(turn) = snapshot.pending_user_turn {
             self.session.set_pending_user_turn(turn);
         }
@@ -2756,7 +2782,10 @@ fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
 
     if let Some(tool_call_id) = &message.tool_call_id {
         if let Some(object) = value.as_object_mut() {
-            object.insert("toolCallId".to_string(), Value::String(tool_call_id.clone()));
+            object.insert(
+                "toolCallId".to_string(),
+                Value::String(tool_call_id.clone()),
+            );
         }
     }
 
@@ -2814,7 +2843,9 @@ fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Kimi => "kimi",
         ModelProvider::Minimax => "minimax",
         ModelProvider::Alibaba => "alibaba",
-        ModelProvider::Anthropic => unreachable!("Anthropic 不应映射到 openai-compatible llmVendor"),
+        ModelProvider::Anthropic => {
+            unreachable!("Anthropic 不应映射到 openai-compatible llmVendor")
+        }
         ModelProvider::Custom => "custom",
     }
 }
@@ -2959,6 +2990,7 @@ mod tests {
             current_pending_questions: None,
             child_sessions: vec![],
             is_busy: true,
+            loop_enabled: false,
             background_tool_status: None,
         }
     }
@@ -2985,6 +3017,7 @@ mod tests {
             current_pending_questions: None,
             child_sessions: vec![],
             is_busy: false,
+            loop_enabled: false,
             background_tool_status: None,
         }
     }
@@ -3148,10 +3181,9 @@ mod tests {
             .expect("active model should exist");
         active.provider = Some(ModelProvider::Anthropic);
         active.reasoning_effort = Some("max".to_string());
-        active.extra.insert(
-            "transportKind".to_string(),
-            json!("anthropic"),
-        );
+        active
+            .extra
+            .insert("transportKind".to_string(), json!("anthropic"));
 
         let transport = runtime
             .resolve_transport_config_json_for(&next)
@@ -3162,10 +3194,7 @@ mod tests {
             Some("anthropic")
         );
         assert_eq!(transport.get("llmVendor"), None);
-        assert_eq!(
-            transport.get("effort").and_then(Value::as_str),
-            Some("max")
-        );
+        assert_eq!(transport.get("effort").and_then(Value::as_str), Some("max"));
         assert_eq!(transport.get("imageGeneration"), None);
     }
 
@@ -3515,6 +3544,7 @@ fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
             })
         }).collect::<Vec<_>>(),
         "llmHistory": archive.llm_history.iter().map(archived_llm_message_to_json).collect::<Vec<_>>(),
+        "loopEnabled": archive.loop_enabled,
         "subagentSessions": archive.subagent_sessions.iter().map(|entry| {
             json!({
                 "summary": {

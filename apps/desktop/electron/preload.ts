@@ -88,6 +88,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   submitUserTurn(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'submitUserTurn', request);
   },
+  setLoopEnabled(enabled: boolean) {
+    return ipcRenderer.invoke('desktop:invoke', 'setLoopEnabled', { enabled });
+  },
   abortConversation() {
     return ipcRenderer.invoke('desktop:invoke', 'abortConversation');
   },

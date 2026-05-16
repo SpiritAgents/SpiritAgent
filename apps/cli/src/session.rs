@@ -80,6 +80,7 @@ pub struct SessionModel {
     pending_user_turn: Option<String>,
     pending_image_paths: Vec<String>,
     pending_mcp_resources: Vec<PendingMcpResource>,
+    loop_enabled: bool,
 }
 
 impl SessionModel {
@@ -93,6 +94,7 @@ impl SessionModel {
         self.pending_user_turn = None;
         self.pending_image_paths.clear();
         self.pending_mcp_resources.clear();
+        self.loop_enabled = false;
     }
 
     pub fn llm_history(&self) -> &[LlmMessage] {
@@ -133,6 +135,14 @@ impl SessionModel {
 
     pub fn pending_mcp_resources(&self) -> &[PendingMcpResource] {
         &self.pending_mcp_resources
+    }
+
+    pub fn loop_enabled(&self) -> bool {
+        self.loop_enabled
+    }
+
+    pub fn set_loop_enabled(&mut self, enabled: bool) {
+        self.loop_enabled = enabled;
     }
 
     pub fn add_pending_image(&mut self, path: String) {
@@ -223,13 +233,14 @@ impl SessionModel {
                         })
                         .collect()
                 }),
-                    provider_state: message.provider_state.clone(),
+                provider_state: message.provider_state.clone(),
             })
             .collect();
         self.llm_api_trace.clear();
         self.pending_user_turn = None;
         self.pending_image_paths.clear();
         self.pending_mcp_resources.clear();
+        self.loop_enabled = archive.loop_enabled;
     }
 
     pub fn to_archive(
@@ -259,14 +270,14 @@ impl SessionModel {
                                 arguments_json: tool_call.arguments_json.clone(),
                             })
                             .collect()
-                            }))
-                            .with_provider_state(message.provider_state.clone())
+                    }))
+                    .with_provider_state(message.provider_state.clone())
                 })
                 .collect(),
+            loop_enabled: self.loop_enabled,
             subagent_sessions: Vec::new(),
             desktop_messages: None,
             rewind: None,
         }
     }
-
 }

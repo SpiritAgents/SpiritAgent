@@ -229,6 +229,7 @@ export interface RunSubagentRequest {
 }
 
 export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
+  | { name: 'finish_task'; summary?: string }
   | { name: 'run_shell_command'; command: string; reason: string }
   | { name: 'web_fetch'; url: string }
   | { name: 'list_directory_files'; path: string }
@@ -583,6 +584,14 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     const parsed = parseJsonObject(argumentsJson);
 
     switch (name) {
+      case 'finish_task':
+        {
+          const summary = optionalStringStrict(parsed, 'summary');
+          return {
+            name,
+            ...(summary ? { summary } : {}),
+          };
+        }
       case 'run_shell_command':
         return {
           name,
@@ -725,6 +734,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     request: HostToolRequest<QuestionSpec>,
   ): Promise<HostAuthorizationDecision<QuestionSpec>> {
     switch (request.name) {
+      case 'finish_task':
       case 'glob':
       case 'grep':
       case 'run_subagent':
@@ -842,6 +852,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
   async execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string> {
     switch (request.name) {
+      case 'finish_task':
+        return createHostToolTextOutput(request.summary?.trim() || 'Task marked complete.');
       case 'run_shell_command':
         return this.executeShell(request.command);
       case 'web_fetch':
@@ -1806,6 +1818,9 @@ async function savePermissions(filePath: string, store: ToolPermissionStore): Pr
 }
 
 function parseJsonObject(argumentsJson: string): HostJsonObject {
+  if (argumentsJson.trim().length === 0) {
+    return {};
+  }
   const parsed = JSON.parse(argumentsJson) as HostJsonValue;
   if (!isJsonObject(parsed)) {
     throw new Error('工具参数必须为对象。');

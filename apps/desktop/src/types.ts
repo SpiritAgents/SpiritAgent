@@ -613,6 +613,7 @@ export interface McpStatusSnapshot {
 
 export interface ConversationSnapshot {
   messages: ConversationMessageSnapshot[];
+  loopEnabled: boolean;
   pendingUserTurn?: string;
   pendingImagePaths: string[];
   pendingMcpResources: PendingMcpResource[];

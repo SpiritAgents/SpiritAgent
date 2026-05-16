@@ -65,22 +65,34 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
         MainInputMode::Agent => t!("ui.footer.mode.agent"),
         MainInputMode::Plan => t!("ui.footer.mode.plan"),
     };
+    let loop_label = if app.loop_enabled {
+        t!("ui.footer.loop.on")
+    } else {
+        t!("ui.footer.loop.off")
+    };
     let left_label = if app.rewind_picker.is_some() {
         format!(
-            "{}  |  {}  |  {}",
+            "{}  |  {}  |  {}  |  {}",
             t!("ui.footer.preview"),
             mode_label,
+            loop_label,
             t!("ui.footer.rewind_hint")
         )
     } else if app.pending_response_active && app.pending_aux_state().is_some() {
         format!(
-            "{}  |  {}  |  {}",
+            "{}  |  {}  |  {}  |  {}",
             t!("ui.footer.preview"),
             mode_label,
+            loop_label,
             t!("ui.footer.interrupt_reply_hint")
         )
     } else {
-        format!("{}  |  {}", t!("ui.footer.preview"), mode_label)
+        format!(
+            "{}  |  {}  |  {}",
+            t!("ui.footer.preview"),
+            mode_label,
+            loop_label
+        )
     };
     let right_label = app.config.active_model.as_str();
     let side_padding = if width >= 12 {

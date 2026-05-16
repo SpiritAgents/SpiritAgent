@@ -609,6 +609,7 @@ type ComposerSurfaceProps = {
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
   activeModel: string;
   planMode: boolean;
+  loopEnabled: boolean;
   canSend: boolean;
   canAbort?: boolean;
   busy: boolean;
@@ -619,6 +620,7 @@ type ComposerSurfaceProps = {
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
   onPlanModeChange(planMode: boolean): void;
+  onLoopEnabledChange(enabled: boolean): void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   onKeyDown?(event: ReactKeyboardEvent<HTMLTextAreaElement>): void;
   onSelectionChange?(selectionStart: number | null): void;
@@ -628,6 +630,7 @@ type ComposerSurfaceProps = {
   onPickLocalFile?(): void | Promise<void>;
   onInsertSkillTrigger?(): void;
   onRemoveLocalFileAttachment?(path: string): void;
+  showLoopSwitch?: boolean;
 };
 
 function ComposerSurface({
@@ -638,6 +641,7 @@ function ComposerSurface({
   catalogHints,
   activeModel,
   planMode,
+  loopEnabled,
   canSend,
   canAbort = false,
   busy,
@@ -648,6 +652,7 @@ function ComposerSurface({
   onModelSelect,
   onModelReasoningEffortSelect,
   onPlanModeChange,
+  onLoopEnabledChange,
   textareaRef,
   onKeyDown,
   onSelectionChange,
@@ -657,6 +662,7 @@ function ComposerSurface({
   onPickLocalFile,
   onInsertSkillTrigger,
   onRemoveLocalFileAttachment,
+  showLoopSwitch = true,
 }: ComposerSurfaceProps) {
   const [modelFilter, setModelFilter] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -761,6 +767,27 @@ function ComposerSurface({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {showLoopSwitch ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={loopEnabled}
+                disabled={readOnly}
+                className={cn(
+                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  loopEnabled
+                    ? "bg-primary/12 text-primary hover:bg-primary/16"
+                    : "bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                )}
+                onClick={() => onLoopEnabledChange(!loopEnabled)}
+                title={loopEnabled ? "Loop On" : "Loop Off"}
+              >
+                <span>Loop</span>
+                <span className={cn("text-[10px]", loopEnabled ? "text-primary" : "text-muted-foreground/80")}>
+                  {loopEnabled ? "On" : "Off"}
+                </span>
+              </button>
+            ) : null}
             {models.length > 0 ? (
               <DropdownMenu
                 open={modelMenuOpen}
@@ -1112,9 +1139,12 @@ function MessageCard({
             catalogHints={catalogHints}
             activeModel={activeModel}
             planMode={planMode}
+            loopEnabled={false}
             onModelSelect={onModelSelect}
             onModelReasoningEffortSelect={onModelReasoningEffortSelect}
             onPlanModeChange={onPlanModeChange}
+            onLoopEnabledChange={() => {}}
+            showLoopSwitch={false}
             canSend={rewindCanSubmit}
             busy={rewindBusy}
           />
@@ -2511,10 +2541,14 @@ export default function App() {
                     catalogHints={snapshot?.config.modelCatalogHints}
                     activeModel={runtime.settings.activeModel}
                     planMode={runtime.settings.planMode}
+                    loopEnabled={snapshot?.conversation.loopEnabled === true}
                     onModelSelect={runtime.setActiveModel}
                     onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
                     onPlanModeChange={(planMode) => {
                       void runtime.saveSettingsPatch({ planMode });
+                    }}
+                    onLoopEnabledChange={(enabled) => {
+                      void runtime.setLoopEnabled(enabled);
                     }}
                     textareaRef={composerTextareaRef}
                     onKeyDown={handleComposerSuggestionKeyDown}

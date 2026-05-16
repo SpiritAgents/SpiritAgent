@@ -16,6 +16,7 @@ import {
 } from '../ports.js';
 import {
   applyDeferredUserGuidance,
+  appendLoopContinuationGuidance,
   enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   isCompatibleContinuedToolRequest,
@@ -146,6 +147,7 @@ export interface TurnMachineRuntime<
   takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined;
   tryFallbackToTextOnlyAndBuildRetryState(error: string, pendingUserInput: string): State | undefined;
   compactHistoryImmediate(): Promise<RuntimeCompactionRecord>;
+  loopEnabled(): boolean;
   isBusy(): boolean;
   poll(): Promise<void>;
 }
@@ -494,6 +496,11 @@ export async function runTurnLoop<
       role: 'assistant',
       content: createLlmMessageContentFromText(assistantText),
     });
+    if (runtime.loopEnabled()) {
+      currentState = appendLoopContinuationGuidance(runtime, currentState, currentPendingUserInput);
+      emptyAssistantRetries = 0;
+      continue;
+    }
     runtime.pendingUserTurnStore = undefined;
 
     return {
@@ -898,6 +905,20 @@ export async function handlePendingToolAgentRoundCompletion<
     role: 'assistant',
       content: createLlmMessageContentFromText(assistantText),
   });
+  if (runtime.loopEnabled()) {
+    const continuationState = appendLoopContinuationGuidance(
+      runtime,
+      round.state,
+      pending.pendingUserInput,
+    );
+    startToolAgentRoundAsync(
+      runtime,
+      continuationState,
+      pending.pendingUserInput,
+      pending.turn,
+    );
+    return;
+  }
   runtime.pendingUserTurnStore = undefined;
   runtime.completeTurn({
     kind: 'completed',
