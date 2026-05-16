@@ -7,7 +7,12 @@ import {
 } from '../ports.js';
 
 import { STREAM_EVENT_BUDGET_PER_POLL, STREAM_STALL_TIMEOUT_MS } from './constants.js';
-import { applyDeferredUserGuidance, cloneHistory, renderError } from './helpers.js';
+import {
+  applyDeferredUserGuidance,
+  appendLoopContinuationGuidance,
+  cloneHistory,
+  renderError,
+} from './helpers.js';
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
@@ -481,7 +486,12 @@ export async function handlePendingStreamEvent<
       if (assistantText) {
         if (runtime.loopEnabled()) {
           clearPendingStreamingState(runtime);
-          await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, true);
+          const continuationState = appendLoopContinuationGuidance(
+            runtime,
+            round.state,
+            pending.pendingUserInput,
+          );
+          await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
           return true;
         }
         runtime.storeCompletedTurnResult({
@@ -690,7 +700,12 @@ export async function handlePendingStreamingCompletion<
     runtime.pendingUserTurnStore = undefined;
     clearPendingStreamingState(runtime);
     if (runtime.loopEnabled()) {
-      await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, true);
+      const continuationState = appendLoopContinuationGuidance(
+        runtime,
+        round.state,
+        pending.pendingUserInput,
+      );
+      await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
       return;
     }
     runtime.storeCompletedTurnResult(completedResult);
@@ -701,7 +716,12 @@ export async function handlePendingStreamingCompletion<
   if (pending.streamEnded) {
     clearPendingStreamingState(runtime);
     if (runtime.loopEnabled()) {
-      await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, true);
+      const continuationState = appendLoopContinuationGuidance(
+        runtime,
+        round.state,
+        pending.pendingUserInput,
+      );
+      await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
       return;
     }
     runtime.storeCompletedTurnResult(completedResult);
