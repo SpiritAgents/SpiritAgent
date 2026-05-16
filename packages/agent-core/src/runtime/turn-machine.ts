@@ -16,6 +16,7 @@ import {
 } from '../ports.js';
 import {
   applyDeferredUserGuidance,
+  appendLoopContinuationGuidance,
   enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   isCompatibleContinuedToolRequest,
@@ -496,6 +497,7 @@ export async function runTurnLoop<
       content: createLlmMessageContentFromText(assistantText),
     });
     if (runtime.loopEnabled()) {
+      currentState = appendLoopContinuationGuidance(runtime, currentState, currentPendingUserInput);
       emptyAssistantRetries = 0;
       continue;
     }
@@ -904,9 +906,14 @@ export async function handlePendingToolAgentRoundCompletion<
       content: createLlmMessageContentFromText(assistantText),
   });
   if (runtime.loopEnabled()) {
-    startToolAgentRoundAsync(
+    const continuationState = appendLoopContinuationGuidance(
       runtime,
       round.state,
+      pending.pendingUserInput,
+    );
+    startToolAgentRoundAsync(
+      runtime,
+      continuationState,
       pending.pendingUserInput,
       pending.turn,
     );

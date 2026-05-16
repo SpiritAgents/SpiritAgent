@@ -130,7 +130,10 @@ test('runTurnLoop continues ordinary final response when Loop is enabled', async
 
   assert.equal(result.kind, 'failed');
   assert.equal(runtime.roundsStarted, 2);
-  assert.deepEqual(runtime.historyStore.map((message) => message.role), ['assistant']);
+  assert.deepEqual(runtime.historyStore.map((message) => message.role), ['assistant', 'user']);
+  assert.match(runtime.historyStore[1]?.content[0]?.type === 'text' ? runtime.historyStore[1].content[0].text : '', /finish_task/);
+  assert.match(runtime.historyStore[1]?.content[0]?.type === 'text' ? runtime.historyStore[1].content[0].text : '', /Original user request:\nwork/);
+  assert.equal(runtime.pendingUserTurnStore, 'work');
 });
 
 test('AgentRuntime completes Loop when finish_task is called', async () => {
@@ -147,7 +150,7 @@ test('AgentRuntime completes Loop when finish_task is called', async () => {
   assert.equal(result.kind, 'completed');
   assert.equal(result.kind === 'completed' ? result.assistantText : '', 'all done');
   assert.equal(runtime.loopEnabled(), true);
-  assert.deepEqual(runtime.history().map((message) => message.role), ['user', 'assistant', 'assistant', 'tool']);
+  assert.deepEqual(runtime.history().map((message) => message.role), ['user', 'assistant', 'user', 'assistant', 'tool']);
 });
 
 test('AgentRuntime accepts finish_task when Loop is disabled', async () => {
@@ -225,6 +228,10 @@ function buildLoopTestRuntime(options: {
         execute: async () => ({ content: [], summaryText: '' }),
       },
       createToolAgentState: () => ({ messages: [], steps: 0 }),
+      appendUserMessage: (currentState: { messages: Array<{ role: string; content?: string }>; steps: number }, content: string) => ({
+        messages: [...currentState.messages, { role: 'user', content }],
+        steps: currentState.steps,
+      }),
       appendToolResultMessage: (currentState: { messages: Array<{ role: string; content?: string }>; steps: number }) => currentState,
       extractAssistantText: (currentState: { messages: Array<{ role: string; content?: string }> }) =>
         latestAssistantContent(currentState.messages),
@@ -343,6 +350,10 @@ function buildAgentRuntimeOptions(rounds: LoopTestRound[]): any {
     createToolAgentState: (_history: unknown[], userInput: string) => ({
       messages: [{ role: 'user', content: userInput }],
       steps: 0,
+    }),
+    appendUserMessage: (state: { messages: unknown[]; steps: number }, content: string) => ({
+      messages: [...state.messages, { role: 'user', content }],
+      steps: state.steps,
     }),
     createContinuationState: () => ({ messages: [], steps: 0 }),
     appendToolResultMessage: (state: { messages: unknown[]; steps: number }, toolCallId: string, content: string) => ({
