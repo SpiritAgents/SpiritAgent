@@ -20,6 +20,8 @@ struct ChatFile {
     assistant_aux: Vec<StoredAssistantAux>,
     llm_history: Vec<crate::ports::ArchivedLlmMessage>,
     #[serde(default)]
+    loop_enabled: bool,
+    #[serde(default)]
     subagent_sessions: Vec<StoredSubagentSession>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     rewind: Option<Value>,
@@ -83,6 +85,7 @@ pub struct LoadedChat {
     pub messages: Vec<(String, String)>,
     pub assistant_aux: Vec<crate::ports::AssistantAuxArchiveEntry>,
     pub llm_history: Vec<crate::ports::ArchivedLlmMessage>,
+    pub loop_enabled: bool,
     pub subagent_sessions: Vec<crate::ports::SubagentSessionArchiveEntry>,
     pub desktop_messages: Option<Vec<ConversationMessageSnapshot>>,
     pub rewind: Option<Value>,
@@ -127,6 +130,7 @@ pub fn save_chat(
     messages: &[(String, String)],
     assistant_aux: &[crate::ports::AssistantAuxArchiveEntry],
     llm_history: &[crate::ports::ArchivedLlmMessage],
+    loop_enabled: bool,
     subagent_sessions: &[crate::ports::SubagentSessionArchiveEntry],
     rewind: Option<&Value>,
     desktop_messages: Option<&[ConversationMessageSnapshot]>,
@@ -145,6 +149,7 @@ pub fn save_chat(
         messages: sanitized.messages,
         assistant_aux: sanitized.assistant_aux,
         llm_history: llm_history.to_vec(),
+        loop_enabled,
         subagent_sessions: subagent_sessions
             .iter()
             .map(|entry| StoredSubagentSession {
@@ -191,6 +196,7 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
         messages: parsed_messages,
         assistant_aux: parsed_assistant_aux,
         llm_history,
+        loop_enabled,
         subagent_sessions,
         rewind,
         desktop_messages,
@@ -237,6 +243,7 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
             })
             .collect(),
         llm_history,
+        loop_enabled,
         subagent_sessions: subagent_sessions
             .into_iter()
             .map(|entry| crate::ports::SubagentSessionArchiveEntry {
@@ -323,9 +330,8 @@ fn sanitize_chat_data(
         });
     }
 
-    let desktop_messages = sanitize_desktop_messages(desktop_messages).unwrap_or_else(|| {
-        build_fallback_desktop_messages(&persisted_messages, &persisted_aux)
-    });
+    let desktop_messages = sanitize_desktop_messages(desktop_messages)
+        .unwrap_or_else(|| build_fallback_desktop_messages(&persisted_messages, &persisted_aux));
 
     SanitizedChatData {
         messages: persisted_messages,
@@ -363,7 +369,10 @@ fn sanitize_desktop_messages(
 
 fn sanitize_message_aux_snapshot(aux: Option<&MessageAuxSnapshot>) -> Option<MessageAuxSnapshot> {
     let aux = aux?;
-    let thinking = aux.thinking.clone().filter(|value| !value.trim().is_empty());
+    let thinking = aux
+        .thinking
+        .clone()
+        .filter(|value| !value.trim().is_empty());
     let compaction = aux
         .compaction
         .clone()
@@ -546,6 +555,7 @@ mod tests {
             &messages,
             &assistant_aux,
             &llm_history,
+            true,
             &[],
             None,
             None,
@@ -559,6 +569,7 @@ mod tests {
         assert!(parsed.get("assistantAux").is_some());
         assert!(parsed.get("assistant_aux").is_none());
         assert!(parsed.get("llmHistory").is_some());
+        assert_eq!(parsed["loopEnabled"], json!(true));
         assert!(parsed["llmHistory"][0]["content"].is_array());
         assert!(parsed["llmHistory"][0].get("imagePaths").is_none());
 
@@ -573,6 +584,7 @@ mod tests {
 
         let loaded = load_chat(saved.to_string_lossy().as_ref()).expect("reload chat");
         assert_eq!(loaded.messages.len(), 3);
+        assert!(loaded.loop_enabled);
         assert_eq!(loaded.assistant_aux.len(), 1);
         assert_eq!(
             loaded
@@ -607,13 +619,19 @@ mod tests {
             ],
             "subagentSessions": [],
         });
-        fs::write(&file_path, serde_json::to_string_pretty(&raw).expect("serialize legacy json"))
-            .expect("write legacy chat");
+        fs::write(
+            &file_path,
+            serde_json::to_string_pretty(&raw).expect("serialize legacy json"),
+        )
+        .expect("write legacy chat");
 
         let loaded = load_chat(file_path.to_string_lossy().as_ref()).expect("load legacy chat");
         assert_eq!(loaded.llm_history.len(), 1);
         assert_eq!(loaded.llm_history[0].text_content(), "hello");
-        assert_eq!(loaded.llm_history[0].image_paths(), vec!["demo.png".to_string()]);
+        assert_eq!(
+            loaded.llm_history[0].image_paths(),
+            vec!["demo.png".to_string()]
+        );
         assert_eq!(
             loaded
                 .desktop_messages
@@ -662,8 +680,11 @@ mod tests {
                 }
             ]
         });
-        fs::write(&file_path, serde_json::to_string_pretty(&raw).expect("serialize desktop json"))
-            .expect("write desktop chat");
+        fs::write(
+            &file_path,
+            serde_json::to_string_pretty(&raw).expect("serialize desktop json"),
+        )
+        .expect("write desktop chat");
 
         let loaded = load_chat(file_path.to_string_lossy().as_ref()).expect("load desktop chat");
         let desktop_messages = loaded

@@ -245,6 +245,7 @@ pub(in crate::ui) fn suggestion_summary(suggestion: &InputSuggestion) -> String 
         "/clear" => t!("ui.suggestion.summary.clear").into_owned(),
         "/quit" | "/exit" => t!("ui.suggestion.summary.quit").into_owned(),
         "/continue" => t!("ui.suggestion.summary.continue").into_owned(),
+        "/loop" => t!("ui.suggestion.summary.loop").into_owned(),
         "/model" => t!("ui.suggestion.summary.model").into_owned(),
         "/compact" => t!("ui.suggestion.summary.compact").into_owned(),
         "/sessions" => t!("ui.suggestion.summary.sessions").into_owned(),
@@ -278,6 +279,14 @@ pub(in crate::ui) fn suggestion_usage_lines(suggestion: &InputSuggestion) -> Vec
             t!("ui.suggestion.usage.heading").into_owned(),
             "    /continue".to_string(),
             t!("ui.suggestion.usage.continue_note").into_owned(),
+        ],
+        "/loop" => vec![
+            t!("ui.suggestion.usage.heading").into_owned(),
+            "    /loop".to_string(),
+            "    /loop on".to_string(),
+            "    /loop off".to_string(),
+            "    /loop status".to_string(),
+            t!("ui.suggestion.usage.loop_note").into_owned(),
         ],
         "/model" => vec![
             t!("ui.suggestion.usage.heading").into_owned(),

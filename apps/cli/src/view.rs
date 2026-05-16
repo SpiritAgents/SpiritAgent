@@ -337,6 +337,7 @@ pub struct TuiViewModel {
     pub shell_mode_active: bool,
     pub pending_image_paths: Vec<String>,
     pub pending_mcp_resources: Vec<PendingMcpResource>,
+    pub loop_enabled: bool,
     pub history_truncated_before: usize,
     pub messages: Vec<ChatMessage>,
     pub assistant_aux_by_message: HashMap<usize, AssistantAuxData>,
