@@ -301,6 +301,7 @@ type CommandPayloads = {
   rememberWorkspaceRoot: { request: RememberWorkspaceRequest };
   commitChanges: { request: CommitChangesRequest };
   updateConfig: { request: UpdateConfigRequest };
+  setLoopEnabled: { enabled: boolean };
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };
@@ -357,6 +358,7 @@ interface HostState {
   ephemeralSessions: EphemeralSessionRecord[];
   archiveHistory: ChatArchive['llmHistory'];
   archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
+  loopEnabled: boolean;
   rewind: StoredDesktopRewindMetadata;
   rewindWarnings: FileRewindWarning[];
 }
@@ -1402,6 +1404,17 @@ class DesktopHostService {
     });
   }
 
+  async setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const state = this.requireState();
+      state.loopEnabled = enabled;
+      this.runtime?.setLoopEnabled(enabled);
+      await this.persistCurrentSessionIfNeeded();
+      return this.buildSnapshot();
+    });
+  }
+
   async abortConversation(): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
@@ -1752,6 +1765,7 @@ class DesktopHostService {
       state.activeSession = undefined;
       state.archiveHistory = [];
       state.archiveSubagentSessions = [];
+      state.loopEnabled = false;
       state.rewind = createDesktopRewindMetadata();
       state.rewindWarnings = [];
       this.currentTurnSkills = [];
@@ -1868,6 +1882,7 @@ class DesktopHostService {
         state.activeSession = restored.activeSession;
         state.archiveHistory = restored.archiveHistory;
         state.archiveSubagentSessions = restored.archiveSubagentSessions;
+        state.loopEnabled = restored.loopEnabled;
         state.rewind = restored.rewind;
         state.rewindWarnings = [];
         this.currentTurnSkills = [];
@@ -1895,6 +1910,7 @@ class DesktopHostService {
       state.activeSession = restored.activeSession;
       state.archiveHistory = restored.archiveHistory;
       state.archiveSubagentSessions = restored.archiveSubagentSessions;
+      state.loopEnabled = restored.loopEnabled;
       state.rewind = restored.rewind;
       state.rewindWarnings = [];
       this.currentTurnSkills = [];
@@ -2031,6 +2047,10 @@ class DesktopHostService {
         const typedPayload = payload as CommandPayloads['submitUserTurn'];
         return this.submitUserTurn(typedPayload);
       }
+      case 'setLoopEnabled': {
+        const typedPayload = payload as CommandPayloads['setLoopEnabled'];
+        return this.setLoopEnabled(typedPayload.enabled === true);
+      }
       case 'abortConversation':
         return this.abortConversation();
       case 'continueAssistantCompletion': {
@@ -2165,6 +2185,7 @@ class DesktopHostService {
       ephemeralSessions: state?.ephemeralSessions ?? [],
       archiveHistory: switchingWorkspace ? [] : state?.archiveHistory ?? [],
       archiveSubagentSessions: switchingWorkspace ? [] : state?.archiveSubagentSessions ?? [],
+      loopEnabled: switchingWorkspace ? false : state?.loopEnabled ?? false,
       rewind: switchingWorkspace
         ? createDesktopRewindMetadata()
         : state?.rewind ?? createDesktopRewindMetadata(),
@@ -2261,8 +2282,10 @@ class DesktopHostService {
         assistantAux: this.archiveAssistantAux(),
         llmHistory: state.archiveHistory,
         subagentSessions: state.archiveSubagentSessions ?? [],
+        loopEnabled: state.loopEnabled,
       });
     }
+    runtime.setLoopEnabled(state.loopEnabled);
     this.runtime = runtime;
     this.lastRuntimeError = '';
     await this.refreshModelKeyPresence();
@@ -2580,6 +2603,7 @@ class DesktopHostService {
       mcpServers: listDesktopMcpServersFromDisk(),
       conversation: {
         messages: conversationMessages,
+        loopEnabled: state.loopEnabled,
         ...(this.runtime?.pendingUserTurn()
           ? { pendingUserTurn: this.runtime.pendingUserTurn() }
           : {}),
@@ -3223,6 +3247,7 @@ class DesktopHostService {
           assistantAux: this.archiveAssistantAux(),
           llmHistory: state.archiveHistory,
           subagentSessions: state.archiveSubagentSessions ?? [],
+          loopEnabled: state.loopEnabled,
         } satisfies ChatArchive;
     await saveRewindCheckpointSnapshot(
       spiritAgentDataDir(),
@@ -3253,6 +3278,7 @@ class DesktopHostService {
           assistantAux: this.archiveAssistantAux(),
           llmHistory: state.archiveHistory,
           subagentSessions: state.archiveSubagentSessions ?? [],
+          loopEnabled: state.loopEnabled,
         } satisfies ChatArchive;
     return {
       archive,
@@ -3272,6 +3298,7 @@ class DesktopHostService {
     state.messageTimeline = this.createMessageTimelineFromMessages(state.messages);
     state.archiveHistory = cloneArchiveHistory(archive.llmHistory);
     state.archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
+    state.loopEnabled = archive.loopEnabled === true;
     pruneRewindMetadataAfterCheckpoint(state.rewind, checkpointSequence);
     this.pendingUnboundFileChangeIds = [];
     this.messageIdCounter = nextMessageIdFromMessages(state.messages);
@@ -3292,6 +3319,7 @@ class DesktopHostService {
           assistantAux: this.archiveAssistantAux(),
           llmHistory: state.archiveHistory,
           subagentSessions: state.archiveSubagentSessions ?? [],
+          loopEnabled: state.loopEnabled,
         } satisfies ChatArchive;
 
     const stored = buildStoredDesktopSession({
@@ -3302,6 +3330,7 @@ class DesktopHostService {
       desktopMessages: this.desktopMessages(),
       desktopMessageTimeline: state.messageTimeline.snapshot(),
       rewind: state.rewind,
+      loopEnabled: state.loopEnabled,
     });
     state.activeSession.filePath = await saveStoredSession(state.activeSession.filePath, stored);
   }

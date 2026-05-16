@@ -616,6 +616,18 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/loop') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setLoopEnabled', {
+        enabled: jsonBody?.enabled === true,
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/git/commit') {
     writeJson(
       request,

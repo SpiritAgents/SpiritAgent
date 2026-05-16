@@ -96,6 +96,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     submitUserTurn(request) {
       return bridge.submitUserTurn(request);
     },
+    setLoopEnabled(enabled) {
+      return bridge.setLoopEnabled(enabled);
+    },
     abortConversation() {
       return bridge.abortConversation();
     },

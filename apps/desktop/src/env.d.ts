@@ -74,6 +74,7 @@ declare global {
     submitStartImplementing(): Promise<DesktopSnapshot>;
     exportSessionLog(): Promise<DesktopSnapshot>;
     submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot>;
+    setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot>;
     abortConversation(): Promise<DesktopSnapshot>;
     continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
     rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;
