@@ -169,14 +169,14 @@ impl<'de> Deserialize<'de> for ArchivedLlmMessage {
                 tool_calls: message.tool_calls,
                 provider_state: message.provider_state,
             }),
-            ArchivedLlmMessageRepr::Legacy(message) => Ok(Self::from_text_and_images(
-                message.role,
-                message.content,
-                message.image_paths,
-            )
-            .with_tool_call_id(message.tool_call_id)
-            .with_tool_calls(message.tool_calls)
-            .with_provider_state(message.provider_state)),
+            ArchivedLlmMessageRepr::Legacy(message) => {
+                Ok(
+                    Self::from_text_and_images(message.role, message.content, message.image_paths)
+                        .with_tool_call_id(message.tool_call_id)
+                        .with_tool_calls(message.tool_calls)
+                        .with_provider_state(message.provider_state),
+                )
+            }
         }
     }
 }
@@ -195,6 +195,8 @@ pub struct ChatArchive {
     pub messages: Vec<(String, String)>,
     pub assistant_aux: Vec<AssistantAuxArchiveEntry>,
     pub llm_history: Vec<ArchivedLlmMessage>,
+    #[serde(default)]
+    pub loop_enabled: bool,
     #[serde(default)]
     pub subagent_sessions: Vec<SubagentSessionArchiveEntry>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

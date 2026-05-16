@@ -814,6 +814,44 @@ impl TuiShell {
         }
     }
 
+    pub(crate) fn handle_loop_slash(&mut self, args: &[&str]) {
+        let current = self.runtime.loop_enabled();
+        let next = match args {
+            [] => Some(!current),
+            ["on"] => Some(true),
+            ["off"] => Some(false),
+            ["status"] => {
+                self.push_agent_message(if current {
+                    t!("tui.loop.status_on").into_owned()
+                } else {
+                    t!("tui.loop.status_off").into_owned()
+                });
+                None
+            }
+            _ => {
+                self.push_agent_message(t!("tui.loop.usage").into_owned());
+                None
+            }
+        };
+
+        let Some(enabled) = next else {
+            return;
+        };
+
+        match self.runtime.set_loop_enabled(enabled) {
+            Ok(()) => {
+                self.push_agent_message(if enabled {
+                    t!("tui.loop.enabled").into_owned()
+                } else {
+                    t!("tui.loop.disabled").into_owned()
+                });
+            }
+            Err(err) => {
+                self.push_agent_message(t!("tui.loop.failed", err = err).into_owned());
+            }
+        }
+    }
+
     pub(crate) fn handle_skill_alias_slash(&mut self, message: &str) -> bool {
         let Some((command, user_message)) = split_first_token(message) else {
             return false;

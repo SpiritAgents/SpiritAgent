@@ -75,6 +75,7 @@ fn build_view_model(message: ChatMessage) -> TuiViewModel {
         shell_mode_active: false,
         pending_image_paths: vec![],
         pending_mcp_resources: vec![],
+        loop_enabled: false,
         history_truncated_before: 0,
         messages: vec![message],
         assistant_aux_by_message: HashMap::new(),
@@ -479,9 +480,7 @@ fn file_reference_suggestions_use_inline_layout_without_footer_or_title() {
 
     let lines = render_ui_lines(&app, 80, 20);
 
-    assert!(
-        lines.iter().any(|line| line.contains("> src/ui.rs"))
-    );
+    assert!(lines.iter().any(|line| line.contains("> src/ui.rs")));
     assert!(
         !lines
             .iter()
@@ -1122,9 +1121,7 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
 
     assert!(lines[0].contains("run_shell_command"));
-    assert!(
-        lines[0].contains(t!("ui.tool.phase.pending_approval").as_ref())
-    );
+    assert!(lines[0].contains(t!("ui.tool.phase.pending_approval").as_ref()));
     assert!(lines[0].contains("查看构建输出"));
     assert!(!lines[0].contains("call_00_demo_reason"));
     assert!(!lines.iter().any(|line| line == "  ▌ 查看构建输出"));
@@ -1157,7 +1154,11 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
     assert!(lines.iter().any(|line| {
         line.contains("路径: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png")
     }));
-    assert!(lines.iter().all(|line| !line.contains("\"prompt\": \"画一张图\"")));
+    assert!(
+        lines
+            .iter()
+            .all(|line| !line.contains("\"prompt\": \"画一张图\""))
+    );
     assert!(lines.iter().all(|line| !line.contains("[generated image]")));
 }
 
@@ -1223,7 +1224,8 @@ fn generate_image_tool_card_selection_highlights_wrapped_rail_consistently() {
     app.show_aux_details = false;
 
     let message_lines = render_message_lines(&app, &app.messages[0], 0);
-    let (flat, _) = crate::conversation_select::flatten_wrapped_history(message_lines.clone(), 28, None);
+    let (flat, _) =
+        crate::conversation_select::flatten_wrapped_history(message_lines.clone(), 28, None);
     let plain_lines = render_text_lines(flat);
     let continuation_index = plain_lines
         .iter()
@@ -1332,7 +1334,10 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
         })
     });
 
-    assert!(has_red_pixels, "expected colored image pixels below generated path");
+    assert!(
+        has_red_pixels,
+        "expected colored image pixels below generated path"
+    );
 
     let _ = fs::remove_file(file_path);
 }
