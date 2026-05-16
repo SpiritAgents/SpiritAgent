@@ -67,6 +67,7 @@ export interface BridgeRuntimeSnapshot {
   currentPendingQuestions?: RuntimePendingQuestions<JsonValue>;
   childSessions: RuntimeSubagentSessionSummary[];
   isBusy: boolean;
+  loopEnabled: boolean;
   backgroundToolStatus?: string;
 }
 
@@ -88,6 +89,11 @@ export interface RuntimeInitParams {
   enabledSkillCatalog?: LlmEnabledSkillCatalogEntry[];
   planMetadata?: LlmPlanMetadata;
   extensionToolDefinitions?: JsonValue[];
+  loopEnabled?: boolean;
+}
+
+export interface RuntimeSetLoopEnabledParams {
+  enabled: boolean;
 }
 
 export interface RuntimeSubmitUserTurnParams {

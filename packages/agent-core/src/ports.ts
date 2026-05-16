@@ -326,6 +326,7 @@ export interface ChatArchive {
   assistantAux: AssistantAuxArchiveEntry[];
   llmHistory: Array<StoredLlmMessageArchiveEntry | LegacyLlmMessageArchiveEntry>;
   subagentSessions?: SubagentSessionArchiveEntry[];
+  loopEnabled?: boolean;
 }
 
 export type McpStatusState = 'idle' | 'loading' | 'ready' | 'error';

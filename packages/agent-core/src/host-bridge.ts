@@ -70,6 +70,7 @@ import type {
   RuntimeReplacePlanMetadataParams,
   RuntimeRespondToPendingApprovalParams,
   RuntimeRespondToPendingQuestionsParams,
+  RuntimeSetLoopEnabledParams,
   RuntimeActivateSkillParams,
   RuntimeStartManualMcpToolParams,
   RuntimeStartManualToolCommandParams,
@@ -1353,6 +1354,7 @@ function buildSnapshot(target: HostRuntime): BridgeRuntimeSnapshot {
   childSessions: [...target.childSessions()],
   ...(currentPendingQuestions !== undefined ? { currentPendingQuestions } : {}),
   isBusy: target.isBusy(),
+  loopEnabled: target.loopEnabled(),
     ...(backgroundToolStatus !== undefined ? { backgroundToolStatus } : {}),
   };
 }
@@ -1396,6 +1398,7 @@ peer.on('runtime.init', async (rawParams) => {
   }
   activeSkills = pruneActiveSkillsAgainstCatalog(activeSkills, enabledSkillCatalog);
   runtime = await createRuntime(params.transportConfig, params.history ?? []);
+  runtime.setLoopEnabled(params.loopEnabled === true);
   const workspaceRoot =
     params.transportConfig.workspaceRoot?.trim() || currentWorkspaceRoot();
   await dispatchCliExtensionEvent({
@@ -1413,7 +1416,9 @@ peer.on('runtime.replaceConfig', async (rawParams) => {
   await refreshExtensionToolDefinitions();
   await refreshExtensionSystemPrompts();
   const target = requireRuntime();
+  const loopEnabled = target.loopEnabled();
   runtime = await createRuntime(params.transportConfig, [...target.history()]);
+  runtime.setLoopEnabled(loopEnabled);
   return buildSnapshot(runtime);
 });
 
@@ -1752,6 +1757,12 @@ peer.on('runtime.continueAssistantCompletionStreaming', async () => {
 
 peer.on('runtime.drainEvents', async () => drainEvents());
 peer.on('runtime.snapshot', async () => buildSnapshot(requireRuntime()));
+
+peer.on('runtime.setLoopEnabled', async (rawParams) => {
+  const params = rawParams as RuntimeSetLoopEnabledParams;
+  requireRuntime().setLoopEnabled(params.enabled === true);
+  return buildSnapshot(requireRuntime());
+});
 
 peer.on('runtime.respondToPendingApproval', async (rawParams) => {
   const params = rawParams as RuntimeRespondToPendingApprovalParams;

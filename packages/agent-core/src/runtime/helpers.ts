@@ -48,6 +48,15 @@ interface DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget = string> 
   pendingUserTurnStore: string | undefined;
 }
 
+interface LoopContinuationGuidanceRuntime<State, ToolRequest, TrustTarget = string> {
+  options: Pick<
+    AgentRuntimeOptions<unknown, State, ToolRequest, TrustTarget>,
+    'appendUserMessage' | 'createToolAgentState'
+  >;
+  historyStore: LlmMessage[];
+  pendingUserTurnStore: string | undefined;
+}
+
 export function enqueueDeferredUserGuidance<ToolRequest>(
   turn: RuntimeTurnContext<ToolRequest>,
   userMessage: string,
@@ -151,6 +160,41 @@ export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = stri
     state: nextState,
     pendingUserInput: nextPendingUserInput,
   };
+}
+
+export function appendLoopContinuationGuidance<State, ToolRequest, TrustTarget = string>(
+  runtime: LoopContinuationGuidanceRuntime<State, ToolRequest, TrustTarget>,
+  state: State,
+  originalUserInput: string,
+): State {
+  const guidance = formatLoopContinuationGuidance(originalUserInput);
+  const contentForLlm = formatUserMessageContentForLlm(guidance);
+  runtime.historyStore.push({
+    role: 'user',
+    content: createLlmMessageContentFromText(contentForLlm),
+  });
+  runtime.pendingUserTurnStore = originalUserInput;
+
+  if (runtime.options.appendUserMessage) {
+    return runtime.options.appendUserMessage(state, contentForLlm);
+  }
+
+  return runtime.options.createToolAgentState(runtime.historyStore, originalUserInput);
+}
+
+export function formatLoopContinuationGuidance(originalUserInput: string): string {
+  const original = originalUserInput.trim() || '(empty original user request)';
+  return [
+    'Loop continuation check:',
+    'The assistant stopped without calling finish_task, but Loop is enabled.',
+    'Review the original user request and the work already completed in this conversation.',
+    'If the original task is fully complete, call the finish_task tool now.',
+    'If the original task is not complete, continue working on it according to the original user request.',
+    'Do not ask the user what to do next unless you are blocked or genuinely need missing information.',
+    '',
+    'Original user request:',
+    original,
+  ].join('\n');
 }
 
 export function cloneHistory(history: LlmMessage[]): LlmMessage[] {

@@ -39,6 +39,7 @@ const DEFAULT_SLASH_COMMANDS: &[&str] = &[
     "/quit",
     "/exit",
     "/continue",
+    "/loop",
     "/start-implementing",
     "/model",
     "/compact",
@@ -61,6 +62,7 @@ const RESERVED_SLASH_COMMANDS: &[&str] = &[
     "/quit",
     "/exit",
     "/continue",
+    "/loop",
     "/start-implementing",
     "/model",
     "/compact",
@@ -153,6 +155,10 @@ fn contextual_suggestions(shell: &mut TuiShell, query: &str) -> Vec<InputSuggest
 
     if shell.can_continue_last_turn() && (query == "/continue" || query.starts_with("/continue ")) {
         return vec![primary_help_suggestion("/continue", query)];
+    }
+
+    if query == "/loop" || query.starts_with("/loop ") {
+        return vec![primary_help_suggestion("/loop", query)];
     }
 
     if command_visible_in_mode("/start-implementing", shell.input_mode())
@@ -343,6 +349,7 @@ pub(crate) fn help_text(_input_mode: MainInputMode, can_continue_last_turn: bool
     }
 
     lines.push("- /start-implementing".to_string());
+    lines.push("- /loop [on|off|status]".to_string());
 
     lines.extend([
         "- /model [list|use <name>|add|add <name> <api_base> <api_key>|remove <name>]".to_string(),
@@ -377,6 +384,7 @@ pub(crate) fn help_text(_input_mode: MainInputMode, can_continue_last_turn: bool
     lines.extend([
         t!("tui.session.help.open_selector").into_owned(),
         t!("tui.session.help.rewind").into_owned(),
+        t!("tui.loop.help").into_owned(),
         "- /subagents 打开当前会话里的 SubAgent 列表；回车可进入只读子会话视图，Esc 返回主会话。".to_string(),
         "- /image pick 打开当前目录图片选择器。".to_string(),
         "- /image 不带 prompt 时会把图片加入待发送队列。".to_string(),
@@ -424,6 +432,7 @@ pub(crate) fn handle_command(shell: &mut TuiShell, message: &str) {
         )),
         "/clear" => shell.clear_chat_for_slash(),
         "/continue" => shell.handle_continue_slash(),
+        "/loop" => shell.handle_loop_slash(&parts[1..]),
         "/start-implementing" => shell.handle_start_implementing_slash(),
         "/model" => shell.handle_model_slash(&parts[1..]),
         "/compact" => shell.compact_history_for_slash(),
