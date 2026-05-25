@@ -76,6 +76,11 @@ import { SettingsView } from "@/components/settings-view";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useTheme } from "@/hooks/useTheme";
+import {
+  DESKTOP_CHROME_COMMIT_BTN,
+  DESKTOP_CHROME_TOGGLE_ICON_BTN,
+  instantHoverMotionClass,
+} from "@/lib/desktop-chrome";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
 import {
   buildSkillSlashSuggestions,
@@ -222,7 +227,10 @@ function EmptyStateWorkspaceSelector({
             type="button"
             disabled={disabled}
             aria-label="选择工作区"
-            className="inline-flex h-8 max-w-[min(24rem,100%)] min-w-0 items-center gap-1 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left transition-colors outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+            className={cn(
+              "inline-flex h-8 max-w-[min(24rem,100%)] min-w-0 items-center gap-1 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+              instantHoverMotionClass,
+            )}
           >
             <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={currentWorkspaceRoot}>
               {currentWorkspaceLabel}
@@ -744,7 +752,10 @@ function ComposerSurface({
                   type="button"
                   aria-label="运行方式"
                   disabled={readOnly}
-                  className="inline-flex h-7 max-w-[9rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                  className={cn(
+                    "inline-flex h-7 max-w-[9rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                    instantHoverMotionClass,
+                  )}
                 >
                   <span className="min-w-0 flex-1 truncate" title={planMode ? "Plan" : "Agent"}>
                     {planMode ? "Plan" : "Agent"}
@@ -774,10 +785,11 @@ function ComposerSurface({
                 aria-checked={loopEnabled}
                 disabled={readOnly}
                 className={cn(
-                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  instantHoverMotionClass,
                   loopEnabled
                     ? "bg-primary/12 text-primary hover:bg-primary/16"
-                    : "bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                    : "bg-transparent text-muted-foreground hover:bg-muted/50",
                 )}
                 onClick={() => onLoopEnabledChange(!loopEnabled)}
                 title={loopEnabled ? "Loop On" : "Loop Off"}
@@ -803,7 +815,10 @@ function ComposerSurface({
                     type="button"
                     aria-label="选择模型"
                     disabled={readOnly}
-                    className="inline-flex h-7 max-w-[12rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-muted/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                    className={cn(
+                      "inline-flex h-7 max-w-[12rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                      instantHoverMotionClass,
+                    )}
                   >
                     <span className="min-w-0 flex-1 truncate" title={activeModelSummary}>
                       {activeModelSummary}
@@ -923,7 +938,10 @@ function ComposerSurface({
           </div>
           <Button
             type="button"
-            className="size-8 shrink-0 rounded-full p-0 shadow-none [&_svg]:size-3.5"
+            className={cn(
+              "size-8 shrink-0 rounded-full p-0 shadow-none [&_svg]:size-3.5",
+              instantHoverMotionClass,
+            )}
             onClick={canAbort ? onAbort : onSubmit}
             disabled={canAbort ? false : !canSend || busy}
             title={canAbort ? "中止" : "发送（Ctrl+Enter）"}
@@ -1463,10 +1481,6 @@ function WebHostPairingGate({
   );
 }
 
-/** ghost 在 aria-expanded 时默认带 bg-muted，顶栏图标按钮需全透明底 */
-const DESKTOP_CHROME_TOGGLE_ICON_BTN =
-  "size-7 shrink-0 bg-transparent text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10 aria-expanded:bg-transparent dark:aria-expanded:bg-transparent aria-expanded:text-foreground aria-expanded:hover:bg-foreground/[0.06] dark:aria-expanded:hover:bg-foreground/10 [&_svg]:size-3.5";
-
 function DesktopLayoutChromeBar({
   useMicaBackdrop,
   sessionSidebarOpen,
@@ -1519,7 +1533,7 @@ function DesktopLayoutChromeBar({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 rounded-md px-2 text-xs font-medium text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10"
+              className={DESKTOP_CHROME_COMMIT_BTN}
               disabled={commitDisabled}
               onClick={onOpenCommitDialog}
             >
