@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { instantHoverMotionClass } from '@/lib/desktop-chrome'
 import { cn } from '@/lib/utils'
 
 export type ActionPopoverItem = {
@@ -88,6 +89,7 @@ export function ActionPopover({
           disabled={disabled}
           className={cn(
             'size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground',
+            instantHoverMotionClass,
             triggerClassName,
           )}
           title={title}

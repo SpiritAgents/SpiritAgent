@@ -173,6 +173,10 @@ const sidebarInteractionMotionClass =
 const sidebarMenuHoverClass =
   "hover:!bg-accent hover:!text-accent-foreground focus-visible:!bg-accent focus-visible:!text-accent-foreground";
 
+/** 工作区 / 会话行：hover 只铺底，不把文案提亮（与 composer 区下拉一致） */
+const sidebarSessionListHoverClass =
+  "hover:!bg-accent focus-visible:!bg-accent focus-visible:!text-accent-foreground";
+
 const sidebarSelectedHoverClass =
   "hover:!bg-secondary hover:!text-secondary-foreground";
 
@@ -405,7 +409,7 @@ export function SessionSidebar({
                           sidebarInteractionMotionClass,
                           "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
                           "text-sidebar-foreground/90",
-                          sidebarMenuHoverClass,
+                          sidebarSessionListHoverClass,
                         )}
                         title={group.rootPath ?? group.label}
                       >
@@ -445,7 +449,7 @@ export function SessionSidebar({
                                     ? "bg-secondary text-secondary-foreground hover:!bg-secondary hover:!text-secondary-foreground"
                                     : cn(
                                         "text-sidebar-list-foreground",
-                                        sidebarMenuHoverClass,
+                                        sidebarSessionListHoverClass,
                                       ),
                                 )}
                               >
