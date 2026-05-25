@@ -1873,6 +1873,14 @@ export class AgentRuntime<
     this.emitSyncTurnResultEvents(result);
   }
 
+  private completedViaFinishTask(
+    result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
+  ): boolean {
+    return result.toolExecutions.some(
+      (execution) => execution.toolName === 'finish_task' && !execution.failed,
+    );
+  }
+
   private storeCompletedTurnResult(
     result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
   ): void {
@@ -2007,6 +2015,9 @@ export class AgentRuntime<
     result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
   ): void {
     if (result.kind === 'completed') {
+      if (this.completedViaFinishTask(result)) {
+        return;
+      }
       this.emitEvent({ kind: 'begin-assistant-response' });
       this.emitEvent({ kind: 'assistant-chunk', text: result.assistantText });
       this.emitEvent({ kind: 'assistant-response-completed' });

@@ -243,6 +243,63 @@ export class DesktopAssistantMessageStateMachine {
     this.latestPendingAssistantAux = undefined;
   }
 
+  applyFinishTaskNotice(
+    notice: string,
+    rawCompletionText: string,
+    pendingAux?: MessageAuxSnapshot,
+    summary = '',
+  ): boolean {
+    const messages = this.messages();
+    const normalizedRaw = rawCompletionText.trim();
+    const normalizedSummary = summary.trim();
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index]!;
+      if (message.role === 'user') {
+        break;
+      }
+      if (message.role !== 'assistant' || message.tool) {
+        continue;
+      }
+      const content = message.content.trim();
+      if (
+        (normalizedRaw && content === normalizedRaw) ||
+        (normalizedSummary && content === normalizedSummary)
+      ) {
+        message.content = '';
+      }
+      message.aux = normalizeMessageAuxSnapshot({
+        ...(message.aux?.thinking ? { thinking: message.aux.thinking } : {}),
+        ...(message.aux?.compaction ? { compaction: message.aux.compaction } : {}),
+        finishTaskNotice: notice,
+      });
+      this.logAssistantAuxDecision('finish-task-notice', {
+        messageId: message.id,
+        aux: message.aux,
+        content: message.content,
+      });
+      return true;
+    }
+
+    const message: ConversationMessageSnapshot = {
+      id: this.options.allocateMessageId(),
+      role: 'assistant',
+      content: '',
+      aux: normalizeMessageAuxSnapshot({
+        ...(pendingAux?.thinking ? { thinking: pendingAux.thinking } : {}),
+        ...(pendingAux?.compaction ? { compaction: pendingAux.compaction } : {}),
+        finishTaskNotice: notice,
+      }),
+      pending: false,
+    };
+    messages.push(message);
+    this.logAssistantAuxDecision('append-finish-task-notice', {
+      messageId: message.id,
+      aux: message.aux,
+      content: message.content,
+    });
+    return true;
+  }
+
   materializeExistingCompletedAssistantMessage(
     content: string,
     aux?: MessageAuxSnapshot,

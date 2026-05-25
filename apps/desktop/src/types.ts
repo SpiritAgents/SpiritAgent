@@ -667,6 +667,8 @@ export interface ToolBlockSnapshot {
 export interface MessageAuxSnapshot {
   thinking?: string;
   compaction?: string;
+  /** Loop finish_task：不展示工具卡，在助手正文下方显示一行灰色说明 */
+  finishTaskNotice?: string;
 }
 
 export interface PendingToolApprovalSnapshot {

@@ -463,14 +463,75 @@ export function normalizeMessageAuxSnapshot(
 
   const thinking = aux.thinking?.trim() ? aux.thinking : undefined;
   const compaction = aux.compaction?.trim() ? aux.compaction : undefined;
-  if (!thinking && !compaction) {
+  const finishTaskNotice = aux.finishTaskNotice?.trim()
+    ? aux.finishTaskNotice
+    : undefined;
+  if (!thinking && !compaction && !finishTaskNotice) {
     return undefined;
   }
 
   return {
     ...(thinking ? { thinking } : {}),
     ...(compaction ? { compaction } : {}),
+    ...(finishTaskNotice ? { finishTaskNotice } : {}),
   };
+}
+
+const FINISH_TASK_DEFAULT_OUTPUT = 'Task marked complete.';
+
+export function finishTaskSummaryFromExecution(input: {
+  request: unknown;
+  output?: string;
+}): string {
+  if (input.request && typeof input.request === 'object') {
+    const request = input.request as { name?: unknown; summary?: unknown };
+    if (request.name === 'finish_task' && typeof request.summary === 'string') {
+      const summary = request.summary.trim();
+      if (summary) {
+        return summary;
+      }
+    }
+  }
+
+  const output = (input.output ?? '').trim();
+  if (output && output !== FINISH_TASK_DEFAULT_OUTPUT) {
+    return output;
+  }
+
+  return '';
+}
+
+export function finishTaskNoticeFromExecution(input: {
+  request: unknown;
+  output?: string;
+}): string {
+  const summary = finishTaskSummaryFromExecution(input);
+  if (!summary) {
+    return '任务已完成。';
+  }
+
+  return `任务因 ${summary} 完成。`;
+}
+
+export function assistantContentDuplicatesFinishTaskSummary(
+  content: string,
+  summary: string,
+  rawCompletionText: string,
+): boolean {
+  const normalizedContent = content.trim();
+  if (!normalizedContent) {
+    return false;
+  }
+  const normalizedSummary = summary.trim();
+  const normalizedRaw = rawCompletionText.trim();
+  return (
+    (normalizedSummary.length > 0 && normalizedContent === normalizedSummary) ||
+    (normalizedRaw.length > 0 && normalizedContent === normalizedRaw)
+  );
+}
+
+export function isFinishTaskToolName(toolName: string): boolean {
+  return toolName === 'finish_task';
 }
 
 export function shouldDropEmptyAssistantMessage(

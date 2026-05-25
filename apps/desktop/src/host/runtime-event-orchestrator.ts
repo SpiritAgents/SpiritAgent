@@ -5,7 +5,11 @@ import type {
 } from '@spirit-agent/agent-core';
 import type { HostExtensionEvent } from '@spirit-agent/host-internal';
 
-import type { ConversationMessageSnapshot, ToolBlockSnapshot } from '../types.js';
+import type {
+  ConversationMessageSnapshot,
+  MessageAuxSnapshot,
+  ToolBlockSnapshot,
+} from '../types.js';
 import type { DesktopToolRequest } from './contracts.js';
 import type { DesktopRuntime } from './runtime.js';
 import type { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
@@ -16,8 +20,11 @@ import type {
 } from './message-timeline.js';
 import {
   assistantPrefixBeforeFirstToolInCurrentTurn,
+  finishTaskNoticeFromExecution,
+  finishTaskSummaryFromExecution,
   headlineForToolPhase,
   headlineForStreamingToolPreview,
+  isFinishTaskToolName,
   lastAssistantPlainTextInHistory,
   latestUnsyncedAssistantTextInCurrentTurn,
   messageOrderDebugLevel,
@@ -71,10 +78,30 @@ export class DesktopRuntimeEventOrchestrator {
 
     this.integrateToolExecutions(result.toolExecutions, 'turn-result');
     switch (result.kind) {
-      case 'completed':
+      case 'completed': {
         this.options.clearCurrentTurnSkills();
-        if (result.assistantText.trim()) {
-          const aux = this.options.assistantMessages.takeLatestPendingAux();
+        const finishExecution = [...result.toolExecutions]
+          .reverse()
+          .find((execution) => isFinishTaskToolName(execution.toolName) && !execution.failed);
+        const aux = this.options.assistantMessages.takeLatestPendingAux();
+        if (finishExecution) {
+          const summary = finishTaskSummaryFromExecution(finishExecution);
+          const notice = finishTaskNoticeFromExecution(finishExecution);
+          const noticeAux: MessageAuxSnapshot = {
+            ...(aux ?? {}),
+            finishTaskNotice: notice,
+          };
+          this.options.assistantMessages.applyFinishTaskNotice(
+            notice,
+            result.assistantText,
+            aux,
+            summary,
+          );
+          this.options.messageTimeline?.()?.materializeFinishTaskNotice(
+            notice,
+            summary || result.assistantText,
+          );
+        } else if (result.assistantText.trim()) {
           if (!this.options.assistantMessages.materializeExistingCompletedAssistantMessage(result.assistantText, aux)) {
             this.options.assistantMessages.appendAssistantMessage(result.assistantText, aux);
           }
@@ -84,6 +111,7 @@ export class DesktopRuntimeEventOrchestrator {
         }
         this.options.setLastRuntimeError('');
         break;
+      }
       case 'failed':
         this.options.clearCurrentTurnSkills();
         {
@@ -169,6 +197,9 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind === 'tool-call-started') {
+        if (isFinishTaskToolName(event.toolName)) {
+          continue;
+        }
         const runningTool: ToolBlockSnapshot = {
           toolCallId: event.toolCallId,
           toolName: event.toolName,
@@ -225,6 +256,9 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind !== 'streaming-tool-preview') {
+        continue;
+      }
+      if (isFinishTaskToolName(event.toolName)) {
         continue;
       }
       let previewRequest: unknown;
@@ -429,6 +463,12 @@ export class DesktopRuntimeEventOrchestrator {
     source: 'event' | 'turn-result',
   ): void {
     for (const execution of executions) {
+      if (isFinishTaskToolName(execution.toolName)) {
+        const toolCallId = execution.toolCallId || `tool:${execution.toolName}`;
+        this.options.assistantMessages.removeToolMessage(toolCallId);
+        this.options.messageTimeline?.()?.removeToolMessage(toolCallId);
+        continue;
+      }
       if (execution.toolName === 'generate_image' && execution.toolCallId) {
         this.activeGenerateImageTools.delete(execution.toolCallId);
       }
