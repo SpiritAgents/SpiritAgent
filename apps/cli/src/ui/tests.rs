@@ -449,6 +449,18 @@ fn single_slash_suggestion_details_align_with_usage_heading() {
 }
 
 #[test]
+fn start_implementing_slash_suggestion_shows_summary() {
+    let suggestion = InputSuggestion::simple("/start-implementing");
+    let summary = super::pickers::suggestion_summary(&suggestion);
+
+    assert_eq!(
+        summary,
+        t!("ui.suggestion.summary.start_implementing").into_owned()
+    );
+    assert!(!summary.is_empty());
+}
+
+#[test]
 fn file_reference_suggestions_reuse_inline_picker_styles_and_scroll_window() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::User, "@src/"));
     app.input_suggestion_kind = Some(InputSuggestionKind::FileReference);
