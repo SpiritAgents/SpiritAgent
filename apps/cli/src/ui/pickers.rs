@@ -258,6 +258,7 @@ pub(in crate::ui) fn suggestion_summary(suggestion: &InputSuggestion) -> String 
         "/extensions" => t!("ui.suggestion.summary.extensions").into_owned(),
         "/log" => t!("ui.suggestion.summary.log").into_owned(),
         "/language" => t!("ui.suggestion.summary.language").into_owned(),
+        "/start-implementing" => t!("ui.suggestion.summary.start_implementing").into_owned(),
         _ => String::new(),
     }
 }
@@ -361,6 +362,11 @@ pub(in crate::ui) fn suggestion_usage_lines(suggestion: &InputSuggestion) -> Vec
             "    /language".to_string(),
             "    /language en".to_string(),
             "    /language zh-CN".to_string(),
+        ],
+        "/start-implementing" => vec![
+            t!("ui.suggestion.usage.heading").into_owned(),
+            "    /start-implementing".to_string(),
+            t!("ui.suggestion.usage.start_implementing_note").into_owned(),
         ],
         _ => Vec::new(),
     }
