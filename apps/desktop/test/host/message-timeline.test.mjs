@@ -28,6 +28,7 @@ function rowToken(message) {
   if (message.tool) return `tool:${message.tool.toolCallId}:${message.tool.phase}`;
   if (message.aux?.thinking) return `thinking:${message.aux.thinking}`;
   if (message.aux?.compaction) return `compaction:${message.aux.compaction}`;
+  if (message.aux?.finishTaskNotice) return `finish:${message.aux.finishTaskNotice}`;
   return `${message.pending ? 'pending' : 'assistant'}:${message.content}`;
 }
 
@@ -95,6 +96,28 @@ test('assistant text splits around tool rows inside a segment', () => {
     'assistant:I will inspect it.',
     'tool:call-1:succeeded',
     'assistant:Done.',
+  ]);
+});
+
+test('finish_task notice clears duplicate completion text instead of adding a second row', () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn('你好啊');
+  timeline.beginAssistantSegment('initial');
+  timeline.appendAssistantTextChunk('你好！我是 Spirit Agent，有什么可以帮你的吗？');
+  timeline.completeActiveAssistantSegment();
+
+  timeline.beginAssistantSegment('continuation');
+  timeline.appendAssistantTextChunk('用户打招呼，已问候回复，无后续任务。');
+  timeline.completeActiveAssistantSegment();
+  timeline.materializeFinishTaskNotice(
+    '任务因 用户打招呼，已问候回复，无后续任务。 完成。',
+    '用户打招呼，已问候回复，无后续任务。',
+  );
+
+  assert.deepEqual(timeline.toMessages().map(rowToken), [
+    'user:你好啊',
+    'assistant:你好！我是 Spirit Agent，有什么可以帮你的吗？',
+    'finish:任务因 用户打招呼，已问候回复，无后续任务。 完成。',
   ]);
 });
 

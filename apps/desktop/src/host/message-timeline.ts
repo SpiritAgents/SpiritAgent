@@ -410,6 +410,47 @@ export class DesktopMessageTimeline {
     return rowToMessage(row);
   }
 
+  materializeFinishTaskNotice(
+    notice: string,
+    completionText: string,
+  ): ConversationMessageSnapshot | undefined {
+    const normalizedNotice = notice.trim();
+    if (!normalizedNotice) {
+      return undefined;
+    }
+
+    const segment = this.activeSegment() ?? this.lastSegmentOfActiveTurn();
+    if (!segment) {
+      return undefined;
+    }
+
+    const normalizedCompletion = completionText.trim();
+    const normalizedAux = normalizeMessageAuxSnapshot({
+      finishTaskNotice: normalizedNotice,
+    });
+    let target = this.findAssistantTextRowWithContent(segment, normalizedCompletion);
+    if (target) {
+      target.content = '';
+    } else {
+      target = this.findLastAssistantTextRow(segment);
+    }
+    if (!target) {
+      target = this.createAssistantTextRow(
+        segment,
+        segmentHasToolRows(segment) ? 'after-tools' : 'before-tools',
+        false,
+      );
+    }
+
+    target.pending = false;
+    target.aux = normalizedAux;
+    segment.status = 'completed';
+    segment.activeAssistantTextRowId = undefined;
+    this.logCompletedAssistantMaterialization(segment, target, true, '');
+    this.logSegmentRows('finish-task-notice', segment);
+    return rowToMessage(target);
+  }
+
   completeActiveAssistantSegment(): void {
     const segment = this.activeSegment();
     if (!segment) {
@@ -838,6 +879,43 @@ export class DesktopMessageTimeline {
     return segment.rows.find(
       (row) => row.rowId === segment.activeAssistantTextRowId && row.kind === 'assistant-text',
     );
+  }
+
+  private lastSegmentOfActiveTurn(): DesktopTimelineSegment | undefined {
+    const turn = this.activeTurn();
+    if (!turn || turn.segments.length === 0) {
+      return undefined;
+    }
+    return turn.segments[turn.segments.length - 1];
+  }
+
+  private findLastAssistantTextRow(
+    segment: DesktopTimelineSegment,
+  ): DesktopTimelineRow | undefined {
+    for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
+      const row = segment.rows[index];
+      if (row?.kind === 'assistant-text') {
+        return row;
+      }
+    }
+    return undefined;
+  }
+
+  private findAssistantTextRowWithContent(
+    segment: DesktopTimelineSegment,
+    content: string,
+  ): DesktopTimelineRow | undefined {
+    const normalized = content.trim();
+    if (!normalized) {
+      return undefined;
+    }
+    for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
+      const row = segment.rows[index];
+      if (row?.kind === 'assistant-text' && row.content.trim() === normalized) {
+        return row;
+      }
+    }
+    return undefined;
   }
 
   private findReusableCompletedAssistantTextRow(

@@ -153,6 +153,21 @@ test('AgentRuntime completes Loop when finish_task is called', async () => {
   assert.deepEqual(runtime.history().map((message) => message.role), ['user', 'assistant', 'user', 'assistant', 'tool']);
 });
 
+test('AgentRuntime omits sync assistant UI events when finish_task completes', async () => {
+  const runtime = new AgentRuntime(
+    buildAgentRuntimeOptions([
+      { kind: 'tool', id: 'call_finish', name: 'finish_task', argumentsJson: '{"summary":"all done"}' },
+    ]),
+  );
+
+  await runtime.submitUserTurn('work');
+  const events = runtime.drainEvents();
+
+  assert.equal(events.some((event) => event.kind === 'begin-assistant-response'), false);
+  assert.equal(events.some((event) => event.kind === 'assistant-chunk'), false);
+  assert.equal(events.some((event) => event.kind === 'assistant-response-completed'), false);
+});
+
 test('AgentRuntime accepts finish_task when Loop is disabled', async () => {
   const runtime = new AgentRuntime(
     buildAgentRuntimeOptions([

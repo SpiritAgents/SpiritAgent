@@ -303,6 +303,10 @@ function ToolCallCollapsible({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   saveLocalImageAs: SaveLocalImageAs;
 }) {
+  if (tool.toolName === "finish_task") {
+    return null;
+  }
+
   if (tool.toolName === "generate_image") {
     return (
       <ImageGenerationToolCard
@@ -1216,6 +1220,11 @@ function MessageCard({
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             />
           </div>
+        ) : null}
+        {!isUser && message.aux?.finishTaskNotice ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {message.aux.finishTaskNotice}
+          </p>
         ) : null}
         {!isUser && message.tool ? (
           <ToolCallCollapsible
