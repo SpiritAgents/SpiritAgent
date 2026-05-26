@@ -2274,7 +2274,6 @@ export class AgentRuntime<
         }
 
         const output = await this.options.generateImage(imageRequest);
-        this.persistToolExecutionResult(output, toolCallId);
         return {
           kind: 'completed',
           output,

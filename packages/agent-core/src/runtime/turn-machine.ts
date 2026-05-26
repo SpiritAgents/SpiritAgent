@@ -966,6 +966,7 @@ export async function processToolCallsAsync<
         false,
         earlyOutcome.enqueueDeferredGuidance,
       );
+      persistCompletedEarlyToolResult(runtime, call.id, earlyOutcome.output);
       if (earlyOutcome.fatalError !== undefined) {
         runtime.completeTurn({
           kind: 'failed',
@@ -1448,7 +1449,7 @@ async function runEarlyToolExecution<
   });
 
   const external = internal === undefined
-    ? await runtime.performToolExecution(request, call.name, call.id)
+    ? await performEarlyExternalToolExecution(runtime, request)
     : undefined;
   const output = internal?.kind === 'completed'
     ? internal.output
@@ -1479,6 +1480,55 @@ async function runEarlyToolExecution<
     enqueueDeferredGuidance,
     ...(fatalError !== undefined ? { fatalError } : {}),
   };
+}
+
+async function performEarlyExternalToolExecution<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  request: ToolRequest,
+): Promise<ToolExecutionResult> {
+  try {
+    const output = await runtime.options.toolExecutor.execute(request);
+    return {
+      output,
+      failed: false,
+      backgroundExecution: false,
+    };
+  } catch (error) {
+    const summaryText = `[tool error] ${renderError(error)}`;
+    return {
+      output: {
+        content: createLlmMessageContentFromText(summaryText),
+        summaryText,
+      },
+      failed: true,
+      backgroundExecution: false,
+    };
+  }
+}
+
+function persistCompletedEarlyToolResult<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, 'historyStore'>,
+  toolCallId: string,
+  output: ToolExecutionOutput,
+): void {
+  if (output.content.length === 0) {
+    return;
+  }
+  runtime.historyStore.push({
+    role: 'tool',
+    toolCallId,
+    content: cloneLlmMessageContent(output.content),
+  });
 }
 
 async function matchingEarlyToolExecutionOutcome<ToolRequest>(
