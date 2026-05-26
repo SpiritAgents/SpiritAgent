@@ -321,6 +321,14 @@ function ToolCallCollapsible({
 }
 
 function GenericToolCallCollapsible({ tool }: { tool: ToolBlockSnapshot }) {
+  if (tool.toolName === "read_file") {
+    return (
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {tool.headline}
+      </p>
+    );
+  }
+
   const hasExpandableContent =
     tool.detailLines.length > 0 ||
     Boolean(tool.argsExcerpt?.trim()) ||
@@ -1075,6 +1083,7 @@ function MessageCard({
   message,
   listIndex,
   compactAfterPrevious,
+  tightenAfterPreviousMeta,
   canContinue,
   continueBusy,
   rewindText,
@@ -1100,6 +1109,7 @@ function MessageCard({
   message: ConversationMessageSnapshot;
   listIndex: number;
   compactAfterPrevious: boolean;
+  tightenAfterPreviousMeta: boolean;
   canContinue: boolean;
   continueBusy: boolean;
   rewindText: string;
@@ -1135,6 +1145,7 @@ function MessageCard({
       className={cn(
         "scroll-mt-4 flex w-full pb-3 last:pb-0",
         compactAfterPrevious && "-mt-4",
+        tightenAfterPreviousMeta && "-mt-3",
         isUser ? "justify-end" : "justify-start",
         rewindSelected && "relative z-40",
       )}
@@ -1281,6 +1292,41 @@ function shouldCompactAfterPreviousMessage(
       current.content.trim() &&
       !currentHasStandaloneAux,
   );
+}
+
+function shouldTightenAfterPreviousMetaMessage(
+  previous: ConversationMessageSnapshot | undefined,
+  current: ConversationMessageSnapshot,
+): boolean {
+  return isGrayMetaTrailingMessage(previous) && isGrayMetaLeadingMessage(current);
+}
+
+function isGrayMetaLineMessage(message: ConversationMessageSnapshot | undefined): boolean {
+  return isGrayMetaLeadingMessage(message) && isGrayMetaTrailingMessage(message);
+}
+
+function isGrayMetaLeadingMessage(message: ConversationMessageSnapshot | undefined): boolean {
+  if (!message || message.role !== "assistant" || message.content.trim()) {
+    return Boolean(
+      message?.role === "assistant" &&
+        !message.tool &&
+        message.aux?.thinking?.trim(),
+    );
+  }
+  if (message.tool) {
+    return message.tool.toolName === "read_file";
+  }
+  return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
+}
+
+function isGrayMetaTrailingMessage(message: ConversationMessageSnapshot | undefined): boolean {
+  if (!message || message.role !== "assistant" || message.content.trim()) {
+    return false;
+  }
+  if (message.tool) {
+    return message.tool.toolName === "read_file";
+  }
+  return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
 }
 
 function AskQuestionField({
@@ -2347,54 +2393,60 @@ export default function App() {
                       )}
                     >
                       <div data-spirit-surface="conversation-list" className="space-y-3">
-                        {messages.map((message, index) => (
-                          <MessageCard
-                            key={conversationMessageDomId(message, index)}
-                            messages={messages}
-                            listIndex={index}
-                            message={message}
-                            compactAfterPrevious={shouldCompactAfterPreviousMessage(messages[index - 1], message)}
-                            canContinue={
-                              message.canContinue === true &&
-                              !activeSessionReadOnly &&
-                              snapshot?.conversation.isBusy !== true
-                            }
-                            continueBusy={continueBusy}
-                            rewindSelected={rewindDraft?.messageId === message.id}
-                            rewindText={
-                              rewindDraft?.messageId === message.id ? rewindDraft.text : ""
-                            }
-                            rewindCanSubmit={
-                              runtime.summary.canSend &&
-                              runtime.busyAction !== "rewind" &&
-                              runtime.busyAction !== "session" &&
-                              Boolean(rewindDraft?.text.trim())
-                            }
-                            rewindBusy={runtime.busyAction === "rewind"}
-                            models={models}
-                            catalogHints={snapshot?.config.modelCatalogHints}
-                            activeModel={runtime.settings.activeModel}
-                            planMode={runtime.settings.planMode}
-                            onContinue={(targetMessage) => {
-                              void runtime.continueAssistantCompletion(targetMessage.id);
-                            }}
-                            onRewindStart={startMessageRewind}
-                            onRewindChange={(value) => {
-                              setRewindDraft((current) =>
-                                current ? { ...current, text: value } : current,
-                              );
-                            }}
-                            onRewindSubmit={submitMessageRewind}
-                            onModelSelect={runtime.setActiveModel}
-                            onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
-                            onPlanModeChange={(planMode) => {
-                              void runtime.saveSettingsPatch({ planMode });
-                            }}
-                            readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
-                            readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
-                            saveLocalImageAs={runtime.saveLocalImageAs}
-                          />
-                        ))}
+                        {messages.map((message, index) => {
+                          const previous = messages[index - 1];
+                          const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
+                          const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
+                          return (
+                            <MessageCard
+                              key={conversationMessageDomId(message, index)}
+                              messages={messages}
+                              listIndex={index}
+                              message={message}
+                              compactAfterPrevious={compactAfterPrevious}
+                              tightenAfterPreviousMeta={tightenAfterPreviousMeta}
+                              canContinue={
+                                message.canContinue === true &&
+                                !activeSessionReadOnly &&
+                                snapshot?.conversation.isBusy !== true
+                              }
+                              continueBusy={continueBusy}
+                              rewindSelected={rewindDraft?.messageId === message.id}
+                              rewindText={
+                                rewindDraft?.messageId === message.id ? rewindDraft.text : ""
+                              }
+                              rewindCanSubmit={
+                                runtime.summary.canSend &&
+                                runtime.busyAction !== "rewind" &&
+                                runtime.busyAction !== "session" &&
+                                Boolean(rewindDraft?.text.trim())
+                              }
+                              rewindBusy={runtime.busyAction === "rewind"}
+                              models={models}
+                              catalogHints={snapshot?.config.modelCatalogHints}
+                              activeModel={runtime.settings.activeModel}
+                              planMode={runtime.settings.planMode}
+                              onContinue={(targetMessage) => {
+                                void runtime.continueAssistantCompletion(targetMessage.id);
+                              }}
+                              onRewindStart={startMessageRewind}
+                              onRewindChange={(value) => {
+                                setRewindDraft((current) =>
+                                  current ? { ...current, text: value } : current,
+                                );
+                              }}
+                              onRewindSubmit={submitMessageRewind}
+                              onModelSelect={runtime.setActiveModel}
+                              onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
+                              onPlanModeChange={(planMode) => {
+                                void runtime.saveSettingsPatch({ planMode });
+                              }}
+                              readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
+                              readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
+                              saveLocalImageAs={runtime.saveLocalImageAs}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   )}

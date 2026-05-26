@@ -198,7 +198,7 @@ test('tool previews keep live and finalized thinking above the tool card without
       kind: 'streaming-tool-preview',
       toolCallId: 'call-1',
       toolName: 'read_file',
-      argumentsJson: '{"filePath":"README.md"}',
+      argumentsJson: '{"path":"README.md","start_line":10,"end_line":50}',
     },
     { kind: 'update-pending-assistant-thinking', text: 'Need to inspect README.md first.' },
   ]);
@@ -211,13 +211,14 @@ test('tool previews keep live and finalized thinking above the tool card without
 
   const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-1')?.tool;
   assert.equal(previewTool?.phase, 'preview');
+  assert.equal(previewTool?.headline, '查看 README.md 10 - 50');
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
       kind: 'tool-call-started',
       toolCallId: 'call-1',
       toolName: 'read_file',
-      request: { filePath: 'README.md' },
+      request: { path: 'README.md', start_line: 10, end_line: 50 },
     },
     { kind: 'assistant-thinking-segment-finalized', text: 'Need to inspect README.md first.' },
   ]);
@@ -230,6 +231,7 @@ test('tool previews keep live and finalized thinking above the tool card without
 
   const runningTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-1')?.tool;
   assert.equal(runningTool?.phase, 'running');
+  assert.equal(runningTool?.headline, '查看 README.md 10 - 50');
 });
 
 test('tool previews do not clone the first thinking block when multiple tool previews arrive', () => {
