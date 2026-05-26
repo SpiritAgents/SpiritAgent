@@ -149,6 +149,11 @@ export function headlineForToolPhase(
   toolName: string,
   request: unknown,
 ): string {
+  const readFileHeadline = headlineForReadFileRequest(toolName, request);
+  if (readFileHeadline) {
+    return readFileHeadline;
+  }
+
   const shellReason = reasonForShellTool(toolName, request);
   if (shellReason) {
     return shellReason;
@@ -610,6 +615,11 @@ export function headlineForStreamingToolPreview(
   toolName: string,
   request?: unknown,
 ): string {
+  const readFileHeadline = headlineForReadFileRequest(toolName, request);
+  if (readFileHeadline) {
+    return readFileHeadline;
+  }
+
   const shellReason = reasonForShellTool(toolName, request);
   if (shellReason) {
     return shellReason;
@@ -618,6 +628,64 @@ export function headlineForStreamingToolPreview(
   return hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
     ? `排队中: ${toolName}`
     : `调用中: ${toolName}`;
+}
+
+function headlineForReadFileRequest(toolName: string, request: unknown): string | undefined {
+  if (toolName !== 'read_file') {
+    return undefined;
+  }
+
+  if (!request || typeof request !== 'object') {
+    return '查看文件';
+  }
+
+  const record = request as Record<string, unknown>;
+  const rawPath = typeof record.path === 'string'
+    ? record.path
+    : typeof record.filePath === 'string'
+      ? record.filePath
+      : '';
+  const displayPath = displayPathForReadFile(rawPath);
+  const lineRange = lineRangeForReadFile(record.start_line, record.end_line);
+
+  return `查看 ${displayPath}${lineRange}`;
+}
+
+function displayPathForReadFile(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return '文件';
+  }
+
+  const normalized = trimmed.replace(/\\/g, '/');
+  const absolute = normalized.startsWith('/') || /^[A-Za-z]:\//u.test(normalized);
+  if (!absolute) {
+    return normalized;
+  }
+
+  const segments = normalized.split('/').filter(Boolean);
+  return segments[segments.length - 1] || normalized;
+}
+
+function lineRangeForReadFile(startLine: unknown, endLine: unknown): string {
+  const start = positiveLineNumber(startLine);
+  const end = positiveLineNumber(endLine);
+  if (start !== undefined && end !== undefined) {
+    return ` ${start} - ${end}`;
+  }
+  if (start !== undefined) {
+    return ` ${start} -`;
+  }
+  if (end !== undefined) {
+    return ` 1 - ${end}`;
+  }
+  return '';
+}
+
+function positiveLineNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : undefined;
 }
 
 export function restoreMessagesFromArchive(
