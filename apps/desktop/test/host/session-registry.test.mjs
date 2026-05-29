@@ -40,3 +40,31 @@ test('SessionRegistry resetActive clears conversation state', () => {
   assert.equal(bundle.messages.length, 0);
   assert.equal(bundle.activeSession, undefined);
 });
+
+test('SessionRegistry beginNewActive keeps prior bundle in memory', () => {
+  const registry = new SessionRegistry();
+  const filePath = 'D:/SpiritAgent/chats/session-a.json';
+  const restored = restoreStoredSessionState({
+    filePath,
+    loaded: {
+      llmHistory: [],
+      subagentSessions: [],
+      desktopMessages: [{ id: 1, role: 'user', content: 'keep me', pending: false }],
+    },
+    fallbackMessages: [],
+  });
+  registry.upsertFromRestored(
+    'D:/SpiritAgent/repo',
+    restored,
+    (messages) => ({
+      toMessages: () => messages,
+      snapshot: () => [],
+    }),
+  );
+
+  const first = registry.requireActive();
+  const second = registry.beginNewActive('D:/SpiritAgent/repo');
+  assert.notEqual(second.id, first.id);
+  assert.equal(registry.get(first.id)?.messages[0]?.content, 'keep me');
+  assert.equal(registry.activeSessionId(), second.id);
+});
