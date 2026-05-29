@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { ConversationMessageSnapshot } from '../types.js';
+import type { ActiveSessionSnapshot, ConversationMessageSnapshot } from '../types.js';
 import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from './message-timeline.js';
 import {
   createEmptySessionBundle,
@@ -9,8 +9,23 @@ import {
   type SessionBundle,
 } from './session-bundle.js';
 import type { RestoredSessionState } from './sessions.js';
+import { defaultNewSessionPath, provisionalNewSessionPath } from './storage.js';
 
 const MAX_LOADED_BUNDLES = 8;
+
+export function buildProvisionalActiveSession(filePath: string): ActiveSessionSnapshot {
+  return {
+    filePath: path.resolve(filePath),
+    displayName: 'New conversation',
+    kind: 'stored',
+  };
+}
+
+export function assignProvisionalActiveSession(bundle: SessionBundle, filePath?: string): string {
+  const resolved = path.resolve(filePath ?? bundle.activeSession?.filePath ?? defaultNewSessionPath());
+  bundle.activeSession = buildProvisionalActiveSession(resolved);
+  return resolved;
+}
 
 export class SessionRegistry {
   private readonly bundles = new Map<string, SessionBundle>();
@@ -92,15 +107,38 @@ export class SessionRegistry {
     return [...this.bundles.values()].filter((bundle) => isBusy(bundle));
   }
 
-  ensureDraft(workspaceRoot: string): SessionBundle {
+  ensureDraft(workspaceRoot: string, provisionalFilePath?: string): SessionBundle {
     const existing = this.getActive();
     if (existing) {
       existing.workspaceRoot = workspaceRoot;
+      const resolved = assignProvisionalActiveSession(existing, provisionalFilePath);
+      this.rekeyBundle(existing, resolved);
       return existing;
     }
-    const bundle = createEmptySessionBundle(workspaceRoot);
-    this.bundles.set(bundle.id, bundle);
-    this.activeId = bundle.id;
+    return this.activateProvisional(
+      workspaceRoot,
+      provisionalFilePath ?? provisionalNewSessionPath(workspaceRoot),
+    );
+  }
+
+  activateProvisional(workspaceRoot: string, filePath: string): SessionBundle {
+    const resolved = path.resolve(filePath);
+    const existing = this.findBySessionPath(resolved);
+    if (existing) {
+      existing.workspaceRoot = workspaceRoot;
+      if (!existing.activeSession) {
+        assignProvisionalActiveSession(existing, resolved);
+      }
+      this.rekeyBundle(existing, path.resolve(existing.activeSession!.filePath));
+      this.activeId = path.resolve(existing.activeSession!.filePath);
+      return existing;
+    }
+
+    this.evictIfNeeded();
+    const bundle = createEmptySessionBundle(workspaceRoot, resolved);
+    bundle.activeSession = buildProvisionalActiveSession(resolved);
+    this.bundles.set(resolved, bundle);
+    this.activeId = resolved;
     return bundle;
   }
 
@@ -151,11 +189,13 @@ export class SessionRegistry {
 
   /** New empty foreground session; prior bundles (including busy runs) stay loaded. */
   beginNewActive(workspaceRoot: string): SessionBundle {
-    const id = `__draft__${Date.now()}`;
-    const bundle = createEmptySessionBundle(workspaceRoot, id);
-    this.evictIfNeeded();
-    this.bundles.set(id, bundle);
-    this.activeId = id;
+    const provisionalPath = provisionalNewSessionPath(workspaceRoot);
+    const bundle = this.activateProvisional(workspaceRoot, provisionalPath);
+    resetSessionBundleInPlace(bundle);
+    bundle.workspaceRoot = workspaceRoot;
+    assignProvisionalActiveSession(bundle, provisionalPath);
+    this.rekeyBundle(bundle, path.resolve(provisionalPath));
+    this.activeId = path.resolve(provisionalPath);
     return bundle;
   }
 

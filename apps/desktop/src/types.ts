@@ -513,6 +513,8 @@ export interface DesktopSnapshot {
   conversation: ConversationSnapshot;
   /** 从磁盘打开的会话；未从文件打开时为 `undefined`（新会话/未保存）。 */
   activeSession?: ActiveSessionSnapshot;
+  /** Stable key for per-session composer draft persistence (`filePath` or synthetic bundle id). */
+  composerSessionKey: string;
 }
 
 export interface DesktopExtensionCssLayer {

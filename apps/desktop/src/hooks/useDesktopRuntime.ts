@@ -3,6 +3,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SettingsFormState } from "@/components/settings-view";
 import { useHostApi } from "@/hooks/useHostApi";
 import {
+  clearComposerDraft,
+  readComposerDraft,
+  writeComposerDraft,
+} from "@/lib/composer-draft-store";
+import {
+  composerAttachmentViewFromPath,
+  type ComposerLocalFileAttachmentView,
+} from "@/lib/local-file-attachments";
+import {
   isCreateSkillSlashInput,
   isLogSessionSlashInput,
   isStartImplementingSlashInput,
@@ -69,6 +78,33 @@ type BusyAction =
   | "git";
 
 const DREAM_IDLE_POLL_INTERVAL_MS = 30_000;
+const COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS = 400;
+
+type SessionUiState = {
+  composer: string;
+  questionDrafts: Record<string, QuestionDraft>;
+  localFilePaths: string[];
+};
+
+function pathsFromComposerAttachments(
+  attachments: readonly ComposerLocalFileAttachmentView[],
+): string[] {
+  return attachments.map((attachment) => attachment.path);
+}
+
+function attachmentsFromPaths(paths: readonly string[]): ComposerLocalFileAttachmentView[] {
+  return paths.map((filePath) => composerAttachmentViewFromPath(filePath));
+}
+
+function persistSessionUiDraft(
+  sessionKey: string,
+  state: Pick<SessionUiState, "composer" | "localFilePaths">,
+): void {
+  writeComposerDraft(sessionKey, {
+    text: state.composer,
+    localFilePaths: state.localFilePaths,
+  });
+}
 
 export interface QuestionDraft {
   selectedOptionIndexes: number[];
@@ -226,40 +262,77 @@ export function useDesktopRuntime() {
   const [busyAction, setBusyAction] = useState<BusyAction>("");
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
+  const [composerLocalFileAttachments, setComposerLocalFileAttachments] = useState<
+    ComposerLocalFileAttachmentView[]
+  >([]);
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
-  const sessionUiCacheRef = useRef(
-    new Map<string, { composer: string; questionDrafts: Record<string, QuestionDraft> }>(),
-  );
+  const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
 
-  const sessionUiKey = useCallback((filePath: string | undefined) => filePath?.trim() || "", []);
+  const sessionUiKey = useCallback((sessionKey: string | undefined) => sessionKey?.trim() || "", []);
+
+  const clearActiveComposerDraft = useCallback(() => {
+    const key = sessionUiKey(snapshotRef.current?.composerSessionKey);
+    setComposer("");
+    setComposerLocalFileAttachments([]);
+    if (!key) {
+      return;
+    }
+    sessionUiCacheRef.current.delete(key);
+    clearComposerDraft(key);
+  }, [sessionUiKey]);
 
   const stashSessionUi = useCallback(
-    (filePath: string | undefined) => {
-      const key = sessionUiKey(filePath);
+    (targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession"> | null | undefined) => {
+      const snapshotLike = targetSnapshot ?? snapshotRef.current;
+      if (snapshotLike?.activeSession?.readOnly) {
+        return;
+      }
+      const key = sessionUiKey(snapshotLike?.composerSessionKey);
       if (!key) {
         return;
       }
-      sessionUiCacheRef.current.set(key, {
+      const state: SessionUiState = {
         composer,
         questionDrafts,
-      });
+        localFilePaths: pathsFromComposerAttachments(composerLocalFileAttachments),
+      };
+      sessionUiCacheRef.current.set(key, state);
+      persistSessionUiDraft(key, state);
     },
-    [composer, questionDrafts, sessionUiKey],
+    [composer, composerLocalFileAttachments, questionDrafts, sessionUiKey],
   );
 
   const restoreSessionUi = useCallback(
-    (filePath: string | undefined) => {
-      const key = sessionUiKey(filePath);
+    (targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession"> | null | undefined) => {
+      const snapshotLike = targetSnapshot ?? snapshotRef.current;
+      if (snapshotLike?.activeSession?.readOnly) {
+        setComposer("");
+        setQuestionDrafts({});
+        setComposerLocalFileAttachments([]);
+        setQuestionError("");
+        return;
+      }
+      const key = sessionUiKey(snapshotLike?.composerSessionKey);
       if (!key) {
         setComposer("");
         setQuestionDrafts({});
+        setComposerLocalFileAttachments([]);
         setQuestionError("");
         return;
       }
       const cached = sessionUiCacheRef.current.get(key);
-      setComposer(cached?.composer ?? "");
-      setQuestionDrafts(cached?.questionDrafts ?? {});
+      if (cached) {
+        setComposer(cached.composer);
+        setQuestionDrafts(cached.questionDrafts);
+        setComposerLocalFileAttachments(attachmentsFromPaths(cached.localFilePaths));
+        setQuestionError("");
+        return;
+      }
+      const stored = readComposerDraft(key);
+      setComposer(stored?.text ?? "");
+      setQuestionDrafts({});
+      setComposerLocalFileAttachments(attachmentsFromPaths(stored?.localFilePaths ?? []));
       setQuestionError("");
     },
     [sessionUiKey],
@@ -272,6 +345,41 @@ export function useDesktopRuntime() {
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
+
+  useEffect(() => {
+    if (
+      busyAction === "bootstrap" ||
+      busyAction === "session" ||
+      busyAction === "reset" ||
+      snapshot?.activeSession?.readOnly
+    ) {
+      return;
+    }
+    const key = sessionUiKey(snapshot?.composerSessionKey);
+    if (!key) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const localFilePaths = pathsFromComposerAttachments(composerLocalFileAttachments);
+      sessionUiCacheRef.current.set(key, {
+        composer,
+        questionDrafts,
+        localFilePaths,
+      });
+      persistSessionUiDraft(key, { composer, localFilePaths });
+    }, COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    busyAction,
+    composer,
+    composerLocalFileAttachments,
+    questionDrafts,
+    sessionUiKey,
+    snapshot?.activeSession?.readOnly,
+    snapshot?.composerSessionKey,
+  ]);
 
   const applySnapshot = useCallback((next: DesktopSnapshot) => {
     setSnapshot(next);
@@ -327,6 +435,7 @@ export function useDesktopRuntime() {
     try {
       const next = await api.bootstrap(request);
       applySnapshot(next);
+      restoreSessionUi(next);
       setRuntimeError("");
       setWebHostPairingRequired(false);
       void refreshSessions();
@@ -336,7 +445,7 @@ export function useDesktopRuntime() {
     } finally {
       setBusyAction("");
     }
-  }, [api, applySnapshot, refreshSessions]);
+  }, [api, applySnapshot, refreshSessions, restoreSessionUi]);
 
   const switchWorkspaceRoot = useCallback(
     async (workspaceRoot: string): Promise<boolean> => {
@@ -346,9 +455,10 @@ export function useDesktopRuntime() {
 
       setBusyAction("bootstrap");
       try {
+        stashSessionUi(snapshotRef.current);
         const next = await api.bootstrap({ workspaceRoot });
         applySnapshot(next);
-        setComposer("");
+        restoreSessionUi(next);
         setQuestionError("");
         setRuntimeError("");
         void refreshSessions();
@@ -360,7 +470,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     },
-    [api, applySnapshot, refreshSessions],
+    [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
   );
 
   const rememberWorkspaceRoot = useCallback(
@@ -1271,7 +1381,7 @@ export function useDesktopRuntime() {
       try {
         const next = await api.exportSessionLog();
         applySnapshot(next);
-        setComposer("");
+        clearActiveComposerDraft();
         setRuntimeError("");
         void refreshSessions();
         return true;
@@ -1325,7 +1435,7 @@ export function useDesktopRuntime() {
             ...(hasLocalFiles ? { localFilePaths } : {}),
           });
       applySnapshot(next);
-      setComposer("");
+      clearActiveComposerDraft();
       setRuntimeError("");
       void refreshSessions();
       return true;
@@ -1335,7 +1445,7 @@ export function useDesktopRuntime() {
     } finally {
       setBusyAction("");
     }
-  }, [api, applySnapshot, composer, refreshSessions, snapshot]);
+  }, [api, applySnapshot, clearActiveComposerDraft, composer, refreshSessions, snapshot]);
 
   const abortConversation = useCallback(async (): Promise<boolean> => {
     if (!api) {
@@ -1408,7 +1518,7 @@ export function useDesktopRuntime() {
       try {
         const next = await api.rewindAndSubmitMessage(request);
         applySnapshot(next);
-        setComposer("");
+        clearActiveComposerDraft();
         setQuestionError("");
         setRuntimeError("");
         void refreshSessions();
@@ -1420,7 +1530,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     },
-    [api, applySnapshot, refreshSessions],
+    [api, applySnapshot, clearActiveComposerDraft, refreshSessions],
   );
 
   const submitApproval = useCallback(async (decision: DesktopApprovalDecision) => {
@@ -1497,10 +1607,10 @@ export function useDesktopRuntime() {
       }
       setBusyAction("session");
       try {
-        stashSessionUi(snapshotRef.current?.activeSession?.filePath);
+        stashSessionUi(snapshotRef.current);
         const next = await api.openSession(path);
         applySnapshot(next);
-        restoreSessionUi(next.activeSession?.filePath);
+        restoreSessionUi(next);
         setRuntimeError("");
         void refreshSessions();
       } catch (error) {
@@ -1561,10 +1671,10 @@ export function useDesktopRuntime() {
 
     setBusyAction("reset");
     try {
-      stashSessionUi(snapshotRef.current?.activeSession?.filePath);
+      stashSessionUi(snapshotRef.current);
       const next = await api.resetSession();
       applySnapshot(next);
-      restoreSessionUi(next.activeSession?.filePath);
+      restoreSessionUi(next);
       setRuntimeError("");
       void refreshSessions();
     } catch (error) {
@@ -1601,6 +1711,7 @@ export function useDesktopRuntime() {
     hostConnectionError: hostError,
     busyAction,
     composer,
+    composerLocalFileAttachments,
     hostKind: kind,
     pendingQuestions,
     questionDrafts,
@@ -1618,6 +1729,7 @@ export function useDesktopRuntime() {
     setModelReasoningEffort,
     setApprovalGuidance,
     setComposer,
+    setComposerLocalFileAttachments,
     setQuestionDrafts,
     setSettings,
     updateQuestionDraft,
