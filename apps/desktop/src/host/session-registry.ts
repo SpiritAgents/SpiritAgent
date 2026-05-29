@@ -142,21 +142,6 @@ export class SessionRegistry {
     return bundle;
   }
 
-  replaceActiveWithRestored(
-    workspaceRoot: string,
-    restored: RestoredSessionState,
-    createTimeline: (
-      messages: ConversationMessageSnapshot[],
-      timelineSnapshot?: DesktopTimelineTurnSnapshot[],
-    ) => DesktopMessageTimeline,
-  ): SessionBundle {
-    const id = restored.activeSession.filePath;
-    const bundle = sessionBundleFromRestored(workspaceRoot, restored, createTimeline);
-    this.bundles.set(id, bundle);
-    this.activeId = id;
-    return bundle;
-  }
-
   resetActive(workspaceRoot: string): SessionBundle {
     const bundle = this.ensureDraft(workspaceRoot);
     resetSessionBundleInPlace(bundle);
