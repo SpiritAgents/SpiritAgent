@@ -518,44 +518,16 @@ pub(in crate::ui) fn build_access_picker_lines(
         .access_picker_index
         .min(OPTIONS.len().saturating_sub(1));
     let total = OPTIONS.len();
-    let window = max_items.max(1);
-    let start = if selected + 1 > window {
-        selected + 1 - window
-    } else {
-        0
-    };
-    let end = (start + window).min(total);
-    let current = app.approval_level.as_str();
+    let (start, end) = inline_picker_bounds(total, selected, max_items);
 
     let mut lines = Vec::new();
     for (idx, level) in OPTIONS.iter().enumerate().take(end).skip(start) {
         let is_selected = idx == selected;
-        let is_active = *level == current;
-        let active_suffix = if is_active {
-            t!("ui.picker.access.current_suffix").into_owned()
-        } else {
-            String::new()
-        };
-        let style = if is_selected {
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD | Modifier::REVERSED)
-        } else if is_active {
-            Style::default()
-                .fg(Color::Green)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::White)
-        };
-        lines.push(Line::from(Span::styled(
-            format!(
-                "{}{} {}",
-                picker_selection_prefix(is_selected),
-                access_level_display_label(level),
-                active_suffix
-            ),
-            style,
-        )));
+        let row_style = inline_picker_text_style(is_selected);
+        lines.push(Line::from(vec![
+            Span::styled(picker_selection_prefix(is_selected), row_style),
+            Span::styled(access_level_display_label(level), row_style),
+        ]));
     }
 
     lines
