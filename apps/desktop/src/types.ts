@@ -2,6 +2,8 @@ import type { ModelProviderId } from '@spirit-agent/host-internal/model-provider
 import type { ModelReasoningEffort } from '@spirit-agent/agent-core/reasoning-effort';
 import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult } from '@spirit-agent/host-internal';
 
+import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachments.js';
+
 export interface BootstrapRequest {
   workspaceRoot?: string;
 }
@@ -414,6 +416,7 @@ export interface SubmitCreateSkillSlashRequest {
 export interface RewindAndSubmitMessageRequest {
   messageId: number;
   text: string;
+  localFilePaths?: string[];
 }
 
 export interface SubmitUserTurnRequest {
@@ -628,10 +631,17 @@ export interface ConversationSnapshot {
   rewindWarnings?: FileRewindWarning[];
 }
 
+export interface ConversationLocalFileAttachmentSnapshot {
+  path: string;
+  name: string;
+  isImage: boolean;
+}
+
 export interface ConversationMessageSnapshot {
   id: number;
   role: 'user' | 'assistant';
   content: string;
+  localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
   tool?: ToolBlockSnapshot;
   aux?: MessageAuxSnapshot;
   pending: boolean;
@@ -644,6 +654,7 @@ export interface MessageRewindDraftState {
   /** List index in the visible conversation; disambiguates duplicate `messageId`s in the timeline. */
   listIndex: number;
   text: string;
+  localFileAttachments: ComposerLocalFileAttachmentView[];
 }
 
 export interface MessageRewindResult {

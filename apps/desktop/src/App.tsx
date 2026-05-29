@@ -83,9 +83,19 @@ import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { ShellCommandToolCard } from "@/components/shell-command-tool-card";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
+import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
+import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useFont } from "@/hooks/useFont";
 import { useTheme } from "@/hooks/useTheme";
+import {
+  appendComposerLocalFileAttachment,
+  composerAttachmentViewFromPath,
+  isPreviewableImagePath,
+  normalizeSlashPath as normalizeAttachmentPath,
+  removeComposerLocalFileAttachment,
+  snapshotsToComposerAttachmentViews,
+} from "@/lib/local-file-attachments";
 import {
   DESKTOP_CHROME_COMMIT_BTN,
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
@@ -185,16 +195,6 @@ function deriveWorkspaceLabel(workspaceRoot: string): string {
 
 function normalizeSlashPath(value: string): string {
   return value.replace(/\\/g, "/").replace(/\/+$/g, "");
-}
-
-function basenameFromPath(value: string): string {
-  const normalized = normalizeSlashPath(value);
-  const lastSlash = normalized.lastIndexOf("/");
-  return lastSlash >= 0 ? normalized.slice(lastSlash + 1) || normalized : normalized;
-}
-
-function isPreviewableImagePath(value: string): boolean {
-  return /\.(?:bmp|gif|jpe?g|png|webp)$/iu.test(value);
 }
 
 type EmptyStateWorkspaceSelectorProps = {
@@ -1106,9 +1106,11 @@ function MessageCard({
   canContinue,
   continueBusy,
   rewindText,
+  rewindLocalFileAttachments,
   rewindSelected,
   rewindCanSubmit,
   rewindBusy,
+  canPickLocalFile,
   models,
   catalogHints,
   activeModel,
@@ -1117,6 +1119,9 @@ function MessageCard({
   onRewindChange,
   onRewindStart,
   onRewindSubmit,
+  onRewindRemoveLocalFileAttachment,
+  onRewindPickLocalFile,
+  onRewindPaste,
   onModelSelect,
   onModelReasoningEffortSelect,
   onPlanModeChange,
@@ -1132,9 +1137,11 @@ function MessageCard({
   canContinue: boolean;
   continueBusy: boolean;
   rewindText: string;
+  rewindLocalFileAttachments: readonly ComposerLocalFileAttachmentView[];
   rewindSelected: boolean;
   rewindCanSubmit: boolean;
   rewindBusy: boolean;
+  canPickLocalFile: boolean;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
   activeModel: string;
@@ -1143,6 +1150,9 @@ function MessageCard({
   onRewindChange(value: string): void;
   onRewindStart(message: ConversationMessageSnapshot, listIndex: number): void;
   onRewindSubmit(): void;
+  onRewindRemoveLocalFileAttachment(path: string): void;
+  onRewindPickLocalFile(): void;
+  onRewindPaste(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
   onPlanModeChange(planMode: boolean): void;
@@ -1183,7 +1193,7 @@ function MessageCard({
         {rewindSelected && isUser ? (
           <ComposerSurface
             value={rewindText}
-            localFileAttachments={[]}
+            localFileAttachments={rewindLocalFileAttachments}
             onChange={onRewindChange}
             onSubmit={onRewindSubmit}
             placeholder="输入消息…"
@@ -1199,6 +1209,11 @@ function MessageCard({
             showLoopSwitch={false}
             canSend={rewindCanSubmit}
             busy={rewindBusy}
+            showInsertButton
+            canPickLocalFile={canPickLocalFile}
+            onPickLocalFile={onRewindPickLocalFile}
+            onRemoveLocalFileAttachment={onRewindRemoveLocalFileAttachment}
+            onPaste={onRewindPaste}
           />
         ) : null}
         {!isUser && message.aux?.thinking ? (
@@ -1217,30 +1232,14 @@ function MessageCard({
             </pre>
           </div>
         ) : null}
-        {isUser && message.content.trim() && !rewindSelected ? (
-          <pre
-            data-spirit-surface="message-bubble"
-            className={cn(
-              "whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground",
-              userBubble,
-              canStartRewind && "cursor-pointer transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
-            )}
-            role={canStartRewind ? "button" : undefined}
-            tabIndex={canStartRewind ? 0 : undefined}
-            onClick={canStartRewind ? () => onRewindStart(message, listIndex) : undefined}
-            onKeyDown={
-              canStartRewind
-                ? (event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onRewindStart(message, listIndex);
-                    }
-                  }
-                : undefined
-            }
-          >
-            {message.content}
-          </pre>
+        {isUser && !rewindSelected ? (
+          <UserMessageBubble
+            message={message}
+            userBubbleClassName={userBubble}
+            canStartRewind={canStartRewind}
+            onRewindStart={() => onRewindStart(message, listIndex)}
+            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+          />
         ) : null}
         {!isUser && message.content.trim() ? (
           <div data-spirit-surface="message-bubble">
@@ -1719,6 +1718,11 @@ export default function App() {
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
   const pendingQuestions = runtime.pendingQuestions;
   const [localFileAttachments, setLocalFileAttachments] = useState<ComposerLocalFileAttachmentView[]>([]);
+  useLocalFileAttachmentPreviews(
+    localFileAttachments,
+    setLocalFileAttachments,
+    runtime.readLocalImagePreviewDataUrl,
+  );
   const activeSessionReadOnly = snapshot?.activeSession?.readOnly === true;
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
@@ -1737,6 +1741,20 @@ export default function App() {
     Boolean(pendingQuestions) ||
     (runtime.busyAction === "send" && !conversationInterruptible);
   const [rewindDraft, setRewindDraft] = useState<MessageRewindDraftState | null>(null);
+  useLocalFileAttachmentPreviews(
+    rewindDraft?.localFileAttachments ?? [],
+    (update) => {
+      setRewindDraft((current) => {
+        if (!current) {
+          return current;
+        }
+        const localFileAttachments =
+          typeof update === "function" ? update(current.localFileAttachments) : update;
+        return { ...current, localFileAttachments };
+      });
+    },
+    runtime.readLocalImagePreviewDataUrl,
+  );
 
   const [activeSurface, setActiveSurface] = useState<"conversation" | "settings" | "marketplace">(
     "conversation",
@@ -1930,7 +1948,12 @@ export default function App() {
     if (!runtime.summary.canSend || runtime.busyAction || message.canRewind !== true) {
       return;
     }
-    setRewindDraft({ messageId: message.id, listIndex, text: message.content });
+    setRewindDraft({
+      messageId: message.id,
+      listIndex,
+      text: message.content,
+      localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
+    });
   };
 
   const submitMessageRewind = () => {
@@ -1941,6 +1964,9 @@ export default function App() {
       .rewindAndSubmitMessage({
         messageId: rewindDraft.messageId,
         text: rewindDraft.text,
+        ...(rewindDraft.localFileAttachments.length > 0
+          ? { localFilePaths: rewindDraft.localFileAttachments.map((item) => item.path) }
+          : {}),
       })
       .then((ok) => {
         if (ok) {
@@ -2004,51 +2030,56 @@ export default function App() {
   };
 
   const removeLocalFileAttachment = (path: string) => {
-    setLocalFileAttachments((current) =>
-      current.filter((item) => normalizeSlashPath(item.path) !== normalizeSlashPath(path)),
-    );
+    removeComposerLocalFileAttachment(setLocalFileAttachments, path);
+  };
+
+  const removeRewindLocalFileAttachment = (path: string) => {
+    setRewindDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const localFileAttachments = current.localFileAttachments.filter(
+        (item) => normalizeAttachmentPath(item.path) !== normalizeAttachmentPath(path),
+      );
+      return { ...current, localFileAttachments };
+    });
   };
 
   const attachLocalFilePath = useCallback(
     (filePath: string) => {
-      const normalizedPath = normalizeSlashPath(filePath);
-      setLocalFileAttachments((current) => {
-        if (current.some((item) => normalizeSlashPath(item.path) === normalizedPath)) {
-          return current;
-        }
-
-        return [
-          ...current,
-          {
-            id: normalizedPath,
-            path: normalizedPath,
-            name: basenameFromPath(normalizedPath),
-            isImage: isPreviewableImagePath(normalizedPath),
-            previewDataUrl: null,
-          },
-        ];
-      });
-      if (isPreviewableImagePath(normalizedPath)) {
-        void runtime.readLocalImagePreviewDataUrl(normalizedPath).then((previewDataUrl) => {
-          if (!previewDataUrl) {
-            return;
-          }
-
-          setLocalFileAttachments((current) =>
-            current.map((item) =>
-              normalizeSlashPath(item.path) === normalizedPath
-                ? { ...item, previewDataUrl }
-                : item,
-            ),
-          );
-        });
-      }
-      queueMicrotask(() => {
-        composerTextareaRef.current?.focus();
+      appendComposerLocalFileAttachment(setLocalFileAttachments, filePath, {
+        onAfterAttach: () => {
+          queueMicrotask(() => {
+            composerTextareaRef.current?.focus();
+          });
+        },
       });
     },
-    [runtime],
+    [],
   );
+
+  const attachRewindLocalFilePath = useCallback((filePath: string) => {
+    setRewindDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const normalizedPath = normalizeAttachmentPath(filePath);
+      if (
+        current.localFileAttachments.some(
+          (item) => normalizeAttachmentPath(item.path) === normalizedPath,
+        )
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        localFileAttachments: [
+          ...current.localFileAttachments,
+          composerAttachmentViewFromPath(normalizedPath),
+        ],
+      };
+    });
+  }, []);
 
   const pickLocalFileFromPalette = () => {
     void runtime.pickLocalFile().then((filePath) => {
@@ -2081,6 +2112,38 @@ export default function App() {
     },
     [activeSessionReadOnly, attachLocalFilePath, runtime],
   );
+
+  const handleRewindComposerPaste = useCallback(
+    (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
+      if (activeSessionReadOnly || runtime.hostKind !== "electron" || !rewindDraft) {
+        return;
+      }
+
+      const hasClipboardImage = Array.from(event.clipboardData?.items ?? []).some(
+        (item) => item.kind === "file" && item.type.startsWith("image/"),
+      );
+      if (!hasClipboardImage) {
+        return;
+      }
+
+      event.preventDefault();
+      void runtime.ingestClipboardImage().then((filePath) => {
+        if (filePath) {
+          attachRewindLocalFilePath(filePath);
+        }
+      });
+    },
+    [activeSessionReadOnly, attachRewindLocalFilePath, rewindDraft, runtime],
+  );
+
+  const pickRewindLocalFileFromPalette = () => {
+    void runtime.pickLocalFile().then((filePath) => {
+      if (!filePath) {
+        return;
+      }
+      attachRewindLocalFilePath(filePath);
+    });
+  };
 
   const submitComposerMessage = () => {
     void runtime
@@ -2469,12 +2532,20 @@ export default function App() {
                               rewindText={
                                 rewindDraft?.listIndex === index ? rewindDraft.text : ""
                               }
+                              rewindLocalFileAttachments={
+                                rewindDraft?.listIndex === index
+                                  ? rewindDraft.localFileAttachments
+                                  : []
+                              }
                               rewindCanSubmit={
                                 runtime.summary.canSend &&
                                 runtime.busyAction !== "rewind" &&
                                 runtime.busyAction !== "session" &&
-                                Boolean(rewindDraft?.text.trim())
+                                rewindDraft?.listIndex === index &&
+                                (Boolean(rewindDraft.text.trim()) ||
+                                  rewindDraft.localFileAttachments.length > 0)
                               }
+                              canPickLocalFile={runtime.hostKind === "electron"}
                               rewindBusy={runtime.busyAction === "rewind"}
                               models={models}
                               catalogHints={snapshot?.config.modelCatalogHints}
@@ -2490,6 +2561,9 @@ export default function App() {
                                 );
                               }}
                               onRewindSubmit={submitMessageRewind}
+                              onRewindRemoveLocalFileAttachment={removeRewindLocalFileAttachment}
+                              onRewindPickLocalFile={pickRewindLocalFileFromPalette}
+                              onRewindPaste={handleRewindComposerPaste}
                               onModelSelect={runtime.setActiveModel}
                               onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
                               onPlanModeChange={(planMode) => {

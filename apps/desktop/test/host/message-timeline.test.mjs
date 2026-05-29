@@ -374,3 +374,24 @@ test('hydrated messages can open a continuation segment without reordering resto
     'tool:call-2:running',
   ]);
 });
+
+test('user local file attachments survive timeline round trip', () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn('how is this image?', {
+    localFileAttachments: [{ path: '/tmp/photo.png', name: 'photo.png', isImage: true }],
+  });
+  timeline.beginAssistantSegment('initial');
+  timeline.appendAssistantTextChunk('Looks good.');
+  timeline.completeActiveAssistantSegment();
+
+  const messages = timeline.toMessages();
+  assert.equal(messages[0].localFileAttachments?.length, 1);
+  assert.equal(messages[0].localFileAttachments?.[0]?.name, 'photo.png');
+
+  let nextMessageId = 10;
+  const rebuilt = DesktopMessageTimeline.fromMessages(messages, {
+    allocateMessageId: () => nextMessageId++,
+  });
+  const roundTripped = rebuilt.toMessages();
+  assert.deepEqual(roundTripped[0].localFileAttachments, messages[0].localFileAttachments);
+});

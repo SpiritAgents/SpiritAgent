@@ -1,4 +1,5 @@
 import type {
+  ConversationLocalFileAttachmentSnapshot,
   ConversationMessageSnapshot,
   MessageAuxSnapshot,
   ToolBlockSnapshot,
@@ -33,6 +34,7 @@ export interface DesktopTimelineRowSnapshot {
   content: string;
   pending: boolean;
   canContinue?: boolean;
+  localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
   tool?: ToolBlockSnapshot;
   aux?: MessageAuxSnapshot;
 }
@@ -157,7 +159,14 @@ export class DesktopMessageTimeline {
     return messages;
   }
 
-  beginUserTurn(content: string, input: { messageId?: number; pending?: boolean } = {}): ConversationMessageSnapshot {
+  beginUserTurn(
+    content: string,
+    input: {
+      messageId?: number;
+      pending?: boolean;
+      localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
+    } = {},
+  ): ConversationMessageSnapshot {
     this.clearContinuationMarkers();
     const turn: DesktopTimelineTurn = {
       turnId: this.nextTurnId++,
@@ -170,6 +179,9 @@ export class DesktopMessageTimeline {
       kind: 'user',
       content,
       pending: input.pending ?? false,
+      ...(input.localFileAttachments?.length
+        ? { localFileAttachments: cloneLocalFileAttachments(input.localFileAttachments) }
+        : {}),
     });
     turn.userRow = row;
     this.turns.push(turn);
@@ -556,6 +568,9 @@ export class DesktopMessageTimeline {
       this.beginUserTurn(message.content, {
         messageId: message.id,
         pending: message.pending,
+        ...(message.localFileAttachments?.length
+          ? { localFileAttachments: message.localFileAttachments }
+          : {}),
       });
       return;
     }
@@ -964,6 +979,7 @@ export class DesktopMessageTimeline {
     content: string;
     pending: boolean;
     canContinue?: boolean;
+    localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
     tool?: ToolBlockSnapshot;
     aux?: MessageAuxSnapshot;
   }): DesktopTimelineRow {
@@ -982,6 +998,9 @@ export class DesktopMessageTimeline {
       content: input.content,
       pending: input.pending,
       ...(input.canContinue ? { canContinue: true } : {}),
+      ...(input.localFileAttachments?.length
+        ? { localFileAttachments: cloneLocalFileAttachments(input.localFileAttachments) }
+        : {}),
       ...(input.tool ? { tool: cloneTool(input.tool) } : {}),
       ...(input.aux ? { aux: cloneAux(input.aux) } : {}),
     };
@@ -1195,6 +1214,9 @@ function rowToMessage(row: DesktopTimelineRow): ConversationMessageSnapshot {
       role: 'user',
       content: row.content,
       pending: row.pending,
+      ...(row.localFileAttachments?.length
+        ? { localFileAttachments: cloneLocalFileAttachments(row.localFileAttachments) }
+        : {}),
       ...(row.canContinue ? { canContinue: true } : {}),
     };
   }
@@ -1212,9 +1234,18 @@ function rowToMessage(row: DesktopTimelineRow): ConversationMessageSnapshot {
   };
 }
 
+function cloneLocalFileAttachments(
+  attachments: readonly ConversationLocalFileAttachmentSnapshot[],
+): ConversationLocalFileAttachmentSnapshot[] {
+  return attachments.map((attachment) => ({ ...attachment }));
+}
+
 function cloneRow(row: DesktopTimelineRow): DesktopTimelineRowSnapshot {
   return {
     ...row,
+    ...(row.localFileAttachments?.length
+      ? { localFileAttachments: cloneLocalFileAttachments(row.localFileAttachments) }
+      : {}),
     ...(row.tool ? { tool: cloneTool(row.tool) } : {}),
     ...(row.aux ? { aux: cloneAux(row.aux) } : {}),
   };
