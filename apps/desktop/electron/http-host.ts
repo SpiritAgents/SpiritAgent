@@ -653,6 +653,9 @@ async function handleApiRequest({
         request: {
           messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : NaN,
           text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+          ...(Array.isArray(jsonBody?.localFilePaths)
+            ? { localFilePaths: jsonBody.localFilePaths.filter((item): item is string => typeof item === 'string') }
+            : {}),
         },
       }),
     );

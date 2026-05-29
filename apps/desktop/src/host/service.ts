@@ -71,6 +71,7 @@ import type {
   AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
+  ConversationLocalFileAttachmentSnapshot,
   ConversationMessageSnapshot,
   CreateSkillRequest,
   DeleteExtensionRequest,
@@ -371,6 +372,16 @@ function defaultDisplayTextForUserTurn(
   }
 
   return `已附加文件: ${explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', ')}`;
+}
+
+function pendingWorkspaceFilesToAttachmentSnapshots(
+  files: readonly PendingWorkspaceFile[],
+): ConversationLocalFileAttachmentSnapshot[] {
+  return files.map((file) => ({
+    path: file.path,
+    name: path.basename(file.path),
+    isImage: file.kind === 'image',
+  }));
 }
 
 function normalizeFsPath(value: string): string {
@@ -1598,6 +1609,7 @@ class DesktopHostService {
       this.restoreBeforeRewindCheckpoint(snapshot, checkpoint.sequence);
       return this.submitUserTurnAfterInitialized(request.text, {
         preserveRewindWarnings: true,
+        explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
       });
     });
   }
@@ -1638,14 +1650,22 @@ class DesktopHostService {
     this.activeBundle().currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
     this.ensureActiveSession(displayText);
     const beforeUserCheckpoint = this.buildRewindCheckpointSnapshot();
+    const localFileAttachments =
+      explicitWorkspaceFiles.length > 0
+        ? pendingWorkspaceFilesToAttachmentSnapshots(explicitWorkspaceFiles)
+        : undefined;
     const userMessage: ConversationMessageSnapshot = {
       id: this.allocateMessageId(),
       role: 'user',
       content: displayText,
       pending: false,
+      ...(localFileAttachments ? { localFileAttachments } : {}),
     };
     this.activeBundle().messages.push(userMessage);
-    this.activeBundle().messageTimeline.beginUserTurn(userMessage.content, { messageId: userMessage.id });
+    this.activeBundle().messageTimeline.beginUserTurn(userMessage.content, {
+      messageId: userMessage.id,
+      ...(localFileAttachments ? { localFileAttachments } : {}),
+    });
     this.resetStreamingPlacementState(false);
     await this.persistCurrentSessionIfNeeded();
     await this.dispatchExtensionEvent({
