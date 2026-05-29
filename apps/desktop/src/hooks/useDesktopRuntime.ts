@@ -228,6 +228,42 @@ export function useDesktopRuntime() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
+  const sessionUiCacheRef = useRef(
+    new Map<string, { composer: string; questionDrafts: Record<string, QuestionDraft> }>(),
+  );
+
+  const sessionUiKey = useCallback((filePath: string | undefined) => filePath?.trim() || "", []);
+
+  const stashSessionUi = useCallback(
+    (filePath: string | undefined) => {
+      const key = sessionUiKey(filePath);
+      if (!key) {
+        return;
+      }
+      sessionUiCacheRef.current.set(key, {
+        composer,
+        questionDrafts,
+      });
+    },
+    [composer, questionDrafts, sessionUiKey],
+  );
+
+  const restoreSessionUi = useCallback(
+    (filePath: string | undefined) => {
+      const key = sessionUiKey(filePath);
+      if (!key) {
+        setComposer("");
+        setQuestionDrafts({});
+        setQuestionError("");
+        return;
+      }
+      const cached = sessionUiCacheRef.current.get(key);
+      setComposer(cached?.composer ?? "");
+      setQuestionDrafts(cached?.questionDrafts ?? {});
+      setQuestionError("");
+    },
+    [sessionUiKey],
+  );
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -1446,10 +1482,10 @@ export function useDesktopRuntime() {
       }
       setBusyAction("session");
       try {
+        stashSessionUi(snapshotRef.current?.activeSession?.filePath);
         const next = await api.openSession(path);
         applySnapshot(next);
-        setComposer("");
-        setQuestionError("");
+        restoreSessionUi(next.activeSession?.filePath);
         setRuntimeError("");
         void refreshSessions();
       } catch (error) {
@@ -1458,7 +1494,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     },
-    [api, applySnapshot, refreshSessions],
+    [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
   );
 
   const listWorkspaceFileReferenceSuggestions = useCallback(
@@ -1510,10 +1546,10 @@ export function useDesktopRuntime() {
 
     setBusyAction("reset");
     try {
+      stashSessionUi(snapshotRef.current?.activeSession?.filePath);
       const next = await api.resetSession();
       applySnapshot(next);
-      setComposer("");
-      setQuestionError("");
+      restoreSessionUi(next.activeSession?.filePath);
       setRuntimeError("");
       void refreshSessions();
     } catch (error) {
@@ -1521,7 +1557,7 @@ export function useDesktopRuntime() {
     } finally {
       setBusyAction("");
     }
-  }, [api, applySnapshot, refreshSessions]);
+  }, [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
 
   const summary = useMemo(() => {
     return {

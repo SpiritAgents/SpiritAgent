@@ -173,12 +173,16 @@ export class SessionRegistry {
     if (this.bundles.size < MAX_LOADED_BUNDLES) {
       return;
     }
-    for (const [id] of this.bundles) {
-      if (id !== this.activeId) {
-        this.bundles.delete(id);
-        if (this.bundles.size < MAX_LOADED_BUNDLES) {
-          return;
-        }
+    for (const [id, bundle] of this.bundles) {
+      if (id === this.activeId) {
+        continue;
+      }
+      if (bundle.runtime?.isBusy()) {
+        continue;
+      }
+      this.bundles.delete(id);
+      if (this.bundles.size < MAX_LOADED_BUNDLES) {
+        return;
       }
     }
   }
