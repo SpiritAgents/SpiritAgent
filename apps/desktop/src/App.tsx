@@ -82,7 +82,8 @@ import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
-import { isMinimalToolCallMessage } from "@/lib/tool-call-display";
+import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
+import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
@@ -1199,6 +1200,9 @@ function MessageCard({
           />
         ) : null}
         {!isUser && message.content.trim() ? (
+          isSubagentStatusSurfaceMessage(message) ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">{message.content}</p>
+          ) : (
           <div data-spirit-surface="message-bubble">
             <MarkdownMessage
               content={message.content}
@@ -1206,6 +1210,7 @@ function MessageCard({
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             />
           </div>
+          )
         ) : null}
         {!isUser && message.aux?.finishTaskNotice ? (
           <p className="text-xs leading-relaxed text-muted-foreground">
@@ -1281,12 +1286,14 @@ function isGrayMetaLineMessage(message: ConversationMessageSnapshot | undefined)
 }
 
 function isGrayMetaLeadingMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  if (!message || message.role !== "assistant" || message.content.trim()) {
-    return Boolean(
-      message?.role === "assistant" &&
-        !message.tool &&
-        message.aux?.thinking?.trim(),
-    );
+  if (!message || message.role !== "assistant") {
+    return false;
+  }
+  if (isSubagentStatusSurfaceMessage(message)) {
+    return true;
+  }
+  if (!message.content.trim()) {
+    return Boolean(!message.tool && message.aux?.thinking?.trim());
   }
   if (message.tool) {
     return isMinimalToolCallMessage(message);
@@ -1295,7 +1302,13 @@ function isGrayMetaLeadingMessage(message: ConversationMessageSnapshot | undefin
 }
 
 function isGrayMetaTrailingMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  if (!message || message.role !== "assistant" || message.content.trim()) {
+  if (!message || message.role !== "assistant") {
+    return false;
+  }
+  if (isSubagentStatusSurfaceMessage(message)) {
+    return true;
+  }
+  if (message.content.trim()) {
     return false;
   }
   if (message.tool) {

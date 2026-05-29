@@ -38,6 +38,16 @@ export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
     return shellHasExpandableContent(tool, command);
   }
 
+  if (tool.toolName === 'run_subagent') {
+    return (
+      Boolean(tool.outputExcerpt?.trim()) ||
+      tool.detailLines.some((line) => line.trim()) ||
+      Boolean(tool.argsExcerpt?.trim()) ||
+      tool.phase === 'preview' ||
+      tool.phase === 'running'
+    );
+  }
+
   return (
     Boolean(tool.outputExcerpt?.trim()) ||
     tool.detailLines.some((line) => line.trim()) ||

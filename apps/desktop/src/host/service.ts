@@ -223,6 +223,8 @@ import {
   displayTitleForTool,
   messageOrderDebugLevel,
   messageIndexIsInCurrentTurn,
+  hasActiveRunSubagentToolInMessages,
+  isSubagentStatusSurfaceMessage,
   parsePendingSubagentStatusText,
   restoreMessagesFromArchive,
   stripReasonLineFromShellPrompt,
@@ -233,6 +235,10 @@ import {
 } from './message-ordering.js';
 import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
 import { DesktopRuntimeEventOrchestrator } from './runtime-event-orchestrator.js';
+import {
+  extractSubagentSessionStreamingText,
+  findRunSubagentToolPhase,
+} from './subagent-stream-sync.js';
 import {
   DesktopMessageTimeline,
   type DesktopTimelineSegmentKind,
@@ -1782,6 +1788,7 @@ class DesktopHostService {
     }
     orchestration.runtimeEvents.consumeCompletedTurnResult();
     orchestration.runtimeEvents.syncPendingToolStates();
+    this.syncSubagentToolStreamingOutput(bundle);
     orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
     await this.persistSessionBundle(bundle, {
       fromRuntime: bundle.runtime,
@@ -3283,6 +3290,99 @@ class DesktopHostService {
       ? truncateOneLineForDebug(message.content, 28)
       : '∅';
     return `${message.id}:${kind}:${text}`;
+  }
+
+  private purgeSubagentLeakTextInCurrentTurn(bundle: SessionBundle): void {
+    const messages = bundle.messageTimeline.toMessages();
+    if (!hasActiveRunSubagentToolInMessages(messages)) {
+      return;
+    }
+
+    let lastUserIndex = -1;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index]?.role === 'user') {
+        lastUserIndex = index;
+        break;
+      }
+    }
+
+    let activeSubagentToolIndex = -1;
+    for (let index = lastUserIndex + 1; index < messages.length; index += 1) {
+      const message = messages[index];
+      if (
+        message?.role === 'assistant' &&
+        message.tool?.toolName === 'run_subagent' &&
+        (message.tool.phase === 'preview' || message.tool.phase === 'running')
+      ) {
+        activeSubagentToolIndex = index;
+      }
+    }
+
+    if (activeSubagentToolIndex < 0) {
+      return;
+    }
+
+    for (let index = activeSubagentToolIndex + 1; index < messages.length; index += 1) {
+      const message = messages[index];
+      if (message.role !== 'assistant' || message.tool || !message.content.trim()) {
+        break;
+      }
+      if (!isSubagentStatusSurfaceMessage(message)) {
+        continue;
+      }
+      bundle.messageTimeline.setAssistantTextContent(message.id, '');
+    }
+  }
+
+  private syncSubagentToolStreamingOutput(bundle: SessionBundle): void {
+    const runtime = bundle.runtime;
+    if (!runtime?.isBusy()) {
+      return;
+    }
+
+    this.refreshArchiveFromRuntime(bundle);
+
+    this.purgeSubagentLeakTextInCurrentTurn(bundle);
+
+    const sessions = bundle.archiveSubagentSessions;
+    if (sessions.length === 0) {
+      return;
+    }
+
+    const timelineMessages = bundle.messageTimeline.toMessages();
+    const orchestration = this.orchestrationFor(bundle);
+    for (const session of sessions) {
+      if (session.summary.status !== 'running' && session.summary.status !== 'blocked') {
+        continue;
+      }
+
+      const toolCallId = session.summary.parentToolCallId?.trim();
+      if (!toolCallId) {
+        continue;
+      }
+
+      const existing = timelineMessages.find((message) => message.tool?.toolCallId === toolCallId)?.tool;
+      if (!existing) {
+        continue;
+      }
+
+      const streamingText = extractSubagentSessionStreamingText(session)?.trim();
+      const phase = findRunSubagentToolPhase(timelineMessages, toolCallId) ?? 'running';
+      const nextPhase = phase === 'preview' || phase === 'running' ? phase : 'running';
+      const nextTool = {
+        ...existing,
+        phase: nextPhase,
+        ...(streamingText
+          ? {
+              outputExcerpt:
+                streamingText.length > 4_000 ? streamingText.slice(0, 4_000) : streamingText,
+            }
+          : {}),
+      };
+
+      orchestration.assistantMessages.upsertToolMessage(toolCallId, nextTool, 0);
+      bundle.messageTimeline.upsertToolMessage(toolCallId, nextTool);
+    }
   }
 
   private refreshArchiveFromRuntime(bundle: SessionBundle = this.activeBundle()): void {

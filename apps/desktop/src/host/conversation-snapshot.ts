@@ -6,6 +6,7 @@ import {
   buildVisibleMessageSnapshots,
 } from './message-snapshots.js';
 import {
+  hasActiveRunSubagentToolInMessages,
   isStandaloneSubagentStatusAux,
   messageOrderDebugLevel,
   parsePendingSubagentStatusText,
@@ -51,18 +52,9 @@ export class DesktopConversationSnapshotView {
       rewind: input.rewind,
     });
 
-    const standalonePendingAux = this.standalonePendingAuxSnapshot(
-      input.livePendingAux,
-      snapshots,
-    );
-    if (!standalonePendingAux) {
-      this.lastStandalonePendingAuxSnapshotLogSignature = undefined;
-      return snapshots;
-    }
-
-    const insertAt = Math.max(0, Math.min(standalonePendingAux.insertAt, snapshots.length));
-    snapshots.splice(insertAt, 0, standalonePendingAux.message);
-    this.logSnapshotStandalonePendingAux(standalonePendingAux, snapshots);
+    // Subagent runtime status is shown on the run_subagent tool card only — never splice a
+    // standalone assistant row (wrong insertAt can place it above the user message).
+    this.lastStandalonePendingAuxSnapshotLogSignature = undefined;
     return snapshots;
   }
 
@@ -84,7 +76,10 @@ export class DesktopConversationSnapshotView {
       return;
     }
 
-    if (!isStandaloneSubagentStatusAux(this.persistedStandalonePendingAux)) {
+    if (
+      !isStandaloneSubagentStatusAux(this.persistedStandalonePendingAux) ||
+      (livePendingAux !== undefined && !isStandaloneSubagentStatusAux(livePendingAux))
+    ) {
       this.clearStandalonePendingAuxState();
     }
   }
@@ -121,9 +116,12 @@ export class DesktopConversationSnapshotView {
       ? parsePendingSubagentStatusText(liveStandalonePendingAux.statusText)
       : undefined;
     if (liveStatusText) {
+      if (hasActiveRunSubagentToolInMessages(snapshots)) {
+        return undefined;
+      }
       return {
         source: 'live',
-        insertAt: snapshots.length,
+        insertAt: this.subagentStatusInsertIndex(snapshots),
         message: this.standalonePendingAuxMessage(liveStatusText),
       };
     }
@@ -151,7 +149,11 @@ export class DesktopConversationSnapshotView {
     }
 
     if (insertAt === undefined) {
-      insertAt = snapshots.length > 0 ? Math.max(0, snapshots.length - 1) : 0;
+      insertAt = this.subagentStatusInsertIndex(snapshots);
+    }
+
+    if (hasActiveRunSubagentToolInMessages(snapshots)) {
+      return undefined;
     }
 
     return {
@@ -161,6 +163,19 @@ export class DesktopConversationSnapshotView {
       insertAt,
       message: this.standalonePendingAuxMessage(persistedStatusText),
     };
+  }
+
+  private subagentStatusInsertIndex(snapshots: ConversationMessageSnapshot[]): number {
+    for (let index = snapshots.length - 1; index >= 0; index -= 1) {
+      const message = snapshots[index];
+      if (
+        message?.role === 'assistant' &&
+        message.tool?.toolName === 'run_subagent'
+      ) {
+        return index + 1;
+      }
+    }
+    return snapshots.length;
   }
 
   private standalonePendingAuxMessage(statusText: string): ConversationMessageSnapshot {

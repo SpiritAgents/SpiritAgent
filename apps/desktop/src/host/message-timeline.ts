@@ -199,15 +199,33 @@ export class DesktopMessageTimeline {
     return rowToMessage(row);
   }
 
+  setAssistantTextContent(messageId: number, content: string): boolean {
+    for (const row of this.allRows()) {
+      if (row.messageId !== messageId || row.kind !== 'assistant-text') {
+        continue;
+      }
+      row.content = content;
+      row.pending = false;
+      return true;
+    }
+    return false;
+  }
+
   appendAssistantTextChunk(chunk: string): ConversationMessageSnapshot {
-    const row = this.ensureActiveAssistantTextRow('text');
+    const segment = this.ensureActiveSegment();
+    const row = segmentHasToolRows(segment)
+      ? this.ensureStreamingAssistantTextRowAfterTools(segment)
+      : this.ensureActiveAssistantTextRow('text');
     row.content += chunk;
     row.pending = true;
     return rowToMessage(row);
   }
 
   replaceAssistantText(text: string): ConversationMessageSnapshot {
-    const row = this.ensureActiveAssistantTextRow('text');
+    const segment = this.ensureActiveSegment();
+    const row = segmentHasToolRows(segment)
+      ? this.ensureStreamingAssistantTextRowAfterTools(segment)
+      : this.ensureActiveAssistantTextRow('text');
     row.content = text;
     row.pending = true;
     return rowToMessage(row);
@@ -855,6 +873,22 @@ export class DesktopMessageTimeline {
     this.activeTurnId = turn.turnId;
     this.activeSegmentId = segment.segmentId;
     return segment;
+  }
+
+  /** Parent wrap-up text after tool rows — never reuse a polluted before-tools row. */
+  private ensureStreamingAssistantTextRowAfterTools(
+    segment: DesktopTimelineSegment,
+  ): DesktopTimelineRow {
+    for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
+      const row = segment.rows[index];
+      if (row?.kind === 'assistant-text' && row.section === 'after-tools') {
+        segment.activeAssistantTextRowId = row.rowId;
+        return row;
+      }
+    }
+    const row = this.createAssistantTextRow(segment, 'after-tools', true);
+    segment.activeAssistantTextRowId = row.rowId;
+    return row;
   }
 
   private ensureActiveAssistantTextRow(mode: 'text' | 'aux'): DesktopTimelineRow {
