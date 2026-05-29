@@ -1,6 +1,7 @@
 import type { ChatArchive, LlmActiveSkill, SpiritLlmTransport } from '@spirit-agent/agent-core';
 
 import type { DesktopRuntime } from './runtime.js';
+import type { DesktopToolExecutor } from './tool-executor.js';
 
 import type {
   ActiveSessionSnapshot,
@@ -32,6 +33,8 @@ export interface SessionBundle {
   lastPersistedAtUnixMs?: number;
   runtime?: DesktopRuntime;
   runtimeTransport?: SpiritLlmTransport;
+  toolExecutor?: DesktopToolExecutor;
+  toolExecutorWorkspaceRoot?: string;
 }
 
 export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {

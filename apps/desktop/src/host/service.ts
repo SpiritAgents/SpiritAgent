@@ -2259,7 +2259,7 @@ class DesktopHostService {
       state.metadata.planMetadata.path,
       state.metadata.planMetadata.exists,
     );
-    await this.ensureToolExecutor();
+    await this.ensureToolExecutor(bundle);
     bundle.currentTurnSkills = [];
     const apiKey = await resolveApiKeyForModel(state.config.activeModel);
     this.activeApiKeyConfigured = Boolean(apiKey);
@@ -2324,7 +2324,7 @@ class DesktopHostService {
         workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
         gitBranch: state.git.branch,
       }),
-      await this.ensureToolExecutor(),
+      await this.ensureToolExecutor(bundle),
       bundle.runtimeTransport,
       bundle,
     );
@@ -2346,46 +2346,72 @@ class DesktopHostService {
     await this.refreshModelKeyPresence();
   }
 
-  private async ensureToolExecutor(): Promise<DesktopToolExecutor> {
+  private async ensureToolExecutor(bundle: SessionBundle = this.activeBundle()): Promise<DesktopToolExecutor> {
     const state = this.requireState();
-    const dreamScope: HostDreamScope | undefined = state.git.branch
-      ? {
-          workspaceRoot: state.workspaceRoot,
-          gitBranch: state.git.branch,
-        }
-      : undefined;
+    const isActive = bundle.id === this.sessionRegistry.activeSessionId();
+    const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
+    const dreamScope: HostDreamScope | undefined =
+      isActive && state.git.branch
+        ? {
+            workspaceRoot,
+            gitBranch: state.git.branch,
+          }
+        : undefined;
 
-    if (!this.toolExecutor || !this.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined)) {
-      const extensions = await this.extensionManager().list();
-      this.toolExecutor = new DesktopToolExecutor(state.workspaceRoot, {
-        extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
-        fileChangeObserver: {
-          recordFileChange: (change) => this.recordHostFileChange(change),
-        },
-        extensions: {
-          manager: this.extensionManager(),
-          getHost: () => {
-            const adapter = desktopExtensionHostAdapter;
-            if (!adapter) {
-              throw new Error('当前桌面宿主尚未连接扩展 host adapter。');
-            }
-            return adapter;
-          },
-          logger: console,
-        },
-        ...(dreamScope
-          ? {
-              dreamScope,
-              dreamToolMode: 'read-only' as const,
-            }
-          : {}),
-      });
-      this.toolExecutor.startMcpBackgroundRefresh();
-      return this.toolExecutor;
+    const needsRebuild =
+      !bundle.toolExecutor
+      || bundle.toolExecutorWorkspaceRoot !== workspaceRoot
+      || !bundle.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined);
+
+    if (needsRebuild) {
+      bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope);
+      bundle.toolExecutorWorkspaceRoot = workspaceRoot;
+      bundle.toolExecutor.startMcpBackgroundRefresh();
+    } else {
+      await this.refreshExtensionToolDefinitions(bundle.toolExecutor);
     }
 
-    await this.refreshExtensionToolDefinitions();
-    return this.toolExecutor;
+    if (isActive) {
+      this.toolExecutor = bundle.toolExecutor;
+    }
+    if (!bundle.toolExecutor) {
+      throw new Error('Desktop MCP tool executor 尚未初始化。');
+    }
+    return bundle.toolExecutor;
+  }
+
+  private async buildToolExecutorForBundle(
+    bundle: SessionBundle,
+    dreamScope?: HostDreamScope,
+  ): Promise<DesktopToolExecutor> {
+    const state = this.requireState();
+    const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
+    const extensions = await this.extensionManager().list();
+    return new DesktopToolExecutor(workspaceRoot, {
+      extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
+      fileChangeObserver: {
+        recordFileChange: (change) => {
+          void this.recordHostFileChange(bundle, change);
+        },
+      },
+      extensions: {
+        manager: this.extensionManager(),
+        getHost: () => {
+          const adapter = desktopExtensionHostAdapter;
+          if (!adapter) {
+            throw new Error('当前桌面宿主尚未连接扩展 host adapter。');
+          }
+          return adapter;
+        },
+        logger: console,
+      },
+      ...(dreamScope
+        ? {
+            dreamScope,
+            dreamToolMode: 'read-only' as const,
+          }
+        : {}),
+    });
   }
 
   private async refreshGitState(): Promise<void> {
@@ -2658,7 +2684,10 @@ class DesktopHostService {
       runtimeError: this.lastRuntimeError,
       modelKeyPresence: this.modelKeyPresence,
       activeApiKeyConfigured: this.activeApiKeyConfigured,
-      mcpStatus: this.toolExecutor?.mcpStatusSnapshot() ?? emptyMcpStatusSnapshot(),
+      mcpStatus:
+        this.activeBundle().toolExecutor?.mcpStatusSnapshot()
+        ?? this.toolExecutor?.mcpStatusSnapshot()
+        ?? emptyMcpStatusSnapshot(),
       mcpServers: listDesktopMcpServersFromDisk(),
       conversation: {
         messages: conversationMessages,
@@ -2895,13 +2924,9 @@ class DesktopHostService {
     state.extensionCss = await collectDesktopExtensionCssLayers(extensions);
   }
 
-  private async refreshExtensionToolDefinitions(): Promise<void> {
-    if (!this.toolExecutor) {
-      return;
-    }
-
+  private async refreshExtensionToolDefinitions(executor: DesktopToolExecutor = this.requireToolExecutor()): Promise<void> {
     const extensions = await this.extensionManager().list();
-    this.toolExecutor.setExtensionToolDefinitions(buildDesktopExtensionToolDefinitions(extensions));
+    executor.setExtensionToolDefinitions(buildDesktopExtensionToolDefinitions(extensions));
   }
 
   private async collectExtensionSystemPrompts(): Promise<LlmExtensionSystemPrompt[]> {
@@ -3236,13 +3261,16 @@ class DesktopHostService {
     bundle.archiveSubagentSessions = archive.subagentSessions ?? [];
   }
 
-  private async recordHostFileChange(change: HostRecordedFileChange): Promise<void> {
+  private async recordHostFileChange(bundle: SessionBundle, change: HostRecordedFileChange): Promise<void> {
     const state = this.state;
     if (!state) {
       return;
     }
 
-    if (sameFsPath(change.resolvedPath, state.plan.path)) {
+    if (
+      bundle.id === this.sessionRegistry.activeSessionId()
+      && sameFsPath(change.resolvedPath, state.plan.path)
+    ) {
       state.metadata.planMetadata.exists = change.after.exists && change.after.file;
       state.plan = {
         path: state.plan.path,
@@ -3254,16 +3282,16 @@ class DesktopHostService {
       };
     }
 
-    if (!this.activeBundle().activeSession) {
+    if (!bundle.activeSession) {
       return;
     }
 
-    const stored = toDesktopFileChange(change, nextDesktopRewindSequence(this.activeBundle().rewind));
-    await saveRewindFileChange(spiritAgentDataDir(), this.activeBundle().rewind.sessionId, stored);
+    const stored = toDesktopFileChange(change, nextDesktopRewindSequence(bundle.rewind));
+    await saveRewindFileChange(spiritAgentDataDir(), bundle.rewind.sessionId, stored);
     const metadata = fileChangeMetadata(stored);
-    this.activeBundle().rewind.fileChanges.push(metadata);
+    bundle.rewind.fileChanges.push(metadata);
     if (!metadata.toolCallId) {
-      this.activeBundle().pendingUnboundFileChangeIds.push(metadata.id);
+      bundle.pendingUnboundFileChangeIds.push(metadata.id);
     }
   }
 
@@ -3517,10 +3545,11 @@ class DesktopHostService {
   }
 
   private requireToolExecutor(): DesktopToolExecutor {
-    if (!this.toolExecutor) {
+    const executor = this.activeBundle().toolExecutor ?? this.toolExecutor;
+    if (!executor) {
       throw new Error('Desktop MCP tool executor 尚未初始化。');
     }
-    return this.toolExecutor;
+    return executor;
   }
 
   private requireExtensionHostAdapter(): DesktopExtensionHostAdapter {
