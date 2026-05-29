@@ -2479,7 +2479,7 @@ export default function App() {
                   "pointer-events-none absolute inset-x-0 z-10 bg-transparent",
                   isEmptySession
                     ? "inset-y-0 flex items-center justify-center px-3 pb-[env(safe-area-inset-bottom,0px)]"
-                    : "bottom-0 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+                    : "bottom-0 pt-2 pb-0",
                 )}
               >
                 <div
@@ -2623,7 +2623,8 @@ export default function App() {
                   </Card>
                 ) : null}
 
-                <div className="relative grid gap-1.5">
+                <div className="relative">
+                <div className="relative z-10 grid gap-1.5">
                   {fileReferenceSuggestions ? (
                     <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 pb-2">
                       <div className="pointer-events-auto">
@@ -2689,21 +2690,24 @@ export default function App() {
                     onRemoveLocalFileAttachment={removeLocalFileAttachment}
                     onPaste={handleComposerPaste}
                   />
+                </div>
                   {!isEmptySession ? (
-                    <div className="flex justify-start px-3">
-                      <ApprovalLevelMenu
-                        approvalLevel={snapshot?.conversation.approvalLevel ?? "default"}
-                        disabled={activeSessionReadOnly}
-                        onApprovalLevelChange={(level) => {
-                          void runtime.setApprovalLevel(level);
-                        }}
-                      />
+                    <div className="relative z-0 -mx-3 -mt-4 bg-background px-3 pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+                      <div className="flex justify-start px-3">
+                        <ApprovalLevelMenu
+                          approvalLevel={snapshot?.conversation.approvalLevel ?? "default"}
+                          disabled={activeSessionReadOnly}
+                          onApprovalLevelChange={(level) => {
+                            void runtime.setApprovalLevel(level);
+                          }}
+                        />
+                      </div>
+                      {snapshot?.conversation.pendingQuestions ? (
+                        <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
+                          请先完成上方问卷
+                        </p>
+                      ) : null}
                     </div>
-                  ) : null}
-                  {snapshot?.conversation.pendingQuestions ? (
-                    <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
-                      请先完成上方问卷
-                    </p>
                   ) : null}
                 </div>
                 </div>
