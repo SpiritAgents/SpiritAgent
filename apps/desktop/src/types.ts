@@ -675,6 +675,8 @@ export interface ToolBlockSnapshot {
   toolName: string;
   phase: 'preview' | 'pending-approval' | 'running' | 'succeeded' | 'failed';
   headline: string;
+  /** Muted secondary line shown after headline (e.g. shell command, grep query). */
+  headlineDetail?: string;
   detailLines: string[];
   argsExcerpt?: string;
   outputExcerpt?: string;

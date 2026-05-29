@@ -81,7 +81,8 @@ import {
 import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
-import { ShellCommandToolCard } from "@/components/shell-command-tool-card";
+import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
+import { isMinimalToolCallMessage } from "@/lib/tool-call-display";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
@@ -327,74 +328,7 @@ function ToolCallCollapsible({
     );
   }
 
-  if (tool.toolName === "run_shell_command") {
-    return <ShellCommandToolCard tool={tool} />;
-  }
-
-  return <GenericToolCallCollapsible tool={tool} />;
-}
-
-function GenericToolCallCollapsible({ tool }: { tool: ToolBlockSnapshot }) {
-  if (tool.toolName === "read_file") {
-    return (
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        {tool.headline}
-      </p>
-    );
-  }
-
-  const hasExpandableContent =
-    tool.detailLines.length > 0 ||
-    Boolean(tool.argsExcerpt?.trim()) ||
-    Boolean(tool.outputExcerpt?.trim());
-
-  if (!hasExpandableContent) {
-    return (
-      <div className="border-l-2 border-border/40 py-1 pl-2.5">
-        <p className="text-sm font-medium text-foreground/90">{tool.headline}</p>
-      </div>
-    );
-  }
-
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen} className="border-l-2 border-border/40 pl-2">
-      <CollapsibleTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-auto min-h-7 w-full justify-start gap-1.5 px-0 py-1 text-left font-normal hover:bg-transparent hover:underline"
-        >
-          {open ? (
-            <ChevronDown className="mt-0.5 size-3 shrink-0 text-muted-foreground" aria-hidden />
-          ) : (
-            <ChevronRight className="mt-0.5 size-3 shrink-0 text-muted-foreground" aria-hidden />
-          )}
-          <span className="min-w-0 flex-1 text-sm font-medium leading-snug">{tool.headline}</span>
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-2 pb-1 pl-4 pt-0.5">
-        {tool.detailLines.length > 0 ? (
-          <ul className="list-disc space-y-0.5 pl-3.5 text-xs leading-relaxed text-muted-foreground">
-            {tool.detailLines.map((line, i) => (
-              <li key={`${i}:${line}`}>{line}</li>
-            ))}
-          </ul>
-        ) : null}
-        {tool.argsExcerpt ? (
-          <pre className="overflow-x-auto rounded-md border border-border/30 bg-muted/25 p-2 font-mono text-xs leading-relaxed">
-            {tool.argsExcerpt}
-          </pre>
-        ) : null}
-        {tool.outputExcerpt ? (
-          <pre className="overflow-x-auto rounded-md border border-border/30 bg-muted/25 p-2 font-mono text-xs leading-relaxed">
-            {tool.outputExcerpt}
-          </pre>
-        ) : null}
-      </CollapsibleContent>
-    </Collapsible>
-  );
+  return <MinimalToolCallCard tool={tool} />;
 }
 
 function ImageGenerationToolCard({
@@ -1332,7 +1266,7 @@ function isGrayMetaLeadingMessage(message: ConversationMessageSnapshot | undefin
     );
   }
   if (message.tool) {
-    return message.tool.toolName === "read_file" || message.tool.toolName === "run_shell_command";
+    return isMinimalToolCallMessage(message);
   }
   return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
 }
@@ -1342,7 +1276,7 @@ function isGrayMetaTrailingMessage(message: ConversationMessageSnapshot | undefi
     return false;
   }
   if (message.tool) {
-    return message.tool.toolName === "read_file" || message.tool.toolName === "run_shell_command";
+    return isMinimalToolCallMessage(message);
   }
   return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
 }

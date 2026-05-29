@@ -144,22 +144,171 @@ export function stripReasonLineFromShellPrompt(toolName: string, prompt: string)
   return lines.slice(1).join('\n').trim();
 }
 
+export interface ToolCallSummaryCopy {
+  headline: string;
+  headlineDetail?: string;
+}
+
+const SUMMARY_DETAIL_MAX = 80;
+const SUBAGENT_TASK_PREVIEW_MAX = 48;
+
+export function toolCallSummaryCopyForRequest(
+  toolName: string,
+  request: unknown,
+): ToolCallSummaryCopy | undefined {
+  if (!request || typeof request !== 'object') {
+    return undefined;
+  }
+
+  const record = request as Record<string, unknown>;
+
+  switch (toolName) {
+    case 'run_shell_command': {
+      const reason = reasonForShellTool(toolName, request);
+      const command = typeof record.command === 'string' ? record.command.trim() : '';
+      if (!reason && !command) {
+        return undefined;
+      }
+      return {
+        headline: reason ?? '运行命令',
+        ...(command ? { headlineDetail: truncateSummaryDetail(command) } : {}),
+      };
+    }
+    case 'create_file':
+    case 'edit_file':
+    case 'delete_file': {
+      const rawPath = typeof record.path === 'string' ? record.path : '';
+      const basename = displayBasename(rawPath);
+      const verb =
+        toolName === 'create_file' ? '创建' : toolName === 'edit_file' ? '编辑' : '删除';
+      return { headline: `${verb} ${basename}` };
+    }
+    case 'grep': {
+      const query = typeof record.query === 'string' ? record.query.trim() : '';
+      const prefix = record.is_regexp === true ? '正则: ' : '';
+      return {
+        headline: '搜索',
+        ...(query ? { headlineDetail: truncateSummaryDetail(`${prefix}${query}`) } : {}),
+      };
+    }
+    case 'glob': {
+      const pattern = typeof record.pattern === 'string' ? record.pattern.trim() : '';
+      return {
+        headline: '匹配',
+        ...(pattern ? { headlineDetail: truncateSummaryDetail(pattern) } : {}),
+      };
+    }
+    case 'web_fetch': {
+      const url = typeof record.url === 'string' ? record.url.trim() : '';
+      return {
+        headline: '抓取',
+        ...(url ? { headlineDetail: truncateSummaryDetail(url) } : {}),
+      };
+    }
+    case 'list_directory_files': {
+      const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
+      return {
+        headline: '列出目录',
+        ...(rawPath ? { headlineDetail: truncateSummaryDetail(displayPathForListDirectory(rawPath)) } : {}),
+      };
+    }
+    case 'ask_questions': {
+      const questions = Array.isArray(record.questions) ? record.questions : [];
+      return {
+        headline: '询问',
+        headlineDetail: questions.length > 0 ? `${questions.length} 个问题` : '问题',
+      };
+    }
+    case 'run_subagent': {
+      const task = typeof record.task === 'string' ? record.task.trim() : '';
+      const contextSummary =
+        typeof record.context_summary === 'string' ? record.context_summary.trim() : '';
+      const previewSource = task || contextSummary;
+      return {
+        headline: '子智能体',
+        headlineDetail: previewSource
+          ? truncateSummaryDetail(previewSource, SUBAGENT_TASK_PREVIEW_MAX)
+          : '未指定任务',
+      };
+    }
+    case 'dream_list':
+      return { headline: '列出梦境' };
+    case 'dream_read':
+      return dreamIdSummaryCopy('查看梦境', record);
+    case 'dream_update':
+      return dreamIdSummaryCopy('更新梦境', record);
+    case 'dream_delete':
+      return dreamIdSummaryCopy('删除梦境', record);
+    case 'dream_record': {
+      const title = typeof record.title === 'string' ? record.title.trim() : '';
+      const summary = typeof record.summary === 'string' ? record.summary.trim() : '';
+      const detail = title || summary;
+      return {
+        headline: '记录梦境',
+        ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
+      };
+    }
+    case 'extension_tool': {
+      const extensionToolName =
+        typeof record.tool_name === 'string' ? record.tool_name.trim() : '';
+      if (!extensionToolName) {
+        return undefined;
+      }
+      return { headline: extensionToolName };
+    }
+    default:
+      return undefined;
+  }
+}
+
+function dreamIdSummaryCopy(
+  headline: string,
+  record: Record<string, unknown>,
+): ToolCallSummaryCopy {
+  const id = typeof record.id === 'string' ? record.id.trim() : '';
+  return {
+    headline,
+    ...(id ? { headlineDetail: truncateSummaryDetail(id) } : {}),
+  };
+}
+
+export function toolCallSummaryForPhase(
+  phase: ToolBlockSnapshot['phase'],
+  toolName: string,
+  request: unknown,
+): ToolCallSummaryCopy {
+  const readFileHeadline = headlineForReadFileRequest(toolName, request);
+  if (readFileHeadline) {
+    return { headline: readFileHeadline };
+  }
+
+  const custom = toolCallSummaryCopyForRequest(toolName, request);
+  if (custom) {
+    return custom;
+  }
+
+  return { headline: defaultToolHeadline(phase, toolName) };
+}
+
 export function headlineForToolPhase(
   phase: ToolBlockSnapshot['phase'],
   toolName: string,
   request: unknown,
 ): string {
-  const readFileHeadline = headlineForReadFileRequest(toolName, request);
-  if (readFileHeadline) {
-    return readFileHeadline;
-  }
+  return toolCallSummaryForPhase(phase, toolName, request).headline;
+}
 
-  const shellReason = reasonForShellTool(toolName, request);
-  if (shellReason) {
-    return shellReason;
-  }
-
-  return defaultToolHeadline(phase, toolName);
+export function applyToolCallSummaryCopy(
+  tool: ToolBlockSnapshot,
+  summary: ToolCallSummaryCopy,
+): ToolBlockSnapshot {
+  const headlineDetail = summary.headlineDetail?.trim();
+  const { headlineDetail: _previousDetail, ...rest } = tool;
+  return {
+    ...rest,
+    headline: summary.headline,
+    ...(headlineDetail ? { headlineDetail } : {}),
+  };
 }
 
 /** 自 history 尾部向前找**最后一条**非空 `assistant` 正文（OpenAI 路径下 `historyStore` 常无 `role: tool`，需用此作待审批时的兜底）。 */
@@ -443,6 +592,7 @@ export function normalizeToolBlockSnapshot(
 
   const toolName = tool.toolName.trim() || 'unknown-tool';
   const headline = tool.headline.trim() || defaultToolHeadline(tool.phase, toolName);
+  const headlineDetail = tool.headlineDetail?.trim() ? tool.headlineDetail.trim() : undefined;
   const detailLines = tool.detailLines.filter((line) => line.trim().length > 0);
   const argsExcerpt = tool.argsExcerpt?.trim() ? tool.argsExcerpt : undefined;
   const outputExcerpt = tool.outputExcerpt?.trim() ? tool.outputExcerpt : undefined;
@@ -453,6 +603,7 @@ export function normalizeToolBlockSnapshot(
     toolName,
     headline,
     detailLines,
+    ...(headlineDetail ? { headlineDetail } : {}),
     ...(argsExcerpt ? { argsExcerpt } : {}),
     ...(outputExcerpt ? { outputExcerpt } : {}),
     ...(imagePaths && imagePaths.length > 0 ? { imagePaths } : {}),
@@ -609,25 +760,36 @@ function hasBlockingToolAheadOfSameTurnPreview(
   return false;
 }
 
+export function toolCallSummaryForStreamingPreview(
+  messages: ConversationMessageSnapshot[],
+  toolCallId: string,
+  toolName: string,
+  request?: unknown,
+): ToolCallSummaryCopy {
+  const readFileHeadline = headlineForReadFileRequest(toolName, request);
+  if (readFileHeadline) {
+    return { headline: readFileHeadline };
+  }
+
+  const custom = request !== undefined ? toolCallSummaryCopyForRequest(toolName, request) : undefined;
+  if (custom) {
+    return custom;
+  }
+
+  return {
+    headline: hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
+      ? `排队中: ${toolName}`
+      : `调用中: ${toolName}`,
+  };
+}
+
 export function headlineForStreamingToolPreview(
   messages: ConversationMessageSnapshot[],
   toolCallId: string,
   toolName: string,
   request?: unknown,
 ): string {
-  const readFileHeadline = headlineForReadFileRequest(toolName, request);
-  if (readFileHeadline) {
-    return readFileHeadline;
-  }
-
-  const shellReason = reasonForShellTool(toolName, request);
-  if (shellReason) {
-    return shellReason;
-  }
-
-  return hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
-    ? `排队中: ${toolName}`
-    : `调用中: ${toolName}`;
+  return toolCallSummaryForStreamingPreview(messages, toolCallId, toolName, request).headline;
 }
 
 function headlineForReadFileRequest(toolName: string, request: unknown): string | undefined {
@@ -649,6 +811,36 @@ function headlineForReadFileRequest(toolName: string, request: unknown): string 
   const lineRange = lineRangeForReadFile(record.start_line, record.end_line);
 
   return `查看 ${displayPath}${lineRange}`;
+}
+
+function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= max) {
+    return normalized;
+  }
+  return `${normalized.slice(0, max)}…`;
+}
+
+function displayBasename(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return '文件';
+  }
+
+  const normalized = trimmed.replace(/\\/g, '/');
+  const segments = normalized.split('/').filter(Boolean);
+  return segments[segments.length - 1] || normalized;
+}
+
+function displayPathForListDirectory(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) {
+    return '目录';
+  }
+  if (trimmed.length <= SUMMARY_DETAIL_MAX) {
+    return trimmed.replace(/\\/g, '/');
+  }
+  return displayPathForReadFile(trimmed);
 }
 
 function displayPathForReadFile(path: string): string {

@@ -22,8 +22,9 @@ import {
   assistantPrefixBeforeFirstToolInCurrentTurn,
   finishTaskNoticeFromExecution,
   finishTaskSummaryFromExecution,
-  headlineForToolPhase,
-  headlineForStreamingToolPreview,
+  applyToolCallSummaryCopy,
+  toolCallSummaryForPhase,
+  toolCallSummaryForStreamingPreview,
   isFinishTaskToolName,
   lastAssistantPlainTextInHistory,
   latestUnsyncedAssistantTextInCurrentTurn,
@@ -200,16 +201,21 @@ export class DesktopRuntimeEventOrchestrator {
         if (isFinishTaskToolName(event.toolName)) {
           continue;
         }
-        const runningTool: ToolBlockSnapshot = {
-          toolCallId: event.toolCallId,
-          toolName: event.toolName,
-          phase: 'running',
-          headline: event.toolName === 'generate_image'
-            ? '生成图片'
-            : headlineForToolPhase('running', event.toolName, event.request),
-          detailLines: [],
-          argsExcerpt: truncateJson(event.request),
-        };
+        const runningSummary =
+          event.toolName === 'generate_image'
+            ? { headline: '生成图片' }
+            : toolCallSummaryForPhase('running', event.toolName, event.request);
+        const runningTool: ToolBlockSnapshot = applyToolCallSummaryCopy(
+          {
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            phase: 'running',
+            headline: runningSummary.headline,
+            detailLines: [],
+            argsExcerpt: truncateJson(event.request),
+          },
+          runningSummary,
+        );
         if (event.toolName === 'generate_image') {
           this.activeGenerateImageTools.set(event.toolCallId, runningTool);
         }
@@ -269,19 +275,23 @@ export class DesktopRuntimeEventOrchestrator {
       } catch {
         argsExcerpt = truncateText(event.argumentsJson, 4_000);
       }
-      const runningTool: ToolBlockSnapshot = {
-        toolCallId: event.toolCallId,
-        toolName: event.toolName,
-        phase: 'preview',
-        headline: headlineForStreamingToolPreview(
-          messages,
-          event.toolCallId,
-          event.toolName,
-          previewRequest,
-        ),
-        detailLines: [],
-        argsExcerpt,
-      };
+      const previewSummary = toolCallSummaryForStreamingPreview(
+        messages,
+        event.toolCallId,
+        event.toolName,
+        previewRequest,
+      );
+      const runningTool: ToolBlockSnapshot = applyToolCallSummaryCopy(
+        {
+          toolCallId: event.toolCallId,
+          toolName: event.toolName,
+          phase: 'preview',
+          headline: previewSummary.headline,
+          detailLines: [],
+          argsExcerpt,
+        },
+        previewSummary,
+      );
       this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
       this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, runningTool);
     }
@@ -418,14 +428,22 @@ export class DesktopRuntimeEventOrchestrator {
     const runtime = this.options.runtime();
     const approval = runtime?.currentPendingApproval();
     if (approval) {
-      const pendingTool: ToolBlockSnapshot = {
-        toolCallId: toolMessageKey(approval),
-        toolName: approval.toolName,
-        phase: 'pending-approval',
-        headline: headlineForToolPhase('pending-approval', approval.toolName, approval.request),
-        detailLines: [stripReasonLineFromShellPrompt(approval.toolName, approval.prompt)],
-        argsExcerpt: truncateJson(approval.request),
-      };
+      const approvalSummary = toolCallSummaryForPhase(
+        'pending-approval',
+        approval.toolName,
+        approval.request,
+      );
+      const pendingTool: ToolBlockSnapshot = applyToolCallSummaryCopy(
+        {
+          toolCallId: toolMessageKey(approval),
+          toolName: approval.toolName,
+          phase: 'pending-approval',
+          headline: approvalSummary.headline,
+          detailLines: [stripReasonLineFromShellPrompt(approval.toolName, approval.prompt)],
+          argsExcerpt: truncateJson(approval.request),
+        },
+        approvalSummary,
+      );
       this.options.assistantMessages.upsertToolMessage(toolMessageKey(approval), pendingTool, this.lastApplyEventBatchId);
       this.options.messageTimeline?.()?.upsertToolMessage(toolMessageKey(approval), pendingTool);
     }
@@ -473,24 +491,29 @@ export class DesktopRuntimeEventOrchestrator {
         this.activeGenerateImageTools.delete(execution.toolCallId);
       }
       const imagePaths = imagePathsFromExecution(execution);
-      const toolBlock: ToolBlockSnapshot = {
-        toolCallId: execution.toolCallId || `tool:${execution.toolName}`,
-        toolName: execution.toolName,
-        phase: execution.failed ? 'failed' : 'succeeded',
-        headline: execution.toolName === 'generate_image'
-          ? (execution.failed ? '图片生成失败' : '图片生成完成')
-          : headlineForToolPhase(
+      const executionSummary =
+        execution.toolName === 'generate_image'
+          ? {
+              headline: execution.failed ? '图片生成失败' : '图片生成完成',
+            }
+          : toolCallSummaryForPhase(
               execution.failed ? 'failed' : 'succeeded',
               execution.toolName,
               execution.request,
-            ),
-        detailLines: [],
-        argsExcerpt: truncateJson(execution.request),
-        outputExcerpt: truncateText(execution.output, 4_000),
-        ...(imagePaths.length > 0
-          ? { imagePaths }
-          : {}),
-      };
+            );
+      const toolBlock: ToolBlockSnapshot = applyToolCallSummaryCopy(
+        {
+          toolCallId: execution.toolCallId || `tool:${execution.toolName}`,
+          toolName: execution.toolName,
+          phase: execution.failed ? 'failed' : 'succeeded',
+          headline: executionSummary.headline,
+          detailLines: [],
+          argsExcerpt: truncateJson(execution.request),
+          outputExcerpt: truncateText(execution.output, 4_000),
+          ...(imagePaths.length > 0 ? { imagePaths } : {}),
+        },
+        executionSummary,
+      );
       const message = this.options.assistantMessages.upsertToolMessage(
         execution.toolCallId || `tool:${execution.toolName}`,
         toolBlock,
@@ -534,14 +557,18 @@ export class DesktopRuntimeEventOrchestrator {
       return;
     }
 
-    const runningTool: ToolBlockSnapshot = {
-      toolCallId: event.toolCallId,
-      toolName: event.toolName,
-      phase: 'running',
-      headline: headlineForToolPhase('running', event.toolName, event.request),
-      detailLines: [],
-      argsExcerpt: truncateJson(event.request),
-    };
+    const runningSummary = toolCallSummaryForPhase('running', event.toolName, event.request);
+    const runningTool: ToolBlockSnapshot = applyToolCallSummaryCopy(
+      {
+        toolCallId: event.toolCallId,
+        toolName: event.toolName,
+        phase: 'running',
+        headline: runningSummary.headline,
+        detailLines: [],
+        argsExcerpt: truncateJson(event.request),
+      },
+      runningSummary,
+    );
     this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
     this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, runningTool);
   }
