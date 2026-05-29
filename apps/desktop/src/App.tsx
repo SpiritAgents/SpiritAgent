@@ -948,10 +948,26 @@ function assistantReasoningLive(message: ConversationMessageSnapshot): boolean {
   );
 }
 
+function isLiveStreamingThinkingMessage(message: ConversationMessageSnapshot | undefined): boolean {
+  return Boolean(
+    message?.role === "assistant" &&
+      message.pending &&
+      Boolean(message.aux?.thinking?.trim()) &&
+      !message.content.trim(),
+  );
+}
+
+function toolPhaseCollapsesLiveThinking(phase: ToolBlockSnapshot["phase"]): boolean {
+  return phase === "preview" || phase === "running" || phase === "pending-approval";
+}
+
 function shouldCollapseThinkingDuringToolPreview(
   messages: readonly ConversationMessageSnapshot[],
   messageIndex: number,
 ): boolean {
+  const message = messages[messageIndex];
+  const liveThinking = isLiveStreamingThinkingMessage(message);
+
   for (let index = messageIndex + 1; index < messages.length; index += 1) {
     const candidate = messages[index];
     if (!candidate) {
@@ -960,10 +976,16 @@ function shouldCollapseThinkingDuringToolPreview(
     if (candidate.role === "user") {
       break;
     }
-    if (candidate.role === "assistant" && candidate.tool?.phase === "preview") {
-      return true;
+    if (candidate.role === "assistant" && candidate.tool) {
+      if (toolPhaseCollapsesLiveThinking(candidate.tool.phase)) {
+        return true;
+      }
+      if (liveThinking) {
+        return true;
+      }
     }
   }
+
   return false;
 }
 
@@ -980,7 +1002,8 @@ function AssistantThinkingCollapsible({
   }
 
   const reasoningLive = assistantReasoningLive(message);
-  const autoExpanded = reasoningLive && !collapseDuringToolPreview;
+  const thinkingActive = reasoningLive && !collapseDuringToolPreview;
+  const autoExpanded = thinkingActive;
   const [manualOpen, setManualOpen] = useState(false);
   const prevAutoExpandedRef = useRef(autoExpanded);
 
@@ -1010,7 +1033,7 @@ function AssistantThinkingCollapsible({
           interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
         )}
       >
-        <ThinkingLabelWithShimmer active={reasoningLive} />
+        <ThinkingLabelWithShimmer active={thinkingActive} />
         {interactive ? (
           <ChevronRight
             className={cn(
