@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import type { ConversationMessageSnapshot } from '../types.js';
 import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from './message-timeline.js';
 import {
@@ -37,6 +39,47 @@ export class SessionRegistry {
     return this.bundles.get(id);
   }
 
+  /** Resolve a bundle by map key, `bundle.id`, or `activeSession.filePath` (handles draft map keys). */
+  findBySessionPath(filePath: string): SessionBundle | undefined {
+    const resolved = path.resolve(filePath);
+    const direct = this.bundles.get(resolved);
+    if (direct) {
+      return direct;
+    }
+    for (const bundle of this.bundles.values()) {
+      if (path.resolve(bundle.id) === resolved) {
+        return bundle;
+      }
+      if (bundle.activeSession && path.resolve(bundle.activeSession.filePath) === resolved) {
+        return bundle;
+      }
+    }
+    return undefined;
+  }
+
+  /** Keep map key in sync when a session file path is assigned after first persist. */
+  rekeyBundle(bundle: SessionBundle, newId: string): void {
+    const resolvedNew = path.resolve(newId);
+    const currentKey = this.mapKeyFor(bundle);
+    if (currentKey !== undefined && currentKey !== resolvedNew) {
+      this.bundles.delete(currentKey);
+    }
+    bundle.id = resolvedNew;
+    this.bundles.set(resolvedNew, bundle);
+    if (this.getActive() === bundle || this.activeId === currentKey) {
+      this.activeId = resolvedNew;
+    }
+  }
+
+  private mapKeyFor(bundle: SessionBundle): string | undefined {
+    for (const [key, candidate] of this.bundles) {
+      if (candidate === bundle) {
+        return key;
+      }
+    }
+    return undefined;
+  }
+
   activeSessionId(): string | undefined {
     return this.activeId;
   }
@@ -62,11 +105,11 @@ export class SessionRegistry {
   }
 
   setActive(id: string): SessionBundle {
-    const bundle = this.bundles.get(id);
+    const bundle = this.findBySessionPath(id) ?? this.bundles.get(id);
     if (!bundle) {
       throw new Error('会话不存在或已卸载。');
     }
-    this.activeId = id;
+    this.rekeyBundle(bundle, path.resolve(bundle.activeSession?.filePath ?? bundle.id));
     return bundle;
   }
 
@@ -79,10 +122,17 @@ export class SessionRegistry {
     ) => DesktopMessageTimeline,
   ): SessionBundle {
     const id = restored.activeSession.filePath;
-    const existing = this.bundles.get(id);
+    const existing = this.findBySessionPath(id);
     if (existing) {
-      this.applyRestoredToBundle(existing, workspaceRoot, restored, createTimeline);
-      this.activeId = id;
+      this.rekeyBundle(existing, id);
+      // Never clobber in-memory timeline while a runtime is still attached (incl. busy background runs).
+      if (!existing.runtime) {
+        this.applyRestoredToBundle(existing, workspaceRoot, restored, createTimeline);
+      } else {
+        existing.workspaceRoot = workspaceRoot;
+        existing.activeSession = restored.activeSession;
+      }
+      this.activeId = path.resolve(id);
       return existing;
     }
     this.evictIfNeeded();
@@ -147,7 +197,7 @@ export class SessionRegistry {
       timelineSnapshot?: DesktopTimelineTurnSnapshot[],
     ) => DesktopMessageTimeline,
   ): void {
-    bundle.id = restored.activeSession.filePath;
+    this.rekeyBundle(bundle, restored.activeSession.filePath);
     bundle.workspaceRoot = workspaceRoot;
     bundle.activeSession = restored.activeSession;
     bundle.messages = restored.messages;
