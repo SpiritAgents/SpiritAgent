@@ -149,6 +149,7 @@ import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
   discoverWorkspaceRoot,
+  isProvisionalSessionPath,
   loadConfig,
   loadHostMetadata,
   loadStoredSession,
@@ -2716,6 +2717,8 @@ class DesktopHostService {
       isBusy: this.runtime?.isBusy() ?? false,
     });
 
+    const activeBundle = this.activeBundle();
+
     return buildDesktopSnapshot({
       workspaceRoot: state.workspaceRoot,
       config: state.config,
@@ -2783,7 +2786,8 @@ class DesktopHostService {
           ? { rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })) }
           : {}),
       },
-      ...(this.activeBundle().activeSession ? { activeSession: this.activeBundle().activeSession } : {}),
+      ...(activeBundle.activeSession ? { activeSession: activeBundle.activeSession } : {}),
+      composerSessionKey: path.resolve(activeBundle.activeSession?.filePath ?? activeBundle.id),
     });
   }
 
@@ -3018,16 +3022,30 @@ class DesktopHostService {
   }
 
   private ensureActiveSession(seedText: string): void {
-    const state = this.requireState();
-    if (this.activeBundle().activeSession) {
+    const bundle = this.activeBundle();
+    if (bundle.activeSession) {
+      this.promoteProvisionalSessionIfNeeded(seedText);
       return;
     }
 
-    this.activeBundle().activeSession = {
+    bundle.activeSession = {
       filePath: defaultNewSessionPath(),
       displayName: deriveDisplayNameFromSeed(seedText),
       kind: 'stored',
     };
+  }
+
+  private promoteProvisionalSessionIfNeeded(seedText: string): void {
+    const bundle = this.activeBundle();
+    const activeSession = bundle.activeSession;
+    if (!activeSession || !isProvisionalSessionPath(activeSession.filePath)) {
+      return;
+    }
+
+    const nextPath = defaultNewSessionPath();
+    activeSession.filePath = nextPath;
+    activeSession.displayName = deriveDisplayNameFromSeed(seedText);
+    this.sessionRegistry.rekeyBundle(bundle, nextPath);
   }
 
   private archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {
@@ -3556,6 +3574,9 @@ class DesktopHostService {
     }
 
     const desktopMessages = bundle.messageTimeline.toMessages();
+    if (desktopMessages.length === 0) {
+      return;
+    }
     const archiveMessages = buildArchiveMessagesFromConversation(desktopMessages);
     const archiveAssistantAux = buildArchiveAssistantAuxFromConversation(desktopMessages);
     const archive = options.fromRuntime

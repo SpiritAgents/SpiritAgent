@@ -1628,17 +1628,16 @@ export default function App() {
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
   const pendingQuestions = runtime.pendingQuestions;
-  const [localFileAttachments, setLocalFileAttachments] = useState<ComposerLocalFileAttachmentView[]>([]);
   useLocalFileAttachmentPreviews(
-    localFileAttachments,
-    setLocalFileAttachments,
+    runtime.composerLocalFileAttachments,
+    runtime.setComposerLocalFileAttachments,
     runtime.readLocalImagePreviewDataUrl,
   );
   const activeSessionReadOnly = snapshot?.activeSession?.readOnly === true;
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const composerCanSend =
-    (Boolean(runtime.composer.trim()) || localFileAttachments.length > 0) &&
+    (Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0) &&
     !activeSessionReadOnly &&
     runtime.busyAction !== "session" &&
     !pendingApproval &&
@@ -1851,10 +1850,6 @@ export default function App() {
     }
   }, [messages, rewindDraft]);
 
-  useEffect(() => {
-    setLocalFileAttachments([]);
-  }, [snapshot?.workspaceRoot, snapshot?.activeSession?.filePath]);
-
   const startMessageRewind = (message: ConversationMessageSnapshot, listIndex: number) => {
     if (!runtime.summary.canSend || runtime.busyAction || message.canRewind !== true) {
       return;
@@ -1941,7 +1936,7 @@ export default function App() {
   };
 
   const removeLocalFileAttachment = (path: string) => {
-    removeComposerLocalFileAttachment(setLocalFileAttachments, path);
+    removeComposerLocalFileAttachment(runtime.setComposerLocalFileAttachments, path);
   };
 
   const removeRewindLocalFileAttachment = (path: string) => {
@@ -1958,7 +1953,7 @@ export default function App() {
 
   const attachLocalFilePath = useCallback(
     (filePath: string) => {
-      appendComposerLocalFileAttachment(setLocalFileAttachments, filePath, {
+      appendComposerLocalFileAttachment(runtime.setComposerLocalFileAttachments, filePath, {
         onAfterAttach: () => {
           queueMicrotask(() => {
             composerTextareaRef.current?.focus();
@@ -1966,7 +1961,7 @@ export default function App() {
         },
       });
     },
-    [],
+    [runtime.setComposerLocalFileAttachments],
   );
 
   const attachRewindLocalFilePath = useCallback((filePath: string) => {
@@ -2057,18 +2052,14 @@ export default function App() {
   };
 
   const submitComposerMessage = () => {
-    void runtime
-      .sendMessage({
-        text: runtime.composer,
-        ...(localFileAttachments.length > 0
-          ? { localFilePaths: localFileAttachments.map((item) => item.path) }
-          : {}),
-      })
-      .then((ok) => {
-        if (ok) {
-          setLocalFileAttachments([]);
-        }
-      });
+    void runtime.sendMessage({
+      text: runtime.composer,
+      ...(runtime.composerLocalFileAttachments.length > 0
+        ? {
+            localFilePaths: runtime.composerLocalFileAttachments.map((item) => item.path),
+          }
+        : {}),
+    });
   };
 
   const handleComposerSuggestionKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
@@ -2650,7 +2641,7 @@ export default function App() {
                     onSubmit={submitComposerMessage}
                     onAbort={() => void runtime.abortConversation()}
                     placeholder={activeSessionReadOnly ? "调试会话只读，无法发送消息…" : "输入消息…"}
-                    localFileAttachments={localFileAttachments}
+                    localFileAttachments={runtime.composerLocalFileAttachments}
                     models={models}
                     catalogHints={snapshot?.config.modelCatalogHints}
                     activeModel={runtime.settings.activeModel}

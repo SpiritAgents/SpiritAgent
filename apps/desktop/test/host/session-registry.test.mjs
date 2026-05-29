@@ -4,6 +4,10 @@ import { test } from 'node:test';
 
 import { SessionRegistry } from '../../dist-electron/src/host/session-registry.js';
 import { restoreStoredSessionState } from '../../dist-electron/src/host/sessions.js';
+import {
+  isProvisionalSessionPath,
+  provisionalNewSessionPath,
+} from '../../dist-electron/src/host/storage.js';
 
 test('SessionRegistry tracks active bundle after upsertFromRestored', () => {
   const registry = new SessionRegistry();
@@ -40,6 +44,29 @@ test('SessionRegistry resetActive clears conversation state', () => {
   const bundle = registry.requireActive();
   assert.equal(bundle.messages.length, 0);
   assert.equal(bundle.activeSession, undefined);
+});
+
+test('SessionRegistry beginNewActive assigns a stable workspace provisional path', () => {
+  const registry = new SessionRegistry();
+  const workspaceRoot = 'D:/SpiritAgent/repo';
+  const bundle = registry.beginNewActive(workspaceRoot);
+
+  assert.equal(bundle.activeSession?.displayName, 'New conversation');
+  assert.equal(
+    path.resolve(bundle.activeSession?.filePath ?? ''),
+    path.resolve(provisionalNewSessionPath(workspaceRoot)),
+  );
+  assert.equal(isProvisionalSessionPath(bundle.id), true);
+});
+
+test('SessionRegistry beginNewActive reuses the same provisional slot per workspace', () => {
+  const registry = new SessionRegistry();
+  const workspaceRoot = 'D:/SpiritAgent/repo';
+  const first = registry.beginNewActive(workspaceRoot);
+  const second = registry.beginNewActive(workspaceRoot);
+
+  assert.equal(path.resolve(first.id), path.resolve(second.id));
+  assert.equal(path.resolve(first.id), path.resolve(provisionalNewSessionPath(workspaceRoot)));
 });
 
 test('SessionRegistry rekeyBundle moves draft map entry to session file path', () => {

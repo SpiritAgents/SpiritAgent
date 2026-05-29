@@ -6,6 +6,7 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 import { Entry } from '@napi-rs/keyring';
@@ -46,6 +47,7 @@ export const DEFAULT_DESKTOP_WEB_PORT = 7788;
 const APP_DATA_DIR_NAME = 'SpiritAgent';
 const CONFIG_FILE_NAME = 'config.json';
 const CHATS_DIR_NAME = 'chats';
+const PROVISIONAL_CHATS_DIR_NAME = '__provisional__';
 const MAX_RECENT_WORKSPACES = 20;
 const MODEL_CAPABILITIES = ['chat', 'vision', 'imageGeneration'] as const;
 const DEFAULT_CUSTOM_MODEL_CAPABILITIES: DesktopModelCapability[] = ['chat', 'vision'];
@@ -140,6 +142,30 @@ function readGlobalKeyFromKeyring(): string | undefined {
 
 export function defaultNewSessionPath(): string {
   return path.join(chatsDirPath(), `chat-${Math.floor(Date.now() / 1000)}.json`);
+}
+
+export function provisionalChatsDirPath(): string {
+  return path.join(chatsDirPath(), PROVISIONAL_CHATS_DIR_NAME);
+}
+
+export function workspaceSessionKey(workspaceRoot: string): string {
+  const resolved = path.resolve(workspaceRoot.trim() || process.cwd());
+  return createHash('sha256').update(resolved).digest('hex').slice(0, 16);
+}
+
+/** Stable in-memory-only session slot per workspace; never listed in the sidebar until first send. */
+export function provisionalNewSessionPath(workspaceRoot: string): string {
+  return path.join(
+    provisionalChatsDirPath(),
+    `${workspaceSessionKey(workspaceRoot)}.json`,
+  );
+}
+
+export function isProvisionalSessionPath(filePath: string): boolean {
+  const resolved = path.resolve(filePath);
+  const provisionalDir = path.resolve(provisionalChatsDirPath());
+  const relative = path.relative(provisionalDir, resolved);
+  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
 export function discoverWorkspaceRoot(start = process.cwd()): string {
@@ -316,7 +342,8 @@ export async function listStoredSessions(): Promise<SessionListItem[]> {
   const entries = await readdir(dirPath, { withFileTypes: true });
   const files = entries
     .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.json'))
-    .map((entry) => path.join(dirPath, entry.name));
+    .map((entry) => path.join(dirPath, entry.name))
+    .filter((filePath) => !isProvisionalSessionPath(filePath));
 
   const loaded = await Promise.all(
     files.map(async (filePath) => {

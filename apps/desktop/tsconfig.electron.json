@@ -14,6 +14,7 @@
     "electron/**/*.ts",
     "src/env.d.ts",
     "src/host/**/*.ts",
+    "src/lib/composer-draft-store.ts",
     "src/types.ts"
   ],
   "exclude": ["electron/preload.ts"]

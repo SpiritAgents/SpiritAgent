@@ -38,6 +38,7 @@ export interface BuildDesktopSnapshotInput {
   mcpServers: DesktopMcpServerListItem[];
   conversation: ConversationSnapshot;
   activeSession?: ActiveSessionSnapshot;
+  composerSessionKey: string;
 }
 
 export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopSnapshot {
@@ -104,6 +105,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
     mcpServers: input.mcpServers,
     conversation: input.conversation,
     ...(input.activeSession ? { activeSession: { ...input.activeSession } } : {}),
+    composerSessionKey: input.composerSessionKey,
   };
 }
 
