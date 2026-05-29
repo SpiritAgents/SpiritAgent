@@ -228,6 +228,42 @@ export function useDesktopRuntime() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
+  const sessionUiCacheRef = useRef(
+    new Map<string, { composer: string; questionDrafts: Record<string, QuestionDraft> }>(),
+  );
+
+  const sessionUiKey = useCallback((filePath: string | undefined) => filePath?.trim() || "", []);
+
+  const stashSessionUi = useCallback(
+    (filePath: string | undefined) => {
+      const key = sessionUiKey(filePath);
+      if (!key) {
+        return;
+      }
+      sessionUiCacheRef.current.set(key, {
+        composer,
+        questionDrafts,
+      });
+    },
+    [composer, questionDrafts, sessionUiKey],
+  );
+
+  const restoreSessionUi = useCallback(
+    (filePath: string | undefined) => {
+      const key = sessionUiKey(filePath);
+      if (!key) {
+        setComposer("");
+        setQuestionDrafts({});
+        setQuestionError("");
+        return;
+      }
+      const cached = sessionUiCacheRef.current.get(key);
+      setComposer(cached?.composer ?? "");
+      setQuestionDrafts(cached?.questionDrafts ?? {});
+      setQuestionError("");
+    },
+    [sessionUiKey],
+  );
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -505,9 +541,12 @@ export function useDesktopRuntime() {
     });
   }, [pendingQuestions]);
 
-  /** `isBusy` 期间连续 poll 直至空闲，无固定间隔（便于观察流式与 IPC 真实性能）。 */
+  const backgroundSessionsBusy = sessions.some((session) => session.isBusy === true);
+
+  /** Active or background session busy: poll until none are busy. */
   useEffect(() => {
-    if (!api || !snapshot?.conversation.isBusy) {
+    const shouldPoll = snapshot?.conversation.isBusy === true || backgroundSessionsBusy;
+    if (!api || !shouldPoll) {
       return;
     }
 
@@ -521,8 +560,16 @@ export function useDesktopRuntime() {
             break;
           }
           applySnapshot(next);
-          if (!next.conversation.isBusy) {
-            void refreshSessions();
+          if (next.conversation.isBusy === true) {
+            continue;
+          }
+          const sessionItems = await api.listSessions();
+          if (cancelled) {
+            break;
+          }
+          setSessions(sessionItems);
+          const stillBusy = sessionItems.some((session) => session.isBusy === true);
+          if (!stillBusy) {
             break;
           }
         }
@@ -536,7 +583,7 @@ export function useDesktopRuntime() {
     return () => {
       cancelled = true;
     };
-  }, [api, applySnapshot, refreshSessions, snapshot?.conversation.isBusy]);
+  }, [api, applySnapshot, backgroundSessionsBusy, snapshot?.conversation.isBusy]);
 
   useEffect(() => {
     if (!api?.subscribeDreamUpdates) {
@@ -1437,10 +1484,10 @@ export function useDesktopRuntime() {
       }
       setBusyAction("session");
       try {
+        stashSessionUi(snapshotRef.current?.activeSession?.filePath);
         const next = await api.openSession(path);
         applySnapshot(next);
-        setComposer("");
-        setQuestionError("");
+        restoreSessionUi(next.activeSession?.filePath);
         setRuntimeError("");
         void refreshSessions();
       } catch (error) {
@@ -1449,7 +1496,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     },
-    [api, applySnapshot, refreshSessions],
+    [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
   );
 
   const listWorkspaceFileReferenceSuggestions = useCallback(
@@ -1501,10 +1548,10 @@ export function useDesktopRuntime() {
 
     setBusyAction("reset");
     try {
+      stashSessionUi(snapshotRef.current?.activeSession?.filePath);
       const next = await api.resetSession();
       applySnapshot(next);
-      setComposer("");
-      setQuestionError("");
+      restoreSessionUi(next.activeSession?.filePath);
       setRuntimeError("");
       void refreshSessions();
     } catch (error) {
@@ -1512,7 +1559,7 @@ export function useDesktopRuntime() {
     } finally {
       setBusyAction("");
     }
-  }, [api, applySnapshot, refreshSessions]);
+  }, [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
 
   const summary = useMemo(() => {
     return {
