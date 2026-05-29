@@ -1611,6 +1611,11 @@ class DesktopHostService {
       explicitWorkspaceFiles?: PendingWorkspaceFile[];
     } = {},
   ): Promise<DesktopSnapshot> {
+    const bundle = this.activeBundle();
+    if (!bundle.runtime) {
+      await this.refreshRuntimeForBundle(bundle);
+      this.syncActiveRuntimePointer();
+    }
     const runtime = this.requireRuntime();
     const trimmed = text.trim();
     const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
@@ -1817,8 +1822,8 @@ class DesktopHostService {
           fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
         });
       }
-      this.sessionRegistry.beginNewActive(state.workspaceRoot);
-      this.resetStreamingPlacementState(true);
+      const bundle = this.sessionRegistry.beginNewActive(state.workspaceRoot);
+      this.resetStreamingPlacementState(true, bundle);
       await this.refreshRuntime();
       this.lastRuntimeError = '';
       await this.dispatchExtensionEvent({
@@ -1943,12 +1948,7 @@ class DesktopHostService {
           restored,
           (messages, timelineSnapshot) => this.createMessageTimelineFromMessages(messages, timelineSnapshot),
         );
-        bundle.deferredRuntimeRefreshWhileBusy = false;
-        this.resetStreamingPlacementState(true, bundle);
-        if (!bundle.runtime) {
-          await this.refreshRuntimeForBundle(bundle);
-        }
-        this.syncActiveRuntimePointer();
+        await this.finishSessionActivation(bundle);
         this.lastRuntimeError = '';
         return this.buildSnapshot();
       }
@@ -1966,12 +1966,7 @@ class DesktopHostService {
         restored,
         (messages, timelineSnapshot) => this.createMessageTimelineFromMessages(messages, timelineSnapshot),
       );
-      bundle.deferredRuntimeRefreshWhileBusy = false;
-      this.resetStreamingPlacementState(true, bundle);
-      if (!bundle.runtime) {
-        await this.refreshRuntimeForBundle(bundle);
-      }
-      this.syncActiveRuntimePointer();
+      await this.finishSessionActivation(bundle);
       this.lastRuntimeError = '';
       await this.dispatchExtensionEvent({
         type: 'onSessionOpened',
@@ -1982,6 +1977,25 @@ class DesktopHostService {
       });
       return this.buildSnapshot();
     });
+  }
+
+  /** After registry switch: wire runtime for new loads, resume in-flight runs without resetting timeline. */
+  private async finishSessionActivation(bundle: SessionBundle): Promise<void> {
+    bundle.deferredRuntimeRefreshWhileBusy = false;
+    if (bundle.runtime?.isBusy()) {
+      await this.tickSession(bundle);
+      this.syncActiveRuntimePointer();
+      return;
+    }
+    if (!bundle.runtime) {
+      this.resetStreamingPlacementState(true, bundle);
+      await this.refreshRuntimeForBundle(bundle);
+      this.syncActiveRuntimePointer();
+      return;
+    }
+    this.resetStreamingPlacementState(true, bundle);
+    this.refreshArchiveFromRuntime(bundle);
+    this.syncActiveRuntimePointer();
   }
 
   async invoke(command: HostCommandName, payload?: unknown): Promise<unknown> {
@@ -3440,8 +3454,13 @@ class DesktopHostService {
       rewind: bundle.rewind,
       loopEnabled: bundle.loopEnabled,
     });
+    const previousId = bundle.id;
     activeSession.filePath = await saveStoredSession(activeSession.filePath, stored);
-    bundle.id = activeSession.filePath;
+    if (path.resolve(previousId) !== path.resolve(activeSession.filePath)) {
+      this.sessionRegistry.rekeyBundle(bundle, activeSession.filePath);
+    } else {
+      bundle.id = activeSession.filePath;
+    }
     bundle.lastPersistedAtUnixMs = Date.now();
   }
 
