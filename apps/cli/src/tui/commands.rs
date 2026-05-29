@@ -531,7 +531,7 @@ impl TuiShell {
                     Ok(()) => self.push_agent_message(
                         t!(
                             "tui.access.changed",
-                            level = super::pickers::access_level_label(&normalized)
+                            level = crate::ui::access_level_label(&normalized)
                         )
                         .into_owned(),
                     ),
