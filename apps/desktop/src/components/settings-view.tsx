@@ -193,13 +193,13 @@ const customTransportOptions: Array<{
 }> = [
   {
     value: "openai-compatible",
-    label: "OpenAI Chat Completions API",
-    summary: "Bearer 鉴权，使用 /models 列模型与 chat-completions 风格端点。",
+    label: "Chat Completions API",
+    summary: "Bearer 鉴权；Chat Completions API（`/chat/completions`、`/models`）。",
   },
   {
     value: "anthropic",
-    label: "Anthropic API",
-    summary: "x-api-key + anthropic-version，使用 Anthropic messages /models 语义。",
+    label: "Messages API",
+    summary: "x-api-key + anthropic-version；Messages API（`/messages`、`/models`）。",
   },
 ];
 
