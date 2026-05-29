@@ -84,6 +84,13 @@ import { SettingsView } from "@/components/settings-view";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
+import {
+  isGrayMetaLeadingMessage,
+  isGrayMetaTrailingMessage,
+  isStandaloneAssistantAuxMessage,
+  shouldCompactAfterPreviousMessage,
+  shouldTightenAfterPreviousMetaMessage,
+} from "@/lib/message-card-spacing";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
@@ -1243,78 +1250,8 @@ function MessageCard({
   );
 }
 
-function isStandaloneAssistantAuxMessage(
-  message: ConversationMessageSnapshot | undefined,
-): boolean {
-  return Boolean(
-    message &&
-      message.role === "assistant" &&
-      !message.tool &&
-      !message.content.trim() &&
-      (message.aux?.thinking?.trim() || message.aux?.compaction?.trim()),
-  );
-}
-
-function shouldCompactAfterPreviousMessage(
-  previous: ConversationMessageSnapshot | undefined,
-  current: ConversationMessageSnapshot,
-): boolean {
-  const currentHasStandaloneAux = Boolean(
-    current.role === "assistant" &&
-      !current.tool &&
-      (current.aux?.thinking?.trim() || current.aux?.compaction?.trim()),
-  );
-
-  return Boolean(
-    isStandaloneAssistantAuxMessage(previous) &&
-      current.role === "assistant" &&
-      !current.tool &&
-      current.content.trim() &&
-      !currentHasStandaloneAux,
-  );
-}
-
-function shouldTightenAfterPreviousMetaMessage(
-  previous: ConversationMessageSnapshot | undefined,
-  current: ConversationMessageSnapshot,
-): boolean {
-  return isGrayMetaTrailingMessage(previous) && isGrayMetaLeadingMessage(current);
-}
-
 function isGrayMetaLineMessage(message: ConversationMessageSnapshot | undefined): boolean {
   return isGrayMetaLeadingMessage(message) && isGrayMetaTrailingMessage(message);
-}
-
-function isGrayMetaLeadingMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  if (!message || message.role !== "assistant") {
-    return false;
-  }
-  if (isSubagentStatusSurfaceMessage(message)) {
-    return true;
-  }
-  if (!message.content.trim()) {
-    return Boolean(!message.tool && message.aux?.thinking?.trim());
-  }
-  if (message.tool) {
-    return isMinimalToolCallMessage(message);
-  }
-  return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
-}
-
-function isGrayMetaTrailingMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  if (!message || message.role !== "assistant") {
-    return false;
-  }
-  if (isSubagentStatusSurfaceMessage(message)) {
-    return true;
-  }
-  if (message.content.trim()) {
-    return false;
-  }
-  if (message.tool) {
-    return isMinimalToolCallMessage(message);
-  }
-  return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
 }
 
 function AskQuestionField({
