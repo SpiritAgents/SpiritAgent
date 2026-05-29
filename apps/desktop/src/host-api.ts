@@ -95,6 +95,7 @@ export interface HostApi {
   writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void>;
   pickWorkspaceDirectory?(): Promise<string | null>;
   pickLocalFile?(): Promise<string | null>;
+  ingestClipboardImage?(): Promise<string | null>;
   readLocalImagePreviewDataUrl?(filePath: string): Promise<string | null>;
   readManagedImagePreviewDataUrl?(reference: string): Promise<string | null>;
   saveLocalImageAs?(filePath: string): Promise<boolean>;

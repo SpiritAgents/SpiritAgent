@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent as ReactClipboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 
 import {
   modelReasoningEffortOptions,
@@ -656,6 +664,7 @@ type ComposerSurfaceProps = {
   onPickLocalFile?(): void | Promise<void>;
   onInsertSkillTrigger?(): void;
   onRemoveLocalFileAttachment?(path: string): void;
+  onPaste?(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
   showLoopSwitch?: boolean;
 };
 
@@ -688,6 +697,7 @@ function ComposerSurface({
   onPickLocalFile,
   onInsertSkillTrigger,
   onRemoveLocalFileAttachment,
+  onPaste,
   showLoopSwitch = true,
 }: ComposerSurfaceProps) {
   const [modelFilter, setModelFilter] = useState("");
@@ -735,6 +745,9 @@ function ComposerSurface({
         }}
         onSelect={(event) => {
           onSelectionChange?.(event.currentTarget.selectionStart);
+        }}
+        onPaste={(event) => {
+          onPaste?.(event);
         }}
         disabled={readOnly}
         placeholder={placeholder}
@@ -1996,11 +2009,8 @@ export default function App() {
     );
   };
 
-  const pickLocalFileFromPalette = () => {
-    void runtime.pickLocalFile().then((filePath) => {
-      if (!filePath) {
-        return;
-      }
+  const attachLocalFilePath = useCallback(
+    (filePath: string) => {
       const normalizedPath = normalizeSlashPath(filePath);
       setLocalFileAttachments((current) => {
         if (current.some((item) => normalizeSlashPath(item.path) === normalizedPath)) {
@@ -2036,8 +2046,41 @@ export default function App() {
       queueMicrotask(() => {
         composerTextareaRef.current?.focus();
       });
+    },
+    [runtime],
+  );
+
+  const pickLocalFileFromPalette = () => {
+    void runtime.pickLocalFile().then((filePath) => {
+      if (!filePath) {
+        return;
+      }
+      attachLocalFilePath(filePath);
     });
   };
+
+  const handleComposerPaste = useCallback(
+    (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
+      if (activeSessionReadOnly || runtime.hostKind !== "electron") {
+        return;
+      }
+
+      const hasClipboardImage = Array.from(event.clipboardData?.items ?? []).some(
+        (item) => item.kind === "file" && item.type.startsWith("image/"),
+      );
+      if (!hasClipboardImage) {
+        return;
+      }
+
+      event.preventDefault();
+      void runtime.ingestClipboardImage().then((filePath) => {
+        if (filePath) {
+          attachLocalFilePath(filePath);
+        }
+      });
+    },
+    [activeSessionReadOnly, attachLocalFilePath, runtime],
+  );
 
   const submitComposerMessage = () => {
     void runtime
@@ -2653,6 +2696,7 @@ export default function App() {
                     onPickLocalFile={pickLocalFileFromPalette}
                     onInsertSkillTrigger={insertSkillTriggerFromPalette}
                     onRemoveLocalFileAttachment={removeLocalFileAttachment}
+                    onPaste={handleComposerPaste}
                   />
                   {snapshot?.conversation.pendingQuestions ? (
                     <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
