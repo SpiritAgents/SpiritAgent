@@ -3,14 +3,6 @@ use super::*;
 
 pub(crate) const ACCESS_LEVEL_OPTIONS: [&str; 2] = ["default", "full-access"];
 
-pub(crate) fn access_level_label(level: &str) -> String {
-    if level == "full-access" {
-        t!("ui.footer.approval.full_access").into_owned()
-    } else {
-        t!("ui.footer.approval.default").into_owned()
-    }
-}
-
 pub(crate) fn access_level_picker_index(current: &str) -> usize {
     if current == "full-access" {
         1
@@ -144,7 +136,7 @@ impl TuiShell {
 
         match self.runtime.set_approval_level(selected) {
             Ok(()) => self.push_agent_message(
-                t!("tui.access.changed", level = access_level_label(selected)).into_owned(),
+                t!("tui.access.changed", level = crate::ui::access_level_label(selected)).into_owned(),
             ),
             Err(err) => self.push_agent_message(t!("tui.access.failed", err = err).into_owned()),
         }

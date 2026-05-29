@@ -70,7 +70,7 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
     } else {
         t!("ui.footer.loop.off")
     };
-    let approval_label = footer_approval_label(&app.approval_level);
+    let approval_label = access_level_label(&app.approval_level);
     let approval_style = if app.approval_level == "full-access" {
         Style::default().fg(Color::Yellow)
     } else {
@@ -170,14 +170,6 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
         Span::styled(right_label.to_string(), footer_style),
         Span::styled(" ".repeat(side_padding), footer_style),
     ])
-}
-
-fn footer_approval_label(level: &str) -> String {
-    if level == "full-access" {
-        t!("ui.footer.approval.full_access").into_owned()
-    } else {
-        t!("ui.footer.approval.default").into_owned()
-    }
 }
 
 pub(in crate::ui) fn input_block_height(app: &TuiViewModel, max_width: usize) -> u16 {

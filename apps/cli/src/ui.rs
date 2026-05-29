@@ -22,6 +22,8 @@ mod subagent;
 mod text;
 mod theme;
 
+pub(crate) use pickers::access_level_label;
+
 use conversation::*;
 use forms::*;
 use input::*;

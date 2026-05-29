@@ -501,7 +501,7 @@ pub(in crate::ui) fn build_subagent_picker_lines(
     lines
 }
 
-fn access_level_display_label(level: &str) -> String {
+pub(crate) fn access_level_label(level: &str) -> String {
     if level == "full-access" {
         t!("ui.footer.approval.full_access").into_owned()
     } else {
@@ -526,7 +526,7 @@ pub(in crate::ui) fn build_access_picker_lines(
         let row_style = inline_picker_text_style(is_selected);
         lines.push(Line::from(vec![
             Span::styled(picker_selection_prefix(is_selected), row_style),
-            Span::styled(access_level_display_label(level), row_style),
+            Span::styled(access_level_label(level), row_style),
         ]));
     }
 
