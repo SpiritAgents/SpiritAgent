@@ -1749,11 +1749,14 @@ class DesktopHostService {
   async resetSession(): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized();
-      if (this.runtime?.isBusy()) {
-        throw new Error('当前已有响应或审批在处理中，请稍候。');
-      }
 
       const state = this.requireState();
+      const leaving = this.sessionRegistry.getActive();
+      if (leaving?.activeSession) {
+        await this.persistSessionBundle(leaving, {
+          fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
+        });
+      }
       this.sessionRegistry.resetActive(state.workspaceRoot);
       this.resetStreamingPlacementState(true);
       await this.refreshRuntime();
@@ -1852,6 +1855,13 @@ class DesktopHostService {
 
   async openSession(filePath: string): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
+      const leaving = this.sessionRegistry.getActive();
+      if (leaving?.activeSession) {
+        await this.persistSessionBundle(leaving, {
+          fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
+        });
+      }
+
       if (isEphemeralCommitSessionPath(filePath)) {
         const ephemeral = this.findEphemeralSession(filePath);
         if (!ephemeral) {
@@ -3264,35 +3274,55 @@ class DesktopHostService {
   }
 
   private async persistCurrentSessionIfNeeded(): Promise<void> {
+    const bundle = this.sessionRegistry.getActive();
+    if (!bundle) {
+      return;
+    }
+    await this.persistSessionBundle(bundle, {
+      fromRuntime: this.runtime,
+    });
+  }
+
+  private async persistSessionBundle(
+    bundle: SessionBundle,
+    options: { fromRuntime?: DesktopRuntime } = {},
+  ): Promise<void> {
     const state = this.requireState();
-    const bundle = this.activeBundle();
     const activeSession = bundle.activeSession;
-    if (!activeSession || activeSession.kind === 'ephemeral' || this.runtime?.isBusy()) {
+    if (!activeSession || activeSession.kind === 'ephemeral') {
       return;
     }
 
-    const archive = this.runtime
-      ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
+    const desktopMessages = bundle.messageTimeline.toMessages();
+    const archiveMessages = buildArchiveMessagesFromConversation(desktopMessages);
+    const archiveAssistantAux = buildArchiveAssistantAuxFromConversation(desktopMessages);
+    const archive = options.fromRuntime
+      ? options.fromRuntime.toArchive(archiveMessages, archiveAssistantAux)
       : {
-          messages: this.archiveMessages(),
-          assistantAux: this.archiveAssistantAux(),
+          messages: archiveMessages,
+          assistantAux: archiveAssistantAux,
           llmHistory: bundle.archiveHistory,
           subagentSessions: bundle.archiveSubagentSessions ?? [],
           loopEnabled: bundle.loopEnabled,
         } satisfies ChatArchive;
 
+    bundle.archiveHistory = archive.llmHistory;
+    bundle.archiveSubagentSessions = archive.subagentSessions ?? [];
+    bundle.loopEnabled = archive.loopEnabled === true;
+
     const stored = buildStoredDesktopSession({
       archive,
       sessionDisplayName: activeSession.displayName,
-      workspaceRoot: state.workspaceRoot,
+      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       gitBranch: state.git.branch,
-      desktopMessages: this.desktopMessages(),
+      desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
       desktopMessageTimeline: bundle.messageTimeline.snapshot(),
       rewind: bundle.rewind,
       loopEnabled: bundle.loopEnabled,
     });
     activeSession.filePath = await saveStoredSession(activeSession.filePath, stored);
     bundle.id = activeSession.filePath;
+    bundle.lastPersistedAtUnixMs = Date.now();
   }
 
   private activeBundle(): SessionBundle {
