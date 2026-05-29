@@ -2180,7 +2180,9 @@ export default function App() {
       )}
     >
       <LaunchSplash active={launchSplashActive} />
-      {winElectronChrome ? <DesktopTitleBar useMicaBackdrop={useMicaBackdrop} /> : null}
+      {winElectronChrome ? (
+        <DesktopTitleBar useMicaBackdrop={useMicaBackdrop} sessionSidebarOpen={sessionSidebarOpen} />
+      ) : null}
       <div data-spirit-surface="app-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {!winElectronChrome ? (
           <div
