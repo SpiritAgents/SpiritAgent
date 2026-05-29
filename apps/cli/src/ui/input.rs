@@ -76,7 +76,8 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
     } else {
         footer_style
     };
-    let left_prefix = format!("{}  |  {}  |  ", mode_label, loop_label);
+    let left_prefix = format!("{}  |  ", mode_label);
+    let left_after_approval = format!("  |  {}", loop_label);
     let (left_suffix, left_suffix_plain) = if app.rewind_picker.is_some() {
         let hint = t!("ui.footer.rewind_hint");
         (
@@ -92,7 +93,10 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
     } else {
         (None, String::new())
     };
-    let left_plain = format!("{}{}{}", left_prefix, approval_label, left_suffix_plain);
+    let left_plain = format!(
+        "{}{}{}{}",
+        left_prefix, approval_label, left_after_approval, left_suffix_plain
+    );
     let right_label = app.config.active_model.as_str();
     let side_padding = if width >= 12 {
         2
@@ -148,6 +152,7 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
             Span::styled(" ".repeat(side_padding), footer_style),
             Span::styled(left_prefix, footer_style),
             Span::styled(approval_label, approval_style),
+            Span::styled(left_after_approval, footer_style),
         ];
         if let Some(suffix) = left_suffix {
             left_spans.push(suffix);

@@ -279,6 +279,16 @@ fn footer_shows_mode_without_tab_toggle_hint() {
     assert!(plan_footer[0].contains(t!("ui.footer.mode.plan").as_ref()));
     assert!(!agent_footer[0].contains(t!("ui.footer.preview").as_ref()));
     assert!(agent_footer[0].contains(t!("ui.footer.approval.default").as_ref()));
+    let approval_pos = agent_footer[0]
+        .find(t!("ui.footer.approval.default").as_ref())
+        .expect("approval label");
+    let loop_pos = agent_footer[0]
+        .find(t!("ui.footer.loop.off").as_ref())
+        .expect("loop label");
+    assert!(
+        approval_pos < loop_pos,
+        "approval should appear before loop in footer"
+    );
 }
 
 #[test]
