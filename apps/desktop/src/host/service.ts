@@ -1991,20 +1991,14 @@ class DesktopHostService {
 
   /** After registry switch: wire runtime for new loads, resume in-flight runs without resetting timeline. */
   private async finishSessionActivation(bundle: SessionBundle): Promise<void> {
-    bundle.deferredRuntimeRefreshWhileBusy = false;
     if (bundle.runtime?.isBusy()) {
       await this.tickSession(bundle);
       this.syncActiveRuntimePointer();
       return;
     }
-    if (!bundle.runtime) {
-      this.resetStreamingPlacementState(true, bundle);
-      await this.refreshRuntimeForBundle(bundle);
-      this.syncActiveRuntimePointer();
-      return;
-    }
     this.resetStreamingPlacementState(true, bundle);
-    this.refreshArchiveFromRuntime(bundle);
+    await this.refreshRuntimeForBundle(bundle);
+    await this.flushDeferredRuntimeRefreshIfIdle(bundle);
     this.syncActiveRuntimePointer();
   }
 
