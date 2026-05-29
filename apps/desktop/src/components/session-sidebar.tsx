@@ -450,9 +450,9 @@ export function SessionSidebar({
                           <ChevronRight className="size-3 shrink-0 text-sidebar-faint-foreground" aria-hidden />
                         )}
                         {expanded ? (
-                          <FolderOpen className="size-3.5 shrink-0 text-sidebar-faint-foreground" aria-hidden />
+                          <FolderOpen className="size-3.5 shrink-0" aria-hidden />
                         ) : (
-                          <FolderClosed className="size-3.5 shrink-0 text-sidebar-faint-foreground" aria-hidden />
+                          <FolderClosed className="size-3.5 shrink-0" aria-hidden />
                         )}
                         <span className="min-w-0 flex-1 truncate text-xs font-medium">{group.label}</span>
                       </button>
