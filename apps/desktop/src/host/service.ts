@@ -256,6 +256,8 @@ import {
   commitWorkspaceChanges,
   readWorkspaceGitSnapshot,
 } from './git.js';
+import { SessionRegistry } from './session-registry.js';
+import type { SessionBundle } from './session-bundle.js';
 import {
   bindRewindFileChangesToToolMessage,
   createDesktopRewindMetadata,
@@ -350,17 +352,9 @@ interface HostState {
   git: DesktopGitSnapshot;
   metadata: HostMetadataSummary;
   plan: PlanSnapshot;
-  messages: ConversationMessageSnapshot[];
-  messageTimeline: DesktopMessageTimeline;
   extensionsList: DesktopExtensionListItem[];
   extensionCss: DesktopExtensionCssLayer[];
-  activeSession?: ActiveSessionSnapshot;
   ephemeralSessions: EphemeralSessionRecord[];
-  archiveHistory: ChatArchive['llmHistory'];
-  archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
-  loopEnabled: boolean;
-  rewind: StoredDesktopRewindMetadata;
-  rewindWarnings: FileRewindWarning[];
 }
 
 function defaultDisplayTextForUserTurn(
@@ -426,56 +420,95 @@ class DesktopHostService {
   private hostExtensionMarketplace: HostExtensionMarketplaceManager | undefined;
   private hostExtensionMarketplaceFetchImpl: typeof fetch | undefined;
   private state: HostState | undefined;
+  private readonly sessionRegistry = new SessionRegistry();
+  /** Active bundle runtime mirror for legacy call sites; use `bundle.runtime` in session ticks. */
   private runtime: DesktopRuntime | undefined;
   private toolExecutor: DesktopToolExecutor | undefined;
   private initialized = false;
   private lastRuntimeError = '';
   private activeApiKeyConfigured = false;
   private modelKeyPresence: Record<string, boolean> = {};
-  private readonly conversationSnapshotView = new DesktopConversationSnapshotView(() => this.allocateMessageId());
-  private readonly assistantMessages = new DesktopAssistantMessageStateMachine({
-    messages: () => this.requireState().messages,
-    setMessages: (messages) => {
-      this.requireState().messages = messages;
-    },
-    allocateMessageId: () => this.allocateMessageId(),
-    isRuntimeBusy: () => this.runtime?.isBusy() ?? false,
-  });
-  private readonly runtimeEvents = new DesktopRuntimeEventOrchestrator({
-    runtime: () => this.runtime,
-    messages: () => this.requireState().messages,
-    allocateMessageId: () => this.allocateMessageId(),
-    assistantMessages: this.assistantMessages,
-    messageTimeline: () => this.state?.messageTimeline,
-    takeNextAssistantSegmentKind: () => this.takeNextTimelineAssistantSegmentKind(),
-    conversationSnapshotView: this.conversationSnapshotView,
-    clearCurrentTurnSkills: () => {
-      this.currentTurnSkills = [];
-    },
-    setLastRuntimeError: (error) => {
-      this.lastRuntimeError = error;
-    },
-    refreshArchiveFromRuntime: () => this.refreshArchiveFromRuntime(),
-    dispatchExtensionEvent: (event) => {
-      void this.dispatchExtensionEvent(event);
-    },
-    bindFileChangesToToolMessage: (execution, messageId) => {
-      this.bindFileChangesToToolMessage(execution, messageId);
-    },
-  });
-  private messageIdCounter = 1;
-  private nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind = 'initial';
-  private pendingUnboundFileChangeIds: string[] = [];
-  private currentTurnSkills: LlmActiveSkill[] = [];
+  private readonly bundleOrchestrations = new WeakMap<
+    SessionBundle,
+    {
+      assistantMessages: DesktopAssistantMessageStateMachine;
+      runtimeEvents: DesktopRuntimeEventOrchestrator;
+      conversationSnapshotView: DesktopConversationSnapshotView;
+    }
+  >();
   private serialized = Promise.resolve();
-  /** 忙时改 planMode / 模型或 endpoint 时推迟 `refreshRuntime`，避免替换 runtime 导致流式输出丢失；空闲后由 `flushDeferredRuntimeRefreshIfIdle` 应用。 */
-  private deferredRuntimeRefreshWhileBusy = false;
   private dreamCollectorStatus: DesktopDreamCollectorSnapshot = emptyDreamCollectorSnapshot('disabled');
   private dreamCollectorRunning = false;
   private dreamCollectorLastTickUnixMs = 0;
   private dreamCollectorMonitorTimer: ReturnType<typeof setInterval> | undefined;
   private readonly dreamUpdateListeners = new Set<(snapshot: DesktopSnapshot) => void>();
   private lastToolSnapshotLogSignature: string | undefined;
+
+  private orchestrationFor(bundle: SessionBundle): {
+    assistantMessages: DesktopAssistantMessageStateMachine;
+    runtimeEvents: DesktopRuntimeEventOrchestrator;
+    conversationSnapshotView: DesktopConversationSnapshotView;
+  } {
+    let existing = this.bundleOrchestrations.get(bundle);
+    if (existing) {
+      return existing;
+    }
+    existing = this.createBundleOrchestration(bundle);
+    this.bundleOrchestrations.set(bundle, existing);
+    return existing;
+  }
+
+  private activeOrchestration() {
+    return this.orchestrationFor(this.activeBundle());
+  }
+
+  private createBundleOrchestration(bundle: SessionBundle): {
+    assistantMessages: DesktopAssistantMessageStateMachine;
+    runtimeEvents: DesktopRuntimeEventOrchestrator;
+    conversationSnapshotView: DesktopConversationSnapshotView;
+  } {
+    const allocateMessageId = () => {
+      const next = bundle.messageIdCounter;
+      bundle.messageIdCounter += 1;
+      return next;
+    };
+    const conversationSnapshotView = new DesktopConversationSnapshotView(allocateMessageId);
+    const assistantMessages = new DesktopAssistantMessageStateMachine({
+      messages: () => bundle.messages,
+      setMessages: (messages) => {
+        bundle.messages = messages;
+      },
+      allocateMessageId,
+      isRuntimeBusy: () => bundle.runtime?.isBusy() ?? false,
+    });
+    const runtimeEvents = new DesktopRuntimeEventOrchestrator({
+      runtime: () => bundle.runtime,
+      messages: () => bundle.messages,
+      allocateMessageId,
+      assistantMessages,
+      messageTimeline: () => bundle.messageTimeline,
+      takeNextAssistantSegmentKind: () => this.takeNextTimelineAssistantSegmentKind(bundle),
+      conversationSnapshotView,
+      clearCurrentTurnSkills: () => {
+        bundle.currentTurnSkills = [];
+      },
+      setLastRuntimeError: (error) => {
+        this.lastRuntimeError = error;
+      },
+      refreshArchiveFromRuntime: () => this.refreshArchiveFromRuntime(bundle),
+      dispatchExtensionEvent: (event) => {
+        void this.dispatchExtensionEvent(event);
+      },
+      bindFileChangesToToolMessage: (execution, messageId) => {
+        this.bindFileChangesToToolMessage(bundle, execution, messageId);
+      },
+    });
+    return { assistantMessages, runtimeEvents, conversationSnapshotView };
+  }
+
+  private syncActiveRuntimePointer(): void {
+    this.runtime = this.sessionRegistry.getActive()?.runtime;
+  }
 
   async bootstrap(request?: BootstrapRequest): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
@@ -641,9 +674,9 @@ class DesktopHostService {
         !Boolean(request.apiKey?.trim());
 
       if (deferRuntimeRefresh) {
-        this.deferredRuntimeRefreshWhileBusy = true;
+        this.activeBundle().deferredRuntimeRefreshWhileBusy = true;
       } else {
-        this.deferredRuntimeRefreshWhileBusy = false;
+        this.activeBundle().deferredRuntimeRefreshWhileBusy = false;
         await this.refreshRuntime();
       }
       this.lastRuntimeError = '';
@@ -1334,7 +1367,7 @@ class DesktopHostService {
         state.metadata.skills.enabledSkillCatalog,
       );
       const planSystemPrompt = buildPlanSystemMessage(state.metadata.planMetadata);
-      const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(this.currentTurnSkills);
+      const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(this.activeBundle().currentTurnSkills);
       const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);
       const dreamsSystemPrompt = buildDreamsSystemMessage(
         await buildDreamContextText({
@@ -1408,7 +1441,7 @@ class DesktopHostService {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
       const state = this.requireState();
-      state.loopEnabled = enabled;
+      this.activeBundle().loopEnabled = enabled;
       this.runtime?.setLoopEnabled(enabled);
       await this.persistCurrentSessionIfNeeded();
       return this.buildSnapshot();
@@ -1432,12 +1465,12 @@ class DesktopHostService {
       }
 
       runtime.abort();
-      this.requireState().messageTimeline.abortActiveAssistantSegment();
-      this.currentTurnSkills = [];
-      this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
-      this.runtimeEvents.consumeCompletedTurnResult();
-      this.runtimeEvents.syncPendingToolStates();
-      this.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      this.activeBundle().messageTimeline.abortActiveAssistantSegment();
+      this.activeBundle().currentTurnSkills = [];
+      this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+      this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
+      this.activeOrchestration().runtimeEvents.syncPendingToolStates();
+      this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       if (interruptedAssistantText || interruptedAssistantAuxText) {
         this.markAssistantMessageContinuable(interruptedAssistantText);
       } else {
@@ -1464,7 +1497,7 @@ class DesktopHostService {
       }
 
       const state = this.requireState();
-      if (state.activeSession?.readOnly) {
+      if (this.activeBundle().activeSession?.readOnly) {
         throw new Error('当前调试会话为只读，无法继续补全。');
       }
 
@@ -1473,18 +1506,18 @@ class DesktopHostService {
         throw new Error('当前消息已不可继续补全。');
       }
 
-      const previousContinuationIds = this.requireState().messages
+      const previousContinuationIds = this.activeBundle().messages
         .filter((message) => message.canContinue === true)
         .map((message) => message.id);
       try {
         this.clearAssistantContinuationMarkers();
         this.resetStreamingPlacementState(false);
         await this.persistCurrentSessionIfNeeded();
-        this.nextTimelineAssistantSegmentKind = 'continuation';
+        this.activeBundle().nextTimelineAssistantSegmentKind = 'continuation';
         await runtime.continueAssistantCompletionStreaming();
       } catch (error) {
-        this.nextTimelineAssistantSegmentKind = 'initial';
-        for (const message of this.requireState().messages) {
+        this.activeBundle().nextTimelineAssistantSegmentKind = 'initial';
+        for (const message of this.activeBundle().messages) {
           if (previousContinuationIds.includes(message.id)) {
             message.canContinue = true;
           }
@@ -1493,10 +1526,10 @@ class DesktopHostService {
       }
       this.refreshArchiveFromRuntime();
       await runtime.poll();
-      this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
-      this.runtimeEvents.consumeCompletedTurnResult();
-      this.runtimeEvents.syncPendingToolStates();
-      this.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+      this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
+      this.activeOrchestration().runtimeEvents.syncPendingToolStates();
+      this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       await this.flushDeferredRuntimeRefreshIfIdle();
       if (!runtime.isBusy()) {
         await this.refreshGitState();
@@ -1517,7 +1550,7 @@ class DesktopHostService {
         throw new Error('消息 id 无效。');
       }
 
-      const checkpoint = state.rewind.checkpoints.find(
+      const checkpoint = this.activeBundle().rewind.checkpoints.find(
         (candidate) => candidate.messageId === request.messageId,
       );
       if (!checkpoint) {
@@ -1526,14 +1559,14 @@ class DesktopHostService {
 
       const snapshot = await loadRewindCheckpointSnapshot(
         spiritAgentDataDir(),
-        state.rewind.sessionId,
+        this.activeBundle().rewind.sessionId,
         checkpoint.id,
       );
       if (!snapshot) {
         throw new Error('回溯检查点文件不存在，无法回溯。');
       }
 
-      const changesToRestore = state.rewind.fileChanges
+      const changesToRestore = this.activeBundle().rewind.fileChanges
         .filter((change) => change.sequence > checkpoint.sequence)
         .sort((left, right) => left.sequence - right.sequence);
       const loadedChanges: HostRecordedFileChange[] = [];
@@ -1541,7 +1574,7 @@ class DesktopHostService {
       for (const metadata of changesToRestore) {
         const stored = await loadRewindFileChange(
           spiritAgentDataDir(),
-          state.rewind.sessionId,
+          this.activeBundle().rewind.sessionId,
           metadata.id,
         );
         if (stored) {
@@ -1557,7 +1590,7 @@ class DesktopHostService {
       }
 
       const restoreResult = await restoreHostFileChanges(loadedChanges);
-      state.rewindWarnings = [
+      this.activeBundle().rewindWarnings = [
         ...missingWarnings,
         ...restoreResult.warnings.map((warning) => ({ ...warning })),
       ];
@@ -1578,6 +1611,11 @@ class DesktopHostService {
       explicitWorkspaceFiles?: PendingWorkspaceFile[];
     } = {},
   ): Promise<DesktopSnapshot> {
+    const bundle = this.activeBundle();
+    if (!bundle.runtime) {
+      await this.refreshRuntimeForBundle(bundle);
+      this.syncActiveRuntimePointer();
+    }
     const runtime = this.requireRuntime();
     const trimmed = text.trim();
     const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
@@ -1590,14 +1628,14 @@ class DesktopHostService {
     }
 
     const state = this.requireState();
-    if (state.activeSession?.readOnly) {
+    if (this.activeBundle().activeSession?.readOnly) {
       throw new Error('当前调试会话为只读，无法继续发送消息。');
     }
     if (!options.preserveRewindWarnings) {
-      state.rewindWarnings = [];
+      this.activeBundle().rewindWarnings = [];
     }
     this.clearAssistantContinuationMarkers();
-    this.currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
+    this.activeBundle().currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
     this.ensureActiveSession(displayText);
     const beforeUserCheckpoint = this.buildRewindCheckpointSnapshot();
     const userMessage: ConversationMessageSnapshot = {
@@ -1606,8 +1644,8 @@ class DesktopHostService {
       content: displayText,
       pending: false,
     };
-    state.messages.push(userMessage);
-    state.messageTimeline.beginUserTurn(userMessage.content, { messageId: userMessage.id });
+    this.activeBundle().messages.push(userMessage);
+    this.activeBundle().messageTimeline.beginUserTurn(userMessage.content, { messageId: userMessage.id });
     this.resetStreamingPlacementState(false);
     await this.persistCurrentSessionIfNeeded();
     await this.dispatchExtensionEvent({
@@ -1624,18 +1662,18 @@ class DesktopHostService {
       this.refreshArchiveFromRuntime();
       await this.recordRewindCheckpoint(userMessage.id, beforeUserCheckpoint);
       await runtime.poll();
-      this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+      this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
     } catch (error) {
-      this.currentTurnSkills = [];
-      this.assistantMessages.handleMessageRemoved(state.messages.length - 1, userMessage.id, 'send-user-rollback');
-      state.messages.pop();
+      this.activeBundle().currentTurnSkills = [];
+      this.activeOrchestration().assistantMessages.handleMessageRemoved(this.activeBundle().messages.length - 1, userMessage.id, 'send-user-rollback');
+      this.activeBundle().messages.pop();
       this.rebuildMessageTimelineFromMessages();
       throw error;
     }
 
-    this.runtimeEvents.consumeCompletedTurnResult();
-    this.runtimeEvents.syncPendingToolStates();
-    this.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+    this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
+    this.activeOrchestration().runtimeEvents.syncPendingToolStates();
+    this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
     await this.flushDeferredRuntimeRefreshIfIdle();
     if (!runtime.isBusy()) {
       await this.refreshGitState();
@@ -1666,7 +1704,7 @@ class DesktopHostService {
     assistantText: string,
   ): Promise<DesktopSnapshot> {
     const state = this.requireState();
-    state.rewindWarnings = [];
+    this.activeBundle().rewindWarnings = [];
     this.clearAssistantContinuationMarkers();
     this.ensureActiveSession(displayText);
     const userMessage: ConversationMessageSnapshot = {
@@ -1675,12 +1713,12 @@ class DesktopHostService {
       content: displayText,
       pending: false,
     };
-    state.messages.push(userMessage);
-    state.messageTimeline.beginUserTurn(userMessage.content, { messageId: userMessage.id });
+    this.activeBundle().messages.push(userMessage);
+    this.activeBundle().messageTimeline.beginUserTurn(userMessage.content, { messageId: userMessage.id });
     this.resetStreamingPlacementState(false);
-    this.assistantMessages.appendAssistantMessage(assistantText);
-    state.messageTimeline.beginAssistantSegment('initial');
-    state.messageTimeline.materializeCompletedAssistantText(assistantText);
+    this.activeOrchestration().assistantMessages.appendAssistantMessage(assistantText);
+    this.activeBundle().messageTimeline.beginAssistantSegment('initial');
+    this.activeBundle().messageTimeline.materializeCompletedAssistantText(assistantText);
     await this.persistCurrentSessionIfNeeded();
     await this.refreshGitState();
     return this.buildSnapshot();
@@ -1689,22 +1727,47 @@ class DesktopHostService {
   async poll(): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
-      if (this.runtime) {
-        this.runtime.tickThinkingSpinner();
-        await this.runtime.poll();
-        this.runtimeEvents.applyRuntimeHostEvents(this.runtime.drainEvents());
+      for (const bundle of this.sessionRegistry.all()) {
+        if (bundle.runtime?.isBusy()) {
+          await this.tickSession(bundle);
+        }
       }
-      this.runtimeEvents.consumeCompletedTurnResult();
-      this.runtimeEvents.syncPendingToolStates();
-      this.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-      await this.persistCurrentSessionIfNeeded();
-      await this.flushDeferredRuntimeRefreshIfIdle();
-      if (!this.runtime?.isBusy()) {
+      const active = this.sessionRegistry.getActive();
+      if (active && !active.runtime?.isBusy()) {
+        await this.tickSession(active, { light: true });
+      }
+      this.syncActiveRuntimePointer();
+      if (this.sessionRegistry.allBusy((bundle) => bundle.runtime?.isBusy() === true).length === 0) {
         await this.refreshGitState();
       }
       this.startDreamCollectorIfNeeded();
       return this.buildSnapshot();
     });
+  }
+
+  private async tickSession(
+    bundle: SessionBundle,
+    options: { light?: boolean } = {},
+  ): Promise<void> {
+    const orchestration = this.orchestrationFor(bundle);
+    if (bundle.runtime) {
+      bundle.runtime.tickThinkingSpinner();
+      if (!options.light) {
+        await bundle.runtime.poll();
+        orchestration.runtimeEvents.applyRuntimeHostEvents(bundle.runtime.drainEvents());
+      }
+    }
+    if (options.light) {
+      return;
+    }
+    orchestration.runtimeEvents.consumeCompletedTurnResult();
+    orchestration.runtimeEvents.syncPendingToolStates();
+    orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+    await this.persistSessionBundle(bundle, {
+      fromRuntime: bundle.runtime,
+      bumpListSortAt: false,
+    });
+    await this.flushDeferredRuntimeRefreshIfIdle(bundle);
   }
 
   async replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot> {
@@ -1721,10 +1784,10 @@ class DesktopHostService {
         this.resetStreamingPlacementState(false);
       }
       await runtime.continuePendingApproval(runtimeDecision);
-      this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
-      this.runtimeEvents.consumeCompletedTurnResult();
-      this.runtimeEvents.syncPendingToolStates();
-      this.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+      this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
+      this.activeOrchestration().runtimeEvents.syncPendingToolStates();
+      this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       await this.flushDeferredRuntimeRefreshIfIdle();
       if (!runtime.isBusy()) {
         await this.refreshGitState();
@@ -1738,10 +1801,10 @@ class DesktopHostService {
       await this.ensureInitialized(undefined, { fastPath: true });
       const runtime = this.requireRuntime();
       await runtime.continuePendingQuestions(toRuntimeAskQuestionsResult(result));
-      this.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
-      this.runtimeEvents.consumeCompletedTurnResult();
-      this.runtimeEvents.syncPendingToolStates();
-      this.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+      this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
+      this.activeOrchestration().runtimeEvents.syncPendingToolStates();
+      this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       await this.persistCurrentSessionIfNeeded();
       await this.flushDeferredRuntimeRefreshIfIdle();
       if (!runtime.isBusy()) {
@@ -1754,24 +1817,17 @@ class DesktopHostService {
   async resetSession(): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized();
-      if (this.runtime?.isBusy()) {
-        throw new Error('当前已有响应或审批在处理中，请稍候。');
-      }
 
-      this.deferredRuntimeRefreshWhileBusy = false;
       const state = this.requireState();
-      state.messages = [];
-      state.messageTimeline = this.createMessageTimelineFromMessages([]);
-      state.activeSession = undefined;
-      state.archiveHistory = [];
-      state.archiveSubagentSessions = [];
-      state.loopEnabled = false;
-      state.rewind = createDesktopRewindMetadata();
-      state.rewindWarnings = [];
-      this.currentTurnSkills = [];
-      this.pendingUnboundFileChangeIds = [];
-      this.resetStreamingPlacementState(true);
-      this.messageIdCounter = 1;
+      const leaving = this.sessionRegistry.getActive();
+      if (leaving?.activeSession) {
+        await this.persistSessionBundle(leaving, {
+          fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
+          bumpListSortAt: false,
+        });
+      }
+      const bundle = this.sessionRegistry.beginNewActive(state.workspaceRoot);
+      this.resetStreamingPlacementState(true, bundle);
       await this.refreshRuntime();
       this.lastRuntimeError = '';
       await this.dispatchExtensionEvent({
@@ -1788,9 +1844,18 @@ class DesktopHostService {
     return this.runSerialized(async () => {
       await this.ensureInitialized();
       const state = this.requireState();
+      const activeId = this.sessionRegistry.activeSessionId();
       const stored = await listStoredSessions();
       const ephemeral: SessionListItem[] = ephemeralSessionsToListItems(state.ephemeralSessions);
-      return [...stored, ...ephemeral].sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
+      const merged = [...stored, ...ephemeral].sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
+      return merged.map((item) => {
+        const bundle = this.sessionRegistry.get(item.path);
+        return {
+          ...item,
+          ...(bundle?.runtime?.isBusy() ? { isBusy: true } : {}),
+          ...(item.path === activeId ? { isActive: true } : {}),
+        };
+      });
     });
   }
 
@@ -1868,66 +1933,73 @@ class DesktopHostService {
 
   async openSession(filePath: string): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
-      this.deferredRuntimeRefreshWhileBusy = false;
+      const leaving = this.sessionRegistry.getActive();
+      if (
+        leaving?.activeSession
+        && leaving.activeSession.kind !== 'ephemeral'
+        && leaving.runtime?.isBusy()
+      ) {
+        await this.persistSessionBundle(leaving, {
+          fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
+          bumpListSortAt: false,
+        });
+      }
+
       if (isEphemeralCommitSessionPath(filePath)) {
         const ephemeral = this.findEphemeralSession(filePath);
         if (!ephemeral) {
           throw new Error('临时调试会话不存在或已过期。');
         }
         await this.ensureInitialized(ephemeral.workspaceRoot);
-        const state = this.requireState();
         const restored = restoreEphemeralSessionState(ephemeral);
-        state.messages = restored.messages;
-        state.messageTimeline = this.createMessageTimelineFromMessages(state.messages);
-        state.activeSession = restored.activeSession;
-        state.archiveHistory = restored.archiveHistory;
-        state.archiveSubagentSessions = restored.archiveSubagentSessions;
-        state.loopEnabled = restored.loopEnabled;
-        state.rewind = restored.rewind;
-        state.rewindWarnings = [];
-        this.currentTurnSkills = [];
-        this.pendingUnboundFileChangeIds = [];
-        this.messageIdCounter = nextMessageIdFromMessages(state.messages);
-        this.resetStreamingPlacementState(true);
-        await this.refreshRuntime();
+        const bundle = this.sessionRegistry.upsertFromRestored(
+          ephemeral.workspaceRoot,
+          restored,
+          (messages, timelineSnapshot) => this.createMessageTimelineFromMessages(messages, timelineSnapshot),
+        );
+        await this.finishSessionActivation(bundle);
         this.lastRuntimeError = '';
         return this.buildSnapshot();
       }
 
       const loaded = await loadStoredSession(filePath);
-      await this.ensureInitialized(loaded.workspaceRoot);
-      const state = this.requireState();
+      const workspaceRoot = loaded.workspaceRoot ?? this.requireState().workspaceRoot;
+      await this.ensureInitialized(workspaceRoot);
       const restored = restoreStoredSessionState({
         filePath,
         loaded,
         fallbackMessages: restoreMessagesFromArchive(loaded),
       });
-      state.messages = restored.messages;
-      state.messageTimeline = this.createMessageTimelineFromMessages(
-        state.messages,
-        restored.desktopMessageTimeline,
+      const bundle = this.sessionRegistry.upsertFromRestored(
+        workspaceRoot,
+        restored,
+        (messages, timelineSnapshot) => this.createMessageTimelineFromMessages(messages, timelineSnapshot),
       );
-      state.activeSession = restored.activeSession;
-      state.archiveHistory = restored.archiveHistory;
-      state.archiveSubagentSessions = restored.archiveSubagentSessions;
-      state.loopEnabled = restored.loopEnabled;
-      state.rewind = restored.rewind;
-      state.rewindWarnings = [];
-      this.currentTurnSkills = [];
-      this.pendingUnboundFileChangeIds = [];
-      this.messageIdCounter = nextMessageIdFromMessages(state.messages);
-      this.resetStreamingPlacementState(true);
-      await this.refreshRuntime();
+      bundle.listSortSavedAtUnixMs = loaded.savedAtUnixMs;
+      await this.finishSessionActivation(bundle);
       this.lastRuntimeError = '';
       await this.dispatchExtensionEvent({
         type: 'onSessionOpened',
         detail: {
           filePath: path.resolve(filePath),
-          displayName: state.activeSession.displayName,
+          displayName: bundle.activeSession!.displayName,
         },
       });
       return this.buildSnapshot();
     });
+  }
+
+  /** After registry switch: wire runtime for new loads, resume in-flight runs without resetting timeline. */
+  private async finishSessionActivation(bundle: SessionBundle): Promise<void> {
+    if (bundle.runtime?.isBusy()) {
+      await this.tickSession(bundle);
+      this.syncActiveRuntimePointer();
+      return;
+    }
+    this.resetStreamingPlacementState(true, bundle);
+    await this.refreshRuntimeForBundle(bundle);
+    await this.flushDeferredRuntimeRefreshIfIdle(bundle);
+    this.syncActiveRuntimePointer();
   }
 
   async invoke(command: HostCommandName, payload?: unknown): Promise<unknown> {
@@ -2159,37 +2231,25 @@ class DesktopHostService {
     }
 
     if (switchingWorkspace) {
-      this.deferredRuntimeRefreshWhileBusy = false;
-      this.currentTurnSkills = [];
-      this.pendingUnboundFileChangeIds = [];
-      this.resetStreamingPlacementState(true);
-      this.messageIdCounter = 1;
       this.lastRuntimeError = '';
       this.toolExecutor = undefined;
+      this.sessionRegistry.clearForWorkspaceSwitch(workspaceRoot);
+      this.resetStreamingPlacementState(true);
+    } else if (!this.sessionRegistry.hasActive()) {
+      this.sessionRegistry.ensureDraft(workspaceRoot);
+    } else {
+      this.sessionRegistry.requireActive().workspaceRoot = workspaceRoot;
     }
 
-    const messages = switchingWorkspace ? [] : state?.messages ?? [];
     this.state = {
       workspaceRoot,
       config,
       git,
       metadata,
       plan,
-      messages,
-      messageTimeline: switchingWorkspace
-        ? this.createMessageTimelineFromMessages([])
-        : state?.messageTimeline ?? this.createMessageTimelineFromMessages(messages),
       extensionsList: state?.extensionsList ?? [],
       extensionCss: state?.extensionCss ?? [],
-      activeSession: switchingWorkspace ? undefined : state?.activeSession,
       ephemeralSessions: state?.ephemeralSessions ?? [],
-      archiveHistory: switchingWorkspace ? [] : state?.archiveHistory ?? [],
-      archiveSubagentSessions: switchingWorkspace ? [] : state?.archiveSubagentSessions ?? [],
-      loopEnabled: switchingWorkspace ? false : state?.loopEnabled ?? false,
-      rewind: switchingWorkspace
-        ? createDesktopRewindMetadata()
-        : state?.rewind ?? createDesktopRewindMetadata(),
-      rewindWarnings: switchingWorkspace ? [] : state?.rewindWarnings ?? [],
     };
     this.initialized = true;
     await this.refreshExtensionsList();
@@ -2203,6 +2263,11 @@ class DesktopHostService {
   }
 
   private async refreshRuntime(): Promise<void> {
+    await this.refreshRuntimeForBundle(this.activeBundle());
+    this.syncActiveRuntimePointer();
+  }
+
+  private async refreshRuntimeForBundle(bundle: SessionBundle): Promise<void> {
     const state = this.requireState();
     state.metadata = await loadHostMetadata(
       state.workspaceRoot,
@@ -2212,8 +2277,8 @@ class DesktopHostService {
       state.metadata.planMetadata.path,
       state.metadata.planMetadata.exists,
     );
-    await this.ensureToolExecutor();
-    this.currentTurnSkills = [];
+    await this.ensureToolExecutor(bundle);
+    bundle.currentTurnSkills = [];
     const apiKey = await resolveApiKeyForModel(state.config.activeModel);
     this.activeApiKeyConfigured = Boolean(apiKey);
     const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
@@ -2224,9 +2289,12 @@ class DesktopHostService {
     const imageGenerationApiKey = imageGenerationProfile
       ? await resolveApiKeyForModel(imageGenerationProfile.name)
       : undefined;
-    this.runtimeTransport = createLlmTransport();
+    bundle.runtimeTransport = createLlmTransport();
     if (!apiKey) {
-      this.runtime = undefined;
+      bundle.runtime = undefined;
+      if (bundle.id === this.sessionRegistry.activeSessionId()) {
+        this.runtime = undefined;
+      }
       this.lastRuntimeError = '未配置 API Key，请在设置中填写。';
       await this.refreshModelKeyPresence();
       return;
@@ -2236,7 +2304,7 @@ class DesktopHostService {
       apiKey,
       model: state.config.activeModel,
       baseUrl: currentApiBase(state.config),
-      workspaceRoot: state.workspaceRoot,
+      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       profile: activeProfile,
     });
     if (
@@ -2260,77 +2328,108 @@ class DesktopHostService {
         },
       };
     }
-    this.runtimeTransport = createLlmTransport(runtimeTransportConfig);
+    bundle.runtimeTransport = createLlmTransport(runtimeTransportConfig);
 
+    const desktopMessages = bundle.messageTimeline.toMessages();
     const runtime = this.createRuntime(
       runtimeTransportConfig,
-      state.archiveHistory,
+      bundle.archiveHistory,
       state.metadata.rules.enabledRules,
       state.metadata.skills.enabledSkillCatalog,
       state.metadata.planMetadata,
       extensionSystemPrompts,
       await buildDreamContextText({
-        workspaceRoot: state.workspaceRoot,
+        workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
         gitBranch: state.git.branch,
       }),
-      undefined,
-      this.runtimeTransport,
+      await this.ensureToolExecutor(bundle),
+      bundle.runtimeTransport,
+      bundle,
     );
-    if (state.archiveSubagentSessions.length > 0 || state.archiveHistory.length > 0) {
+    if (bundle.archiveSubagentSessions.length > 0 || bundle.archiveHistory.length > 0) {
       runtime.replaceFromArchive({
-        messages: this.archiveMessages(),
-        assistantAux: this.archiveAssistantAux(),
-        llmHistory: state.archiveHistory,
-        subagentSessions: state.archiveSubagentSessions ?? [],
-        loopEnabled: state.loopEnabled,
+        messages: buildArchiveMessagesFromConversation(desktopMessages),
+        assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
+        llmHistory: bundle.archiveHistory,
+        subagentSessions: bundle.archiveSubagentSessions ?? [],
+        loopEnabled: bundle.loopEnabled,
       });
     }
-    runtime.setLoopEnabled(state.loopEnabled);
-    this.runtime = runtime;
+    runtime.setLoopEnabled(bundle.loopEnabled);
+    bundle.runtime = runtime;
+    if (bundle.id === this.sessionRegistry.activeSessionId()) {
+      this.runtime = runtime;
+    }
     this.lastRuntimeError = '';
     await this.refreshModelKeyPresence();
   }
 
-  private async ensureToolExecutor(): Promise<DesktopToolExecutor> {
+  private async ensureToolExecutor(bundle: SessionBundle = this.activeBundle()): Promise<DesktopToolExecutor> {
     const state = this.requireState();
-    const dreamScope: HostDreamScope | undefined = state.git.branch
-      ? {
-          workspaceRoot: state.workspaceRoot,
-          gitBranch: state.git.branch,
-        }
-      : undefined;
+    const isActive = bundle.id === this.sessionRegistry.activeSessionId();
+    const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
+    const dreamScope: HostDreamScope | undefined =
+      isActive && state.git.branch
+        ? {
+            workspaceRoot,
+            gitBranch: state.git.branch,
+          }
+        : undefined;
 
-    if (!this.toolExecutor || !this.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined)) {
-      const extensions = await this.extensionManager().list();
-      this.toolExecutor = new DesktopToolExecutor(state.workspaceRoot, {
-        extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
-        fileChangeObserver: {
-          recordFileChange: (change) => this.recordHostFileChange(change),
-        },
-        extensions: {
-          manager: this.extensionManager(),
-          getHost: () => {
-            const adapter = desktopExtensionHostAdapter;
-            if (!adapter) {
-              throw new Error('当前桌面宿主尚未连接扩展 host adapter。');
-            }
-            return adapter;
-          },
-          logger: console,
-        },
-        ...(dreamScope
-          ? {
-              dreamScope,
-              dreamToolMode: 'read-only' as const,
-            }
-          : {}),
-      });
-      this.toolExecutor.startMcpBackgroundRefresh();
-      return this.toolExecutor;
+    const needsRebuild =
+      !bundle.toolExecutor
+      || bundle.toolExecutorWorkspaceRoot !== workspaceRoot
+      || !bundle.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined);
+
+    if (needsRebuild) {
+      bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope);
+      bundle.toolExecutorWorkspaceRoot = workspaceRoot;
+      bundle.toolExecutor.startMcpBackgroundRefresh();
+    } else {
+      await this.refreshExtensionToolDefinitions(bundle.toolExecutor);
     }
 
-    await this.refreshExtensionToolDefinitions();
-    return this.toolExecutor;
+    if (isActive) {
+      this.toolExecutor = bundle.toolExecutor;
+    }
+    if (!bundle.toolExecutor) {
+      throw new Error('Desktop MCP tool executor 尚未初始化。');
+    }
+    return bundle.toolExecutor;
+  }
+
+  private async buildToolExecutorForBundle(
+    bundle: SessionBundle,
+    dreamScope?: HostDreamScope,
+  ): Promise<DesktopToolExecutor> {
+    const state = this.requireState();
+    const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
+    const extensions = await this.extensionManager().list();
+    return new DesktopToolExecutor(workspaceRoot, {
+      extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
+      fileChangeObserver: {
+        recordFileChange: (change) => {
+          void this.recordHostFileChange(bundle, change);
+        },
+      },
+      extensions: {
+        manager: this.extensionManager(),
+        getHost: () => {
+          const adapter = desktopExtensionHostAdapter;
+          if (!adapter) {
+            throw new Error('当前桌面宿主尚未连接扩展 host adapter。');
+          }
+          return adapter;
+        },
+        logger: console,
+      },
+      ...(dreamScope
+        ? {
+            dreamScope,
+            dreamToolMode: 'read-only' as const,
+          }
+        : {}),
+    });
   }
 
   private async refreshGitState(): Promise<void> {
@@ -2432,10 +2531,10 @@ class DesktopHostService {
             return;
           }
           if (this.runtime?.isBusy()) {
-            this.deferredRuntimeRefreshWhileBusy = true;
+            this.activeBundle().deferredRuntimeRefreshWhileBusy = true;
             return;
           }
-          this.deferredRuntimeRefreshWhileBusy = false;
+          this.activeBundle().deferredRuntimeRefreshWhileBusy = false;
           await this.refreshRuntime();
           this.lastRuntimeError = '';
         });
@@ -2476,15 +2575,18 @@ class DesktopHostService {
     }
   }
 
-  private async flushDeferredRuntimeRefreshIfIdle(): Promise<void> {
-    if (!this.deferredRuntimeRefreshWhileBusy) {
+  private async flushDeferredRuntimeRefreshIfIdle(bundle: SessionBundle = this.activeBundle()): Promise<void> {
+    if (!bundle.deferredRuntimeRefreshWhileBusy) {
       return;
     }
-    if (this.runtime?.isBusy()) {
+    if (bundle.runtime?.isBusy()) {
       return;
     }
-    this.deferredRuntimeRefreshWhileBusy = false;
-    await this.refreshRuntime();
+    bundle.deferredRuntimeRefreshWhileBusy = false;
+    await this.refreshRuntimeForBundle(bundle);
+    if (bundle.id === this.sessionRegistry.activeSessionId()) {
+      this.syncActiveRuntimePointer();
+    }
     this.lastRuntimeError = '';
   }
 
@@ -2509,6 +2611,7 @@ class DesktopHostService {
     dreamsContextText?: string,
     toolExecutor: DesktopToolExecutor = this.requireToolExecutor(),
     llmTransport: SpiritLlmTransport = createLlmTransport(transportConfig),
+    bundle: SessionBundle = this.activeBundle(),
   ): DesktopRuntime {
     const workspaceRoot = transportConfig.workspaceRoot ?? this.requireState().workspaceRoot;
     toolExecutor.setActiveTransportConfig(transportConfig);
@@ -2522,7 +2625,7 @@ class DesktopHostService {
       ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
       toolExecutor,
       llmTransport,
-      activeSkills: this.currentTurnSkills,
+      activeSkills: bundle.currentTurnSkills,
       workspaceRoot,
       basicInfo: this.buildRuntimeBasicInfo(workspaceRoot, toolExecutor),
     });
@@ -2545,33 +2648,33 @@ class DesktopHostService {
     const pendingApproval = this.runtime?.currentPendingApproval();
     const pendingQuestions = this.runtime?.currentPendingQuestions();
     const pendingAux = this.runtime?.pendingAuxState();
-    const standaloneAnchorState = this.assistantMessages.standaloneAnchorState();
-    this.conversationSnapshotView.syncStandalonePendingAux({
+    const standaloneAnchorState = this.activeOrchestration().assistantMessages.standaloneAnchorState();
+    this.activeOrchestration().conversationSnapshotView.syncStandalonePendingAux({
       livePendingAux: pendingAux,
       pendingAssistantMessageId: standaloneAnchorState.pendingAssistantMessageId,
       lastSettledAssistantMessageId: standaloneAnchorState.lastSettledAssistantMessageId,
     });
     if (pendingAux && !parsePendingSubagentStatusText(pendingAux.statusText)) {
-      this.assistantMessages.updatePendingAssistantAux(
+      this.activeOrchestration().assistantMessages.updatePendingAssistantAux(
         pendingAux.kind,
         pendingAux.detailText ?? pendingAux.statusText,
       );
       const pendingAuxText = pendingAux.detailText ?? pendingAux.statusText;
-      if (!state.messageTimeline.hasFinalizedAuxInActiveSegment(pendingAux.kind, pendingAuxText)) {
-        state.messageTimeline.updatePendingAssistantAux(
+      if (!this.activeBundle().messageTimeline.hasFinalizedAuxInActiveSegment(pendingAux.kind, pendingAuxText)) {
+        this.activeBundle().messageTimeline.updatePendingAssistantAux(
           pendingAux.kind,
           pendingAuxText,
         );
       }
     }
 
-    const rawMessages = state.messages;
+    const rawMessages = this.activeBundle().messages;
     const rawConversationMessages = this.desktopMessages();
 
-    const conversationMessages = this.conversationSnapshotView.buildMessagesWithPendingAssistant({
+    const conversationMessages = this.activeOrchestration().conversationSnapshotView.buildMessagesWithPendingAssistant({
       messages: rawConversationMessages,
       livePendingAux: pendingAux,
-      rewind: state.rewind,
+      rewind: this.activeBundle().rewind,
     });
     this.logContinuationSnapshotState({
       rawMessages: rawConversationMessages,
@@ -2599,11 +2702,14 @@ class DesktopHostService {
       runtimeError: this.lastRuntimeError,
       modelKeyPresence: this.modelKeyPresence,
       activeApiKeyConfigured: this.activeApiKeyConfigured,
-      mcpStatus: this.toolExecutor?.mcpStatusSnapshot() ?? emptyMcpStatusSnapshot(),
+      mcpStatus:
+        this.activeBundle().toolExecutor?.mcpStatusSnapshot()
+        ?? this.toolExecutor?.mcpStatusSnapshot()
+        ?? emptyMcpStatusSnapshot(),
       mcpServers: listDesktopMcpServersFromDisk(),
       conversation: {
         messages: conversationMessages,
-        loopEnabled: state.loopEnabled,
+        loopEnabled: this.activeBundle().loopEnabled,
         ...(this.runtime?.pendingUserTurn()
           ? { pendingUserTurn: this.runtime.pendingUserTurn() }
           : {}),
@@ -2646,11 +2752,11 @@ class DesktopHostService {
           ? { pendingQuestions: mapPendingQuestions(pendingQuestions) }
           : {}),
         isBusy: this.runtime?.isBusy() ?? false,
-        ...(state.rewindWarnings.length > 0
-          ? { rewindWarnings: state.rewindWarnings.map((warning) => ({ ...warning })) }
+        ...(this.activeBundle().rewindWarnings.length > 0
+          ? { rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })) }
           : {}),
       },
-      ...(state.activeSession ? { activeSession: state.activeSession } : {}),
+      ...(this.activeBundle().activeSession ? { activeSession: this.activeBundle().activeSession } : {}),
     });
   }
 
@@ -2836,13 +2942,9 @@ class DesktopHostService {
     state.extensionCss = await collectDesktopExtensionCssLayers(extensions);
   }
 
-  private async refreshExtensionToolDefinitions(): Promise<void> {
-    if (!this.toolExecutor) {
-      return;
-    }
-
+  private async refreshExtensionToolDefinitions(executor: DesktopToolExecutor = this.requireToolExecutor()): Promise<void> {
     const extensions = await this.extensionManager().list();
-    this.toolExecutor.setExtensionToolDefinitions(buildDesktopExtensionToolDefinitions(extensions));
+    executor.setExtensionToolDefinitions(buildDesktopExtensionToolDefinitions(extensions));
   }
 
   private async collectExtensionSystemPrompts(): Promise<LlmExtensionSystemPrompt[]> {
@@ -2856,11 +2958,11 @@ class DesktopHostService {
 
   private async refreshRuntimeAfterExtensionMutation(): Promise<void> {
     if (this.runtime?.isBusy()) {
-      this.deferredRuntimeRefreshWhileBusy = true;
+      this.activeBundle().deferredRuntimeRefreshWhileBusy = true;
       return;
     }
 
-    this.deferredRuntimeRefreshWhileBusy = false;
+    this.activeBundle().deferredRuntimeRefreshWhileBusy = false;
     await this.refreshRuntime();
     this.lastRuntimeError = '';
   }
@@ -2890,11 +2992,11 @@ class DesktopHostService {
 
   private ensureActiveSession(seedText: string): void {
     const state = this.requireState();
-    if (state.activeSession) {
+    if (this.activeBundle().activeSession) {
       return;
     }
 
-    state.activeSession = {
+    this.activeBundle().activeSession = {
       filePath: defaultNewSessionPath(),
       displayName: deriveDisplayNameFromSeed(seedText),
       kind: 'stored',
@@ -2910,7 +3012,7 @@ class DesktopHostService {
   }
 
   private desktopMessages(): ConversationMessageSnapshot[] {
-    return this.requireState().messageTimeline.toMessages();
+    return this.activeBundle().messageTimeline.toMessages();
   }
 
   private createMessageTimelineFromMessages(
@@ -2943,30 +3045,30 @@ class DesktopHostService {
   }
 
   private rebuildMessageTimelineFromMessages(): void {
-    const state = this.requireState();
-    state.messageTimeline = this.createMessageTimelineFromMessages(state.messages);
+    const bundle = this.activeBundle();
+    bundle.messageTimeline = this.createMessageTimelineFromMessages(bundle.messages);
   }
 
-  private takeNextTimelineAssistantSegmentKind(): DesktopTimelineSegmentKind {
-    const kind = this.nextTimelineAssistantSegmentKind;
-    this.nextTimelineAssistantSegmentKind = 'initial';
+  private takeNextTimelineAssistantSegmentKind(bundle: SessionBundle): DesktopTimelineSegmentKind {
+    const kind = bundle.nextTimelineAssistantSegmentKind;
+    bundle.nextTimelineAssistantSegmentKind = 'initial';
     return kind;
   }
 
   private clearAssistantContinuationMarkers(): void {
-    const messages = this.requireState().messages;
+    const messages = this.activeBundle().messages;
     for (const message of messages) {
       delete message.canContinue;
     }
-    this.requireState().messageTimeline.clearContinuationMarkers();
+    this.activeBundle().messageTimeline.clearContinuationMarkers();
   }
 
   private markAssistantMessageContinuable(content: string): void {
     const normalized = content.trim();
     this.clearAssistantContinuationMarkers();
 
-    const messages = this.requireState().messages;
-    const timelineMessage = this.requireState().messageTimeline.markLatestRenderableAssistantRowContinuable({
+    const messages = this.activeBundle().messages;
+    const timelineMessage = this.activeBundle().messageTimeline.markLatestRenderableAssistantRowContinuable({
       content: normalized,
     });
     if (timelineMessage) {
@@ -2995,7 +3097,7 @@ class DesktopHostService {
         continue;
       }
       message.canContinue = true;
-      this.requireState().messageTimeline.markRowContinuable(message.id);
+      this.activeBundle().messageTimeline.markRowContinuable(message.id);
       this.logContinuationMarker('marked', message, normalized, messages);
       return;
     }
@@ -3004,11 +3106,11 @@ class DesktopHostService {
   }
 
   private latestContinuableAssistantMessage(): ConversationMessageSnapshot | undefined {
-    const timelineContinuable = this.requireState().messageTimeline.latestContinuableAssistantMessage();
+    const timelineContinuable = this.activeBundle().messageTimeline.latestContinuableAssistantMessage();
     if (timelineContinuable) {
       return timelineContinuable;
     }
-    const messages = this.requireState().messages;
+    const messages = this.activeBundle().messages;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index]!;
       if (
@@ -3025,8 +3127,8 @@ class DesktopHostService {
   private markLatestRenderableAssistantMessageContinuableInCurrentTurn(): void {
     this.clearAssistantContinuationMarkers();
 
-    const messages = this.requireState().messages;
-    const timelineMessage = this.requireState().messageTimeline.markLatestRenderableAssistantRowContinuableInActiveTurn();
+    const messages = this.activeBundle().messages;
+    const timelineMessage = this.activeBundle().messageTimeline.markLatestRenderableAssistantRowContinuableInActiveTurn();
     if (timelineMessage) {
       const cachedMessage = messages.find((message) => message.id === timelineMessage.id);
       if (cachedMessage) {
@@ -3055,7 +3157,7 @@ class DesktopHostService {
       }
 
       message.canContinue = true;
-      this.requireState().messageTimeline.markRowContinuable(message.id);
+      this.activeBundle().messageTimeline.markRowContinuable(message.id);
       this.logContinuationMarker('marked-fallback', message, '', messages);
       return;
     }
@@ -3163,27 +3265,30 @@ class DesktopHostService {
     return `${message.id}:${kind}:${text}`;
   }
 
-  private refreshArchiveFromRuntime(): void {
-    if (!this.runtime) {
+  private refreshArchiveFromRuntime(bundle: SessionBundle = this.activeBundle()): void {
+    if (!bundle.runtime) {
       return;
     }
 
-    const archive = this.runtime.toArchive(
-      this.archiveMessages(),
-      this.archiveAssistantAux(),
+    const desktopMessages = bundle.messageTimeline.toMessages();
+    const archive = bundle.runtime.toArchive(
+      buildArchiveMessagesFromConversation(desktopMessages),
+      buildArchiveAssistantAuxFromConversation(desktopMessages),
     );
-    const state = this.requireState();
-    state.archiveHistory = archive.llmHistory;
-    state.archiveSubagentSessions = archive.subagentSessions ?? [];
+    bundle.archiveHistory = archive.llmHistory;
+    bundle.archiveSubagentSessions = archive.subagentSessions ?? [];
   }
 
-  private async recordHostFileChange(change: HostRecordedFileChange): Promise<void> {
+  private async recordHostFileChange(bundle: SessionBundle, change: HostRecordedFileChange): Promise<void> {
     const state = this.state;
     if (!state) {
       return;
     }
 
-    if (sameFsPath(change.resolvedPath, state.plan.path)) {
+    if (
+      bundle.id === this.sessionRegistry.activeSessionId()
+      && sameFsPath(change.resolvedPath, state.plan.path)
+    ) {
       state.metadata.planMetadata.exists = change.after.exists && change.after.file;
       state.plan = {
         path: state.plan.path,
@@ -3195,27 +3300,27 @@ class DesktopHostService {
       };
     }
 
-    if (!state.activeSession) {
+    if (!bundle.activeSession) {
       return;
     }
 
-    const stored = toDesktopFileChange(change, nextDesktopRewindSequence(state.rewind));
-    await saveRewindFileChange(spiritAgentDataDir(), state.rewind.sessionId, stored);
+    const stored = toDesktopFileChange(change, nextDesktopRewindSequence(bundle.rewind));
+    await saveRewindFileChange(spiritAgentDataDir(), bundle.rewind.sessionId, stored);
     const metadata = fileChangeMetadata(stored);
-    state.rewind.fileChanges.push(metadata);
+    bundle.rewind.fileChanges.push(metadata);
     if (!metadata.toolCallId) {
-      this.pendingUnboundFileChangeIds.push(metadata.id);
+      bundle.pendingUnboundFileChangeIds.push(metadata.id);
     }
   }
 
   private bindFileChangesToToolMessage(
+    bundle: SessionBundle,
     execution: RuntimeToolExecution<DesktopToolRequest>,
     messageId: number,
   ): void {
-    const state = this.requireState();
-    this.pendingUnboundFileChangeIds = bindRewindFileChangesToToolMessage(
-      state.rewind,
-      this.pendingUnboundFileChangeIds,
+    bundle.pendingUnboundFileChangeIds = bindRewindFileChangesToToolMessage(
+      bundle.rewind,
+      bundle.pendingUnboundFileChangeIds,
       execution,
       messageId,
     );
@@ -3226,7 +3331,7 @@ class DesktopHostService {
     beforeUserCheckpoint?: DesktopRewindCheckpointSnapshot,
   ): Promise<void> {
     const state = this.requireState();
-    if (!state.activeSession) {
+    if (!this.activeBundle().activeSession) {
       return;
     }
     const desktopMessages = this.desktopMessages();
@@ -3238,20 +3343,20 @@ class DesktopHostService {
     const checkpoint = createRewindCheckpointMetadata(
       messageId,
       messageIndex,
-      nextDesktopRewindSequence(state.rewind),
+      nextDesktopRewindSequence(this.activeBundle().rewind),
     );
     const archive = this.runtime
       ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
       : {
           messages: this.archiveMessages(),
           assistantAux: this.archiveAssistantAux(),
-          llmHistory: state.archiveHistory,
-          subagentSessions: state.archiveSubagentSessions ?? [],
-          loopEnabled: state.loopEnabled,
+          llmHistory: this.activeBundle().archiveHistory,
+          subagentSessions: this.activeBundle().archiveSubagentSessions ?? [],
+          loopEnabled: this.activeBundle().loopEnabled,
         } satisfies ChatArchive;
     await saveRewindCheckpointSnapshot(
       spiritAgentDataDir(),
-      state.rewind.sessionId,
+      this.activeBundle().rewind.sessionId,
       checkpoint.id,
       {
         archive,
@@ -3265,7 +3370,7 @@ class DesktopHostService {
       },
     );
 
-    upsertRewindCheckpointMetadata(state.rewind, checkpoint);
+    upsertRewindCheckpointMetadata(this.activeBundle().rewind, checkpoint);
   }
 
   private buildRewindCheckpointSnapshot(): DesktopRewindCheckpointSnapshot {
@@ -3276,9 +3381,9 @@ class DesktopHostService {
       : {
           messages: this.archiveMessages(),
           assistantAux: this.archiveAssistantAux(),
-          llmHistory: state.archiveHistory,
-          subagentSessions: state.archiveSubagentSessions ?? [],
-          loopEnabled: state.loopEnabled,
+          llmHistory: this.activeBundle().archiveHistory,
+          subagentSessions: this.activeBundle().archiveSubagentSessions ?? [],
+          loopEnabled: this.activeBundle().loopEnabled,
         } satisfies ChatArchive;
     return {
       archive,
@@ -3294,45 +3399,89 @@ class DesktopHostService {
     const archive = snapshot.beforeArchive ?? archiveBeforeLastUser(snapshot.archive);
     const desktopMessages = snapshot.beforeDesktopMessages ?? snapshot.desktopMessages.slice(0, -1);
 
-    state.messages = desktopMessages.map((message) => ({ ...message }));
-    state.messageTimeline = this.createMessageTimelineFromMessages(state.messages);
-    state.archiveHistory = cloneArchiveHistory(archive.llmHistory);
-    state.archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
-    state.loopEnabled = archive.loopEnabled === true;
-    pruneRewindMetadataAfterCheckpoint(state.rewind, checkpointSequence);
-    this.pendingUnboundFileChangeIds = [];
-    this.messageIdCounter = nextMessageIdFromMessages(state.messages);
+    this.activeBundle().messages = desktopMessages.map((message) => ({ ...message }));
+    this.activeBundle().messageTimeline = this.createMessageTimelineFromMessages(this.activeBundle().messages);
+    this.activeBundle().archiveHistory = cloneArchiveHistory(archive.llmHistory);
+    this.activeBundle().archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
+    this.activeBundle().loopEnabled = archive.loopEnabled === true;
+    pruneRewindMetadataAfterCheckpoint(this.activeBundle().rewind, checkpointSequence);
+    this.activeBundle().pendingUnboundFileChangeIds = [];
+    this.activeBundle().messageIdCounter = nextMessageIdFromMessages(this.activeBundle().messages);
     this.resetStreamingPlacementState(true);
     this.requireRuntime().replaceFromArchive(archive);
   }
 
   private async persistCurrentSessionIfNeeded(): Promise<void> {
+    const bundle = this.sessionRegistry.getActive();
+    if (!bundle) {
+      return;
+    }
+    await this.persistSessionBundle(bundle, {
+      fromRuntime: this.runtime,
+      bumpListSortAt: true,
+    });
+  }
+
+  private async persistSessionBundle(
+    bundle: SessionBundle,
+    options: {
+      fromRuntime?: DesktopRuntime;
+      bumpListSortAt?: boolean;
+    } = {},
+  ): Promise<void> {
     const state = this.requireState();
-    if (!state.activeSession || state.activeSession.kind === 'ephemeral' || this.runtime?.isBusy()) {
+    const activeSession = bundle.activeSession;
+    if (!activeSession || activeSession.kind === 'ephemeral') {
       return;
     }
 
-    const archive = this.runtime
-      ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
+    const desktopMessages = bundle.messageTimeline.toMessages();
+    const archiveMessages = buildArchiveMessagesFromConversation(desktopMessages);
+    const archiveAssistantAux = buildArchiveAssistantAuxFromConversation(desktopMessages);
+    const archive = options.fromRuntime
+      ? options.fromRuntime.toArchive(archiveMessages, archiveAssistantAux)
       : {
-          messages: this.archiveMessages(),
-          assistantAux: this.archiveAssistantAux(),
-          llmHistory: state.archiveHistory,
-          subagentSessions: state.archiveSubagentSessions ?? [],
-          loopEnabled: state.loopEnabled,
+          messages: archiveMessages,
+          assistantAux: archiveAssistantAux,
+          llmHistory: bundle.archiveHistory,
+          subagentSessions: bundle.archiveSubagentSessions ?? [],
+          loopEnabled: bundle.loopEnabled,
         } satisfies ChatArchive;
 
+    bundle.archiveHistory = archive.llmHistory;
+    bundle.archiveSubagentSessions = archive.subagentSessions ?? [];
+    bundle.loopEnabled = archive.loopEnabled === true;
+
+    const bumpListSortAt = options.bumpListSortAt === true;
+    const savedAtUnixMs = bumpListSortAt
+      ? Date.now()
+      : (bundle.listSortSavedAtUnixMs ?? Date.now());
     const stored = buildStoredDesktopSession({
       archive,
-      sessionDisplayName: state.activeSession.displayName,
-      workspaceRoot: state.workspaceRoot,
+      savedAtUnixMs,
+      sessionDisplayName: activeSession.displayName,
+      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       gitBranch: state.git.branch,
-      desktopMessages: this.desktopMessages(),
-      desktopMessageTimeline: state.messageTimeline.snapshot(),
-      rewind: state.rewind,
-      loopEnabled: state.loopEnabled,
+      desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
+      desktopMessageTimeline: bundle.messageTimeline.snapshot(),
+      rewind: bundle.rewind,
+      loopEnabled: bundle.loopEnabled,
     });
-    state.activeSession.filePath = await saveStoredSession(state.activeSession.filePath, stored);
+    if (bumpListSortAt) {
+      bundle.listSortSavedAtUnixMs = savedAtUnixMs;
+    }
+    const previousId = bundle.id;
+    activeSession.filePath = await saveStoredSession(activeSession.filePath, stored);
+    if (path.resolve(previousId) !== path.resolve(activeSession.filePath)) {
+      this.sessionRegistry.rekeyBundle(bundle, activeSession.filePath);
+    } else {
+      bundle.id = activeSession.filePath;
+    }
+    bundle.lastPersistedAtUnixMs = Date.now();
+  }
+
+  private activeBundle(): SessionBundle {
+    return this.sessionRegistry.requireActive();
   }
 
   private requireState(): HostState {
@@ -3343,15 +3492,17 @@ class DesktopHostService {
   }
 
   private requireRuntime(): DesktopRuntime {
-    if (!this.runtime) {
+    const runtime = this.activeBundle().runtime ?? this.runtime;
+    if (!runtime) {
       throw new Error(this.lastRuntimeError || '运行时尚未就绪。');
     }
-    return this.runtime;
+    return runtime;
   }
 
   private allocateMessageId(): number {
-    const next = this.messageIdCounter;
-    this.messageIdCounter += 1;
+    const bundle = this.activeBundle();
+    const next = bundle.messageIdCounter;
+    bundle.messageIdCounter += 1;
     return next;
   }
 
@@ -3370,36 +3521,37 @@ class DesktopHostService {
     };
 
     if (!pendingToolCallId) {
-      state.messages.push(nextMessage);
+      this.activeBundle().messages.push(nextMessage);
       this.rebuildMessageTimelineFromMessages();
       return;
     }
 
-    const toolIndex = state.messages.findIndex(
+    const toolIndex = this.activeBundle().messages.findIndex(
       (message) => message.role === 'assistant' && message.tool?.toolCallId === pendingToolCallId,
     );
     if (toolIndex < 0) {
-      state.messages.push(nextMessage);
+      this.activeBundle().messages.push(nextMessage);
       this.rebuildMessageTimelineFromMessages();
       return;
     }
 
     const insertAt = toolIndex + 1;
-    state.messages.splice(insertAt, 0, nextMessage);
+    this.activeBundle().messages.splice(insertAt, 0, nextMessage);
     this.rebuildMessageTimelineFromMessages();
   }
 
   /**
    * @param full `false`：仅清思考插入锚点（新用户轮次，避免误插旧工具链）。`true`：另清 finalize 去重与 apply 批次计数（重置会话 / 打开存档）。
    */
-  private resetStreamingPlacementState(full: boolean): void {
-    this.assistantMessages.resetStreamingPlacementState(full);
-    this.nextTimelineAssistantSegmentKind = 'initial';
+  private resetStreamingPlacementState(full: boolean, bundle: SessionBundle = this.activeBundle()): void {
+    const orchestration = this.orchestrationFor(bundle);
+    orchestration.assistantMessages.resetStreamingPlacementState(full);
+    bundle.nextTimelineAssistantSegmentKind = 'initial';
     if (!full) {
       return;
     }
-    this.conversationSnapshotView.clearStandalonePendingAuxState();
-    this.runtimeEvents.reset();
+    orchestration.conversationSnapshotView.clearStandalonePendingAuxState();
+    orchestration.runtimeEvents.reset();
   }
 
   private async runSerialized<T>(work: () => Promise<T>): Promise<T> {
@@ -3428,10 +3580,11 @@ class DesktopHostService {
   }
 
   private requireToolExecutor(): DesktopToolExecutor {
-    if (!this.toolExecutor) {
+    const executor = this.activeBundle().toolExecutor ?? this.toolExecutor;
+    if (!executor) {
       throw new Error('Desktop MCP tool executor 尚未初始化。');
     }
-    return this.toolExecutor;
+    return executor;
   }
 
   private requireExtensionHostAdapter(): DesktopExtensionHostAdapter {
