@@ -482,6 +482,13 @@ export function rewindStandalonePendingAuxInsertIndexForThinking(
   return index;
 }
 
+export {
+  hasActiveRunSubagentToolInMessages,
+  hasRunSubagentToolInCurrentTurn,
+  isSubagentStatusSurfaceMessage,
+  isSubagentStatusSurfaceText,
+} from '../lib/subagent-display.js';
+
 export function parsePendingSubagentStatusText(text: string | undefined): string | undefined {
   if (!text) {
     return undefined;

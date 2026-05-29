@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { isSubagentStatusSurfaceText } from '../../dist-electron/src/lib/subagent-display.js';
 import {
   toolCallSummaryCopyForRequest,
   toolCallSummaryForPhase,
@@ -34,6 +35,36 @@ test('toolCallSummaryCopyForRequest: search tools use Chinese headline + detail'
     headline: '抓取',
     headlineDetail: 'https://example.com/',
   });
+});
+
+test('isSubagentStatusSurfaceText detects runtime status lines', () => {
+  assert.equal(
+    isSubagentStatusSurfaceText('输出 "Spirit 牛逼" 这句话，不要做任何其他事情。: 运行中'),
+    true,
+  );
+  assert.equal(
+    isSubagentStatusSurfaceText('请输出"Spirit 牛逼"这句话。: The'),
+    true,
+  );
+  assert.equal(
+    isSubagentStatusSurfaceText('请输出"Spirit 牛逼"这句话。: Sp'),
+    true,
+  );
+  assert.equal(
+    isSubagentStatusSurfaceText(
+      '输出 "Spirit 牛逼" 这句话。: The user wants me to output "Spirit 牛逼" — that\'s all.',
+    ),
+    true,
+  );
+  assert.equal(isSubagentStatusSurfaceText('Spirit 牛逼'), false);
+  assert.equal(
+    isSubagentStatusSurfaceText('子智能体已完成，输出如下：**Spirit 牛逼**'),
+    false,
+  );
+  assert.equal(
+    isSubagentStatusSurfaceText('子智能体已完成，输出如下：\n\n**Spirit 牛逼**'),
+    false,
+  );
 });
 
 test('toolCallSummaryCopyForRequest: ask_questions and subagent', () => {

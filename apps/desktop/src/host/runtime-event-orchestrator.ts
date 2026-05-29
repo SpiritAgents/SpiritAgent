@@ -23,6 +23,8 @@ import {
   finishTaskNoticeFromExecution,
   finishTaskSummaryFromExecution,
   applyToolCallSummaryCopy,
+  hasActiveRunSubagentToolInMessages,
+  isSubagentStatusSurfaceText,
   toolCallSummaryForPhase,
   toolCallSummaryForStreamingPreview,
   isFinishTaskToolName,
@@ -161,8 +163,12 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind === 'update-pending-assistant-thinking') {
-        this.options.assistantMessages.updatePendingAssistantAux('thinking', event.text);
-        this.options.messageTimeline?.()?.updatePendingAssistantAux('thinking', event.text);
+        const timelineMessages =
+          this.options.messageTimeline?.()?.toMessages() ?? this.options.messages();
+        if (!hasActiveRunSubagentToolInMessages(timelineMessages)) {
+          this.options.assistantMessages.updatePendingAssistantAux('thinking', event.text);
+          this.options.messageTimeline?.()?.updatePendingAssistantAux('thinking', event.text);
+        }
         continue;
       }
       if (event.kind === 'update-pending-assistant-compaction') {
@@ -171,6 +177,11 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind === 'assistant-chunk') {
+        const timelineMessagesForChunk =
+          this.options.messageTimeline?.()?.toMessages() ?? messages;
+        if (hasActiveRunSubagentToolInMessages(timelineMessagesForChunk)) {
+          continue;
+        }
         this.options.assistantMessages.appendPendingAssistantChunk(event.text);
         this.options.messageTimeline?.()?.appendAssistantTextChunk(event.text);
         continue;
@@ -307,6 +318,11 @@ export class DesktopRuntimeEventOrchestrator {
     if (!runtime) {
       return;
     }
+    const messages = this.options.messageTimeline?.()?.toMessages() ?? this.options.messages();
+    if (hasActiveRunSubagentToolInMessages(messages)) {
+      return;
+    }
+
     const pendingTrim = runtime.pendingAssistantText().trim();
     const awaitingInteractive =
       Boolean(runtime.currentPendingApproval()) ||
@@ -317,7 +333,6 @@ export class DesktopRuntimeEventOrchestrator {
     }
 
     const history = runtime.history();
-    const messages = this.options.messages();
     const prefixFromUnsyncedLatest = latestUnsyncedAssistantTextInCurrentTurn(
       history,
       messages,
@@ -336,6 +351,10 @@ export class DesktopRuntimeEventOrchestrator {
     const lastMessage = messageCount > 0 ? messages[messageCount - 1] : undefined;
 
     if (!prefix || messageCount === 0) {
+      return;
+    }
+
+    if (isSubagentStatusSurfaceText(prefix)) {
       return;
     }
 
@@ -523,6 +542,9 @@ export class DesktopRuntimeEventOrchestrator {
         execution.toolCallId || `tool:${execution.toolName}`,
         toolBlock,
       );
+      if (execution.toolName === 'run_subagent') {
+        this.options.conversationSnapshotView.clearStandalonePendingAuxState();
+      }
       this.options.bindFileChangesToToolMessage(execution, message.id);
       this.logToolExecutionIntegration(source, execution, message.id);
     }
