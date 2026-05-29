@@ -73,6 +73,7 @@ import {
 import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
+import { ShellCommandToolCard } from "@/components/shell-command-tool-card";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useFont } from "@/hooks/useFont";
@@ -316,6 +317,10 @@ function ToolCallCollapsible({
         saveLocalImageAs={saveLocalImageAs}
       />
     );
+  }
+
+  if (tool.toolName === "run_shell_command") {
+    return <ShellCommandToolCard tool={tool} />;
   }
 
   return <GenericToolCallCollapsible tool={tool} />;
@@ -1315,7 +1320,7 @@ function isGrayMetaLeadingMessage(message: ConversationMessageSnapshot | undefin
     );
   }
   if (message.tool) {
-    return message.tool.toolName === "read_file";
+    return message.tool.toolName === "read_file" || message.tool.toolName === "run_shell_command";
   }
   return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
 }
@@ -1325,7 +1330,7 @@ function isGrayMetaTrailingMessage(message: ConversationMessageSnapshot | undefi
     return false;
   }
   if (message.tool) {
-    return message.tool.toolName === "read_file";
+    return message.tool.toolName === "read_file" || message.tool.toolName === "run_shell_command";
   }
   return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
 }
