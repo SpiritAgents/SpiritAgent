@@ -152,6 +152,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   pickLocalFile() {
     return ipcRenderer.invoke('desktop:pick-local-file');
   },
+  ingestClipboardImage() {
+    return ipcRenderer.invoke('desktop:ingest-clipboard-image');
+  },
   listSystemFonts() {
     return ipcRenderer.invoke('desktop:list-system-fonts');
   },

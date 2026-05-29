@@ -414,6 +414,19 @@ export function useDesktopRuntime() {
     }
   }, [api]);
 
+  const ingestClipboardImage = useCallback(async (): Promise<string | null> => {
+    if (!api?.ingestClipboardImage) {
+      return null;
+    }
+
+    try {
+      return await api.ingestClipboardImage();
+    } catch (error) {
+      setRuntimeError(describeError(error));
+      return null;
+    }
+  }, [api]);
+
   const readLocalImagePreviewDataUrl = useCallback(
     async (filePath: string): Promise<string | null> => {
       if (!api?.readLocalImagePreviewDataUrl) {
@@ -1613,6 +1626,7 @@ export function useDesktopRuntime() {
     rememberWorkspaceRoot,
     pickWorkspaceDirectory,
     pickLocalFile,
+    ingestClipboardImage,
     readLocalImagePreviewDataUrl,
     readManagedImagePreviewDataUrl,
     saveLocalImageAs,

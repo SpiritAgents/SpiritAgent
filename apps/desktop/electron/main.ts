@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { copyFile, lstat, readFile, realpath, stat } from 'node:fs/promises';
+import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { BrowserWindow, Menu, app, dialog, ipcMain, nativeTheme, net, shell } from 'electron';
+import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, nativeTheme, net, shell } from 'electron';
 
 import { openSystemTerminalInDirectory } from './open-system-terminal.js';
 import { WorkspacePtyManager } from './workspace-pty.js';
@@ -512,6 +512,19 @@ app.whenReady().then(async () => {
       return null;
     }
     return result.filePaths[0] ?? null;
+  });
+
+  ipcMain.handle('desktop:ingest-clipboard-image', async () => {
+    const image = clipboard.readImage();
+    if (image.isEmpty()) {
+      return null;
+    }
+
+    const dir = path.join(spiritAgentDataDir(), 'clipboard-paste');
+    await mkdir(dir, { recursive: true });
+    const filePath = path.join(dir, `paste-${Date.now()}.png`);
+    await writeFile(filePath, image.toPNG());
+    return filePath;
   });
 
   ipcMain.handle('desktop:list-system-fonts', () => listSystemFonts());
