@@ -346,8 +346,8 @@ export function SessionSidebar({
         aria-hidden={!settingsMode && narrow}
       >
         {settingsMode ? null : (
-          <div className="shrink-0 px-1.5 pt-1.5">
-            <p className="px-2.5 pb-1.5 text-[0.65rem] text-sidebar-faint-foreground">工作区</p>
+          <div className="shrink-0 px-1.5 pt-3 pb-2.5">
+            <p className="px-2.5 text-[0.65rem] text-sidebar-faint-foreground">工作区</p>
           </div>
         )}
         <ScrollArea className="h-full min-h-0 min-w-0" type="hover" scrollHideDelay={450}>
