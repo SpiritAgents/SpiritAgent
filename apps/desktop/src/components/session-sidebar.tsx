@@ -478,7 +478,7 @@ export function SessionSidebar({
                                   "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
                                   sessionRowSelected
                                     ? sessionRowSelectedClass(micaStyle)
-                                    : cn("text-sidebar-list-foreground", sessionRowHoverClass(micaStyle)),
+                                    : cn("text-sidebar-foreground/90", sessionRowHoverClass(micaStyle)),
                                 )}
                               >
                                 <span
