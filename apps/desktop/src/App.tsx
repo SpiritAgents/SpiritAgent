@@ -1003,9 +1003,11 @@ function shouldCollapseThinkingDuringToolPreview(
 function AssistantThinkingCollapsible({
   message,
   collapseDuringToolPreview,
+  readManagedImagePreviewDataUrl,
 }: {
   message: ConversationMessageSnapshot;
   collapseDuringToolPreview: boolean;
+  readManagedImagePreviewDataUrl: ReadManagedImagePreview;
 }) {
   const thinking = message.aux?.thinking;
   if (!thinking) {
@@ -1060,10 +1062,12 @@ function AssistantThinkingCollapsible({
           ) : null}
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="min-w-0">
-        <pre className="whitespace-pre-wrap break-words pt-1.5 font-sans text-sm leading-relaxed text-muted-foreground">
-          {thinking}
-        </pre>
+      <CollapsibleContent className="min-w-0 pt-1.5">
+        <MarkdownMessage
+          content={thinking}
+          tone="muted"
+          readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+        />
       </CollapsibleContent>
     </Collapsible>
   );
@@ -1196,6 +1200,7 @@ function MessageCard({
           <AssistantThinkingCollapsible
             message={message}
             collapseDuringToolPreview={shouldCollapseThinkingDuringToolPreview(messages, listIndex)}
+            readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
           />
         ) : null}
         {!isUser && message.aux?.compaction ? (
