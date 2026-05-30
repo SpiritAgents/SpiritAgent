@@ -7,14 +7,13 @@ import { cn } from "@/lib/utils";
 type ComposerTodoCardProps = {
   todos: ConversationTodoSnapshot;
   sessionKey: string;
-  composerFused?: boolean;
 };
 
 function storageKey(sessionKey: string): string {
   return `spirit-todo-expanded:${sessionKey}`;
 }
 
-export function ComposerTodoCard({ todos, sessionKey, composerFused = true }: ComposerTodoCardProps) {
+export function ComposerTodoCard({ todos, sessionKey }: ComposerTodoCardProps) {
   const [expanded, setExpanded] = useState(() => {
     if (typeof window === "undefined") {
       return true;
@@ -70,8 +69,7 @@ export function ComposerTodoCard({ todos, sessionKey, composerFused = true }: Co
     <div
       data-spirit-surface="composer-todo-card"
       className={cn(
-        "overflow-hidden border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl transition-[max-height] duration-300 ease-out dark:border-white/12 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25",
-        composerFused ? "rounded-t-2xl rounded-b-none border-b-0" : "rounded-2xl",
+        "overflow-hidden rounded-t-2xl rounded-b-none border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl transition-[max-height] duration-300 ease-out dark:border-white/12 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25",
       )}
     >
       <button

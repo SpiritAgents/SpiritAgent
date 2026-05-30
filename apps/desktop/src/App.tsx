@@ -617,7 +617,6 @@ type ComposerSurfaceProps = {
   onRemoveLocalFileAttachment?(path: string): void;
   onPaste?(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
   showLoopSwitch?: boolean;
-  fusedWithTodoAbove?: boolean;
 };
 
 function ComposerSurface({
@@ -651,7 +650,6 @@ function ComposerSurface({
   onRemoveLocalFileAttachment,
   onPaste,
   showLoopSwitch = true,
-  fusedWithTodoAbove = false,
 }: ComposerSurfaceProps) {
   const [modelFilter, setModelFilter] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -683,10 +681,7 @@ function ComposerSurface({
   return (
     <div
       data-spirit-surface="composer-surface"
-      className={cn(
-        "relative overflow-hidden border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl transition-[border-color,box-shadow] focus-within:border-ring/60 focus-within:ring-0 dark:border-white/12 dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25",
-        fusedWithTodoAbove ? "rounded-t-none rounded-b-2xl border-t-0" : "rounded-2xl",
-      )}
+      className="relative overflow-hidden rounded-2xl border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl transition-[border-color,box-shadow] focus-within:border-ring/60 focus-within:ring-0 dark:border-white/12 dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25"
     >
       <ComposerLocalFileStrip
         attachments={localFileAttachments}
@@ -2860,12 +2855,14 @@ export default function App() {
                 ) : null}
 
                 <div className="relative">
-                <div className="relative z-10 grid gap-1.5">
+                <div className="relative z-10 flex flex-col">
                   {snapshot?.conversation.todos ? (
-                    <ComposerTodoCard
-                      todos={snapshot.conversation.todos}
-                      sessionKey={snapshot.composerSessionKey}
-                    />
+                    <div className="relative z-20 mx-4 -mb-px shrink-0">
+                      <ComposerTodoCard
+                        todos={snapshot.conversation.todos}
+                        sessionKey={snapshot.composerSessionKey}
+                      />
+                    </div>
                   ) : null}
                   {fileReferenceSuggestions ? (
                     <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 pb-2">
@@ -2894,7 +2891,6 @@ export default function App() {
                     </div>
                   ) : null}
                   <ComposerSurface
-                    fusedWithTodoAbove={Boolean(snapshot?.conversation.todos)}
                     value={runtime.composer}
                     onChange={runtime.setComposer}
                     onSubmit={submitComposerMessage}
