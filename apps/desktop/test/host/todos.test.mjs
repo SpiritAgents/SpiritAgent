@@ -12,10 +12,17 @@ import { createHostTodoStore } from '@spirit-agent/host-internal';
 
 import {
   buildSessionTodosContextText,
+  createTodoSessionScopeKey,
   listSessionTodos,
   replaceSessionTodos,
+  resolveTodoSessionKey,
+  normalizeTodoSessionStorageKey,
 } from '../../dist-electron/src/host/todos.js';
-import { spiritAgentDataDir } from '../../dist-electron/src/host/storage.js';
+import {
+  isProvisionalSessionPath,
+  provisionalNewSessionPath,
+  spiritAgentDataDir,
+} from '../../dist-electron/src/host/storage.js';
 import { DesktopToolExecutor } from '../../dist-electron/src/host/tool-executor.js';
 
 function functionToolNames(definitions) {
@@ -31,6 +38,43 @@ function functionToolNames(definitions) {
       })
     : [];
 }
+
+test('provisional chat paths do not alias todo storage', () => {
+  const workspaceRoot = path.join(process.cwd(), 'workspace-a');
+  const provisionalPath = provisionalNewSessionPath(workspaceRoot);
+  const scopeKey = createTodoSessionScopeKey();
+  assert.ok(isProvisionalSessionPath(provisionalPath));
+  assert.notEqual(
+    resolveTodoSessionKey({
+      sessionFilePath: provisionalPath,
+      bundleId: provisionalPath,
+      todoSessionScopeKey: scopeKey,
+    }),
+    path.resolve(provisionalPath),
+  );
+  assert.equal(
+    resolveTodoSessionKey({
+      sessionFilePath: provisionalPath,
+      bundleId: provisionalPath,
+      todoSessionScopeKey: scopeKey,
+    }),
+    scopeKey,
+  );
+  assert.equal(normalizeTodoSessionStorageKey(scopeKey), scopeKey);
+  assert.notEqual(
+    normalizeTodoSessionStorageKey(scopeKey),
+    path.resolve(scopeKey),
+  );
+  const savedPath = path.join(process.cwd(), 'chats', 'session-1.json');
+  assert.equal(
+    resolveTodoSessionKey({
+      sessionFilePath: savedPath,
+      bundleId: provisionalPath,
+      todoSessionScopeKey: scopeKey,
+    }),
+    path.resolve(savedPath),
+  );
+});
 
 test('desktop todo tools are exposed on the main agent executor', () => {
   const executor = new DesktopToolExecutor(process.cwd(), {

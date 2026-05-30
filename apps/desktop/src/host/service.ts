@@ -161,6 +161,7 @@ import {
   defaultNewSessionPath,
   discoverWorkspaceRoot,
   isProvisionalSessionPath,
+  provisionalNewSessionPath,
   loadConfig,
   loadHostMetadata,
   loadStoredSession,
@@ -209,6 +210,9 @@ import {
   resolveTodoSessionKey,
   createTodoScope,
   mapHostTodoToDesktopItem,
+  migrateSessionTodos,
+  createTodoSessionScopeKey,
+  normalizeTodoSessionStorageKey,
 } from './todos.js';
 import {
   buildDesktopExtensionListItems,
@@ -563,6 +567,14 @@ class DesktopHostService {
       },
       bindFileChangesToToolMessage: (execution, messageId) => {
         this.bindFileChangesToToolMessage(bundle, execution, messageId);
+      },
+      onTodoStoreMutated: () => {
+        void this.runSerialized(async () => {
+          await this.refreshTodoSnapshotForBundle(bundle);
+          if (bundle.id === this.sessionRegistry.activeSessionId()) {
+            this.emitLiveSnapshotUpdate();
+          }
+        });
       },
     });
     return { assistantMessages, runtimeEvents, conversationSnapshotView };
@@ -1781,7 +1793,6 @@ class DesktopHostService {
       await this.refreshRuntimeForBundle(bundle);
       this.syncActiveRuntimePointer();
     }
-    const runtime = this.requireRuntime();
     const trimmed = text.trim();
     const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
     const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)).trim();
@@ -1800,8 +1811,11 @@ class DesktopHostService {
       this.activeBundle().rewindWarnings = [];
     }
     this.clearAssistantContinuationMarkers();
-    this.activeBundle().currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
+    bundle.currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
+    const todoSessionKeyBeforeEnsure = this.resolveTodoSessionKeyForBundle(bundle);
     this.ensureActiveSession(displayText);
+    await this.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforeEnsure);
+    await this.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforeEnsure);
     const beforeUserCheckpoint = await this.buildRewindCheckpointSnapshot();
     const localFileAttachments =
       explicitWorkspaceFiles.length > 0
@@ -1820,7 +1834,10 @@ class DesktopHostService {
       ...(localFileAttachments ? { localFileAttachments } : {}),
     });
     this.resetStreamingPlacementState(false);
+    const todoSessionKeyBeforePersist = this.resolveTodoSessionKeyForBundle(bundle);
     await this.persistCurrentSessionIfNeeded();
+    await this.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
+    await this.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
     await this.dispatchExtensionEvent({
       type: 'onUserMessage',
       detail: {
@@ -1830,6 +1847,8 @@ class DesktopHostService {
       },
     });
 
+    // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
+    const runtime = this.requireRuntime();
     try {
       await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles);
       this.refreshArchiveFromRuntime();
@@ -1847,7 +1866,8 @@ class DesktopHostService {
     this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
     this.activeOrchestration().runtimeEvents.syncPendingToolStates();
     this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-    await this.flushDeferredRuntimeRefreshIfIdle();
+    await this.flushDeferredRuntimeRefreshIfIdle(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
     if (!runtime.isBusy()) {
       await this.refreshGitState();
     }
@@ -2013,6 +2033,7 @@ class DesktopHostService {
         });
       }
       const bundle = this.sessionRegistry.beginNewActive(state.workspaceRoot);
+      await this.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
       this.resetStreamingPlacementState(true, bundle);
       await this.refreshRuntime();
       this.lastRuntimeError = '';
@@ -2183,6 +2204,8 @@ class DesktopHostService {
       return;
     }
     this.resetStreamingPlacementState(true, bundle);
+    await this.ensureToolExecutor(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
     await this.refreshRuntimeForBundle(bundle);
     await this.flushDeferredRuntimeRefreshIfIdle(bundle);
     this.syncActiveRuntimePointer();
@@ -2876,7 +2899,62 @@ class DesktopHostService {
     return resolveTodoSessionKey({
       sessionFilePath: bundle.activeSession?.filePath,
       bundleId: bundle.id,
+      todoSessionScopeKey: bundle.todoSessionScopeKey,
     });
+  }
+
+  private async maybeRefreshRuntimeAfterTodoScopeChange(
+    bundle: SessionBundle,
+    previousSessionKey: string,
+  ): Promise<void> {
+    const nextSessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    if (
+      normalizeTodoSessionStorageKey(previousSessionKey)
+      === normalizeTodoSessionStorageKey(nextSessionKey)
+    ) {
+      return;
+    }
+    if (!bundle.runtime) {
+      return;
+    }
+    await this.refreshRuntimeForBundle(bundle);
+    if (bundle.id === this.sessionRegistry.activeSessionId()) {
+      this.syncActiveRuntimePointer();
+    }
+  }
+
+  private async finalizeTodoScopeForNewActiveBundle(
+    bundle: SessionBundle,
+    workspaceRoot: string,
+  ): Promise<void> {
+    if (!bundle.todoSessionScopeKey) {
+      bundle.todoSessionScopeKey = createTodoSessionScopeKey();
+    }
+    bundle.cachedTodoSnapshot = undefined;
+    const legacyProvisionalKey = path.resolve(provisionalNewSessionPath(workspaceRoot));
+    this.cancelTodoClearing(legacyProvisionalKey);
+    await purgeSessionTodos(legacyProvisionalKey);
+    await this.ensureToolExecutor(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
+  }
+
+  private async reconcileTodoScopeAfterSessionPathChange(
+    bundle: SessionBundle,
+    previousSessionKey: string,
+  ): Promise<void> {
+    const nextSessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    if (
+      normalizeTodoSessionStorageKey(previousSessionKey)
+      === normalizeTodoSessionStorageKey(nextSessionKey)
+    ) {
+      return;
+    }
+
+    this.cancelTodoClearing(previousSessionKey);
+    this.cancelTodoClearing(nextSessionKey);
+    await migrateSessionTodos(previousSessionKey, nextSessionKey);
+    await this.ensureToolExecutor(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
   }
 
   private cancelTodoClearing(sessionKey: string): void {
@@ -2917,6 +2995,7 @@ class DesktopHostService {
     bundle: SessionBundle,
   ): Promise<ConversationTodoSnapshot | undefined> {
     const sessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    const executorKey = bundle.toolExecutorTodoSessionKey;
     const pendingClearing = this.todoClearingBySession.get(sessionKey);
     if (pendingClearing) {
       return {
@@ -3076,7 +3155,7 @@ class DesktopHostService {
         ...(activeBundle.cachedTodoSnapshot ? { todos: activeBundle.cachedTodoSnapshot } : {}),
       },
       ...(activeBundle.activeSession ? { activeSession: activeBundle.activeSession } : {}),
-      composerSessionKey: path.resolve(activeBundle.activeSession?.filePath ?? activeBundle.id),
+      composerSessionKey: this.resolveTodoSessionKeyForBundle(activeBundle),
     });
   }
 
