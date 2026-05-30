@@ -17,14 +17,14 @@ test('buildArchiveAssistantAuxFromConversation persists finishTaskNotice', () =>
       role: 'assistant',
       content: 'hi there',
       pending: false,
-      aux: { finishTaskNotice: '任务因 已问候 完成。' },
+      aux: { finishTaskNotice: '任务以 已问候 完成。' },
     },
   ];
 
   assert.deepEqual(buildArchiveAssistantAuxFromConversation(messages), [
     {
       messageIndex: 1,
-      finishTaskNotice: '任务因 已问候 完成。',
+      finishTaskNotice: '任务以 已问候 完成。',
     },
   ]);
 });
@@ -38,14 +38,14 @@ test('restoreMessagesFromArchive restores finishTaskNotice from assistantAux', (
     assistantAux: [
       {
         messageIndex: 1,
-        finishTaskNotice: '任务因 已问候 完成。',
+        finishTaskNotice: '任务以 已问候 完成。',
       },
     ],
     llmHistory: [],
     subagentSessions: [],
   });
 
-  assert.equal(restored[1]?.aux?.finishTaskNotice, '任务因 已问候 完成。');
+  assert.equal(restored[1]?.aux?.finishTaskNotice, '任务以 已问候 完成。');
 });
 
 test('rehydrateFinishTaskNoticesInConversation rebuilds notice from finish_task tool history', () => {
@@ -79,7 +79,7 @@ test('rehydrateFinishTaskNoticesInConversation rebuilds notice from finish_task 
     },
   ]);
 
-  assert.equal(messages[1]?.aux?.finishTaskNotice, '任务因 确认每条消息 完成。');
+  assert.equal(messages[1]?.aux?.finishTaskNotice, '任务以 确认每条消息 完成。');
 });
 
 test('rehydrateFinishTaskNoticesInTimeline applies notice to assistant text row by message id', () => {
@@ -115,6 +115,6 @@ test('rehydrateFinishTaskNoticesInTimeline applies notice to assistant text row 
   assert.equal(
     timeline.toMessages().find((message) => message.role === 'assistant' && !message.tool)?.aux
       ?.finishTaskNotice,
-    '任务因 确认每条消息 完成。',
+    '任务以 确认每条消息 完成。',
   );
 });

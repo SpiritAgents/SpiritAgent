@@ -299,7 +299,7 @@ test('finish_task streaming preview updates finishTaskNotice on assistant text r
     .toMessages()
     .find((message) => message.role === 'assistant' && !message.tool);
   assert.equal(assistantRow?.content, '明白，我会在每条回复末尾调用 finish_task。');
-  assert.equal(assistantRow?.aux?.finishTaskNotice, '任务因 确认每条');
+  assert.equal(assistantRow?.aux?.finishTaskNotice, '任务以 确认每条');
   assert.equal(
     harness.timeline.toMessages().some((message) => message.tool?.toolName === 'finish_task'),
     false,
@@ -319,7 +319,7 @@ test('finish_task streaming preview updates finishTaskNotice on assistant text r
     .find((message) => message.role === 'assistant' && !message.tool);
   assert.equal(
     updatedAssistantRow?.aux?.finishTaskNotice,
-    '任务因 确认每条消息输出完毕后调用 finish_task。 完成。',
+    '任务以 确认每条消息输出完毕后调用 finish_task。 完成。',
   );
 });
 

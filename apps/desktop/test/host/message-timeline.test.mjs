@@ -110,14 +110,14 @@ test('finish_task notice clears duplicate completion text instead of adding a se
   timeline.appendAssistantTextChunk('用户打招呼，已问候回复，无后续任务。');
   timeline.completeActiveAssistantSegment();
   timeline.materializeFinishTaskNotice(
-    '任务因 用户打招呼，已问候回复，无后续任务。 完成。',
+    '任务以 用户打招呼，已问候回复，无后续任务。 完成。',
     '用户打招呼，已问候回复，无后续任务。',
   );
 
   assert.deepEqual(timeline.toMessages().map(rowToken), [
     'user:你好啊',
     'assistant:你好！我是 Spirit Agent，有什么可以帮你的吗？',
-    'finish:任务因 用户打招呼，已问候回复，无后续任务。 完成。',
+    'finish:任务以 用户打招呼，已问候回复，无后续任务。 完成。',
   ]);
 });
 
@@ -127,18 +127,18 @@ test('finish_task notice preview updates the active assistant text row', () => {
   timeline.beginAssistantSegment('initial');
   timeline.appendAssistantTextChunk('明白，我会在每条回复末尾调用 finish_task。');
 
-  timeline.updateFinishTaskNoticePreview('任务因 确认每条');
+  timeline.updateFinishTaskNoticePreview('任务以 确认每条');
   assert.equal(
     timeline.toMessages().find((message) => message.role === 'assistant' && !message.tool)?.aux
       ?.finishTaskNotice,
-    '任务因 确认每条',
+    '任务以 确认每条',
   );
 
-  timeline.updateFinishTaskNoticePreview('任务因 确认每条消息输出完毕后调用 finish_task。 完成。');
+  timeline.updateFinishTaskNoticePreview('任务以 确认每条消息输出完毕后调用 finish_task。 完成。');
   assert.equal(
     timeline.toMessages().find((message) => message.role === 'assistant' && !message.tool)?.aux
       ?.finishTaskNotice,
-    '任务因 确认每条消息输出完毕后调用 finish_task。 完成。',
+    '任务以 确认每条消息输出完毕后调用 finish_task。 完成。',
   );
 });
 
@@ -147,14 +147,14 @@ test('updatePendingAssistantAux preserves finish_task notice preview on assistan
   timeline.beginUserTurn('loop');
   timeline.beginAssistantSegment('initial');
   timeline.appendAssistantTextChunk('正文内容。');
-  timeline.updateFinishTaskNoticePreview('任务因 确认每条');
+  timeline.updateFinishTaskNoticePreview('任务以 确认每条');
 
   timeline.updatePendingAssistantAux('thinking', 'Still reasoning about the reply.');
 
   assert.equal(
     timeline.toMessages().find((message) => message.content.includes('正文内容'))?.aux
       ?.finishTaskNotice,
-    '任务因 确认每条',
+    '任务以 确认每条',
   );
 });
 
@@ -337,7 +337,7 @@ test('timeline snapshot round-trip preserves finishTaskNotice on assistant text 
   timeline.beginUserTurn('loop');
   timeline.beginAssistantSegment('initial');
   timeline.appendAssistantTextChunk('done for this turn');
-  timeline.updateFinishTaskNoticePreview('任务因 确认每条 完成。');
+  timeline.updateFinishTaskNoticePreview('任务以 确认每条 完成。');
   timeline.completeActiveAssistantSegment();
 
   const snapshot = timeline.snapshot();
@@ -354,7 +354,7 @@ test('timeline snapshot round-trip preserves finishTaskNotice on assistant text 
   assert.equal(
     restored.toMessages().find((message) => message.role === 'assistant' && !message.tool)?.aux
       ?.finishTaskNotice,
-    '任务因 确认每条 完成。',
+    '任务以 确认每条 完成。',
   );
 });
 

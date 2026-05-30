@@ -30,7 +30,8 @@ export function buildBuiltinHostToolDefinitions(
         properties: {
           summary: {
             type: 'string',
-            description: 'Optional short completion summary for the user.',
+            description:
+              'Optional terse Chinese completion reason (roughly 4–16 characters) shown as "任务以 X 完成." in the UI. Provide only the X phrase—no quotes, no full sentence, and do not include the "任务以" or "完成" wrapper. Example X: "已确认每条消息".',
           },
         },
         additionalProperties: false,

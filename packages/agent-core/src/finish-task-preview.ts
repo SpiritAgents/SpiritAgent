@@ -59,7 +59,7 @@ export function finishTaskNoticeFromSummary(summary: string): string {
   if (!normalized) {
     return '任务已完成。';
   }
-  return `任务因 ${normalized} 完成。`;
+  return `任务以 ${normalized} 完成。`;
 }
 
 export function finishTaskNoticePreviewFromArguments(argumentsJson: string): string | undefined {
@@ -73,5 +73,5 @@ export function finishTaskNoticePreviewFromArguments(argumentsJson: string): str
   if (finishTaskArgumentsJsonComplete(argumentsJson)) {
     return finishTaskNoticeFromSummary(summary);
   }
-  return `任务因 ${summary}`;
+  return `任务以 ${summary}`;
 }
