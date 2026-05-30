@@ -56,6 +56,8 @@ struct StoredAssistantAux {
     thinking: Option<String>,
     #[serde(default)]
     compaction: Option<String>,
+    #[serde(default)]
+    finish_task_notice: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -228,11 +230,18 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
                     .compaction
                     .as_ref()
                     .is_some_and(|value| !value.trim().is_empty())
+                || entry
+                    .finish_task_notice
+                    .as_ref()
+                    .is_some_and(|value| !value.trim().is_empty())
         })
         .map(|entry| crate::ports::AssistantAuxArchiveEntry {
             message_index: entry.message_index,
             thinking: entry.thinking.filter(|value| !value.trim().is_empty()),
             compaction: entry.compaction.filter(|value| !value.trim().is_empty()),
+            finish_task_notice: entry
+                .finish_task_notice
+                .filter(|value| !value.trim().is_empty()),
         })
         .collect::<Vec<_>>();
     let sanitized = sanitize_chat_data(&messages, &assistant_aux, desktop_messages.as_deref());
@@ -250,6 +259,7 @@ pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
                 message_index: entry.message_index,
                 thinking: entry.thinking,
                 compaction: entry.compaction,
+                finish_task_notice: entry.finish_task_notice,
             })
             .collect(),
         llm_history,
@@ -302,7 +312,11 @@ fn sanitize_chat_data(
                 .compaction
                 .clone()
                 .filter(|value| !value.trim().is_empty());
-            if thinking.is_none() && compaction.is_none() {
+            let finish_task_notice = entry
+                .finish_task_notice
+                .clone()
+                .filter(|value| !value.trim().is_empty());
+            if thinking.is_none() && compaction.is_none() && finish_task_notice.is_none() {
                 None
             } else {
                 Some((
@@ -311,6 +325,7 @@ fn sanitize_chat_data(
                         message_index: 0,
                         thinking,
                         compaction,
+                        finish_task_notice,
                     },
                 ))
             }
@@ -554,6 +569,7 @@ mod tests {
             message_index: 2,
             thinking: Some("reasoning".to_string()),
             compaction: None,
+            finish_task_notice: None,
         }];
         let llm_history = vec![crate::ports::ArchivedLlmMessage::from_text_and_images(
             "user".to_string(),

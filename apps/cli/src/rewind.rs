@@ -516,6 +516,7 @@ pub fn assistant_aux_entries(
                     message_index: *idx,
                     thinking,
                     compaction,
+                    finish_task_notice: None,
                 })
             }
         })

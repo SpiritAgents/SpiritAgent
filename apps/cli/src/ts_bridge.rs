@@ -206,6 +206,8 @@ struct BridgeAssistantAuxEntry {
     message_index: usize,
     thinking: Option<String>,
     compaction: Option<String>,
+    #[serde(default)]
+    finish_task_notice: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -1004,6 +1006,7 @@ impl TsBridgeRuntime {
                     message_index: entry.message_index,
                     thinking: entry.thinking,
                     compaction: entry.compaction,
+                    finish_task_notice: entry.finish_task_notice,
                 })
                 .collect(),
             llm_history: bridge_archive.llm_history,
@@ -3574,6 +3577,7 @@ fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
                 "messageIndex": entry.message_index,
                 "thinking": entry.thinking,
                 "compaction": entry.compaction,
+                "finishTaskNotice": entry.finish_task_notice,
             })
         }).collect::<Vec<_>>(),
         "llmHistory": archive.llm_history.iter().map(archived_llm_message_to_json).collect::<Vec<_>>(),
