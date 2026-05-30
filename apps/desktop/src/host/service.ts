@@ -14,6 +14,7 @@ import {
   buildSkillsCatalogSystemMessage,
   buildToolAgentHostPrompt,
   createLlmTransport,
+  McpService,
   extractLastLlmAssistantText,
   buildDreamReadHostToolDefinitions,
   startLlmToolAgentState,
@@ -510,6 +511,8 @@ class DesktopHostService {
     }
   >();
   private lastToolSnapshotLogSignature: string | undefined;
+  /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
+  private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
 
   private orchestrationFor(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
@@ -1685,6 +1688,8 @@ class DesktopHostService {
         throw new Error('当前调试会话为只读，无法继续补全。');
       }
 
+      await this.ensureToolExecutor();
+
       const continuable = this.latestContinuableAssistantMessage();
       if (!continuable || continuable.id !== messageId) {
         throw new Error('当前消息已不可继续补全。');
@@ -1858,6 +1863,7 @@ class DesktopHostService {
 
     // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
     const runtime = this.requireRuntime();
+    await this.ensureToolExecutor(bundle);
     try {
       await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles);
       this.refreshArchiveFromRuntime();
@@ -2473,6 +2479,7 @@ class DesktopHostService {
     if (switchingWorkspace) {
       this.lastRuntimeError = '';
       this.toolExecutor = undefined;
+      this.mcpServiceByWorkspaceRoot.clear();
       this.sessionRegistry.clearForWorkspaceSwitch(workspaceRoot);
       this.resetStreamingPlacementState(true);
     } else if (!this.sessionRegistry.hasActive()) {
@@ -2631,8 +2638,7 @@ class DesktopHostService {
       bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope, todoScope);
       bundle.toolExecutorWorkspaceRoot = workspaceRoot;
       bundle.toolExecutorTodoSessionKey = todoScope.sessionKey;
-      bundle.toolExecutor.startMcpBackgroundRefresh();
-    } else {
+    } else if (bundle.toolExecutor) {
       await this.refreshExtensionToolDefinitions(bundle.toolExecutor);
     }
     if (isActive) {
@@ -2643,7 +2649,19 @@ class DesktopHostService {
     }
     bundle.toolExecutor.setApprovalLevel(bundle.approvalLevel);
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
+    await bundle.toolExecutor.ensureMcpToolingReady();
     return bundle.toolExecutor;
+  }
+
+  private sharedMcpServiceForWorkspace(workspaceRoot: string): McpService {
+    const key = path.resolve(workspaceRoot);
+    let service = this.mcpServiceByWorkspaceRoot.get(key);
+    if (!service) {
+      service = new McpService(key);
+      service.startBackgroundRefreshInBackground(true);
+      this.mcpServiceByWorkspaceRoot.set(key, service);
+    }
+    return service;
   }
 
   private async buildToolExecutorForBundle(
@@ -2655,6 +2673,7 @@ class DesktopHostService {
     const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
     const extensions = await this.extensionManager().list();
     return new DesktopToolExecutor(workspaceRoot, {
+      mcp: this.sharedMcpServiceForWorkspace(workspaceRoot),
       extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
       fileChangeObserver: {
         recordFileChange: (change) => {
