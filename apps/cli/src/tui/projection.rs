@@ -1,5 +1,5 @@
 use super::*;
-use crate::view::RewindPickerView;
+use crate::view::{RewindPickerView, TodoStripItemView, TodoStripView};
 
 impl TuiShell {
     pub fn view_model(&self) -> TuiViewModel {
@@ -23,6 +23,28 @@ impl TuiShell {
             .collect();
         let marketplace_view = self.build_marketplace_view_model();
         let rewind_picker = self.rewind_picker_view();
+        let todo_strip = if self.todo_items.is_empty() {
+            None
+        } else {
+            let completed_count = self
+                .todo_items
+                .iter()
+                .filter(|item| item.status == "completed")
+                .count();
+            Some(TodoStripView {
+                items: self
+                    .todo_items
+                    .iter()
+                    .map(|item| TodoStripItemView {
+                        id: item.id.clone(),
+                        title: item.title.clone(),
+                        status: item.status.clone(),
+                    })
+                    .collect(),
+                expanded: self.todo_strip_expanded,
+                completed_count,
+            })
+        };
 
         TuiViewModel {
             input: self.input.value.clone(),
@@ -71,6 +93,7 @@ impl TuiShell {
             persisted_standalone_pending_aux_anchor: self.persisted_standalone_pending_aux_anchor,
             cli_ui_hooks: self.cli_ui_hooks.clone(),
             marketplace_view,
+            todo_strip,
             conversation_sel_anchor: self.conversation.sel_anchor,
             conversation_sel_head: self.conversation.sel_head,
         }
