@@ -2,7 +2,14 @@ import type { AnthropicTransportConfig } from './anthropic/anthropic-compat.js';
 import type { LlmTransportKind } from './llm-provider-shared.js';
 import type { OpenAiTransportConfig } from './openai/openai-compat.js';
 
-export type ModelReasoningProvider = 'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'anthropic' | 'custom';
+export type ModelReasoningProvider =
+  | 'deepseek'
+  | 'kimi'
+  | 'minimax'
+  | 'alibaba'
+  | 'anthropic'
+  | 'vercel-ai-gateway'
+  | 'custom';
 
 export type ModelReasoningEffort = string;
 

@@ -1,7 +1,14 @@
 import rawImport from './model-provider-presets.json' with { type: 'json' };
 
 /** 与 `config.json` / CLI `ModelProvider` 小写字符串对齐（须与 `pickerOrder` 一致）。 */
-export type ModelProviderId = 'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'anthropic' | 'custom';
+export type ModelProviderId =
+  | 'deepseek'
+  | 'kimi'
+  | 'minimax'
+  | 'alibaba'
+  | 'anthropic'
+  | 'vercel-ai-gateway'
+  | 'custom';
 export type PresetModelProviderId = Exclude<ModelProviderId, 'custom'>;
 
 const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
@@ -10,6 +17,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'minimax',
   'alibaba',
   'anthropic',
+  'vercel-ai-gateway',
   'custom',
 ];
 
@@ -28,14 +36,17 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["deepseek","kimi","minimax","alibaba","anthropic","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["deepseek","kimi","minimax","alibaba","anthropic","vercel-ai-gateway","custom"]',
     );
   }
 }
 
 interface ParsedModelProviderPresets {
   defaultCustomApiBase: string;
-  presetApiBaseByProvider: Record<'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'anthropic', string>;
+  presetApiBaseByProvider: Record<
+    'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'anthropic' | 'vercel-ai-gateway',
+    string
+  >;
   pickerOrder: readonly ModelProviderId[];
   pickerLabels: Record<string, string>;
 }
@@ -73,6 +84,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     minimax: requireStringField(presetRaw, 'minimax'),
     alibaba: requireStringField(presetRaw, 'alibaba'),
     anthropic: requireStringField(presetRaw, 'anthropic'),
+    'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
   };
 
   const labelsRaw = data.pickerLabels;
@@ -107,6 +119,7 @@ const kimiBase = raw.presetApiBaseByProvider.kimi;
 const minimaxBase = raw.presetApiBaseByProvider.minimax;
 const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
+const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
 
 export const PROVIDER_PRESET_API_BASE = {
   deepseek: deepseekBase,
@@ -114,6 +127,7 @@ export const PROVIDER_PRESET_API_BASE = {
   minimax: minimaxBase,
   alibaba: alibabaBase,
   anthropic: anthropicBase,
+  'vercel-ai-gateway': vercelAiGatewayBase,
 } as const satisfies Record<Exclude<ModelProviderId, 'custom'>, string>;
 
 const pickerLabels = raw.pickerLabels;
@@ -176,6 +190,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.alibaba;
     case 'anthropic':
       return PROVIDER_PRESET_API_BASE.anthropic;
+    case 'vercel-ai-gateway':
+      return PROVIDER_PRESET_API_BASE['vercel-ai-gateway'];
     case 'custom': {
       const trimmed = customApiBaseTrimmed.trim();
       return trimmed.length > 0 ? trimmed : DEFAULT_CUSTOM_API_BASE;

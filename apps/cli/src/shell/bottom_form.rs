@@ -95,8 +95,17 @@ fn model_add_provider_choice_labels() -> Vec<String> {
         t!("form.model.provider.minimax").into_owned(),
         t!("form.model.provider.alibaba").into_owned(),
         t!("form.model.provider.anthropic").into_owned(),
+        t!("form.model.provider.vercel_ai_gateway").into_owned(),
         t!("form.model.provider.custom").into_owned(),
     ]
+}
+
+fn model_add_provider_option_count() -> usize {
+    model_add_provider_choice_labels().len()
+}
+
+fn model_add_is_preset_provider(provider_idx: usize) -> bool {
+    provider_idx + 1 < model_add_provider_option_count()
 }
 
 fn model_add_provider_selected(form: &BottomFormView) -> Option<usize> {
@@ -109,7 +118,7 @@ fn model_add_provider_selected(form: &BottomFormView) -> Option<usize> {
 }
 
 fn model_add_mode_bulk(form: &BottomFormView, provider_idx: usize) -> bool {
-    if provider_idx < 5 {
+    if model_add_is_preset_provider(provider_idx) {
         return true;
     }
     match form.fields.get(1).map(|f| &f.editor) {
@@ -162,7 +171,7 @@ fn model_add_provider_field(selected: usize) -> BottomFormFieldView {
         help: String::new(),
         editor: BottomFormFieldEditorView::Choice {
             options: model_add_provider_choice_labels(),
-            selected: selected.min(5),
+            selected: selected.min(model_add_provider_option_count().saturating_sub(1)),
         },
     }
 }
@@ -247,7 +256,8 @@ fn model_add_provider_to_enum(idx: usize) -> Option<ModelProvider> {
         2 => Some(ModelProvider::Minimax),
         3 => Some(ModelProvider::Alibaba),
         4 => Some(ModelProvider::Anthropic),
-        5 => Some(ModelProvider::Custom),
+        5 => Some(ModelProvider::VercelAiGateway),
+        6 => Some(ModelProvider::Custom),
         _ => None,
     }
 }
@@ -288,9 +298,9 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         ""
     };
 
-    let bulk_custom = provider_idx >= 5 && mode_custom == 1;
+    let bulk_custom = !model_add_is_preset_provider(provider_idx) && mode_custom == 1;
 
-    let new_fields: Vec<BottomFormFieldView> = if provider_idx < 5 {
+    let new_fields: Vec<BottomFormFieldView> = if model_add_is_preset_provider(provider_idx) {
         vec![
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),

@@ -8,6 +8,7 @@ import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
+import { createGateway } from '@ai-sdk/gateway';
 import {
   createOpenAICompatible,
   type OpenAICompatibleLanguageModelChatOptions,
@@ -518,7 +519,11 @@ function buildAiSdkRequestTrace(
   stream = false,
 ): JsonValue[] {
   const requestTrace = buildOpenAiRequestTrace(config, stepIndex, messages, tools, stream);
-  if (!isDeepSeekOfficialAiSdkProvider(config) && !isAlibabaOfficialAiSdkProvider(config)) {
+  if (
+    !isDeepSeekOfficialAiSdkProvider(config) &&
+    !isAlibabaOfficialAiSdkProvider(config) &&
+    !isVercelAiGatewayProvider(config)
+  ) {
     return requestTrace;
   }
 
@@ -527,12 +532,16 @@ function buildAiSdkRequestTrace(
     return requestTrace;
   }
 
+  const kind = isDeepSeekOfficialAiSdkProvider(config)
+    ? 'deepseek_sdk_chat_completions'
+    : isAlibabaOfficialAiSdkProvider(config)
+      ? 'alibaba_sdk_chat_completions'
+      : 'gateway_sdk_chat_completions';
+
   return [
     {
       ...firstTrace,
-      kind: isDeepSeekOfficialAiSdkProvider(config)
-        ? 'deepseek_sdk_chat_completions'
-        : 'alibaba_sdk_chat_completions',
+      kind,
     },
     ...requestTrace.slice(1),
   ];
@@ -545,6 +554,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
 
   if (isAlibabaOfficialAiSdkProvider(config)) {
     return createAiSdkAlibabaProvider(config).chatModel(config.model);
+  }
+
+  if (isVercelAiGatewayProvider(config)) {
+    return createAiSdkGatewayProvider(config)(config.model);
   }
 
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
@@ -623,6 +636,13 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
 
 function createAiSdkAlibabaProvider(config: OpenAiTransportConfig) {
   return createAlibaba({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+  });
+}
+
+function createAiSdkGatewayProvider(config: OpenAiTransportConfig) {
+  return createGateway({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
   });
@@ -1455,6 +1475,10 @@ function isDeepSeekOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean
 
 function isAlibabaOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'alibaba';
+}
+
+function isVercelAiGatewayProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'vercel-ai-gateway';
 }
 
 function buildAiSdkImageGenerationUrl(config: OpenAiImageGenerationConfig): string {

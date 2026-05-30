@@ -21,6 +21,7 @@ pub enum ModelProvider {
     Minimax,
     Alibaba,
     Anthropic,
+    VercelAiGateway,
     Custom,
 }
 
@@ -32,6 +33,7 @@ impl ModelProvider {
             Self::Minimax => "minimax",
             Self::Alibaba => "alibaba",
             Self::Anthropic => "anthropic",
+            Self::VercelAiGateway => "vercel-ai-gateway",
             Self::Custom => "custom",
         }
     }
@@ -47,6 +49,7 @@ impl FromStr for ModelProvider {
             "minimax" => Ok(Self::Minimax),
             "alibaba" => Ok(Self::Alibaba),
             "anthropic" => Ok(Self::Anthropic),
+            "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
             "custom" => Ok(Self::Custom),
             other => Err(format!("不支持的 provider: {other}")),
         }
@@ -122,6 +125,7 @@ impl ModelProfile {
             Some(ModelProvider::Minimax)
             | Some(ModelProvider::Alibaba)
             | Some(ModelProvider::Anthropic)
+            | Some(ModelProvider::VercelAiGateway)
             | Some(ModelProvider::Custom)
             | None => true,
         }
