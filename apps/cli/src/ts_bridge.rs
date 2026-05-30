@@ -2918,6 +2918,7 @@ fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Anthropic => {
             unreachable!("Anthropic 不应映射到 openai-compatible llmVendor")
         }
+        ModelProvider::VercelAiGateway => "vercel-ai-gateway",
         ModelProvider::Custom => "custom",
     }
 }

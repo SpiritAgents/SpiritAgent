@@ -75,7 +75,11 @@ mod tests {
             model_add_preset_api_base_by_choice_index(4).as_deref(),
             Some("https://api.anthropic.com/v1")
         );
-        assert!(model_add_preset_api_base_by_choice_index(5).is_none());
+        assert_eq!(
+            model_add_preset_api_base_by_choice_index(5).as_deref(),
+            Some("https://ai-gateway.vercel.sh/v1")
+        );
+        assert!(model_add_preset_api_base_by_choice_index(6).is_none());
     }
 
     #[test]
