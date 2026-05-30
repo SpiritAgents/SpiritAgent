@@ -270,6 +270,14 @@ impl RuntimeHandle {
         self.runtime.rewind_message(message_id)
     }
 
+    pub fn set_todo_session_key(&mut self, session_key: &str) -> Result<()> {
+        self.runtime.set_todo_session_key(session_key)
+    }
+
+    pub fn list_session_todos(&mut self) -> Result<Vec<crate::rewind::HostTodoRecord>> {
+        self.runtime.list_session_todos()
+    }
+
     pub fn submit_user_turn(
         &mut self,
         text: String,

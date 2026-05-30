@@ -54,6 +54,7 @@ export interface DesktopRuntimeEventOrchestratorOptions {
     execution: RuntimeToolExecution<DesktopToolRequest>,
     messageId: number,
   ) => void;
+  onTodoStoreMutated?: () => void;
 }
 
 export class DesktopRuntimeEventOrchestrator {
@@ -559,6 +560,9 @@ export class DesktopRuntimeEventOrchestrator {
         this.options.conversationSnapshotView.clearStandalonePendingAuxState();
       }
       this.options.bindFileChangesToToolMessage(execution, message.id);
+      if (execution.toolName.startsWith('todo_')) {
+        this.options.onTodoStoreMutated?.();
+      }
       this.logToolExecutionIntegration(source, execution, message.id);
     }
   }

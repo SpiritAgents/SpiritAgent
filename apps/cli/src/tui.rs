@@ -96,6 +96,8 @@ pub struct TuiShell {
     conversation: ConversationUiState,
     interrupt_escape_armed_at: Option<Instant>,
     last_turn_can_continue: bool,
+    todo_strip_expanded: bool,
+    todo_items: Vec<rewind::HostTodoRecord>,
     should_quit: bool,
     runtime: RuntimeHandle,
     config_store: Box<dyn ConfigStore>,
@@ -181,6 +183,8 @@ impl TuiShell {
             conversation: ConversationUiState::default(),
             interrupt_escape_armed_at: None,
             last_turn_can_continue: false,
+            todo_strip_expanded: false,
+            todo_items: Vec::new(),
             should_quit: false,
             runtime,
             config_store,
@@ -653,6 +657,7 @@ impl TuiShell {
 
     fn apply_runtime_events(&mut self) {
         runtime_events::apply_runtime_events(self);
+        self.refresh_todo_items();
     }
 
     fn submit_runtime_user_turn(
@@ -667,6 +672,7 @@ impl TuiShell {
         };
         let before_archive = self.export_chat_archive_for_message_count(user_message_index);
         let before_messages = self.conversation_snapshots_for_message_count(user_message_index);
+        let before_todos = self.runtime.list_session_todos().ok();
         let submit_result = self.runtime.submit_user_turn(user_turn, explicit_images);
         if submit_result.is_err() {
             self.messages.pop();
@@ -680,6 +686,8 @@ impl TuiShell {
                             .conversation_snapshots_for_message_count(user_message_count),
                         before_archive: Some(before_archive),
                         before_desktop_messages: Some(before_messages),
+                        todos: self.runtime.list_session_todos().ok(),
+                        before_todos,
                     };
                     if let Err(err) = self.runtime.record_rewind_checkpoint(
                         user_message_index + 1,
@@ -706,6 +714,12 @@ impl TuiShell {
         }
         self.apply_runtime_events();
         submit_result
+    }
+
+    fn refresh_todo_items(&mut self) {
+        self.todo_items = self.runtime.list_session_todos().unwrap_or_default();
+        // No expand/collapse keybinding in TUI — always show the full list when todos exist.
+        self.todo_strip_expanded = !self.todo_items.is_empty();
     }
 
     fn archive_messages_for_message_count(&self, message_count: usize) -> Vec<(String, String)> {

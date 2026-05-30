@@ -267,6 +267,38 @@ export function toolCallSummaryCopyForRequest(
         ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
       };
     }
+    case 'todo_create': {
+      const items = Array.isArray(record.items) ? record.items : [];
+      const firstTitle =
+        items.length > 0 && typeof items[0] === 'object' && items[0] !== null
+          ? String((items[0] as Record<string, unknown>).title ?? '').trim()
+          : '';
+      return {
+        headline: '创建 TODO',
+        headlineDetail: truncateSummaryDetail(
+          items.length > 1
+            ? `${items.length} 项${firstTitle ? ` · ${firstTitle}` : ''}`
+            : firstTitle || '1 项',
+        ),
+      };
+    }
+    case 'todo_update': {
+      const title = typeof record.title === 'string' ? record.title.trim() : '';
+      const id = typeof record.id === 'string' ? record.id.trim() : '';
+      return {
+        headline: '更新 TODO',
+        headlineDetail: truncateSummaryDetail(title || id || ''),
+      };
+    }
+    case 'todo_complete': {
+      const id = typeof record.id === 'string' ? record.id.trim() : '';
+      return {
+        headline: '完成 TODO',
+        ...(id ? { headlineDetail: truncateSummaryDetail(id) } : {}),
+      };
+    }
+    case 'todo_list':
+      return { headline: '列出 TODO' };
     case 'extension_tool': {
       const extensionToolName =
         typeof record.tool_name === 'string' ? record.tool_name.trim() : '';

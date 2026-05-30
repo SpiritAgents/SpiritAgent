@@ -135,6 +135,18 @@ pub struct DesktopStoredFileChange {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct HostTodoRecord {
+    pub id: String,
+    pub title: String,
+    pub status: String,
+    pub created_at_unix_ms: u64,
+    pub updated_at_unix_ms: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completed_at_unix_ms: Option<u64>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DesktopRewindCheckpointSnapshot {
     pub archive: ChatArchive,
     pub desktop_messages: Vec<ConversationMessageSnapshot>,
@@ -142,6 +154,10 @@ pub struct DesktopRewindCheckpointSnapshot {
     pub before_archive: Option<ChatArchive>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub before_desktop_messages: Option<Vec<ConversationMessageSnapshot>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub todos: Option<Vec<HostTodoRecord>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub before_todos: Option<Vec<HostTodoRecord>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
