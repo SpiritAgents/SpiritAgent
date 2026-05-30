@@ -8,6 +8,7 @@ export * from './reasoning-effort.js';
 export * from './transport-factory.js';
 export * from './openai/index.js';
 export * from './anthropic/index.js';
+export * from './open-responses/index.js';
 export * from './host-tools.js';
 export * from './unknown-tool-error.js';
 export * from './finish-task-preview.js';
