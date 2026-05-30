@@ -32,7 +32,8 @@ import {
   type LlmToolAgentBasicInfo,
   type LlmToolAgentState,
 } from './llm-tool-agent.js';
-import { buildContributedHostToolDefinitions } from './host-tools.js';
+import { buildContributedHostToolDefinitions, buildTodoHostToolDefinitions } from './host-tools.js';
+import { buildTodosSystemMessage } from './tool-agent.js';
 import type { LlmTransportConfig } from './provider-config.js';
 import { createLlmTransport } from './transport-factory.js';
 import type {
@@ -96,6 +97,7 @@ let enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [];
 let activeSkills: LlmActiveSkill[] = [];
 let planMetadata: LlmPlanMetadata | undefined;
 let extensionSystemPrompts: LlmExtensionSystemPrompt[] = [];
+let currentTodoSessionKey: string | undefined;
 
 interface CliHostInternalModule {
   NodeHostToolService: new (
@@ -108,9 +110,21 @@ interface CliHostInternalModule {
         logger?: Pick<Console, 'error' | 'log'>;
       };
       getModelCompatibilityProfile?: () => OpenAiModelCompatibilityProfile | undefined;
+      getApprovalLevel?: () => 'default' | 'full-approval';
+      todoScope?: { sessionKey: string };
+      fileChangeObserver?: { recordFileChange(change: unknown): Promise<void> };
     },
   ) => LocalHostToolService;
   createNoopMcpAdapter?: () => unknown;
+  createHostTodoStore?: (input: {
+    spiritDataDir: string;
+    scope: { sessionKey: string };
+  }) => {
+    list(options?: { includeCompleted?: boolean }): Promise<unknown[]>;
+    replaceAll(records: unknown[]): Promise<unknown[]>;
+    purge(): Promise<void>;
+  };
+  buildTodoContextText?: (records: unknown[]) => string | undefined;
   loadHostInstructionMetadata: (
     context: { workspaceRoot: string; spiritDataDir: string },
     options?: { planMode?: boolean },
@@ -554,6 +568,7 @@ interface CliHostInternalState {
   service: LocalHostToolService;
   workspaceRoot: string;
   spiritDataDir: string;
+  todoSessionKey?: string;
   extensionManager?: CliHostExtensionManager;
   extensionMarketplace?: CliHostExtensionMarketplace;
 }
@@ -615,32 +630,58 @@ function buildRuntimeBasicInfo(
   };
 }
 
-async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInternalState | undefined> {
-  const modulePath = process.env[ENV_HOST_INTERNAL_MODULE_PATH]?.trim();
-  const spiritDataDir = process.env[ENV_HOST_INTERNAL_SPIRIT_DATA_DIR]?.trim();
-  if (!modulePath || !spiritDataDir) {
-    cliHostInternal = undefined;
-    toolExecutor.setLocalHostService(undefined);
-    toolExecutor.setExtensionToolDefinitions([]);
-    extensionSystemPrompts = [];
+async function buildTodosContextTextForSession(
+  sessionKey: string | undefined,
+): Promise<string | undefined> {
+  if (!sessionKey?.trim() || !cliHostInternal?.module.createHostTodoStore) {
     return undefined;
   }
+  const store = cliHostInternal.module.createHostTodoStore({
+    spiritDataDir: cliHostInternal.spiritDataDir,
+    scope: { sessionKey: sessionKey.trim() },
+  });
+  const records = await store.list({ includeCompleted: true });
+  const text = cliHostInternal.module.buildTodoContextText?.(records)?.trim();
+  return text && text.length > 0 ? text : undefined;
+}
 
-  if (cliHostInternal?.workspaceRoot === workspaceRoot && cliHostInternal.spiritDataDir === spiritDataDir) {
-    return cliHostInternal;
+async function updateCliTodoScope(sessionKey: string | undefined): Promise<void> {
+  const normalized = sessionKey?.trim() || undefined;
+  if (currentTodoSessionKey === normalized) {
+    return;
   }
+  currentTodoSessionKey = normalized;
+  toolExecutor.setTodoToolDefinitions(normalized ? buildTodoHostToolDefinitions() : []);
+  const workspaceRoot = cliHostInternal?.workspaceRoot ?? currentWorkspaceRoot();
+  if (cliHostInternal) {
+    if (normalized) {
+      cliHostInternal.todoSessionKey = normalized;
+    } else {
+      delete cliHostInternal.todoSessionKey;
+    }
+    await rebuildCliHostToolService(workspaceRoot);
+  }
+}
 
-  const loaded = await import(pathToFileURL(modulePath).href);
-  const module = loaded as unknown as CliHostInternalModule;
-  const extensionManager =
-    typeof module.createHostExtensionManager === 'function'
-      ? module.createHostExtensionManager({ spiritDataDir, hostKind: 'cli' })
-      : undefined;
-  const extensionMarketplace =
-    typeof module.createHostExtensionMarketplace === 'function'
-      ? module.createHostExtensionMarketplace({ spiritDataDir, hostKind: 'cli' })
-      : undefined;
-  const serviceOptions = {
+async function rebuildCliHostToolService(workspaceRoot: string): Promise<void> {
+  const modulePath = process.env[ENV_HOST_INTERNAL_MODULE_PATH]?.trim();
+  const spiritDataDir = process.env[ENV_HOST_INTERNAL_SPIRIT_DATA_DIR]?.trim();
+  if (!modulePath || !spiritDataDir || !cliHostInternal) {
+    return;
+  }
+  const module = cliHostInternal.module;
+  const serviceOptions = buildCliHostToolServiceOptions(module, cliHostInternal.extensionManager);
+  const service = new module.NodeHostToolService({ workspaceRoot, spiritDataDir }, serviceOptions);
+  cliHostInternal.service = service;
+  toolExecutor.setLocalHostService(service);
+  await toolExecutor.refreshCaches();
+}
+
+function buildCliHostToolServiceOptions(
+  module: CliHostInternalModule,
+  extensionManager: CliHostExtensionManager | undefined,
+): NonNullable<ConstructorParameters<CliHostInternalModule['NodeHostToolService']>[1]> {
+  return {
     ...(typeof module.createNoopMcpAdapter === 'function'
       ? { mcp: module.createNoopMcpAdapter() }
       : {}),
@@ -660,17 +701,53 @@ async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInte
       : {}),
     getModelCompatibilityProfile: () => currentHostToolModelCompatibilityProfile,
     getApprovalLevel: () => currentApprovalLevel,
+    ...(currentTodoSessionKey ? { todoScope: { sessionKey: currentTodoSessionKey } } : {}),
   };
+}
+
+async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInternalState | undefined> {
+  const modulePath = process.env[ENV_HOST_INTERNAL_MODULE_PATH]?.trim();
+  const spiritDataDir = process.env[ENV_HOST_INTERNAL_SPIRIT_DATA_DIR]?.trim();
+  if (!modulePath || !spiritDataDir) {
+    cliHostInternal = undefined;
+    toolExecutor.setLocalHostService(undefined);
+    toolExecutor.setExtensionToolDefinitions([]);
+    toolExecutor.setTodoToolDefinitions([]);
+    extensionSystemPrompts = [];
+    return undefined;
+  }
+
+  if (
+    cliHostInternal?.workspaceRoot === workspaceRoot
+    && cliHostInternal.spiritDataDir === spiritDataDir
+    && cliHostInternal.todoSessionKey === currentTodoSessionKey
+  ) {
+    return cliHostInternal;
+  }
+
+  const loaded = await import(pathToFileURL(modulePath).href);
+  const module = loaded as unknown as CliHostInternalModule;
+  const extensionManager =
+    typeof module.createHostExtensionManager === 'function'
+      ? module.createHostExtensionManager({ spiritDataDir, hostKind: 'cli' })
+      : undefined;
+  const extensionMarketplace =
+    typeof module.createHostExtensionMarketplace === 'function'
+      ? module.createHostExtensionMarketplace({ spiritDataDir, hostKind: 'cli' })
+      : undefined;
+  const serviceOptions = buildCliHostToolServiceOptions(module, extensionManager);
   const service = new module.NodeHostToolService(
     { workspaceRoot, spiritDataDir },
     Object.keys(serviceOptions).length > 0 ? serviceOptions : undefined,
   );
   toolExecutor.setLocalHostService(service);
+  toolExecutor.setTodoToolDefinitions(currentTodoSessionKey ? buildTodoHostToolDefinitions() : []);
   cliHostInternal = {
     module,
     service,
     workspaceRoot,
     spiritDataDir,
+    ...(currentTodoSessionKey ? { todoSessionKey: currentTodoSessionKey } : {}),
     ...(extensionManager ? { extensionManager } : {}),
     ...(extensionMarketplace ? { extensionMarketplace } : {}),
   };
@@ -1253,6 +1330,7 @@ async function createRuntime(
   const workspaceRoot = config.workspaceRoot ?? process.cwd();
   const hostInternal = await ensureCliHostInternal(workspaceRoot);
   const basicInfo = buildRuntimeBasicInfo(workspaceRoot, hostInternal?.service);
+  const todosContextText = await buildTodosContextTextForSession(currentTodoSessionKey);
   toolExecutor.setImageGenerationAvailable('imageGeneration' in config && config.imageGeneration !== undefined);
   await toolExecutor.refreshCaches();
   logBridge('createRuntime', {
@@ -1274,6 +1352,7 @@ async function createRuntime(
       planMetadata,
       extensionSystemPrompts,
       undefined,
+      todosContextText,
       basicInfo,
     );
   const llmTransport = createLlmTransport(config);
@@ -1294,6 +1373,7 @@ async function createRuntime(
         planMetadata,
         extensionSystemPrompts,
         undefined,
+        todosContextText,
         basicInfo,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
@@ -1316,6 +1396,7 @@ async function createRuntime(
         planMetadata,
         extensionSystemPrompts,
         undefined,
+        todosContextText,
         basicInfo,
       ),
     generateImage: (request) =>
@@ -1392,6 +1473,54 @@ async function drainEvents(): Promise<DrainEventsResult> {
   };
 }
 
+peer.on('hostInternal.setTodoSessionKey', async (rawParams) => {
+  const params = rawParams as { sessionKey?: string };
+  const nextKey =
+    typeof params.sessionKey === 'string' && params.sessionKey.trim()
+      ? params.sessionKey.trim()
+      : undefined;
+  const previousKey = currentTodoSessionKey;
+  await updateCliTodoScope(nextKey);
+  if (
+    runtime
+    && transportConfig
+    && (previousKey?.trim() || '') !== (nextKey ?? '')
+  ) {
+    const target = requireRuntime();
+    const loopEnabled = target.loopEnabled();
+    runtime = await createRuntime(transportConfig, [...target.history()]);
+    runtime.setLoopEnabled(loopEnabled);
+  }
+  return { ok: true };
+});
+
+peer.on('hostInternal.listSessionTodos', async () => {
+  if (!currentTodoSessionKey || !cliHostInternal?.module.createHostTodoStore) {
+    return { todos: [] };
+  }
+  const store = cliHostInternal.module.createHostTodoStore({
+    spiritDataDir: cliHostInternal.spiritDataDir,
+    scope: { sessionKey: currentTodoSessionKey },
+  });
+  return {
+    todos: await store.list({ includeCompleted: true }),
+  };
+});
+
+peer.on('hostInternal.replaceSessionTodos', async (rawParams) => {
+  const params = rawParams as { records?: unknown[] };
+  if (!currentTodoSessionKey || !cliHostInternal?.module.createHostTodoStore) {
+    return { todos: [] };
+  }
+  const store = cliHostInternal.module.createHostTodoStore({
+    spiritDataDir: cliHostInternal.spiritDataDir,
+    scope: { sessionKey: currentTodoSessionKey },
+  });
+  const records = Array.isArray(params.records) ? params.records : [];
+  const todos = await store.replaceAll(records);
+  return { todos };
+});
+
 peer.on('runtime.init', async (rawParams) => {
   const params = rawParams as RuntimeInitParams;
   logBridge('runtime.init', { historyCount: params.history?.length ?? 0 });
@@ -1408,6 +1537,9 @@ peer.on('runtime.init', async (rawParams) => {
   }
   activeSkills = pruneActiveSkillsAgainstCatalog(activeSkills, enabledSkillCatalog);
   currentApprovalLevel = normalizeBridgeApprovalLevel(params.approvalLevel);
+  if (typeof params.todoSessionKey === 'string' && params.todoSessionKey.trim()) {
+    await updateCliTodoScope(params.todoSessionKey.trim());
+  }
   runtime = await createRuntime(params.transportConfig, params.history ?? []);
   runtime.setLoopEnabled(params.loopEnabled === true);
   const workspaceRoot =

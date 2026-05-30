@@ -55,6 +55,8 @@ import {
   PROVIDER_PRESET_API_BASE,
   restoreHostFileChanges,
   type HostDreamScope,
+  type HostTodoRecord,
+  type HostTodoScope,
   type HostExtensionMarketplaceManager,
   type HostExtensionEvent,
   type HostRecordedFileChange,
@@ -78,6 +80,7 @@ import type {
   CheckoutGitBranchRequest,
   ConversationLocalFileAttachmentSnapshot,
   ConversationMessageSnapshot,
+  ConversationTodoSnapshot,
   CreateSkillRequest,
   DeleteExtensionRequest,
   DeleteMcpServerRequest,
@@ -158,6 +161,7 @@ import {
   defaultNewSessionPath,
   discoverWorkspaceRoot,
   isProvisionalSessionPath,
+  provisionalNewSessionPath,
   loadConfig,
   loadHostMetadata,
   loadStoredSession,
@@ -197,6 +201,19 @@ import {
   isDreamCollectorDebugSessionPath,
   runDesktopDreamCollectorOnce,
 } from './dreams.js';
+import {
+  buildSessionTodosContextText,
+  cloneHostTodoRecords,
+  listSessionTodos,
+  purgeSessionTodos,
+  replaceSessionTodos,
+  resolveTodoSessionKey,
+  createTodoScope,
+  mapHostTodoToDesktopItem,
+  migrateSessionTodos,
+  createTodoSessionScopeKey,
+  normalizeTodoSessionStorageKey,
+} from './todos.js';
 import {
   buildDesktopExtensionListItems,
   buildDesktopExtensionToolDefinitions,
@@ -483,6 +500,14 @@ class DesktopHostService {
   private dreamCollectorLastTickUnixMs = 0;
   private dreamCollectorMonitorTimer: ReturnType<typeof setInterval> | undefined;
   private readonly dreamUpdateListeners = new Set<(snapshot: DesktopSnapshot) => void>();
+  private readonly todoClearingBySession = new Map<
+    string,
+    {
+      untilUnixMs: number;
+      items: HostTodoRecord[];
+      timer: ReturnType<typeof setTimeout>;
+    }
+  >();
   private lastToolSnapshotLogSignature: string | undefined;
 
   private orchestrationFor(bundle: SessionBundle): {
@@ -542,6 +567,14 @@ class DesktopHostService {
       },
       bindFileChangesToToolMessage: (execution, messageId) => {
         this.bindFileChangesToToolMessage(bundle, execution, messageId);
+      },
+      onTodoStoreMutated: () => {
+        void this.runSerialized(async () => {
+          await this.refreshTodoSnapshotForBundle(bundle);
+          if (bundle.id === this.sessionRegistry.activeSessionId()) {
+            this.emitLiveSnapshotUpdate();
+          }
+        });
       },
     });
     return { assistantMessages, runtimeEvents, conversationSnapshotView };
@@ -1738,6 +1771,7 @@ class DesktopHostService {
       ];
 
       this.restoreBeforeRewindCheckpoint(snapshot, checkpoint.sequence);
+      await this.applyTodosAfterRewind(snapshot);
       return this.submitUserTurnAfterInitialized(request.text, {
         preserveRewindWarnings: true,
         explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
@@ -1759,7 +1793,6 @@ class DesktopHostService {
       await this.refreshRuntimeForBundle(bundle);
       this.syncActiveRuntimePointer();
     }
-    const runtime = this.requireRuntime();
     const trimmed = text.trim();
     const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
     const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)).trim();
@@ -1778,9 +1811,12 @@ class DesktopHostService {
       this.activeBundle().rewindWarnings = [];
     }
     this.clearAssistantContinuationMarkers();
-    this.activeBundle().currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
+    bundle.currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
+    const todoSessionKeyBeforeEnsure = this.resolveTodoSessionKeyForBundle(bundle);
     this.ensureActiveSession(displayText);
-    const beforeUserCheckpoint = this.buildRewindCheckpointSnapshot();
+    await this.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforeEnsure);
+    await this.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforeEnsure);
+    const beforeUserCheckpoint = await this.buildRewindCheckpointSnapshot();
     const localFileAttachments =
       explicitWorkspaceFiles.length > 0
         ? pendingWorkspaceFilesToAttachmentSnapshots(explicitWorkspaceFiles)
@@ -1798,7 +1834,10 @@ class DesktopHostService {
       ...(localFileAttachments ? { localFileAttachments } : {}),
     });
     this.resetStreamingPlacementState(false);
+    const todoSessionKeyBeforePersist = this.resolveTodoSessionKeyForBundle(bundle);
     await this.persistCurrentSessionIfNeeded();
+    await this.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
+    await this.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
     await this.dispatchExtensionEvent({
       type: 'onUserMessage',
       detail: {
@@ -1808,6 +1847,8 @@ class DesktopHostService {
       },
     });
 
+    // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
+    const runtime = this.requireRuntime();
     try {
       await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles);
       this.refreshArchiveFromRuntime();
@@ -1825,7 +1866,8 @@ class DesktopHostService {
     this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
     this.activeOrchestration().runtimeEvents.syncPendingToolStates();
     this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-    await this.flushDeferredRuntimeRefreshIfIdle();
+    await this.flushDeferredRuntimeRefreshIfIdle(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
     if (!runtime.isBusy()) {
       await this.refreshGitState();
     }
@@ -1931,6 +1973,7 @@ class DesktopHostService {
       bumpListSortAt: false,
     });
     await this.flushDeferredRuntimeRefreshIfIdle(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
   }
 
   async replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot> {
@@ -1990,6 +2033,7 @@ class DesktopHostService {
         });
       }
       const bundle = this.sessionRegistry.beginNewActive(state.workspaceRoot);
+      await this.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
       this.resetStreamingPlacementState(true, bundle);
       await this.refreshRuntime();
       this.lastRuntimeError = '';
@@ -2160,6 +2204,8 @@ class DesktopHostService {
       return;
     }
     this.resetStreamingPlacementState(true, bundle);
+    await this.ensureToolExecutor(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
     await this.refreshRuntimeForBundle(bundle);
     await this.flushDeferredRuntimeRefreshIfIdle(bundle);
     this.syncActiveRuntimePointer();
@@ -2527,6 +2573,7 @@ class DesktopHostService {
         workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
         gitBranch: state.git.branch,
       }),
+      (await buildSessionTodosContextText(this.resolveTodoSessionKeyForBundle(bundle))) || undefined,
       await this.ensureToolExecutor(bundle),
       bundle.runtimeTransport,
       bundle,
@@ -2549,6 +2596,7 @@ class DesktopHostService {
     }
     this.lastRuntimeError = '';
     await this.refreshModelKeyPresence();
+    await this.refreshTodoSnapshotForBundle(bundle);
   }
 
   private async ensureToolExecutor(bundle: SessionBundle = this.activeBundle()): Promise<DesktopToolExecutor> {
@@ -2562,15 +2610,18 @@ class DesktopHostService {
             gitBranch: state.git.branch,
           }
         : undefined;
+    const todoScope: HostTodoScope = createTodoScope(this.resolveTodoSessionKeyForBundle(bundle));
 
     const needsRebuild =
       !bundle.toolExecutor
       || bundle.toolExecutorWorkspaceRoot !== workspaceRoot
-      || !bundle.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined);
+      || !bundle.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined)
+      || !bundle.toolExecutor.matchesTodoAccess(todoScope);
 
     if (needsRebuild) {
-      bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope);
+      bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope, todoScope);
       bundle.toolExecutorWorkspaceRoot = workspaceRoot;
+      bundle.toolExecutorTodoSessionKey = todoScope.sessionKey;
       bundle.toolExecutor.startMcpBackgroundRefresh();
     } else {
       await this.refreshExtensionToolDefinitions(bundle.toolExecutor);
@@ -2588,6 +2639,7 @@ class DesktopHostService {
   private async buildToolExecutorForBundle(
     bundle: SessionBundle,
     dreamScope?: HostDreamScope,
+    todoScope?: HostTodoScope,
   ): Promise<DesktopToolExecutor> {
     const state = this.requireState();
     const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
@@ -2616,6 +2668,7 @@ class DesktopHostService {
             dreamToolMode: 'read-only' as const,
           }
         : {}),
+      ...(todoScope ? { todoScope } : {}),
     });
   }
 
@@ -2707,6 +2760,7 @@ class DesktopHostService {
             content: buildDreamCollectorSystemMessage(),
           },
         ],
+        undefined,
         undefined,
         toolExecutor,
       ),
@@ -2817,6 +2871,7 @@ class DesktopHostService {
     planMetadata: LlmPlanMetadata,
     extensionSystemPrompts: LlmExtensionSystemPrompt[],
     dreamsContextText?: string,
+    todosContextText?: string,
     toolExecutor: DesktopToolExecutor = this.requireToolExecutor(),
     llmTransport: SpiritLlmTransport = createLlmTransport(transportConfig),
     bundle: SessionBundle = this.activeBundle(),
@@ -2831,12 +2886,141 @@ class DesktopHostService {
       planMetadata,
       extensionSystemPrompts,
       ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
+      ...(todosContextText === undefined ? {} : { todosContextText }),
       toolExecutor,
       llmTransport,
       activeSkills: bundle.currentTurnSkills,
       workspaceRoot,
       basicInfo: this.buildRuntimeBasicInfo(workspaceRoot, toolExecutor),
     });
+  }
+
+  private resolveTodoSessionKeyForBundle(bundle: SessionBundle): string {
+    return resolveTodoSessionKey({
+      sessionFilePath: bundle.activeSession?.filePath,
+      bundleId: bundle.id,
+      todoSessionScopeKey: bundle.todoSessionScopeKey,
+    });
+  }
+
+  private async maybeRefreshRuntimeAfterTodoScopeChange(
+    bundle: SessionBundle,
+    previousSessionKey: string,
+  ): Promise<void> {
+    const nextSessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    if (
+      normalizeTodoSessionStorageKey(previousSessionKey)
+      === normalizeTodoSessionStorageKey(nextSessionKey)
+    ) {
+      return;
+    }
+    if (!bundle.runtime) {
+      return;
+    }
+    await this.refreshRuntimeForBundle(bundle);
+    if (bundle.id === this.sessionRegistry.activeSessionId()) {
+      this.syncActiveRuntimePointer();
+    }
+  }
+
+  private async finalizeTodoScopeForNewActiveBundle(
+    bundle: SessionBundle,
+    workspaceRoot: string,
+  ): Promise<void> {
+    if (!bundle.todoSessionScopeKey) {
+      bundle.todoSessionScopeKey = createTodoSessionScopeKey();
+    }
+    bundle.cachedTodoSnapshot = undefined;
+    const legacyProvisionalKey = path.resolve(provisionalNewSessionPath(workspaceRoot));
+    this.cancelTodoClearing(legacyProvisionalKey);
+    await purgeSessionTodos(legacyProvisionalKey);
+    await this.ensureToolExecutor(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
+  }
+
+  private async reconcileTodoScopeAfterSessionPathChange(
+    bundle: SessionBundle,
+    previousSessionKey: string,
+  ): Promise<void> {
+    const nextSessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    if (
+      normalizeTodoSessionStorageKey(previousSessionKey)
+      === normalizeTodoSessionStorageKey(nextSessionKey)
+    ) {
+      return;
+    }
+
+    this.cancelTodoClearing(previousSessionKey);
+    this.cancelTodoClearing(nextSessionKey);
+    await migrateSessionTodos(previousSessionKey, nextSessionKey);
+    await this.ensureToolExecutor(bundle);
+    await this.refreshTodoSnapshotForBundle(bundle);
+  }
+
+  private cancelTodoClearing(sessionKey: string): void {
+    const pending = this.todoClearingBySession.get(sessionKey);
+    if (!pending) {
+      return;
+    }
+    clearTimeout(pending.timer);
+    this.todoClearingBySession.delete(sessionKey);
+  }
+
+  private scheduleTodoClearing(sessionKey: string, items: HostTodoRecord[]): void {
+    this.cancelTodoClearing(sessionKey);
+    const untilUnixMs = Date.now() + 1000;
+    const timer = setTimeout(() => {
+      void this.runSerialized(async () => {
+        const pending = this.todoClearingBySession.get(sessionKey);
+        if (!pending || pending.timer !== timer) {
+          return;
+        }
+        this.todoClearingBySession.delete(sessionKey);
+        await purgeSessionTodos(sessionKey);
+        const active = this.sessionRegistry.getActive();
+        if (active) {
+          await this.refreshTodoSnapshotForBundle(active);
+        }
+        this.emitLiveSnapshotUpdate();
+      });
+    }, 1000);
+    this.todoClearingBySession.set(sessionKey, { untilUnixMs, items: cloneHostTodoRecords(items), timer });
+  }
+
+  private async refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void> {
+    bundle.cachedTodoSnapshot = await this.buildConversationTodoSnapshot(bundle);
+  }
+
+  private async buildConversationTodoSnapshot(
+    bundle: SessionBundle,
+  ): Promise<ConversationTodoSnapshot | undefined> {
+    const sessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    const executorKey = bundle.toolExecutorTodoSessionKey;
+    const pendingClearing = this.todoClearingBySession.get(sessionKey);
+    if (pendingClearing) {
+      return {
+        items: pendingClearing.items.map(mapHostTodoToDesktopItem),
+        clearingUntilUnixMs: pendingClearing.untilUnixMs,
+      };
+    }
+
+    const records = await listSessionTodos(sessionKey);
+    if (records.length === 0) {
+      return undefined;
+    }
+
+    const allCompleted = records.every((record) => record.status === 'completed');
+    if (allCompleted) {
+      this.scheduleTodoClearing(sessionKey, records);
+      return {
+        items: records.map(mapHostTodoToDesktopItem),
+        clearingUntilUnixMs: Date.now() + 1000,
+      };
+    }
+
+    return {
+      items: records.map(mapHostTodoToDesktopItem),
+    };
   }
 
   private buildRuntimeBasicInfo(
@@ -2968,9 +3152,10 @@ class DesktopHostService {
         ...(this.activeBundle().rewindWarnings.length > 0
           ? { rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })) }
           : {}),
+        ...(activeBundle.cachedTodoSnapshot ? { todos: activeBundle.cachedTodoSnapshot } : {}),
       },
       ...(activeBundle.activeSession ? { activeSession: activeBundle.activeSession } : {}),
-      composerSessionKey: path.resolve(activeBundle.activeSession?.filePath ?? activeBundle.id),
+      composerSessionKey: this.resolveTodoSessionKeyForBundle(activeBundle),
     });
   }
 
@@ -3026,6 +3211,7 @@ class DesktopHostService {
       state.metadata.planMetadata,
       extensionSystemPrompts,
       dreamContextText || undefined,
+      undefined,
       this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
     );
     const sessionPath = createEphemeralCommitSessionPath();
@@ -3238,6 +3424,7 @@ class DesktopHostService {
       state.metadata.planMetadata,
       extensionSystemPrompts,
       dreamContextText || undefined,
+      undefined,
       this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
     );
     const sessionPath = createEphemeralWorktreeSessionPath();
@@ -3888,6 +4075,8 @@ class DesktopHostService {
           subagentSessions: this.activeBundle().archiveSubagentSessions ?? [],
           loopEnabled: this.activeBundle().loopEnabled,
         } satisfies ChatArchive;
+    const sessionKey = this.resolveTodoSessionKeyForBundle(this.activeBundle());
+    const currentTodos = cloneHostTodoRecords(await listSessionTodos(sessionKey));
     await saveRewindCheckpointSnapshot(
       spiritAgentDataDir(),
       this.activeBundle().rewind.sessionId,
@@ -3895,10 +4084,14 @@ class DesktopHostService {
       {
         archive,
         desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
+        todos: currentTodos,
         ...(beforeUserCheckpoint
           ? {
               beforeArchive: cloneChatArchive(beforeUserCheckpoint.archive),
               beforeDesktopMessages: beforeUserCheckpoint.desktopMessages.map((message) => ({ ...message })),
+              ...(beforeUserCheckpoint.todos
+                ? { beforeTodos: cloneHostTodoRecords(beforeUserCheckpoint.todos) }
+                : {}),
             }
           : {}),
       },
@@ -3907,7 +4100,16 @@ class DesktopHostService {
     upsertRewindCheckpointMetadata(this.activeBundle().rewind, checkpoint);
   }
 
-  private buildRewindCheckpointSnapshot(): DesktopRewindCheckpointSnapshot {
+  private async applyTodosAfterRewind(snapshot: DesktopRewindCheckpointSnapshot): Promise<void> {
+    const bundle = this.activeBundle();
+    const sessionKey = this.resolveTodoSessionKeyForBundle(bundle);
+    this.cancelTodoClearing(sessionKey);
+    const restored = snapshot.beforeTodos ?? snapshot.todos ?? [];
+    await replaceSessionTodos(sessionKey, restored);
+    await this.refreshTodoSnapshotForBundle(bundle);
+  }
+
+  private async buildRewindCheckpointSnapshot(): Promise<DesktopRewindCheckpointSnapshot> {
     const state = this.requireState();
     const desktopMessages = this.desktopMessages();
     const archive = this.runtime
@@ -3919,9 +4121,12 @@ class DesktopHostService {
           subagentSessions: this.activeBundle().archiveSubagentSessions ?? [],
           loopEnabled: this.activeBundle().loopEnabled,
         } satisfies ChatArchive;
+    const sessionKey = this.resolveTodoSessionKeyForBundle(this.activeBundle());
+    const todos = cloneHostTodoRecords(await listSessionTodos(sessionKey));
     return {
       archive,
       desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
+      todos,
     };
   }
 

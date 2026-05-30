@@ -84,6 +84,7 @@ import { BranchSelectMenu } from "@/components/branch-select-menu";
 import { WorkLocationMenu } from "@/components/work-location-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
+import { ComposerTodoCard } from "@/components/composer-todo-card";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import {
@@ -2854,7 +2855,15 @@ export default function App() {
                 ) : null}
 
                 <div className="relative">
-                <div className="relative z-10 grid gap-1.5">
+                <div className="relative z-10 flex flex-col">
+                  {snapshot?.conversation.todos ? (
+                    <div className="relative z-20 mx-4 -mb-px shrink-0">
+                      <ComposerTodoCard
+                        todos={snapshot.conversation.todos}
+                        sessionKey={snapshot.composerSessionKey}
+                      />
+                    </div>
+                  ) : null}
                   {fileReferenceSuggestions ? (
                     <div className="pointer-events-none absolute inset-x-0 bottom-full z-20 pb-2">
                       <div className="pointer-events-auto">
