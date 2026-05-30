@@ -13,13 +13,13 @@ export type ModelProviderId =
 export type PresetModelProviderId = Exclude<ModelProviderId, 'custom'>;
 
 const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
-  'deepseek',
-  'kimi',
-  'minimax',
-  'alibaba',
-  'anthropic',
-  'vercel-ai-gateway',
   'openai',
+  'anthropic',
+  'deepseek',
+  'vercel-ai-gateway',
+  'kimi',
+  'alibaba',
+  'minimax',
   'custom',
 ];
 
@@ -38,7 +38,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["deepseek","kimi","minimax","alibaba","anthropic","vercel-ai-gateway","openai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","deepseek","vercel-ai-gateway","kimi","alibaba","minimax","custom"]',
     );
   }
 }

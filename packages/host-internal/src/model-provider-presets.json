@@ -9,7 +9,7 @@
     "vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1",
     "openai": "https://api.openai.com/v1"
   },
-  "pickerOrder": ["deepseek", "kimi", "minimax", "alibaba", "anthropic", "vercel-ai-gateway", "openai", "custom"],
+  "pickerOrder": ["openai", "anthropic", "deepseek", "vercel-ai-gateway", "kimi", "alibaba", "minimax", "custom"],
   "pickerLabels": {
     "deepseek": "DeepSeek",
     "kimi": "Kimi",
