@@ -2863,16 +2863,8 @@ class DesktopHostService {
       lastSettledAssistantMessageId: standaloneAnchorState.lastSettledAssistantMessageId,
     });
     if (pendingAux && !parsePendingSubagentStatusText(pendingAux.statusText)) {
-      const pendingAssistantMessage = [...this.desktopMessages()]
-        .reverse()
-        .find((message) => message.role === 'assistant' && message.pending);
-      const detailText = pendingAux.detailText?.trim();
-      const auxText =
-        detailText ??
-        (pendingAssistantMessage && !pendingAssistantMessage.content.trim()
-          ? pendingAux.statusText
-          : undefined);
-      if (auxText?.trim()) {
+      const auxText = pendingAux.detailText?.trim();
+      if (auxText) {
         this.activeOrchestration().assistantMessages.updatePendingAssistantAux(
           pendingAux.kind,
           auxText,

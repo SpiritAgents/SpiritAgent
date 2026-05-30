@@ -3,6 +3,7 @@ import type {
   PendingAssistantAux,
 } from '../types.js';
 import { canRewindMessage, type StoredDesktopRewindMetadata } from './rewind.js';
+import { isGenericPendingThinkingStatusText } from '../lib/subagent-display.js';
 import {
   normalizeMessageAuxSnapshot,
   normalizeToolBlockSnapshot,
@@ -12,6 +13,15 @@ import {
   stripRedundantThinkingFromMessageAux,
   stripThinkingFromAux,
 } from './message-ordering.js';
+
+function stripGenericPendingThinkingStatusFromAux(
+  aux: ReturnType<typeof normalizeMessageAuxSnapshot>,
+): ReturnType<typeof normalizeMessageAuxSnapshot> {
+  if (!aux?.thinking || !isGenericPendingThinkingStatusText(aux.thinking)) {
+    return aux;
+  }
+  return stripThinkingFromAux(aux);
+}
 
 export interface PrunedAssistantMessage {
   messageIndex: number;
@@ -29,7 +39,9 @@ export function buildVisibleMessageSnapshots(input: {
       livePendingAux: input.livePendingAux,
       rewind: input.rewind,
     });
-    return snapshot && !shouldHideEmptyPendingAssistantSnapshot(snapshot) ? [snapshot] : [];
+    return snapshot && !shouldHideEmptyPendingAssistantSnapshot(snapshot, input.livePendingAux)
+      ? [snapshot]
+      : [];
   });
 }
 
@@ -39,12 +51,14 @@ export function buildVisibleMessageSnapshot(input: {
   rewind: StoredDesktopRewindMetadata;
 }): ConversationMessageSnapshot | undefined {
   const tool = normalizeToolBlockSnapshot(input.message.tool);
-  const baseAux = shouldHidePendingAssistantThinkingForLiveStandaloneSubagentStatus(
-    input.message,
-    input.livePendingAux,
-  )
-    ? stripThinkingFromAux(input.message.aux)
-    : normalizeMessageAuxSnapshot(input.message.aux);
+  const baseAux = stripGenericPendingThinkingStatusFromAux(
+    shouldHidePendingAssistantThinkingForLiveStandaloneSubagentStatus(
+      input.message,
+      input.livePendingAux,
+    )
+      ? stripThinkingFromAux(input.message.aux)
+      : normalizeMessageAuxSnapshot(input.message.aux),
+  );
   const aux = stripRedundantThinkingFromMessageAux(input.message.content, baseAux);
   if (shouldDropEmptyAssistantMessage(input.message, tool, aux)) {
     return undefined;

@@ -86,7 +86,11 @@ import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
-import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
+import {
+  isGenericPendingThinkingStatusText,
+  isLivePendingReasoningAux,
+  isSubagentStatusSurfaceMessage,
+} from "@/lib/subagent-display";
 import {
   isGrayMetaLeadingMessage,
   isGrayMetaTrailingMessage,
@@ -142,6 +146,7 @@ import type {
   ConversationMessageSnapshot,
   DesktopSnapshot,
   MessageRewindDraftState,
+  PendingAssistantAux,
   ToolBlockSnapshot,
   WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
@@ -950,21 +955,64 @@ function ThinkingLabelWithShimmer({ active }: { active: boolean }) {
   );
 }
 
-/** 推理流进行中：有 thinking 且尚未写入正文；正文开始后自动收起。 */
-function assistantReasoningLive(message: ConversationMessageSnapshot): boolean {
-  return (
-    message.pending &&
-    Boolean(message.aux?.thinking?.trim()) &&
-    !message.content.trim()
+function isLiveReasoningPlaceholderMessage(
+  message: ConversationMessageSnapshot,
+  pendingAuxState: PendingAssistantAux | undefined,
+): boolean {
+  return Boolean(
+    message.role === "assistant" &&
+      message.pending &&
+      !message.content.trim() &&
+      !message.tool &&
+      isLivePendingReasoningAux(pendingAuxState) &&
+      pendingAuxState?.kind === "thinking" &&
+      pendingAuxState.detailText === undefined,
   );
 }
 
-function isLiveStreamingThinkingMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  return Boolean(
-    message?.role === "assistant" &&
-      message.pending &&
-      Boolean(message.aux?.thinking?.trim()) &&
-      !message.content.trim(),
+/** 推理流进行中：尚未写入正文；正文开始后自动收起。 */
+function assistantReasoningLive(
+  message: ConversationMessageSnapshot,
+  pendingAuxState?: PendingAssistantAux,
+): boolean {
+  if (message.role !== "assistant" || !message.pending || message.content.trim() || message.tool) {
+    return false;
+  }
+  const thinking = message.aux?.thinking?.trim();
+  if (thinking && !isGenericPendingThinkingStatusText(thinking)) {
+    return true;
+  }
+  return isLiveReasoningPlaceholderMessage(message, pendingAuxState);
+}
+
+function isLiveStreamingThinkingMessage(
+  message: ConversationMessageSnapshot | undefined,
+  pendingAuxState?: PendingAssistantAux,
+): boolean {
+  return Boolean(message && assistantReasoningLive(message, pendingAuxState));
+}
+
+function hasDisplayableThinkingAux(message: ConversationMessageSnapshot): boolean {
+  const thinking = message.aux?.thinking?.trim();
+  if (!thinking || isGenericPendingThinkingStatusText(thinking)) {
+    return false;
+  }
+  if (!message.content.trim()) {
+    return true;
+  }
+  return thinking !== message.content.trim();
+}
+
+function shouldShowAssistantThinkingCollapsible(
+  message: ConversationMessageSnapshot,
+  pendingAuxState: PendingAssistantAux | undefined,
+): boolean {
+  if (message.role === "user") {
+    return false;
+  }
+  return (
+    hasDisplayableThinkingAux(message) ||
+    isLiveReasoningPlaceholderMessage(message, pendingAuxState)
   );
 }
 
@@ -975,9 +1023,10 @@ function toolPhaseCollapsesLiveThinking(phase: ToolBlockSnapshot["phase"]): bool
 function shouldCollapseThinkingDuringToolPreview(
   messages: readonly ConversationMessageSnapshot[],
   messageIndex: number,
+  pendingAuxState?: PendingAssistantAux,
 ): boolean {
   const message = messages[messageIndex];
-  const liveThinking = isLiveStreamingThinkingMessage(message);
+  const liveThinking = isLiveStreamingThinkingMessage(message, pendingAuxState);
 
   for (let index = messageIndex + 1; index < messages.length; index += 1) {
     const candidate = messages[index];
@@ -1002,21 +1051,24 @@ function shouldCollapseThinkingDuringToolPreview(
 
 function AssistantThinkingCollapsible({
   message,
+  pendingAuxState,
   collapseDuringToolPreview,
   readManagedImagePreviewDataUrl,
 }: {
   message: ConversationMessageSnapshot;
+  pendingAuxState?: PendingAssistantAux;
   collapseDuringToolPreview: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
 }) {
-  const thinking = message.aux?.thinking;
-  if (!thinking) {
+  const thinking = message.aux?.thinking?.trim() ?? "";
+  const reasoningLive = assistantReasoningLive(message, pendingAuxState);
+  if (!thinking && !reasoningLive) {
     return null;
   }
 
-  const reasoningLive = assistantReasoningLive(message);
+  const showThinkingBody = Boolean(thinking && !isGenericPendingThinkingStatusText(thinking));
   const thinkingActive = reasoningLive && !collapseDuringToolPreview;
-  const autoExpanded = thinkingActive;
+  const autoExpanded = thinkingActive && showThinkingBody;
   const [manualOpen, setManualOpen] = useState(false);
   const prevAutoExpandedRef = useRef(autoExpanded);
 
@@ -1062,13 +1114,15 @@ function AssistantThinkingCollapsible({
           ) : null}
         </button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="min-w-0 pt-1.5">
-        <MarkdownMessage
-          content={thinking}
-          tone="muted"
-          readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-        />
-      </CollapsibleContent>
+      {showThinkingBody ? (
+        <CollapsibleContent className="min-w-0 pt-1.5">
+          <MarkdownMessage
+            content={thinking}
+            tone="muted"
+            readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+          />
+        </CollapsibleContent>
+      ) : null}
     </Collapsible>
   );
 }
@@ -1101,11 +1155,13 @@ function MessageCard({
   onModelSelect,
   onModelReasoningEffortSelect,
   onPlanModeChange,
+  pendingAuxState,
   readManagedImagePreviewDataUrl,
   readLocalImagePreviewDataUrl,
   saveLocalImageAs,
 }: {
   messages: readonly ConversationMessageSnapshot[];
+  pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
   listIndex: number;
   compactAfterPrevious: boolean;
@@ -1194,12 +1250,15 @@ function MessageCard({
             onPaste={onRewindPaste}
           />
         ) : null}
-        {!isUser &&
-        message.aux?.thinking?.trim() &&
-        (!message.content.trim() || message.aux.thinking.trim() !== message.content.trim()) ? (
+        {shouldShowAssistantThinkingCollapsible(message, pendingAuxState) ? (
           <AssistantThinkingCollapsible
             message={message}
-            collapseDuringToolPreview={shouldCollapseThinkingDuringToolPreview(messages, listIndex)}
+            pendingAuxState={pendingAuxState}
+            collapseDuringToolPreview={shouldCollapseThinkingDuringToolPreview(
+              messages,
+              listIndex,
+              pendingAuxState,
+            )}
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
           />
         ) : null}
@@ -2553,6 +2612,7 @@ export default function App() {
                             <MessageCard
                               key={conversationMessageDomId(message, index)}
                               messages={messages}
+                              pendingAuxState={snapshot?.conversation.pendingAuxState}
                               listIndex={index}
                               message={message}
                               compactAfterPrevious={compactAfterPrevious}

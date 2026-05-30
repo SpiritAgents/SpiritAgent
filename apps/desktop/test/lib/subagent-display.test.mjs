@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  isGenericPendingThinkingStatusText,
   isSubagentStatusSurfaceText,
   parsePendingSubagentStatusText,
 } from '../../dist-electron/src/lib/subagent-display.js';
@@ -54,6 +55,12 @@ test('isSubagentStatusSurfaceText rejects assistant prose with colons', () => {
     ),
     false,
   );
+});
+
+test('isGenericPendingThinkingStatusText detects runtime spinner placeholders', () => {
+  assert.equal(isGenericPendingThinkingStatusText('| Thinking...'), true);
+  assert.equal(isGenericPendingThinkingStatusText('/ Compressing...'), true);
+  assert.equal(isGenericPendingThinkingStatusText('Need to inspect README.md first.'), false);
 });
 
 test('parsePendingSubagentStatusText only accepts subagent runtime status', () => {
