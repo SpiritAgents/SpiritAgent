@@ -92,6 +92,56 @@ export function enqueueDeferredToolOutputGuidance<ToolRequest>(
   );
 }
 
+export const MISSING_TOOL_RESULT_PLACEHOLDER =
+  '[tool result unavailable] missing tool result recovered in session history';
+
+export function repairMissingToolResultsInHistory(history: readonly LlmMessage[]): LlmMessage[] {
+  const repaired: LlmMessage[] = [];
+
+  for (let index = 0; index < history.length; index += 1) {
+    const message = history[index]!;
+    repaired.push({
+      role: message.role,
+      content: cloneLlmMessageContent(message.content),
+      ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+      ...(message.toolCalls !== undefined
+        ? {
+            toolCalls: message.toolCalls.map((toolCall) => ({
+              id: toolCall.id,
+              name: toolCall.name,
+              argumentsJson: toolCall.argumentsJson,
+            })),
+          }
+        : {}),
+      ...(message.providerState !== undefined
+        ? { providerState: cloneLlmProviderState(message.providerState) }
+        : {}),
+    });
+
+    if (message.role !== 'assistant' || !message.toolCalls?.length) {
+      continue;
+    }
+
+    for (const toolCall of message.toolCalls) {
+      const hasResult = history.some(
+        (candidate, candidateIndex) =>
+          candidateIndex > index
+          && candidate.role === 'tool'
+          && candidate.toolCallId === toolCall.id,
+      );
+      if (!hasResult) {
+        repaired.push({
+          role: 'tool',
+          toolCallId: toolCall.id,
+          content: createLlmMessageContentFromText(MISSING_TOOL_RESULT_PLACEHOLDER),
+        });
+      }
+    }
+  }
+
+  return repaired;
+}
+
 export function toolArtifactsFromOutput(output: ToolExecutionOutput): RuntimeToolArtifact[] | undefined {
   const artifacts = output.content
     .filter((part) => part.type === 'image')

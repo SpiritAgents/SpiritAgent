@@ -197,6 +197,14 @@ export async function resumePendingApproval<
       ? decision.resultText
       : '[denied by user] tool call rejected by user guidance';
     const guidanceMessage = decision.userMessage.trim();
+    commitSyntheticToolExecutionFailure(
+      runtime,
+      pending.turn,
+      pending.request,
+      pending.toolCallId,
+      pending.toolName,
+      guidanceText,
+    );
     let resumedState = runtime.options.appendToolResultMessage(
       pending.state,
       pending.toolCallId,
@@ -224,6 +232,14 @@ export async function resumePendingApproval<
   const deniedText = decision.resultText?.trim()
     ? decision.resultText
     : '[denied by user] tool call rejected by user approval policy';
+  commitSyntheticToolExecutionFailure(
+    runtime,
+    pending.turn,
+    pending.request,
+    pending.toolCallId,
+    pending.toolName,
+    deniedText,
+  );
   const resumedState = runtime.options.appendToolResultMessage(
     pending.state,
     pending.toolCallId,
@@ -1305,7 +1321,7 @@ function persistAssistantToolCalls<
   });
 }
 
-function commitSyntheticToolExecutionFailure<
+export function commitSyntheticToolExecutionFailure<
   Config,
   State,
   ToolRequest,
