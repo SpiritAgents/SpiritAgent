@@ -16,6 +16,7 @@ import {
   buildFinishTaskHostToolDefinitions,
   type BuiltinHostToolDefinitionEnvironment,
 } from '../host-tools.js';
+import { enrichUnknownToolError, toolNamesFromDefinitions } from '../unknown-tool-error.js';
 import { McpService, type McpToolRequest } from '../mcp/service.js';
 import { JsonRpcPeer } from './framing.js';
 
@@ -113,21 +114,30 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<JsonValue> {
-    assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled);
-    const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
-    if (localMcpRequest) {
-      return localMcpRequest;
-    }
+    const availableDefinitions = this.toolDefinitionsJson();
+    assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled, availableDefinitions);
+    try {
+      const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
+      if (localMcpRequest) {
+        return localMcpRequest;
+      }
 
-    if (this.localHostService) {
+      if (this.localHostService) {
+        return this.unwrapHostToolRequest(
+          await this.localHostService.requestFromFunctionCall(name, argumentsJson),
+        );
+      }
+
       return this.unwrapHostToolRequest(
-        await this.localHostService.requestFromFunctionCall(name, argumentsJson),
+        await this.peer.call<JsonValue>('host.requestFromFunctionCall', { name, argumentsJson }),
+      );
+    } catch (error) {
+      throw enrichUnknownToolError(
+        error,
+        name,
+        toolNamesFromDefinitions(availableDefinitions),
       );
     }
-
-    return this.unwrapHostToolRequest(
-      await this.peer.call<JsonValue>('host.requestFromFunctionCall', { name, argumentsJson }),
-    );
   }
 
   async authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>> {

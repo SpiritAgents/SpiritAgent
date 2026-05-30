@@ -449,6 +449,8 @@ async function runCandidate(params) {
     AgentRuntime,
     pendingWorkspaceFilesFromInput,
     buildBuiltinHostToolDefinitions,
+    enrichUnknownToolError,
+    toolNamesFromDefinitions,
     createToolExecutionTextOutput,
     createOpenAiCompatibleTransport,
     appendOpenAiToolResultMessage,
@@ -477,7 +479,14 @@ async function runCandidate(params) {
     autoApprove: params.autoApprove,
     buildBuiltinHostToolDefinitions,
     createToolExecutionTextOutput,
+    unknownToolHelpers: {
+      enrichUnknownToolError: modules.enrichUnknownToolError,
+      toolNamesFromDefinitions: modules.toolNamesFromDefinitions,
+    },
   });
+  if (typeof hostToolService.bindAvailableToolDefinitions === 'function') {
+    hostToolService.bindAvailableToolDefinitions(() => toolExecutor.toolDefinitionsJson());
+  }
   const toolDefinitionsJson = toolExecutor.toolDefinitionsJson();
   const initialState = startOpenAiToolAgentState(
     [],
@@ -648,6 +657,7 @@ class EvalHostToolExecutor {
     this.tracker = tracker;
     this.autoApprove = options.autoApprove;
     this.createToolExecutionTextOutput = options.createToolExecutionTextOutput;
+    this.unknownToolHelpers = options.unknownToolHelpers;
     this.hostToolDefinitionsCache = options.buildBuiltinHostToolDefinitions(service.toolDefinitionEnvironment());
   }
 
@@ -659,8 +669,21 @@ class EvalHostToolExecutor {
     return this.service.parseCommand(message);
   }
 
-  requestFromFunctionCall(name, argumentsJson) {
-    return this.service.requestFromFunctionCall(name, argumentsJson);
+  async requestFromFunctionCall(name, argumentsJson) {
+    const availableDefinitions = this.toolDefinitionsJson();
+    try {
+      return await this.service.requestFromFunctionCall(name, argumentsJson);
+    } catch (error) {
+      const { enrichUnknownToolError, toolNamesFromDefinitions } = this.unknownToolHelpers ?? {};
+      if (typeof enrichUnknownToolError !== 'function' || typeof toolNamesFromDefinitions !== 'function') {
+        throw error;
+      }
+      throw enrichUnknownToolError(
+        error,
+        name,
+        toolNamesFromDefinitions(availableDefinitions),
+      );
+    }
   }
 
   async authorize(request) {
@@ -1029,6 +1052,8 @@ async function loadWorkspaceRuntimeModules(workspacePath) {
     AgentRuntime: runtimeModule.AgentRuntime,
     pendingWorkspaceFilesFromInput: runtimeModule.pendingWorkspaceFilesFromInput,
     buildBuiltinHostToolDefinitions: hostToolsModule.buildBuiltinHostToolDefinitions,
+    enrichUnknownToolError: hostToolsModule.enrichUnknownToolError ?? undefined,
+    toolNamesFromDefinitions: hostToolsModule.toolNamesFromDefinitions ?? undefined,
     createToolExecutionTextOutput: portsModule.createToolExecutionTextOutput,
     createOpenAiCompatibleTransport: transportFactoryModule.createOpenAiCompatibleTransport,
     appendOpenAiToolResultMessage: toolAgentHelpersModule.appendOpenAiToolResultMessage,
