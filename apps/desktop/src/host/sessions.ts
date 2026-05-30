@@ -21,7 +21,9 @@ import { cloneArchiveHistory, cloneArchiveSubagentSessions } from './service-uti
 import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
 
 export const EPHEMERAL_COMMIT_SESSION_PREFIX = 'ephemeral://commit-message/';
+export const EPHEMERAL_WORKTREE_SESSION_PREFIX = 'ephemeral://worktree-naming/';
 const MAX_EPHEMERAL_COMMIT_SESSIONS = 8;
+const MAX_EPHEMERAL_WORKTREE_SESSIONS = 8;
 
 export interface EphemeralSessionRecord {
   path: string;
@@ -48,8 +50,20 @@ export function isEphemeralCommitSessionPath(filePath: string): boolean {
   return filePath.startsWith(EPHEMERAL_COMMIT_SESSION_PREFIX);
 }
 
+export function isEphemeralWorktreeSessionPath(filePath: string): boolean {
+  return filePath.startsWith(EPHEMERAL_WORKTREE_SESSION_PREFIX);
+}
+
+export function isEphemeralDebugSessionPath(filePath: string): boolean {
+  return isEphemeralCommitSessionPath(filePath) || isEphemeralWorktreeSessionPath(filePath);
+}
+
 export function createEphemeralCommitSessionPath(now = Date.now()): string {
   return `${EPHEMERAL_COMMIT_SESSION_PREFIX}${now}`;
+}
+
+export function createEphemeralWorktreeSessionPath(now = Date.now()): string {
+  return `${EPHEMERAL_WORKTREE_SESSION_PREFIX}${now}`;
 }
 
 export function rememberEphemeralSessionRecord(
@@ -95,6 +109,26 @@ export function buildCommitEphemeralSessionRecord(input: {
     })),
     readOnly: true,
   };
+}
+
+export function rememberEphemeralWorktreeSessionRecord(
+  sessions: EphemeralSessionRecord[],
+  record: EphemeralSessionRecord,
+): EphemeralSessionRecord[] {
+  return [
+    record,
+    ...sessions.filter((session) => session.path !== record.path),
+  ].slice(0, MAX_EPHEMERAL_WORKTREE_SESSIONS);
+}
+
+export function buildWorktreeEphemeralSessionRecord(input: {
+  path: string;
+  displayName: string;
+  workspaceRoot: string;
+  messages: ConversationMessageSnapshot[];
+  modifiedAtUnixMs?: number;
+}): EphemeralSessionRecord {
+  return buildCommitEphemeralSessionRecord(input);
 }
 
 export function restoreEphemeralSessionState(record: EphemeralSessionRecord): RestoredSessionState {

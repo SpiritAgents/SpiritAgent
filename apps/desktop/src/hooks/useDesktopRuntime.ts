@@ -1588,6 +1588,26 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, refreshSessions]);
 
+  const mergeWorktreeToMain = useCallback(async (): Promise<boolean> => {
+    if (!api) {
+      return false;
+    }
+
+    setBusyAction("git");
+    try {
+      const next = await api.mergeWorktreeToMain();
+      applySnapshot(next);
+      setRuntimeError("");
+      void refreshSessions();
+      return true;
+    } catch (error) {
+      setRuntimeError(sanitizeGitErrorMessage(error));
+      return false;
+    } finally {
+      setBusyAction("");
+    }
+  }, [api, applySnapshot, refreshSessions]);
+
   const continueAssistantCompletion = useCallback(
     async (messageId: number): Promise<boolean> => {
       if (!api) {
@@ -1874,6 +1894,7 @@ export function useDesktopRuntime() {
     setPendingGitBranch,
     setWorkLocation,
     checkoutGitBranch,
+    mergeWorktreeToMain,
     continueAssistantCompletion,
     openSession,
     listWorkspaceFileReferenceSuggestions,

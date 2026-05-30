@@ -103,6 +103,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   checkoutGitBranch(request: { branch: string; discardLocalChanges?: boolean }) {
     return ipcRenderer.invoke('desktop:invoke', 'checkoutGitBranch', request);
   },
+  mergeWorktreeToMain() {
+    return ipcRenderer.invoke('desktop:invoke', 'mergeWorktreeToMain');
+  },
   abortConversation() {
     return ipcRenderer.invoke('desktop:invoke', 'abortConversation');
   },

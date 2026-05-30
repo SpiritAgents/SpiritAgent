@@ -1477,6 +1477,10 @@ function DesktopLayoutChromeBar({
   commitDisabled = false,
   commitBusy = false,
   onOpenCommitDialog,
+  showMergeButton = false,
+  mergeDisabled = false,
+  mergeBusy = false,
+  onOpenMergeDialog,
   workspaceToolsOpen = false,
   onToggleWorkspaceTools,
 }: {
@@ -1488,16 +1492,21 @@ function DesktopLayoutChromeBar({
   commitDisabled?: boolean;
   commitBusy?: boolean;
   onOpenCommitDialog?: () => void;
+  showMergeButton?: boolean;
+  mergeDisabled?: boolean;
+  mergeBusy?: boolean;
+  onOpenMergeDialog?: () => void;
   workspaceToolsOpen?: boolean;
   onToggleWorkspaceTools?: () => void;
 }) {
+  const showTrailingActions = showWorkspaceToggle || showCommitButton || showMergeButton;
   return (
     <div
       role="toolbar"
       aria-label="侧栏与工具区"
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-1.5",
-        showWorkspaceToggle || showCommitButton ? "justify-between" : "justify-start",
+        showTrailingActions ? "justify-between" : "justify-start",
         useMicaBackdrop ? "bg-transparent" : "bg-background",
       )}
     >
@@ -1513,8 +1522,21 @@ function DesktopLayoutChromeBar({
       >
         {sessionSidebarOpen ? <PanelLeftClose className="size-3.5" aria-hidden /> : <PanelLeftOpen className="size-3.5" aria-hidden />}
       </Button>
-      {showWorkspaceToggle || showCommitButton ? (
+      {showTrailingActions ? (
         <div className="flex items-center gap-1">
+          {showMergeButton ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={DESKTOP_CHROME_COMMIT_BTN}
+              disabled={mergeDisabled}
+              onClick={onOpenMergeDialog}
+            >
+              {mergeBusy ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> : null}
+              <span>Merge</span>
+            </Button>
+          ) : null}
           {showCommitButton ? (
             <Button
               type="button"
@@ -1690,6 +1712,7 @@ export default function App() {
   const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
   const [commitDialogOpen, setCommitDialogOpen] = useState(false);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
   const [branchCheckoutBlockedByChanges, setBranchCheckoutBlockedByChanges] = useState(false);
   const pendingComposerSendRef = useRef<{
@@ -1700,6 +1723,11 @@ export default function App() {
   const [commitMode, setCommitMode] = useState<DesktopCommitMode>("commit");
   const activeFilePath = snapshot?.activeSession?.filePath ?? null;
   const canOpenCommitDialog = snapshot?.git.isRepository === true;
+  const isWorktreeSession = snapshot?.git.isWorktreeSession === true;
+  const canOpenMergeDialog =
+    isWorktreeSession &&
+    Boolean(snapshot?.git.worktreeBranch) &&
+    Boolean(snapshot?.git.primaryRepoRoot);
   const commitBusy = runtime.busyAction === "git";
   const sessionNavigationBusy = runtime.busyAction === "session";
   const newSessionBusy = runtime.busyAction === "reset";
@@ -1707,6 +1735,7 @@ export default function App() {
     !canOpenCommitDialog ||
     snapshot?.git.hasChanges !== true ||
     commitBusy;
+  const mergeActionDisabled = !canOpenMergeDialog || commitBusy;
   const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previousPlanModifiedAtRef = useRef<number | undefined>(undefined);
   const previousPlanExistsRef = useRef<boolean | undefined>(undefined);
@@ -2237,6 +2266,26 @@ export default function App() {
     });
   };
 
+  const submitMergeDialog = () => {
+    void runtime.mergeWorktreeToMain().then((ok) => {
+      if (!ok) {
+        return;
+      }
+      setMergeDialogOpen(false);
+    });
+  };
+
+  const chromeBarGitActions = {
+    showCommitButton: canOpenCommitDialog,
+    commitDisabled: commitActionDisabled,
+    commitBusy,
+    onOpenCommitDialog: () => setCommitDialogOpen(true),
+    showMergeButton: canOpenMergeDialog,
+    mergeDisabled: mergeActionDisabled,
+    mergeBusy: commitBusy,
+    onOpenMergeDialog: () => setMergeDialogOpen(true),
+  };
+
   const launchSplashActive =
     snapshot === null &&
     !runtime.hostConnectionError.trim() &&
@@ -2352,10 +2401,7 @@ export default function App() {
               sessionSidebarOpen={sessionSidebarOpen}
               onToggleSessionSidebar={() => setSessionSidebarOpen((o) => !o)}
               showWorkspaceToggle={false}
-              showCommitButton={canOpenCommitDialog}
-              commitDisabled={commitActionDisabled}
-              commitBusy={commitBusy}
-              onOpenCommitDialog={() => setCommitDialogOpen(true)}
+              {...chromeBarGitActions}
             />
             <SettingsView
               tab={settingsTab}
@@ -2407,10 +2453,7 @@ export default function App() {
               sessionSidebarOpen={sessionSidebarOpen}
               onToggleSessionSidebar={() => setSessionSidebarOpen((o) => !o)}
               showWorkspaceToggle={false}
-              showCommitButton={canOpenCommitDialog}
-              commitDisabled={commitActionDisabled}
-              commitBusy={commitBusy}
-              onOpenCommitDialog={() => setCommitDialogOpen(true)}
+              {...chromeBarGitActions}
             />
             <MarketplaceView
               snapshot={snapshot}
@@ -2432,10 +2475,7 @@ export default function App() {
                 sessionSidebarOpen={sessionSidebarOpen}
                 onToggleSessionSidebar={() => setSessionSidebarOpen((o) => !o)}
                 showWorkspaceToggle
-                showCommitButton={canOpenCommitDialog}
-                commitDisabled={commitActionDisabled}
-                commitBusy={commitBusy}
-                onOpenCommitDialog={() => setCommitDialogOpen(true)}
+                {...chromeBarGitActions}
                 workspaceToolsOpen={workspaceToolsOpen}
                 onToggleWorkspaceTools={() => setWorkspaceToolsOpen((c) => !c)}
               />
@@ -3080,6 +3120,52 @@ export default function App() {
             >
               {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {commitMode === "commit-and-push" ? "提交并推送" : "提交"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={mergeDialogOpen}
+        onOpenChange={(open) => {
+          setMergeDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>合并 Worktree 至主分支</DialogTitle>
+            <DialogDescription>
+              {snapshot?.git.worktreeBranch && snapshot?.git.defaultBranch
+                ? `将 ${snapshot.git.worktreeBranch} 合并到 ${snapshot.git.defaultBranch}（主仓库）。`
+                : "将当前 Worktree 分支合并到主仓库默认分支。"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-1">
+            <p className="text-sm text-muted-foreground">
+              合并将在主仓库执行。请确保 Worktree 中的更改已提交；主仓库不能有未提交更改。
+            </p>
+            {runtime.runtimeError && mergeDialogOpen ? (
+              <p className="text-sm leading-relaxed text-destructive">{runtime.runtimeError}</p>
+            ) : null}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setMergeDialogOpen(false)}
+              disabled={commitBusy}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={submitMergeDialog}
+              disabled={mergeActionDisabled || commitBusy}
+            >
+              {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+              合并
             </Button>
           </DialogFooter>
         </DialogContent>

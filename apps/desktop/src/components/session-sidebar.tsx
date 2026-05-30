@@ -18,6 +18,7 @@ import {
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { cn } from "@/lib/utils";
 import type { DesktopSnapshot, SessionListItem } from "@/types";
 
@@ -87,13 +88,18 @@ function buildWorkspaceGroups(
   const currentWorkspaceRoot = workspaceRoot?.trim() || null;
   const groups = new Map<string, SessionWorkspaceGroup>();
 
+  const currentGroupingRoot = currentWorkspaceRoot
+    ? resolveWorkspaceGroupingRoot(currentWorkspaceRoot)
+    : null;
+
   for (const session of sessions) {
     const rootPath = session.workspaceRoot?.trim() || currentWorkspaceRoot;
     if (!rootPath) {
       continue;
     }
 
-    const id = normalizePath(rootPath);
+    const groupingRoot = resolveWorkspaceGroupingRoot(rootPath);
+    const id = normalizePath(groupingRoot);
     const existing = groups.get(id);
     if (existing) {
       existing.sessions.push(session);
@@ -106,16 +112,16 @@ function buildWorkspaceGroups(
 
     groups.set(id, {
       id,
-      label: deriveWorkspaceLabel(rootPath),
-      rootPath,
+      label: deriveWorkspaceLabel(groupingRoot),
+      rootPath: groupingRoot,
       sessions: [session],
       latestModifiedAtUnixMs: session.modifiedAtUnixMs,
     });
   }
 
   return [...groups.values()].sort((left, right) => {
-    const leftIsCurrent = Boolean(currentWorkspaceRoot && samePath(left.rootPath ?? "", currentWorkspaceRoot));
-    const rightIsCurrent = Boolean(currentWorkspaceRoot && samePath(right.rootPath ?? "", currentWorkspaceRoot));
+    const leftIsCurrent = Boolean(currentGroupingRoot && samePath(left.rootPath ?? "", currentGroupingRoot));
+    const rightIsCurrent = Boolean(currentGroupingRoot && samePath(right.rootPath ?? "", currentGroupingRoot));
     if (leftIsCurrent !== rightIsCurrent) {
       return leftIsCurrent ? -1 : 1;
     }

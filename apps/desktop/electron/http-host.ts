@@ -689,6 +689,11 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/git/merge-worktree') {
+    writeJson(request, response, 200, await runHostCommand('mergeWorktreeToMain'));
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/git/commit') {
     writeJson(
       request,
