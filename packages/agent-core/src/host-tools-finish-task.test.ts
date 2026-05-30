@@ -7,6 +7,7 @@ import {
   buildBuiltinHostToolDefinitions,
   buildFinishTaskHostToolDefinitions,
 } from './host-tools.js';
+import { toolNamesFromDefinitions, unknownToolErrorMessage } from './unknown-tool-error.js';
 import { isJsonObject } from './tool-agent.js';
 
 function readToolName(definition: JsonValue): string {
@@ -36,10 +37,17 @@ test('buildFinishTaskHostToolDefinitions exposes finish_task only when Loop tool
 });
 
 test('assertFinishTaskToolAllowed rejects finish_task when Loop is off', () => {
+  const definitions = buildBuiltinHostToolDefinitions({
+    shellDisplayName: 'test shell',
+    shellCommandParameterDescription: 'cmd',
+  });
+  const available = toolNamesFromDefinitions(definitions);
   assert.throws(
-    () => assertFinishTaskToolAllowed('finish_task', false),
-    /未知工具: finish_task/,
+    () => assertFinishTaskToolAllowed('finish_task', false, definitions),
+    (error: unknown) =>
+      error instanceof Error
+      && error.message === unknownToolErrorMessage('finish_task', available),
   );
-  assert.doesNotThrow(() => assertFinishTaskToolAllowed('finish_task', true));
-  assert.doesNotThrow(() => assertFinishTaskToolAllowed('read_file', false));
+  assert.doesNotThrow(() => assertFinishTaskToolAllowed('finish_task', true, definitions));
+  assert.doesNotThrow(() => assertFinishTaskToolAllowed('read_file', false, definitions));
 });

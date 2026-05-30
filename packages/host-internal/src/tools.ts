@@ -17,6 +17,12 @@ import { promisify } from 'node:util';
 import { glob as globPaths } from 'glob';
 
 import {
+  throwUnknownToolError,
+  toolNamesFromDefinitions,
+  type JsonValue,
+} from '@spirit-agent/agent-core';
+
+import {
   readHostFileSnapshot,
   type HostFileChangeKind,
   type HostFileChangeObserver,
@@ -390,6 +396,8 @@ export interface NodeHostToolServiceOptions {
   todoScope?: HostTodoScope;
   getModelCompatibilityProfile?: () => HostToolModelCompatibilityProfile | undefined;
   getApprovalLevel?: () => ApprovalLevel;
+  /** Full tool list exposed to the model (builtin + extension + MCP). Used for unknown-tool errors. */
+  availableToolDefinitions?: () => JsonValue;
 }
 
 interface ToolPermissionStore {
@@ -493,6 +501,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
   private readonly todoStore: HostTodoStore | undefined;
   private permissionsPromise: Promise<ToolPermissionStore> | undefined;
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
+  private availableToolDefinitions: (() => JsonValue) | undefined;
 
   constructor(
     private readonly context: InstructionDiscoveryContext,
@@ -513,6 +522,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       : undefined;
     this.getModelCompatibilityProfile = options.getModelCompatibilityProfile;
     this.getApprovalLevel = options.getApprovalLevel;
+    this.availableToolDefinitions = options.availableToolDefinitions;
   }
 
   private readonly getModelCompatibilityProfile:
@@ -520,6 +530,10 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     | undefined;
 
   private readonly getApprovalLevel: (() => ApprovalLevel) | undefined;
+
+  bindAvailableToolDefinitions(provider: () => JsonValue): void {
+    this.availableToolDefinitions = provider;
+  }
 
   toolDefinitionEnvironment(): HostBuiltinToolDefinitionEnvironment {
     return detectShellForTools();
@@ -775,7 +789,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
             return extensionTool;
           }
         }
-        throw new Error(`未知工具: ${name}`);
+        throwUnknownToolError(name, toolNamesFromDefinitions(this.resolveAvailableToolDefinitions()));
     }
   }
 
@@ -1095,6 +1109,10 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
   async getMcpPrompt(name: string, prompt: string, argsJson?: string): Promise<HostJsonValue> {
     return this.mcp.getPrompt(name, prompt, argsJson);
+  }
+
+  private resolveAvailableToolDefinitions(): JsonValue {
+    return this.availableToolDefinitions?.() ?? [];
   }
 
   private async resolveExtensionToolRequest(

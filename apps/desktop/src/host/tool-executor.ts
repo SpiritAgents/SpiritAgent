@@ -11,6 +11,8 @@ import {
   buildDreamHostToolDefinitions,
   buildDreamReadHostToolDefinitions,
   assertFinishTaskToolAllowed,
+  enrichUnknownToolError,
+  toolNamesFromDefinitions,
   buildFinishTaskHostToolDefinitions,
   buildTodoHostToolDefinitions,
   AuthorizationDecision,
@@ -103,6 +105,7 @@ export class DesktopToolExecutor
       ...(options.dreamScope ? { dreamScope: options.dreamScope } : {}),
       ...(options.dreamSourceSession ? { dreamSourceSession: options.dreamSourceSession } : {}),
       ...(options.todoScope ? { todoScope: options.todoScope } : {}),
+      availableToolDefinitions: () => this.toolDefinitionsJson(),
     });
   }
 
@@ -178,14 +181,23 @@ export class DesktopToolExecutor
     name: string,
     argumentsJson: string,
   ): Promise<DesktopToolRequest> {
-    assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled);
-    const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
-    if (localMcpRequest) {
-      return localMcpRequest as unknown as DesktopToolRequest;
+    const availableDefinitions = this.toolDefinitionsJson();
+    assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled, availableDefinitions);
+    try {
+      const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
+      if (localMcpRequest) {
+        return localMcpRequest as unknown as DesktopToolRequest;
+      }
+      const request = await this.tools.requestFromFunctionCall(name, argumentsJson);
+      this.assertAllowedDreamToolRequest(request);
+      return request;
+    } catch (error) {
+      throw enrichUnknownToolError(
+        error,
+        name,
+        toolNamesFromDefinitions(availableDefinitions),
+      );
     }
-    const request = await this.tools.requestFromFunctionCall(name, argumentsJson);
-    this.assertAllowedDreamToolRequest(request);
-    return request;
   }
 
   async authorize(

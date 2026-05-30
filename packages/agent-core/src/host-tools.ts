@@ -1,4 +1,7 @@
 import { DEFAULT_IMAGE_GENERATION_SIZE, type JsonObject, type JsonValue } from './ports.js';
+import { throwUnknownToolError, toolNamesFromDefinitions } from './unknown-tool-error.js';
+
+export { enrichUnknownToolError, toolNamesFromDefinitions, unknownToolErrorMessage } from './unknown-tool-error.js';
 
 export interface BuiltinHostToolDefinitionEnvironment {
   shellDisplayName: string;
@@ -27,9 +30,13 @@ export type TodoHostToolName =
 export const FINISH_TASK_TOOL_NAME = 'finish_task';
 
 /** Reject finish_task when Loop is off (model may still call it from prior turns). */
-export function assertFinishTaskToolAllowed(toolName: string, loopEnabled: boolean): void {
+export function assertFinishTaskToolAllowed(
+  toolName: string,
+  loopEnabled: boolean,
+  availableToolDefinitions: JsonValue,
+): void {
   if (toolName.trim() === FINISH_TASK_TOOL_NAME && !loopEnabled) {
-    throw new Error(`未知工具: ${toolName}`);
+    throwUnknownToolError(toolName, toolNamesFromDefinitions(availableToolDefinitions));
   }
 }
 
