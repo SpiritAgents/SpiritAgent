@@ -90,13 +90,13 @@ pub(crate) fn new_mcp_add_form() -> BottomFormView {
 
 fn model_add_provider_choice_labels() -> Vec<String> {
     vec![
-        t!("form.model.provider.deepseek").into_owned(),
-        t!("form.model.provider.kimi").into_owned(),
-        t!("form.model.provider.minimax").into_owned(),
-        t!("form.model.provider.alibaba").into_owned(),
-        t!("form.model.provider.anthropic").into_owned(),
-        t!("form.model.provider.vercel_ai_gateway").into_owned(),
         t!("form.model.provider.openai").into_owned(),
+        t!("form.model.provider.anthropic").into_owned(),
+        t!("form.model.provider.deepseek").into_owned(),
+        t!("form.model.provider.vercel_ai_gateway").into_owned(),
+        t!("form.model.provider.kimi").into_owned(),
+        t!("form.model.provider.alibaba").into_owned(),
+        t!("form.model.provider.minimax").into_owned(),
         t!("form.model.provider.custom").into_owned(),
     ]
 }
@@ -252,13 +252,13 @@ fn model_add_api_key_field(api_key: &str) -> BottomFormFieldView {
 
 fn model_add_provider_to_enum(idx: usize) -> Option<ModelProvider> {
     match idx {
-        0 => Some(ModelProvider::Deepseek),
-        1 => Some(ModelProvider::Kimi),
-        2 => Some(ModelProvider::Minimax),
-        3 => Some(ModelProvider::Alibaba),
-        4 => Some(ModelProvider::Anthropic),
-        5 => Some(ModelProvider::VercelAiGateway),
-        6 => Some(ModelProvider::Openai),
+        0 => Some(ModelProvider::Openai),
+        1 => Some(ModelProvider::Anthropic),
+        2 => Some(ModelProvider::Deepseek),
+        3 => Some(ModelProvider::VercelAiGateway),
+        4 => Some(ModelProvider::Kimi),
+        5 => Some(ModelProvider::Alibaba),
+        6 => Some(ModelProvider::Minimax),
         7 => Some(ModelProvider::Custom),
         _ => None,
     }
