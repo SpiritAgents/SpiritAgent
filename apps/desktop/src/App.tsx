@@ -139,7 +139,13 @@ import {
   mcpBadgeText,
   type SettingsSidebarTab,
 } from "@/components/session-sidebar";
-import { WorkspaceToolsDock, type WorkspaceToolsTab } from "@/components/workspace-tools-panel";
+import { WorkspaceToolsDock } from "@/components/workspace-tools-panel";
+import {
+  addWorkspaceToolTab,
+  createInitialWorkspaceToolsState,
+  findWorkspaceToolTab,
+  focusFirstTabOfKind,
+} from "@/lib/workspace-tool-tabs";
 import type {
   AskQuestionsQuestionSpec,
   DesktopCommitMode,
@@ -1775,8 +1781,21 @@ export default function App() {
   const [extensionSettingsId, setExtensionSettingsId] = useState<string | null>(null);
   const [sessionSidebarOpen, setSessionSidebarOpen] = useState(true);
   const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
-  const [workspaceToolsTab, setWorkspaceToolsTab] = useState<WorkspaceToolsTab>("files");
+  const initialWorkspaceToolsRef = useRef<ReturnType<
+    typeof createInitialWorkspaceToolsState
+  > | null>(null);
+  if (initialWorkspaceToolsRef.current === null) {
+    initialWorkspaceToolsRef.current = createInitialWorkspaceToolsState();
+  }
+  const initialWorkspaceTools = initialWorkspaceToolsRef.current;
+  const [workspaceToolTabs, setWorkspaceToolTabs] = useState(() => initialWorkspaceTools.tabs);
+  const [activeWorkspaceToolTabId, setActiveWorkspaceToolTabId] = useState(
+    () => initialWorkspaceTools.activeTabId,
+  );
   const [workspaceFilesPlanRevealNonce, setWorkspaceFilesPlanRevealNonce] = useState(0);
+  const [workspaceFilesPlanRevealTargetId, setWorkspaceFilesPlanRevealTargetId] = useState<
+    string | null
+  >(null);
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(420);
   const [composerCursorCodeUnits, setComposerCursorCodeUnits] = useState(0);
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(-1);
@@ -1852,9 +1871,33 @@ export default function App() {
     }
 
     setWorkspaceToolsOpen(true);
-    setWorkspaceToolsTab("files");
+
+    const activeTab = findWorkspaceToolTab(workspaceToolTabs, activeWorkspaceToolTabId);
+    let targetFilesTabId: string;
+    if (activeTab?.kind === "files") {
+      targetFilesTabId = activeWorkspaceToolTabId;
+    } else {
+      const firstFilesId = focusFirstTabOfKind(workspaceToolTabs, "files");
+      if (firstFilesId) {
+        targetFilesTabId = firstFilesId;
+        setActiveWorkspaceToolTabId(firstFilesId);
+      } else {
+        const added = addWorkspaceToolTab(workspaceToolTabs, "files");
+        setWorkspaceToolTabs(added.tabs);
+        setActiveWorkspaceToolTabId(added.activeId);
+        targetFilesTabId = added.activeId;
+      }
+    }
+
+    setWorkspaceFilesPlanRevealTargetId(targetFilesTabId);
     setWorkspaceFilesPlanRevealNonce((value) => value + 1);
-  }, [snapshot?.plan.exists, snapshot?.plan.modifiedAtUnixMs, snapshot?.plan]);
+  }, [
+    activeWorkspaceToolTabId,
+    snapshot?.plan.exists,
+    snapshot?.plan.modifiedAtUnixMs,
+    snapshot?.plan,
+    workspaceToolTabs,
+  ]);
   const composerCursorChars = useMemo(
     () => codeUnitIndexToCharCount(runtime.composer, composerCursorCodeUnits),
     [composerCursorCodeUnits, runtime.composer],
@@ -2967,8 +3010,11 @@ export default function App() {
               }}
               startImplementingDisabled={startImplementingDisabled}
               autoRevealPlanNonce={workspaceFilesPlanRevealNonce}
-              tab={workspaceToolsTab}
-              onTabChange={setWorkspaceToolsTab}
+              planRevealTabId={workspaceFilesPlanRevealTargetId}
+              tabs={workspaceToolTabs}
+              activeTabId={activeWorkspaceToolTabId}
+              onTabsChange={setWorkspaceToolTabs}
+              onActiveTabIdChange={setActiveWorkspaceToolTabId}
               open={workspaceToolsOpen}
               widthPx={workspaceToolsWidthPx}
               onWidthPxChange={setWorkspaceToolsWidthPx}
