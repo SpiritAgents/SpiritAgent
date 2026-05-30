@@ -36,6 +36,12 @@ import {
   type HostDreamStore,
   type HostDreamSourceSessionRef,
 } from './dreams.js';
+import {
+  createHostTodoStore,
+  type HostTodoCreateItem,
+  type HostTodoScope,
+  type HostTodoStore,
+} from './todos.js';
 import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
 
 const exec = promisify(execCallback);
@@ -275,7 +281,11 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { name: 'dream_read'; id: string }
   | { name: 'dream_record'; title: string; summary: string; details?: string; tags: string[] }
   | { name: 'dream_update'; id: string; title?: string; summary?: string; details?: string; tags?: string[] }
-  | { name: 'dream_delete'; id: string; reason: string };
+  | { name: 'dream_delete'; id: string; reason: string }
+  | { name: 'todo_list'; include_completed: boolean }
+  | { name: 'todo_create'; items: HostTodoCreateItem[] }
+  | { name: 'todo_update'; id: string; title: string }
+  | { name: 'todo_complete'; id: string };
 
 export type HostAuthorizationDecision<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { kind: 'allowed' }
@@ -377,6 +387,7 @@ export interface NodeHostToolServiceOptions {
   extensions?: HostExtensionRuntimeBinding<unknown>;
   dreamScope?: HostDreamScope;
   dreamSourceSession?: HostDreamSourceSessionRef;
+  todoScope?: HostTodoScope;
   getModelCompatibilityProfile?: () => HostToolModelCompatibilityProfile | undefined;
   getApprovalLevel?: () => ApprovalLevel;
 }
@@ -479,6 +490,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
   private readonly extensions: HostExtensionRuntimeBinding<unknown> | undefined;
   private readonly dreamStore: HostDreamStore | undefined;
   private readonly dreamSourceSession: HostDreamSourceSessionRef | undefined;
+  private readonly todoStore: HostTodoStore | undefined;
   private permissionsPromise: Promise<ToolPermissionStore> | undefined;
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
 
@@ -496,6 +508,9 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       ? createHostDreamStore({ spiritDataDir: this.spiritDataDir, scope: options.dreamScope })
       : undefined;
     this.dreamSourceSession = options.dreamSourceSession;
+    this.todoStore = options.todoScope
+      ? createHostTodoStore({ spiritDataDir: this.spiritDataDir, scope: options.todoScope })
+      : undefined;
     this.getModelCompatibilityProfile = options.getModelCompatibilityProfile;
     this.getApprovalLevel = options.getApprovalLevel;
   }
@@ -732,6 +747,27 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           id: requiredString(parsed, 'id'),
           reason: requiredString(parsed, 'reason'),
         };
+      case 'todo_list':
+        return {
+          name,
+          include_completed: optionalBoolean(parsed, 'include_completed') ?? true,
+        };
+      case 'todo_create':
+        return {
+          name,
+          items: parseTodoCreateItems(parsed),
+        };
+      case 'todo_update':
+        return {
+          name,
+          id: requiredString(parsed, 'id'),
+          title: requiredString(parsed, 'title'),
+        };
+      case 'todo_complete':
+        return {
+          name,
+          id: requiredString(parsed, 'id'),
+        };
       default:
         {
           const extensionTool = await this.resolveExtensionToolRequest(name, parsed);
@@ -842,6 +878,10 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'dream_record':
       case 'dream_update':
       case 'dream_delete':
+      case 'todo_list':
+      case 'todo_create':
+      case 'todo_update':
+      case 'todo_complete':
         return { kind: 'allowed' };
     }
   }
@@ -959,6 +999,22 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         return JSON.stringify({
           dream: await this.requireDreamStore().delete(request.id, request.reason),
         });
+      case 'todo_list':
+        return JSON.stringify({
+          todos: await this.requireTodoStore().list({
+            includeCompleted: request.include_completed,
+          }),
+        });
+      case 'todo_create':
+        return JSON.stringify({
+          todos: await this.requireTodoStore().create(request.items),
+        });
+      case 'todo_update':
+        return JSON.stringify({
+          todo: await this.requireTodoStore().update(request.id, request.title),
+        });
+      case 'todo_complete':
+        return JSON.stringify(await this.requireTodoStore().complete(request.id));
     }
   }
 
@@ -1069,6 +1125,13 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       throw new Error('当前宿主未配置梦境 scope，无法执行梦境工具。');
     }
     return this.dreamStore;
+  }
+
+  private requireTodoStore(): HostTodoStore {
+    if (!this.todoStore) {
+      throw new Error('当前宿主未配置会话 TODO scope，无法执行 todo 工具。');
+    }
+    return this.todoStore;
   }
 
   private async loadPermissions(): Promise<ToolPermissionStore> {
@@ -1849,6 +1912,19 @@ function parseJsonObject(argumentsJson: string): HostJsonObject {
     throw new Error('工具参数必须为对象。');
   }
   return parsed;
+}
+
+function parseTodoCreateItems(parsed: HostJsonObject): HostTodoCreateItem[] {
+  const rawItems = parsed.items;
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    throw new Error('items 必须是非空数组。');
+  }
+  return rawItems.map((entry, index) => {
+    if (!isJsonObject(entry)) {
+      throw new Error(`items[${index}] 必须是对象。`);
+    }
+    return { title: requiredString(entry, 'title') };
+  });
 }
 
 function requiredString(obj: HostJsonObject, key: string): string {
