@@ -243,6 +243,7 @@ export function buildArchiveAssistantAuxFromConversation(
       messageIndex: index,
       ...(message.aux.thinking ? { thinking: message.aux.thinking } : {}),
       ...(message.aux.compaction ? { compaction: message.aux.compaction } : {}),
+      ...(message.aux.finishTaskNotice ? { finishTaskNotice: message.aux.finishTaskNotice } : {}),
     }];
   });
 }

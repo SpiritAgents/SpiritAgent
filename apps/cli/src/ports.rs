@@ -13,6 +13,8 @@ pub struct AssistantAuxArchiveEntry {
     pub message_index: usize,
     pub thinking: Option<String>,
     pub compaction: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub finish_task_notice: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

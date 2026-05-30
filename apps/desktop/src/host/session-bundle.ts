@@ -17,6 +17,7 @@ import type {
 } from '../types.js';
 import type { DesktopTimelineSegmentKind, DesktopMessageTimeline } from './message-timeline.js';
 import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
+import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import { nextMessageIdFromMessages, type RestoredSessionState } from './sessions.js';
 import { DesktopMessageTimeline as TimelineCtor } from './message-timeline.js';
 
@@ -89,11 +90,16 @@ export function sessionBundleFromRestored(
     restored.messages,
     restored.desktopMessageTimeline,
   );
+  const messages = rehydrateFinishTaskNoticesForRestoredSession({
+    messages: restored.messages,
+    messageTimeline,
+    archiveHistory: restored.archiveHistory,
+  });
   return {
     id,
     workspaceRoot,
     activeSession: restored.activeSession,
-    messages: restored.messages,
+    messages,
     messageTimeline,
     archiveHistory: restored.archiveHistory,
     archiveSubagentSessions: restored.archiveSubagentSessions,

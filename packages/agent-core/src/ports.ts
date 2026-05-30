@@ -222,6 +222,7 @@ export interface AssistantAuxArchiveEntry {
   messageIndex: number;
   thinking?: string;
   compaction?: string;
+  finishTaskNotice?: string;
 }
 
 export type SubagentSessionStatus = 'running' | 'completed' | 'failed' | 'blocked';

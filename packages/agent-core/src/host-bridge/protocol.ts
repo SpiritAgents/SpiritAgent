@@ -115,6 +115,7 @@ export interface RuntimeExportArchiveParams {
     messageIndex: number;
     thinking?: string;
     compaction?: string;
+    finishTaskNotice?: string;
   }>;
 }
 

@@ -259,6 +259,27 @@ export class DesktopMessageTimeline {
     return rowToMessage(row);
   }
 
+  applyFinishTaskNoticeByMessageId(messageId: number, notice: string): boolean {
+    const normalizedNotice = notice.trim();
+    if (!normalizedNotice) {
+      return false;
+    }
+
+    const row = this.allRows().find(
+      (candidate) => candidate.messageId === messageId && candidate.kind === 'assistant-text',
+    );
+    if (!row) {
+      return false;
+    }
+
+    row.aux = normalizeMessageAuxSnapshot({
+      ...(row.aux?.thinking ? { thinking: row.aux.thinking } : {}),
+      ...(row.aux?.compaction ? { compaction: row.aux.compaction } : {}),
+      finishTaskNotice: normalizedNotice,
+    });
+    return true;
+  }
+
   updateFinishTaskNoticePreview(notice: string): ConversationMessageSnapshot | undefined {
     const normalizedNotice = notice.trim();
     if (!normalizedNotice) {
@@ -1266,7 +1287,8 @@ function isRenderableAssistantRow(row: DesktopTimelineRow): boolean {
     row.kind === 'tool' ||
       row.content.trim() ||
       row.aux?.thinking?.trim() ||
-      row.aux?.compaction?.trim(),
+      row.aux?.compaction?.trim() ||
+      row.aux?.finishTaskNotice?.trim(),
   );
 }
 
@@ -1327,6 +1349,7 @@ function cloneAux(aux: MessageAuxSnapshot): MessageAuxSnapshot {
   return {
     ...(aux.thinking ? { thinking: aux.thinking } : {}),
     ...(aux.compaction ? { compaction: aux.compaction } : {}),
+    ...(aux.finishTaskNotice ? { finishTaskNotice: aux.finishTaskNotice } : {}),
   };
 }
 
