@@ -102,6 +102,15 @@ export async function createElectronHostApi(): Promise<HostApi> {
     setApprovalLevel(approvalLevel) {
       return bridge.setApprovalLevel(approvalLevel);
     },
+    setPendingGitBranch(branch) {
+      return bridge.setPendingGitBranch(branch);
+    },
+    setWorkLocation(workLocation) {
+      return bridge.setWorkLocation(workLocation);
+    },
+    checkoutGitBranch(request) {
+      return bridge.checkoutGitBranch(request);
+    },
     abortConversation() {
       return bridge.abortConversation();
     },

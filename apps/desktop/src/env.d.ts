@@ -76,6 +76,9 @@ declare global {
     submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot>;
     setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot>;
     setApprovalLevel(approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel): Promise<DesktopSnapshot>;
+    setPendingGitBranch(branch: string): Promise<DesktopSnapshot>;
+    setWorkLocation(workLocation: import('@spirit-agent/host-internal').WorkLocationKind): Promise<DesktopSnapshot>;
+    checkoutGitBranch(request: import('./types.js').CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
     abortConversation(): Promise<DesktopSnapshot>;
     continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
     rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;

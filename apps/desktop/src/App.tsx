@@ -80,6 +80,8 @@ import {
 } from "@/components/composer-local-file-strip";
 import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { ApprovalLevelMenu } from "@/components/approval-level-menu";
+import { BranchSelectMenu } from "@/components/branch-select-menu";
+import { WorkLocationMenu } from "@/components/work-location-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
@@ -1688,6 +1690,12 @@ export default function App() {
   const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
   const [commitDialogOpen, setCommitDialogOpen] = useState(false);
+  const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
+  const [branchCheckoutBlockedByChanges, setBranchCheckoutBlockedByChanges] = useState(false);
+  const pendingComposerSendRef = useRef<{
+    text: string;
+    localFilePaths?: string[];
+  } | null>(null);
   const [commitMessageDraft, setCommitMessageDraft] = useState("");
   const [commitMode, setCommitMode] = useState<DesktopCommitMode>("commit");
   const activeFilePath = snapshot?.activeSession?.filePath ?? null;
@@ -2054,14 +2062,75 @@ export default function App() {
   };
 
   const submitComposerMessage = () => {
-    void runtime.sendMessage({
+    const payload = {
       text: runtime.composer,
       ...(runtime.composerLocalFileAttachments.length > 0
         ? {
             localFilePaths: runtime.composerLocalFileAttachments.map((item) => item.path),
           }
         : {}),
-    });
+    };
+
+    if (
+      isEmptySession &&
+      snapshot?.git.isRepository &&
+      snapshot.git.workLocation === "local"
+    ) {
+      const selectedBranch = snapshot.git.selectedBranch ?? snapshot.git.branch;
+      if (selectedBranch && snapshot.git.branch && selectedBranch !== snapshot.git.branch) {
+        pendingComposerSendRef.current = payload;
+        setBranchCheckoutDialogOpen(true);
+        return;
+      }
+    }
+
+    void runtime.sendMessage(payload);
+  };
+
+  const confirmBranchCheckoutAndSend = () => {
+    void (async () => {
+      const pending = pendingComposerSendRef.current;
+      const selectedBranch = snapshot?.git.selectedBranch ?? snapshot?.git.branch;
+      if (!pending || !selectedBranch) {
+        setBranchCheckoutDialogOpen(false);
+        return;
+      }
+
+      const result = await runtime.checkoutGitBranch(selectedBranch);
+      if (result.ok) {
+        pendingComposerSendRef.current = null;
+        setBranchCheckoutBlockedByChanges(false);
+        setBranchCheckoutDialogOpen(false);
+        void runtime.sendMessage(pending);
+        return;
+      }
+
+      if (result.reason === "local-changes") {
+        setBranchCheckoutBlockedByChanges(true);
+        return;
+      }
+    })();
+  };
+
+  const discardBranchChangesAndCheckoutSend = () => {
+    void (async () => {
+      const pending = pendingComposerSendRef.current;
+      const selectedBranch = snapshot?.git.selectedBranch ?? snapshot?.git.branch;
+      if (!pending || !selectedBranch) {
+        setBranchCheckoutDialogOpen(false);
+        return;
+      }
+
+      const result = await runtime.checkoutGitBranch(selectedBranch, { discardLocalChanges: true });
+      if (!result.ok) {
+        return;
+      }
+
+      pendingComposerSendRef.current = null;
+      setBranchCheckoutBlockedByChanges(false);
+      setBranchCheckoutDialogOpen(false);
+      void runtime.sendMessage(pending);
+    })();
   };
 
   const handleComposerSuggestionKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
@@ -2495,7 +2564,7 @@ export default function App() {
                 ) : null}
                 <div className="space-y-2">
                 {isEmptySession ? (
-                  <div className="flex items-center gap-2 px-0.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-0.5">
                     <EmptyStateWorkspaceSelector
                       currentWorkspaceRoot={snapshot?.workspaceRoot ?? ""}
                       availableWorkspaces={snapshot?.availableWorkspaces ?? []}
@@ -2514,6 +2583,31 @@ export default function App() {
                           }
                           await runtime.rememberWorkspaceRoot(workspaceRoot);
                         })();
+                      }}
+                    />
+                    <BranchSelectMenu
+                      branches={snapshot?.git.branches ?? []}
+                      selectedBranch={snapshot?.git.selectedBranch}
+                      currentBranch={snapshot?.git.branch}
+                      disabled={
+                        runtime.busyAction === "bootstrap"
+                        || runtime.busyAction === "session"
+                        || commitBusy
+                      }
+                      onBranchChange={(branch) => {
+                        void runtime.setPendingGitBranch(branch);
+                      }}
+                    />
+                    <WorkLocationMenu
+                      workLocation={snapshot?.git.workLocation ?? "local"}
+                      disabled={
+                        runtime.busyAction === "bootstrap"
+                        || runtime.busyAction === "session"
+                        || commitBusy
+                        || snapshot?.git.isRepository !== true
+                      }
+                      onWorkLocationChange={(workLocation) => {
+                        void runtime.setWorkLocation(workLocation);
                       }}
                     />
                     <ApprovalLevelMenu
@@ -2824,6 +2918,80 @@ export default function App() {
               ) : null}
               提交答案
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={branchCheckoutDialogOpen}
+        onOpenChange={(open) => {
+          setBranchCheckoutDialogOpen(open);
+          if (!open) {
+            pendingComposerSendRef.current = null;
+            setBranchCheckoutBlockedByChanges(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>
+              {branchCheckoutBlockedByChanges ? "无法切换分支" : "切换分支"}
+            </DialogTitle>
+            <DialogDescription>
+              {branchCheckoutBlockedByChanges ? (
+                <>
+                  工作区有未提交的更改，无法切换到「{snapshot?.git.selectedBranch ?? snapshot?.git.branch}」。
+                  放弃更改后，这些本地修改将永久丢失。
+                </>
+              ) : (
+                <>
+                  发送前将切换到分支「{snapshot?.git.selectedBranch ?? snapshot?.git.branch}」。
+                  {snapshot?.git.hasChanges
+                    ? " 检测到未提交更改，切换可能失败。"
+                    : null}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {runtime.runtimeError ? (
+            <p className="text-sm leading-relaxed text-destructive">{runtime.runtimeError}</p>
+          ) : null}
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                pendingComposerSendRef.current = null;
+                setBranchCheckoutBlockedByChanges(false);
+                setBranchCheckoutDialogOpen(false);
+              }}
+              disabled={commitBusy}
+            >
+              取消
+            </Button>
+            {branchCheckoutBlockedByChanges ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                onClick={discardBranchChangesAndCheckoutSend}
+                disabled={commitBusy}
+              >
+                {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                放弃更改并切换
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={confirmBranchCheckoutAndSend}
+                disabled={commitBusy}
+              >
+                {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                切换并发送
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

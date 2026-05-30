@@ -1,5 +1,5 @@
 import type { ChatArchive, LlmActiveSkill, SpiritLlmTransport } from '@spirit-agent/agent-core';
-import type { ApprovalLevel } from '@spirit-agent/host-internal';
+import type { ApprovalLevel, WorkLocationKind } from '@spirit-agent/host-internal';
 
 import type { DesktopRuntime } from './runtime.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
@@ -25,6 +25,8 @@ export interface SessionBundle {
   archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
+  pendingGitBranch?: string;
+  workLocation: WorkLocationKind;
   rewind: StoredDesktopRewindMetadata;
   rewindWarnings: FileRewindWarning[];
   messageIdCounter: number;
@@ -55,6 +57,7 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     archiveSubagentSessions: [],
     loopEnabled: false,
     approvalLevel: 'default',
+    workLocation: 'local',
     rewind: createDesktopRewindMetadata(),
     rewindWarnings: [],
     messageIdCounter: 1,
@@ -88,6 +91,7 @@ export function sessionBundleFromRestored(
     archiveSubagentSessions: restored.archiveSubagentSessions,
     loopEnabled: restored.loopEnabled,
     approvalLevel: restored.approvalLevel,
+    workLocation: 'local',
     rewind: restored.rewind,
     rewindWarnings: [],
     messageIdCounter: nextMessageIdFromMessages(restored.messages),
@@ -109,6 +113,8 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.archiveSubagentSessions = [];
   bundle.loopEnabled = false;
   bundle.approvalLevel = 'default';
+  bundle.pendingGitBranch = undefined;
+  bundle.workLocation = 'local';
   bundle.rewind = createDesktopRewindMetadata();
   bundle.rewindWarnings = [];
   bundle.messageIdCounter = 1;

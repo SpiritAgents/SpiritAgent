@@ -120,6 +120,31 @@ function describeError(error: unknown): string {
   return String(error);
 }
 
+export type CheckoutGitBranchResult =
+  | { ok: true }
+  | { ok: false; reason: "local-changes" }
+  | { ok: false; reason: "error" };
+
+function isCheckoutBlockedByLocalChanges(error: unknown): boolean {
+  if (typeof error === "object" && error !== null) {
+    const code = (error as { code?: unknown }).code;
+    if (code === "GIT_CHECKOUT_LOCAL_CHANGES") {
+      return true;
+    }
+  }
+
+  const message = describeError(error);
+  return /local changes to the following files would be overwritten by checkout/i.test(message)
+    || /please commit your changes or stash them before you switch branches/i.test(message)
+    || message.includes("工作区有未提交更改，无法切换分支");
+}
+
+function sanitizeGitErrorMessage(error: unknown): string {
+  return describeError(error)
+    .replace(/^Error invoking remote method 'desktop:invoke': Error: /u, "")
+    .replace(/^Error invoking remote method 'desktop:invoke': /u, "");
+}
+
 function errorCode(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) {
     return undefined;
@@ -1500,6 +1525,69 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, refreshSessions]);
 
+  const setPendingGitBranch = useCallback(async (branch: string): Promise<boolean> => {
+    if (!api) {
+      return false;
+    }
+
+    try {
+      const next = await api.setPendingGitBranch(branch);
+      applySnapshot(next);
+      setRuntimeError("");
+      return true;
+    } catch (error) {
+      setRuntimeError(describeError(error));
+      return false;
+    }
+  }, [api, applySnapshot]);
+
+  const setWorkLocation = useCallback(async (
+    workLocation: import('@spirit-agent/host-internal').WorkLocationKind,
+  ): Promise<boolean> => {
+    if (!api) {
+      return false;
+    }
+
+    try {
+      const next = await api.setWorkLocation(workLocation);
+      applySnapshot(next);
+      setRuntimeError("");
+      return true;
+    } catch (error) {
+      setRuntimeError(describeError(error));
+      return false;
+    }
+  }, [api, applySnapshot]);
+
+  const checkoutGitBranch = useCallback(async (
+    branch: string,
+    options?: { discardLocalChanges?: boolean },
+  ): Promise<CheckoutGitBranchResult> => {
+    if (!api) {
+      return { ok: false, reason: "error" };
+    }
+
+    setBusyAction("git");
+    try {
+      const next = await api.checkoutGitBranch({
+        branch,
+        discardLocalChanges: options?.discardLocalChanges === true,
+      });
+      applySnapshot(next);
+      setRuntimeError("");
+      void refreshSessions();
+      return { ok: true };
+    } catch (error) {
+      if (isCheckoutBlockedByLocalChanges(error)) {
+        return { ok: false, reason: "local-changes" };
+      }
+      setRuntimeError(sanitizeGitErrorMessage(error));
+      return { ok: false, reason: "error" };
+    } finally {
+      setBusyAction("");
+    }
+  }, [api, applySnapshot, refreshSessions]);
+
   const continueAssistantCompletion = useCallback(
     async (messageId: number): Promise<boolean> => {
       if (!api) {
@@ -1783,6 +1871,9 @@ export function useDesktopRuntime() {
     abortConversation,
     setLoopEnabled,
     setApprovalLevel,
+    setPendingGitBranch,
+    setWorkLocation,
+    checkoutGitBranch,
     continueAssistantCompletion,
     openSession,
     listWorkspaceFileReferenceSuggestions,

@@ -61,6 +61,8 @@ import {
   type ProviderListedModelEntry,
   type ApprovalLevel,
   normalizeApprovalLevel,
+  normalizeWorkLocationKind,
+  type WorkLocationKind,
 } from '@spirit-agent/host-internal';
 
 import type {
@@ -73,6 +75,7 @@ import type {
   AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
+  CheckoutGitBranchRequest,
   ConversationLocalFileAttachmentSnapshot,
   ConversationMessageSnapshot,
   CreateSkillRequest,
@@ -263,6 +266,7 @@ import {
 } from './workspace-files.js';
 import {
   buildWorkspaceGitCommitMessageContext,
+  checkoutWorkspaceGitBranch,
   commitWorkspaceChanges,
   readWorkspaceGitSnapshot,
 } from './git.js';
@@ -315,6 +319,9 @@ type CommandPayloads = {
   updateConfig: { request: UpdateConfigRequest };
   setLoopEnabled: { enabled: boolean };
   setApprovalLevel: { approvalLevel: ApprovalLevel };
+  setPendingGitBranch: { branch: string };
+  setWorkLocation: { workLocation: WorkLocationKind };
+  checkoutGitBranch: CheckoutGitBranchRequest;
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };
@@ -1482,6 +1489,63 @@ class DesktopHostService {
     });
   }
 
+  async setPendingGitBranch(branch: string): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const state = this.requireState();
+      const normalized = branch.trim();
+      if (!state.git.isRepository) {
+        throw new Error('当前工作区不是 Git 仓库。');
+      }
+      if (!normalized) {
+        throw new Error('分支名称不能为空。');
+      }
+      if (!state.git.branches.includes(normalized)) {
+        throw new Error(`分支不存在：${normalized}`);
+      }
+      this.activeBundle().pendingGitBranch = normalized;
+      return this.buildSnapshot();
+    });
+  }
+
+  async setWorkLocation(workLocation: WorkLocationKind): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      this.activeBundle().workLocation = normalizeWorkLocationKind(workLocation);
+      return this.buildSnapshot();
+    });
+  }
+
+  async checkoutGitBranch(request: CheckoutGitBranchRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      if (this.runtime?.isBusy()) {
+        throw new Error('当前已有响应或审批在处理中，请稍候。');
+      }
+
+      const state = this.requireState();
+      const normalized = request.branch.trim();
+      if (!state.git.isRepository) {
+        throw new Error('当前工作区不是 Git 仓库。');
+      }
+      if (!normalized) {
+        throw new Error('分支名称不能为空。');
+      }
+      if (!state.git.branches.includes(normalized)) {
+        throw new Error(`分支不存在：${normalized}`);
+      }
+
+      state.git = await checkoutWorkspaceGitBranch(state.workspaceRoot, normalized, {
+        discardLocalChanges: request.discardLocalChanges === true,
+      });
+      this.activeBundle().pendingGitBranch = undefined;
+      await this.refreshRuntimeForBundle(this.activeBundle());
+      this.syncActiveRuntimePointer();
+      this.startDreamCollectorIfNeeded();
+      return this.buildSnapshot();
+    });
+  }
+
   async abortConversation(): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
@@ -2171,6 +2235,18 @@ class DesktopHostService {
         const typedPayload = payload as CommandPayloads['setApprovalLevel'];
         return this.setApprovalLevel(typedPayload.approvalLevel);
       }
+      case 'setPendingGitBranch': {
+        const typedPayload = payload as CommandPayloads['setPendingGitBranch'];
+        return this.setPendingGitBranch(typedPayload.branch);
+      }
+      case 'setWorkLocation': {
+        const typedPayload = payload as CommandPayloads['setWorkLocation'];
+        return this.setWorkLocation(typedPayload.workLocation);
+      }
+      case 'checkoutGitBranch': {
+        const typedPayload = payload as CommandPayloads['checkoutGitBranch'];
+        return this.checkoutGitBranch(typedPayload);
+      }
       case 'abortConversation':
         return this.abortConversation();
       case 'continueAssistantCompletion': {
@@ -2482,6 +2558,17 @@ class DesktopHostService {
     });
   }
 
+  private buildClientGitSnapshot(): DesktopGitSnapshot {
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+    const selectedBranch = bundle.pendingGitBranch ?? state.git.branch;
+    return {
+      ...state.git,
+      ...(selectedBranch ? { selectedBranch } : {}),
+      workLocation: bundle.workLocation,
+    };
+  }
+
   private async refreshGitState(): Promise<void> {
     const state = this.state;
     if (!state) {
@@ -2744,7 +2831,7 @@ class DesktopHostService {
     return buildDesktopSnapshot({
       workspaceRoot: state.workspaceRoot,
       config: state.config,
-      git: state.git,
+      git: this.buildClientGitSnapshot(),
       metadata: state.metadata,
       plan: state.plan,
       extensionsList: state.extensionsList,
