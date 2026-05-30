@@ -110,3 +110,19 @@ test('todo scopes are isolated per sessionKey', async () => {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
+
+test('todo-scope draft keys are not rewritten by path.resolve', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-todos-scope-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+  const scopeKey = 'todo-scope:11111111-2222-4333-8444-555555555555';
+
+  try {
+    const store = createHostTodoStore({ spiritDataDir, scope: { sessionKey: scopeKey } });
+    await store.create([{ title: 'Draft task' }]);
+    const listed = await store.list({ includeCompleted: true });
+    assert.equal(listed.length, 1);
+    assert.equal(listed[0]?.title, 'Draft task');
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});

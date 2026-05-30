@@ -218,6 +218,10 @@ function normalizeTodoScope(scope: HostTodoScope): HostTodoScope {
   if (!sessionKey) {
     throw new Error('sessionKey is required for todo scope.');
   }
+  // Opaque draft scope keys must not be passed through path.resolve (cwd-relative on Windows).
+  if (sessionKey.startsWith('todo-scope:')) {
+    return { sessionKey };
+  }
   return { sessionKey: path.resolve(sessionKey) };
 }
 

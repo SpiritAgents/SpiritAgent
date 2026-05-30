@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import {
@@ -8,13 +9,36 @@ import {
 } from '@spirit-agent/host-internal';
 
 import type { DesktopTodoItem } from '../types.js';
-import { spiritAgentDataDir } from './storage.js';
+import { isProvisionalSessionPath, spiritAgentDataDir } from './storage.js';
+
+/** Per-bundle TODO scope while the chat file is still the shared provisional slot. */
+export function createTodoSessionScopeKey(): string {
+  return `todo-scope:${randomUUID()}`;
+}
 
 export function resolveTodoSessionKey(input: {
   sessionFilePath?: string;
   bundleId: string;
+  todoSessionScopeKey?: string;
 }): string {
-  return path.resolve(input.sessionFilePath ?? input.bundleId);
+  if (input.sessionFilePath) {
+    const resolved = path.resolve(input.sessionFilePath);
+    if (!isProvisionalSessionPath(resolved)) {
+      return resolved;
+    }
+  }
+  if (input.todoSessionScopeKey) {
+    return input.todoSessionScopeKey;
+  }
+  return path.resolve(input.bundleId);
+}
+
+export function normalizeTodoSessionStorageKey(sessionKey: string): string {
+  const trimmed = sessionKey.trim();
+  if (trimmed.startsWith('todo-scope:')) {
+    return trimmed;
+  }
+  return path.resolve(trimmed);
 }
 
 export function createTodoScope(sessionKey: string): HostTodoScope {
@@ -51,6 +75,29 @@ export async function purgeSessionTodos(sessionKey: string): Promise<void> {
     scope: createTodoScope(sessionKey),
   });
   await store.purge();
+}
+
+export async function migrateSessionTodos(
+  fromSessionKey: string,
+  toSessionKey: string,
+): Promise<void> {
+  const fromKey = normalizeTodoSessionStorageKey(fromSessionKey);
+  const toKey = normalizeTodoSessionStorageKey(toSessionKey);
+  if (fromKey === toKey) {
+    return;
+  }
+
+  const records = await listSessionTodos(fromKey);
+  if (records.length === 0) {
+    await purgeSessionTodos(fromKey);
+    return;
+  }
+
+  const existing = await listSessionTodos(toKey);
+  if (existing.length === 0) {
+    await replaceSessionTodos(toKey, records);
+  }
+  await purgeSessionTodos(fromKey);
 }
 
 export function mapHostTodoToDesktopItem(record: HostTodoRecord): DesktopTodoItem {

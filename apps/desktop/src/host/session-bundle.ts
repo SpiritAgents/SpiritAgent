@@ -17,6 +17,7 @@ import type {
 } from '../types.js';
 import type { DesktopTimelineSegmentKind, DesktopMessageTimeline } from './message-timeline.js';
 import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
+import { createTodoSessionScopeKey } from './todos.js';
 import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import { nextMessageIdFromMessages, type RestoredSessionState } from './sessions.js';
 import { DesktopMessageTimeline as TimelineCtor } from './message-timeline.js';
@@ -50,6 +51,8 @@ export interface SessionBundle {
   toolExecutor?: DesktopToolExecutor;
   toolExecutorWorkspaceRoot?: string;
   toolExecutorTodoSessionKey?: string;
+  /** Isolated TODO storage key until the session is saved to a real chat file. */
+  todoSessionScopeKey?: string;
   cachedTodoSnapshot?: import('../types.js').ConversationTodoSnapshot;
 }
 
@@ -76,6 +79,7 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     nextTimelineAssistantSegmentKind: 'initial',
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
+    todoSessionScopeKey: createTodoSessionScopeKey(),
   };
 }
 
@@ -140,4 +144,6 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.nextTimelineAssistantSegmentKind = 'initial';
   bundle.deferredRuntimeRefreshWhileBusy = false;
   bundle.deferredRuntimeHostEvents = [];
+  bundle.cachedTodoSnapshot = undefined;
+  bundle.todoSessionScopeKey = createTodoSessionScopeKey();
 }

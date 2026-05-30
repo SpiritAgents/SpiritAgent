@@ -331,7 +331,7 @@ function ToolCallCollapsible({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   saveLocalImageAs: SaveLocalImageAs;
 }) {
-  if (tool.toolName === "finish_task" || tool.toolName.startsWith("todo_")) {
+  if (tool.toolName === "finish_task") {
     return null;
   }
 
