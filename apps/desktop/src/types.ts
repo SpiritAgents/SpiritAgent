@@ -19,6 +19,11 @@ export interface CommitChangesRequest {
   mode: DesktopCommitMode;
 }
 
+export interface CheckoutGitBranchRequest {
+  branch: string;
+  discardLocalChanges?: boolean;
+}
+
 export interface UpdateConfigRequest {
   activeModel: string;
   imageGenerationModel?: string;
@@ -583,6 +588,11 @@ export interface DesktopGitSnapshot {
   isRepository: boolean;
   hasChanges: boolean;
   branch?: string;
+  branches: string[];
+  /** User-selected branch for the next send; defaults to `branch` when unset. */
+  selectedBranch?: string;
+  /** Session work-location preference; populated on client snapshots. */
+  workLocation?: import('@spirit-agent/host-internal').WorkLocationKind;
 }
 
 export interface ModelProfileSnapshot {

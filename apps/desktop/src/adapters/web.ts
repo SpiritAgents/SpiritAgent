@@ -139,6 +139,15 @@ export function createWebHostApi(): HostApi {
     setApprovalLevel(approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel) {
       return post<DesktopSnapshot>(baseUrl, '/api/approval', { approvalLevel });
     },
+    setPendingGitBranch(branch: string) {
+      return post<DesktopSnapshot>(baseUrl, '/api/git/pending-branch', { branch });
+    },
+    setWorkLocation(workLocation: import('@spirit-agent/host-internal').WorkLocationKind) {
+      return post<DesktopSnapshot>(baseUrl, '/api/git/work-location', { workLocation });
+    },
+    checkoutGitBranch(request: import('../types.js').CheckoutGitBranchRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/git/checkout', request);
+    },
     abortConversation() {
       return post<DesktopSnapshot>(baseUrl, '/api/abort');
     },

@@ -629,12 +629,61 @@ async function handleApiRequest({
   }
 
   if (request.method === 'POST' && pathname === '/api/approval') {
+    if (jsonBody?.decision !== undefined) {
+      writeJson(
+        request,
+        response,
+        200,
+        await runHostCommand('replyPendingApproval', {
+          decision: normalizeApprovalDecisionPayload(jsonBody.decision),
+        }),
+      );
+      return;
+    }
+
     writeJson(
       request,
       response,
       200,
       await runHostCommand('setApprovalLevel', {
         approvalLevel: jsonBody?.approvalLevel,
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/git/pending-branch') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setPendingGitBranch', {
+        branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/git/work-location') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setWorkLocation', {
+        workLocation: jsonBody?.workLocation,
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/git/checkout') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('checkoutGitBranch', {
+        branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+        discardLocalChanges: jsonBody?.discardLocalChanges === true,
       }),
     );
     return;
@@ -691,18 +740,6 @@ async function handleApiRequest({
       200,
       await runHostCommand('continueAssistantCompletion', {
         messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : NaN,
-      }),
-    );
-    return;
-  }
-
-  if (request.method === 'POST' && pathname === '/api/approval') {
-    writeJson(
-      request,
-      response,
-      200,
-      await runHostCommand('replyPendingApproval', {
-        decision: normalizeApprovalDecisionPayload(jsonBody?.decision),
       }),
     );
     return;

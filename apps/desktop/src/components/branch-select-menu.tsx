@@ -1,0 +1,82 @@
+import { ChevronDown, GitBranch } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+
+type BranchSelectMenuProps = {
+  branches: readonly string[];
+  selectedBranch?: string;
+  currentBranch?: string;
+  disabled?: boolean;
+  onBranchChange(branch: string): void;
+};
+
+export function BranchSelectMenu({
+  branches,
+  selectedBranch,
+  currentBranch,
+  disabled = false,
+  onBranchChange,
+}: BranchSelectMenuProps) {
+  const isRepository = branches.length > 0 || Boolean(currentBranch);
+  const activeBranch = selectedBranch ?? currentBranch;
+  const label = isRepository ? (activeBranch ?? "无分支") : "非 Git 仓库";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="选择分支"
+          disabled={disabled || !isRepository}
+          className={cn(
+            "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+            "text-muted-foreground",
+          )}
+        >
+          <GitBranch className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+          <span className="min-w-0 truncate" title={label}>
+            {label}
+          </span>
+          <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        side="top"
+        className="min-w-[8.5rem] p-0 text-xs"
+      >
+        <ScrollArea
+          type="always"
+          className="[&>[data-radix-scroll-area-viewport]]:max-h-[min(18rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
+          onWheel={(event) => {
+            event.stopPropagation();
+          }}
+          onTouchMove={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <div className="p-1 pr-2">
+            {branches.map((branch) => (
+              <DropdownMenuItem
+                key={branch}
+                onSelect={() => onBranchChange(branch)}
+                className={cn(activeBranch === branch && "bg-accent/40")}
+              >
+                <span className="min-w-0 truncate" title={branch}>
+                  {branch}
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        </ScrollArea>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

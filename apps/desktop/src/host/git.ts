@@ -1,6 +1,13 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+import {
+  checkoutGitBranch as checkoutGitBranchInternal,
+  isGitCheckoutBlockedError,
+  readGitWorkspaceSnapshot,
+  type GitCheckoutOptions,
+} from '@spirit-agent/host-internal';
+
 import type { DesktopCommitMode, DesktopGitSnapshot } from '../types.js';
 
 const execFileAsync = promisify(execFile);
@@ -55,40 +62,35 @@ function truncateChars(text: string, maxChars: number): string {
   return `${chars.slice(0, maxChars).join('')}\n...<truncated>`;
 }
 
-async function readBranchName(workspaceRoot: string): Promise<string | undefined> {
-  const { stdout } = await runGit(workspaceRoot, ['branch', '--show-current']);
-  const branch = stdout.trim();
-  return branch || undefined;
-}
-
 export async function readWorkspaceGitSnapshot(
   workspaceRoot: string,
 ): Promise<DesktopGitSnapshot> {
+  const snapshot = await readGitWorkspaceSnapshot(workspaceRoot);
+  return {
+    isRepository: snapshot.isRepository,
+    hasChanges: snapshot.hasChanges,
+    branches: snapshot.branches,
+    ...(snapshot.branch ? { branch: snapshot.branch } : {}),
+  };
+}
+
+export async function checkoutWorkspaceGitBranch(
+  workspaceRoot: string,
+  branch: string,
+  options: GitCheckoutOptions = {},
+): Promise<DesktopGitSnapshot> {
   try {
-    const [{ stdout: repoFlag }, { stdout: statusOutput }, branch] = await Promise.all([
-      runGit(workspaceRoot, ['rev-parse', '--is-inside-work-tree']),
-      runGit(workspaceRoot, ['status', '--porcelain', '--untracked-files=all']),
-      readBranchName(workspaceRoot),
-    ]);
-
-    if (repoFlag.trim() !== 'true') {
-      return {
-        isRepository: false,
-        hasChanges: false,
-      };
+    await checkoutGitBranchInternal(workspaceRoot, branch, options);
+  } catch (error) {
+    if (isGitCheckoutBlockedError(error)) {
+      const blocked = new Error('工作区有未提交更改，无法切换分支。') as Error & { code: string };
+      blocked.code = 'GIT_CHECKOUT_LOCAL_CHANGES';
+      throw blocked;
     }
-
-    return {
-      isRepository: true,
-      hasChanges: statusOutput.trim().length > 0,
-      ...(branch ? { branch } : {}),
-    };
-  } catch {
-    return {
-      isRepository: false,
-      hasChanges: false,
-    };
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(message.replace(/^git checkout .* failed: /u, 'git checkout 失败：'));
   }
+  return readWorkspaceGitSnapshot(workspaceRoot);
 }
 
 export async function buildWorkspaceGitCommitMessageContext(

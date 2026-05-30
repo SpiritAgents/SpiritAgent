@@ -94,6 +94,15 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   setApprovalLevel(approvalLevel: string) {
     return ipcRenderer.invoke('desktop:invoke', 'setApprovalLevel', { approvalLevel });
   },
+  setPendingGitBranch(branch: string) {
+    return ipcRenderer.invoke('desktop:invoke', 'setPendingGitBranch', { branch });
+  },
+  setWorkLocation(workLocation: string) {
+    return ipcRenderer.invoke('desktop:invoke', 'setWorkLocation', { workLocation });
+  },
+  checkoutGitBranch(request: { branch: string; discardLocalChanges?: boolean }) {
+    return ipcRenderer.invoke('desktop:invoke', 'checkoutGitBranch', request);
+  },
   abortConversation() {
     return ipcRenderer.invoke('desktop:invoke', 'abortConversation');
   },
