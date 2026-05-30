@@ -172,8 +172,17 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
     ])
 }
 
+fn todo_strip_line_count(app: &TuiViewModel) -> usize {
+    match &app.todo_strip {
+        None => 0,
+        Some(strip) if strip.expanded => strip.items.len().saturating_add(1),
+        Some(_) => 1,
+    }
+}
+
 pub(in crate::ui) fn input_block_height(app: &TuiViewModel, max_width: usize) -> u16 {
-    let content_lines = pending_input_header_line_count(app)
+    let content_lines = todo_strip_line_count(app)
+        .saturating_add(pending_input_header_line_count(app))
         .saturating_add(input_visual_line_count(&app.input, max_width))
         .max(1);
     content_lines.saturating_add(2) as u16
@@ -183,7 +192,9 @@ pub(in crate::ui) fn input_cursor_position(app: &TuiViewModel, max_width: usize)
     let prefix: String = app.input.chars().take(app.input_cursor).collect();
     let (row, col) = wrapped_text_cursor_position(&prefix, max_width);
     (
-        pending_input_header_line_count(app).saturating_add(row) as u16,
+        todo_strip_line_count(app)
+            .saturating_add(pending_input_header_line_count(app))
+            .saturating_add(row) as u16,
         col as u16,
     )
 }
@@ -194,6 +205,44 @@ pub(in crate::ui) fn build_input_lines(
     bottom_form_open: bool,
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
+
+    if let Some(strip) = &app.todo_strip {
+        if strip.expanded {
+            let first_pending = strip
+                .items
+                .iter()
+                .position(|entry| entry.status != "completed");
+            for (index, item) in strip.items.iter().enumerate() {
+                let marker = if item.status == "completed" {
+                    "✓"
+                } else if first_pending == Some(index) {
+                    "◐"
+                } else {
+                    "○"
+                };
+                let text = format!("{marker} {}", item.title);
+                lines.push(Line::from(Span::styled(
+                    truncate_to_width(&text, max_width),
+                    if item.status == "completed" {
+                        Style::default().fg(Color::DarkGray)
+                    } else {
+                        Style::default().fg(Color::White)
+                    },
+                )));
+            }
+        } else if let Some(first) = strip.items.first() {
+            let summary = format!(
+                "TODO {}  {}/{}",
+                truncate_to_width(&first.title, max_width.saturating_sub(12)),
+                strip.completed_count,
+                strip.items.len()
+            );
+            lines.push(Line::from(Span::styled(
+                truncate_to_width(&summary, max_width),
+                Style::default().fg(Color::Cyan),
+            )));
+        }
+    }
 
     if let Some(approval) = &app.pending_subagent_approval {
         let summary = format!(

@@ -605,6 +605,8 @@ impl TsBridgeRuntime {
             runtime.workspace_root.display()
         ));
         runtime.initialize_bridge()?;
+        let session_key = runtime.rewind.session_id.clone();
+        runtime.set_todo_session_key(&session_key)?;
         Ok(runtime)
     }
 
@@ -1053,6 +1055,32 @@ impl TsBridgeRuntime {
         self.rewind.can_rewind_message(message_id)
     }
 
+    pub fn set_todo_session_key(&mut self, session_key: &str) -> Result<()> {
+        self.call_bridge(
+            "hostInternal.setTodoSessionKey",
+            Some(serde_json::json!({ "sessionKey": session_key })),
+        )?;
+        Ok(())
+    }
+
+    pub fn list_session_todos(&mut self) -> Result<Vec<rewind::HostTodoRecord>> {
+        #[derive(serde::Deserialize)]
+        struct HostTodoListResponse {
+            todos: Vec<rewind::HostTodoRecord>,
+        }
+        let value = self.call_bridge("hostInternal.listSessionTodos", None)?;
+        let parsed: HostTodoListResponse = serde_json::from_value(value)?;
+        Ok(parsed.todos)
+    }
+
+    pub fn replace_session_todos(&mut self, records: Vec<rewind::HostTodoRecord>) -> Result<()> {
+        self.call_bridge(
+            "hostInternal.replaceSessionTodos",
+            Some(serde_json::json!({ "records": records })),
+        )?;
+        Ok(())
+    }
+
     pub fn record_rewind_checkpoint(
         &mut self,
         message_id: usize,
@@ -1124,6 +1152,12 @@ impl TsBridgeRuntime {
 
         self.rewind.prune_after_checkpoint(checkpoint.sequence);
         self.replace_runtime_archive(&outcome.before_archive)?;
+        let todos_to_restore = snapshot
+            .before_todos
+            .clone()
+            .or(snapshot.todos.clone())
+            .unwrap_or_default();
+        self.replace_session_todos(todos_to_restore)?;
         Ok(outcome)
     }
 
@@ -2213,6 +2247,9 @@ impl TsBridgeRuntime {
                 }
                 BridgeRuntimeEvent::BackgroundToolStatus { .. } => {}
                 BridgeRuntimeEvent::ToolExecutionFinished { execution } => {
+                    if execution.tool_name.starts_with("todo_") {
+                        continue;
+                    }
                     match tool_request_from_host_value(execution.request) {
                         Ok(request) => {
                             self.events.push_back(RuntimeEvent::PushMessage(

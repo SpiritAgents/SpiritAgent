@@ -42,6 +42,7 @@ export interface LocalHostToolService {
 export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue> {
   private hostToolDefinitionsCache: JsonValue = [];
   private extensionToolDefinitionsCache: JsonValue[] = [];
+  private todoToolDefinitionsCache: JsonValue[] = [];
   private hostToolDefinitionsLoaded = false;
   private toolDefinitionsCache: JsonValue = [];
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
@@ -65,6 +66,11 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
   setExtensionToolDefinitions(definitions: JsonValue[] | undefined): void {
     this.extensionToolDefinitionsCache = Array.isArray(definitions) ? [...definitions] : [];
+    this.refreshMergedToolDefinitions();
+  }
+
+  setTodoToolDefinitions(definitions: JsonValue[] | undefined): void {
+    this.todoToolDefinitionsCache = Array.isArray(definitions) ? [...definitions] : [];
     this.refreshMergedToolDefinitions();
   }
 
@@ -378,8 +384,11 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     const hostDefinitions = this.imageGenerationAvailable
       ? this.hostToolDefinitionsCache
       : filterToolDefinitionByName(this.hostToolDefinitionsCache, 'generate_image');
+    const mergedHostDefinitions = Array.isArray(hostDefinitions)
+      ? [...hostDefinitions, ...this.todoToolDefinitionsCache]
+      : [...this.todoToolDefinitionsCache];
     this.toolDefinitionsCache = mergeToolDefinitions(
-      hostDefinitions,
+      mergedHostDefinitions,
       this.extensionToolDefinitionsCache,
       this.mcp.toolDefinitionsJson(),
     );

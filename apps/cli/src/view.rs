@@ -330,6 +330,20 @@ pub struct CliUiHookView {
 }
 
 #[derive(Clone, Debug)]
+pub struct TodoStripItemView {
+    pub id: String,
+    pub title: String,
+    pub status: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct TodoStripView {
+    pub items: Vec<TodoStripItemView>,
+    pub expanded: bool,
+    pub completed_count: usize,
+}
+
+#[derive(Clone, Debug)]
 pub struct TuiViewModel {
     pub input: String,
     pub input_cursor: usize,
@@ -377,6 +391,7 @@ pub struct TuiViewModel {
     pub persisted_standalone_pending_aux_anchor: Option<usize>,
     pub cli_ui_hooks: Vec<CliUiHookView>,
     pub marketplace_view: Option<MarketplaceViewModel>,
+    pub todo_strip: Option<TodoStripView>,
     /// 对话区选区：折行后的全局行号 + 显示列（与 WordWrapper 一致）。
     pub conversation_sel_anchor: Option<(usize, usize)>,
     pub conversation_sel_head: Option<(usize, usize)>,
