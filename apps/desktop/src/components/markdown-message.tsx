@@ -131,36 +131,74 @@ function MarkdownImage({
   );
 }
 
+type MarkdownTone = "default" | "muted";
+
 function createMarkdownComponents(
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl,
+  tone: MarkdownTone = "default",
 ): Partial<Components> {
+  const muted = tone === "muted";
+  const bodyText = muted
+    ? "text-sm leading-relaxed text-muted-foreground"
+    : "text-sm leading-relaxed text-foreground/95";
+  const headingText = muted ? "text-muted-foreground" : "text-foreground";
+  const inlineCodeText = muted ? "text-muted-foreground" : "text-foreground";
+  const blockCodeText = muted ? "text-muted-foreground" : "text-foreground";
+  const tableCellText = muted ? "text-muted-foreground" : "text-foreground/95";
+
   return {
     h1: ({ className, ...props }) => (
       <h1
-        className={cn("mt-3 mb-2 text-lg font-semibold tracking-tight text-foreground first:mt-0", className)}
+        className={cn(
+          muted
+            ? "mt-2 mb-1.5 text-sm font-semibold tracking-tight first:mt-0"
+            : "mt-3 mb-2 text-lg font-semibold tracking-tight first:mt-0",
+          headingText,
+          className,
+        )}
         {...props}
       />
     ),
     h2: ({ className, ...props }) => (
       <h2
-        className={cn("mt-3 mb-1.5 text-base font-semibold tracking-tight text-foreground first:mt-0", className)}
+        className={cn(
+          muted
+            ? "mt-2 mb-1 text-sm font-semibold tracking-tight first:mt-0"
+            : "mt-3 mb-1.5 text-base font-semibold tracking-tight first:mt-0",
+          headingText,
+          className,
+        )}
         {...props}
       />
     ),
     h3: ({ className, ...props }) => (
-      <h3 className={cn("mt-2 mb-1 text-sm font-semibold text-foreground first:mt-0", className)} {...props} />
+      <h3
+        className={cn(
+          "mt-2 mb-1 text-sm font-semibold first:mt-0",
+          headingText,
+          className,
+        )}
+        {...props}
+      />
     ),
     h4: ({ className, ...props }) => (
-      <h4 className={cn("mt-2 mb-1 text-sm font-medium text-foreground first:mt-0", className)} {...props} />
+      <h4
+        className={cn(
+          "mt-2 mb-1 text-sm font-medium first:mt-0",
+          headingText,
+          className,
+        )}
+        {...props}
+      />
     ),
     p: ({ className, ...props }) => (
-      <p className={cn("mb-2 text-sm leading-relaxed text-foreground/95 last:mb-0", className)} {...props} />
+      <p className={cn("mb-2 last:mb-0", bodyText, className)} {...props} />
     ),
     ul: ({ className, ...props }) => (
-      <ul className={cn("mb-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground/95 last:mb-0", className)} {...props} />
+      <ul className={cn("mb-2 list-disc space-y-1 pl-5 last:mb-0", bodyText, className)} {...props} />
     ),
     ol: ({ className, ...props }) => (
-      <ol className={cn("mb-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-foreground/95 last:mb-0", className)} {...props} />
+      <ol className={cn("mb-2 list-decimal space-y-1 pl-5 last:mb-0", bodyText, className)} {...props} />
     ),
     li: ({ className, ...props }) => <li className={cn("break-words", className)} {...props} />,
     blockquote: ({ className, ...props }) => (
@@ -175,7 +213,12 @@ function createMarkdownComponents(
     hr: ({ className, ...props }) => <hr className={cn("my-4 border-border/60", className)} {...props} />,
     a: ({ className, href, children, ...props }) => (
       <a
-        className={cn("break-words text-primary underline underline-offset-2 hover:opacity-90", className)}
+        className={cn(
+          muted
+            ? "break-words text-muted-foreground underline underline-offset-2 hover:text-foreground/80"
+            : "break-words text-primary underline underline-offset-2 hover:opacity-90",
+          className,
+        )}
         href={href}
         target="_blank"
         rel="noopener noreferrer"
@@ -184,14 +227,17 @@ function createMarkdownComponents(
         {children}
       </a>
     ),
-    strong: ({ className, ...props }) => <strong className={cn("font-semibold text-foreground", className)} {...props} />,
+    strong: ({ className, ...props }) => (
+      <strong className={cn("font-semibold", muted ? "text-muted-foreground" : "text-foreground", className)} {...props} />
+    ),
     em: ({ className, ...props }) => <em className={cn("italic", className)} {...props} />,
     del: ({ className, ...props }) => <del className={cn("line-through text-muted-foreground", className)} {...props} />,
     code: ({ className, children, ...props }) => (
       <code
         className={cn(
-          "break-words font-mono text-[0.85em] leading-relaxed text-foreground",
-          "rounded-md border border-border/40 bg-muted/60 px-1 py-px",
+          "break-words font-mono text-[0.85em] leading-relaxed",
+          inlineCodeText,
+          muted ? "rounded-md border border-border/30 bg-muted/40 px-1 py-px" : "rounded-md border border-border/40 bg-muted/60 px-1 py-px",
           "[pre>&]:m-0 [pre>&]:block [pre>&]:w-full [pre>&]:max-w-none [pre>&]:rounded-none [pre>&]:border-0 [pre>&]:bg-transparent [pre>&]:p-0 [pre>&]:text-xs [pre>&]:whitespace-pre",
           className,
         )}
@@ -203,7 +249,9 @@ function createMarkdownComponents(
     pre: ({ className, children, ...props }) => (
       <pre
         className={cn(
-          "mb-2 max-w-full overflow-x-auto rounded-md border border-border/40 bg-muted/30 p-3 font-mono text-xs leading-relaxed text-foreground last:mb-0",
+          "mb-2 max-w-full overflow-x-auto rounded-md border p-3 font-mono text-xs leading-relaxed last:mb-0",
+          muted ? "border-border/30 bg-muted/20" : "border-border/40 bg-muted/30",
+          blockCodeText,
           className,
         )}
         {...props}
@@ -220,10 +268,17 @@ function createMarkdownComponents(
     ),
     thead: ({ className, ...props }) => <thead className={cn("bg-muted/40", className)} {...props} />,
     th: ({ className, ...props }) => (
-      <th className={cn("border border-border/50 px-2 py-1.5 text-left font-medium text-foreground", className)} {...props} />
+      <th
+        className={cn(
+          "border border-border/50 px-2 py-1.5 text-left font-medium",
+          muted ? "text-muted-foreground" : "text-foreground",
+          className,
+        )}
+        {...props}
+      />
     ),
     td: ({ className, ...props }) => (
-      <td className={cn("border border-border/50 px-2 py-1.5 align-top text-foreground/95", className)} {...props} />
+      <td className={cn("border border-border/50 px-2 py-1.5 align-top", tableCellText, className)} {...props} />
     ),
     tr: ({ className, ...props }) => <tr className={cn("", className)} {...props} />,
     img: ({ className, ...props }) => (
@@ -252,19 +307,27 @@ function createMarkdownComponents(
 export function MarkdownMessage({
   content,
   className,
+  tone = "default",
   readManagedImagePreviewDataUrl,
 }: {
   content: string;
   className?: string;
+  tone?: MarkdownTone;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
 }) {
   const markdownComponents = useMemo(
-    () => createMarkdownComponents(readManagedImagePreviewDataUrl),
-    [readManagedImagePreviewDataUrl],
+    () => createMarkdownComponents(readManagedImagePreviewDataUrl, tone),
+    [readManagedImagePreviewDataUrl, tone],
   );
 
   return (
-    <div className={cn("min-w-0 break-words text-foreground/95", className)}>
+    <div
+      className={cn(
+        "min-w-0 break-words",
+        tone === "muted" ? "font-sans text-sm leading-relaxed text-muted-foreground" : "text-foreground/95",
+        className,
+      )}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={markdownComponents}
