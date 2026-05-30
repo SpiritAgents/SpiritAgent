@@ -73,6 +73,7 @@ export class DesktopToolExecutor
   constructor(
     private readonly workspaceRoot: string,
     options: {
+      mcp?: McpService;
       extensionToolDefinitions?: JsonValue[];
       fileChangeObserver?: HostFileChangeObserver;
       extensions?: HostExtensionRuntimeBinding<unknown>;
@@ -82,7 +83,7 @@ export class DesktopToolExecutor
       todoScope?: HostTodoScope;
     } = {},
   ) {
-    this.mcp = new McpService(workspaceRoot);
+    this.mcp = options.mcp ?? new McpService(workspaceRoot);
     this.extensionToolDefinitions = [...(options.extensionToolDefinitions ?? [])];
     this.dreamScope = options.dreamScope;
     this.todoScope = options.todoScope;
@@ -279,6 +280,14 @@ export class DesktopToolExecutor
 
   startMcpBackgroundRefresh(): void {
     this.mcp.startBackgroundRefreshInBackground(true);
+  }
+
+  /** Await MCP tool catalog before the first LLM round (background refresh alone is too late). */
+  async ensureMcpToolingReady(): Promise<void> {
+    if (this.mcp.statusSnapshot().configuredServers === 0) {
+      return;
+    }
+    await this.mcp.ensureToolingCache();
   }
 
   mcpStatusSnapshot(): McpStatusSnapshot {
