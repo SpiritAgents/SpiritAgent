@@ -3,6 +3,7 @@ import { createLlmMessageContentFromTextAndImages, type LlmMessage } from '../po
 import {
   formatPendingMcpResourceContext,
   formatPendingWorkspaceFileContext,
+  repairMissingToolResultsInHistory,
 } from './helpers.js';
 import { formatUserMessageContentForLlm } from './user-turn-timestamp.js';
 import type {
@@ -60,6 +61,7 @@ export async function prepareSubmittedUserTurn<
     runtime.recordContextMessage('system', formatPendingMcpResourceContext(resource));
   }
 
+  runtime.historyStore = repairMissingToolResultsInHistory(runtime.historyStore);
   const contentForLlm = formatUserMessageContentForLlm(userInput);
   runtime.historyStore.push({
     role: 'user',

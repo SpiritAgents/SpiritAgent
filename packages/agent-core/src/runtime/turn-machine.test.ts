@@ -3,9 +3,10 @@ import test from 'node:test';
 
 import { AgentRuntime } from '../runtime.js';
 import { assistantToolCallMessageFromState } from '../tool-agent.js';
-import { createTurnContext } from './helpers.js';
+import { createTurnContext, repairMissingToolResultsInHistory } from './helpers.js';
 import {
   processToolCalls,
+  resumePendingApproval,
   runTurnLoop,
   shouldSkipPersistAssistantToolCalls,
   type TurnMachineRuntime,
@@ -27,6 +28,99 @@ test('shouldSkipPersistAssistantToolCalls skips subset re-persist after partial 
     shouldSkipPersistAssistantToolCalls(history, [{ id: 'call_02', name: 'read_file', argumentsJson: '{}' }]),
     false,
   );
+});
+
+test('resumePendingApproval deny persists tool result into historyStore', async () => {
+  const state = {
+    messages: [{
+      role: 'assistant',
+      content: 'run shell',
+      tool_calls: [{
+        id: 'call_shell',
+        type: 'function',
+        function: { name: 'run_shell_command', arguments: '{}' },
+      }],
+    }],
+    steps: 0,
+  };
+  const request = { name: 'run_shell_command', argumentsJson: '{}' };
+  const turn = createTurnContext<{ name: string; argumentsJson: string }>();
+  const historyStore = [{
+    role: 'assistant' as const,
+    content: [{ type: 'text' as const, text: 'run shell' }],
+    toolCalls: [{
+      id: 'call_shell',
+      name: 'run_shell_command',
+      argumentsJson: '{}',
+    }],
+  }];
+  const runtime = {
+    options: buildAgentRuntimeOptions([{ kind: 'final', text: 'summary after deny' }]),
+    historyStore,
+    requestTraceStore: [],
+    pendingUserTurnStore: 'check types',
+    pendingApproval: {
+      pendingUserInput: 'check types',
+      state,
+      request,
+      toolCallId: 'call_shell',
+      toolName: 'run_shell_command',
+      remainingCalls: [],
+      turn,
+    },
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async () => {
+      throw new Error('unused');
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error('unused');
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, typeof request>;
+
+  const result = await resumePendingApproval(runtime, { kind: 'deny' });
+
+  assert.equal(result.kind, 'completed');
+  const toolMessage = runtime.historyStore.find(
+    (message) => message.role === 'tool' && message.toolCallId === 'call_shell',
+  );
+  assert.ok(toolMessage);
+  assert.equal(
+    toolMessage?.content[0]?.type === 'text' ? toolMessage.content[0].text : '',
+    '[denied by user] tool call rejected by user approval policy',
+  );
+});
+
+test('repairMissingToolResultsInHistory inserts placeholders for orphaned tool calls', () => {
+  const history = [
+    {
+      role: 'assistant' as const,
+      content: [{ type: 'text' as const, text: 'run shell' }],
+      toolCalls: [{
+        id: 'call_00_zbxFvpiBoJJIy2ca3n8b4482',
+        name: 'run_shell_command',
+        argumentsJson: '{}',
+      }],
+    },
+    {
+      role: 'assistant' as const,
+      content: [{ type: 'text' as const, text: 'The tool was rejected but continuing.' }],
+    },
+  ];
+
+  const repaired = repairMissingToolResultsInHistory(history);
+  const toolMessage = repaired.find(
+    (message) => message.role === 'tool' && message.toolCallId === 'call_00_zbxFvpiBoJJIy2ca3n8b4482',
+  );
+
+  assert.ok(toolMessage);
+  assert.equal(repaired.indexOf(toolMessage!), 1);
 });
 
 test('processToolCalls does not re-persist assistant tool calls when continuing remaining calls', async () => {

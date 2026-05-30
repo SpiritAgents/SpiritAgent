@@ -42,6 +42,7 @@ import {
   promptMessagesFromValue,
   renderError,
   isCompatibleContinuedToolRequest,
+  repairMissingToolResultsInHistory,
   shortLabelForPendingMcpResource,
   toolArtifactsFromOutput,
   toolNameFromRequest,
@@ -59,6 +60,7 @@ import {
   executeAuthorizedToolCall as executeAuthorizedToolCallInternal,
   handlePendingToolAgentRoundCompletion as handlePendingToolAgentRoundCompletionInternal,
   pollPendingToolAgentRound as pollPendingToolAgentRoundInternal,
+  commitSyntheticToolExecutionFailure,
   processToolCalls as processToolCallsInternal,
   processToolCallsAsync as processToolCallsAsyncInternal,
   resumePendingApproval as resumePendingApprovalInternal,
@@ -578,7 +580,7 @@ export class AgentRuntime<
   }
 
   replaceHistory(history: LlmMessage[]): void {
-    this.historyStore = cloneHistory(history);
+    this.historyStore = repairMissingToolResultsInHistory(cloneHistory(history));
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -592,7 +594,9 @@ export class AgentRuntime<
   }
 
   replaceFromArchive(archive: ChatArchive): void {
-    this.historyStore = archive.llmHistory.map((message) => normalizeStoredLlmMessage(message));
+    this.historyStore = repairMissingToolResultsInHistory(
+      archive.llmHistory.map((message) => normalizeStoredLlmMessage(message)),
+    );
     this.loopEnabledStore = archive.loopEnabled === true;
     this.requestTraceStore = [];
     this.clearPendingStreamingState();
@@ -974,6 +978,14 @@ export class AgentRuntime<
         ? decision.resultText
         : '[denied by user] tool call rejected by user guidance';
       const guidanceMessage = decision.userMessage.trim();
+      commitSyntheticToolExecutionFailure(
+        this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+        pending.turn,
+        pending.request,
+        pending.toolCallId,
+        pending.toolName,
+        guidanceText,
+      );
       let resumedState = this.options.appendToolResultMessage(
         pending.state,
         pending.toolCallId,
@@ -1040,6 +1052,14 @@ export class AgentRuntime<
     const deniedText = decision.resultText?.trim()
       ? decision.resultText
       : '[denied by user] tool call rejected by user approval policy';
+    commitSyntheticToolExecutionFailure(
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      pending.turn,
+      pending.request,
+      pending.toolCallId,
+      pending.toolName,
+      deniedText,
+    );
     const resumedState = this.options.appendToolResultMessage(
       pending.state,
       pending.toolCallId,
