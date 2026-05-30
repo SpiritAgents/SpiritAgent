@@ -45,6 +45,7 @@ export type HostCommandName =
   | 'setPendingGitBranch'
   | 'setWorkLocation'
   | 'checkoutGitBranch'
+  | 'mergeWorktreeToMain'
   | 'abortConversation'
   | 'continueAssistantCompletion'
   | 'poll'

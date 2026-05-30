@@ -12,10 +12,9 @@ import { cn } from "@/lib/utils";
 const WORK_LOCATION_OPTIONS: Array<{
   value: WorkLocationKind;
   label: string;
-  hint?: string;
 }> = [
   { value: "local", label: "Local" },
-  { value: "worktree", label: "Worktree", hint: "即将推出" },
+  { value: "worktree", label: "Worktree" },
 ];
 
 function workLocationLabel(workLocation: WorkLocationKind): string {
@@ -65,9 +64,6 @@ export function WorkLocationMenu({
             )}
           >
             <span>{option.label}</span>
-            {option.hint ? (
-              <span className="text-[0.65rem] text-muted-foreground">{option.hint}</span>
-            ) : null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

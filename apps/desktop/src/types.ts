@@ -593,6 +593,16 @@ export interface DesktopGitSnapshot {
   selectedBranch?: string;
   /** Session work-location preference; populated on client snapshots. */
   workLocation?: import('@spirit-agent/host-internal').WorkLocationKind;
+  /** True when the active workspace path is a linked Git worktree. */
+  isWorktreeSession?: boolean;
+  /** Primary repository root for the active worktree session. */
+  primaryRepoRoot?: string;
+  /** Directory name under `{repoRoot}.worktrees/`. */
+  worktreeName?: string;
+  /** Current spirit/ branch checked out in the worktree. */
+  worktreeBranch?: string;
+  /** Default branch on the primary repository (for merge UI). */
+  defaultBranch?: string;
 }
 
 export interface ModelProfileSnapshot {

@@ -2,13 +2,20 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import {
+  addGitWorktree as addGitWorktreeInternal,
   checkoutGitBranch as checkoutGitBranchInternal,
+  buildWorktreeRootPath,
   isGitCheckoutBlockedError,
+  mergeSpiritBranchToMain as mergeSpiritBranchToMainInternal,
   readGitWorkspaceSnapshot,
+  readWorktreeContext,
+  resolveDefaultBranch,
+  resolvePrimaryRepoRoot,
   type GitCheckoutOptions,
 } from '@spirit-agent/host-internal';
 
 import type { DesktopCommitMode, DesktopGitSnapshot } from '../types.js';
+import type { GeneratedWorktreeNames } from './worktree-naming.js';
 
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
@@ -66,12 +73,59 @@ export async function readWorkspaceGitSnapshot(
   workspaceRoot: string,
 ): Promise<DesktopGitSnapshot> {
   const snapshot = await readGitWorkspaceSnapshot(workspaceRoot);
+  const worktreeContext = await readWorktreeContext(workspaceRoot);
+  const defaultBranch = worktreeContext.isWorktree && worktreeContext.repoRoot
+    ? await resolveDefaultBranch(worktreeContext.repoRoot).catch(() => undefined)
+    : undefined;
+
   return {
     isRepository: snapshot.isRepository,
     hasChanges: snapshot.hasChanges,
     branches: snapshot.branches,
     ...(snapshot.branch ? { branch: snapshot.branch } : {}),
+    ...(worktreeContext.isWorktree
+      ? {
+          isWorktreeSession: true,
+          ...(worktreeContext.repoRoot ? { primaryRepoRoot: worktreeContext.repoRoot } : {}),
+          ...(worktreeContext.worktreeName ? { worktreeName: worktreeContext.worktreeName } : {}),
+          ...(worktreeContext.branch ? { worktreeBranch: worktreeContext.branch } : {}),
+        }
+      : {}),
+    ...(defaultBranch ? { defaultBranch } : {}),
   };
+}
+
+export async function createWorkspaceGitWorktree(
+  repoRoot: string,
+  names: GeneratedWorktreeNames,
+  baseBranch: string,
+): Promise<{ worktreePath: string; branchName: string }> {
+  const worktreePath = buildWorktreeRootPath(repoRoot, names.worktreeName);
+  await addGitWorktreeInternal(repoRoot, {
+    worktreePath,
+    branchName: names.branchName,
+    baseBranch,
+  });
+  return {
+    worktreePath,
+    branchName: names.branchName,
+  };
+}
+
+export async function mergeWorktreeBranchToMain(
+  primaryRepoRoot: string,
+  branchName: string,
+): Promise<void> {
+  try {
+    await mergeSpiritBranchToMainInternal(primaryRepoRoot, branchName);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(message.replace(/^git merge .* failed: /u, 'git merge 失败：'));
+  }
+}
+
+export async function readPrimaryRepoRoot(workspaceRoot: string): Promise<string> {
+  return resolvePrimaryRepoRoot(workspaceRoot);
 }
 
 export async function checkoutWorkspaceGitBranch(

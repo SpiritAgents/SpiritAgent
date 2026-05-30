@@ -111,6 +111,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     checkoutGitBranch(request) {
       return bridge.checkoutGitBranch(request);
     },
+    mergeWorktreeToMain() {
+      return bridge.mergeWorktreeToMain();
+    },
     abortConversation() {
       return bridge.abortConversation();
     },

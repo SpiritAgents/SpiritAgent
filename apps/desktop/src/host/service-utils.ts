@@ -16,6 +16,12 @@ import type {
 } from '../types.js';
 import type { DesktopToolRequest } from './contracts.js';
 import {
+  isSpiritBranchName,
+  isSpiritWorktreeName,
+  resolveWorkspaceGroupingRoot,
+} from '@spirit-agent/host-internal';
+import type { GeneratedWorktreeNames } from './worktree-naming.js';
+import {
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
   mergeRecentWorkspaceRoots,
@@ -40,10 +46,23 @@ export function deriveWorkspaceLabel(workspaceRoot: string): string {
 }
 
 export function buildAvailableWorkspaces(currentWorkspaceRoot: string, recentWorkspaces?: string[]) {
-  return mergeRecentWorkspaceRoots(recentWorkspaces, currentWorkspaceRoot).map((workspaceRoot) => ({
-    path: workspaceRoot,
-    label: deriveWorkspaceLabel(workspaceRoot),
-  }));
+  const groupingCurrent = resolveWorkspaceGroupingRoot(currentWorkspaceRoot);
+  const merged = mergeRecentWorkspaceRoots(recentWorkspaces, groupingCurrent);
+  const seen = new Set<string>();
+  const items: Array<{ path: string; label: string }> = [];
+  for (const workspaceRoot of merged) {
+    const groupingRoot = resolveWorkspaceGroupingRoot(workspaceRoot);
+    const key = groupingRoot.replace(/\\/g, '/').toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    items.push({
+      path: groupingRoot,
+      label: deriveWorkspaceLabel(groupingRoot),
+    });
+  }
+  return items;
 }
 
 export function cloneDesktopConfig(config: DesktopConfigFile): DesktopConfigFile {
@@ -89,6 +108,51 @@ export function parseGeneratedCommitMessageResponse(rawText: string): string {
   }
 
   return normalizeGeneratedCommitMessage((parsed as { message?: unknown }).message);
+}
+
+export function normalizeGeneratedWorktreeNames(value: {
+  worktreeName?: unknown;
+  branchName?: unknown;
+}): GeneratedWorktreeNames {
+  if (typeof value.worktreeName !== 'string' || typeof value.branchName !== 'string') {
+    throw new Error('自动生成 Worktree 名称失败：模型未返回 worktreeName 或 branchName 字段。');
+  }
+
+  const worktreeName = value.worktreeName.trim();
+  const branchName = value.branchName.trim();
+  if (!worktreeName || !branchName) {
+    throw new Error('自动生成 Worktree 名称失败：模型返回了空名称。');
+  }
+  if (!isSpiritWorktreeName(worktreeName)) {
+    throw new Error(`自动生成 Worktree 名称失败：worktreeName 格式无效（${worktreeName}）。`);
+  }
+  if (!isSpiritBranchName(branchName)) {
+    throw new Error(`自动生成 Worktree 名称失败：branchName 格式无效（${branchName}）。`);
+  }
+
+  return { worktreeName, branchName };
+}
+
+export function parseGeneratedWorktreeNamingResponse(rawText: string): GeneratedWorktreeNames {
+  const trimmed = rawText.trim();
+  if (!trimmed) {
+    throw new Error('自动生成 Worktree 名称失败：模型未返回正文。');
+  }
+
+  const candidate = extractJsonObjectText(trimmed);
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(candidate);
+  } catch {
+    throw new Error('自动生成 Worktree 名称失败：模型未返回合法 JSON。');
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error('自动生成 Worktree 名称失败：模型返回的 JSON 不是对象。');
+  }
+
+  return normalizeGeneratedWorktreeNames(parsed as { worktreeName?: unknown; branchName?: unknown });
 }
 
 function extractJsonObjectText(text: string): string {

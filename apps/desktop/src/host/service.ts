@@ -129,13 +129,16 @@ import {
   buildArchiveMessagesFromConversation,
   buildCommitEphemeralSessionRecord,
   buildStoredDesktopSession,
+  buildWorktreeEphemeralSessionRecord,
   createEphemeralCommitSessionPath,
+  createEphemeralWorktreeSessionPath,
   deriveDisplayNameFromSeed,
   ephemeralSessionsToListItems,
   type EphemeralSessionRecord,
-  isEphemeralCommitSessionPath,
+  isEphemeralDebugSessionPath,
   nextMessageIdFromMessages,
   rememberEphemeralSessionRecord,
+  rememberEphemeralWorktreeSessionRecord,
   restoreEphemeralSessionState,
   restoreStoredSessionState,
   sanitizeConversationMessagesForPersistence,
@@ -219,6 +222,7 @@ import {
   currentApiBase,
   mapPendingQuestions,
   parseGeneratedCommitMessageResponse,
+  parseGeneratedWorktreeNamingResponse,
   sameDreamCollectorSnapshot,
   sameWorkspaceRoot,
   toRuntimeAskQuestionsResult,
@@ -268,8 +272,12 @@ import {
   buildWorkspaceGitCommitMessageContext,
   checkoutWorkspaceGitBranch,
   commitWorkspaceChanges,
+  createWorkspaceGitWorktree,
+  mergeWorktreeBranchToMain,
+  readPrimaryRepoRoot,
   readWorkspaceGitSnapshot,
 } from './git.js';
+import { buildWorktreeNamingPrompt } from './worktree-naming.js';
 import { SessionRegistry } from './session-registry.js';
 import type { SessionBundle } from './session-bundle.js';
 import {
@@ -322,6 +330,7 @@ type CommandPayloads = {
   setPendingGitBranch: { branch: string };
   setWorkLocation: { workLocation: WorkLocationKind };
   checkoutGitBranch: CheckoutGitBranchRequest;
+  mergeWorktreeToMain: undefined;
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };
@@ -1459,6 +1468,18 @@ class DesktopHostService {
   async submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
+      const trimmed = request.text.trim();
+      const bundle = this.activeBundle();
+      const hasLocalFiles = Array.isArray(request.localFilePaths) && request.localFilePaths.length > 0;
+      if (!trimmed && !hasLocalFiles) {
+        throw new Error('消息不能为空。');
+      }
+
+      const isFirstTurn = bundle.messages.length === 0;
+      if (isFirstTurn && bundle.workLocation === 'worktree') {
+        await this.bootstrapWorktreeForFirstTurn(trimmed);
+      }
+
       return this.submitUserTurnAfterInitialized(request.text, {
         explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
       });
@@ -1542,6 +1563,25 @@ class DesktopHostService {
       await this.refreshRuntimeForBundle(this.activeBundle());
       this.syncActiveRuntimePointer();
       this.startDreamCollectorIfNeeded();
+      return this.buildSnapshot();
+    });
+  }
+
+  async mergeWorktreeToMain(): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      if (this.runtime?.isBusy()) {
+        throw new Error('当前已有响应或审批在处理中，请稍候。');
+      }
+
+      const state = this.requireState();
+      const git = state.git;
+      if (!git.isWorktreeSession || !git.primaryRepoRoot || !git.worktreeBranch) {
+        throw new Error('当前会话不在 Worktree 中，无法合并。');
+      }
+
+      await mergeWorktreeBranchToMain(git.primaryRepoRoot, git.worktreeBranch);
+      state.git = await readWorkspaceGitSnapshot(state.workspaceRoot);
       return this.buildSnapshot();
     });
   }
@@ -1950,7 +1990,7 @@ class DesktopHostService {
 
   async listSessions(): Promise<SessionListItem[]> {
     return this.runSerialized(async () => {
-      await this.ensureInitialized();
+      await this.ensureInitialized(undefined, { fastPath: true });
       const state = this.requireState();
       const activeId = this.sessionRegistry.activeSessionId();
       const stored = await listStoredSessions();
@@ -2053,7 +2093,7 @@ class DesktopHostService {
         });
       }
 
-      if (isEphemeralCommitSessionPath(filePath)) {
+      if (isEphemeralDebugSessionPath(filePath)) {
         const ephemeral = this.findEphemeralSession(filePath);
         if (!ephemeral) {
           throw new Error('临时调试会话不存在或已过期。');
@@ -2247,6 +2287,8 @@ class DesktopHostService {
         const typedPayload = payload as CommandPayloads['checkoutGitBranch'];
         return this.checkoutGitBranch(typedPayload);
       }
+      case 'mergeWorktreeToMain':
+        return this.mergeWorktreeToMain();
       case 'abortConversation':
         return this.abortConversation();
       case 'continueAssistantCompletion': {
@@ -2316,13 +2358,17 @@ class DesktopHostService {
 
     const loadedConfig = await loadConfig();
     const workspaceRoot = requestedWorkspaceRoot
+      ?? (this.initialized && this.state?.workspaceRoot ? this.state.workspaceRoot : undefined)
       ?? loadedConfig.recentWorkspaces?.[0]
       ?? discoverWorkspaceRoot();
+    const git = await readWorkspaceGitSnapshot(workspaceRoot);
     const config = {
       ...loadedConfig,
-      recentWorkspaces: mergeRecentWorkspaceRoots(loadedConfig.recentWorkspaces, workspaceRoot),
+      recentWorkspaces: mergeRecentWorkspaceRoots(
+        loadedConfig.recentWorkspaces,
+        git.primaryRepoRoot ?? workspaceRoot,
+      ),
     } satisfies DesktopConfigFile;
-    const git = await readWorkspaceGitSnapshot(workspaceRoot);
 
     if (
       !loadedConfig.recentWorkspaces ||
@@ -3042,6 +3088,219 @@ class DesktopHostService {
       this.rememberEphemeralSession(buildCommitEphemeralSessionRecord({
         path: sessionPath,
         displayName: '[Commit] 自动生成失败',
+        workspaceRoot: state.workspaceRoot,
+        messages: finalMessages,
+      }));
+      throw error;
+    }
+  }
+
+  private rememberEphemeralWorktreeSession(record: EphemeralSessionRecord): void {
+    const state = this.requireState();
+    state.ephemeralSessions = rememberEphemeralWorktreeSessionRecord(state.ephemeralSessions, record);
+  }
+
+  private async bootstrapWorktreeForFirstTurn(userPrompt: string): Promise<void> {
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+
+    if (!state.git.isRepository) {
+      throw new Error('当前工作区不是 Git 仓库，无法创建 Worktree。');
+    }
+
+    const repoRoot = await readPrimaryRepoRoot(state.workspaceRoot);
+    const worktreeContext = await readWorkspaceGitSnapshot(state.workspaceRoot);
+    if (worktreeContext.isWorktreeSession) {
+      throw new Error('当前已在 Worktree 中，请新建会话后再创建 Worktree。');
+    }
+
+    const baseBranch = bundle.pendingGitBranch ?? state.git.branch;
+    if (!baseBranch) {
+      throw new Error('无法确定 Worktree 的基础分支。');
+    }
+    if (!state.git.branches.includes(baseBranch)) {
+      throw new Error(`基础分支不存在：${baseBranch}`);
+    }
+
+    const names = await this.generateWorktreeNamesFromModel(userPrompt, baseBranch, repoRoot);
+    const created = await createWorkspaceGitWorktree(repoRoot, names, baseBranch);
+
+    bundle.pendingGitBranch = undefined;
+    bundle.workLocation = 'local';
+    bundle.workspaceRoot = created.worktreePath;
+
+    await this.adoptWorkspaceRootForActiveBundle(created.worktreePath);
+    this.startDreamCollectorIfNeeded();
+  }
+
+  private async adoptWorkspaceRootForActiveBundle(workspaceRoot: string): Promise<void> {
+    const resolved = path.resolve(workspaceRoot);
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+    const switchingWorkspace = !sameWorkspaceRoot(state.workspaceRoot, resolved);
+
+    if (switchingWorkspace) {
+      await this.extensionManager().deactivateAll();
+      this.lastRuntimeError = '';
+      this.toolExecutor = undefined;
+      this.resetStreamingPlacementState(true);
+    }
+
+    state.workspaceRoot = resolved;
+    state.git = await readWorkspaceGitSnapshot(resolved);
+    state.metadata = await loadHostMetadata(resolved, state.config.planMode === true);
+    state.plan = await loadDesktopPlanSnapshot(
+      state.metadata.planMetadata.path,
+      state.metadata.planMetadata.exists,
+    );
+    bundle.workspaceRoot = resolved;
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    if (switchingWorkspace) {
+      await this.refreshExtensionsList();
+      await this.dispatchExtensionEvent({
+        type: 'onStartup',
+        detail: {
+          workspaceRoot: resolved,
+        },
+      });
+    }
+  }
+
+  private async generateWorktreeNamesFromModel(
+    userPrompt: string,
+    baseBranch: string,
+    repoRoot: string,
+  ): Promise<{ worktreeName: string; branchName: string }> {
+    const state = this.requireState();
+    const activeProfile = state.config.models.find((model) => model.name === state.config.activeModel);
+    const apiKey = await resolveApiKeyForModel(state.config.activeModel);
+    if (!apiKey) {
+      throw new Error('自动生成 Worktree 名称失败：当前模型未配置 API Key。');
+    }
+
+    const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
+    const dreamContextText = await buildDreamContextText({
+      workspaceRoot: state.workspaceRoot,
+      gitBranch: state.git.branch,
+    });
+    const prompt = buildWorktreeNamingPrompt({
+      userPrompt,
+      baseBranch,
+      repoRoot,
+    });
+    const transportConfig = buildPrimaryTransportConfig({
+      apiKey,
+      model: state.config.activeModel,
+      baseUrl: currentApiBase(state.config),
+      workspaceRoot: state.workspaceRoot,
+      profile: activeProfile,
+    });
+    const llmTransport = createLlmTransport(transportConfig);
+    const toolExecutor = await this.ensureToolExecutor();
+    toolExecutor.setActiveTransportConfig(transportConfig);
+    const dreamToolDefinitions = state.git.branch ? buildDreamReadHostToolDefinitions() : [];
+    let toolState = startLlmToolAgentState(
+      [],
+      prompt,
+      state.workspaceRoot,
+      state.metadata.rules.enabledRules,
+      state.metadata.skills.enabledSkillCatalog,
+      [],
+      transportConfig.model,
+      state.metadata.planMetadata,
+      extensionSystemPrompts,
+      dreamContextText || undefined,
+      this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
+    );
+    const sessionPath = createEphemeralWorktreeSessionPath();
+    const baseMessages: ConversationMessageSnapshot[] = [
+      {
+        id: 1,
+        role: 'user',
+        content: prompt,
+        pending: false,
+      },
+    ];
+
+    try {
+      for (let round = 0; round < 6; round += 1) {
+        const completion = await llmTransport.startToolAgentRound(
+          transportConfig,
+          toolState,
+          dreamToolDefinitions,
+        );
+
+        if (completion.kind !== 'success') {
+          throw new Error(`自动生成 Worktree 名称失败：${completion.error}`);
+        }
+
+        toolState = completion.result.state;
+
+        if (completion.result.step.kind === 'final-response-ready') {
+          const assistantText = extractLastLlmAssistantText(toolState)?.trim();
+          if (!assistantText) {
+            throw new Error('自动生成 Worktree 名称失败：模型未返回正文。');
+          }
+
+          const names = parseGeneratedWorktreeNamingResponse(assistantText);
+          const summary = JSON.stringify(names);
+          const finalMessages = [
+            ...baseMessages,
+            {
+              id: 2,
+              role: 'assistant' as const,
+              content: summary,
+              pending: false,
+            },
+          ];
+          this.rememberEphemeralWorktreeSession(buildWorktreeEphemeralSessionRecord({
+            path: sessionPath,
+            displayName: `[Worktree] ${names.worktreeName}`,
+            workspaceRoot: state.workspaceRoot,
+            messages: finalMessages,
+          }));
+          return names;
+        }
+
+        const toolResults = [];
+        for (const call of completion.result.step.calls) {
+          const request = await toolExecutor.requestFromFunctionCall(call.name, call.argumentsJson);
+          const requestWithMetadata = toolExecutor.attachRequestMetadata
+            ? toolExecutor.attachRequestMetadata(request, {
+                toolCallId: call.id,
+                toolName: call.name,
+              })
+            : request;
+          const authorization = await toolExecutor.authorize(requestWithMetadata);
+          if (authorization.kind !== 'allowed') {
+            throw new Error(`自动生成 Worktree 名称失败：命名生成不支持交互式工具请求（${call.name}）。`);
+          }
+          const output = await toolExecutor.execute(requestWithMetadata);
+          toolResults.push({
+            toolCallId: call.id,
+            content: output.summaryText,
+          });
+        }
+
+        toolState = appendLlmToolResultMessages(toolState, toolResults);
+      }
+
+      throw new Error('自动生成 Worktree 名称失败：模型在限定轮次内未完成。');
+    } catch (error) {
+      const failureMessage = `生成失败：${error instanceof Error ? error.message : String(error)}`;
+      const finalMessages = [
+        ...baseMessages,
+        {
+          id: 2,
+          role: 'assistant' as const,
+          content: failureMessage,
+          pending: false,
+        },
+      ];
+      this.rememberEphemeralWorktreeSession(buildWorktreeEphemeralSessionRecord({
+        path: sessionPath,
+        displayName: '[Worktree] 自动生成失败',
         workspaceRoot: state.workspaceRoot,
         messages: finalMessages,
       }));

@@ -148,6 +148,9 @@ export function createWebHostApi(): HostApi {
     checkoutGitBranch(request: import('../types.js').CheckoutGitBranchRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/git/checkout', request);
     },
+    mergeWorktreeToMain() {
+      return post<DesktopSnapshot>(baseUrl, '/api/git/merge-worktree');
+    },
     abortConversation() {
       return post<DesktopSnapshot>(baseUrl, '/api/abort');
     },
