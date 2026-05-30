@@ -23,10 +23,10 @@ test('finishTaskSummaryFromStreamingArguments extracts partial summary', () => {
 test('finishTaskNoticePreviewFromArguments builds streaming notice text', () => {
   assert.equal(
     finishTaskNoticePreviewFromArguments('{"summary":"确认每条'),
-    '任务因 确认每条',
+    '任务以 确认每条',
   );
   assert.equal(
     finishTaskNoticePreviewFromArguments('{"summary":"确认每条消息。"}'),
-    '任务因 确认每条消息。 完成。',
+    '任务以 确认每条消息。 完成。',
   );
 });

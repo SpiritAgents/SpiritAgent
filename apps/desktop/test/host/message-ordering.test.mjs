@@ -114,12 +114,12 @@ test('finishTaskNoticePreviewFromArguments streams partial summary text', () => 
   );
   assert.equal(
     finishTaskNoticePreviewFromArguments('{"summary":"确认每条'),
-    '任务因 确认每条',
+    '任务以 确认每条',
   );
   assert.equal(
     finishTaskNoticePreviewFromArguments(
       '{"summary":"确认每条消息输出完毕后调用 finish_task。"}',
     ),
-    '任务因 确认每条消息输出完毕后调用 finish_task。 完成。',
+    '任务以 确认每条消息输出完毕后调用 finish_task。 完成。',
   );
 });
