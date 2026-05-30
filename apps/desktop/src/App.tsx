@@ -1480,6 +1480,7 @@ function DesktopLayoutChromeBar({
   showMergeButton = false,
   mergeDisabled = false,
   mergeBusy = false,
+  mergeButtonFlashMerged = false,
   onOpenMergeDialog,
   workspaceToolsOpen = false,
   onToggleWorkspaceTools,
@@ -1495,6 +1496,7 @@ function DesktopLayoutChromeBar({
   showMergeButton?: boolean;
   mergeDisabled?: boolean;
   mergeBusy?: boolean;
+  mergeButtonFlashMerged?: boolean;
   onOpenMergeDialog?: () => void;
   workspaceToolsOpen?: boolean;
   onToggleWorkspaceTools?: () => void;
@@ -1534,7 +1536,7 @@ function DesktopLayoutChromeBar({
               onClick={onOpenMergeDialog}
             >
               {mergeBusy ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> : null}
-              <span>Merge</span>
+              <span>{mergeButtonFlashMerged ? "Merged" : "Merge"}</span>
             </Button>
           ) : null}
           {showCommitButton ? (
@@ -1713,6 +1715,8 @@ export default function App() {
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
   const [commitDialogOpen, setCommitDialogOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeButtonFlashMerged, setMergeButtonFlashMerged] = useState(false);
+  const mergeFlashTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
   const [branchCheckoutBlockedByChanges, setBranchCheckoutBlockedByChanges] = useState(false);
   const pendingComposerSendRef = useRef<{
@@ -2266,12 +2270,32 @@ export default function App() {
     });
   };
 
+  useEffect(() => {
+    return () => {
+      if (mergeFlashTimerRef.current !== undefined) {
+        clearTimeout(mergeFlashTimerRef.current);
+      }
+    };
+  }, []);
+
+  const flashMergeButtonSucceeded = useCallback(() => {
+    if (mergeFlashTimerRef.current !== undefined) {
+      clearTimeout(mergeFlashTimerRef.current);
+    }
+    setMergeButtonFlashMerged(true);
+    mergeFlashTimerRef.current = setTimeout(() => {
+      mergeFlashTimerRef.current = undefined;
+      setMergeButtonFlashMerged(false);
+    }, 1000);
+  }, []);
+
   const submitMergeDialog = () => {
     void runtime.mergeWorktreeToMain().then((ok) => {
       if (!ok) {
         return;
       }
       setMergeDialogOpen(false);
+      flashMergeButtonSucceeded();
     });
   };
 
@@ -2283,6 +2307,7 @@ export default function App() {
     showMergeButton: canOpenMergeDialog,
     mergeDisabled: mergeActionDisabled,
     mergeBusy: commitBusy,
+    mergeButtonFlashMerged,
     onOpenMergeDialog: () => setMergeDialogOpen(true),
   };
 
