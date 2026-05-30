@@ -8,6 +8,7 @@ import {
   sessionBundleFromRestored,
   type SessionBundle,
 } from './session-bundle.js';
+import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import type { RestoredSessionState } from './sessions.js';
 import { defaultNewSessionPath, provisionalNewSessionPath } from './storage.js';
 
@@ -230,6 +231,11 @@ export class SessionRegistry {
       restored.messages,
       restored.desktopMessageTimeline,
     );
+    bundle.messages = rehydrateFinishTaskNoticesForRestoredSession({
+      messages: bundle.messages,
+      messageTimeline: bundle.messageTimeline,
+      archiveHistory: restored.archiveHistory,
+    });
     bundle.archiveHistory = restored.archiveHistory;
     bundle.archiveSubagentSessions = restored.archiveSubagentSessions;
     bundle.loopEnabled = restored.loopEnabled;

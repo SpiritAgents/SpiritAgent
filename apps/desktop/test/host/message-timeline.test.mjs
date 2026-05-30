@@ -332,6 +332,32 @@ test('verbose pending segment row logs are deduplicated and throttled', { concur
   assert.match(segmentLogs[1], /I should greet the user warmly/);
 });
 
+test('timeline snapshot round-trip preserves finishTaskNotice on assistant text rows', () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn('loop');
+  timeline.beginAssistantSegment('initial');
+  timeline.appendAssistantTextChunk('done for this turn');
+  timeline.updateFinishTaskNoticePreview('任务因 确认每条 完成。');
+  timeline.completeActiveAssistantSegment();
+
+  const snapshot = timeline.snapshot();
+  let nextMessageId = 4;
+  const restored = DesktopMessageTimeline.fromSnapshot(snapshot, {
+    allocateMessageId: () => nextMessageId++,
+    reserveMessageId: (messageId) => {
+      if (messageId >= nextMessageId) {
+        nextMessageId = messageId + 1;
+      }
+    },
+  });
+
+  assert.equal(
+    restored.toMessages().find((message) => message.role === 'assistant' && !message.tool)?.aux
+      ?.finishTaskNotice,
+    '任务因 确认每条 完成。',
+  );
+});
+
 test('timeline snapshot round-trip preserves segment boundaries across restore', () => {
   const timeline = createTimeline();
   timeline.beginUserTurn('read README.md');

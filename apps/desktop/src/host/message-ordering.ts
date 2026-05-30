@@ -898,6 +898,7 @@ export function restoreMessagesFromArchive(
     auxByIndex.set(entry.messageIndex, {
       ...(entry.thinking ? { thinking: entry.thinking } : {}),
       ...(entry.compaction ? { compaction: entry.compaction } : {}),
+      ...(entry.finishTaskNotice ? { finishTaskNotice: entry.finishTaskNotice } : {}),
     });
   }
 
