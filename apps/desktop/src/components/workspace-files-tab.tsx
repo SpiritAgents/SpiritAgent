@@ -57,6 +57,8 @@ export type WorkspaceFilesTabProps = {
   onStartImplementing?: () => void;
   startImplementingDisabled?: boolean;
   autoRevealPlanNonce?: number;
+  /** 为 false 时不响应 Plan 自动展开（多 files 选项卡时仅目标 tab 为 true） */
+  planRevealEnabled?: boolean;
 };
 
 export function WorkspaceFilesTab({
@@ -69,6 +71,7 @@ export function WorkspaceFilesTab({
   onStartImplementing,
   startImplementingDisabled = false,
   autoRevealPlanNonce = 0,
+  planRevealEnabled = true,
 }: WorkspaceFilesTabProps) {
   const [selectedEntry, setSelectedEntry] = useState<SelectedEntry>(null);
   const [doc, setDoc] = useState<LoadedDoc | null>(null);
@@ -98,10 +101,13 @@ export function WorkspaceFilesTab({
   const isWorkspaceFileSelected = selectedEntry?.kind === "workspace";
 
   useEffect(() => {
+    if (!planRevealEnabled) {
+      return;
+    }
     if (autoRevealPlanNonce > 0) {
       setSelectedEntry({ kind: "plan" });
     }
-  }, [autoRevealPlanNonce]);
+  }, [autoRevealPlanNonce, planRevealEnabled]);
 
   useEffect(() => {
     if (!selectedEntry) {

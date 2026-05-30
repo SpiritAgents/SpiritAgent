@@ -1,9 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 
-import { FileText, GitBranch, Terminal } from "lucide-react";
+import { FileText, GitBranch, Plus, Terminal, X } from "lucide-react";
+import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
+import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
+import {
+  addWorkspaceToolTab,
+  closeWorkspaceToolTab,
+  workspaceToolTabLabel,
+  type WorkspaceToolTab,
+  type WorkspaceToolTabKind,
+} from "@/lib/workspace-tool-tabs";
 import type {
   PlanSnapshot,
   WorkspaceExplorerListResult,
@@ -11,13 +20,19 @@ import type {
   WriteWorkspaceTextFileRequest,
 } from "@/types";
 
-export type WorkspaceToolsTab = "files" | "shell" | "git";
+/** @deprecated Use WorkspaceToolTabKind */
+export type WorkspaceToolsTab = WorkspaceToolTabKind;
 
-const TAB_ITEMS: Array<{ id: WorkspaceToolsTab; label: string; icon: typeof FileText }> = [
-  { id: "files", label: "文件", icon: FileText },
-  { id: "shell", label: "Shell", icon: Terminal },
-  { id: "git", label: "Git", icon: GitBranch },
-];
+export type { WorkspaceToolTab, WorkspaceToolTabKind };
+
+const TAB_KIND_META: Record<
+  WorkspaceToolTabKind,
+  { label: string; icon: typeof FileText }
+> = {
+  files: { label: "文件", icon: FileText },
+  shell: { label: "Shell", icon: Terminal },
+  git: { label: "Git", icon: GitBranch },
+};
 
 export type WorkspaceToolsDockProps = {
   /** 已解析的工作区根路径；未就绪时传空字符串 */
@@ -30,8 +45,12 @@ export type WorkspaceToolsDockProps = {
   onStartImplementing?: () => void;
   startImplementingDisabled?: boolean;
   autoRevealPlanNonce?: number;
-  tab: WorkspaceToolsTab;
-  onTabChange(next: WorkspaceToolsTab): void;
+  /** 仅该 files 选项卡响应 Plan 自动展开 */
+  planRevealTabId?: string | null;
+  tabs: WorkspaceToolTab[];
+  activeTabId: string;
+  onTabsChange(tabs: WorkspaceToolTab[]): void;
+  onActiveTabIdChange(id: string): void;
   /** 右侧面板宽度（像素） */
   widthPx: number;
   minWidthPx?: number;
@@ -45,6 +64,14 @@ const DEFAULT_MIN = 240;
 /** 含文件树 + Monaco 时需更宽；与左侧栏同开时过大会挤压中间输入区，900 为经验上限。 */
 const DEFAULT_MAX = 900;
 
+function WorkspaceGitTabPlaceholder() {
+  return (
+    <div className="p-3 text-muted-foreground">
+      <p>Git 区占位</p>
+    </div>
+  );
+}
+
 export function WorkspaceToolsDock({
   workspaceRoot,
   listExplorerChildren,
@@ -55,8 +82,11 @@ export function WorkspaceToolsDock({
   onStartImplementing,
   startImplementingDisabled = false,
   autoRevealPlanNonce = 0,
-  tab,
-  onTabChange,
+  planRevealTabId = null,
+  tabs,
+  activeTabId,
+  onTabsChange,
+  onActiveTabIdChange,
   widthPx,
   minWidthPx = DEFAULT_MIN,
   maxWidthPx = DEFAULT_MAX,
@@ -94,7 +124,6 @@ export function WorkspaceToolsDock({
       if (!drag) {
         return;
       }
-      // 手柄在面板左缘：向左拖增大宽度
       const delta = drag.startX - event.clientX;
       onWidthPxChange(clampWidth(drag.startWidth + delta));
     },
@@ -112,6 +141,39 @@ export function WorkspaceToolsDock({
       // 已释放或无 capture
     }
   }, []);
+
+  const handleAddTab = useCallback(
+    (kind: WorkspaceToolTabKind) => {
+      const next = addWorkspaceToolTab(tabs, kind);
+      onTabsChange(next.tabs);
+      onActiveTabIdChange(next.activeId);
+    },
+    [onActiveTabIdChange, onTabsChange, tabs],
+  );
+
+  const handleCloseTab = useCallback(
+    (closeId: string) => {
+      const next = closeWorkspaceToolTab(tabs, activeTabId, closeId);
+      onTabsChange(next.tabs);
+      onActiveTabIdChange(next.activeId);
+    },
+    [activeTabId, onActiveTabIdChange, onTabsChange, tabs],
+  );
+
+  const newTabItems = useMemo<readonly ActionPopoverItem[]>(
+    () =>
+      (["files", "shell", "git"] as const).map((kind) => {
+        const meta = TAB_KIND_META[kind];
+        const Icon = meta.icon;
+        return {
+          id: `new-${kind}`,
+          icon: <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />,
+          label: meta.label,
+          onSelect: () => handleAddTab(kind),
+        };
+      }),
+    [handleAddTab],
+  );
 
   const shellWidth = open ? `calc(0.25rem + ${widthPx}px)` : "0px";
 
@@ -160,67 +222,122 @@ export function WorkspaceToolsDock({
           style={{ width: widthPx }}
           aria-label="工作区工具"
         >
-          <div
-            role="tablist"
-            aria-label="工具分页"
-            className="flex shrink-0 gap-0 border-b border-border/40 px-1 pt-1.5 pb-0"
-          >
-            {TAB_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const selected = tab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  tabIndex={selected ? 0 : -1}
-                  className={cn(
-                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-t-md border border-transparent px-2 py-2 text-xs font-medium transition-colors",
-                    selected
-                      ? "border-border/40 border-b-background bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground dark:hover:bg-foreground/10",
-                  )}
-                  onClick={() => onTabChange(item.id)}
-                >
-                  <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
-            })}
+          <div className="flex shrink-0 items-end gap-0 border-b border-border/40 pt-1.5 pb-0 pl-1 pr-1">
+            <div
+              role="tablist"
+              aria-label="工具分页"
+              className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto overscroll-x-contain"
+            >
+              {tabs.map((item) => {
+                const meta = TAB_KIND_META[item.kind];
+                const Icon = meta.icon;
+                const selected = item.id === activeTabId;
+                const label = workspaceToolTabLabel(item.kind, tabs, item.id);
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "flex max-w-[9rem] shrink-0 items-stretch rounded-t-md border border-transparent",
+                      instantHoverMotionClass,
+                      selected
+                        ? "border-border/40 border-b-background bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground dark:hover:bg-foreground/10",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      id={`workspace-tool-tab-${item.id}`}
+                      aria-selected={selected}
+                      aria-controls={`workspace-tool-panel-${item.id}`}
+                      tabIndex={selected ? 0 : -1}
+                      className="flex min-w-0 flex-1 items-center gap-1 rounded-tl-md bg-transparent py-2 pl-2 pr-0.5 text-xs font-medium outline-none"
+                      onClick={() => onActiveTabIdChange(item.id)}
+                    >
+                      <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                      <span className="truncate">{label}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex shrink-0 items-center justify-center rounded-tr-md bg-transparent p-1 pr-1.5 outline-none",
+                        selected ? "text-foreground/70" : "text-inherit",
+                      )}
+                      aria-label={`关闭${label}选项卡`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCloseTab(item.id);
+                      }}
+                    >
+                      <X className="size-3" aria-hidden />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <ActionPopover
+              ariaLabel="新建工具选项卡"
+              title="新建"
+              triggerIcon={<Plus className="size-3.5" aria-hidden />}
+              items={newTabItems}
+              triggerClassName="mb-1"
+              contentClassName="text-xs"
+            />
           </div>
 
-          <div
-            role="tabpanel"
-            className={cn(
-              "flex min-h-0 flex-1 flex-col overflow-hidden text-xs",
-              tab === "files" || tab === "shell" ? "p-0" : "p-3",
-            )}
-            aria-live="polite"
-          >
-            {tab === "files" ? (
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-                <WorkspaceFilesTab
-                  workspaceRoot={workspaceRoot}
-                  plan={plan}
-                  listExplorerChildren={listExplorerChildren}
-                  readWorkspaceTextFile={readWorkspaceTextFile}
-                  writeWorkspaceTextFile={writeWorkspaceTextFile}
-                  readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-                  onStartImplementing={onStartImplementing}
-                  startImplementingDisabled={startImplementingDisabled}
-                  autoRevealPlanNonce={autoRevealPlanNonce}
-                />
-              </div>
-            ) : tab === "shell" ? (
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-                <WorkspaceShellTab workspaceRoot={workspaceRoot} />
-              </div>
-            ) : (
-              <div className="p-3 text-muted-foreground">
-                <p>Git 区占位</p>
-              </div>
-            )}
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden text-xs" aria-live="polite">
+            {tabs.map((item) => {
+              const selected = item.id === activeTabId;
+              const panelPadding =
+                item.kind === "files" || item.kind === "shell" ? "p-0" : "p-0";
+              const planRevealEnabled =
+                item.kind === "files" &&
+                planRevealTabId != null &&
+                item.id === planRevealTabId;
+
+              return (
+                <div
+                  key={item.id}
+                  id={`workspace-tool-panel-${item.id}`}
+                  role="tabpanel"
+                  aria-labelledby={`workspace-tool-tab-${item.id}`}
+                  hidden={!selected}
+                  inert={!selected}
+                  aria-hidden={!selected}
+                  className={cn(
+                    "absolute inset-0 flex min-h-0 flex-col overflow-hidden",
+                    panelPadding,
+                    !selected && "invisible",
+                  )}
+                >
+                  {item.kind === "files" ? (
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                      <WorkspaceFilesTab
+                        workspaceRoot={workspaceRoot}
+                        plan={plan}
+                        listExplorerChildren={listExplorerChildren}
+                        readWorkspaceTextFile={readWorkspaceTextFile}
+                        writeWorkspaceTextFile={writeWorkspaceTextFile}
+                        readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                        onStartImplementing={onStartImplementing}
+                        startImplementingDisabled={startImplementingDisabled}
+                        autoRevealPlanNonce={planRevealEnabled ? autoRevealPlanNonce : 0}
+                        planRevealEnabled={planRevealEnabled}
+                      />
+                    </div>
+                  ) : item.kind === "shell" ? (
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                      <WorkspaceShellTab workspaceRoot={workspaceRoot} />
+                    </div>
+                  ) : (
+                    <WorkspaceGitTabPlaceholder />
+                  )}
+                </div>
+              );
+            })}
+            {tabs.length === 0 ? (
+              <p className="p-3 text-muted-foreground">暂无打开的选项卡。</p>
+            ) : null}
           </div>
         </aside>
       </div>
