@@ -1,4 +1,4 @@
-import type { ConversationMessageSnapshot } from '../types.js';
+import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
 
 /** Parent wrap-up after run_subagent — normal assistant body, not runtime status. */
 function isParentSubagentCompletionSurfaceText(text: string): boolean {
@@ -34,6 +34,25 @@ function lastStatusColonIndex(text: string): number {
 
 export function stripSubagentSpinnerPrefix(text: string): string {
   return text.trim().replace(SUBAGENT_SPINNER_PREFIX, '').trim();
+}
+
+/** Runtime `pendingAuxState()` for main-thread thinking/compressing (not subagent status lines). */
+export function isLivePendingReasoningAux(pendingAux: PendingAssistantAux | undefined): boolean {
+  return Boolean(
+    pendingAux &&
+      (pendingAux.kind === 'thinking' || pendingAux.kind === 'compressing') &&
+      !parsePendingSubagentStatusText(pendingAux.statusText),
+  );
+}
+
+/** Runtime `pendingAuxState().statusText` while no `detailText` yet (e.g. `| Thinking...`). */
+export function isGenericPendingThinkingStatusText(text: string | undefined): boolean {
+  const normalized = text?.trim();
+  if (!normalized) {
+    return false;
+  }
+  const withoutSpinner = stripSubagentSpinnerPrefix(normalized);
+  return withoutSpinner === 'Thinking...' || withoutSpinner === 'Compressing...';
 }
 
 function isSubagentRuntimeStatusTail(after: string): boolean {

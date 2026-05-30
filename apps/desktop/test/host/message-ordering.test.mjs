@@ -5,6 +5,7 @@ import { isSubagentStatusSurfaceText } from '../../dist-electron/src/lib/subagen
 import {
   finishTaskNoticePreviewFromArguments,
   finishTaskSummaryFromStreamingArguments,
+  shouldHideEmptyPendingAssistantSnapshot,
   stripRedundantThinkingFromMessageAux,
   toolCallSummaryCopyForRequest,
   toolCallSummaryForPhase,
@@ -127,6 +128,24 @@ test('toolCallSummaryCopyForRequest: shell reason and command', () => {
       command: 'npm install',
     }),
     { headline: 'Install dependencies', headlineDetail: 'npm install' },
+  );
+});
+
+test('shouldHideEmptyPendingAssistantSnapshot keeps live thinking rows visible', () => {
+  const emptyPending = {
+    id: 1,
+    role: 'assistant',
+    content: '',
+    pending: true,
+  };
+
+  assert.equal(shouldHideEmptyPendingAssistantSnapshot(emptyPending), true);
+  assert.equal(
+    shouldHideEmptyPendingAssistantSnapshot(emptyPending, {
+      kind: 'thinking',
+      statusText: '| Thinking...',
+    }),
+    false,
   );
 });
 

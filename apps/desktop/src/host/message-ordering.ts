@@ -11,6 +11,7 @@ import {
 import {
   hasActiveRunSubagentToolInMessages,
   hasRunSubagentToolInCurrentTurn,
+  isLivePendingReasoningAux,
   isSubagentStatusSurfaceMessage,
   isSubagentStatusSurfaceText,
   parsePendingSubagentStatusText,
@@ -729,14 +730,28 @@ export function shouldDropEmptyAssistantMessage(
   );
 }
 
-export function shouldHideEmptyPendingAssistantSnapshot(message: ConversationMessageSnapshot): boolean {
-  return (
+export function shouldHideEmptyPendingAssistantSnapshot(
+  message: ConversationMessageSnapshot,
+  livePendingAux?: PendingAssistantAux,
+): boolean {
+  const isEmptyPending =
     message.role === 'assistant' &&
     message.pending &&
     !message.content.trim() &&
     !message.tool &&
-    !normalizeMessageAuxSnapshot(message.aux)
-  );
+    !normalizeMessageAuxSnapshot(message.aux);
+
+  if (!isEmptyPending) {
+    return false;
+  }
+
+  // Keep the pending row visible while runtime reports thinking/compressing so the
+  // conversation UI can show the Thinking label before detailText is synced.
+  if (isLivePendingReasoningAux(livePendingAux)) {
+    return false;
+  }
+
+  return true;
 }
 
 function defaultToolHeadline(
