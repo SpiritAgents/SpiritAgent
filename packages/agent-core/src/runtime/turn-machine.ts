@@ -146,7 +146,6 @@ export interface TurnMachineRuntime<
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): void;
   takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined;
-  tryFallbackToTextOnlyAndBuildRetryState(error: string, pendingUserInput: string): State | undefined;
   compactHistoryImmediate(): Promise<RuntimeCompactionRecord>;
   loopEnabled(): boolean;
   isBusy(): boolean;
@@ -418,15 +417,6 @@ export async function runTurnLoop<
 
     if (completion.kind === 'failure') {
       runtime.appendTrace(completion.requestTrace, turn);
-
-      const textOnlyRetryState = runtime.tryFallbackToTextOnlyAndBuildRetryState(
-        completion.error,
-        currentPendingUserInput,
-      );
-      if (textOnlyRetryState !== undefined) {
-        currentState = textOnlyRetryState;
-        continue;
-      }
 
       if (
         runtime.options.llmTransport.isContextOverflowError(completion.error) &&
@@ -842,15 +832,6 @@ export async function handlePendingToolAgentRoundCompletion<
 ): Promise<void> {
   if (completion.kind === 'failure') {
     runtime.appendTrace(completion.requestTrace, pending.turn);
-
-    const textOnlyRetryState = runtime.tryFallbackToTextOnlyAndBuildRetryState(
-      completion.error,
-      pending.pendingUserInput,
-    );
-    if (textOnlyRetryState !== undefined) {
-      startToolAgentRoundAsync(runtime, textOnlyRetryState, pending.pendingUserInput, pending.turn);
-      return;
-    }
 
     if (
       runtime.options.llmTransport.isContextOverflowError(completion.error) &&

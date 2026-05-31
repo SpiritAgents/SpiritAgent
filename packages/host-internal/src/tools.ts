@@ -119,7 +119,7 @@ export type HostToolContentPart =
   | HostToolVideoContentPart;
 
 export interface HostToolModelCapabilities {
-  vision?: true;
+  imageInput?: true;
   audioInput?: true;
   videoInput?: true;
 }
@@ -1645,11 +1645,11 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
   ): HostToolExecutionOutput {
     const summaryLines = [header, locationLine, ...extraLines, `mime_type: ${mimeType}`];
     const compatibilityProfile = this.getModelCompatibilityProfile?.();
-    if (isVisionInputBlocked(compatibilityProfile)) {
+    if (isImageInputBlocked(compatibilityProfile)) {
       return createHostToolTextOutput([
         ...summaryLines,
         '',
-        '该模型不支持 Vision，图像文件无法作为图片输入返回。',
+        '该模型不支持 Image 输入，图像文件无法作为图片输入返回。',
       ].join('\n'));
     }
 
@@ -2071,10 +2071,10 @@ function createSearchLineMatcher(query: string, isRegexp: boolean): (line: strin
   return (line: string) => regexp.test(line);
 }
 
-function isVisionInputBlocked(
+function isImageInputBlocked(
   profile: HostToolModelCompatibilityProfile | undefined,
 ): boolean {
-  return profile?.hasExplicitCapabilities === true && profile.capabilities.vision !== true;
+  return profile?.hasExplicitCapabilities === true && profile.capabilities.imageInput !== true;
 }
 
 function isVideoInputBlocked(

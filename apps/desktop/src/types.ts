@@ -63,7 +63,7 @@ export type DesktopTransportKind = 'openai-compatible' | 'open-responses' | 'ant
 /** 模型推理强度字符串；具体允许值由 provider / transportKind 在 agent-core 中约束。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
-export type DesktopModelCapability = 'chat' | 'vision' | 'video' | 'imageGeneration';
+export type DesktopModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration';
 
 export interface PreviewModelCatalogEntry {
   id: string;

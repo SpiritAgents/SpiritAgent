@@ -21,9 +21,6 @@ import {
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
   createToolExecutionTextOutput,
-  llmMessageContentWithoutImages,
-  llmMessageHasImages,
-  llmMessageImagePaths,
   llmMessageTextContent,
   normalizeStoredLlmMessage,
 } from './ports.js';
@@ -2066,50 +2063,6 @@ export class AgentRuntime<
       text: `LLM 调用失败: ${result.error}`,
     });
     this.emitEvent({ kind: 'assistant-response-completed' });
-  }
-
-  private tryFallbackToTextOnlyAndBuildRetryState(
-    error: string,
-    pendingUserInput: string,
-  ): State | undefined {
-    if (!this.options.isVisionUnsupportedError?.(error)) {
-      return undefined;
-    }
-
-    let droppedImages = 0;
-    let userTurn = this.pendingUserTurnStore ?? pendingUserInput;
-
-    for (let index = this.historyStore.length - 1; index >= 0; index -= 1) {
-      const message = this.historyStore[index];
-      if (!message) {
-        continue;
-      }
-
-      if (message.role !== 'user' || !llmMessageHasImages(message.content)) {
-        continue;
-      }
-
-      droppedImages = llmMessageImagePaths(message.content).length;
-      if (!userTurn.trim()) {
-        userTurn = llmMessageTextContent(message.content);
-      }
-      message.content = llmMessageContentWithoutImages(message.content);
-      break;
-    }
-
-    if (droppedImages === 0 || !userTurn.trim()) {
-      return undefined;
-    }
-
-    this.pendingUserTurnStore = userTurn;
-    const fallbackMessage = `当前模型/接口不支持图像输入，已自动降级为文本重试（忽略 ${droppedImages} 张图片）。`;
-    this.emitEvent({
-      kind: 'vision-fallback-retry',
-      droppedImages,
-      message: fallbackMessage,
-    });
-
-    return this.options.createToolAgentState(this.historyStore, userTurn);
   }
 
   private emitEvent(event: RuntimeEvent<ToolRequest>): void {

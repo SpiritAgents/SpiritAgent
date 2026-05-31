@@ -2,7 +2,7 @@ export type LlmTransportKind = 'openai-compatible' | 'open-responses' | 'anthrop
 
 export interface LlmModelCapabilities {
   chat?: true;
-  vision?: true;
+  imageInput?: true;
   audioInput?: true;
   videoInput?: true;
   imageGeneration?: true;

@@ -764,7 +764,7 @@ function dreamCollectorModelCapabilities(
 ): LlmModelCapabilities {
   return {
     ...(capabilities.includes('chat') ? { chat: true } : {}),
-    ...(capabilities.includes('vision') ? { vision: true } : {}),
+    ...(capabilities.includes('image') ? { imageInput: true } : {}),
     ...(capabilities.includes('imageGeneration') ? { imageGeneration: true } : {}),
   };
 }

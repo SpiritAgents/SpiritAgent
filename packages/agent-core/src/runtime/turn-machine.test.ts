@@ -542,7 +542,6 @@ function buildLoopTestRuntime(options: {
     startStreamingRound: async () => {},
     queuePendingToolCallContinuation: () => {},
     takeCompletedTurnResult: () => undefined,
-    tryFallbackToTextOnlyAndBuildRetryState: () => undefined,
     compactHistoryImmediate: async () => ({ droppedMessages: 0, beforeLength: 0, afterLength: 0 }),
     loopEnabled: () => options.loopEnabled,
     isBusy: () => false,

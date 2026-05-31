@@ -22,7 +22,6 @@ import {
   llmMessageImagePaths,
   llmMessageTextContent,
 } from '../../../../ports.js';
-import { isOpenAiVisionUnsupportedError } from '../../../../openai/tool-agent-helpers.js';
 import {
   AgentRuntime,
   pendingWorkspaceFilesFromInput,
@@ -737,151 +736,6 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
       result: {
         state: {
           messages: [...state.messages, { role: 'assistant', content: 'BACKGROUND_OK' }],
-          steps: state.steps + 1,
-        },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ round: this.rounds }],
-      },
-    };
-  }
-
-  async compactHistoryManual(
-    _config: undefined,
-    history: LlmMessage[],
-  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
-    return {
-      droppedMessages: 0,
-      beforeLength: history.length,
-      afterLength: history.length,
-    };
-  }
-
-  compactSummaryText(): string | undefined {
-    return undefined;
-  }
-
-  isContextOverflowError(error: string): boolean {
-    return error.includes('context');
-  }
-
-  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
-    return history.map((message) => ({
-      role: message.role,
-      content: message.content,
-    }));
-  }
-
-  llmSystemPromptsForExport(): JsonValue {
-    return {};
-  }
-}
-
-export class VisionExecutor implements ToolExecutor<ScriptedToolRequest> {
-  toolDefinitionsJson(): JsonValue {
-    return [];
-  }
-
-  async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error('VisionExecutor.parseCommand 未实现。');
-  }
-
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<ScriptedToolRequest> {
-    return { name, argumentsJson };
-  }
-
-  async authorize(): Promise<AuthorizationDecision> {
-    return { kind: 'allowed' };
-  }
-
-  async trust(_target: string): Promise<void> {}
-
-  async execute(_request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
-    return createToolExecutionTextOutput('unused');
-  }
-
-  startMcpBackgroundRefresh(): void {}
-
-  mcpStatusSnapshot() {
-    return {
-      revision: 0,
-      state: 'idle' as const,
-      configuredServers: 0,
-      loadedServers: 0,
-      cachedTools: 0,
-    };
-  }
-
-  async addMcpServer(): Promise<string> {
-    throw new Error('VisionExecutor.addMcpServer 未实现。');
-  }
-
-  async listMcpServers(): Promise<never[]> {
-    return [];
-  }
-
-  async inspectMcpServer(): Promise<never> {
-    throw new Error('VisionExecutor.inspectMcpServer 未实现。');
-  }
-
-  async listMcpTools(): Promise<never[]> {
-    return [];
-  }
-
-  async listMcpResources(): Promise<never[]> {
-    return [];
-  }
-
-  async readMcpResource(): Promise<JsonValue> {
-    throw new Error('VisionExecutor.readMcpResource 未实现。');
-  }
-
-  async listCachedMcpPrompts(): Promise<never[]> {
-    return [];
-  }
-
-  async listMcpPrompts(): Promise<never[]> {
-    return [];
-  }
-
-  async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('VisionExecutor.getMcpPrompt 未实现。');
-  }
-}
-
-export class VisionTransport implements LlmTransport<undefined, ScriptedState> {
-  rounds = 0;
-
-  async startToolAgentRound(
-    _config: undefined,
-    state: ScriptedState,
-    _tools: JsonValue,
-  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    this.rounds += 1;
-
-    const hasUserImage = state.messages.some(
-      (message) =>
-        isJsonObject(message) &&
-        message.role === 'user' &&
-        Array.isArray(message.image_paths) &&
-        message.image_paths.length > 0,
-    );
-
-    if (hasUserImage) {
-      return {
-        kind: 'failure',
-        error: 'Failed to process the base64 image (code 20015)',
-        requestTrace: [{ round: this.rounds }],
-      };
-    }
-
-    return {
-      kind: 'success',
-      result: {
-        state: {
-          messages: [...state.messages, { role: 'assistant', content: 'VISION_OK' }],
           steps: state.steps + 1,
         },
         step: { kind: 'final-response-ready' },
@@ -2803,7 +2657,6 @@ export {
   writeFile,
   tmpdir,
   join,
-  isOpenAiVisionUnsupportedError,
   AgentRuntime,
   pendingWorkspaceFilesFromInput,
   userMessageContentMatchesInput,

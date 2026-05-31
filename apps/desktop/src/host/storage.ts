@@ -49,8 +49,8 @@ const CONFIG_FILE_NAME = 'config.json';
 const CHATS_DIR_NAME = 'chats';
 const PROVISIONAL_CHATS_DIR_NAME = '__provisional__';
 const MAX_RECENT_WORKSPACES = 20;
-const MODEL_CAPABILITIES = ['chat', 'vision', 'video', 'imageGeneration'] as const;
-const DEFAULT_CUSTOM_MODEL_CAPABILITIES: DesktopModelCapability[] = ['chat', 'vision'];
+const MODEL_CAPABILITIES = ['chat', 'image', 'video', 'imageGeneration'] as const;
+const DEFAULT_CUSTOM_MODEL_CAPABILITIES: DesktopModelCapability[] = ['chat', 'image'];
 
 export interface DesktopConfigFile {
   models: ModelProfileSnapshot[];
@@ -518,10 +518,14 @@ export function normalizeModelCapabilities(
   const seen = new Set<DesktopModelCapability>();
   const normalized: DesktopModelCapability[] = [];
   for (const item of value) {
-    if (typeof item !== 'string' || !allowed.has(item)) {
+    if (typeof item !== 'string') {
       continue;
     }
-    const capability = item as DesktopModelCapability;
+    const normalizedItem = item === 'vision' ? 'image' : item;
+    if (!allowed.has(normalizedItem)) {
+      continue;
+    }
+    const capability = normalizedItem as DesktopModelCapability;
     if (seen.has(capability)) {
       continue;
     }

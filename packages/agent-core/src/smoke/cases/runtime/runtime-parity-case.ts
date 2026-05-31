@@ -9,13 +9,10 @@ import { runManualToolsCase } from './parity/manual-tools.case.js';
 import { runMcpCase } from './parity/mcp.case.js';
 import { runStreamingCase } from './parity/streaming.case.js';
 import { runSubagentCase } from './parity/subagent.case.js';
-import { runVisionCase } from './parity/vision.case.js';
-
 export async function runRuntimeParitySmoke(): Promise<void> {
   const approval = await runApprovalCase();
   const compaction = await runCompactionCase();
   const background = await runBackgroundCase();
-  const vision = await runVisionCase();
   const subagent = await runSubagentCase();
   const generateImage = await runGenerateImageCase();
   const manualTools = await runManualToolsCase();
@@ -28,7 +25,6 @@ export async function runRuntimeParitySmoke(): Promise<void> {
   printSmokeSection('background execution smoke', background.backgroundResult);
   printSmokeSection('polling background smoke', background.pollingBackgroundResult);
   printSmokeSection('polling compact smoke', compaction.pollingCompactResult);
-  printSmokeSection('vision fallback smoke', vision.visionResult);
   printSmokeSection('manual command smoke', manualTools.manualGuidance);
   printSmokeSection('generate image terminal smoke', generateImage.generateImageNonStreamingResult);
   printSmokeSection('generate image streaming terminal smoke events', generateImage.generateImageStreamingEvents);
