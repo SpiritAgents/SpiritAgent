@@ -2623,8 +2623,7 @@ impl TsBridgeRuntime {
 
 impl JsonRpcProcess {
     fn spawn(script_path: PathBuf) -> Result<Self> {
-        let node_path =
-            env::var(ENV_RUNTIME_BACKEND_NODE_PATH).unwrap_or_else(|_| "node".to_string());
+        let node_path = resolve_node_path();
         let mut command = Command::new(&node_path);
         command
             .arg(script_path)
@@ -2640,7 +2639,7 @@ impl JsonRpcProcess {
 
         let mut child = command
             .spawn()
-            .with_context(|| format!("启动 TS bridge 失败: {}", node_path))?;
+            .with_context(|| format!("启动 TS bridge 失败: {}", node_path.display()))?;
 
         let stdin = child
             .stdin
@@ -2703,9 +2702,52 @@ impl Drop for JsonRpcProcess {
     }
 }
 
+fn release_bundle_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Ok(exe_path) = env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            roots.push(exe_dir.to_path_buf());
+            if let Some(parent) = exe_dir.parent() {
+                roots.push(parent.to_path_buf());
+            }
+        }
+    }
+    roots
+}
+
+fn resolve_node_path() -> PathBuf {
+    if let Ok(path) = env::var(ENV_RUNTIME_BACKEND_NODE_PATH) {
+        return PathBuf::from(path);
+    }
+
+    for root in release_bundle_roots() {
+        let candidate = if cfg!(windows) {
+            root.join("node").join("node.exe")
+        } else {
+            root.join("node").join("bin").join("node")
+        };
+        if candidate.exists() {
+            return candidate;
+        }
+    }
+
+    PathBuf::from("node")
+}
+
 fn resolve_bridge_script(workspace_root: &Path) -> Result<PathBuf> {
     if let Ok(path) = env::var(ENV_RUNTIME_BRIDGE_PATH) {
         let candidate = PathBuf::from(path);
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+    }
+
+    for root in release_bundle_roots() {
+        let candidate = root
+            .join("packages")
+            .join("agent-core")
+            .join("dist")
+            .join("host-bridge.js");
         if candidate.exists() {
             return Ok(candidate);
         }
@@ -2786,6 +2828,17 @@ fn resolve_host_internal_module_path() -> Result<PathBuf> {
         .join("index.js");
     if from_crate.exists() {
         return Ok(from_crate);
+    }
+
+    for root in release_bundle_roots() {
+        let candidate = root
+            .join("packages")
+            .join("host-internal")
+            .join("dist")
+            .join("index.js");
+        if candidate.exists() {
+            return Ok(candidate);
+        }
     }
 
     Err(anyhow!(
