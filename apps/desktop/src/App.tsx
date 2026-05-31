@@ -7,6 +7,9 @@ import {
   type ClipboardEvent as ReactClipboardEvent,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { useTranslation } from "react-i18next";
+
+import i18n from "@/lib/i18n";
 
 import {
   modelReasoningEffortOptions,
@@ -205,18 +208,18 @@ function formatModelPickerLabel(name: string, reasoningEffort: DesktopModelReaso
 
 const commitModeOptions: Array<{
   value: DesktopCommitMode;
-  label: string;
-  hint: string;
+  labelKey: string;
+  hintKey: string;
 }> = [
   {
     value: "commit",
-    label: "提交",
-    hint: "仅在本地创建一次提交。",
+    labelKey: "app.commit",
+    hintKey: "app.commitHint",
   },
   {
     value: "commit-and-push",
-    label: "提交并推送",
-    hint: "提交后立即推送到当前分支远端。",
+    labelKey: "app.commitAndPush",
+    hintKey: "app.commitAndPushHint",
   },
 ];
 
@@ -253,6 +256,7 @@ function EmptyStateWorkspaceSelector({
   onSelectWorkspace,
   onAddWorkspace,
 }: EmptyStateWorkspaceSelectorProps) {
+  const { t } = useTranslation();
   const [workspaceFilter, setWorkspaceFilter] = useState("");
   const filteredWorkspaces = useMemo(() => {
     const query = workspaceFilter.trim().toLowerCase();
@@ -277,7 +281,7 @@ function EmptyStateWorkspaceSelector({
           <button
             type="button"
             disabled={disabled}
-            aria-label="选择工作区"
+            aria-label={t('app.selectWorkspace')}
             className={cn(
               "inline-flex h-8 max-w-[min(24rem,100%)] min-w-0 items-center gap-1 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
               instantHoverMotionClass,
@@ -298,7 +302,7 @@ function EmptyStateWorkspaceSelector({
             <Input
               value={workspaceFilter}
               onChange={(event) => setWorkspaceFilter(event.target.value)}
-              placeholder="搜索工作区"
+              placeholder={t('app.searchWorkspace')}
               className="h-8 w-full min-w-0 text-xs"
               onKeyDown={(event) => event.stopPropagation()}
               autoComplete="off"
@@ -306,7 +310,7 @@ function EmptyStateWorkspaceSelector({
           </div>
           <div className="max-h-[min(18rem,var(--radix-dropdown-menu-content-available-height))] overflow-y-auto p-1">
             {filteredWorkspaces.length === 0 ? (
-              <p className="px-2 py-4 text-center text-xs text-muted-foreground">无匹配项</p>
+              <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('app.noMatches')}</p>
             ) : (
               filteredWorkspaces.map((workspace) => {
                 const selected = sameWorkspacePath(workspace.path, currentWorkspaceRoot);
@@ -332,7 +336,7 @@ function EmptyStateWorkspaceSelector({
           <div className="border-t border-border/40 p-1">
             <DropdownMenuItem onSelect={onAddWorkspace} className="gap-2 px-2 py-2 text-sm">
               <FolderPlus className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span>添加工作区</span>
+              <span>{t('app.addWorkspace')}</span>
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>
@@ -380,6 +384,7 @@ function ImageGenerationToolCard({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   saveLocalImageAs: SaveLocalImageAs;
 }) {
+  const { t } = useTranslation();
   const previewableImagePath = tool.imagePaths?.find(isPreviewableImagePath) ?? "";
   const imagePath = tool.imagePaths?.find((path) => path.trim().length > 0) ?? "";
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
@@ -508,7 +513,7 @@ function ImageGenerationToolCard({
                 loading ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
               )}
             >
-              {loading ? "Loading" : "预览不可用"}
+              {loading ? t('common.loading') : t('app.previewUnavailable')}
             </span>
           </div>
         )}
@@ -524,8 +529,8 @@ function ImageGenerationToolCard({
                 void handleSaveImage();
               }}
               disabled={saving}
-              title="下载图片"
-              aria-label="下载图片"
+              title={t('app.downloadImage')}
+              aria-label={t('app.downloadImage')}
             >
               {saving ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
             </Button>
@@ -538,8 +543,8 @@ function ImageGenerationToolCard({
                 event.stopPropagation();
                 setViewerOpen(true);
               }}
-              title="查看大图"
-              aria-label="查看大图"
+              title={t('app.viewLargeImage')}
+              aria-label={t('app.viewLargeImage')}
             >
               <Maximize2 className="size-4" aria-hidden />
             </Button>
@@ -574,11 +579,11 @@ function ImageGenerationToolCard({
                   variant="ghost"
                   size="icon"
                   className={cn("absolute top-3 right-3 z-20", floatingActionButtonClass)}
-                  title="关闭图片预览"
-                  aria-label="关闭图片预览"
+                  title={t('app.closeImagePreview')}
+                  aria-label={t('app.closeImagePreview')}
                 >
                   <X className="size-4" aria-hidden />
-                  <span className="sr-only">关闭图片预览</span>
+                  <span className="sr-only">{t('app.closeImagePreview')}</span>
                 </Button>
               </DialogClose>
               <img
@@ -595,8 +600,8 @@ function ImageGenerationToolCard({
                   className={cn("pointer-events-auto", floatingActionButtonClass)}
                   onClick={() => void handleSaveImage()}
                   disabled={saving}
-                  title="下载图片"
-                  aria-label="下载图片"
+                  title={t('app.downloadImage')}
+                  aria-label={t('app.downloadImage')}
                 >
                   {saving ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
                 </Button>
@@ -674,6 +679,7 @@ function ComposerSurface({
   onPaste,
   showLoopSwitch = true,
 }: ComposerSurfaceProps) {
+  const { t } = useTranslation();
   const [modelFilter, setModelFilter] = useState("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const activeModelProfile = useMemo(
@@ -755,7 +761,7 @@ function ComposerSurface({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  aria-label="运行方式"
+                  aria-label={t('app.runMode')}
                   disabled={readOnly}
                   className={cn(
                     "inline-flex h-7 max-w-[9rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -818,7 +824,7 @@ function ComposerSurface({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    aria-label="选择模型"
+                    aria-label={t('app.selectModel')}
                     disabled={readOnly}
                     className={cn(
                       "inline-flex h-7 max-w-[12rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -840,7 +846,7 @@ function ComposerSurface({
                     <Input
                       value={modelFilter}
                       onChange={(event) => setModelFilter(event.target.value)}
-                      placeholder="筛选模型"
+                      placeholder={t('app.filterModels')}
                       className="h-8 w-full min-w-0 text-xs"
                       onKeyDown={(event) => event.stopPropagation()}
                       autoComplete="off"
@@ -858,7 +864,7 @@ function ComposerSurface({
                   >
                     <div className="p-1 pr-2">
                       {filteredModelGroups.length === 0 ? (
-                        <p className="px-2 py-4 text-center text-xs text-muted-foreground">无匹配项</p>
+                        <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('app.noMatches')}</p>
                       ) : (
                         filteredModelGroups.map((group) => (
                           <div key={group.provider} className="mb-2 last:mb-0">
@@ -938,7 +944,7 @@ function ComposerSurface({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <span className="px-1 text-xs text-muted-foreground">无可用模型</span>
+              <span className="px-1 text-xs text-muted-foreground">{t('app.noModelsAvailable')}</span>
             )}
           </div>
           <Button
@@ -949,7 +955,7 @@ function ComposerSurface({
             )}
             onClick={canAbort ? onAbort : onSubmit}
             disabled={canAbort ? false : !canSend || busy}
-            title={canAbort ? "中止" : "发送（Ctrl+Enter）"}
+            title={canAbort ? t('app.abort') : t('app.send')}
           >
             {canAbort ? (
               <Square className="size-3.5" strokeWidth={2.4} aria-hidden />
@@ -1261,6 +1267,7 @@ function MessageCard({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   saveLocalImageAs: SaveLocalImageAs;
 }) {
+  const { t } = useTranslation();
   const isUser = message.role === "user";
   const canStartRewind = isUser && message.canRewind === true && !message.pending;
   const userBubble =
@@ -1314,7 +1321,7 @@ function MessageCard({
             localFileAttachments={rewindLocalFileAttachments}
             onChange={onRewindChange}
             onSubmit={onRewindSubmit}
-            placeholder="输入消息…"
+            placeholder={t('app.typeMessage')}
             models={models}
             catalogHints={catalogHints}
             activeModel={activeModel}
@@ -1393,7 +1400,7 @@ function MessageCard({
               onClick={() => onContinue(continueTarget)}
               disabled={continueBusy}
             >
-              继续
+              {t('app.continue')}
             </Button>
           </div>
         ) : null}
@@ -1425,6 +1432,7 @@ function AskQuestionField({
   onRadioSelect(index: number): void;
   onTextChange(value: string): void;
 }) {
+  const { t } = useTranslation();
   const selectedValue =
     question.kind === "single_select" && draft.selectedOptionIndexes.length > 0
       ? String(draft.selectedOptionIndexes[0])
@@ -1435,7 +1443,7 @@ function AskQuestionField({
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle>{question.title}</CardTitle>
-          {question.required ? <Badge variant="secondary">必答</Badge> : null}
+          {question.required ? <Badge variant="secondary">{t('app.required')}</Badge> : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1501,13 +1509,13 @@ function AskQuestionField({
         {question.kind === "text" ? (
           <div className="space-y-2">
             <Label htmlFor={`${question.id}-text`}>
-              {question.customInputLabel ?? "回答"}
+              {question.customInputLabel ?? t('app.answer')}
             </Label>
             <Textarea
               id={`${question.id}-text`}
               value={draft.text}
               onChange={(event) => onTextChange(event.target.value)}
-              placeholder={question.customInputPlaceholder ?? "请输入回答"}
+              placeholder={question.customInputPlaceholder ?? t('app.enterAnswer')}
               className="min-h-28"
             />
           </div>
@@ -1516,13 +1524,13 @@ function AskQuestionField({
         {question.allowCustomInput ? (
           <div className="space-y-2">
             <Label htmlFor={`${question.id}-custom`}>
-              {question.customInputLabel ?? "自定义输入"}
+              {question.customInputLabel ?? t('app.customInput')}
             </Label>
             <Input
               id={`${question.id}-custom`}
               value={draft.customInput}
               onChange={(event) => onCustomInputChange(event.target.value)}
-              placeholder={question.customInputPlaceholder ?? "补充一个未列出的选项"}
+              placeholder={question.customInputPlaceholder ?? t('app.supplementOption')}
             />
           </div>
         ) : null}
@@ -1558,18 +1566,19 @@ function WebHostPairingGate({
   error: string;
   onPair(code: string): Promise<boolean>;
 }) {
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [localError, setLocalError] = useState("");
 
   const submit = () => {
     const normalized = code.trim();
     if (!normalized) {
-      setLocalError("请输入配对码。");
+      setLocalError(t('app.enterPairingCode'));
       return;
     }
     void onPair(normalized).then((ok) => {
       if (!ok) {
-        setLocalError("配对失败，请检查配对码。");
+        setLocalError(t('app.pairingFailed'));
       }
     });
   };
@@ -1578,12 +1587,12 @@ function WebHostPairingGate({
     <div className="flex h-[100dvh] items-center justify-center bg-background px-4 text-foreground">
       <Card className="w-full max-w-sm rounded-lg">
         <CardHeader>
-          <CardTitle>首次配对</CardTitle>
-          <CardDescription>输入 Desktop 设置页显示的配对码。</CardDescription>
+          <CardTitle>{t('app.firstTimePairing')}</CardTitle>
+          <CardDescription>{t('app.pairingDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="web-host-pairing-code">配对码</Label>
+            <Label htmlFor="web-host-pairing-code">{t('app.pairingCode')}</Label>
             <Input
               id="web-host-pairing-code"
               value={code}
@@ -1600,12 +1609,12 @@ function WebHostPairingGate({
               }}
             />
           </div>
-          {localError || (error && !error.includes("需要完成首次配对")) ? (
+          {localError || (error && !error.includes(t('app.pairingRequired'))) ? (
             <p className="text-sm text-destructive">{localError || error}</p>
           ) : null}
           <Button type="button" className="w-full" disabled={busy} onClick={submit}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            配对
+            {t('app.pair')}
           </Button>
         </CardContent>
       </Card>
@@ -1646,11 +1655,12 @@ function DesktopLayoutChromeBar({
   workspaceToolsOpen?: boolean;
   onToggleWorkspaceTools?: () => void;
 }) {
+  const { t } = useTranslation();
   const showTrailingActions = showWorkspaceToggle || showCommitButton || showMergeButton;
   return (
     <div
       role="toolbar"
-      aria-label="侧栏与工具区"
+      aria-label={t('app.sidebarAndTools')}
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-1.5",
         showTrailingActions ? "justify-between" : "justify-start",
@@ -1663,7 +1673,7 @@ function DesktopLayoutChromeBar({
         size="icon"
         className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
         onClick={onToggleSessionSidebar}
-        aria-label={sessionSidebarOpen ? "隐藏侧栏" : "展开侧栏"}
+        aria-label={sessionSidebarOpen ? t('app.hideSidebar') : t('app.showSidebar')}
         aria-expanded={sessionSidebarOpen}
         {...(sessionSidebarOpen ? { "aria-controls": "session-sidebar-panel" } : {})}
       >
@@ -1704,7 +1714,7 @@ function DesktopLayoutChromeBar({
               size="icon"
               className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
               onClick={() => onToggleWorkspaceTools?.()}
-              aria-label={workspaceToolsOpen ? "收拢工具区" : "展开工具区"}
+              aria-label={workspaceToolsOpen ? t('app.collapseTools') : t('app.expandTools')}
               aria-expanded={workspaceToolsOpen}
               {...(workspaceToolsOpen ? { "aria-controls": "workspace-tools-panel" } : {})}
             >
@@ -1722,6 +1732,7 @@ function DesktopLayoutChromeBar({
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { font, setFont } = useFont();
   const runtime = useDesktopRuntime();
@@ -2716,14 +2727,14 @@ export default function App() {
                     )}
                   >
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">上下文压缩 UI 演示</span>
+                      <span className="font-medium text-foreground">{t('app.compactionDemo')}</span>
                       <span className="hidden sm:inline">
                         {" "}
-                        · 模拟 Compressing → Compaction 摘要 → 压缩后回复（不写入会话）
+                        · {t('app.compactionDemoDescription')}
                       </span>
                     </p>
                     <Button type="button" variant="outline" size="sm" onClick={compactionDemo.stop}>
-                      退出演示
+                      {t('app.exitDemo')}
                     </Button>
                   </div>
                 </div>
@@ -2731,7 +2742,7 @@ export default function App() {
               {rewindDraft ? (
                 <button
                   type="button"
-                  aria-label="取消回溯编辑"
+                  aria-label={t('app.cancelRewind')}
                   className="fixed inset-0 z-30 cursor-default bg-background/35 backdrop-blur-sm"
                   onClick={() => setRewindDraft(null)}
                 />
@@ -2922,7 +2933,7 @@ export default function App() {
 
                 {rewindWarnings.length > 0 ? (
                   <div className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2.5 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-100">
-                    <p>回溯完成，{rewindWarnings.length} 项文件变更需要注意。</p>
+                    <p>{t('app.rewindComplete', { count: rewindWarnings.length })}</p>
                     <p className="mt-1 truncate" title={rewindWarnings[0]?.message}>
                       {rewindWarnings[0]?.path}: {rewindWarnings[0]?.message}
                     </p>
@@ -2955,7 +2966,7 @@ export default function App() {
                           disabled={runtime.busyAction === "approve"}
                         >
                           <Check data-icon="inline-start" />
-                          允许
+                          {t('app.allow')}
                         </Button>
                         <Button
                           size="sm"
@@ -2969,7 +2980,7 @@ export default function App() {
                           }
                         >
                           <ShieldCheck data-icon="inline-start" />
-                          始终信任
+                          {t('app.alwaysTrust')}
                         </Button>
                         <Button
                           size="sm"
@@ -2979,14 +2990,14 @@ export default function App() {
                           disabled={runtime.busyAction === "approve"}
                         >
                           <X data-icon="inline-start" />
-                          拒绝
+                          {t('app.deny')}
                         </Button>
                       </div>
                       <div className="flex min-h-9 items-stretch overflow-hidden rounded-md border border-input bg-transparent focus-within:border-ring/60 focus-within:ring-2 focus-within:ring-ring/20">
                         <Textarea
                           value={runtime.approvalGuidance}
                           onChange={(event) => runtime.setApprovalGuidance(event.target.value)}
-                          placeholder="需要调整时，写给模型的说明"
+                          placeholder={t('app.approvalGuidancePlaceholder')}
                           className="min-h-9 flex-1 resize-none rounded-none border-0 bg-transparent px-2.5 py-2 text-sm shadow-none focus-visible:ring-0"
                         />
                         <Button
@@ -3005,7 +3016,7 @@ export default function App() {
                           }
                         >
                           <MessageSquareText />
-                          <span className="sr-only">发送说明</span>
+                          <span className="sr-only">{t('app.sendGuidance')}</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -3053,7 +3064,7 @@ export default function App() {
                     onChange={runtime.setComposer}
                     onSubmit={submitComposerMessage}
                     onAbort={() => void runtime.abortConversation()}
-                    placeholder={activeSessionReadOnly ? "调试会话只读，无法发送消息…" : "输入消息…"}
+                    placeholder={activeSessionReadOnly ? t('app.readOnlySession') : t('app.typeMessage')}
                     localFileAttachments={runtime.composerLocalFileAttachments}
                     models={models}
                     catalogHints={snapshot?.config.modelCatalogHints}
@@ -3101,7 +3112,7 @@ export default function App() {
                       </div>
                       {snapshot?.conversation.pendingQuestions ? (
                         <p className="px-0.5 text-xs leading-relaxed text-muted-foreground">
-                          请先完成上方问卷
+                          {t('app.completeQuestionsAbove')}
                         </p>
                       ) : null}
                     </div>
@@ -3144,7 +3155,7 @@ export default function App() {
         <DialogContent className="max-w-4xl p-0" showCloseButton={false}>
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>
-              {pendingQuestions?.request.title ?? "还需要确认几个问题"}
+              {pendingQuestions?.request.title ?? t('app.needMoreQuestions')}
             </DialogTitle>
             <DialogDescription>
               Use the structured questionnaire below to resume the host runtime.
@@ -3213,7 +3224,7 @@ export default function App() {
               onClick={() => void runtime.skipQuestions()}
               disabled={runtime.busyAction === "questions"}
             >
-              跳过
+              {t('app.skip')}
             </Button>
             <Button
               onClick={() => void runtime.submitQuestions()}
@@ -3222,7 +3233,7 @@ export default function App() {
               {runtime.busyAction === "questions" ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : null}
-              提交答案
+              {t('app.submitAnswers')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3241,19 +3252,19 @@ export default function App() {
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
             <DialogTitle>
-              {branchCheckoutBlockedByChanges ? "无法切换分支" : "切换分支"}
+              {branchCheckoutBlockedByChanges ? t('app.cannotSwitchBranch') : t('app.switchBranch')}
             </DialogTitle>
             <DialogDescription>
               {branchCheckoutBlockedByChanges ? (
                 <>
-                  工作区有未提交的更改，无法切换到「{snapshot?.git.selectedBranch ?? snapshot?.git.branch}」。
-                  放弃更改后，这些本地修改将永久丢失。
+                  {t('app.uncommittedChangesCannotSwitch', { branch: snapshot?.git.selectedBranch ?? snapshot?.git.branch ?? '' })}
+                  {t('app.discardChangesWarning')}
                 </>
               ) : (
                 <>
-                  发送前将切换到分支「{snapshot?.git.selectedBranch ?? snapshot?.git.branch}」。
+                  {t('app.willSwitchBranch', { branch: snapshot?.git.selectedBranch ?? snapshot?.git.branch ?? '' })}
                   {snapshot?.git.hasChanges
-                    ? " 检测到未提交更改，切换可能失败。"
+                    ? ` ${t('app.uncommittedChangesMayFail')}`
                     : null}
                 </>
               )}
@@ -3274,7 +3285,7 @@ export default function App() {
               }}
               disabled={commitBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             {branchCheckoutBlockedByChanges ? (
               <Button
@@ -3285,7 +3296,7 @@ export default function App() {
                 disabled={commitBusy}
               >
                 {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                放弃更改并切换
+                {t('app.discardAndSwitch')}
               </Button>
             ) : (
               <Button
@@ -3295,7 +3306,7 @@ export default function App() {
                 disabled={commitBusy}
               >
                 {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                切换并发送
+                {t('app.switchAndSend')}
               </Button>
             )}
           </DialogFooter>
@@ -3314,31 +3325,31 @@ export default function App() {
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>提交更改</DialogTitle>
+            <DialogTitle>{t('app.commitChanges')}</DialogTitle>
             <DialogDescription>
               {snapshot?.git.branch
-                ? `当前分支：${snapshot.git.branch}`
-                : "为当前工作区创建一次 Git 提交。"}
+                ? t('app.currentBranch', { branch: snapshot.git.branch })
+                : t('app.commitDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
-              <Label htmlFor="commit-message-input">提交信息</Label>
+              <Label htmlFor="commit-message-input">{t('app.commitMessage')}</Label>
               <Textarea
                 id="commit-message-input"
                 value={commitMessageDraft}
                 onChange={(event) => setCommitMessageDraft(event.target.value)}
-                placeholder="提交信息，为空将自动生成"
+                placeholder={t('app.commitMessagePlaceholder')}
                 className="min-h-28"
                 autoComplete="off"
                 disabled={runtime.busyAction === "git"}
               />
             </div>
             <div className="grid gap-2">
-              <Label>方式</Label>
+              <Label>{t('app.mode')}</Label>
               <div
                 role="tablist"
-                aria-label="提交方式"
+                aria-label={t('app.commitMode')}
                 className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
               >
                 {commitModeOptions.map((option) => (
@@ -3356,12 +3367,12 @@ export default function App() {
                     disabled={runtime.busyAction === "git"}
                     onClick={() => setCommitMode(option.value)}
                   >
-                    {option.label}
+                    {t(option.labelKey)}
                   </button>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                {commitModeOptions.find((option) => option.value === commitMode)?.hint}
+                {t(commitModeOptions.find((option) => option.value === commitMode)?.hintKey ?? '')}
               </p>
             </div>
             {runtime.runtimeError ? (
@@ -3376,7 +3387,7 @@ export default function App() {
               onClick={() => setCommitDialogOpen(false)}
               disabled={runtime.busyAction === "git"}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -3385,7 +3396,7 @@ export default function App() {
               disabled={commitActionDisabled || commitBusy}
             >
               {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {commitMode === "commit-and-push" ? "提交并推送" : "提交"}
+              {commitMode === "commit-and-push" ? t('app.commitAndPush') : t('app.commit')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3399,16 +3410,16 @@ export default function App() {
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>合并至默认分支</DialogTitle>
+            <DialogTitle>{t('app.mergeToDefaultBranch')}</DialogTitle>
             <DialogDescription>
               {snapshot?.git.worktreeBranch && snapshot?.git.defaultBranch
-                ? `将 ${snapshot.git.worktreeBranch} 合并到 ${snapshot.git.defaultBranch}。`
-                : "将当前分支合并到默认分支。"}
+                ? t('app.mergeBranchDescription', { from: snapshot.git.worktreeBranch, to: snapshot.git.defaultBranch })
+                : t('app.mergeToDefaultBranchDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <p className="text-sm text-muted-foreground">
-              请确保 Worktree 中的更改已提交；默认分支上不能有未提交更改。
+              {t('app.mergeWarning')}
             </p>
             {runtime.runtimeError && mergeDialogOpen ? (
               <p className="text-sm leading-relaxed text-destructive">{runtime.runtimeError}</p>
@@ -3422,7 +3433,7 @@ export default function App() {
               onClick={() => setMergeDialogOpen(false)}
               disabled={commitBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -3431,7 +3442,7 @@ export default function App() {
               disabled={mergeActionDisabled || commitBusy}
             >
               {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              合并
+              {t('app.merge')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
+import i18n from "@/lib/i18n";
 import { ArrowLeft, ArrowLeftRight, Download, LoaderCircle, RefreshCw, Search, Sparkles } from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
@@ -69,12 +71,12 @@ function reviewStatusBadgeVariant(status: DesktopMarketplaceCatalogItem["default
 
 function reviewStatusLabel(status: DesktopMarketplaceCatalogItem["defaultReviewStatus"]) {
   if (status === "verified") {
-    return "已验证";
+    return i18n.t('marketplace.verified');
   }
   if (status === "revoked") {
-    return "已撤销";
+    return i18n.t('marketplace.revoked');
   }
-  return "未验证";
+  return i18n.t('marketplace.unverified');
 }
 
 function installedExtensionForCatalog(
@@ -91,9 +93,9 @@ function installedExtensionForCatalog(
 
 function installedBadgeLabel(installed: DesktopExtensionListItem, targetVersion: string) {
   if (installed.version === targetVersion) {
-    return `已安装 ${installed.version}`;
+    return i18n.t('marketplace.installedVersion', { version: installed.version });
   }
-  return `可更新 ${installed.version} → ${targetVersion}`;
+  return i18n.t('marketplace.updateAvailable', { current: installed.version, target: targetVersion });
 }
 
 export function MarketplaceView({
@@ -107,6 +109,7 @@ export function MarketplaceView({
   onPrepareMarketplaceExtensionInstall,
   onInstallMarketplaceExtension,
 }: MarketplaceViewProps) {
+  const { t } = useTranslation();
   const [catalog, setCatalog] = useState<DesktopMarketplaceCatalogItem[]>([]);
   /** null = 列表；非 null = 该扩展的详情页 */
   const [detailExtensionId, setDetailExtensionId] = useState<string | null>(null);
@@ -162,9 +165,9 @@ export function MarketplaceView({
     ? undefined
     : installedItem
       ? installedItem.version === latestVersion
-        ? "当前已为目录中的最新版本"
-        : "前往版本列表选择版本"
-      : `安装 ${latestVersion}`;
+        ? t('marketplace.alreadyLatest')
+        : t('marketplace.goToVersionList')
+      : t('marketplace.installVersion', { version: latestVersion });
   const selectedReadme = selectedCatalog ? readmeById[selectedCatalog.extensionId] : undefined;
 
   useEffect(() => {
@@ -298,7 +301,7 @@ export function MarketplaceView({
     try {
       const prepared = await onPrepareMarketplaceExtensionInstall(request);
       if (!prepared.supportsCurrentHost) {
-        setLocalError(`扩展 ${prepared.displayName}@${prepared.version} 不支持当前 Desktop 宿主。`);
+        setLocalError(t('marketplace.extensionNotSupported', { name: prepared.displayName, version: prepared.version }));
         return null;
       }
       setPendingInstall(null);
@@ -420,7 +423,7 @@ export function MarketplaceView({
           >
             <div className="flex flex-col items-center gap-6">
               <div className="flex w-full flex-col items-center gap-2">
-                <p className="text-center text-lg font-medium tracking-tight text-foreground">扩展</p>
+                <p className="text-center text-lg font-medium tracking-tight text-foreground">{t('marketplace.title')}</p>
                 <div className="flex w-full max-w-sm items-center gap-1.5">
                   <div className="relative min-w-0 flex-1">
                     <Search
@@ -430,7 +433,7 @@ export function MarketplaceView({
                     <Input
                       value={searchText}
                       onChange={(event) => setSearchText(event.target.value)}
-                      placeholder="搜索扩展名、描述或包名"
+                      placeholder={t('marketplace.searchPlaceholder')}
                       className="h-8 pl-8 text-sm"
                     />
                   </div>
@@ -440,7 +443,7 @@ export function MarketplaceView({
                     size="icon"
                     className="size-8 shrink-0"
                     disabled={loadingCatalog || marketplaceBusy}
-                    title="刷新目录"
+                    title={t('marketplace.refreshCatalog')}
                     onClick={() => {
                       void refreshCatalog();
                     }}
@@ -456,7 +459,7 @@ export function MarketplaceView({
 
               {listEmpty ? (
                 <p className="text-center text-sm text-muted-foreground">
-                  {loadingCatalog ? "正在读取目录…" : "没有匹配的扩展。"}
+                  {loadingCatalog ? t('marketplace.loadingCatalog') : t('marketplace.noMatches')}
                 </p>
               ) : (
                 <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
@@ -487,7 +490,7 @@ export function MarketplaceView({
                             <span className="truncate font-medium text-foreground">{item.displayName}</span>
                             {item.featured ? (
                               <Badge variant="secondary" className="text-[10px] font-normal">
-                                精选
+                                {t('marketplace.featured')}
                               </Badge>
                             ) : null}
                             <Badge variant={reviewStatusBadgeVariant(item.defaultReviewStatus)} className="text-[10px]">
@@ -517,14 +520,14 @@ export function MarketplaceView({
                 onClick={closeDetail}
               >
                 <ArrowLeft className="size-4" aria-hidden />
-                返回
+                {t('common.back')}
               </Button>
             </div>
           </div>
 
           {!selectedCatalog ? (
             <div className="flex flex-1 items-center justify-center px-6 text-sm text-muted-foreground">
-              找不到该扩展，请返回列表。
+              {t('marketplace.extensionNotFound')}
             </div>
           ) : (
             <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
@@ -592,7 +595,7 @@ export function MarketplaceView({
                       ) : (
                         <Download className="size-4" aria-hidden />
                       )}
-                      {installedItem ? "切换" : "安装"}
+                      {installedItem ? t('marketplace.switch') : t('marketplace.install')}
                     </Button>
                   </div>
                 </div>
@@ -602,9 +605,9 @@ export function MarketplaceView({
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {(
                       [
-                        ["readme", "内容"],
-                        ["changelog", "更新日志"],
-                        ["versions", "版本"],
+                        ["readme", t('marketplace.tabReadme')],
+                        ["changelog", t('marketplace.tabChangelog')],
+                        ["versions", t('marketplace.tabVersions')],
                       ] as const
                     ).map(([tabId, label]) => (
                       <button
@@ -630,12 +633,12 @@ export function MarketplaceView({
                       {loadingReadmeId === selectedCatalog.extensionId ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <LoaderCircle className="size-4 animate-spin" aria-hidden />
-                          正在加载…
+                          {t('common.loading')}
                         </div>
                       ) : selectedReadme ? (
                         <MarkdownMessage content={selectedReadme} />
                       ) : (
-                        <p className="text-sm text-muted-foreground">暂无 README 内容。</p>
+                        <p className="text-sm text-muted-foreground">{t('marketplace.noReadme')}</p>
                       )}
                     </div>
                   ) : null}
@@ -663,7 +666,7 @@ export function MarketplaceView({
                           ) : null,
                         )
                       ) : (
-                        <p className="text-sm text-muted-foreground">暂无更新日志。</p>
+                        <p className="text-sm text-muted-foreground">{t('marketplace.noChangelog')}</p>
                       )}
                     </div>
                   ) : null}
@@ -673,7 +676,7 @@ export function MarketplaceView({
                       {loadingDetailId === selectedCatalog.extensionId && !selectedDetail ? (
                         <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
                           <LoaderCircle className="size-4 animate-spin" aria-hidden />
-                          正在读取版本…
+                          {t('marketplace.loadingVersions')}
                         </div>
                       ) : selectedDetail ? (
                         selectedDetail.versions.map((version) => {

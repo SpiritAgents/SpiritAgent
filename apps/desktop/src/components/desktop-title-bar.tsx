@@ -1,11 +1,13 @@
+import { useTranslation } from "react-i18next";
+
 import { cn } from "@/lib/utils";
 
 const MENU_ENTRIES = [
-  { label: "文件", section: "file" as const },
-  { label: "编辑", section: "edit" as const },
-  { label: "查看", section: "view" as const },
-  { label: "窗口", section: "window" as const },
-  { label: "帮助", section: "help" as const },
+  { labelKey: "titleBar.file", section: "file" as const },
+  { labelKey: "titleBar.edit", section: "edit" as const },
+  { labelKey: "titleBar.view", section: "view" as const },
+  { labelKey: "titleBar.window", section: "window" as const },
+  { labelKey: "titleBar.help", section: "help" as const },
 ];
 
 /** 与 [`App.tsx`](../App.tsx) 侧栏壳层宽度一致 */
@@ -42,6 +44,7 @@ function titleBarSurfaceClass(
 }
 
 function TitleBarMenuCluster() {
+  const { t } = useTranslation();
   return (
     <>
       <img
@@ -54,16 +57,16 @@ function TitleBarMenuCluster() {
       />
       <nav
         className="electron-no-drag flex items-center gap-0.5 text-[13px] leading-none"
-        aria-label="应用菜单"
+        aria-label={t('titleBar.appMenu')}
       >
-        {MENU_ENTRIES.map(({ label, section }) => (
+        {MENU_ENTRIES.map(({ labelKey, section }) => (
           <button
             key={section}
             type="button"
             className="rounded px-2 py-1.5 text-foreground/90 hover:bg-foreground/10 dark:hover:bg-white/10"
             onClick={(e) => popupMenuAtAnchor(e.currentTarget, section)}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </nav>
