@@ -1,3 +1,5 @@
+import i18n from "@/lib/i18n";
+
 export type WorkspaceToolTabKind = "files" | "shell" | "git";
 
 export type WorkspaceToolTab = {
@@ -6,7 +8,7 @@ export type WorkspaceToolTab = {
 };
 
 const KIND_BASE_LABEL: Record<WorkspaceToolTabKind, string> = {
-  files: "文件",
+  files: i18n.t('workspace.files'),
   shell: "Shell",
   git: "Git",
 };

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Brackets,
@@ -128,6 +129,7 @@ export function WorkspaceFilesPanel({
   onOpenFile,
   onOpenPlan,
 }: WorkspaceFilesPanelProps) {
+  const { t } = useTranslation();
   const [rootOpen, setRootOpen] = useState(true);
   const [cache, setCache] = useState<Record<string, DirCacheEntry>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -175,7 +177,7 @@ export function WorkspaceFilesPanel({
   );
 
   if (!workspaceRoot.trim()) {
-    return <p className="text-muted-foreground">连接工作区后显示文件树</p>;
+    return <p className="text-muted-foreground">{t('workspace.connectToShowFiles')}</p>;
   }
 
   const rootLabel = fileBasename(workspaceRoot.trim()) || workspaceRoot.trim();
@@ -296,7 +298,7 @@ export function WorkspaceFilesPanel({
         <div
           className="spirit-scroll min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5"
           role="tree"
-          aria-label="文件列表"
+          aria-label={t('workspace.fileList')}
           aria-busy={cache[""]?.status === "loading" ? true : undefined}
         >
           {renderDirBody("", 0)}

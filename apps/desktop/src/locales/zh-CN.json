@@ -361,5 +361,43 @@
     "enterAnswer": "请输入回答",
     "customInput": "自定义输入",
     "supplementOption": "补充一个未列出的选项"
+  },
+  "workspace": {
+    "planNotCreated": "Plan 还没有创建。后续检测到实际写入时，这里会显示托管 plan.md。",
+    "unsavedChangesCloseConfirm": "有未保存的更改，仍要关闭吗？",
+    "markdownPreview": "Markdown 预览",
+    "preview": "预览",
+    "markdownEdit": "Markdown 编辑",
+    "currentDocReadOnly": "当前文档只读",
+    "edit": "编辑",
+    "startImplementing": "开始实现",
+    "emptyMarkdownDoc": "当前 Markdown 文档为空。",
+    "connectToShowFiles": "连接工作区后显示文件树",
+    "fileList": "文件列表",
+    "shellExited": "已退出，代码 {{exitCode}}",
+    "openWorkspaceToUse": "打开工作区后可用。",
+    "shellElectronOnly": "Shell 仅在 Electron 桌面版可用。",
+    "openSystemTerminal": "打开系统终端",
+    "files": "文件",
+    "gitPlaceholder": "Git 区占位",
+    "resizeToolsWidth": "调整工具区宽度",
+    "workspaceTools": "工作区工具",
+    "toolTabs": "工具分页",
+    "closeTab": "关闭{{label}}选项卡",
+    "newToolTab": "新建工具选项卡",
+    "noOpenTabs": "暂无打开的选项卡。",
+    "fileReferenceCandidates": "工作区文件引用候选"
+  },
+  "composer": {
+    "insertWorkspaceFile": "引用工作区文件",
+    "selectLocalFile": "选择本地文件",
+    "slashCommand": "斜杠命令",
+    "openInsertPanel": "打开插入面板",
+    "insert": "插入",
+    "approvalDefault": "默认审批",
+    "approvalBypass": "绕过审批",
+    "approvalLevel": "审批级别",
+    "workLocation": "工作地点",
+    "removeAttachment": "移除 {{name}}"
   }
 }

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { AtSign, File, Plus } from 'lucide-react'
 
@@ -27,36 +28,37 @@ export function ComposerInsertMenu({
   onPickLocalFile,
   onInsertSkillTrigger,
 }: ComposerInsertMenuProps) {
+  const { t } = useTranslation()
   const items = useMemo<readonly ActionPopoverItem[]>(
     () => [
       {
         id: 'workspace-file-reference',
         icon: <AtSign className="size-4 shrink-0 text-muted-foreground" aria-hidden />,
-        label: '引用工作区文件',
+        label: t('composer.insertWorkspaceFile'),
         onSelect: onInsertWorkspaceReference,
       },
       {
         id: 'local-file-picker',
         icon: <File className="size-4 shrink-0 text-muted-foreground" aria-hidden />,
-        label: '选择本地文件',
+        label: t('composer.selectLocalFile'),
         disabled: !canPickLocalFile,
         onSelect: onPickLocalFile,
       },
       {
         id: 'skill-trigger',
         icon: <SlashBadge />,
-        label: '斜杠命令',
+        label: t('composer.slashCommand'),
         onSelect: onInsertSkillTrigger,
       },
     ],
-    [canPickLocalFile, onInsertSkillTrigger, onInsertWorkspaceReference, onPickLocalFile],
+    [canPickLocalFile, onInsertSkillTrigger, onInsertWorkspaceReference, onPickLocalFile, t],
   )
 
   return (
     <ActionPopover
-      ariaLabel="打开插入面板"
-      title="插入"
-      heading="插入"
+      ariaLabel={t('composer.openInsertPanel')}
+      title={t('composer.insert')}
+      heading={t('composer.insert')}
       disabled={disabled}
       triggerIcon={<Plus className="size-3.5" aria-hidden />}
       items={items}

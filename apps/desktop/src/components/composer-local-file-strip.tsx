@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { File, X } from "lucide-react";
 
@@ -24,6 +25,7 @@ function ComposerLocalFileCard({
   readOnly: boolean;
   onRemove?(path: string): void;
 }) {
+  const { t } = useTranslation();
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const showImage = attachment.isImage && !imageLoadFailed && Boolean(attachment.previewDataUrl);
 
@@ -34,7 +36,7 @@ function ComposerLocalFileCard({
           type="button"
           onClick={() => onRemove(attachment.path)}
           className="inline-flex size-[18px] shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-          aria-label={`移除 ${attachment.name}`}
+          aria-label={t('composer.removeAttachment', { name: attachment.name })}
         >
           <X className="size-3" aria-hidden />
         </button>

@@ -361,5 +361,43 @@
     "enterAnswer": "Please enter your answer",
     "customInput": "Custom Input",
     "supplementOption": "Supplement an unlisted option"
+  },
+  "workspace": {
+    "planNotCreated": "Plan has not been created yet. A managed plan.md will appear here once actual writes are detected.",
+    "unsavedChangesCloseConfirm": "There are unsaved changes. Close anyway?",
+    "markdownPreview": "Markdown Preview",
+    "preview": "Preview",
+    "markdownEdit": "Markdown Edit",
+    "currentDocReadOnly": "Current document is read-only",
+    "edit": "Edit",
+    "startImplementing": "Start Implementing",
+    "emptyMarkdownDoc": "Current Markdown document is empty.",
+    "connectToShowFiles": "Connect to a workspace to show the file tree",
+    "fileList": "File List",
+    "shellExited": "Exited with code {{exitCode}}",
+    "openWorkspaceToUse": "Open a workspace to use.",
+    "shellElectronOnly": "Shell is only available in the Electron desktop version.",
+    "openSystemTerminal": "Open System Terminal",
+    "files": "Files",
+    "gitPlaceholder": "Git area placeholder",
+    "resizeToolsWidth": "Resize Tools Width",
+    "workspaceTools": "Workspace Tools",
+    "toolTabs": "Tool Tabs",
+    "closeTab": "Close {{label}} tab",
+    "newToolTab": "New Tool Tab",
+    "noOpenTabs": "No open tabs.",
+    "fileReferenceCandidates": "Workspace file reference candidates"
+  },
+  "composer": {
+    "insertWorkspaceFile": "Reference Workspace File",
+    "selectLocalFile": "Select Local File",
+    "slashCommand": "Slash Command",
+    "openInsertPanel": "Open Insert Panel",
+    "insert": "Insert",
+    "approvalDefault": "Default Approval",
+    "approvalBypass": "Bypass Approval",
+    "approvalLevel": "Approval Level",
+    "workLocation": "Work Location",
+    "removeAttachment": "Remove {{name}}"
   }
 }

@@ -6,6 +6,7 @@ import {
   Sparkles,
   Wand2,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { instantHoverMotionClass } from '@/lib/desktop-chrome'
 import { cn } from '@/lib/utils'
@@ -37,6 +38,7 @@ export function SkillSlashMenu({
   onSelectIndex,
   onApplySuggestion,
 }: SkillSlashMenuProps) {
+  const { t } = useTranslation();
   return (
     <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl dark:border-white/12 supports-[backdrop-filter]:bg-background/40">
       {suggestions.length > 0 ? (
@@ -71,7 +73,7 @@ export function SkillSlashMenu({
           ))}
         </div>
       ) : (
-        <div className="px-3 py-2.5 text-sm text-muted-foreground">没有匹配项</div>
+        <div className="px-3 py-2.5 text-sm text-muted-foreground">{t('app.noMatches')}</div>
       )}
     </div>
   )
