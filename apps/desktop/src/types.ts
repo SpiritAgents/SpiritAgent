@@ -657,6 +657,8 @@ export interface ConversationTodoSnapshot {
 }
 
 export interface ConversationSnapshot {
+  /** Monotonic per session bundle; bumps on rewind restore so stale poll snapshots are ignored. */
+  revision: number;
   messages: ConversationMessageSnapshot[];
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;

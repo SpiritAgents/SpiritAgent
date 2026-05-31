@@ -1789,7 +1789,9 @@ export default function App() {
   const compactionDemo = useCompactionUiDemo();
   const models = snapshot?.config.models ?? [];
   const sessionMessages = snapshot?.conversation.messages ?? [];
-  const messages = compactionDemo.active ? compactionDemo.messages : sessionMessages;
+  const messagesDuringRewindSuppressed =
+    runtime.busyAction === "rewind" ? [] : sessionMessages;
+  const messages = compactionDemo.active ? compactionDemo.messages : messagesDuringRewindSuppressed;
   const isEmptySession = !compactionDemo.active && sessionMessages.length === 0;
   const conversationPendingAuxState = compactionDemo.active
     ? compactionDemo.pendingAuxState
