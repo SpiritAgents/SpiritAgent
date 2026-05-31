@@ -62,17 +62,27 @@ export interface HostFileRewindResult {
   warnings: HostFileRewindWarning[];
 }
 
+/** Node `fs.Stats.mtimeMs` is a float; Rust rewind sidecar expects integer unix/ms fields. */
+function toIntegerMs(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value)) {
+    return undefined;
+  }
+  return Math.trunc(value);
+}
+
 export async function readHostFileSnapshot(resolvedPath: string): Promise<HostFileSnapshot> {
   if (!existsSync(resolvedPath)) {
     return { exists: false, file: false };
   }
 
   const st = await lstat(resolvedPath);
+  const mtimeMs = toIntegerMs(st.mtimeMs);
+  const mtimeField = mtimeMs !== undefined ? { mtimeMs } : {};
   if (!st.isFile()) {
     return {
       exists: true,
       file: false,
-      mtimeMs: st.mtimeMs,
+      ...mtimeField,
       size: st.size,
     };
   }
@@ -83,7 +93,7 @@ export async function readHostFileSnapshot(resolvedPath: string): Promise<HostFi
     file: true,
     content,
     sha256: sha256Text(content),
-    mtimeMs: st.mtimeMs,
+    ...mtimeField,
     size: st.size,
   };
 }
