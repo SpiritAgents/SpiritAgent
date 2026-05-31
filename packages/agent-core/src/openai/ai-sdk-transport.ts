@@ -7,6 +7,10 @@ import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
+import {
+  createMoonshotAI,
+  type MoonshotAILanguageModelOptions,
+} from '@ai-sdk/moonshotai';
 import { createGateway } from '@ai-sdk/gateway';
 import { createOpenAI } from '@ai-sdk/openai';
 import {
@@ -71,6 +75,7 @@ import {
   llmHistoryToOpenAiMessages,
   resolveMoonshotVideoUrlsInOpenAiMessages,
 } from './openai-multimodal-messages.js';
+import { normalizeMoonshotApiBase } from './moonshot-files.js';
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
@@ -389,7 +394,7 @@ export class AiSdkOpenAiCompatibleTransport
           nextState,
           requestTrace,
           completion,
-          isDeepSeekOfficialAiSdkProvider(config),
+          usesStructuredReasoningStreamEvents(config),
         ),
         completion: completionPromise,
         cancel: () => {
@@ -565,6 +570,7 @@ function buildAiSdkRequestTrace(
   const requestTrace = buildOpenAiRequestTrace(config, stepIndex, messages, tools, stream);
   if (
     !isDeepSeekOfficialAiSdkProvider(config) &&
+    !isMoonshotOfficialAiSdkProvider(config) &&
     !isAlibabaOfficialAiSdkProvider(config) &&
     !isVercelAiGatewayProvider(config) &&
     !isOpenAiOfficialAiSdkProvider(config)
@@ -579,11 +585,13 @@ function buildAiSdkRequestTrace(
 
   const kind = isDeepSeekOfficialAiSdkProvider(config)
     ? 'deepseek_sdk_chat_completions'
-    : isAlibabaOfficialAiSdkProvider(config)
-      ? 'alibaba_sdk_chat_completions'
-      : isVercelAiGatewayProvider(config)
-        ? 'gateway_sdk_chat_completions'
-        : 'openai_official_sdk_chat_completions';
+    : isMoonshotOfficialAiSdkProvider(config)
+      ? 'moonshot_sdk_chat_completions'
+      : isAlibabaOfficialAiSdkProvider(config)
+        ? 'alibaba_sdk_chat_completions'
+        : isVercelAiGatewayProvider(config)
+          ? 'gateway_sdk_chat_completions'
+          : 'openai_official_sdk_chat_completions';
 
   return [
     {
@@ -611,6 +619,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkOpenAiProvider(config).chat(config.model);
   }
 
+  if (isMoonshotOfficialAiSdkProvider(config)) {
+    return createAiSdkMoonshotProvider(config).chatModel(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
@@ -623,13 +635,11 @@ function createAiSdkOpenAiCompatibleProvider(
   options: { includeChatVendorExtras?: boolean } = {},
 ) {
   const transportConfig = config as OpenAiTransportConfig;
-  const isMoonshotChat = transportConfig.llmVendor === 'moonshot-ai';
   const vendorExtras = options.includeChatVendorExtras === false
     ? {}
     : openAiVendorChatCompletionBodyExtras(transportConfig);
-  // Moonshot AI：合并 vendorExtras，并在 chat.completions 请求中恢复含 video_url 的 messages。
   const fetchWrapper =
-    Object.keys(vendorExtras).length === 0 && !isMoonshotChat
+    Object.keys(vendorExtras).length === 0
       ? undefined
       : async (input: RequestInfo | URL, init?: RequestInit) => {
           const body = tryParseRequestBody(init?.body);
@@ -637,23 +647,11 @@ function createAiSdkOpenAiCompatibleProvider(
             return fetch(input, init);
           }
 
-          const requestUrl =
-            typeof input === 'string'
-              ? input
-              : input instanceof URL
-                ? input.toString()
-                : 'request';
-          const moonshotMessages =
-            isMoonshotChat && requestUrl.includes('/chat/completions')
-              ? takeMoonshotChatCompletionMessages()
-              : undefined;
-
           return fetch(input, {
             ...init,
             body: JSON.stringify({
               ...body,
               ...vendorExtras,
-              ...(moonshotMessages ? { messages: moonshotMessages } : {}),
             }),
           });
         };
@@ -670,6 +668,41 @@ function createAiSdkOpenAiCompatibleProvider(
     supportsStructuredOutputs: true,
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
     ...(fetchWrapper ? { fetch: fetchWrapper } : {}),
+  });
+}
+
+function createAiSdkMoonshotProvider(config: OpenAiTransportConfig) {
+  const reasoningEffort = openAiReasoningEffort(config);
+  const fetchWrapper = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const body = tryParseRequestBody(init?.body);
+    if (!isJsonObject(body)) {
+      return fetch(input, init);
+    }
+
+    const requestUrl =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : 'request';
+    const moonshotMessages = requestUrl.includes('/chat/completions')
+      ? takeMoonshotChatCompletionMessages()
+      : undefined;
+
+    return fetch(input, {
+      ...init,
+      body: JSON.stringify({
+        ...body,
+        ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
+        ...(moonshotMessages ? { messages: moonshotMessages } : {}),
+      }),
+    });
+  };
+
+  return createMoonshotAI({
+    apiKey: config.apiKey,
+    baseURL: normalizeMoonshotApiBase(config.baseUrl),
+    fetch: fetchWrapper,
   });
 }
 
@@ -735,6 +768,18 @@ function buildAiSdkProviderOptions(
 
     return {
       deepseek: deepseekOptions as JsonObject,
+    };
+  }
+
+  if (isMoonshotOfficialAiSdkProvider(config)) {
+    const moonshotaiOptions = {
+      thinking: {
+        type: config.vendorExtendedThinking === false ? 'disabled' : 'enabled',
+      },
+    } satisfies MoonshotAILanguageModelOptions;
+
+    return {
+      moonshotai: moonshotaiOptions as JsonObject,
     };
   }
 
@@ -1419,6 +1464,14 @@ function sanitizeMessageForCompatibility(
 
 function isDeepSeekOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'deepseek';
+}
+
+function isMoonshotOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'moonshot-ai';
+}
+
+function usesStructuredReasoningStreamEvents(config: OpenAiTransportConfig): boolean {
+  return isDeepSeekOfficialAiSdkProvider(config) || isMoonshotOfficialAiSdkProvider(config);
 }
 
 function isAlibabaOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
