@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateText, streamText } from 'ai';
 
 import type {
   JsonValue,
@@ -33,6 +33,7 @@ import {
   buildOpenResponsesRequestTrace,
   type OpenResponsesTransportConfig,
 } from './responses-compat.js';
+import { createDeferred, responsesEventStreamToRuntimeEvents } from './streaming.js';
 
 export class AiSdkOpenResponsesTransport
   implements LlmTransport<OpenResponsesTransportConfig, ToolAgentState>
@@ -129,10 +130,70 @@ export class AiSdkOpenResponsesTransport
     state: ToolAgentState,
     tools: JsonValue,
   ): Promise<StartedToolAgentRound<ToolAgentState>> {
-    void config;
-    void state;
-    void tools;
-    throw new Error('Open Responses transport: startToolAgentRoundStreaming 尚未实现。');
+    const nextState: ToolAgentState = {
+      messages: state.messages.map((message) => cloneJsonValue(message)),
+      steps: state.steps + 1,
+    };
+
+    const requestMessages = nextState.messages.map((message) => cloneJsonValue(message));
+    const normalizedTools = normalizeResponsesToolDefinitions(tools);
+    const previousResponseId = findPreviousResponseId(requestMessages);
+    const traceExtras: Parameters<typeof buildOpenResponsesRequestTrace>[5] = {
+      ...(config.store !== undefined ? { store: config.store } : {}),
+      ...(previousResponseId ? { previousResponseId } : {}),
+      ...(config.truncation ? { truncation: config.truncation } : {}),
+    };
+    const requestTrace = buildOpenResponsesRequestTrace(
+      config,
+      nextState.steps,
+      requestMessages,
+      normalizedTools,
+      true,
+      traceExtras,
+    );
+
+    const abortController = new AbortController();
+
+    try {
+      const result: { fullStream: AsyncIterable<unknown> } = streamText({
+        model: createResponsesLanguageModel(config) as any,
+        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages) as any,
+        allowSystemInMessages: true,
+        ...(normalizedTools.length === 0
+          ? {}
+          : {
+              tools: buildResponsesAiSdkTools(normalizedTools) as any,
+              toolChoice: 'auto' as const,
+            }),
+        providerOptions: buildResponsesProviderOptions(config, previousResponseId),
+        includeRawChunks: true,
+        maxRetries: 0,
+        abortSignal: abortController.signal,
+      });
+      const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
+
+      return {
+        eventStream: responsesEventStreamToRuntimeEvents(
+          config,
+          result.fullStream as any,
+          nextState,
+          requestTrace,
+          completion,
+        ),
+        completion: completion.promise,
+        cancel: () => abortController.abort(),
+      };
+    } catch (error) {
+      return {
+        eventStream: emptyResponsesEventStream(),
+        completion: Promise.resolve({
+          kind: 'failure',
+          error: renderResponsesTransportError(error),
+          requestTrace,
+        }),
+        cancel: () => abortController.abort(),
+      };
+    }
   }
 
   async compactHistoryManual(
@@ -194,3 +255,9 @@ export class AiSdkOpenResponsesTransport
     };
   }
 }
+
+async function* emptyResponsesEventStream(): AsyncGenerator<
+  import('../ports.js').LlmStreamEvent,
+  void,
+  undefined
+> {}
