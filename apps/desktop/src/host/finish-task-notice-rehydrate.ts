@@ -37,7 +37,10 @@ export function rehydrateFinishTaskNoticesInConversation(
     if (notices.length === 0) {
       continue;
     }
-    applyFinishTaskNoticeToConversationTurn(conversationTurns[turnIndex]!, notices.at(-1)!);
+    applyFinishTaskNoticeToConversationTurn(
+      conversationTurns[turnIndex]!,
+      notices[notices.length - 1]!,
+    );
   }
 }
 
@@ -54,7 +57,7 @@ export function rehydrateFinishTaskNoticesInTimeline(
     if (notices.length === 0) {
       continue;
     }
-    const notice = notices.at(-1)!;
+    const notice = notices[notices.length - 1]!;
     const turnMessages = conversationTurns[turnIndex]!;
     for (let index = turnMessages.length - 1; index >= 0; index -= 1) {
       const message = turnMessages[index]!;

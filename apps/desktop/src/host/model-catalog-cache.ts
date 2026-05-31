@@ -91,7 +91,9 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
       ? (obj.provider.trim() as DesktopModelProvider)
       : undefined;
   const transportKind =
-    obj.transportKind === 'openai-compatible' || obj.transportKind === 'anthropic'
+    obj.transportKind === 'openai-compatible'
+      || obj.transportKind === 'open-responses'
+      || obj.transportKind === 'anthropic'
       ? obj.transportKind
       : undefined;
   return {

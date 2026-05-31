@@ -40,7 +40,9 @@ pub(crate) fn model_add_default_custom_api_base(
 ) -> String {
     let p = presets();
     match transport_kind {
-        ModelTransportKind::OpenAiCompatible => p.default_custom_api_base.clone(),
+        ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses => {
+            p.default_custom_api_base.clone()
+        }
         ModelTransportKind::Anthropic => p
             .preset_api_base_by_provider
             .get("anthropic")

@@ -5,6 +5,7 @@ import {
   parseModelProviderId,
   parsePresetModelProviderId,
   partitionModelsByProvider,
+  resolveProviderConnectApiBase,
 } from './model-provider-presets.js';
 
 test('parse model provider helpers accept canonical ids and reject invalid values', () => {
@@ -33,4 +34,34 @@ test('partition models by provider preserves ordering and separates unmatched en
     matched: [models[0], models[2]],
     unmatched: [models[1], models[3], models[4]],
   });
+});
+
+test('resolveProviderConnectApiBase uses transport-specific preset bases', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('minimax', 'anthropic'),
+    'https://api.minimaxi.com/anthropic/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('deepseek', 'anthropic'),
+    'https://api.deepseek.com/anthropic',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('alibaba', 'open-responses'),
+    'https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('alibaba', 'anthropic'),
+    'https://dashscope.aliyuncs.com/apps/anthropic',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('openai', 'open-responses'),
+    'https://api.openai.com/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase prefers custom override', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('deepseek', 'anthropic', 'https://custom.example/v1'),
+    'https://custom.example/v1',
+  );
 });

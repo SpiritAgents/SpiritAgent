@@ -2,9 +2,9 @@
  * OpenAI-compatible `GET /v1/models` listing (host-side; no secrets stored here).
  */
 
-import type { ModelProviderId } from './model-provider-presets.js';
+import type { ModelProviderId, ProviderModelTransportKind } from './model-provider-presets.js';
 
-export type ProviderModelTransportKind = 'openai-compatible' | 'anthropic';
+export type { ProviderModelTransportKind };
 
 export interface ProviderListedModelEntry {
   id: string;
@@ -238,7 +238,10 @@ export async function listAnthropicModels(
 export async function listProviderModels(
   options: ListProviderModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  if (options.transportKind === 'anthropic' || options.provider === 'anthropic') {
+  if (
+    options.transportKind === 'anthropic'
+    || options.provider === 'anthropic'
+  ) {
     return listAnthropicModels(options);
   }
 
