@@ -188,6 +188,38 @@ test('completed Chinese greeting keeps finalized thinking above the final assist
   ]);
 });
 
+test('read_file streaming preview shows filename from partial arguments JSON', () => {
+  const harness = createHarness();
+  harness.pushUser('read Cargo.toml');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'call-partial',
+      toolName: 'read_file',
+      argumentsJson: '{"path":"Cargo.toml"',
+    },
+  ]);
+
+  const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-partial')?.tool;
+  assert.equal(previewTool?.phase, 'preview');
+  assert.equal(previewTool?.headline, '查看');
+  assert.equal(previewTool?.headlineDetail, 'Cargo.toml');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'call-partial',
+      toolName: 'read_file',
+      argumentsJson: '{"path":"Cargo.toml","start_line":1,"end_line":80',
+    },
+  ]);
+
+  const updatedTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-partial')?.tool;
+  assert.equal(updatedTool?.headlineDetail, 'Cargo.toml 1 - 80');
+});
+
 test('tool previews keep live and finalized thinking above the tool card without duplicates', () => {
   const harness = createHarness();
   harness.pushUser('read README.md');

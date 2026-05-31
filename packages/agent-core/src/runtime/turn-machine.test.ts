@@ -7,9 +7,11 @@ import { createTurnContext, repairMissingToolResultsInHistory } from './helpers.
 import type { RuntimeEvent } from './types.js';
 import {
   processToolCalls,
+  resolveEarlyToolCallArguments,
   resumePendingApproval,
   runTurnLoop,
   shouldSkipPersistAssistantToolCalls,
+  startEarlyToolExecution,
   type TurnMachineRuntime,
 } from './turn-machine.js';
 
@@ -671,3 +673,46 @@ function latestAssistantContent(messages: Array<{ role: string; content?: string
   }
   return undefined;
 }
+
+test('resolveEarlyToolCallArguments canonicalizes partial read_file path JSON', () => {
+  const resolved = resolveEarlyToolCallArguments('read_file', '{"path":"Cargo.toml"');
+  assert.deepEqual(resolved, {
+    argumentsJson: '{"path":"Cargo.toml"}',
+    canonicalArgumentsJson: '{"path":"Cargo.toml"}',
+  });
+});
+
+test('startEarlyToolExecution executes read_file once path is streamed', async () => {
+  const executed: string[] = [];
+  const events: RuntimeEvent<{ name: string; path: string }>[] = [];
+  const runtime = {
+    options: {
+      toolExecutor: {
+        requestFromFunctionCall: async (_name: string, argumentsJson: string) =>
+          JSON.parse(argumentsJson) as { name: string; path: string },
+        authorize: async () => ({ kind: 'allowed' as const }),
+        execute: async (request: { path: string }) => {
+          executed.push(request.path);
+          return { content: [], summaryText: `read ${request.path}` };
+        },
+      },
+    },
+    emitEvent: (event: RuntimeEvent<{ name: string; path: string }>) => {
+      events.push(event);
+    },
+    tryPerformEarlyInternalToolCall: undefined,
+  } as unknown as TurnMachineRuntime<{}, {}, { name: string; path: string }>;
+
+  const early = new Map();
+  const record = startEarlyToolExecution(
+    runtime,
+    { id: 'call-preview-read', name: 'read_file', argumentsJson: '{"path":"preview.txt"' },
+    early,
+  );
+  assert.ok(record);
+  const outcome = await record?.outcome;
+  assert.equal(outcome?.kind, 'completed');
+  assert.deepEqual(executed, ['preview.txt']);
+  assert.ok(events.some((event) => event.kind === 'tool-call-started'));
+  assert.ok(events.some((event) => event.kind === 'tool-execution-finished'));
+});

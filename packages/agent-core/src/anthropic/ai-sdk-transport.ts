@@ -75,6 +75,7 @@ interface StreamingToolCallAccumulator {
   argumentsJson: string;
   readyPreviewEmitted: boolean;
   lastPreviewArgsLen?: number;
+  lastPreviewDetailSignature?: string;
 }
 
 type AnthropicToolCallStreamingStartPart = {
@@ -756,6 +757,9 @@ async function* anthropicEventStreamToRuntimeEvents(
           ...(current.lastPreviewArgsLen === undefined
             ? {}
             : { lastPreviewArgsLen: current.lastPreviewArgsLen }),
+          ...(current.lastPreviewDetailSignature === undefined
+            ? {}
+            : { lastPreviewDetailSignature: current.lastPreviewDetailSignature }),
         };
         const previewDecision = resolveStreamingToolPreviewEmit(
           current.toolName,
@@ -766,6 +770,9 @@ async function* anthropicEventStreamToRuntimeEvents(
           current.readyPreviewEmitted = previewDecision.nextState.readyPreviewEmitted;
           if (previewDecision.nextState.lastPreviewArgsLen !== undefined) {
             current.lastPreviewArgsLen = previewDecision.nextState.lastPreviewArgsLen;
+          }
+          if (previewDecision.nextState.lastPreviewDetailSignature !== undefined) {
+            current.lastPreviewDetailSignature = previewDecision.nextState.lastPreviewDetailSignature;
           }
           yield {
             kind: 'streaming-tool-preview',

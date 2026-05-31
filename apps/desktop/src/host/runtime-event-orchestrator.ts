@@ -1,7 +1,8 @@
-import type {
-  JsonObject,
-  RuntimeEvent,
-  RuntimeToolExecution,
+import {
+  previewRequestFromStreamingArguments,
+  type JsonObject,
+  type RuntimeEvent,
+  type RuntimeToolExecution,
 } from '@spirit-agent/agent-core';
 import type { HostExtensionEvent } from '@spirit-agent/host-internal';
 
@@ -298,14 +299,13 @@ export class DesktopRuntimeEventOrchestrator {
         }
         continue;
       }
-      let previewRequest: unknown;
-      let argsExcerpt: string;
-      try {
-        previewRequest = JSON.parse(event.argumentsJson) as unknown;
-        argsExcerpt = truncateJson(previewRequest);
-      } catch {
-        argsExcerpt = truncateText(event.argumentsJson, 4_000);
-      }
+      const previewRequest = previewRequestFromStreamingArguments(
+        event.toolName,
+        event.argumentsJson,
+      );
+      const argsExcerpt = previewRequest !== undefined
+        ? truncateJson(previewRequest)
+        : truncateText(event.argumentsJson, 4_000);
       const previewSummary = toolCallSummaryForStreamingPreview(
         messages,
         event.toolCallId,

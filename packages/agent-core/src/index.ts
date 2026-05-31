@@ -12,5 +12,6 @@ export * from './open-responses/index.js';
 export * from './host-tools.js';
 export * from './unknown-tool-error.js';
 export * from './finish-task-preview.js';
+export * from './tool-streaming-preview-gate.js';
 export * from './mcp/index.js';
 export * from './eval/index.js';

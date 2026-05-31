@@ -14,6 +14,7 @@ import {
   cloneLlmProviderState,
   createLlmMessageContentFromText,
 } from '../ports.js';
+import { buildEarlyExecutableArgumentsJson } from '../tool-streaming-preview-gate.js';
 import {
   applyDeferredUserGuidance,
   appendLoopContinuationGuidance,
@@ -1439,6 +1440,28 @@ export function canonicalizeToolArguments(argumentsJson: string): string | undef
   }
 }
 
+export function resolveEarlyToolCallArguments(
+  name: string,
+  argumentsJson: string,
+): { argumentsJson: string; canonicalArgumentsJson: string } | undefined {
+  const directCanonical = canonicalizeToolArguments(argumentsJson);
+  if (directCanonical !== undefined) {
+    return { argumentsJson, canonicalArgumentsJson: directCanonical };
+  }
+
+  const builtArgumentsJson = buildEarlyExecutableArgumentsJson(name, argumentsJson);
+  if (builtArgumentsJson === undefined) {
+    return undefined;
+  }
+
+  const builtCanonical = canonicalizeToolArguments(builtArgumentsJson);
+  if (builtCanonical === undefined) {
+    return undefined;
+  }
+
+  return { argumentsJson: builtArgumentsJson, canonicalArgumentsJson: builtCanonical };
+}
+
 export function startEarlyToolExecution<
   Config,
   State,
@@ -1449,21 +1472,29 @@ export function startEarlyToolExecution<
   call: ToolCallRequest,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
 ): PendingEarlyToolExecution<ToolRequest> | undefined {
-  if (earlyToolExecutions.has(call.id)) {
-    return earlyToolExecutions.get(call.id);
-  }
-
-  const canonicalArgumentsJson = canonicalizeToolArguments(call.argumentsJson);
-  if (canonicalArgumentsJson === undefined) {
+  const resolved = resolveEarlyToolCallArguments(call.name, call.argumentsJson);
+  if (resolved === undefined) {
     return undefined;
   }
 
+  const existing = earlyToolExecutions.get(call.id);
+  if (existing) {
+    if (existing.canonicalArgumentsJson === resolved.canonicalArgumentsJson) {
+      return existing;
+    }
+    return existing;
+  }
+
+  const executionCall: ToolCallRequest = {
+    ...call,
+    argumentsJson: resolved.argumentsJson,
+  };
   const record: PendingEarlyToolExecution<ToolRequest> = {
     toolCallId: call.id,
     toolName: call.name,
-    argumentsJson: call.argumentsJson,
-    canonicalArgumentsJson,
-    outcome: runEarlyToolExecution(runtime, call),
+    argumentsJson: resolved.argumentsJson,
+    canonicalArgumentsJson: resolved.canonicalArgumentsJson,
+    outcome: runEarlyToolExecution(runtime, executionCall),
   };
   earlyToolExecutions.set(call.id, record);
   return record;
@@ -1620,12 +1651,64 @@ async function matchingEarlyToolExecutionOutcome<ToolRequest>(
   }
 
   const canonicalArgumentsJson = canonicalizeToolArguments(call.argumentsJson);
-  if (canonicalArgumentsJson === undefined || canonicalArgumentsJson !== early.canonicalArgumentsJson) {
+  if (canonicalArgumentsJson === undefined) {
+    return undefined;
+  }
+  if (
+    canonicalArgumentsJson !== early.canonicalArgumentsJson &&
+    !earlyToolArgumentsMatchFormal(call.name, early.canonicalArgumentsJson, call.argumentsJson)
+  ) {
     return undefined;
   }
 
   const outcome = await early.outcome;
   return outcome.kind === 'completed' ? outcome : undefined;
+}
+
+function earlyToolArgumentsMatchFormal(
+  toolName: string,
+  earlyCanonicalJson: string,
+  formalArgumentsJson: string,
+): boolean {
+  const formalCanonical = canonicalizeToolArguments(formalArgumentsJson);
+  if (formalCanonical === undefined || formalCanonical === earlyCanonicalJson) {
+    return formalCanonical === earlyCanonicalJson;
+  }
+
+  if (
+    toolName !== 'read_file' &&
+    toolName !== 'list_directory_files' &&
+    toolName !== 'delete_file'
+  ) {
+    return false;
+  }
+
+  let early: Record<string, unknown>;
+  let formal: Record<string, unknown>;
+  try {
+    early = JSON.parse(earlyCanonicalJson) as Record<string, unknown>;
+    formal = JSON.parse(formalCanonical) as Record<string, unknown>;
+  } catch {
+    return false;
+  }
+
+  if (typeof early.path !== 'string' || early.path !== formal.path) {
+    return false;
+  }
+
+  const earlyKeys = Object.keys(early).sort();
+  if (earlyKeys.length !== 1 || earlyKeys[0] !== 'path') {
+    return false;
+  }
+
+  if (toolName === 'read_file') {
+    if (early.start_line === formal.start_line && early.end_line === formal.end_line) {
+      return true;
+    }
+    return formal.start_line === undefined && formal.end_line === undefined;
+  }
+
+  return true;
 }
 
 function stableJsonValue(value: JsonValue): JsonValue {
