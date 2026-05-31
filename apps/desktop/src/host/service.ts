@@ -158,7 +158,7 @@ import {
 import {
   previewCatalogMapForTransport,
   previewModelCatalogForTransport,
-  usesAnthropicModelCatalogMetadata,
+  usesProviderListedModelCatalogMetadata,
 } from './model-catalog-metadata.js';
 import {
   DEFAULT_API_BASE,
@@ -4556,6 +4556,7 @@ function modelCapabilitiesFromConfig(
   return {
     ...(capabilities.includes('chat') ? { chat: true } : {}),
     ...(capabilities.includes('vision') ? { vision: true } : {}),
+    ...(capabilities.includes('video') ? { videoInput: true } : {}),
     ...(capabilities.includes('imageGeneration') ? { imageGeneration: true } : {}),
   };
 }
@@ -4808,7 +4809,7 @@ async function findCatalogEntryForModel(input: {
   apiKey: string;
   model: string;
 }): Promise<PreviewModelCatalogEntry | undefined> {
-  if (!usesAnthropicModelCatalogMetadata(input)) {
+  if (!usesProviderListedModelCatalogMetadata(input)) {
     return undefined;
   }
 

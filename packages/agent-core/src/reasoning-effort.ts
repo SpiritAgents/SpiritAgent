@@ -156,6 +156,9 @@ export function modelReasoningEffortOptions(
   }
 
   if (isKimiReasoningEffortModel(context)) {
+    if (context?.supportedEfforts !== undefined) {
+      return kimiReasoningEffortOptionsForSupportedEfforts(context.supportedEfforts);
+    }
     return KIMI_REASONING_EFFORT_OPTIONS;
   }
 
@@ -277,6 +280,7 @@ function resolveCompatibleModelReasoningEffort(
   }
 
   if (isKimiReasoningEffortModel(context)) {
+    const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     switch (normalized) {
       case 'none':
         return 'default';
@@ -284,9 +288,7 @@ function resolveCompatibleModelReasoningEffort(
       case 'max':
         return 'high';
       default:
-        return KIMI_REASONING_EFFORT_VALUES.has(normalized)
-          ? normalized
-          : 'default';
+        return kimiReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
     }
   }
 
@@ -351,6 +353,30 @@ function anthropicReasoningEffortOptionsForSupportedEfforts(
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
   const supported = normalizeSupportedReasoningEfforts(supportedEfforts) ?? new Set<string>();
   return ANTHROPIC_REASONING_EFFORT_OPTIONS.filter(
+    (option) => option.value === 'default' || supported.has(option.value),
+  );
+}
+
+function kimiReasoningEffortValueForContext(
+  normalized: ModelReasoningEffort,
+  supportedEfforts?: ReadonlySet<string>,
+): ModelReasoningEffort | undefined {
+  if (!KIMI_REASONING_EFFORT_VALUES.has(normalized)) {
+    return undefined;
+  }
+  if (!supportedEfforts) {
+    return normalized;
+  }
+  return normalized === 'default' || supportedEfforts.has(normalized)
+    ? normalized
+    : undefined;
+}
+
+function kimiReasoningEffortOptionsForSupportedEfforts(
+  supportedEfforts: readonly ModelReasoningEffort[],
+): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
+  const supported = normalizeSupportedReasoningEfforts(supportedEfforts) ?? new Set<string>();
+  return KIMI_REASONING_EFFORT_OPTIONS.filter(
     (option) => option.value === 'default' || supported.has(option.value),
   );
 }

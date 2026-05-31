@@ -409,30 +409,21 @@ function verifyKnownModelCapabilityTable(): void {
     throw new Error('DeepSeek capabilities 表异常：应显式声明且不支持 vision。');
   }
 
-  const kimi25 = resolveOpenAiModelCompatibilityProfile({
+  const kimiWithoutCatalog = resolveOpenAiModelCompatibilityProfile({
     llmVendor: 'kimi',
     model: 'kimi-k2.5',
   });
-  const kimi26Variant = resolveOpenAiModelCompatibilityProfile({
+  const kimiWithVision = resolveOpenAiModelCompatibilityProfile({
     llmVendor: 'kimi',
-    model: 'kimi-k2.6-thinking',
-  });
-  const kimiK26Variant = resolveOpenAiModelCompatibilityProfile({
-    llmVendor: 'kimi',
-    model: 'kimi-k2.6-high',
-  });
-  const kimiOther = resolveOpenAiModelCompatibilityProfile({
-    llmVendor: 'kimi',
-    model: 'kimi-k2-turbo-preview',
+    model: 'kimi-k2.5',
+    modelCapabilities: { vision: true },
   });
 
-  if (
-    !kimi25.capabilities.vision ||
-    !kimi26Variant.capabilities.vision ||
-    !kimiK26Variant.capabilities.vision ||
-    kimiOther.capabilities.vision
-  ) {
-    throw new Error('Kimi capabilities 表异常：仅 kimi-k2.5 / kimi-k2.6 应支持 vision。');
+  if (!kimiWithoutCatalog.hasExplicitCapabilities || kimiWithoutCatalog.capabilities.vision) {
+    throw new Error('Kimi capabilities 表异常：无 catalog 时不应推断 vision。');
+  }
+  if (!kimiWithVision.capabilities.vision) {
+    throw new Error('Kimi capabilities 表异常：显式 modelCapabilities 应保留 vision。');
   }
 
   const explicitCustom = resolveOpenAiModelCompatibilityProfile({

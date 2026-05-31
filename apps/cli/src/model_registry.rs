@@ -128,7 +128,7 @@ impl ModelProfile {
 
         match self.provider {
             Some(ModelProvider::Deepseek) => false,
-            Some(ModelProvider::Kimi) => is_kimi_vision_model(&self.name),
+            Some(ModelProvider::Kimi) => false,
             Some(ModelProvider::Minimax)
             | Some(ModelProvider::Alibaba)
             | Some(ModelProvider::Anthropic)
@@ -419,14 +419,6 @@ fn is_deepseek_v4_reasoning_model(model: &str) -> bool {
     normalized == "deepseek-v4-pro" || normalized == "deepseek-v4-flash"
 }
 
-fn is_kimi_vision_model(model: &str) -> bool {
-    let normalized = model.trim().to_ascii_lowercase();
-    normalized == "kimi-k2.5"
-        || normalized.starts_with("kimi-k2.5-")
-        || normalized == "kimi-k2.6"
-        || normalized.starts_with("kimi-k2.6-")
-}
-
 #[cfg(test)]
 mod tests {
     use super::{deserialize_config, serialize_config};
@@ -534,21 +526,19 @@ mod tests {
     }
 
     #[test]
-    fn model_profile_supports_vision_only_for_kimi_k2_and_non_explicit_providers() {
-        let kimi_k2 = super::ModelProfile {
+    fn model_profile_supports_vision_uses_explicit_capabilities_for_kimi() {
+        let kimi_without_capabilities = super::ModelProfile {
             name: "kimi-k2.6".to_string(),
             api_base: "https://api.moonshot.cn/v1".to_string(),
             provider: Some(super::ModelProvider::Kimi),
             reasoning_effort: None,
             extra: serde_json::Map::new(),
         };
-        let kimi_other = super::ModelProfile {
-            name: "kimi-k2-turbo-preview".to_string(),
-            api_base: "https://api.moonshot.cn/v1".to_string(),
-            provider: Some(super::ModelProvider::Kimi),
-            reasoning_effort: None,
-            extra: serde_json::Map::new(),
-        };
+        let mut kimi_with_vision = kimi_without_capabilities.clone();
+        kimi_with_vision.extra.insert(
+            "capabilities".to_string(),
+            serde_json::json!(["chat", "vision"]),
+        );
         let deepseek = super::ModelProfile {
             name: "deepseek-v4-pro".to_string(),
             api_base: "https://api.deepseek.com/v1".to_string(),
@@ -564,8 +554,8 @@ mod tests {
             extra: serde_json::Map::new(),
         };
 
-        assert!(kimi_k2.supports_vision_input());
-        assert!(!kimi_other.supports_vision_input());
+        assert!(!kimi_without_capabilities.supports_vision_input());
+        assert!(kimi_with_vision.supports_vision_input());
         assert!(!deepseek.supports_vision_input());
         assert!(custom.supports_vision_input());
     }

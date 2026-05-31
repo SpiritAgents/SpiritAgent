@@ -5,6 +5,7 @@ import {
   previewCatalogMapForTransport,
   previewModelCatalogForTransport,
   usesAnthropicModelCatalogMetadata,
+  usesProviderListedModelCatalogMetadata,
 } from '../../dist-electron/src/host/model-catalog-metadata.js';
 
 test('custom anthropic transport consumes Anthropic model catalog metadata', () => {
@@ -40,6 +41,42 @@ test('custom anthropic transport consumes Anthropic model catalog metadata', () 
   });
 
   assert.deepEqual(catalogMap.get('claude-sonnet-4-20250514'), preview[0]);
+});
+
+test('kimi provider consumes Moonshot model catalog metadata', () => {
+  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'kimi' }), true);
+
+  const preview = previewModelCatalogForTransport({
+    provider: 'kimi',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'kimi-k2.5',
+        supportsVision: true,
+        supportsVideoInput: false,
+        supportedReasoningEfforts: ['minimal', 'low', 'medium', 'high'],
+      },
+      {
+        id: 'kimi-k2-turbo-preview',
+        supportsVision: false,
+        supportsVideoInput: false,
+        supportedReasoningEfforts: [],
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'kimi-k2.5',
+      capabilities: ['chat', 'vision'],
+      supportedReasoningEfforts: ['minimal', 'low', 'medium', 'high'],
+    },
+    {
+      id: 'kimi-k2-turbo-preview',
+      capabilities: ['chat'],
+      supportedReasoningEfforts: [],
+    },
+  ]);
 });
 
 test('openai-compatible transport does not treat metadata as Anthropic-specific catalog data', () => {
