@@ -10,6 +10,8 @@ export type ToolCallSummaryParts = {
   detail?: string;
 };
 
+export { toolCallPhaseShowsShimmer } from './tool-call-shimmer.js';
+
 const LEGACY_READ_FILE_HEADLINE = /^查看\s+(.+)$/u;
 
 export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts {
