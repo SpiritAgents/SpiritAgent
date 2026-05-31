@@ -438,24 +438,6 @@ pub(in crate::ui) fn assistant_aux_body_style(kind: AssistantAuxKind) -> Style {
     )
 }
 
-pub(in crate::ui) fn is_tool_progress_only_text(text: &str) -> bool {
-    let mut saw_line = false;
-    for segment in text.lines().map(str::trim).filter(|line| !line.is_empty()) {
-        saw_line = true;
-        if !segment.starts_with("准备调用工具:") {
-            return false;
-        }
-    }
-    saw_line
-}
-
-pub(in crate::ui) fn should_render_aux_after_message_body(
-    text: Option<&str>,
-    has_message_body: bool,
-) -> bool {
-    has_message_body && text.is_some_and(is_tool_progress_only_text)
-}
-
 pub(in crate::ui) fn render_aux_text_lines(
     push_message_line: &mut impl FnMut(Vec<Span<'static>>),
     kind: AssistantAuxKind,
@@ -637,11 +619,6 @@ pub(in crate::ui) fn render_message_lines(
         } else {
             None
         };
-    let render_stored_thinking_after_body =
-        should_render_aux_after_message_body(stored_thinking_text, has_message_body);
-    let render_pending_aux_after_body = pending_aux.is_some_and(|_| {
-        should_render_aux_after_message_body(pending_aux_detail_text, has_message_body)
-    });
     let slot_prefix = cli_ui_prefix(message_slot);
     let slot_suffix = cli_ui_suffix(message_slot);
 
@@ -678,25 +655,21 @@ pub(in crate::ui) fn render_message_lines(
     }
 
     if let Some(thinking_text) = stored_thinking_text {
-        if !render_stored_thinking_after_body {
-            if stored_compaction_text.is_some() {
-                push_message_line(vec![Span::styled(
-                    assistant_aux_title(AssistantAuxKind::Thinking),
-                    assistant_aux_title_style(AssistantAuxKind::Thinking),
-                )]);
-            }
-            render_aux_text_lines(
-                &mut push_message_line,
-                AssistantAuxKind::Thinking,
-                thinking_text,
-            );
+        if stored_compaction_text.is_some() {
+            push_message_line(vec![Span::styled(
+                assistant_aux_title(AssistantAuxKind::Thinking),
+                assistant_aux_title_style(AssistantAuxKind::Thinking),
+            )]);
         }
+        render_aux_text_lines(
+            &mut push_message_line,
+            AssistantAuxKind::Thinking,
+            thinking_text,
+        );
     }
 
     if let Some(pending_aux) = pending_aux {
-        if !render_pending_aux_after_body {
-            render_pending_aux_lines(&mut push_message_line, pending_aux, pending_aux_detail_text);
-        }
+        render_pending_aux_lines(&mut push_message_line, pending_aux, pending_aux_detail_text);
     }
 
     let mut iter = content_lines.into_iter();
@@ -708,22 +681,6 @@ pub(in crate::ui) fn render_message_lines(
 
     for line in iter {
         push_message_line(line);
-    }
-
-    if let Some(thinking_text) = stored_thinking_text {
-        if render_stored_thinking_after_body {
-            render_aux_text_lines(
-                &mut push_message_line,
-                AssistantAuxKind::Thinking,
-                thinking_text,
-            );
-        }
-    }
-
-    if let Some(pending_aux) = pending_aux {
-        if render_pending_aux_after_body {
-            render_pending_aux_lines(&mut push_message_line, pending_aux, pending_aux_detail_text);
-        }
     }
 
     maybe_rewind_deemphasize_lines(out, rewind_deemphasized_message)
@@ -794,6 +751,7 @@ pub(in crate::ui) fn split_embedded_thinking_content(text: &str) -> (String, Opt
 
 pub(in crate::ui) fn tool_phase_label(phase: ToolUiPhase) -> (String, Color) {
     match phase {
+        ToolUiPhase::Preview => (t!("ui.tool.phase.preview").into_owned(), Color::DarkGray),
         ToolUiPhase::PendingApproval => (
             t!("ui.tool.phase.pending_approval").into_owned(),
             Color::Yellow,
@@ -820,7 +778,7 @@ pub(in crate::ui) fn render_tool_card_lines(
     let expand_details = show_aux_details
         || matches!(
             tool.phase,
-            ToolUiPhase::PendingApproval | ToolUiPhase::Failed
+            ToolUiPhase::Preview | ToolUiPhase::PendingApproval | ToolUiPhase::Failed
         );
 
     let mut out = Vec::new();

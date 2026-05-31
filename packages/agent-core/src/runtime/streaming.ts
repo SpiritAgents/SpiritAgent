@@ -422,20 +422,6 @@ export async function handlePendingStreamEvent<
       },
       pending.earlyToolExecutions,
     );
-    mergeToolProgressIntoThinking(runtime, event.previewLine);
-    runtime.emitEvent({
-      kind: 'update-pending-assistant-thinking',
-      text: runtime.thinkingTextStore,
-    });
-    return false;
-  }
-
-  if (event.kind === 'tool-progress') {
-    mergeToolProgressIntoThinking(runtime, event.text);
-    runtime.emitEvent({
-      kind: 'update-pending-assistant-thinking',
-      text: runtime.thinkingTextStore,
-    });
     return false;
   }
 
@@ -737,31 +723,3 @@ export async function handlePendingStreamingCompletion<
   }
 }
 
-export function mergeToolProgressIntoThinking<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
-  progress: string,
-): void {
-  const normalized = progress.trim();
-  if (!normalized) {
-    return;
-  }
-
-  if (!runtime.thinkingTextStore.trim()) {
-    runtime.thinkingTextStore = normalized;
-    return;
-  }
-
-  if (runtime.thinkingTextStore.split('\n').some((line) => line.trim() === normalized)) {
-    return;
-  }
-
-  if (!runtime.thinkingTextStore.endsWith('\n')) {
-    runtime.thinkingTextStore += '\n';
-  }
-  runtime.thinkingTextStore += normalized;
-}

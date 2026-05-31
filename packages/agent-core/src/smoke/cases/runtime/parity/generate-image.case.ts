@@ -31,7 +31,6 @@ export async function runGenerateImageCase(): Promise<RuntimeParityCaseResult> {
   const nonStreamingTransport = new GenerateImageTerminalTransport(
     'non-streaming',
     '{"prompt":"square poster of a quiet moonlit courtyard"}',
-    'generate_image square poster',
   );
   const nonStreamingExecutor = new CountingHostExecutor();
   const nonStreamingEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
@@ -64,7 +63,6 @@ export async function runGenerateImageCase(): Promise<RuntimeParityCaseResult> {
   const streamingTransport = new GenerateImageTerminalTransport(
     'streaming',
     '{"prompt":"wide poster of a quiet moonlit courtyard","size":"1536x1024"}',
-    'generate_image wide poster',
   );
   const streamingExecutor = new CountingHostExecutor();
   const streamingEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
@@ -202,7 +200,6 @@ class GenerateImageTerminalTransport implements LlmTransport<undefined, Scripted
   constructor(
     private readonly mode: 'non-streaming' | 'streaming',
     private readonly argumentsJson: string,
-    private readonly previewLine: string,
   ) {}
 
   async startToolAgentRound(
@@ -235,7 +232,6 @@ class GenerateImageTerminalTransport implements LlmTransport<undefined, Scripted
             toolCallId: 'call-generate-image',
             toolName: 'generate_image',
             argumentsJson: this.argumentsJson,
-            previewLine: this.previewLine,
           },
         ]),
         completion: Promise.resolve(this.buildToolCallRound(state)),

@@ -660,30 +660,39 @@ fn rewind_picker_deemphasizes_non_selectable_user_messages() {
 }
 
 #[test]
-fn stored_tool_progress_renders_after_agent_message_body() {
+fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
     let mut app = build_view_model(ChatMessage::new(
         MessageRole::Agent,
         "我来帮您执行这个命令。",
     ));
-    app.assistant_aux_by_message.insert(
-        0,
-        AssistantAuxData {
-            thinking: Some("准备调用工具: run_shell_command".to_string()),
-            compaction: None,
+    app.messages.push(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call-preview-shell".to_string()),
+            tool_name: "run_shell_command".to_string(),
+            phase: ToolUiPhase::Preview,
+            headline: "执行命令".to_string(),
+            detail_lines: vec!["echo hello".to_string()],
+            image_paths: Vec::new(),
+            args_excerpt: None,
+            output_excerpt: None,
         },
+    ));
+
+    let body_lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
+    let preview_lines = render_text_lines(render_message_lines(&app, &app.messages[1], 1));
+
+    assert!(
+        body_lines
+            .iter()
+            .any(|line| line.contains("我来帮您执行这个命令。"))
     );
-
-    let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
-    let body_idx = lines
-        .iter()
-        .position(|line| line.contains("我来帮您执行这个命令。"))
-        .expect("body line exists");
-    let tool_idx = lines
-        .iter()
-        .position(|line| line.contains("准备调用工具: run_shell_command"))
-        .expect("tool progress line exists");
-
-    assert!(body_idx < tool_idx);
+    assert!(
+        preview_lines
+            .iter()
+            .any(|line| line.contains("执行命令"))
+    );
 }
 
 #[test]

@@ -87,10 +87,10 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   }
   if (
     !drainedStreamingEvents.some(
-      (event) => event.kind === 'update-pending-assistant-thinking' && event.text.includes('searching workspace'),
+      (event) => event.kind === 'update-pending-assistant-thinking' && event.text.includes('thinking...'),
     )
   ) {
-    throw new Error('streaming final smoke 缺少 thinking/tool-progress 聚合事件。');
+    throw new Error('streaming final smoke 缺少 thinking 聚合事件。');
   }
   if (
     drainedStreamingEvents.filter((event) => event.kind === 'assistant-chunk').length < 2
@@ -1114,7 +1114,6 @@ class PreviewEarlyExecutionTransport implements LlmTransport<undefined, Scripted
             toolCallId: 'call-preview-read',
             toolName: 'read_file',
             argumentsJson: '{"path":"preview.txt"}',
-            previewLine: '准备调用工具: read_file',
           },
         ]),
         completion: new Promise((resolve) => {
@@ -1390,7 +1389,6 @@ class PreviewBackgroundDeferredTransport implements LlmTransport<undefined, Scri
             toolCallId: 'call-preview-background',
             toolName: 'grep',
             argumentsJson: '{"query":"runtime parity"}',
-            previewLine: '准备调用工具: grep',
           },
         ]),
         completion: new Promise((resolve) => {
@@ -1538,7 +1536,6 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
             toolCallId: 'call-preview-subagent',
             toolName: 'run_subagent',
             argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
-            previewLine: '准备调用工具: run_subagent',
           },
         ]),
         completion: new Promise((resolve) => {

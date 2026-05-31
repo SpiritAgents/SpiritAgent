@@ -756,7 +756,6 @@ async function* anthropicEventStreamToRuntimeEvents(
             toolCallId: current.toolCallId,
             toolName: current.toolName,
             argumentsJson: current.argumentsJson,
-            previewLine: buildToolProgressPreview(current.toolName, current.argumentsJson),
           };
           current.readyPreviewEmitted = false;
         }
@@ -797,7 +796,6 @@ async function* anthropicEventStreamToRuntimeEvents(
               toolCallId: current.toolCallId,
               toolName: current.toolName,
               argumentsJson: current.argumentsJson,
-              previewLine: buildToolProgressPreview(current.toolName, current.argumentsJson),
             };
           }
           toolCalls.set(part.toolCallId, current);
@@ -1078,15 +1076,6 @@ function normalizeAnthropicReasoningProviderOptions(value: unknown): JsonObject 
   return {
     anthropic: anthropicMetadata,
   };
-}
-
-function buildToolProgressPreview(name: string, argumentsJson: string): string {
-  const lineHint = tryCountContentLines(argumentsJson);
-  if (lineHint !== undefined && lineHint > 0) {
-    return `准备调用工具: ${name}（约 ${lineHint} 行内容）`;
-  }
-
-  return `准备调用工具: ${name}`;
 }
 
 function hostToolArgumentsReadyForPreview(name: string, argumentsJson: string): boolean {

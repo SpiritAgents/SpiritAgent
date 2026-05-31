@@ -1,9 +1,18 @@
 use super::*;
+use crate::host_runtime::{ToolUiRequest, build_tool_preview_block};
 
 pub(super) fn apply_runtime_events(shell: &mut TuiShell) {
     for event in shell.runtime.drain_events() {
         match event {
             RuntimeEvent::PushMessage(msg) => shell.messages.push(msg),
+            RuntimeEvent::UpsertToolPreview {
+                tool_call_id,
+                tool_name,
+                arguments,
+            } => {
+                let request = ToolUiRequest::new(tool_name.clone(), arguments);
+                upsert_tool_preview(shell, &tool_call_id, &tool_name, &request);
+            }
             RuntimeEvent::OpenAskQuestions {
                 tool_call_id,
                 tool_name,
@@ -132,4 +141,23 @@ pub(super) fn apply_runtime_events(shell: &mut TuiShell) {
 
     shell.sync_persisted_standalone_pending_aux();
     shell.sync_subagent_approval_input_state();
+}
+
+fn upsert_tool_preview(shell: &mut TuiShell, tool_call_id: &str, tool_name: &str, request: &ToolUiRequest) {
+    let block = build_tool_preview_block(tool_name, tool_call_id, request);
+    for message in shell.messages.iter_mut().rev() {
+        if message
+            .tool_block
+            .as_ref()
+            .is_some_and(|tool| tool.tool_call_id.as_deref() == Some(tool_call_id))
+        {
+            message.tool_block = Some(block);
+            return;
+        }
+    }
+    shell.messages.push(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        block,
+    ));
 }
