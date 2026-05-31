@@ -381,6 +381,7 @@ type CommandPayloads = {
   submitSkillSlash: { request: SubmitSkillSlashRequest };
   submitStartImplementing: undefined;
   exportSessionLog: undefined;
+  compactHistory: undefined;
   submitUserTurn: SubmitUserTurnRequest;
   abortConversation: undefined;
   continueAssistantCompletion: { messageId: number };
@@ -1440,6 +1441,40 @@ class DesktopHostService {
     });
   }
 
+  async compactHistory(): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const runtime = this.requireRuntime();
+      if (this.activeBundle().activeSession?.readOnly) {
+        throw new Error('当前调试会话为只读，无法压缩历史。');
+      }
+      if (runtime.currentPendingApproval() || runtime.currentPendingQuestions()) {
+        throw new Error('当前正在等待审批或问卷，无法压缩历史。');
+      }
+      if (runtime.isBusy()) {
+        throw new Error('当前已有响应或审批在处理中，请稍候。');
+      }
+
+      // Match CLI `/compact`: start async compaction and let poll() stream aux updates.
+      await runtime.startManualHistoryCompaction();
+      try {
+        await runtime.poll();
+        this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+      } catch (error) {
+        runtime.abort();
+        this.activeBundle().messageTimeline.abortActiveAssistantSegment();
+        this.activeOrchestration().runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+        throw error;
+      }
+
+      this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
+      this.activeOrchestration().runtimeEvents.syncPendingToolStates();
+      this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      await this.flushDeferredRuntimeRefreshIfIdle();
+      return this.buildSnapshot();
+    });
+  }
+
   async exportSessionLog(): Promise<{ snapshot: DesktopSnapshot; path: string }> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
@@ -2341,6 +2376,8 @@ class DesktopHostService {
         return this.submitStartImplementing();
       case 'exportSessionLog':
         return this.exportSessionLog();
+      case 'compactHistory':
+        return this.compactHistory();
       case 'submitUserTurn': {
         const typedPayload = payload as CommandPayloads['submitUserTurn'];
         return this.submitUserTurn(typedPayload);

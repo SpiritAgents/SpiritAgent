@@ -39,6 +39,7 @@ export type HostCommandName =
   | 'submitSkillSlash'
   | 'submitStartImplementing'
   | 'exportSessionLog'
+  | 'compactHistory'
   | 'submitUserTurn'
   | 'setLoopEnabled'
   | 'setApprovalLevel'

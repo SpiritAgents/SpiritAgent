@@ -604,6 +604,16 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/compact') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('compactHistory'),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/submit') {
     writeJson(
       request,

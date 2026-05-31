@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  isGenericPendingCompactionStatusText,
   isGenericPendingThinkingStatusText,
   isSubagentStatusSurfaceText,
   parsePendingSubagentStatusText,
@@ -59,8 +60,13 @@ test('isSubagentStatusSurfaceText rejects assistant prose with colons', () => {
 
 test('isGenericPendingThinkingStatusText detects runtime spinner placeholders', () => {
   assert.equal(isGenericPendingThinkingStatusText('| Thinking...'), true);
-  assert.equal(isGenericPendingThinkingStatusText('/ Compressing...'), true);
   assert.equal(isGenericPendingThinkingStatusText('Need to inspect README.md first.'), false);
+});
+
+test('isGenericPendingCompactionStatusText detects runtime spinner placeholders', () => {
+  assert.equal(isGenericPendingCompactionStatusText('| Compressing...'), true);
+  assert.equal(isGenericPendingCompactionStatusText('/ Compressing...'), true);
+  assert.equal(isGenericPendingCompactionStatusText('## Context compressed'), false);
 });
 
 test('parsePendingSubagentStatusText only accepts subagent runtime status', () => {

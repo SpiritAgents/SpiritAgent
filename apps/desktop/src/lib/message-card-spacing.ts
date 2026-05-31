@@ -24,7 +24,10 @@ export function isGrayMetaLeadingMessage(
     return true;
   }
   if (!message.content.trim()) {
-    return Boolean(!message.tool && message.aux?.thinking?.trim());
+    return Boolean(
+      !message.tool &&
+        (message.aux?.thinking?.trim() || message.aux?.compaction?.trim()),
+    );
   }
   if (message.tool) {
     return isMinimalToolCallMessage(message);
@@ -47,7 +50,11 @@ export function isGrayMetaTrailingMessage(
   if (message.tool) {
     return isMinimalToolCallMessage(message);
   }
-  return Boolean(message.aux?.thinking?.trim() || message.aux?.finishTaskNotice?.trim());
+  return Boolean(
+    message.aux?.thinking?.trim() ||
+      message.aux?.compaction?.trim() ||
+      message.aux?.finishTaskNotice?.trim(),
+  );
 }
 
 export function shouldCompactAfterPreviousMessage(

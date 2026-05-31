@@ -85,6 +85,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   exportSessionLog() {
     return ipcRenderer.invoke('desktop:export-session-log');
   },
+  compactHistory() {
+    return ipcRenderer.invoke('desktop:invoke', 'compactHistory');
+  },
   submitUserTurn(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'submitUserTurn', request);
   },

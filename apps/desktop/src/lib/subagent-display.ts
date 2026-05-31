@@ -52,7 +52,17 @@ export function isGenericPendingThinkingStatusText(text: string | undefined): bo
     return false;
   }
   const withoutSpinner = stripSubagentSpinnerPrefix(normalized);
-  return withoutSpinner === 'Thinking...' || withoutSpinner === 'Compressing...';
+  return withoutSpinner === 'Thinking...';
+}
+
+/** Placeholder compaction aux before summary text arrives (e.g. `| Compressing...`). */
+export function isGenericPendingCompactionStatusText(text: string | undefined): boolean {
+  const normalized = text?.trim();
+  if (!normalized) {
+    return false;
+  }
+  const withoutSpinner = stripSubagentSpinnerPrefix(normalized);
+  return withoutSpinner === 'Compressing...';
 }
 
 function isSubagentRuntimeStatusTail(after: string): boolean {

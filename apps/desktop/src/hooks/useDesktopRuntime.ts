@@ -13,6 +13,7 @@ import {
 } from "@/lib/local-file-attachments";
 import {
   isCreateSkillSlashInput,
+  isCompactSlashInput,
   isLogSessionSlashInput,
   isStartImplementingSlashInput,
   matchSkillSlashInput,
@@ -1417,6 +1418,27 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
+    if (isCompactSlashInput(text)) {
+      if (hasLocalFiles) {
+        setRuntimeError("附加文件暂不支持与 Slash 指令一起发送。");
+        return false;
+      }
+
+      setBusyAction("send");
+      try {
+        const next = await api.compactHistory();
+        applySnapshot(next);
+        clearActiveComposerDraft();
+        setRuntimeError("");
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setBusyAction("");
+      }
+    }
     if (snapshot?.activeSession?.readOnly) {
       setRuntimeError("当前调试会话为只读，无法发送消息。");
       return false;
@@ -1439,7 +1461,13 @@ export function useDesktopRuntime() {
       }
 
       const skillSlash = snapshot ? matchSkillSlashInput(text, snapshot.skillsList) : undefined;
-      if (hasLocalFiles && (isCreateSkillSlashInput(text) || isStartImplementingSlashInput(text) || skillSlash)) {
+      if (
+        hasLocalFiles &&
+        (isCreateSkillSlashInput(text) ||
+          isStartImplementingSlashInput(text) ||
+          isCompactSlashInput(text) ||
+          skillSlash)
+      ) {
         setRuntimeError("附加文件暂不支持与 Slash 指令一起发送。");
         return false;
       }

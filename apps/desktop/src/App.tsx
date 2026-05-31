@@ -93,9 +93,14 @@ import {
   isSubagentStatusSurfaceMessage,
 } from "@/lib/subagent-display";
 import {
+  assistantCompactionLive,
+  shouldShowAssistantCompactionCollapsible,
+} from "@/lib/conversation-compaction-ui";
+import {
   shouldCollapseThinkingDuringToolPreview,
   shouldShowAssistantThinkingCollapsible,
 } from "@/lib/conversation-thinking-ui";
+import { isGenericPendingCompactionStatusText } from "@/lib/subagent-display";
 import {
   isGrayMetaLeadingMessage,
   isGrayMetaTrailingMessage,
@@ -956,7 +961,15 @@ function ComposerSurface({
 }
 
 /** 随 `active` 切换 `.spirit-thinking-shimmer-text`（样式与动画在 `styles.css`）。 */
-function ThinkingLabelWithShimmer({ active }: { active: boolean }) {
+function ReasoningLabelWithShimmer({
+  active,
+  activeLabel,
+  idleLabel,
+}: {
+  active: boolean;
+  activeLabel: string;
+  idleLabel: string;
+}) {
   return (
     <span
       className={cn(
@@ -964,8 +977,20 @@ function ThinkingLabelWithShimmer({ active }: { active: boolean }) {
         active ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
       )}
     >
-      {active ? "Thinking" : "Thought"}
+      {active ? activeLabel : idleLabel}
     </span>
+  );
+}
+
+function ThinkingLabelWithShimmer({ active }: { active: boolean }) {
+  return (
+    <ReasoningLabelWithShimmer active={active} activeLabel="Thinking" idleLabel="Thought" />
+  );
+}
+
+function CompactionLabelWithShimmer({ active }: { active: boolean }) {
+  return (
+    <ReasoningLabelWithShimmer active={active} activeLabel="Compacting" idleLabel="Compacted" />
   );
 }
 
@@ -1086,6 +1111,82 @@ function AssistantThinkingCollapsible({
   );
 }
 
+function AssistantCompactionCollapsible({
+  message,
+  pendingAuxState,
+  readManagedImagePreviewDataUrl,
+}: {
+  message: ConversationMessageSnapshot;
+  pendingAuxState?: PendingAssistantAux;
+  readManagedImagePreviewDataUrl: ReadManagedImagePreview;
+}) {
+  const compaction = message.aux?.compaction?.trim() ?? "";
+  const compactionLive = assistantCompactionLive(message, pendingAuxState);
+  const showCompactionBody = Boolean(
+    compaction && !isGenericPendingCompactionStatusText(compaction),
+  );
+  const compactionActive = compactionLive;
+  const autoExpanded = compactionActive && showCompactionBody;
+  const [manualOpen, setManualOpen] = useState(false);
+  const prevAutoExpandedRef = useRef(autoExpanded);
+
+  useEffect(() => {
+    if (prevAutoExpandedRef.current && !autoExpanded) {
+      setManualOpen(false);
+    }
+    prevAutoExpandedRef.current = autoExpanded;
+  }, [autoExpanded]);
+
+  const expanded = autoExpanded || manualOpen;
+  const interactive = !autoExpanded;
+
+  return (
+    <Collapsible
+      open={expanded}
+      onOpenChange={(open) => {
+        if (!interactive) {
+          return;
+        }
+        setManualOpen(open);
+      }}
+      className="min-w-0 py-0.5"
+    >
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
+            interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+          )}
+        >
+          <CompactionLabelWithShimmer active={compactionActive} />
+          {interactive ? (
+            <ChevronRight
+              className={cn(
+                "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
+                "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+                expanded && "rotate-90",
+              )}
+              aria-hidden
+            />
+          ) : null}
+        </button>
+      </CollapsibleTrigger>
+      {showCompactionBody ? (
+        <CollapsibleContent className="min-w-0">
+          <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
+            <MarkdownMessage
+              content={compaction}
+              tone="muted"
+              readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+            />
+          </div>
+        </CollapsibleContent>
+      ) : null}
+    </Collapsible>
+  );
+}
+
 function MessageCard({
   messages,
   message,
@@ -1163,6 +1264,10 @@ function MessageCard({
     messages,
     listIndex,
   );
+  const showCompactionCollapsible = shouldShowAssistantCompactionCollapsible(
+    message,
+    pendingAuxState,
+  );
   const collapseThinkingDuringToolPreview = shouldCollapseThinkingDuringToolPreview(
     messages,
     listIndex,
@@ -1228,15 +1333,12 @@ function MessageCard({
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
           />
         ) : null}
-        {!isUser && message.aux?.compaction ? (
-          <div className="border-l border-dashed border-muted-foreground/35 py-0.5 pl-2.5">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground">
-              Compaction
-            </p>
-            <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-muted-foreground">
-              {message.aux.compaction}
-            </pre>
-          </div>
+        {showCompactionCollapsible ? (
+          <AssistantCompactionCollapsible
+            message={message}
+            pendingAuxState={pendingAuxState}
+            readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+          />
         ) : null}
         {isUser && !rewindSelected ? (
           <UserMessageBubble

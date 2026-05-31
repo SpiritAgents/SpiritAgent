@@ -93,6 +93,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     exportSessionLog() {
       return bridge.exportSessionLog();
     },
+    compactHistory() {
+      return bridge.compactHistory();
+    },
     submitUserTurn(request) {
       return bridge.submitUserTurn(request);
     },
