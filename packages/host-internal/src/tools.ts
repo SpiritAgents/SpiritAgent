@@ -49,6 +49,7 @@ import {
   type HostTodoStore,
 } from './todos.js';
 import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
+import { detectSupportedVideoFile, hasSupportedVideoExtension } from './video-file-support.js';
 
 const exec = promisify(execCallback);
 
@@ -107,7 +108,15 @@ export interface HostToolImageContentPart {
   path: string;
 }
 
-export type HostToolContentPart = HostToolTextContentPart | HostToolImageContentPart;
+export interface HostToolVideoContentPart {
+  type: 'video';
+  path: string;
+}
+
+export type HostToolContentPart =
+  | HostToolTextContentPart
+  | HostToolImageContentPart
+  | HostToolVideoContentPart;
 
 export interface HostToolModelCapabilities {
   vision?: true;
@@ -1409,6 +1418,20 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       throw new Error(`图片文件校验失败: ${errorPath}`);
     }
 
+    const video = detectSupportedVideoFile(canonical, bytes);
+    if (video) {
+      return this.createVideoToolOutput(
+        '[read video]',
+        `path: ${target.displayPath}`,
+        canonical,
+        video.mimeType,
+      );
+    }
+
+    if (hasSupportedVideoExtension(canonical)) {
+      throw new Error(`视频文件校验失败: ${errorPath}`);
+    }
+
     if (bytes.includes(0)) {
       throw new Error(`暂不支持以文本方式读取二进制文件: ${errorPath}`);
     }
@@ -1635,6 +1658,30 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       '',
       '图像文件已作为图片输入返回。',
     ].join('\n'), [{ type: 'image', path: imagePath }]);
+  }
+
+  private createVideoToolOutput(
+    header: string,
+    locationLine: string,
+    videoPath: string,
+    mimeType: string,
+    extraLines: string[] = [],
+  ): HostToolExecutionOutput {
+    const summaryLines = [header, locationLine, ...extraLines, `mime_type: ${mimeType}`];
+    const compatibilityProfile = this.getModelCompatibilityProfile?.();
+    if (isVideoInputBlocked(compatibilityProfile)) {
+      return createHostToolTextOutput([
+        ...summaryLines,
+        '',
+        '该模型不支持视频输入，视频文件无法作为视频输入返回。',
+      ].join('\n'));
+    }
+
+    return createHostToolOutput([
+      ...summaryLines,
+      '',
+      '视频文件已作为视频输入返回。',
+    ].join('\n'), [{ type: 'video', path: videoPath }]);
   }
 
   private async persistWebFetchedImage(bytes: Uint8Array, extension: string): Promise<string> {
@@ -2028,6 +2075,12 @@ function isVisionInputBlocked(
   profile: HostToolModelCompatibilityProfile | undefined,
 ): boolean {
   return profile?.hasExplicitCapabilities === true && profile.capabilities.vision !== true;
+}
+
+function isVideoInputBlocked(
+  profile: HostToolModelCompatibilityProfile | undefined,
+): boolean {
+  return profile?.hasExplicitCapabilities === true && profile.capabilities.videoInput !== true;
 }
 
 function optionalStringArrayStrict(obj: HostJsonObject, key: string): string[] {

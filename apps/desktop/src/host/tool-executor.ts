@@ -6,6 +6,7 @@ import {
   type OpenAiTransportConfig,
   resolveOpenAiModelCompatibilityProfile,
   createLlmImageContentPart,
+  createLlmVideoContentPart,
   createLlmTextContentPart,
   buildBuiltinHostToolDefinitions,
   buildDreamHostToolDefinitions,
@@ -231,11 +232,15 @@ export class DesktopToolExecutor
 
     return {
       summaryText: output.summaryText,
-      content: output.content.map((part) =>
-        part.type === 'text'
-          ? createLlmTextContentPart(part.text)
-          : createLlmImageContentPart(part.path),
-      ),
+      content: output.content.map((part) => {
+        if (part.type === 'text') {
+          return createLlmTextContentPart(part.text);
+        }
+        if (part.type === 'video') {
+          return createLlmVideoContentPart(part.path);
+        }
+        return createLlmImageContentPart(part.path);
+      }),
     };
   }
 

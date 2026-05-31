@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { basename, extname, isAbsolute, resolve } from 'node:path';
+import { basename } from 'node:path';
 
 import {
   createAlibaba,
@@ -29,6 +28,7 @@ import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   createLlmMessageContentFromTextAndImages,
   llmMessageHasImages,
+  llmMessageHasVideos,
   llmMessageTextContent,
 } from '../ports.js';
 import type {
@@ -61,6 +61,16 @@ import {
   type OpenAiImageGenerationConfig,
   type OpenAiTransportConfig,
 } from './openai-compat.js';
+import {
+  clearMoonshotChatCompletionMessages,
+  openAiMessagesContainVideoUrl,
+  stashMoonshotChatCompletionMessages,
+  takeMoonshotChatCompletionMessages,
+} from './moonshot-chat-completion-messages.js';
+import {
+  llmHistoryToOpenAiMessages,
+  resolveMoonshotVideoUrlsInOpenAiMessages,
+} from './openai-multimodal-messages.js';
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
@@ -208,10 +218,13 @@ export class AiSdkOpenAiCompatibleTransport
     config: OpenAiTransportConfig,
     request: OpenAiJsonSchemaCompletionRequest,
   ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
-    const messages = normalizeMessagesForRequest(
+    const rawMessages = buildJsonSchemaCompletionMessages(config, request);
+    await resolveMoonshotVideoUrlsInOpenAiMessages(
       config,
-      buildJsonSchemaCompletionMessages(config, request),
+      rawMessages,
+      openAiTransportAssetRoot(config),
     );
+    const messages = normalizeMessagesForRequest(config, rawMessages);
     const requestTrace = buildAiSdkRequestTrace(config, 1, messages, []);
 
     try {
@@ -246,6 +259,11 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
+    await resolveMoonshotVideoUrlsInOpenAiMessages(
+      config,
+      nextState.messages,
+      openAiTransportAssetRoot(config),
+    );
     const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const tracedRequest = buildAiSdkRequestTrace(
@@ -255,6 +273,7 @@ export class AiSdkOpenAiCompatibleTransport
       normalizedTools,
     );
 
+    prepareMoonshotChatCompletionRequest(config, requestMessages);
     try {
       const result: any = await generateText({
         model: createAiSdkLanguageModel(config),
@@ -308,6 +327,8 @@ export class AiSdkOpenAiCompatibleTransport
         error: renderAiSdkOpenAiError(error),
         requestTrace: tracedRequest,
       };
+    } finally {
+      clearMoonshotChatCompletionRequest(config);
     }
   }
 
@@ -321,6 +342,11 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
+    await resolveMoonshotVideoUrlsInOpenAiMessages(
+      config,
+      nextState.messages,
+      openAiTransportAssetRoot(config),
+    );
     const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAiSdkRequestTrace(
@@ -333,6 +359,8 @@ export class AiSdkOpenAiCompatibleTransport
 
     const abortController = new AbortController();
 
+    // Moonshot 视频：须在 streamText 异步发起 HTTP 之后再清理 stash，不可在同步 finally 里清理。
+    prepareMoonshotChatCompletionRequest(config, requestMessages);
     try {
       const result: any = streamText({
         model: createAiSdkLanguageModel(config),
@@ -351,6 +379,10 @@ export class AiSdkOpenAiCompatibleTransport
       });
       const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
 
+      const completionPromise = completion.promise.finally(() => {
+        clearMoonshotChatCompletionRequest(config);
+      });
+
       return {
         eventStream: aiSdkEventStreamToRuntimeEvents(
           result.fullStream,
@@ -359,10 +391,14 @@ export class AiSdkOpenAiCompatibleTransport
           completion,
           isDeepSeekOfficialAiSdkProvider(config),
         ),
-        completion: completion.promise,
-        cancel: () => abortController.abort(),
+        completion: completionPromise,
+        cancel: () => {
+          abortController.abort();
+          clearMoonshotChatCompletionRequest(config);
+        },
       };
     } catch (error) {
+      clearMoonshotChatCompletionRequest(config);
       return {
         eventStream: emptyAiSdkEventStream(),
         completion: Promise.resolve({
@@ -408,8 +444,12 @@ export class AiSdkOpenAiCompatibleTransport
         content: history
           .map((message) => {
             const text = llmMessageTextContent(message.content);
-            const imageNote = llmMessageHasImages(message.content) ? '\n[images attached]' : '';
-            return `${message.role.toUpperCase()}: ${text}${imageNote}`;
+            const mediaNote = llmMessageHasImages(message.content)
+              ? '\n[images attached]'
+              : llmMessageHasVideos(message.content)
+                ? '\n[videos attached]'
+                : '';
+            return `${message.role.toUpperCase()}: ${text}${mediaNote}`;
           })
           .join('\n\n'),
       },
@@ -582,11 +622,14 @@ function createAiSdkOpenAiCompatibleProvider(
   config: OpenAiTransportConfig | OpenAiImageGenerationConfig,
   options: { includeChatVendorExtras?: boolean } = {},
 ) {
+  const transportConfig = config as OpenAiTransportConfig;
+  const isMoonshotChat = transportConfig.llmVendor === 'moonshot-ai';
   const vendorExtras = options.includeChatVendorExtras === false
     ? {}
-    : openAiVendorChatCompletionBodyExtras(config as OpenAiTransportConfig);
+    : openAiVendorChatCompletionBodyExtras(transportConfig);
+  // Moonshot AI：合并 vendorExtras，并在 chat.completions 请求中恢复含 video_url 的 messages。
   const fetchWrapper =
-    Object.keys(vendorExtras).length === 0
+    Object.keys(vendorExtras).length === 0 && !isMoonshotChat
       ? undefined
       : async (input: RequestInfo | URL, init?: RequestInit) => {
           const body = tryParseRequestBody(init?.body);
@@ -594,11 +637,23 @@ function createAiSdkOpenAiCompatibleProvider(
             return fetch(input, init);
           }
 
+          const requestUrl =
+            typeof input === 'string'
+              ? input
+              : input instanceof URL
+                ? input.toString()
+                : 'request';
+          const moonshotMessages =
+            isMoonshotChat && requestUrl.includes('/chat/completions')
+              ? takeMoonshotChatCompletionMessages()
+              : undefined;
+
           return fetch(input, {
             ...init,
             body: JSON.stringify({
               ...body,
               ...vendorExtras,
+              ...(moonshotMessages ? { messages: moonshotMessages } : {}),
             }),
           });
         };
@@ -788,6 +843,9 @@ function openAiUserContentToAiSdkContent(
         if (isJsonObject(part.image_url) && typeof part.image_url.url === 'string') {
           parts.push({ type: 'image', image: part.image_url.url });
         }
+        break;
+      case 'video_url':
+        // Moonshot AI 视频：AI SDK 会丢弃 video_url，由 fetch 包装器写回完整 messages（见 moonshot-chat-completion-messages.ts）。
         break;
       default:
         break;
@@ -1298,117 +1356,22 @@ function tryCountContentLines(argumentsJson: string): number | undefined {
   }
 }
 
-function llmHistoryToOpenAiMessages(
-  history: LlmMessage[],
-  assetRoot = process.cwd(),
-): JsonValue[] {
-  return history.map((message) => llmMessageToOpenAiMessage(message, assetRoot));
+function openAiTransportAssetRoot(config: Pick<OpenAiTransportConfig, 'workspaceRoot'>): string {
+  return config.workspaceRoot ?? process.cwd();
 }
 
-function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonValue {
-  if (message.role === 'assistant' && Array.isArray(message.toolCalls) && message.toolCalls.length > 0) {
-    return {
-      ...llmMessageProviderState(message),
-      role: 'assistant',
-      content: llmMessageTextContent(message.content),
-      tool_calls: message.toolCalls.map((toolCall) => ({
-        id: toolCall.id,
-        type: 'function',
-        function: {
-          name: toolCall.name,
-          arguments: toolCall.argumentsJson,
-        },
-      })),
-    };
-  }
-
-  if (message.role === 'user' && llmMessageHasImages(message.content)) {
-    const parts: JsonValue[] = [];
-
-    for (const part of message.content) {
-      if (part.type === 'text' && part.text.length > 0) {
-        parts.push({ type: 'text', text: part.text });
-        continue;
-      }
-
-      if (part.type === 'image') {
-        parts.push({
-          type: 'image_url',
-          image_url: {
-            url: pathToImageUrl(part.path, assetRoot),
-          },
-        });
-      }
-    }
-
-    if (parts.length === 0) {
-      return { role: message.role, content: '' };
-    }
-
-    return {
-      role: message.role,
-      content: parts,
-    };
-  }
-
-  return {
-    ...llmMessageProviderState(message),
-    role: message.role,
-    content: llmMessageTextContent(message.content),
-    ...(message.toolCallId !== undefined ? { tool_call_id: message.toolCallId } : {}),
-  };
-}
-
-function llmMessageProviderState(message: LlmMessage): JsonObject {
-  if (message.providerState === undefined) {
-    return {};
-  }
-
-  return cloneJsonValue(message.providerState) as JsonObject;
-}
-
-function pathToImageUrl(path: string, assetRoot: string): string {
-  const normalized = path.trim();
-  if (
-    normalized.startsWith('http://') ||
-    normalized.startsWith('https://') ||
-    normalized.startsWith('data:') ||
-    normalized.startsWith('file://')
-  ) {
-    return normalized;
-  }
-
-  const absolutePath = isAbsolute(normalized) ? normalized : resolve(assetRoot, normalized);
-  const mime = guessImageMimeFromPath(absolutePath);
-
-  try {
-    const bytes = readFileSync(absolutePath);
-    return `data:${mime};base64,${bytes.toString('base64')}`;
-  } catch {
-    return toFileUrl(absolutePath);
+function prepareMoonshotChatCompletionRequest(
+  config: OpenAiTransportConfig,
+  requestMessages: JsonValue[],
+): void {
+  if (config.llmVendor === 'moonshot-ai' && openAiMessagesContainVideoUrl(requestMessages)) {
+    stashMoonshotChatCompletionMessages(requestMessages);
   }
 }
 
-function toFileUrl(absolutePath: string): string {
-  const normalized = absolutePath.replace(/\\/g, '/');
-  return normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`;
-}
-
-function guessImageMimeFromPath(path: string): string {
-  switch (extname(path).toLowerCase()) {
-    case '.png':
-      return 'image/png';
-    case '.jpg':
-    case '.jpeg':
-      return 'image/jpeg';
-    case '.webp':
-      return 'image/webp';
-    case '.gif':
-      return 'image/gif';
-    case '.bmp':
-      return 'image/bmp';
-    default:
-      return 'application/octet-stream';
+function clearMoonshotChatCompletionRequest(config: OpenAiTransportConfig): void {
+  if (config.llmVendor === 'moonshot-ai') {
+    clearMoonshotChatCompletionMessages();
   }
 }
 
@@ -1429,16 +1392,25 @@ function sanitizeMessageForCompatibility(
     return cloned;
   }
 
+  let content = cloned.content;
   if (profile.hasExplicitCapabilities && !profile.capabilities.vision) {
-    const textParts = cloned.content.filter(
+    content = content.filter(
+      (part) => !(isJsonObject(part) && part.type === 'image_url'),
+    );
+  }
+  if (profile.hasExplicitCapabilities && !profile.capabilities.videoInput) {
+    content = content.filter(
+      (part) => !(isJsonObject(part) && part.type === 'video_url'),
+    );
+  }
+
+  if (content !== cloned.content) {
+    const textParts = content.filter(
       (part) => isJsonObject(part) && part.type === 'text' && typeof part.text === 'string',
     );
     return {
       ...cloned,
-      content:
-        textParts.length > 0
-          ? textParts
-          : '',
+      content: textParts.length > 0 ? textParts : '',
     };
   }
 

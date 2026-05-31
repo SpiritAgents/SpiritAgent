@@ -48,10 +48,16 @@ export async function prepareSubmittedUserTurn<
   ];
   const resources = runtime.takePendingMcpResources();
   const imagePaths = new Set(images);
+  const videoPaths = new Set<string>();
 
   for (const file of workspaceFiles) {
     if (file.kind === 'image') {
       imagePaths.add(file.path);
+      continue;
+    }
+
+    if (file.kind === 'video') {
+      videoPaths.add(file.path);
       continue;
     }
 
@@ -65,7 +71,7 @@ export async function prepareSubmittedUserTurn<
   const contentForLlm = formatUserMessageContentForLlm(userInput);
   runtime.historyStore.push({
     role: 'user',
-    content: createLlmMessageContentFromTextAndImages(contentForLlm, [...imagePaths]),
+    content: createLlmMessageContentFromTextAndImages(contentForLlm, [...imagePaths], [...videoPaths]),
   });
   runtime.pendingUserTurnStore = userInput;
   return runtime.options.createToolAgentState(runtime.historyStore, userInput);
