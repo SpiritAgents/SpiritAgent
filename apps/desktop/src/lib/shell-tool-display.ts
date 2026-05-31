@@ -1,6 +1,7 @@
+import i18n from "@/lib/i18n";
 import type { ToolBlockSnapshot } from "@/types";
 
-const COMMAND_LINE_PREFIX = "命令:";
+const COMMAND_LINE_PREFIX = i18n.t('tool.commandPrefix');
 
 export function parseShellCommand(
   tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines">,

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ComponentPropsWithoutRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { Components, UrlTransform } from "react-markdown";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
@@ -31,6 +32,7 @@ function MarkdownImage({
 }: ComponentPropsWithoutRef<"img"> & {
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
 }) {
+  const { t } = useTranslation();
   const normalizedSrc = typeof src === "string" && src.trim().length > 0 ? src.trim() : null;
   const managedRef = normalizedSrc && isManagedGeneratedImageRef(normalizedSrc) ? normalizedSrc : null;
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(managedRef ? null : normalizedSrc);
@@ -92,7 +94,7 @@ function MarkdownImage({
   if (managedRef && !readManagedImagePreviewDataUrl) {
     return (
       <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
-        当前宿主不支持预览 Spirit 托管图片。
+        {t('imagePreview.hostNotSupported')}
       </div>
     );
   }
@@ -100,7 +102,7 @@ function MarkdownImage({
   if (managedRef && managedLoadState === "loading") {
     return (
       <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
-        加载图片中…
+        {t('imagePreview.loading')}
       </div>
     );
   }
@@ -108,7 +110,7 @@ function MarkdownImage({
   if (managedRef && managedLoadState === "unavailable") {
     return (
       <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
-        当前图片不可预览。
+        {t('imagePreview.unavailable')}
       </div>
     );
   }
