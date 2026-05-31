@@ -1454,8 +1454,7 @@ async function drainEvents(): Promise<DrainEventsResult> {
   const target = requireRuntime();
   await toolExecutor.refreshCaches();
   const raw = target.drainEvents();
-  // Rust bridge 仍未消费 streaming-tool-preview；其余事件保持透传，避免 CLI 丢失工具完成消息。
-  const events = raw.filter((event) => event.kind !== 'streaming-tool-preview');
+  const events = raw;
   if (events.length > 0) {
     logBridge('drainEvents', {
       count: events.length,

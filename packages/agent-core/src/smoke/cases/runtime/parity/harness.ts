@@ -1243,7 +1243,6 @@ export class StreamingFinalTransport implements LlmTransport<undefined, Scripted
     return {
       eventStream: streamFromEvents([
         { kind: 'thinking-chunk', text: 'thinking...' },
-        { kind: 'tool-progress', text: 'searching workspace' },
         { kind: 'assistant-chunk', text: 'STREAM_' },
         { kind: 'assistant-chunk', text: 'OK' },
         { kind: 'done' },

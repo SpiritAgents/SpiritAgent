@@ -319,7 +319,6 @@ function maybeEmitPreview(events: LlmStreamEvent[], call: AggregatedStreamingToo
     toolCallId: call.id,
     toolName: call.functionName,
     argumentsJson: call.functionArguments,
-    previewLine: `准备调用工具: ${call.functionName}`,
   });
   call.readyPreviewEmitted = true;
 }

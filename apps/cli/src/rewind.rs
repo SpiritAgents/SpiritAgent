@@ -209,6 +209,7 @@ pub struct ToolBlockSnapshot {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ToolBlockSnapshotPhase {
+    Preview,
     PendingApproval,
     Running,
     Succeeded,
@@ -813,6 +814,7 @@ fn tool_snapshot_from_block(block: &ToolUiBlock) -> ToolBlockSnapshot {
         tool_call_id: block.tool_call_id.clone(),
         tool_name: block.tool_name.clone(),
         phase: match block.phase {
+            ToolUiPhase::Preview => ToolBlockSnapshotPhase::Preview,
             ToolUiPhase::PendingApproval => ToolBlockSnapshotPhase::PendingApproval,
             ToolUiPhase::Running => ToolBlockSnapshotPhase::Running,
             ToolUiPhase::Succeeded => ToolBlockSnapshotPhase::Succeeded,
@@ -831,6 +833,7 @@ fn tool_block_from_snapshot(snapshot: &ToolBlockSnapshot) -> ToolUiBlock {
         tool_call_id: snapshot.tool_call_id.clone(),
         tool_name: snapshot.tool_name.clone(),
         phase: match snapshot.phase {
+            ToolBlockSnapshotPhase::Preview => ToolUiPhase::Preview,
             ToolBlockSnapshotPhase::PendingApproval => ToolUiPhase::PendingApproval,
             ToolBlockSnapshotPhase::Running => ToolUiPhase::Running,
             ToolBlockSnapshotPhase::Succeeded => ToolUiPhase::Succeeded,

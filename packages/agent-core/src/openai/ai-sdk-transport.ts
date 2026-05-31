@@ -1135,7 +1135,6 @@ function accumulateStreamingToolCallProgressFromRawChunk(
             toolCallId: current.id,
             toolName: current.functionName,
             argumentsJson: current.functionArguments,
-            previewLine: buildToolProgressPreview(current.functionName, current.functionArguments),
           });
         }
       } else if (
@@ -1144,13 +1143,11 @@ function accumulateStreamingToolCallProgressFromRawChunk(
         !isGeneratedStreamingToolCallId(current.id) &&
         hostToolArgumentsReadyForPreview(current.functionName, current.functionArguments)
       ) {
-        const previewLine = buildToolProgressPreview(current.functionName, current.functionArguments);
         updates.push({
           kind: 'streaming-tool-preview',
           toolCallId: current.id,
           toolName: current.functionName,
           argumentsJson: current.functionArguments,
-          previewLine,
         });
         current.readyPreviewEmitted = true;
       }
@@ -1258,15 +1255,6 @@ function extractAssistantReasoningContentFromJson(message: JsonObject): string {
   ]
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
     .join('');
-}
-
-function buildToolProgressPreview(name: string, argumentsJson: string): string {
-  const lineHint = tryCountContentLines(argumentsJson);
-  if (lineHint !== undefined && lineHint > 0) {
-    return `准备调用工具: ${name}（约 ${lineHint} 行内容）`;
-  }
-
-  return `准备调用工具: ${name}`;
 }
 
 function hostToolArgumentsReadyForPreview(name: string, argumentsJson: string): boolean {

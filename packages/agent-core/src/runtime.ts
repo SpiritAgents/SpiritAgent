@@ -91,7 +91,6 @@ import {
   handlePendingStreamEvent as handlePendingStreamEventInternal,
   handlePendingStreamingCompletion as handlePendingStreamingCompletionInternal,
   handleStreamStallTimeout as handleStreamStallTimeoutInternal,
-  mergeToolProgressIntoThinking as mergeToolProgressIntoThinkingInternal,
   pollPendingStreamingRound as pollPendingStreamingRoundInternal,
   startStreamingRound as startStreamingRoundInternal,
 } from './runtime/streaming.js';
@@ -2067,13 +2066,6 @@ export class AgentRuntime<
       text: `LLM 调用失败: ${result.error}`,
     });
     this.emitEvent({ kind: 'assistant-response-completed' });
-  }
-
-  private mergeToolProgressIntoThinking(progress: string): void {
-    mergeToolProgressIntoThinkingInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
-      progress,
-    );
   }
 
   private tryFallbackToTextOnlyAndBuildRetryState(

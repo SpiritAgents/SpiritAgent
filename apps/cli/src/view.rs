@@ -182,6 +182,7 @@ pub enum BottomFormFieldEditorView {
 /// 工具卡片在对话里的生命周期阶段（用于 TUI 着色与标签）。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ToolUiPhase {
+    Preview,
     PendingApproval,
     Running,
     Succeeded,

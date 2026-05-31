@@ -540,6 +540,15 @@ enum BridgeRuntimeEvent {
         tool_name: String,
         request: Value,
     },
+    #[serde(rename = "streaming-tool-preview")]
+    StreamingToolPreview {
+        #[serde(alias = "toolCallId")]
+        tool_call_id: String,
+        #[serde(alias = "toolName")]
+        tool_name: String,
+        #[serde(alias = "argumentsJson")]
+        arguments_json: String,
+    },
     #[serde(rename = "approval-resolved")]
     ApprovalResolved {
         #[serde(alias = "toolCallId")]
@@ -2260,6 +2269,19 @@ impl TsBridgeRuntime {
                     });
                 }
                 BridgeRuntimeEvent::ToolCallStarted { .. } => {}
+                BridgeRuntimeEvent::StreamingToolPreview {
+                    tool_call_id,
+                    tool_name,
+                    arguments_json,
+                } => {
+                    let request =
+                        tool_request_from_streaming_preview(&tool_name, &arguments_json);
+                    self.events.push_back(RuntimeEvent::UpsertToolPreview {
+                        tool_call_id,
+                        tool_name,
+                        arguments: request.arguments,
+                    });
+                }
                 BridgeRuntimeEvent::ApprovalResolved { .. } => {}
                 BridgeRuntimeEvent::HistoryCompacted {
                     dropped_messages,
@@ -3701,6 +3723,11 @@ fn is_retired_builtin_host_method(method: &str) -> bool {
             | "host.trust"
             | "host.execute"
     )
+}
+
+fn tool_request_from_streaming_preview(tool_name: &str, arguments_json: &str) -> ToolUiRequest {
+    let arguments = serde_json::from_str(arguments_json).unwrap_or(Value::Null);
+    ToolUiRequest::new(tool_name, arguments)
 }
 
 fn tool_request_from_host_value(value: Value) -> anyhow::Result<ToolUiRequest> {

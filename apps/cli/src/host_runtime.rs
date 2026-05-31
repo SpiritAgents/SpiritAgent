@@ -22,6 +22,11 @@ impl ToolUiRequest {
 
 pub enum RuntimeEvent {
     PushMessage(ChatMessage),
+    UpsertToolPreview {
+        tool_call_id: String,
+        tool_name: String,
+        arguments: serde_json::Value,
+    },
     OpenAskQuestions {
         tool_call_id: String,
         tool_name: String,
@@ -116,6 +121,53 @@ fn truncate_for_preview(text: &str, max_chars: usize) -> String {
 
 fn truncate_output_for_tool_ui(text: &str, max_chars: usize) -> String {
     truncate_for_preview(text, max_chars)
+}
+
+pub(crate) fn build_tool_preview_block(
+    tool_name: &str,
+    tool_call_id: &str,
+    request: &ToolUiRequest,
+) -> ToolUiBlock {
+    let (headline, detail_lines) = preview_summary_for_tool(tool_name, request);
+    ToolUiBlock {
+        tool_call_id: Some(tool_call_id.to_string()),
+        tool_name: tool_name.to_string(),
+        phase: ToolUiPhase::Preview,
+        headline,
+        detail_lines,
+        image_paths: Vec::new(),
+        args_excerpt: Some(tool_request_args_excerpt(request)),
+        output_excerpt: None,
+    }
+}
+
+fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String, Vec<String>) {
+    match tool_name {
+        "read_file" => {
+            let path = string_arg(request, "path")
+                .or_else(|| string_arg(request, "filePath"))
+                .unwrap_or("文件");
+            ("查看".to_string(), vec![path.to_string()])
+        }
+        "list_directory_files" => (
+            "列出目录".to_string(),
+            vec![string_arg(request, "path").unwrap_or(".").to_string()],
+        ),
+        "glob" => (
+            "匹配".to_string(),
+            vec![string_arg(request, "pattern").unwrap_or("**/*").to_string()],
+        ),
+        "run_shell_command" => (
+            "执行命令".to_string(),
+            string_arg(request, "command")
+                .map(|value| vec![value.to_string()])
+                .unwrap_or_default(),
+        ),
+        _ => (
+            format!("调用 {}", tool_name),
+            Vec::new(),
+        ),
+    }
 }
 
 pub(crate) fn tool_approval_block(
