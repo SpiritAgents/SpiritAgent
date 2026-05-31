@@ -12,7 +12,7 @@ import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
 } from '../openai/json-schema.js';
-import { llmMessageHasImages, llmMessageTextContent } from '../ports.js';
+import { llmMessageHasImages, llmMessageHasVideos, llmMessageTextContent } from '../ports.js';
 import {
   COMPACT_SUMMARY_PREFIX,
   buildToolAgentHostPrompt,
@@ -277,8 +277,12 @@ export class AiSdkOpenResponsesTransport
         content: history
           .map((message) => {
             const text = llmMessageTextContent(message.content);
-            const imageNote = llmMessageHasImages(message.content) ? '\n[images attached]' : '';
-            return `${message.role.toUpperCase()}: ${text}${imageNote}`;
+            const mediaNote = llmMessageHasImages(message.content)
+              ? '\n[images attached]'
+              : llmMessageHasVideos(message.content)
+                ? '\n[videos attached]'
+                : '';
+            return `${message.role.toUpperCase()}: ${text}${mediaNote}`;
           })
           .join('\n\n'),
       },

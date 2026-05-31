@@ -145,6 +145,28 @@ test('resolve workspace file attachments truncates oversized content and ignores
   }
 });
 
+const MINIMAL_MP4_HEADER = Buffer.from([
+  0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+]);
+
+test('resolve workspace file attachments keeps validated videos and ignores fake video extensions', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-video-attachment-'));
+  try {
+    await writeFile(join(workspaceRoot, 'clip.mp4'), MINIMAL_MP4_HEADER);
+    await writeFile(join(workspaceRoot, 'fake.mp4'), 'not really a video');
+
+    const attachments = await resolveWorkspaceFileReferenceAttachmentsFromInput(
+      workspaceRoot,
+      '@clip.mp4 @fake.mp4',
+    );
+    assert.equal(attachments.length, 1);
+    assert.equal(attachments[0]?.kind, 'video');
+    assert.equal(attachments[0]?.path, 'clip.mp4');
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test('resolve workspace file attachments keeps validated images and ignores fake image extensions', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-image-attachment-'));
   try {

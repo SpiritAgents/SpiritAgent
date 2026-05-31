@@ -179,6 +179,11 @@ interface CliHostInternalModule {
           path: string;
           attachedAtUnixMs: number;
         }
+      | {
+          kind: 'video';
+          path: string;
+          attachedAtUnixMs: number;
+        }
     >
   >;
   collectHostExtensionContributedTools?: (

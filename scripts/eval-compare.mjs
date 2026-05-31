@@ -790,6 +790,9 @@ function normalizeToolExecutionOutputWithFactory(output, createToolExecutionText
       if (part.type === 'text') {
         return { type: 'text', text: part.text };
       }
+      if (part.type === 'video') {
+        return { type: 'video', path: part.path };
+      }
       return { type: 'image', path: part.path };
     }),
   };

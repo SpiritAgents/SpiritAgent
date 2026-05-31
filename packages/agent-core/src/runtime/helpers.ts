@@ -9,6 +9,7 @@ import {
   llmMessageHasImages,
   llmMessageImagePaths,
   llmMessageTextContent,
+  llmMessageVideoPaths,
   normalizeStoredLlmMessage,
   type JsonValue,
   type LlmMessage,
@@ -80,15 +81,22 @@ export function enqueueDeferredToolOutputGuidance<ToolRequest>(
   output: ToolExecutionOutput,
 ): void {
   const imagePaths = llmMessageImagePaths(output.content);
-  if (imagePaths.length === 0) {
+  const videoPaths = llmMessageVideoPaths(output.content);
+  if (imagePaths.length === 0 && videoPaths.length === 0) {
     return;
   }
 
-  const guidanceMessage = output.summaryText.trim() || `[tool output] ${toolName} returned images.`;
+  const guidanceMessage =
+    output.summaryText.trim()
+    || `[tool output] ${toolName} returned ${imagePaths.length > 0 && videoPaths.length > 0 ? 'media' : imagePaths.length > 0 ? 'images' : 'videos'}.`;
   enqueueDeferredUserGuidance(
     turn,
     guidanceMessage,
-    createLlmMessageContentFromTextAndImages(formatUserMessageContentForLlm(guidanceMessage), imagePaths),
+    createLlmMessageContentFromTextAndImages(
+      formatUserMessageContentForLlm(guidanceMessage),
+      imagePaths,
+      videoPaths,
+    ),
   );
 }
 
@@ -143,12 +151,16 @@ export function repairMissingToolResultsInHistory(history: readonly LlmMessage[]
 }
 
 export function toolArtifactsFromOutput(output: ToolExecutionOutput): RuntimeToolArtifact[] | undefined {
-  const artifacts = output.content
-    .filter((part) => part.type === 'image')
-    .map((part) => ({
-      kind: 'image' as const,
-      path: part.path,
-    }));
+  const artifacts: RuntimeToolArtifact[] = [];
+  for (const part of output.content) {
+    if (part.type === 'image') {
+      artifacts.push({ kind: 'image', path: part.path });
+      continue;
+    }
+    if (part.type === 'video') {
+      artifacts.push({ kind: 'video', path: part.path });
+    }
+  }
 
   return artifacts.length > 0 ? artifacts : undefined;
 }
@@ -514,6 +526,18 @@ async function pendingWorkspaceFileFromPath(
     throw new Error(`图片文件校验失败: ${referencePath}`);
   }
 
+  if (detectPendingWorkspaceVideoFile(target, bytes)) {
+    return {
+      kind: 'video',
+      path: relativeTarget.replace(/\\/gu, '/'),
+      attachedAtUnixMs: Date.now(),
+    };
+  }
+
+  if (hasPendingWorkspaceVideoExtension(target)) {
+    throw new Error(`视频文件校验失败: ${referencePath}`);
+  }
+
   if (bytes.includes(0)) {
     throw new Error(`暂不支持引用二进制文件: ${referencePath}`);
   }
@@ -545,6 +569,50 @@ function hasPendingWorkspaceImageExtension(filePath: string): boolean {
     extension.endsWith('.gif') ||
     extension.endsWith('.webp')
   );
+}
+
+function hasPendingWorkspaceVideoExtension(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return (
+    lower.endsWith('.3gp') ||
+    lower.endsWith('.3gpp') ||
+    lower.endsWith('.avi') ||
+    lower.endsWith('.flv') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.mp4') ||
+    lower.endsWith('.mpeg') ||
+    lower.endsWith('.mpg') ||
+    lower.endsWith('.webm') ||
+    lower.endsWith('.wmv')
+  );
+}
+
+function detectPendingWorkspaceVideoFile(filePath: string, bytes: Uint8Array): boolean {
+  if (!hasPendingWorkspaceVideoExtension(filePath)) {
+    return false;
+  }
+
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.3gp') || lower.endsWith('.3gpp')) {
+    return hasAsciiBytePrefix(bytes, 'ftyp', 4);
+  }
+  if (lower.endsWith('.webm')) {
+    return hasBytePrefix(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
+  }
+  if (lower.endsWith('.avi')) {
+    return hasAsciiBytePrefix(bytes, 'RIFF') && hasAsciiBytePrefix(bytes.slice(8), 'AVI ');
+  }
+  if (lower.endsWith('.wmv')) {
+    return hasBytePrefix(bytes, [0x30, 0x26, 0xb2, 0x75]);
+  }
+  if (lower.endsWith('.mpeg') || lower.endsWith('.mpg')) {
+    return hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0xba]) || hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0xb3]);
+  }
+  if (lower.endsWith('.flv')) {
+    return hasAsciiBytePrefix(bytes, 'FLV');
+  }
+
+  return true;
 }
 
 function detectPendingWorkspaceImageFile(filePath: string, bytes: Uint8Array): boolean {
@@ -580,9 +648,13 @@ function hasBytePrefix(bytes: Uint8Array, prefix: readonly number[]): boolean {
   return prefix.every((value, index) => bytes[index] === value);
 }
 
-function hasAsciiBytePrefix(bytes: Uint8Array, prefix: string): boolean {
+function hasAsciiBytePrefix(bytes: Uint8Array, prefix: string, offset = 0): boolean {
   const expected = Array.from(prefix, (char) => char.charCodeAt(0));
-  return hasBytePrefix(bytes, expected);
+  if (bytes.length < offset + expected.length) {
+    return false;
+  }
+
+  return expected.every((value, index) => bytes[offset + index] === value);
 }
 
 function normalizePromptRole(role: string): 'system' | 'user' | 'assistant' {

@@ -15,7 +15,7 @@ import type {
 } from '../ports.js';
 
 export interface RuntimeToolArtifact {
-  kind: 'image';
+  kind: 'image' | 'video';
   path: string;
   mimeType?: string;
 }
@@ -220,7 +220,16 @@ export interface PendingWorkspaceImageFile {
   attachedAtUnixMs: number;
 }
 
-export type PendingWorkspaceFile = PendingWorkspaceTextFile | PendingWorkspaceImageFile;
+export interface PendingWorkspaceVideoFile {
+  kind: 'video';
+  path: string;
+  attachedAtUnixMs: number;
+}
+
+export type PendingWorkspaceFile =
+  | PendingWorkspaceTextFile
+  | PendingWorkspaceImageFile
+  | PendingWorkspaceVideoFile;
 
 export type AssistantAuxKind = 'thinking' | 'compressing';
 

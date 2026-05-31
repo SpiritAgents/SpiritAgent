@@ -60,6 +60,72 @@ test('read_file returns unsupported vision text without image part when model bl
   }
 });
 
+const MINIMAL_MP4_HEADER = Buffer.from([
+  0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+]);
+
+test('read_file returns unsupported video text without video part when model blocks video input', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-video-blocked-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+  const videoPath = join(workspaceRoot, 'blocked.mp4');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+    await writeFile(videoPath, MINIMAL_MP4_HEADER);
+
+    const service = new NodeHostToolService(
+      { workspaceRoot, spiritDataDir },
+      {
+        getModelCompatibilityProfile: () => ({
+          hasExplicitCapabilities: true,
+          capabilities: {},
+        }),
+      },
+    );
+
+    const output = await service.execute({
+      name: 'read_file',
+      path: videoPath,
+    });
+    assertHostToolExecutionOutput(output);
+    assert.match(output.summaryText, /该模型不支持视频输入/u);
+    assert.equal(output.content.some((part) => part.type === 'video'), false);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('read_file still returns video part when model explicitly supports video input', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-video-allowed-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+  const videoPath = join(workspaceRoot, 'allowed.mp4');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+    await writeFile(videoPath, MINIMAL_MP4_HEADER);
+
+    const service = new NodeHostToolService(
+      { workspaceRoot, spiritDataDir },
+      {
+        getModelCompatibilityProfile: () => ({
+          hasExplicitCapabilities: true,
+          capabilities: { videoInput: true },
+        }),
+      },
+    );
+
+    const output = await service.execute({
+      name: 'read_file',
+      path: videoPath,
+    });
+    assertHostToolExecutionOutput(output);
+    assert.match(output.summaryText, /视频文件已作为视频输入返回/u);
+    assert.equal(output.content.some((part) => part.type === 'video'), true);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test('read_file still returns image part when model explicitly supports vision', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-vision-allowed-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');

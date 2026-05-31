@@ -9,6 +9,7 @@ import {
   type WorkspaceFileReferenceSuggestionsResult,
 } from './workspace-file-reference-query.js';
 import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
+import { detectSupportedVideoFile, hasSupportedVideoExtension } from './video-file-support.js';
 
 const createIgnore = ignore as unknown as (options?: {
   allowRelativePaths?: boolean;
@@ -40,9 +41,16 @@ export interface WorkspaceFileReferenceImageAttachment {
   attachedAtUnixMs: number;
 }
 
+export interface WorkspaceFileReferenceVideoAttachment {
+  kind: 'video';
+  path: string;
+  attachedAtUnixMs: number;
+}
+
 export type WorkspaceFileReferenceAttachment =
   | WorkspaceFileReferenceTextAttachment
-  | WorkspaceFileReferenceImageAttachment;
+  | WorkspaceFileReferenceImageAttachment
+  | WorkspaceFileReferenceVideoAttachment;
 
 export interface ResolveWorkspaceFileReferenceAttachmentsOptions {
   maxContentChars?: number;
@@ -209,6 +217,19 @@ async function localFileAttachmentFromAbsolutePath(
 
   if (hasSupportedImageExtension(absolutePath)) {
     throw new Error(`图片文件校验失败: ${attachmentPath}`);
+  }
+
+  const video = detectSupportedVideoFile(absolutePath, bytes);
+  if (video) {
+    return {
+      kind: 'video',
+      path: attachmentPath,
+      attachedAtUnixMs: Date.now(),
+    };
+  }
+
+  if (hasSupportedVideoExtension(absolutePath)) {
+    throw new Error(`视频文件校验失败: ${attachmentPath}`);
   }
 
   if (bytes.includes(0)) {

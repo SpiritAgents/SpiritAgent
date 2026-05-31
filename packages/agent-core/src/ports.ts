@@ -23,7 +23,12 @@ export interface LlmImageContentPart extends JsonObject {
   path: string;
 }
 
-export type LlmContentPart = LlmTextContentPart | LlmImageContentPart;
+export interface LlmVideoContentPart extends JsonObject {
+  type: 'video';
+  path: string;
+}
+
+export type LlmContentPart = LlmTextContentPart | LlmImageContentPart | LlmVideoContentPart;
 export type LlmMessageContent = LlmContentPart[];
 
 export interface LlmMessage {
@@ -115,6 +120,10 @@ export function createLlmImageContentPart(path: string): LlmImageContentPart {
   return { type: 'image', path };
 }
 
+export function createLlmVideoContentPart(path: string): LlmVideoContentPart {
+  return { type: 'video', path };
+}
+
 export function createLlmMessageContentFromText(text: string): LlmMessageContent {
   return text.length > 0 ? [createLlmTextContentPart(text)] : [];
 }
@@ -122,6 +131,7 @@ export function createLlmMessageContentFromText(text: string): LlmMessageContent
 export function createLlmMessageContentFromTextAndImages(
   text: string,
   imagePaths: readonly string[] = [],
+  videoPaths: readonly string[] = [],
 ): LlmMessageContent {
   const content: LlmMessageContent = [];
   if (text.length > 0) {
@@ -130,6 +140,9 @@ export function createLlmMessageContentFromTextAndImages(
   for (const imagePath of imagePaths) {
     content.push(createLlmImageContentPart(imagePath));
   }
+  for (const videoPath of videoPaths) {
+    content.push(createLlmVideoContentPart(videoPath));
+  }
   return content;
 }
 
@@ -137,6 +150,10 @@ export function cloneLlmMessageContent(content: readonly LlmContentPart[]): LlmM
   return content.map((part) => {
     if (part.type === 'text') {
       return { type: 'text', text: part.text };
+    }
+
+    if (part.type === 'video') {
+      return { type: 'video', path: part.path };
     }
 
     return { type: 'image', path: part.path };
@@ -158,6 +175,20 @@ export function llmMessageImagePaths(content: readonly LlmContentPart[]): string
 
 export function llmMessageHasImages(content: readonly LlmContentPart[]): boolean {
   return content.some((part) => part.type === 'image');
+}
+
+export function llmMessageVideoPaths(content: readonly LlmContentPart[]): string[] {
+  return content
+    .filter((part): part is LlmVideoContentPart => part.type === 'video')
+    .map((part) => part.path);
+}
+
+export function llmMessageHasVideos(content: readonly LlmContentPart[]): boolean {
+  return content.some((part) => part.type === 'video');
+}
+
+export function llmMessageHasMedia(content: readonly LlmContentPart[]): boolean {
+  return llmMessageHasImages(content) || llmMessageHasVideos(content);
 }
 
 export function llmMessageHasText(content: readonly LlmContentPart[]): boolean {
