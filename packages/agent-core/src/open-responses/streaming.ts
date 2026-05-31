@@ -16,6 +16,7 @@ interface AggregatedStreamingToolCall {
   functionArguments: string;
   readyPreviewEmitted: boolean;
   lastPreviewArgsLen?: number;
+  lastPreviewDetailSignature?: string;
 }
 
 interface Deferred<T> {
@@ -310,6 +311,9 @@ function maybeEmitPreview(events: LlmStreamEvent[], call: AggregatedStreamingToo
   const previewState = {
     readyPreviewEmitted: call.readyPreviewEmitted,
     ...(call.lastPreviewArgsLen === undefined ? {} : { lastPreviewArgsLen: call.lastPreviewArgsLen }),
+    ...(call.lastPreviewDetailSignature === undefined
+      ? {}
+      : { lastPreviewDetailSignature: call.lastPreviewDetailSignature }),
   };
   const decision = resolveStreamingToolPreviewEmit(
     call.functionName,
@@ -329,6 +333,9 @@ function maybeEmitPreview(events: LlmStreamEvent[], call: AggregatedStreamingToo
   call.readyPreviewEmitted = decision.nextState.readyPreviewEmitted;
   if (decision.nextState.lastPreviewArgsLen !== undefined) {
     call.lastPreviewArgsLen = decision.nextState.lastPreviewArgsLen;
+  }
+  if (decision.nextState.lastPreviewDetailSignature !== undefined) {
+    call.lastPreviewDetailSignature = decision.nextState.lastPreviewDetailSignature;
   }
 }
 

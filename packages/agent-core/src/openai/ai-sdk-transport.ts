@@ -91,6 +91,7 @@ interface AggregatedStreamingToolCall {
   functionArguments: string;
   readyPreviewEmitted: boolean;
   lastPreviewArgsLen?: number;
+  lastPreviewDetailSignature?: string;
 }
 
 interface Deferred<T> {
@@ -1148,6 +1149,9 @@ function accumulateStreamingToolCallProgressFromRawChunk(
           ...(current.lastPreviewArgsLen === undefined
             ? {}
             : { lastPreviewArgsLen: current.lastPreviewArgsLen }),
+          ...(current.lastPreviewDetailSignature === undefined
+            ? {}
+            : { lastPreviewDetailSignature: current.lastPreviewDetailSignature }),
         };
         const decision = resolveStreamingToolPreviewEmit(
           current.functionName,
@@ -1164,6 +1168,9 @@ function accumulateStreamingToolCallProgressFromRawChunk(
           current.readyPreviewEmitted = decision.nextState.readyPreviewEmitted;
           if (decision.nextState.lastPreviewArgsLen !== undefined) {
             current.lastPreviewArgsLen = decision.nextState.lastPreviewArgsLen;
+          }
+          if (decision.nextState.lastPreviewDetailSignature !== undefined) {
+            current.lastPreviewDetailSignature = decision.nextState.lastPreviewDetailSignature;
           }
         }
       }
