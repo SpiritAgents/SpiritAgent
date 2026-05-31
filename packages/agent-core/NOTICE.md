@@ -6,7 +6,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 ## Summary
 
-- Apache-2.0: 9 package(s)
+- Apache-2.0: 10 package(s)
 - MIT: 2 package(s)
 - BSD-3-Clause: 1 package(s)
 
@@ -19,6 +19,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 - **@ai-sdk/deepseek** 2.0.32 — Apache-2.0
   - https://github.com/vercel/ai
 - **@ai-sdk/gateway** 3.0.121 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/moonshotai** 2.0.23 — Apache-2.0
   - https://github.com/vercel/ai
 - **@ai-sdk/open-responses** 1.0.16 — Apache-2.0
   - https://github.com/vercel/ai
@@ -46,6 +48,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 - @ai-sdk/anthropic 2.0.79
 - @ai-sdk/deepseek 2.0.32
 - @ai-sdk/gateway 3.0.121
+- @ai-sdk/moonshotai 2.0.23
 - @ai-sdk/open-responses 1.0.16
 - @ai-sdk/openai 2.0.106
 - @ai-sdk/openai-compatible 2.0.46

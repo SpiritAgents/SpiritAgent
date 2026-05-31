@@ -80,6 +80,7 @@ export interface OpenAiRequestTrace extends JsonObject {
   kind:
     | 'openai_sdk_chat_completions'
     | 'deepseek_sdk_chat_completions'
+    | 'moonshot_sdk_chat_completions'
     | 'alibaba_sdk_chat_completions'
     | 'gateway_sdk_chat_completions'
     | 'openai_official_sdk_chat_completions';
@@ -139,14 +140,14 @@ export function openAiReasoningEffort(
 }
 
 /**
- * DeepSeek / Moonshot AI 等网关常在 OpenAI 兼容路径上接受顶层 `thinking` 字段以开关思考链输出。
- * 凡走 OpenAI-compatible transport 的 chat.completions（含压缩）均合并，避免同一连接上部分请求缺字段导致网关行为不一致。
+ * DeepSeek 等仍走 OpenAI-compatible 兜底的网关可在请求体顶层接受 `thinking` 字段。
+ * Moonshot 已改用 `@ai-sdk/moonshotai` 的 `providerOptions.moonshotai.thinking`。
  */
 export function openAiVendorChatCompletionBodyExtras(
   config: Pick<OpenAiTransportConfig, 'llmVendor' | 'vendorExtendedThinking'>,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (config.llmVendor === 'deepseek' || config.llmVendor === 'moonshot-ai') {
+  if (config.llmVendor === 'deepseek') {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
   }
