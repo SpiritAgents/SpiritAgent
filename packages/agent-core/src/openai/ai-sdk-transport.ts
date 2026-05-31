@@ -1527,7 +1527,11 @@ function isOpenAiOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
 function xaiChatReasoningEffort(
   effort: string | undefined,
 ): XaiLanguageModelChatOptions['reasoningEffort'] | undefined {
-  return effort === 'low' || effort === 'high' ? effort : undefined;
+  if (effort === 'low' || effort === 'high') {
+    return effort;
+  }
+
+  return effort === 'medium' ? 'high' : undefined;
 }
 
 function buildAiSdkImageGenerationUrl(config: OpenAiImageGenerationConfig): string {
