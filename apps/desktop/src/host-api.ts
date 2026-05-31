@@ -75,6 +75,7 @@ export interface HostApi {
   submitSkillSlash(request: SubmitSkillSlashRequest): Promise<DesktopSnapshot>;
   submitStartImplementing(): Promise<DesktopSnapshot>;
   exportSessionLog?(): Promise<DesktopSnapshot>;
+  compactHistory(): Promise<DesktopSnapshot>;
   submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot>;
   setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot>;
   setApprovalLevel(approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel): Promise<DesktopSnapshot>;

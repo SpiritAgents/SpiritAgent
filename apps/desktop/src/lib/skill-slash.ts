@@ -19,6 +19,7 @@ export function skillSlashAlias(skillName: string): string {
 export const CREATE_SKILL_SLASH_ALIAS = '/create-skill'
 export const LOG_SESSION_SLASH_ALIAS = '/log-session'
 export const START_IMPLEMENTING_SLASH_ALIAS = '/start-implementing'
+export const COMPACT_SLASH_ALIAS = '/compact'
 
 const STATIC_SLASH_SUGGESTIONS: readonly SkillSlashSuggestion[] = [
   {
@@ -38,6 +39,12 @@ const STATIC_SLASH_SUGGESTIONS: readonly SkillSlashSuggestion[] = [
     alias: START_IMPLEMENTING_SLASH_ALIAS,
     name: '/start-implementing',
     description: '读取 Spirit 托管 plan.md 后直接开始实现',
+  },
+  {
+    id: 'command:compact',
+    alias: COMPACT_SLASH_ALIAS,
+    name: '/compact',
+    description: '主动压缩当前会话上下文历史',
   },
 ] as const
 
@@ -96,6 +103,10 @@ export function isLogSessionSlashInput(input: string): boolean {
 
 export function isStartImplementingSlashInput(input: string): boolean {
   return input.trim() === START_IMPLEMENTING_SLASH_ALIAS
+}
+
+export function isCompactSlashInput(input: string): boolean {
+  return input.trim() === COMPACT_SLASH_ALIAS
 }
 
 export function matchSkillSlashInput(

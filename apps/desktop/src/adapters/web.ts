@@ -130,6 +130,9 @@ export function createWebHostApi(): HostApi {
     submitStartImplementing() {
       return post<DesktopSnapshot>(baseUrl, '/api/start-implementing');
     },
+    compactHistory() {
+      return post<DesktopSnapshot>(baseUrl, '/api/compact');
+    },
     submitUserTurn(request) {
       return post<DesktopSnapshot>(baseUrl, '/api/submit', request);
     },
