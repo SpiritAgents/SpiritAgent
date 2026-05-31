@@ -1853,7 +1853,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       request: requestSummary,
       before,
       after,
-      createdAtUnixMs: Date.now(),
+      createdAtUnixMs: Math.trunc(Date.now()),
     };
 
     try {
