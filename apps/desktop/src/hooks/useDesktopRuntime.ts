@@ -293,6 +293,8 @@ export function useDesktopRuntime() {
   >([]);
   const appliedConversationRevisionRef = useRef(0);
   const appliedComposerSessionKeyRef = useRef("");
+  const sessionNavigationGenerationRef = useRef(0);
+  const busyActionRef = useRef<BusyAction>("");
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
@@ -371,6 +373,10 @@ export function useDesktopRuntime() {
   }, [settings]);
 
   useEffect(() => {
+    busyActionRef.current = busyAction;
+  }, [busyAction]);
+
+  useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
 
@@ -409,13 +415,32 @@ export function useDesktopRuntime() {
     snapshot?.composerSessionKey,
   ]);
 
-  const applySnapshot = useCallback((next: DesktopSnapshot) => {
+  const applySnapshot = useCallback((next: DesktopSnapshot, options?: { navGeneration?: number }) => {
+    if (
+      options?.navGeneration === undefined &&
+      (busyActionRef.current === "session" || busyActionRef.current === "reset")
+    ) {
+      return;
+    }
+
+    if (
+      options?.navGeneration !== undefined &&
+      options.navGeneration !== sessionNavigationGenerationRef.current
+    ) {
+      return;
+    }
+
     const revision = next.conversation.revision ?? 0;
     const sessionKey = next.composerSessionKey;
     const sameSession = sessionKey === appliedComposerSessionKeyRef.current;
     if (sameSession && revision < appliedConversationRevisionRef.current) {
       return;
     }
+
+    if (!sameSession) {
+      appliedConversationRevisionRef.current = 0;
+    }
+
     appliedComposerSessionKeyRef.current = sessionKey;
     appliedConversationRevisionRef.current = revision;
     setSnapshot(next);
@@ -1768,18 +1793,25 @@ export function useDesktopRuntime() {
       if (!api) {
         return;
       }
+      const navGeneration = sessionNavigationGenerationRef.current + 1;
+      sessionNavigationGenerationRef.current = navGeneration;
       setBusyAction("session");
       try {
         stashSessionUi(snapshotRef.current);
         const next = await api.openSession(path);
-        applySnapshot(next);
+        if (navGeneration !== sessionNavigationGenerationRef.current) {
+          return;
+        }
+        applySnapshot(next, { navGeneration });
         restoreSessionUi(next);
         setRuntimeError("");
         void refreshSessions();
       } catch (error) {
         setRuntimeError(describeError(error));
       } finally {
-        setBusyAction("");
+        if (navGeneration === sessionNavigationGenerationRef.current) {
+          setBusyAction("");
+        }
       }
     },
     [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
@@ -1832,18 +1864,25 @@ export function useDesktopRuntime() {
       return;
     }
 
+    const navGeneration = sessionNavigationGenerationRef.current + 1;
+    sessionNavigationGenerationRef.current = navGeneration;
     setBusyAction("reset");
     try {
       stashSessionUi(snapshotRef.current);
       const next = await api.resetSession();
-      applySnapshot(next);
+      if (navGeneration !== sessionNavigationGenerationRef.current) {
+        return;
+      }
+      applySnapshot(next, { navGeneration });
       restoreSessionUi(next);
       setRuntimeError("");
       void refreshSessions();
     } catch (error) {
       setRuntimeError(describeError(error));
     } finally {
-      setBusyAction("");
+      if (navGeneration === sessionNavigationGenerationRef.current) {
+        setBusyAction("");
+      }
     }
   }, [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
 
