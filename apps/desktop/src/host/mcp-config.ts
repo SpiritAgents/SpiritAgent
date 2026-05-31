@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import {
   mcpUserConfigPath,
   normalizeCapabilityToggles,

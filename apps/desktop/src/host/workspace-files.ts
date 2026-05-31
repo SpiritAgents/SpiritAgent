@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { lstat, readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import type {
   WorkspaceExplorerEntry,
   WorkspaceExplorerListResult,

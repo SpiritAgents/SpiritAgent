@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import type {
   OpenAiActiveSkill,
   OpenAiActiveSkillResourceEntry,
