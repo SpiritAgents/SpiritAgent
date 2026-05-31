@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   ArrowLeft,
@@ -21,6 +22,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { cn } from "@/lib/utils";
+import i18n from "@/lib/i18n";
 import type { DesktopSnapshot, SessionListItem } from "@/types";
 
 function samePath(a: string, b: string): boolean {
@@ -83,7 +85,7 @@ function normalizePath(value: string): string {
 function deriveWorkspaceLabel(workspaceRoot: string | null | undefined): string {
   const trimmed = workspaceRoot?.trim();
   if (!trimmed) {
-    return "当前工作区";
+    return i18n.t('sidebar.currentWorkspace');
   }
   const normalized = trimmed.replace(/\\/g, "/").replace(/\/+$/g, "");
   const lastSlash = normalized.lastIndexOf("/");
@@ -140,47 +142,47 @@ function buildWorkspaceGroups(
 
 const settingsTabs: Array<{
   id: SettingsSidebarTab;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
 }> = [
   {
     id: "basic",
-    label: "基础",
+    labelKey: "settings.basic",
     icon: SlidersHorizontal,
   },
   {
     id: "models",
-    label: "模型",
+    labelKey: "settings.models",
     icon: Layers,
   },
   {
     id: "skills",
-    label: "Skills",
+    labelKey: "settings.skills",
     icon: Sparkles,
   },
   {
     id: "dreams",
-    label: "梦境",
+    labelKey: "settings.dreams",
     icon: MoonStar,
   },
   {
     id: "extensions",
-    label: "扩展",
+    labelKey: "settings.extensions",
     icon: Package,
   },
   {
     id: "mcps",
-    label: "MCPs",
+    labelKey: "settings.mcps",
     icon: Plug,
   },
   {
     id: "appearance",
-    label: "外观",
+    labelKey: "settings.appearance",
     icon: Palette,
   },
   {
     id: "developer",
-    label: "开发者",
+    labelKey: "settings.developer",
     icon: Code2,
   },
 ];
@@ -252,10 +254,11 @@ export function SessionSidebar({
   sessionNavigationBusy = false,
   disabled,
 }: SessionSidebarProps) {
+  const { t, i18n } = useTranslation();
   const settingsMode = mode === "settings";
   const workspaceGroups = useMemo(
     () => buildWorkspaceGroups(sessions, workspaceRoot),
-    [sessions, workspaceRoot],
+    [sessions, workspaceRoot, i18n.language],
   );
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Record<string, boolean>>({});
 
@@ -277,7 +280,7 @@ export function SessionSidebar({
       )}
       data-narrow={narrow || undefined}
       id="session-sidebar-panel"
-      aria-label={settingsMode ? "设置导航侧栏" : "会话与设置侧栏"}
+      aria-label={settingsMode ? t('sidebar.settingsNavAria') : t('sidebar.sessionNavAria')}
     >
       {settingsMode ? (
         <div
@@ -299,7 +302,7 @@ export function SessionSidebar({
             onClick={onBackToSessions}
           >
             <ArrowLeft className="size-4" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>返回</span>
+            <span className={cn(narrow && "sr-only")}>{t('common.back')}</span>
           </Button>
         </div>
       ) : (
@@ -325,13 +328,13 @@ export function SessionSidebar({
             onClick={onNewSession}
           >
             <Plus className="size-3.5" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>新会话</span>
+            <span className={cn(narrow && "sr-only")}>{t('sidebar.newSession')}</span>
           </Button>
           <Button
             type="button"
             variant={sidebarNavButtonVariant(micaStyle, marketplaceActive)}
             size={narrow ? "icon" : "sm"}
-            title={narrow ? "扩展" : undefined}
+            title={narrow ? t('sidebar.extensions') : undefined}
             aria-current={marketplaceActive ? "page" : undefined}
             className={cn(
               "text-xs text-sidebar-foreground/90",
@@ -347,7 +350,7 @@ export function SessionSidebar({
             onClick={onOpenMarketplace}
           >
             <Package className="size-3.5" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>扩展</span>
+            <span className={cn(narrow && "sr-only")}>{t('sidebar.extensions')}</span>
           </Button>
         </div>
       )}
@@ -361,12 +364,12 @@ export function SessionSidebar({
       >
         {settingsMode ? null : (
           <div className="shrink-0 px-1.5 pt-3 pb-2.5">
-            <p className="px-2.5 text-[0.65rem] text-sidebar-faint-foreground">工作区</p>
+            <p className="px-2.5 text-[0.65rem] text-sidebar-faint-foreground">{t('sidebar.workspace')}</p>
           </div>
         )}
         <ScrollArea className="h-full min-h-0 min-w-0" type="hover" scrollHideDelay={450}>
           {settingsMode ? (
-            <nav className="flex min-w-0 flex-col gap-0.5 p-1.5" aria-label="设置页签">
+            <nav className="flex min-w-0 flex-col gap-0.5 p-1.5" aria-label={t('sidebar.settingsTabsAria')}>
               {settingsTabs.map((tab) => {
                 const selected = extensionSettingsId === null && tab.id === settingsTab;
                 const Icon = tab.icon;
@@ -377,7 +380,7 @@ export function SessionSidebar({
                     disabled={disabled}
                     onClick={() => onSettingsTabChange?.(tab.id)}
                     aria-current={selected ? "page" : undefined}
-                    title={narrow ? tab.label : undefined}
+                    title={narrow ? t(tab.labelKey) : undefined}
                     className={cn(
                       buttonVariants({
                         variant: sidebarNavButtonVariant(micaStyle, selected),
@@ -390,7 +393,7 @@ export function SessionSidebar({
                     )}
                   >
                     <Icon className="size-3.5" aria-hidden />
-                    <span className={cn("min-w-0 truncate", narrow && "sr-only")}>{tab.label}</span>
+                    <span className={cn("min-w-0 truncate", narrow && "sr-only")}>{t(tab.labelKey)}</span>
                   </button>
                 );
               })}
@@ -399,7 +402,7 @@ export function SessionSidebar({
                   <div className="h-2" aria-hidden />
                   {narrow ? null : (
                     <p className="px-2.5 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
-                      扩展设置
+                      {t('sidebar.extensionSettings')}
                     </p>
                   )}
                   {extensionSettingsItems.map((item) => {
@@ -433,7 +436,7 @@ export function SessionSidebar({
             </nav>
           ) : (
             <div className="min-w-0 px-1.5 pb-1.5">
-              <nav className="flex min-w-0 flex-col gap-0.5" aria-label="工作区会话">
+              <nav className="flex min-w-0 flex-col gap-0.5" aria-label={t('sidebar.workspaceSessionsAria')}>
                 {workspaceGroups.map((group) => {
                   const expanded = collapsedWorkspaceIds[group.id] !== false;
                   const panelId = `workspace-session-group-${group.id.replace(/[^a-z0-9_-]/g, "-")}`;
@@ -497,7 +500,7 @@ export function SessionSidebar({
                                 {session.isBusy ? (
                                   <span
                                     className="size-1.5 shrink-0 rounded-full bg-primary animate-pulse"
-                                    aria-label="运行中"
+                                    aria-label={t('common.running')}
                                   />
                                 ) : null}
                               </button>
@@ -534,7 +537,7 @@ export function SessionSidebar({
             onClick={onOpenSettings}
           >
             <Settings2 className="size-4" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>设置</span>
+            <span className={cn(narrow && "sr-only")}>{t('settings.title')}</span>
           </Button>
         )}
         {narrow ? (

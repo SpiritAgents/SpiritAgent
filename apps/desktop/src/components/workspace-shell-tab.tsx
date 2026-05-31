@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
@@ -61,6 +62,7 @@ function readClipboardSync(): string | null {
 }
 
 export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const activePtyIdRef = useRef<string | null>(null);
@@ -135,7 +137,7 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
       },
       onExit: (payload) => {
         if (payload.id === activePtyIdRef.current) {
-          term.write(`\r\n\x1b[90m[已退出，代码 ${payload.exitCode}]\x1b[0m\r\n`);
+          term.write(`\r\n\x1b[90m[${t('workspace.shellExited', { exitCode: payload.exitCode })}]\x1b[0m\r\n`);
           activePtyIdRef.current = null;
         }
       },
@@ -224,11 +226,11 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
   };
 
   if (!trimmed) {
-    return <p className="text-muted-foreground">打开工作区后可用。</p>;
+    return <p className="text-muted-foreground">{t('workspace.openWorkspaceToUse')}</p>;
   }
 
   if (!canEmbed || !bridge?.openSystemTerminal) {
-    return <p className="text-muted-foreground">Shell 仅在 Electron 桌面版可用。</p>;
+    return <p className="text-muted-foreground">{t('workspace.shellElectronOnly')}</p>;
   }
 
   return (
@@ -246,10 +248,10 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
                 setRetryNonce((n) => n + 1);
               }}
             >
-              重试
+              {t('common.retry')}
             </Button>
             <Button type="button" variant="secondary" size="sm" onClick={openExternal}>
-              打开系统终端
+              {t('workspace.openSystemTerminal')}
             </Button>
           </div>
         </div>
