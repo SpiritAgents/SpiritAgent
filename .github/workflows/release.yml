@@ -203,7 +203,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.package_target }}
-          path: apps/desktop/release/*
+          # electron-builder leaves *-unpacked dirs when packaging Linux; exclude them.
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.zip
           if-no-files-found: error
 
   publish:
@@ -240,8 +246,13 @@ jobs:
           Desktop artifacts are unsigned unless signing secrets are configured.
           EOF
           )"
+          mapfile -d '' -t assets < <(find release-assets -maxdepth 1 -type f -print0)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No release assets found under release-assets" >&2
+            exit 1
+          fi
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
           else
-            gh release create "$RELEASE_TAG" release-assets/* --title "$RELEASE_TAG" --notes "$notes"
+            gh release create "$RELEASE_TAG" "${assets[@]}" --title "$RELEASE_TAG" --notes "$notes"
           fi
