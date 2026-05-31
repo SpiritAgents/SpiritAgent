@@ -32,6 +32,7 @@ import {
 import { resolveRendererDistPath } from './renderer-dist.js';
 import { listSystemFonts } from './system-fonts.js';
 import { syncWindowsImmersiveDarkMode } from './win-dwm.js';
+import i18nHost from '../src/lib/i18n-host.js';
 
 /** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
@@ -616,6 +617,13 @@ app.whenReady().then(async () => {
       applyWin32Backdrop(window, request.dark);
     },
   );
+
+  ipcMain.handle('desktop:sync-language', (_event, lang: string) => {
+    console.log('[spirit-desktop] language synced:', lang);
+    i18nHost.changeLanguage(lang).catch(() => {
+      // ignore i18n errors
+    });
+  });
 
   ipcMain.handle(
     'desktop:pty-create',

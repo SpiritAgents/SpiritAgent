@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
+import i18n from "@/lib/i18n";
 import { ChevronsUpDown, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 
 import { DreamGraphCard } from "@/components/dream-graph-card";
@@ -32,6 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { FontPreference } from "@/lib/font";
+import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import type {
@@ -126,21 +129,21 @@ type SettingsViewProps = {
   onStartCompactionUiDemo?: () => void;
 };
 
-const themeSelectOptions: Array<{ value: ThemePreference; label: string }> = [
-  { value: "system", label: "跟随系统" },
-  { value: "light", label: "浅色" },
-  { value: "dark", label: "深色" },
+const themeSelectOptions: Array<{ value: ThemePreference; labelKey: string }> = [
+  { value: "system", labelKey: "settings.themeSystem" },
+  { value: "light", labelKey: "settings.themeLight" },
+  { value: "dark", labelKey: "settings.themeDark" },
 ];
 
-const settingsPageTitle: Record<SettingsSidebarTab, string> = {
-  basic: "工作区与连接",
-  models: "模型",
-  extensions: "扩展",
-  mcps: "MCP 服务",
-  skills: "Skills",
-  dreams: "梦境",
-  appearance: "外观与字体",
-  developer: "开发者",
+const settingsPageTitleKey: Record<SettingsSidebarTab, string> = {
+  basic: "settings.basic",
+  models: "settings.models",
+  extensions: "settings.extensions",
+  mcps: "settings.mcps",
+  skills: "settings.skills",
+  dreams: "settings.dreams",
+  appearance: "settings.appearance",
+  developer: "settings.developer",
 };
 
 function formatExtensionInstalledAt(unixMs: number): string {
@@ -152,10 +155,10 @@ function formatExtensionInstalledAt(unixMs: number): string {
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error("读取文件失败。"));
+    reader.onerror = () => reject(reader.error ?? new Error(i18n.t('settings.readFileFailed')));
     reader.onload = () => {
       if (typeof reader.result !== "string") {
-        reject(new Error("读取文件失败。"));
+        reject(new Error(i18n.t('settings.readFileFailed')));
         return;
       }
       const marker = "base64,";
@@ -186,40 +189,41 @@ type ModelDefaultRole = keyof ModelDefaultAssignments;
 const modelCapabilityOptions: Array<{
   value: DesktopModelCapability;
   label: string;
-  summary: string;
+  labelKey: string;
+  summaryKey: string;
 }> = [
-  { value: "chat", label: "Chat", summary: "对话与工具编排" },
-  { value: "image", label: "Image", summary: "读取图片输入" },
-  { value: "video", label: "Video", summary: "读取视频输入" },
-  { value: "imageGeneration", label: "Image generation", summary: "生成图片输出" },
+  { value: "chat", label: "Chat", labelKey: 'settings.capabilityChatLabel', summaryKey: 'settings.capabilityChat' },
+  { value: "image", label: "Image", labelKey: 'settings.capabilityImageLabel', summaryKey: 'settings.capabilityImage' },
+  { value: "video", label: "Video", labelKey: 'settings.capabilityVideoLabel', summaryKey: 'settings.capabilityVideo' },
+  { value: "imageGeneration", label: "Image generation", labelKey: 'settings.capabilityImageGenerationLabel', summaryKey: 'settings.capabilityImageGeneration' },
 ];
 
 type ConnectTransportOption = {
   value: DesktopTransportKind;
   label: string;
-  summary: string;
+  summaryKey: string;
 };
 
 const connectTransportOptionCatalog = {
   chatCompletions: {
     value: "openai-compatible" as const,
     label: "Chat Completions API",
-    summary: "Bearer 鉴权；Chat Completions API（`/chat/completions`、`/models`）。",
+    summaryKey: 'settings.transportChatCompletions',
   },
   messagesApi: {
     value: "anthropic" as const,
     label: "Messages API",
-    summary: "x-api-key + anthropic-version；Messages API（`/messages`、`/models`）。",
+    summaryKey: 'settings.transportMessagesApi',
   },
   responsesApi: {
     value: "open-responses" as const,
     label: "Responses API",
-    summary: "OpenAI 官方 Responses API（`@ai-sdk/openai`，`/responses`、`/models`）。",
+    summaryKey: 'settings.transportResponsesApi',
   },
   openResponsesApi: {
     value: "open-responses" as const,
     label: "Open Responses API",
-    summary: "Open Responses 兼容协议（`/responses`）；经网关或自定义 endpoint 时使用。",
+    summaryKey: 'settings.transportOpenResponses',
   },
 } satisfies Record<string, ConnectTransportOption>;
 
@@ -272,22 +276,22 @@ function connectTransportOptionSummary(
   provider: DesktopModelProvider | null,
 ): string {
   if (option.value === "open-responses" && provider === "xai") {
-    return "xAI 官方 Responses API（`@ai-sdk/xai`，`/responses`、`/models`）。";
+    return i18n.t('settings.transportXaiResponses');
   }
 
   if (option.value === "open-responses" && provider === "vercel-ai-gateway") {
-    return "经 Vercel AI Gateway 调用 Open Responses（`/responses`），底层使用 open-responses-compatible provider。";
+    return i18n.t('settings.transportVercelAiGateway');
   }
 
   if (option.value === "open-responses" && provider === "alibaba") {
-    return "百炼 OpenAI 兼容 Responses API（`/api/v2/apps/protocols/compatible-mode/v1/responses`）。";
+    return i18n.t('settings.transportAlibabaResponses');
   }
 
   if (option.value === "open-responses" && provider === "custom") {
-    return connectTransportOptionCatalog.openResponsesApi.summary;
+    return i18n.t(connectTransportOptionCatalog.openResponsesApi.summaryKey);
   }
 
-  return option.summary;
+  return i18n.t(option.summaryKey);
 }
 
 function resolveCustomConnectApiBase(
@@ -298,7 +302,8 @@ function resolveCustomConnectApiBase(
 }
 
 function modelCapabilityLabel(value: DesktopModelCapability): string {
-  return modelCapabilityOptions.find((option) => option.value === value)?.label ?? value;
+  const option = modelCapabilityOptions.find((item) => item.value === value);
+  return option ? i18n.t(option.labelKey, { defaultValue: option.label }) : value;
 }
 
 function normalizeModelCapabilitySelection(
@@ -351,14 +356,14 @@ function getSupportedModelDefaultRoles(
 
 function modelDefaultActionLabel(roles: readonly ModelDefaultRole[]): string {
   if (roles.length === 0) {
-    return "该模型当前没有可设置的默认角色";
+    return i18n.t('settings.noDefaultRoles');
   }
 
   if (roles.length === 1) {
-    return roles[0] === "activeModel" ? "设为当前推理模型" : "设为默认图片生成模型";
+    return roles[0] === "activeModel" ? i18n.t('settings.setActiveModel') : i18n.t('settings.setImageGenModel');
   }
 
-  return "选择默认角色";
+  return i18n.t('settings.selectDefaultRole');
 }
 
 function ModelCapabilitiesCombobox({
@@ -370,6 +375,7 @@ function ModelCapabilitiesCombobox({
   disabled?: boolean;
   onChange: (value: DesktopModelCapability[]) => void;
 }) {
+  const { t } = useTranslation();
   const selected = normalizeModelCapabilitySelection(value);
   const selectedOptions = modelCapabilityOptions.filter((option) =>
     selected.includes(option.value),
@@ -397,16 +403,18 @@ function ModelCapabilitiesCombobox({
         >
           <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
             {selectedOptions.length > 0 ? (
-              selectedOptions.map((option) => (
-                <span
-                  key={option.value}
-                  className="inline-flex max-w-full items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-xs text-foreground"
-                >
-                  <span className="truncate">{option.label}</span>
+              selectedOptions.map((option) => {
+                const label = t(option.labelKey, { defaultValue: option.label });
+                return (
+                  <span
+                    key={option.value}
+                    className="inline-flex max-w-full items-center gap-1 rounded-md border border-border/60 bg-muted/50 px-1.5 py-0.5 text-xs text-foreground"
+                  >
+                    <span className="truncate">{label}</span>
                   <span
                     role="button"
                     tabIndex={-1}
-                    aria-label={`移除 ${option.label}`}
+                    aria-label={t('settings.removeCapability', { label })}
                     className="rounded-sm text-muted-foreground hover:text-foreground"
                     onPointerDown={(event) => {
                       event.preventDefault();
@@ -420,10 +428,11 @@ function ModelCapabilitiesCombobox({
                   >
                     <X className="size-3" aria-hidden />
                   </span>
-                </span>
-              ))
+                  </span>
+                );
+              })
             ) : (
-              <span className="px-1 text-muted-foreground">选择能力</span>
+              <span className="px-1 text-muted-foreground">{t('settings.selectCapability')}</span>
             )}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-60" aria-hidden />
@@ -443,9 +452,9 @@ function ModelCapabilitiesCombobox({
             className="items-start gap-2 py-2"
           >
             <span className="min-w-0 flex-1">
-              <span className="block text-sm">{option.label}</span>
+              <span className="block text-sm">{t(option.labelKey, { defaultValue: option.label })}</span>
               <span className="block truncate text-xs text-muted-foreground">
-                {option.summary}
+                {t(option.summaryKey)}
               </span>
             </span>
           </DropdownMenuCheckboxItem>
@@ -460,17 +469,17 @@ function mcpTransportTypeLabel(type: DesktopMcpTransportType): string {
 }
 
 function mcpMetadataLabel(type: DesktopMcpTransportType): string {
-  return type === "http" ? "Headers" : "环境变量";
+  return type === "http" ? "Headers" : i18n.t('settings.envVars');
 }
 
 function mcpEndpointLabel(type: DesktopMcpTransportType): string {
-  return type === "http" ? "URL" : "命令";
+  return type === "http" ? "URL" : i18n.t('settings.command');
 }
 
 function mcpEndpointPlaceholder(type: DesktopMcpTransportType): string {
   return type === "http"
-    ? "例如 https://example.com/mcp"
-    : "例如 npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent";
+    ? i18n.t('settings.mcpUrlExample')
+    : i18n.t('settings.mcpCommandExample');
 }
 
 function mcpMetadataPlaceholder(type: DesktopMcpTransportType): string {
@@ -518,38 +527,38 @@ function mcpCountsSummary(runtime?: McpServerRuntimeInfo): string {
   const tools = runtime?.state === "ready" ? String(runtime.counts?.tools ?? 0) : "-";
   const resources = runtime?.state === "ready" ? String(runtime.counts?.resources ?? 0) : "-";
   const prompts = runtime?.state === "ready" ? String(runtime.counts?.prompts ?? 0) : "-";
-  return `已发现 ${tools} tools · ${resources} resources · ${prompts} prompts`;
+  return i18n.t('settings.mcpCountsSummary', { tools, resources, prompts });
 }
 
 function McpRuntimeBadge({ state }: { state: McpServerRuntimeBadgeState }) {
   if (state === "ready") {
-    return <Badge>活跃</Badge>;
+    return <Badge>{i18n.t('settings.active')}</Badge>;
   }
 
   if (state === "error") {
-    return <Badge variant="destructive">失败</Badge>;
+    return <Badge variant="destructive">{i18n.t('settings.failed')}</Badge>;
   }
 
   if (state === "disabled") {
-    return <Badge variant="outline">未启用</Badge>;
+    return <Badge variant="outline">{i18n.t('settings.disabled')}</Badge>;
   }
 
   return (
     <Badge variant="outline" className="gap-1.5">
       <LoaderCircle className="size-3 animate-spin" aria-hidden />
-      加载中
+      {i18n.t('common.loading')}
     </Badge>
   );
 }
 
 function skillRootKindLabel(rootKind: DesktopSkillRootKind): string {
   if (rootKind === "user") {
-    return "用户目录";
+    return i18n.t('settings.skillUserDir');
   }
   if (rootKind === "workspaceSpirit") {
-    return "工作区 .spirit";
+    return i18n.t('settings.skillWorkspaceSpirit');
   }
-  return "工作区 .agents";
+  return i18n.t('settings.skillWorkspaceAgents');
 }
 
 function skillLocationLabel(item: DesktopSkillListItem): string {
@@ -559,32 +568,32 @@ function skillLocationLabel(item: DesktopSkillListItem): string {
 function webHostStatusLabel(state: DesktopSnapshot["webHost"]["status"]["state"]): string {
   switch (state) {
     case "running":
-      return "运行中";
+      return i18n.t('settings.webHostRunning');
     case "starting":
-      return "启动中";
+      return i18n.t('settings.webHostStarting');
     case "error":
-      return "启动失败";
+      return i18n.t('settings.webHostError');
     case "stopped":
-      return "已停止";
+      return i18n.t('settings.webHostStopped');
     default:
-      return "关闭";
+      return i18n.t('settings.webHostClosed');
   }
 }
 
 function dreamCollectorStateLabel(state: DesktopSnapshot["dreams"]["collector"]["state"]): string {
   switch (state) {
     case "disabled":
-      return "已关闭";
+      return i18n.t('settings.dreamDisabled');
     case "missing-model":
-      return "等待模型";
+      return i18n.t('settings.dreamMissingModel');
     case "running":
-      return "收集中";
+      return i18n.t('settings.dreamCollecting');
     case "backoff":
-      return "退避中";
+      return i18n.t('settings.dreamBackoff');
     case "error":
-      return "异常";
+      return i18n.t('settings.dreamError');
     default:
-      return "空闲";
+      return i18n.t('settings.dreamIdle');
   }
 }
 
@@ -639,6 +648,7 @@ function BasicSettingsPanel({
   SettingsViewProps,
   "settings" | "snapshot" | "onSavePatch" | "onResetWebHostPairing"
 >) {
+  const { t } = useTranslation();
   const webHost = snapshot?.webHost;
   const webHostUrl =
     webHost?.status.url ?? `http://${settings.webHostHost}:${settings.webHostPort}`;
@@ -657,24 +667,35 @@ function BasicSettingsPanel({
 
   return (
     <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-      <SettingsRow label="UI locale" description="界面语言区域，如 zh-CN。" htmlFor="settings-locale">
-        <Input
-          id="settings-locale"
-          className="sm:text-right"
+      <SettingsRow label={t('settings.uiLocale')} description={t('settings.uiLocaleDescription')} htmlFor="settings-locale">
+        <Select
           value={settings.uiLocale}
-          onChange={(event) => void onSavePatch({ uiLocale: event.target.value })}
-          placeholder="zh-CN / en"
-        />
+          onValueChange={(value) => {
+            void changeLanguage(value);
+            void onSavePatch({ uiLocale: value });
+          }}
+        >
+          <SelectTrigger id="settings-locale" className="w-40 sm:text-right">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {VALID_LANGUAGES.map((lang) => (
+              <SelectItem key={lang} value={lang}>
+                {lang === 'zh-CN' ? t('settings.langZhCN') : t('settings.langEn')}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </SettingsRow>
 
       <SettingsRow
-        label="Web 远程访问"
-        description="浏览器连本机；默认仅本机可连。"
+        label={t('settings.webRemoteAccess')}
+        description={t('settings.webRemoteAccessDescription')}
         htmlFor="settings-web-host-enabled"
       >
         <div className="flex items-center justify-end gap-3">
           <span className="truncate text-sm text-muted-foreground">
-            {settings.webHostEnabled ? webHostStatus : "关闭"}
+            {settings.webHostEnabled ? webHostStatus : t('settings.webHostClosed')}
           </span>
           <Checkbox
             id="settings-web-host-enabled"
@@ -688,8 +709,8 @@ function BasicSettingsPanel({
       </SettingsRow>
 
       <SettingsRow
-        label="监听地址"
-        description="填本机回环 IP 或局域网 IPv4。"
+        label={t('settings.listenAddress')}
+        description={t('settings.listenAddressDescription')}
         htmlFor="settings-web-host-host"
       >
         <Input
@@ -708,7 +729,7 @@ function BasicSettingsPanel({
         />
       </SettingsRow>
 
-      <SettingsRow label="端口" htmlFor="settings-web-host-port">
+      <SettingsRow label={t('settings.listenPort')} htmlFor="settings-web-host-port">
         <Input
           id="settings-web-host-port"
           className="sm:text-right"
@@ -729,17 +750,17 @@ function BasicSettingsPanel({
       </SettingsRow>
 
       <div className="py-4">
-        <p className="text-sm font-medium text-foreground">远程状态</p>
+        <p className="text-sm font-medium text-foreground">{t('settings.remoteStatus')}</p>
         <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:text-right">
           <p className="truncate">
-            <span className="text-foreground">{settings.webHostEnabled ? webHostStatus : "关闭"}</span>
+            <span className="text-foreground">{settings.webHostEnabled ? webHostStatus : t('settings.webHostClosed')}</span>
             {settings.webHostEnabled ? ` · ${webHostUrl}` : null}
           </p>
           {webHost?.status.error ? (
             <p className="break-words text-destructive">{webHost.status.error}</p>
           ) : null}
           <p>
-            配对：{webHost?.config.paired ? "已完成" : "等待首次配对"}
+            {t('settings.pairing')}{webHost?.config.paired ? t('settings.pairingDone') : t('settings.pairingPending')}
           </p>
           {webHost?.status.pairingCode ? (
             <p className="font-mono text-foreground">{webHost.status.pairingCode}</p>
@@ -753,7 +774,7 @@ function BasicSettingsPanel({
                 className="text-muted-foreground"
                 onClick={() => void onResetWebHostPairing()}
               >
-                重置配对
+                {t('settings.resetPairing')}
               </Button>
             </div>
           ) : null}
@@ -761,7 +782,7 @@ function BasicSettingsPanel({
       </div>
 
       <div className="py-4">
-        <p className="text-sm font-medium text-foreground">运行时概览</p>
+        <p className="text-sm font-medium text-foreground">{t('settings.runtimeOverview')}</p>
         <p className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
           <span>
             Rules{" "}
@@ -791,13 +812,14 @@ function BasicSettingsPanel({
 function DeveloperSettingsPanel({
   onStartCompactionUiDemo,
 }: Pick<SettingsViewProps, "onStartCompactionUiDemo">) {
+  const { t } = useTranslation();
   return (
     <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
       <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <p className="text-sm font-medium text-foreground">UI 演示 · 上下文压缩</p>
+          <p className="text-sm font-medium text-foreground">{t('settings.compactionDemoTitle')}</p>
           <p className="text-xs leading-5 text-muted-foreground">
-            在对话区模拟上下文触发压缩：Compressing 动画、Compaction 摘要流式与压缩后助手回复（不调用模型、不写入会话）。
+            {t('settings.compactionDemoDescription')}
           </p>
         </div>
         <Button
@@ -808,7 +830,7 @@ function DeveloperSettingsPanel({
           disabled={!onStartCompactionUiDemo}
           onClick={() => onStartCompactionUiDemo?.()}
         >
-          在对话中演示
+          {t('settings.demoInConversation')}
         </Button>
       </div>
     </div>
@@ -817,12 +839,13 @@ function DeveloperSettingsPanel({
 
 const skillCreateRootOptions: Array<{
   kind: DesktopSkillRootKind;
-  label: string;
-  hint: string;
+  labelKey?: string;
+  labelFallback: string;
+  hintKey: string;
 }> = [
-  { kind: "user", label: "用户", hint: "Spirit 用户目录 skills/" },
-  { kind: "workspaceSpirit", label: ".spirit", hint: "工作区 .spirit/skills/" },
-  { kind: "workspaceAgents", label: ".agents", hint: "工作区 .agents/skills/" },
+  { kind: "user", labelKey: 'settings.skillUserDirShort', labelFallback: 'User', hintKey: 'settings.skillUserDirHint' },
+  { kind: "workspaceSpirit", labelFallback: ".spirit", hintKey: 'settings.skillWorkspaceSpiritHint' },
+  { kind: "workspaceAgents", labelFallback: ".agents", hintKey: 'settings.skillWorkspaceAgentsHint' },
 ];
 
 function SkillsSettingsPanel({
@@ -841,6 +864,7 @@ function SkillsSettingsPanel({
   | "onDeleteSkill"
   | "onGenerateSkillNavigate"
 >) {
+  const { t } = useTranslation();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteSkillRequest | null>(null);
   const [newName, setNewName] = useState("");
@@ -848,6 +872,11 @@ function SkillsSettingsPanel({
   const [createRootKind, setCreateRootKind] = useState<DesktopSkillRootKind>("user");
 
   const items = snapshot?.skillsList ?? [];
+  const localizedSkillCreateRootOptions = skillCreateRootOptions.map((option) => ({
+    ...option,
+    label: option.labelKey ? t(option.labelKey) : option.labelFallback,
+    hint: t(option.hintKey),
+  }));
 
   const resetForm = () => {
     setNewName("");
@@ -860,7 +889,7 @@ function SkillsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Skills</h1>
-          <p className="text-sm text-muted-foreground">用户与工作区内已发现的 Skills。</p>
+          <p className="text-sm text-muted-foreground">{t('settings.skillsDescription')}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {onGenerateSkillNavigate ? (
@@ -870,11 +899,11 @@ function SkillsSettingsPanel({
               size="sm"
               className="shrink-0 gap-1.5"
               disabled={!apiReady}
-              title="进入主对话区，预填 /create-skill，并直接用自然语言描述需求"
+              title={t('settings.generateSkillTooltip')}
               onClick={() => onGenerateSkillNavigate()}
             >
               <Sparkles className="size-3.5 shrink-0" aria-hidden />
-              生成 Skill
+              {t('settings.generateSkill')}
             </Button>
           ) : null}
           <Button
@@ -887,14 +916,14 @@ function SkillsSettingsPanel({
             }}
             disabled={skillsBusy}
           >
-            新建 Skill
+            {t('settings.newSkill')}
           </Button>
         </div>
       </div>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">未发现 Skill</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noSkillsFound')}</p>
         ) : (
           items.map((item) => (
             <div
@@ -909,7 +938,7 @@ function SkillsSettingsPanel({
                   </Badge>
                   {!item.enabled ? (
                     <Badge variant="secondary" className="text-muted-foreground">
-                      已关闭
+                      {t('settings.skillDisabled')}
                     </Badge>
                   ) : null}
                 </div>
@@ -926,7 +955,7 @@ function SkillsSettingsPanel({
                 disabled={skillsBusy}
                 onClick={() => setDeleteTarget({ name: item.name, rootKind: item.rootKind })}
               >
-                删除
+                {t('common.delete')}
               </Button>
             </div>
           ))
@@ -943,11 +972,9 @@ function SkillsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>删除 Skill</DialogTitle>
+            <DialogTitle>{t('settings.deleteSkill')}</DialogTitle>
             <DialogDescription>
-              确定删除「{deleteTarget?.name ?? ""}」（
-              {deleteTarget ? skillRootKindLabel(deleteTarget.rootKind) : ""}
-              ）？将移除整个目录（含 SKILL.md）。
+              {t('settings.deleteSkillConfirm', { name: deleteTarget?.name ?? '', location: deleteTarget ? skillRootKindLabel(deleteTarget.rootKind) : '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
@@ -958,7 +985,7 @@ function SkillsSettingsPanel({
               onClick={() => setDeleteTarget(null)}
               disabled={skillsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -981,7 +1008,7 @@ function SkillsSettingsPanel({
               }}
             >
               {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              删除
+              {t('common.delete')}
             </Button>
           </div>
         </DialogContent>
@@ -998,18 +1025,18 @@ function SkillsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>新建 Skill</DialogTitle>
-            <DialogDescription>填写位置、名称与描述，新增一条供助手参考的技能。</DialogDescription>
+            <DialogTitle>{t('settings.newSkill')}</DialogTitle>
+            <DialogDescription>{t('settings.newSkillDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
-              <Label>保存位置</Label>
+              <Label>{t('settings.saveLocation')}</Label>
               <div
                 role="tablist"
-                aria-label="Skill 保存位置"
+                aria-label={t('settings.saveLocation')}
                 className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
               >
-                {skillCreateRootOptions.map((opt) => (
+                {localizedSkillCreateRootOptions.map((opt) => (
                   <button
                     key={opt.kind}
                     type="button"
@@ -1030,26 +1057,26 @@ function SkillsSettingsPanel({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                {skillCreateRootOptions.find((o) => o.kind === createRootKind)?.hint}
+                {localizedSkillCreateRootOptions.find((o) => o.kind === createRootKind)?.hint}
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-skill-name">名称</Label>
+              <Label htmlFor="new-skill-name">{t('settings.name')}</Label>
               <Input
                 id="new-skill-name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="例如 code-review"
+                placeholder={t('settings.skillNamePlaceholder')}
                 autoComplete="off"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-skill-desc">描述</Label>
+              <Label htmlFor="new-skill-desc">{t('settings.description')}</Label>
               <Input
                 id="new-skill-desc"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="简要说明何时用、做什么"
+                placeholder={t('settings.skillDescPlaceholder')}
                 autoComplete="off"
                 required
               />
@@ -1063,7 +1090,7 @@ function SkillsSettingsPanel({
               onClick={() => setAddDialogOpen(false)}
               disabled={skillsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -1089,7 +1116,7 @@ function SkillsSettingsPanel({
               }}
             >
               {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              创建
+              {t('common.create')}
             </Button>
           </div>
         </DialogContent>
@@ -1109,6 +1136,7 @@ function ExtensionConfigurationPanel({
   onUpdateExtensionSettings: (request: UpdateExtensionSettingsRequest) => Promise<void>;
   onUpdateExtensionSecret: (request: UpdateExtensionSecretRequest) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const [secretDrafts, setSecretDrafts] = useState<Record<string, string>>({});
 
@@ -1153,13 +1181,13 @@ function ExtensionConfigurationPanel({
           {item.desktopSettingsPage?.title ?? item.displayName}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {item.description ?? `扩展 ${item.id} 的设置。`}
+          {item.description ?? t('settings.extensionSettingsDescription', { id: item.id })}
         </p>
       </div>
 
       {!hasSettings && !hasSecrets ? (
         <div className="rounded-lg border border-border/40 bg-background/80 px-4 py-10 text-center text-sm text-muted-foreground">
-          此扩展已声明独立设置页，但尚未声明设置项或 secret slot。
+          {t('settings.noExtensionSettings')}
         </div>
       ) : (
         <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
@@ -1267,7 +1295,7 @@ function ExtensionConfigurationPanel({
                       });
                     }}
                   >
-                    保存
+                    {t('common.save')}
                   </Button>
                 </div>
               </SettingsRow>
@@ -1286,14 +1314,14 @@ function ExtensionConfigurationPanel({
               >
                 <div className="flex w-full flex-wrap justify-end gap-2 sm:max-w-md">
                   <Badge variant={configured ? "secondary" : "outline"} className="h-9 px-3 text-muted-foreground">
-                    {configured ? "已配置" : "未配置"}
+                    {configured ? t('settings.configured') : t('settings.notConfigured')}
                   </Badge>
                   <Input
                     id={fieldKey}
                     type="password"
                     value={secretDrafts[fieldKey] ?? ""}
                     disabled={extensionsBusy}
-                    placeholder={configured ? "输入新值以覆盖" : "输入 secret"}
+                    placeholder={configured ? t('settings.enterNewValue') : t('settings.enterSecret')}
                     onChange={(event) => updateSecretDraft(item.id, slot.key, event.target.value)}
                     className="min-w-0 flex-1"
                   />
@@ -1311,7 +1339,7 @@ function ExtensionConfigurationPanel({
                       updateSecretDraft(item.id, slot.key, "");
                     }}
                   >
-                    保存
+                    {t('common.save')}
                   </Button>
                   <Button
                     type="button"
@@ -1327,7 +1355,7 @@ function ExtensionConfigurationPanel({
                       updateSecretDraft(item.id, slot.key, "");
                     }}
                   >
-                    清除
+                    {t('common.clear')}
                   </Button>
                 </div>
               </SettingsRow>
@@ -1353,6 +1381,7 @@ function ExtensionsSettingsPanel({
   | "onDeleteExtension"
   | "onRunExtension"
 >) {
+  const { t } = useTranslation();
   const [deleteTarget, setDeleteTarget] = useState<DesktopExtensionListItem | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const items = snapshot?.extensionsList ?? [];
@@ -1387,8 +1416,8 @@ function ExtensionsSettingsPanel({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">扩展</h1>
-          <p className="text-sm text-muted-foreground">管理用户级扩展 ZIP 导入结果与已安装元数据。</p>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.extensionsTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('settings.extensionsDescription')}</p>
         </div>
         <Button
           type="button"
@@ -1397,13 +1426,13 @@ function ExtensionsSettingsPanel({
           disabled={extensionsBusy}
           onClick={() => inputRef.current?.click()}
         >
-          导入 ZIP
+          {t('settings.importZip')}
         </Button>
       </div>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">未安装扩展</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noExtensionsInstalled')}</p>
         ) : (
           items.map((item) => (
             <div
@@ -1423,7 +1452,7 @@ function ExtensionsSettingsPanel({
                   ) : null}
                   {item.desktopSettingsPage ? (
                     <Badge variant="outline" className="text-muted-foreground">
-                      设置页
+                      {t('settings.settingsPage')}
                     </Badge>
                   ) : null}
                 </div>
@@ -1434,8 +1463,8 @@ function ExtensionsSettingsPanel({
                   {item.id}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  安装时间：{formatExtensionInstalledAt(item.installedAtUnixMs)}
-                  {item.archiveFileName ? ` · 来源：${item.archiveFileName}` : ""}
+                  {t('settings.installedAt')}{formatExtensionInstalledAt(item.installedAtUnixMs)}
+                  {item.archiveFileName ? ` · ${t('settings.source')}${item.archiveFileName}` : ""}
                   {item.main ? ` · main: ${item.main}` : ""}
                 </p>
                 {item.activationEvents?.length ? (
@@ -1445,7 +1474,7 @@ function ExtensionsSettingsPanel({
                 ) : null}
                 {item.contributedTools?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className="text-xs font-medium text-foreground">贡献工具</p>
+                    <p className="text-xs font-medium text-foreground">{t('settings.contributedTools')}</p>
                     {item.contributedTools.map((tool) => (
                       <div key={`${item.id}:${tool.name}`} className="rounded-md border border-border/40 bg-muted/20 px-2.5 py-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1483,8 +1512,7 @@ function ExtensionsSettingsPanel({
                           ) : null}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          该样式会以扩展层的形式注入 Desktop Renderer，可配合稳定的
-                          {" "}`data-spirit-*` hooks 覆盖界面表现。
+                          {t('settings.desktopCssDescription')}
                         </p>
                       </div>
                     ))}
@@ -1507,7 +1535,7 @@ function ExtensionsSettingsPanel({
                           ) : null}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          这是 CLI 专属的受控语义 hook，不会在 Desktop Renderer 中执行。
+                          {t('settings.cliHookDescription')}
                         </p>
                       </div>
                     ))}
@@ -1530,7 +1558,7 @@ function ExtensionsSettingsPanel({
                     })();
                   }}
                 >
-                  手动运行
+                  {t('settings.runManually')}
                 </Button>
                 <Button
                   type="button"
@@ -1539,7 +1567,7 @@ function ExtensionsSettingsPanel({
                   disabled={extensionsBusy}
                   onClick={() => setDeleteTarget(item)}
                 >
-                  删除
+                  {t('common.delete')}
                 </Button>
               </div>
             </div>
@@ -1557,9 +1585,9 @@ function ExtensionsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>删除扩展</DialogTitle>
+            <DialogTitle>{t('settings.deleteExtension')}</DialogTitle>
             <DialogDescription>
-              确定删除扩展「{deleteTarget?.displayName ?? ""}」？这会移除本地安装目录。
+              {t('settings.deleteExtensionConfirm', { name: deleteTarget?.displayName ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
@@ -1570,7 +1598,7 @@ function ExtensionsSettingsPanel({
               onClick={() => setDeleteTarget(null)}
               disabled={extensionsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -1593,7 +1621,7 @@ function ExtensionsSettingsPanel({
               }}
             >
               {extensionsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              删除
+              {t('common.delete')}
             </Button>
           </div>
         </DialogContent>
@@ -1612,6 +1640,7 @@ function McpsSettingsPanel({
   SettingsViewProps,
   "snapshot" | "mcpsBusy" | "onAddMcpServer" | "onDeleteMcpServer" | "onInspectMcpServer"
 >) {
+  const { t } = useTranslation();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteMcpServerRequest | null>(null);
   const [transportType, setTransportType] = useState<DesktopMcpTransportType>("stdio");
@@ -1696,7 +1725,7 @@ function McpsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">MCPs</h1>
-          <p className="text-sm text-muted-foreground">管理 Desktop 侧已配置的 MCP servers。</p>
+          <p className="text-sm text-muted-foreground">{t('settings.mcpsDescription')}</p>
         </div>
         <Button
           type="button"
@@ -1708,13 +1737,13 @@ function McpsSettingsPanel({
           }}
           disabled={mcpsBusy}
         >
-          添加 MCP
+          {t('settings.addMcp')}
         </Button>
       </div>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">未配置 MCP server</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noMcpsConfigured')}</p>
         ) : (
           items.map((item) => (
             <div
@@ -1730,7 +1759,7 @@ function McpsSettingsPanel({
                   </Badge>
                   {!item.enabled ? (
                     <Badge variant="secondary" className="text-muted-foreground">
-                      已关闭
+                      {t('settings.mcpDisabled')}
                     </Badge>
                   ) : null}
                 </div>
@@ -1753,7 +1782,7 @@ function McpsSettingsPanel({
                 disabled={mcpsBusy}
                 onClick={() => setDeleteTarget({ name: item.name })}
               >
-                删除
+                {t('common.delete')}
               </Button>
             </div>
           ))
@@ -1770,9 +1799,9 @@ function McpsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>删除 MCP</DialogTitle>
+            <DialogTitle>{t('settings.deleteMcp')}</DialogTitle>
             <DialogDescription>
-              确定删除 MCP server「{deleteTarget?.name ?? ""}」？这会从本地 mcp.json 中移除对应配置。
+              {t('settings.deleteMcpConfirm', { name: deleteTarget?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
@@ -1783,7 +1812,7 @@ function McpsSettingsPanel({
               onClick={() => setDeleteTarget(null)}
               disabled={mcpsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -1806,7 +1835,7 @@ function McpsSettingsPanel({
               }}
             >
               {mcpsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              删除
+              {t('common.delete')}
             </Button>
           </div>
         </DialogContent>
@@ -1823,15 +1852,15 @@ function McpsSettingsPanel({
       >
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
-            <DialogTitle>添加 MCP</DialogTitle>
-            <DialogDescription>表单语义与 CLI 保持一致：Stdio 写命令，HTTP 写 URL，metadata 按 transport 解释。</DialogDescription>
+            <DialogTitle>{t('settings.addMcp')}</DialogTitle>
+            <DialogDescription>{t('settings.addMcpDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
-              <Label>传输方式</Label>
+              <Label>{t('settings.transportType')}</Label>
               <div
                 role="tablist"
-                aria-label="MCP 传输方式"
+                aria-label={t('settings.transportType')}
                 className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
               >
                 {(["stdio", "http"] as const).map((value) => (
@@ -1856,12 +1885,12 @@ function McpsSettingsPanel({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="new-mcp-name">名称</Label>
+              <Label htmlFor="new-mcp-name">{t('settings.name')}</Label>
               <Input
                 id="new-mcp-name"
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
-                placeholder="例如 filesystem"
+                placeholder={t('settings.mcpNamePlaceholder')}
                 autoComplete="off"
               />
             </div>
@@ -1886,7 +1915,7 @@ function McpsSettingsPanel({
                 placeholder={mcpMetadataPlaceholder(transportType)}
                 className="min-h-24"
               />
-              <p className="text-xs text-muted-foreground">多个条目使用分号分隔；HTTP 支持 `Key: Value` 或 `Key=Value`，Stdio 使用 `KEY=value`。</p>
+              <p className="text-xs text-muted-foreground">{t('settings.mcpMetadataHint')}</p>
             </div>
 
             <div className="grid gap-2">
@@ -1920,7 +1949,7 @@ function McpsSettingsPanel({
               onClick={() => setAddDialogOpen(false)}
               disabled={mcpsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -1945,7 +1974,7 @@ function McpsSettingsPanel({
               }}
             >
               {mcpsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              创建
+              {t('common.create')}
             </Button>
           </div>
         </DialogContent>
@@ -1978,6 +2007,7 @@ function ModelsSettingsPanel({
   | "onRemoveModel"
   | "onRemoveProviderModels"
 >) {
+  const { t } = useTranslation();
   const [providerDialogOpen, setProviderDialogOpen] = useState(false);
   const [providerQuery, setProviderQuery] = useState("");
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
@@ -2039,7 +2069,8 @@ function ModelsSettingsPanel({
   }
 
   function providerLabel(provider: DesktopModelProvider): string {
-    return PROVIDER_PICKER_ROWS.find((row) => row.id === provider)?.label ?? provider;
+    const row = PROVIDER_PICKER_ROWS.find((item) => item.id === provider);
+    return row ? String(t(row.labelKey, { defaultValue: row.fallbackLabel })) : provider;
   }
 
   const resetConnectWizard = () => {
@@ -2073,13 +2104,17 @@ function ModelsSettingsPanel({
     setConnectDialogOpen(true);
   };
 
-  const filteredProviders = PROVIDER_PICKER_ROWS.filter((row) =>
+  const localizedProviderRows = PROVIDER_PICKER_ROWS.map((row) => ({
+    ...row,
+    label: providerLabel(row.id),
+  }));
+  const filteredProviders = localizedProviderRows.filter((row) =>
     row.label.toLowerCase().includes(providerQuery.trim().toLowerCase()),
   );
   const selectedProviderLabel =
     selectedProvider === null
-      ? "连接提供商"
-      : PROVIDER_PICKER_ROWS.find((row) => row.id === selectedProvider)?.label ?? "连接提供商";
+      ? t('settings.connectProvider')
+      : providerLabel(selectedProvider);
 
   const openModelDefaultsDialog = (model: SettingsModelProfile) => {
     setModelDefaultsDialogTarget(model.name);
@@ -2188,7 +2223,7 @@ function ModelsSettingsPanel({
       return;
     }
     if (!connectApiKey.trim()) {
-      throw new Error("API Key 不能为空。");
+      throw new Error(t('settings.apiKeyRequired'));
     }
     const res = await onPreviewModels({
       apiBase: effectiveApiBase,
@@ -2200,7 +2235,7 @@ function ModelsSettingsPanel({
       forceRefresh,
     });
     if (res.modelIds.length === 0) {
-      throw new Error("未返回任何模型，请检查密钥或端点。");
+      throw new Error(t('settings.noModelsReturned'));
     }
     const bulk: AddProviderModelsRequest = {
       apiBase: effectiveApiBase,
@@ -2224,10 +2259,10 @@ function ModelsSettingsPanel({
     const name = connectName.trim();
     const apiBase = effectiveApiBase;
     if (!name) {
-      throw new Error("模型名称不能为空。");
+      throw new Error(t('settings.modelNameRequired'));
     }
     if (!connectApiKey.trim()) {
-      throw new Error("API Key 不能为空。");
+      throw new Error(t('settings.apiKeyRequired'));
     }
     await onAddModel({
       name,
@@ -2244,7 +2279,7 @@ function ModelsSettingsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">模型</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.modelsTitle')}</h1>
         <Button
           type="button"
           size="sm"
@@ -2253,14 +2288,14 @@ function ModelsSettingsPanel({
           }}
           disabled={modelsBusy || modelsPreviewBusy}
         >
-          连接提供商
+          {t('settings.connectProvider')}
         </Button>
       </div>
 
       <div className="space-y-3">
         {models.length === 0 ? (
           <div className="rounded-lg border border-border/40 bg-background/80 px-4 py-10 text-center">
-            <p className="text-sm text-muted-foreground">暂无已保存模型</p>
+            <p className="text-sm text-muted-foreground">{t('settings.noSavedModels')}</p>
           </div>
         ) : (
           <>
@@ -2278,11 +2313,11 @@ function ModelsSettingsPanel({
                         {providerLabel(provider)}
                       </span>
                       <Badge variant="secondary" className="text-muted-foreground shrink-0">
-                        {groupModels.length} 个模型
+                        {groupModels.length} {t('settings.modelsCount')}
                       </Badge>
                       {groupHasKey ? (
                         <Badge variant="secondary" className="text-muted-foreground shrink-0">
-                          已存密钥
+                          {t('settings.keySaved')}
                         </Badge>
                       ) : null}
                     </div>
@@ -2293,11 +2328,11 @@ function ModelsSettingsPanel({
                       className="shrink-0"
                       disabled={modelsBusy || modelsPreviewBusy || groupHasActive}
                       title={
-                        groupHasActive ? "不能删除包含当前模型的提供商组" : undefined
+                        groupHasActive ? t('settings.cannotDeleteProviderGroup') : undefined
                       }
                       onClick={() => setDeleteGroupTarget(provider)}
                     >
-                      删除整组
+                      {t('settings.deleteGroup')}
                     </Button>
                   </div>
                   <div className="divide-y divide-border/35">
@@ -2327,12 +2362,12 @@ function ModelsSettingsPanel({
                               </span>
                               {isActive ? (
                                 <Badge variant="secondary" className="text-muted-foreground">
-                                  当前推理
+                                  {t('settings.currentInference')}
                                 </Badge>
                               ) : null}
                               {isImageDefault ? (
                                 <Badge variant="secondary" className="text-muted-foreground">
-                                  当前图片生成
+                                  {t('settings.currentImageGen')}
                                 </Badge>
                               ) : null}
                               {model.capabilities?.map((capability) => (
@@ -2399,17 +2434,17 @@ function ModelsSettingsPanel({
                           </span>
                           {isActive ? (
                             <Badge variant="secondary" className="text-muted-foreground">
-                              当前推理
+                              {t('settings.currentInference')}
                             </Badge>
                           ) : null}
                           {isImageDefault ? (
                             <Badge variant="secondary" className="text-muted-foreground">
-                              当前图片生成
+                              {t('settings.currentImageGen')}
                             </Badge>
                           ) : null}
                           {model.keyConfigured ? (
                             <Badge variant="secondary" className="text-muted-foreground">
-                              已存密钥
+                              {t('settings.keySaved')}
                             </Badge>
                           ) : null}
                           {model.capabilities?.map((capability) => (
@@ -2432,13 +2467,13 @@ function ModelsSettingsPanel({
                           size="sm"
                           className="shrink-0"
                           disabled={modelsBusy || modelsPreviewBusy || isActive}
-                          title={isActive ? "不能删除当前模型" : undefined}
+                          title={isActive ? t('settings.cannotDeleteCurrentModel') : undefined}
                           onClick={(event) => {
                             event.stopPropagation();
                             setDeleteTarget(model.name);
                           }}
                         >
-                          删除
+                          {t('common.delete')}
                         </Button>
                       </div>
                     </div>
@@ -2460,9 +2495,9 @@ function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>设为默认</DialogTitle>
+            <DialogTitle>{t('settings.setAsDefault')}</DialogTitle>
             <DialogDescription>
-              为模型「{modelDefaultsDialogModel?.name ?? ""}」选择要承担的默认角色。
+              {t('settings.setAsDefaultDescription', { name: modelDefaultsDialogModel?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
@@ -2484,12 +2519,12 @@ function ModelsSettingsPanel({
                 />
                 <div className="grid gap-1.5">
                   <Label htmlFor="model-default-active" className="text-sm font-medium text-foreground">
-                    当前推理模型
+                    {t('settings.activeModelLabel')}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
                     {isModelDefaultsDialogModelActive
-                      ? "当前必须保留一个推理模型；如需切换，请到目标模型上设置。"
-                      : "用于对话、规划与工具编排。"}
+                      ? t('settings.activeModelKeepHint')
+                      : t('settings.activeModelUsage')}
                   </p>
                 </div>
               </div>
@@ -2515,17 +2550,17 @@ function ModelsSettingsPanel({
                     htmlFor="model-default-image-generation"
                     className="text-sm font-medium text-foreground"
                   >
-                    默认图片生成模型
+                    {t('settings.imageGenModelLabel')}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    用于 generate_image 等图片输出；取消后将不再指定默认图片模型。
+                    {t('settings.imageGenModelUsage')}
                   </p>
                 </div>
               </div>
             ) : null}
             {!canAssignActiveRole && !canAssignImageGenerationRole ? (
               <div className="rounded-lg border border-dashed border-dialog-panel-border px-3 py-4 text-sm text-muted-foreground">
-                这个模型当前没有可设置的默认角色。
+                {t('settings.noDefaultRolesForModel')}
               </div>
             ) : null}
           </div>
@@ -2537,7 +2572,7 @@ function ModelsSettingsPanel({
               onClick={closeModelDefaultsDialog}
               disabled={modelsBusy || modelsPreviewBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -2554,7 +2589,7 @@ function ModelsSettingsPanel({
               }}
             >
               {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              保存
+              {t('common.save')}
             </Button>
           </div>
         </DialogContent>
@@ -2570,9 +2605,9 @@ function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>删除模型</DialogTitle>
+            <DialogTitle>{t('settings.deleteModel')}</DialogTitle>
             <DialogDescription>
-              确定删除模型「{deleteTarget ?? ""}」？配置与单独保存的密钥将一并移除。
+              {t('settings.deleteModelConfirm', { name: deleteTarget ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
@@ -2583,7 +2618,7 @@ function ModelsSettingsPanel({
               onClick={() => setDeleteTarget(null)}
               disabled={modelsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -2606,7 +2641,7 @@ function ModelsSettingsPanel({
               }}
             >
               {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              删除
+              {t('common.delete')}
             </Button>
           </div>
         </DialogContent>
@@ -2622,10 +2657,9 @@ function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>删除提供商模型组</DialogTitle>
+            <DialogTitle>{t('settings.deleteProviderGroup')}</DialogTitle>
             <DialogDescription>
-              确定删除「{deleteGroupTarget ? providerLabel(deleteGroupTarget) : ""}」下的全部模型？
-              配置与密钥将一并移除。
+              {t('settings.deleteProviderGroupConfirm', { provider: deleteGroupTarget ? providerLabel(deleteGroupTarget) : '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
@@ -2636,7 +2670,7 @@ function ModelsSettingsPanel({
               onClick={() => setDeleteGroupTarget(null)}
               disabled={modelsBusy}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -2659,7 +2693,7 @@ function ModelsSettingsPanel({
               }}
             >
               {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              删除整组
+              {t('settings.deleteGroup')}
             </Button>
           </div>
         </DialogContent>
@@ -2681,20 +2715,20 @@ function ModelsSettingsPanel({
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>选择提供商</DialogTitle>
-            <DialogDescription>选择后填写连接信息。</DialogDescription>
+            <DialogTitle>{t('settings.selectProvider')}</DialogTitle>
+            <DialogDescription>{t('settings.selectProviderDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <Input
               value={providerQuery}
               onChange={(e) => setProviderQuery(e.target.value)}
-              placeholder="搜索"
+              placeholder={t('common.search')}
               autoComplete="off"
             />
             <ScrollArea className="h-56 rounded-md border border-dialog-panel-border">
               <div className="p-1">
                 {filteredProviders.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-sm text-muted-foreground">无匹配项</p>
+                  <p className="px-2 py-6 text-center text-sm text-muted-foreground">{t('app.noMatches')}</p>
                 ) : (
                   filteredProviders.map((row) => (
                     <button
@@ -2730,21 +2764,21 @@ function ModelsSettingsPanel({
         >
           <DialogHeader>
             <DialogTitle>
-              {selectedProvider === "custom" ? "自定义连接" : selectedProviderLabel}
+              {selectedProvider === "custom" ? t('settings.customConnection') : selectedProviderLabel}
             </DialogTitle>
             <DialogDescription>
               {selectedProvider === "custom"
-                ? "先选择 API 类型，再填写端点与密钥。"
+                ? t('settings.customConnectionDescription')
                 : providerSupportsConnectTransportPicker(selectedProvider)
-                  ? "先选择 API 类型，再填写 API Key；批量导入的模型会沿用该类型。"
-                  : "填写 API Key 即可连接。"}
+                  ? t('settings.providerConnectionDescription')
+                  : t('settings.providerSimpleDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3 py-1">
             {providerSupportsConnectTransportPicker(selectedProvider) ? (
               <div className="grid gap-2">
-                <Label htmlFor="connect-api-transport">API 类型</Label>
+                <Label htmlFor="connect-api-transport">{t('settings.apiType')}</Label>
                 <Select
                   value={connectTransportKind}
                   onValueChange={(value) => setConnectTransportKind(value as DesktopTransportKind)}
@@ -2770,10 +2804,10 @@ function ModelsSettingsPanel({
             ) : null}
             {selectedProvider === "custom" ? (
               <div className="grid gap-2">
-                <Label>模型添加方式</Label>
+                <Label>{t('settings.modelAddMode')}</Label>
                 <div
                   role="tablist"
-                  aria-label="模型添加方式"
+                  aria-label={t('settings.modelAddMode')}
                   className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
                 >
                   {(["single", "bulk"] as const).map((value) => (
@@ -2791,7 +2825,7 @@ function ModelsSettingsPanel({
                       disabled={modelsBusy || modelsPreviewBusy}
                       onClick={() => setCustomConnectMode(value)}
                     >
-                      {value === "single" ? "仅添加单个" : "添加所有"}
+                      {value === "single" ? t('settings.addSingle') : t('settings.addAll')}
                     </button>
                   ))}
                 </div>
@@ -2799,19 +2833,19 @@ function ModelsSettingsPanel({
             ) : null}
             {selectedProvider === "custom" && customConnectMode === "single" ? (
               <div className="grid gap-2">
-                <Label htmlFor="connect-model-name">模型名称</Label>
+                <Label htmlFor="connect-model-name">{t('settings.modelName')}</Label>
                 <Input
                   id="connect-model-name"
                   value={connectName}
                   onChange={(e) => setConnectName(e.target.value)}
-                  placeholder="例如 my-model"
+                  placeholder={t('settings.modelNameExample')}
                   autoComplete="off"
                 />
               </div>
             ) : null}
             {selectedProvider === "custom" && customConnectMode === "single" ? (
               <div className="grid gap-2">
-                <Label>模型能力</Label>
+                <Label>{t('settings.modelCapabilities')}</Label>
                 <ModelCapabilitiesCombobox
                   value={connectCapabilities}
                   disabled={modelsBusy || modelsPreviewBusy}
@@ -2821,16 +2855,16 @@ function ModelsSettingsPanel({
             ) : null}
             {selectedProvider === "custom" ? (
               <div className="grid gap-2">
-                <Label htmlFor="connect-api-base">端点</Label>
+                <Label htmlFor="connect-api-base">{t('settings.endpoint')}</Label>
                 <Input
                   id="connect-api-base"
                   value={connectApiBase}
                   onChange={(e) => setConnectApiBase(e.target.value)}
-                  placeholder="可选"
+                  placeholder={t('settings.optional')}
                   autoComplete="off"
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
-                  留空时默认使用 {effectiveApiBase}。
+                  {t('settings.defaultEndpointHint', { endpoint: effectiveApiBase })}
                 </p>
               </div>
             ) : null}
@@ -2841,7 +2875,7 @@ function ModelsSettingsPanel({
                 type="password"
                 value={connectApiKey}
                 onChange={(e) => setConnectApiKey(e.target.value)}
-                placeholder="输入密钥"
+                placeholder={t('settings.enterApiKey')}
                 autoComplete="off"
               />
             </div>
@@ -2853,7 +2887,7 @@ function ModelsSettingsPanel({
                 onClick={() => setConnectDialogOpen(false)}
                 disabled={modelsBusy || modelsPreviewBusy}
               >
-                取消
+                {t('common.cancel')}
               </Button>
               <div className="flex flex-col-reverse gap-2 sm:flex-row">
                 {selectedProvider === "custom" && customConnectMode === "single" ? (
@@ -2877,7 +2911,7 @@ function ModelsSettingsPanel({
                     }}
                   >
                     {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                    添加此模型
+                    {t('settings.addThisModel')}
                   </Button>
                 ) : null}
                 {selectedProvider === "custom" && customConnectMode === "bulk" ? (
@@ -2900,7 +2934,7 @@ function ModelsSettingsPanel({
                     ) : (
                       <RefreshCw className="size-4" />
                     )}
-                    添加提供商
+                    {t('settings.addProvider')}
                   </Button>
                 ) : null}
                 {selectedProvider !== null && selectedProvider !== "custom" ? (
@@ -2921,7 +2955,7 @@ function ModelsSettingsPanel({
                     {modelsBusy || modelsPreviewBusy ? (
                       <LoaderCircle className="size-4 animate-spin" />
                     ) : null}
-                    添加提供商
+                    {t('settings.addProvider')}
                   </Button>
                 ) : null}
               </div>
@@ -2945,21 +2979,22 @@ function AppearanceSettingsPanel({
   SettingsViewProps,
   "theme" | "onThemeChange" | "font" | "onFontChange" | "settings" | "isElectronShell" | "onSavePatch"
 >) {
+  const { t } = useTranslation();
   return (
     <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
       <SettingsRow
-        label="主题"
-        description="立即应用到界面；与宿主配置无关。"
+        label={t('settings.theme')}
+        description={t('settings.themeDescription')}
         htmlFor="settings-theme-select"
       >
         <Select value={theme} onValueChange={(v) => onThemeChange(v as ThemePreference)}>
           <SelectTrigger id="settings-theme-select" className="w-full sm:min-w-[12rem]">
-            <SelectValue placeholder="选择主题" />
+            <SelectValue placeholder={t('settings.selectTheme')} />
           </SelectTrigger>
           <SelectContent>
             {themeSelectOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -2967,16 +3002,16 @@ function AppearanceSettingsPanel({
       </SettingsRow>
 
       <SettingsRow
-        label="字体"
-        description="立即应用到界面；默认与 shadcn/ui 一致（Geist）。"
+        label={t('settings.font')}
+        description={t('settings.fontDescription')}
         htmlFor="settings-font-select"
       >
         <FontSelect id="settings-font-select" value={font} onValueChange={onFontChange} />
       </SettingsRow>
 
       <SettingsRow
-        label="Windows 云母背景"
-        description={isElectronShell ? "桌面窗口材质；关闭后为实色背景。" : "当前宿主不支持此选项。"}
+        label={t('settings.windowsMica')}
+        description={isElectronShell ? t('settings.windowsMicaDescription') : t('settings.windowsMicaUnsupported')}
         htmlFor="settings-windows-mica"
       >
         {isElectronShell ? (
@@ -3003,6 +3038,7 @@ function DreamSettingsPanel({
   onSavePatch,
   onListDreamsOverview,
 }: Pick<SettingsViewProps, "theme" | "settings" | "snapshot" | "onSavePatch" | "onListDreamsOverview">) {
+  const { t } = useTranslation();
   const models = snapshot?.config.models ?? [];
   const collector = snapshot?.dreams.collector;
   const disabled = !settings.dreamEnabled;
@@ -3058,8 +3094,8 @@ function DreamSettingsPanel({
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
         <SettingsRow
-          label="梦境"
-          description="后台汇总当前工作区与分支的近期会话动向。"
+          label={t('settings.dreams')}
+          description={t('settings.dreamDescription')}
           htmlFor="settings-dream-enabled"
         >
           <div className="flex items-center justify-end gap-3">
@@ -3074,8 +3110,8 @@ function DreamSettingsPanel({
         </SettingsRow>
 
         <SettingsRow
-          label="收集者模型"
-          description="用于后台摘要；未选择时不会启动收集。"
+          label={t('settings.collectorModel')}
+          description={t('settings.collectorModelDescription')}
           htmlFor="settings-dream-model"
         >
           <Select
@@ -3086,10 +3122,10 @@ function DreamSettingsPanel({
             }
           >
             <SelectTrigger id="settings-dream-model" className="w-full sm:min-w-[14rem]">
-              <SelectValue placeholder="选择模型" />
+              <SelectValue placeholder={t('settings.selectModel')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none">未选择</SelectItem>
+              <SelectItem value="__none">{t('settings.notSelected')}</SelectItem>
               {models.map((model) => (
                 <SelectItem key={model.name} value={model.name}>
                   {model.name}
@@ -3100,8 +3136,8 @@ function DreamSettingsPanel({
         </SettingsRow>
 
         <SettingsRow
-          label="调试模式"
-          description="后续收集会话保留为可追踪记录。"
+          label={t('settings.debugMode')}
+          description={t('settings.debugModeDescription')}
           htmlFor="settings-dream-debug"
         >
           <div className="flex justify-end">
@@ -3116,27 +3152,27 @@ function DreamSettingsPanel({
         </SettingsRow>
 
         <div className="py-4">
-          <p className="text-sm font-medium text-foreground">收集状态</p>
+          <p className="text-sm font-medium text-foreground">{t('settings.collectorStatus')}</p>
           <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:text-right">
             <p>
-              状态：
+              {t('settings.status')}
               <span className="font-medium text-foreground">
                 {dreamCollectorStateLabel(collector?.state ?? "disabled")}
               </span>
             </p>
             <p>
-              待处理：{collector?.pendingCount ?? 0} · 已处理：{collector?.processedCount ?? 0}
+              {t('settings.pendingProcessed', { pending: collector?.pendingCount ?? 0, processed: collector?.processedCount ?? 0 })}
             </p>
-            <p>上次运行：{formatSettingsTime(collector?.lastRunAtUnixMs)}</p>
-            <p>上次成功：{formatSettingsTime(collector?.lastSuccessAtUnixMs)}</p>
+            <p>{t('settings.lastRun')}{formatSettingsTime(collector?.lastRunAtUnixMs)}</p>
+            <p>{t('settings.lastSuccess')}{formatSettingsTime(collector?.lastSuccessAtUnixMs)}</p>
             {collector?.backoffUntilUnixMs ? (
-              <p>退避到：{formatSettingsTime(collector.backoffUntilUnixMs)}</p>
+              <p>{t('settings.backoffUntil')}{formatSettingsTime(collector.backoffUntilUnixMs)}</p>
             ) : null}
             {collector?.lastError ? (
               <p className="break-words text-destructive">{collector.lastError}</p>
             ) : null}
             {settings.dreamEnabled && !settings.dreamCollectorModel.trim() ? (
-              <p className="text-amber-600 dark:text-amber-400">请选择收集者模型。</p>
+              <p className="text-amber-600 dark:text-amber-400">{t('settings.selectCollectorModelHint')}</p>
             ) : null}
           </div>
         </div>
@@ -3183,6 +3219,7 @@ export function SettingsView({
   onGenerateSkillNavigate,
   onStartCompactionUiDemo,
 }: SettingsViewProps) {
+  const { t } = useTranslation();
   const extensionSettingsItem = extensionSettingsId
     ? snapshot?.extensionsList.find((item) => item.id === extensionSettingsId)
     : undefined;
@@ -3194,7 +3231,7 @@ export function SettingsView({
           <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
             {!extensionSettingsItem && tab !== "models" && tab !== "skills" && tab !== "mcps" && tab !== "extensions" ? (
               <h1 className="mb-6 text-xl font-semibold tracking-tight text-foreground">
-                {settingsPageTitle[tab]}
+                {t(settingsPageTitleKey[tab])}
               </h1>
             ) : null}
 

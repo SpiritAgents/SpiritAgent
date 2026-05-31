@@ -1,5 +1,6 @@
 import type { ApprovalLevel } from "@spirit-agent/host-internal";
 import { ChevronDown, ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
   DropdownMenu,
@@ -8,15 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-
-const APPROVAL_LEVEL_OPTIONS: Array<{ value: ApprovalLevel; label: string }> = [
-  { value: "default", label: "默认审批" },
-  { value: "full-approval", label: "绕过审批" },
-];
-
-function approvalLevelLabel(level: ApprovalLevel): string {
-  return APPROVAL_LEVEL_OPTIONS.find((option) => option.value === level)?.label ?? "默认审批";
-}
 
 type ApprovalLevelMenuProps = {
   approvalLevel: ApprovalLevel;
@@ -29,15 +21,20 @@ export function ApprovalLevelMenu({
   disabled = false,
   onApprovalLevelChange,
 }: ApprovalLevelMenuProps) {
+  const { t } = useTranslation();
+  const options = [
+    { value: "default" as ApprovalLevel, label: t('composer.approvalDefault') },
+    { value: "full-approval" as ApprovalLevel, label: t('composer.approvalBypass') },
+  ];
+  const label = options.find((option) => option.value === approvalLevel)?.label ?? t('composer.approvalDefault');
   const isFullApproval = approvalLevel === "full-approval";
-  const label = approvalLevelLabel(approvalLevel);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="审批级别"
+          aria-label={t('composer.approvalLevel')}
           disabled={disabled}
           className={cn(
             "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -61,7 +58,7 @@ export function ApprovalLevelMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="min-w-[8.5rem] text-xs">
-        {APPROVAL_LEVEL_OPTIONS.map((option) => (
+        {options.map((option) => (
           <DropdownMenuItem
             key={option.value}
             onSelect={() => onApprovalLevelChange(option.value)}

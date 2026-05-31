@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from '@/lib/i18n';
 
 import type { SettingsFormState } from "@/components/settings-view";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -137,7 +139,7 @@ function isCheckoutBlockedByLocalChanges(error: unknown): boolean {
   const message = describeError(error);
   return /local changes to the following files would be overwritten by checkout/i.test(message)
     || /please commit your changes or stash them before you switch branches/i.test(message)
-    || message.includes("工作区有未提交更改，无法切换分支");
+    || message.includes(i18n.t('error.uncommittedChangesBlockCheckout'));
 }
 
 function sanitizeGitErrorMessage(error: unknown): string {
@@ -230,7 +232,7 @@ function buildAskQuestionsResult(
 
   if (missingRequired) {
     return {
-      error: `请先完成必答问题：${missingRequired.title}`,
+      error: i18n.t('error.completeRequiredQuestion', { title: missingRequired.title }),
     };
   }
 
@@ -537,7 +539,7 @@ export function useDesktopRuntime() {
   const rememberWorkspaceRoot = useCallback(
     async (workspaceRoot: string): Promise<boolean> => {
       if (!api?.rememberWorkspaceRoot) {
-        setRuntimeError("当前宿主不支持添加工作区。");
+        setRuntimeError(i18n.t('error.hostNotSupportAddWorkspace'));
         return false;
       }
 
@@ -559,7 +561,7 @@ export function useDesktopRuntime() {
 
   const pickWorkspaceDirectory = useCallback(async (): Promise<string | null> => {
     if (!api?.pickWorkspaceDirectory) {
-      setRuntimeError("当前宿主不支持选择工作区目录。");
+      setRuntimeError(i18n.t('error.hostNotSupportPickWorkspace'));
       return null;
     }
 
@@ -573,7 +575,7 @@ export function useDesktopRuntime() {
 
   const pickLocalFile = useCallback(async (): Promise<string | null> => {
     if (!api?.pickLocalFile) {
-      setRuntimeError("当前宿主不支持选择本地文件。");
+      setRuntimeError(i18n.t('error.hostNotSupportPickFile'));
       return null;
     }
 
@@ -631,7 +633,7 @@ export function useDesktopRuntime() {
   const saveLocalImageAs = useCallback(
     async (filePath: string): Promise<boolean> => {
       if (!api?.saveLocalImageAs) {
-        setRuntimeError("当前宿主不支持另存图片。");
+        setRuntimeError(i18n.t('error.hostNotSupportSaveImage'));
         return false;
       }
 
@@ -671,7 +673,7 @@ export function useDesktopRuntime() {
   const pairWebHost = useCallback(
     async (code: string): Promise<boolean> => {
       if (!api?.pairWebHost) {
-        setRuntimeError("当前宿主不支持 Web 配对。");
+        setRuntimeError(i18n.t('error.hostNotSupportWebPair'));
         return false;
       }
 
@@ -926,7 +928,7 @@ export function useDesktopRuntime() {
   const previewModels = useCallback(
     async (request: PreviewModelsRequest): Promise<PreviewModelsResponse> => {
       if (!api) {
-        throw new Error("宿主未就绪。");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
       setBusyAction("modelsPreview");
       try {
@@ -1078,7 +1080,7 @@ export function useDesktopRuntime() {
   const inspectMcpServer = useCallback(
     async (name: string): Promise<DesktopMcpServerInspection> => {
       if (!api) {
-        throw new Error("当前宿主尚未就绪。");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
       return api.inspectMcpServer(name);
     },
@@ -1132,7 +1134,7 @@ export function useDesktopRuntime() {
   const getMarketplaceExtensionDetail = useCallback(
     async (extensionId: string): Promise<DesktopMarketplaceDetail> => {
       if (!api) {
-        throw new Error("当前宿主尚未就绪。");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
 
       setBusyAction("marketplace");
@@ -1154,7 +1156,7 @@ export function useDesktopRuntime() {
   const getMarketplaceExtensionReadme = useCallback(
     async (extensionId: string): Promise<string> => {
       if (!api) {
-        throw new Error("当前宿主尚未就绪。");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
 
       setBusyAction("marketplace");
@@ -1178,7 +1180,7 @@ export function useDesktopRuntime() {
       request: PrepareMarketplaceExtensionInstallRequest,
     ): Promise<DesktopMarketplacePreparedInstall> => {
       if (!api) {
-        throw new Error("当前宿主尚未就绪。");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
 
       setBusyAction("marketplace");
@@ -1430,11 +1432,11 @@ export function useDesktopRuntime() {
     }
     if (isLogSessionSlashInput(text)) {
       if (hasLocalFiles) {
-        setRuntimeError("附加文件暂不支持与 Slash 指令一起发送。");
+        setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
         return false;
       }
       if (!api.exportSessionLog) {
-        setRuntimeError("当前宿主不支持 /log-session。");
+        setRuntimeError(i18n.t('error.hostNotSupportLogSession'));
         return false;
       }
 
@@ -1455,7 +1457,7 @@ export function useDesktopRuntime() {
     }
     if (isCompactSlashInput(text)) {
       if (hasLocalFiles) {
-        setRuntimeError("附加文件暂不支持与 Slash 指令一起发送。");
+        setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
         return false;
       }
 
@@ -1475,7 +1477,7 @@ export function useDesktopRuntime() {
       }
     }
     if (snapshot?.activeSession?.readOnly) {
-      setRuntimeError("当前调试会话为只读，无法发送消息。");
+      setRuntimeError(i18n.t('error.readonlySessionSend'));
       return false;
     }
 
@@ -1484,7 +1486,7 @@ export function useDesktopRuntime() {
       !snapshot.conversation.pendingToolApproval &&
       !snapshot.conversation.pendingQuestions;
     if (snapshot?.conversation.isBusy && !interruptible) {
-      setRuntimeError("当前正在等待审批或问卷，无法直接发送新消息。");
+      setRuntimeError(i18n.t('error.pendingApprovalSend'));
       return false;
     }
 
@@ -1503,7 +1505,7 @@ export function useDesktopRuntime() {
           isCompactSlashInput(text) ||
           skillSlash)
       ) {
-        setRuntimeError("附加文件暂不支持与 Slash 指令一起发送。");
+        setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
         return false;
       }
       const next = isCreateSkillSlashInput(text)
@@ -1727,7 +1729,7 @@ export function useDesktopRuntime() {
     }
 
     if (decision.kind === "guidance" && !decision.userMessage.trim()) {
-      setRuntimeError("请输入要发给模型的说明。");
+      setRuntimeError(i18n.t('error.enterGuidance'));
       return;
     }
 
@@ -1751,7 +1753,7 @@ export function useDesktopRuntime() {
 
     const built = buildAskQuestionsResult(pendingQuestions.request, questionDrafts);
     if (!built.result) {
-      setQuestionError(built.error ?? "请先完成问卷。");
+      setQuestionError(built.error ?? i18n.t('error.completeQuestionnaire'));
       return;
     }
 
@@ -1842,7 +1844,7 @@ export function useDesktopRuntime() {
   const readWorkspaceTextFile = useCallback(
     async (relativePath: string): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
-        throw new Error("宿主未就绪");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
       return api.readWorkspaceTextFile(relativePath);
     },
@@ -1852,7 +1854,7 @@ export function useDesktopRuntime() {
   const writeWorkspaceTextFile = useCallback(
     async (request: WriteWorkspaceTextFileRequest): Promise<void> => {
       if (!api) {
-        throw new Error("宿主未就绪");
+        throw new Error(i18n.t('error.hostNotReady'));
       }
       return api.writeWorkspaceTextFile(request);
     },
@@ -1904,7 +1906,7 @@ export function useDesktopRuntime() {
           ? kind === "electron"
             ? "Electron Desktop"
             : "localhost Web Host"
-          : "连接宿主中…",
+          : i18n.t('common.connectingHost'),
     };
   }, [hostError, hostReady, kind, snapshot]);
 

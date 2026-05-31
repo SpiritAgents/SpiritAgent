@@ -1,5 +1,6 @@
 import type { WorkLocationKind } from "@spirit-agent/host-internal";
 import { ChevronDown, FolderGit2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ export function WorkLocationMenu({
   disabled = false,
   onWorkLocationChange,
 }: WorkLocationMenuProps) {
+  const { t } = useTranslation();
   const label = workLocationLabel(workLocation);
 
   return (
@@ -39,7 +41,7 @@ export function WorkLocationMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="工作地点"
+          aria-label={t('composer.workLocation')}
           disabled={disabled}
           className={cn(
             "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",

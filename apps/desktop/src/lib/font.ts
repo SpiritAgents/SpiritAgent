@@ -1,7 +1,7 @@
 export const FONT_STORAGE_KEY = "spirit-agent-desktop-font" as const;
 export const SPIRIT_UI_FONT_STACK_VAR = "--spirit-ui-font-stack" as const;
 export const DEFAULT_FONT_ID = "geist" as const;
-export const DEFAULT_FONT_LABEL = "Geist（默认）" as const;
+export const DEFAULT_FONT_LABEL = "Geist" as const;
 
 export type FontPreference = typeof DEFAULT_FONT_ID | string;
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { File } from 'lucide-react'
 
@@ -29,6 +30,7 @@ export function WorkspaceFileReferenceMenu({
   onSelectIndex,
   onApplySuggestion,
 }: WorkspaceFileReferenceMenuProps) {
+  const { t } = useTranslation();
   const scrollViewportRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export function WorkspaceFileReferenceMenu({
   return (
     <Command
       shouldFilter={false}
-      aria-label="工作区文件引用候选"
+      aria-label={t('workspace.fileReferenceCandidates')}
       className="overflow-hidden rounded-2xl border border-border/50 bg-background/85 p-1.5 shadow-lg backdrop-blur-xl dark:border-white/12 supports-[backdrop-filter]:bg-background/70"
     >
       <div
@@ -82,7 +84,7 @@ export function WorkspaceFileReferenceMenu({
             </CommandItem>
           ))}
           <CommandEmpty className="px-3 py-2.5 text-left text-sm text-muted-foreground">
-            没有匹配项
+            {t('app.noMatches')}
           </CommandEmpty>
         </CommandList>
       </div>

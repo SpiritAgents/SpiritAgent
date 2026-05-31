@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ChevronDown, GitBranch } from "lucide-react";
 
 import {
@@ -24,16 +25,17 @@ export function BranchSelectMenu({
   disabled = false,
   onBranchChange,
 }: BranchSelectMenuProps) {
+  const { t } = useTranslation();
   const isRepository = branches.length > 0 || Boolean(currentBranch);
   const activeBranch = selectedBranch ?? currentBranch;
-  const label = isRepository ? (activeBranch ?? "无分支") : "非 Git 仓库";
+  const label = isRepository ? (activeBranch ?? t('error.noBranch')) : t('error.notGitRepo');
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="选择分支"
+          aria-label={t('error.selectBranch')}
           disabled={disabled || !isRepository}
           className={cn(
             "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
