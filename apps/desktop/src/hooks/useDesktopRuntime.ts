@@ -291,6 +291,8 @@ export function useDesktopRuntime() {
   const [composerLocalFileAttachments, setComposerLocalFileAttachments] = useState<
     ComposerLocalFileAttachmentView[]
   >([]);
+  const appliedConversationRevisionRef = useRef(0);
+  const appliedComposerSessionKeyRef = useRef("");
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
@@ -408,6 +410,14 @@ export function useDesktopRuntime() {
   ]);
 
   const applySnapshot = useCallback((next: DesktopSnapshot) => {
+    const revision = next.conversation.revision ?? 0;
+    const sessionKey = next.composerSessionKey;
+    const sameSession = sessionKey === appliedComposerSessionKeyRef.current;
+    if (sameSession && revision < appliedConversationRevisionRef.current) {
+      return;
+    }
+    appliedComposerSessionKeyRef.current = sessionKey;
+    appliedConversationRevisionRef.current = revision;
     setSnapshot(next);
     setRuntimeError(next.runtimeError ?? "");
     setSettings((current) => {

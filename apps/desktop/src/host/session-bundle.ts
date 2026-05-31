@@ -54,6 +54,8 @@ export interface SessionBundle {
   /** Isolated TODO storage key until the session is saved to a real chat file. */
   todoSessionScopeKey?: string;
   cachedTodoSnapshot?: import('../types.js').ConversationTodoSnapshot;
+  /** Bumped on rewind restore; exposed as `conversation.revision` in snapshots. */
+  conversationRevision: number;
 }
 
 export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {
@@ -80,6 +82,7 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
     todoSessionScopeKey: createTodoSessionScopeKey(),
+    conversationRevision: 0,
   };
 }
 
@@ -120,6 +123,7 @@ export function sessionBundleFromRestored(
     nextTimelineAssistantSegmentKind: 'initial',
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
+    conversationRevision: 0,
   };
 }
 
@@ -146,4 +150,5 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.deferredRuntimeHostEvents = [];
   bundle.cachedTodoSnapshot = undefined;
   bundle.todoSessionScopeKey = createTodoSessionScopeKey();
+  bundle.conversationRevision = 0;
 }

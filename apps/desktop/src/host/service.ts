@@ -3171,6 +3171,7 @@ class DesktopHostService {
         ?? emptyMcpStatusSnapshot(),
       mcpServers: listDesktopMcpServersFromDisk(),
       conversation: {
+        revision: activeBundle.conversationRevision,
         messages: conversationMessages,
         loopEnabled: this.activeBundle().loopEnabled,
         approvalLevel: this.activeBundle().approvalLevel,
@@ -4213,6 +4214,7 @@ class DesktopHostService {
     pruneRewindMetadataAfterCheckpoint(this.activeBundle().rewind, checkpointSequence);
     this.activeBundle().pendingUnboundFileChangeIds = [];
     this.activeBundle().messageIdCounter = nextMessageIdFromMessages(this.activeBundle().messages);
+    this.activeBundle().conversationRevision += 1;
     this.resetStreamingPlacementState(true);
     this.requireRuntime().replaceFromArchive(archive);
   }
