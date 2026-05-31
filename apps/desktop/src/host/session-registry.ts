@@ -148,7 +148,14 @@ export class SessionRegistry {
     if (!bundle) {
       throw new Error('会话不存在或已卸载。');
     }
-    this.rekeyBundle(bundle, path.resolve(bundle.activeSession?.filePath ?? bundle.id));
+    return this.activateExisting(bundle);
+  }
+
+  /** Switch foreground to an already-loaded bundle without reloading from disk. */
+  activateExisting(bundle: SessionBundle): SessionBundle {
+    const resolved = path.resolve(bundle.activeSession?.filePath ?? bundle.id);
+    this.rekeyBundle(bundle, resolved);
+    this.activeId = resolved;
     return bundle;
   }
 
