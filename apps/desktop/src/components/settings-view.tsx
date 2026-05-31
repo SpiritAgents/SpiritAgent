@@ -201,6 +201,12 @@ const customTransportOptions: Array<{
     label: "Messages API",
     summary: "x-api-key + anthropic-version；Messages API（`/messages`、`/models`）。",
   },
+  {
+    value: "open-responses",
+    label: "Open Responses API",
+    summary:
+      "Open Responses 协议（`/responses`）。provider=openai 时走 OpenAI 官方 Responses；custom 时走兼容实现。",
+  },
 ];
 
 function resolveCustomConnectApiBase(
@@ -211,9 +217,15 @@ function resolveCustomConnectApiBase(
   if (trimmed.length > 0) {
     return trimmed;
   }
-  return transportKind === "anthropic"
-    ? resolveConnectApiBase("anthropic", "")
-    : resolveConnectApiBase("custom", "");
+  if (transportKind === "anthropic") {
+    return resolveConnectApiBase("anthropic", "");
+  }
+
+  if (transportKind === "open-responses") {
+    return resolveConnectApiBase("openai", "");
+  }
+
+  return resolveConnectApiBase("custom", "");
 }
 
 function modelCapabilityLabel(value: DesktopModelCapability): string {

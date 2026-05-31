@@ -1746,6 +1746,20 @@ impl TsBridgeRuntime {
                     "baseUrl": api_base,
                     "workspaceRoot": self.workspace_root,
                 })
+            } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses {
+                let responses_provider = match active.provider {
+                    Some(crate::model_registry::ModelProvider::Openai) => "openai",
+                    _ => "open-responses-compatible",
+                };
+                serde_json::json!({
+                    "transportKind": "open-responses",
+                    "responsesProvider": responses_provider,
+                    "apiKey": api_key,
+                    "model": active.name,
+                    "baseUrl": api_base,
+                    "workspaceRoot": self.workspace_root,
+                    "store": false,
+                })
             } else {
                 serde_json::json!({
                     "apiKey": api_key,
@@ -1765,6 +1779,20 @@ impl TsBridgeRuntime {
             if let Some(effort) = anthropic_effort_value(normalized_reasoning_effort.as_deref()) {
                 if let Some(obj) = transport.as_object_mut() {
                     obj.insert("effort".to_string(), json!(effort));
+                }
+            }
+        } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses {
+            if let Some(provider) = active.provider {
+                if let Some(obj) = transport.as_object_mut() {
+                    obj.insert(
+                        "llmVendor".to_string(),
+                        json!(model_provider_vendor(provider)),
+                    );
+                }
+            }
+            if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref() {
+                if let Some(obj) = transport.as_object_mut() {
+                    obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
                 }
             }
         } else {

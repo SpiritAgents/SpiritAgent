@@ -20,7 +20,11 @@ function normalizeTransportKind(
   transportKind: DesktopTransportKind | undefined,
   provider?: DesktopModelProvider,
 ): DesktopTransportKind {
-  return transportKind ?? (provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+  if (transportKind) {
+    return transportKind;
+  }
+
+  return provider === 'anthropic' ? 'anthropic' : 'openai-compatible';
 }
 
 function catalogOrderIndex(

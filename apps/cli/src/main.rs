@@ -98,7 +98,7 @@ enum ModelAction {
         api_base: Option<String>,
         #[arg(long, value_parser = ["deepseek", "kimi", "minimax", "alibaba", "anthropic", "custom"])]
         provider: Option<String>,
-        #[arg(long, value_parser = ["openai-compatible", "anthropic"])]
+        #[arg(long, value_parser = ["openai-compatible", "open-responses", "anthropic"])]
         transport_kind: Option<String>,
         #[arg(long)]
         reasoning_effort: Option<String>,
