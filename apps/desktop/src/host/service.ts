@@ -251,6 +251,7 @@ import {
 import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import { buildDesktopSnapshot } from './snapshot.js';
 import {
+  applyToolCallSummaryCopy,
   displayTitleForTool,
   messageOrderDebugLevel,
   messageIndexIsInCurrentTurn,
@@ -1695,6 +1696,7 @@ class DesktopHostService {
       this.activeOrchestration().runtimeEvents.consumeCompletedTurnResult();
       this.activeOrchestration().runtimeEvents.syncPendingToolStates();
       this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      this.markInterruptedToolsInCurrentTurn();
       if (interruptedAssistantText || interruptedAssistantAuxText) {
         this.markAssistantMessageContinuable(interruptedAssistantText);
       } else {
@@ -3749,6 +3751,42 @@ class DesktopHostService {
     const kind = bundle.nextTimelineAssistantSegmentKind;
     bundle.nextTimelineAssistantSegmentKind = 'initial';
     return kind;
+  }
+
+  private markInterruptedToolsInCurrentTurn(): void {
+    const messages = this.activeBundle().messages;
+    let lastUser = -1;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index]?.role === 'user') {
+        lastUser = index;
+        break;
+      }
+    }
+    for (let index = lastUser + 1; index < messages.length; index += 1) {
+      const message = messages[index];
+      const tool = message?.tool;
+      if (!tool?.toolCallId) {
+        continue;
+      }
+      if (tool.phase !== 'preview' && tool.phase !== 'running' && tool.phase !== 'pending-approval') {
+        continue;
+      }
+      const headline = `已中断: ${tool.toolName}`;
+      const failedTool = applyToolCallSummaryCopy(
+        {
+          ...tool,
+          phase: 'failed',
+          headline,
+          detailLines: [],
+        },
+        { headline },
+      );
+      message.tool = failedTool;
+      this.activeBundle().messageTimeline.upsertToolMessage(tool.toolCallId, failedTool);
+      const orchestration = this.activeOrchestration();
+      orchestration.assistantMessages.upsertToolMessage(tool.toolCallId, failedTool, 0);
+    }
+    this.activeBundle().messages = this.desktopMessages();
   }
 
   private clearAssistantContinuationMarkers(): void {
