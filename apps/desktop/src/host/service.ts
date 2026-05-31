@@ -56,6 +56,7 @@ import {
   parsePresetModelProviderId,
   partitionModelsByProvider,
   PROVIDER_PRESET_API_BASE,
+  resolveProviderConnectApiBase,
   restoreHostFileChanges,
   type HostDreamScope,
   type HostTodoRecord,
@@ -4442,15 +4443,14 @@ function defaultApiBaseForTransport(
   provider?: DesktopModelProvider,
   transportKind?: DesktopTransportKind,
 ): string {
-  if (transportKind === 'anthropic' || provider === 'anthropic') {
-    return PROVIDER_PRESET_API_BASE.anthropic;
+  if (!provider) {
+    return DEFAULT_API_BASE;
   }
 
-  if (transportKind === 'open-responses' || provider === 'openai') {
-    return PROVIDER_PRESET_API_BASE.openai;
-  }
-
-  return DEFAULT_API_BASE;
+  return resolveProviderConnectApiBase(
+    provider,
+    transportKind ?? resolveDesktopTransportKind({ provider }),
+  );
 }
 
 function reasoningProviderForTransport(
