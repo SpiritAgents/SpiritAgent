@@ -96,6 +96,7 @@ import {
   assistantCompactionLive,
   shouldShowAssistantCompactionCollapsible,
 } from "@/lib/conversation-compaction-ui";
+import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import {
   shouldCollapseThinkingDuringToolPreview,
   shouldShowAssistantThinkingCollapsible,
@@ -1193,7 +1194,8 @@ function MessageCard({
   listIndex,
   compactAfterPrevious,
   tightenAfterPreviousMeta,
-  canContinue,
+  showContinueButton,
+  continueTarget,
   continueBusy,
   rewindText,
   rewindLocalFileAttachments,
@@ -1226,7 +1228,8 @@ function MessageCard({
   listIndex: number;
   compactAfterPrevious: boolean;
   tightenAfterPreviousMeta: boolean;
-  canContinue: boolean;
+  showContinueButton: boolean;
+  continueTarget?: ConversationMessageSnapshot;
   continueBusy: boolean;
   rewindText: string;
   rewindLocalFileAttachments: readonly ComposerLocalFileAttachmentView[];
@@ -1374,14 +1377,14 @@ function MessageCard({
             saveLocalImageAs={saveLocalImageAs}
           />
         ) : null}
-        {!isUser && canContinue ? (
+        {!isUser && showContinueButton && continueTarget ? (
           <div className="ml-auto flex max-w-[min(72%,22rem)] justify-end pt-1">
             <Button
               type="button"
               variant="outline"
               size="sm"
               className="h-8 px-4"
-              onClick={() => onContinue(message)}
+              onClick={() => onContinue(continueTarget)}
               disabled={continueBusy}
             >
               继续
@@ -1792,6 +1795,10 @@ export default function App() {
   const messagesDuringRewindSuppressed =
     runtime.busyAction === "rewind" ? [] : sessionMessages;
   const messages = compactionDemo.active ? compactionDemo.messages : messagesDuringRewindSuppressed;
+  const turnContinue = useMemo(
+    () => (compactionDemo.active ? undefined : resolveTurnContinuePresentation(messages)),
+    [compactionDemo.active, messages],
+  );
   const isEmptySession = !compactionDemo.active && sessionMessages.length === 0;
   const conversationPendingAuxState = compactionDemo.active
     ? compactionDemo.pendingAuxState
@@ -2758,11 +2765,12 @@ export default function App() {
                               message={message}
                               compactAfterPrevious={compactAfterPrevious}
                               tightenAfterPreviousMeta={tightenAfterPreviousMeta}
-                              canContinue={
-                                message.canContinue === true &&
+                              showContinueButton={
+                                turnContinue?.showContinueAtIndex === index &&
                                 !activeSessionReadOnly &&
                                 snapshot?.conversation.isBusy !== true
                               }
+                              continueTarget={turnContinue?.continuableMessage}
                               continueBusy={continueBusy}
                               rewindSelected={rewindDraft?.listIndex === index}
                               rewindText={
