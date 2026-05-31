@@ -1187,7 +1187,7 @@ function printHelp() {
   console.log('  --api-key <key>          覆盖 OPENAI_API_KEY');
   console.log('  --base-url <url>         覆盖 OPENAI_BASE_URL');
   console.log('  --model <id>             覆盖 OPENAI_MODEL；未传时直接读取环境变量');
-  console.log('  --llm-vendor <vendor>    例如 deepseek / kimi / custom');
+  console.log('  --llm-vendor <vendor>    例如 deepseek / moonshot-ai / custom');
   console.log('  --reasoning-effort <v>   例如 low / medium / high');
   console.log('  --output-dir <dir>       必填；本次 compare 的输出根目录，可为一个不存在的新路径或已存在的空目录');
   console.log('  --workspace-source <dir> 复制指定工作区目录到输出目录；默认使用空工作区');

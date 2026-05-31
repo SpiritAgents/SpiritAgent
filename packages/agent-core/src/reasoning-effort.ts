@@ -4,7 +4,7 @@ import type { OpenAiTransportConfig } from './openai/openai-compat.js';
 
 export type ModelReasoningProvider =
   | 'deepseek'
-  | 'kimi'
+  | 'moonshot-ai'
   | 'minimax'
   | 'alibaba'
   | 'anthropic'
@@ -26,7 +26,7 @@ export type OpenAiCompatibleReasoningEffort =
 
 export type DeepSeekV4ReasoningEffort = 'default' | 'high' | 'max';
 
-export type KimiReasoningEffort = 'default' | 'minimal' | 'low' | 'medium' | 'high';
+export type MoonshotReasoningEffort = 'default' | 'minimal' | 'low' | 'medium' | 'high';
 
 export type AnthropicReasoningEffort = 'default' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
@@ -63,8 +63,8 @@ export const DEEPSEEK_V4_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   { value: 'max', label: 'Max' },
 ];
 
-export const KIMI_REASONING_EFFORT_OPTIONS: ReadonlyArray<
-  ModelReasoningEffortOption<KimiReasoningEffort>
+export const MOONSHOT_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<MoonshotReasoningEffort>
 > = [
   { value: 'default', label: 'Default' },
   { value: 'minimal', label: 'Minimal' },
@@ -89,7 +89,7 @@ const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(['deepseek-v4-pro', 'deepseek-v4
 const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
   ...OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS,
   ...DEEPSEEK_V4_REASONING_EFFORT_OPTIONS,
-  ...KIMI_REASONING_EFFORT_OPTIONS,
+  ...MOONSHOT_REASONING_EFFORT_OPTIONS,
   ...ANTHROPIC_REASONING_EFFORT_OPTIONS,
 ]);
 
@@ -105,8 +105,8 @@ const DEEPSEEK_V4_REASONING_EFFORT_VALUES = new Set<string>(
   DEEPSEEK_V4_REASONING_EFFORT_OPTIONS.map((option) => option.value),
 );
 
-const KIMI_REASONING_EFFORT_VALUES = new Set<string>(
-  KIMI_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+const MOONSHOT_REASONING_EFFORT_VALUES = new Set<string>(
+  MOONSHOT_REASONING_EFFORT_OPTIONS.map((option) => option.value),
 );
 
 const ANTHROPIC_REASONING_EFFORT_VALUES = new Set<string>(
@@ -137,7 +137,7 @@ export function defaultModelReasoningEffort(
     return 'default';
   }
 
-  if (isKimiReasoningEffortModel(context)) {
+  if (isMoonshotReasoningEffortModel(context)) {
     return 'default';
   }
 
@@ -155,11 +155,11 @@ export function modelReasoningEffortOptions(
     return DEEPSEEK_V4_REASONING_EFFORT_OPTIONS;
   }
 
-  if (isKimiReasoningEffortModel(context)) {
+  if (isMoonshotReasoningEffortModel(context)) {
     if (context?.supportedEfforts !== undefined) {
-      return kimiReasoningEffortOptionsForSupportedEfforts(context.supportedEfforts);
+      return moonshotReasoningEffortOptionsForSupportedEfforts(context.supportedEfforts);
     }
-    return KIMI_REASONING_EFFORT_OPTIONS;
+    return MOONSHOT_REASONING_EFFORT_OPTIONS;
   }
 
   if (isAnthropicReasoningEffortModel(context)) {
@@ -236,10 +236,10 @@ export function isDeepSeekV4ReasoningEffortModel(
     DEEPSEEK_V4_REASONING_MODEL_IDS.has(normalizeModelId(context.model));
 }
 
-export function isKimiReasoningEffortModel(
+export function isMoonshotReasoningEffortModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
-  return context?.provider === 'kimi';
+  return context?.provider === 'moonshot-ai';
 }
 
 export function isAnthropicReasoningEffortModel(
@@ -279,7 +279,7 @@ function resolveCompatibleModelReasoningEffort(
     }
   }
 
-  if (isKimiReasoningEffortModel(context)) {
+  if (isMoonshotReasoningEffortModel(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     switch (normalized) {
       case 'none':
@@ -288,7 +288,7 @@ function resolveCompatibleModelReasoningEffort(
       case 'max':
         return 'high';
       default:
-        return kimiReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+        return moonshotReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
     }
   }
 
@@ -357,11 +357,11 @@ function anthropicReasoningEffortOptionsForSupportedEfforts(
   );
 }
 
-function kimiReasoningEffortValueForContext(
+function moonshotReasoningEffortValueForContext(
   normalized: ModelReasoningEffort,
   supportedEfforts?: ReadonlySet<string>,
 ): ModelReasoningEffort | undefined {
-  if (!KIMI_REASONING_EFFORT_VALUES.has(normalized)) {
+  if (!MOONSHOT_REASONING_EFFORT_VALUES.has(normalized)) {
     return undefined;
   }
   if (!supportedEfforts) {
@@ -372,11 +372,11 @@ function kimiReasoningEffortValueForContext(
     : undefined;
 }
 
-function kimiReasoningEffortOptionsForSupportedEfforts(
+function moonshotReasoningEffortOptionsForSupportedEfforts(
   supportedEfforts: readonly ModelReasoningEffort[],
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
   const supported = normalizeSupportedReasoningEfforts(supportedEfforts) ?? new Set<string>();
-  return KIMI_REASONING_EFFORT_OPTIONS.filter(
+  return MOONSHOT_REASONING_EFFORT_OPTIONS.filter(
     (option) => option.value === 'default' || supported.has(option.value),
   );
 }

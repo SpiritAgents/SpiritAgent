@@ -6,7 +6,7 @@ import { cloneJsonValue } from '../tool-agent.js';
 /** 与宿主 `ModelProfile.provider` 对齐；用于在 OpenAI 形态 API 上附加厂商扩展字段。 */
 export type OpenAiLlmVendor =
   | 'deepseek'
-  | 'kimi'
+  | 'moonshot-ai'
   | 'minimax'
   | 'alibaba'
   | 'vercel-ai-gateway'
@@ -69,7 +69,7 @@ export interface OpenAiTransportConfig {
    */
   reasoningEffort?: 'default' | 'minimal' | 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   /**
-   * 仅对 `deepseek` / `kimi`：是否在所有经本 transport 的 chat.completions 请求体中加入
+   * 仅对 `deepseek` / `moonshot-ai`：是否在所有经本 transport 的 chat.completions 请求体中加入
    * `thinking: { type: 'enabled' | 'disabled' }`（含主对话、工具轮与历史压缩）。
    * 缺省为 `true`（enabled）；设为 `false` 时发送 `disabled`。
    */
@@ -91,7 +91,7 @@ export interface OpenAiRequestTrace extends JsonObject {
   toolChoice?: 'auto';
   messages: JsonValue[];
   tools?: JsonValue[];
-  /** 与 SDK 请求体一并发送的真正厂商扩展（若有），例如 DeepSeek/Kimi 的 `thinking`。 */
+  /** 与 SDK 请求体一并发送的真正厂商扩展（若有），例如 DeepSeek/Moonshot 的 `thinking`。 */
   vendorExtras?: JsonValue;
 }
 
@@ -112,7 +112,7 @@ export function resolveOpenAiModelCompatibilityProfile(
     };
   }
 
-  if (config.llmVendor === 'kimi') {
+  if (config.llmVendor === 'moonshot-ai') {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
@@ -139,14 +139,14 @@ export function openAiReasoningEffort(
 }
 
 /**
- * DeepSeek / Kimi 等网关常在 OpenAI 兼容路径上接受顶层 `thinking` 字段以开关思考链输出。
+ * DeepSeek / Moonshot AI 等网关常在 OpenAI 兼容路径上接受顶层 `thinking` 字段以开关思考链输出。
  * 凡走 OpenAI-compatible transport 的 chat.completions（含压缩）均合并，避免同一连接上部分请求缺字段导致网关行为不一致。
  */
 export function openAiVendorChatCompletionBodyExtras(
   config: Pick<OpenAiTransportConfig, 'llmVendor' | 'vendorExtendedThinking'>,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (config.llmVendor === 'deepseek' || config.llmVendor === 'kimi') {
+  if (config.llmVendor === 'deepseek' || config.llmVendor === 'moonshot-ai') {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
   }

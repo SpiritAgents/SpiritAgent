@@ -17,7 +17,8 @@ const KEYRING_ACCOUNT_API_KEY: &str = "openai_api_key";
 #[serde(rename_all = "lowercase")]
 pub enum ModelProvider {
     Deepseek,
-    Kimi,
+    #[serde(rename = "moonshot-ai")]
+    Moonshot,
     Minimax,
     Alibaba,
     Anthropic,
@@ -31,7 +32,7 @@ impl ModelProvider {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Deepseek => "deepseek",
-            Self::Kimi => "kimi",
+            Self::Moonshot => "moonshot-ai",
             Self::Minimax => "minimax",
             Self::Alibaba => "alibaba",
             Self::Anthropic => "anthropic",
@@ -48,7 +49,7 @@ impl FromStr for ModelProvider {
     fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
         match value.trim().to_ascii_lowercase().as_str() {
             "deepseek" => Ok(Self::Deepseek),
-            "kimi" => Ok(Self::Kimi),
+            "moonshot-ai" => Ok(Self::Moonshot),
             "minimax" => Ok(Self::Minimax),
             "alibaba" => Ok(Self::Alibaba),
             "anthropic" => Ok(Self::Anthropic),
@@ -128,7 +129,7 @@ impl ModelProfile {
 
         match self.provider {
             Some(ModelProvider::Deepseek) => false,
-            Some(ModelProvider::Kimi) => false,
+            Some(ModelProvider::Moonshot) => false,
             Some(ModelProvider::Minimax)
             | Some(ModelProvider::Alibaba)
             | Some(ModelProvider::Anthropic)
@@ -376,7 +377,7 @@ pub(crate) fn normalize_reasoning_effort_value(
                     _ => "default".to_string(),
                 }
             }
-            Some(ModelProvider::Kimi) => match normalized.as_str() {
+            Some(ModelProvider::Moonshot) => match normalized.as_str() {
                 "default" | "minimal" | "low" | "medium" | "high" => normalized,
                 "none" => "default".to_string(),
                 "xhigh" | "max" => "high".to_string(),
@@ -526,11 +527,11 @@ mod tests {
     }
 
     #[test]
-    fn model_profile_supports_vision_uses_explicit_capabilities_for_kimi() {
+    fn model_profile_supports_vision_uses_explicit_capabilities_for_moonshot() {
         let kimi_without_capabilities = super::ModelProfile {
             name: "kimi-k2.6".to_string(),
             api_base: "https://api.moonshot.cn/v1".to_string(),
-            provider: Some(super::ModelProvider::Kimi),
+            provider: Some(super::ModelProvider::Moonshot),
             reasoning_effort: None,
             extra: serde_json::Map::new(),
         };

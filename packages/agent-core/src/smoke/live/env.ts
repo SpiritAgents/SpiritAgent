@@ -8,7 +8,7 @@ export const LIVE_SMOKE_GATE_ENV = 'SPIRIT_AGENT_ALLOW_LIVE_SMOKE';
 const OPENAI_LLM_VENDOR_ENV = 'OPENAI_LLM_VENDOR';
 const LIVE_SMOKE_VENDOR_VALUES = new Set<OpenAiLlmVendor>([
   'deepseek',
-  'kimi',
+  'moonshot-ai',
   'minimax',
   'alibaba',
   'custom',

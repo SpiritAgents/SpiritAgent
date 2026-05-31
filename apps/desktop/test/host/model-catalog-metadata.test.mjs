@@ -43,11 +43,11 @@ test('custom anthropic transport consumes Anthropic model catalog metadata', () 
   assert.deepEqual(catalogMap.get('claude-sonnet-4-20250514'), preview[0]);
 });
 
-test('kimi provider consumes Moonshot model catalog metadata', () => {
-  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'kimi' }), true);
+test('moonshot-ai provider consumes Moonshot model catalog metadata', () => {
+  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'moonshot-ai' }), true);
 
   const preview = previewModelCatalogForTransport({
-    provider: 'kimi',
+    provider: 'moonshot-ai',
     transportKind: 'openai-compatible',
     listedModels: [
       {
