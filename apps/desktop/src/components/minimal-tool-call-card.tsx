@@ -7,6 +7,7 @@ import {
   genericExpandableDetailLines,
   getToolCallSummaryParts,
   shellToolExpandableDetailLines,
+  toolCallPhaseShowsShimmer,
   toolHasExpandableContent,
 } from "@/lib/tool-call-display";
 import { parseShellCommand } from "@/lib/shell-tool-display";
@@ -18,13 +19,23 @@ const summaryClass = "text-xs leading-relaxed text-muted-foreground";
 export function MinimalToolSummary({
   headline,
   detail,
+  shimmerActive = false,
 }: {
   headline: string;
   detail?: string;
+  shimmerActive?: boolean;
 }) {
   return (
-    <span className={cn(summaryClass, "min-w-0 break-words")}>
-      {headline}
+    <span className={cn("min-w-0 break-words text-xs leading-relaxed")}>
+      <span
+        className={cn(
+          shimmerActive
+            ? "spirit-thinking-shimmer-text font-medium tracking-wide"
+            : summaryClass,
+        )}
+      >
+        {headline}
+      </span>
       {detail ? (
         <>
           {" "}
@@ -98,6 +109,7 @@ function ShellToolExpandedBody({
 
 export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
   const summary = getToolCallSummaryParts(tool);
+  const shimmerActive = toolCallPhaseShowsShimmer(tool.phase);
   const isShell = tool.toolName === "run_shell_command";
   const shellCommand = useMemo(
     () => (isShell ? tool.headlineDetail?.trim() || parseShellCommand(tool) : undefined),
@@ -108,8 +120,12 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
 
   if (!expandable) {
     return (
-      <p className={summaryClass}>
-        <MinimalToolSummary headline={summary.headline} detail={summary.detail} />
+      <p className={shimmerActive ? undefined : summaryClass}>
+        <MinimalToolSummary
+          headline={summary.headline}
+          detail={summary.detail}
+          shimmerActive={shimmerActive}
+        />
       </p>
     );
   }
@@ -124,7 +140,11 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
             "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
           )}
         >
-          <MinimalToolSummary headline={summary.headline} detail={summary.detail} />
+          <MinimalToolSummary
+            headline={summary.headline}
+            detail={summary.detail}
+            shimmerActive={shimmerActive}
+          />
           <ChevronRight
             className={cn(
               "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
