@@ -58,7 +58,7 @@ export interface DesktopDreamConfigUpdate {
 /** 模型提供方（与 `packages/host-internal` 中 `ModelProviderId` 同源）。 */
 export type DesktopModelProvider = ModelProviderId;
 
-export type DesktopTransportKind = 'openai-compatible' | 'anthropic';
+export type DesktopTransportKind = 'openai-compatible' | 'open-responses' | 'anthropic';
 
 /** 模型推理强度字符串；具体允许值由 provider / transportKind 在 agent-core 中约束。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;

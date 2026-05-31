@@ -5,5 +5,9 @@ export {
   PROVIDER_PRESET_API_BASE,
   PROVIDER_PICKER_ROWS,
   resolveConnectApiBase,
+  resolveProviderConnectApiBase,
 } from '@spirit-agent/host-internal/model-provider-presets';
-export type { ModelProviderId } from '@spirit-agent/host-internal/model-provider-presets';
+export type {
+  ModelProviderId,
+  ProviderModelTransportKind,
+} from '@spirit-agent/host-internal/model-provider-presets';

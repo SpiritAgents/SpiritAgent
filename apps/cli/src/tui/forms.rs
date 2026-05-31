@@ -450,7 +450,9 @@ impl TuiShell {
                 continue;
             }
             let mut extra = serde_json::Map::new();
-            if parsed.transport_kind == crate::model_registry::ModelTransportKind::Anthropic {
+            if parsed.transport_kind == crate::model_registry::ModelTransportKind::Anthropic
+                || parsed.transport_kind == crate::model_registry::ModelTransportKind::OpenResponses
+            {
                 extra.insert(
                     "transportKind".to_string(),
                     serde_json::json!(parsed.transport_kind.as_str()),

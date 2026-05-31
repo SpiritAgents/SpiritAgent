@@ -30,6 +30,7 @@ import {
   type LlmToolAgentBasicInfo,
   type LlmTransportConfig,
   type OpenAiTransportConfig,
+  resolveOpenResponsesReasoningSummary,
   type RuntimeApprovalDecision,
   type RuntimeEvent,
   type PendingWorkspaceFile,
@@ -55,6 +56,7 @@ import {
   parsePresetModelProviderId,
   partitionModelsByProvider,
   PROVIDER_PRESET_API_BASE,
+  resolveProviderConnectApiBase,
   restoreHostFileChanges,
   type HostDreamScope,
   type HostTodoRecord,
@@ -872,8 +874,8 @@ class DesktopHostService {
         }
         if (provider !== undefined) {
           profile.provider = provider;
-          if (transportKind === 'anthropic') {
-            profile.transportKind = 'anthropic';
+          if (transportKind === 'anthropic' || transportKind === 'open-responses') {
+            profile.transportKind = transportKind;
           }
         }
         toAdd.push(profile);
@@ -974,8 +976,8 @@ class DesktopHostService {
       }
       if (provider !== undefined) {
         profile.provider = provider;
-        if (transportKind === 'anthropic') {
-          profile.transportKind = 'anthropic';
+        if (transportKind === 'anthropic' || transportKind === 'open-responses') {
+          profile.transportKind = transportKind;
         }
       }
       const capabilities = resolveAddedModelCapabilities({
@@ -2555,7 +2557,7 @@ class DesktopHostService {
       profile: activeProfile,
     });
     if (
-      runtimeTransportConfig.transportKind !== 'anthropic'
+      runtimeTransportConfig.transportKind === 'openai-compatible'
       && imageGenerationProfile
       && imageGenerationApiKey
       && supportsImageGeneration(imageGenerationProfile)
@@ -4430,16 +4432,25 @@ function modelCapabilitiesFromConfig(
 function resolveDesktopTransportKind(
   profile?: Pick<ModelProfileSnapshot, 'provider' | 'transportKind'>,
 ): DesktopTransportKind {
-  return profile?.transportKind ?? (profile?.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+  if (profile?.transportKind) {
+    return profile.transportKind;
+  }
+
+  return profile?.provider === 'anthropic' ? 'anthropic' : 'openai-compatible';
 }
 
 function defaultApiBaseForTransport(
   provider?: DesktopModelProvider,
   transportKind?: DesktopTransportKind,
 ): string {
-  return transportKind === 'anthropic' || provider === 'anthropic'
-    ? PROVIDER_PRESET_API_BASE.anthropic
-    : DEFAULT_API_BASE;
+  if (!provider) {
+    return DEFAULT_API_BASE;
+  }
+
+  return resolveProviderConnectApiBase(
+    provider,
+    transportKind ?? resolveDesktopTransportKind({ provider }),
+  );
 }
 
 function reasoningProviderForTransport(
@@ -4449,6 +4460,11 @@ function reasoningProviderForTransport(
   if (transportKind === 'anthropic') {
     return 'anthropic';
   }
+
+  if (transportKind === 'open-responses' && provider === 'openai') {
+    return 'openai';
+  }
+
   return provider;
 }
 
@@ -4469,6 +4485,44 @@ function buildPrimaryTransportConfig(input: {
   >;
 }): LlmTransportConfig {
   const transportKind = resolveDesktopTransportKind(input.profile);
+  if (transportKind === 'open-responses') {
+    const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
+    const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
+      input.profile?.reasoningEffort,
+      {
+        ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
+        transportKind: 'open-responses',
+        ...(input.profile?.supportedReasoningEfforts !== undefined
+          ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+          : {}),
+        model: input.model,
+      },
+    );
+    const responsesProvider =
+      input.profile?.provider === 'openai' ? 'openai' : 'open-responses-compatible';
+    const reasoningSummary = resolveOpenResponsesReasoningSummary({
+      ...(llmVendor ? { llmVendor } : {}),
+      model: input.model,
+      ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
+    });
+
+    return {
+      transportKind: 'open-responses',
+      apiKey: input.apiKey,
+      model: input.model,
+      baseUrl: input.baseUrl,
+      workspaceRoot: input.workspaceRoot,
+      responsesProvider,
+      store: false,
+      ...(llmVendor ? { llmVendor } : {}),
+      ...(input.profile?.capabilities
+        ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
+        : {}),
+      ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
+      ...(reasoningSummary ? { reasoningSummary } : {}),
+    };
+  }
+
   if (transportKind === 'anthropic') {
     const supportedAnthropicEfforts = normalizeAnthropicSupportedEfforts(
       input.profile?.supportedReasoningEfforts,

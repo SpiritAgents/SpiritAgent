@@ -61,7 +61,11 @@ import type {
   PreviewModelsRequest,
   PreviewModelsResponse,
 } from "@/types";
-import { PROVIDER_PICKER_ROWS, resolveConnectApiBase } from "@/host/provider-presets";
+import {
+  PROVIDER_PICKER_ROWS,
+  resolveConnectApiBase,
+  resolveProviderConnectApiBase,
+} from "@/host/provider-presets";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export type SettingsFormState = {
@@ -186,34 +190,101 @@ const modelCapabilityOptions: Array<{
   { value: "imageGeneration", label: "Image generation", summary: "生成图片输出" },
 ];
 
-const customTransportOptions: Array<{
+type ConnectTransportOption = {
   value: DesktopTransportKind;
   label: string;
   summary: string;
-}> = [
-  {
-    value: "openai-compatible",
+};
+
+const connectTransportOptionCatalog = {
+  chatCompletions: {
+    value: "openai-compatible" as const,
     label: "Chat Completions API",
     summary: "Bearer 鉴权；Chat Completions API（`/chat/completions`、`/models`）。",
   },
-  {
-    value: "anthropic",
+  messagesApi: {
+    value: "anthropic" as const,
     label: "Messages API",
     summary: "x-api-key + anthropic-version；Messages API（`/messages`、`/models`）。",
   },
-];
+  responsesApi: {
+    value: "open-responses" as const,
+    label: "Responses API",
+    summary: "OpenAI 官方 Responses API（`@ai-sdk/openai`，`/responses`、`/models`）。",
+  },
+  openResponsesApi: {
+    value: "open-responses" as const,
+    label: "Open Responses API",
+    summary: "Open Responses 兼容协议（`/responses`）；经网关或自定义 endpoint 时使用。",
+  },
+} satisfies Record<string, ConnectTransportOption>;
+
+function connectTransportOptionsForProvider(provider: DesktopModelProvider): ConnectTransportOption[] {
+  switch (provider) {
+    case "openai":
+      return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.responsesApi];
+    case "minimax":
+    case "deepseek":
+      return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
+    case "alibaba":
+      return [
+        connectTransportOptionCatalog.chatCompletions,
+        connectTransportOptionCatalog.messagesApi,
+        connectTransportOptionCatalog.openResponsesApi,
+      ];
+    case "vercel-ai-gateway":
+    case "custom":
+      return [
+        connectTransportOptionCatalog.chatCompletions,
+        connectTransportOptionCatalog.openResponsesApi,
+        connectTransportOptionCatalog.messagesApi,
+      ];
+    default:
+      return [];
+  }
+}
+
+function defaultConnectTransportKind(provider: DesktopModelProvider): DesktopTransportKind {
+  return connectTransportOptionsForProvider(provider)[0]?.value ?? "openai-compatible";
+}
+
+function providerSupportsConnectTransportPicker(
+  provider: DesktopModelProvider | null,
+): provider is DesktopModelProvider {
+  return (
+    provider === "openai" ||
+    provider === "minimax" ||
+    provider === "deepseek" ||
+    provider === "alibaba" ||
+    provider === "custom" ||
+    provider === "vercel-ai-gateway"
+  );
+}
+
+function connectTransportOptionSummary(
+  option: ConnectTransportOption,
+  provider: DesktopModelProvider | null,
+): string {
+  if (option.value === "open-responses" && provider === "vercel-ai-gateway") {
+    return "经 Vercel AI Gateway 调用 Open Responses（`/responses`），底层使用 open-responses-compatible provider。";
+  }
+
+  if (option.value === "open-responses" && provider === "alibaba") {
+    return "百炼 OpenAI 兼容 Responses API（`/api/v2/apps/protocols/compatible-mode/v1/responses`）。";
+  }
+
+  if (option.value === "open-responses" && provider === "custom") {
+    return connectTransportOptionCatalog.openResponsesApi.summary;
+  }
+
+  return option.summary;
+}
 
 function resolveCustomConnectApiBase(
   transportKind: DesktopTransportKind,
   customApiBase: string,
 ): string {
-  const trimmed = customApiBase.trim();
-  if (trimmed.length > 0) {
-    return trimmed;
-  }
-  return transportKind === "anthropic"
-    ? resolveConnectApiBase("anthropic", "")
-    : resolveConnectApiBase("custom", "");
+  return resolveProviderConnectApiBase("custom", transportKind, customApiBase);
 }
 
 function modelCapabilityLabel(value: DesktopModelCapability): string {
@@ -1879,7 +1950,7 @@ function ModelsSettingsPanel({
   const [connectCapabilities, setConnectCapabilities] = useState<DesktopModelCapability[]>(
     defaultCustomModelCapabilities,
   );
-  const [customConnectTransportKind, setCustomConnectTransportKind] = useState<DesktopTransportKind>(
+  const [connectTransportKind, setConnectTransportKind] = useState<DesktopTransportKind>(
     "openai-compatible",
   );
   const [customConnectMode, setCustomConnectMode] = useState<"single" | "bulk">(
@@ -1938,9 +2009,13 @@ function ModelsSettingsPanel({
     setConnectName("");
     setConnectApiBase("");
     setConnectCapabilities(defaultCustomModelCapabilities);
-    setCustomConnectTransportKind("openai-compatible");
+    setConnectTransportKind("openai-compatible");
     setCustomConnectMode("single");
     setSelectedProvider(null);
+  };
+
+  const resetConnectTransportKindForProvider = (provider: DesktopModelProvider) => {
+    setConnectTransportKind(defaultConnectTransportKind(provider));
   };
 
   const openProviderPicker = () => {
@@ -1955,7 +2030,7 @@ function ModelsSettingsPanel({
     setConnectName("");
     setConnectApiBase("");
     setConnectCapabilities(defaultCustomModelCapabilities);
-    setCustomConnectTransportKind("openai-compatible");
+    resetConnectTransportKindForProvider(id);
     setCustomConnectMode("single");
     setConnectDialogOpen(true);
   };
@@ -2065,8 +2140,10 @@ function ModelsSettingsPanel({
     selectedProvider === null
       ? ""
       : selectedProvider === "custom"
-        ? resolveCustomConnectApiBase(customConnectTransportKind, connectApiBase)
-        : resolveConnectApiBase(selectedProvider, connectApiBase);
+        ? resolveCustomConnectApiBase(connectTransportKind, connectApiBase)
+        : providerSupportsConnectTransportPicker(selectedProvider)
+          ? resolveProviderConnectApiBase(selectedProvider, connectTransportKind, connectApiBase)
+          : resolveConnectApiBase(selectedProvider, connectApiBase);
 
   const syncCatalogFromUpstream = async (forceRefresh: boolean) => {
     if (selectedProvider === null) {
@@ -2079,7 +2156,9 @@ function ModelsSettingsPanel({
       apiBase: effectiveApiBase,
       apiKey: connectApiKey,
       provider: selectedProvider,
-      ...(selectedProvider === "custom" ? { transportKind: customConnectTransportKind } : {}),
+      ...(providerSupportsConnectTransportPicker(selectedProvider)
+        ? { transportKind: connectTransportKind }
+        : {}),
       forceRefresh,
     });
     if (res.modelIds.length === 0) {
@@ -2091,7 +2170,9 @@ function ModelsSettingsPanel({
       modelIds: res.modelIds,
       ...(res.models ? { modelCatalog: res.models } : {}),
       provider: selectedProvider,
-      ...(selectedProvider === "custom" ? { transportKind: customConnectTransportKind } : {}),
+      ...(providerSupportsConnectTransportPicker(selectedProvider)
+        ? { transportKind: connectTransportKind }
+        : {}),
     };
     await onAddProviderModels(bulk);
     setConnectDialogOpen(false);
@@ -2115,7 +2196,7 @@ function ModelsSettingsPanel({
       apiBase,
       apiKey: connectApiKey,
       provider: "custom",
-      transportKind: customConnectTransportKind,
+      transportKind: connectTransportKind,
       capabilities: normalizeModelCapabilitySelection(connectCapabilities),
     });
     setConnectDialogOpen(false);
@@ -2616,31 +2697,36 @@ function ModelsSettingsPanel({
             <DialogDescription>
               {selectedProvider === "custom"
                 ? "先选择 API 类型，再填写端点与密钥。"
-                : "填写 API Key 即可连接。"}
+                : providerSupportsConnectTransportPicker(selectedProvider)
+                  ? "先选择 API 类型，再填写 API Key；批量导入的模型会沿用该类型。"
+                  : "填写 API Key 即可连接。"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3 py-1">
-            {selectedProvider === "custom" ? (
+            {providerSupportsConnectTransportPicker(selectedProvider) ? (
               <div className="grid gap-2">
                 <Label htmlFor="connect-api-transport">API 类型</Label>
                 <Select
-                  value={customConnectTransportKind}
-                  onValueChange={(value) => setCustomConnectTransportKind(value as DesktopTransportKind)}
+                  value={connectTransportKind}
+                  onValueChange={(value) => setConnectTransportKind(value as DesktopTransportKind)}
                 >
                   <SelectTrigger id="connect-api-transport">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {customTransportOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
+                    {connectTransportOptionsForProvider(selectedProvider).map((option) => (
+                      <SelectItem key={`${option.value}-${option.label}`} value={option.value}>
                         {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  {customTransportOptions.find((option) => option.value === customConnectTransportKind)?.summary}
+                  {connectTransportOptionsForProvider(selectedProvider)
+                    .filter((option) => option.value === connectTransportKind)
+                    .map((option) => connectTransportOptionSummary(option, selectedProvider))
+                    .join("")}
                 </p>
               </div>
             ) : null}

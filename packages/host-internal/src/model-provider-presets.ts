@@ -12,6 +12,15 @@ export type ModelProviderId =
   | 'custom';
 export type PresetModelProviderId = Exclude<ModelProviderId, 'custom'>;
 
+/** 与 Desktop `DesktopTransportKind` / openai-models `ProviderModelTransportKind` 对齐。 */
+export type ProviderModelTransportKind = 'openai-compatible' | 'open-responses' | 'anthropic';
+
+const PROVIDER_MODEL_TRANSPORT_KINDS: readonly ProviderModelTransportKind[] = [
+  'openai-compatible',
+  'open-responses',
+  'anthropic',
+];
+
 const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'openai',
   'anthropic',
@@ -43,12 +52,17 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
   }
 }
 
+type PresetApiBaseByTransport = Partial<
+  Record<PresetModelProviderId, Partial<Record<ProviderModelTransportKind, string>>>
+>;
+
 interface ParsedModelProviderPresets {
   defaultCustomApiBase: string;
   presetApiBaseByProvider: Record<
     'deepseek' | 'kimi' | 'minimax' | 'alibaba' | 'anthropic' | 'vercel-ai-gateway' | 'openai',
     string
   >;
+  presetApiBaseByTransport: PresetApiBaseByTransport;
   pickerOrder: readonly ModelProviderId[];
   pickerLabels: Record<string, string>;
 }
@@ -59,6 +73,53 @@ function requireStringField(obj: Record<string, unknown>, key: string): string {
     throw new Error(`model-provider-presets.json: missing or invalid string field "${key}"`);
   }
   return value;
+}
+
+function isProviderModelTransportKind(value: unknown): value is ProviderModelTransportKind {
+  return (
+    typeof value === 'string' &&
+    (PROVIDER_MODEL_TRANSPORT_KINDS as readonly string[]).includes(value)
+  );
+}
+
+function parsePresetApiBaseByTransport(data: unknown): PresetApiBaseByTransport {
+  if (!isJsonRecord(data)) {
+    return {};
+  }
+
+  const result: PresetApiBaseByTransport = {};
+
+  for (const [providerKey, transportMapRaw] of Object.entries(data)) {
+    if (!isPresetModelProviderId(providerKey)) {
+      throw new Error(
+        `model-provider-presets.json: presetApiBaseByTransport.${providerKey} is not a preset provider id`,
+      );
+    }
+    if (!isJsonRecord(transportMapRaw)) {
+      throw new Error(
+        `model-provider-presets.json: presetApiBaseByTransport.${providerKey} must be an object`,
+      );
+    }
+
+    const transportMap: Partial<Record<ProviderModelTransportKind, string>> = {};
+    for (const [transportKey, baseUrl] of Object.entries(transportMapRaw)) {
+      if (!isProviderModelTransportKind(transportKey)) {
+        throw new Error(
+          `model-provider-presets.json: presetApiBaseByTransport.${providerKey}.${transportKey} is not a valid transport kind`,
+        );
+      }
+      if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
+        throw new Error(
+          `model-provider-presets.json: presetApiBaseByTransport.${providerKey}.${transportKey} must be a non-empty string`,
+        );
+      }
+      transportMap[transportKey] = baseUrl;
+    }
+
+    result[providerKey] = transportMap;
+  }
+
+  return result;
 }
 
 function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPresets {
@@ -105,9 +166,16 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
 
   const defaultCustomApiBase = requireStringField(data, 'defaultCustomApiBase');
 
+  const presetApiBaseByTransportRaw = data.presetApiBaseByTransport;
+  const presetApiBaseByTransport =
+    presetApiBaseByTransportRaw === undefined
+      ? {}
+      : parsePresetApiBaseByTransport(presetApiBaseByTransportRaw);
+
   return {
     defaultCustomApiBase,
     presetApiBaseByProvider,
+    presetApiBaseByTransport,
     pickerOrder,
     pickerLabels,
   };
@@ -204,4 +272,34 @@ export function resolveConnectApiBase(
       return trimmed.length > 0 ? trimmed : DEFAULT_CUSTOM_API_BASE;
     }
   }
+}
+
+/**
+ * 连接向导：按预设提供商与 API 类型解析默认端点（用户未填写端点覆盖时）。
+ */
+export function resolveProviderConnectApiBase(
+  provider: ModelProviderId,
+  transportKind: ProviderModelTransportKind,
+  customApiBaseTrimmed = '',
+): string {
+  const trimmedOverride = customApiBaseTrimmed.trim();
+  if (trimmedOverride.length > 0) {
+    return trimmedOverride;
+  }
+
+  if (provider === 'openai') {
+    return PROVIDER_PRESET_API_BASE.openai;
+  }
+
+  if (provider === 'custom') {
+    return DEFAULT_CUSTOM_API_BASE;
+  }
+
+  const transportBases = raw.presetApiBaseByTransport[provider as PresetModelProviderId];
+  const transportBase = transportBases?.[transportKind];
+  if (transportBase) {
+    return transportBase;
+  }
+
+  return resolveConnectApiBase(provider, '');
 }
