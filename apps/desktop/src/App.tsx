@@ -185,11 +185,15 @@ function mcpStateVariant(
 }
 
 /** Stable list identity — must not include list index (rows insert above tools during finalize-thinking). */
-function conversationMessageStableId(message: ConversationMessageSnapshot): string {
+function conversationMessageStableId(
+  message: ConversationMessageSnapshot,
+  composerSessionKey = "",
+): string {
+  const sessionPart = composerSessionKey.trim() ? `${composerSessionKey.trim()}:` : "";
   const toolPart =
     message.tool?.toolCallId ??
     (message.tool ? `${message.tool.toolName}:${message.tool.phase}` : "");
-  return `message-${message.id}-${message.pending ? "p" : "m"}-${toolPart}`;
+  return `${sessionPart}message-${message.id}-${message.pending ? "p" : "m"}-${toolPart}`;
 }
 
 /** 主会话列最大宽度（居中） */
@@ -1189,6 +1193,7 @@ function AssistantCompactionCollapsible({
 }
 
 function MessageCard({
+  composerSessionKey,
   messages,
   message,
   listIndex,
@@ -1222,6 +1227,7 @@ function MessageCard({
   readLocalImagePreviewDataUrl,
   saveLocalImageAs,
 }: {
+  composerSessionKey: string;
   messages: readonly ConversationMessageSnapshot[];
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
@@ -1279,7 +1285,7 @@ function MessageCard({
 
   return (
     <div
-      id={conversationMessageStableId(message)}
+      id={conversationMessageStableId(message, composerSessionKey)}
       data-spirit-surface="message-row"
       data-spirit-message-role={message.role}
       data-spirit-message-pending={message.pending ? "true" : "false"}
@@ -1791,6 +1797,7 @@ export default function App() {
 
   const compactionDemo = useCompactionUiDemo();
   const models = snapshot?.config.models ?? [];
+  const composerSessionKey = snapshot?.composerSessionKey ?? "";
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const messagesDuringRewindSuppressed =
     runtime.busyAction === "rewind" ? [] : sessionMessages;
@@ -2751,14 +2758,19 @@ export default function App() {
                         CONVERSATION_MAX_W,
                       )}
                     >
-                      <div data-spirit-surface="conversation-list" className="space-y-3">
+                      <div
+                        key={composerSessionKey || "__no-session__"}
+                        data-spirit-surface="conversation-list"
+                        className="space-y-3"
+                      >
                         {messages.map((message, index) => {
                           const previous = messages[index - 1];
                           const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
                           const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
                           return (
                             <MessageCard
-                              key={conversationMessageStableId(message)}
+                              key={conversationMessageStableId(message, composerSessionKey)}
+                              composerSessionKey={composerSessionKey}
                               messages={messages}
                               pendingAuxState={conversationPendingAuxState}
                               listIndex={index}
