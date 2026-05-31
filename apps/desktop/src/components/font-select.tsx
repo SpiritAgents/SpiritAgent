@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Check, ChevronDown, LoaderCircle } from "lucide-react";
 
@@ -53,6 +54,7 @@ export function FontSelect({
   loading,
   disabled,
 }: FontSelectProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const [loadedFonts, setLoadedFonts] = useState<string[]>([]);
@@ -178,7 +180,7 @@ export function FontSelect({
             <Input
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
-              placeholder="搜索字体..."
+              placeholder={t('settings.searchFont')}
               className="h-8 w-full min-w-0 text-sm"
               onKeyDown={(event) => event.stopPropagation()}
               autoComplete="off"
@@ -196,9 +198,9 @@ export function FontSelect({
           >
             <div className="p-1 pr-2">
               {effectiveLoading ? (
-                <p className="px-2 py-4 text-center text-xs text-muted-foreground">正在加载字体...</p>
+                <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('settings.loadingFonts')}</p>
               ) : filteredOptions.length === 0 ? (
-                <p className="px-2 py-4 text-center text-xs text-muted-foreground">没有匹配的字体</p>
+                <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('settings.noMatchingFonts')}</p>
               ) : (
                 filteredOptions.map((option) => {
                   const selected = option.id === value;
@@ -223,7 +225,7 @@ export function FontSelect({
         </DropdownMenuContent>
       </DropdownMenu>
       {loadFailed ? (
-        <p className="text-xs text-muted-foreground">无法枚举本机字体；请在桌面客户端中重试。</p>
+        <p className="text-xs text-muted-foreground">{t('settings.fontEnumerationFailed')}</p>
       ) : null}
     </div>
   );

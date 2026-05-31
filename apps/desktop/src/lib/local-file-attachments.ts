@@ -114,7 +114,7 @@ export function snapshotsToComposerAttachmentViews(
   );
 }
 
-const ATTACHMENT_ONLY_DISPLAY_TEXT_PATTERN = /^已附加文件:\s*.+$/u;
+const ATTACHMENT_ONLY_DISPLAY_TEXT_PATTERN = /^(已附加文件|Attached files):\s*.+$/u;
 
 export function isAttachmentOnlyDisplayText(
   content: string,

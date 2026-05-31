@@ -703,12 +703,12 @@ export function MarketplaceView({
                                     </div>
                                     {installedHere ? (
                                       <Badge variant="secondary" className="text-[10px]">
-                                        已安装
+                                        {t('marketplace.installed')}
                                       </Badge>
                                     ) : null}
                                     {!desktopSupported ? (
                                       <Badge variant="destructive" className="text-[10px]">
-                                        不支持 Desktop
+                                        {t('marketplace.unsupportedDesktop')}
                                       </Badge>
                                     ) : null}
                                   </div>
@@ -723,15 +723,15 @@ export function MarketplaceView({
                                     className="h-8 text-xs"
                                     title={
                                       installedHere
-                                        ? "当前已使用该版本"
-                                        : `切换至 ${version.version}`
+                                        ? t('marketplace.currentVersionInUse')
+                                        : t('marketplace.switchToVersion', { version: version.version })
                                     }
                                     disabled={marketplaceBusy || !desktopSupported || installedHere}
                                     onClick={() => {
                                       void requestInstallVersion(version.version);
                                     }}
                                   >
-                                    切换
+                                    {t('marketplace.switch')}
                                   </Button>
                                 </div>
                               </div>
@@ -758,13 +758,13 @@ export function MarketplaceView({
       >
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
-            <DialogTitle>确认切换未验证扩展</DialogTitle>
+            <DialogTitle>{t('marketplace.confirmSwitchUnverified')}</DialogTitle>
             <DialogDescription>
               {pendingInstall
                 ? pendingInstall.reviewStatus === "revoked"
-                  ? `「${pendingInstall.displayName} ${pendingInstall.version}」当前为已撤销状态，仅在明确接受风险时再切换。`
-                  : `「${pendingInstall.displayName} ${pendingInstall.version}」未通过验证。确认后仍将执行宿主侧兼容性等校验。`
-                : "该扩展当前不是已验证状态。"}
+                  ? t('marketplace.revokedExtensionWarning', { name: pendingInstall.displayName, version: pendingInstall.version })
+                  : t('marketplace.unverifiedExtensionWarning', { name: pendingInstall.displayName, version: pendingInstall.version })
+                : t('marketplace.notVerifiedStatus')}
             </DialogDescription>
           </DialogHeader>
 
@@ -776,12 +776,12 @@ export function MarketplaceView({
                 : "border border-border bg-muted/40 text-foreground",
             )}
           >
-            建议在切换前查看所需能力与 README。本次确认仅作用于本次切换。
+            {t('marketplace.switchAdvice')}
           </div>
 
           <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
             <Button type="button" variant="outline" onClick={() => setPendingInstall(null)} disabled={marketplaceBusy}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -798,7 +798,7 @@ export function MarketplaceView({
               disabled={marketplaceBusy}
             >
               {marketplaceBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
-              继续切换
+              {t('marketplace.continueSwitch')}
             </Button>
           </div>
         </DialogContent>
