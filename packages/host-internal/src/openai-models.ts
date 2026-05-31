@@ -2,9 +2,9 @@
  * OpenAI-compatible `GET /v1/models` listing (host-side; no secrets stored here).
  */
 
-import type { ModelProviderId } from './model-provider-presets.js';
+import type { ModelProviderId, ProviderModelTransportKind } from './model-provider-presets.js';
 
-export type ProviderModelTransportKind = 'openai-compatible' | 'open-responses' | 'anthropic';
+export type { ProviderModelTransportKind };
 
 export interface ProviderListedModelEntry {
   id: string;
