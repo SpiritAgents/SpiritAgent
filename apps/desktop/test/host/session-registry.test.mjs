@@ -59,6 +59,27 @@ test('SessionRegistry beginNewActive assigns a stable workspace provisional path
   assert.equal(isProvisionalSessionPath(bundle.id), true);
 });
 
+test('SessionRegistry activateExisting sets active session id', () => {
+  const registry = new SessionRegistry();
+  const workspaceRoot = 'D:/SpiritAgent/repo';
+  const first = registry.beginNewActive(workspaceRoot);
+  first.messages.push({ id: 1, role: 'user', content: 'hello', pending: false });
+  const sessionPath = path.resolve('D:/SpiritAgent/chats/chat-active.json');
+  first.activeSession = {
+    filePath: sessionPath,
+    displayName: 'chat-active',
+    kind: 'stored',
+  };
+  registry.rekeyBundle(first, sessionPath);
+
+  const second = registry.beginNewActive(workspaceRoot);
+  second.messages.push({ id: 1, role: 'user', content: 'other', pending: false });
+
+  registry.activateExisting(first);
+  assert.equal(registry.activeSessionId(), sessionPath);
+  assert.equal(registry.getActive(), first);
+});
+
 test('SessionRegistry beginNewActive reuses the same provisional slot per workspace', () => {
   const registry = new SessionRegistry();
   const workspaceRoot = 'D:/SpiritAgent/repo';

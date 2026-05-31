@@ -47,6 +47,8 @@ export interface SessionBundle {
   /** `savedAtUnixMs` from disk; used to avoid bumping list order on background/switch persist. */
   listSortSavedAtUnixMs?: number;
   runtime?: DesktopRuntime;
+  /** Fingerprint of host config used when `runtime` was last built for this bundle. */
+  runtimeActivationSignature?: string;
   runtimeTransport?: SpiritLlmTransport;
   toolExecutor?: DesktopToolExecutor;
   toolExecutorWorkspaceRoot?: string;

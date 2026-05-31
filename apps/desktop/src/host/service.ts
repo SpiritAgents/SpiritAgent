@@ -2076,11 +2076,12 @@ class DesktopHostService {
 
   async resetSession(): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
-      await this.ensureInitialized();
+      await this.ensureInitialized(undefined, { fastPath: true });
 
       const state = this.requireState();
       const leaving = this.sessionRegistry.getActive();
-      if (leaving?.activeSession) {
+      const leavingMessageCount = leaving?.messageTimeline.toMessages().length ?? 0;
+      if (leaving?.activeSession && leavingMessageCount > 0) {
         await this.persistSessionBundle(leaving, {
           fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
           bumpListSortAt: false,
@@ -2089,7 +2090,7 @@ class DesktopHostService {
       const bundle = this.sessionRegistry.beginNewActive(state.workspaceRoot);
       await this.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
       this.resetStreamingPlacementState(true, bundle);
-      await this.refreshRuntime();
+      await this.finishSessionActivation(bundle);
       this.lastRuntimeError = '';
       await this.dispatchExtensionEvent({
         type: 'onSessionReset',
@@ -2223,9 +2224,31 @@ class DesktopHostService {
         return this.buildSnapshot();
       }
 
+      const resolvedPath = path.resolve(filePath);
+      const warmBundle = this.sessionRegistry.findBySessionPath(resolvedPath);
+      const warmMessageCount = warmBundle?.messageTimeline.toMessages().length ?? 0;
+      if (warmBundle?.activeSession && warmMessageCount > 0) {
+        await this.ensureInitialized(warmBundle.workspaceRoot, { fastPath: true });
+        this.sessionRegistry.activateExisting(warmBundle);
+        await this.finishSessionActivation(warmBundle);
+        this.lastRuntimeError = '';
+        await this.dispatchExtensionEvent({
+          type: 'onSessionOpened',
+          detail: {
+            filePath: resolvedPath,
+            displayName: warmBundle.activeSession.displayName,
+          },
+        });
+        return this.buildSnapshot();
+      }
+
       const loaded = await loadStoredSession(filePath);
       const workspaceRoot = loaded.workspaceRoot ?? this.requireState().workspaceRoot;
-      await this.ensureInitialized(workspaceRoot);
+      const sameWorkspace =
+        this.initialized
+        && Boolean(this.state?.workspaceRoot)
+        && sameWorkspaceRoot(this.state!.workspaceRoot, workspaceRoot);
+      await this.ensureInitialized(workspaceRoot, sameWorkspace ? { fastPath: true } : {});
       const restored = restoreStoredSessionState({
         filePath,
         loaded,
@@ -2250,6 +2273,30 @@ class DesktopHostService {
     });
   }
 
+  private runtimeActivationSignature(bundle: SessionBundle): string {
+    const state = this.requireState();
+    return JSON.stringify({
+      model: state.config.activeModel,
+      imageModel: state.config.imageGenerationModel ?? '',
+      apiBase: currentApiBase(state.config),
+      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
+      planMode: state.config.planMode === true,
+      approvalLevel: bundle.approvalLevel,
+      loopEnabled: bundle.loopEnabled,
+      todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+    });
+  }
+
+  private isBundleRuntimeFresh(bundle: SessionBundle): boolean {
+    if (!bundle.runtime || bundle.runtime.isBusy() || !bundle.runtimeTransport) {
+      return false;
+    }
+    if (!bundle.runtimeActivationSignature) {
+      return false;
+    }
+    return bundle.runtimeActivationSignature === this.runtimeActivationSignature(bundle);
+  }
+
   /** After registry switch: wire runtime for new loads, resume in-flight runs without resetting timeline. */
   private async finishSessionActivation(bundle: SessionBundle): Promise<void> {
     if (bundle.runtime?.isBusy()) {
@@ -2258,6 +2305,12 @@ class DesktopHostService {
       return;
     }
     this.resetStreamingPlacementState(true, bundle);
+    if (this.isBundleRuntimeFresh(bundle)) {
+      await this.refreshTodoSnapshotForBundle(bundle);
+      await this.flushDeferredRuntimeRefreshIfIdle(bundle);
+      this.syncActiveRuntimePointer();
+      return;
+    }
     await this.ensureToolExecutor(bundle);
     await this.refreshTodoSnapshotForBundle(bundle);
     await this.refreshRuntimeForBundle(bundle);
@@ -2654,6 +2707,7 @@ class DesktopHostService {
     this.lastRuntimeError = '';
     await this.refreshModelKeyPresence();
     await this.refreshTodoSnapshotForBundle(bundle);
+    bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
   }
 
   private async ensureToolExecutor(bundle: SessionBundle = this.activeBundle()): Promise<DesktopToolExecutor> {
