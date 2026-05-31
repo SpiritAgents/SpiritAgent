@@ -162,7 +162,9 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     ModelTransportKind::Anthropic => {
                         model_add_default_custom_api_base(ModelTransportKind::Anthropic)
                     }
-                    ModelTransportKind::OpenAiCompatible => DEFAULT_API_BASE.to_string(),
+                    ModelTransportKind::OpenResponses | ModelTransportKind::OpenAiCompatible => {
+                        DEFAULT_API_BASE.to_string()
+                    }
                 });
                 let capabilities = normalize_model_capabilities(capabilities);
                 let key_value = match key {
@@ -178,7 +180,9 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 if !capabilities.is_empty() {
                     extra.insert("capabilities".to_string(), serde_json::json!(capabilities));
                 }
-                if transport_kind == ModelTransportKind::Anthropic {
+                if transport_kind == ModelTransportKind::Anthropic
+                    || transport_kind == ModelTransportKind::OpenResponses
+                {
                     extra.insert(
                         "transportKind".to_string(),
                         serde_json::json!(transport_kind.as_str()),
@@ -366,14 +370,20 @@ fn parse_model_transport_kind(
     };
 
     match (provider, parsed) {
-        (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible) => {
-            Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible"))
+        (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses) => {
+            Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible 或 open-responses"))
         }
-        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic) => {
-            Err(anyhow!("只有 provider=custom 或 anthropic 时可以选择 anthropic transport-kind"))
+        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic | ModelTransportKind::OpenResponses) => {
+            Err(anyhow!("只有 provider=openai 或 custom 时可以选择 open-responses transport-kind"))
+        }
+        (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
+            Err(anyhow!("provider=openai 时 transport-kind 不能是 anthropic"))
         }
         (None, ModelTransportKind::Anthropic) => {
             Err(anyhow!("transport-kind=anthropic 需要同时指定 --provider custom 或 --provider anthropic"))
+        }
+        (None, ModelTransportKind::OpenResponses) => {
+            Err(anyhow!("transport-kind=open-responses 需要同时指定 --provider openai 或 --provider custom"))
         }
         _ => Ok(parsed),
     }
@@ -394,7 +404,7 @@ fn parse_model_reasoning_effort(
         ModelTransportKind::Anthropic => {
             &["default", "low", "medium", "high", "xhigh", "max"][..]
         }
-        ModelTransportKind::OpenAiCompatible => match provider {
+        ModelTransportKind::OpenResponses | ModelTransportKind::OpenAiCompatible => match provider {
             Some(ModelProvider::Deepseek) if is_deepseek_v4_reasoning_model(model_name) => {
                 &["default", "high", "max"]
             }

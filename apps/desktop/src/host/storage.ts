@@ -500,7 +500,7 @@ function normalizeDesktopTransportKind(
   value: unknown,
   provider?: DesktopModelProvider,
 ): DesktopTransportKind | undefined {
-  if (value === 'openai-compatible' || value === 'anthropic') {
+  if (value === 'openai-compatible' || value === 'open-responses' || value === 'anthropic') {
     return value;
   }
 

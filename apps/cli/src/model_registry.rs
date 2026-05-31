@@ -62,6 +62,7 @@ impl FromStr for ModelProvider {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModelTransportKind {
     OpenAiCompatible,
+    OpenResponses,
     Anthropic,
 }
 
@@ -69,6 +70,7 @@ impl ModelTransportKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::OpenAiCompatible => "openai-compatible",
+            Self::OpenResponses => "open-responses",
             Self::Anthropic => "anthropic",
         }
     }
@@ -80,6 +82,7 @@ impl FromStr for ModelTransportKind {
     fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
         match value.trim().to_ascii_lowercase().as_str() {
             "openai-compatible" => Ok(Self::OpenAiCompatible),
+            "open-responses" => Ok(Self::OpenResponses),
             "anthropic" => Ok(Self::Anthropic),
             other => Err(format!("不支持的 transport kind: {other}")),
         }
@@ -340,10 +343,10 @@ fn normalize_transport_kind(model: &mut ModelProfile) {
     model.extra.remove("transportKind");
     model.extra.remove("transport_kind");
 
-    if transport_kind == ModelTransportKind::Anthropic {
+    if transport_kind == ModelTransportKind::Anthropic || transport_kind == ModelTransportKind::OpenResponses {
         model.extra.insert(
             "transportKind".to_string(),
-            Value::String(ModelTransportKind::Anthropic.as_str().to_string()),
+            Value::String(transport_kind.as_str().to_string()),
         );
     }
 }
@@ -362,7 +365,7 @@ pub(crate) fn normalize_reasoning_effort_value(
             "none" | "minimal" => "default".to_string(),
             _ => "default".to_string(),
         },
-        ModelTransportKind::OpenAiCompatible => match provider {
+        ModelTransportKind::OpenResponses | ModelTransportKind::OpenAiCompatible => match provider {
             Some(ModelProvider::Deepseek) if is_deepseek_v4_reasoning_model(model_name) => {
                 match normalized.as_str() {
                     "default" | "high" | "max" => normalized,

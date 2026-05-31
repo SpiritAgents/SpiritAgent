@@ -137,9 +137,10 @@ fn model_add_transport_field(selected: usize) -> BottomFormFieldView {
         editor: BottomFormFieldEditorView::Choice {
             options: vec![
                 t!("form.model.api_kind.openai_compatible").into_owned(),
+                t!("form.model.api_kind.open_responses").into_owned(),
                 t!("form.model.api_kind.anthropic").into_owned(),
             ],
-            selected: selected.min(1),
+            selected: selected.min(2),
         },
     }
 }
@@ -148,11 +149,11 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
     match provider {
         ModelProvider::Anthropic => ModelTransportKind::Anthropic,
         ModelProvider::Custom => match form.fields.get(2).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 1 => {
-                if *selected == 1 {
-                    ModelTransportKind::Anthropic
-                } else {
-                    ModelTransportKind::OpenAiCompatible
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
+                match *selected {
+                    1 => ModelTransportKind::OpenResponses,
+                    2 => ModelTransportKind::Anthropic,
+                    _ => ModelTransportKind::OpenAiCompatible,
                 }
             }
             _ => ModelTransportKind::OpenAiCompatible,
@@ -281,8 +282,8 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         _ => 0,
     };
     let transport_selected = match form.fields.get(2).map(|f| &f.editor) {
-        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 1 => {
-            (*selected).min(1)
+        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
+            (*selected).min(2)
         }
         _ => 0,
     };
@@ -1543,10 +1544,18 @@ mod tests {
         assert_eq!(value, "line1 line2");
     }
 
+    const MODEL_ADD_CUSTOM_PROVIDER_INDEX: usize = 7;
+
     #[test]
     fn model_add_form_parses_preset_connection() {
         let mut form = new_model_add_form();
         assert!(matches!(form.kind, crate::view::BottomFormKind::ModelAdd));
+        if let Some(f) = form.fields.get_mut(0) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 2;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
         const API_KEY_FIELD: usize = 2;
         form.selected_field = API_KEY_FIELD;
         insert_text(&mut form, "sk-secret");
@@ -1571,7 +1580,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 5;
+                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -1595,7 +1604,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 5;
+                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -1627,13 +1636,13 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 5;
+                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
             }
         }
         sync_model_add_form_fields(&mut form);
         if let Some(f) = form.fields.get_mut(2) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
+                *selected = 2;
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -1653,7 +1662,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 3;
+                *selected = 5;
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -1674,7 +1683,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 4;
+                *selected = 1;
             }
         }
         sync_model_add_form_fields(&mut form);

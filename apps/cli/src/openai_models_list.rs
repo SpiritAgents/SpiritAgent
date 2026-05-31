@@ -170,7 +170,9 @@ pub fn list_model_ids(
     transport_kind: ModelTransportKind,
 ) -> Result<Vec<String>, String> {
     match transport_kind {
-        ModelTransportKind::OpenAiCompatible => list_openai_compatible_model_ids(api_base, api_key),
+        ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses => {
+            list_openai_compatible_model_ids(api_base, api_key)
+        }
         ModelTransportKind::Anthropic => list_anthropic_model_ids(api_base, api_key),
     }
 }
