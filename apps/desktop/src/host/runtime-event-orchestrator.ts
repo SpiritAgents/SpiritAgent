@@ -6,7 +6,7 @@ import {
 } from '@spirit-agent/agent-core';
 import type { HostExtensionEvent } from '@spirit-agent/host-internal';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import type {
   ConversationMessageSnapshot,
   MessageAuxSnapshot,

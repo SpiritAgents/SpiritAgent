@@ -2,7 +2,7 @@ import { lstat, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import {
   appendLlmToolResultMessages,
   buildActiveSkillsSystemMessage,

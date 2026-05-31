@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import {
   addGitWorktree as addGitWorktreeInternal,
   checkoutGitBranch as checkoutGitBranchInternal,

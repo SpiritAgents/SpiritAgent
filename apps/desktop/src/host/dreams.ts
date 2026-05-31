@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import i18n from '@/lib/i18n';
+import i18n from '../lib/i18n-host.js';
 import type {
   AgentRuntime,
   AnthropicTransportConfig,
