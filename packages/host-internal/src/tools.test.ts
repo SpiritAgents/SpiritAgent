@@ -29,8 +29,8 @@ function createMockImageFetch(): typeof fetch {
   }) as typeof fetch;
 }
 
-test('read_file returns unsupported vision text without image part when model blocks vision', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-vision-blocked-'));
+test('read_file returns unsupported image text without image part when model blocks image input', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-image-blocked-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
   const imagePath = join(workspaceRoot, 'blocked.png');
 
@@ -53,7 +53,7 @@ test('read_file returns unsupported vision text without image part when model bl
       path: imagePath,
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /该模型不支持 Vision/u);
+    assert.match(output.summaryText, /该模型不支持 Image 输入/u);
     assert.equal(output.content.some((part) => part.type === 'image'), false);
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
@@ -126,8 +126,8 @@ test('read_file still returns video part when model explicitly supports video in
   }
 });
 
-test('read_file still returns image part when model explicitly supports vision', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-vision-allowed-'));
+test('read_file still returns image part when model explicitly supports image input', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-image-allowed-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
   const imagePath = join(workspaceRoot, 'allowed.png');
 
@@ -140,7 +140,7 @@ test('read_file still returns image part when model explicitly supports vision',
       {
         getModelCompatibilityProfile: () => ({
           hasExplicitCapabilities: true,
-          capabilities: { vision: true },
+          capabilities: { imageInput: true },
         }),
       },
     );
@@ -171,7 +171,7 @@ test('web_fetch returns image part for supported remote image responses', async 
       {
         getModelCompatibilityProfile: () => ({
           hasExplicitCapabilities: true,
-          capabilities: { vision: true },
+          capabilities: { imageInput: true },
         }),
       },
     );
@@ -189,7 +189,7 @@ test('web_fetch returns image part for supported remote image responses', async 
   }
 });
 
-test('web_fetch returns blocked-vision text without image part for remote image responses', async () => {
+test('web_fetch returns blocked-image text without image part for remote image responses', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-web-fetch-blocked-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
   const originalFetch = globalThis.fetch;
@@ -213,7 +213,7 @@ test('web_fetch returns blocked-vision text without image part for remote image 
       url: 'https://example.com/source-image',
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /该模型不支持 Vision/u);
+    assert.match(output.summaryText, /该模型不支持 Image 输入/u);
     assert.equal(output.content.some((part) => part.type === 'image'), false);
   } finally {
     globalThis.fetch = originalFetch;
@@ -255,7 +255,7 @@ test('read_file accepts Spirit-managed generated image refs without leaking loca
       {
         getModelCompatibilityProfile: () => ({
           hasExplicitCapabilities: true,
-          capabilities: { vision: true },
+          capabilities: { imageInput: true },
         }),
       },
     );
@@ -299,7 +299,7 @@ test('read_file accepts Spirit-managed generated image refs with mixed-case URL 
       {
         getModelCompatibilityProfile: () => ({
           hasExplicitCapabilities: true,
-          capabilities: { vision: true },
+          capabilities: { imageInput: true },
         }),
       },
     );

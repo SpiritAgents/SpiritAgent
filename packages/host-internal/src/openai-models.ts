@@ -8,7 +8,7 @@ export type { ProviderModelTransportKind };
 
 export interface ProviderListedModelEntry {
   id: string;
-  supportsVision?: boolean;
+  supportsImageInput?: boolean;
   supportsVideoInput?: boolean;
   supportsReasoning?: boolean;
   contextLength?: number;
@@ -94,9 +94,9 @@ export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedM
     }
 
     const modelEntry: ProviderListedModelEntry = { id: id.trim() };
-    const supportsVision = readBooleanModelTrait(record, 'supports_image_in');
-    if (supportsVision !== undefined) {
-      modelEntry.supportsVision = supportsVision;
+    const supportsImageInput = readBooleanModelTrait(record, 'supports_image_in');
+    if (supportsImageInput !== undefined) {
+      modelEntry.supportsImageInput = supportsImageInput;
     }
     const supportsVideoInput = readBooleanModelTrait(record, 'supports_video_in');
     if (supportsVideoInput !== undefined) {
@@ -137,9 +137,9 @@ export function parseAnthropicModelEntriesPayload(body: unknown): ProviderListed
     const id = record.id;
     if (typeof id === 'string' && id.trim().length > 0) {
       const modelEntry: ProviderListedModelEntry = { id: id.trim() };
-      const supportsVision = anthropicModelSupportsVision(record.capabilities);
-      if (supportsVision !== undefined) {
-        modelEntry.supportsVision = supportsVision;
+      const supportsImageInput = anthropicModelSupportsImageInput(record.capabilities);
+      if (supportsImageInput !== undefined) {
+        modelEntry.supportsImageInput = supportsImageInput;
       }
       const supportedReasoningEfforts = anthropicSupportedReasoningEfforts(record.capabilities);
       if (supportedReasoningEfforts !== undefined) {
@@ -360,7 +360,7 @@ export async function listProviderModelIds(
   return (await listProviderModels(options)).map((entry) => entry.id);
 }
 
-function anthropicModelSupportsVision(value: unknown): boolean | undefined {
+function anthropicModelSupportsImageInput(value: unknown): boolean | undefined {
   const capabilities = asRecord(value);
   if (!capabilities) {
     return undefined;
@@ -409,7 +409,9 @@ function dedupeProviderListedModelEntries(
     seen.add(entry.id);
     deduped.push({
       id: entry.id,
-      ...(entry.supportsVision !== undefined ? { supportsVision: entry.supportsVision } : {}),
+      ...(entry.supportsImageInput !== undefined
+        ? { supportsImageInput: entry.supportsImageInput }
+        : {}),
       ...(entry.supportsVideoInput !== undefined
         ? { supportsVideoInput: entry.supportsVideoInput }
         : {}),

@@ -54,7 +54,6 @@ export interface StreamingRuntime<
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
   appendTrace(trace: unknown[], turn: RuntimeTurnContext<ToolRequest>): void;
   storeCompletedTurnResult(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void;
-  tryFallbackToTextOnlyAndBuildRetryState(error: string, pendingUserInput: string): State | undefined;
   startHistoryCompactionAsync(
     retryState: State,
     pendingUserInput: string,
@@ -504,22 +503,6 @@ export async function handlePendingStreamEvent<
     return true;
   }
 
-  const retryState = runtime.tryFallbackToTextOnlyAndBuildRetryState(
-    event.error,
-    pending.pendingUserInput,
-  );
-  if (retryState !== undefined) {
-    if (!runtime.pendingAssistantTextStore.trim()) {
-      runtime.emitEvent({
-        kind: 'replace-pending-assistant',
-        text: '当前模型不支持图片输入，已自动去除图片并重试。',
-      });
-    }
-    runtime.emitEvent({ kind: 'assistant-response-completed' });
-    await startStreamingRound(runtime, retryState, pending.pendingUserInput, pending.turn, true);
-    return true;
-  }
-
   if (
     runtime.options.llmTransport.isContextOverflowError(event.error) &&
     pending.turn.autoCompactAttempts < (runtime.options.maxAutoCompactRetries ?? 1)
@@ -582,15 +565,6 @@ export async function handlePendingStreamingCompletion<
 ): Promise<void> {
   if (completion.kind === 'failure') {
     runtime.appendTrace(completion.requestTrace, pending.turn);
-
-    const textOnlyRetryState = runtime.tryFallbackToTextOnlyAndBuildRetryState(
-      completion.error,
-      pending.pendingUserInput,
-    );
-    if (textOnlyRetryState !== undefined) {
-      await startStreamingRound(runtime, textOnlyRetryState, pending.pendingUserInput, pending.turn, true);
-      return;
-    }
 
     if (
       runtime.options.llmTransport.isContextOverflowError(completion.error) &&

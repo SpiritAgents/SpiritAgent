@@ -74,10 +74,10 @@ export function previewCatalogMapForTransport(input: {
 
 function previewCapabilitiesFromListedEntry(
   entry: ProviderListedModelEntry,
-): Array<'chat' | 'vision' | 'video'> {
-  const capabilities: Array<'chat' | 'vision' | 'video'> = ['chat'];
-  if (entry.supportsVision === true) {
-    capabilities.push('vision');
+): Array<'chat' | 'image' | 'video'> {
+  const capabilities: Array<'chat' | 'image' | 'video'> = ['chat'];
+  if (entry.supportsImageInput === true) {
+    capabilities.push('image');
   }
   if (entry.supportsVideoInput === true) {
     capabilities.push('video');

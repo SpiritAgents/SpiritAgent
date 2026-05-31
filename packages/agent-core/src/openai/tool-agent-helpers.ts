@@ -296,19 +296,3 @@ function isOpenAiUserMessageForInput(message: JsonValue, userInput: string): boo
 }
 
 export { llmHistoryToOpenAiMessages, llmMessageToOpenAiMessage };
-
-export function isOpenAiVisionUnsupportedError(error: string): boolean {
-  const normalized = error.toLowerCase();
-  return (
-    ((normalized.includes('image') || normalized.includes('vision') || normalized.includes('multimodal')) &&
-      (normalized.includes('unsupported') ||
-        normalized.includes('not support') ||
-        normalized.includes('does not support') ||
-        normalized.includes('not supported'))) ||
-    (normalized.includes('base64') &&
-      (normalized.includes('failed to process') ||
-        normalized.includes('cannot process') ||
-        normalized.includes('decode') ||
-        normalized.includes('20015')))
-  );
-}

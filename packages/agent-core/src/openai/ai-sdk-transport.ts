@@ -1393,7 +1393,7 @@ function sanitizeMessageForCompatibility(
   }
 
   let content = cloned.content;
-  if (profile.hasExplicitCapabilities && !profile.capabilities.vision) {
+  if (profile.hasExplicitCapabilities && !profile.capabilities.imageInput) {
     content = content.filter(
       (part) => !(isJsonObject(part) && part.type === 'image_url'),
     );

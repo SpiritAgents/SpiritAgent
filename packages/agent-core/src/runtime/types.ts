@@ -138,11 +138,6 @@ export type RuntimeEvent<ToolRequest> =
       decisionKind: RuntimeApprovalDecision['kind'];
     }
   | {
-      kind: 'vision-fallback-retry';
-      droppedImages: number;
-      message: string;
-    }
-  | {
       kind: 'background-tool-status';
       phase: 'started' | 'finished';
       toolName: string;
@@ -365,7 +360,6 @@ export interface AgentRuntimeOptions<
   appendUserMessage?: (state: State, content: string) => State;
   appendUserLlmMessage?: (state: State, message: LlmMessage) => State;
   extractAssistantText: (state: State) => string | undefined;
-  isVisionUnsupportedError?: (error: string) => boolean;
   generateImage?: (request: ImageGenerationRequest) => Promise<ToolExecutionOutput>;
   truncateStateForContextRetry?: (state: State) => RuntimeStatePreparationResult<State>;
   truncateHistoryForCompaction?: (

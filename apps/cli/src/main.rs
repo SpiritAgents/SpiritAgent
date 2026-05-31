@@ -102,7 +102,7 @@ enum ModelAction {
         transport_kind: Option<String>,
         #[arg(long)]
         reasoning_effort: Option<String>,
-        #[arg(long = "capability", value_parser = ["chat", "vision", "imageGeneration"])]
+        #[arg(long = "capability", value_parser = ["chat", "image", "imageGeneration", "video"])]
         capabilities: Vec<String>,
         #[arg(long)]
         key: Option<String>,

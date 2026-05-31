@@ -2990,8 +2990,20 @@ fn model_capabilities_json(profile: &crate::model_registry::ModelProfile) -> Opt
     let mut object = Map::new();
     for capability in capabilities {
         match capability.as_str() {
-            "chat" | "vision" | "audioInput" | "videoInput" | "imageGeneration" => {
-                object.insert(capability, Value::Bool(true));
+            "chat" => {
+                object.insert("chat".to_string(), Value::Bool(true));
+            }
+            "image" | "imageInput" => {
+                object.insert("imageInput".to_string(), Value::Bool(true));
+            }
+            "audioInput" => {
+                object.insert("audioInput".to_string(), Value::Bool(true));
+            }
+            "video" | "videoInput" => {
+                object.insert("videoInput".to_string(), Value::Bool(true));
+            }
+            "imageGeneration" => {
+                object.insert("imageGeneration".to_string(), Value::Bool(true));
             }
             _ => {}
         }

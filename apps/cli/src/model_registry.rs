@@ -122,9 +122,11 @@ impl ModelProfile {
             })
     }
 
-    pub fn supports_vision_input(&self) -> bool {
+    pub fn supports_image_input(&self) -> bool {
         if let Some(capabilities) = self.explicit_capabilities() {
-            return capabilities.iter().any(|capability| capability == "vision");
+            return capabilities
+                .iter()
+                .any(|capability| capability == "image" || capability == "imageInput");
         }
 
         match self.provider {
@@ -527,7 +529,7 @@ mod tests {
     }
 
     #[test]
-    fn model_profile_supports_vision_uses_explicit_capabilities_for_moonshot() {
+    fn model_profile_supports_image_input_uses_explicit_capabilities_for_moonshot() {
         let kimi_without_capabilities = super::ModelProfile {
             name: "kimi-k2.6".to_string(),
             api_base: "https://api.moonshot.cn/v1".to_string(),
@@ -535,10 +537,10 @@ mod tests {
             reasoning_effort: None,
             extra: serde_json::Map::new(),
         };
-        let mut kimi_with_vision = kimi_without_capabilities.clone();
-        kimi_with_vision.extra.insert(
+        let mut kimi_with_image = kimi_without_capabilities.clone();
+        kimi_with_image.extra.insert(
             "capabilities".to_string(),
-            serde_json::json!(["chat", "vision"]),
+            serde_json::json!(["chat", "image"]),
         );
         let deepseek = super::ModelProfile {
             name: "deepseek-v4-pro".to_string(),
@@ -555,14 +557,14 @@ mod tests {
             extra: serde_json::Map::new(),
         };
 
-        assert!(!kimi_without_capabilities.supports_vision_input());
-        assert!(kimi_with_vision.supports_vision_input());
-        assert!(!deepseek.supports_vision_input());
-        assert!(custom.supports_vision_input());
+        assert!(!kimi_without_capabilities.supports_image_input());
+        assert!(kimi_with_image.supports_image_input());
+        assert!(!deepseek.supports_image_input());
+        assert!(custom.supports_image_input());
     }
 
     #[test]
-    fn explicit_capabilities_override_provider_vision_inference() {
+    fn explicit_capabilities_override_provider_image_input_inference() {
         let mut deepseek = super::ModelProfile {
             name: "deepseek-v4-pro".to_string(),
             api_base: "https://api.deepseek.com/v1".to_string(),
@@ -572,7 +574,7 @@ mod tests {
         };
         deepseek.extra.insert(
             "capabilities".to_string(),
-            serde_json::json!(["chat", "vision"]),
+            serde_json::json!(["chat", "image"]),
         );
 
         let mut custom = super::ModelProfile {
@@ -586,8 +588,8 @@ mod tests {
             .extra
             .insert("capabilities".to_string(), serde_json::json!(["chat"]));
 
-        assert!(deepseek.supports_vision_input());
-        assert!(!custom.supports_vision_input());
+        assert!(deepseek.supports_image_input());
+        assert!(!custom.supports_image_input());
     }
 
     #[test]

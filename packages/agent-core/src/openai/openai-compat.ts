@@ -56,7 +56,7 @@ export interface OpenAiTransportConfig {
   llmVendor?: OpenAiLlmVendor;
   /**
    * User-configured explicit model capabilities. When provided, these override
-   * provider/model inference for compatibility decisions such as vision input.
+   * provider/model inference for compatibility decisions such as image input.
    */
   modelCapabilities?: OpenAiModelCapabilities;
   /**

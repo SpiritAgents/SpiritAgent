@@ -7,7 +7,7 @@ import {
   parseMoonshotModelEntriesPayload,
 } from './openai-models.js';
 
-test('parseAnthropicModelEntriesPayload extracts vision and supported effort levels', () => {
+test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
   const entries = parseAnthropicModelEntriesPayload({
     data: [
       {
@@ -30,7 +30,7 @@ test('parseAnthropicModelEntriesPayload extracts vision and supported effort lev
   assert.deepEqual(entries, [
     {
       id: 'claude-sonnet-4-5',
-      supportsVision: true,
+      supportsImageInput: true,
       supportedReasoningEfforts: ['low', 'medium', 'high'],
     },
   ]);
@@ -52,7 +52,7 @@ test('parseAnthropicModelEntriesPayload keeps explicit no-effort support as empt
   assert.deepEqual(entries, [
     {
       id: 'claude-haiku-no-effort',
-      supportsVision: false,
+      supportsImageInput: false,
       supportedReasoningEfforts: [],
     },
   ]);
@@ -82,7 +82,7 @@ test('parseMoonshotModelEntriesPayload maps Moonshot model trait fields', () => 
   assert.deepEqual(entries, [
     {
       id: 'kimi-k2.5',
-      supportsVision: true,
+      supportsImageInput: true,
       supportsVideoInput: false,
       supportsReasoning: true,
       supportedReasoningEfforts: moonshotSupportedReasoningEfforts(true),
@@ -90,7 +90,7 @@ test('parseMoonshotModelEntriesPayload maps Moonshot model trait fields', () => 
     },
     {
       id: 'kimi-k2-turbo-preview',
-      supportsVision: false,
+      supportsImageInput: false,
       supportsVideoInput: false,
       supportsReasoning: false,
       supportedReasoningEfforts: [],

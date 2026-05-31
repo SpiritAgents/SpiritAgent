@@ -405,35 +405,35 @@ function verifyKnownModelCapabilityTable(): void {
     llmVendor: 'deepseek',
     model: 'deepseek-v4-pro',
   });
-  if (!deepSeek.hasExplicitCapabilities || deepSeek.capabilities.vision) {
-    throw new Error('DeepSeek capabilities 表异常：应显式声明且不支持 vision。');
+  if (!deepSeek.hasExplicitCapabilities || deepSeek.capabilities.imageInput) {
+    throw new Error('DeepSeek capabilities 表异常：应显式声明且不支持 imageInput。');
   }
 
   const moonshotWithoutCatalog = resolveOpenAiModelCompatibilityProfile({
     llmVendor: 'moonshot-ai',
     model: 'kimi-k2.5',
   });
-  const moonshotWithVision = resolveOpenAiModelCompatibilityProfile({
+  const moonshotWithImageInput = resolveOpenAiModelCompatibilityProfile({
     llmVendor: 'moonshot-ai',
     model: 'kimi-k2.5',
-    modelCapabilities: { vision: true },
+    modelCapabilities: { imageInput: true },
   });
 
-  if (!moonshotWithoutCatalog.hasExplicitCapabilities || moonshotWithoutCatalog.capabilities.vision) {
-    throw new Error('Moonshot capabilities 表异常：无 catalog 时不应推断 vision。');
+  if (!moonshotWithoutCatalog.hasExplicitCapabilities || moonshotWithoutCatalog.capabilities.imageInput) {
+    throw new Error('Moonshot capabilities 表异常：无 catalog 时不应推断 imageInput。');
   }
-  if (!moonshotWithVision.capabilities.vision) {
-    throw new Error('Moonshot capabilities 表异常：显式 modelCapabilities 应保留 vision。');
+  if (!moonshotWithImageInput.capabilities.imageInput) {
+    throw new Error('Moonshot capabilities 表异常：显式 modelCapabilities 应保留 imageInput。');
   }
 
   const explicitCustom = resolveOpenAiModelCompatibilityProfile({
     llmVendor: 'custom',
     model: 'custom-image-model',
-    modelCapabilities: { chat: true, vision: true, imageGeneration: true },
+    modelCapabilities: { chat: true, imageInput: true, imageGeneration: true },
   });
   if (
     !explicitCustom.hasExplicitCapabilities ||
-    !explicitCustom.capabilities.vision ||
+    !explicitCustom.capabilities.imageInput ||
     !explicitCustom.capabilities.imageGeneration
   ) {
     throw new Error('显式 modelCapabilities 未覆盖 provider/model 推断。');
