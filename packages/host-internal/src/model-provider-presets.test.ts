@@ -13,6 +13,8 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('vercel-ai-gateway'), 'vercel-ai-gateway');
   assert.equal(parseModelProviderId('openai'), 'openai');
   assert.equal(parseModelProviderId('custom'), 'custom');
+  assert.equal(parseModelProviderId('moonshot-ai'), 'moonshot-ai');
+  assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
   assert.equal(parseModelProviderId(''), undefined);
 

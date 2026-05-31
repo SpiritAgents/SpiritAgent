@@ -43,10 +43,10 @@ test('anthropic models normalize max to high transport effort', () => {
   );
 });
 
-test('kimi supported efforts restrict unavailable levels', () => {
+test('moonshot-ai supported efforts restrict unavailable levels', () => {
   assert.equal(
     resolveOpenAiTransportReasoningEffortForContext('minimal', {
-      provider: 'kimi',
+      provider: 'moonshot-ai',
       model: 'kimi-k2-turbo-preview',
       transportKind: 'openai-compatible',
       supportedEfforts: [],
@@ -55,7 +55,7 @@ test('kimi supported efforts restrict unavailable levels', () => {
   );
   assert.equal(
     resolveOpenAiTransportReasoningEffortForContext('low', {
-      provider: 'kimi',
+      provider: 'moonshot-ai',
       model: 'kimi-k2.5',
       transportKind: 'openai-compatible',
       supportedEfforts: ['minimal', 'low', 'medium', 'high'],

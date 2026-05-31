@@ -18,7 +18,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
 }): boolean {
-  if (input.provider === 'kimi') {
+  if (input.provider === 'moonshot-ai') {
     return true;
   }
   return usesAnthropicModelCatalogMetadata(input);

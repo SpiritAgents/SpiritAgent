@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  kimiSupportedReasoningEfforts,
+  moonshotSupportedReasoningEfforts,
   parseAnthropicModelEntriesPayload,
-  parseKimiModelEntriesPayload,
+  parseMoonshotModelEntriesPayload,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts vision and supported effort levels', () => {
@@ -58,8 +58,8 @@ test('parseAnthropicModelEntriesPayload keeps explicit no-effort support as empt
   ]);
 });
 
-test('parseKimiModelEntriesPayload maps Moonshot model trait fields', () => {
-  const entries = parseKimiModelEntriesPayload({
+test('parseMoonshotModelEntriesPayload maps Moonshot model trait fields', () => {
+  const entries = parseMoonshotModelEntriesPayload({
     object: 'list',
     data: [
       {
@@ -85,7 +85,7 @@ test('parseKimiModelEntriesPayload maps Moonshot model trait fields', () => {
       supportsVision: true,
       supportsVideoInput: false,
       supportsReasoning: true,
-      supportedReasoningEfforts: kimiSupportedReasoningEfforts(true),
+      supportedReasoningEfforts: moonshotSupportedReasoningEfforts(true),
       contextLength: 256000,
     },
     {

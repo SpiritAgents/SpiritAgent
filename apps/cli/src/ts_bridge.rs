@@ -2962,7 +2962,7 @@ fn approval_decision_from_input(message: &str) -> Value {
 fn model_provider_vendor(provider: ModelProvider) -> &'static str {
     match provider {
         ModelProvider::Deepseek => "deepseek",
-        ModelProvider::Kimi => "kimi",
+        ModelProvider::Moonshot => "moonshot-ai",
         ModelProvider::Minimax => "minimax",
         ModelProvider::Alibaba => "alibaba",
         ModelProvider::Anthropic => {

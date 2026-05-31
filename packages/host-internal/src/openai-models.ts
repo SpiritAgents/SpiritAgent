@@ -42,15 +42,15 @@ export function parseOpenAiModelsPayload(body: unknown): string[] {
 }
 
 /**
- * OpenAI-shaped `GET /v1/models` list. Kimi (Moonshot) extends each item with
+ * OpenAI-shaped `GET /v1/models` list. Moonshot AI extends each item with
  * `supports_image_in`, `supports_video_in`, `supports_reasoning`, and `context_length`.
  */
 export function parseOpenAiCompatibleModelEntriesPayload(
   body: unknown,
   provider?: ModelProviderId,
 ): ProviderListedModelEntry[] {
-  if (provider === 'kimi') {
-    return parseKimiModelEntriesPayload(body);
+  if (provider === 'moonshot-ai') {
+    return parseMoonshotModelEntriesPayload(body);
   }
 
   if (typeof body !== 'object' || body === null || !('data' in body)) {
@@ -73,7 +73,7 @@ export function parseOpenAiCompatibleModelEntriesPayload(
   return entries;
 }
 
-export function parseKimiModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
   }
@@ -105,7 +105,7 @@ export function parseKimiModelEntriesPayload(body: unknown): ProviderListedModel
     const supportsReasoning = readBooleanModelTrait(record, 'supports_reasoning');
     if (supportsReasoning !== undefined) {
       modelEntry.supportsReasoning = supportsReasoning;
-      modelEntry.supportedReasoningEfforts = kimiSupportedReasoningEfforts(supportsReasoning);
+      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning);
     }
     const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
     if (contextLength !== undefined) {
@@ -341,17 +341,17 @@ export async function listProviderModels(
     return listAnthropicModels(options);
   }
 
-  if (options.provider === 'kimi') {
-    return listKimiModels(options);
+  if (options.provider === 'moonshot-ai') {
+    return listMoonshotModels(options);
   }
 
   return listOpenAiCompatibleModels(options);
 }
 
-export async function listKimiModels(
+export async function listMoonshotModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'kimi');
+  return listOpenAiCompatibleModelsForProvider(options, 'moonshot-ai');
 }
 
 export async function listProviderModelIds(
@@ -436,7 +436,7 @@ function readPositiveIntegerModelTrait(record: Record<string, unknown>, key: str
   return Math.floor(value);
 }
 
-export function kimiSupportedReasoningEfforts(supportsReasoning: boolean): string[] {
+export function moonshotSupportedReasoningEfforts(supportsReasoning: boolean): string[] {
   return supportsReasoning ? ['minimal', 'low', 'medium', 'high'] : [];
 }
 

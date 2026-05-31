@@ -373,10 +373,10 @@ fn parse_model_transport_kind(
         (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses) => {
             Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible 或 open-responses"))
         }
-        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic) => {
+        (Some(ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic) => {
             Err(anyhow!("只有 provider=custom 或 anthropic 时可以选择 anthropic transport-kind"))
         }
-        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::OpenResponses) => {
+        (Some(ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::OpenResponses) => {
             Err(anyhow!("只有 provider=openai 或 custom 时可以选择 open-responses transport-kind"))
         }
         (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
@@ -411,7 +411,7 @@ fn parse_model_reasoning_effort(
             Some(ModelProvider::Deepseek) if is_deepseek_v4_reasoning_model(model_name) => {
                 &["default", "high", "max"]
             }
-            Some(ModelProvider::Kimi) => &["default", "minimal", "low", "medium", "high"],
+            Some(ModelProvider::Moonshot) => &["default", "minimal", "low", "medium", "high"],
             _ => &["default", "none", "low", "medium", "high", "xhigh"],
         },
     };

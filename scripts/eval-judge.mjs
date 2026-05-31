@@ -187,7 +187,7 @@ function printHelp() {
   console.log('  --api-key <key>          覆盖 OPENAI_API_KEY');
   console.log('  --base-url <url>         覆盖 OPENAI_BASE_URL');
   console.log('  --model <id>             覆盖 OPENAI_MODEL；未传时直接读取环境变量');
-  console.log('  --llm-vendor <vendor>    例如 deepseek / kimi / custom');
+  console.log('  --llm-vendor <vendor>    例如 deepseek / moonshot-ai / custom');
   console.log('  --reasoning-effort <v>   例如 low / medium / high');
   console.log('  --force                  覆盖已有的已完成 judgeReview');
 }
