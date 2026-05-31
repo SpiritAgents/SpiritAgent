@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { FileText, GitBranch, Plus, Terminal, X } from "lucide-react";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
+import i18n from "@/lib/i18n";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import {
@@ -29,7 +31,7 @@ const TAB_KIND_META: Record<
   WorkspaceToolTabKind,
   { label: string; icon: typeof FileText }
 > = {
-  files: { label: "文件", icon: FileText },
+  files: { label: i18n.t('workspace.files'), icon: FileText },
   shell: { label: "Shell", icon: Terminal },
   git: { label: "Git", icon: GitBranch },
 };
@@ -65,9 +67,10 @@ const DEFAULT_MIN = 240;
 const DEFAULT_MAX = 900;
 
 function WorkspaceGitTabPlaceholder() {
+  const { t } = useTranslation();
   return (
     <div className="p-3 text-muted-foreground">
-      <p>Git 区占位</p>
+      <p>{t('workspace.gitPlaceholder')}</p>
     </div>
   );
 }
@@ -94,6 +97,7 @@ export function WorkspaceToolsDock({
   open,
   className,
 }: WorkspaceToolsDockProps) {
+  const { t } = useTranslation();
   const [isResizing, setIsResizing] = useState(false);
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
@@ -200,7 +204,7 @@ export function WorkspaceToolsDock({
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label="调整工具区宽度"
+          aria-label={t('workspace.resizeToolsWidth')}
           className={cn(
             "group relative z-10 w-1 shrink-0 cursor-col-resize touch-none select-none",
             "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
@@ -220,12 +224,12 @@ export function WorkspaceToolsDock({
           id="workspace-tools-panel"
           className="flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden bg-background text-foreground"
           style={{ width: widthPx }}
-          aria-label="工作区工具"
+          aria-label={t('workspace.workspaceTools')}
         >
           <div className="flex shrink-0 items-end gap-0 border-b border-border/40 pt-1.5 pb-0 pl-1 pr-1">
             <div
               role="tablist"
-              aria-label="工具分页"
+              aria-label={t('workspace.toolTabs')}
               className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto overscroll-x-contain"
             >
               {tabs.map((item) => {
@@ -263,7 +267,7 @@ export function WorkspaceToolsDock({
                         "flex shrink-0 items-center justify-center rounded-tr-md bg-transparent p-1 pr-1.5 outline-none",
                         selected ? "text-foreground/70" : "text-inherit",
                       )}
-                      aria-label={`关闭${label}选项卡`}
+                      aria-label={t('workspace.closeTab', { label })}
                       onClick={(event) => {
                         event.stopPropagation();
                         handleCloseTab(item.id);
@@ -276,8 +280,8 @@ export function WorkspaceToolsDock({
               })}
             </div>
             <ActionPopover
-              ariaLabel="新建工具选项卡"
-              title="新建"
+              ariaLabel={t('workspace.newToolTab')}
+              title={t('common.new')}
               triggerIcon={<Plus className="size-3.5" aria-hidden />}
               items={newTabItems}
               triggerClassName="mb-1"
@@ -336,7 +340,7 @@ export function WorkspaceToolsDock({
               );
             })}
             {tabs.length === 0 ? (
-              <p className="p-3 text-muted-foreground">暂无打开的选项卡。</p>
+              <p className="p-3 text-muted-foreground">{t('workspace.noOpenTabs')}</p>
             ) : null}
           </div>
         </aside>

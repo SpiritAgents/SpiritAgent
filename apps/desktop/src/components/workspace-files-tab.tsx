@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Eye, Loader2, Play, Save, SquarePen, X } from "lucide-react";
 
@@ -73,6 +74,7 @@ export function WorkspaceFilesTab({
   autoRevealPlanNonce = 0,
   planRevealEnabled = true,
 }: WorkspaceFilesTabProps) {
+  const { t } = useTranslation();
   const [selectedEntry, setSelectedEntry] = useState<SelectedEntry>(null);
   const [doc, setDoc] = useState<LoadedDoc | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -129,7 +131,7 @@ export function WorkspaceFilesTab({
         setSavedText("");
         setDoc({
           status: "empty",
-          message: "Plan 还没有创建。后续检测到实际写入时，这里会显示托管 plan.md。",
+          message: t('workspace.planNotCreated'),
           readOnly: true,
           title: "Plan",
           subtitle: plan.path,
@@ -249,7 +251,7 @@ export function WorkspaceFilesTab({
 
   const closeEditor = useCallback(() => {
     if (dirty) {
-      const ok = window.confirm("有未保存的更改，仍要关闭吗？");
+      const ok = window.confirm(t('workspace.unsavedChangesCloseConfirm'));
       if (!ok) {
         return;
       }
@@ -310,22 +312,22 @@ export function WorkspaceFilesTab({
                   <ToggleGroupItem
                     value="preview"
                     className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
-                    aria-label="Markdown 预览"
-                    title="Markdown 预览"
+                    aria-label={t('workspace.markdownPreview')}
+                    title={t('workspace.markdownPreview')}
                     disabled={doc?.status !== "ready"}
                   >
                     <Eye className="size-3" aria-hidden />
-                    预览
+                    {t('workspace.preview')}
                   </ToggleGroupItem>
                   <ToggleGroupItem
                     value="edit"
                     className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
-                    aria-label="Markdown 编辑"
-                    title={doc?.readOnly ? "当前文档只读" : "Markdown 编辑"}
+                    aria-label={t('workspace.markdownEdit')}
+                    title={doc?.readOnly ? t('workspace.currentDocReadOnly') : t('workspace.markdownEdit')}
                     disabled={doc?.status !== "ready" || doc.readOnly}
                   >
                     <SquarePen className="size-3" aria-hidden />
-                    编辑
+                    {t('workspace.edit')}
                   </ToggleGroupItem>
                 </ToggleGroup>
               ) : null}
@@ -334,8 +336,8 @@ export function WorkspaceFilesTab({
                   type="button"
                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground disabled:opacity-50 dark:enabled:hover:bg-foreground/10"
                   disabled={startImplementingDisabled}
-                  aria-label="开始实现"
-                  title="开始实现"
+                  aria-label={t('workspace.startImplementing')}
+                  title={t('workspace.startImplementing')}
                   onClick={onStartImplementing}
                 >
                   <Play className="size-3.5" aria-hidden />
@@ -345,7 +347,7 @@ export function WorkspaceFilesTab({
                 <button
                   type="button"
                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground disabled:opacity-50 dark:enabled:hover:bg-foreground/10"
-                  aria-label="保存"
+                  aria-label={t('common.save')}
                   title="Ctrl+S / ⌘S"
                   disabled={saving || !dirty || doc?.status !== "ready"}
                   onClick={onClickSave}
@@ -360,7 +362,7 @@ export function WorkspaceFilesTab({
               <button
                 type="button"
                 className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10"
-                aria-label="关闭"
+                aria-label={t('common.close')}
                 onClick={closeEditor}
               >
                 <X className="size-3.5" aria-hidden />
@@ -391,7 +393,7 @@ export function WorkspaceFilesTab({
                       />
                     ) : (
                       <div className="flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border/50 bg-background/35 px-4 text-center text-xs text-muted-foreground">
-                        当前 Markdown 文档为空。
+                        {t('workspace.emptyMarkdownDoc')}
                       </div>
                     )}
                   </div>
