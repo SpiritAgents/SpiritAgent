@@ -156,6 +156,20 @@ apps 必须尽量薄，避免 CLI 与 Desktop 再次分叉。
 - CLI 与 Desktop 当前重复的宿主工具实现、rules / skills / plan 发现与管理逻辑，应收敛到宿主内部库。
 - `agent-core` 不应吸收这些发现与管理实现，因为那会把 Host / UI 责任错误抬升成 Agent SDK 的一部分。
 
+## LLM 传输族（transportKind）
+
+宿主通过 `LlmTransportConfig` 选择底层协议，**不得**把 Chat Completions 与 Responses 混为同一配置默认值：
+
+| `transportKind` | 协议族 | 典型 SDK |
+| --- | --- | --- |
+| `openai-compatible` | OpenAI Chat Completions 兼容 | `@ai-sdk/openai-compatible` 等 |
+| `open-responses` | Responses / Open Responses | OpenAI 官方：`@ai-sdk/openai` 的 `responses`；其它兼容 endpoint：`@ai-sdk/open-responses` |
+| `anthropic` | Anthropic Messages | `@ai-sdk/anthropic` |
+
+- 现有 `provider=openai` 配置默认仍为 `openai-compatible`；切换到 Responses 须由用户显式选择 `open-responses`。
+- OpenAI 官方 Responses 的 `store: true` / `previousResponseId` 会涉及服务端状态与隐私语义，默认 `store: false`；Desktop/CLI 文案须说明。
+- Open Responses 兼容 endpoint 的存储语义取决于用户配置的服务方，本项目不替用户假设。
+
 ## 设计判断
 
 “把 Rules / Skills / Plan 的发现与管理留在宿主内部库”并不违背 `agent-core` 作为唯一能力库的目标。
