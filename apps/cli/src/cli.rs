@@ -373,7 +373,10 @@ fn parse_model_transport_kind(
         (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses) => {
             Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible 或 open-responses"))
         }
-        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic | ModelTransportKind::OpenResponses) => {
+        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::Anthropic) => {
+            Err(anyhow!("只有 provider=custom 或 anthropic 时可以选择 anthropic transport-kind"))
+        }
+        (Some(ModelProvider::Deepseek | ModelProvider::Kimi | ModelProvider::Minimax | ModelProvider::Alibaba), ModelTransportKind::OpenResponses) => {
             Err(anyhow!("只有 provider=openai 或 custom 时可以选择 open-responses transport-kind"))
         }
         (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
