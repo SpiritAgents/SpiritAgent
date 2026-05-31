@@ -190,6 +190,7 @@ const modelCapabilityOptions: Array<{
 }> = [
   { value: "chat", label: "Chat", summary: "对话与工具编排" },
   { value: "vision", label: "Vision", summary: "读取图片输入" },
+  { value: "video", label: "Video", summary: "读取视频输入" },
   { value: "imageGeneration", label: "Image generation", summary: "生成图片输出" },
 ];
 

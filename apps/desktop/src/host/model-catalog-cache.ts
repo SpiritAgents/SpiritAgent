@@ -217,7 +217,7 @@ function normalizeCachedCapabilities(value: unknown): DesktopModelCapability[] |
   if (!Array.isArray(value)) {
     return undefined;
   }
-  const allowed = new Set<DesktopModelCapability>(['chat', 'vision', 'imageGeneration']);
+  const allowed = new Set<DesktopModelCapability>(['chat', 'vision', 'video', 'imageGeneration']);
   const seen = new Set<DesktopModelCapability>();
   const normalized: DesktopModelCapability[] = [];
   for (const item of value) {

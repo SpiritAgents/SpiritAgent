@@ -115,9 +115,7 @@ export function resolveOpenAiModelCompatibilityProfile(
   if (config.llmVendor === 'kimi') {
     return {
       hasExplicitCapabilities: true,
-      capabilities: isKimiVisionModel(config.model)
-        ? { vision: true }
-        : {},
+      capabilities: {},
     };
   }
 
@@ -139,22 +137,6 @@ export function openAiReasoningEffort(
     transportKind: 'openai-compatible',
   });
 }
-
-function isKimiVisionModel(model: string): boolean {
-  const normalizedModel = normalizeCompatibleModelId(model);
-  return KIMI_VISION_MODEL_PREFIXES.some(
-    (prefix) => normalizedModel === prefix || normalizedModel.startsWith(`${prefix}-`),
-  );
-}
-
-function normalizeCompatibleModelId(model: string): string {
-  return model.trim().toLowerCase();
-}
-
-const KIMI_VISION_MODEL_PREFIXES = [
-  'kimi-k2.5',
-  'kimi-k2.6',
-] as const;
 
 /**
  * DeepSeek / Kimi 等网关常在 OpenAI 兼容路径上接受顶层 `thinking` 字段以开关思考链输出。

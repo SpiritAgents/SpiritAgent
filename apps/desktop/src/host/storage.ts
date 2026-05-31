@@ -49,7 +49,7 @@ const CONFIG_FILE_NAME = 'config.json';
 const CHATS_DIR_NAME = 'chats';
 const PROVISIONAL_CHATS_DIR_NAME = '__provisional__';
 const MAX_RECENT_WORKSPACES = 20;
-const MODEL_CAPABILITIES = ['chat', 'vision', 'imageGeneration'] as const;
+const MODEL_CAPABILITIES = ['chat', 'vision', 'video', 'imageGeneration'] as const;
 const DEFAULT_CUSTOM_MODEL_CAPABILITIES: DesktopModelCapability[] = ['chat', 'vision'];
 
 export interface DesktopConfigFile {

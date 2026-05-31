@@ -9,6 +9,9 @@ export type { ProviderModelTransportKind };
 export interface ProviderListedModelEntry {
   id: string;
   supportsVision?: boolean;
+  supportsVideoInput?: boolean;
+  supportsReasoning?: boolean;
+  contextLength?: number;
   supportedReasoningEfforts?: string[];
 }
 
@@ -35,6 +38,21 @@ export function anthropicModelsListUrl(baseUrl: string): string {
  * Tolerates missing `data` by returning an empty list.
  */
 export function parseOpenAiModelsPayload(body: unknown): string[] {
+  return parseOpenAiCompatibleModelEntriesPayload(body).map((entry) => entry.id);
+}
+
+/**
+ * OpenAI-shaped `GET /v1/models` list. Kimi (Moonshot) extends each item with
+ * `supports_image_in`, `supports_video_in`, `supports_reasoning`, and `context_length`.
+ */
+export function parseOpenAiCompatibleModelEntriesPayload(
+  body: unknown,
+  provider?: ModelProviderId,
+): ProviderListedModelEntry[] {
+  if (provider === 'kimi') {
+    return parseKimiModelEntriesPayload(body);
+  }
+
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
   }
@@ -42,17 +60,60 @@ export function parseOpenAiModelsPayload(body: unknown): string[] {
   if (!Array.isArray(raw)) {
     return [];
   }
-  const ids: string[] = [];
+  const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
     if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
       continue;
     }
     const id = (entry as { id?: unknown }).id;
     if (typeof id === 'string' && id.trim().length > 0) {
-      ids.push(id.trim());
+      entries.push({ id: id.trim() });
     }
   }
-  return ids;
+  return entries;
+}
+
+export function parseKimiModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  if (typeof body !== 'object' || body === null || !('data' in body)) {
+    return [];
+  }
+  const raw = (body as { data?: unknown }).data;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const id = record.id;
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id: id.trim() };
+    const supportsVision = readBooleanModelTrait(record, 'supports_image_in');
+    if (supportsVision !== undefined) {
+      modelEntry.supportsVision = supportsVision;
+    }
+    const supportsVideoInput = readBooleanModelTrait(record, 'supports_video_in');
+    if (supportsVideoInput !== undefined) {
+      modelEntry.supportsVideoInput = supportsVideoInput;
+    }
+    const supportsReasoning = readBooleanModelTrait(record, 'supports_reasoning');
+    if (supportsReasoning !== undefined) {
+      modelEntry.supportsReasoning = supportsReasoning;
+      modelEntry.supportedReasoningEfforts = kimiSupportedReasoningEfforts(supportsReasoning);
+    }
+    const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+    entries.push(modelEntry);
+  }
+  return entries;
 }
 
 export function parseAnthropicModelsPayload(body: unknown): string[] {
@@ -132,6 +193,12 @@ export async function listOpenAiCompatibleModelIds(
     init.signal = options.signal;
   }
 
+  const json = await fetchModelsListJson(url, init);
+  const ids = parseOpenAiModelsPayload(json);
+  return [...new Set(ids)].sort((a, b) => a.localeCompare(b));
+}
+
+async function fetchModelsListJson(url: string, init: RequestInit): Promise<unknown> {
   let response: Response;
   try {
     response = await fetch(url, init);
@@ -165,8 +232,37 @@ export async function listOpenAiCompatibleModelIds(
     );
   }
 
-  const ids = parseOpenAiModelsPayload(json);
-  return [...new Set(ids)].sort((a, b) => a.localeCompare(b));
+  return json;
+}
+
+export async function listOpenAiCompatibleModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  return listOpenAiCompatibleModelsForProvider(options);
+}
+
+async function listOpenAiCompatibleModelsForProvider(
+  options: ListOpenAiCompatibleModelIdsOptions,
+  provider?: ModelProviderId,
+): Promise<ProviderListedModelEntry[]> {
+  const url = openAiCompatibleModelsListUrl(options.baseUrl);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key}`,
+  };
+
+  const init: RequestInit = { method: 'GET', headers };
+  if (options.signal !== undefined) {
+    init.signal = options.signal;
+  }
+
+  const json = await fetchModelsListJson(url, init);
+  const entries = parseOpenAiCompatibleModelEntriesPayload(json, provider);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function listAnthropicModelIds(
@@ -245,7 +341,17 @@ export async function listProviderModels(
     return listAnthropicModels(options);
   }
 
-  return (await listOpenAiCompatibleModelIds(options)).map((id) => ({ id }));
+  if (options.provider === 'kimi') {
+    return listKimiModels(options);
+  }
+
+  return listOpenAiCompatibleModels(options);
+}
+
+export async function listKimiModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  return listOpenAiCompatibleModelsForProvider(options, 'kimi');
 }
 
 export async function listProviderModelIds(
@@ -304,12 +410,34 @@ function dedupeProviderListedModelEntries(
     deduped.push({
       id: entry.id,
       ...(entry.supportsVision !== undefined ? { supportsVision: entry.supportsVision } : {}),
+      ...(entry.supportsVideoInput !== undefined
+        ? { supportsVideoInput: entry.supportsVideoInput }
+        : {}),
+      ...(entry.supportsReasoning !== undefined ? { supportsReasoning: entry.supportsReasoning } : {}),
+      ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
       ...(entry.supportedReasoningEfforts !== undefined
         ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }
         : {}),
     });
   }
   return deduped;
+}
+
+function readBooleanModelTrait(record: Record<string, unknown>, key: string): boolean | undefined {
+  const value = record[key];
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function readPositiveIntegerModelTrait(record: Record<string, unknown>, key: string): number | undefined {
+  const value = record[key];
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  return Math.floor(value);
+}
+
+export function kimiSupportedReasoningEfforts(supportsReasoning: boolean): string[] {
+  return supportsReasoning ? ['minimal', 'low', 'medium', 'high'] : [];
 }
 
 const ANTHROPIC_REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;

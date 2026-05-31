@@ -43,6 +43,27 @@ test('anthropic models normalize max to high transport effort', () => {
   );
 });
 
+test('kimi supported efforts restrict unavailable levels', () => {
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext('minimal', {
+      provider: 'kimi',
+      model: 'kimi-k2-turbo-preview',
+      transportKind: 'openai-compatible',
+      supportedEfforts: [],
+    }),
+    undefined,
+  );
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext('low', {
+      provider: 'kimi',
+      model: 'kimi-k2.5',
+      transportKind: 'openai-compatible',
+      supportedEfforts: ['minimal', 'low', 'medium', 'high'],
+    }),
+    'low',
+  );
+});
+
 test('anthropic supported efforts restrict unavailable levels', () => {
   assert.equal(
     resolveAnthropicTransportReasoningEffortForContext('xhigh', {

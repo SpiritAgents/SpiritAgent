@@ -14,18 +14,28 @@ export function usesAnthropicModelCatalogMetadata(input: {
   return input.transportKind === 'anthropic' || input.provider === 'anthropic';
 }
 
+export function usesProviderListedModelCatalogMetadata(input: {
+  provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
+}): boolean {
+  if (input.provider === 'kimi') {
+    return true;
+  }
+  return usesAnthropicModelCatalogMetadata(input);
+}
+
 export function previewModelCatalogForTransport(input: {
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
   listedModels: readonly ProviderListedModelEntry[];
 }): PreviewModelCatalogEntry[] | undefined {
-  if (!usesAnthropicModelCatalogMetadata(input)) {
+  if (!usesProviderListedModelCatalogMetadata(input)) {
     return undefined;
   }
 
   return input.listedModels.map((entry) => ({
     id: entry.id,
-    capabilities: entry.supportsVision === true ? ['chat', 'vision'] : ['chat'],
+    capabilities: previewCapabilitiesFromListedEntry(entry),
     ...(entry.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
       : {}),
@@ -37,7 +47,7 @@ export function previewCatalogMapForTransport(input: {
   transportKind?: DesktopTransportKind;
   modelCatalog?: readonly PreviewModelCatalogEntry[];
 }): Map<string, PreviewModelCatalogEntry> {
-  if (!usesAnthropicModelCatalogMetadata(input) || !Array.isArray(input.modelCatalog)) {
+  if (!usesProviderListedModelCatalogMetadata(input) || !Array.isArray(input.modelCatalog)) {
     return new Map();
   }
 
@@ -60,6 +70,19 @@ export function previewCatalogMapForTransport(input: {
   }
 
   return new Map(normalized);
+}
+
+function previewCapabilitiesFromListedEntry(
+  entry: ProviderListedModelEntry,
+): Array<'chat' | 'vision' | 'video'> {
+  const capabilities: Array<'chat' | 'vision' | 'video'> = ['chat'];
+  if (entry.supportsVision === true) {
+    capabilities.push('vision');
+  }
+  if (entry.supportsVideoInput === true) {
+    capabilities.push('video');
+  }
+  return capabilities;
 }
 
 function normalizePreviewSupportedReasoningEfforts(

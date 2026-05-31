@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseAnthropicModelEntriesPayload } from './openai-models.js';
+import {
+  kimiSupportedReasoningEfforts,
+  parseAnthropicModelEntriesPayload,
+  parseKimiModelEntriesPayload,
+} from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts vision and supported effort levels', () => {
   const entries = parseAnthropicModelEntriesPayload({
@@ -49,6 +53,46 @@ test('parseAnthropicModelEntriesPayload keeps explicit no-effort support as empt
     {
       id: 'claude-haiku-no-effort',
       supportsVision: false,
+      supportedReasoningEfforts: [],
+    },
+  ]);
+});
+
+test('parseKimiModelEntriesPayload maps Moonshot model trait fields', () => {
+  const entries = parseKimiModelEntriesPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'kimi-k2.5',
+        object: 'model',
+        supports_image_in: true,
+        supports_video_in: false,
+        supports_reasoning: true,
+        context_length: 256000,
+      },
+      {
+        id: 'kimi-k2-turbo-preview',
+        supports_image_in: false,
+        supports_video_in: false,
+        supports_reasoning: false,
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'kimi-k2.5',
+      supportsVision: true,
+      supportsVideoInput: false,
+      supportsReasoning: true,
+      supportedReasoningEfforts: kimiSupportedReasoningEfforts(true),
+      contextLength: 256000,
+    },
+    {
+      id: 'kimi-k2-turbo-preview',
+      supportsVision: false,
+      supportsVideoInput: false,
+      supportsReasoning: false,
       supportedReasoningEfforts: [],
     },
   ]);
