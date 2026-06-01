@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 export type WorkspaceBrowserTabProps = {
   browserUrl: string | undefined;
   onBrowserUrlChange(url: string): void;
+  /** 当前网页标题变化时通知父层；切到新标签页时传 undefined */
+  onTitleChange?: (title: string | undefined) => void;
 };
 
 type LocalListeningEndpoint = {
@@ -146,6 +148,7 @@ function BrowserNewTabPage({
 export function WorkspaceBrowserTab({
   browserUrl,
   onBrowserUrlChange,
+  onTitleChange,
 }: WorkspaceBrowserTabProps) {
   const { t } = useTranslation();
   const webviewRef = useRef<WebviewElement | null>(null);
@@ -155,6 +158,10 @@ export function WorkspaceBrowserTab({
   const [canGoForward, setCanGoForward] = useState(false);
   const [lastVisitedUrl, setLastVisitedUrl] = useState<string | undefined>(undefined);
   const canEmbed = canUseEmbeddedBrowser();
+  const onTitleChangeRef = useRef(onTitleChange);
+  useLayoutEffect(() => {
+    onTitleChangeRef.current = onTitleChange;
+  });
 
   const syncNavState = useCallback(() => {
     const el = webviewRef.current;
@@ -172,6 +179,7 @@ export function WorkspaceBrowserTab({
   useEffect(() => {
     if (showNewTab) {
       setAddressDraft("");
+      onTitleChangeRef.current?.(undefined);
       return;
     }
     setAddressDraft(browserUrl ?? "");
@@ -226,11 +234,17 @@ export function WorkspaceBrowserTab({
       }
     };
 
+    const onPageTitleUpdated = (event: Event) => {
+      const title = (event as Event & { title?: string }).title;
+      onTitleChangeRef.current?.(title || undefined);
+    };
+
     el.addEventListener("did-navigate", onDidNavigate);
     el.addEventListener("did-navigate-in-page", onDidNavigate);
     el.addEventListener("did-stop-loading", onDidStopLoading);
     el.addEventListener("new-window", onNewWindow);
     el.addEventListener("dom-ready", scheduleSyncNavState);
+    el.addEventListener("page-title-updated", onPageTitleUpdated);
 
     return () => {
       el.removeEventListener("did-navigate", onDidNavigate);
@@ -238,6 +252,7 @@ export function WorkspaceBrowserTab({
       el.removeEventListener("did-stop-loading", onDidStopLoading);
       el.removeEventListener("new-window", onNewWindow);
       el.removeEventListener("dom-ready", scheduleSyncNavState);
+      el.removeEventListener("page-title-updated", onPageTitleUpdated);
     };
   }, [canEmbed, showNewTab, syncNavState]);
 
