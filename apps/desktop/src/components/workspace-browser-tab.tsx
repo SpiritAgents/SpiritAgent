@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normalizeBrowserUrl, toLocalHostUrl } from "@/lib/browser-url";
 import {
+  BROWSER_NEW_TAB_SENTINEL,
   isBrowserNewTabUrl,
 } from "@/lib/workspace-tool-tabs";
 import { cn } from "@/lib/utils";
@@ -147,6 +148,7 @@ export function WorkspaceBrowserTab({
   const [addressDraft, setAddressDraft] = useState("");
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [lastVisitedUrl, setLastVisitedUrl] = useState<string | undefined>(undefined);
   const canEmbed = canUseEmbeddedBrowser();
 
   const syncNavState = useCallback(() => {
@@ -165,11 +167,12 @@ export function WorkspaceBrowserTab({
   useEffect(() => {
     if (showNewTab) {
       setAddressDraft("");
-      setCanGoBack(false);
-      setCanGoForward(false);
       return;
     }
     setAddressDraft(browserUrl ?? "");
+    if (browserUrl) {
+      setLastVisitedUrl(browserUrl);
+    }
   }, [browserUrl, showNewTab]);
 
   const submitAddress = useCallback(() => {
@@ -234,12 +237,21 @@ export function WorkspaceBrowserTab({
   }, [canEmbed, showNewTab, syncNavState]);
 
   const handleGoBack = useCallback(() => {
-    webviewRef.current?.goBack?.();
-  }, []);
+    const el = webviewRef.current;
+    if (el?.canGoBack?.()) {
+      el.goBack?.();
+    } else {
+      onBrowserUrlChange(BROWSER_NEW_TAB_SENTINEL);
+    }
+  }, [onBrowserUrlChange]);
 
   const handleGoForward = useCallback(() => {
+    if (showNewTab && lastVisitedUrl) {
+      onBrowserUrlChange(lastVisitedUrl);
+      return;
+    }
     webviewRef.current?.goForward?.();
-  }, []);
+  }, [showNewTab, lastVisitedUrl, onBrowserUrlChange]);
 
   const handleReload = useCallback(() => {
     if (showNewTab) {
@@ -267,7 +279,7 @@ export function WorkspaceBrowserTab({
           size="icon-sm"
           className="size-7 shrink-0"
           aria-label={t("workspace.browserBack")}
-          disabled={navDisabled || !canGoBack}
+          disabled={navDisabled}
           onClick={handleGoBack}
         >
           <ArrowLeft className="size-3.5" aria-hidden />
@@ -278,7 +290,7 @@ export function WorkspaceBrowserTab({
           size="icon-sm"
           className="size-7 shrink-0"
           aria-label={t("workspace.browserForward")}
-          disabled={navDisabled || !canGoForward}
+          disabled={showNewTab ? !lastVisitedUrl : !canGoForward}
           onClick={handleGoForward}
         >
           <ArrowRight className="size-3.5" aria-hidden />
