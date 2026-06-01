@@ -16,10 +16,64 @@ export type RichSegment =
   | { kind: "text"; value: string }
   | { kind: "element"; attachment: BrowserElementAttachment };
 
-/** Serialize contenteditable DOM → RichSegment[] */
+/**
+ * Flatten the contenteditable div's DOM so that all children are either:
+ * - text nodes
+ * - br elements
+ * - chip spans (data-element-chip)
+ *
+ * This prevents browsers from wrapping content in div/p containers when
+ * typing or deleting near chip nodes.
+ */
+function normalizeDOM(root: HTMLElement): void {
+  // Collect all top-level direct children that are block containers
+  const toUnwrap: HTMLElement[] = [];
+  root.childNodes.forEach((node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      if (!el.dataset.elementChip && (el.tagName === "DIV" || el.tagName === "P")) {
+        toUnwrap.push(el);
+      }
+    }
+  });
+
+  for (const container of toUnwrap) {
+    // Replace the container with its children
+    const children = Array.from(container.childNodes);
+    for (const child of children) {
+      root.insertBefore(child, container);
+    }
+    container.remove();
+  }
+
+  // Merge adjacent text nodes
+  root.normalize();
+
+  // Remove all lone <br> nodes that are adjacent to chips or at boundaries.
+  // A <br> is "lone" if it is next to a chip (or at start/end) and not serving
+  // as a deliberate newline between two text nodes.
+  const kids = Array.from(root.childNodes);
+  const toRemoveBr: ChildNode[] = [];
+  kids.forEach((node, i) => {
+    if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
+      const prev = kids[i - 1];
+      const next = kids[i + 1];
+      const prevIsText = prev?.nodeType === Node.TEXT_NODE;
+      const nextIsText = next?.nodeType === Node.TEXT_NODE;
+      // Keep <br> only when it sits between two text nodes (intentional newline).
+      // Remove it when it is at start, at end, or adjacent to a chip.
+      if (!(prevIsText && nextIsText)) {
+        toRemoveBr.push(node);
+      }
+    }
+  });
+  toRemoveBr.forEach((n) => n.remove());
+}
+
+/** Serialize contenteditable DOM → RichSegment[] (DOM must be normalized first) */
 function domToSegments(root: HTMLElement): RichSegment[] {
   const segs: RichSegment[] = [];
-  function walk(node: Node) {
+  root.childNodes.forEach((node) => {
     if (node.nodeType === Node.TEXT_NODE) {
       const v = node.textContent ?? "";
       if (v) segs.push({ kind: "text", value: v });
@@ -36,23 +90,15 @@ function domToSegments(root: HTMLElement): RichSegment[] {
         });
       } else if (el.tagName === "BR") {
         segs.push({ kind: "text", value: "\n" });
-      } else {
-        el.childNodes.forEach(walk);
-        if (el.tagName === "DIV" || el.tagName === "P") {
-          const last = segs[segs.length - 1];
-          if (last?.kind === "text" && !last.value.endsWith("\n")) {
-            last.value += "\n";
-          } else {
-            segs.push({ kind: "text", value: "\n" });
-          }
-        }
       }
+      // block containers handled by normalizeDOM; ignore here
     }
-  }
-  root.childNodes.forEach(walk);
+  });
+  // Strip trailing newline added by browsers
   const last = segs[segs.length - 1];
   if (last?.kind === "text" && last.value.endsWith("\n")) {
     last.value = last.value.slice(0, -1);
+    if (!last.value) segs.pop();
   }
   return segs;
 }
@@ -173,6 +219,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         div.appendChild(chip);
       }
       suppressNextSync.current = true;
+      normalizeDOM(div);
       notify();
     }, [notify]);
 
@@ -185,20 +232,22 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         suppressNextSync.current = false;
         return;
       }
+      normalizeDOM(div);
       const currentSegs = domToSegments(div);
       const currentText = segmentsToPlainText(currentSegs);
-      const currentIds = segmentsToAttachments(currentSegs).map((a) => a.id).join(",");
-      const incomingIds = (elementAttachments ?? []).map((a) => a.id).join(",");
-      if (currentText === value && currentIds === incomingIds) return;
-      const savedSel = saveSelection(div);
-      const segs: RichSegment[] = [];
-      if (value) segs.push({ kind: "text", value });
-      div.innerHTML = "";
-      div.appendChild(segmentsToDom(segs, document));
-      if (savedSel) restoreSelection(div, savedSel);
-    }, [value, elementAttachments]);
+      if (currentText === value) return;
+      // Only rebuild text content; preserve chip nodes in place
+      // Remove all non-chip children, keep chips
+      const chips = Array.from(div.querySelectorAll<HTMLElement>('[data-element-chip]'));
+      div.innerHTML = '';
+      // Re-insert text then chips in order matching value
+      if (value) div.appendChild(document.createTextNode(value));
+      chips.forEach((c) => div.appendChild(c));
+    }, [value]);
 
     const handleInput = useCallback(() => {
+      const div = divRef.current;
+      if (div) normalizeDOM(div);
       notify();
     }, [notify]);
 
