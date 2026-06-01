@@ -53,6 +53,13 @@ fn tool_request_args_excerpt(request: &ToolUiRequest) -> String {
             "old_text_chars": string_arg(request, "old_text").map(|value| value.chars().count()),
             "new_text_chars": string_arg(request, "new_text").map(|value| value.chars().count()),
         }),
+        "apply_patch" => json!({
+            "operation": {
+                "type": apply_patch_operation_type(request),
+                "path": apply_patch_path(request),
+                "diff_chars": apply_patch_diff_chars(request),
+            }
+        }),
         "ask_questions" => json!({
             "title": string_arg(request, "title"),
             "questionCount": question_count(request),
@@ -87,6 +94,34 @@ fn question_count(request: &ToolUiRequest) -> usize {
         .and_then(Value::as_array)
         .map(|questions| questions.len())
         .unwrap_or(0)
+}
+
+fn apply_patch_operation_object(request: &ToolUiRequest) -> Option<&Map<String, Value>> {
+    args_object(request)?
+        .get("operation")
+        .and_then(Value::as_object)
+}
+
+fn apply_patch_path<'a>(request: &'a ToolUiRequest) -> Option<&'a str> {
+    apply_patch_operation_object(request)?
+        .get("path")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+}
+
+fn apply_patch_operation_type(request: &ToolUiRequest) -> Option<&str> {
+    apply_patch_operation_object(request)?
+        .get("type")
+        .and_then(Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+}
+
+fn apply_patch_diff_chars(request: &ToolUiRequest) -> Option<usize> {
+    apply_patch_operation_object(request)?
+        .get("diff")
+        .and_then(Value::as_str)
+        .map(|value| value.chars().count())
+        .filter(|count| *count > 0)
 }
 
 fn strip_shell_reason_from_prompt(prompt: &str) -> (Option<String>, Vec<String>) {
@@ -193,6 +228,20 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
                 }
             }
             ("创建".to_string(), lines)
+        }
+        "apply_patch" => {
+            let path = apply_patch_path(request).unwrap_or("文件");
+            let mut lines = vec![path.to_string()];
+            if let Some(chars) = apply_patch_diff_chars(request) {
+                lines.push(format!("diff: {} 字符", chars));
+            }
+            let headline = match apply_patch_operation_type(request) {
+                Some("create_file") => "创建".to_string(),
+                Some("update_file") => "编辑".to_string(),
+                Some("delete_file") => "删除".to_string(),
+                _ => "补丁".to_string(),
+            };
+            (headline, lines)
         }
         _ => (
             format!("调用 {}", tool_name),
@@ -433,6 +482,25 @@ pub(crate) fn build_tool_result_block(
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
         },
+        "apply_patch" => {
+            let path = apply_patch_path(request).unwrap_or("<unknown>");
+            let headline = match apply_patch_operation_type(request) {
+                Some("create_file") => "已创建文件",
+                Some("update_file") => "已编辑文件",
+                Some("delete_file") => "已删除文件",
+                _ => "已应用补丁",
+            };
+            ToolUiBlock {
+                tool_call_id: tool_call_id.map(String::from),
+                tool_name: tool_name.to_string(),
+                phase: ToolUiPhase::Succeeded,
+                headline: headline.to_string(),
+                detail_lines: vec![format!("路径: {}", path)],
+                image_paths: Vec::new(),
+                args_excerpt: Some(args_excerpt),
+                output_excerpt: None,
+            }
+        }
         "run_shell_command" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
@@ -519,6 +587,10 @@ pub(crate) fn format_tool_ui_message(
         "delete_file" => format!(
             "[tool] 已删除文件 {}",
             string_arg(request, "path").unwrap_or("<unknown>")
+        ),
+        "apply_patch" => format!(
+            "[tool] 已应用补丁 {}",
+            apply_patch_path(request).unwrap_or("<unknown>")
         ),
         "run_shell_command" => format!(
             "[tool] {} 执行完成。\n{}",

@@ -1,6 +1,7 @@
 import { generateObject, generateText, jsonSchema, streamText } from 'ai';
 
 import type {
+  JsonObject,
   JsonValue,
   LlmMessage,
   LlmTransport,
@@ -23,13 +24,27 @@ import {
 import { llmHistoryToOpenAiMessages } from '../openai/tool-agent-helpers.js';
 import {
   buildAssistantMessageFromResponsesGenerateText,
-  buildResponsesAiSdkTools,
   extractToolCallsFromAiSdk,
   normalizeResponsesToolDefinitions,
   openAiMessagesToResponsesAiSdkMessages,
   renderResponsesTransportError,
 } from './ai-sdk-message-bridge.js';
-import { buildResponsesProviderOptions, createResponsesLanguageModel } from './model-factory.js';
+import {
+  appendApplyPatchToolCallsToAssistantMessage,
+  beginApplyPatchBridgeRound,
+  buildResponsesTraceTools,
+  endApplyPatchBridgeRound,
+  mergeToolCallsWithApplyPatch,
+  registerPendingApplyPatchCallIds,
+  runWithApplyPatchBridgeContext,
+  takeLastExtractedApplyPatchCalls,
+} from './apply-patch-bridge.js';
+import { shouldUseOpenAiSdkApplyPatchTool } from './apply-patch-eligibility.js';
+import {
+  buildResponsesGenerateTools,
+  buildResponsesProviderOptions,
+  createResponsesLanguageModel,
+} from './model-factory.js';
 import {
   attachResponseIdToAssistantMessage,
   extractResponseIdFromGenerateTextResult,
@@ -112,7 +127,7 @@ export class AiSdkOpenResponsesTransport
       config,
       nextState.steps,
       requestMessages,
-      normalizedTools,
+      buildResponsesTraceTools(config, normalizedTools),
       false,
       traceExtras,
     );
@@ -126,56 +141,72 @@ export class AiSdkOpenResponsesTransport
     }
 
     try {
-      const result = await generateText({
-        model: createResponsesLanguageModel(config) as any,
-        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages) as any,
-        allowSystemInMessages: true,
-        ...(normalizedTools.length === 0
-          ? {}
-          : {
-              tools: buildResponsesAiSdkTools(normalizedTools) as any,
-              toolChoice: 'auto' as const,
-            }),
-        providerOptions: buildResponsesProviderOptions(config, previousResponseId),
-        maxRetries: 0,
-      });
+      return await runWithApplyPatchBridgeContext(async () => {
+        const generateTools = buildResponsesGenerateTools(config, normalizedTools);
+        const hasGenerateTools = Object.keys(generateTools).length > 0;
+        const result = await generateText({
+          model: createResponsesLanguageModel(config) as any,
+          messages: openAiMessagesToResponsesAiSdkMessages(requestMessages, config) as any,
+          allowSystemInMessages: true,
+          ...(hasGenerateTools
+            ? {
+                tools: generateTools as any,
+                toolChoice: 'auto' as const,
+              }
+            : {}),
+          providerOptions: buildResponsesProviderOptions(config, previousResponseId),
+          maxRetries: 0,
+        });
 
-      const assistantMessage = attachResponseIdToAssistantMessage(
-        config,
-        buildAssistantMessageFromResponsesGenerateText(
-          result.text,
-          result.toolCalls,
-          result.reasoningText ?? '',
-        ),
-        extractResponseIdFromGenerateTextResult(result),
-      );
-      nextState.messages.push(assistantMessage);
+        const applyPatchCalls = shouldUseOpenAiSdkApplyPatchTool(config)
+          ? []
+          : takeLastExtractedApplyPatchCalls();
+        const assistantMessage = attachResponseIdToAssistantMessage(
+          config,
+          buildAssistantMessageFromResponsesGenerateText(
+            result.text,
+            result.toolCalls,
+            result.reasoningText ?? '',
+          ),
+          extractResponseIdFromGenerateTextResult(result),
+        );
+        if (applyPatchCalls.length > 0 && isJsonObject(assistantMessage as JsonValue)) {
+          appendApplyPatchToolCallsToAssistantMessage(assistantMessage as JsonObject, applyPatchCalls);
+        }
+        nextState.messages.push(assistantMessage);
 
-      const calls = extractToolCallsFromAiSdk(result.toolCalls);
-      if (calls.length > 0) {
+        if (applyPatchCalls.length > 0) {
+          registerPendingApplyPatchCallIds(applyPatchCalls.map((call) => call.id));
+        }
+        const calls = mergeToolCallsWithApplyPatch(
+          extractToolCallsFromAiSdk(result.toolCalls),
+          applyPatchCalls,
+        );
+        if (calls.length > 0) {
+          return {
+            kind: 'success',
+            result: {
+              state: nextState,
+              step: {
+                kind: 'tool-calls',
+                calls,
+              },
+              requestTrace: tracedRequest,
+            },
+          } as ToolAgentRoundCompletion<ToolAgentState>;
+        }
+
         return {
           kind: 'success',
           result: {
             state: nextState,
             step: {
-              kind: 'tool-calls',
-              calls,
+              kind: 'final-response-ready',
             },
             requestTrace: tracedRequest,
           },
-        };
-      }
-
-      return {
-        kind: 'success',
-        result: {
-          state: nextState,
-          step: {
-            kind: 'final-response-ready',
-          },
-          requestTrace: tracedRequest,
-        },
-      };
+        } as ToolAgentRoundCompletion<ToolAgentState>;
+      });
     } catch (error) {
       return {
         kind: 'failure',
@@ -203,7 +234,7 @@ export class AiSdkOpenResponsesTransport
       config,
       nextState.steps,
       requestMessages,
-      normalizedTools,
+      buildResponsesTraceTools(config, normalizedTools),
       true,
       traceExtras,
     );
@@ -223,22 +254,26 @@ export class AiSdkOpenResponsesTransport
     }
 
     try {
+      beginApplyPatchBridgeRound();
+      const generateTools = buildResponsesGenerateTools(config, normalizedTools);
+      const hasGenerateTools = Object.keys(generateTools).length > 0;
       const result: { fullStream: AsyncIterable<unknown> } = streamText({
         model: createResponsesLanguageModel(config) as any,
-        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages) as any,
+        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages, config) as any,
         allowSystemInMessages: true,
-        ...(normalizedTools.length === 0
-          ? {}
-          : {
-              tools: buildResponsesAiSdkTools(normalizedTools) as any,
+        ...(hasGenerateTools
+          ? {
+              tools: generateTools as any,
               toolChoice: 'auto' as const,
-            }),
+            }
+          : {}),
         providerOptions: buildResponsesProviderOptions(config, previousResponseId),
         includeRawChunks: true,
         maxRetries: 0,
         abortSignal: abortController.signal,
       });
       const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
+      void completion.promise.finally(endApplyPatchBridgeRound);
 
       return {
         eventStream: responsesEventStreamToRuntimeEvents(
@@ -252,6 +287,7 @@ export class AiSdkOpenResponsesTransport
         cancel: () => abortController.abort(),
       };
     } catch (error) {
+      endApplyPatchBridgeRound();
       return {
         eventStream: emptyResponsesEventStream(),
         completion: Promise.resolve({

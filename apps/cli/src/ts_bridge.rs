@@ -1756,16 +1756,23 @@ impl TsBridgeRuntime {
                     "workspaceRoot": self.workspace_root,
                 })
             } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses {
-                let responses_provider = open_responses_sdk_provider(active.provider);
-                serde_json::json!({
+                let mut transport = serde_json::json!({
                     "transportKind": "open-responses",
-                    "responsesProvider": responses_provider,
                     "apiKey": api_key,
                     "model": active.name,
                     "baseUrl": api_base,
                     "workspaceRoot": self.workspace_root,
                     "store": false,
-                })
+                });
+                if let Some(responses_provider) = open_responses_sdk_provider(active.provider) {
+                    if let Some(obj) = transport.as_object_mut() {
+                        obj.insert(
+                            "responsesProvider".to_string(),
+                            json!(responses_provider),
+                        );
+                    }
+                }
+                transport
             } else {
                 serde_json::json!({
                     "apiKey": api_key,
@@ -3009,11 +3016,12 @@ fn approval_decision_from_input(message: &str) -> Value {
     }
 }
 
-fn open_responses_sdk_provider(provider: Option<ModelProvider>) -> &'static str {
+fn open_responses_sdk_provider(provider: Option<ModelProvider>) -> Option<&'static str> {
     match provider {
-        Some(ModelProvider::Openai) => "openai",
-        Some(ModelProvider::Xai) => "xai",
-        _ => "open-responses-compatible",
+        Some(ModelProvider::Openai) => Some("openai"),
+        Some(ModelProvider::Xai) => Some("xai"),
+        Some(ModelProvider::VercelAiGateway) => None,
+        _ => Some("open-responses-compatible"),
     }
 }
 
