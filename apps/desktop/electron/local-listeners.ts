@@ -11,6 +11,8 @@ export type LocalListeningEndpoint = {
   processName?: string;
   /** 探测到的可访问 URL（http 或 https） */
   url?: string;
+  /** 探测时从 HTML <title> 提取的标题 */
+  title?: string;
 };
 
 type RawListener = {
@@ -64,10 +66,10 @@ export function isLikelyWebPage(contentType: string | undefined, body: string): 
   return extractHtmlTitle(body) != null;
 }
 
-export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS): Promise<string | null> {
+export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS): Promise<{ url: string; title?: string } | null> {
   return new Promise((resolve) => {
     let settled = false;
-    const finish = (value: string | null) => {
+    const finish = (value: { url: string; title?: string } | null) => {
       if (settled) {
         return;
       }
@@ -116,7 +118,12 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS): Pr
 
         res.on('end', () => {
           const body = Buffer.concat(chunks).toString('utf8');
-          finish(isLikelyWebPage(contentType, body) ? url : null);
+          if (!isLikelyWebPage(contentType, body)) {
+            finish(null);
+            return;
+          }
+          const title = extractHtmlTitle(body) ?? undefined;
+          finish({ url, title });
         });
 
         res.on('error', () => finish(null));
@@ -132,7 +139,7 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS): Pr
 }
 
 /** 依次尝试 http / https，返回首个像网页的 URL。 */
-export async function probeLocalHttpPort(port: number): Promise<string | null> {
+export async function probeLocalHttpPort(port: number): Promise<{ url: string; title?: string } | null> {
   const candidates = [`http://127.0.0.1:${port}/`, `https://127.0.0.1:${port}/`];
   for (const url of candidates) {
     const matched = await probeHttpUrl(url);
@@ -151,8 +158,8 @@ export async function filterHttpListeningEndpoints(
     const batch = endpoints.slice(index, index + HTTP_PROBE_BATCH_SIZE);
     const probed = await Promise.all(
       batch.map(async (endpoint) => {
-        const url = await probeLocalHttpPort(endpoint.port);
-        return url ? { ...endpoint, url } : null;
+        const result = await probeLocalHttpPort(endpoint.port);
+        return result ? { ...endpoint, url: result.url, title: result.title } : null;
       }),
     );
     for (const item of probed) {
