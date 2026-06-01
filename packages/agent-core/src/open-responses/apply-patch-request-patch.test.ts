@@ -6,6 +6,7 @@ import {
   buildApplyPatchToolCallArgumentsJson,
   patchResponsesRequestBodyForApplyPatch,
   registerPendingApplyPatchCallIds,
+  runWithApplyPatchBridgeContext,
 } from './apply-patch-bridge.js';
 import { APPLY_PATCH_HOST_TOOL_NAME } from './apply-patch-eligibility.js';
 
@@ -33,99 +34,105 @@ const gatewayAnthropicConfig = {
 };
 
 test('patchResponsesRequestBodyForApplyPatch openai uses native apply_patch_call items', () => {
-  const callId = 'call_test_1';
-  const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
-  registerPendingApplyPatchCallIds([callId]);
+  runWithApplyPatchBridgeContext(() => {
+    const callId = 'call_test_1';
+    const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
+    registerPendingApplyPatchCallIds([callId]);
 
-  const body = {
-    input: [
-      {
-        type: 'function_call',
-        call_id: callId,
-        name: APPLY_PATCH_HOST_TOOL_NAME,
-        arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
-      },
-      {
-        type: 'function_call_output',
-        call_id: callId,
-        output: 'ok',
-      },
-    ],
-  } as JsonObject;
+    const body = {
+      input: [
+        {
+          type: 'function_call',
+          call_id: callId,
+          name: APPLY_PATCH_HOST_TOOL_NAME,
+          arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
+        },
+        {
+          type: 'function_call_output',
+          call_id: callId,
+          output: 'ok',
+        },
+      ],
+    } as JsonObject;
 
-  patchResponsesRequestBodyForApplyPatch(body, openAiConfig);
+    patchResponsesRequestBodyForApplyPatch(body, openAiConfig);
 
-  const input = body.input as JsonObject[];
-  assert.equal(input[0]?.type, 'apply_patch_call');
-  assert.equal(input[1]?.type, 'apply_patch_call_output');
+    const input = body.input as JsonObject[];
+    assert.equal(input[0]?.type, 'apply_patch_call');
+    assert.equal(input[1]?.type, 'apply_patch_call_output');
+  });
 });
 
 test('patchResponsesRequestBodyForApplyPatch gateway openai route keeps function_call pairs with callId in arguments', () => {
-  const callId = 'call_test_2';
-  const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
-  registerPendingApplyPatchCallIds([callId]);
+  runWithApplyPatchBridgeContext(() => {
+    const callId = 'call_test_2';
+    const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
+    registerPendingApplyPatchCallIds([callId]);
 
-  const body = {
-    input: [
-      {
-        type: 'function_call',
-        call_id: callId,
-        name: APPLY_PATCH_HOST_TOOL_NAME,
-        arguments: JSON.stringify({ operation }),
-      },
-      {
-        type: 'function_call_output',
-        call_id: callId,
-        output: 'ok',
-      },
-    ],
-  } as JsonObject;
+    const body = {
+      input: [
+        {
+          type: 'function_call',
+          call_id: callId,
+          name: APPLY_PATCH_HOST_TOOL_NAME,
+          arguments: JSON.stringify({ operation }),
+        },
+        {
+          type: 'function_call_output',
+          call_id: callId,
+          output: 'ok',
+        },
+      ],
+    } as JsonObject;
 
-  patchResponsesRequestBodyForApplyPatch(body, gatewayConfig);
+    patchResponsesRequestBodyForApplyPatch(body, gatewayConfig);
 
-  const input = body.input as JsonObject[];
-  assert.equal(input[0]?.type, 'function_call');
-  assert.equal(input[0]?.name, APPLY_PATCH_HOST_TOOL_NAME);
-  const args = JSON.parse(String(input[0]?.arguments)) as { callId?: string; operation?: unknown };
-  assert.equal(args.callId, callId);
-  assert.equal(input[1]?.type, 'function_call_output');
-  assert.equal(
-    input.some((item) => item.type === 'apply_patch_call'),
-    false,
-  );
+    const input = body.input as JsonObject[];
+    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[0]?.name, APPLY_PATCH_HOST_TOOL_NAME);
+    const args = JSON.parse(String(input[0]?.arguments)) as { callId?: string; operation?: unknown };
+    assert.equal(args.callId, callId);
+    assert.equal(input[1]?.type, 'function_call_output');
+    assert.equal(
+      input.some((item) => item.type === 'apply_patch_call'),
+      false,
+    );
+  });
 });
 
 test('patchResponsesRequestBodyForApplyPatch gateway non-openai route keeps function_call pairs', () => {
-  const callId = 'call_test_3';
-  const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
-  registerPendingApplyPatchCallIds([callId]);
+  runWithApplyPatchBridgeContext(() => {
+    const callId = 'call_test_3';
+    const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
+    registerPendingApplyPatchCallIds([callId]);
 
-  const body = {
-    input: [
-      {
-        type: 'function_call',
-        call_id: callId,
-        name: APPLY_PATCH_HOST_TOOL_NAME,
-        arguments: JSON.stringify({ operation }),
-      },
-      {
-        type: 'function_call_output',
-        call_id: callId,
-        output: 'ok',
-      },
-    ],
-  } as JsonObject;
+    const body = {
+      input: [
+        {
+          type: 'function_call',
+          call_id: callId,
+          name: APPLY_PATCH_HOST_TOOL_NAME,
+          arguments: JSON.stringify({ operation }),
+        },
+        {
+          type: 'function_call_output',
+          call_id: callId,
+          output: 'ok',
+        },
+      ],
+    } as JsonObject;
 
-  patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
+    patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
 
-  const input = body.input as JsonObject[];
-  assert.equal(input[0]?.type, 'function_call');
-  assert.equal(input[0]?.name, APPLY_PATCH_HOST_TOOL_NAME);
-  const args = JSON.parse(String(input[0]?.arguments)) as { callId?: string; operation?: unknown };
-  assert.equal(args.callId, callId);
-  assert.equal(input[1]?.type, 'function_call_output');
-  assert.equal(
-    input.some((item) => item.type === 'apply_patch_call'),
-    false,
-  );
+    const input = body.input as JsonObject[];
+    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[0]?.name, APPLY_PATCH_HOST_TOOL_NAME);
+    const args = JSON.parse(String(input[0]?.arguments)) as { callId?: string; operation?: unknown };
+    assert.equal(args.callId, callId);
+    assert.equal(input[1]?.type, 'function_call_output');
+    assert.equal(
+      input.some((item) => item.type === 'apply_patch_call'),
+      false,
+    );
+  });
 });

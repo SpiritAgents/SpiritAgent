@@ -8,6 +8,7 @@ import {
   normalizeApplyPatchToolCallArgumentsJson,
   patchResponsesRequestBodyForApplyPatch,
   prepareApplyPatchRequestBodyStash,
+  runWithApplyPatchBridgeContext,
 } from './apply-patch-bridge.js';
 
 const openAiConfig = {
@@ -41,6 +42,28 @@ test('normalizeApplyPatchToolCallArgumentsJson injects callId for AI SDK', () =>
   const parsed = JSON.parse(normalized) as { callId?: string; operation?: unknown };
   assert.equal(parsed.callId, callId);
   assert.deepEqual(parsed.operation, operation);
+});
+
+test('openAiMessagesToResponsesAiSdkMessages tolerates malformed apply_patch arguments', () => {
+  const callId = 'call_apply_bad';
+  const messages = [
+    {
+      role: 'assistant',
+      content: null,
+      tool_calls: [{
+        id: callId,
+        type: 'function',
+        function: {
+          name: 'apply_patch',
+          arguments: '{not valid json',
+        },
+      }],
+    },
+  ];
+
+  assert.doesNotThrow(() => {
+    openAiMessagesToResponsesAiSdkMessages(messages, openAiConfig);
+  });
 });
 
 test('openAiMessagesToResponsesAiSdkMessages keeps apply_patch tool parts for OpenAI SDK path', () => {
@@ -135,12 +158,14 @@ test('openAiMessagesToResponsesAiSdkMessages omits apply_patch on Gateway fetch 
   );
   assert.equal(sdkMessages.some((message) => message.role === 'tool'), false);
 
-  prepareApplyPatchRequestBodyStash(messages);
-  const body = { input: [] } as JsonObject;
-  patchResponsesRequestBodyForApplyPatch(body, gatewayOpenAiConfig);
-  const input = body.input as JsonObject[];
-  assert.equal(input[0]?.type, 'function_call');
-  assert.equal(input[1]?.type, 'function_call_output');
+  runWithApplyPatchBridgeContext(() => {
+    prepareApplyPatchRequestBodyStash(messages);
+    const body = { input: [] } as JsonObject;
+    patchResponsesRequestBodyForApplyPatch(body, gatewayOpenAiConfig);
+    const input = body.input as JsonObject[];
+    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[1]?.type, 'function_call_output');
+  });
 });
 
 test('openAiMessagesToResponsesAiSdkMessages omits apply_patch when fetch stash path is active', () => {
@@ -177,36 +202,92 @@ test('openAiMessagesToResponsesAiSdkMessages omits apply_patch when fetch stash 
   );
   assert.equal(sdkMessages.some((message) => message.role === 'tool'), false);
 
-  const body = { input: [] } as JsonObject;
-  patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
-  const input = body.input as JsonObject[];
-  assert.equal(input.length, 2);
-  assert.equal(input[0]?.type, 'function_call');
-  assert.equal(input[1]?.type, 'function_call_output');
+  runWithApplyPatchBridgeContext(() => {
+    prepareApplyPatchRequestBodyStash(messages);
+    const body = { input: [] } as JsonObject;
+    patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
+    const input = body.input as JsonObject[];
+    assert.equal(input.length, 2);
+    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[1]?.type, 'function_call_output');
+  });
+});
+
+test('runWithApplyPatchBridgeContext isolates nested apply_patch stash rounds', () => {
+  const callIdA = 'call_apply_a';
+  const callIdB = 'call_apply_b';
+  const operationA = { type: 'update_file', path: 'a.md', diff: '+a\n' };
+  const operationB = { type: 'update_file', path: 'b.md', diff: '+b\n' };
+
+  runWithApplyPatchBridgeContext(() => {
+    prepareApplyPatchRequestBodyStash([
+      {
+        role: 'assistant',
+        tool_calls: [{
+          id: callIdA,
+          type: 'function',
+          function: {
+            name: 'apply_patch',
+            arguments: buildApplyPatchToolCallArgumentsJson(callIdA, operationA),
+          },
+        }],
+      },
+      { role: 'tool', tool_call_id: callIdA, content: 'ok-a' },
+    ]);
+
+    runWithApplyPatchBridgeContext(() => {
+      prepareApplyPatchRequestBodyStash([
+        {
+          role: 'assistant',
+          tool_calls: [{
+            id: callIdB,
+            type: 'function',
+            function: {
+              name: 'apply_patch',
+              arguments: buildApplyPatchToolCallArgumentsJson(callIdB, operationB),
+            },
+          }],
+        },
+        { role: 'tool', tool_call_id: callIdB, content: 'ok-b' },
+      ]);
+
+      const bodyB = { input: [] } as JsonObject;
+      patchResponsesRequestBodyForApplyPatch(bodyB, gatewayAnthropicConfig);
+      const inputB = bodyB.input as JsonObject[];
+      assert.equal(inputB[0]?.call_id, callIdB);
+    });
+
+    const bodyA = { input: [] } as JsonObject;
+    patchResponsesRequestBodyForApplyPatch(bodyA, gatewayAnthropicConfig);
+    const inputA = bodyA.input as JsonObject[];
+    assert.equal(inputA[0]?.call_id, callIdA);
+  });
 });
 
 test('prepareApplyPatchRequestBodyStash pairs assistant call with tool result on fetch path', () => {
   const callId = 'call_apply_2';
   const operation = { type: 'create_file', path: 'demo.txt', diff: '+hi\n' };
-  prepareApplyPatchRequestBodyStash([
-    {
-      role: 'assistant',
-      tool_calls: [{
-        id: callId,
-        type: 'function',
-        function: {
-          name: 'apply_patch',
-          arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
-        },
-      }],
-    },
-    { role: 'tool', tool_call_id: callId, content: 'created' },
-  ]);
+  runWithApplyPatchBridgeContext(() => {
+    prepareApplyPatchRequestBodyStash([
+      {
+        role: 'assistant',
+        tool_calls: [{
+          id: callId,
+          type: 'function',
+          function: {
+            name: 'apply_patch',
+            arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
+          },
+        }],
+      },
+      { role: 'tool', tool_call_id: callId, content: 'created' },
+    ]);
 
-  const body = { input: [] } as JsonObject;
-  patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
-  const input = body.input as JsonObject[];
-  assert.equal(input[0]?.type, 'function_call');
-  assert.equal(input[0]?.call_id, callId);
-  assert.equal(input[1]?.type, 'function_call_output');
+    const body = { input: [] } as JsonObject;
+    patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
+    const input = body.input as JsonObject[];
+    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[0]?.call_id, callId);
+    assert.equal(input[1]?.type, 'function_call_output');
+  });
 });
