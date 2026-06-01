@@ -21,6 +21,7 @@ type LocalListeningEndpoint = {
   address?: string;
   processName?: string;
   url?: string;
+  title?: string;
 };
 
 type WebviewElement = HTMLElement & {
@@ -108,6 +109,8 @@ function BrowserNewTabPage({
           {endpoints.map((item) => {
             const url = item.url ?? toLocalHostUrl(item.port);
             const subtitle = [item.address, item.processName].filter(Boolean).join(" · ");
+            const displayTitle = item.title || url;
+            const displaySubtitle = item.title ? url : subtitle;
             return (
               <li key={`${item.port}-${url}`}>
                 <button
@@ -118,10 +121,10 @@ function BrowserNewTabPage({
                   )}
                   onClick={() => onNavigate(url)}
                 >
-                  <span className="block truncate font-medium text-foreground">{url}</span>
-                  {subtitle ? (
+                  <span className="block truncate font-medium text-foreground">{displayTitle}</span>
+                  {displaySubtitle ? (
                     <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                      {subtitle}
+                      {displaySubtitle}
                     </span>
                   ) : null}
                 </button>
