@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { FileText, GitBranch, Plus, Terminal, X } from "lucide-react";
+import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
+import { WorkspaceBrowserTab } from "@/components/workspace-browser-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
@@ -33,6 +34,7 @@ const TAB_KIND_META: Record<
   files: { labelKey: 'workspace.files', icon: FileText },
   shell: { labelKey: 'workspace.shell', icon: Terminal },
   git: { labelKey: 'workspace.git', icon: GitBranch },
+  browser: { labelKey: 'workspace.browser', icon: Globe },
 };
 
 export type WorkspaceToolsDockProps = {
@@ -163,9 +165,16 @@ export function WorkspaceToolsDock({
     [activeTabId, onActiveTabIdChange, onTabsChange, tabs],
   );
 
+  const handleBrowserUrlChange = useCallback(
+    (tabId: string, url: string) => {
+      onTabsChange(tabs.map((item) => (item.id === tabId ? { ...item, browserUrl: url } : item)));
+    },
+    [onTabsChange, tabs],
+  );
+
   const newTabItems = useMemo<readonly ActionPopoverItem[]>(
     () =>
-      (["files", "shell", "git"] as const).map((kind) => {
+      (["files", "shell", "git", "browser"] as const).map((kind) => {
         const meta = TAB_KIND_META[kind];
         const Icon = meta.icon;
         return {
@@ -331,6 +340,13 @@ export function WorkspaceToolsDock({
                   ) : item.kind === "shell" ? (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
                       <WorkspaceShellTab workspaceRoot={workspaceRoot} />
+                    </div>
+                  ) : item.kind === "browser" ? (
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                      <WorkspaceBrowserTab
+                        browserUrl={item.browserUrl}
+                        onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
+                      />
                     </div>
                   ) : (
                     <WorkspaceGitTabPlaceholder />
