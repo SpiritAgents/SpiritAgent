@@ -1,5 +1,10 @@
 import type { BrowserElementAttachment } from "./browser-element-attachment";
 
+/** Keep in sync with browserElementContextText in browser-element-attachment.ts */
+function elementContextText(attachment: BrowserElementAttachment): string {
+  return `Selected element from ${attachment.pageUrl}:\n\`\`\`html\n${attachment.outerHtml}\n\`\`\``;
+}
+
 export type RichSegment =
   | { kind: "text"; value: string }
   | { kind: "element"; attachment: BrowserElementAttachment };
@@ -37,21 +42,61 @@ export function segmentsToAttachments(segs: RichSegment[]): BrowserElementAttach
     .map((s) => s.attachment);
 }
 
-/** Keep in sync with browserElementContextText in browser-element-attachment.ts */
-function elementContextText(attachment: BrowserElementAttachment): string {
-  return `Selected element from ${attachment.pageUrl}:\n\`\`\`html\n${attachment.outerHtml}\n\`\`\``;
+/** Separator between serialized parts; avoids extra blank lines around inline chips. */
+export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): string {
+  if (prev.kind === "text" && next.kind === "text") return "";
+
+  if (prev.kind === "text" && next.kind === "element") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "element" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  return "\n\n";
 }
 
 export function segmentsToMessageText(segs: RichSegment[]): string {
-  const parts: string[] = [];
-  for (const seg of segs) {
-    if (seg.kind === "text") {
-      if (seg.value) parts.push(seg.value);
-    } else {
-      parts.push(elementContextText(seg.attachment));
+  const merged = mergeAdjacentTextSegments(segs);
+  let out = "";
+  for (let i = 0; i < merged.length; i++) {
+    const seg = merged[i]!;
+    const piece =
+      seg.kind === "text" ? seg.value : elementContextText(seg.attachment);
+    if (seg.kind === "text" && !piece) continue;
+
+    if (!out) {
+      out = piece;
+      continue;
     }
+    const prev = merged[i - 1]!;
+    out += messageSegmentSeparator(prev, seg) + piece;
   }
-  return parts.join("\n\n");
+  return out;
+}
+
+/** Trim one structural newline adjacent to an element block for inline bubble display. */
+export function trimMessageTextAroundElements(
+  value: string,
+  opts: { afterElement?: boolean; beforeElement?: boolean },
+): string {
+  let v = value;
+  if (opts.afterElement) {
+    v = v.replace(/^\n/, "");
+  }
+  if (opts.beforeElement) {
+    v = v.replace(/\n$/, "");
+  }
+  return v;
 }
 
 export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {

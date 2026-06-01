@@ -4,9 +4,11 @@ import { test } from "node:test";
 import {
   insertSegmentAtCaret,
   mergeAdjacentTextSegments,
+  messageSegmentSeparator,
   segmentsToMessageText,
   segmentsToPlainText,
   syncSegmentsFromExternalValue,
+  trimMessageTextAroundElements,
 } from "../src/lib/composer-segment-model.ts";
 
 const sampleAttachment = {
@@ -49,6 +51,31 @@ test("segmentsToMessageText keeps document order", () => {
   assert.match(message, /after$/);
   assert.ok(message.indexOf("before") < message.indexOf("Selected element"));
   assert.ok(message.indexOf("Selected element") < message.indexOf("after"));
+});
+
+test("segmentsToMessageText does not double-newline inline text after element", () => {
+  const segs = [
+    { kind: "element", attachment: sampleAttachment },
+    { kind: "text", value: "你好啊\n这是什么" },
+  ];
+  const message = segmentsToMessageText(segs);
+  assert.ok(!message.includes("```\n\n你好"));
+  assert.match(message, /```\n你好啊/);
+});
+
+test("messageSegmentSeparator uses single newline between element and inline text", () => {
+  assert.equal(
+    messageSegmentSeparator(
+      { kind: "element", attachment: sampleAttachment },
+      { kind: "text", value: "你好" },
+    ),
+    "\n",
+  );
+});
+
+test("trimMessageTextAroundElements removes one structural newline after element", () => {
+  assert.equal(trimMessageTextAroundElements("\n你好啊", { afterElement: true }), "你好啊");
+  assert.equal(trimMessageTextAroundElements("你好啊\n", { beforeElement: true }), "你好啊");
 });
 
 test("insertSegmentAtCaret splits text and leaves trailing text segment", () => {
