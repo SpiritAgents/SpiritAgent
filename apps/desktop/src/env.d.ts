@@ -137,6 +137,10 @@ declare global {
       onData: (payload: { id: string; data: string }) => void;
       onExit: (payload: { id: string; exitCode: number; signal?: number }) => void;
     }): () => void;
+    captureWebviewRect(
+      webContentsId: number,
+      rect: { x: number; y: number; width: number; height: number },
+    ): Promise<string>;
     readClipboardText(): string;
     writeClipboardText(text: string): void;
   }
