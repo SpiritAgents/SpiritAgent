@@ -222,6 +222,26 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   listLocalListeningEndpoints() {
     return ipcRenderer.invoke('desktop:list-local-listeners');
   },
+  scanLocalListeners() {
+    ipcRenderer.send('desktop:scan-local-listeners');
+  },
+  subscribeLocalListeners(callbacks: {
+    onFound: (item: { port: number; address?: string; processName?: string; url?: string; title?: string }) => void;
+    onDone: () => void;
+  }) {
+    const onFound = (_event: Electron.IpcRendererEvent, item: { port: number; address?: string; processName?: string; url?: string; title?: string }) => {
+      callbacks.onFound(item);
+    };
+    const onDone = () => {
+      callbacks.onDone();
+    };
+    ipcRenderer.on('desktop:local-listener-found', onFound);
+    ipcRenderer.on('desktop:local-listeners-done', onDone);
+    return () => {
+      ipcRenderer.removeListener('desktop:local-listener-found', onFound);
+      ipcRenderer.removeListener('desktop:local-listeners-done', onDone);
+    };
+  },
   readClipboardText() {
     return clipboard.readText();
   },

@@ -7,7 +7,7 @@ import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, nativeTheme, net,
 
 import { openSystemTerminalInDirectory } from './open-system-terminal.js';
 import { WorkspacePtyManager } from './workspace-pty.js';
-import { isAllowedExternalUrl, listLocalListeningEndpoints } from './local-listeners.js';
+import { isAllowedExternalUrl, getCachedLocalListeningEndpoints, startLocalListenersScan } from './local-listeners.js';
 
 import type { DesktopSnapshot } from '../src/types.js';
 import {
@@ -672,7 +672,20 @@ app.whenReady().then(async () => {
     await shell.openExternal(url);
   });
 
-  ipcMain.handle('desktop:list-local-listeners', () => listLocalListeningEndpoints());
+  ipcMain.handle('desktop:list-local-listeners', () => getCachedLocalListeningEndpoints() ?? []);
+
+  ipcMain.on('desktop:scan-local-listeners', (event) => {
+    const { sender } = event;
+    void startLocalListenersScan((item) => {
+      if (!sender.isDestroyed()) {
+        sender.send('desktop:local-listener-found', item);
+      }
+    }).then(() => {
+      if (!sender.isDestroyed()) {
+        sender.send('desktop:local-listeners-done');
+      }
+    });
+  });
 
   await syncInitialDesktopWebHost();
   await createMainWindow();

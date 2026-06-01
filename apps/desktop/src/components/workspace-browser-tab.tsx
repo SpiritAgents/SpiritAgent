@@ -56,32 +56,39 @@ function BrowserNewTabPage({
 }) {
   const { t } = useTranslation();
   const [endpoints, setEndpoints] = useState<LocalListeningEndpoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
 
-  const scan = useCallback(async () => {
-    const bridge = window.spiritDesktop;
-    if (!bridge?.listLocalListeningEndpoints) {
-      setError(t("workspace.browserScanPortsFailed"));
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const next = await bridge.listLocalListeningEndpoints();
-      setEndpoints(next);
-    } catch {
-      setError(t("workspace.browserScanPortsFailed"));
-      setEndpoints([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const addEndpoint = useCallback((item: LocalListeningEndpoint) => {
+    setEndpoints((prev) => {
+      if (prev.some((e) => e.port === item.port)) return prev;
+      return [...prev, item].sort((a, b) => a.port - b.port);
+    });
+  }, []);
 
   useEffect(() => {
-    void scan();
-  }, [scan]);
+    const bridge = window.spiritDesktop;
+    if (!bridge) return;
+
+    void bridge.listLocalListeningEndpoints().then((items) => {
+      setEndpoints(items);
+    });
+
+    if (!bridge.subscribeLocalListeners) return;
+    const unsubscribe = bridge.subscribeLocalListeners({
+      onFound: addEndpoint,
+      onDone: () => setScanning(false),
+    });
+
+    return unsubscribe;
+  }, [addEndpoint]);
+
+  const handleRefresh = useCallback(() => {
+    const bridge = window.spiritDesktop;
+    if (!bridge?.scanLocalListeners) return;
+    setEndpoints([]);
+    setScanning(true);
+    bridge.scanLocalListeners();
+  }, []);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3">
@@ -92,17 +99,15 @@ function BrowserNewTabPage({
           variant="secondary"
           size="sm"
           className="electron-no-drag h-7 gap-1 px-2 text-xs"
-          disabled={loading}
-          onClick={() => void scan()}
+          disabled={scanning}
+          onClick={handleRefresh}
         >
-          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} aria-hidden />
+          <RefreshCw className={cn("size-3.5", scanning && "animate-spin")} aria-hidden />
           {t("workspace.browserRefreshPorts")}
         </Button>
       </div>
-      {loading ? (
+      {endpoints.length === 0 && scanning ? (
         <p className="text-muted-foreground">{t("workspace.browserScanningPorts")}</p>
-      ) : error ? (
-        <p className="text-destructive">{error}</p>
       ) : endpoints.length === 0 ? (
         <p className="text-muted-foreground">{t("workspace.browserNoLocalPorts")}</p>
       ) : (

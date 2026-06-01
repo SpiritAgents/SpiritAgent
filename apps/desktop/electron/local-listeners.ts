@@ -22,8 +22,8 @@ type RawListener = {
 };
 
 const SCAN_TIMEOUT_MS = 5_000;
-const HTTP_PROBE_TIMEOUT_MS = 900;
-const HTTP_PROBE_BATCH_SIZE = 16;
+const HTTP_PROBE_TIMEOUT_MS = 400;
+const HTTP_PROBE_BATCH_SIZE = 32;
 const PROBE_BODY_LIMIT_BYTES = 64 * 1024;
 
 export function isHtmlContentType(contentType: string | undefined): boolean {
@@ -183,21 +183,21 @@ export async function probeLocalHttpPort(port: number): Promise<{ url: string; t
 
 export async function filterHttpListeningEndpoints(
   endpoints: readonly LocalListeningEndpoint[],
+  onFound?: (item: LocalListeningEndpoint) => void,
 ): Promise<LocalListeningEndpoint[]> {
   const verified: LocalListeningEndpoint[] = [];
   for (let index = 0; index < endpoints.length; index += HTTP_PROBE_BATCH_SIZE) {
     const batch = endpoints.slice(index, index + HTTP_PROBE_BATCH_SIZE);
-    const probed = await Promise.all(
+    await Promise.all(
       batch.map(async (endpoint) => {
         const result = await probeLocalHttpPort(endpoint.port);
-        return result ? { ...endpoint, url: result.url, title: result.title } : null;
+        if (result) {
+          const item = { ...endpoint, url: result.url, title: result.title };
+          verified.push(item);
+          onFound?.(item);
+        }
       }),
     );
-    for (const item of probed) {
-      if (item) {
-        verified.push(item);
-      }
-    }
   }
   return verified.sort((a, b) => a.port - b.port);
 }
@@ -457,6 +457,54 @@ export async function listLocalListeningEndpoints(): Promise<LocalListeningEndpo
     return [];
   }
 }
+
+/** 模块级缓存 */
+let _cachedEndpoints: LocalListeningEndpoint[] | null = null;
+let _scanningPromise: Promise<LocalListeningEndpoint[]> | null = null;
+
+/** 返回上一次扫描的缓存结果（可能为 null 表示尚未完成首次扫描） */
+export function getCachedLocalListeningEndpoints(): LocalListeningEndpoint[] | null {
+  return _cachedEndpoints;
+}
+
+/**
+ * 启动一轮新扫描。
+ * onFound 每发现一个可访问端口立即回调（流式）；
+ * 扫描完成后 promise resolve 并更新缓存。
+ * 若已有扫描正在进行，先等它结束再启动新一轮。
+ */
+export async function startLocalListenersScan(
+  onFound?: (item: LocalListeningEndpoint) => void,
+): Promise<LocalListeningEndpoint[]> {
+  if (_scanningPromise) {
+    await _scanningPromise.catch(() => undefined);
+  }
+  _scanningPromise = (async () => {
+    try {
+      let raw: RawListener[] = [];
+      if (process.platform === 'win32') {
+        raw = await scanWindowsListeners();
+      } else if (process.platform === 'darwin') {
+        raw = await scanDarwinListeners();
+      } else {
+        raw = await scanLinuxListeners();
+      }
+      const merged = mergeLocalListeningEndpoints(raw.filter((item) => item.port > 0));
+      const result = await filterHttpListeningEndpoints(merged, onFound);
+      _cachedEndpoints = result;
+      return result;
+    } catch (error) {
+      console.warn('[spirit-desktop] startLocalListenersScan failed:', error);
+      return _cachedEndpoints ?? [];
+    } finally {
+      _scanningPromise = null;
+    }
+  })();
+  return _scanningPromise;
+}
+
+/** 应用启动时预热：后台静默扫描一次，结果存入缓存 */
+_scanningPromise = startLocalListenersScan();
 
 export function isAllowedExternalUrl(url: string): boolean {
   try {

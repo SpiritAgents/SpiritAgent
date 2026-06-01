@@ -128,6 +128,11 @@ declare global {
     listLocalListeningEndpoints(): Promise<
       Array<{ port: number; address?: string; processName?: string; url?: string; title?: string }>
     >;
+    scanLocalListeners(): void;
+    subscribeLocalListeners(callbacks: {
+      onFound: (item: { port: number; address?: string; processName?: string; url?: string; title?: string }) => void;
+      onDone: () => void;
+    }): () => void;
     ptySubscribe(callbacks: {
       onData: (payload: { id: string; data: string }) => void;
       onExit: (payload: { id: string; exitCode: number; signal?: number }) => void;
