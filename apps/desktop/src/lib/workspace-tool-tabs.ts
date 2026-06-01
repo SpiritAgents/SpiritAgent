@@ -1,14 +1,19 @@
-export type WorkspaceToolTabKind = "files" | "shell" | "git";
+export type WorkspaceToolTabKind = "files" | "shell" | "git" | "browser";
+
+export const BROWSER_NEW_TAB_SENTINEL = "__spirit_browser_new_tab__";
 
 export type WorkspaceToolTab = {
   id: string;
   kind: WorkspaceToolTabKind;
+  /** 仅 kind === "browser" 时使用；sentinel 表示内置新标签页 */
+  browserUrl?: string;
 };
 
 const KIND_BASE_LABEL_KEY: Record<WorkspaceToolTabKind, string> = {
   files: 'workspace.files',
   shell: 'workspace.shell',
   git: 'workspace.git',
+  browser: 'workspace.browser',
 };
 
 function newTabId(): string {
@@ -18,8 +23,16 @@ function newTabId(): string {
   return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function isBrowserNewTabUrl(url: string | undefined): boolean {
+  return url === BROWSER_NEW_TAB_SENTINEL || url === undefined || url === "";
+}
+
 export function createWorkspaceToolTab(kind: WorkspaceToolTabKind): WorkspaceToolTab {
-  return { id: newTabId(), kind };
+  const tab: WorkspaceToolTab = { id: newTabId(), kind };
+  if (kind === "browser") {
+    tab.browserUrl = BROWSER_NEW_TAB_SENTINEL;
+  }
+  return tab;
 }
 
 /** 默认三个选项卡：文件、Shell、Git 各一。 */

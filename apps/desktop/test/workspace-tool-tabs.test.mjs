@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BROWSER_NEW_TAB_SENTINEL,
   addWorkspaceToolTab,
   closeWorkspaceToolTab,
   createDefaultWorkspaceToolTabs,
@@ -9,8 +10,16 @@ import {
   createWorkspaceToolTab,
   defaultActiveWorkspaceToolTabId,
   focusFirstTabOfKind,
+  isBrowserNewTabUrl,
   workspaceToolTabLabel,
 } from "../src/lib/workspace-tool-tabs.ts";
+
+const t = (key) =>
+  ({
+    "workspace.files": "文件",
+    "workspace.shell": "Shell",
+    "workspace.browser": "浏览器",
+  })[key] ?? key;
 
 test("createDefaultWorkspaceToolTabs has files, shell, and git", () => {
   const tabs = createDefaultWorkspaceToolTabs();
@@ -24,9 +33,24 @@ test("workspaceToolTabLabel numbers duplicate kinds", () => {
   const a = createWorkspaceToolTab("files");
   const b = createWorkspaceToolTab("files");
   const tabs = [a, b];
-  assert.equal(workspaceToolTabLabel("files", tabs, a.id), "文件");
-  assert.equal(workspaceToolTabLabel("files", tabs, b.id), "文件 2");
-  assert.equal(workspaceToolTabLabel("shell", tabs, createWorkspaceToolTab("shell").id), "Shell");
+  assert.equal(workspaceToolTabLabel("files", tabs, a.id, t), "文件");
+  assert.equal(workspaceToolTabLabel("files", tabs, b.id, t), "文件 2");
+  assert.equal(workspaceToolTabLabel("shell", tabs, createWorkspaceToolTab("shell").id, t), "Shell");
+});
+
+test("createWorkspaceToolTab browser defaults to new-tab sentinel", () => {
+  const tab = createWorkspaceToolTab("browser");
+  assert.equal(tab.kind, "browser");
+  assert.equal(tab.browserUrl, BROWSER_NEW_TAB_SENTINEL);
+  assert.equal(isBrowserNewTabUrl(tab.browserUrl), true);
+});
+
+test("addWorkspaceToolTab browser includes sentinel url", () => {
+  const tabs = createDefaultWorkspaceToolTabs();
+  const { tabs: next, activeId } = addWorkspaceToolTab(tabs, "browser");
+  const browserTab = next.find((item) => item.id === activeId);
+  assert.equal(browserTab?.kind, "browser");
+  assert.equal(browserTab?.browserUrl, BROWSER_NEW_TAB_SENTINEL);
 });
 
 test("focusFirstTabOfKind returns first matching id", () => {
