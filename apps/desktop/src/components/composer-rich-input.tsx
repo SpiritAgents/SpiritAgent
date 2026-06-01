@@ -12,6 +12,7 @@ import {
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-selection";
+import { caretAtEnd } from "@/lib/composer-segment-model";
 import {
   domToSegments,
   emptySegments,
@@ -39,6 +40,8 @@ const ELEMENT_MIME = "application/x-spirit-elements";
 type Props = {
   value: string;
   elementAttachments?: readonly BrowserElementAttachment[];
+  /** One-shot hydrate (e.g. message rewind); ignored after first apply per mount. */
+  initialSegments?: readonly RichSegment[] | null;
   placeholder?: string;
   readOnly?: boolean;
   className?: string;
@@ -52,6 +55,7 @@ export type ComposerRichInputHandle = {
   focus(): void;
   insertAttachment(a: BrowserElementAttachment): void;
   getSegments(): RichSegment[];
+  setSegments(segments: RichSegment[]): void;
 };
 
 export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
@@ -59,6 +63,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     {
       value,
       elementAttachments,
+      initialSegments,
       placeholder,
       readOnly,
       className,
@@ -75,6 +80,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const pendingCaretRef = useRef<SegmentCaret | null>(null);
     const skipExternalValueSyncRef = useRef(false);
     const skipRenderRef = useRef(false);
+    const initialSegmentsHydratedRef = useRef(false);
     const onElementAttachmentsChangeRef = useRef(onElementAttachmentsChange);
 
     useEffect(() => {
@@ -126,15 +132,31 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments],
     );
 
+    const applySegments = useCallback(
+      (next: RichSegment[], caret?: SegmentCaret | null) => {
+        commitSegments(next, caret ?? caretAtEnd(mergeAdjacentTextSegments(next)));
+      },
+      [commitSegments],
+    );
+
     useImperativeHandle(
       ref,
       () => ({
         focus: () => divRef.current?.focus(),
         insertAttachment,
         getSegments,
+        setSegments: (next: RichSegment[]) => applySegments(next),
       }),
-      [insertAttachment, getSegments],
+      [insertAttachment, getSegments, applySegments],
     );
+
+    useLayoutEffect(() => {
+      if (!initialSegments || initialSegmentsHydratedRef.current) {
+        return;
+      }
+      initialSegmentsHydratedRef.current = true;
+      applySegments([...initialSegments]);
+    }, [initialSegments, applySegments]);
 
     useLayoutEffect(() => {
       const div = divRef.current;

@@ -224,3 +224,74 @@ export function caretAtEnd(segs: RichSegment[]): SegmentCaret {
   }
   return { segmentIndex: lastIndex + 1, offset: 0 };
 }
+
+export type MessageContentPart =
+  | { kind: "text"; value: string }
+  | { kind: "element"; tagName: string; url: string; outerHtml: string };
+
+const ELEMENT_BLOCK_RE = /Selected element from ([^\n]*):\n```html\n[\s\S]*?\n```/g;
+
+/** Parse wire-format user message text into text / element blocks. */
+export function parseMessageContentParts(content: string): MessageContentPart[] {
+  const parts: MessageContentPart[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  const re = new RegExp(ELEMENT_BLOCK_RE.source, "g");
+  while ((m = re.exec(content)) !== null) {
+    if (m.index > last) {
+      parts.push({ kind: "text", value: content.slice(last, m.index) });
+    }
+    const url = m[1].trim();
+    const htmlMatch = /```html\n([\s\S]*?)\n```/.exec(m[0]);
+    const outerHtml = htmlMatch?.[1] ?? "";
+    const firstTag = outerHtml ? (/<(\w[\w-]*)/.exec(outerHtml)?.[1] ?? "element") : "element";
+    parts.push({ kind: "element", tagName: firstTag, url, outerHtml });
+    last = m.index + m[0].length;
+  }
+  if (last < content.length) {
+    parts.push({ kind: "text", value: content.slice(last) });
+  }
+  return parts;
+}
+
+/** Rebuild composer segments from stored message content (e.g. message rewind). */
+export function messageContentToRichSegments(
+  content: string,
+  idPrefix: string,
+): RichSegment[] {
+  const parts = parseMessageContentParts(content);
+  if (parts.length === 0) {
+    return content ? [{ kind: "text", value: content }] : emptySegments();
+  }
+
+  const segments: RichSegment[] = [];
+  let elementIndex = 0;
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]!;
+    const prev = i > 0 ? parts[i - 1]! : null;
+    const next = i < parts.length - 1 ? parts[i + 1]! : null;
+
+    if (part.kind === "element") {
+      const attachment: BrowserElementAttachment = {
+        id: `${idPrefix}-el-${elementIndex++}`,
+        tagName: part.tagName,
+        outerHtml: part.outerHtml,
+        screenshotDataUrl: "",
+        pageUrl: part.url,
+      };
+      segments.push({ kind: "element", attachment });
+      continue;
+    }
+
+    const display = trimMessageTextAroundElements(part.value, {
+      afterElement: prev?.kind === "element",
+      beforeElement: next?.kind === "element",
+    });
+    if (display || segments.length === 0) {
+      segments.push({ kind: "text", value: display });
+    }
+  }
+
+  return mergeAdjacentTextSegments(segments.length > 0 ? segments : emptySegments());
+}
