@@ -11,32 +11,12 @@ import {
   snapshotsToComposerAttachmentViews,
   type ComposerLocalFileAttachmentView,
 } from "@/lib/local-file-attachments";
-import { trimMessageTextAroundElements } from "@/lib/composer-segment-model";
+import {
+  parseMessageContentParts,
+  trimMessageTextAroundElements,
+} from "@/lib/composer-segment-model";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
-
-type MessagePart =
-  | { kind: 'text'; value: string }
-  | { kind: 'element'; tagName: string; url: string };
-
-const ELEMENT_BLOCK_RE = /Selected element from ([^\n]*):\n```html\n[\s\S]*?\n```/g;
-
-function parseMessageContent(content: string): MessagePart[] {
-  const parts: MessagePart[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  const re = new RegExp(ELEMENT_BLOCK_RE.source, 'g');
-  while ((m = re.exec(content)) !== null) {
-    if (m.index > last) parts.push({ kind: 'text', value: content.slice(last, m.index) });
-    const url = m[1].trim();
-    const htmlMatch = /```html\n([\s\S]*?)\n```/.exec(m[0]);
-    const firstTag = htmlMatch ? (/<(\w[\w-]*)/.exec(htmlMatch[1])?.[1] ?? 'element') : 'element';
-    parts.push({ kind: 'element', tagName: firstTag, url });
-    last = m.index + m[0].length;
-  }
-  if (last < content.length) parts.push({ kind: 'text', value: content.slice(last) });
-  return parts;
-}
 
 function ElementCard({ tagName, url }: { tagName: string; url: string }) {
   return (
@@ -81,7 +61,10 @@ export function UserMessageBubble({
 
   useLocalFileAttachmentPreviews(attachmentViews, setAttachmentViews, readLocalImagePreviewDataUrl);
 
-  const contentParts = useMemo(() => parseMessageContent(message.content), [message.content]);
+  const contentParts = useMemo(
+    () => parseMessageContentParts(message.content),
+    [message.content],
+  );
   const visibleText = contentParts.filter((p) => p.kind === 'text').map((p) => p.value).join('');
   const showText =
     (visibleText.trim().length > 0 || contentParts.some((p) => p.kind === 'element')) &&

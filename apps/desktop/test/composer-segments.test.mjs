@@ -9,6 +9,7 @@ import {
   segmentsToPlainText,
   syncSegmentsFromExternalValue,
   trimMessageTextAroundElements,
+  messageContentToRichSegments,
 } from "../src/lib/composer-segment-model.ts";
 
 const sampleAttachment = {
@@ -91,6 +92,17 @@ test("insertSegmentAtCaret splits text and leaves trailing text segment", () => 
   ]);
   assert.equal(caret.segmentIndex, 2);
   assert.equal(caret.offset, 0);
+});
+
+test("messageContentToRichSegments rebuilds element chips from wire text", () => {
+  const wire = segmentsToMessageText([
+    { kind: "element", attachment: sampleAttachment },
+    { kind: "text", value: "你好" },
+  ]);
+  const segments = messageContentToRichSegments(wire, "msg-1");
+  assert.equal(segments.length, 2);
+  assert.equal(segments[0]?.kind, "element");
+  assert.equal(segments[1]?.kind === "text" && segments[1].value, "你好");
 });
 
 test("insertSegmentAtCaret adds trailing space after element at caret", () => {

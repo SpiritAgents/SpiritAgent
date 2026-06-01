@@ -79,8 +79,18 @@ import {
   ComposerLocalFileStrip,
   type ComposerLocalFileAttachmentView,
 } from "@/components/composer-local-file-strip";
-import { ComposerRichInput, segmentsToMessageText, type ComposerRichInputHandle } from "@/components/composer-rich-input";
+import {
+  ComposerRichInput,
+  segmentsToMessageText,
+  type ComposerRichInputHandle,
+  type RichSegment,
+} from "@/components/composer-rich-input";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
+import {
+  messageContentToRichSegments,
+  segmentsToAttachments,
+  segmentsToPlainText,
+} from "@/lib/composer-segment-model";
 import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { ApprovalLevelMenu } from "@/components/approval-level-menu";
 import { BranchSelectMenu } from "@/components/branch-select-menu";
@@ -649,6 +659,7 @@ type ComposerSurfaceProps = {
   showLoopSwitch?: boolean;
   browserElementAttachments?: readonly BrowserElementAttachment[];
   onElementAttachmentsChange?(attachments: BrowserElementAttachment[]): void;
+  initialSegments?: readonly RichSegment[] | null;
 };
 
 function ComposerSurface({
@@ -684,6 +695,7 @@ function ComposerSurface({
   showLoopSwitch = true,
   browserElementAttachments,
   onElementAttachmentsChange,
+  initialSegments,
 }: ComposerSurfaceProps) {
   const { t } = useTranslation();
   const [modelFilter, setModelFilter] = useState("");
@@ -726,6 +738,7 @@ function ComposerSurface({
         ref={richInputRef}
         value={value}
         elementAttachments={browserElementAttachments}
+        initialSegments={initialSegments}
         placeholder={placeholder}
         readOnly={readOnly}
         onTextChange={onChange}
@@ -1205,9 +1218,12 @@ function MessageCard({
   continueBusy,
   rewindText,
   rewindLocalFileAttachments,
+  rewindBrowserElementAttachments,
   rewindSelected,
   rewindCanSubmit,
   rewindBusy,
+  rewindRichInputRef,
+  onRewindElementAttachmentsChange,
   canPickLocalFile,
   models,
   catalogHints,
@@ -1240,9 +1256,12 @@ function MessageCard({
   continueBusy: boolean;
   rewindText: string;
   rewindLocalFileAttachments: readonly ComposerLocalFileAttachmentView[];
+  rewindBrowserElementAttachments: readonly BrowserElementAttachment[];
   rewindSelected: boolean;
   rewindCanSubmit: boolean;
   rewindBusy: boolean;
+  rewindRichInputRef: React.RefObject<ComposerRichInputHandle | null>;
+  onRewindElementAttachmentsChange(attachments: BrowserElementAttachment[]): void;
   canPickLocalFile: boolean;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
@@ -1283,6 +1302,13 @@ function MessageCard({
     messages,
     listIndex,
   );
+  const rewindInitialSegments = useMemo(
+    () =>
+      rewindSelected
+        ? messageContentToRichSegments(message.content, String(message.id))
+        : null,
+    [rewindSelected, message.content, message.id],
+  );
   const nextMessage = messages[listIndex + 1];
 
   return (
@@ -1312,7 +1338,12 @@ function MessageCard({
       >
         {rewindSelected && isUser ? (
           <ComposerSurface
+            key={`rewind-composer-${message.id}`}
+            richInputRef={rewindRichInputRef}
             value={rewindText}
+            initialSegments={rewindInitialSegments}
+            browserElementAttachments={rewindBrowserElementAttachments}
+            onElementAttachmentsChange={onRewindElementAttachmentsChange}
             localFileAttachments={rewindLocalFileAttachments}
             onChange={onRewindChange}
             onSubmit={onRewindSubmit}
@@ -1946,6 +1977,7 @@ export default function App() {
     commitBusy;
   const mergeActionDisabled = !canOpenMergeDialog || commitBusy;
   const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
+  const rewindRichInputRef = useRef<ComposerRichInputHandle | null>(null);
   const previousPlanModifiedAtRef = useRef<number | undefined>(undefined);
   const previousPlanExistsRef = useRef<boolean | undefined>(undefined);
   const planAutoOpenInitializedRef = useRef(false);
@@ -2126,10 +2158,12 @@ export default function App() {
     if (!runtime.summary.canSend || runtime.busyAction || message.canRewind !== true) {
       return;
     }
+    const segments = messageContentToRichSegments(message.content, String(message.id));
     setRewindDraft({
       messageId: message.id,
       listIndex,
-      text: message.content,
+      text: segmentsToPlainText(segments),
+      browserElementAttachments: segmentsToAttachments(segments),
       localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
     });
   };
@@ -2138,10 +2172,12 @@ export default function App() {
     if (!rewindDraft) {
       return;
     }
+    const segs = rewindRichInputRef.current?.getSegments() ?? [];
+    const wireText = segmentsToMessageText(segs) || rewindDraft.text;
     void runtime
       .rewindAndSubmitMessage({
         messageId: rewindDraft.messageId,
-        text: rewindDraft.text,
+        text: wireText,
         ...(rewindDraft.localFileAttachments.length > 0
           ? { localFilePaths: rewindDraft.localFileAttachments.map((item) => item.path) }
           : {}),
@@ -2843,12 +2879,26 @@ export default function App() {
                                   ? rewindDraft.localFileAttachments
                                   : []
                               }
+                              rewindBrowserElementAttachments={
+                                rewindDraft?.listIndex === index
+                                  ? rewindDraft.browserElementAttachments
+                                  : []
+                              }
+                              rewindRichInputRef={rewindRichInputRef}
+                              onRewindElementAttachmentsChange={(attachments) => {
+                                setRewindDraft((current) =>
+                                  current && current.listIndex === index
+                                    ? { ...current, browserElementAttachments: attachments }
+                                    : current,
+                                );
+                              }}
                               rewindCanSubmit={
                                 runtime.summary.canSend &&
                                 runtime.busyAction !== "rewind" &&
                                 runtime.busyAction !== "session" &&
                                 rewindDraft?.listIndex === index &&
                                 (Boolean(rewindDraft.text.trim()) ||
+                                  rewindDraft.browserElementAttachments.length > 0 ||
                                   rewindDraft.localFileAttachments.length > 0)
                               }
                               canPickLocalFile={runtime.hostKind === "electron"}
