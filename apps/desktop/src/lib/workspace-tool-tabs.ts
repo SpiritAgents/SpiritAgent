@@ -7,6 +7,8 @@ export type WorkspaceToolTab = {
   kind: WorkspaceToolTabKind;
   /** 仅 kind === "browser" 时使用；sentinel 表示内置新标签页 */
   browserUrl?: string;
+  /** 由各子 Tab 组件上报的当前标题（文件名 / 网页标题 / 终端标题）；空时仅显示图标 */
+  tabTitle?: string;
 };
 
 const KIND_BASE_LABEL_KEY: Record<WorkspaceToolTabKind, string> = {

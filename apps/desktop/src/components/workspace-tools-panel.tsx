@@ -172,6 +172,15 @@ export function WorkspaceToolsDock({
     [onTabsChange, tabs],
   );
 
+  const handleTabTitleChange = useCallback(
+    (tabId: string, title: string | undefined) => {
+      onTabsChange(
+        tabs.map((item) => (item.id === tabId ? { ...item, tabTitle: title || undefined } : item)),
+      );
+    },
+    [onTabsChange, tabs],
+  );
+
   const newTabItems = useMemo<readonly ActionPopoverItem[]>(
     () =>
       (["files", "shell", "git", "browser"] as const).map((kind) => {
@@ -245,11 +254,13 @@ export function WorkspaceToolsDock({
                 const Icon = meta.icon;
                 const selected = item.id === activeTabId;
                 const label = workspaceToolTabLabel(item.kind, tabs, item.id, t);
+                const displayTitle = item.tabTitle;
                 return (
                   <div
                     key={item.id}
                     className={cn(
-                      "flex max-w-[9rem] shrink-0 items-stretch rounded-t-md border border-transparent",
+                      "flex shrink-0 items-stretch rounded-t-md border border-transparent",
+                      displayTitle ? "max-w-[9rem]" : "max-w-[3rem]",
                       instantHoverMotionClass,
                       selected
                         ? "border-border/40 border-b-background bg-background text-foreground shadow-sm"
@@ -263,11 +274,12 @@ export function WorkspaceToolsDock({
                       aria-selected={selected}
                       aria-controls={`workspace-tool-panel-${item.id}`}
                       tabIndex={selected ? 0 : -1}
+                      title={displayTitle ?? label}
                       className="flex min-w-0 flex-1 items-center gap-1 rounded-tl-md bg-transparent py-2 pl-2 pr-0.5 text-xs font-medium outline-none"
                       onClick={() => onActiveTabIdChange(item.id)}
                     >
                       <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                      <span className="truncate">{label}</span>
+                      {displayTitle ? <span className="truncate">{displayTitle}</span> : null}
                     </button>
                     <button
                       type="button"
@@ -335,17 +347,22 @@ export function WorkspaceToolsDock({
                         startImplementingDisabled={startImplementingDisabled}
                         autoRevealPlanNonce={planRevealEnabled ? autoRevealPlanNonce : 0}
                         planRevealEnabled={planRevealEnabled}
+                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       />
                     </div>
                   ) : item.kind === "shell" ? (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-                      <WorkspaceShellTab workspaceRoot={workspaceRoot} />
+                      <WorkspaceShellTab
+                        workspaceRoot={workspaceRoot}
+                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                      />
                     </div>
                   ) : item.kind === "browser" ? (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                       <WorkspaceBrowserTab
                         browserUrl={item.browserUrl}
                         onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
+                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       />
                     </div>
                   ) : (

@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 
 export type WorkspaceShellTabProps = {
   workspaceRoot: string;
+  /** 终端标题变化时通知父层（来自 OSC 0/2 序列）；无标题时传 undefined */
+  onTitleChange?: (title: string | undefined) => void;
 };
 
 /** 与 `.dark` 下 `--background`（oklch(0.145 0 0) ≈ #0a0a0a）一致。 */
@@ -61,7 +63,7 @@ function readClipboardSync(): string | null {
   return null;
 }
 
-export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
+export function WorkspaceShellTab({ workspaceRoot, onTitleChange }: WorkspaceShellTabProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -102,6 +104,9 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
       scrollback: 8000,
     });
     termRef.current = term;
+    term.onTitleChange((title) => {
+      onTitleChange?.(title || undefined);
+    });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(el);
