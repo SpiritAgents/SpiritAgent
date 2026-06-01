@@ -320,7 +320,7 @@ function extractAssistantToolCallParts(
       ? toolCall.function.arguments
       : JSON.stringify(toolCall.function.arguments ?? {});
     const input = toolName === APPLY_PATCH_HOST_TOOL_NAME
-      ? JSON.parse(normalizeApplyPatchToolCallArgumentsJson(toolCall.id, rawArguments))
+      ? tryParseJsonValue(normalizeApplyPatchToolCallArgumentsJson(toolCall.id, rawArguments)) ?? {}
       : tryParseJsonValue(toolCall.function.arguments) ?? toolCall.function.arguments ?? {};
 
     return [{
