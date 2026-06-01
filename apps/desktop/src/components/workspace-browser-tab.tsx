@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Pen, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import {
   BROWSER_NEW_TAB_SENTINEL,
   isBrowserNewTabUrl,
 } from "@/lib/workspace-tool-tabs";
+import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
+import { truncateOuterHtml } from "@/lib/browser-element-attachment";
 import { cn } from "@/lib/utils";
 
 export type WorkspaceBrowserTabProps = {
@@ -17,6 +19,8 @@ export type WorkspaceBrowserTabProps = {
   onBrowserUrlChange(url: string): void;
   /** 当前网页标题变化时通知父层；切到新标签页时传 undefined */
   onTitleChange?: (title: string | undefined) => void;
+  /** 用户选中元素后的回调 */
+  onElementPicked?: (attachment: BrowserElementAttachment) => void;
 };
 
 type LocalListeningEndpoint = {
@@ -30,11 +34,15 @@ type LocalListeningEndpoint = {
 type WebviewElement = HTMLElement & {
   src?: string;
   getURL?(): string;
+  getWebContentsId?(): number;
   canGoBack?(): boolean;
   canGoForward?(): boolean;
   goBack?(): void;
   goForward?(): void;
   reload?(): void;
+  executeJavaScript?(code: string): Promise<unknown>;
+  insertCSS?(css: string): Promise<string>;
+  removeInsertedCSS?(key: string): Promise<void>;
 };
 
 function isElectronDesktop(): boolean {
@@ -156,6 +164,7 @@ export function WorkspaceBrowserTab({
   browserUrl,
   onBrowserUrlChange,
   onTitleChange,
+  onElementPicked,
 }: WorkspaceBrowserTabProps) {
   const { t } = useTranslation();
   const webviewRef = useRef<WebviewElement | null>(null);
@@ -164,6 +173,12 @@ export function WorkspaceBrowserTab({
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
   const [lastVisitedUrl, setLastVisitedUrl] = useState<string | undefined>(undefined);
+  const [isPickerActive, setIsPickerActive] = useState(false);
+  const [overlayRect, setOverlayRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const onElementPickedRef = useRef(onElementPicked);
+  useLayoutEffect(() => {
+    onElementPickedRef.current = onElementPicked;
+  });
   const canEmbed = canUseEmbeddedBrowser();
   const onTitleChangeRef = useRef(onTitleChange);
   useLayoutEffect(() => {
@@ -269,6 +284,110 @@ export function WorkspaceBrowserTab({
     };
   }, [canEmbed, showNewTab, syncNavState]);
 
+  const exitPicker = useCallback(() => {
+    setIsPickerActive(false);
+    setOverlayRect(null);
+  }, []);
+
+  useEffect(() => {
+    const el = webviewRef.current;
+    if (!isPickerActive || showNewTab || !canEmbed || !el) return;
+
+    const INJECT_MOUSEMOVE = `
+      (function() {
+        if (window.__spiritPickerCleanup) window.__spiritPickerCleanup();
+        function onMove(e) {
+          var el = document.elementFromPoint(e.clientX, e.clientY);
+          if (!el) return;
+          var r = el.getBoundingClientRect();
+          window.__spiritPickerRect = { x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height), tagName: el.tagName, outerHTML: el.outerHTML };
+        }
+        function onClick(e) {
+          e.preventDefault(); e.stopPropagation();
+          var el = document.elementFromPoint(e.clientX, e.clientY);
+          if (!el) return;
+          var r = el.getBoundingClientRect();
+          window.__spiritPickerResult = { x: Math.round(r.left), y: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height), tagName: el.tagName, outerHTML: el.outerHTML };
+          window.__spiritPickerDone = true;
+        }
+        document.addEventListener('mousemove', onMove, true);
+        document.addEventListener('click', onClick, true);
+        window.__spiritPickerDone = false;
+        window.__spiritPickerRect = null;
+        window.__spiritPickerResult = null;
+        window.__spiritPickerCleanup = function() {
+          document.removeEventListener('mousemove', onMove, true);
+          document.removeEventListener('click', onClick, true);
+        };
+        true;
+      })();
+    `;
+
+    void el.executeJavaScript?.(INJECT_MOUSEMOVE);
+
+    let rafId: number;
+    let cancelled = false;
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const done = await el.executeJavaScript?.('window.__spiritPickerDone || false');
+        if (done) {
+          const result = await el.executeJavaScript?.('window.__spiritPickerResult');
+          await el.executeJavaScript?.('if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;');
+          const r = result as { x: number; y: number; width: number; height: number; tagName: string; outerHTML: string } | null;
+          if (r && !cancelled) {
+            const webContentsId = el.getWebContentsId?.();
+            const bridge = window.spiritDesktop;
+            if (webContentsId && bridge?.captureWebviewRect) {
+              try {
+                const base64 = await bridge.captureWebviewRect(webContentsId, {
+                  x: r.x,
+                  y: r.y,
+                  width: Math.max(r.width, 1),
+                  height: Math.max(r.height, 1),
+                });
+                if (!cancelled) {
+                  onElementPickedRef.current?.({
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    tagName: r.tagName.toLowerCase(),
+                    outerHtml: truncateOuterHtml(r.outerHTML),
+                    screenshotDataUrl: `data:image/png;base64,${base64}`,
+                    pageUrl: el.getURL?.() ?? browserUrl ?? '',
+                  });
+                }
+              } catch (err) {
+                console.warn('[picker] capturePage failed:', err);
+              }
+            }
+            exitPicker();
+            return;
+          }
+        } else {
+          const rect = await el.executeJavaScript?.('window.__spiritPickerRect');
+          const r = rect as { x: number; y: number; width: number; height: number } | null;
+          if (r && !cancelled) {
+            setOverlayRect({ x: r.x, y: r.y, width: r.width, height: r.height });
+          }
+        }
+      } catch {
+        // webview may not be ready
+      }
+      if (!cancelled) {
+        rafId = window.setTimeout(poll, 50);
+      }
+    };
+
+    rafId = window.setTimeout(poll, 50);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(rafId);
+      void el.executeJavaScript?.('if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;');
+      setOverlayRect(null);
+    };
+  }, [isPickerActive, showNewTab, canEmbed, browserUrl, exitPicker]);
+
   const handleGoBack = useCallback(() => {
     const el = webviewRef.current;
     if (el?.canGoBack?.()) {
@@ -355,18 +474,53 @@ export function WorkspaceBrowserTab({
             }
           }}
         />
+        {!showNewTab && onElementPicked ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              "size-7 shrink-0",
+              isPickerActive && "bg-accent text-accent-foreground",
+            )}
+            aria-label={t("workspace.browserPickerToggle")}
+            aria-pressed={isPickerActive}
+            onClick={() => setIsPickerActive((v) => !v)}
+          >
+            <Pen className="size-3.5" aria-hidden />
+          </Button>
+        ) : null}
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {showNewTab ? (
           <BrowserNewTabPage onNavigate={onBrowserUrlChange} />
         ) : (
-          <webview
-            ref={webviewRef as React.RefObject<HTMLElement>}
-            src={browserUrl}
-            allowpopups
-            className="electron-no-drag h-full w-full flex-1 border-0 bg-background"
-          />
+          <>
+            <webview
+              ref={webviewRef as React.RefObject<HTMLElement>}
+              src={browserUrl}
+              allowpopups
+              className={cn(
+                "electron-no-drag h-full w-full flex-1 border-0 bg-background",
+                isPickerActive && "cursor-crosshair",
+              )}
+            />
+            {isPickerActive && overlayRect ? (
+              <div
+                className="pointer-events-none absolute z-10"
+                style={{
+                  left: overlayRect.x,
+                  top: overlayRect.y,
+                  width: overlayRect.width,
+                  height: overlayRect.height,
+                  boxShadow: "0 0 0 2px #60a5fa",
+                  background: "rgba(147,197,253,0.15)",
+                  borderRadius: 2,
+                }}
+              />
+            ) : null}
+          </>
         )}
       </div>
     </div>
