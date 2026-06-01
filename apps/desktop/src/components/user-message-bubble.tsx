@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { Pen } from "lucide-react";
 
+import { BROWSER_ELEMENT_CHIP_CLASS } from "@/components/browser-element-card";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import {
@@ -40,7 +41,7 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
   return (
     <span
       title={url}
-      className="inline-flex items-center gap-1 rounded-md border border-blue-700/60 bg-blue-950 px-1.5 py-0.5 text-xs font-medium leading-none text-blue-400 select-none align-middle mx-0.5"
+      className={BROWSER_ELEMENT_CHIP_CLASS}
     >
       <Pen className="size-[10px] shrink-0" aria-hidden />
       {`<${tagName}>`}

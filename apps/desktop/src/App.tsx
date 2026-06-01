@@ -79,9 +79,8 @@ import {
   ComposerLocalFileStrip,
   type ComposerLocalFileAttachmentView,
 } from "@/components/composer-local-file-strip";
-import { ComposerRichInput, segmentsToPlainText, segmentsToAttachments, type ComposerRichInputHandle } from "@/components/composer-rich-input";
+import { ComposerRichInput, segmentsToMessageText, type ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import { browserElementContextText } from "@/lib/browser-element-attachment";
 import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { ApprovalLevelMenu } from "@/components/approval-level-menu";
 import { BranchSelectMenu } from "@/components/branch-select-menu";
@@ -2336,13 +2335,7 @@ export default function App() {
 
   const submitComposerMessage = () => {
     const segs = composerRichInputRef.current?.getSegments() ?? [];
-    const plainText = segmentsToPlainText(segs);
-    const elementParts = segmentsToAttachments(segs)
-      .map((a) => browserElementContextText(a))
-      .join('\n\n');
-    const fullText = elementParts
-      ? (plainText ? `${elementParts}\n\n${plainText}` : elementParts)
-      : plainText;
+    const fullText = segmentsToMessageText(segs) || runtime.composer;
     const payload = {
       text: fullText || runtime.composer,
       ...(runtime.composerLocalFileAttachments.length > 0
@@ -2365,7 +2358,11 @@ export default function App() {
       }
     }
 
-    void runtime.sendMessage(payload);
+    void runtime.sendMessage(payload).then((ok) => {
+      if (ok) {
+        setComposerBrowserElementAttachments([]);
+      }
+    });
   };
 
   const confirmBranchCheckoutAndSend = () => {

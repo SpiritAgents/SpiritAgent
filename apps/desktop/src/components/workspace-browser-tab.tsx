@@ -536,7 +536,7 @@ export function WorkspaceBrowserTab({
             <webview
               ref={webviewRef as React.RefObject<HTMLElement>}
               src={browserUrl}
-              allowpopups=""
+              allowpopups={true}
               className={cn(
                 "electron-no-drag h-full w-full flex-1 border-0 bg-background",
                 isPickerActive && "cursor-crosshair",

@@ -1,173 +1,38 @@
 import {
   useRef,
   useEffect,
+  useLayoutEffect,
   useCallback,
+  useState,
   forwardRef,
   useImperativeHandle,
   type KeyboardEvent,
   type ClipboardEvent,
 } from "react";
-import { Pen } from "lucide-react";
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
+import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-selection";
+import {
+  domToSegments,
+  emptySegments,
+  insertSegmentAtCaret,
+  mergeAdjacentTextSegments,
+  renderSegmentsToElement,
+  segmentsEqual,
+  segmentsToAttachments,
+  segmentsToPlainText,
+  syncSegmentsFromExternalValue,
+  type RichSegment,
+  type SegmentCaret,
+} from "@/lib/composer-segments";
 import { cn } from "@/lib/utils";
 
-export type RichSegment =
-  | { kind: "text"; value: string }
-  | { kind: "element"; attachment: BrowserElementAttachment };
-
-/**
- * Flatten the contenteditable div's DOM so that all children are either:
- * - text nodes
- * - br elements
- * - chip spans (data-element-chip)
- *
- * This prevents browsers from wrapping content in div/p containers when
- * typing or deleting near chip nodes.
- */
-function normalizeDOM(root: HTMLElement): void {
-  // Collect all top-level direct children that are block containers
-  const toUnwrap: HTMLElement[] = [];
-  root.childNodes.forEach((node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      if (!el.dataset.elementChip && (el.tagName === "DIV" || el.tagName === "P")) {
-        toUnwrap.push(el);
-      }
-    }
-  });
-
-  for (const container of toUnwrap) {
-    // Replace the container with its children
-    const children = Array.from(container.childNodes);
-    for (const child of children) {
-      root.insertBefore(child, container);
-    }
-    container.remove();
-  }
-
-  // Merge adjacent text nodes
-  root.normalize();
-
-  // Remove all lone <br> nodes that are adjacent to chips or at boundaries.
-  // A <br> is "lone" if it is next to a chip (or at start/end) and not serving
-  // as a deliberate newline between two text nodes.
-  const kids = Array.from(root.childNodes);
-  const toRemoveBr: ChildNode[] = [];
-  kids.forEach((node, i) => {
-    if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
-      const prev = kids[i - 1];
-      const next = kids[i + 1];
-      const prevIsText = prev?.nodeType === Node.TEXT_NODE;
-      const nextIsText = next?.nodeType === Node.TEXT_NODE;
-      // Keep <br> only when it sits between two text nodes (intentional newline).
-      // Remove it when it is at start, at end, or adjacent to a chip.
-      if (!(prevIsText && nextIsText)) {
-        toRemoveBr.push(node);
-      }
-    }
-  });
-  toRemoveBr.forEach((n) => n.remove());
-
-  // Remove comment nodes and whitespace-only text nodes introduced by HTML paste
-  const toRemoveMisc: ChildNode[] = [];
-  root.childNodes.forEach((node) => {
-    if (node.nodeType === Node.COMMENT_NODE) {
-      toRemoveMisc.push(node);
-    } else if (node.nodeType === Node.TEXT_NODE && /^[\r\n\s]*$/.test(node.textContent ?? '')) {
-      toRemoveMisc.push(node);
-    }
-  });
-  toRemoveMisc.forEach((n) => n.remove());
-}
-
-/** Serialize contenteditable DOM → RichSegment[] (DOM must be normalized first) */
-function domToSegments(root: HTMLElement): RichSegment[] {
-  const segs: RichSegment[] = [];
-  root.childNodes.forEach((node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const v = node.textContent ?? "";
-      if (v) segs.push({ kind: "text", value: v });
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const id = el.dataset.elementId;
-      const tag = el.dataset.elementTag;
-      const html = el.dataset.elementHtml;
-      const url = el.dataset.elementUrl;
-      if (id && tag && html !== undefined && url !== undefined) {
-        segs.push({
-          kind: "element",
-          attachment: { id, tagName: tag, outerHtml: html, screenshotDataUrl: "", pageUrl: url },
-        });
-      } else if (el.tagName === "BR") {
-        segs.push({ kind: "text", value: "\n" });
-      }
-      // block containers handled by normalizeDOM; ignore here
-    }
-  });
-  // Strip trailing newline added by browsers
-  const last = segs[segs.length - 1];
-  if (last?.kind === "text" && last.value.endsWith("\n")) {
-    last.value = last.value.slice(0, -1);
-    if (!last.value) segs.pop();
-  }
-  return segs;
-}
-
-/** Serialize RichSegment[] → plain text (for sending) */
-export function segmentsToPlainText(segs: RichSegment[]): string {
-  return segs.map((s) => (s.kind === "text" ? s.value : "")).join("");
-}
-
-/** Extract all element attachments from segments */
-export function segmentsToAttachments(segs: RichSegment[]): BrowserElementAttachment[] {
-  return segs.filter((s): s is Extract<RichSegment, { kind: "element" }> => s.kind === "element").map((s) => s.attachment);
-}
-
-/** Build DOM from segments (used to reset contenteditable) */
-function segmentsToDom(segs: RichSegment[], doc: Document): DocumentFragment {
-  const frag = doc.createDocumentFragment();
-  for (const seg of segs) {
-    if (seg.kind === "text") {
-      const lines = seg.value.split("\n");
-      lines.forEach((line, i) => {
-        if (line) frag.appendChild(doc.createTextNode(line));
-        if (i < lines.length - 1) frag.appendChild(doc.createElement("br"));
-      });
-    } else {
-      frag.appendChild(makeChipNode(seg.attachment, doc));
-    }
-  }
-  return frag;
-}
-
-function makeChipNode(a: BrowserElementAttachment, doc: Document): HTMLElement {
-  const span = doc.createElement("span");
-  span.contentEditable = "false";
-  span.dataset.elementId = a.id;
-  span.dataset.elementTag = a.tagName;
-  span.dataset.elementHtml = a.outerHtml;
-  span.dataset.elementUrl = a.pageUrl;
-  span.setAttribute("data-element-chip", "true");
-  span.className =
-    "inline-flex items-center gap-1 rounded-md border border-blue-700/60 bg-blue-950 px-1.5 py-0.5 text-xs font-medium leading-none text-blue-400 select-none align-middle mx-0.5";
-  const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-  icon.setAttribute("viewBox", "0 0 24 24");
-  icon.setAttribute("width", "10");
-  icon.setAttribute("height", "10");
-  icon.setAttribute("fill", "none");
-  icon.setAttribute("stroke", "currentColor");
-  icon.setAttribute("stroke-width", "2");
-  icon.setAttribute("stroke-linecap", "round");
-  icon.setAttribute("stroke-linejoin", "round");
-  icon.setAttribute("aria-hidden", "true");
-  icon.innerHTML =
-    '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>';
-  span.appendChild(icon);
-  const label = doc.createTextNode(`<${a.tagName}>`);
-  span.appendChild(label);
-  return span;
-}
+export type { RichSegment } from "@/lib/composer-segment-model";
+export {
+  segmentsToAttachments,
+  segmentsToMessageText,
+  segmentsToPlainText,
+} from "@/lib/composer-segment-model";
 
 const ELEMENT_MIME = "application/x-spirit-elements";
 
@@ -191,99 +56,156 @@ export type ComposerRichInputHandle = {
 
 export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
   function ComposerRichInput(
-    { value, elementAttachments, placeholder, readOnly, className, onTextChange, onElementAttachmentsChange, onKeyDown, onPaste },
+    {
+      value,
+      elementAttachments,
+      placeholder,
+      readOnly,
+      className,
+      onTextChange,
+      onElementAttachmentsChange,
+      onKeyDown,
+      onPaste,
+    },
     ref,
   ) {
     const divRef = useRef<HTMLDivElement>(null);
-    const suppressNextSync = useRef(false);
-    const justInsertedChipRef = useRef(false);
+    const [segments, setSegments] = useState<RichSegment[]>(emptySegments);
+    const segmentsRef = useRef(segments);
+    const pendingCaretRef = useRef<SegmentCaret | null>(null);
+    const skipExternalValueSyncRef = useRef(false);
+    const skipRenderRef = useRef(false);
     const onElementAttachmentsChangeRef = useRef(onElementAttachmentsChange);
-    useEffect(() => { onElementAttachmentsChangeRef.current = onElementAttachmentsChange; });
-
-    const getSegments = useCallback((): RichSegment[] => {
-      if (!divRef.current) return [];
-      return domToSegments(divRef.current);
-    }, []);
-
-    const notify = useCallback(() => {
-      const segs = getSegments();
-      onTextChange(segmentsToPlainText(segs));
-      onElementAttachmentsChange(segmentsToAttachments(segs));
-    }, [getSegments, onTextChange, onElementAttachmentsChange]);
-
-    const insertAttachment = useCallback((a: BrowserElementAttachment) => {
-      const div = divRef.current;
-      if (!div) return;
-      div.focus();
-      const sel = window.getSelection();
-      const chip = makeChipNode(a, document);
-      if (sel && sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        if (div.contains(range.commonAncestorContainer)) {
-          range.deleteContents();
-          range.insertNode(chip);
-          range.setStartAfter(chip);
-          range.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(range);
-        } else {
-          div.appendChild(chip);
-        }
-      } else {
-        div.appendChild(chip);
-      }
-      suppressNextSync.current = true;
-      justInsertedChipRef.current = true;
-      normalizeDOM(div);
-      notify();
-    }, [notify]);
-
-    useImperativeHandle(ref, () => ({ focus: () => divRef.current?.focus(), insertAttachment, getSegments }), [insertAttachment, getSegments]);
 
     useEffect(() => {
+      segmentsRef.current = segments;
+    }, [segments]);
+
+    useEffect(() => {
+      onElementAttachmentsChangeRef.current = onElementAttachmentsChange;
+    });
+
+    const notifyParents = useCallback(
+      (next: RichSegment[]) => {
+        skipExternalValueSyncRef.current = true;
+        onTextChange(segmentsToPlainText(next));
+        onElementAttachmentsChange(segmentsToAttachments(next));
+      },
+      [onTextChange, onElementAttachmentsChange],
+    );
+
+    const commitSegments = useCallback(
+      (next: RichSegment[], caret?: SegmentCaret | null) => {
+        const merged = mergeAdjacentTextSegments(next);
+        pendingCaretRef.current = caret ?? null;
+        setSegments(merged);
+        notifyParents(merged);
+      },
+      [notifyParents],
+    );
+
+    const getSegments = useCallback((): RichSegment[] => segmentsRef.current, []);
+
+    const insertAttachment = useCallback(
+      (a: BrowserElementAttachment) => {
+        const div = divRef.current;
+        if (!div) return;
+        div.focus();
+        const current = segmentsRef.current;
+        const caret =
+          selectionToCaret(div, current) ?? {
+            segmentIndex: current.length - 1,
+            offset: segmentsToPlainText(current).length,
+          };
+        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+          kind: "element",
+          attachment: a,
+        });
+        commitSegments(next, nextCaret);
+      },
+      [commitSegments],
+    );
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => divRef.current?.focus(),
+        insertAttachment,
+        getSegments,
+      }),
+      [insertAttachment, getSegments],
+    );
+
+    useLayoutEffect(() => {
       const div = divRef.current;
-      if (!div) return;
-      if (suppressNextSync.current) {
-        suppressNextSync.current = false;
+      if (!div || skipRenderRef.current) {
+        skipRenderRef.current = false;
         return;
       }
-      normalizeDOM(div);
-      const currentSegs = domToSegments(div);
-      const currentText = segmentsToPlainText(currentSegs);
-      const currentHasChips = div.querySelector('[data-element-chip]') !== null;
-      // When value is cleared externally (e.g. after send), also wipe chips.
-      // But skip if we just inserted a chip (value may still be empty in that case).
-      if (!value && currentHasChips) {
-        if (justInsertedChipRef.current) {
-          justInsertedChipRef.current = false;
-          return;
+
+      const domSegs = domToSegments(div);
+      if (segmentsEqual(domSegs, segments)) {
+        if (pendingCaretRef.current) {
+          caretToDomRange(div, segments, pendingCaretRef.current);
+          pendingCaretRef.current = null;
         }
-        div.innerHTML = '';
-        onElementAttachmentsChangeRef.current([]);
         return;
       }
-      justInsertedChipRef.current = false;
-      if (currentText === value) return;
-      // Rebuild text content; preserve chip nodes in place
-      const chips = Array.from(div.querySelectorAll<HTMLElement>('[data-element-chip]'));
-      div.innerHTML = '';
-      if (value) div.appendChild(document.createTextNode(value));
-      chips.forEach((c) => div.appendChild(c));
-    }, [value]);
+
+      renderSegmentsToElement(div, segments);
+      if (pendingCaretRef.current) {
+        caretToDomRange(div, segments, pendingCaretRef.current);
+        pendingCaretRef.current = null;
+      }
+    }, [segments]);
+
+    useEffect(() => {
+      if (skipExternalValueSyncRef.current) {
+        skipExternalValueSyncRef.current = false;
+        return;
+      }
+
+      const current = segmentsRef.current;
+      const plain = segmentsToPlainText(current);
+      const hasElements = current.some((s) => s.kind === "element");
+      const attachmentCount = elementAttachments?.length ?? 0;
+
+      // Parent cleared composer after send: empty value AND no attachments prop.
+      if (!value && attachmentCount === 0 && (plain || hasElements)) {
+        commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
+        return;
+      }
+
+      if (plain === value) return;
+
+      const next = syncSegmentsFromExternalValue(current, value);
+      if (!segmentsEqual(next, current)) {
+        pendingCaretRef.current = null;
+        setSegments(next);
+      }
+    }, [value, elementAttachments?.length, commitSegments]);
 
     const handleInput = useCallback(() => {
       const div = divRef.current;
-      if (div) normalizeDOM(div);
-      notify();
-    }, [notify]);
+      if (!div) return;
+      skipRenderRef.current = true;
+      const caret = selectionToCaret(div, segmentsRef.current);
+      const next = mergeAdjacentTextSegments(domToSegments(div));
+      pendingCaretRef.current = caret;
+      setSegments(next);
+      notifyParents(next);
+    }, [notifyParents]);
 
-    const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
-      onKeyDown?.(e);
-      if (e.defaultPrevented) return;
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-      }
-    }, [onKeyDown]);
+    const handleKeyDown = useCallback(
+      (e: KeyboardEvent<HTMLDivElement>) => {
+        onKeyDown?.(e);
+        if (e.defaultPrevented) return;
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+        }
+      },
+      [onKeyDown],
+    );
 
     const handleCopy = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
       const sel = window.getSelection();
@@ -306,55 +228,69 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       e.preventDefault();
       const textDiv = document.createElement("div");
       textDiv.appendChild(frag.cloneNode(true));
-      const plainText = textDiv.innerText;
-      e.nativeEvent.clipboardData?.setData("text/plain", plainText);
+      e.nativeEvent.clipboardData?.setData("text/plain", textDiv.innerText);
       e.nativeEvent.clipboardData?.setData(ELEMENT_MIME, JSON.stringify(chips));
       e.nativeEvent.clipboardData?.setData("text/html", textDiv.innerHTML);
     }, []);
 
-    const handlePaste = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
-      onPaste?.(e);
-      if (e.defaultPrevented) return;
-      const raw = e.nativeEvent.clipboardData?.getData(ELEMENT_MIME);
-      if (!raw) return;
-      e.preventDefault();
-      try {
-        const chips: Record<string, BrowserElementAttachment> = JSON.parse(raw);
-        const html = e.nativeEvent.clipboardData?.getData("text/html") ?? "";
-        const parser = new DOMParser();
-        const parsed = parser.parseFromString(html, "text/html");
-        const sel = window.getSelection();
-        const div = divRef.current;
-        if (!sel || !div) return;
-        const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-        if (range && div.contains(range.commonAncestorContainer)) {
-          range.deleteContents();
-          const frag = document.createDocumentFragment();
+    const handlePaste = useCallback(
+      (e: ClipboardEvent<HTMLDivElement>) => {
+        onPaste?.(e);
+        if (e.defaultPrevented) return;
+        const raw = e.nativeEvent.clipboardData?.getData(ELEMENT_MIME);
+        if (!raw) return;
+        e.preventDefault();
+        try {
+          const chips: Record<string, BrowserElementAttachment> = JSON.parse(raw);
+          const html = e.nativeEvent.clipboardData?.getData("text/html") ?? "";
+          const parser = new DOMParser();
+          const parsed = parser.parseFromString(html, "text/html");
+          const div = divRef.current;
+          if (!div) return;
+
+          const pasteSegs: RichSegment[] = [];
           parsed.body.childNodes.forEach((node) => {
-            // Skip comment nodes and whitespace-only text nodes from HTML boilerplate
             if (node.nodeType === Node.COMMENT_NODE) return;
-            if (node.nodeType === Node.TEXT_NODE && /^[\r\n\s]*$/.test(node.textContent ?? '')) return;
-            if ((node as HTMLElement).dataset?.elementChip === "true") {
-              const span = node as HTMLElement;
-              const id = span.dataset.elementId ?? "";
-              if (chips[id]) {
-                frag.appendChild(makeChipNode(chips[id], document));
+            if (node.nodeType === Node.TEXT_NODE) {
+              const text = node.textContent ?? "";
+              if (text) pasteSegs.push({ kind: "text", value: text });
+              return;
+            }
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as HTMLElement;
+              if (el.dataset?.elementChip === "true") {
+                const id = el.dataset.elementId ?? "";
+                if (chips[id]) {
+                  pasteSegs.push({ kind: "element", attachment: chips[id] });
+                }
+              } else if (el.tagName === "BR") {
+                mergeTextIntoPaste(pasteSegs, "\n");
+              } else if (el.tagName === "DIV" || el.tagName === "P") {
+                el.childNodes.forEach((child) => {
+                  if (child.nodeType === Node.TEXT_NODE && child.textContent) {
+                    pasteSegs.push({ kind: "text", value: child.textContent });
+                  }
+                });
               }
-            } else {
-              frag.appendChild(document.importNode(node, true));
             }
           });
-          range.insertNode(frag);
-          range.collapse(false);
-          sel.removeAllRanges();
-          sel.addRange(range);
+
+          const caret =
+            selectionToCaret(div, segmentsRef.current) ?? { segmentIndex: 0, offset: 0 };
+          let next = segmentsRef.current;
+          let nextCaret = caret;
+          for (const seg of pasteSegs) {
+            const result = insertSegmentAtCaret(next, nextCaret, seg);
+            next = result.segments;
+            nextCaret = result.caret;
+          }
+          commitSegments(next, nextCaret);
+        } catch {
+          // fall through to default paste
         }
-        normalizeDOM(div);
-        notify();
-      } catch {
-        // fall through to default paste
-      }
-    }, [notify, onPaste]);
+      },
+      [commitSegments, onPaste],
+    );
 
     const isEmpty = !value && !(elementAttachments?.length);
 
@@ -390,47 +326,11 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
   },
 );
 
-function saveSelection(root: HTMLElement): { startOffset: number; endOffset: number } | null {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return null;
-  const range = sel.getRangeAt(0);
-  if (!root.contains(range.commonAncestorContainer)) return null;
-  const preStart = range.cloneRange();
-  preStart.selectNodeContents(root);
-  preStart.setEnd(range.startContainer, range.startOffset);
-  const startOffset = preStart.toString().length;
-  const preEnd = range.cloneRange();
-  preEnd.selectNodeContents(root);
-  preEnd.setEnd(range.endContainer, range.endOffset);
-  return { startOffset, endOffset: preEnd.toString().length };
-}
-
-function restoreSelection(root: HTMLElement, saved: { startOffset: number; endOffset: number }) {
-  const sel = window.getSelection();
-  if (!sel) return;
-  const range = document.createRange();
-  let charIdx = 0;
-  let startSet = false;
-  function walk(node: Node): boolean {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const len = node.textContent?.length ?? 0;
-      if (!startSet && charIdx + len >= saved.startOffset) {
-        range.setStart(node, saved.startOffset - charIdx);
-        startSet = true;
-      }
-      if (startSet && charIdx + len >= saved.endOffset) {
-        range.setEnd(node, saved.endOffset - charIdx);
-        return true;
-      }
-      charIdx += len;
-    } else {
-      for (const child of Array.from(node.childNodes)) {
-        if (walk(child)) return true;
-      }
-    }
-    return false;
+function mergeTextIntoPaste(segs: RichSegment[], chunk: string): void {
+  const last = segs[segs.length - 1];
+  if (last?.kind === "text") {
+    last.value += chunk;
+  } else {
+    segs.push({ kind: "text", value: chunk });
   }
-  walk(root);
-  sel.removeAllRanges();
-  sel.addRange(range);
 }

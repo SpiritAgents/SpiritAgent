@@ -3,7 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { Code2, X } from "lucide-react";
 
+import {
+  BROWSER_ELEMENT_CARD_SHELL_CLASS,
+  BROWSER_ELEMENT_CHIP_ICON_CLASS,
+  BROWSER_ELEMENT_CHIP_REMOVE_CLASS,
+} from "@/lib/browser-element-chip-styles";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
+
+export { BROWSER_ELEMENT_CHIP_CLASS } from "@/lib/browser-element-chip-styles";
 
 type BrowserElementCardProps = {
   attachment: BrowserElementAttachment;
@@ -20,12 +27,12 @@ export function BrowserElementCard({
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="inline-flex min-w-0 max-w-[12rem] items-center gap-1 rounded-md border border-blue-700/60 bg-blue-950 pl-1 pr-1.5 py-0.75">
+    <div className={BROWSER_ELEMENT_CARD_SHELL_CLASS}>
       {!readOnly && onRemove ? (
         <button
           type="button"
           onClick={() => onRemove(attachment.id)}
-          className="inline-flex size-[18px] shrink-0 items-center justify-center rounded-full text-blue-400 transition-colors hover:bg-blue-900 hover:text-blue-200"
+          className={BROWSER_ELEMENT_CHIP_REMOVE_CLASS}
           aria-label={t("composer.removeAttachment", { name: attachment.tagName })}
         >
           <X className="size-3" aria-hidden />
@@ -39,12 +46,17 @@ export function BrowserElementCard({
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="-ml-0.25 inline-flex size-[18px] shrink-0 items-center justify-center rounded-sm text-blue-400">
+        <div
+          className={`-ml-0.25 inline-flex size-[18px] shrink-0 items-center justify-center rounded-sm ${BROWSER_ELEMENT_CHIP_ICON_CLASS}`}
+        >
           <Code2 className="size-[14px] shrink-0" aria-hidden />
         </div>
       )}
       <div className="min-w-0 pr-0.5">
-        <div className="truncate text-xs leading-4 font-medium text-blue-400" title={attachment.pageUrl}>
+        <div
+          className={`truncate text-xs leading-4 font-medium ${BROWSER_ELEMENT_CHIP_ICON_CLASS}`}
+          title={attachment.pageUrl}
+        >
           {"<"}{attachment.tagName}{">"}
         </div>
       </div>
