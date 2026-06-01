@@ -467,6 +467,11 @@ export function getCachedLocalListeningEndpoints(): LocalListeningEndpoint[] | n
   return _cachedEndpoints;
 }
 
+/** 返回正在进行的扫描 promise（无扫描时为 null） */
+export function getScanningPromise(): Promise<LocalListeningEndpoint[]> | null {
+  return _scanningPromise;
+}
+
 /**
  * 启动一轮新扫描。
  * onFound 每发现一个可访问端口立即回调（流式）；
