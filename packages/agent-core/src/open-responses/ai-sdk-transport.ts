@@ -24,7 +24,6 @@ import {
 import { llmHistoryToOpenAiMessages } from '../openai/tool-agent-helpers.js';
 import {
   buildAssistantMessageFromResponsesGenerateText,
-  buildResponsesAiSdkTools,
   extractToolCallsFromAiSdk,
   normalizeResponsesToolDefinitions,
   openAiMessagesToResponsesAiSdkMessages,
@@ -37,7 +36,12 @@ import {
   registerPendingApplyPatchCallIds,
   takeLastExtractedApplyPatchCalls,
 } from './apply-patch-bridge.js';
-import { buildResponsesProviderOptions, createResponsesLanguageModel } from './model-factory.js';
+import { shouldUseOpenAiSdkApplyPatchTool } from './apply-patch-eligibility.js';
+import {
+  buildResponsesGenerateTools,
+  buildResponsesProviderOptions,
+  createResponsesLanguageModel,
+} from './model-factory.js';
 import {
   attachResponseIdToAssistantMessage,
   extractResponseIdFromGenerateTextResult,
@@ -134,21 +138,25 @@ export class AiSdkOpenResponsesTransport
     }
 
     try {
+      const generateTools = buildResponsesGenerateTools(config, normalizedTools);
+      const hasGenerateTools = Object.keys(generateTools).length > 0;
       const result = await generateText({
         model: createResponsesLanguageModel(config) as any,
-        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages) as any,
+        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages, config) as any,
         allowSystemInMessages: true,
-        ...(normalizedTools.length === 0
-          ? {}
-          : {
-              tools: buildResponsesAiSdkTools(normalizedTools) as any,
+        ...(hasGenerateTools
+          ? {
+              tools: generateTools as any,
               toolChoice: 'auto' as const,
-            }),
+            }
+          : {}),
         providerOptions: buildResponsesProviderOptions(config, previousResponseId),
         maxRetries: 0,
       });
 
-      const applyPatchCalls = takeLastExtractedApplyPatchCalls();
+      const applyPatchCalls = shouldUseOpenAiSdkApplyPatchTool(config)
+        ? []
+        : takeLastExtractedApplyPatchCalls();
       const assistantMessage = attachResponseIdToAssistantMessage(
         config,
         buildAssistantMessageFromResponsesGenerateText(
@@ -241,16 +249,18 @@ export class AiSdkOpenResponsesTransport
     }
 
     try {
+      const generateTools = buildResponsesGenerateTools(config, normalizedTools);
+      const hasGenerateTools = Object.keys(generateTools).length > 0;
       const result: { fullStream: AsyncIterable<unknown> } = streamText({
         model: createResponsesLanguageModel(config) as any,
-        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages) as any,
+        messages: openAiMessagesToResponsesAiSdkMessages(requestMessages, config) as any,
         allowSystemInMessages: true,
-        ...(normalizedTools.length === 0
-          ? {}
-          : {
-              tools: buildResponsesAiSdkTools(normalizedTools) as any,
+        ...(hasGenerateTools
+          ? {
+              tools: generateTools as any,
               toolChoice: 'auto' as const,
-            }),
+            }
+          : {}),
         providerOptions: buildResponsesProviderOptions(config, previousResponseId),
         includeRawChunks: true,
         maxRetries: 0,

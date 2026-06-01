@@ -2,8 +2,16 @@ import { jsonSchema, tool } from 'ai';
 
 import type { JsonObject, JsonValue, ToolCallRequest } from '../ports.js';
 import { cloneJsonValue, isJsonObject } from '../tool-agent.js';
-import { prepareApplyPatchRequestBodyStash } from './apply-patch-bridge.js';
-import { APPLY_PATCH_HOST_TOOL_NAME } from './apply-patch-eligibility.js';
+import {
+  normalizeApplyPatchToolCallArgumentsJson,
+  prepareApplyPatchRequestBodyStash,
+  readApplyPatchToolResultProviderState,
+} from './apply-patch-bridge.js';
+import {
+  APPLY_PATCH_HOST_TOOL_NAME,
+  shouldUseOpenAiSdkApplyPatchTool,
+} from './apply-patch-eligibility.js';
+import type { OpenResponsesTransportConfig } from './responses-compat.js';
 
 type AiSdkToolCall = {
   toolCallId: string;
@@ -11,7 +19,7 @@ type AiSdkToolCall = {
   input: unknown;
 };
 
-type OpenAiFunctionToolDefinition = JsonObject & {
+export type OpenAiFunctionToolDefinition = JsonObject & {
   type: 'function';
   function: JsonObject;
 };
@@ -51,8 +59,15 @@ export function buildResponsesAiSdkTools(
 
 export function openAiMessagesToResponsesAiSdkMessages(
   messages: JsonValue[],
+  config?: Pick<
+    OpenResponsesTransportConfig,
+    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+  >,
 ): Array<Record<string, unknown>> {
-  prepareApplyPatchRequestBodyStash(messages);
+  const useSdkApplyPatch = config !== undefined && shouldUseOpenAiSdkApplyPatchTool(config);
+  if (!useSdkApplyPatch) {
+    prepareApplyPatchRequestBodyStash(messages);
+  }
   const toolCallNames = buildToolCallNameIndex(messages);
 
   return messages.flatMap((message) => {
@@ -70,11 +85,11 @@ export function openAiMessagesToResponsesAiSdkMessages(
         return content === undefined ? [] : [{ role: 'user', content }];
       }
       case 'assistant': {
-        const assistantMessage = openAiAssistantMessageToAiSdkMessage(message);
+        const assistantMessage = openAiAssistantMessageToAiSdkMessage(message, useSdkApplyPatch);
         return assistantMessage === undefined ? [] : [assistantMessage];
       }
       case 'tool': {
-        const toolMessage = openAiToolMessageToAiSdkMessage(message, toolCallNames);
+        const toolMessage = openAiToolMessageToAiSdkMessage(message, toolCallNames, useSdkApplyPatch);
         return toolMessage === undefined ? [] : [toolMessage];
       }
       default:
@@ -159,9 +174,10 @@ function openAiUserContentToAiSdkContent(
 
 function openAiAssistantMessageToAiSdkMessage(
   message: JsonObject,
+  useSdkApplyPatch: boolean,
 ): Record<string, unknown> | undefined {
   const reasoningText = extractAssistantReasoningContentFromJson(message);
-  const toolCallParts = extractAssistantToolCallParts(message);
+  const toolCallParts = extractAssistantToolCallParts(message, useSdkApplyPatch);
   const contentParts: Array<Record<string, unknown>> = [];
 
   if (reasoningText) {
@@ -191,6 +207,7 @@ function openAiAssistantMessageToAiSdkMessage(
 function openAiToolMessageToAiSdkMessage(
   message: JsonObject,
   toolCallNames: Map<string, string>,
+  useSdkApplyPatch: boolean,
 ): Record<string, unknown> | undefined {
   const toolCallId = nonEmptyToolCallIdOrUndefined(message.tool_call_id);
   if (!toolCallId) {
@@ -199,7 +216,34 @@ function openAiToolMessageToAiSdkMessage(
 
   const toolName = toolCallNames.get(toolCallId) ?? 'unknown_tool';
   if (toolName === APPLY_PATCH_HOST_TOOL_NAME) {
-    return undefined;
+    if (!useSdkApplyPatch) {
+      return undefined;
+    }
+
+    const patchOutput = readApplyPatchToolResultProviderState(message);
+    const failedText = typeof message.content === 'string' ? message.content : '';
+    const status = patchOutput?.status === 'failed' ? 'failed' : 'completed';
+    return {
+      role: 'tool',
+      content: [
+        {
+          type: 'tool-result',
+          toolCallId,
+          toolName: APPLY_PATCH_HOST_TOOL_NAME,
+          output: {
+            type: 'json',
+            value: {
+              status,
+              ...(patchOutput?.output
+                ? { output: patchOutput.output }
+                : status === 'failed' && failedText
+                  ? { output: failedText }
+                  : {}),
+            },
+          },
+        },
+      ],
+    };
   }
   const result = tryParseJsonValue(message.content);
   const output =
@@ -250,7 +294,10 @@ function buildToolCallNameIndex(messages: JsonValue[]): Map<string, string> {
   return toolCallNames;
 }
 
-function extractAssistantToolCallParts(message: JsonObject): Array<Record<string, unknown>> {
+function extractAssistantToolCallParts(
+  message: JsonObject,
+  useSdkApplyPatch: boolean,
+): Array<Record<string, unknown>> {
   if (!Array.isArray(message.tool_calls)) {
     return [];
   }
@@ -265,11 +312,16 @@ function extractAssistantToolCallParts(message: JsonObject): Array<Record<string
     }
 
     const toolName = toolCall.function.name;
-    if (toolName === APPLY_PATCH_HOST_TOOL_NAME) {
+    if (toolName === APPLY_PATCH_HOST_TOOL_NAME && !useSdkApplyPatch) {
       return [];
     }
 
-    const input = tryParseJsonValue(toolCall.function.arguments) ?? toolCall.function.arguments ?? {};
+    const rawArguments = typeof toolCall.function.arguments === 'string'
+      ? toolCall.function.arguments
+      : JSON.stringify(toolCall.function.arguments ?? {});
+    const input = toolName === APPLY_PATCH_HOST_TOOL_NAME
+      ? JSON.parse(normalizeApplyPatchToolCallArgumentsJson(toolCall.id, rawArguments))
+      : tryParseJsonValue(toolCall.function.arguments) ?? toolCall.function.arguments ?? {};
 
     return [{
       type: 'tool-call',
