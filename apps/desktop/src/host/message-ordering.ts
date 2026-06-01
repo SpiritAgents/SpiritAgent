@@ -204,6 +204,24 @@ export function toolCallSummaryCopyForRequest(
         toolName === 'create_file' ? i18n.t('tool.create') : toolName === 'edit_file' ? i18n.t('tool.edit') : i18n.t('tool.delete');
       return { headline: `${verb} ${basename}` };
     }
+    case 'apply_patch': {
+      const operation =
+        record.operation && typeof record.operation === 'object'
+          ? (record.operation as Record<string, unknown>)
+          : undefined;
+      const rawPath = typeof operation?.path === 'string' ? operation.path : '';
+      const basename = displayBasename(rawPath);
+      const opType = typeof operation?.type === 'string' ? operation.type : '';
+      const verb =
+        opType === 'create_file'
+          ? i18n.t('tool.create')
+          : opType === 'update_file'
+            ? i18n.t('tool.edit')
+            : opType === 'delete_file'
+              ? i18n.t('tool.delete')
+              : 'Patch';
+      return { headline: `${verb} ${basename}` };
+    }
     case 'grep': {
       const query = typeof record.query === 'string' ? record.query.trim() : '';
       const prefix = record.is_regexp === true ? i18n.t('tool.regexPrefix') : '';
