@@ -11,6 +11,7 @@ import {
   snapshotsToComposerAttachmentViews,
   type ComposerLocalFileAttachmentView,
 } from "@/lib/local-file-attachments";
+import { trimMessageTextAroundElements } from "@/lib/composer-segment-model";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
@@ -115,13 +116,18 @@ export function UserMessageBubble({
           onKeyDown={canStartRewind ? handleRewindKeyDown : undefined}
         >
           <pre className="m-0 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground">
-            {contentParts.map((part, i) =>
-              part.kind === 'text' ? (
-                part.value
-              ) : (
-                <ElementCard key={i} tagName={part.tagName} url={part.url} />
-              ),
-            )}
+            {contentParts.map((part, i) => {
+              if (part.kind === "element") {
+                return <ElementCard key={i} tagName={part.tagName} url={part.url} />;
+              }
+              const prev = i > 0 ? contentParts[i - 1] : null;
+              const next = i < contentParts.length - 1 ? contentParts[i + 1] : null;
+              const display = trimMessageTextAroundElements(part.value, {
+                afterElement: prev?.kind === "element",
+                beforeElement: next?.kind === "element",
+              });
+              return display;
+            })}
           </pre>
         </div>
       ) : null}
