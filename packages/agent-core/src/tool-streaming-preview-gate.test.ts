@@ -18,6 +18,15 @@ test('tryExtractPartialToolPath reads path from incomplete JSON', () => {
   assert.equal(tryExtractPartialToolPath(partial), 'D:\\SpiritAgent\\README.md');
 });
 
+test('apply_patch early preview when operation.path is streamed', () => {
+  const partial = '{"operation":{"type":"create_file","path":"demo.txt","diff":"+hel';
+  assert.equal(hostToolArgumentsReadyForEarlyStreamingPreview('apply_patch', partial), true);
+  assert.equal(hostToolArgumentsReadyForPreview('apply_patch', partial), false);
+  assert.deepEqual(previewRequestFromStreamingArguments('apply_patch', partial), {
+    operation: { path: 'demo.txt', type: 'create_file' },
+  });
+});
+
 test('edit_file early preview when only path is streamed', () => {
   const partial = '{"path":"README.md","old_text":"';
   assert.equal(hostToolArgumentsReadyForEarlyStreamingPreview('edit_file', partial), true);
