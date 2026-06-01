@@ -1,8 +1,9 @@
 appId: ai.spiritagent.desktop
 productName: Spirit Agent
-icon: public/favicon.ico
+icon: build/icon.ico
 artifactName: SpiritAgent-Desktop-${version}-${os}-${arch}.${ext}
 directories:
+  buildResources: build
   output: release
 files:
   - package.json
@@ -35,6 +36,7 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
 mac:
+  icon: build/icon.png
   target:
     - dmg
     - zip
