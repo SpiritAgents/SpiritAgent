@@ -35,12 +35,13 @@ export function createWorkspaceToolTab(kind: WorkspaceToolTabKind): WorkspaceToo
   return tab;
 }
 
-/** 默认三个选项卡：文件、Shell、Git 各一。 */
+/** 默认四个选项卡：文件、Shell、Git、浏览器各一。 */
 export function createDefaultWorkspaceToolTabs(): WorkspaceToolTab[] {
   return [
     createWorkspaceToolTab("files"),
     createWorkspaceToolTab("shell"),
     createWorkspaceToolTab("git"),
+    createWorkspaceToolTab("browser"),
   ];
 }
 
