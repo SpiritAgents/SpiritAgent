@@ -143,6 +143,11 @@ export type SegmentCaret = {
   offset: number;
 };
 
+/** When inserting an element with no following text, add a space for caret spacing. */
+function textFollowingElementInsert(after: string): string {
+  return after === "" ? " " : after;
+}
+
 export function insertSegmentAtCaret(
   segs: RichSegment[],
   caret: SegmentCaret,
@@ -161,7 +166,11 @@ export function insertSegmentAtCaret(
       ...merged.slice(0, index),
       ...(before ? [{ kind: "text" as const, value: before }] : []),
       newSegment,
-      { kind: "text" as const, value: after },
+      {
+        kind: "text" as const,
+        value:
+          newSegment.kind === "element" ? textFollowingElementInsert(after) : after,
+      },
       ...merged.slice(index + 1),
     ];
   } else if (seg?.kind === "element") {
@@ -169,26 +178,40 @@ export function insertSegmentAtCaret(
     next = [
       ...merged.slice(0, insertAt),
       newSegment,
-      { kind: "text" as const, value: "" },
+      {
+        kind: "text" as const,
+        value: newSegment.kind === "element" ? textFollowingElementInsert("") : "",
+      },
       ...merged.slice(insertAt),
     ];
   } else {
-    next = [newSegment, { kind: "text" as const, value: "" }];
+    next = [
+      newSegment,
+      {
+        kind: "text" as const,
+        value: newSegment.kind === "element" ? textFollowingElementInsert("") : "",
+      },
+    ];
   }
 
   const normalized = mergeAdjacentTextSegments(next);
   let afterIndex = normalized.length - 1;
+  let caretOffset = 0;
   if (newSegment.kind === "element") {
     const elIndex = normalized.findIndex(
       (s) => s.kind === "element" && s.attachment.id === newSegment.attachment.id,
     );
     if (elIndex >= 0) {
       afterIndex = elIndex + 1;
+      const trailing = normalized[afterIndex];
+      if (trailing?.kind === "text" && trailing.value === " ") {
+        caretOffset = 1;
+      }
     }
   }
   return {
     segments: normalized,
-    caret: { segmentIndex: afterIndex, offset: 0 },
+    caret: { segmentIndex: afterIndex, offset: caretOffset },
   };
 }
 
