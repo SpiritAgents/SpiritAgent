@@ -185,6 +185,9 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
   ) {
     const divRef = useRef<HTMLDivElement>(null);
     const suppressNextSync = useRef(false);
+    const justInsertedChipRef = useRef(false);
+    const onElementAttachmentsChangeRef = useRef(onElementAttachmentsChange);
+    useEffect(() => { onElementAttachmentsChangeRef.current = onElementAttachmentsChange; });
 
     const getSegments = useCallback((): RichSegment[] => {
       if (!divRef.current) return [];
@@ -219,6 +222,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         div.appendChild(chip);
       }
       suppressNextSync.current = true;
+      justInsertedChipRef.current = true;
       normalizeDOM(div);
       notify();
     }, [notify]);
@@ -235,12 +239,23 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       normalizeDOM(div);
       const currentSegs = domToSegments(div);
       const currentText = segmentsToPlainText(currentSegs);
+      const currentHasChips = div.querySelector('[data-element-chip]') !== null;
+      // When value is cleared externally (e.g. after send), also wipe chips.
+      // But skip if we just inserted a chip (value may still be empty in that case).
+      if (!value && currentHasChips) {
+        if (justInsertedChipRef.current) {
+          justInsertedChipRef.current = false;
+          return;
+        }
+        div.innerHTML = '';
+        onElementAttachmentsChangeRef.current([]);
+        return;
+      }
+      justInsertedChipRef.current = false;
       if (currentText === value) return;
-      // Only rebuild text content; preserve chip nodes in place
-      // Remove all non-chip children, keep chips
+      // Rebuild text content; preserve chip nodes in place
       const chips = Array.from(div.querySelectorAll<HTMLElement>('[data-element-chip]'));
       div.innerHTML = '';
-      // Re-insert text then chips in order matching value
       if (value) div.appendChild(document.createTextNode(value));
       chips.forEach((c) => div.appendChild(c));
     }, [value]);
