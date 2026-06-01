@@ -72,7 +72,14 @@ function BrowserNewTabPage({
     if (!bridge) return;
 
     void bridge.listLocalListeningEndpoints().then((items) => {
-      setEndpoints(items);
+      setEndpoints((prev) => {
+        const merged = [...prev];
+        for (const item of items) {
+          if (!merged.some((e) => e.port === item.port)) merged.push(item);
+        }
+        merged.sort((a, b) => a.port - b.port);
+        return merged;
+      });
     });
 
     if (!bridge.subscribeLocalListeners) return;
