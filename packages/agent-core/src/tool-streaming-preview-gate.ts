@@ -3,6 +3,8 @@ import type { JsonValue } from './ports.js';
 import { isJsonObject } from './tool-agent.js';
 
 const PARTIAL_PATH_PATTERN = /"path"\s*:\s*"((?:\\.|[^"\\])*)"/;
+const PARTIAL_APPLY_PATCH_OPERATION_TYPE_PATTERN =
+  /"type"\s*:\s*"(create_file|update_file|delete_file)"/;
 const PARTIAL_POSITIVE_INT_FIELD_PATTERN = (key: string): RegExp =>
   new RegExp(`"${key}"\\s*:\\s*(\\d+)`);
 
@@ -41,6 +43,36 @@ export function readFileStreamingPreviewSignature(argumentsJson: string): string
   return `${fields.path}\0${fields.start_line ?? ''}\0${fields.end_line ?? ''}`;
 }
 
+function decodePartialJsonString(match: string): string | undefined {
+  try {
+    return JSON.parse(`"${match}"`) as string;
+  } catch {
+    return match;
+  }
+}
+
+/** Extract apply_patch `operation.path` from complete or in-flight JSON. */
+export function tryExtractPartialApplyPatchPath(argumentsJson: string): string | undefined {
+  const trimmed = argumentsJson.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as JsonValue;
+    if (isJsonObject(parsed) && isJsonObject(parsed.operation)) {
+      const path = parsed.operation.path;
+      if (typeof path === 'string' && path.trim()) {
+        return path.trim();
+      }
+    }
+  } catch {
+    // Streaming JSON may be incomplete.
+  }
+
+  return tryExtractPartialToolPath(argumentsJson);
+}
+
 /** Extract `path` from complete or in-flight tool argument JSON. */
 export function tryExtractPartialToolPath(argumentsJson: string): string | undefined {
   const trimmed = argumentsJson.trim();
@@ -62,11 +94,7 @@ export function tryExtractPartialToolPath(argumentsJson: string): string | undef
     return undefined;
   }
 
-  try {
-    return JSON.parse(`"${match[1]}"`) as string;
-  } catch {
-    return match[1];
-  }
+  return decodePartialJsonString(match[1]);
 }
 
 export function hostToolArgumentsReadyForEarlyStreamingPreview(
@@ -74,6 +102,8 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
   argumentsJson: string,
 ): boolean {
   switch (name) {
+    case 'apply_patch':
+      return tryExtractPartialApplyPatchPath(argumentsJson) !== undefined;
     case 'edit_file':
     case 'create_file':
     case 'read_file':
@@ -132,6 +162,21 @@ export function hostToolArgumentsReadyForPreview(name: string, argumentsJson: st
       return nonEmpty('query');
     case 'run_subagent':
       return nonEmpty('task');
+    case 'apply_patch': {
+      const operation = parsed.operation;
+      if (!isJsonObject(operation)) {
+        return false;
+      }
+      const opType = operation.type;
+      const opPath = operation.path;
+      if (typeof opType !== 'string' || typeof opPath !== 'string' || !opPath.trim()) {
+        return false;
+      }
+      if (opType === 'delete_file') {
+        return true;
+      }
+      return typeof operation.diff === 'string' && operation.diff.length > 0;
+    }
     case 'create_file':
       return nonEmpty('path') && nonEmpty('content');
     case 'edit_file':
@@ -167,7 +212,7 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
-  if (toolName !== 'edit_file' && toolName !== 'create_file') {
+  if (toolName !== 'edit_file' && toolName !== 'create_file' && toolName !== 'apply_patch') {
     return false;
   }
   return nextArgsLen >= previousArgsLen + STREAMING_PREVIEW_UPDATE_MIN_DELTA_CHARS;
@@ -261,6 +306,18 @@ export function previewRequestFromStreamingArguments(
     if (toolName === 'list_directory_files' || toolName === 'delete_file') {
       const path = tryExtractPartialToolPath(argumentsJson);
       return path ? { path } : undefined;
+    }
+    if (toolName === 'apply_patch') {
+      const path = tryExtractPartialApplyPatchPath(argumentsJson);
+      if (!path) {
+        return undefined;
+      }
+      const typeMatch = trimmed.match(PARTIAL_APPLY_PATCH_OPERATION_TYPE_PATTERN);
+      const operation: Record<string, string> = { path };
+      if (typeMatch?.[1]) {
+        operation.type = typeMatch[1];
+      }
+      return { operation };
     }
     return undefined;
   }

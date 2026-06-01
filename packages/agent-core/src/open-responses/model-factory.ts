@@ -1,4 +1,4 @@
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
 import { createOpenResponses } from '@ai-sdk/open-responses';
 import {
   createXai,
@@ -6,9 +6,19 @@ import {
 } from '@ai-sdk/xai';
 
 import type { JsonObject } from '../ports.js';
+import { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
+import {
+  buildResponsesAiSdkTools,
+  type OpenAiFunctionToolDefinition,
+} from './ai-sdk-message-bridge.js';
+import {
+  shouldUseApplyPatchFileTools,
+  shouldUseOpenAiSdkApplyPatchTool,
+} from './apply-patch-eligibility.js';
 import {
   openResponsesPostUrl,
   openResponsesReasoningEffort,
+  resolveOpenResponsesLanguageModelId,
   resolveOpenResponsesReasoningSummary,
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
@@ -16,16 +26,42 @@ import {
 
 const DEFAULT_XAI_BASE_URL = 'https://api.x.ai/v1';
 
+function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof fetch | undefined {
+  if (shouldUseOpenAiSdkApplyPatchTool(config)) {
+    return undefined;
+  }
+
+  return shouldUseApplyPatchFileTools(config)
+    ? createApplyPatchAwareFetch(config)
+    : undefined;
+}
+
+export function createOpenAIResponsesProvider(
+  config: OpenResponsesTransportConfig,
+): OpenAIProvider | undefined {
+  if (resolveOpenResponsesSdkProvider(config) !== 'openai') {
+    return undefined;
+  }
+
+  const applyPatchFetch = responsesFetchForConfig(config);
+  return createOpenAI({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    ...(config.organization ? { organization: config.organization } : {}),
+    ...(config.project ? { project: config.project } : {}),
+    ...(applyPatchFetch ? { fetch: applyPatchFetch } : {}),
+  });
+}
+
 export function createResponsesLanguageModel(config: OpenResponsesTransportConfig): unknown {
   const provider = resolveOpenResponsesSdkProvider(config);
+  const languageModelId = resolveOpenResponsesLanguageModelId(config);
   if (provider === 'openai') {
-    const openai = createOpenAI({
-      apiKey: config.apiKey,
-      ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
-      ...(config.organization ? { organization: config.organization } : {}),
-      ...(config.project ? { project: config.project } : {}),
-    });
-    return openai.responses(config.model);
+    const openai = createOpenAIResponsesProvider(config);
+    if (!openai) {
+      throw new Error('OpenAI Responses provider 未配置。');
+    }
+    return openai.responses(languageModelId);
   }
 
   if (provider === 'xai') {
@@ -33,15 +69,37 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
       apiKey: config.apiKey,
       baseURL: config.baseUrl ?? DEFAULT_XAI_BASE_URL,
     });
-    return xai.responses(config.model);
+    return xai.responses(languageModelId);
   }
 
+  const applyPatchFetch = responsesFetchForConfig(config);
   const openResponses = createOpenResponses({
     name: config.llmVendor ?? 'spirit-agent',
     url: openResponsesPostUrl(config.baseUrl),
     apiKey: config.apiKey,
+    ...(applyPatchFetch ? { fetch: applyPatchFetch } : {}),
   });
   return openResponses(config.model);
+}
+
+export function buildResponsesGenerateTools(
+  config: OpenResponsesTransportConfig,
+  normalizedTools: readonly OpenAiFunctionToolDefinition[],
+): Record<string, unknown> {
+  const tools = buildResponsesAiSdkTools([...normalizedTools]) as Record<string, unknown>;
+  if (!shouldUseOpenAiSdkApplyPatchTool(config)) {
+    return tools;
+  }
+
+  const openai = createOpenAIResponsesProvider(config);
+  if (!openai) {
+    return tools;
+  }
+
+  return {
+    ...tools,
+    apply_patch: openai.tools.applyPatch({}),
+  };
 }
 
 export function buildResponsesProviderOptions(
