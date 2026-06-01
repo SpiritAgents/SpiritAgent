@@ -3,7 +3,7 @@ import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from 'nod
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { BrowserWindow, Menu, app, clipboard, dialog, ipcMain, nativeTheme, net, shell } from 'electron';
+import { BrowserWindow, IpcMainInvokeEvent, Menu, app, clipboard, dialog, ipcMain, nativeTheme, net, shell, webContents } from 'electron';
 
 import { openSystemTerminalInDirectory } from './open-system-terminal.js';
 import { WorkspacePtyManager } from './workspace-pty.js';
@@ -671,6 +671,25 @@ app.whenReady().then(async () => {
     }
     await shell.openExternal(url);
   });
+
+  ipcMain.handle(
+    'desktop:capture-webview-rect',
+    async (
+      _event: IpcMainInvokeEvent,
+      payload: { webContentsId: number; rect: { x: number; y: number; width: number; height: number } },
+    ) => {
+      const { webContentsId, rect } = payload ?? {};
+      if (typeof webContentsId !== 'number') {
+        throw new Error('Invalid webContentsId');
+      }
+      const wc = webContents.fromId(webContentsId);
+      if (!wc) {
+        throw new Error(`No webContents found for id ${webContentsId}`);
+      }
+      const image = await wc.capturePage(rect);
+      return image.toPNG().toString('base64');
+    },
+  );
 
   ipcMain.handle('desktop:list-local-listeners', () => {
     const cached = getCachedLocalListeningEndpoints();

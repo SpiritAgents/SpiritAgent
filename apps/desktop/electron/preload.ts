@@ -242,6 +242,12 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
       ipcRenderer.removeListener('desktop:local-listeners-done', onDone);
     };
   },
+  captureWebviewRect(
+    webContentsId: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ): Promise<string> {
+    return ipcRenderer.invoke('desktop:capture-webview-rect', { webContentsId, rect });
+  },
   readClipboardText() {
     return clipboard.readText();
   },
