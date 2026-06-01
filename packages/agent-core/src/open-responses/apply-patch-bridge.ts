@@ -5,6 +5,7 @@ import {
   type ApplyPatchOperation,
   shouldUseApplyPatchFileTools,
   shouldUseNativeApplyPatchRequestItems,
+  shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 
@@ -125,7 +126,15 @@ export function buildResponsesTraceTools(
 ): JsonValue[] {
   const traceTools = normalizedFunctionTools.map((tool) => cloneJsonValue(tool as JsonValue));
   if (shouldUseApplyPatchFileTools(config)) {
-    traceTools.push(cloneJsonValue(APPLY_PATCH_NATIVE_TOOL as JsonValue));
+    if (shouldUseOpenAiSdkApplyPatchTool(config)) {
+      traceTools.push({
+        type: 'provider_tool',
+        id: 'openai.apply_patch',
+        name: APPLY_PATCH_HOST_TOOL_NAME,
+      });
+    } else {
+      traceTools.push(cloneJsonValue(APPLY_PATCH_NATIVE_TOOL as JsonValue));
+    }
   }
   return traceTools;
 }

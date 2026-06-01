@@ -6,6 +6,8 @@ export {
   type OpenResponsesPreviousResponseMode,
   type OpenResponsesReasoningSummary,
   resolveOpenResponsesSdkProvider,
+  resolveOpenResponsesLanguageModelId,
+  isGatewayOpenAiRoutedModel,
   openResponsesReasoningEffort,
   resolveOpenResponsesReasoningSummary,
   openResponsesReasoningTrace,
@@ -15,6 +17,10 @@ export {
   openResponsesPostUrl,
 } from './responses-compat.js';
 export { AiSdkOpenResponsesTransport } from './ai-sdk-transport.js';
+export {
+  buildResponsesGenerateTools,
+  createOpenAIResponsesProvider,
+} from './model-factory.js';
 export { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
 export {
   APPLY_PATCH_HOST_TOOL_NAME,
@@ -23,6 +29,7 @@ export {
   filterBuiltinFileToolsForApplyPatch,
   buildApplyPatchFileToolsPromptSection,
   shouldUseNativeApplyPatchRequestItems,
+  shouldUseOpenAiSdkApplyPatchTool,
   filterLegacyHostFileToolDefinitions,
   isLegacyHostFileToolName,
   isOpenAiGptModelAtLeast51,

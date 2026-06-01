@@ -1,9 +1,12 @@
 import type { JsonValue } from '../ports.js';
 import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
 import {
+  normalizeGatewayOpenAiModelId,
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
 } from './responses-compat.js';
+
+export { normalizeGatewayOpenAiModelId } from './responses-compat.js';
 
 const LEGACY_FILE_TOOL_NAMES = new Set(['create_file', 'edit_file', 'delete_file']);
 
@@ -60,20 +63,6 @@ export function isOpenAiGptModelAtLeast51(modelId: string): boolean {
   return false;
 }
 
-/**
- * Strips Gateway-style `openai/` routing prefix. Other vendor prefixes return undefined.
- */
-export function normalizeGatewayOpenAiModelId(model: string): string | undefined {
-  const trimmed = model.trim();
-  const lower = trimmed.toLowerCase();
-  const prefix = 'openai/';
-  if (!lower.startsWith(prefix)) {
-    return undefined;
-  }
-
-  return trimmed.slice(prefix.length).trim();
-}
-
 function isEligibleOpenAiRoutedModel(model: string, llmVendor: OpenAiLlmVendor | undefined): boolean {
   if (llmVendor === 'vercel-ai-gateway') {
     const routed = normalizeGatewayOpenAiModelId(model);
@@ -91,11 +80,14 @@ function isEligibleOpenAiRoutedModel(model: string, llmVendor: OpenAiLlmVendor |
 }
 
 function isEligibleResponsesProvider(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider'>,
+  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
 ): boolean {
   const provider = resolveOpenResponsesSdkProvider(config);
   if (provider === 'openai') {
-    return config.llmVendor === 'openai';
+    return (
+      config.llmVendor === 'openai'
+      || (config.llmVendor === 'vercel-ai-gateway' && normalizeGatewayOpenAiModelId(config.model) !== undefined)
+    );
   }
 
   return config.llmVendor === 'vercel-ai-gateway';
@@ -103,9 +95,19 @@ function isEligibleResponsesProvider(
 
 /** OpenAI 官方 Responses 使用 apply_patch_call/output；Gateway 等兼容端点用 function_call 对。 */
 export function shouldUseNativeApplyPatchRequestItems(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider'>,
+  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
 ): boolean {
-  return resolveOpenResponsesSdkProvider(config) === 'openai';
+  return config.llmVendor === 'openai';
+}
+
+/** OpenAI 官方：`@ai-sdk/openai` 3.x `openai.tools.applyPatch`；Gateway 走 fetch function_call。 */
+export function shouldUseOpenAiSdkApplyPatchTool(
+  config: Pick<
+    OpenResponsesTransportConfig,
+    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+  >,
+): boolean {
+  return shouldUseApplyPatchFileTools(config) && config.llmVendor === 'openai';
 }
 
 export function shouldUseApplyPatchFileTools(

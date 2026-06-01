@@ -30,6 +30,7 @@ import {
   type LlmPlanMetadata,
   type LlmToolAgentBasicInfo,
   type LlmTransportConfig,
+  type OpenResponsesSdkProvider,
   type OpenAiTransportConfig,
   resolveOpenResponsesReasoningSummary,
   type RuntimeApprovalDecision,
@@ -4631,12 +4632,14 @@ function buildPrimaryTransportConfig(input: {
         model: input.model,
       },
     );
-    const responsesProvider =
+    const responsesProvider: OpenResponsesSdkProvider | undefined =
       input.profile?.provider === 'openai'
         ? 'openai'
         : input.profile?.provider === 'xai'
           ? 'xai'
-          : 'open-responses-compatible';
+          : input.profile?.provider === 'vercel-ai-gateway'
+            ? undefined
+            : 'open-responses-compatible';
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
       ...(llmVendor ? { llmVendor } : {}),
       model: input.model,
@@ -4649,7 +4652,7 @@ function buildPrimaryTransportConfig(input: {
       model: input.model,
       baseUrl: input.baseUrl,
       workspaceRoot: input.workspaceRoot,
-      responsesProvider,
+      ...(responsesProvider ? { responsesProvider } : {}),
       store: false,
       ...(llmVendor ? { llmVendor } : {}),
       ...(input.profile?.capabilities

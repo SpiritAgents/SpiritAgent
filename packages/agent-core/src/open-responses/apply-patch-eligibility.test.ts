@@ -52,6 +52,14 @@ test('shouldUseApplyPatchFileTools vercel gateway', () => {
     shouldUseApplyPatchFileTools({
       transportKind: 'open-responses',
       llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.1',
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseApplyPatchFileTools({
+      transportKind: 'open-responses',
+      llmVendor: 'vercel-ai-gateway',
       responsesProvider: 'open-responses-compatible',
       model: 'openai/gpt-5.1',
     }),

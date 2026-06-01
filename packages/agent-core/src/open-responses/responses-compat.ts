@@ -26,7 +26,8 @@ export interface OpenResponsesTransportConfig {
   llmVendor?: OpenAiLlmVendor;
   modelCapabilities?: LlmModelCapabilities;
   /**
-   * 显式指定底层 SDK。缺省时：`openai` → OpenAI 官方、`xai` → `@ai-sdk/xai` 官方，其余 → `open-responses-compatible`。
+   * 显式指定底层 SDK。缺省时：`openai` → OpenAI 官方、`xai` → `@ai-sdk/xai` 官方、
+   * Gateway `openai/*` → `@ai-sdk/openai`、其余 Gateway 与其它厂商 → `open-responses-compatible`。
    */
   responsesProvider?: OpenResponsesSdkProvider;
   /** OpenAI 官方 Responses：是否由 OpenAI 服务端存储会话。默认 false。 */
@@ -55,9 +56,52 @@ export interface OpenResponsesRequestTrace extends JsonObject {
   truncation?: string;
 }
 
+/**
+ * Strips Gateway-style `openai/` routing prefix. Other vendor prefixes return undefined.
+ */
+export function normalizeGatewayOpenAiModelId(model: string): string | undefined {
+  const trimmed = model.trim();
+  const lower = trimmed.toLowerCase();
+  const prefix = 'openai/';
+  if (!lower.startsWith(prefix)) {
+    return undefined;
+  }
+
+  return trimmed.slice(prefix.length).trim();
+}
+
+export function isGatewayOpenAiRoutedModel(model: string): boolean {
+  return normalizeGatewayOpenAiModelId(model) !== undefined;
+}
+
+/**
+ * Model id passed to `@ai-sdk/openai` / `@ai-sdk/xai` language model factories.
+ * Gateway OpenAI routes use the stripped id (e.g. `gpt-5.1` from `openai/gpt-5.1`).
+ */
+export function resolveOpenResponsesLanguageModelId(
+  config: Pick<OpenResponsesTransportConfig, 'model' | 'llmVendor'>,
+): string {
+  if (config.llmVendor === 'vercel-ai-gateway') {
+    const routed = normalizeGatewayOpenAiModelId(config.model);
+    if (routed) {
+      return routed;
+    }
+  }
+
+  return config.model;
+}
+
 export function resolveOpenResponsesSdkProvider(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider'>,
+  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
 ): OpenResponsesSdkProvider {
+  if (
+    config.responsesProvider === 'open-responses-compatible'
+    && config.llmVendor === 'vercel-ai-gateway'
+    && isGatewayOpenAiRoutedModel(config.model)
+  ) {
+    return 'openai';
+  }
+
   if (config.responsesProvider !== undefined) {
     return config.responsesProvider;
   }
@@ -68,6 +112,10 @@ export function resolveOpenResponsesSdkProvider(
 
   if (config.llmVendor === 'xai') {
     return 'xai';
+  }
+
+  if (config.llmVendor === 'vercel-ai-gateway' && isGatewayOpenAiRoutedModel(config.model)) {
+    return 'openai';
   }
 
   return 'open-responses-compatible';
