@@ -93,6 +93,20 @@ test("insertSegmentAtCaret splits text and leaves trailing text segment", () => 
   assert.equal(caret.offset, 0);
 });
 
+test("insertSegmentAtCaret adds trailing space after element at caret", () => {
+  const { segments, caret } = insertSegmentAtCaret(
+    [{ kind: "text", value: "" }],
+    { segmentIndex: 0, offset: 0 },
+    { kind: "element", attachment: sampleAttachment },
+  );
+  assert.deepEqual(segments, [
+    { kind: "element", attachment: sampleAttachment },
+    { kind: "text", value: " " },
+  ]);
+  assert.equal(caret.segmentIndex, 1);
+  assert.equal(caret.offset, 1);
+});
+
 test("insertSegmentAtCaret preserves whitespace-only text after chip", () => {
   const { segments } = insertSegmentAtCaret(
     [{ kind: "element", attachment: sampleAttachment }, { kind: "text", value: "" }],
