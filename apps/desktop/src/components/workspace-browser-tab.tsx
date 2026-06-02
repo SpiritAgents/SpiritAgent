@@ -544,13 +544,14 @@ export function WorkspaceBrowserTab({
             />
             {isPickerActive && overlayRect ? (
               <div
-                className="pointer-events-none absolute z-10"
+                className="pointer-events-none absolute z-10 box-border"
                 style={{
                   left: overlayRect.x,
                   top: overlayRect.y,
                   width: overlayRect.width,
                   height: overlayRect.height,
-                  boxShadow: "0 0 0 2px #60a5fa",
+                  // Inset ring: outer box-shadow is clipped when the highlight fills the webview (overflow-hidden).
+                  boxShadow: "inset 0 0 0 2px #60a5fa",
                   background: "rgba(147,197,253,0.15)",
                   borderRadius: 2,
                 }}
