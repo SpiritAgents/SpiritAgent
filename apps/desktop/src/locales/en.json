@@ -368,6 +368,7 @@
     "commitMessage": "Commit Message",
     "commitChanges": "Commit Changes",
     "currentBranch": "Current branch: {{branch}}",
+    "notGitRepoLabel": "Not a Git repo",
     "readOnlySession": "Debug session is read-only. Cannot send messages\u2026",
     "completeQuestionsAbove": "Please complete the questionnaire above first",
     "needMoreQuestions": "A few more questions need to be confirmed",
