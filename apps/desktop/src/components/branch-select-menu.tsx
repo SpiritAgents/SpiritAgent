@@ -28,7 +28,7 @@ export function BranchSelectMenu({
   const { t } = useTranslation();
   const isRepository = branches.length > 0 || Boolean(currentBranch);
   const activeBranch = selectedBranch ?? currentBranch;
-  const label = isRepository ? (activeBranch ?? t('error.noBranch')) : t('error.notGitRepo');
+  const label = isRepository ? (activeBranch ?? t('error.noBranch')) : t('app.notGitRepoLabel');
 
   return (
     <DropdownMenu>
