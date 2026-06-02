@@ -18,8 +18,10 @@ import {
 } from "@/lib/workspace-tool-tabs";
 import type {
   DesktopGitSnapshot,
+  GitHistorySnapshot,
   GitWorkingTreeSnapshot,
   PlanSnapshot,
+  ReadGitHistoryRequest,
   WorkspaceExplorerListResult,
   WorkspaceReadTextFileResult,
   WriteWorkspaceTextFileRequest,
@@ -69,6 +71,7 @@ export type WorkspaceToolsDockProps = {
   open: boolean;
   gitSnapshot?: DesktopGitSnapshot;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
+  readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
   gitRefreshNonce?: number;
   className?: string;
 };
@@ -109,6 +112,7 @@ export function WorkspaceToolsDock({
   open,
   gitSnapshot,
   readGitWorkingTree,
+  readGitHistory,
   gitRefreshNonce = 0,
   className,
 }: WorkspaceToolsDockProps) {
@@ -431,6 +435,7 @@ export function WorkspaceToolsDock({
                         isActive={selected}
                         refreshNonce={gitRefreshNonce}
                         readGitWorkingTree={readGitWorkingTree}
+                        readGitHistory={readGitHistory}
                       />
                     </div>
                   )}

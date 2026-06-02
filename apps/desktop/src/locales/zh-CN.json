@@ -441,7 +441,6 @@
       "noRepo": "当前工作区不是 Git 仓库。",
       "noChanges": "没有未提交的更改。",
       "loadingChanges": "正在加载更改…",
-      "historyLoading": "提交历史将在下一步加载…",
       "loadingHistory": "正在加载提交历史…",
       "noHistory": "暂无提交记录。",
       "copySha": "复制 SHA",
