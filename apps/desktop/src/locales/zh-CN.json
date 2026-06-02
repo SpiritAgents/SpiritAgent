@@ -444,9 +444,7 @@
       "loadingHistory": "正在加载提交历史…",
       "noHistory": "暂无提交记录。",
       "copySha": "复制 SHA",
-      "copiedSha": "已复制",
-      "expandDetails": "展开详情",
-      "collapseDetails": "收起详情"
+      "copiedSha": "已复制"
     },
     "resizeToolsWidth": "调整工具区宽度",
     "workspaceTools": "工作区工具",

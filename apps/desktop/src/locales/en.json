@@ -444,9 +444,7 @@
       "loadingHistory": "Loading commit history…",
       "noHistory": "No commits yet.",
       "copySha": "Copy SHA",
-      "copiedSha": "Copied",
-      "expandDetails": "Show details",
-      "collapseDetails": "Hide details"
+      "copiedSha": "Copied"
     },
     "resizeToolsWidth": "Resize Tools Width",
     "workspaceTools": "Workspace Tools",
