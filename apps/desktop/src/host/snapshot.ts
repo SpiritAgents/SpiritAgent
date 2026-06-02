@@ -49,6 +49,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
     availableWorkspaces: buildAvailableWorkspaces(
       input.workspaceRoot,
       input.config.recentWorkspaces,
+      normalizeWorkspaceBinding(input.config.workspaceBinding),
     ),
     git: { ...input.git },
     dreams: {
