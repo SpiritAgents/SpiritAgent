@@ -13,4 +13,4 @@ export function truncateOuterHtml(html: string): string {
   return html.slice(0, OUTER_HTML_MAX_BYTES) + '…';
 }
 
-export { browserElementContextText } from "./composer-segment-model";
+export { browserElementContextText } from "./browser-element-wire-text.js";
