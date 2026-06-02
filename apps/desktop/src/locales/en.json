@@ -255,6 +255,7 @@
     "newSession": "New Session",
     "extensions": "Extensions",
     "workspace": "Workspace",
+    "noWorkspaceSessions": "No workspace",
     "settingsTabsAria": "Settings Tabs",
     "extensionSettings": "Extension Settings",
     "workspaceSessionsAria": "Workspace Sessions"

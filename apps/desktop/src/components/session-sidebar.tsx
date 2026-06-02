@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
-import type { DesktopSnapshot, SessionListItem } from "@/types";
+import type { DesktopSnapshot, DesktopWorkspaceBinding, SessionListItem } from "@/types";
 
 function samePath(a: string, b: string): boolean {
   return a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
@@ -35,8 +35,7 @@ type SessionSidebarProps = {
   narrow: boolean;
   mode?: "sessions" | "settings";
   workspaceRoot?: string | null;
-  /** `flat`：无工作区分组，直接列出当前 cwd 下的会话。 */
-  sessionListLayout?: "grouped" | "flat";
+  workspaceBinding?: DesktopWorkspaceBinding;
   sessions: SessionListItem[];
   activeFilePath: string | null;
   onSelectSession: (path: string) => void;
@@ -133,6 +132,92 @@ function buildWorkspaceGroups(
   );
 }
 
+function isNoWorkspaceSession(session: SessionListItem, homeDirectory: string): boolean {
+  const root = session.workspaceRoot?.trim();
+  if (!root) {
+    return true;
+  }
+  return samePath(root, homeDirectory);
+}
+
+function partitionSessionsForSidebar(
+  sessions: SessionListItem[],
+  workspaceBinding: DesktopWorkspaceBinding,
+  homeDirectory: string | null | undefined,
+): { bound: SessionListItem[]; unbound: SessionListItem[] } {
+  if (workspaceBinding !== "none") {
+    return { bound: sessions, unbound: [] };
+  }
+  const home = homeDirectory?.trim();
+  if (!home) {
+    return { bound: sessions, unbound: [] };
+  }
+  const bound: SessionListItem[] = [];
+  const unbound: SessionListItem[] = [];
+  for (const session of sessions) {
+    if (isNoWorkspaceSession(session, home)) {
+      unbound.push(session);
+    } else {
+      bound.push(session);
+    }
+  }
+  return { bound, unbound };
+}
+
+function sortSessionsByModified(sessions: SessionListItem[]): SessionListItem[] {
+  return [...sessions].sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
+}
+
+type SessionListRowProps = {
+  session: SessionListItem;
+  nested: boolean;
+  selected: boolean;
+  disabled?: boolean;
+  micaStyle?: boolean;
+  onSelect(): void;
+};
+
+function SessionListRow({
+  session,
+  nested,
+  selected,
+  disabled,
+  micaStyle,
+  onSelect,
+}: SessionListRowProps) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-current={selected ? "true" : undefined}
+      onClick={onSelect}
+      className={cn(
+        "group flex w-full min-w-0 items-center overflow-hidden rounded-md text-left text-sm outline-none",
+        sidebarInteractionMotionClass,
+        "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+        nested ? "py-2 pr-2.5 pl-8" : "h-8 gap-2 px-2.5",
+        selected
+          ? sessionRowSelectedClass(micaStyle)
+          : cn("text-sidebar-foreground/90", sessionRowHoverClass(micaStyle)),
+      )}
+    >
+      <span
+        className="min-w-0 flex-1 basis-0 truncate text-xs font-medium"
+        title={session.displayName}
+      >
+        {session.displayName}
+      </span>
+      {session.isBusy ? (
+        <span
+          className="size-1.5 shrink-0 rounded-full bg-primary animate-pulse"
+          aria-label={t('common.running')}
+        />
+      ) : null}
+    </button>
+  );
+}
+
 const settingsTabs: Array<{
   id: SettingsSidebarTab;
   labelKey: string;
@@ -222,28 +307,12 @@ function sessionRowHoverClass(micaStyle?: boolean) {
   return micaStyle ? sidebarMicaMenuHoverClass : sidebarSessionListHoverClass;
 }
 
-function filterSessionsForWorkspace(
-  sessions: SessionListItem[],
-  workspaceRoot: string | null | undefined,
-): SessionListItem[] {
-  const currentRoot = workspaceRoot?.trim();
-  if (!currentRoot) {
-    return [];
-  }
-  return sessions
-    .filter((session) => {
-      const sessionRoot = session.workspaceRoot?.trim() || currentRoot;
-      return samePath(sessionRoot, currentRoot);
-    })
-    .sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
-}
-
 export function SessionSidebar({
   className,
   narrow,
   mode = "sessions",
   workspaceRoot,
-  sessionListLayout = "grouped",
+  workspaceBinding = "project",
   sessions,
   activeFilePath,
   onSelectSession,
@@ -266,15 +335,23 @@ export function SessionSidebar({
 }: SessionSidebarProps) {
   const { t, i18n } = useTranslation();
   const settingsMode = mode === "settings";
+  const { bound, unbound } = useMemo(
+    () => partitionSessionsForSidebar(sessions, workspaceBinding, workspaceRoot),
+    [sessions, workspaceBinding, workspaceRoot],
+  );
   const workspaceGroups = useMemo(
-    () => buildWorkspaceGroups(sessions, workspaceRoot),
-    [sessions, workspaceRoot, i18n.language],
+    () =>
+      buildWorkspaceGroups(
+        bound,
+        workspaceBinding === "none" ? undefined : workspaceRoot,
+      ),
+    [bound, workspaceBinding, workspaceRoot, i18n.language],
   );
-  const flatSessions = useMemo(
-    () => filterSessionsForWorkspace(sessions, workspaceRoot),
-    [sessions, workspaceRoot],
-  );
+  const unboundSessions = useMemo(() => sortSessionsByModified(unbound), [unbound]);
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Record<string, boolean>>({});
+
+  const isSessionSelected = (sessionPath: string) =>
+    !marketplaceActive && activeFilePath !== null && samePath(sessionPath, activeFilePath);
 
   const toggleWorkspaceGroup = (groupId: string) => {
     setCollapsedWorkspaceIds((current) => ({
@@ -376,7 +453,7 @@ export function SessionSidebar({
         )}
         aria-hidden={!settingsMode && narrow}
       >
-        {settingsMode || sessionListLayout === "flat" ? null : (
+        {settingsMode || workspaceBinding === "none" ? null : (
           <div className="shrink-0 px-1.5 pt-3 pb-2.5">
             <p className="px-2.5 text-[0.65rem] text-sidebar-faint-foreground">{t('sidebar.workspace')}</p>
           </div>
@@ -448,51 +525,35 @@ export function SessionSidebar({
                 </>
               ) : null}
             </nav>
-          ) : sessionListLayout === "flat" ? (
-            <div className="min-w-0 px-1.5 pb-1.5">
-              <nav className="flex min-w-0 flex-col gap-0.5" aria-label={t('sidebar.sessionNavAria')}>
-                {flatSessions.map((session) => {
-                  const sessionRowSelected =
-                    !marketplaceActive
-                    && activeFilePath !== null
-                    && samePath(session.path, activeFilePath);
-                  return (
-                    <button
-                      key={session.path}
-                      type="button"
-                      disabled={disabled}
-                      aria-current={sessionRowSelected ? "true" : undefined}
-                      onClick={() => onSelectSession(session.path)}
-                      className={cn(
-                        "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
-                        "outline-none",
-                        sidebarInteractionMotionClass,
-                        "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-                        sessionRowSelected
-                          ? sessionRowSelectedClass(micaStyle)
-                          : cn("text-sidebar-foreground/90", sessionRowHoverClass(micaStyle)),
-                      )}
-                    >
-                      <span
-                        className="min-w-0 flex-1 truncate text-xs font-medium"
-                        title={session.displayName}
-                      >
-                        {session.displayName}
-                      </span>
-                      {session.isBusy ? (
-                        <span
-                          className="size-1.5 shrink-0 rounded-full bg-primary animate-pulse"
-                          aria-label={t('common.running')}
-                        />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
           ) : (
             <div className="min-w-0 px-1.5 pb-1.5">
               <nav className="flex min-w-0 flex-col gap-0.5" aria-label={t('sidebar.workspaceSessionsAria')}>
+                {workspaceBinding === "none" && unboundSessions.length > 0 ? (
+                  <>
+                    <p className="px-2.5 pt-2 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
+                      {t('sidebar.noWorkspaceSessions')}
+                    </p>
+                    {unboundSessions.map((session) => (
+                      <SessionListRow
+                        key={session.path}
+                        session={session}
+                        nested={false}
+                        selected={isSessionSelected(session.path)}
+                        disabled={disabled}
+                        micaStyle={micaStyle}
+                        onSelect={() => onSelectSession(session.path)}
+                      />
+                    ))}
+                  </>
+                ) : null}
+                {workspaceBinding === "none" && unboundSessions.length > 0 && workspaceGroups.length > 0 ? (
+                  <div className="h-2" aria-hidden />
+                ) : null}
+                {workspaceBinding === "none" && workspaceGroups.length > 0 ? (
+                  <p className="px-2.5 pt-1 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
+                    {t('sidebar.workspace')}
+                  </p>
+                ) : null}
                 {workspaceGroups.map((group) => {
                   const expanded = collapsedWorkspaceIds[group.id] !== false;
                   const panelId = `workspace-session-group-${group.id.replace(/[^a-z0-9_-]/g, "-")}`;
@@ -525,43 +586,17 @@ export function SessionSidebar({
 
                       <div id={panelId} className={cn("min-w-0", !expanded && "hidden") }>
                         <div className="mt-0.5 flex min-w-0 flex-col gap-0.5">
-                          {group.sessions.map((session) => {
-                            const sessionRowSelected =
-                              !marketplaceActive &&
-                              activeFilePath !== null &&
-                              samePath(session.path, activeFilePath);
-                            return (
-                              <button
-                                key={session.path}
-                                type="button"
-                                disabled={disabled}
-                                aria-current={sessionRowSelected ? "true" : undefined}
-                                onClick={() => onSelectSession(session.path)}
-                                className={cn(
-                                  "group flex w-full min-w-0 items-center overflow-hidden rounded-md py-2 pr-2.5 pl-8 text-left text-sm",
-                                  "outline-none",
-                                  sidebarInteractionMotionClass,
-                                  "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-                                  sessionRowSelected
-                                    ? sessionRowSelectedClass(micaStyle)
-                                    : cn("text-sidebar-foreground/90", sessionRowHoverClass(micaStyle)),
-                                )}
-                              >
-                                <span
-                                  className="min-w-0 flex-1 basis-0 truncate text-xs font-medium"
-                                  title={session.displayName}
-                                >
-                                  {session.displayName}
-                                </span>
-                                {session.isBusy ? (
-                                  <span
-                                    className="size-1.5 shrink-0 rounded-full bg-primary animate-pulse"
-                                    aria-label={t('common.running')}
-                                  />
-                                ) : null}
-                              </button>
-                            );
-                          })}
+                          {group.sessions.map((session) => (
+                            <SessionListRow
+                              key={session.path}
+                              session={session}
+                              nested
+                              selected={isSessionSelected(session.path)}
+                              disabled={disabled}
+                              micaStyle={micaStyle}
+                              onSelect={() => onSelectSession(session.path)}
+                            />
+                          ))}
                         </div>
                       </div>
                     </div>

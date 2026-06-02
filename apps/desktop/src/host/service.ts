@@ -252,6 +252,7 @@ import {
   parseGeneratedCommitMessageResponse,
   parseGeneratedWorktreeNamingResponse,
   sameDreamCollectorSnapshot,
+  resolveWorkspaceBindingForRequestedRoot,
   sameWorkspaceRoot,
   toRuntimeAskQuestionsResult,
 } from './service-utils.js';
@@ -2580,14 +2581,12 @@ class DesktopHostService {
     const previousBinding = normalizeWorkspaceBinding(
       previousState?.workspaceBinding ?? loadedConfig.workspaceBinding,
     );
-    let workspaceBinding: DesktopWorkspaceBinding;
-    if (options.workspaceBinding === 'none') {
-      workspaceBinding = 'none';
-    } else if (options.workspaceBinding === 'project' || requestedWorkspaceRoot) {
-      workspaceBinding = 'project';
-    } else {
-      workspaceBinding = previousBinding;
-    }
+    const workspaceBinding = resolveWorkspaceBindingForRequestedRoot({
+      requestedWorkspaceRoot,
+      explicitBinding: options.workspaceBinding,
+      previousBinding,
+      persistedBinding: normalizeWorkspaceBinding(loadedConfig.workspaceBinding),
+    });
 
     const workspaceRoot =
       workspaceBinding === 'none'
@@ -2670,7 +2669,6 @@ class DesktopHostService {
     const switchingWorkspace = Boolean(
       previousWorkspaceRoot && !sameWorkspaceRoot(previousWorkspaceRoot, workspaceRoot),
     );
-
     if (switchingWorkspace) {
       await this.extensionManager().deactivateAll();
     }
