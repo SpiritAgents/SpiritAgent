@@ -752,7 +752,9 @@ class DesktopHostService {
       const imageGenerationModelChanged = state.config.imageGenerationModel !== prevImageGenerationModel;
 
       if (planModeNow !== prevPlanMode) {
-        state.metadata = await loadHostMetadata(state.workspaceRoot, planModeNow);
+        state.metadata = await loadHostMetadata(state.workspaceRoot, planModeNow, {
+          activePlanPath: this.activeBundle().activePlanPath,
+        });
       }
 
       const transportOrPlanChanged =
@@ -1427,13 +1429,17 @@ class DesktopHostService {
       }
 
       const state = this.requireState();
+      const bundle = this.activeBundle();
       return this.submitUserTurnAfterInitialized(
-        buildStartImplementingUserTurn({
-          workspaceRoot: state.workspaceRoot,
-          spiritDataDir: spiritAgentDataDir(),
-        }),
+        buildStartImplementingUserTurn(
+          {
+            workspaceRoot: state.workspaceRoot,
+            spiritDataDir: spiritAgentDataDir(),
+          },
+          bundle.activePlanPath,
+        ),
         {
-          displayText: '/start-implementing',
+          displayText: i18n.t('workspace.startImplementing'),
         },
       );
     });
@@ -2616,6 +2622,7 @@ class DesktopHostService {
     state.metadata = await loadHostMetadata(
       state.workspaceRoot,
       state.config.planMode === true,
+      { activePlanPath: bundle.activePlanPath },
     );
     state.plan = await loadDesktopPlanSnapshot(
       state.metadata.planMetadata.path,
@@ -2747,6 +2754,7 @@ class DesktopHostService {
     }
     bundle.toolExecutor.setApprovalLevel(bundle.approvalLevel);
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
+    bundle.toolExecutor.setPlanModeToolExposure(this.requireState().config.planMode === true);
     await bundle.toolExecutor.ensureMcpToolingReady();
     return bundle.toolExecutor;
   }
@@ -4170,12 +4178,28 @@ class DesktopHostService {
     }
 
     if (
-      bundle.id === this.sessionRegistry.activeSessionId()
-      && sameFsPath(change.resolvedPath, state.plan.path)
+      change.toolName === 'create_plan'
+      && change.after.exists
+      && change.after.file
     ) {
+      bundle.activePlanPath = change.resolvedPath;
+    }
+
+    if (
+      bundle.id === this.sessionRegistry.activeSessionId()
+      && (
+        (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath))
+        || sameFsPath(change.resolvedPath, state.plan.path)
+      )
+    ) {
+      if (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath)) {
+        state.metadata = await loadHostMetadata(state.workspaceRoot, state.config.planMode === true, {
+          activePlanPath: bundle.activePlanPath,
+        });
+      }
       state.metadata.planMetadata.exists = change.after.exists && change.after.file;
       state.plan = {
-        path: state.plan.path,
+        path: change.resolvedPath,
         exists: change.after.exists && change.after.file,
         ...(change.after.content !== undefined ? { content: change.after.content } : {}),
         ...(typeof change.after.mtimeMs === 'number'
@@ -4368,6 +4392,7 @@ class DesktopHostService {
       sessionDisplayName: activeSession.displayName,
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       gitBranch: state.git.branch,
+      ...(bundle.activePlanPath ? { activePlanPath: bundle.activePlanPath } : {}),
       desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
       desktopMessageTimeline: bundle.messageTimeline.snapshot(),
       rewind: bundle.rewind,

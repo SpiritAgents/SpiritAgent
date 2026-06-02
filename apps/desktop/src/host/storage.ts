@@ -297,12 +297,14 @@ export function createDesktopExtensionStateStore(
 export async function loadHostMetadata(
   workspaceRoot: string,
   planMode = false,
+  options?: { activePlanPath?: string },
 ): Promise<HostMetadataSummary> {
   return loadHostInstructionMetadata({
     workspaceRoot,
     spiritDataDir: spiritAgentDataDir(),
   }, {
     planMode,
+    activePlanPath: options?.activePlanPath,
   });
 }
 
@@ -323,6 +325,9 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
       ? { workspaceRoot: resolveStoredWorkspaceRoot(parsed.workspaceRoot) }
       : {}),
     ...(normalizeGitBranch(parsed.gitBranch) ? { gitBranch: normalizeGitBranch(parsed.gitBranch) } : {}),
+    ...(typeof parsed.activePlanPath === 'string' && parsed.activePlanPath.trim()
+      ? { activePlanPath: parsed.activePlanPath.trim() }
+      : {}),
     ...(Array.isArray(parsed.desktopMessages)
       ? { desktopMessages: parsed.desktopMessages as ConversationMessageSnapshot[] }
       : {}),
