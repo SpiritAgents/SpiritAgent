@@ -32,8 +32,13 @@ function maxLaneOnRow(row: GitCommitGraphRow): number {
   return activeLanesForRow(row).reduce((max, lane) => Math.max(max, lane), row.lane);
 }
 
-/** Keep message column clear of side lanes on this row and immediate neighbors. */
-function textLaneForRow(
+/** Text starts this many px after the commit node's lane center (dot radius + gap). */
+function commitLaneTextInsetPx(row: GitCommitGraphRow): number {
+  return Math.ceil(laneCenterX(row.lane) + NODE_RADIUS_PX + TEXT_GAP_PX);
+}
+
+/** Wider inset when a merge forks a side lane — keeps fork-start rows unchanged. */
+function mergeForkTextInsetPx(
   row: GitCommitGraphRow,
   rowIndex: number,
   rows: readonly GitCommitGraphRow[],
@@ -47,21 +52,37 @@ function textLaneForRow(
   if (next) {
     maxLane = Math.max(maxLane, maxLaneOnRow(next));
   }
-  return maxLane;
+  return Math.ceil(laneCenterX(maxLane) + NODE_RADIUS_PX + TEXT_GAP_PX);
 }
 
-function rowTextInsetPx(
+function isMainRejoinAfterBranch(
+  row: GitCommitGraphRow,
+  rowIndex: number,
+  rows: readonly GitCommitGraphRow[],
+): boolean {
+  const prev = rows[rowIndex - 1];
+  return row.lane === 0 && Boolean(prev && prev.lane > 0);
+}
+
+function textInsetForRow(
   row: GitCommitGraphRow,
   rowIndex: number,
   rows: readonly GitCommitGraphRow[],
 ): number {
-  const maxLane = textLaneForRow(row, rowIndex, rows);
-  return Math.ceil(laneCenterX(maxLane) + NODE_RADIUS_PX + TEXT_GAP_PX);
+  if (row.mergeLanes.length > 0) {
+    return mergeForkTextInsetPx(row, rowIndex, rows);
+  }
+  // Rejoin row: dot on lane 0 but text stays aligned with the side branch column above.
+  if (isMainRejoinAfterBranch(row, rowIndex, rows)) {
+    const prev = rows[rowIndex - 1]!;
+    return commitLaneTextInsetPx(prev);
+  }
+  return commitLaneTextInsetPx(row);
 }
 
 function computeGraphWidth(rows: readonly GitCommitGraphRow[]): number {
   return rows.reduce(
-    (max, row, rowIndex) => Math.max(max, rowTextInsetPx(row, rowIndex, rows)),
+    (max, row, rowIndex) => Math.max(max, textInsetForRow(row, rowIndex, rows)),
     0,
   );
 }
@@ -562,8 +583,12 @@ export function GitCommitGraph({ history, loading, error, className }: GitCommit
       <div className="relative min-w-0 pr-1">
         <CommitGraphGutter rows={rows} graphWidth={graphWidth} geometry={geometry} />
         <div className="relative" ref={rowsContainerRef}>
-          {rows.map((row) => (
-            <CommitGraphRow key={row.commit.oid} row={row} textInset={graphWidth} />
+          {rows.map((row, rowIndex) => (
+            <CommitGraphRow
+              key={row.commit.oid}
+              row={row}
+              textInset={textInsetForRow(row, rowIndex, rows)}
+            />
           ))}
         </div>
       </div>
