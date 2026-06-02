@@ -21,6 +21,7 @@ import {
   buildAvailableWorkspaces,
   buildWebHostSnapshot,
 } from './service-utils.js';
+import { resolveDesktopHomeDirectory } from './storage.js';
 
 export interface BuildDesktopSnapshotInput {
   workspaceRoot: string;
@@ -45,6 +46,7 @@ export interface BuildDesktopSnapshotInput {
 export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopSnapshot {
   return {
     workspaceRoot: input.workspaceRoot,
+    userHomeDirectory: resolveDesktopHomeDirectory(),
     workspaceBinding: normalizeWorkspaceBinding(input.config.workspaceBinding),
     availableWorkspaces: buildAvailableWorkspaces(
       input.workspaceRoot,

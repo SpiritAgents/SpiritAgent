@@ -508,6 +508,8 @@ export interface WriteWorkspaceTextFileRequest {
 
 export interface DesktopSnapshot {
   workspaceRoot: string;
+  /** 用户主目录；侧栏划分「无工作区」会话与项目工作区会话时使用。 */
+  userHomeDirectory: string;
   workspaceBinding: DesktopWorkspaceBinding;
   availableWorkspaces: DesktopWorkspaceListItem[];
   git: DesktopGitSnapshot;

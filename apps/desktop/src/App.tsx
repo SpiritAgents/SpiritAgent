@@ -2736,8 +2736,7 @@ export default function App() {
             <SessionSidebar
               narrow={false}
               mode={settingsMode ? "settings" : "sessions"}
-              workspaceRoot={snapshot?.workspaceRoot ?? null}
-              workspaceBinding={snapshot?.workspaceBinding ?? "project"}
+              userHomeDirectory={snapshot?.userHomeDirectory ?? null}
               sessions={runtime.sessions}
               activeFilePath={activeFilePath}
               onNewSession={() => {

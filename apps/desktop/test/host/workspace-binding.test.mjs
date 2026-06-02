@@ -35,6 +35,18 @@ test('resolveWorkspaceBindingForRequestedRoot keeps none when opening homedir se
   );
 });
 
+test('resolveWorkspaceBindingForRequestedRoot uses none for homedir even when persisted project', () => {
+  const home = resolveDesktopHomeDirectory();
+  assert.equal(
+    resolveWorkspaceBindingForRequestedRoot({
+      requestedWorkspaceRoot: home,
+      previousBinding: 'project',
+      persistedBinding: 'project',
+    }),
+    'none',
+  );
+});
+
 test('resolveWorkspaceBindingForRequestedRoot uses project for real workspace roots', () => {
   assert.equal(
     resolveWorkspaceBindingForRequestedRoot({
@@ -53,4 +65,12 @@ test('buildAvailableWorkspaces excludes homedir when workspace binding is none',
   const paths = items.map((item) => item.path.replace(/\\/g, '/').toLowerCase());
   assert.ok(!paths.includes(home.replace(/\\/g, '/').toLowerCase()));
   assert.ok(paths.some((entry) => entry.endsWith('/spiritagent')));
+});
+
+test('buildAvailableWorkspaces excludes homedir when workspace binding is project', () => {
+  const home = resolveDesktopHomeDirectory();
+  const recent = [home, 'D:/SpiritAgent'];
+  const items = buildAvailableWorkspaces(home, recent, 'project');
+  const paths = items.map((item) => item.path.replace(/\\/g, '/').toLowerCase());
+  assert.ok(!paths.includes(home.replace(/\\/g, '/').toLowerCase()));
 });

@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
-import type { DesktopSnapshot, DesktopWorkspaceBinding, SessionListItem } from "@/types";
+import type { DesktopSnapshot, SessionListItem } from "@/types";
 
 function samePath(a: string, b: string): boolean {
   return a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
@@ -34,8 +34,8 @@ type SessionSidebarProps = {
   /** 窄轨：只换样式/折叠列表，不切换整棵子树，避免与外层 width 动画错拍 */
   narrow: boolean;
   mode?: "sessions" | "settings";
-  workspaceRoot?: string | null;
-  workspaceBinding?: DesktopWorkspaceBinding;
+  /** 用户主目录，用于将主目录会话划入「无工作区」区。 */
+  userHomeDirectory?: string | null;
   sessions: SessionListItem[];
   activeFilePath: string | null;
   onSelectSession: (path: string) => void;
@@ -142,12 +142,8 @@ function isNoWorkspaceSession(session: SessionListItem, homeDirectory: string): 
 
 function partitionSessionsForSidebar(
   sessions: SessionListItem[],
-  workspaceBinding: DesktopWorkspaceBinding,
   homeDirectory: string | null | undefined,
 ): { bound: SessionListItem[]; unbound: SessionListItem[] } {
-  if (workspaceBinding !== "none") {
-    return { bound: sessions, unbound: [] };
-  }
   const home = homeDirectory?.trim();
   if (!home) {
     return { bound: sessions, unbound: [] };
@@ -311,8 +307,7 @@ export function SessionSidebar({
   className,
   narrow,
   mode = "sessions",
-  workspaceRoot,
-  workspaceBinding = "project",
+  userHomeDirectory,
   sessions,
   activeFilePath,
   onSelectSession,
@@ -336,16 +331,12 @@ export function SessionSidebar({
   const { t, i18n } = useTranslation();
   const settingsMode = mode === "settings";
   const { bound, unbound } = useMemo(
-    () => partitionSessionsForSidebar(sessions, workspaceBinding, workspaceRoot),
-    [sessions, workspaceBinding, workspaceRoot],
+    () => partitionSessionsForSidebar(sessions, userHomeDirectory),
+    [sessions, userHomeDirectory],
   );
   const workspaceGroups = useMemo(
-    () =>
-      buildWorkspaceGroups(
-        bound,
-        workspaceBinding === "none" ? undefined : workspaceRoot,
-      ),
-    [bound, workspaceBinding, workspaceRoot, i18n.language],
+    () => buildWorkspaceGroups(bound, undefined),
+    [bound, i18n.language],
   );
   const unboundSessions = useMemo(() => sortSessionsByModified(unbound), [unbound]);
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Record<string, boolean>>({});
@@ -453,11 +444,6 @@ export function SessionSidebar({
         )}
         aria-hidden={!settingsMode && narrow}
       >
-        {settingsMode || workspaceBinding === "none" ? null : (
-          <div className="shrink-0 px-1.5 pt-3 pb-2.5">
-            <p className="px-2.5 text-[0.65rem] text-sidebar-faint-foreground">{t('sidebar.workspace')}</p>
-          </div>
-        )}
         <ScrollArea className="h-full min-h-0 min-w-0" type="hover" scrollHideDelay={450}>
           {settingsMode ? (
             <nav className="flex min-w-0 flex-col gap-0.5 p-1.5" aria-label={t('sidebar.settingsTabsAria')}>
@@ -528,7 +514,7 @@ export function SessionSidebar({
           ) : (
             <div className="min-w-0 px-1.5 pb-1.5">
               <nav className="flex min-w-0 flex-col gap-0.5" aria-label={t('sidebar.workspaceSessionsAria')}>
-                {workspaceBinding === "none" && unboundSessions.length > 0 ? (
+                {unboundSessions.length > 0 ? (
                   <>
                     <p className="px-2.5 pt-2 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
                       {t('sidebar.noWorkspaceSessions')}
@@ -546,10 +532,10 @@ export function SessionSidebar({
                     ))}
                   </>
                 ) : null}
-                {workspaceBinding === "none" && unboundSessions.length > 0 && workspaceGroups.length > 0 ? (
+                {unboundSessions.length > 0 && workspaceGroups.length > 0 ? (
                   <div className="h-2" aria-hidden />
                 ) : null}
-                {workspaceBinding === "none" && workspaceGroups.length > 0 ? (
+                {workspaceGroups.length > 0 ? (
                   <p className="px-2.5 pt-1 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
                     {t('sidebar.workspace')}
                   </p>
