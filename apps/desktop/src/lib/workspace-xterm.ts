@@ -2,6 +2,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 
+import { configureWorkspaceTerminalLinks } from "@/lib/workspace-terminal-links";
 import {
   readTerminalThemeFromDocument,
   trackTerminalTheme,
@@ -95,6 +96,7 @@ export function createWorkspaceTerminalSession(
     scrollback: 8000,
   });
   untrackTheme = trackTerminalTheme(term);
+  configureWorkspaceTerminalLinks(term);
 
   term.onTitleChange((title) => {
     onTitleChange?.(title || undefined);
