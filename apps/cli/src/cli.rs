@@ -6,7 +6,7 @@ use crate::{
     adapters::{DefaultAppPaths, JsonConfigStore, KeyringSecretStore},
     mcp::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
-        user_mcp_config_path,
+        user_mcp_config_path, workspace_mcp_config_path,
     },
     model_provider_presets::model_add_default_custom_api_base,
     model_registry::{
@@ -473,7 +473,8 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
             let mut runtime = new_mcp_cli_runtime(workspace_root.clone())?;
             let servers = runtime.list_mcp_servers()?;
 
-            println!("MCP 配置: {}", user_mcp_config_path().display());
+            println!("用户 MCP 配置: {}", user_mcp_config_path().display());
+            println!("工作区 MCP 配置: {}", workspace_mcp_config_path(&workspace_root).display());
 
             if servers.is_empty() {
                 println!("未配置任何 MCP server。可先执行 `spirit mcp init` 生成模板。\n");
@@ -498,7 +499,8 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
         McpCommand::Show => {
             let loaded = load_mcp_config(&workspace_root)?;
 
-            println!("MCP 配置: {}", loaded.path.display());
+            println!("用户 MCP 配置: {}", loaded.user_path.display());
+            println!("工作区 MCP 配置: {}", loaded.workspace_path.display());
             println!();
             println!("server 数量: {}", loaded.config.servers.len());
             println!();

@@ -5,7 +5,7 @@ use std::{path::PathBuf, sync::Arc};
 use crate::{
     ask_questions::AskQuestionsResult,
     host_runtime::RuntimeEvent,
-    mcp::McpServerConfig,
+    mcp::{McpScope, McpServerConfig},
     mcp_types::{
         ManagedMcpServer, McpDiscoveredPrompt, McpDiscoveredResource, McpDiscoveredTool,
         McpServerInspection,
@@ -329,8 +329,8 @@ impl RuntimeHandle {
             .apply_mcp_prompt(server, prompt, args_json, user_message)
     }
 
-    pub fn add_mcp_server(&mut self, name: &str, config: McpServerConfig) -> Result<PathBuf> {
-        self.runtime.add_mcp_server(name, config)
+    pub fn add_mcp_server(&mut self, scope: McpScope, name: &str, config: McpServerConfig) -> Result<PathBuf> {
+        self.runtime.add_mcp_server(scope, name, config)
     }
 
     pub fn execute_mcp_tool(

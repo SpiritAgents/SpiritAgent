@@ -323,29 +323,31 @@ impl TuiShell {
         }
 
         match bottom_form::to_config(form) {
-            Ok((server_name, config)) => match self.runtime.add_mcp_server(&server_name, config) {
-                Ok(path) => {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: t!(
-                            "tui.bottom_form.added",
-                            server = server_name,
-                            path = path.display()
-                        )
-                        .into_owned(),
-                        tool_block: None,
-                    });
-                    self.forms.active = None;
-                    self.sync_welcome_mcp_status();
+            Ok((server_name, scope, config)) => {
+                match self.runtime.add_mcp_server(scope, &server_name, config) {
+                    Ok(path) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: t!(
+                                "tui.bottom_form.added",
+                                server = server_name,
+                                path = path.display()
+                            )
+                            .into_owned(),
+                            tool_block: None,
+                        });
+                        self.forms.active = None;
+                        self.sync_welcome_mcp_status();
+                    }
+                    Err(err) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: t!("tui.bottom_form.add_failed", err = err).into_owned(),
+                            tool_block: None,
+                        });
+                    }
                 }
-                Err(err) => {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: t!("tui.bottom_form.add_failed", err = err).into_owned(),
-                        tool_block: None,
-                    });
-                }
-            },
+            }
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,

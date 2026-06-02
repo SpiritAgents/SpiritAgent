@@ -134,8 +134,11 @@ export interface DesktopMcpCapabilityToggles {
 
 export type DesktopMcpTransportType = 'stdio' | 'http';
 
+export type DesktopMcpScope = 'user' | 'workspace';
+
 export interface AddMcpServerRequest {
   name: string;
+  scope: DesktopMcpScope;
   transportType: DesktopMcpTransportType;
   endpoint: string;
   metadata?: string;
@@ -144,6 +147,7 @@ export interface AddMcpServerRequest {
 
 export interface DeleteMcpServerRequest {
   name: string;
+  scope: DesktopMcpScope;
 }
 
 export interface ImportExtensionRequest {
@@ -379,6 +383,7 @@ export interface DesktopMcpServerListItem {
   displayName: string;
   enabled: boolean;
   capabilities: DesktopMcpCapabilityToggles;
+  scope: DesktopMcpScope;
   transport: DesktopMcpTransportSnapshot;
 }
 

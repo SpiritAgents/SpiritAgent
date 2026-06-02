@@ -391,6 +391,7 @@ async function handleApiRequest({
       await runHostCommand('addMcpServer', {
         request: {
           name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
+          scope: jsonBody?.scope === 'workspace' ? 'workspace' : 'user',
           transportType: jsonBody?.transportType === 'http' ? 'http' : 'stdio',
           endpoint: typeof jsonBody?.endpoint === 'string' ? jsonBody.endpoint : '',
           metadata: typeof jsonBody?.metadata === 'string' ? jsonBody.metadata : '',
@@ -412,6 +413,7 @@ async function handleApiRequest({
       await runHostCommand('deleteMcpServer', {
         request: {
           name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
+          scope: jsonBody?.scope === 'workspace' ? 'workspace' : 'user',
         },
       }),
     );

@@ -23,7 +23,7 @@ use crate::{
     },
     llm_types::LlmMessage,
     logging,
-    mcp::{McpServerConfig, add_mcp_server, spirit_agent_data_dir},
+    mcp::{McpServerConfig, McpScope, add_mcp_server, spirit_agent_data_dir},
     mcp_types::{
         ManagedMcpServer, McpDiscoveredPrompt, McpDiscoveredResource, McpDiscoveredTool,
         McpServerInspection,
@@ -1531,8 +1531,8 @@ impl TsBridgeRuntime {
         Ok(notice)
     }
 
-    pub fn add_mcp_server(&mut self, name: &str, config: McpServerConfig) -> Result<PathBuf> {
-        let path = add_mcp_server(&self.workspace_root, name, config)?;
+    pub fn add_mcp_server(&mut self, scope: McpScope, name: &str, config: McpServerConfig) -> Result<PathBuf> {
+        let path = add_mcp_server(&self.workspace_root, scope, name, config)?;
         let _ = self.call_bridge("runtime.startMcpBackgroundRefresh", None)?;
         Ok(path)
     }
@@ -2046,7 +2046,18 @@ impl TsBridgeRuntime {
                         .cloned()
                         .ok_or_else(|| anyhow!("host.addMcpServer 缺少 config"))?,
                 )?;
-                let path = add_mcp_server(&self.workspace_root, name, config)?;
+                let scope = params
+                    .get("scope")
+                    .and_then(Value::as_str)
+                    .map(|value| {
+                        if value.eq_ignore_ascii_case("workspace") {
+                            McpScope::Workspace
+                        } else {
+                            McpScope::User
+                        }
+                    })
+                    .unwrap_or(McpScope::User);
+                let path = add_mcp_server(&self.workspace_root, scope, name, config)?;
                 Ok(Some(Value::String(path.display().to_string())))
             }
             "host.localToolExecuted" => {

@@ -28,6 +28,8 @@ pub struct ManagedMcpServer {
     pub capabilities: McpCapabilityToggles,
     pub transport: McpTransportConfig,
     pub state: McpServerRuntimeState,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
 }
 
 impl ManagedMcpServer {

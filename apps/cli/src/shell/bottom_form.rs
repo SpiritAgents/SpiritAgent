@@ -6,7 +6,7 @@ use rust_i18n::t;
 use serde_json::{Map, Value};
 
 use crate::{
-    mcp::{McpCapabilityToggles, McpServerConfig, McpTransportConfig},
+    mcp::{McpCapabilityToggles, McpScope, McpServerConfig, McpTransportConfig},
     mcp_types::McpDiscoveredPrompt,
     model_provider_presets::{
         model_add_default_custom_api_base, model_add_preset_api_base_by_choice_index,
@@ -22,9 +22,10 @@ use crate::{
 };
 
 const MCP_ADD_FIELD_NAME: usize = 0;
-const MCP_ADD_FIELD_TRANSPORT: usize = 1;
-const MCP_ADD_FIELD_ENDPOINT: usize = 2;
-const MCP_ADD_FIELD_METADATA: usize = 3;
+const MCP_ADD_FIELD_SCOPE: usize = 1;
+const MCP_ADD_FIELD_TRANSPORT: usize = 2;
+const MCP_ADD_FIELD_ENDPOINT: usize = 3;
+const MCP_ADD_FIELD_METADATA: usize = 4;
 
 const MODEL_ADD_FIELD_PROVIDER: usize = 0;
 
@@ -44,6 +45,17 @@ pub(crate) fn new_mcp_add_form() -> BottomFormView {
                     cursor: 0,
                     mask: false,
                     disabled: false,
+                },
+            },
+            BottomFormFieldView {
+                label: t!("form.mcp.field.scope.label").into_owned(),
+                help: String::new(),
+                editor: BottomFormFieldEditorView::Choice {
+                    options: vec![
+                        t!("form.mcp.field.scope.workspace").into_owned(),
+                        t!("form.mcp.field.scope.user").into_owned(),
+                    ],
+                    selected: 0,
                 },
             },
             BottomFormFieldView {
@@ -763,7 +775,7 @@ pub(crate) fn delete(form: &mut BottomFormView) {
 
 pub(crate) fn to_config(
     form: &BottomFormView,
-) -> std::result::Result<(String, McpServerConfig), String> {
+) -> std::result::Result<(String, McpScope, McpServerConfig), String> {
     let server_name = bottom_form_text_value(form, MCP_ADD_FIELD_NAME)
         .trim()
         .to_string();
@@ -773,6 +785,8 @@ pub(crate) fn to_config(
     if server_name.chars().any(char::is_whitespace) {
         return Err(t!("form.mcp.validation.server_name_whitespace").into_owned());
     }
+
+    let scope = selected_mcp_scope(form).unwrap_or(McpScope::Workspace);
 
     let endpoint = bottom_form_text_value(form, MCP_ADD_FIELD_ENDPOINT)
         .trim()
@@ -810,6 +824,7 @@ pub(crate) fn to_config(
 
     Ok((
         server_name.clone(),
+        scope,
         McpServerConfig {
             display_name: Some(server_name),
             enabled: true,
@@ -1190,6 +1205,21 @@ fn bottom_form_text_value(form: &BottomFormView, index: usize) -> &str {
     }
 }
 
+fn selected_mcp_scope(form: &BottomFormView) -> Option<McpScope> {
+    match form.fields.get(MCP_ADD_FIELD_SCOPE).map(|field| &field.editor) {
+        Some(BottomFormFieldEditorView::Choice { options, selected }) => options
+            .get((*selected).min(options.len().saturating_sub(1)))
+            .map(|value| {
+                if value.contains("用户") || value.eq_ignore_ascii_case("user") {
+                    McpScope::User
+                } else {
+                    McpScope::Workspace
+                }
+            }),
+        _ => None,
+    }
+}
+
 fn selected_transport_kind(form: &BottomFormView) -> Option<McpAddTransportKind> {
     match form
         .fields
@@ -1361,11 +1391,11 @@ mod tests {
         let form = new_mcp_add_form();
 
         assert_eq!(
-            form.fields[2].label,
+            form.fields[3].label,
             t!("form.mcp.field.endpoint.command.label")
         );
         assert_eq!(
-            form.fields[3].label,
+            form.fields[4].label,
             t!("form.mcp.field.metadata.env.label")
         );
     }

@@ -14,7 +14,10 @@ import type {
 } from './types.js';
 
 const ENV_PLACEHOLDER_PREFIX = '${env:';
-const DEFAULT_MCP_CONFIG_FILE = 'mcp.json';
+export const MCP_CONFIG_FILE_NAME = 'mcp.json';
+const DEFAULT_MCP_CONFIG_FILE = MCP_CONFIG_FILE_NAME;
+export const SPIRIT_DIR_NAME = '.spirit';
+export type McpConfigScope = 'user' | 'workspace';
 
 export const DEFAULT_MCP_CLIENT_INFO: McpClientInfo = {
   name: '@spirit-agent/agent-core',
@@ -23,6 +26,70 @@ export const DEFAULT_MCP_CLIENT_INFO: McpClientInfo = {
 
 export function mcpUserConfigPath(dataDir: string): string {
   return join(dataDir, DEFAULT_MCP_CONFIG_FILE);
+}
+
+export function mcpWorkspaceConfigPath(workspaceRoot: string): string {
+  return join(workspaceRoot, SPIRIT_DIR_NAME, DEFAULT_MCP_CONFIG_FILE);
+}
+
+export function spiritAgentDataDir(): string {
+  const appData = process.env.APPDATA?.trim();
+  if (appData) {
+    return join(appData, 'SpiritAgent');
+  }
+
+  const userProfile = process.env.USERPROFILE?.trim();
+  if (userProfile) {
+    return join(userProfile, '.spirit-agent');
+  }
+
+  return '.spirit-agent';
+}
+
+export function mergeMcpConfigFiles(
+  user: McpConfigFile,
+  workspace: McpConfigFile,
+): McpConfigFile {
+  return {
+    servers: { ...user.servers, ...workspace.servers },
+  };
+}
+
+export function mcpServerScopesFromFiles(
+  user: McpConfigFile,
+  workspace: McpConfigFile,
+): Record<string, McpConfigScope> {
+  const scopes: Record<string, McpConfigScope> = {};
+  for (const name of Object.keys(user.servers)) {
+    scopes[name] = 'user';
+  }
+  for (const name of Object.keys(workspace.servers)) {
+    scopes[name] = 'workspace';
+  }
+  return scopes;
+}
+
+export function findMcpServerNameConflict(
+  user: McpConfigFile,
+  workspace: McpConfigFile,
+  name: string,
+): McpConfigScope | undefined {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const inUser = trimmed in user.servers;
+  const inWorkspace = trimmed in workspace.servers;
+  if (inUser && inWorkspace) {
+    return 'user';
+  }
+  if (inUser) {
+    return 'user';
+  }
+  if (inWorkspace) {
+    return 'workspace';
+  }
+  return undefined;
 }
 
 export function defaultMcpCapabilityToggles(): McpCapabilityToggles {

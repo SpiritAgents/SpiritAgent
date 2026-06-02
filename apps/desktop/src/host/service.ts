@@ -230,11 +230,11 @@ import {
   toDesktopMarketplacePreparedInstall,
 } from './extensions.js';
 import {
+  addMcpServerToDisk,
   buildMcpServerConfigFromRequest,
+  deleteMcpServerFromDisk,
   emptyMcpStatusSnapshot,
   listDesktopMcpServersFromDisk,
-  loadMcpConfigFileFromDisk,
-  saveMcpConfigFileToDisk,
 } from './mcp-config.js';
 import {
   archiveBeforeLastUser,
@@ -1092,6 +1092,7 @@ class DesktopHostService {
   async addMcpServer(request: AddMcpServerRequest): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized();
+      const state = this.requireState();
 
       const name = request.name.trim();
       if (!name) {
@@ -1106,13 +1107,10 @@ class DesktopHostService {
         throw new Error(request.transportType === 'http' ? i18n.t('error.urlRequired') : i18n.t('error.commandRequired'));
       }
 
-      const configFile = loadMcpConfigFileFromDisk();
-      if (configFile.servers[name]) {
-        throw new Error(i18n.t('error.mcpExists', { name }));
-      }
-
-      configFile.servers[name] = buildMcpServerConfigFromRequest(request);
-      await saveMcpConfigFileToDisk(configFile);
+      const scope = request.scope ?? 'workspace';
+      const serverConfig = buildMcpServerConfigFromRequest({ ...request, scope });
+      await addMcpServerToDisk(scope, state.workspaceRoot, name, serverConfig);
+      this.sharedMcpServiceForWorkspace(state.workspaceRoot).startBackgroundRefreshInBackground(true);
       this.toolExecutor?.startMcpBackgroundRefresh();
       return this.buildSnapshot();
     });
@@ -1121,19 +1119,16 @@ class DesktopHostService {
   async deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized();
+      const state = this.requireState();
 
       const name = request.name.trim();
       if (!name) {
         throw new Error(i18n.t('error.mcpNameRequired'));
       }
 
-      const configFile = loadMcpConfigFileFromDisk();
-      if (!configFile.servers[name]) {
-        throw new Error(i18n.t('error.mcpNotFound', { name }));
-      }
-
-      delete configFile.servers[name];
-      await saveMcpConfigFileToDisk(configFile);
+      const scope = request.scope ?? 'user';
+      await deleteMcpServerFromDisk(scope, state.workspaceRoot, name);
+      this.sharedMcpServiceForWorkspace(state.workspaceRoot).startBackgroundRefreshInBackground(true);
       this.toolExecutor?.startMcpBackgroundRefresh();
       return this.buildSnapshot();
     });
@@ -3233,7 +3228,7 @@ class DesktopHostService {
         this.activeBundle().toolExecutor?.mcpStatusSnapshot()
         ?? this.toolExecutor?.mcpStatusSnapshot()
         ?? emptyMcpStatusSnapshot(),
-      mcpServers: listDesktopMcpServersFromDisk(),
+      mcpServers: listDesktopMcpServersFromDisk(state.workspaceRoot),
       conversation: {
         revision: activeBundle.conversationRevision,
         messages: conversationMessages,

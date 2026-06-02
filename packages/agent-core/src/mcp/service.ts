@@ -9,6 +9,11 @@ import {
   parseMcpConfigFile,
   resolveEnvRecord,
   mcpUserConfigPath,
+  mcpWorkspaceConfigPath,
+  mergeMcpConfigFiles,
+  mcpServerScopesFromFiles,
+  spiritAgentDataDir,
+  type McpConfigScope,
   normalizeMcpServerConfig,
 } from './config.js';
 import { SdkMcpConnection } from './client.js';
@@ -73,6 +78,7 @@ export interface McpToolRequest {
 interface LoadedMcpConfig {
   raw: McpConfigFile;
   resolved: Record<string, ResolvedMcpServerConfig>;
+  serverScopes: Record<string, McpConfigScope>;
 }
 
 type EnvLookupStore = Map<string, string>;
@@ -82,6 +88,7 @@ export class McpService {
   private loadedConfigStore: LoadedMcpConfig = {
     raw: { servers: {} },
     resolved: {},
+    serverScopes: {},
   };
   private configDigestStore = mcpConfigDigest({ servers: {} });
   private toolCatalogStore: McpToolCatalog = {
@@ -151,7 +158,8 @@ export class McpService {
 
   async refreshConfig(): Promise<void> {
     try {
-      const raw = await loadMcpConfigFile(resolveMcpConfigPath());
+      const { merged, serverScopes } = await loadMergedMcpConfigForWorkspace(this.workspaceRootStore);
+      const raw = merged;
       const nextDigest = mcpConfigDigest(raw);
       const configChanged = nextDigest !== this.configDigestStore;
       if (configChanged) {
@@ -173,6 +181,7 @@ export class McpService {
       this.loadedConfigStore = {
         raw,
         resolved: Object.fromEntries(resolvedEntries),
+        serverScopes,
       };
       if (configChanged) {
         this.configDigestStore = nextDigest;
@@ -292,7 +301,12 @@ export class McpService {
     }
 
     return Object.entries(this.loadedConfigStore.raw.servers).map(([name, server]) =>
-      buildManagedServerForRust(name, server, this.loadedConfigStore.resolved[name]),
+      buildManagedServerForRust(
+        name,
+        server,
+        this.loadedConfigStore.resolved[name],
+        this.loadedConfigStore.serverScopes[name],
+      ),
     );
   }
 
@@ -672,11 +686,13 @@ export class McpService {
 
   private primeRegistryFromDisk(): void {
     try {
-      const raw = loadMcpConfigFileSync(resolveMcpConfigPath());
+      const { merged, serverScopes } = loadMergedMcpConfigForWorkspaceSync(this.workspaceRootStore);
+      const raw = merged;
       const nextDigest = mcpConfigDigest(raw);
       this.loadedConfigStore = {
         raw,
         resolved: {},
+        serverScopes,
       };
       if (nextDigest !== this.configDigestStore) {
         this.registry.replaceConfig(raw);
@@ -687,6 +703,7 @@ export class McpService {
       this.loadedConfigStore = {
         raw: { servers: {} },
         resolved: {},
+        serverScopes: {},
       };
       this.registry.replaceConfig({ servers: {} });
       this.configDigestStore = mcpConfigDigest({ servers: {} });
@@ -699,22 +716,37 @@ function mcpConfigDigest(config: McpConfigFile): string {
   return createHash('sha1').update(JSON.stringify(config)).digest('hex');
 }
 
-function resolveMcpConfigPath(): string {
-  return mcpUserConfigPath(spiritAgentDataDir());
+function resolveMcpConfigPaths(workspaceRoot: string): { userPath: string; workspacePath: string } {
+  return {
+    userPath: mcpUserConfigPath(spiritAgentDataDir()),
+    workspacePath: mcpWorkspaceConfigPath(workspaceRoot),
+  };
 }
 
-function spiritAgentDataDir(): string {
-  const appData = process.env.APPDATA?.trim();
-  if (appData) {
-    return join(appData, 'SpiritAgent');
-  }
+async function loadMergedMcpConfigForWorkspace(workspaceRoot: string): Promise<{
+  merged: McpConfigFile;
+  serverScopes: Record<string, McpConfigScope>;
+}> {
+  const { userPath, workspacePath } = resolveMcpConfigPaths(workspaceRoot);
+  const user = await loadMcpConfigFile(userPath);
+  const workspace = await loadMcpConfigFile(workspacePath);
+  return {
+    merged: mergeMcpConfigFiles(user, workspace),
+    serverScopes: mcpServerScopesFromFiles(user, workspace),
+  };
+}
 
-  const userProfile = process.env.USERPROFILE?.trim();
-  if (userProfile) {
-    return join(userProfile, '.spirit-agent');
-  }
-
-  return '.spirit-agent';
+function loadMergedMcpConfigForWorkspaceSync(workspaceRoot: string): {
+  merged: McpConfigFile;
+  serverScopes: Record<string, McpConfigScope>;
+} {
+  const { userPath, workspacePath } = resolveMcpConfigPaths(workspaceRoot);
+  const user = loadMcpConfigFileSync(userPath);
+  const workspace = loadMcpConfigFileSync(workspacePath);
+  return {
+    merged: mergeMcpConfigFiles(user, workspace),
+    serverScopes: mcpServerScopesFromFiles(user, workspace),
+  };
 }
 
 async function loadMcpConfigFile(path: string): Promise<McpConfigFile> {
@@ -871,6 +903,7 @@ function buildManagedServerForRust(
   name: string,
   server: McpServerConfig,
   resolved: ResolvedMcpServerConfig | undefined,
+  scope: McpConfigScope | undefined,
 ): JsonValue {
   const enabled = server.enabled ?? true;
   const normalizedName = resolved?.name ?? (name.trim() || name);
@@ -882,6 +915,7 @@ function buildManagedServerForRust(
     capabilities: capabilityTogglesFromConfig(server.capabilities),
     transport: transportConfigForRust(server.transport),
     state: enabled ? 'ready' : 'disabled',
+    ...(scope ? { scope } : {}),
   };
 }
 

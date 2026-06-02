@@ -10,6 +10,14 @@ use crate::logging;
 
 const MCP_CONFIG_FILE_NAME: &str = "mcp.json";
 const APP_DATA_DIR_NAME: &str = "SpiritAgent";
+const SPIRIT_DIR_NAME: &str = ".spirit";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum McpScope {
+    User,
+    Workspace,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct McpConfigFile {
@@ -124,7 +132,8 @@ impl McpTransportConfig {
 
 #[derive(Debug, Clone)]
 pub struct LoadedMcpConfig {
-    pub path: PathBuf,
+    pub user_path: PathBuf,
+    pub workspace_path: PathBuf,
     pub config: McpConfigFile,
 }
 
@@ -145,14 +154,65 @@ pub fn user_mcp_config_path() -> PathBuf {
 }
 
 pub fn workspace_mcp_config_path(workspace_root: &Path) -> PathBuf {
-    let _ = workspace_root;
-    user_mcp_config_path()
+    workspace_root.join(SPIRIT_DIR_NAME).join(MCP_CONFIG_FILE_NAME)
+}
+
+pub fn mcp_config_path_for_scope(scope: McpScope, workspace_root: &Path) -> PathBuf {
+    match scope {
+        McpScope::User => user_mcp_config_path(),
+        McpScope::Workspace => workspace_mcp_config_path(workspace_root),
+    }
+}
+
+fn merge_mcp_config_files(user: &McpConfigFile, workspace: &McpConfigFile) -> McpConfigFile {
+    let mut servers = user.servers.clone();
+    servers.extend(workspace.servers.clone());
+    McpConfigFile { servers }
 }
 
 pub fn load_mcp_config(workspace_root: &Path) -> Result<LoadedMcpConfig> {
-    let path = workspace_mcp_config_path(workspace_root);
-    let config = load_mcp_config_file(&path)?.unwrap_or_default();
-    Ok(LoadedMcpConfig { path, config })
+    let user_path = user_mcp_config_path();
+    let workspace_path = workspace_mcp_config_path(workspace_root);
+    let user = load_mcp_config_file(&user_path)?.unwrap_or_default();
+    let workspace = load_mcp_config_file(&workspace_path)?.unwrap_or_default();
+    let config = merge_mcp_config_files(&user, &workspace);
+    Ok(LoadedMcpConfig {
+        user_path,
+        workspace_path,
+        config,
+    })
+}
+
+pub fn assert_mcp_server_name_available(workspace_root: &Path, name: &str) -> Result<()> {
+    let server_name = name.trim();
+    if server_name.is_empty() {
+        return Err(anyhow!("MCP server 名称不能为空"));
+    }
+
+    let user_path = user_mcp_config_path();
+    let workspace_path = workspace_mcp_config_path(workspace_root);
+    let user = load_mcp_config_file(&user_path)?.unwrap_or_default();
+    let workspace = load_mcp_config_file(&workspace_path)?.unwrap_or_default();
+    if user.servers.contains_key(server_name) || workspace.servers.contains_key(server_name) {
+        return Err(anyhow!("MCP server 已存在: {}", server_name));
+    }
+    Ok(())
+}
+
+fn resolve_mcp_server_scope(workspace_root: &Path, name: &str) -> Result<(McpScope, PathBuf)> {
+    let user_path = user_mcp_config_path();
+    let workspace_path = workspace_mcp_config_path(workspace_root);
+    if let Some(config) = load_mcp_config_file(&user_path)? {
+        if config.servers.contains_key(name) {
+            return Ok((McpScope::User, user_path));
+        }
+    }
+    if let Some(config) = load_mcp_config_file(&workspace_path)? {
+        if config.servers.contains_key(name) {
+            return Ok((McpScope::Workspace, workspace_path));
+        }
+    }
+    Err(anyhow!("未找到 MCP server: {}", name))
 }
 
 pub fn save_mcp_config(path: &Path, config: &McpConfigFile, overwrite: bool) -> Result<()> {
@@ -180,6 +240,7 @@ pub fn example_github_mcp_config() -> McpConfigFile {
 
 pub fn add_mcp_server(
     workspace_root: &Path,
+    scope: McpScope,
     name: &str,
     server_config: McpServerConfig,
 ) -> Result<PathBuf> {
@@ -188,11 +249,10 @@ pub fn add_mcp_server(
         return Err(anyhow!("MCP server 名称不能为空"));
     }
 
-    let LoadedMcpConfig { path, mut config } = load_mcp_config(workspace_root)?;
-    if config.servers.contains_key(server_name) {
-        return Err(anyhow!("MCP server 已存在: {}", server_name));
-    }
+    assert_mcp_server_name_available(workspace_root, server_name)?;
 
+    let path = mcp_config_path_for_scope(scope, workspace_root);
+    let mut config = load_mcp_config_file(&path)?.unwrap_or_default();
     config
         .servers
         .insert(server_name.to_string(), server_config);
@@ -286,7 +346,9 @@ fn mutate_existing_server(
     name: &str,
     mutator: impl FnOnce(&mut McpServerConfig),
 ) -> Result<PathBuf> {
-    let LoadedMcpConfig { path, mut config } = load_mcp_config(workspace_root)?;
+    let (_scope, path) = resolve_mcp_server_scope(workspace_root, name)?;
+    let mut config = load_mcp_config_file(&path)?
+        .ok_or_else(|| anyhow!("未找到 MCP server: {}", name))?;
     let server = config
         .servers
         .get_mut(name)
@@ -416,11 +478,26 @@ mod tests {
     }
 
     #[test]
-    fn user_config_path_lives_under_spirit_agent_data_dir() {
+    fn workspace_config_path_lives_under_spirit_dir() {
         let workspace_root = PathBuf::from("C:/workspace/spirit-agent");
         let path = workspace_mcp_config_path(&workspace_root);
 
-        assert_eq!(path, spirit_agent_data_dir().join(MCP_CONFIG_FILE_NAME));
+        assert_eq!(
+            path,
+            workspace_root.join(SPIRIT_DIR_NAME).join(MCP_CONFIG_FILE_NAME)
+        );
+    }
+
+    #[test]
+    fn merge_mcp_config_combines_user_and_workspace_servers() {
+        let mut user = McpConfigFile::default();
+        user.servers.insert("user-server".to_string(), github_preset_config());
+        let mut workspace = McpConfigFile::default();
+        workspace.servers.insert("workspace-server".to_string(), github_preset_config());
+
+        let merged = merge_mcp_config_files(&user, &workspace);
+        assert!(merged.servers.contains_key("user-server"));
+        assert!(merged.servers.contains_key("workspace-server"));
     }
 
     fn unique_test_workspace(tag: &str) -> PathBuf {

@@ -4,7 +4,9 @@ import path from 'node:path';
 
 import i18n from '../lib/i18n-host.js';
 import {
+  findMcpServerNameConflict,
   mcpUserConfigPath,
+  mcpWorkspaceConfigPath,
   normalizeCapabilityToggles,
   normalizeMcpServerConfig,
   parseMcpConfigFile,
@@ -15,6 +17,7 @@ import {
 
 import type {
   AddMcpServerRequest,
+  DesktopMcpScope,
   DesktopMcpServerListItem,
   DesktopSnapshot,
 } from '../types.js';
@@ -34,12 +37,21 @@ export function emptyMcpStatusSnapshot(): DesktopSnapshot['mcpStatus'] {
   };
 }
 
-export function desktopMcpConfigPath(): string {
+export function desktopUserMcpConfigPath(): string {
   return mcpUserConfigPath(spiritAgentDataDir());
 }
 
-export function loadMcpConfigFileFromDisk(): McpConfigFile {
-  const configPath = desktopMcpConfigPath();
+export function desktopWorkspaceMcpConfigPath(workspaceRoot: string): string {
+  return mcpWorkspaceConfigPath(workspaceRoot);
+}
+
+export function mcpConfigPathForScope(scope: DesktopMcpScope, workspaceRoot: string): string {
+  return scope === 'workspace'
+    ? desktopWorkspaceMcpConfigPath(workspaceRoot)
+    : desktopUserMcpConfigPath();
+}
+
+export function loadMcpConfigFileAt(configPath: string): McpConfigFile {
   if (!existsSync(configPath)) {
     return { servers: {} };
   }
@@ -48,57 +60,118 @@ export function loadMcpConfigFileFromDisk(): McpConfigFile {
   return parseMcpConfigFile(JSON.parse(content) as unknown);
 }
 
-export async function saveMcpConfigFileToDisk(config: McpConfigFile): Promise<void> {
-  const configPath = desktopMcpConfigPath();
+export async function saveMcpConfigFileAt(configPath: string, config: McpConfigFile): Promise<void> {
   await mkdir(path.dirname(configPath), { recursive: true });
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
 }
 
-export function listDesktopMcpServersFromDisk(): DesktopMcpServerListItem[] {
+function mapServerListItem(
+  name: string,
+  server: McpServerConfig,
+  scope: DesktopMcpScope,
+): DesktopMcpServerListItem {
+  const normalized = normalizeMcpServerConfig(name, server);
+  switch (normalized.transport.type) {
+    case 'stdio':
+      return {
+        name: normalized.name,
+        displayName: normalized.displayName,
+        enabled: normalized.enabled,
+        capabilities: normalized.capabilities,
+        scope,
+        transport: {
+          type: 'stdio',
+          command: normalized.transport.command,
+          args: normalized.transport.args,
+          metadata: normalized.transport.env,
+          ...(normalized.transport.cwd ? { cwd: normalized.transport.cwd } : {}),
+          ...(normalized.transport.timeoutMs !== undefined
+            ? { timeoutMs: normalized.transport.timeoutMs }
+            : {}),
+          summary: summarizeTransport(normalized.transport),
+        },
+      };
+    case 'http':
+      return {
+        name: normalized.name,
+        displayName: normalized.displayName,
+        enabled: normalized.enabled,
+        capabilities: normalized.capabilities,
+        scope,
+        transport: {
+          type: 'http',
+          url: normalized.transport.url,
+          metadata: normalized.transport.headers,
+          ...(normalized.transport.timeoutMs !== undefined
+            ? { timeoutMs: normalized.transport.timeoutMs }
+            : {}),
+          summary: summarizeTransport(normalized.transport),
+        },
+      };
+  }
+}
+
+export function listDesktopMcpServersFromDisk(workspaceRoot: string): DesktopMcpServerListItem[] {
   try {
-    const configFile = loadMcpConfigFileFromDisk();
-    return Object.entries(configFile.servers).map(([name, server]) => {
-      const normalized = normalizeMcpServerConfig(name, server);
-      switch (normalized.transport.type) {
-        case 'stdio':
-          return {
-            name: normalized.name,
-            displayName: normalized.displayName,
-            enabled: normalized.enabled,
-            capabilities: normalized.capabilities,
-            transport: {
-              type: 'stdio',
-              command: normalized.transport.command,
-              args: normalized.transport.args,
-              metadata: normalized.transport.env,
-              ...(normalized.transport.cwd ? { cwd: normalized.transport.cwd } : {}),
-              ...(normalized.transport.timeoutMs !== undefined
-                ? { timeoutMs: normalized.transport.timeoutMs }
-                : {}),
-              summary: summarizeTransport(normalized.transport),
-            },
-          };
-        case 'http':
-          return {
-            name: normalized.name,
-            displayName: normalized.displayName,
-            enabled: normalized.enabled,
-            capabilities: normalized.capabilities,
-            transport: {
-              type: 'http',
-              url: normalized.transport.url,
-              metadata: normalized.transport.headers,
-              ...(normalized.transport.timeoutMs !== undefined
-                ? { timeoutMs: normalized.transport.timeoutMs }
-                : {}),
-              summary: summarizeTransport(normalized.transport),
-            },
-          };
-      }
-    });
+    const userConfig = loadMcpConfigFileAt(desktopUserMcpConfigPath());
+    const workspaceConfig = loadMcpConfigFileAt(desktopWorkspaceMcpConfigPath(workspaceRoot));
+    const userItems = Object.entries(userConfig.servers).map(([name, server]) =>
+      mapServerListItem(name, server, 'user'),
+    );
+    const workspaceItems = Object.entries(workspaceConfig.servers).map(([name, server]) =>
+      mapServerListItem(name, server, 'workspace'),
+    );
+    return [...userItems, ...workspaceItems];
   } catch {
     return [];
   }
+}
+
+export function assertMcpServerNameAvailable(workspaceRoot: string, name: string): void {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error(i18n.t('error.mcpNameRequired'));
+  }
+
+  const userConfig = loadMcpConfigFileAt(desktopUserMcpConfigPath());
+  const workspaceConfig = loadMcpConfigFileAt(desktopWorkspaceMcpConfigPath(workspaceRoot));
+  if (findMcpServerNameConflict(userConfig, workspaceConfig, trimmed)) {
+    throw new Error(i18n.t('error.mcpExists', { name: trimmed }));
+  }
+}
+
+export async function addMcpServerToDisk(
+  scope: DesktopMcpScope,
+  workspaceRoot: string,
+  name: string,
+  config: McpServerConfig,
+): Promise<string> {
+  assertMcpServerNameAvailable(workspaceRoot, name);
+  const configPath = mcpConfigPathForScope(scope, workspaceRoot);
+  const configFile = loadMcpConfigFileAt(configPath);
+  configFile.servers[name.trim()] = config;
+  await saveMcpConfigFileAt(configPath, configFile);
+  return configPath;
+}
+
+export async function deleteMcpServerFromDisk(
+  scope: DesktopMcpScope,
+  workspaceRoot: string,
+  name: string,
+): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error(i18n.t('error.mcpNameRequired'));
+  }
+
+  const configPath = mcpConfigPathForScope(scope, workspaceRoot);
+  const configFile = loadMcpConfigFileAt(configPath);
+  if (!configFile.servers[trimmed]) {
+    throw new Error(i18n.t('error.mcpNotFound', { name: trimmed }));
+  }
+
+  delete configFile.servers[trimmed];
+  await saveMcpConfigFileAt(configPath, configFile);
 }
 
 export function buildMcpServerConfigFromRequest(request: AddMcpServerRequest): McpServerConfig {

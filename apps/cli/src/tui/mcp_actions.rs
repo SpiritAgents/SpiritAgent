@@ -4,7 +4,7 @@ impl TuiShell {
     pub(super) fn push_mcp_usage(&mut self) {
         self.messages.push(ChatMessage {
             role: MessageRole::Agent,
-            content: "用法:\n- /mcp\n- /mcp list\n- /mcp add\n- /mcp inspect [server]\n- /mcp tools [server]\n- /mcp resources [server]\n- /mcp prompts [server]\n- /<server>_<prompt> [args_json | user_message]\n\n说明:\n- `/mcp add` 会打开底部表单，支持填写 STDIO 或 HTTP server；Enter 保存，Esc 取消。\n- MCP prompt 会作为一级 slash 命令暴露，例如 `/github_issue_to_fix_workflow`。若尾部是合法 JSON object，会直接作为 prompt 参数；其他文本会作为附加用户消息发给 LLM。\n- 省略尾部且 prompt 定义了参数时，会自动打开参数表单；表单最后一栏可填写附加说明。\n- `/mcp tool call`、`/mcp resource attach`、`/mcp resource clear` 仍保留为调试入口，但不作为主交互路径。".to_string(),
+            content: "用法:\n- /mcp\n- /mcp list\n- /mcp add\n- /mcp inspect [server]\n- /mcp tools [server]\n- /mcp resources [server]\n- /mcp prompts [server]\n- /<server>_<prompt> [args_json | user_message]\n\n说明:\n- `/mcp add` 会打开底部表单，支持填写保存位置（用户 / 工作区 `.spirit`）、STDIO 或 HTTP server；Enter 保存，Esc 取消。\n- MCP prompt 会作为一级 slash 命令暴露，例如 `/github_issue_to_fix_workflow`。若尾部是合法 JSON object，会直接作为 prompt 参数；其他文本会作为附加用户消息发给 LLM。\n- 省略尾部且 prompt 定义了参数时，会自动打开参数表单；表单最后一栏可填写附加说明。\n- `/mcp tool call`、`/mcp resource attach`、`/mcp resource clear` 仍保留为调试入口，但不作为主交互路径。".to_string(),
             tool_block: None,
         });
     }
