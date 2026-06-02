@@ -19,6 +19,7 @@ import {
   isLogSessionSlashInput,
   matchSkillSlashInput,
 } from "@/lib/skill-slash";
+import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
 import type {
   AddModelRequest,
   AddMcpServerRequest,
@@ -1763,6 +1764,16 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot]);
 
+  useEffect(() => {
+    const bridge = window.spiritDesktop;
+    if (!bridge?.subscribeApprovalFromNotification) {
+      return;
+    }
+    return bridge.subscribeApprovalFromNotification(({ decision }) => {
+      void submitApproval({ kind: decision });
+    });
+  }, [submitApproval]);
+
   const submitQuestions = useCallback(async () => {
     if (!api || !pendingQuestions) {
       return;
@@ -1926,6 +1937,26 @@ export function useDesktopRuntime() {
           : i18n.t('common.connectingHost'),
     };
   }, [hostError, hostReady, kind, snapshot]);
+
+  const refreshFromHostPoll = useCallback(async () => {
+    if (!api) {
+      return;
+    }
+    try {
+      const next = await api.poll();
+      applySnapshot(next);
+      void refreshSessions();
+    } catch {
+      // ignore poll errors from notification refresh
+    }
+  }, [api, applySnapshot, refreshSessions]);
+
+  useDesktopSystemNotifications({
+    apiKind: kind,
+    snapshot,
+    sessions,
+    onNotifyRefresh: refreshFromHostPoll,
+  });
 
   return {
     apiReady: hostReady,

@@ -18,6 +18,28 @@ import {
   type WebContents,
 } from 'electron';
 
+import {
+  registerDesktopNotifications,
+  registerWindowsToastActivationHandler,
+  showDesktopNotification,
+  type DesktopNotificationPayload,
+} from './desktop-notifications.js';
+import {
+  registerDesktopAttention,
+  setDesktopAttentionPending,
+  refreshDesktopAttention,
+} from './desktop-attention.js';
+import {
+  bindSpiritNotificationProtocolHandlers,
+  handleSpiritNotificationProtocolArgv,
+  installSpiritNotificationProtocolRouting,
+  registerSpiritNotificationProtocolClient,
+} from './notification-protocol.js';
+import {
+  getAppAwayFromUser,
+  registerWindowPresence,
+  setRendererVisibility,
+} from './window-presence.js';
 import { openSystemTerminalInDirectory } from './open-system-terminal.js';
 import { WorkspacePtyManager } from './workspace-pty.js';
 import { isAllowedExternalUrl, getCachedLocalListeningEndpoints, getScanningPromise, startLocalListenersScan } from './local-listeners.js';
@@ -25,6 +47,31 @@ import { isAllowedExternalUrl, getCachedLocalListeningEndpoints, getScanningProm
 import type { DesktopSnapshot } from '../src/types.js';
 
 const spiritWebviewHooksAttached = new WeakSet<WebContents>();
+
+registerSpiritNotificationProtocolClient();
+installSpiritNotificationProtocolRouting();
+
+const gotSpiritSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSpiritSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    handleSpiritNotificationProtocolArgv(argv);
+  });
+}
+
+function focusSpiritDesktopWindows(): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) {
+      continue;
+    }
+    if (window.isMinimized()) {
+      window.restore();
+    }
+    window.show();
+    window.focus();
+  }
+}
 
 function sendBrowserOpenUrlToHost(guestContents: WebContents, url: string): void {
   if (!isAllowedExternalUrl(url)) {
@@ -199,6 +246,35 @@ async function stopDesktopWebHostIfRunning(): Promise<void> {
     return;
   }
   await desktopWebHost.stop();
+}
+
+async function handleApprovalNotificationAction(decision: 'allow' | 'deny'): Promise<void> {
+  let deliveredToRenderer = false;
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed() || window.webContents.isDestroyed()) {
+      continue;
+    }
+    window.webContents.send('desktop:approval-from-notification', { decision });
+    deliveredToRenderer = true;
+  }
+  if (deliveredToRenderer) {
+    return;
+  }
+
+  try {
+    const next = await invokeMainDesktopHostCommand('replyPendingApproval', {
+      decision: { kind: decision },
+    });
+    if (isDesktopSnapshot(next)) {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send('desktop:notify-refresh');
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[spirit-desktop] approval notification action failed:', error);
+  }
 }
 
 async function invokeMainDesktopHostCommand(
@@ -526,10 +602,23 @@ async function createMainWindow(): Promise<BrowserWindow> {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
 
+  registerDesktopNotifications(window, {
+    onApprovalAction: handleApprovalNotificationAction,
+  });
+  registerDesktopAttention(window);
+  registerWindowPresence(window);
+
   return window;
 }
 
-app.whenReady().then(async () => {
+if (gotSpiritSingleInstanceLock) {
+  app.whenReady().then(async () => {
+  bindSpiritNotificationProtocolHandlers({
+    onApproval: handleApprovalNotificationAction,
+    onFocus: focusSpiritDesktopWindows,
+  });
+  handleSpiritNotificationProtocolArgv(process.argv);
+  registerWindowsToastActivationHandler();
   if (process.platform === 'win32') {
     Menu.setApplicationMenu(null);
   }
@@ -784,6 +873,38 @@ app.whenReady().then(async () => {
     });
   });
 
+  ipcMain.handle('desktop:show-notification', async (_event, payload: DesktopNotificationPayload) => {
+    if (!getAppAwayFromUser()) {
+      return false;
+    }
+    if (!payload || typeof payload.title !== 'string' || !payload.title.trim()) {
+      return false;
+    }
+    return showDesktopNotification(payload);
+  });
+
+  ipcMain.handle('desktop:get-app-away', () => getAppAwayFromUser());
+
+  ipcMain.handle('desktop:report-renderer-visibility', (_event, payload: { hidden?: boolean }) => {
+    setRendererVisibility(payload?.hidden === true);
+    return getAppAwayFromUser();
+  });
+
+  ipcMain.handle(
+    'desktop:sync-attention-pending',
+    (
+      _event,
+      payload: { needsApproval?: boolean; needsQuestions?: boolean; needsTaskComplete?: boolean },
+    ) => {
+      setDesktopAttentionPending({
+        needsApproval: payload?.needsApproval === true,
+        needsQuestions: payload?.needsQuestions === true,
+        needsTaskComplete: payload?.needsTaskComplete === true,
+      });
+      refreshDesktopAttention(getAppAwayFromUser());
+    },
+  );
+
   await syncInitialDesktopWebHost();
   await createMainWindow();
 
@@ -792,7 +913,8 @@ app.whenReady().then(async () => {
       await createMainWindow();
     }
   });
-});
+  });
+}
 
 app.on('before-quit', (event) => {
   unsubscribeDesktopDreamUpdates?.();
