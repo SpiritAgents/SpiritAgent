@@ -5,6 +5,7 @@ export type SkillSlashSuggestionKind =
   | 'log-session'
   | 'start-implementing'
   | 'compact'
+  | 'loop'
   | 'skill'
 
 export interface SkillSlashSuggestion {
@@ -29,6 +30,7 @@ export const CREATE_SKILL_SLASH_ALIAS = '/create-skill'
 export const LOG_SESSION_SLASH_ALIAS = '/log-session'
 export const START_IMPLEMENTING_SLASH_ALIAS = '/start-implementing'
 export const COMPACT_SLASH_ALIAS = '/compact'
+export const LOOP_SLASH_ALIAS = '/loop'
 
 const STATIC_SLASH_SUGGESTIONS: readonly SkillSlashSuggestion[] = [
   {
@@ -58,6 +60,13 @@ const STATIC_SLASH_SUGGESTIONS: readonly SkillSlashSuggestion[] = [
     name: 'compact',
     descriptionKey: 'slash.compact',
     kind: 'compact',
+  },
+  {
+    id: 'command:loop',
+    alias: LOOP_SLASH_ALIAS,
+    name: 'loop',
+    descriptionKey: 'slash.loop',
+    kind: 'loop',
   },
 ] as const
 

@@ -149,6 +149,7 @@ import {
   CREATE_SKILL_SLASH_ALIAS,
   currentSkillSlashQuery,
   START_IMPLEMENTING_SLASH_ALIAS,
+  type SkillSlashSuggestion,
 } from "@/lib/skill-slash";
 import {
   desktopNativeThemeForPreference,
@@ -647,7 +648,7 @@ type ComposerSurfaceProps = {
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
   onPlanModeChange(planMode: boolean): void;
-  onLoopEnabledChange(enabled: boolean): void;
+  onLoopEnabledChange?(enabled: boolean): void;
   richInputRef?: React.RefObject<ComposerRichInputHandle | null>;
   onKeyDown?(event: ReactKeyboardEvent<HTMLTextAreaElement>): void;
   onSelectionChange?(selectionStart: number | null): void;
@@ -658,7 +659,6 @@ type ComposerSurfaceProps = {
   onInsertSkillTrigger?(): void;
   onRemoveLocalFileAttachment?(path: string): void;
   onPaste?(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
-  showLoopSwitch?: boolean;
   browserElementAttachments?: readonly BrowserElementAttachment[];
   onElementAttachmentsChange?(attachments: BrowserElementAttachment[]): void;
   initialSegments?: readonly RichSegment[] | null;
@@ -672,7 +672,7 @@ function ComposerSurface({
   catalogHints,
   activeModel,
   planMode,
-  loopEnabled,
+  loopEnabled = false,
   canSend,
   canAbort = false,
   busy,
@@ -694,7 +694,6 @@ function ComposerSurface({
   onInsertSkillTrigger,
   onRemoveLocalFileAttachment,
   onPaste,
-  showLoopSwitch = true,
   browserElementAttachments,
   onElementAttachmentsChange,
   initialSegments,
@@ -743,8 +742,11 @@ function ComposerSurface({
         initialSegments={initialSegments}
         placeholder={placeholder}
         readOnly={readOnly}
+        loopEnabled={loopEnabled}
+        loopChipLabel={t('composer.loopChipLabel')}
         onTextChange={onChange}
         onElementAttachmentsChange={(atts) => onElementAttachmentsChange?.(atts)}
+        onLoopEnabledChange={onLoopEnabledChange}
         onPaste={(e) => onPaste?.(e as unknown as ReactClipboardEvent<HTMLTextAreaElement>)}
         onKeyDown={(e) => {
           onKeyDown?.(e as unknown as ReactKeyboardEvent<HTMLTextAreaElement>);
@@ -805,28 +807,6 @@ function ComposerSurface({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {showLoopSwitch ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={loopEnabled}
-                disabled={readOnly}
-                className={cn(
-                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-                  instantHoverMotionClass,
-                  loopEnabled
-                    ? "bg-primary/12 text-primary hover:bg-primary/16"
-                    : "bg-transparent text-muted-foreground hover:bg-muted/50",
-                )}
-                onClick={() => onLoopEnabledChange(!loopEnabled)}
-                title={loopEnabled ? "Loop On" : "Loop Off"}
-              >
-                <span>Loop</span>
-                <span className={cn("text-[10px]", loopEnabled ? "text-primary" : "text-muted-foreground/80")}>
-                  {loopEnabled ? "On" : "Off"}
-                </span>
-              </button>
-            ) : null}
             {models.length > 0 ? (
               <DropdownMenu
                 open={modelMenuOpen}
@@ -1365,7 +1345,6 @@ function MessageCard({
             onModelReasoningEffortSelect={onModelReasoningEffortSelect}
             onPlanModeChange={onPlanModeChange}
             onLoopEnabledChange={() => {}}
-            showLoopSwitch={false}
             canSend={rewindCanSubmit}
             busy={rewindBusy}
             showInsertButton
@@ -2234,6 +2213,24 @@ export default function App() {
     });
   };
 
+  const applyLoopSlash = useCallback(() => {
+    setSlashSelectedIndex(-1);
+    void runtime.setLoopEnabled(true);
+    runtime.setComposer("");
+    composerRichInputRef.current?.insertLoopChip({ clearText: true });
+  }, [runtime]);
+
+  const applySlashSuggestionItem = useCallback(
+    (suggestion: SkillSlashSuggestion) => {
+      if (suggestion.kind === "loop") {
+        applyLoopSlash();
+        return;
+      }
+      applySlashSuggestion(`${suggestion.alias} `);
+    },
+    [applyLoopSlash],
+  );
+
   const applyFileReferenceSuggestion = (path: string) => {
     const query = fileReferenceSuggestions?.query;
     if (!query) {
@@ -2560,7 +2557,7 @@ export default function App() {
       event.preventDefault();
       const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
       if (selected) {
-        applySlashSuggestion(`${selected.alias} `);
+        applySlashSuggestionItem(selected);
       }
       return;
     }
@@ -2569,7 +2566,7 @@ export default function App() {
       event.preventDefault();
       const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
       if (selected) {
-        applySlashSuggestion(`${selected.alias} `);
+        applySlashSuggestionItem(selected);
       }
     }
   };
@@ -3197,9 +3194,7 @@ export default function App() {
                           suggestions={slashSuggestions}
                           selectedIndex={slashSelectedIndex}
                           onSelectIndex={setSlashSelectedIndex}
-                          onApplySuggestion={(suggestion) => {
-                            applySlashSuggestion(`${suggestion.alias} `);
-                          }}
+                          onApplySuggestion={applySlashSuggestionItem}
                         />
                       </div>
                     </div>

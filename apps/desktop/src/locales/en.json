@@ -449,7 +449,8 @@
     "approvalBypass": "Bypass Approval",
     "approvalLevel": "Approval Level",
     "workLocation": "Work Location",
-    "removeAttachment": "Remove {{name}}"
+    "removeAttachment": "Remove {{name}}",
+    "loopChipLabel": "Loop"
   },
   "error": {
     "runtimeBusy": "A response or approval is already being processed. Please wait.",
@@ -635,6 +636,7 @@
     "logSession": "Export current session llm_history and full API request traces and open automatically",
     "startImplementing": "Read Spirit-managed plan.md and start implementing directly",
     "compact": "Proactively compress current session context history",
+    "loop": "Enable autonomous loop until finish_task or remove the chip with Backspace",
     "activateSkillPrompt": "Please handle the current task according to skill \"{{skillName}}\"."
   }
 }

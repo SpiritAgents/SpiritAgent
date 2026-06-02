@@ -16,8 +16,13 @@ import { caretAtEnd, caretToPlainTextOffset } from "@/lib/composer-segment-model
 import {
   domToSegments,
   emptySegments,
+  ensureLoopPinned,
+  hasLoopSegment,
+  insertLoopSegment,
   insertSegmentAtCaret,
+  isCaretAtLoopRemovalPoint,
   mergeAdjacentTextSegments,
+  removeLoopSegment,
   renderSegmentsToElement,
   segmentsEqual,
   segmentsToAttachments,
@@ -45,17 +50,27 @@ type Props = {
   placeholder?: string;
   readOnly?: boolean;
   className?: string;
+  loopEnabled?: boolean;
+  loopChipLabel?: string;
   onTextChange(text: string): void;
   onElementAttachmentsChange(attachments: BrowserElementAttachment[]): void;
+  onLoopEnabledChange?(enabled: boolean): void;
   onKeyDown?(e: KeyboardEvent<HTMLDivElement>): void;
   onPaste?(e: ClipboardEvent<HTMLDivElement>): void;
   /** UTF-16 offset in plain composer text (`segmentsToPlainText`), for @-file suggestions. */
   onSelectionChange?(selectionStart: number | null): void;
 };
 
+export type InsertLoopChipOptions = {
+  /** Drop existing composer text; use after /loop or post-send reset. */
+  clearText?: boolean;
+};
+
 export type ComposerRichInputHandle = {
   focus(): void;
   insertAttachment(a: BrowserElementAttachment): void;
+  insertLoopChip(options?: InsertLoopChipOptions): void;
+  removeLoopChip(): void;
   getSegments(): RichSegment[];
   setSegments(segments: RichSegment[]): void;
 };
@@ -69,8 +84,11 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       placeholder,
       readOnly,
       className,
+      loopEnabled = false,
+      loopChipLabel = "Loop",
       onTextChange,
       onElementAttachmentsChange,
+      onLoopEnabledChange,
       onKeyDown,
       onPaste,
       onSelectionChange,
@@ -80,8 +98,10 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const divRef = useRef<HTMLDivElement>(null);
     const [segments, setSegments] = useState<RichSegment[]>(() =>
       initialSegments?.length
-        ? mergeAdjacentTextSegments([...initialSegments])
-        : emptySegments(),
+        ? ensureLoopPinned(mergeAdjacentTextSegments([...initialSegments]))
+        : loopEnabled
+          ? insertLoopSegment(emptySegments()).segments
+          : emptySegments(),
     );
     const segmentsRef = useRef(segments);
     segmentsRef.current = segments;
@@ -90,11 +110,32 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const skipRenderRef = useRef(false);
     const initialSegmentsHydratedRef = useRef(Boolean(initialSegments?.length));
     const onElementAttachmentsChangeRef = useRef(onElementAttachmentsChange);
+    const onLoopEnabledChangeRef = useRef(onLoopEnabledChange);
     const onSelectionChangeRef = useRef(onSelectionChange);
+    const loopEnabledRef = useRef(loopEnabled);
+    const prevLoopEnabledRef = useRef(false);
+    const hadLoopRef = useRef(hasLoopSegment(segments));
 
     useEffect(() => {
-      onSelectionChangeRef.current = onSelectionChange;
-    }, [onSelectionChange]);
+      loopEnabledRef.current = loopEnabled;
+    }, [loopEnabled]);
+
+    useEffect(() => {
+      onLoopEnabledChangeRef.current = onLoopEnabledChange;
+    }, [onLoopEnabledChange]);
+
+    const syncLoopEnabledFromSegments = useCallback((next: RichSegment[]) => {
+      const hasLoop = hasLoopSegment(next);
+      if (hasLoop === hadLoopRef.current) {
+        return;
+      }
+      // Loop is host-controlled while enabled; do not turn off from transient segment/DOM drift.
+      if (!hasLoop && loopEnabledRef.current) {
+        return;
+      }
+      hadLoopRef.current = hasLoop;
+      onLoopEnabledChangeRef.current?.(hasLoop);
+    }, []);
 
     const reportSelectionChange = useCallback(() => {
       const report = onSelectionChangeRef.current;
@@ -131,8 +172,8 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     }, [onSelectionChange, reportSelectionChange]);
 
     useEffect(() => {
-      segmentsRef.current = segments;
-    }, [segments]);
+      onSelectionChangeRef.current = onSelectionChange;
+    }, [onSelectionChange]);
 
     useEffect(() => {
       onElementAttachmentsChangeRef.current = onElementAttachmentsChange;
@@ -151,17 +192,20 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       (
         next: RichSegment[],
         caret?: SegmentCaret | null,
-        options?: { notifyParent?: boolean },
+        options?: { notifyParent?: boolean; syncLoop?: boolean },
       ) => {
-        const merged = mergeAdjacentTextSegments(next);
+        const merged = ensureLoopPinned(mergeAdjacentTextSegments(next));
         segmentsRef.current = merged;
         pendingCaretRef.current = caret ?? null;
         setSegments(merged);
+        if (options?.syncLoop !== false && !loopEnabledRef.current) {
+          syncLoopEnabledFromSegments(merged);
+        }
         if (options?.notifyParent !== false) {
           notifyParents(merged);
         }
       },
-      [notifyParents],
+      [notifyParents, syncLoopEnabledFromSegments],
     );
 
     const getSegments = useCallback((): RichSegment[] => segmentsRef.current, []);
@@ -195,16 +239,63 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments],
     );
 
+    const insertLoopChip = useCallback(
+      (options?: InsertLoopChipOptions) => {
+        const div = divRef.current;
+        if (div) {
+          div.focus();
+        }
+        const base = options?.clearText ? emptySegments() : segmentsRef.current;
+        if (!options?.clearText && hasLoopSegment(base)) {
+          return;
+        }
+        const { segments: next, caret } = insertLoopSegment(base);
+        if (options?.clearText) {
+          loopEnabledRef.current = true;
+        }
+        hadLoopRef.current = true;
+        commitSegments(next, caret, { syncLoop: false });
+      },
+      [commitSegments],
+    );
+
+    const removeLoopChip = useCallback(() => {
+      if (!hasLoopSegment(segmentsRef.current)) {
+        return;
+      }
+      const next = removeLoopSegment(segmentsRef.current);
+      hadLoopRef.current = false;
+      commitSegments(next, { segmentIndex: 0, offset: 0 }, { syncLoop: false });
+      onLoopEnabledChangeRef.current?.(false);
+    }, [commitSegments, loopEnabled]);
+
     useImperativeHandle(
       ref,
       () => ({
         focus: () => divRef.current?.focus(),
         insertAttachment,
+        insertLoopChip,
+        removeLoopChip,
         getSegments,
         setSegments: (next: RichSegment[]) => applySegments(next),
       }),
-      [insertAttachment, getSegments, applySegments],
+      [insertAttachment, insertLoopChip, removeLoopChip, getSegments, applySegments],
     );
+
+    useEffect(() => {
+      const prev = prevLoopEnabledRef.current;
+      prevLoopEnabledRef.current = loopEnabled;
+      if (!loopEnabled) {
+        // Only strip chip when loop was on and is now turned off (not while host state is catching up).
+        if (prev && hasLoopSegment(segmentsRef.current)) {
+          removeLoopChip();
+        }
+        return;
+      }
+      if (!prev && !hasLoopSegment(segmentsRef.current)) {
+        insertLoopChip();
+      }
+    }, [loopEnabled, insertLoopChip, removeLoopChip]);
 
     useLayoutEffect(() => {
       if (!initialSegments?.length || initialSegmentsHydratedRef.current) {
@@ -230,16 +321,18 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         if (pendingCaretRef.current) {
           caretToDomRange(div, segments, pendingCaretRef.current);
           pendingCaretRef.current = null;
+          reportSelectionChange();
         }
         return;
       }
 
-      renderSegmentsToElement(div, segments);
+      renderSegmentsToElement(div, segments, { loopLabel: loopChipLabel });
       if (pendingCaretRef.current) {
         caretToDomRange(div, segments, pendingCaretRef.current);
         pendingCaretRef.current = null;
+        reportSelectionChange();
       }
-    }, [segments]);
+    }, [segments, loopChipLabel, reportSelectionChange]);
 
     useEffect(() => {
       if (skipExternalValueSyncRef.current) {
@@ -264,7 +357,16 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       }
 
       // Parent cleared composer after send: empty value AND no attachments prop.
-      if (!value && attachmentCount === 0 && (plain || hasElements)) {
+      if (!value && attachmentCount === 0 && (plain || hasElements || hasLoopSegment(current))) {
+        if (loopEnabled || loopEnabledRef.current) {
+          const { segments: next, caret } = insertLoopSegment(emptySegments());
+          commitSegments(next, caret, { syncLoop: false });
+          return;
+        }
+        // Keep loop-only shell while host loopEnabled catches up (e.g. /loop).
+        if (hasLoopSegment(current) && !plain && !hasElements) {
+          return;
+        }
         commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
         return;
       }
@@ -277,26 +379,56 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         segmentsRef.current = next;
         setSegments(next);
       }
-    }, [value, elementAttachments?.length, initialSegments, applySegments, commitSegments]);
+    }, [value, elementAttachments?.length, initialSegments, applySegments, commitSegments, loopEnabled]);
 
     const handleInput = useCallback(() => {
       const div = divRef.current;
       if (!div) return;
-      skipRenderRef.current = true;
       const caret = selectionToCaret(div, segmentsRef.current);
-      const next = mergeAdjacentTextSegments(domToSegments(div));
+      let next = mergeAdjacentTextSegments(domToSegments(div));
+      if (loopEnabledRef.current) {
+        next = ensureLoopPinned(next);
+        if (!hasLoopSegment(next)) {
+          const { segments: pinned, caret: pinCaret } = insertLoopSegment(next);
+          commitSegments(pinned, caret ?? pinCaret, { syncLoop: false });
+          reportSelectionChange();
+          return;
+        }
+        skipRenderRef.current = true;
+        pendingCaretRef.current = caret;
+        segmentsRef.current = next;
+        hadLoopRef.current = true;
+        setSegments(next);
+        notifyParents(next);
+        reportSelectionChange();
+        return;
+      }
+      skipRenderRef.current = true;
+      next = ensureLoopPinned(next);
       pendingCaretRef.current = caret;
       segmentsRef.current = next;
       setSegments(next);
+      syncLoopEnabledFromSegments(next);
       notifyParents(next);
       reportSelectionChange();
-    }, [notifyParents, reportSelectionChange]);
+    }, [notifyParents, reportSelectionChange, syncLoopEnabledFromSegments]);
 
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === "Backspace" && !e.defaultPrevented) {
+          const div = divRef.current;
+          if (div) {
+            const caret = selectionToCaret(div, segmentsRef.current);
+            if (caret && isCaretAtLoopRemovalPoint(segmentsRef.current, caret)) {
+              e.preventDefault();
+              removeLoopChip();
+              return;
+            }
+          }
+        }
         onKeyDown?.(e);
       },
-      [onKeyDown],
+      [onKeyDown, removeLoopChip],
     );
 
     const handleCopy = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
@@ -384,7 +516,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments, onPaste],
     );
 
-    const isEmpty = !value && !(elementAttachments?.length);
+    const isEmpty = !value && !(elementAttachments?.length) && !hasLoopSegment(segments);
 
     return (
       <div className="relative">

@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   caretToPlainTextOffset,
+  emptySegments,
   insertSegmentAtCaret,
   mergeAdjacentTextSegments,
   messageSegmentSeparator,
@@ -12,6 +13,12 @@ import {
   trimMessageTextAroundElements,
   messageContentToRichSegments,
 } from "../src/lib/composer-segment-model.ts";
+import {
+  ensureLoopPinned,
+  hasLoopSegment,
+  insertLoopSegment,
+  removeLoopSegment,
+} from "../src/lib/composer-loop-segments.ts";
 
 const sampleAttachment = {
   id: "el-1",
@@ -163,4 +170,50 @@ test("syncSegmentsFromExternalValue replaces text while keeping elements", () =>
     { kind: "text", value: "new" },
     { kind: "element", attachment: sampleAttachment },
   ]);
+});
+
+test("insertLoopSegment pins loop at index 0", () => {
+  const { segments } = insertLoopSegment([
+    { kind: "text", value: "hello" },
+  ]);
+  assert.equal(segments[0]?.kind, "loop");
+  assert.equal(segments[1]?.kind === "text" && segments[1].value, "hello");
+  assert.equal(hasLoopSegment(segments), true);
+});
+
+test("insertLoopSegment adds trailing space after loop when composer empty", () => {
+  const { segments, caret } = insertLoopSegment(emptySegments());
+  assert.deepEqual(segments, [
+    { kind: "loop" },
+    { kind: "text", value: " " },
+  ]);
+  assert.equal(caret.segmentIndex, 1);
+  assert.equal(caret.offset, 1);
+});
+
+test("ensureLoopPinned deduplicates and moves loop to front", () => {
+  const pinned = ensureLoopPinned([
+    { kind: "text", value: "tail" },
+    { kind: "loop" },
+    { kind: "loop" },
+  ]);
+  assert.equal(pinned.filter((s) => s.kind === "loop").length, 1);
+  assert.equal(pinned[0]?.kind, "loop");
+});
+
+test("segmentsToMessageText ignores loop chip", () => {
+  const message = segmentsToMessageText([
+    { kind: "loop" },
+    { kind: "text", value: "do work" },
+  ]);
+  assert.equal(message, "do work");
+});
+
+test("removeLoopSegment drops loop only", () => {
+  const next = removeLoopSegment([
+    { kind: "loop" },
+    { kind: "text", value: "keep" },
+  ]);
+  assert.equal(hasLoopSegment(next), false);
+  assert.equal(next[0]?.kind === "text" && next[0].value, "keep");
 });

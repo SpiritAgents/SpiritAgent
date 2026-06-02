@@ -5,7 +5,8 @@ export { browserElementContextText };
 
 export type RichSegment =
   | { kind: "text"; value: string }
-  | { kind: "element"; attachment: BrowserElementAttachment };
+  | { kind: "element"; attachment: BrowserElementAttachment }
+  | { kind: "loop" };
 
 export const EMPTY_TEXT_SEGMENT: RichSegment = { kind: "text", value: "" };
 
@@ -64,7 +65,7 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
 }
 
 export function segmentsToMessageText(segs: RichSegment[]): string {
-  const merged = mergeAdjacentTextSegments(segs);
+  const merged = mergeAdjacentTextSegments(segs).filter((s) => s.kind !== "loop");
   let out = "";
   for (let i = 0; i < merged.length; i++) {
     const seg = merged[i]!;
@@ -108,32 +109,43 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
     if (seg.kind === "element" && other.kind === "element") {
       return seg.attachment.id === other.attachment.id;
     }
+    if (seg.kind === "loop" && other.kind === "loop") {
+      return true;
+    }
     return false;
   });
 }
 
 export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string): RichSegment[] {
+  const loopPinned = segs.some((s) => s.kind === "loop");
   const elements = segs.filter((s): s is Extract<RichSegment, { kind: "element" }> => s.kind === "element");
+
+  let body: RichSegment[];
   if (elements.length === 0) {
-    return value ? [{ kind: "text", value }] : emptySegments();
-  }
-  if (!value) {
-    return emptySegments();
-  }
-  const out: RichSegment[] = [];
-  let textApplied = false;
-  for (const seg of segs) {
-    if (seg.kind === "element") {
-      out.push(seg);
-    } else if (!textApplied) {
-      out.push({ kind: "text", value });
-      textApplied = true;
+    body = value ? [{ kind: "text", value }] : emptySegments();
+  } else if (!value) {
+    body = emptySegments();
+  } else {
+    const out: RichSegment[] = [];
+    let textApplied = false;
+    for (const seg of segs) {
+      if (seg.kind === "element") {
+        out.push(seg);
+      } else if (seg.kind === "text" && !textApplied) {
+        out.push({ kind: "text", value });
+        textApplied = true;
+      }
     }
+    if (!textApplied) {
+      out.unshift({ kind: "text", value });
+    }
+    body = mergeAdjacentTextSegments(out);
   }
-  if (!textApplied) {
-    out.unshift({ kind: "text", value });
+
+  if (loopPinned) {
+    return mergeAdjacentTextSegments([{ kind: "loop" }, ...body]);
   }
-  return mergeAdjacentTextSegments(out);
+  return body;
 }
 
 export type SegmentCaret = {
@@ -141,9 +153,13 @@ export type SegmentCaret = {
   offset: number;
 };
 
-/** When inserting an element with no following text, add a space for caret spacing. */
-function textFollowingElementInsert(after: string): string {
+/** When inserting a chip with no following text, add a space for caret spacing. */
+function textFollowingChipInsert(after: string): string {
   return after === "" ? " " : after;
+}
+
+function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<RichSegment, { kind: "element" | "loop" }> {
+  return seg?.kind === "element" || seg?.kind === "loop";
 }
 
 export function insertSegmentAtCaret(
@@ -167,18 +183,18 @@ export function insertSegmentAtCaret(
       {
         kind: "text" as const,
         value:
-          newSegment.kind === "element" ? textFollowingElementInsert(after) : after,
+          isInlineChipSegment(newSegment) ? textFollowingChipInsert(after) : after,
       },
       ...merged.slice(index + 1),
     ];
-  } else if (seg?.kind === "element") {
+  } else if (isInlineChipSegment(seg)) {
     const insertAt = caret.offset === 0 ? index : index + 1;
     next = [
       ...merged.slice(0, insertAt),
       newSegment,
       {
         kind: "text" as const,
-        value: newSegment.kind === "element" ? textFollowingElementInsert("") : "",
+        value: isInlineChipSegment(newSegment) ? textFollowingChipInsert("") : "",
       },
       ...merged.slice(insertAt),
     ];
@@ -187,7 +203,7 @@ export function insertSegmentAtCaret(
       newSegment,
       {
         kind: "text" as const,
-        value: newSegment.kind === "element" ? textFollowingElementInsert("") : "",
+        value: isInlineChipSegment(newSegment) ? textFollowingChipInsert("") : "",
       },
     ];
   }

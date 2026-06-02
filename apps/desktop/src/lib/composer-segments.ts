@@ -1,6 +1,7 @@
 import { makeChipNode } from "@/lib/browser-element-chip-styles";
 import type { RichSegment } from "@/lib/composer-segment-model";
 import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segment-model";
+import { makeLoopChipNode } from "@/lib/loop-chip-styles";
 
 export {
   caretAtEnd,
@@ -16,7 +17,16 @@ export {
   type SegmentCaret,
 } from "@/lib/composer-segment-model";
 
+export {
+  ensureLoopPinned,
+  hasLoopSegment,
+  insertLoopSegment,
+  isCaretAtLoopRemovalPoint,
+  removeLoopSegment,
+} from "@/lib/composer-loop-segments";
+
 export { makeChipNode } from "@/lib/browser-element-chip-styles";
+export { makeLoopChipNode } from "@/lib/loop-chip-styles";
 
 function mergeTextIntoLast(segs: RichSegment[], chunk: string): void {
   const last = segs[segs.length - 1];
@@ -52,6 +62,10 @@ function appendSegmentFromNode(node: Node, segs: RichSegment[]): void {
     return;
   }
   const el = node as HTMLElement;
+  if (el.dataset.loopChip === "true" || el.getAttribute("data-loop-chip") === "true") {
+    segs.push({ kind: "loop" });
+    return;
+  }
   if (el.dataset.elementChip === "true" || el.getAttribute("data-element-chip") === "true") {
     const id = el.dataset.elementId;
     const tag = el.dataset.elementTag;
@@ -74,7 +88,11 @@ function appendSegmentFromNode(node: Node, segs: RichSegment[]): void {
   }
 }
 
-export function segmentsToDom(segs: RichSegment[], doc: Document): DocumentFragment {
+export function segmentsToDom(
+  segs: RichSegment[],
+  doc: Document,
+  opts?: { loopLabel?: string },
+): DocumentFragment {
   const frag = doc.createDocumentFragment();
   for (const seg of segs) {
     if (seg.kind === "text") {
@@ -85,6 +103,8 @@ export function segmentsToDom(segs: RichSegment[], doc: Document): DocumentFragm
           frag.appendChild(doc.createElement("br"));
         }
       });
+    } else if (seg.kind === "loop") {
+      frag.appendChild(makeLoopChipNode(doc, opts?.loopLabel ?? "Loop"));
     } else {
       frag.appendChild(makeChipNode(seg.attachment, doc));
     }
@@ -92,8 +112,12 @@ export function segmentsToDom(segs: RichSegment[], doc: Document): DocumentFragm
   return frag;
 }
 
-export function renderSegmentsToElement(root: HTMLElement, segs: RichSegment[]): void {
-  root.replaceChildren(segmentsToDom(segs, root.ownerDocument));
+export function renderSegmentsToElement(
+  root: HTMLElement,
+  segs: RichSegment[],
+  opts?: { loopLabel?: string },
+): void {
+  root.replaceChildren(segmentsToDom(segs, root.ownerDocument, opts));
 }
 
 export function applyExternalTextValue(segs: RichSegment[], value: string): RichSegment[] {
