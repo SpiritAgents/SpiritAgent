@@ -1,4 +1,5 @@
 import { FitAddon } from "@xterm/addon-fit";
+import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 
 /** 与 `.dark` 下 `--background`（oklch(0.145 0 0) ≈ #0a0a0a）一致。 */
@@ -7,6 +8,24 @@ const TERMINAL_DARK_BG = "#0a0a0a";
 /** Windows 上优先系统 Cascadia / Consolas；不把 webfont 置于栈首，以免覆盖已安装的系统等宽字体。 */
 export const WORKSPACE_TERMINAL_FONT_FAMILY =
   '"Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "Courier New", monospace';
+
+const WORKSPACE_TERMINAL_FONT_SIZE = 14;
+const WORKSPACE_TERMINAL_LINE_HEIGHT = 1;
+const WORKSPACE_TERMINAL_LETTER_SPACING = 0;
+
+/** 在 open + fit 之后加载 WebGL；失败或上下文丢失时回退默认渲染器。 */
+export function loadWorkspaceTerminalWebgl(term: Terminal): void {
+  try {
+    const webgl = new WebglAddon();
+    webgl.onContextLoss(() => {
+      console.warn("[workspace-xterm] WebGL context lost; falling back to default renderer.");
+      webgl.dispose();
+    });
+    term.loadAddon(webgl);
+  } catch (error) {
+    console.warn("[workspace-xterm] WebGL addon failed to load; using default renderer.", error);
+  }
+}
 
 export function workspaceTerminalTheme(): import("@xterm/xterm").ITheme {
   const dark = document.documentElement.classList.contains("dark");
@@ -84,8 +103,9 @@ export function createWorkspaceTerminalSession(
 
   const term = new Terminal({
     cursorBlink: true,
-    fontSize: 12,
-    lineHeight: 1.2,
+    fontSize: WORKSPACE_TERMINAL_FONT_SIZE,
+    lineHeight: WORKSPACE_TERMINAL_LINE_HEIGHT,
+    letterSpacing: WORKSPACE_TERMINAL_LETTER_SPACING,
     fontFamily: WORKSPACE_TERMINAL_FONT_FAMILY,
     fontWeight: "normal",
     theme: workspaceTerminalTheme(),
@@ -100,6 +120,7 @@ export function createWorkspaceTerminalSession(
   term.loadAddon(fitAddon);
   term.open(container);
   fitAddon.fit();
+  loadWorkspaceTerminalWebgl(term);
 
   const onContextMenu = (e: MouseEvent): void => {
     e.preventDefault();
