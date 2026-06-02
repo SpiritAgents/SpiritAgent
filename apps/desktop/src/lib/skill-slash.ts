@@ -3,7 +3,6 @@ import type { DesktopSkillListItem } from '@/types'
 export type SkillSlashSuggestionKind =
   | 'create-skill'
   | 'log-session'
-  | 'start-implementing'
   | 'compact'
   | 'loop'
   | 'skill'
@@ -28,7 +27,6 @@ export function skillSlashAlias(skillName: string): string {
 
 export const CREATE_SKILL_SLASH_ALIAS = '/create-skill'
 export const LOG_SESSION_SLASH_ALIAS = '/log-session'
-export const START_IMPLEMENTING_SLASH_ALIAS = '/start-implementing'
 export const COMPACT_SLASH_ALIAS = '/compact'
 export const LOOP_SLASH_ALIAS = '/loop'
 
@@ -46,13 +44,6 @@ const STATIC_SLASH_SUGGESTIONS: readonly SkillSlashSuggestion[] = [
     name: 'log-session',
     descriptionKey: 'slash.logSession',
     kind: 'log-session',
-  },
-  {
-    id: 'command:start-implementing',
-    alias: START_IMPLEMENTING_SLASH_ALIAS,
-    name: 'start-implementing',
-    descriptionKey: 'slash.startImplementing',
-    kind: 'start-implementing',
   },
   {
     id: 'command:compact',
@@ -80,56 +71,30 @@ export function currentSkillSlashQuery(input: string): string | undefined {
     return undefined
   }
 
-  if (/\s/u.test(trimmedRight.slice(1))) {
-    return undefined
-  }
-
   return trimmedRight
 }
 
 export function buildSkillSlashSuggestions(
-  query: string | undefined,
+  query: string,
   skills: readonly DesktopSkillListItem[],
 ): SkillSlashSuggestion[] {
-  if (!query) {
-    return []
-  }
-
-  return [
-    ...STATIC_SLASH_SUGGESTIONS.filter((suggestion) => suggestion.alias.startsWith(query)),
-    ...skills
-      .filter((skill) => skill.enabled)
-      .filter((skill) => skillSlashAlias(skill.name).startsWith(query))
-      .map((skill) => ({
-        id: skill.id,
+  const normalized = query.trim().toLowerCase()
+  const staticMatches = STATIC_SLASH_SUGGESTIONS.filter((item) =>
+    item.alias.toLowerCase().startsWith(normalized),
+  )
+  const skillMatches = skills
+    .filter((skill) => skillSlashAlias(skill.name).toLowerCase().startsWith(normalized))
+    .map(
+      (skill): SkillSlashSuggestion => ({
+        id: `skill:${skill.id}`,
         alias: skillSlashAlias(skill.name),
         name: skill.name,
         description: skill.description,
-        kind: 'skill' as const,
-      })),
-  ]
-}
+        kind: 'skill',
+      }),
+    )
 
-export function isCreateSkillSlashInput(input: string): boolean {
-  const trimmed = input.trim()
-  if (!trimmed.startsWith(CREATE_SKILL_SLASH_ALIAS)) {
-    return false
-  }
-
-  const remainder = trimmed.slice(CREATE_SKILL_SLASH_ALIAS.length)
-  return remainder.length === 0 || /^\s/u.test(remainder)
-}
-
-export function isLogSessionSlashInput(input: string): boolean {
-  return input.trim() === LOG_SESSION_SLASH_ALIAS
-}
-
-export function isStartImplementingSlashInput(input: string): boolean {
-  return input.trim() === START_IMPLEMENTING_SLASH_ALIAS
-}
-
-export function isCompactSlashInput(input: string): boolean {
-  return input.trim() === COMPACT_SLASH_ALIAS
+  return [...staticMatches, ...skillMatches]
 }
 
 export function matchSkillSlashInput(
@@ -141,13 +106,12 @@ export function matchSkillSlashInput(
     return undefined
   }
 
-  const firstWhitespace = trimmed.search(/\s/u)
-  const command = firstWhitespace === -1 ? trimmed : trimmed.slice(0, firstWhitespace)
-  const extraNote = firstWhitespace === -1 ? '' : trimmed.slice(firstWhitespace).trim()
-  const skill = skills.find(
-    (item) => item.enabled && skillSlashAlias(item.name) === command,
-  )
+  const firstLine = trimmed.split('\n')[0]?.trim() ?? ''
+  const spaceIndex = firstLine.indexOf(' ')
+  const alias = spaceIndex >= 0 ? firstLine.slice(0, spaceIndex) : firstLine
+  const extraNote = spaceIndex >= 0 ? firstLine.slice(spaceIndex + 1).trim() : ''
 
+  const skill = skills.find((item) => skillSlashAlias(item.name) === alias)
   if (!skill) {
     return undefined
   }
@@ -156,4 +120,21 @@ export function matchSkillSlashInput(
     skillName: skill.name,
     extraNote,
   }
+}
+
+export function isCreateSkillSlashInput(input: string): boolean {
+  return input.trim() === CREATE_SKILL_SLASH_ALIAS
+}
+
+export function isLogSessionSlashInput(input: string): boolean {
+  return input.trim() === LOG_SESSION_SLASH_ALIAS
+}
+
+export function isCompactSlashInput(input: string): boolean {
+  return input.trim() === COMPACT_SLASH_ALIAS
+}
+
+export function isLoopSlashInput(input: string): boolean {
+  const trimmed = input.trim()
+  return trimmed === LOOP_SLASH_ALIAS || trimmed.startsWith(`${LOOP_SLASH_ALIAS} `)
 }
