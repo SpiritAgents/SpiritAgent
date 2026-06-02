@@ -1995,7 +1995,7 @@ export default function App() {
   const rewindRichInputRef = useRef<ComposerRichInputHandle | null>(null);
   const previousPlanModifiedAtRef = useRef<number | undefined>(undefined);
   const previousPlanExistsRef = useRef<boolean | undefined>(undefined);
-  const planAutoOpenInitializedRef = useRef(false);
+  const previousActiveSessionPathRef = useRef<string | null>(null);
   const winElectronChrome = isWin32ElectronShell();
   const settingsMode = activeSurface === "settings";
   const marketplaceMode = activeSurface === "marketplace";
@@ -2007,17 +2007,23 @@ export default function App() {
 
   useEffect(() => {
     const plan = snapshot?.plan;
+    const sessionPath = snapshot?.activeSession?.filePath ?? null;
     if (!plan) {
       return;
     }
 
+    const sessionChanged =
+      previousActiveSessionPathRef.current !== null &&
+      previousActiveSessionPathRef.current !== sessionPath;
+
     const previousExists = previousPlanExistsRef.current;
     const previousModifiedAt = previousPlanModifiedAtRef.current;
+
+    previousActiveSessionPathRef.current = sessionPath;
     previousPlanExistsRef.current = plan.exists;
     previousPlanModifiedAtRef.current = plan.modifiedAtUnixMs;
 
-    if (!planAutoOpenInitializedRef.current) {
-      planAutoOpenInitializedRef.current = true;
+    if (sessionChanged) {
       return;
     }
 
@@ -2054,6 +2060,7 @@ export default function App() {
     setWorkspaceFilesPlanRevealTargetId(targetFilesTabId);
     setWorkspaceFilesPlanRevealNonce((value) => value + 1);
   }, [
+    activeFilePath,
     activeWorkspaceToolTabId,
     snapshot?.plan.exists,
     snapshot?.plan.modifiedAtUnixMs,
