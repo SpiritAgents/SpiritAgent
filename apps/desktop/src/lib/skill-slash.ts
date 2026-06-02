@@ -75,9 +75,12 @@ export function currentSkillSlashQuery(input: string): string | undefined {
 }
 
 export function buildSkillSlashSuggestions(
-  query: string,
+  query: string | undefined,
   skills: readonly DesktopSkillListItem[],
 ): SkillSlashSuggestion[] {
+  if (!query) {
+    return []
+  }
   const normalized = query.trim().toLowerCase()
   const staticMatches = STATIC_SLASH_SUGGESTIONS.filter((item) =>
     item.alias.toLowerCase().startsWith(normalized),
