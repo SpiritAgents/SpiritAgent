@@ -426,7 +426,7 @@ export function WorkspaceFilesTab({
                   ref={editorRef}
                   relativePath={
                     doc.readOnly
-                      ? (plan.path.split(/[/\\]/).pop() ?? "plan.md")
+                      ? (plan.path.split(/[/\\]/).pop() ?? "plan")
                       : doc.subtitle
                   }
                   initialText={draftText}

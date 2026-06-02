@@ -22,7 +22,6 @@ import {
   type ExtensionStateStore,
   loadHostInstructionMetadata,
   parseModelProviderId,
-  resolveInstructionPaths,
   type HostInstructionMetadataSummary,
   type HostRuleDiscoveryResult,
   type HostSkillDiscoveryResult,
@@ -111,13 +110,6 @@ export function chatsDirPath(): string {
 
 export function configFilePath(): string {
   return path.join(spiritAgentDataDir(), CONFIG_FILE_NAME);
-}
-
-export function planFilePath(): string {
-  return resolveInstructionPaths({
-    workspaceRoot: path.resolve('.'),
-    spiritDataDir: spiritAgentDataDir(),
-  }).planFile;
 }
 
 function readModelKeyFromKeyring(modelName: string): string | undefined {
