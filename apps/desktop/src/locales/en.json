@@ -584,6 +584,21 @@
     "autoWorktreeNameFailedInvalidBranchName": "Auto-generating Worktree name failed: branchName format is invalid ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Auto-generating Worktree name failed: model returned JSON that is not an object."
   },
+  "notification": {
+    "defaultSessionName": "Session",
+    "taskComplete": {
+      "title": "Task completed"
+    },
+    "approval": {
+      "title": "Approval required",
+      "returnToApp": "Return to the app to handle approval."
+    },
+    "askQuestions": {
+      "title": "Questions pending",
+      "nQuestions": "{{count}} questions to answer",
+      "fallback": "Return to the app to answer questions."
+    }
+  },
   "tool": {
     "reasonPrefix": "Reason:",
     "runCommand": "Run command",
