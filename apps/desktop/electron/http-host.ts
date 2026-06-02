@@ -722,6 +722,25 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/git/working-tree') {
+    writeJson(request, response, 200, await runHostCommand('readGitWorkingTree'));
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/git/history') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('readGitHistory', {
+        request: {
+          ...(typeof jsonBody?.maxCount === 'number' ? { maxCount: jsonBody.maxCount } : {}),
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/rewind-submit') {
     writeJson(
       request,

@@ -156,6 +156,12 @@ export async function createElectronHostApi(): Promise<HostApi> {
     listWorkspaceExplorerChildren(relativePath) {
       return bridge.listWorkspaceExplorerChildren(relativePath);
     },
+    readGitWorkingTree() {
+      return bridge.readGitWorkingTree();
+    },
+    readGitHistory(request) {
+      return bridge.readGitHistory(request);
+    },
     readWorkspaceTextFile(relativePath) {
       return bridge.readWorkspaceTextFile(relativePath);
     },

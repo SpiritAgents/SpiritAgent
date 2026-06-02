@@ -159,6 +159,12 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
       relativePath,
     });
   },
+  readGitWorkingTree() {
+    return ipcRenderer.invoke('desktop:invoke', 'readGitWorkingTree');
+  },
+  readGitHistory(request?: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'readGitHistory', { request });
+  },
   readWorkspaceTextFile(relativePath: string) {
     return ipcRenderer.invoke('desktop:invoke', 'readWorkspaceTextFile', { relativePath });
   },

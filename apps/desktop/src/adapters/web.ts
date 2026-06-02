@@ -6,6 +6,9 @@ import type {
   AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
+  GitHistorySnapshot,
+  GitWorkingTreeSnapshot,
+  ReadGitHistoryRequest,
   CreateSkillRequest,
   DeleteExtensionRequest,
   DeleteMcpServerRequest,
@@ -153,6 +156,12 @@ export function createWebHostApi(): HostApi {
     },
     mergeWorktreeToMain() {
       return post<DesktopSnapshot>(baseUrl, '/api/git/merge-worktree');
+    },
+    readGitWorkingTree() {
+      return post<GitWorkingTreeSnapshot>(baseUrl, '/api/git/working-tree', {});
+    },
+    readGitHistory(request: ReadGitHistoryRequest = {}) {
+      return post<GitHistorySnapshot>(baseUrl, '/api/git/history', request);
     },
     abortConversation() {
       return post<DesktopSnapshot>(baseUrl, '/api/abort');
