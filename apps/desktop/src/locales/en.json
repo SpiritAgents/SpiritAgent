@@ -441,7 +441,6 @@
       "noRepo": "The workspace is not a Git repository.",
       "noChanges": "No uncommitted changes.",
       "loadingChanges": "Loading changes…",
-      "historyLoading": "Commit history will load in the next step…",
       "loadingHistory": "Loading commit history…",
       "noHistory": "No commits yet.",
       "copySha": "Copy SHA",
