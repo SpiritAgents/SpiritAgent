@@ -432,22 +432,10 @@ function CommitGraphRow({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="flex w-full min-w-0 items-start py-1 pr-2 text-left hover:bg-muted/30"
+            className="flex w-full min-w-0 items-center py-1 pr-2 text-left hover:bg-muted/30"
           >
-            <span className="min-w-0 flex-1">
-              <span className="line-clamp-2 text-xs leading-snug text-foreground">{row.commit.subject}</span>
-              {row.commit.refs.length > 0 ? (
-                <span className="mt-0.5 flex flex-wrap gap-1">
-                  {row.commit.refs.map((ref) => (
-                    <span
-                      key={`${row.commit.oid}:${ref}`}
-                      className="rounded bg-primary/15 px-1 py-0 font-mono text-[10px] text-primary"
-                    >
-                      {ref}
-                    </span>
-                  ))}
-                </span>
-              ) : null}
+            <span className="min-w-0 flex-1 truncate text-xs leading-snug text-foreground">
+              {row.commit.subject}
             </span>
           </button>
         </PopoverTrigger>
@@ -466,6 +454,18 @@ function CommitGraphRow({
             {" · "}
             <span>{row.commit.authoredAt}</span>
           </p>
+          {row.commit.refs.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {row.commit.refs.map((ref) => (
+                <span
+                  key={`${row.commit.oid}:${ref}`}
+                  className="rounded bg-primary/15 px-1 py-0 font-mono text-[10px] text-primary"
+                >
+                  {ref}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
             <span className="truncate" title={row.commit.oid}>
               {shortOid}
