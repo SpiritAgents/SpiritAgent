@@ -68,8 +68,15 @@ export type WorkspaceToolsDockProps = {
 };
 
 const DEFAULT_MIN = 240;
-/** 含文件树 + Monaco 时需更宽；与左侧栏同开时过大会挤压中间输入区，900 为经验上限。 */
-const DEFAULT_MAX = 900;
+/** 默认可拖至视口宽度约 62%，保证大屏下能占至少一大半。 */
+const VIEWPORT_MAX_WIDTH_RATIO = 0.62;
+
+function computeViewportMaxWidthPx(): number {
+  if (typeof window === "undefined") {
+    return 900;
+  }
+  return Math.round(window.innerWidth * VIEWPORT_MAX_WIDTH_RATIO);
+}
 
 function WorkspaceGitTabPlaceholder() {
   const { t } = useTranslation();
@@ -100,7 +107,7 @@ export function WorkspaceToolsDock({
   browserTabEnabled = false,
   widthPx,
   minWidthPx = DEFAULT_MIN,
-  maxWidthPx = DEFAULT_MAX,
+  maxWidthPx: maxWidthPxProp,
   onWidthPxChange,
   open,
   className,
@@ -108,6 +115,19 @@ export function WorkspaceToolsDock({
   const { t } = useTranslation();
   const [isResizing, setIsResizing] = useState(false);
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [viewportMaxWidthPx, setViewportMaxWidthPx] = useState(computeViewportMaxWidthPx);
+  const maxWidthPx = maxWidthPxProp ?? viewportMaxWidthPx;
+
+  useEffect(() => {
+    if (maxWidthPxProp !== undefined) {
+      return;
+    }
+    const onWindowResize = () => {
+      setViewportMaxWidthPx(computeViewportMaxWidthPx());
+    };
+    window.addEventListener("resize", onWindowResize);
+    return () => window.removeEventListener("resize", onWindowResize);
+  }, [maxWidthPxProp]);
 
   useEffect(() => {
     if (!open) {
@@ -119,6 +139,13 @@ export function WorkspaceToolsDock({
     (value: number) => Math.min(maxWidthPx, Math.max(minWidthPx, value)),
     [minWidthPx, maxWidthPx],
   );
+
+  useEffect(() => {
+    if (widthPx <= maxWidthPx) {
+      return;
+    }
+    onWidthPxChange(clampWidth(widthPx));
+  }, [clampWidth, maxWidthPx, onWidthPxChange, widthPx]);
 
   const onResizePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
