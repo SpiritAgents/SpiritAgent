@@ -17,6 +17,11 @@ test("normalizeBrowserUrl adds https for hostnames", () => {
   assert.equal(normalizeBrowserUrl("https://example.com/path"), "https://example.com/path");
 });
 
+test("normalizeBrowserUrl treats localhost:port as host without scheme", () => {
+  assert.equal(normalizeBrowserUrl("localhost:3000"), "https://localhost:3000/");
+  assert.equal(normalizeBrowserUrl("127.0.0.1:8080"), "https://127.0.0.1:8080/");
+});
+
 test("normalizeBrowserUrl rejects invalid input", () => {
   assert.equal(normalizeBrowserUrl(""), null);
   assert.equal(normalizeBrowserUrl("ftp://example.com"), null);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { FitAddon } from "@xterm/addon-fit";
@@ -73,6 +73,10 @@ export function WorkspaceShellTab({ workspaceRoot, onTitleChange }: WorkspaceShe
   const bridge = typeof window !== "undefined" ? window.spiritDesktop : undefined;
   const canEmbed = Boolean(bridge?.ptyCreate);
   const trimmed = workspaceRoot.trim();
+  const onTitleChangeRef = useRef(onTitleChange);
+  useLayoutEffect(() => {
+    onTitleChangeRef.current = onTitleChange;
+  });
 
   useEffect(() => {
     setEmbedError(null);
@@ -105,7 +109,7 @@ export function WorkspaceShellTab({ workspaceRoot, onTitleChange }: WorkspaceShe
     });
     termRef.current = term;
     term.onTitleChange((title) => {
-      onTitleChange?.(title || undefined);
+      onTitleChangeRef.current?.(title || undefined);
     });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
