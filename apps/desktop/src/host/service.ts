@@ -48,6 +48,7 @@ import {
 } from '@spirit-agent/agent-core/reasoning-effort';
 import {
   buildStartImplementingUserTurn,
+  extractActivePlanPathFromLlmHistory,
   createHostExtensionMarketplace,
   createHostExtensionManager,
   createHostDreamStore,
@@ -2199,13 +2200,17 @@ class DesktopHostService {
   async openSession(filePath: string): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       const leaving = this.sessionRegistry.getActive();
+      const leavingMessageCount = leaving?.messageTimeline.toMessages().length ?? 0;
       if (
         leaving?.activeSession
         && leaving.activeSession.kind !== 'ephemeral'
-        && leaving.runtime?.isBusy()
+        && leavingMessageCount > 0
       ) {
         await this.persistSessionBundle(leaving, {
-          fromRuntime: this.sessionRegistry.activeSessionId() === leaving.id ? this.runtime : undefined,
+          fromRuntime:
+            leaving.runtime?.isBusy() && this.sessionRegistry.activeSessionId() === leaving.id
+              ? this.runtime
+              : undefined,
           bumpListSortAt: false,
         });
       }
@@ -2305,6 +2310,7 @@ class DesktopHostService {
 
   /** After registry switch: wire runtime for new loads, resume in-flight runs without resetting timeline. */
   private async finishSessionActivation(bundle: SessionBundle): Promise<void> {
+    await this.syncPlanStateForBundle(bundle);
     if (bundle.runtime?.isBusy()) {
       await this.tickSession(bundle);
       this.syncActiveRuntimePointer();
@@ -2617,17 +2623,35 @@ class DesktopHostService {
     this.syncActiveRuntimePointer();
   }
 
-  private async refreshRuntimeForBundle(bundle: SessionBundle): Promise<void> {
+  private resolveBundleActivePlanPath(bundle: SessionBundle): string | undefined {
+    const existing = bundle.activePlanPath?.trim();
+    if (existing) {
+      return existing;
+    }
+    const fromArchive = extractActivePlanPathFromLlmHistory(bundle.archiveHistory);
+    if (fromArchive) {
+      bundle.activePlanPath = fromArchive;
+    }
+    return fromArchive;
+  }
+
+  private async syncPlanStateForBundle(bundle: SessionBundle): Promise<void> {
     const state = this.requireState();
+    const activePlanPath = this.resolveBundleActivePlanPath(bundle);
     state.metadata = await loadHostMetadata(
       state.workspaceRoot,
       state.config.planMode === true,
-      { activePlanPath: bundle.activePlanPath },
+      { activePlanPath },
     );
     state.plan = await loadDesktopPlanSnapshot(
       state.metadata.planMetadata.path,
       state.metadata.planMetadata.exists,
     );
+  }
+
+  private async refreshRuntimeForBundle(bundle: SessionBundle): Promise<void> {
+    const state = this.requireState();
+    await this.syncPlanStateForBundle(bundle);
     await this.ensureToolExecutor(bundle);
     bundle.currentTurnSkills = [];
     const apiKey = await resolveApiKeyForModel(state.config.activeModel);
@@ -3496,12 +3520,8 @@ class DesktopHostService {
 
     state.workspaceRoot = resolved;
     state.git = await readWorkspaceGitSnapshot(resolved);
-    state.metadata = await loadHostMetadata(resolved, state.config.planMode === true);
-    state.plan = await loadDesktopPlanSnapshot(
-      state.metadata.planMetadata.path,
-      state.metadata.planMetadata.exists,
-    );
     bundle.workspaceRoot = resolved;
+    await this.syncPlanStateForBundle(bundle);
     await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
     if (switchingWorkspace) {
