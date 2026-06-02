@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 
 import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
@@ -52,7 +52,7 @@ export type WorkspaceToolsDockProps = {
   planRevealTabId?: string | null;
   tabs: WorkspaceToolTab[];
   activeTabId: string;
-  onTabsChange(tabs: WorkspaceToolTab[]): void;
+  onTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
   onActiveTabIdChange(id: string): void;
   onBrowserElementPicked?: WorkspaceBrowserTabProps['onElementPicked'];
   onBrowserOpenInNewTab?: WorkspaceBrowserTabProps['onOpenUrlInNewTab'];
@@ -186,18 +186,20 @@ export function WorkspaceToolsDock({
 
   const handleBrowserUrlChange = useCallback(
     (tabId: string, url: string) => {
-      onTabsChange(tabs.map((item) => (item.id === tabId ? { ...item, browserUrl: url } : item)));
+      onTabsChange((prev) =>
+        prev.map((item) => (item.id === tabId ? { ...item, browserUrl: url } : item)),
+      );
     },
-    [onTabsChange, tabs],
+    [onTabsChange],
   );
 
   const handleTabTitleChange = useCallback(
     (tabId: string, title: string | undefined) => {
-      onTabsChange(
-        tabs.map((item) => (item.id === tabId ? { ...item, tabTitle: title || undefined } : item)),
+      onTabsChange((prev) =>
+        prev.map((item) => (item.id === tabId ? { ...item, tabTitle: title || undefined } : item)),
       );
     },
-    [onTabsChange, tabs],
+    [onTabsChange],
   );
 
   const newTabItems = useMemo<readonly ActionPopoverItem[]>(
