@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   FoldVertical,
+  Repeat,
   Rocket,
   ScrollText,
   Sparkles,
@@ -24,6 +25,7 @@ const SLASH_SUGGESTION_ICONS: Record<SkillSlashSuggestionKind, LucideIcon> = {
   'log-session': ScrollText,
   'start-implementing': Rocket,
   compact: FoldVertical,
+  loop: Repeat,
   skill: Sparkles,
 }
 

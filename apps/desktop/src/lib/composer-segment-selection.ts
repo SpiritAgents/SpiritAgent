@@ -6,7 +6,12 @@ type WalkState = {
 };
 
 function isChip(el: HTMLElement): boolean {
-  return el.dataset.elementChip === "true" || el.getAttribute("data-element-chip") === "true";
+  return (
+    el.dataset.elementChip === "true" ||
+    el.getAttribute("data-element-chip") === "true" ||
+    el.dataset.loopChip === "true" ||
+    el.getAttribute("data-loop-chip") === "true"
+  );
 }
 
 function childIndex(parent: Node, child: Node): number {
@@ -130,7 +135,7 @@ export function caretToDomRange(
     return;
   }
 
-  if (seg.kind === "element") {
+  if (seg.kind === "element" || seg.kind === "loop") {
     targetSegment = index;
     targetOffset = 0;
   }
@@ -142,14 +147,14 @@ export function caretToDomRange(
     const currentSeg = segments[walkIndex];
     if (!currentSeg) break;
 
-    if (currentSeg.kind === "element") {
+    if (currentSeg.kind === "element" || currentSeg.kind === "loop") {
       if (walkIndex === targetSegment && targetOffset === 0) {
         range.setStartBefore(node);
         range.collapse(true);
         placed = true;
         break;
       }
-      if (walkIndex === targetSegment - 1 || (walkIndex === targetSegment && targetOffset > 0)) {
+      if (walkIndex === targetSegment - 1 && targetOffset === 0) {
         range.setStartAfter(node);
         range.collapse(true);
         placed = true;
@@ -167,6 +172,7 @@ export function caretToDomRange(
         placed = true;
         break;
       }
+      walkIndex += 1;
       continue;
     }
 
