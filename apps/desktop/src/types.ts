@@ -617,6 +617,47 @@ export interface DesktopGitSnapshot {
   defaultBranch?: string;
 }
 
+export interface GitWorkingTreeChange {
+  path: string;
+  indexStatus: string;
+  worktreeStatus: string;
+  code: string;
+  previousPath?: string;
+}
+
+export interface GitWorkingTreeSnapshot {
+  isRepository: boolean;
+  changes: GitWorkingTreeChange[];
+}
+
+export interface GitCommitRecord {
+  oid: string;
+  parents: string[];
+  subject: string;
+  author: string;
+  authoredAt: string;
+  refs: string[];
+}
+
+export interface GitCommitGraphRow {
+  commit: GitCommitRecord;
+  lane: number;
+  laneCount: number;
+  passingLanes: number[];
+  mergeLanes: number[];
+  branchFromLane?: number;
+}
+
+export interface GitHistorySnapshot {
+  isRepository: boolean;
+  commits: GitCommitRecord[];
+  rows: GitCommitGraphRow[];
+}
+
+export interface ReadGitHistoryRequest {
+  maxCount?: number;
+}
+
 export interface ModelProfileSnapshot {
   name: string;
   apiBase: string;

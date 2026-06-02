@@ -97,6 +97,8 @@ declare global {
       request: QueryWorkspaceFileReferenceSuggestionsRequest,
     ): Promise<WorkspaceFileReferenceSuggestionsResponse>;
     listWorkspaceExplorerChildren(relativePath: string): Promise<WorkspaceExplorerListResult>;
+    readGitWorkingTree(): Promise<import('./types').GitWorkingTreeSnapshot>;
+    readGitHistory(request?: import('./types').ReadGitHistoryRequest): Promise<import('./types').GitHistorySnapshot>;
     readWorkspaceTextFile(relativePath: string): Promise<WorkspaceReadTextFileResult>;
     writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void>;
     pickWorkspaceDirectory(): Promise<string | null>;

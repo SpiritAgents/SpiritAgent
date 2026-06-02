@@ -8,6 +8,8 @@ import {
   buildWorktreeRootPath,
   isGitCheckoutBlockedError,
   mergeSpiritBranchToMain as mergeSpiritBranchToMainInternal,
+  readGitCommitHistory,
+  readGitWorkingTreeChanges,
   readGitWorkspaceSnapshot,
   readWorktreeContext,
   resolveDefaultBranch,
@@ -15,7 +17,13 @@ import {
   type GitCheckoutOptions,
 } from '@spirit-agent/host-internal';
 
-import type { DesktopCommitMode, DesktopGitSnapshot } from '../types.js';
+import type {
+  DesktopCommitMode,
+  DesktopGitSnapshot,
+  GitHistorySnapshot,
+  GitWorkingTreeSnapshot,
+  ReadGitHistoryRequest,
+} from '../types.js';
 import type { GeneratedWorktreeNames } from './worktree-naming.js';
 
 const execFileAsync = promisify(execFile);
@@ -94,6 +102,19 @@ export async function readWorkspaceGitSnapshot(
       : {}),
     ...(defaultBranch ? { defaultBranch } : {}),
   };
+}
+
+export async function readWorkspaceGitWorkingTree(
+  workspaceRoot: string,
+): Promise<GitWorkingTreeSnapshot> {
+  return readGitWorkingTreeChanges(workspaceRoot);
+}
+
+export async function readWorkspaceGitHistory(
+  workspaceRoot: string,
+  request: ReadGitHistoryRequest = {},
+): Promise<GitHistorySnapshot> {
+  return readGitCommitHistory(workspaceRoot, request);
 }
 
 export async function createWorkspaceGitWorktree(
