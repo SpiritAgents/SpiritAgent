@@ -48,6 +48,7 @@ import type {
   DesktopDreamOverviewItem,
   DesktopExtensionListItem,
   DesktopMcpCapabilityToggles,
+  DesktopMcpScope,
   DesktopMcpServerInspection,
   DesktopMcpServerListItem,
   DesktopMcpTransportType,
@@ -1630,6 +1631,15 @@ function ExtensionsSettingsPanel({
   );
 }
 
+const mcpCreateScopeOptions: Array<{
+  scope: DesktopMcpScope;
+  labelKey: string;
+  hintKey: string;
+}> = [
+  { scope: "user", labelKey: "settings.skillUserDirShort", hintKey: "settings.mcpUserDirHint" },
+  { scope: "workspace", labelKey: "settings.mcpScopeWorkspace", hintKey: "settings.mcpWorkspaceSpiritHint" },
+];
+
 function McpsSettingsPanel({
   snapshot,
   mcpsBusy,
@@ -1643,6 +1653,7 @@ function McpsSettingsPanel({
   const { t } = useTranslation();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteMcpServerRequest | null>(null);
+  const [createScope, setCreateScope] = useState<DesktopMcpScope>("workspace");
   const [transportType, setTransportType] = useState<DesktopMcpTransportType>("stdio");
   const [newName, setNewName] = useState("");
   const [newEndpoint, setNewEndpoint] = useState("");
@@ -1651,21 +1662,27 @@ function McpsSettingsPanel({
   const [runtimeInfo, setRuntimeInfo] = useState<Record<string, McpServerRuntimeInfo>>({});
 
   const items = snapshot?.mcpServers ?? [];
+  const localizedMcpCreateScopeOptions = mcpCreateScopeOptions.map((option) => ({
+    ...option,
+    label: t(option.labelKey),
+    hint: t(option.hintKey),
+  }));
 
   useEffect(() => {
     let cancelled = false;
-    const names = new Set(items.map((item) => item.name));
+    const keys = new Set(items.map((item) => `${item.scope}:${item.name}`));
 
     setRuntimeInfo((current) => {
       const next: Record<string, McpServerRuntimeInfo> = {};
       for (const item of items) {
-        next[item.name] = item.enabled
+        const key = `${item.scope}:${item.name}`;
+        next[key] = item.enabled
           ? { state: "loading" }
           : { state: "disabled" };
       }
-      for (const [name, info] of Object.entries(current)) {
-        if (names.has(name) && next[name]?.state === "disabled") {
-          next[name] = info;
+      for (const [key, info] of Object.entries(current)) {
+        if (keys.has(key) && next[key]?.state === "disabled") {
+          next[key] = info;
         }
       }
       return next;
@@ -1676,6 +1693,7 @@ function McpsSettingsPanel({
         if (!item.enabled) {
           return;
         }
+        const key = `${item.scope}:${item.name}`;
 
         try {
           const inspection = await onInspectMcpServer(item.name);
@@ -1684,7 +1702,7 @@ function McpsSettingsPanel({
           }
           setRuntimeInfo((current) => ({
             ...current,
-            [item.name]: {
+            [key]: {
               state: "ready",
               counts: {
                 tools: inspection.toolsCount,
@@ -1699,7 +1717,7 @@ function McpsSettingsPanel({
           }
           setRuntimeInfo((current) => ({
             ...current,
-            [item.name]: {
+            [key]: {
               state: "error",
             },
           }));
@@ -1713,6 +1731,7 @@ function McpsSettingsPanel({
   }, [items, onInspectMcpServer]);
 
   const resetForm = () => {
+    setCreateScope("workspace");
     setTransportType("stdio");
     setNewName("");
     setNewEndpoint("");
@@ -1745,15 +1764,20 @@ function McpsSettingsPanel({
         {items.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noMcpsConfigured')}</p>
         ) : (
-          items.map((item) => (
+          items.map((item) => {
+            const runtimeKey = `${item.scope}:${item.name}`;
+            return (
             <div
-              key={item.name}
+              key={runtimeKey}
               className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
             >
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{item.displayName}</span>
-                  <McpRuntimeBadge state={runtimeInfo[item.name]?.state ?? (item.enabled ? "loading" : "disabled")} />
+                  <McpRuntimeBadge state={runtimeInfo[runtimeKey]?.state ?? (item.enabled ? "loading" : "disabled")} />
+                  <Badge variant="outline" className="text-muted-foreground">
+                    {item.scope === "user" ? t('settings.skillUserDirShort') : t('settings.mcpScopeWorkspace')}
+                  </Badge>
                   <Badge variant="secondary" className="text-muted-foreground">
                     {mcpTransportTypeLabel(item.transport.type)}
                   </Badge>
@@ -1764,7 +1788,7 @@ function McpsSettingsPanel({
                   ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">{item.transport.summary}</p>
-                <p className="text-xs text-muted-foreground">{mcpCountsSummary(runtimeInfo[item.name])}</p>
+                <p className="text-xs text-muted-foreground">{mcpCountsSummary(runtimeInfo[runtimeKey])}</p>
                 {Object.keys(item.transport.metadata).length > 0 ? (
                   <p
                     className="truncate font-mono text-[0.65rem] text-muted-foreground/90"
@@ -1780,12 +1804,13 @@ function McpsSettingsPanel({
                 size="sm"
                 className="shrink-0 self-start sm:self-center"
                 disabled={mcpsBusy}
-                onClick={() => setDeleteTarget({ name: item.name })}
+                onClick={() => setDeleteTarget({ name: item.name, scope: item.scope })}
               >
                 {t('common.delete')}
               </Button>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -1856,6 +1881,37 @@ function McpsSettingsPanel({
             <DialogDescription>{t('settings.addMcpDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
+            <div className="grid gap-2">
+              <Label>{t('settings.saveLocation')}</Label>
+              <div
+                role="tablist"
+                aria-label={t('settings.saveLocation')}
+                className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
+              >
+                {localizedMcpCreateScopeOptions.map((opt) => (
+                  <button
+                    key={opt.scope}
+                    type="button"
+                    role="tab"
+                    aria-selected={createScope === opt.scope}
+                    className={cn(
+                      "rounded-md px-2.5 text-xs font-medium transition-colors",
+                      createScope === opt.scope
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    disabled={mcpsBusy}
+                    title={opt.hint}
+                    onClick={() => setCreateScope(opt.scope)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {localizedMcpCreateScopeOptions.find((o) => o.scope === createScope)?.hint}
+              </p>
+            </div>
             <div className="grid gap-2">
               <Label>{t('settings.transportType')}</Label>
               <div
@@ -1960,6 +2016,7 @@ function McpsSettingsPanel({
                   try {
                     await onAddMcpServer({
                       name: newName,
+                      scope: createScope,
                       transportType,
                       endpoint: newEndpoint,
                       metadata: newMetadata,

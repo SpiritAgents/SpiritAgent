@@ -138,6 +138,14 @@ fn build_bottom_form_view(value: &str, footer_hint: &str) -> BottomFormView {
                 },
             },
             BottomFormFieldView {
+                label: "保存位置".to_string(),
+                help: String::new(),
+                editor: BottomFormFieldEditorView::Choice {
+                    options: vec!["用户".to_string(), "工作区 .spirit".to_string()],
+                    selected: 1,
+                },
+            },
+            BottomFormFieldView {
                 label: "类型".to_string(),
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Choice {

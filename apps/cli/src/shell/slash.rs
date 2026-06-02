@@ -394,7 +394,7 @@ pub(crate) fn help_text(_input_mode: MainInputMode, can_continue_last_turn: bool
         "- /image pick 打开当前目录图片选择器。".to_string(),
         "- /image 不带 prompt 时会把图片加入待发送队列。".to_string(),
         "- 输入 @<文件名> 会打开工作区文件引用建议，回车后会把选中文件写回输入框，格式为 @路径 加一个空格。".to_string(),
-        "- /mcp add 打开底部表单，用于填写 server 名称、类型、命令或 URL（Enter 保存，Esc 取消）。".to_string(),
+        "- /mcp add 打开底部表单，用于填写 server 名称、保存位置（用户 / 工作区 `.spirit`）、类型、命令或 URL（Enter 保存，Esc 取消）。".to_string(),
         "- /model add 打开底部表单：选提供商与添加方式、填写端点与 API Key；提交后将请求上游 /models（预设为批量导入全部 id，自定义可选单条）；也可一行 /model add <name> <api_base> <api_key>；成功后会切换当前模型。".to_string(),
         "- MCP prompt 会以一级 slash 命令暴露，例如 /github_issue_to_fix_workflow；若尾部是合法 JSON object，会直接作为 prompt 参数，其他文本会作为附加用户消息发给 LLM。".to_string(),
         "- 省略尾部且 prompt 定义了参数时，会自动打开参数表单；表单最后一栏可填写附加说明。".to_string(),
