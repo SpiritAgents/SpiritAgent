@@ -1,22 +1,7 @@
-const SPIRIT_NOTIFICATION_PROTOCOL = 'spirit-agent';
-
-function buildApprovalProtocolUrl(decision: 'allow' | 'deny', tag?: string): string {
-  const params = new URLSearchParams({ decision });
-  const trimmedTag = tag?.trim();
-  if (trimmedTag) {
-    params.set('tag', trimmedTag);
-  }
-  return `${SPIRIT_NOTIFICATION_PROTOCOL}://notification-approval?${params.toString()}`;
-}
-
-function buildFocusProtocolUrl(tag?: string): string {
-  const trimmedTag = tag?.trim();
-  if (!trimmedTag) {
-    return `${SPIRIT_NOTIFICATION_PROTOCOL}://notification-focus`;
-  }
-  const params = new URLSearchParams({ tag: trimmedTag });
-  return `${SPIRIT_NOTIFICATION_PROTOCOL}://notification-focus?${params.toString()}`;
-}
+import {
+  buildNotificationApprovalProtocolUrl,
+  buildNotificationFocusProtocolUrl,
+} from './spirit-notification-protocol.js';
 
 export type WindowsToastPayload = {
   title: string;
@@ -63,11 +48,11 @@ export function buildWindowsToastXml(payload: WindowsToastPayload): string {
     .slice(0, TOAST_ACTION_MAX)
     .map((action, index) => {
       const decision = index === 0 ? 'allow' : 'deny';
-      const protocolUrl = buildApprovalProtocolUrl(decision, tag);
+      const protocolUrl = buildNotificationApprovalProtocolUrl(decision, tag);
       return `<action content="${escapeToastXml(action.text)}" arguments="${escapeToastXml(protocolUrl)}" activationType="protocol" />`;
     })
     .join('');
-  const launch = escapeToastXml(buildFocusProtocolUrl(tag));
+  const launch = escapeToastXml(buildNotificationFocusProtocolUrl(tag));
   return `<toast launch="${launch}" activationType="protocol"><visual><binding template="ToastGeneric">${textXml}</binding></visual><actions>${actionsXml}</actions></toast>`;
 }
 

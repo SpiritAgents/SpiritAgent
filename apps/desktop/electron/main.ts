@@ -613,11 +613,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
 
 if (gotSpiritSingleInstanceLock) {
   app.whenReady().then(async () => {
-  handleSpiritNotificationProtocolArgv(process.argv);
   bindSpiritNotificationProtocolHandlers({
     onApproval: handleApprovalNotificationAction,
     onFocus: focusSpiritDesktopWindows,
   });
+  handleSpiritNotificationProtocolArgv(process.argv);
   registerWindowsToastActivationHandler();
   if (process.platform === 'win32') {
     Menu.setApplicationMenu(null);
