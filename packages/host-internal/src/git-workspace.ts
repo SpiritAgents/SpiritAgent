@@ -138,6 +138,104 @@ export async function checkoutGitBranch(
   }
 }
 
+export interface GitWorkingTreeChange {
+  path: string;
+  indexStatus: string;
+  worktreeStatus: string;
+  /** Display code such as `M`, `A`, `??`, `D`. */
+  code: string;
+  previousPath?: string;
+}
+
+export interface GitWorkingTreeSnapshot {
+  isRepository: boolean;
+  changes: GitWorkingTreeChange[];
+}
+
+export function parseGitStatusPorcelain(stdout: string): GitWorkingTreeChange[] {
+  const changes: GitWorkingTreeChange[] = [];
+  for (const rawLine of stdout.split(/\r?\n/u)) {
+    const line = rawLine.trimEnd();
+    if (!line) {
+      continue;
+    }
+
+    if (line.startsWith('??')) {
+      const path = line.slice(3).trim();
+      if (path) {
+        changes.push({
+          path,
+          indexStatus: '?',
+          worktreeStatus: '?',
+          code: '??',
+        });
+      }
+      continue;
+    }
+
+    if (line.length < 4) {
+      continue;
+    }
+
+    const indexStatus = line[0] ?? ' ';
+    const worktreeStatus = line[1] ?? ' ';
+    const pathPart = line.slice(3).trim();
+    if (!pathPart) {
+      continue;
+    }
+
+    const renameArrow = ' -> ';
+    const arrowIndex = pathPart.indexOf(renameArrow);
+    const previousPath = arrowIndex >= 0 ? pathPart.slice(0, arrowIndex).trim() : undefined;
+    const path = arrowIndex >= 0
+      ? pathPart.slice(arrowIndex + renameArrow.length).trim()
+      : pathPart;
+
+    if (!path) {
+      continue;
+    }
+
+    const code = indexStatus !== ' ' && worktreeStatus !== ' '
+      ? `${indexStatus}${worktreeStatus}`
+      : indexStatus !== ' '
+        ? indexStatus
+        : worktreeStatus !== ' '
+          ? worktreeStatus
+          : ' ';
+
+    changes.push({
+      path,
+      indexStatus,
+      worktreeStatus,
+      code: code.trim() === '' ? ' ' : code,
+      ...(previousPath ? { previousPath } : {}),
+    });
+  }
+
+  changes.sort((left, right) => left.path.localeCompare(right.path, undefined, { sensitivity: 'base' }));
+  return changes;
+}
+
+export async function readGitWorkingTreeChanges(repoRoot: string): Promise<GitWorkingTreeSnapshot> {
+  try {
+    const [{ stdout: repoFlag }, { stdout: statusOutput }] = await Promise.all([
+      runGit(repoRoot, ['rev-parse', '--is-inside-work-tree']),
+      runGit(repoRoot, ['status', '--porcelain', '--untracked-files=all']),
+    ]);
+
+    if (repoFlag.trim() !== 'true') {
+      return { isRepository: false, changes: [] };
+    }
+
+    return {
+      isRepository: true,
+      changes: parseGitStatusPorcelain(statusOutput),
+    };
+  } catch {
+    return { isRepository: false, changes: [] };
+  }
+}
+
 export async function readGitWorkspaceSnapshot(repoRoot: string): Promise<GitWorkspaceSnapshot> {
   try {
     const [{ stdout: repoFlag }, { stdout: statusOutput }, branch, branches] = await Promise.all([
