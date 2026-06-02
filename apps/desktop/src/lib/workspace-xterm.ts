@@ -13,7 +13,7 @@ import {
 export const WORKSPACE_TERMINAL_FONT_FAMILY =
   '"Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "Courier New", monospace';
 
-const WORKSPACE_TERMINAL_FONT_SIZE = 14;
+const WORKSPACE_TERMINAL_FONT_SIZE = 12;
 const WORKSPACE_TERMINAL_LINE_HEIGHT = 1;
 const WORKSPACE_TERMINAL_LETTER_SPACING = 0;
 
