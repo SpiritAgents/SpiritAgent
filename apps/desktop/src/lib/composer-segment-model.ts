@@ -1,8 +1,7 @@
 import type { BrowserElementAttachment } from "./browser-element-attachment";
+import { browserElementContextText } from "./browser-element-wire-text.js";
 
-export function browserElementContextText(attachment: BrowserElementAttachment): string {
-  return `Selected element from ${attachment.pageUrl}:\n\`\`\`html\n${attachment.outerHtml}\n\`\`\``;
-}
+export { browserElementContextText };
 
 export type RichSegment =
   | { kind: "text"; value: string }
