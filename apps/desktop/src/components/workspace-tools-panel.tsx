@@ -5,6 +5,7 @@ import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { WorkspaceBrowserTab, type WorkspaceBrowserTabProps } from "@/components/workspace-browser-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
+import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ import {
   type WorkspaceToolTabKind,
 } from "@/lib/workspace-tool-tabs";
 import type {
+  DesktopGitSnapshot,
+  GitWorkingTreeSnapshot,
   PlanSnapshot,
   WorkspaceExplorerListResult,
   WorkspaceReadTextFileResult,
@@ -64,6 +67,9 @@ export type WorkspaceToolsDockProps = {
   maxWidthPx?: number;
   onWidthPxChange(next: number): void;
   open: boolean;
+  gitSnapshot?: DesktopGitSnapshot;
+  readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
+  gitRefreshNonce?: number;
   className?: string;
 };
 
@@ -76,15 +82,6 @@ function computeViewportMaxWidthPx(): number {
     return 900;
   }
   return Math.round(window.innerWidth * VIEWPORT_MAX_WIDTH_RATIO);
-}
-
-function WorkspaceGitTabPlaceholder() {
-  const { t } = useTranslation();
-  return (
-    <div className="p-3 text-muted-foreground">
-      <p>{t('workspace.gitPlaceholder')}</p>
-    </div>
-  );
 }
 
 export function WorkspaceToolsDock({
@@ -110,6 +107,9 @@ export function WorkspaceToolsDock({
   maxWidthPx: maxWidthPxProp,
   onWidthPxChange,
   open,
+  gitSnapshot,
+  readGitWorkingTree,
+  gitRefreshNonce = 0,
   className,
 }: WorkspaceToolsDockProps) {
   const { t } = useTranslation();
@@ -425,7 +425,14 @@ export function WorkspaceToolsDock({
                       />
                     </div>
                   ) : (
-                    <WorkspaceGitTabPlaceholder />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                      <WorkspaceGitTab
+                        gitSnapshot={gitSnapshot}
+                        isActive={selected}
+                        refreshNonce={gitRefreshNonce}
+                        readGitWorkingTree={readGitWorkingTree}
+                      />
+                    </div>
                   )}
                 </div>
               );

@@ -3344,6 +3344,8 @@ export default function App() {
               open={workspaceToolsOpen}
               widthPx={workspaceToolsWidthPx}
               onWidthPxChange={setWorkspaceToolsWidthPx}
+              gitSnapshot={snapshot?.git}
+              readGitWorkingTree={runtime.readGitWorkingTree}
             />
             </div>
           </div>
