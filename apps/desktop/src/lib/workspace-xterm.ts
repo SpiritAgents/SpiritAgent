@@ -2,8 +2,10 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 
-/** 与 `.dark` 下 `--background`（oklch(0.145 0 0) ≈ #0a0a0a）一致。 */
-const TERMINAL_DARK_BG = "#0a0a0a";
+import {
+  readTerminalThemeFromDocument,
+  trackTerminalTheme,
+} from "@/lib/workspace-terminal-theme";
 
 /** Windows 上优先系统 Cascadia / Consolas；不把 webfont 置于栈首，以免覆盖已安装的系统等宽字体。 */
 export const WORKSPACE_TERMINAL_FONT_FAMILY =
@@ -25,26 +27,6 @@ export function loadWorkspaceTerminalWebgl(term: Terminal): void {
   } catch (error) {
     console.warn("[workspace-xterm] WebGL addon failed to load; using default renderer.", error);
   }
-}
-
-export function workspaceTerminalTheme(): import("@xterm/xterm").ITheme {
-  const dark = document.documentElement.classList.contains("dark");
-  if (dark) {
-    return {
-      background: TERMINAL_DARK_BG,
-      foreground: "#fafafa",
-      cursor: "#fafafa",
-      cursorAccent: TERMINAL_DARK_BG,
-      selectionBackground: "rgba(100, 100, 100, 0.35)",
-    };
-  }
-  return {
-    background: "#ffffff",
-    foreground: "#0a0a0a",
-    cursor: "#0a0a0a",
-    cursorAccent: "#ffffff",
-    selectionBackground: "rgba(0, 0, 0, 0.15)",
-  };
 }
 
 /** 有选区：复制；无选区：粘贴（与常见集成终端一致，不弹出菜单）。 */
@@ -100,6 +82,7 @@ export function createWorkspaceTerminalSession(
   let unsubPty: (() => void) | undefined;
   let sessionAlive = true;
   let activePtyId: string | null = null;
+  let untrackTheme: (() => void) | undefined;
 
   const term = new Terminal({
     cursorBlink: true,
@@ -108,9 +91,10 @@ export function createWorkspaceTerminalSession(
     letterSpacing: WORKSPACE_TERMINAL_LETTER_SPACING,
     fontFamily: WORKSPACE_TERMINAL_FONT_FAMILY,
     fontWeight: "normal",
-    theme: workspaceTerminalTheme(),
+    theme: readTerminalThemeFromDocument(),
     scrollback: 8000,
   });
+  untrackTheme = trackTerminalTheme(term);
 
   term.onTitleChange((title) => {
     onTitleChange?.(title || undefined);
@@ -163,6 +147,8 @@ export function createWorkspaceTerminalSession(
       return;
     }
     termDisposed = true;
+    untrackTheme?.();
+    untrackTheme = undefined;
     term.dispose();
   };
 
