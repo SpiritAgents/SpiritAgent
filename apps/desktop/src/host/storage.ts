@@ -644,6 +644,9 @@ function normalizeRecentWorkspaceRoots(value: unknown): string[] {
       continue;
     }
     const key = normalizeWorkspaceKey(workspaceRoot);
+    if (key === normalizeWorkspaceKey(resolveDesktopHomeDirectory())) {
+      continue;
+    }
     if (seen.has(key)) {
       continue;
     }
@@ -663,6 +666,9 @@ export function mergeRecentWorkspaceRoots(
 ): string[] {
   const resolvedWorkspaceRoot = path.resolve(workspaceRoot);
   const targetKey = normalizeWorkspaceKey(resolvedWorkspaceRoot);
+  if (targetKey === normalizeWorkspaceKey(resolveDesktopHomeDirectory())) {
+    return normalizeRecentWorkspaceRoots(existing);
+  }
   return [
     resolvedWorkspaceRoot,
     ...normalizeRecentWorkspaceRoots(existing).filter(

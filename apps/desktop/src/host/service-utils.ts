@@ -62,10 +62,7 @@ export function resolveWorkspaceBindingForRequestedRoot(input: {
   if (!input.requestedWorkspaceRoot?.trim()) {
     return input.previousBinding;
   }
-  if (
-    isNoWorkspaceSessionRoot(input.requestedWorkspaceRoot)
-    && (input.previousBinding === 'none' || input.persistedBinding === 'none')
-  ) {
+  if (isNoWorkspaceSessionRoot(input.requestedWorkspaceRoot)) {
     return 'none';
   }
   return 'project';
@@ -95,7 +92,7 @@ export function buildAvailableWorkspaces(
   for (const workspaceRoot of merged) {
     const groupingRoot = resolveWorkspaceGroupingRoot(workspaceRoot);
     const key = normalizeWorkspaceRootKey(groupingRoot);
-    if (workspaceBinding === 'none' && key === homeKey) {
+    if (key === homeKey) {
       continue;
     }
     if (seen.has(key)) {
