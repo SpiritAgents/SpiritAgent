@@ -213,8 +213,14 @@ function CommitGraphGutter({
     const parentLaneIsMergeParent = Boolean(
       nextRow && row.mergeLanes.length > 0 && row.mergeLanes.includes(nextRow.lane),
     );
-    const mergeOnNextTargetsThisLane = Boolean(
-      nextRow && nextRow.mergeLanes.includes(row.lane),
+    // Suppress the branch→main rejoin curve only when the next row is a merge whose
+    // merge parent on THIS lane is actually this row (that connection is drawn by the
+    // merge block). For back-to-back merges this row may share the lane without being
+    // the merge parent, in which case the rejoin curve must still be drawn.
+    const isMergeParentOfNext = Boolean(
+      nextRow &&
+        nextRow.mergeLanes.includes(row.lane) &&
+        mergeParentRowIndex(rowIndex + 1, row.lane, rows) === rowIndex,
     );
     const branchFromChildAbove = Boolean(
       prevRow && prevRow.lane !== row.lane,
@@ -247,7 +253,7 @@ function CommitGraphGutter({
       parentOnMainBelow &&
       row.mergeLanes.length === 0 &&
       !parentLaneIsMergeParent &&
-      !mergeOnNextTargetsThisLane
+      !isMergeParentOfNext
     ) {
       const d = curveBetweenCommits(
         laneCenterX(nextRow.lane),
