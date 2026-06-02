@@ -5,8 +5,11 @@ import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileRefere
 import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
 import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachments.js';
 
+export type DesktopWorkspaceBinding = 'project' | 'none';
+
 export interface BootstrapRequest {
   workspaceRoot?: string;
+  workspaceBinding?: DesktopWorkspaceBinding;
 }
 
 export interface RememberWorkspaceRequest {
@@ -505,6 +508,7 @@ export interface WriteWorkspaceTextFileRequest {
 
 export interface DesktopSnapshot {
   workspaceRoot: string;
+  workspaceBinding: DesktopWorkspaceBinding;
   availableWorkspaces: DesktopWorkspaceListItem[];
   git: DesktopGitSnapshot;
   dreams: DesktopDreamSnapshot;
