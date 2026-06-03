@@ -90,6 +90,22 @@ test('resolveFileToolDiffSource maps create_plan name to plans path', () => {
   assert.equal(result.modified, '# Plan');
 });
 
+test('resolveFileToolDiffSource uses planBaselineText for create_plan overwrite', () => {
+  const tool = {
+    toolName: 'create_plan',
+    phase: 'preview',
+    headline: '计划',
+    detailLines: [],
+    streamingArgumentsJson: '{"name":"my-plan","content":"# New"}',
+  };
+  const result = resolveFileToolDiffSource(tool, {
+    open: true,
+    planBaselineText: '# Old\n',
+  });
+  assert.equal(result.original, '# Old\n');
+  assert.equal(result.modified, '# New');
+});
+
 test('resolveFileToolDiffSource reports truncated argsExcerpt', () => {
   const tool = {
     toolName: 'create_file',
