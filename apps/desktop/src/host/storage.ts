@@ -38,7 +38,20 @@ import type {
   SessionListItem,
 } from '../types.js';
 import type { StoredDesktopSession } from './contracts.js';
+import {
+  buildModelSecretKeyPresence,
+  modelProviderKeyScope,
+  providerKeyAccount,
+  type ModelKeyPresenceProfile,
+} from './provider-api-key.js';
 import { normalizeDesktopRewindMetadata } from './rewind.js';
+
+export type { ModelKeyPresenceProfile } from './provider-api-key.js';
+export {
+  buildModelSecretKeyPresence,
+  modelProviderKeyScope,
+  providerKeyAccount,
+} from './provider-api-key.js';
 
 export const DEFAULT_API_BASE = 'https://api.openai.com/v1';
 export const DEFAULT_MODEL = 'gpt-4o-mini';
@@ -147,6 +160,16 @@ function readGlobalKeyFromKeyring(): string | undefined {
   }
 }
 
+export function readProviderKeyFromKeyring(providerId: string): string | undefined {
+  try {
+    const value = new Entry(KEYRING_SERVICE, providerKeyAccount(providerId)).getPassword();
+    const trimmed = value?.trim();
+    return trimmed || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function defaultNewSessionPath(): string {
   return path.join(chatsDirPath(), `chat-${Math.floor(Date.now() / 1000)}.json`);
 }
@@ -218,10 +241,18 @@ export async function saveConfig(config: DesktopConfigFile): Promise<void> {
   await writeFile(filePath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
 }
 
-export async function resolveApiKeyForModel(modelName: string): Promise<string | undefined> {
+export async function resolveApiKeyForModel(
+  modelName: string,
+  provider?: DesktopModelProvider,
+): Promise<string | undefined> {
   const envKey = process.env.SPIRIT_API_KEY?.trim();
   if (envKey) {
     return envKey;
+  }
+
+  const providerKey = readProviderKeyFromKeyring(modelProviderKeyScope(provider));
+  if (providerKey) {
+    return providerKey;
   }
 
   const modelKey = readModelKeyFromKeyring(modelName);
@@ -232,22 +263,58 @@ export async function resolveApiKeyForModel(modelName: string): Promise<string |
   return readGlobalKeyFromKeyring();
 }
 
-export async function hasApiKeyForModel(modelName: string): Promise<boolean> {
-  return Boolean(await resolveApiKeyForModel(modelName));
+export async function hasApiKeyForModel(
+  modelName: string,
+  provider?: DesktopModelProvider,
+): Promise<boolean> {
+  return Boolean(await resolveApiKeyForModel(modelName, provider));
 }
 
-/** 各模型是否在系统钥匙串中有单独条目（与 CLI `has_model_api_key` 一致；不含环境变量与全局回退）。 */
-export async function modelSecretKeyPresence(modelNames: string[]): Promise<Record<string, boolean>> {
-  const out: Record<string, boolean> = {};
-  for (const name of modelNames) {
-    out[name] = Boolean(readModelKeyFromKeyring(name));
+function normalizePresenceProfiles(
+  profilesOrNames: string[] | ModelKeyPresenceProfile[],
+): ModelKeyPresenceProfile[] {
+  if (profilesOrNames.length === 0) {
+    return [];
   }
-  return out;
+  const first = profilesOrNames[0];
+  if (typeof first === 'string') {
+    return (profilesOrNames as string[]).map((name) => ({ name }));
+  }
+  return profilesOrNames as ModelKeyPresenceProfile[];
+}
+
+/** 各模型是否在钥匙串中有提供商级或遗留模型级条目（不含环境变量与全局回退）。 */
+export async function modelSecretKeyPresence(
+  profilesOrNames: string[] | ModelKeyPresenceProfile[],
+): Promise<Record<string, boolean>> {
+  const profiles = normalizePresenceProfiles(profilesOrNames);
+  return buildModelSecretKeyPresence(
+    profiles,
+    (providerId) => Boolean(readProviderKeyFromKeyring(providerId)),
+    (modelName) => Boolean(readModelKeyFromKeyring(modelName)),
+  );
 }
 
 export async function saveApiKeyForModel(modelName: string, apiKey: string): Promise<void> {
   const trimmed = apiKey.trim();
   new Entry(KEYRING_SERVICE, modelKeyAccount(modelName)).setPassword(trimmed);
+}
+
+export async function saveApiKeyForProvider(
+  providerId: DesktopModelProvider,
+  apiKey: string,
+): Promise<void> {
+  const trimmed = apiKey.trim();
+  new Entry(KEYRING_SERVICE, providerKeyAccount(providerId)).setPassword(trimmed);
+}
+
+/** 删除提供商在钥匙串中的共享 API Key 条目。 */
+export async function removeProviderApiKey(providerId: DesktopModelProvider): Promise<void> {
+  try {
+    new Entry(KEYRING_SERVICE, providerKeyAccount(providerId)).deletePassword();
+  } catch {
+    /* 无条目时忽略 */
+  }
 }
 
 /** 与 CLI `remove_model_api_key` 一致：删除该模型在钥匙串中的专属条目。 */
