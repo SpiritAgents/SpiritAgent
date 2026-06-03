@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import { resolveToolLineDelta } from "@/lib/edit-file-line-delta";
 import {
   isFileDiffTool,
   resolveFileToolDiffSource,
+  resolvePlanRelativePath,
 } from "@/lib/file-tool-diff-source";
 import {
   genericExpandableDetailLines,
@@ -117,12 +118,47 @@ function FileToolDiffExpandedBody({
 }) {
   const { t } = useTranslation();
   const diffHost = useToolCallDiffHost();
+  const [planBaselineText, setPlanBaselineText] = useState<string | undefined>();
+
+  const planRelativePath = useMemo(() => {
+    if (!open || tool.toolName !== "create_plan") {
+      return undefined;
+    }
+    return resolvePlanRelativePath(
+      tool,
+      open ? tool.streamingArgumentsJson : undefined,
+    );
+  }, [open, tool.toolName, tool.phase, tool.argsExcerpt, open ? tool.streamingArgumentsJson : undefined]);
+
+  useEffect(() => {
+    if (!open || !planRelativePath || !diffHost) {
+      setPlanBaselineText(undefined);
+      return;
+    }
+    let cancelled = false;
+    void diffHost
+      .readWorkspaceTextFile(planRelativePath)
+      .then((result) => {
+        if (!cancelled) {
+          setPlanBaselineText(result.text);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPlanBaselineText(undefined);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [diffHost, open, planRelativePath]);
 
   const diffResult = useMemo(
     () =>
       resolveFileToolDiffSource(tool, {
         open,
         workspaceRoot: diffHost?.workspaceRoot,
+        planBaselineText,
       }),
     [
       open,
@@ -133,6 +169,7 @@ function FileToolDiffExpandedBody({
       tool.deleteFileBaselineText,
       open ? tool.streamingArgumentsJson : undefined,
       diffHost?.workspaceRoot,
+      planBaselineText,
     ],
   );
 

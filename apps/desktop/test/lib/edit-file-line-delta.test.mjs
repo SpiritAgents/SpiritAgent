@@ -7,6 +7,7 @@ import path from 'node:path';
 
 import {
   deleteFileLineDeltaFromContent,
+  preserveDeleteFileBaseline,
   preserveDeleteFileLineDelta,
   editFileLineDeltaFromArgumentsJson,
   lineChangeCounts,
@@ -83,4 +84,22 @@ test('preserveDeleteFileLineDelta keeps prior removed count after file is gone',
   };
   assert.deepEqual(preserveDeleteFileLineDelta('delete_file', attached, prior).editLineDelta, prior);
   assert.equal(preserveDeleteFileLineDelta('create_file', attached, prior).editLineDelta, undefined);
+});
+
+test('preserveDeleteFileBaseline keeps prior text after delete succeeds', () => {
+  const priorText = 'line one\nline two';
+  const attached = {
+    toolName: 'delete_file',
+    phase: 'succeeded',
+    headline: '删除 hello.txt',
+    detailLines: [],
+  };
+  assert.equal(
+    preserveDeleteFileBaseline('delete_file', attached, priorText).deleteFileBaselineText,
+    priorText,
+  );
+  assert.equal(
+    preserveDeleteFileBaseline('create_file', attached, priorText).deleteFileBaselineText,
+    undefined,
+  );
 });

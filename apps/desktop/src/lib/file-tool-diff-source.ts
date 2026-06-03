@@ -39,9 +39,41 @@ function textExceedsDiffLimit(text: string): boolean {
   return new TextEncoder().encode(text).length > FILE_TOOL_DIFF_MAX_BYTES;
 }
 
-function planRelativePath(planName: string): string {
+export function planRelativePath(planName: string): string {
   const slug = planName.trim();
   return `plans/${slug}.md`;
+}
+
+/** 从工具快照或流式 JSON 解析 create_plan 的 plans/{name}.md 路径。 */
+export function resolvePlanRelativePath(
+  tool: ToolBlockSnapshot,
+  argumentsJson?: string,
+): string | undefined {
+  if (tool.toolName !== 'create_plan') {
+    return undefined;
+  }
+  const json =
+    argumentsJson?.trim() ||
+    (tool.phase === 'preview' ? tool.streamingArgumentsJson : undefined) ||
+    tool.argsExcerpt;
+  if (!json?.trim()) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    if (parsed && typeof parsed === 'object') {
+      const name = (parsed as Record<string, unknown>).name;
+      if (typeof name === 'string' && name.trim()) {
+        return planRelativePath(name);
+      }
+    }
+  } catch {
+    const name = tryExtractPartialPlanName(json);
+    if (name) {
+      return planRelativePath(name);
+    }
+  }
+  return undefined;
 }
 
 function extractPathFromRequest(
