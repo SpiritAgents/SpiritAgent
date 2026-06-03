@@ -33,7 +33,6 @@ const GIT_CHANGES_DEFAULT_RATIO = 0.45;
 export type WorkspaceGitTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
   isActive: boolean;
-  refreshNonce?: number;
   commitBusy: boolean;
   runtimeError: string;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
@@ -51,7 +50,6 @@ export type WorkspaceGitTabProps = {
 export function WorkspaceGitTab({
   gitSnapshot,
   isActive,
-  refreshNonce = 0,
   commitBusy,
   runtimeError,
   readGitWorkingTree,
@@ -70,7 +68,9 @@ export function WorkspaceGitTab({
   const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
   const [treeError, setTreeError] = useState("");
   const [historyError, setHistoryError] = useState("");
-  const [localRefreshNonce, setLocalRefreshNonce] = useState(0);
+  const prevTabActiveRef = useRef(false);
+  const prevBranchRef = useRef<string | undefined>(undefined);
+  const prevHasChangesRef = useRef<boolean | undefined>(undefined);
 
   const [commitDialogOpen, setCommitDialogOpen] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
@@ -221,23 +221,38 @@ export function WorkspaceGitTab({
 
   useEffect(() => {
     if (!isActive) {
+      prevTabActiveRef.current = false;
       return;
     }
-    void loadHistory();
-  }, [isActive, loadHistory, refreshNonce, localRefreshNonce, gitSnapshot?.branch]);
+    void loadWorkingTree();
+  }, [isActive, loadWorkingTree, gitSnapshot?.revision]);
 
   useEffect(() => {
     if (!isActive) {
       return;
     }
-    void loadWorkingTree();
+
+    const becameActive = !prevTabActiveRef.current;
+    prevTabActiveRef.current = true;
+
+    const branch = gitSnapshot?.branch;
+    const branchChanged =
+      prevBranchRef.current !== undefined && prevBranchRef.current !== branch;
+    prevBranchRef.current = branch;
+
+    const hadChanges = prevHasChangesRef.current;
+    const clearedChanges = hadChanges === true && gitSnapshot?.hasChanges === false;
+    prevHasChangesRef.current = gitSnapshot?.hasChanges;
+
+    if (becameActive || branchChanged || clearedChanges) {
+      void loadHistory();
+    }
   }, [
     isActive,
-    loadWorkingTree,
-    refreshNonce,
-    localRefreshNonce,
-    gitSnapshot?.hasChanges,
+    loadHistory,
+    gitSnapshot?.revision,
     gitSnapshot?.branch,
+    gitSnapshot?.hasChanges,
   ]);
 
   useEffect(() => {
@@ -268,7 +283,6 @@ export function WorkspaceGitTab({
       }
       setCommitDialogOpen(false);
       setCommitMessageDraft("");
-      setLocalRefreshNonce((value) => value + 1);
     });
   };
 
@@ -279,17 +293,11 @@ export function WorkspaceGitTab({
       }
       setMergeDialogOpen(false);
       flashMergeButtonSucceeded();
-      setLocalRefreshNonce((value) => value + 1);
     });
   };
 
   const handlePush = () => {
-    void pushGitBranch().then((ok) => {
-      if (!ok) {
-        return;
-      }
-      setLocalRefreshNonce((value) => value + 1);
-    });
+    void pushGitBranch();
   };
 
   return (

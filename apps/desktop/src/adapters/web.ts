@@ -160,6 +160,9 @@ export function createWebHostApi(): HostApi {
     pushGitBranch() {
       return post<DesktopSnapshot>(baseUrl, '/api/git/push');
     },
+    refreshGitSnapshot() {
+      return post<DesktopSnapshot>(baseUrl, '/api/git/refresh-snapshot', {});
+    },
     readGitWorkingTree() {
       return post<GitWorkingTreeSnapshot>(baseUrl, '/api/git/working-tree', {});
     },

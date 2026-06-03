@@ -83,6 +83,7 @@ declare global {
     checkoutGitBranch(request: import('./types.js').CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
     mergeWorktreeToMain(): Promise<DesktopSnapshot>;
     pushGitBranch(): Promise<DesktopSnapshot>;
+    refreshGitSnapshot(): Promise<DesktopSnapshot>;
     abortConversation(): Promise<DesktopSnapshot>;
     continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
     rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;

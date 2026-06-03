@@ -594,6 +594,8 @@ export interface DesktopDreamOverviewItem {
 }
 
 export interface DesktopGitSnapshot {
+  /** Bumped on each successful workspace git summary refresh (poll or user git op). */
+  revision: number;
   isRepository: boolean;
   hasChanges: boolean;
   branch?: string;

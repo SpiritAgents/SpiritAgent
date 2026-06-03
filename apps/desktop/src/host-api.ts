@@ -87,6 +87,7 @@ export interface HostApi {
   checkoutGitBranch(request: CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
   mergeWorktreeToMain(): Promise<DesktopSnapshot>;
   pushGitBranch(): Promise<DesktopSnapshot>;
+  refreshGitSnapshot(): Promise<DesktopSnapshot>;
   readGitWorkingTree(): Promise<GitWorkingTreeSnapshot>;
   readGitHistory(request?: ReadGitHistoryRequest): Promise<GitHistorySnapshot>;
   abortConversation(): Promise<DesktopSnapshot>;
