@@ -34,16 +34,8 @@ export function shouldUseAlibabaNativeTools(config: LlmTransportConfig): boolean
   return isOpenAiCompatibleTransportConfig(config) || isOpenResponsesTransportConfig(config);
 }
 
-export function shouldUseAlibabaChatCompletionsNativeTools(
-  config: LlmTransportConfig,
-  options: AlibabaChatCompletionsExtraBodyOptions = {},
-): boolean {
-  if (!isOpenAiCompatibleTransportConfig(config) || alibabaLlmVendor(config) !== 'alibaba') {
-    return false;
-  }
-
-  const streaming = options.streaming ?? true;
-  return streaming;
+export function shouldUseAlibabaChatCompletionsNativeTools(config: LlmTransportConfig): boolean {
+  return isOpenAiCompatibleTransportConfig(config) && alibabaLlmVendor(config) === 'alibaba';
 }
 
 export function shouldUseAlibabaResponsesNativeTools(config: LlmTransportConfig): boolean {
