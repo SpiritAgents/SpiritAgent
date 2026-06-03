@@ -435,6 +435,7 @@ function CommitGraphGutter({
   );
 }
 
+const HOVER_OPEN_DELAY_MS = 400;
 const HOVER_CLOSE_DELAY_MS = 120;
 /** Keep the anchor row mounted long enough for Radix's close animation to finish. */
 const ANCHOR_LINGER_MS = 220;
@@ -551,15 +552,25 @@ export function GitCommitGraph({
   const loadMoreInFlightRef = useRef(false);
   const [geometry, setGeometry] = useState<RowGeometry | null>(null);
   const [hoveredRow, setHoveredRow] = useState<GitCommitGraphRow | null>(null);
+  const [pointerRowOid, setPointerRowOid] = useState<string | null>(null);
   // Keeps the anchor row mounted through Radix's close animation so the
   // PopoverContent never loses its anchor and snaps to (0,0).
   const [lingerAnchorOid, setLingerAnchorOid] = useState<string | null>(null);
+  const hoverOpenTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lingerClearTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const hoveredRowRef = useRef<GitCommitGraphRow | null>(null);
+  const pointerRowRef = useRef<GitCommitGraphRow | null>(null);
   const popoverContentRef = useRef<HTMLDivElement>(null);
 
   hoveredRowRef.current = hoveredRow;
+
+  const clearHoverOpenTimer = useCallback(() => {
+    if (hoverOpenTimerRef.current !== undefined) {
+      clearTimeout(hoverOpenTimerRef.current);
+      hoverOpenTimerRef.current = undefined;
+    }
+  }, []);
 
   const clearHoverCloseTimer = useCallback(() => {
     if (hoverCloseTimerRef.current !== undefined) {
@@ -569,6 +580,9 @@ export function GitCommitGraph({
   }, []);
 
   const commitClose = useCallback((closingOid: string) => {
+    clearHoverOpenTimer();
+    pointerRowRef.current = null;
+    setPointerRowOid(null);
     setLingerAnchorOid(closingOid);
     setHoveredRow(null);
     if (lingerClearTimerRef.current !== undefined) {
@@ -578,19 +592,22 @@ export function GitCommitGraph({
       lingerClearTimerRef.current = undefined;
       setLingerAnchorOid(null);
     }, ANCHOR_LINGER_MS);
-  }, []);
+  }, [clearHoverOpenTimer]);
 
   const scheduleHoverClose = useCallback(() => {
+    clearHoverOpenTimer();
     clearHoverCloseTimer();
     const closingOid = hoveredRowRef.current?.commit.oid ?? null;
     if (!closingOid) {
+      pointerRowRef.current = null;
+      setPointerRowOid(null);
       return;
     }
     hoverCloseTimerRef.current = setTimeout(() => {
       hoverCloseTimerRef.current = undefined;
       commitClose(closingOid);
     }, HOVER_CLOSE_DELAY_MS);
-  }, [clearHoverCloseTimer, commitClose]);
+  }, [clearHoverCloseTimer, clearHoverOpenTimer, commitClose]);
 
   const handleRowPointerEnter = useCallback(
     (row: GitCommitGraphRow) => {
@@ -600,9 +617,25 @@ export function GitCommitGraph({
         lingerClearTimerRef.current = undefined;
       }
       setLingerAnchorOid(null);
-      setHoveredRow(row);
+      pointerRowRef.current = row;
+      setPointerRowOid(row.commit.oid);
+
+      if (hoveredRowRef.current !== null) {
+        clearHoverOpenTimer();
+        setHoveredRow(row);
+        return;
+      }
+
+      clearHoverOpenTimer();
+      hoverOpenTimerRef.current = setTimeout(() => {
+        hoverOpenTimerRef.current = undefined;
+        if (pointerRowRef.current?.commit.oid !== row.commit.oid) {
+          return;
+        }
+        setHoveredRow(row);
+      }, HOVER_OPEN_DELAY_MS);
     },
-    [clearHoverCloseTimer],
+    [clearHoverCloseTimer, clearHoverOpenTimer],
   );
 
   // Pointer left the whole commit list. Close unless we are heading into the popover.
@@ -612,6 +645,8 @@ export function GitCommitGraph({
       if (related instanceof Node && popoverContentRef.current?.contains(related)) {
         return;
       }
+      pointerRowRef.current = null;
+      setPointerRowOid(null);
       scheduleHoverClose();
     },
     [scheduleHoverClose],
@@ -631,6 +666,9 @@ export function GitCommitGraph({
 
   useEffect(() => {
     return () => {
+      if (hoverOpenTimerRef.current !== undefined) {
+        clearTimeout(hoverOpenTimerRef.current);
+      }
       if (hoverCloseTimerRef.current !== undefined) {
         clearTimeout(hoverCloseTimerRef.current);
       }
@@ -769,7 +807,10 @@ export function GitCommitGraph({
                 key={row.commit.oid}
                 row={row}
                 textInset={textInsetForRow(row, rowIndex, rows)}
-                isHovered={hoveredRow?.commit.oid === row.commit.oid}
+                isHovered={
+                  pointerRowOid === row.commit.oid ||
+                  hoveredRow?.commit.oid === row.commit.oid
+                }
                 isPopoverAnchor={anchorOid === row.commit.oid}
                 onRowPointerEnter={handleRowPointerEnter}
               />
