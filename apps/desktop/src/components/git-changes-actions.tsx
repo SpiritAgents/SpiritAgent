@@ -149,7 +149,6 @@ export function GitChangesActions({
             triggerIcon={<ChevronDown className="size-3" aria-hidden />}
             items={menuItems}
             triggerClassName={DESKTOP_GIT_ACTION_MENU_TRIGGER}
-            contentClassName="text-xs"
           />
         </>
       ) : null}
