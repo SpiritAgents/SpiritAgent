@@ -38,6 +38,10 @@ import {
   buildApplyPatchFileToolsPromptSection,
   shouldUseApplyPatchFileTools,
 } from './open-responses/apply-patch-eligibility.js';
+import {
+  buildProviderWebSearchPromptSection,
+  shouldUseProviderWebSearch,
+} from './open-responses/web-search-eligibility.js';
 import type { LlmTransportConfig } from './provider-config.js';
 import { createLlmTransport } from './transport-factory.js';
 import type {
@@ -803,6 +807,14 @@ function applyPatchFileToolsPromptSectionForConfig(
     : undefined;
 }
 
+function providerWebSearchPromptSectionForConfig(
+  config: LlmTransportConfig,
+): string | undefined {
+  return shouldUseProviderWebSearch(config)
+    ? buildProviderWebSearchPromptSection()
+    : undefined;
+}
+
 async function reloadHostMetadataFromInternal(
   planMode: boolean,
   nextActivePlanPath?: string,
@@ -1400,6 +1412,7 @@ async function createRuntime(
     cachedTools: toolExecutor.mcpStatusSnapshot().cachedTools,
   });
   const applyPatchPromptSection = applyPatchFileToolsPromptSectionForConfig(config);
+  const providerWebSearchPromptSection = providerWebSearchPromptSectionForConfig(config);
   const createToolAgentState = (messages: LlmMessage[], userInput: string) =>
     startLlmToolAgentState(
       messages,
@@ -1415,6 +1428,7 @@ async function createRuntime(
       todosContextText,
       basicInfo,
       applyPatchPromptSection,
+      providerWebSearchPromptSection,
     );
   const llmTransport = createLlmTransport(config);
 
@@ -1437,6 +1451,7 @@ async function createRuntime(
         todosContextText,
         basicInfo,
         applyPatchPromptSection,
+        providerWebSearchPromptSection,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
