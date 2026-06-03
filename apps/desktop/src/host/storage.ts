@@ -270,6 +270,14 @@ export async function hasApiKeyForModel(
   return Boolean(await resolveApiKeyForModel(modelName, provider));
 }
 
+export async function resolveApiKeyForConfigModel(
+  config: Pick<DesktopConfigFile, 'models'>,
+  modelName: string,
+): Promise<string | undefined> {
+  const profile = config.models.find((model) => model.name === modelName);
+  return resolveApiKeyForModel(modelName, profile?.provider);
+}
+
 function normalizePresenceProfiles(
   profilesOrNames: string[] | ModelKeyPresenceProfile[],
 ): ModelKeyPresenceProfile[] {
