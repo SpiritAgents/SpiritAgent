@@ -5,10 +5,13 @@ import { ChevronDown, GitMerge, LoaderCircle, Upload } from "lucide-react";
 
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
-import { DESKTOP_CHROME_COMMIT_BTN } from "@/lib/desktop-chrome";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
+import {
+  DESKTOP_GIT_ACTION_BTN,
+  DESKTOP_GIT_ACTION_MENU_TRIGGER,
+  DESKTOP_GIT_ACTION_SPLIT,
+} from "@/lib/desktop-chrome";
 import { buildGitChangesMenuItemIds } from "@/lib/git-changes-menu-items";
-import { cn } from "@/lib/utils";
 
 export type GitChangesMenuLabels = {
   push: string;
@@ -107,9 +110,9 @@ export function GitChangesActions({
       <ButtonGroup>
         <Button
           type="button"
-          variant="ghost"
+          variant="default"
           size="sm"
-          className={DESKTOP_CHROME_COMMIT_BTN}
+          className={DESKTOP_GIT_ACTION_BTN}
           disabled={!needsPush || gitBusy}
           title={!needsPush ? pushDisabledTitle : undefined}
           onClick={onPush}
@@ -125,9 +128,9 @@ export function GitChangesActions({
     <ButtonGroup>
       <Button
         type="button"
-        variant="ghost"
+        variant="default"
         size="sm"
-        className={DESKTOP_CHROME_COMMIT_BTN}
+        className={DESKTOP_GIT_ACTION_BTN}
         disabled={gitBusy}
         onClick={onCommit}
       >
@@ -135,18 +138,20 @@ export function GitChangesActions({
         <span>{t("app.commit")}</span>
       </Button>
       {menuItems.length > 0 ? (
-        <ActionPopover
-          ariaLabel={t("workspace.git.moreActions")}
-          title={t("workspace.git.moreActions")}
-          disabled={gitBusy}
-          triggerIcon={<ChevronDown className="size-3.5" aria-hidden />}
-          items={menuItems}
-          triggerClassName={cn(
-            DESKTOP_CHROME_COMMIT_BTN,
-            "size-7 w-7 rounded-l-none rounded-r-md p-0",
-          )}
-          contentClassName="text-xs"
-        />
+        <>
+          <ButtonGroupSeparator className={DESKTOP_GIT_ACTION_SPLIT} />
+          <ActionPopover
+            ariaLabel={t("workspace.git.moreActions")}
+            title={t("workspace.git.moreActions")}
+            disabled={gitBusy}
+            triggerVariant="default"
+            triggerSize="sm"
+            triggerIcon={<ChevronDown className="size-3.5" aria-hidden />}
+            items={menuItems}
+            triggerClassName={DESKTOP_GIT_ACTION_MENU_TRIGGER}
+            contentClassName="text-xs"
+          />
+        </>
       ) : null}
     </ButtonGroup>
   );

@@ -43,6 +43,8 @@
   --sidebar-faint-foreground: oklch(0.5 0 0);
   /* Dialog 内部描边面板统一使用“连接提供商”选择框的边框色；后续仅 Dialog 内部块级边框复用，非 Dialog 场景不要使用。 */
   --dialog-panel-border: color-mix(in oklab, var(--border) 40%, transparent);
+  /* Git primary ButtonGroup 内部分割：固定中性灰，禁止混 primary-foreground（暗色下是近黑，再淡也像黑线） */
+  --git-action-split: oklch(0.58 0 0);
   /* UI 字体栈：运行时由 applyFontToDocument 覆盖；须用 var() 接入 @theme，避免 font-sans 被编译成字面量。 */
   --spirit-ui-font-stack: 'Geist Variable', sans-serif;
   /* 集成终端（xterm）：ANSI 色板参考 VS Code Light+ 默认 */
@@ -118,6 +120,7 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-dialog-panel-border: var(--dialog-panel-border);
+  --color-git-action-split: var(--git-action-split);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -206,6 +209,7 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
   --sidebar-ring: oklch(0.556 0 0);
   --sidebar-list-foreground: oklch(0.8 0 0);
   --sidebar-faint-foreground: oklch(0.55 0 0);
+  --git-action-split: oklch(0.72 0 0);
   /* 集成终端（xterm）：ANSI 色板参考 VS Code Dark+ 默认 */
   --terminal-bg: #0a0a0a;
   --terminal-fg: #fafafa;
