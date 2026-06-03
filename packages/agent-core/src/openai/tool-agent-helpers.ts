@@ -75,6 +75,7 @@ export function startOpenAiToolAgentState(
   todosContextText?: string,
   basicInfo?: OpenAiToolAgentBasicInfo,
   applyPatchFileToolsPromptSection?: string,
+  providerWebSearchPromptSection?: string,
 ): OpenAiToolAgentState {
   return startToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -90,6 +91,7 @@ export function startOpenAiToolAgentState(
       todosContextText,
       basicInfo,
       applyPatchFileToolsPromptSection,
+      providerWebSearchPromptSection,
     ),
     userInput,
   );
@@ -108,6 +110,7 @@ export function continueOpenAiToolAgentState(
   todosContextText?: string,
   basicInfo?: OpenAiToolAgentBasicInfo,
   applyPatchFileToolsPromptSection?: string,
+  providerWebSearchPromptSection?: string,
 ): OpenAiToolAgentState {
   return continueToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -123,6 +126,7 @@ export function continueOpenAiToolAgentState(
       todosContextText,
       basicInfo,
       applyPatchFileToolsPromptSection,
+      providerWebSearchPromptSection,
     ),
   );
 }
@@ -140,6 +144,7 @@ function buildOpenAiToolAgentMessages(
   todosContextText: string | undefined,
   basicInfo: OpenAiToolAgentBasicInfo | undefined,
   applyPatchFileToolsPromptSection: string | undefined,
+  providerWebSearchPromptSection: string | undefined,
 ): JsonValue[] {
   return buildToolAgentMessages({
     historyMessages: llmHistoryToOpenAiMessages(history, assetRoot),
@@ -155,6 +160,9 @@ function buildOpenAiToolAgentMessages(
     ...(applyPatchFileToolsPromptSection === undefined
       ? {}
       : { applyPatchFileToolsPromptSection }),
+    ...(providerWebSearchPromptSection === undefined
+      ? {}
+      : { providerWebSearchPromptSection }),
   });
 }
 

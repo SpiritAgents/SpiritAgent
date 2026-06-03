@@ -135,6 +135,7 @@ export function buildToolAgentMessages(input: {
   todosContextText?: string;
   basicInfo?: ToolAgentBasicInfo;
   applyPatchFileToolsPromptSection?: string;
+  providerWebSearchPromptSection?: string;
 }): JsonValue[] {
   const rulesSystemMessage = buildRulesSystemMessage(input.enabledRules ?? []);
   const skillsCatalogSystemMessage = buildSkillsCatalogSystemMessage(input.enabledSkillCatalog ?? []);
@@ -159,6 +160,7 @@ export function buildToolAgentMessages(input: {
         todosSystemMessage,
         basicInfoSystemMessage,
         input.applyPatchFileToolsPromptSection,
+        input.providerWebSearchPromptSection,
       ),
     },
     ...input.historyMessages.map((message) => cloneJsonValue(message)),

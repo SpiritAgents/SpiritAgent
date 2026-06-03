@@ -43,3 +43,10 @@ export {
   isApplyPatchFunctionToolDefinition,
   shouldUseOpenAiApplyPatchTool,
 } from './apply-patch-eligibility.js';
+export {
+  buildProviderWebSearchPromptSection,
+  buildWebSearchResponsesTraceToolEntry,
+  resolveProviderWebSearchMode,
+  shouldUseProviderWebSearch,
+  type ProviderWebSearchMode,
+} from './web-search-eligibility.js';

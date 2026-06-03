@@ -6,8 +6,8 @@ import i18n from 'i18next';
 function loadLocaleFile(name: string): Record<string, unknown> {
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    join(__dirname, '../locales', `${name}.json`),
     join(__dirname, '../../../src/locales', `${name}.json`),
+    join(__dirname, '../locales', `${name}.json`),
   ];
   for (const p of candidates) {
     try {
