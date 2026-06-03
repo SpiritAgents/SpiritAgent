@@ -789,6 +789,8 @@ export interface ToolBlockSnapshot {
   deleteFileBaselineText?: string;
   /** preview 阶段完整参数 JSON，供展开区流式 Diff；完成后清除。 */
   streamingArgumentsJson?: string;
+  /** 已完成文件类工具：完整请求 JSON（供 Diff；与 UI 用 argsExcerpt 截断分离）。 */
+  fileToolDiffArgumentsJson?: string;
   detailLines: string[];
   argsExcerpt?: string;
   outputExcerpt?: string;

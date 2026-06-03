@@ -208,6 +208,7 @@ function FileToolDiffExpandedBody({
       tool.phase,
       tool.argsExcerpt,
       tool.deleteFileBaselineText,
+      tool.fileToolDiffArgumentsJson,
       open ? tool.streamingArgumentsJson : undefined,
       diffHost?.workspaceRoot,
       planBaselineText,

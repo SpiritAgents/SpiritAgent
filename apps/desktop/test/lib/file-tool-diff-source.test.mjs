@@ -116,3 +116,20 @@ test('resolveFileToolDiffSource reports truncated argsExcerpt', () => {
   };
   assert.equal(resolveFileToolDiffSource(tool, { open: true }), 'truncated');
 });
+
+test('resolveFileToolDiffSource uses fileToolDiffArgumentsJson when argsExcerpt truncated', () => {
+  const content = 'x'.repeat(5000);
+  const request = { path: 'test-messy.txt', content };
+  const tool = {
+    toolName: 'create_file',
+    phase: 'succeeded',
+    headline: '创建',
+    detailLines: [],
+    argsExcerpt: `${JSON.stringify(request).slice(0, 4000)}...<truncated>`,
+    fileToolDiffArgumentsJson: JSON.stringify(request),
+  };
+  const result = resolveFileToolDiffSource(tool, { open: true });
+  assert.ok(result && typeof result === 'object' && 'modified' in result);
+  assert.equal(result.modified, content);
+  assert.equal(result.relativePath, 'test-messy.txt');
+});

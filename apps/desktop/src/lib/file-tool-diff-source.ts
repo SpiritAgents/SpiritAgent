@@ -15,6 +15,24 @@ export const FILE_DIFF_TOOL_NAMES = new Set([
 /** 与 delete-file-line-delta / readWorkspaceTextFile 一致。 */
 export const FILE_TOOL_DIFF_MAX_BYTES = 2 * 1024 * 1024;
 
+/** 会话中持久化文件工具完整参数 JSON 的上限（约为两侧 diff 文本上限之和）。 */
+export const FILE_TOOL_DIFF_ARGUMENTS_JSON_MAX_BYTES = 8 * 1024 * 1024;
+
+export function serializeFileToolDiffArgumentsJson(request: unknown): string | undefined {
+  const json = JSON.stringify(request);
+  if (new TextEncoder().encode(json).length > FILE_TOOL_DIFF_ARGUMENTS_JSON_MAX_BYTES) {
+    return undefined;
+  }
+  return json;
+}
+
+function fileToolDiffArgumentsJsonForTool(tool: ToolBlockSnapshot): string | undefined {
+  if (tool.phase === 'preview') {
+    return tool.streamingArgumentsJson;
+  }
+  return tool.fileToolDiffArgumentsJson;
+}
+
 export type FileToolDiffSource = {
   relativePath: string;
   languageId: string;
@@ -53,7 +71,7 @@ export function resolvePlanRelativePath(
   }
   const json =
     argumentsJson?.trim() ||
-    (tool.phase === 'preview' ? tool.streamingArgumentsJson : undefined) ||
+    fileToolDiffArgumentsJsonForTool(tool) ||
     tool.argsExcerpt;
   if (!json?.trim()) {
     return undefined;
@@ -235,8 +253,7 @@ export function resolveFileToolDiffSource(
     return undefined;
   }
 
-  const argumentsJson =
-    tool.phase === 'preview' ? tool.streamingArgumentsJson : undefined;
+  const argumentsJson = fileToolDiffArgumentsJsonForTool(tool);
 
   const partial = argumentsJson
     ? parsePartialRequestRecord(tool.toolName, argumentsJson)
@@ -259,7 +276,12 @@ export function resolveFileToolDiffSource(
     return resolveFromRecord(tool, { path: pathValue }, options);
   }
 
-  if (tool.phase !== 'preview' && tool.argsExcerpt && argsExcerptLooksTruncated(tool.argsExcerpt)) {
+  if (
+    tool.phase !== 'preview' &&
+    !tool.fileToolDiffArgumentsJson?.trim() &&
+    tool.argsExcerpt &&
+    argsExcerptLooksTruncated(tool.argsExcerpt)
+  ) {
     return 'truncated';
   }
 
