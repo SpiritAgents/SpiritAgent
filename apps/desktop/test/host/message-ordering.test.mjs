@@ -50,6 +50,17 @@ test('toolCallSummaryCopyForRequest: apply_patch uses verb headline + basename d
   );
 });
 
+test('toolCallSummaryCopyForRequest: web_search uses web search headline + query detail', () => {
+  assert.deepEqual(toolCallSummaryCopyForRequest('web_search', { query: 'latest news' }), {
+    headline: '联网搜索',
+    headlineDetail: 'latest news',
+  });
+  assert.deepEqual(toolCallSummaryCopyForRequest('$web_search', { search_query: 'Kimi API' }), {
+    headline: '联网搜索',
+    headlineDetail: 'Kimi API',
+  });
+});
+
 test('toolCallSummaryCopyForRequest: search tools use Chinese headline + detail', () => {
   assert.deepEqual(toolCallSummaryCopyForRequest('grep', { query: 'TODO' }), {
     headline: '搜索',

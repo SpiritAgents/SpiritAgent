@@ -270,6 +270,14 @@ export function toolCallSummaryCopyForRequest(
         ...(url ? { headlineDetail: truncateSummaryDetail(url) } : {}),
       };
     }
+    case 'web_search':
+    case '$web_search': {
+      const query = webSearchQueryFromArguments(record);
+      return {
+        headline: i18n.t('tool.webSearch'),
+        ...(query ? { headlineDetail: truncateSummaryDetail(query) } : {}),
+      };
+    }
     case 'list_directory_files': {
       const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
       return {
@@ -919,6 +927,16 @@ function readFileSummaryCopy(request: unknown): ToolCallSummaryCopy {
     headline: i18n.t('tool.view'),
     ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
   };
+}
+
+function webSearchQueryFromArguments(record: Record<string, unknown>): string {
+  for (const key of ['query', 'search_query', 'q', 'keywords']) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return '';
 }
 
 function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string {

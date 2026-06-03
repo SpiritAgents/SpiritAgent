@@ -12,6 +12,13 @@ applyTo: "**/*"
 
 `agent-core` 是唯一的 Agent 能力库；宿主内部库负责宿主侧发现、管理与执行细节；应用层只做薄适配与 UI。
 
+## 提供商原生 `web_search`
+
+- 联网搜索由 **Moonshot / OpenAI 官方 / xAI 官方** 在各自 API 侧执行；**不在** `host-internal` 注册可执行 `web_search` 宿主工具。
+- Moonshot：Chat Completions `builtin_function` + `$web_search`；启用搜索的回合须禁用 Moonshot thinking。
+- OpenAI / xAI 官方 Responses：经 `@ai-sdk/openai` / `@ai-sdk/xai` 的 `tools.webSearch()` 注入（与 `applyPatch` 同级），首批不为 Vercel AI Gateway 复制 apply_patch 式 fetch body patch。
+- 可见性由 `web-search-eligibility` 门控；未适配模型不注入工具声明与 system 提示段。
+
 ## 术语
 
 ### 工具定义

@@ -632,6 +632,7 @@
     "diffFileTooLarge": "无法展示 Diff：文件超过大小限制。",
     "regexPrefix": "正则: ",
     "search": "搜索",
+    "webSearch": "联网搜索",
     "match": "匹配",
     "fetch": "抓取",
     "listDirectory": "列出目录",

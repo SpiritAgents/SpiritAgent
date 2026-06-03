@@ -43,3 +43,14 @@ export {
   isApplyPatchFunctionToolDefinition,
   shouldUseOpenAiApplyPatchTool,
 } from './apply-patch-eligibility.js';
+export {
+  MOONSHOT_WEB_SEARCH_API_TOOL_NAME,
+  WEB_SEARCH_DISPLAY_TOOL_NAME,
+  buildMoonshotBuiltinWebSearchToolDefinition,
+  buildProviderWebSearchPromptSection,
+  buildWebSearchResponsesTraceToolEntry,
+  resolveProviderWebSearchMode,
+  shouldDisableMoonshotThinkingForWebSearch,
+  shouldUseProviderWebSearch,
+  type ProviderWebSearchMode,
+} from './web-search-eligibility.js';
