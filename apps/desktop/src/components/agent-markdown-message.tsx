@@ -37,9 +37,6 @@ const streamingAnimateOptions = {
   stagger: 0,
 };
 
-/** One block while streaming so prev-length tracks the full growing document. */
-const streamingSingleBlock = (markdown: string) => [markdown];
-
 function isAnimateRehypePlugin(entry: Pluggable): boolean {
   const fn = Array.isArray(entry) ? entry[0] : entry;
   return typeof fn === "function" && /^rehypeAnimate/.test(fn.name ?? "");
@@ -47,7 +44,7 @@ function isAnimateRehypePlugin(entry: Pluggable): boolean {
 
 type StreamBlockAnimateContextValue = {
   lastBlockIndex: number;
-  /** Length of markdown string committed after the previous paint (used instead of getLastRenderCharCount). */
+  /** Tail-block char length committed after the previous paint (used instead of getLastRenderCharCount). */
   frozenCharCountRef: MutableRefObject<number>;
 };
 
@@ -129,18 +126,30 @@ export function AgentMarkdownMessage({
 
   const motionActive = streaming && !prefersReducedMotion;
 
-  const frozenCharCountRef = useRef(0);
-
-  useLayoutEffect(() => {
-    frozenCharCountRef.current = motionActive ? content.length : 0;
-  }, [content, motionActive]);
-
   const streamBlocks = useMemo(() => {
     if (!motionActive) return [];
     return parseMarkdownIntoBlocks(content);
   }, [content, motionActive]);
 
-  const lastBlockIndex = motionActive ? 0 : Math.max(0, streamBlocks.length - 1);
+  const lastBlockIndex = Math.max(0, streamBlocks.length - 1);
+  const tailBlockLength = motionActive
+    ? streamBlocks[lastBlockIndex]?.length ?? 0
+    : 0;
+
+  // Multi-block streaming: only the tail block animates new chars, so prev-length must
+  // track the tail block (not the whole doc). Reset to 0 when a new tail block begins
+  // (its content is entirely new) so its first chars animate; updated to the committed
+  // tail length after each paint so subsequent growth only animates the delta.
+  const frozenCharCountRef = useRef(0);
+  const prevTailIndexRef = useRef(-1);
+  if (motionActive && lastBlockIndex !== prevTailIndexRef.current) {
+    prevTailIndexRef.current = lastBlockIndex;
+    frozenCharCountRef.current = 0;
+  }
+
+  useLayoutEffect(() => {
+    frozenCharCountRef.current = motionActive ? tailBlockLength : 0;
+  }, [tailBlockLength, motionActive]);
 
   const streamBlockAnimateContext = useMemo(
     () => ({ lastBlockIndex, frozenCharCountRef }),
@@ -163,7 +172,6 @@ export function AgentMarkdownMessage({
         parseIncompleteMarkdown={streaming}
         isAnimating={motionActive}
         animated={motionActive ? streamingAnimateOptions : false}
-        parseMarkdownIntoBlocksFn={motionActive ? streamingSingleBlock : undefined}
         BlockComponent={motionActive ? StreamingAnimateBlock : undefined}
       >
         {content}
