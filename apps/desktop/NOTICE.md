@@ -6,8 +6,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 ## Summary
 
-- MIT: 39 package(s)
-- Apache-2.0: 3 package(s)
+- MIT: 40 package(s)
+- Apache-2.0: 7 package(s)
 - BSD-3-Clause: 2 package(s)
 - ISC: 1 package(s)
 - OFL-1.1: 1 package(s)
@@ -22,6 +22,12 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/Brooooooklyn/keyring-node
 - **@radix-ui/react-scroll-area** 1.2.10 — MIT
   - https://github.com/radix-ui/primitives
+- **@streamdown/code** 1.1.1 — Apache-2.0
+  - https://github.com/vercel/streamdown
+- **@streamdown/math** 1.0.2 — Apache-2.0
+  - https://github.com/vercel/streamdown
+- **@streamdown/mermaid** 1.0.2 — Apache-2.0
+  - https://github.com/vercel/streamdown
 - **@tailwindcss/vite** 4.2.4 — MIT
   - https://github.com/tailwindlabs/tailwindcss
 - **@types/diff** 7.0.2 — MIT
@@ -62,6 +68,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/electron-userland/electron-builder
 - **i18next** 26.3.0 — MIT
   - https://github.com/i18next/i18next
+- **katex** 0.17.0 — MIT
+  - https://github.com/KaTeX/KaTeX
 - **koffi** 2.16.1 — MIT
   - https://github.com/Koromix/koffi
 - **license-checker-rseidelsohn** 4.4.2 — BSD-3-Clause
@@ -94,6 +102,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/shadcn-ui/ui
 - **sharp** 0.34.5 — Apache-2.0
   - https://github.com/lovell/sharp
+- **streamdown** 2.5.0 — Apache-2.0
+  - https://github.com/vercel/streamdown
 - **tailwind-merge** 3.5.0 — MIT
   - https://github.com/dcastil/tailwind-merge
 - **tailwindcss** 4.2.4 — MIT
@@ -108,6 +118,30 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/jeffbski/wait-on
 
 ## License texts
+
+### Apache-2.0
+
+**Used by:**
+- @streamdown/code 1.1.1
+- @streamdown/math 1.0.2
+- @streamdown/mermaid 1.0.2
+- streamdown 2.5.0
+
+```
+Copyright 2023 Vercel, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
 
 ### Apache-2.0
 
@@ -1176,6 +1210,35 @@ SOFTWARE.
 The MIT License (MIT)
 
 Copyright (c) 2011-present i18next
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### MIT
+
+**Used by:**
+- katex 0.17.0
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2013-2020 Khan Academy and other contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
