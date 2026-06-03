@@ -1,5 +1,4 @@
 // 与 ratatui 0.29 `Paragraph` + `WordWrapper` 行为一致，便于应用内选区与折行对齐。
-// 逻辑源自 ratatui（MIT）：https://github.com/ratatui/ratatui — 非 OpenCode 或其它产品代码。
 
 use std::{collections::VecDeque, mem};
 
