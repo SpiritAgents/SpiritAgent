@@ -74,7 +74,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { MarkdownMessage } from "@/components/markdown-message";
+import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
 import { MarketplaceView } from "@/components/marketplace-view";
 import {
   ComposerLocalFileStrip,
@@ -1138,8 +1138,9 @@ function AssistantThinkingCollapsible({
       {showThinkingBody ? (
         <CollapsibleContent className="min-w-0">
           <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
-            <MarkdownMessage
+            <AgentMarkdownMessage
               content={thinking}
+              streaming={thinkingActive}
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             />
@@ -1214,8 +1215,9 @@ function AssistantCompactionCollapsible({
       {showCompactionBody ? (
         <CollapsibleContent className="min-w-0">
           <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
-            <MarkdownMessage
+            <AgentMarkdownMessage
               content={compaction}
+              streaming={compactionActive}
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             />
@@ -1417,8 +1419,9 @@ function MessageCard({
             <p className="text-sm leading-relaxed text-muted-foreground">{message.content}</p>
           ) : (
           <div data-spirit-surface="message-bubble">
-            <MarkdownMessage
+            <AgentMarkdownMessage
               content={message.content}
+              streaming={message.pending}
               className="font-sans"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             />
