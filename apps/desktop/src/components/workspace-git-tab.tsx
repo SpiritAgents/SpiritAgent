@@ -82,6 +82,7 @@ export function WorkspaceGitTab({
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const splitDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const historyLoadMoreInFlightRef = useRef(false);
+  const hasLoadedWorkingTreeRef = useRef(false);
 
   const clampChangesPaneHeight = useCallback((height: number): number => {
     const container = splitContainerRef.current;
@@ -168,16 +169,23 @@ export function WorkspaceGitTab({
     : undefined;
 
   const loadWorkingTree = useCallback(async () => {
-    setLoadingTree(true);
+    const showLoadingIndicator = !hasLoadedWorkingTreeRef.current;
+    if (showLoadingIndicator) {
+      setLoadingTree(true);
+    }
     setTreeError("");
     try {
       const next = await readGitWorkingTree();
       setWorkingTree(next);
+      hasLoadedWorkingTreeRef.current = true;
     } catch (loadError) {
       setTreeError(describeError(loadError));
       setWorkingTree(null);
+      hasLoadedWorkingTreeRef.current = false;
     } finally {
-      setLoadingTree(false);
+      if (showLoadingIndicator) {
+        setLoadingTree(false);
+      }
     }
   }, [readGitWorkingTree]);
 
