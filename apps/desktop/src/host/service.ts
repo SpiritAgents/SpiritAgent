@@ -171,6 +171,7 @@ import {
   previewModelCatalogForTransport,
   usesProviderListedModelCatalogMetadata,
 } from './model-catalog-metadata.js';
+import { modelExistsInProviderScope } from './provider-api-key.js';
 import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
@@ -900,7 +901,7 @@ class DesktopHostService {
       const catalogEntries = previewCatalogMapForAddProviderRequest(request, provider, transportKind);
       const toAdd: NewProfile[] = [];
       for (const name of uniqueIds) {
-        if (state.config.models.some((model) => model.name === name)) {
+        if (modelExistsInProviderScope(state.config.models, name, provider)) {
           continue;
         }
         const catalogEntry = catalogEntries.get(name);

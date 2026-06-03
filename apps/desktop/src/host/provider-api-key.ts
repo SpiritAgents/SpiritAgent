@@ -15,6 +15,29 @@ export interface ModelKeyPresenceProfile {
   provider?: DesktopModelProvider;
 }
 
+export type ExistingModelForProviderAdd = ModelKeyPresenceProfile;
+
+/** True when the same model id is already configured under this provider scope. */
+export function modelExistsInProviderScope(
+  existingModels: readonly ExistingModelForProviderAdd[],
+  name: string,
+  provider?: DesktopModelProvider,
+): boolean {
+  const scope = modelProviderKeyScope(provider);
+  return existingModels.some(
+    (model) => model.name === name && modelProviderKeyScope(model.provider) === scope,
+  );
+}
+
+/** Model ids from `modelIds` that are not already present under the target provider scope. */
+export function filterNewProviderModelIds(
+  existingModels: readonly ExistingModelForProviderAdd[],
+  modelIds: readonly string[],
+  provider?: DesktopModelProvider,
+): string[] {
+  return modelIds.filter((name) => !modelExistsInProviderScope(existingModels, name, provider));
+}
+
 /**
  * Per-model keyring presence: provider-level entry OR legacy per-model entry.
  * Does not include env vars or global fallback (snapshot `keyConfigured` semantics).
