@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { EditFileLineDeltaBadge } from "@/components/edit-file-line-delta-badge";
-import { ToolCallMonacoDiff } from "@/components/tool-call-monaco-diff";
+import { ToolCallDiffView } from "@/components/tool-call-diff-view";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -209,7 +209,7 @@ function FileToolDiffExpandedBody({
 
   if (displayDiff) {
     return (
-      <ToolCallMonacoDiff
+      <ToolCallDiffView
         relativePath={displayDiff.relativePath}
         languageId={displayDiff.languageId}
         original={displayDiff.original}

@@ -6,6 +6,7 @@ import { refractorLanguageForPath } from '../../src/lib/refractor-tool-diff.ts';
 
 test('buildToolCallUnifiedDiff marks new file lines as insertions', () => {
   const patch = buildToolCallUnifiedDiff('a.ts', '', 'line1\nline2\n');
+  assert.match(patch, /^diff --git a\/a.ts b\/a.ts/m);
   assert.match(patch, /^---/m);
   assert.match(patch, /^\+\+\+/m);
   assert.match(patch, /^\+line1$/m);
