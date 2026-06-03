@@ -62,6 +62,27 @@ test('continuation segments derive rows after previous segment rows', () => {
   ]);
 });
 
+test('late-finalized pre-tool thinking stays above tool preview inserted mid-stream', () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn('read again silently');
+  timeline.beginAssistantSegment('initial');
+  timeline.updatePendingAssistantAux('thinking', 'Plan to read the full file without speaking.');
+  timeline.upsertToolMessage('read-1', toolBlock('read-1', 'preview'));
+  timeline.finalizeThinkingSegment('Plan to read the full file without speaking.', 'after-stream');
+  timeline.updatePendingAssistantAux('thinking', 'Finished reading the file.');
+  timeline.finalizeThinkingSegment('Finished reading the file.', 'after-stream');
+  timeline.appendAssistantTextChunk('已读取完毕。');
+  timeline.completeActiveAssistantSegment();
+
+  assert.deepEqual(visibleRowTokens(timeline.toMessages()), [
+    'user:read again silently',
+    'thinking:Plan to read the full file without speaking.',
+    'tool:read-1:preview',
+    'thinking:Finished reading the file.',
+    'assistant:已读取完毕。',
+  ]);
+});
+
 test('post-tool thinking in the same segment stays below provider tool rows', () => {
   const timeline = createTimeline();
   timeline.beginUserTurn('search DeepSeek generation');

@@ -1414,6 +1414,32 @@ function segmentHasToolRows(segment: DesktopTimelineSegment): boolean {
   return segment.rows.some((row) => row.kind === 'tool');
 }
 
+function segmentHasPostToolAssistantAnswer(segment: DesktopTimelineSegment): boolean {
+  return segment.rows.some(
+    (row) =>
+      row.kind === 'assistant-text' &&
+      row.section === 'after-tools' &&
+      row.content.trim(),
+  );
+}
+
+/** Tool preview inserted before a still-pending before-tools row (pre-tool reasoning). */
+function segmentHasPendingBeforeToolsRowAfterFirstTool(
+  segment: DesktopTimelineSegment,
+): boolean {
+  const firstToolIndex = segment.rows.findIndex((row) => row.kind === 'tool');
+  if (firstToolIndex < 0) {
+    return false;
+  }
+  return segment.rows.some(
+    (row, index) =>
+      index > firstToolIndex &&
+      row.kind === 'assistant-text' &&
+      row.section === 'before-tools' &&
+      !row.content.trim(),
+  );
+}
+
 function resolveThinkingRowSection(
   segment: DesktopTimelineSegment,
   placement?: DesktopThinkingSegmentPlacement,
@@ -1425,6 +1451,12 @@ function resolveThinkingRowSection(
     return 'tools';
   }
   if (placement === 'after-stream') {
+    if (segmentHasPostToolAssistantAnswer(segment)) {
+      return 'after-tools';
+    }
+    if (segmentHasPendingBeforeToolsRowAfterFirstTool(segment)) {
+      return 'before-tools';
+    }
     return 'after-tools';
   }
   return 'before-tools';

@@ -38,6 +38,73 @@ export function hasAssistantBodyTextLaterInTurn(
   return false;
 }
 
+function isLiveReasoningPlaceholderMessage(
+  message: ConversationMessageSnapshot,
+  pendingAuxState: PendingAssistantAux | undefined,
+): boolean {
+  return Boolean(
+    message.role === 'assistant' &&
+      message.pending &&
+      !message.content.trim() &&
+      !message.tool &&
+      isLivePendingReasoningAux(pendingAuxState) &&
+      pendingAuxState?.kind === 'thinking' &&
+      pendingAuxState.detailText === undefined,
+  );
+}
+
+/** Pending assistant row still streaming reasoning (before answer body). */
+export function isAssistantReasoningLive(
+  message: ConversationMessageSnapshot,
+  pendingAuxState: PendingAssistantAux | undefined,
+  messages?: readonly ConversationMessageSnapshot[],
+  messageIndex?: number,
+): boolean {
+  if (message.role !== 'assistant' || !message.pending || message.content.trim() || message.tool) {
+    return false;
+  }
+  if (
+    messages !== undefined &&
+    messageIndex !== undefined &&
+    hasAssistantBodyTextLaterInTurn(messages, messageIndex)
+  ) {
+    return false;
+  }
+  const thinking = message.aux?.thinking?.trim();
+  if (thinking && !isGenericPendingThinkingStatusText(thinking)) {
+    return true;
+  }
+  return isLiveReasoningPlaceholderMessage(message, pendingAuxState);
+}
+
+/**
+ * The very next assistant row is live reasoning with no tool in between — suppress
+ * finalized Thought to avoid Thought + Thinking on the same stream. When a tool row
+ * is next, pre-tool Thought must stay visible through tool execution.
+ */
+export function hasAssistantLiveReasoningLaterInTurn(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndex: number,
+  pendingAuxState: PendingAssistantAux | undefined,
+): boolean {
+  const next = messages[messageIndex + 1];
+  if (!next || next.role === 'user') {
+    return false;
+  }
+  if (next.role === 'assistant' && next.tool) {
+    return false;
+  }
+  if (
+    next.role === 'assistant' &&
+    !next.pending &&
+    !next.tool &&
+    next.content.trim()
+  ) {
+    return false;
+  }
+  return isAssistantReasoningLive(next, pendingAuxState, messages, messageIndex + 1);
+}
+
 export function hasAssistantToolLaterInTurn(
   messages: readonly ConversationMessageSnapshot[],
   messageIndex: number,
@@ -103,44 +170,6 @@ export function shouldStripThinkingAuxNearToolCard(
   );
 }
 
-function isLiveReasoningPlaceholderMessage(
-  message: ConversationMessageSnapshot,
-  pendingAuxState: PendingAssistantAux | undefined,
-): boolean {
-  return Boolean(
-    message.role === 'assistant' &&
-      message.pending &&
-      !message.content.trim() &&
-      !message.tool &&
-      isLivePendingReasoningAux(pendingAuxState) &&
-      pendingAuxState?.kind === 'thinking' &&
-      pendingAuxState.detailText === undefined,
-  );
-}
-
-function assistantReasoningLive(
-  message: ConversationMessageSnapshot,
-  pendingAuxState?: PendingAssistantAux,
-  messages?: readonly ConversationMessageSnapshot[],
-  messageIndex?: number,
-): boolean {
-  if (message.role !== 'assistant' || !message.pending || message.content.trim() || message.tool) {
-    return false;
-  }
-  if (
-    messages !== undefined &&
-    messageIndex !== undefined &&
-    hasAssistantBodyTextLaterInTurn(messages, messageIndex)
-  ) {
-    return false;
-  }
-  const thinking = message.aux?.thinking?.trim();
-  if (thinking && !isGenericPendingThinkingStatusText(thinking)) {
-    return true;
-  }
-  return isLiveReasoningPlaceholderMessage(message, pendingAuxState);
-}
-
 export function shouldShowAssistantThinkingCollapsible(
   message: ConversationMessageSnapshot,
   pendingAuxState: PendingAssistantAux | undefined,
@@ -183,6 +212,14 @@ export function shouldShowAssistantThinkingCollapsible(
     return true;
   }
 
+  if (
+    !message.pending &&
+    hasDisplayableThinkingAux &&
+    hasAssistantLiveReasoningLaterInTurn(messages, listIndex, pendingAuxState)
+  ) {
+    return false;
+  }
+
   if (!hasAssistantToolLaterInTurn(messages, listIndex)) {
     return true;
   }
@@ -197,7 +234,7 @@ export function shouldShowAssistantThinkingCollapsible(
     return true;
   }
 
-  return assistantReasoningLive(message, pendingAuxState, messages, listIndex);
+  return isAssistantReasoningLive(message, pendingAuxState, messages, listIndex);
 }
 
 export function shouldCollapseThinkingDuringToolPreview(

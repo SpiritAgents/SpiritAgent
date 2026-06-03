@@ -113,6 +113,7 @@ import {
 import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import {
   hasAssistantBodyTextLaterInTurn,
+  isAssistantReasoningLive,
   shouldCollapseThinkingDuringToolPreview,
   shouldShowAssistantThinkingCollapsible,
 } from "@/lib/conversation-thinking-ui";
@@ -998,50 +999,16 @@ function CompactionLabelWithShimmer({ active }: { active: boolean }) {
   );
 }
 
-function isLiveReasoningPlaceholderMessage(
-  message: ConversationMessageSnapshot,
-  pendingAuxState: PendingAssistantAux | undefined,
-): boolean {
-  return Boolean(
-    message.role === "assistant" &&
-      message.pending &&
-      !message.content.trim() &&
-      !message.tool &&
-      isLivePendingReasoningAux(pendingAuxState) &&
-      pendingAuxState?.kind === "thinking" &&
-      pendingAuxState.detailText === undefined,
-  );
-}
-
-/** 推理流进行中：尚未写入正文；正文开始后自动收起。 */
-function assistantReasoningLive(
-  message: ConversationMessageSnapshot,
+function isLiveStreamingThinkingMessage(
+  message: ConversationMessageSnapshot | undefined,
   pendingAuxState?: PendingAssistantAux,
   messages?: readonly ConversationMessageSnapshot[],
   messageIndex?: number,
 ): boolean {
-  if (message.role !== "assistant" || !message.pending || message.content.trim() || message.tool) {
-    return false;
-  }
-  if (
-    messages !== undefined &&
-    messageIndex !== undefined &&
-    hasAssistantBodyTextLaterInTurn(messages, messageIndex)
-  ) {
-    return false;
-  }
-  const thinking = message.aux?.thinking?.trim();
-  if (thinking && !isGenericPendingThinkingStatusText(thinking)) {
-    return true;
-  }
-  return isLiveReasoningPlaceholderMessage(message, pendingAuxState);
-}
-
-function isLiveStreamingThinkingMessage(
-  message: ConversationMessageSnapshot | undefined,
-  pendingAuxState?: PendingAssistantAux,
-): boolean {
-  return Boolean(message && assistantReasoningLive(message, pendingAuxState));
+  return Boolean(
+    message &&
+      isAssistantReasoningLive(message, pendingAuxState, messages, messageIndex),
+  );
 }
 
 function AssistantThinkingCollapsible({
@@ -1060,7 +1027,7 @@ function AssistantThinkingCollapsible({
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
 }) {
   const thinking = message.aux?.thinking?.trim() ?? "";
-  const reasoningLive = assistantReasoningLive(message, pendingAuxState, messages, listIndex);
+  const reasoningLive = isAssistantReasoningLive(message, pendingAuxState, messages, listIndex);
   if (!thinking && !reasoningLive) {
     return null;
   }

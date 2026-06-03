@@ -7,6 +7,90 @@ import {
   shouldStripThinkingAuxNearToolCard,
 } from '../dist-electron/src/lib/conversation-thinking-ui.js';
 
+test('shouldShowAssistantThinkingCollapsible hides finalized Thought when live Thinking is adjacent', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: {
+        toolCallId: 't1',
+        toolName: 'read_file',
+        phase: 'running',
+        headline: 'read_file',
+        detailLines: [],
+      },
+    },
+    {
+      id: 3,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      aux: { thinking: 'Planning which lines to read.' },
+    },
+    {
+      id: 4,
+      role: 'assistant',
+      content: '',
+      pending: true,
+      aux: { thinking: 'Reading the rest of the file now.' },
+    },
+  ];
+
+  assert.equal(
+    shouldShowAssistantThinkingCollapsible(messages[2], undefined, messages, 2),
+    false,
+  );
+  assert.equal(
+    shouldShowAssistantThinkingCollapsible(messages[3], undefined, messages, 3),
+    true,
+  );
+});
+
+test('shouldShowAssistantThinkingCollapsible keeps pre-tool Thought when tool is next row', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      aux: { thinking: 'Plan to read the file silently.' },
+    },
+    {
+      id: 3,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: {
+        toolCallId: 't1',
+        toolName: 'read_file',
+        phase: 'running',
+        headline: 'read_file',
+        detailLines: [],
+      },
+    },
+    {
+      id: 4,
+      role: 'assistant',
+      content: '',
+      pending: true,
+      aux: { thinking: 'Finished reading.' },
+    },
+  ];
+
+  assert.equal(
+    shouldShowAssistantThinkingCollapsible(messages[1], undefined, messages, 1),
+    true,
+  );
+  assert.equal(
+    shouldShowAssistantThinkingCollapsible(messages[3], undefined, messages, 3),
+    true,
+  );
+});
+
 test('shouldStripThinkingAuxNearToolCard removes MCP status near tool row', () => {
   const messages = [
     { id: 1, role: 'user', content: 'hi', pending: false },
