@@ -1,4 +1,12 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { Copy, LoaderCircle } from "lucide-react";
@@ -90,6 +98,9 @@ function computeGraphWidth(rows: readonly GitCommitGraphRow[]): number {
 export type GitCommitGraphProps = {
   history: GitHistorySnapshot | null;
   loading: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
   error?: string;
   className?: string;
 };
@@ -509,13 +520,47 @@ function CommitGraphRow({
   );
 }
 
-export function GitCommitGraph({ history, loading, error, className }: GitCommitGraphProps) {
+export function GitCommitGraph({
+  history,
+  loading,
+  loadingMore = false,
+  hasMore = false,
+  onLoadMore,
+  error,
+  className,
+}: GitCommitGraphProps) {
   const { t } = useTranslation();
 
   const rows = history?.rows ?? [];
   const graphWidth = useMemo(() => computeGraphWidth(rows), [rows]);
   const rowsContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const [geometry, setGeometry] = useState<RowGeometry | null>(null);
+
+  useEffect(() => {
+    if (!hasMore || !onLoadMore || loadingMore) {
+      return;
+    }
+    const root = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]",
+    );
+    const sentinel = loadMoreSentinelRef.current;
+    if (!root || !sentinel) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
+        }
+        onLoadMore();
+      },
+      { root, rootMargin: "160px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, onLoadMore, rows.length]);
 
   useLayoutEffect(() => {
     const container = rowsContainerRef.current;
@@ -578,8 +623,10 @@ export function GitCommitGraph({ history, loading, error, className }: GitCommit
     return <p className={cn("p-3 text-xs text-muted-foreground", className)}>{t("workspace.git.noHistory")}</p>;
   }
 
+  const showLoadMoreFooter = hasMore || loadingMore;
+
   return (
-    <ScrollArea className={cn("min-h-0 flex-1", className)}>
+    <ScrollArea ref={scrollAreaRef} className={cn("min-h-0 flex-1", className)}>
       <div className="relative min-w-0 pr-1">
         <CommitGraphGutter rows={rows} graphWidth={graphWidth} geometry={geometry} />
         <div className="relative" ref={rowsContainerRef}>
@@ -591,6 +638,29 @@ export function GitCommitGraph({ history, loading, error, className }: GitCommit
             />
           ))}
         </div>
+        {showLoadMoreFooter ? (
+          <div
+            ref={loadMoreSentinelRef}
+            className="flex min-h-10 items-center justify-center gap-2 py-2 text-xs text-muted-foreground"
+          >
+            {loadingMore ? (
+              <>
+                <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+                {t("workspace.git.loadingMoreHistory")}
+              </>
+            ) : hasMore && onLoadMore ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={onLoadMore}
+              >
+                {t("workspace.git.loadMoreHistory")}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </ScrollArea>
   );

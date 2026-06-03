@@ -4,9 +4,11 @@ import { promisify } from 'node:util';
 import i18n from '../lib/i18n-host.js';
 import {
   addGitWorktree as addGitWorktreeInternal,
+  buildGitCommitHistorySnapshot,
   checkoutGitBranch as checkoutGitBranchInternal,
   buildWorktreeRootPath,
   isGitCheckoutBlockedError,
+  mergeGitLogCommitPages,
   mergeSpiritBranchToMain as mergeSpiritBranchToMainInternal,
   readGitCommitHistory,
   readGitWorkingTreeChanges,
@@ -114,7 +116,19 @@ export async function readWorkspaceGitHistory(
   workspaceRoot: string,
   request: ReadGitHistoryRequest = {},
 ): Promise<GitHistorySnapshot> {
-  return readGitCommitHistory(workspaceRoot, request);
+  const page = await readGitCommitHistory(workspaceRoot, {
+    maxCount: request.maxCount,
+    skip: request.skip,
+  });
+  if (
+    request.existingLogCommits &&
+    request.existingLogCommits.length > 0 &&
+    page.isRepository
+  ) {
+    const logCommits = mergeGitLogCommitPages(request.existingLogCommits, page.logCommits);
+    return buildGitCommitHistorySnapshot(logCommits, true, page.hasMore);
+  }
+  return page;
 }
 
 export async function createWorkspaceGitWorktree(

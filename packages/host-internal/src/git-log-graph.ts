@@ -4,7 +4,8 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
 const FIELD_SEP = '\x1f';
-const DEFAULT_MAX_COMMITS = 200;
+export const GIT_HISTORY_PAGE_SIZE = 200;
+const DEFAULT_MAX_COMMITS = GIT_HISTORY_PAGE_SIZE;
 
 export interface GitCommitRecord {
   oid: string;
@@ -33,10 +34,16 @@ export interface GitCommitHistorySnapshot {
   isRepository: boolean;
   commits: GitCommitRecord[];
   rows: GitCommitGraphRow[];
+  /** True when another page may exist (last fetch returned a full page). */
+  hasMore: boolean;
+  /** Commits in `git log` fetch order (newest first); used to paginate with `--skip`. */
+  logCommits: GitCommitRecord[];
 }
 
 export interface ReadGitCommitHistoryOptions {
   maxCount?: number;
+  /** Number of commits to skip in `git log` (same ordering as `--topo-order`). */
+  skip?: number;
 }
 
 function renderGitError(error: unknown): string {
@@ -192,6 +199,41 @@ export function orderCommitsForGraph(commits: readonly GitCommitRecord[]): GitCo
   return ordered;
 }
 
+/** Append a newer `git log` page to an older page without duplicate oids. */
+export function mergeGitLogCommitPages(
+  headPage: readonly GitCommitRecord[],
+  tailPage: readonly GitCommitRecord[],
+): GitCommitRecord[] {
+  if (tailPage.length === 0) {
+    return [...headPage];
+  }
+  const seen = new Set(headPage.map((commit) => commit.oid));
+  const merged = [...headPage];
+  for (const commit of tailPage) {
+    if (!seen.has(commit.oid)) {
+      seen.add(commit.oid);
+      merged.push(commit);
+    }
+  }
+  return merged;
+}
+
+export function buildGitCommitHistorySnapshot(
+  logCommits: readonly GitCommitRecord[],
+  isRepository: boolean,
+  hasMore: boolean,
+): GitCommitHistorySnapshot {
+  const orderedCommits = orderCommitsForGraph(logCommits);
+  const rows = layoutGitCommitGraph(orderedCommits);
+  return {
+    isRepository,
+    commits: orderedCommits,
+    rows,
+    hasMore,
+    logCommits: [...logCommits],
+  };
+}
+
 export function layoutGitCommitGraph(commits: readonly GitCommitRecord[]): GitCommitGraphRow[] {
   if (commits.length === 0) {
     return [];
@@ -343,29 +385,39 @@ export async function readGitCommitHistory(
   options: ReadGitCommitHistoryOptions = {},
 ): Promise<GitCommitHistorySnapshot> {
   const maxCount = options.maxCount ?? DEFAULT_MAX_COMMITS;
+  const skip = options.skip ?? 0;
+  const empty: GitCommitHistorySnapshot = {
+    isRepository: false,
+    commits: [],
+    rows: [],
+    hasMore: false,
+    logCommits: [],
+  };
   try {
     const { stdout: repoFlag } = await runGit(repoRoot, ['rev-parse', '--is-inside-work-tree']);
     if (repoFlag.trim() !== 'true') {
-      return { isRepository: false, commits: [], rows: [] };
+      return empty;
     }
 
-    const { stdout } = await runGit(repoRoot, [
+    const logArgs = [
       'log',
       '--all',
       '--topo-order',
+      ...(skip > 0 ? [`--skip=${String(skip)}`] : []),
       `-n${String(maxCount)}`,
       `--format=format:%H${FIELD_SEP}%P${FIELD_SEP}%s${FIELD_SEP}%an${FIELD_SEP}%ai${FIELD_SEP}%D`,
-    ]);
+    ];
 
-    const commits = stdout
+    const { stdout } = await runGit(repoRoot, logArgs);
+
+    const logCommits = stdout
       .split(/\r?\n/u)
       .map((line) => parseGitLogRecordLine(line))
       .filter((record): record is GitCommitRecord => record !== undefined);
 
-    const orderedCommits = orderCommitsForGraph(commits);
-    const rows = layoutGitCommitGraph(orderedCommits);
-    return { isRepository: true, commits: orderedCommits, rows };
+    const hasMore = logCommits.length === maxCount;
+    return buildGitCommitHistorySnapshot(logCommits, true, hasMore);
   } catch {
-    return { isRepository: false, commits: [], rows: [] };
+    return empty;
   }
 }
