@@ -1,13 +1,20 @@
 import { makeChipNode } from "@/lib/browser-element-chip-styles";
 import type { RichSegment } from "@/lib/composer-segment-model";
-import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segment-model";
+import {
+  emptySegments,
+  isComposerPlainEmpty,
+  segmentsToPlainText,
+  syncSegmentsFromExternalValue,
+} from "@/lib/composer-segment-model";
 import { makeLoopChipNode } from "@/lib/loop-chip-styles";
 
 export {
   caretAtEnd,
   emptySegments,
   insertSegmentAtCaret,
+  isComposerPlainEmpty,
   mergeAdjacentTextSegments,
+  normalizeComposerPlain,
   segmentsEqual,
   segmentsToAttachments,
   segmentsToMessageText,
@@ -45,6 +52,9 @@ export function domToSegments(root: HTMLElement): RichSegment[] {
   if (last?.kind === "text" && last.value.endsWith("\n")) {
     last.value = last.value.slice(0, -1);
     if (!last.value) segs.pop();
+  }
+  if (isComposerPlainEmpty(segmentsToPlainText(segs))) {
+    return emptySegments();
   }
   return segs.length > 0 ? segs : emptySegments();
 }

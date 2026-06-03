@@ -17,6 +17,8 @@ import {
   domToSegments,
   emptySegments,
   ensureLoopPinned,
+  isComposerPlainEmpty,
+  normalizeComposerPlain,
   hasLoopSegment,
   insertLoopSegment,
   insertSegmentAtCaret,
@@ -105,6 +107,8 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     );
     const segmentsRef = useRef(segments);
     segmentsRef.current = segments;
+    const valueRef = useRef(value);
+    valueRef.current = value;
     const pendingCaretRef = useRef<SegmentCaret | null>(null);
     const skipExternalValueSyncRef = useRef(Boolean(initialSegments?.length));
     const skipRenderRef = useRef(false);
@@ -115,6 +119,10 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const loopEnabledRef = useRef(loopEnabled);
     const prevLoopEnabledRef = useRef(false);
     const hadLoopRef = useRef(hasLoopSegment(segments));
+
+    useEffect(() => {
+      valueRef.current = value;
+    }, [value]);
 
     useEffect(() => {
       loopEnabledRef.current = loopEnabled;
@@ -182,7 +190,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const notifyParents = useCallback(
       (next: RichSegment[]) => {
         skipExternalValueSyncRef.current = true;
-        onTextChange(segmentsToPlainText(next));
+        onTextChange(normalizeComposerPlain(segmentsToPlainText(next)));
         onElementAttachmentsChange(segmentsToAttachments(next));
       },
       [onTextChange, onElementAttachmentsChange],
@@ -311,12 +319,13 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
     useLayoutEffect(() => {
       const div = divRef.current;
-      if (!div || skipRenderRef.current) {
-        skipRenderRef.current = false;
+      if (!div) {
         return;
       }
 
       const domSegs = domToSegments(div);
+      skipRenderRef.current = false;
+
       if (segmentsEqual(domSegs, segments)) {
         if (pendingCaretRef.current) {
           caretToDomRange(div, segments, pendingCaretRef.current);
@@ -332,7 +341,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         pendingCaretRef.current = null;
         reportSelectionChange();
       }
-    }, [segments, loopChipLabel, reportSelectionChange]);
+    }, [segments, loopChipLabel, reportSelectionChange, value.length]);
 
     useEffect(() => {
       if (skipExternalValueSyncRef.current) {
@@ -342,8 +351,25 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
       const current = segmentsRef.current;
       const plain = segmentsToPlainText(current);
+      const div = divRef.current;
+      const domPlainRaw = div ? segmentsToPlainText(domToSegments(div)) : null;
+      const domPlain = domPlainRaw !== null ? normalizeComposerPlain(domPlainRaw) : null;
       const hasElements = current.some((s) => s.kind === "element");
       const attachmentCount = elementAttachments?.length ?? 0;
+
+      if (
+        domPlain !== null &&
+        isComposerPlainEmpty(domPlain) &&
+        !isComposerPlainEmpty(value) &&
+        attachmentCount === 0 &&
+        !hasLoopSegment(current) &&
+        !loopEnabled &&
+        !loopEnabledRef.current
+      ) {
+        skipExternalValueSyncRef.current = true;
+        commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
+        return;
+      }
 
       if (
         attachmentCount > 0 &&
@@ -371,7 +397,20 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         return;
       }
 
-      if (plain === value) return;
+      const normalizedPlain = normalizeComposerPlain(plain);
+      const normalizedValue = normalizeComposerPlain(value);
+      if (normalizedPlain === normalizedValue) {
+        if (domPlain !== null && domPlain !== normalizedPlain) {
+          skipExternalValueSyncRef.current = true;
+          if (isComposerPlainEmpty(domPlain)) {
+            commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
+          } else {
+            const next = syncSegmentsFromExternalValue(current, domPlain);
+            commitSegments(next, caretAtEnd(next));
+          }
+        }
+        return;
+      }
 
       const next = syncSegmentsFromExternalValue(current, value);
       if (!segmentsEqual(next, current)) {
@@ -381,7 +420,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       }
     }, [value, elementAttachments?.length, initialSegments, applySegments, commitSegments, loopEnabled]);
 
-    const handleInput = useCallback(() => {
+    const applyDomSnapshot = useCallback(() => {
       const div = divRef.current;
       if (!div) return;
       const caret = selectionToCaret(div, segmentsRef.current);
@@ -403,6 +442,18 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         reportSelectionChange();
         return;
       }
+      let domPlain = normalizeComposerPlain(segmentsToPlainText(next));
+
+      if (isComposerPlainEmpty(domPlain)) {
+        next = emptySegments();
+        domPlain = "";
+      }
+
+      const segmentPlain = normalizeComposerPlain(segmentsToPlainText(segmentsRef.current));
+      const parentPlain = normalizeComposerPlain(valueRef.current);
+      if (domPlain === segmentPlain && domPlain === parentPlain) {
+        return;
+      }
       skipRenderRef.current = true;
       next = ensureLoopPinned(next);
       pendingCaretRef.current = caret;
@@ -411,7 +462,11 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       syncLoopEnabledFromSegments(next);
       notifyParents(next);
       reportSelectionChange();
-    }, [notifyParents, reportSelectionChange, syncLoopEnabledFromSegments]);
+    }, [commitSegments, notifyParents, reportSelectionChange, syncLoopEnabledFromSegments]);
+
+    const handleInput = useCallback(() => {
+      applyDomSnapshot();
+    }, [applyDomSnapshot]);
 
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
@@ -429,6 +484,15 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         onKeyDown?.(e);
       },
       [onKeyDown, removeLoopChip],
+    );
+
+    const handleKeyUp = useCallback(
+      (e: KeyboardEvent<HTMLDivElement>) => {
+        if ((e.key === "Backspace" || e.key === "Delete") && !e.defaultPrevented) {
+          applyDomSnapshot();
+        }
+      },
+      [applyDomSnapshot],
     );
 
     const handleCopy = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
@@ -516,7 +580,11 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments, onPaste],
     );
 
-    const isEmpty = !value && !(elementAttachments?.length) && !hasLoopSegment(segments);
+    const plainForEmptyCheck = segmentsToPlainText(segments);
+    const isEmpty =
+      isComposerPlainEmpty(plainForEmptyCheck) &&
+      !(elementAttachments?.length) &&
+      !hasLoopSegment(segments);
 
     return (
       <div className="relative">
@@ -536,6 +604,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
           aria-label={placeholder}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
           onCopy={handleCopy}
           onPaste={handlePaste}
           className={cn(

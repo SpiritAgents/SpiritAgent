@@ -35,6 +35,15 @@ export function segmentsToPlainText(segs: RichSegment[]): string {
   return segs.map((s) => (s.kind === "text" ? s.value : "")).join("");
 }
 
+/** True when composer text is empty for UI purposes (incl. lone newlines from contenteditable `<br>`). */
+export function isComposerPlainEmpty(plain: string): boolean {
+  return plain.length === 0 || /^[\s\u00a0]*$/u.test(plain);
+}
+
+export function normalizeComposerPlain(plain: string): string {
+  return isComposerPlainEmpty(plain) ? "" : plain;
+}
+
 export function segmentsToAttachments(segs: RichSegment[]): BrowserElementAttachment[] {
   return segs
     .filter((s): s is Extract<RichSegment, { kind: "element" }> => s.kind === "element")
