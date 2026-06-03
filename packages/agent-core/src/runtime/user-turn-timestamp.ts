@@ -1,6 +1,9 @@
-/** 将用户消息正文加上本地时区时间戳，供 LLM 建立时间锚点（无独立元数据字段，仅通过纯文本 content 传递）。 */
+/** Prefix user turn content with a local-time anchor for the LLM (plain text, no separate metadata field). */
+const USER_MESSAGE_AT_OPEN = '<user_message_at>';
+const USER_MESSAGE_AT_CLOSE = '</user_message_at>';
+
 export function formatUserMessageContentForLlm(body: string): string {
-  return `[用户消息时间 ${formatLocalIsoWithOffset(new Date())}]\n${body}`;
+  return `${USER_MESSAGE_AT_OPEN}${formatLocalIsoWithOffset(new Date())}${USER_MESSAGE_AT_CLOSE}\n${body}`;
 }
 
 export function userMessageContentMatchesInput(content: string, input: string): boolean {
@@ -8,12 +11,26 @@ export function userMessageContentMatchesInput(content: string, input: string): 
     return true;
   }
 
+  const body = bodyAfterTimestampLine(content);
+  return body !== undefined && body === input;
+}
+
+function bodyAfterTimestampLine(content: string): string | undefined {
   const firstLineEnd = content.indexOf('\n');
   if (firstLineEnd < 0) {
-    return false;
+    return undefined;
   }
 
-  return content.startsWith('[用户消息时间 ') && content.slice(firstLineEnd + 1) === input;
+  const firstLine = content.slice(0, firstLineEnd);
+  if (
+    firstLine.startsWith(USER_MESSAGE_AT_OPEN)
+    && firstLine.endsWith(USER_MESSAGE_AT_CLOSE)
+    && firstLine.length > USER_MESSAGE_AT_OPEN.length + USER_MESSAGE_AT_CLOSE.length
+  ) {
+    return content.slice(firstLineEnd + 1);
+  }
+
+  return undefined;
 }
 
 function pad2(n: number): string {
@@ -24,7 +41,7 @@ function pad3(n: number): string {
   return String(n).padStart(3, '0');
 }
 
-/** 形如 2026-04-21T15:30:45.123+08:00（本地日历 + 与 UTC 的偏移）。 */
+/** e.g. 2026-04-21T15:30:45.123+08:00 (local calendar + UTC offset). */
 function formatLocalIsoWithOffset(d: Date): string {
   const y = d.getFullYear();
   const mo = pad2(d.getMonth() + 1);

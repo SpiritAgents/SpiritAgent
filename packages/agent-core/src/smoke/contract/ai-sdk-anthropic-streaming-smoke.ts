@@ -363,7 +363,7 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
       historyMessages: [
         {
           role: 'user',
-          content: '[用户消息时间 2026-05-14T16:11:27.803+08:00]\nHi DeepSeek',
+          content: '<user_message_at>2026-05-14T16:11:27.803+08:00</user_message_at>\nHi DeepSeek',
         },
         {
           role: 'assistant',
