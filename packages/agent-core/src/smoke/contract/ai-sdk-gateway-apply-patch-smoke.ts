@@ -21,7 +21,16 @@ async function main(): Promise<void> {
     }
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     const tools = Array.isArray(body.tools) ? body.tools : [];
-    if (!tools.some((tool: { type?: string }) => tool?.type === 'apply_patch')) {
+    const hasApplyPatchTool = tools.some((tool: {
+      type?: string;
+      name?: string;
+      function?: { name?: string };
+    }) => (
+      tool?.type === 'apply_patch'
+      || (tool?.type === 'function' && tool?.name === 'apply_patch')
+      || (tool?.type === 'function' && tool?.function?.name === 'apply_patch')
+    ));
+    if (!hasApplyPatchTool) {
       response.statusCode = 400;
       response.end('missing apply_patch tool');
       return;
@@ -44,7 +53,7 @@ async function main(): Promise<void> {
   const config = {
     transportKind: 'open-responses' as const,
     apiKey: 'test-key',
-    model: 'openai/gpt-5.1',
+    model: 'openai/gpt-5.4',
     baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
     llmVendor: 'vercel-ai-gateway' as const,
     responsesProvider: 'open-responses-compatible' as const,

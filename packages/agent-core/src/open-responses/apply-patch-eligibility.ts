@@ -1,4 +1,4 @@
-import type { JsonValue } from '../ports.js';
+import type { JsonObject, JsonValue } from '../ports.js';
 import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
 import {
   normalizeGatewayOpenAiModelId,
@@ -100,6 +100,19 @@ export function shouldUseNativeApplyPatchRequestItems(
   return config.llmVendor === 'openai';
 }
 
+/**
+ * Gateway / 第三方兼容端点：在 tools 中注册标准 function 工具（非原生 `type: apply_patch`），
+ * 并与请求 input 中的 function_call 对保持一致。
+ */
+export function shouldUseApplyPatchFunctionTool(
+  config: Pick<
+    OpenResponsesTransportConfig,
+    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+  >,
+): boolean {
+  return shouldUseApplyPatchFileTools(config) && !shouldUseOpenAiSdkApplyPatchTool(config);
+}
+
 /** OpenAI 官方：`@ai-sdk/openai` 3.x `openai.tools.applyPatch`；Gateway 走 fetch function_call。 */
 export function shouldUseOpenAiSdkApplyPatchTool(
   config: Pick<
@@ -143,6 +156,95 @@ export function filterLegacyHostFileToolDefinitions(definitions: readonly JsonVa
 
 /** @deprecated Use {@link filterLegacyHostFileToolDefinitions}. */
 export const filterBuiltinFileToolsForApplyPatch = filterLegacyHostFileToolDefinitions;
+
+const APPLY_PATCH_OPERATION_SCHEMA: JsonObject = {
+  type: 'object',
+  properties: {
+    type: {
+      type: 'string',
+      enum: ['create_file', 'update_file', 'delete_file'],
+      description: 'Patch operation kind.',
+    },
+    path: {
+      type: 'string',
+      description: 'Workspace-relative or absolute file path to create, update, or delete.',
+    },
+    diff: {
+      type: 'string',
+      description: 'Headerless V4A unified diff for create_file or update_file.',
+    },
+  },
+  required: ['type', 'path'],
+  additionalProperties: false,
+};
+
+/** Chat Completions `tools[]` shape (trace export / legacy). */
+export function buildApplyPatchFunctionToolDefinition(): JsonObject {
+  return {
+    type: 'function',
+    function: {
+      name: APPLY_PATCH_HOST_TOOL_NAME,
+      description: applyPatchFunctionToolDescription(),
+      parameters: applyPatchFunctionToolParameters(),
+    },
+  };
+}
+
+/** OpenAI Responses `tools[]` flat function entry (Gateway / `@ai-sdk/openai`). */
+export function buildApplyPatchResponsesFunctionToolDefinition(): JsonObject {
+  return {
+    type: 'function',
+    name: APPLY_PATCH_HOST_TOOL_NAME,
+    description: applyPatchFunctionToolDescription(),
+    parameters: applyPatchFunctionToolParameters(),
+  };
+}
+
+export function isApplyPatchFunctionToolDefinition(tool: unknown): boolean {
+  return readFunctionToolName(tool as JsonValue) === APPLY_PATCH_HOST_TOOL_NAME;
+}
+
+export function hasApplyPatchToolInResponsesTools(tools: unknown): boolean {
+  if (!Array.isArray(tools)) {
+    return false;
+  }
+
+  for (const tool of tools) {
+    if (typeof tool !== 'object' || tool === null || Array.isArray(tool)) {
+      continue;
+    }
+    const record = tool as JsonObject;
+    if (record.type === 'apply_patch') {
+      return true;
+    }
+    if (record.type === 'function' && record.name === APPLY_PATCH_HOST_TOOL_NAME) {
+      return true;
+    }
+    if (isApplyPatchFunctionToolDefinition(record)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function applyPatchFunctionToolDescription(): string {
+  return (
+    'Apply a headerless V4A unified diff to create, update, or delete a file. '
+    + 'Provide operation.type, operation.path, and operation.diff for create/update.'
+  );
+}
+
+function applyPatchFunctionToolParameters(): JsonObject {
+  return {
+    type: 'object',
+    properties: {
+      operation: APPLY_PATCH_OPERATION_SCHEMA,
+    },
+    required: ['operation'],
+    additionalProperties: false,
+  };
+}
 
 /** Model-visible guidance when legacy file tools are hidden in favor of apply_patch. */
 export function buildApplyPatchFileToolsPromptSection(): string {

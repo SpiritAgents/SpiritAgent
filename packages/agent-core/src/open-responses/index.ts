@@ -36,5 +36,10 @@ export {
   normalizeGatewayOpenAiModelId,
   parseOpenAiGptModelVersion,
   shouldUseApplyPatchFileTools,
+  shouldUseApplyPatchFunctionTool,
+  buildApplyPatchFunctionToolDefinition,
+  buildApplyPatchResponsesFunctionToolDefinition,
+  hasApplyPatchToolInResponsesTools,
+  isApplyPatchFunctionToolDefinition,
   shouldUseOpenAiApplyPatchTool,
 } from './apply-patch-eligibility.js';

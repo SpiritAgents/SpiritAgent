@@ -5,7 +5,12 @@ import { cloneJsonValue, isJsonObject } from '../tool-agent.js';
 import {
   APPLY_PATCH_HOST_TOOL_NAME,
   type ApplyPatchOperation,
+  buildApplyPatchFunctionToolDefinition,
+  buildApplyPatchResponsesFunctionToolDefinition,
+  hasApplyPatchToolInResponsesTools,
+  isApplyPatchFunctionToolDefinition,
   shouldUseApplyPatchFileTools,
+  shouldUseApplyPatchFunctionTool,
   shouldUseNativeApplyPatchRequestItems,
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
@@ -168,6 +173,8 @@ export function buildResponsesTraceTools(
         id: 'openai.apply_patch',
         name: APPLY_PATCH_HOST_TOOL_NAME,
       });
+    } else if (shouldUseApplyPatchFunctionTool(config)) {
+      traceTools.push(cloneJsonValue(buildApplyPatchResponsesFunctionToolDefinition() as JsonValue));
     } else {
       traceTools.push(cloneJsonValue(APPLY_PATCH_NATIVE_TOOL as JsonValue));
     }
@@ -191,12 +198,27 @@ export function extractApplyPatchCallsFromResponsesBody(body: unknown): ToolCall
       continue;
     }
     const patchItem = item as JsonObject;
-    if (patchItem.type !== 'apply_patch_call') {
+    if (patchItem.type === 'apply_patch_call') {
+      const callId = typeof patchItem.call_id === 'string' ? patchItem.call_id : '';
+      const operation = parseApplyPatchOperation(patchItem.operation);
+      if (!callId || !operation) {
+        continue;
+      }
+
+      calls.push({
+        id: callId,
+        name: APPLY_PATCH_HOST_TOOL_NAME,
+        argumentsJson: buildApplyPatchToolCallArgumentsJson(callId, operation),
+      });
+      continue;
+    }
+
+    if (patchItem.type !== 'function_call' || patchItem.name !== APPLY_PATCH_HOST_TOOL_NAME) {
       continue;
     }
 
     const callId = typeof patchItem.call_id === 'string' ? patchItem.call_id : '';
-    const operation = parseApplyPatchOperation(patchItem.operation);
+    const operation = parseApplyPatchOperationFromArguments(patchItem.arguments);
     if (!callId || !operation) {
       continue;
     }
@@ -281,7 +303,16 @@ export function patchResponsesRequestBodyForApplyPatch(
   store.useNativeApplyPatchRequestItems = shouldUseNativeApplyPatchRequestItems(config);
 
   const tools = body.tools;
-  if (Array.isArray(tools) && !tools.some((tool) => isApplyPatchNativeTool(tool))) {
+  if (shouldUseApplyPatchFunctionTool(config)) {
+    if (!hasApplyPatchToolInResponsesTools(tools)) {
+      const definition = cloneJsonValue(buildApplyPatchResponsesFunctionToolDefinition() as JsonValue);
+      if (Array.isArray(tools)) {
+        tools.push(definition);
+      } else {
+        body.tools = [definition];
+      }
+    }
+  } else if (Array.isArray(tools) && !tools.some((tool) => isApplyPatchNativeTool(tool))) {
     tools.push(cloneJsonValue(APPLY_PATCH_NATIVE_TOOL as JsonValue));
   } else if (!Array.isArray(tools)) {
     body.tools = [cloneJsonValue(APPLY_PATCH_NATIVE_TOOL as JsonValue)];
