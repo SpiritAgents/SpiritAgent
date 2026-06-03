@@ -1,3 +1,4 @@
+import { FILE_DIFF_TOOL_NAMES } from '@/lib/file-tool-diff-source.js';
 import {
   parseShellCommand,
   shellExpandableDetailLines,
@@ -39,7 +40,34 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   };
 }
 
+function fileDiffToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
+  if (!FILE_DIFF_TOOL_NAMES.has(tool.toolName)) {
+    return false;
+  }
+
+  if (
+    Boolean(tool.outputExcerpt?.trim()) ||
+    tool.detailLines.some((line) => line.trim()) ||
+    tool.deleteFileBaselineText !== undefined
+  ) {
+    return true;
+  }
+
+  if (tool.phase === 'preview' || tool.phase === 'running') {
+    return (
+      Boolean(tool.argsExcerpt?.trim()) ||
+      Boolean(tool.streamingArgumentsJson?.trim())
+    );
+  }
+
+  return Boolean(tool.argsExcerpt?.trim());
+}
+
 export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
+  if (FILE_DIFF_TOOL_NAMES.has(tool.toolName)) {
+    return fileDiffToolHasExpandableContent(tool);
+  }
+
   if (tool.toolName === 'run_shell_command') {
     const command = tool.headlineDetail?.trim() || parseShellCommand(tool);
     return shellHasExpandableContent(tool, command);
