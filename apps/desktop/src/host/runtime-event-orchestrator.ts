@@ -10,8 +10,10 @@ import {
   attachEditFileLineDelta,
   type AttachEditFileLineDeltaSource,
   type EditFileLineDelta,
+  preserveDeleteFileBaseline,
   preserveDeleteFileLineDelta,
 } from '../lib/edit-file-line-delta.js';
+import { FILE_DIFF_TOOL_NAMES } from '../lib/file-tool-diff-source.js';
 import i18n from '../lib/i18n-host.js';
 import type {
   ConversationMessageSnapshot,
@@ -66,6 +68,8 @@ export interface DesktopRuntimeEventOrchestratorOptions {
   requestLiveSnapshotUpdate?: () => void;
   /** delete_file：删除前按路径读取磁盘并统计行数 */
   lineDeltaForDeleteFile?: (inputPath: string) => EditFileLineDelta | undefined;
+  /** delete_file：删除前按路径读取磁盘全文 baseline */
+  deleteFileBaselineForPath?: (inputPath: string) => string | undefined;
 }
 
 function isMcpLikeToolName(toolName: string): boolean {
@@ -79,15 +83,15 @@ export class DesktopRuntimeEventOrchestrator {
 
   constructor(private readonly options: DesktopRuntimeEventOrchestratorOptions) {}
 
-  private findExistingToolLineDelta(toolCallId: string | undefined): EditFileLineDelta | undefined {
+  private findExistingToolSnapshot(toolCallId: string | undefined): ToolBlockSnapshot | undefined {
     if (!toolCallId) {
       return undefined;
     }
     const messages = this.options.messages();
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
-      if (message?.tool?.toolCallId === toolCallId && message.tool.editLineDelta) {
-        return message.tool.editLineDelta;
+      if (message?.tool?.toolCallId === toolCallId) {
+        return message.tool;
       }
     }
     return undefined;
@@ -95,16 +99,23 @@ export class DesktopRuntimeEventOrchestrator {
 
   private attachLineDelta(
     tool: ToolBlockSnapshot,
-    source: Omit<AttachEditFileLineDeltaSource, 'resolveDeleteFileLines'>,
+    source: Omit<AttachEditFileLineDeltaSource, 'resolveDeleteFileLines' | 'resolveDeleteFileBaseline'>,
   ): ToolBlockSnapshot {
+    const prior = this.findExistingToolSnapshot(tool.toolCallId);
     const attached = attachEditFileLineDelta(tool, {
       ...source,
       resolveDeleteFileLines: this.options.lineDeltaForDeleteFile,
+      resolveDeleteFileBaseline: this.options.deleteFileBaselineForPath,
     });
-    return preserveDeleteFileLineDelta(
+    const withDelta = preserveDeleteFileLineDelta(
       tool.toolName,
       attached,
-      this.findExistingToolLineDelta(tool.toolCallId),
+      prior?.editLineDelta,
+    );
+    return preserveDeleteFileBaseline(
+      tool.toolName,
+      withDelta,
+      prior?.deleteFileBaselineText,
     );
   }
 
@@ -362,6 +373,9 @@ export class DesktopRuntimeEventOrchestrator {
             headline: previewSummary.headline,
             detailLines: [],
             argsExcerpt,
+            ...(FILE_DIFF_TOOL_NAMES.has(event.toolName)
+              ? { streamingArgumentsJson: event.argumentsJson }
+              : {}),
           },
           previewSummary,
         ),

@@ -200,6 +200,7 @@ export type AttachEditFileLineDeltaSource = {
   request?: unknown;
   argumentsJson?: string;
   resolveDeleteFileLines?: (inputPath: string) => EditFileLineDelta | undefined;
+  resolveDeleteFileBaseline?: (inputPath: string) => string | undefined;
 };
 
 export function toolLineDeltaFromRequest(
@@ -311,23 +312,38 @@ export function attachEditFileLineDelta(
       ? toolLineDeltaFromArgumentsJson(tool.toolName, source.argumentsJson)
       : toolLineDeltaFromRequest(tool.toolName, source.request);
 
-  if (!delta && tool.toolName === 'delete_file' && source.resolveDeleteFileLines) {
-    const inputPath = extractDeleteFilePath(
-      tool.toolName,
-      source.request,
-      source.argumentsJson,
-    );
-    if (inputPath) {
-      delta = source.resolveDeleteFileLines(inputPath);
+  const deleteInputPath =
+    tool.toolName === 'delete_file'
+      ? extractDeleteFilePath(tool.toolName, source.request, source.argumentsJson)
+      : undefined;
+
+  if (!delta && tool.toolName === 'delete_file' && deleteInputPath && source.resolveDeleteFileLines) {
+    delta = source.resolveDeleteFileLines(deleteInputPath);
+  }
+
+  let deleteFileBaselineText = tool.deleteFileBaselineText;
+  if (
+    tool.toolName === 'delete_file' &&
+    deleteInputPath &&
+    source.resolveDeleteFileBaseline &&
+    deleteFileBaselineText === undefined
+  ) {
+    const baseline = source.resolveDeleteFileBaseline(deleteInputPath);
+    if (baseline !== undefined) {
+      deleteFileBaselineText = baseline;
     }
   }
 
-  if (!delta) {
-    const { editLineDelta: _removed, ...rest } = tool;
+  if (!delta && deleteFileBaselineText === undefined) {
+    const { editLineDelta: _removed, deleteFileBaselineText: _baseline, ...rest } = tool;
     return rest;
   }
 
-  return { ...tool, editLineDelta: delta };
+  return {
+    ...tool,
+    ...(delta ? { editLineDelta: delta } : {}),
+    ...(deleteFileBaselineText !== undefined ? { deleteFileBaselineText } : {}),
+  };
 }
 
 /** delete_file 完成后文件已不存在，须保留执行前算好的行数。 */
@@ -340,4 +356,16 @@ export function preserveDeleteFileLineDelta(
     return attached;
   }
   return { ...attached, editLineDelta: priorDelta };
+}
+
+/** delete_file 完成后须保留执行前冻结的全文 baseline。 */
+export function preserveDeleteFileBaseline(
+  toolName: string,
+  attached: ToolBlockSnapshot,
+  priorBaseline?: string,
+): ToolBlockSnapshot {
+  if (toolName !== 'delete_file' || attached.deleteFileBaselineText || !priorBaseline) {
+    return attached;
+  }
+  return { ...attached, deleteFileBaselineText: priorBaseline };
 }

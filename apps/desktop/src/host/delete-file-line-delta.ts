@@ -72,11 +72,10 @@ function resolveDeleteFileTarget(
   return resolved;
 }
 
-/** 删除前从磁盘读取目标文件并统计将被移除的行数（仅宿主进程调用）。 */
-export function lineDeltaForDeleteFilePath(
+function readDeleteFileUtf8Content(
   context: InstructionDiscoveryContext,
   inputPath: string,
-): EditFileLineDelta | undefined {
+): string | undefined {
   const target = resolveDeleteFileTarget(context, inputPath);
   if (!target || !existsSync(target)) {
     return undefined;
@@ -93,9 +92,28 @@ export function lineDeltaForDeleteFilePath(
   }
 
   try {
-    const content = readFileSync(target, 'utf8');
-    return deleteFileLineDeltaFromContent(content);
+    return readFileSync(target, 'utf8');
   } catch {
     return undefined;
   }
+}
+
+/** 删除前从磁盘读取目标文件全文，供工具卡 Diff baseline（仅宿主进程调用）。 */
+export function deleteFileBaselineTextForPath(
+  context: InstructionDiscoveryContext,
+  inputPath: string,
+): string | undefined {
+  return readDeleteFileUtf8Content(context, inputPath);
+}
+
+/** 删除前从磁盘读取目标文件并统计将被移除的行数（仅宿主进程调用）。 */
+export function lineDeltaForDeleteFilePath(
+  context: InstructionDiscoveryContext,
+  inputPath: string,
+): EditFileLineDelta | undefined {
+  const content = readDeleteFileUtf8Content(context, inputPath);
+  if (content === undefined) {
+    return undefined;
+  }
+  return deleteFileLineDeltaFromContent(content);
 }
