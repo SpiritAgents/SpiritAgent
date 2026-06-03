@@ -13,6 +13,7 @@ import { cloneJsonValue, isJsonObject, type ToolAgentState } from '../tool-agent
 import { attachResponseIdToAssistantMessage } from './provider-state.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 import { renderResponsesTransportError } from './ai-sdk-message-bridge.js';
+import { accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk } from './responses-provider-builtin-tools.js';
 
 interface AggregatedStreamingToolCall {
   index: number;
@@ -55,6 +56,7 @@ export async function* responsesEventStreamToRuntimeEvents(
   let reasoningContent = '';
   let sawAnswerOrToolOutput = false;
   let nextToolIndex = 0;
+  let nextProviderPreviewIndex = 0;
   let responseId: string | undefined;
 
   try {
@@ -104,6 +106,18 @@ export async function* responsesEventStreamToRuntimeEvents(
             sawAnswerOrToolOutput = true;
             for (const update of rawUpdates.events) {
               yield update;
+            }
+          }
+
+          const providerPreviews = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+            part.rawValue,
+            nextProviderPreviewIndex,
+          );
+          nextProviderPreviewIndex = providerPreviews.nextPreviewIndex;
+          if (providerPreviews.events.length > 0) {
+            sawAnswerOrToolOutput = true;
+            for (const preview of providerPreviews.events) {
+              yield preview;
             }
           }
 

@@ -1,9 +1,12 @@
 import {
+  isResponsesProviderBuiltinToolName,
   previewRequestFromStreamingArguments,
+  resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
   type JsonObject,
   type RuntimeEvent,
   type RuntimeToolExecution,
 } from '@spirit-agent/agent-core';
+import { toolCallPhaseShowsShimmer } from '../lib/tool-call-shimmer.js';
 import type { HostExtensionEvent } from '@spirit-agent/host-internal';
 
 import {
@@ -255,6 +258,7 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind === 'assistant-response-completed') {
+        this.finalizeResponsesProviderBuiltinToolPreviews(messages);
         this.options.assistantMessages.completePendingAssistantMessage();
         this.options.messageTimeline?.()?.completeActiveAssistantSegment();
         continue;
@@ -266,8 +270,9 @@ export class DesktopRuntimeEventOrchestrator {
       }
       if (event.kind === 'assistant-thinking-segment-finalized') {
         if (event.text.trim()) {
+          const timeline = this.options.messageTimeline?.();
           this.options.assistantMessages.appendAssistantThinkingSegment(event.text);
-          this.options.messageTimeline?.()?.finalizeThinkingSegment(event.text);
+          timeline?.finalizeThinkingSegment(event.text, event.placement);
         }
         continue;
       }
@@ -364,12 +369,21 @@ export class DesktopRuntimeEventOrchestrator {
         event.toolName,
         previewRequest,
       );
+      const providerBuiltinPhase = isResponsesProviderBuiltinToolName(event.toolName)
+        ? resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(event.argumentsJson)
+        : undefined;
+      const toolPhase: ToolBlockSnapshot['phase'] =
+        providerBuiltinPhase === 'succeeded'
+          ? 'succeeded'
+          : providerBuiltinPhase === 'failed'
+            ? 'failed'
+            : 'preview';
       const runningTool: ToolBlockSnapshot = this.attachLineDelta(
         applyToolCallSummaryCopy(
           {
             toolCallId: event.toolCallId,
             toolName: event.toolName,
-            phase: 'preview',
+            phase: toolPhase,
             headline: previewSummary.headline,
             detailLines: [],
             argsExcerpt,
@@ -670,6 +684,30 @@ export class DesktopRuntimeEventOrchestrator {
     console.log(
       `[desktop-host][tool-flow] integrate source=${source} call=${callId} name=${execution.toolName} phase=${execution.failed ? 'failed' : 'succeeded'} msg=${messageId} images=${images} tools=${summarizeToolRowsForDebug(messages, 8)} tail=${summarizeMessagesTailForOrderDebug(messages, 8)}`,
     );
+  }
+
+  private finalizeResponsesProviderBuiltinToolPreviews(
+    messages: ConversationMessageSnapshot[],
+  ): void {
+    for (const message of messages) {
+      const tool = message.tool;
+      if (!tool || !isResponsesProviderBuiltinToolName(tool.toolName)) {
+        continue;
+      }
+      if (!toolCallPhaseShowsShimmer(tool.phase)) {
+        continue;
+      }
+      const toolCallId = tool.toolCallId?.trim();
+      if (!toolCallId) {
+        continue;
+      }
+      const succeededTool: ToolBlockSnapshot = {
+        ...tool,
+        phase: 'succeeded',
+      };
+      this.options.assistantMessages.upsertToolMessage(toolCallId, succeededTool, 0);
+      this.options.messageTimeline?.()?.upsertToolMessage(toolCallId, succeededTool);
+    }
   }
 
   private integrateApprovalResolution(
