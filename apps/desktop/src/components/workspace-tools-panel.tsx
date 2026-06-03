@@ -384,7 +384,6 @@ export function WorkspaceToolsDock({
               triggerIcon={<Plus className="size-3.5" aria-hidden />}
               items={newTabItems}
               triggerClassName="mb-1"
-              contentClassName="text-xs"
             />
           </div>
 

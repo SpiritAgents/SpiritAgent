@@ -141,7 +141,17 @@ import {
   snapshotsToComposerAttachmentViews,
 } from "@/lib/local-file-attachments";
 import {
+  FilteredOverlayMenu,
+  FilteredOverlayMenuTrigger,
+} from "@/components/ui/filtered-overlay-menu";
+import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
+  DESKTOP_COMPACT_OVERLAY_GROUP_LABEL,
+  DESKTOP_COMPACT_OVERLAY_ITEM,
+  DESKTOP_COMPACT_OVERLAY_ITEM_PRIMARY,
+  DESKTOP_COMPACT_OVERLAY_ITEM_SECONDARY,
+  DESKTOP_COMPACT_OVERLAY_SIMPLE_MENU,
+  DESKTOP_COMPACT_OVERLAY_SUBCONTENT,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
@@ -287,94 +297,83 @@ function EmptyStateWorkspaceSelector({
 
   return (
     <div className="flex justify-start px-0.5">
-      <DropdownMenu onOpenChange={(open) => !open && setWorkspaceFilter("") }>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label={t('app.selectWorkspace')}
-            className={cn(
-              "inline-flex h-8 max-w-[min(24rem,100%)] min-w-0 items-center gap-1 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-              instantHoverMotionClass,
-            )}
-          >
-            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={currentWorkspaceRoot}>
-              {currentWorkspaceLabel}
-            </span>
-            <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          side="top"
-          className="flex h-[min(24rem,var(--radix-dropdown-menu-content-available-height))] w-[min(24rem,calc(100vw-1.25rem))] flex-col overflow-hidden p-0 text-xs"
-        >
-          <div className="shrink-0 border-b border-border/40 p-1.5">
-            <Input
-              value={workspaceFilter}
-              onChange={(event) => setWorkspaceFilter(event.target.value)}
-              placeholder={t('app.searchWorkspace')}
-              className="h-8 w-full min-w-0 text-xs"
-              onKeyDown={(event) => event.stopPropagation()}
-              autoComplete="off"
-            />
-          </div>
-          <ScrollArea
-            type="always"
-            className="min-h-0 flex-1 [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
-            onWheel={(event) => {
-              event.stopPropagation();
-            }}
-            onTouchMove={(event) => {
-              event.stopPropagation();
-            }}
-          >
-            <div className="p-1 pr-2">
-              {filteredWorkspaces.length === 0 ? (
-                <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('app.noMatches')}</p>
-              ) : (
-                filteredWorkspaces.map((workspace) => {
-                  const selected =
-                    workspaceBinding === "project"
-                    && sameWorkspacePath(workspace.path, currentWorkspaceRoot);
-                  return (
-                    <DropdownMenuItem
-                      key={workspace.path}
-                      onSelect={() => onSelectWorkspace(workspace.path)}
-                      className={cn("items-start px-2 py-2", selected && "bg-accent/40")}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-foreground" title={workspace.label}>
-                          {workspace.label}
-                        </div>
-                        <div className="truncate text-[11px] text-muted-foreground" title={workspace.path}>
-                          {workspace.path}
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })
+      <FilteredOverlayMenu
+        layout="workspace"
+        filterValue={workspaceFilter}
+        onFilterChange={setWorkspaceFilter}
+        filterPlaceholder={t('app.searchWorkspace')}
+        onOpenChange={(open) => {
+          if (!open) {
+            setWorkspaceFilter("");
+          }
+        }}
+        trigger={
+          <FilteredOverlayMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              aria-label={t('app.selectWorkspace')}
+              className={cn(
+                "inline-flex h-8 max-w-[min(18.5rem,100%)] min-w-0 items-center gap-1 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                instantHoverMotionClass,
               )}
-            </div>
-          </ScrollArea>
-          <div className="shrink-0 border-t border-border/40 p-1">
-            <DropdownMenuItem onSelect={onAddWorkspace} className="gap-2 px-2 py-2 text-sm">
+            >
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={currentWorkspaceRoot}>
+                {currentWorkspaceLabel}
+              </span>
+              <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
+            </button>
+          </FilteredOverlayMenuTrigger>
+        }
+        footer={
+          <>
+            <DropdownMenuItem
+              onSelect={onAddWorkspace}
+              className={cn("gap-2 text-xs", DESKTOP_COMPACT_OVERLAY_ITEM)}
+            >
               <FolderPlus className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
               <span>{t('app.addWorkspace')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={onSelectNoWorkspace}
               className={cn(
-                "gap-2 px-2 py-2 text-sm",
+                "gap-2 text-xs",
+                DESKTOP_COMPACT_OVERLAY_ITEM,
                 workspaceBinding === "none" && "bg-accent/40",
               )}
             >
               <MessageSquareText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
               <span>{t('app.noWorkspace')}</span>
             </DropdownMenuItem>
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </>
+        }
+      >
+        {filteredWorkspaces.length === 0 ? (
+          <p className="px-2 py-3 text-center text-xs text-muted-foreground">{t('app.noMatches')}</p>
+        ) : (
+          filteredWorkspaces.map((workspace) => {
+            const selected =
+              workspaceBinding === "project"
+              && sameWorkspacePath(workspace.path, currentWorkspaceRoot);
+            return (
+              <DropdownMenuItem
+                key={workspace.path}
+                onSelect={() => onSelectWorkspace(workspace.path)}
+                className={cn("items-start", DESKTOP_COMPACT_OVERLAY_ITEM, selected && "bg-accent/40")}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className={DESKTOP_COMPACT_OVERLAY_ITEM_PRIMARY} title={workspace.label}>
+                    {workspace.label}
+                  </div>
+                  <div className={DESKTOP_COMPACT_OVERLAY_ITEM_SECONDARY} title={workspace.path}>
+                    {workspace.path}
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            );
+          })
+        )}
+      </FilteredOverlayMenu>
     </div>
   );
 }
@@ -811,23 +810,23 @@ function ComposerSurface({
                   <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top" className="min-w-[8rem] text-xs">
+              <DropdownMenuContent align="start" side="top" className={DESKTOP_COMPACT_OVERLAY_SIMPLE_MENU}>
                 <DropdownMenuItem
                   onSelect={() => onPlanModeChange(false)}
-                  className={cn(!planMode && "bg-accent/40")}
+                  className={cn(DESKTOP_COMPACT_OVERLAY_ITEM, !planMode && "bg-accent/40")}
                 >
                   Agent
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => onPlanModeChange(true)}
-                  className={cn(planMode && "bg-accent/40")}
+                  className={cn(DESKTOP_COMPACT_OVERLAY_ITEM, planMode && "bg-accent/40")}
                 >
                   Plan
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             {models.length > 0 ? (
-              <DropdownMenu
+              <FilteredOverlayMenu
                 open={modelMenuOpen}
                 onOpenChange={(open) => {
                   setModelMenuOpen(open);
@@ -835,129 +834,110 @@ function ComposerSurface({
                     setModelFilter("");
                   }
                 }}
-              >
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={t('app.selectModel')}
-                    disabled={readOnly}
-                    className={cn(
-                      "inline-flex h-7 max-w-[12rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
-                      instantHoverMotionClass,
-                    )}
-                  >
-                    <span className="min-w-0 flex-1 truncate" title={activeModelSummary}>
-                      {activeModelSummary}
-                    </span>
-                    <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  side="top"
-                  className="w-max min-w-[max(11rem,var(--radix-dropdown-menu-trigger-width))] max-w-[min(20rem,calc(100vw-1.25rem))] p-0 text-xs"
-                >
-                  <div className="border-b border-border/40 p-1.5">
-                    <Input
-                      value={modelFilter}
-                      onChange={(event) => setModelFilter(event.target.value)}
-                      placeholder={t('app.filterModels')}
-                      className="h-8 w-full min-w-0 text-xs"
-                      onKeyDown={(event) => event.stopPropagation()}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <ScrollArea
-                    type="always"
-                    className="[&>[data-radix-scroll-area-viewport]]:max-h-[min(18rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
-                    onWheel={(event) => {
-                      event.stopPropagation();
-                    }}
-                    onTouchMove={(event) => {
-                      event.stopPropagation();
-                    }}
-                  >
-                    <div className="p-1 pr-2">
-                      {filteredModelGroups.length === 0 ? (
-                        <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('app.noMatches')}</p>
-                      ) : (
-                        filteredModelGroups.map((group) => (
-                          <div key={group.provider} className="mb-2 last:mb-0">
-                            <div className="px-2 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground">
-                              {t(group.labelKey, { defaultValue: group.fallbackLabel })}
-                            </div>
-                            {group.items.map((model) => {
-                              const modelSummary = formatModelPickerLabel(
-                                model.name,
-                                model.reasoningEffort,
-                              );
-
-                              return (
-                                <DropdownMenuSub key={`${group.provider}:${model.name}`}>
-                                  <DropdownMenuSubTrigger
-                                    className={cn(
-                                      "items-start gap-2 px-2 py-2 pr-2",
-                                      activeModelProfile?.name === model.name && "bg-accent/40",
-                                    )}
-                                    onClick={() => {
-                                      onModelSelect(model.name);
-                                      setModelFilter("");
-                                      setModelMenuOpen(false);
-                                    }}
-                                    onKeyDown={(event) => {
-                                      if (event.key === "Enter" || event.key === " ") {
-                                        event.preventDefault();
-                                        onModelSelect(model.name);
-                                        setModelFilter("");
-                                        setModelMenuOpen(false);
-                                      }
-                                    }}
-                                  >
-                                    <div className="min-w-0 flex-1">
-                                      <div className="truncate text-sm font-medium text-foreground" title={model.name}>
-                                        {model.name}
-                                      </div>
-                                      <div className="truncate text-[11px] text-muted-foreground" title={modelSummary}>
-                                        {modelReasoningEffortLabel(model.reasoningEffort)}
-                                      </div>
-                                    </div>
-                                  </DropdownMenuSubTrigger>
-                                  <DropdownMenuSubContent className="min-w-[10rem] text-xs">
-                                    {modelReasoningEffortOptions({
-                                      provider: model.provider,
-                                      model: model.name,
-                                      ...(model.supportedReasoningEfforts !== undefined
-                                        ? { supportedEfforts: model.supportedReasoningEfforts }
-                                        : {}),
-                                      transportKind: model.transportKind,
-                                    }).map((option) => (
-                                      <DropdownMenuItem
-                                        key={option.value}
-                                        onSelect={() => {
-                                          onModelReasoningEffortSelect(model.name, option.value);
-                                          onModelSelect(model.name);
-                                          setModelFilter("");
-                                          setModelMenuOpen(false);
-                                        }}
-                                        className={cn(
-                                          model.reasoningEffort === option.value && "bg-accent/40",
-                                        )}
-                                        title={modelSummary}
-                                      >
-                                        {option.label}
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                              );
-                            })}
-                          </div>
-                        ))
+                filterValue={modelFilter}
+                onFilterChange={setModelFilter}
+                filterPlaceholder={t('app.filterModels')}
+                trigger={
+                  <FilteredOverlayMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={t('app.selectModel')}
+                      disabled={readOnly}
+                      className={cn(
+                        "inline-flex h-7 max-w-[12rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                        instantHoverMotionClass,
                       )}
+                    >
+                      <span className="min-w-0 flex-1 truncate" title={activeModelSummary}>
+                        {activeModelSummary}
+                      </span>
+                      <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
+                    </button>
+                  </FilteredOverlayMenuTrigger>
+                }
+              >
+                {filteredModelGroups.length === 0 ? (
+                  <p className="px-2 py-3 text-center text-xs text-muted-foreground">{t('app.noMatches')}</p>
+                ) : (
+                  filteredModelGroups.map((group) => (
+                    <div key={group.provider} className="mb-1.5 last:mb-0">
+                      <div className={DESKTOP_COMPACT_OVERLAY_GROUP_LABEL}>
+                        {t(group.labelKey, { defaultValue: group.fallbackLabel })}
+                      </div>
+                      {group.items.map((model) => {
+                        const modelSummary = formatModelPickerLabel(
+                          model.name,
+                          model.reasoningEffort,
+                        );
+
+                        return (
+                          <DropdownMenuSub key={`${group.provider}:${model.name}`}>
+                            <DropdownMenuSubTrigger
+                              className={cn(
+                                "items-start gap-1.5 pr-2",
+                                DESKTOP_COMPACT_OVERLAY_ITEM,
+                                activeModelProfile?.name === model.name && "bg-accent/40",
+                              )}
+                              onClick={() => {
+                                onModelSelect(model.name);
+                                setModelFilter("");
+                                setModelMenuOpen(false);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  onModelSelect(model.name);
+                                  setModelFilter("");
+                                  setModelMenuOpen(false);
+                                }
+                              }}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className={DESKTOP_COMPACT_OVERLAY_ITEM_PRIMARY} title={model.name}>
+                                  {model.name}
+                                </div>
+                                <div
+                                  className={DESKTOP_COMPACT_OVERLAY_ITEM_SECONDARY}
+                                  title={modelSummary}
+                                >
+                                  {modelReasoningEffortLabel(model.reasoningEffort)}
+                                </div>
+                              </div>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className={DESKTOP_COMPACT_OVERLAY_SUBCONTENT}>
+                              {modelReasoningEffortOptions({
+                                provider: model.provider,
+                                model: model.name,
+                                ...(model.supportedReasoningEfforts !== undefined
+                                  ? { supportedEfforts: model.supportedReasoningEfforts }
+                                  : {}),
+                                transportKind: model.transportKind,
+                              }).map((option) => (
+                                <DropdownMenuItem
+                                  key={option.value}
+                                  onSelect={() => {
+                                    onModelReasoningEffortSelect(model.name, option.value);
+                                    onModelSelect(model.name);
+                                    setModelFilter("");
+                                    setModelMenuOpen(false);
+                                  }}
+                                  className={cn(
+                                    DESKTOP_COMPACT_OVERLAY_ITEM,
+                                    model.reasoningEffort === option.value && "bg-accent/40",
+                                  )}
+                                  title={modelSummary}
+                                >
+                                  {option.label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        );
+                      })}
                     </div>
-                  </ScrollArea>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  ))
+                )}
+              </FilteredOverlayMenu>
             ) : (
               <span className="px-1 text-xs text-muted-foreground">{t('app.noModelsAvailable')}</span>
             )}
