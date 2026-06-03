@@ -3,10 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { LoaderCircle } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { GitChangesActions } from "@/components/git-changes-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { workspaceExplorerIcon } from "@/components/workspace-files-panel";
-import { DESKTOP_CHROME_COMMIT_BTN } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type { DesktopGitSnapshot, GitWorkingTreeChange, GitWorkingTreeSnapshot } from "@/types";
 
@@ -15,15 +14,14 @@ export type GitChangesSectionProps = {
   workingTree: GitWorkingTreeSnapshot | null;
   loading: boolean;
   error?: string;
-  showCommitButton?: boolean;
-  commitDisabled?: boolean;
-  commitBusy?: boolean;
-  onOpenCommitDialog?: () => void;
-  showMergeButton?: boolean;
-  mergeDisabled?: boolean;
-  mergeBusy?: boolean;
-  mergeButtonFlashMerged?: boolean;
-  onOpenMergeDialog?: () => void;
+  hasChanges?: boolean;
+  needsPush?: boolean;
+  canMerge?: boolean;
+  gitBusy?: boolean;
+  mergeFlashMerged?: boolean;
+  onCommit?: () => void;
+  onPush?: () => void;
+  onMerge?: () => void;
   onOpenChangedFile?: (relativePath: string) => void;
   className?: string;
   style?: CSSProperties;
@@ -104,15 +102,14 @@ export function GitChangesSection({
   workingTree,
   loading,
   error,
-  showCommitButton = false,
-  commitDisabled = false,
-  commitBusy = false,
-  onOpenCommitDialog,
-  showMergeButton = false,
-  mergeDisabled = false,
-  mergeBusy = false,
-  mergeButtonFlashMerged = false,
-  onOpenMergeDialog,
+  hasChanges = false,
+  needsPush = false,
+  canMerge = false,
+  gitBusy = false,
+  mergeFlashMerged = false,
+  onCommit,
+  onPush,
+  onMerge,
   onOpenChangedFile,
   className,
   style,
@@ -132,32 +129,17 @@ export function GitChangesSection({
               {branchLabel}
             </span>
           ) : null}
-          {showMergeButton ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={DESKTOP_CHROME_COMMIT_BTN}
-              disabled={mergeDisabled}
-              onClick={onOpenMergeDialog}
-            >
-              {mergeBusy ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> : null}
-              <span>{mergeButtonFlashMerged ? "Merged" : "Merge"}</span>
-            </Button>
-          ) : null}
-          {showCommitButton ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={DESKTOP_CHROME_COMMIT_BTN}
-              disabled={commitDisabled}
-              onClick={onOpenCommitDialog}
-            >
-              {commitBusy ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> : null}
-              <span>Commit</span>
-            </Button>
-          ) : null}
+          <GitChangesActions
+            isRepository={isRepository}
+            hasChanges={hasChanges}
+            needsPush={needsPush}
+            canMerge={canMerge}
+            gitBusy={gitBusy}
+            mergeFlashMerged={mergeFlashMerged}
+            onCommit={() => onCommit?.()}
+            onPush={() => onPush?.()}
+            onMerge={() => onMerge?.()}
+          />
         </div>
       </div>
       <div className="relative min-h-0 flex-1">

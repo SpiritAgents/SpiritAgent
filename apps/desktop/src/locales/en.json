@@ -447,7 +447,9 @@
       "noHistory": "No commits yet.",
       "copySha": "Copy SHA",
       "copiedSha": "Copied",
-      "resizeChangesHistory": "Resize Changes and History height"
+      "resizeChangesHistory": "Resize Changes and History height",
+      "push": "Push",
+      "moreActions": "More Git actions"
     },
     "resizeToolsWidth": "Resize Tools Width",
     "workspaceTools": "Workspace Tools",

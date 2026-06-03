@@ -40,6 +40,7 @@ export type WorkspaceGitTabProps = {
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
   commitChanges: (request: CommitChangesRequest) => Promise<boolean>;
+  pushGitBranch: () => Promise<boolean>;
   mergeWorktreeToMain: () => Promise<boolean>;
   onOpenChangedFile?: (
     relativePath: string,
@@ -57,6 +58,7 @@ export function WorkspaceGitTab({
   readGitWorkingTree,
   readGitHistory,
   commitChanges,
+  pushGitBranch,
   mergeWorktreeToMain,
   onOpenChangedFile,
   className,
@@ -159,7 +161,8 @@ export function WorkspaceGitTab({
     !canOpenCommitDialog ||
     gitSnapshot?.hasChanges !== true ||
     commitBusy;
-  const mergeActionDisabled = !canOpenMergeDialog || commitBusy;
+  const needsPush = gitSnapshot?.needsPush === true;
+  const hasChanges = gitSnapshot?.hasChanges === true;
 
   const loadWorkingTree = useCallback(async () => {
     setLoadingTree(true);
@@ -279,6 +282,15 @@ export function WorkspaceGitTab({
     });
   };
 
+  const handlePush = () => {
+    void pushGitBranch().then((ok) => {
+      if (!ok) {
+        return;
+      }
+      setLocalRefreshNonce((value) => value + 1);
+    });
+  };
+
   return (
     <div
       ref={splitContainerRef}
@@ -297,15 +309,14 @@ export function WorkspaceGitTab({
         workingTree={workingTree}
         loading={loadingTree}
         error={treeError}
-        showCommitButton={canOpenCommitDialog}
-        commitDisabled={commitActionDisabled}
-        commitBusy={commitBusy}
-        onOpenCommitDialog={() => setCommitDialogOpen(true)}
-        showMergeButton={canOpenMergeDialog}
-        mergeDisabled={mergeActionDisabled}
-        mergeBusy={commitBusy}
-        mergeButtonFlashMerged={mergeButtonFlashMerged}
-        onOpenMergeDialog={() => setMergeDialogOpen(true)}
+        hasChanges={hasChanges}
+        needsPush={needsPush}
+        canMerge={canOpenMergeDialog}
+        gitBusy={commitBusy}
+        mergeFlashMerged={mergeButtonFlashMerged}
+        onCommit={() => setCommitDialogOpen(true)}
+        onPush={handlePush}
+        onMerge={() => setMergeDialogOpen(true)}
         onOpenChangedFile={onOpenChangedFile}
       />
       <div
@@ -366,7 +377,7 @@ export function WorkspaceGitTab({
         onOpenChange={setMergeDialogOpen}
         gitSnapshot={gitSnapshot}
         commitBusy={commitBusy}
-        mergeActionDisabled={mergeActionDisabled}
+        mergeActionDisabled={!canOpenMergeDialog || commitBusy}
         runtimeError={mergeDialogOpen ? runtimeError : ""}
         onSubmit={submitMergeDialog}
       />

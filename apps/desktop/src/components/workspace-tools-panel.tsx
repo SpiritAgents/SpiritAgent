@@ -82,6 +82,7 @@ export type WorkspaceToolsDockProps = {
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
   commitChanges: (request: CommitChangesRequest) => Promise<boolean>;
+  pushGitBranch: () => Promise<boolean>;
   mergeWorktreeToMain: () => Promise<boolean>;
   gitRefreshNonce?: number;
   className?: string;
@@ -132,6 +133,7 @@ export function WorkspaceToolsDock({
   readGitWorkingTree,
   readGitHistory,
   commitChanges,
+  pushGitBranch,
   mergeWorktreeToMain,
   gitRefreshNonce = 0,
   className,
@@ -467,6 +469,7 @@ export function WorkspaceToolsDock({
                         readGitWorkingTree={readGitWorkingTree}
                         readGitHistory={readGitHistory}
                         commitChanges={commitChanges}
+                        pushGitBranch={pushGitBranch}
                         mergeWorktreeToMain={mergeWorktreeToMain}
                         onOpenChangedFile={onOpenWorkspaceFile}
                       />

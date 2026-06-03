@@ -3249,6 +3249,7 @@ export default function App() {
               readGitWorkingTree={runtime.readGitWorkingTree}
               readGitHistory={runtime.readGitHistory}
               commitChanges={runtime.commitChanges}
+              pushGitBranch={runtime.pushGitBranch}
               mergeWorktreeToMain={runtime.mergeWorktreeToMain}
             />
             </div>
