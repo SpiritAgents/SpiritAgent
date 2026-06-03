@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LoaderCircle } from "lucide-react";
@@ -25,6 +26,7 @@ export type GitChangesSectionProps = {
   onOpenMergeDialog?: () => void;
   onOpenChangedFile?: (relativePath: string) => void;
   className?: string;
+  style?: CSSProperties;
 };
 
 function statusCodeClass(code: string): string {
@@ -113,6 +115,7 @@ export function GitChangesSection({
   onOpenMergeDialog,
   onOpenChangedFile,
   className,
+  style,
 }: GitChangesSectionProps) {
   const { t } = useTranslation();
   const isRepository = gitSnapshot?.isRepository === true && workingTree?.isRepository !== false;
@@ -120,7 +123,7 @@ export function GitChangesSection({
   const branchLabel = gitSnapshot?.branch ?? gitSnapshot?.worktreeBranch;
 
   return (
-    <section className={cn("flex min-h-0 flex-col", className)}>
+    <section className={cn("flex min-h-0 flex-col", className)} style={style}>
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/40 px-2 py-1.5">
         <h3 className="text-xs font-medium text-foreground">{t("workspace.git.changes")}</h3>
         <div className="flex min-w-0 items-center gap-1">
@@ -174,7 +177,7 @@ export function GitChangesSection({
           <p className="p-3 text-xs text-muted-foreground">{t("workspace.git.noChanges")}</p>
         ) : null}
         {!loading && isRepository && !error && changes.length > 0 ? (
-          <ScrollArea className="h-full max-h-48">
+          <ScrollArea className="h-full min-h-0">
             <ul className="py-1">
               {changes.map((change) => (
                 <ChangeRow

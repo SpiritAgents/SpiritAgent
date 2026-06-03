@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { GitChangesSection } from "@/components/git-changes-section";
@@ -24,6 +24,12 @@ function describeError(error: unknown): string {
   }
   return String(error);
 }
+
+const GIT_CHANGES_MIN_PX = 88;
+const GIT_HISTORY_MIN_PX = 120;
+const GIT_HISTORY_HEADER_PX = 32;
+const GIT_SPLITTER_PX = 4;
+const GIT_CHANGES_DEFAULT_RATIO = 0.45;
 
 export type WorkspaceGitTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
@@ -71,6 +77,76 @@ export function WorkspaceGitTab({
   const mergeFlashTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [commitMessageDraft, setCommitMessageDraft] = useState("");
   const [commitMode, setCommitMode] = useState<DesktopCommitMode>("commit");
+  const splitContainerRef = useRef<HTMLDivElement>(null);
+  const [changesPaneHeightPx, setChangesPaneHeightPx] = useState<number | null>(null);
+  const [isResizingSplit, setIsResizingSplit] = useState(false);
+  const splitDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const clampChangesPaneHeight = useCallback((height: number): number => {
+    const container = splitContainerRef.current;
+    if (!container) {
+      return Math.max(GIT_CHANGES_MIN_PX, height);
+    }
+    const max =
+      container.clientHeight - GIT_HISTORY_MIN_PX - GIT_HISTORY_HEADER_PX - GIT_SPLITTER_PX;
+    return Math.min(max, Math.max(GIT_CHANGES_MIN_PX, height));
+  }, []);
+
+  useLayoutEffect(() => {
+    const container = splitContainerRef.current;
+    if (!container) {
+      return;
+    }
+    const syncDefaultHeight = (): void => {
+      setChangesPaneHeightPx((prev) => {
+        if (prev !== null) {
+          return clampChangesPaneHeight(prev);
+        }
+        return clampChangesPaneHeight(container.clientHeight * GIT_CHANGES_DEFAULT_RATIO);
+      });
+    };
+    syncDefaultHeight();
+    const observer = new ResizeObserver(syncDefaultHeight);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [clampChangesPaneHeight]);
+
+  const onSplitResizePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsResizingSplit(true);
+      const startHeight =
+        changesPaneHeightPx ??
+        clampChangesPaneHeight(
+          (splitContainerRef.current?.clientHeight ?? 0) * GIT_CHANGES_DEFAULT_RATIO,
+        );
+      splitDragRef.current = { startY: event.clientY, startHeight };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [changesPaneHeightPx, clampChangesPaneHeight],
+  );
+
+  const onSplitResizePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const drag = splitDragRef.current;
+      if (!drag) {
+        return;
+      }
+      const delta = event.clientY - drag.startY;
+      setChangesPaneHeightPx(clampChangesPaneHeight(drag.startHeight + delta));
+    },
+    [clampChangesPaneHeight],
+  );
+
+  const endSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    setIsResizingSplit(false);
+    splitDragRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // already released
+    }
+  }, []);
 
   const canOpenCommitDialog = gitSnapshot?.isRepository === true;
   const isWorktreeSession = gitSnapshot?.isWorktreeSession === true;
@@ -192,9 +268,19 @@ export function WorkspaceGitTab({
   };
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
+    <div
+      ref={splitContainerRef}
+      className={cn(
+        "flex min-h-0 flex-1 flex-col overflow-hidden",
+        isResizingSplit && "select-none",
+        className,
+      )}
+    >
       <GitChangesSection
-        className="max-h-[45%] shrink-0 border-b border-border/40"
+        className="shrink-0 overflow-hidden"
+        style={
+          changesPaneHeightPx !== null ? { height: changesPaneHeightPx } : { maxHeight: "45%" }
+        }
         gitSnapshot={gitSnapshot}
         workingTree={workingTree}
         loading={loadingTree}
@@ -210,6 +296,24 @@ export function WorkspaceGitTab({
         onOpenMergeDialog={() => setMergeDialogOpen(true)}
         onOpenChangedFile={onOpenChangedFile}
       />
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t("workspace.git.resizeChangesHistory")}
+        className={cn(
+          "group relative z-10 h-1 shrink-0 cursor-row-resize touch-none select-none",
+          "before:absolute before:inset-x-0 before:-top-1 before:h-3 before:content-['']",
+        )}
+        onPointerDown={onSplitResizePointerDown}
+        onPointerMove={onSplitResizePointerMove}
+        onPointerUp={endSplitResize}
+        onPointerCancel={endSplitResize}
+      >
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-border/40 transition-colors group-hover:bg-border/55"
+          aria-hidden
+        />
+      </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border/40 px-2 py-1.5">
           <h3 className="text-xs font-medium text-foreground">{t("workspace.git.history")}</h3>
