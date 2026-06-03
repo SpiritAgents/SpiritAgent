@@ -1,5 +1,6 @@
 import {
   isResponsesProviderBuiltinToolName,
+  parseProviderBuiltinToolUiFromArgumentsJson,
   previewRequestFromStreamingArguments,
   resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
   type JsonObject,
@@ -39,6 +40,7 @@ import {
   applyToolCallSummaryCopy,
   hasActiveRunSubagentToolInMessages,
   isSubagentStatusSurfaceText,
+  toolCallSummaryCopyForProviderBuiltinTool,
   toolCallSummaryForPhase,
   toolCallSummaryForStreamingPreview,
   isFinishTaskToolName,
@@ -356,20 +358,26 @@ export class DesktopRuntimeEventOrchestrator {
         }
         continue;
       }
+      const isProviderBuiltin = isResponsesProviderBuiltinToolName(event.toolName);
+      const providerUi = isProviderBuiltin
+        ? parseProviderBuiltinToolUiFromArgumentsJson(event.argumentsJson)
+        : undefined;
       const previewRequest = previewRequestFromStreamingArguments(
         event.toolName,
         event.argumentsJson,
       );
-      const argsExcerpt = previewRequest !== undefined
-        ? truncateJson(previewRequest)
-        : truncateText(event.argumentsJson, 4_000);
+      const argsExcerpt = providerUi?.inputExcerpt?.trim()
+        ? providerUi.inputExcerpt
+        : previewRequest !== undefined
+          ? truncateJson(previewRequest)
+          : truncateText(event.argumentsJson, 4_000);
       const previewSummary = toolCallSummaryForStreamingPreview(
         messages,
         event.toolCallId,
         event.toolName,
         previewRequest,
       );
-      const providerBuiltinPhase = isResponsesProviderBuiltinToolName(event.toolName)
+      const providerBuiltinPhase = isProviderBuiltin
         ? resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(event.argumentsJson)
         : undefined;
       const toolPhase: ToolBlockSnapshot['phase'] =
@@ -378,20 +386,29 @@ export class DesktopRuntimeEventOrchestrator {
           : providerBuiltinPhase === 'failed'
             ? 'failed'
             : 'preview';
+      const summaryCopy = isProviderBuiltin
+        ? toolCallSummaryCopyForProviderBuiltinTool(
+            event.toolName,
+            toolPhase,
+            previewSummary,
+            providerUi,
+          )
+        : previewSummary;
       const runningTool: ToolBlockSnapshot = this.attachLineDelta(
         applyToolCallSummaryCopy(
           {
             toolCallId: event.toolCallId,
             toolName: event.toolName,
             phase: toolPhase,
-            headline: previewSummary.headline,
-            detailLines: [],
+            headline: summaryCopy.headline,
+            detailLines: providerUi?.detailLines ?? [],
             argsExcerpt,
+            ...(providerUi?.outputExcerpt ? { outputExcerpt: providerUi.outputExcerpt } : {}),
             ...(FILE_DIFF_TOOL_NAMES.has(event.toolName)
               ? { streamingArgumentsJson: event.argumentsJson }
               : {}),
           },
-          previewSummary,
+          summaryCopy,
         ),
         { argumentsJson: event.argumentsJson },
       );

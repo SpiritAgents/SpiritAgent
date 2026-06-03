@@ -6,6 +6,7 @@ import type {
 } from '@spirit-agent/agent-core';
 import {
   finishTaskNoticeFromSummary,
+  isGenericProviderWebSearchQuery,
   llmMessageTextContent,
 } from '@spirit-agent/agent-core';
 
@@ -274,7 +275,9 @@ export function toolCallSummaryCopyForRequest(
       const query = webSearchQueryFromArguments(record);
       return {
         headline: i18n.t('tool.webSearch'),
-        ...(query ? { headlineDetail: truncateSummaryDetail(query) } : {}),
+        ...(query && !isGenericProviderWebSearchQuery(query)
+          ? { headlineDetail: truncateSummaryDetail(query) }
+          : {}),
       };
     }
     case 'web_extractor': {
@@ -289,8 +292,14 @@ export function toolCallSummaryCopyForRequest(
             : {}),
       };
     }
-    case 'code_interpreter':
-      return { headline: i18n.t('tool.codeInterpreter') };
+    case 'code_interpreter': {
+      const code = typeof record.code === 'string' ? record.code.trim() : '';
+      const firstLine = code.split(/\r?\n/u).find((line) => line.trim().length > 0)?.trim() ?? '';
+      return {
+        headline: i18n.t('tool.codeInterpreter'),
+        ...(firstLine ? { headlineDetail: truncateSummaryDetail(firstLine) } : {}),
+      };
+    }
     case 'list_directory_files': {
       const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
       return {
@@ -890,6 +899,30 @@ function hasBlockingToolAheadOfSameTurnPreview(
   return false;
 }
 
+export function toolCallSummaryCopyForProviderBuiltinTool(
+  toolName: string,
+  phase: ToolBlockSnapshot['phase'],
+  previewSummary: ToolCallSummaryCopy,
+  providerUi?: { headlineDetail?: string; sourceCount?: number },
+): ToolCallSummaryCopy {
+  if (toolName === 'web_search') {
+    if (phase === 'succeeded' && providerUi?.sourceCount && providerUi.sourceCount > 0) {
+      return {
+        headline: previewSummary.headline,
+        headlineDetail: i18n.t('tool.webSearchSourceCount', { count: providerUi.sourceCount }),
+      };
+    }
+    return { headline: previewSummary.headline };
+  }
+  if (providerUi?.headlineDetail) {
+    return {
+      headline: previewSummary.headline,
+      headlineDetail: providerUi.headlineDetail,
+    };
+  }
+  return previewSummary;
+}
+
 export function toolCallSummaryForStreamingPreview(
   messages: ConversationMessageSnapshot[],
   toolCallId: string,
@@ -948,6 +981,10 @@ function webSearchQueryFromArguments(record: Record<string, unknown>): string {
     if (typeof value === 'string' && value.trim().length > 0) {
       return value.trim();
     }
+  }
+  const action = record.action;
+  if (action && typeof action === 'object' && !Array.isArray(action)) {
+    return webSearchQueryFromArguments(action as Record<string, unknown>);
   }
   return '';
 }
