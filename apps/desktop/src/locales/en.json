@@ -442,6 +442,8 @@
       "noChanges": "No uncommitted changes.",
       "loadingChanges": "Loading changes…",
       "loadingHistory": "Loading commit history…",
+      "loadingMoreHistory": "Loading older commits…",
+      "loadMoreHistory": "Load more commits",
       "noHistory": "No commits yet.",
       "copySha": "Copy SHA",
       "copiedSha": "Copied"

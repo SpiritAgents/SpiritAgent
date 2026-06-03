@@ -652,10 +652,15 @@ export interface GitHistorySnapshot {
   isRepository: boolean;
   commits: GitCommitRecord[];
   rows: GitCommitGraphRow[];
+  hasMore: boolean;
+  logCommits: GitCommitRecord[];
 }
 
 export interface ReadGitHistoryRequest {
   maxCount?: number;
+  skip?: number;
+  /** When loading the next page, pass the prior `logCommits` to merge and rebuild the graph. */
+  existingLogCommits?: GitCommitRecord[];
 }
 
 export interface ModelProfileSnapshot {

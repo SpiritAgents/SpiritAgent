@@ -1905,7 +1905,7 @@ export function useDesktopRuntime() {
   const readGitHistory = useCallback(
     async (request: ReadGitHistoryRequest = {}): Promise<GitHistorySnapshot> => {
       if (!api) {
-        return { isRepository: false, commits: [], rows: [] };
+        return { isRepository: false, commits: [], rows: [], hasMore: false, logCommits: [] };
       }
       return api.readGitHistory(request);
     },

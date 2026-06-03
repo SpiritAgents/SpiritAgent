@@ -4,6 +4,7 @@ import { LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { workspaceExplorerIcon } from "@/components/workspace-files-panel";
 import { DESKTOP_CHROME_COMMIT_BTN } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type { DesktopGitSnapshot, GitWorkingTreeChange, GitWorkingTreeSnapshot } from "@/types";
@@ -38,17 +39,45 @@ function statusCodeClass(code: string): string {
   return "text-amber-600 dark:text-amber-400";
 }
 
+function splitChangePath(path: string): { fileName: string; dirLabel: string } {
+  const normalized = path.replace(/\\/g, "/");
+  const slash = normalized.lastIndexOf("/");
+  if (slash < 0) {
+    return { fileName: normalized, dirLabel: "" };
+  }
+  return {
+    fileName: normalized.slice(slash + 1),
+    dirLabel: `${normalized.slice(0, slash)}/`,
+  };
+}
+
+// TODO: 点击变更行打开工作区代码编辑器并定位到该文件（hover 样式参考 Git 提交历史行）
 function ChangeRow({ change }: { change: GitWorkingTreeChange }) {
+  const { fileName, dirLabel } = splitChangePath(change.path);
+  const Icon = workspaceExplorerIcon(fileName, "file");
+  const statusLabel = change.code.trim() || "·";
+
   return (
-    <li className="flex min-w-0 items-center gap-2 px-2 py-1 text-xs">
+    <li className="flex min-w-0 items-center gap-1.5 px-2 py-1 text-xs">
+      <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+        <span className="shrink-0 truncate text-foreground/90" title={change.path}>
+          {fileName}
+        </span>
+        {dirLabel ? (
+          <span className="min-w-0 truncate text-[10px] text-muted-foreground" title={dirLabel}>
+            {dirLabel}
+          </span>
+        ) : null}
+      </div>
       <span
-        className={cn("w-5 shrink-0 font-mono font-medium tabular-nums", statusCodeClass(change.code))}
+        className={cn(
+          "ml-1 shrink-0 font-mono text-[10px] font-medium tabular-nums",
+          statusCodeClass(change.code),
+        )}
         title={change.code}
       >
-        {change.code.trim() || "·"}
-      </span>
-      <span className="min-w-0 truncate font-mono text-foreground/90" title={change.path}>
-        {change.path}
+        {statusLabel}
       </span>
     </li>
   );

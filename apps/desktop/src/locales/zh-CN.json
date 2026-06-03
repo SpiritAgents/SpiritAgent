@@ -442,6 +442,8 @@
       "noChanges": "没有未提交的更改。",
       "loadingChanges": "正在加载更改…",
       "loadingHistory": "正在加载提交历史…",
+      "loadingMoreHistory": "正在加载更早的提交…",
+      "loadMoreHistory": "加载更多提交",
       "noHistory": "暂无提交记录。",
       "copySha": "复制 SHA",
       "copiedSha": "已复制"

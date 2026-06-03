@@ -735,6 +735,10 @@ async function handleApiRequest({
       await runHostCommand('readGitHistory', {
         request: {
           ...(typeof jsonBody?.maxCount === 'number' ? { maxCount: jsonBody.maxCount } : {}),
+          ...(typeof jsonBody?.skip === 'number' ? { skip: jsonBody.skip } : {}),
+          ...(Array.isArray(jsonBody?.existingLogCommits)
+            ? { existingLogCommits: jsonBody.existingLogCommits }
+            : {}),
         },
       }),
     );

@@ -54,6 +54,7 @@ export function WorkspaceGitTab({
   const [history, setHistory] = useState<GitHistorySnapshot | null>(null);
   const [loadingTree, setLoadingTree] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
   const [treeError, setTreeError] = useState("");
   const [historyError, setHistoryError] = useState("");
   const [localRefreshNonce, setLocalRefreshNonce] = useState(0);
@@ -104,6 +105,28 @@ export function WorkspaceGitTab({
       setLoadingHistory(false);
     }
   }, [readGitHistory]);
+
+  const loadMoreHistory = useCallback(async () => {
+    if (loadingMoreHistory || loadingHistory) {
+      return;
+    }
+    if (!history?.hasMore || history.logCommits.length === 0) {
+      return;
+    }
+    setLoadingMoreHistory(true);
+    setHistoryError("");
+    try {
+      const next = await readGitHistory({
+        skip: history.logCommits.length,
+        existingLogCommits: history.logCommits,
+      });
+      setHistory(next);
+    } catch (loadError) {
+      setHistoryError(describeError(loadError));
+    } finally {
+      setLoadingMoreHistory(false);
+    }
+  }, [history, loadingHistory, loadingMoreHistory, readGitHistory]);
 
   const reloadAll = useCallback(() => {
     void loadWorkingTree();
@@ -187,7 +210,10 @@ export function WorkspaceGitTab({
         <GitCommitGraph
           className="flex-1"
           history={history}
-          loading={loadingHistory}
+          loading={loadingHistory && history === null}
+          loadingMore={loadingMoreHistory}
+          hasMore={history?.hasMore === true}
+          onLoadMore={loadMoreHistory}
           error={historyError}
         />
       </div>

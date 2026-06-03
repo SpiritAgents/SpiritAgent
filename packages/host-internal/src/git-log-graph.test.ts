@@ -7,7 +7,9 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 import {
+  buildGitCommitHistorySnapshot,
   layoutGitCommitGraph,
+  mergeGitLogCommitPages,
   orderCommitsForGraph,
   parseGitLogDecorations,
   parseGitLogRecordLine,
@@ -231,6 +233,21 @@ test('layoutGitCommitGraph assigns merge lanes for a merge commit', () => {
   assert.ok((mergeRow?.laneCount ?? 0) >= 1);
 });
 
+test('mergeGitLogCommitPages dedupes tail commits and preserves head order', () => {
+  const head = [
+    { oid: 'a', parents: ['b'], subject: 'a', author: '', authoredAt: '', refs: [] },
+    { oid: 'b', parents: [], subject: 'b', author: '', authoredAt: '', refs: [] },
+  ];
+  const tail = [
+    { oid: 'b', parents: [], subject: 'b', author: '', authoredAt: '', refs: [] },
+    { oid: 'c', parents: [], subject: 'c', author: '', authoredAt: '', refs: [] },
+  ];
+  const merged = mergeGitLogCommitPages(head, tail);
+  assert.deepEqual(merged.map((commit) => commit.oid), ['a', 'b', 'c']);
+  const snapshot = buildGitCommitHistorySnapshot(merged, true, false);
+  assert.equal(snapshot.rows.length, snapshot.commits.length);
+});
+
 test('readGitWorkingTreeChanges and readGitCommitHistory in a temp repo with merge', async () => {
   const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-git-graph-'));
 
@@ -268,8 +285,17 @@ test('readGitWorkingTreeChanges and readGitCommitHistory in a temp repo with mer
 
     const history = await readGitCommitHistory(repoRoot, { maxCount: 50 });
     assert.equal(history.isRepository, true);
+    assert.equal(history.hasMore, false);
+    assert.ok(history.logCommits.length >= 4);
     assert.ok(history.commits.length >= 4);
     assert.equal(history.rows.length, history.commits.length);
+
+    const page = await readGitCommitHistory(repoRoot, { maxCount: 2, skip: 0 });
+    assert.equal(page.logCommits.length, 2);
+    assert.equal(page.hasMore, true);
+    const page2 = await readGitCommitHistory(repoRoot, { maxCount: 2, skip: 2 });
+    const combined = mergeGitLogCommitPages(page.logCommits, page2.logCommits);
+    assert.ok(combined.length >= 4);
     const mergeCommit = history.commits.find((commit) => commit.subject === 'merge feature');
     assert.ok(mergeCommit);
     const mergeRow = history.rows.find((row) => row.commit.oid === mergeCommit.oid);
