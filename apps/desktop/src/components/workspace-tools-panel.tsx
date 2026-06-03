@@ -9,6 +9,7 @@ import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
+import type { WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
 import {
   addWorkspaceToolTab,
   closeWorkspaceToolTab,
@@ -56,6 +57,11 @@ export type WorkspaceToolsDockProps = {
   autoRevealPlanNonce?: number;
   /** 仅该 files 选项卡响应 Plan 自动展开 */
   planRevealTabId?: string | null;
+  autoRevealFileNonce?: number;
+  fileRevealTabId?: string | null;
+  fileRevealPath?: string;
+  fileRevealViewMode?: WorkspaceEditorViewMode;
+  onOpenWorkspaceFile?: (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => void;
   tabs: WorkspaceToolTab[];
   activeTabId: string;
   onTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
@@ -103,6 +109,11 @@ export function WorkspaceToolsDock({
   startImplementingDisabled = false,
   autoRevealPlanNonce = 0,
   planRevealTabId = null,
+  autoRevealFileNonce = 0,
+  fileRevealTabId = null,
+  fileRevealPath = "",
+  fileRevealViewMode = "edit",
+  onOpenWorkspaceFile,
   tabs,
   activeTabId,
   onTabsChange,
@@ -386,6 +397,10 @@ export function WorkspaceToolsDock({
                 item.kind === "files" &&
                 planRevealTabId != null &&
                 item.id === planRevealTabId;
+              const fileRevealEnabled =
+                item.kind === "files" &&
+                fileRevealTabId != null &&
+                item.id === fileRevealTabId;
 
               return (
                 <div
@@ -415,6 +430,10 @@ export function WorkspaceToolsDock({
                         startImplementingDisabled={startImplementingDisabled}
                         autoRevealPlanNonce={planRevealEnabled ? autoRevealPlanNonce : 0}
                         planRevealEnabled={planRevealEnabled}
+                        autoRevealFileNonce={fileRevealEnabled ? autoRevealFileNonce : 0}
+                        fileRevealEnabled={fileRevealEnabled}
+                        fileRevealPath={fileRevealPath}
+                        fileRevealViewMode={fileRevealViewMode}
                         onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       />
                     </div>
@@ -449,6 +468,7 @@ export function WorkspaceToolsDock({
                         readGitHistory={readGitHistory}
                         commitChanges={commitChanges}
                         mergeWorktreeToMain={mergeWorktreeToMain}
+                        onOpenChangedFile={onOpenWorkspaceFile}
                       />
                     </div>
                   )}
