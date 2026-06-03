@@ -747,7 +747,7 @@ function ComposerSurface({
   return (
     <div
       data-spirit-surface="composer-surface"
-      className="relative overflow-hidden rounded-2xl border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl transition-[border-color,box-shadow] focus-within:border-ring/60 focus-within:ring-0 dark:border-white/12 dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25"
+      className="relative overflow-hidden rounded-2xl border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12 dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25"
     >
       <ComposerLocalFileStrip
         attachments={localFileAttachments}
