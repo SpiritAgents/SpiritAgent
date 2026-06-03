@@ -257,6 +257,7 @@ export class AiSdkOpenResponsesTransport
       beginApplyPatchBridgeRound();
       const generateTools = buildResponsesGenerateTools(config, normalizedTools);
       const hasGenerateTools = Object.keys(generateTools).length > 0;
+      const providerOptions = buildResponsesProviderOptions(config, previousResponseId);
       const result: { fullStream: AsyncIterable<unknown> } = streamText({
         model: createResponsesLanguageModel(config) as any,
         messages: openAiMessagesToResponsesAiSdkMessages(requestMessages, config) as any,
@@ -267,7 +268,7 @@ export class AiSdkOpenResponsesTransport
               toolChoice: 'auto' as const,
             }
           : {}),
-        providerOptions: buildResponsesProviderOptions(config, previousResponseId),
+        providerOptions,
         includeRawChunks: true,
         maxRetries: 0,
         abortSignal: abortController.signal,

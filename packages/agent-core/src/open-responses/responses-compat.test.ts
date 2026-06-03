@@ -13,19 +13,33 @@ test('normalizeGatewayOpenAiModelId', () => {
   assert.equal(normalizeGatewayOpenAiModelId('anthropic/claude-sonnet-4'), undefined);
 });
 
-test('resolveOpenResponsesSdkProvider gateway openai route uses openai sdk', () => {
+test('resolveOpenResponsesSdkProvider gateway openai route stays open-responses for reasoning', () => {
+  // Gateway-routed OpenAI models must NOT use `@ai-sdk/openai` (which strips the
+  // `openai/` prefix and suppresses gateway reasoning streaming). Default to the
+  // generic open-responses provider.
   assert.equal(
     resolveOpenResponsesSdkProvider({
       llmVendor: 'vercel-ai-gateway',
       model: 'openai/gpt-5.1',
     }),
-    'openai',
+    'open-responses-compatible',
   );
   assert.equal(
     resolveOpenResponsesSdkProvider({
       llmVendor: 'vercel-ai-gateway',
       model: 'openai/gpt-5.1',
       responsesProvider: 'open-responses-compatible',
+    }),
+    'open-responses-compatible',
+  );
+});
+
+test('resolveOpenResponsesSdkProvider honors explicit openai provider override', () => {
+  assert.equal(
+    resolveOpenResponsesSdkProvider({
+      llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.1',
+      responsesProvider: 'openai',
     }),
     'openai',
   );
