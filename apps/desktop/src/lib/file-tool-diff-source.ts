@@ -3,6 +3,7 @@ import { tryExtractPartialPlanName } from '@spirit-agent/agent-core';
 import {
   tryExtractPartialJsonStringValue,
 } from './edit-file-line-delta.js';
+import { monacoLanguageId } from './monaco-language.js';
 import type { ToolBlockSnapshot } from '../types.js';
 
 export const FILE_DIFF_TOOL_NAMES = new Set([
@@ -14,28 +15,6 @@ export const FILE_DIFF_TOOL_NAMES = new Set([
 
 /** 与 delete-file-line-delta / readWorkspaceTextFile 一致。 */
 export const FILE_TOOL_DIFF_MAX_BYTES = 2 * 1024 * 1024;
-
-function languageIdForPath(relativePath: string): string {
-  const lower = relativePath.toLowerCase();
-  const dot = lower.lastIndexOf('.');
-  const ext = dot >= 0 ? lower.slice(dot + 1) : '';
-  const map: Record<string, string> = {
-    ts: 'typescript',
-    tsx: 'typescript',
-    js: 'javascript',
-    jsx: 'javascript',
-    json: 'json',
-    md: 'markdown',
-    mdx: 'markdown',
-    py: 'python',
-    rs: 'rust',
-    css: 'css',
-    html: 'html',
-    yml: 'yaml',
-    yaml: 'yaml',
-  };
-  return map[ext] ?? 'plaintext';
-}
 
 export type FileToolDiffSource = {
   relativePath: string;
@@ -162,7 +141,7 @@ function resolveFromRecord(
     }
     return {
       relativePath,
-      languageId: languageIdForPath(relativePath),
+      languageId: monacoLanguageId(relativePath),
       original,
       modified: '',
     };
@@ -182,7 +161,7 @@ function resolveFromRecord(
     }
     return {
       relativePath,
-      languageId: languageIdForPath(relativePath),
+      languageId: monacoLanguageId(relativePath),
       original,
       modified: content,
     };
@@ -198,7 +177,7 @@ function resolveFromRecord(
   }
   return {
     relativePath,
-    languageId: languageIdForPath(relativePath),
+    languageId: monacoLanguageId(relativePath),
     original: oldText,
     modified: newText,
   };
