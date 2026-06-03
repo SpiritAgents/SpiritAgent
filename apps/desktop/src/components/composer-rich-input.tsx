@@ -12,7 +12,12 @@ import {
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-selection";
-import { caretAtEnd, caretToPlainTextOffset } from "@/lib/composer-segment-model";
+import {
+  caretAtEnd,
+  caretToPlainTextOffset,
+  replaceWorkspaceFileReferenceInSegments,
+  type ActiveWorkspaceFileReferenceQuery,
+} from "@/lib/composer-segment-model";
 import {
   domToSegments,
   emptySegments,
@@ -33,6 +38,8 @@ import {
   type RichSegment,
   type SegmentCaret,
 } from "@/lib/composer-segments";
+
+export type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import { cn } from "@/lib/utils";
 
 export type { RichSegment } from "@/lib/composer-segment-model";
@@ -71,6 +78,11 @@ export type InsertLoopChipOptions = {
 export type ComposerRichInputHandle = {
   focus(): void;
   insertAttachment(a: BrowserElementAttachment): void;
+  insertWorkspaceFileReference(
+    path: string,
+    query: ActiveWorkspaceFileReferenceQuery,
+    finalize?: boolean,
+  ): void;
   insertLoopChip(options?: InsertLoopChipOptions): void;
   removeLoopChip(): void;
   getSegments(): RichSegment[];
@@ -234,6 +246,24 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments],
     );
 
+    const insertWorkspaceFileReference = useCallback(
+      (path: string, query: ActiveWorkspaceFileReferenceQuery, finalize = true) => {
+        const div = divRef.current;
+        if (!div) {
+          return;
+        }
+        div.focus();
+        const { segments: next, caret } = replaceWorkspaceFileReferenceInSegments(
+          segmentsRef.current,
+          query,
+          path,
+          finalize,
+        );
+        commitSegments(next, caret);
+      },
+      [commitSegments],
+    );
+
     const applySegments = useCallback(
       (next: RichSegment[], caret?: SegmentCaret | null, notifyParent = true) => {
         commitSegments(next, caret ?? caretAtEnd(mergeAdjacentTextSegments(next)), {
@@ -278,12 +308,20 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       () => ({
         focus: () => divRef.current?.focus(),
         insertAttachment,
+        insertWorkspaceFileReference,
         insertLoopChip,
         removeLoopChip,
         getSegments,
         setSegments: (next: RichSegment[]) => applySegments(next),
       }),
-      [insertAttachment, insertLoopChip, removeLoopChip, getSegments, applySegments],
+      [
+        insertAttachment,
+        insertWorkspaceFileReference,
+        insertLoopChip,
+        removeLoopChip,
+        getSegments,
+        applySegments,
+      ],
     );
 
     useEffect(() => {

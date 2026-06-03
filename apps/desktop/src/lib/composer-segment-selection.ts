@@ -9,6 +9,8 @@ function isChip(el: HTMLElement): boolean {
   return (
     el.dataset.elementChip === "true" ||
     el.getAttribute("data-element-chip") === "true" ||
+    el.dataset.fileChip === "true" ||
+    el.getAttribute("data-file-chip") === "true" ||
     el.dataset.loopChip === "true" ||
     el.getAttribute("data-loop-chip") === "true"
   );
@@ -135,7 +137,7 @@ export function caretToDomRange(
     return;
   }
 
-  if (seg.kind === "element" || seg.kind === "loop") {
+  if (seg.kind === "element" || seg.kind === "workspaceFile" || seg.kind === "loop") {
     targetSegment = index;
     targetOffset = 0;
   }
@@ -147,7 +149,11 @@ export function caretToDomRange(
     const currentSeg = segments[walkIndex];
     if (!currentSeg) break;
 
-    if (currentSeg.kind === "element" || currentSeg.kind === "loop") {
+    if (
+      currentSeg.kind === "element" ||
+      currentSeg.kind === "workspaceFile" ||
+      currentSeg.kind === "loop"
+    ) {
       if (walkIndex === targetSegment && targetOffset === 0) {
         range.setStartBefore(node);
         range.collapse(true);

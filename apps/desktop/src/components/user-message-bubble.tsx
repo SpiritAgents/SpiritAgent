@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { PenTool } from "lucide-react";
+import { File, PenTool } from "lucide-react";
 
 import { BROWSER_ELEMENT_CHIP_CLASS } from "@/components/browser-element-card";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
@@ -15,6 +15,11 @@ import {
   parseMessageContentParts,
   trimMessageTextAroundElements,
 } from "@/lib/composer-segment-model";
+import {
+  WORKSPACE_FILE_CHIP_CLASS,
+  WORKSPACE_FILE_CHIP_ICON_CLASS,
+  workspaceFileBasename,
+} from "@/lib/workspace-file-chip-styles";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
@@ -28,6 +33,22 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
       {`<${tagName}>`}
     </span>
   );
+}
+
+function WorkspaceFileCard({ path }: { path: string }) {
+  const normalized = path.replace(/\\/gu, "/");
+  return (
+    <span title={normalized} className={WORKSPACE_FILE_CHIP_CLASS}>
+      <File className={cn("size-[10px] shrink-0", WORKSPACE_FILE_CHIP_ICON_CLASS)} aria-hidden />
+      {workspaceFileBasename(normalized)}
+    </span>
+  );
+}
+
+function isInlineChipPart(
+  part: { kind: string } | null | undefined,
+): part is { kind: "element" | "workspaceFile" } {
+  return part?.kind === "element" || part?.kind === "workspaceFile";
 }
 
 type ReadLocalImagePreview = (filePath: string) => Promise<string | null>;
@@ -67,7 +88,8 @@ export function UserMessageBubble({
   );
   const visibleText = contentParts.filter((p) => p.kind === 'text').map((p) => p.value).join('');
   const showText =
-    (visibleText.trim().length > 0 || contentParts.some((p) => p.kind === 'element')) &&
+    (visibleText.trim().length > 0 ||
+      contentParts.some((p) => p.kind === "element" || p.kind === "workspaceFile")) &&
     !isAttachmentOnlyDisplayText(message.content, message.localFileAttachments);
   const hasAttachments = attachmentViews.length > 0;
 
@@ -103,11 +125,14 @@ export function UserMessageBubble({
               if (part.kind === "element") {
                 return <ElementCard key={i} tagName={part.tagName} url={part.url} />;
               }
+              if (part.kind === "workspaceFile") {
+                return <WorkspaceFileCard key={i} path={part.path} />;
+              }
               const prev = i > 0 ? contentParts[i - 1] : null;
               const next = i < contentParts.length - 1 ? contentParts[i + 1] : null;
               const display = trimMessageTextAroundElements(part.value, {
-                afterElement: prev?.kind === "element",
-                beforeElement: next?.kind === "element",
+                afterElement: isInlineChipPart(prev),
+                beforeElement: isInlineChipPart(next),
               });
               return display;
             })}

@@ -6,7 +6,32 @@ export { browserElementContextText };
 export type RichSegment =
   | { kind: "text"; value: string }
   | { kind: "element"; attachment: BrowserElementAttachment }
+  | { kind: "workspaceFile"; path: string }
   | { kind: "loop" };
+
+export type ActiveWorkspaceFileReferenceQuery = {
+  start: number;
+  end: number;
+  raw: string;
+};
+
+export function normalizeWorkspaceFilePath(path: string): string {
+  return path.replace(/\\/gu, "/");
+}
+
+export function workspaceFilePlainToken(path: string): string {
+  return `@${normalizeWorkspaceFilePath(path)}`;
+}
+
+function plainTextLength(seg: RichSegment): number {
+  if (seg.kind === "text") {
+    return seg.value.length;
+  }
+  if (seg.kind === "workspaceFile") {
+    return workspaceFilePlainToken(seg.path).length;
+  }
+  return 0;
+}
 
 export const EMPTY_TEXT_SEGMENT: RichSegment = { kind: "text", value: "" };
 
@@ -32,7 +57,15 @@ export function mergeAdjacentTextSegments(segs: RichSegment[]): RichSegment[] {
 }
 
 export function segmentsToPlainText(segs: RichSegment[]): string {
-  return segs.map((s) => (s.kind === "text" ? s.value : "")).join("");
+  return segs.map((s) => {
+    if (s.kind === "text") {
+      return s.value;
+    }
+    if (s.kind === "workspaceFile") {
+      return workspaceFilePlainToken(s.path);
+    }
+    return "";
+  }).join("");
 }
 
 /** True when composer has no user-visible text (incl. lone `<br>` newlines, not intentional line breaks). */
@@ -77,6 +110,10 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
+  if (prev.kind === "workspaceFile" || next.kind === "workspaceFile") {
+    return "";
+  }
+
   return "\n\n";
 }
 
@@ -86,7 +123,11 @@ export function segmentsToMessageText(segs: RichSegment[]): string {
   for (let i = 0; i < merged.length; i++) {
     const seg = merged[i]!;
     const piece =
-      seg.kind === "text" ? seg.value : browserElementContextText(seg.attachment);
+      seg.kind === "text"
+        ? seg.value
+        : seg.kind === "workspaceFile"
+          ? workspaceFilePlainToken(seg.path)
+          : browserElementContextText(seg.attachment);
     if (seg.kind === "text" && !piece) continue;
 
     if (!out) {
@@ -125,6 +166,9 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
     if (seg.kind === "element" && other.kind === "element") {
       return seg.attachment.id === other.attachment.id;
     }
+    if (seg.kind === "workspaceFile" && other.kind === "workspaceFile") {
+      return seg.path === other.path;
+    }
     if (seg.kind === "loop" && other.kind === "loop") {
       return true;
     }
@@ -134,10 +178,13 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
 
 export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string): RichSegment[] {
   const loopPinned = segs.some((s) => s.kind === "loop");
-  const elements = segs.filter((s): s is Extract<RichSegment, { kind: "element" }> => s.kind === "element");
+  const inlineChips = segs.filter(
+    (s): s is Extract<RichSegment, { kind: "element" | "workspaceFile" }> =>
+      s.kind === "element" || s.kind === "workspaceFile",
+  );
 
   let body: RichSegment[];
-  if (elements.length === 0) {
+  if (inlineChips.length === 0) {
     body = value ? [{ kind: "text", value }] : emptySegments();
   } else if (!value) {
     body = emptySegments();
@@ -145,7 +192,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
     const out: RichSegment[] = [];
     let textApplied = false;
     for (const seg of segs) {
-      if (seg.kind === "element") {
+      if (seg.kind === "element" || seg.kind === "workspaceFile") {
         out.push(seg);
       } else if (seg.kind === "text" && !textApplied) {
         out.push({ kind: "text", value });
@@ -174,8 +221,10 @@ function textFollowingChipInsert(after: string): string {
   return after === "" ? " " : after;
 }
 
-function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<RichSegment, { kind: "element" | "loop" }> {
-  return seg?.kind === "element" || seg?.kind === "loop";
+function isInlineChipSegment(
+  seg: RichSegment | undefined,
+): seg is Extract<RichSegment, { kind: "element" | "workspaceFile" | "loop" }> {
+  return seg?.kind === "element" || seg?.kind === "workspaceFile" || seg?.kind === "loop";
 }
 
 export function insertSegmentAtCaret(
@@ -238,6 +287,17 @@ export function insertSegmentAtCaret(
         caretOffset = 1;
       }
     }
+  } else if (newSegment.kind === "workspaceFile") {
+    const fileIndex = normalized.findIndex(
+      (s) => s.kind === "workspaceFile" && s.path === newSegment.path,
+    );
+    if (fileIndex >= 0) {
+      afterIndex = fileIndex + 1;
+      const trailing = normalized[afterIndex];
+      if (trailing?.kind === "text" && trailing.value.startsWith(" ")) {
+        caretOffset = 1;
+      }
+    }
   }
   return {
     segments: normalized,
@@ -251,16 +311,108 @@ export function caretToPlainTextOffset(segments: RichSegment[], caret: SegmentCa
   let offset = 0;
   const index = Math.min(Math.max(caret.segmentIndex, 0), merged.length);
   for (let i = 0; i < index; i++) {
-    const seg = merged[i]!;
-    if (seg.kind === "text") {
-      offset += seg.value.length;
-    }
+    offset += plainTextLength(merged[i]!);
   }
   const at = merged[index];
   if (at?.kind === "text") {
     offset += Math.min(Math.max(caret.offset, 0), at.value.length);
   }
   return offset;
+}
+
+export function plainTextOffsetToCaret(segments: RichSegment[], offset: number): SegmentCaret {
+  const merged = mergeAdjacentTextSegments(segments);
+  let remaining = Math.max(0, offset);
+
+  for (let i = 0; i < merged.length; i++) {
+    const seg = merged[i]!;
+    const len = plainTextLength(seg);
+    if (seg.kind === "text") {
+      if (remaining <= len) {
+        return { segmentIndex: i, offset: remaining };
+      }
+      remaining -= len;
+      continue;
+    }
+    if (seg.kind === "workspaceFile") {
+      if (remaining < len) {
+        if (remaining === 0) {
+          return { segmentIndex: i, offset: 0 };
+        }
+        const trailing = merged[i + 1];
+        if (trailing?.kind === "text") {
+          return { segmentIndex: i + 1, offset: 0 };
+        }
+        return { segmentIndex: i + 1, offset: 0 };
+      }
+      if (remaining === len) {
+        const trailing = merged[i + 1];
+        if (trailing?.kind === "text") {
+          return { segmentIndex: i + 1, offset: 0 };
+        }
+        return { segmentIndex: i + 1, offset: 0 };
+      }
+      remaining -= len;
+      continue;
+    }
+  }
+
+  return caretAtEnd(merged);
+}
+
+export function replaceWorkspaceFileReferenceInSegments(
+  segs: RichSegment[],
+  query: ActiveWorkspaceFileReferenceQuery,
+  path: string,
+  finalize: boolean,
+): { segments: RichSegment[]; caret: SegmentCaret } {
+  const normalizedPath = normalizeWorkspaceFilePath(path);
+  const merged = mergeAdjacentTextSegments(segs);
+  const startCaret = plainTextOffsetToCaret(merged, query.start);
+  const endCaret = plainTextOffsetToCaret(merged, query.end);
+  const index = startCaret.segmentIndex;
+  const seg = merged[index];
+
+  if (seg?.kind !== "text" || endCaret.segmentIndex !== index) {
+    return insertSegmentAtCaret(merged, caretAtEnd(merged), {
+      kind: "workspaceFile",
+      path: normalizedPath,
+    });
+  }
+
+  const before = seg.value.slice(0, startCaret.offset);
+  const after = seg.value.slice(endCaret.offset);
+  let trailing = after;
+  if (finalize) {
+    const needsSpace = trailing.length === 0 || !/^\s/u.test(trailing.charAt(0));
+    if (needsSpace) {
+      trailing = ` ${trailing}`;
+    }
+  }
+
+  const next: RichSegment[] = [
+    ...merged.slice(0, index),
+    ...(before ? [{ kind: "text" as const, value: before }] : []),
+    { kind: "workspaceFile", path: normalizedPath },
+    { kind: "text" as const, value: trailing },
+    ...merged.slice(index + 1),
+  ];
+
+  const normalized = mergeAdjacentTextSegments(next);
+  const fileIndex = normalized.findIndex(
+    (s) => s.kind === "workspaceFile" && s.path === normalizedPath,
+  );
+  let afterIndex = fileIndex >= 0 ? fileIndex + 1 : normalized.length - 1;
+  let caretOffset = 0;
+  const trailingSeg = normalized[afterIndex];
+  if (trailingSeg?.kind === "text" && trailingSeg.value.startsWith(" ")) {
+    caretOffset = 1;
+  }
+
+  return {
+    segments: normalized,
+    caret: { segmentIndex: afterIndex, offset: caretOffset },
+  };
 }
 
 export function caretAtEnd(segs: RichSegment[]): SegmentCaret {
@@ -275,19 +427,58 @@ export function caretAtEnd(segs: RichSegment[]): SegmentCaret {
 
 export type MessageContentPart =
   | { kind: "text"; value: string }
-  | { kind: "element"; tagName: string; url: string; outerHtml: string };
+  | { kind: "element"; tagName: string; url: string; outerHtml: string }
+  | { kind: "workspaceFile"; path: string };
 
 const ELEMENT_BLOCK_RE = /Selected element from ([^\n]*):\n```html\n[\s\S]*?\n```/g;
+const WORKSPACE_FILE_REF_IN_TEXT_RE = /@([^\s@]+)/gu;
 
-/** Parse wire-format user message text into text / element blocks. */
+function expandTextWithWorkspaceFileRefs(text: string): MessageContentPart[] {
+  if (!text) {
+    return [];
+  }
+
+  const parts: MessageContentPart[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  const re = new RegExp(WORKSPACE_FILE_REF_IN_TEXT_RE.source, "gu");
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > last) {
+      parts.push({ kind: "text", value: text.slice(last, match.index) });
+    }
+    parts.push({
+      kind: "workspaceFile",
+      path: normalizeWorkspaceFilePath(match[1] ?? ""),
+    });
+    last = match.index + match[0].length;
+  }
+
+  if (last < text.length) {
+    parts.push({ kind: "text", value: text.slice(last) });
+  }
+
+  return parts.length > 0 ? parts : [{ kind: "text", value: text }];
+}
+
+function pushExpandedTextParts(parts: MessageContentPart[], text: string): void {
+  for (const part of expandTextWithWorkspaceFileRefs(text)) {
+    parts.push(part);
+  }
+}
+
+/** Parse wire-format user message text into text / element / workspace file blocks. */
 export function parseMessageContentParts(content: string): MessageContentPart[] {
+  if (!content) {
+    return [];
+  }
+
   const parts: MessageContentPart[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
   const re = new RegExp(ELEMENT_BLOCK_RE.source, "g");
   while ((m = re.exec(content)) !== null) {
     if (m.index > last) {
-      parts.push({ kind: "text", value: content.slice(last, m.index) });
+      pushExpandedTextParts(parts, content.slice(last, m.index));
     }
     const url = m[1].trim();
     const htmlMatch = /```html\n([\s\S]*?)\n```/.exec(m[0]);
@@ -297,7 +488,10 @@ export function parseMessageContentParts(content: string): MessageContentPart[] 
     last = m.index + m[0].length;
   }
   if (last < content.length) {
-    parts.push({ kind: "text", value: content.slice(last) });
+    pushExpandedTextParts(parts, content.slice(last));
+  }
+  if (parts.length === 0) {
+    return expandTextWithWorkspaceFileRefs(content);
   }
   return parts;
 }
@@ -332,9 +526,14 @@ export function messageContentToRichSegments(
       continue;
     }
 
+    if (part.kind === "workspaceFile") {
+      segments.push({ kind: "workspaceFile", path: part.path });
+      continue;
+    }
+
     const display = trimMessageTextAroundElements(part.value, {
-      afterElement: prev?.kind === "element",
-      beforeElement: next?.kind === "element",
+      afterElement: prev?.kind === "element" || prev?.kind === "workspaceFile",
+      beforeElement: next?.kind === "element" || next?.kind === "workspaceFile",
     });
     if (display || segments.length === 0) {
       segments.push({ kind: "text", value: display });
