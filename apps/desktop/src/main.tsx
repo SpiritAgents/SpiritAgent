@@ -6,6 +6,8 @@ import App from './App';
 import { ThemeProvider } from './hooks/useTheme';
 import { applyFontToDocument, getStoredFont } from './lib/font';
 import { applyThemeToDocument, getStoredTheme } from './lib/theme';
+import 'katex/dist/katex.min.css';
+import 'streamdown/styles.css';
 import './styles.css';
 
 // 首屏前应用已存外观偏好，避免 portaled 浮层与根样式不一致
