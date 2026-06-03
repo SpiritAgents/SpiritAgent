@@ -60,6 +60,9 @@ import type {
   WorkspaceReadTextFileResult,
   WriteWorkspaceTextFileRequest,
   DesktopModelProvider,
+  GitHistorySnapshot,
+  GitWorkingTreeSnapshot,
+  ReadGitHistoryRequest,
 } from "@/types";
 
 type BusyAction =
@@ -1892,6 +1895,23 @@ export function useDesktopRuntime() {
     [api],
   );
 
+  const readGitWorkingTree = useCallback(async (): Promise<GitWorkingTreeSnapshot> => {
+    if (!api) {
+      return { isRepository: false, changes: [] };
+    }
+    return api.readGitWorkingTree();
+  }, [api]);
+
+  const readGitHistory = useCallback(
+    async (request: ReadGitHistoryRequest = {}): Promise<GitHistorySnapshot> => {
+      if (!api) {
+        return { isRepository: false, commits: [], rows: [], hasMore: false, logCommits: [] };
+      }
+      return api.readGitHistory(request);
+    },
+    [api],
+  );
+
   const readWorkspaceTextFile = useCallback(
     async (relativePath: string): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
@@ -2050,6 +2070,8 @@ export function useDesktopRuntime() {
     openSession,
     listWorkspaceFileReferenceSuggestions,
     listWorkspaceExplorerChildren,
+    readGitWorkingTree,
+    readGitHistory,
     readWorkspaceTextFile,
     writeWorkspaceTextFile,
     pairWebHost,

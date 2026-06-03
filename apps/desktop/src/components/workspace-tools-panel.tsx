@@ -5,9 +5,11 @@ import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { WorkspaceBrowserTab, type WorkspaceBrowserTabProps } from "@/components/workspace-browser-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
+import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
+import type { WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
 import {
   addWorkspaceToolTab,
   closeWorkspaceToolTab,
@@ -16,7 +18,12 @@ import {
   type WorkspaceToolTabKind,
 } from "@/lib/workspace-tool-tabs";
 import type {
+  CommitChangesRequest,
+  DesktopGitSnapshot,
+  GitHistorySnapshot,
+  GitWorkingTreeSnapshot,
   PlanSnapshot,
+  ReadGitHistoryRequest,
   WorkspaceExplorerListResult,
   WorkspaceReadTextFileResult,
   WriteWorkspaceTextFileRequest,
@@ -50,6 +57,11 @@ export type WorkspaceToolsDockProps = {
   autoRevealPlanNonce?: number;
   /** 仅该 files 选项卡响应 Plan 自动展开 */
   planRevealTabId?: string | null;
+  autoRevealFileNonce?: number;
+  fileRevealTabId?: string | null;
+  fileRevealPath?: string;
+  fileRevealViewMode?: WorkspaceEditorViewMode;
+  onOpenWorkspaceFile?: (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => void;
   tabs: WorkspaceToolTab[];
   activeTabId: string;
   onTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
@@ -64,6 +76,14 @@ export type WorkspaceToolsDockProps = {
   maxWidthPx?: number;
   onWidthPxChange(next: number): void;
   open: boolean;
+  gitSnapshot?: DesktopGitSnapshot;
+  gitCommitBusy?: boolean;
+  gitRuntimeError?: string;
+  readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
+  readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
+  commitChanges: (request: CommitChangesRequest) => Promise<boolean>;
+  mergeWorktreeToMain: () => Promise<boolean>;
+  gitRefreshNonce?: number;
   className?: string;
 };
 
@@ -78,15 +98,6 @@ function computeViewportMaxWidthPx(): number {
   return Math.round(window.innerWidth * VIEWPORT_MAX_WIDTH_RATIO);
 }
 
-function WorkspaceGitTabPlaceholder() {
-  const { t } = useTranslation();
-  return (
-    <div className="p-3 text-muted-foreground">
-      <p>{t('workspace.gitPlaceholder')}</p>
-    </div>
-  );
-}
-
 export function WorkspaceToolsDock({
   workspaceRoot,
   listExplorerChildren,
@@ -98,6 +109,11 @@ export function WorkspaceToolsDock({
   startImplementingDisabled = false,
   autoRevealPlanNonce = 0,
   planRevealTabId = null,
+  autoRevealFileNonce = 0,
+  fileRevealTabId = null,
+  fileRevealPath = "",
+  fileRevealViewMode = "edit",
+  onOpenWorkspaceFile,
   tabs,
   activeTabId,
   onTabsChange,
@@ -110,6 +126,14 @@ export function WorkspaceToolsDock({
   maxWidthPx: maxWidthPxProp,
   onWidthPxChange,
   open,
+  gitSnapshot,
+  gitCommitBusy = false,
+  gitRuntimeError = "",
+  readGitWorkingTree,
+  readGitHistory,
+  commitChanges,
+  mergeWorktreeToMain,
+  gitRefreshNonce = 0,
   className,
 }: WorkspaceToolsDockProps) {
   const { t } = useTranslation();
@@ -373,6 +397,10 @@ export function WorkspaceToolsDock({
                 item.kind === "files" &&
                 planRevealTabId != null &&
                 item.id === planRevealTabId;
+              const fileRevealEnabled =
+                item.kind === "files" &&
+                fileRevealTabId != null &&
+                item.id === fileRevealTabId;
 
               return (
                 <div
@@ -402,6 +430,10 @@ export function WorkspaceToolsDock({
                         startImplementingDisabled={startImplementingDisabled}
                         autoRevealPlanNonce={planRevealEnabled ? autoRevealPlanNonce : 0}
                         planRevealEnabled={planRevealEnabled}
+                        autoRevealFileNonce={fileRevealEnabled ? autoRevealFileNonce : 0}
+                        fileRevealEnabled={fileRevealEnabled}
+                        fileRevealPath={fileRevealPath}
+                        fileRevealViewMode={fileRevealViewMode}
                         onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       />
                     </div>
@@ -425,7 +457,20 @@ export function WorkspaceToolsDock({
                       />
                     </div>
                   ) : (
-                    <WorkspaceGitTabPlaceholder />
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                      <WorkspaceGitTab
+                        gitSnapshot={gitSnapshot}
+                        isActive={selected}
+                        refreshNonce={gitRefreshNonce}
+                        commitBusy={gitCommitBusy}
+                        runtimeError={gitRuntimeError}
+                        readGitWorkingTree={readGitWorkingTree}
+                        readGitHistory={readGitHistory}
+                        commitChanges={commitChanges}
+                        mergeWorktreeToMain={mergeWorktreeToMain}
+                        onOpenChangedFile={onOpenWorkspaceFile}
+                      />
+                    </div>
                   )}
                 </div>
               );

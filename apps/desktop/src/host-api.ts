@@ -6,6 +6,9 @@ import type {
   BootstrapRequest,
   CheckoutGitBranchRequest,
   CommitChangesRequest,
+  GitHistorySnapshot,
+  GitWorkingTreeSnapshot,
+  ReadGitHistoryRequest,
   CreateSkillRequest,
   DeleteExtensionRequest,
   DeleteMcpServerRequest,
@@ -83,6 +86,8 @@ export interface HostApi {
   setWorkLocation(workLocation: import('@spirit-agent/host-internal').WorkLocationKind): Promise<DesktopSnapshot>;
   checkoutGitBranch(request: CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
   mergeWorktreeToMain(): Promise<DesktopSnapshot>;
+  readGitWorkingTree(): Promise<GitWorkingTreeSnapshot>;
+  readGitHistory(request?: ReadGitHistoryRequest): Promise<GitHistorySnapshot>;
   abortConversation(): Promise<DesktopSnapshot>;
   continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
   rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;
