@@ -72,6 +72,7 @@
   "devDependencies": {
     "@electron/rebuild": "^3.7.2",
     "@tailwindcss/vite": "^4.2.4",
+    "@types/diff": "^7.0.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

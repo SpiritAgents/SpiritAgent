@@ -1,0 +1,29 @@
+/* react-diff-view 主题：限定在工具卡容器内，与 Spirit Desktop 背景/淡雅 diff 对齐 */
+.tool-call-diff {
+  --diff-background-color: var(--background);
+  --diff-text-color: var(--foreground);
+  --diff-font-family: var(--font-mono, ui-monospace, monospace);
+  --diff-gutter-insert-background-color: transparent;
+  --diff-gutter-delete-background-color: transparent;
+  --diff-gutter-insert-text-color: var(--diff-text-color);
+  --diff-gutter-delete-text-color: var(--diff-text-color);
+  --diff-code-insert-background-color: color-mix(in oklab, #6ee7b7 7%, transparent);
+  --diff-code-delete-background-color: color-mix(in oklab, #fca5a5 7%, transparent);
+  --diff-code-insert-edit-background-color: color-mix(in oklab, #6ee7b7 11%, transparent);
+  --diff-code-delete-edit-background-color: color-mix(in oklab, #fca5a5 11%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dark .tool-call-diff {
+  --diff-code-insert-background-color: color-mix(in oklab, #6ee7b7 7%, transparent);
+  --diff-code-delete-background-color: color-mix(in oklab, #fca5a5 7%, transparent);
+}
+
+.tool-call-diff .diff {
+  background-color: var(--background);
+}
+
+.tool-call-diff .diff-line {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
