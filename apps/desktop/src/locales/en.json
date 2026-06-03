@@ -446,7 +446,8 @@
       "loadMoreHistory": "Load more commits",
       "noHistory": "No commits yet.",
       "copySha": "Copy SHA",
-      "copiedSha": "Copied"
+      "copiedSha": "Copied",
+      "resizeChangesHistory": "Resize Changes and History height"
     },
     "resizeToolsWidth": "Resize Tools Width",
     "workspaceTools": "Workspace Tools",
