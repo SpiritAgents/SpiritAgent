@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { type VariantProps } from 'class-variance-authority'
 
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { instantHoverMotionClass } from '@/lib/desktop-chrome'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,9 @@ type ActionPopoverProps = {
   items: readonly ActionPopoverItem[]
   triggerClassName?: string
   contentClassName?: string
+  /** 默认 ghost + 圆形，适合工具栏独立图标；ButtonGroup 分段请用 default + sm */
+  triggerVariant?: VariantProps<typeof buttonVariants>['variant']
+  triggerSize?: VariantProps<typeof buttonVariants>['size']
 }
 
 type ActionPopoverItemButtonProps = {
@@ -70,6 +74,8 @@ export function ActionPopover({
   items,
   triggerClassName,
   contentClassName,
+  triggerVariant = 'ghost',
+  triggerSize = 'icon',
 }: ActionPopoverProps) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
@@ -88,12 +94,14 @@ export function ActionPopover({
         <Button
           ref={triggerRef}
           type="button"
-          variant="ghost"
-          size="icon"
+          variant={triggerVariant}
+          size={triggerSize}
           aria-label={ariaLabel}
           disabled={disabled}
           className={cn(
-            'size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground',
+            'shrink-0 shadow-none',
+            triggerVariant === 'ghost' &&
+              'size-7 rounded-full p-0 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
             instantHoverMotionClass,
             triggerClassName,
           )}

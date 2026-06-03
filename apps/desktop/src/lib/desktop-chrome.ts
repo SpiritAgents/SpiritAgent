@@ -17,3 +17,20 @@ export const DESKTOP_CHROME_COMMIT_BTN = cn(
   "h-7 rounded-md px-2 text-xs font-medium text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10",
   instantHoverMotionClass,
 );
+
+/** Git 更改区 primary 按钮（ButtonGroup 分段）；`border-r-0` 避免透明右边框叠在分割线上显得过粗 */
+export const DESKTOP_GIT_ACTION_BTN = cn(
+  "h-7 border-r-0 shadow-none",
+  instantHoverMotionClass,
+);
+
+/** Git ButtonGroup 中间竖线（`ButtonGroupSeparator`）；`!bg-*` 覆盖 Separator 默认的 bg-border / bg-input */
+export const DESKTOP_GIT_ACTION_SPLIT = cn(
+  "!my-0 !mx-0 h-auto w-px min-w-px max-w-px shrink-0 self-stretch !border-0 !bg-border-0 !bg-[var(--git-action-split)] !p-0",
+);
+
+/** Git ButtonGroup 右侧下拉触发器 */
+export const DESKTOP_GIT_ACTION_MENU_TRIGGER = cn(
+  DESKTOP_GIT_ACTION_BTN,
+  "w-7 min-w-7 rounded-l-none rounded-r-md px-0",
+);
