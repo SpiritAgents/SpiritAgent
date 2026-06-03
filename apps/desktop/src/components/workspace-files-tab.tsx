@@ -13,6 +13,7 @@ import {
   type WorkspaceMonacoEditorHandle,
 } from "@/components/workspace-monaco-editor";
 import { cn } from "@/lib/utils";
+import type { WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
 import type {
   PlanSnapshot,
   WorkspaceExplorerListResult,
@@ -60,6 +61,11 @@ export type WorkspaceFilesTabProps = {
   autoRevealPlanNonce?: number;
   /** 为 false 时不响应 Plan 自动展开（多 files 选项卡时仅目标 tab 为 true） */
   planRevealEnabled?: boolean;
+  autoRevealFileNonce?: number;
+  /** 为 false 时不响应外部打开文件请求（多 files 选项卡时仅目标 tab 为 true） */
+  fileRevealEnabled?: boolean;
+  fileRevealPath?: string;
+  fileRevealViewMode?: WorkspaceEditorViewMode;
   /** 当前打开文件名变化时通知父层，用于选项卡标题显示；无选中时传 undefined */
   onTitleChange?: (title: string | undefined) => void;
 };
@@ -75,6 +81,10 @@ export function WorkspaceFilesTab({
   startImplementingDisabled = false,
   autoRevealPlanNonce = 0,
   planRevealEnabled = true,
+  autoRevealFileNonce = 0,
+  fileRevealEnabled = false,
+  fileRevealPath = "",
+  fileRevealViewMode = "edit",
   onTitleChange,
 }: WorkspaceFilesTabProps) {
   const { t } = useTranslation();
@@ -134,6 +144,14 @@ export function WorkspaceFilesTab({
   }, [autoRevealPlanNonce, planRevealEnabled]);
 
   useEffect(() => {
+    if (!fileRevealEnabled || !fileRevealPath || autoRevealFileNonce <= 0) {
+      return;
+    }
+    setMarkdownViewMode(fileRevealViewMode);
+    setSelectedEntry({ kind: "workspace", relativePath: fileRevealPath });
+  }, [autoRevealFileNonce, fileRevealEnabled, fileRevealPath, fileRevealViewMode]);
+
+  useEffect(() => {
     if (!selectedEntry) {
       setDoc(null);
       setDirty(false);
@@ -142,8 +160,6 @@ export function WorkspaceFilesTab({
       setSavedText("");
       return;
     }
-
-    setMarkdownViewMode(isMarkdownPath(selectedPath) ? "preview" : "edit");
 
     if (selectedEntry.kind === "plan") {
       setDirty(false);

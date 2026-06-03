@@ -101,6 +101,9 @@ import type {
   DesktopMarketplaceDetail,
   DesktopMarketplacePreparedInstall,
   DesktopGitSnapshot,
+  GitHistorySnapshot,
+  GitWorkingTreeSnapshot,
+  ReadGitHistoryRequest,
   DesktopDreamCollectorSnapshot,
   DesktopModelCapability,
   DesktopModelProvider,
@@ -309,7 +312,9 @@ import {
   createWorkspaceGitWorktree,
   mergeWorktreeBranchToMain,
   readPrimaryRepoRoot,
+  readWorkspaceGitHistory,
   readWorkspaceGitSnapshot,
+  readWorkspaceGitWorkingTree,
 } from './git.js';
 import { buildWorktreeNamingPrompt } from './worktree-naming.js';
 import { SessionRegistry } from './session-registry.js';
@@ -365,6 +370,8 @@ type CommandPayloads = {
   setWorkLocation: { workLocation: WorkLocationKind };
   checkoutGitBranch: CheckoutGitBranchRequest;
   mergeWorktreeToMain: undefined;
+  readGitWorkingTree: undefined;
+  readGitHistory: { request?: ReadGitHistoryRequest };
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };
@@ -2196,6 +2203,22 @@ class DesktopHostService {
     });
   }
 
+  async readGitWorkingTree(): Promise<GitWorkingTreeSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized();
+      const state = this.requireState();
+      return readWorkspaceGitWorkingTree(state.workspaceRoot);
+    });
+  }
+
+  async readGitHistory(request: ReadGitHistoryRequest = {}): Promise<GitHistorySnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized();
+      const state = this.requireState();
+      return readWorkspaceGitHistory(state.workspaceRoot, request);
+    });
+  }
+
   async listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,
   ): Promise<WorkspaceFileReferenceSuggestionsResponse> {
@@ -2544,6 +2567,12 @@ class DesktopHostService {
       case 'listWorkspaceExplorerChildren': {
         const typedPayload = payload as CommandPayloads['listWorkspaceExplorerChildren'];
         return this.listWorkspaceExplorerChildren(typedPayload.relativePath);
+      }
+      case 'readGitWorkingTree':
+        return this.readGitWorkingTree();
+      case 'readGitHistory': {
+        const typedPayload = payload as CommandPayloads['readGitHistory'];
+        return this.readGitHistory(typedPayload.request ?? {});
       }
       case 'readWorkspaceTextFile': {
         const typedPayload = payload as CommandPayloads['readWorkspaceTextFile'];
