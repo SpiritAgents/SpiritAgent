@@ -128,7 +128,7 @@ export function GitChangesSection({
         <h3 className="text-xs font-medium text-foreground">{t("workspace.git.changes")}</h3>
         <div className="flex min-w-0 items-center gap-1">
           {branchLabel ? (
-            <span className="max-w-[7rem] truncate rounded-md bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+            <span className="max-w-[7rem] truncate font-mono text-[10px] text-muted-foreground">
               {branchLabel}
             </span>
           ) : null}
