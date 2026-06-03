@@ -218,6 +218,9 @@ function conversationMessageStableId(
 
 /** 主会话列最大宽度（居中） */
 const CONVERSATION_MAX_W = "max-w-[min(86vw,44rem)]";
+/** 消息列表、输入区与顶栏横幅共用的水平内边距（侧栏拉宽后列变窄时避免贴窗缘） */
+const CONVERSATION_GUTTER_X = "px-4 sm:px-5";
+const CONVERSATION_GUTTER_NEG_X = "-mx-4 sm:-mx-5";
 
 function formatModelPickerLabel(name: string, reasoningEffort: DesktopModelReasoningEffort): string {
   return `${name} · ${modelReasoningEffortLabel(reasoningEffort)}`;
@@ -2782,7 +2785,8 @@ export default function App() {
                 >
                   <div
                     className={cn(
-                      "mx-auto flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2",
+                      "mx-auto flex w-full flex-wrap items-center justify-between gap-2 py-2",
+                      CONVERSATION_GUTTER_X,
                       CONVERSATION_MAX_W,
                     )}
                   >
@@ -2825,7 +2829,8 @@ export default function App() {
                     <div
                       data-spirit-surface="conversation-list-shell"
                       className={cn(
-                        "mx-auto w-full overflow-x-hidden px-3 pt-6 sm:pt-7",
+                        "mx-auto w-full overflow-x-hidden pt-6 sm:pt-7",
+                        CONVERSATION_GUTTER_X,
                         CONVERSATION_MAX_W,
                       )}
                     >
@@ -2934,13 +2939,17 @@ export default function App() {
                 className={cn(
                   "pointer-events-none absolute inset-x-0 z-10 bg-transparent",
                   isEmptySession
-                    ? "inset-y-0 flex items-center justify-center px-3 pb-[env(safe-area-inset-bottom,0px)]"
+                    ? cn(
+                        "inset-y-0 flex items-center justify-center pb-[env(safe-area-inset-bottom,0px)]",
+                        CONVERSATION_GUTTER_X,
+                      )
                     : "bottom-0 pt-2 pb-0",
                 )}
               >
                 <div
                   className={cn(
-                    "pointer-events-auto mx-auto w-full px-3",
+                    "pointer-events-auto mx-auto w-full",
+                    CONVERSATION_GUTTER_X,
                     CONVERSATION_MAX_W,
                   )}
                 >
@@ -3197,7 +3206,13 @@ export default function App() {
                   />
                 </div>
                   {!isEmptySession ? (
-                    <div className="relative z-0 -mx-3 -mt-4 bg-background px-3 pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+                    <div
+                      className={cn(
+                        "relative z-0 -mt-4 bg-background pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+                        CONVERSATION_GUTTER_NEG_X,
+                        CONVERSATION_GUTTER_X,
+                      )}
+                    >
                       <div className="flex justify-start px-3">
                         <ApprovalLevelMenu
                           approvalLevel={snapshot?.conversation.approvalLevel ?? "default"}
