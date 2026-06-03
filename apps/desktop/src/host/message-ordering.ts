@@ -277,6 +277,20 @@ export function toolCallSummaryCopyForRequest(
         ...(query ? { headlineDetail: truncateSummaryDetail(query) } : {}),
       };
     }
+    case 'web_extractor': {
+      const url = typeof record.url === 'string' ? record.url.trim() : '';
+      const query = webSearchQueryFromArguments(record);
+      return {
+        headline: i18n.t('tool.webExtract'),
+        ...(url
+          ? { headlineDetail: truncateSummaryDetail(url) }
+          : query
+            ? { headlineDetail: truncateSummaryDetail(query) }
+            : {}),
+      };
+    }
+    case 'code_interpreter':
+      return { headline: i18n.t('tool.codeInterpreter') };
     case 'list_directory_files': {
       const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
       return {

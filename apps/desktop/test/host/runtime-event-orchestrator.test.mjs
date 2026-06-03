@@ -436,6 +436,85 @@ test('failed finish_task clears notice when preview and tool-finished are split 
   assert.equal(assistantRow?.aux?.finishTaskNotice, undefined);
 });
 
+test('inter-tool thinking finalizes before the next provider builtin tool card', () => {
+  const harness = createHarness();
+  harness.pushUser('search and extract');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    { kind: 'assistant-thinking-segment-finalized', text: 'Plan web search.', placement: undefined },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek', status: 'completed' }),
+    },
+    { kind: 'update-pending-assistant-thinking', text: 'Need to extract a result page next.' },
+    {
+      kind: 'assistant-thinking-segment-finalized',
+      text: 'Need to extract a result page next.',
+      placement: 'before-next-tool',
+    },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ex_1',
+      toolName: 'web_extractor',
+      argumentsJson: JSON.stringify({ url: 'https://example.com', status: 'completed' }),
+    },
+  ]);
+
+  assert.deepEqual(
+    harness.timeline
+      .toMessages()
+      .filter((message) => message.role === 'assistant')
+      .map((message) => {
+        if (message.tool) {
+          return `tool:${message.tool.toolName}`;
+        }
+        if (message.aux?.thinking) {
+          return `thinking:${message.aux.thinking}`;
+        }
+        return 'assistant-text';
+      }),
+    [
+      'thinking:Plan web search.',
+      'tool:web_search',
+      'thinking:Need to extract a result page next.',
+      'tool:web_extractor',
+    ],
+  );
+});
+
+test('web_search provider builtin preview completes when output_item.done reports completed', () => {
+  const harness = createHarness();
+  harness.pushUser('search DeepSeek generation');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek generation', status: 'in_progress' }),
+    },
+  ]);
+
+  const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
+  assert.equal(previewTool?.phase, 'preview');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek generation', status: 'completed' }),
+    },
+  ]);
+
+  const completedTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
+  assert.equal(completedTool?.phase, 'succeeded');
+});
+
 test('splitRuntimeEventsForIncrementalFinishTaskPreview applies one finish_task preview per batch', () => {
   const events = [
     { kind: 'assistant-chunk', text: 'hello' },

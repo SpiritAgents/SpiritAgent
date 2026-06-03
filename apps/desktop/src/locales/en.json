@@ -633,6 +633,8 @@
     "regexPrefix": "Regex: ",
     "search": "Search",
     "webSearch": "Web search",
+    "webExtract": "Web extract",
+    "codeInterpreter": "Code interpreter",
     "match": "Match",
     "fetch": "Fetch",
     "listDirectory": "List directory",

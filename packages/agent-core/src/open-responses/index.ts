@@ -61,3 +61,9 @@ export {
   shouldUseProviderWebSearch,
   type ProviderWebSearchMode,
 } from './web-search-eligibility.js';
+export {
+  isResponsesProviderBuiltinToolName,
+  resolveResponsesProviderBuiltinToolStreamPhase,
+  resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
+  type ResponsesProviderBuiltinToolStreamPhase,
+} from './responses-provider-builtin-tools.js';

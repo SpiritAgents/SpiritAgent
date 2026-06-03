@@ -3395,7 +3395,14 @@ class DesktopHostService {
           pendingAux.kind,
           auxText,
         );
-        if (!this.activeBundle().messageTimeline.hasFinalizedAuxInActiveSegment(pendingAux.kind, auxText)) {
+        const alreadyFinalized = this.activeBundle().messageTimeline.hasFinalizedAuxInActiveSegment(
+          pendingAux.kind,
+          auxText,
+        );
+        const skipDuplicatePendingThinking =
+          pendingAux.kind === 'thinking' &&
+          this.activeBundle().messageTimeline.hasPendingThinkingAuxInActiveSegment(auxText);
+        if (!alreadyFinalized && !skipDuplicatePendingThinking) {
           this.activeBundle().messageTimeline.updatePendingAssistantAux(
             pendingAux.kind,
             auxText,
