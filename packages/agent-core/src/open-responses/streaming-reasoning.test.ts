@@ -38,3 +38,13 @@ test('extractOpenResponsesReasoningTextFromRawChunk reads summary delta', () => 
     'Planning next step.',
   );
 });
+
+test('extractOpenResponsesReasoningTextFromRawChunk reads reasoning_text delta', () => {
+  assert.equal(
+    extractOpenResponsesReasoningTextFromRawChunk({
+      type: 'response.reasoning_text.delta',
+      delta: 'Inspecting files first.',
+    }),
+    'Inspecting files first.',
+  );
+});

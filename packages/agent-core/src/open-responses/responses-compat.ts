@@ -94,14 +94,7 @@ export function resolveOpenResponsesLanguageModelId(
 export function resolveOpenResponsesSdkProvider(
   config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
 ): OpenResponsesSdkProvider {
-  if (
-    config.responsesProvider === 'open-responses-compatible'
-    && config.llmVendor === 'vercel-ai-gateway'
-    && isGatewayOpenAiRoutedModel(config.model)
-  ) {
-    return 'openai';
-  }
-
+  // Honor an explicit choice (including `openai`) when the caller sets one.
   if (config.responsesProvider !== undefined) {
     return config.responsesProvider;
   }
@@ -114,10 +107,12 @@ export function resolveOpenResponsesSdkProvider(
     return 'xai';
   }
 
-  if (config.llmVendor === 'vercel-ai-gateway' && isGatewayOpenAiRoutedModel(config.model)) {
-    return 'openai';
-  }
-
+  // Gateway-routed OpenAI models (e.g. `openai/gpt-5.4`) MUST use the generic
+  // `@ai-sdk/open-responses` provider, not `@ai-sdk/openai`. The latter assumes a
+  // direct OpenAI endpoint: it strips the `openai/` routing prefix and injects
+  // direct-only request shaping, which makes the Vercel AI Gateway silently stop
+  // streaming reasoning summaries. apply_patch stays available via the flat
+  // function-tool path (shouldUseApplyPatchFunctionTool).
   return 'open-responses-compatible';
 }
 
