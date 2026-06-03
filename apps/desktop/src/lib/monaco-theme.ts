@@ -1,8 +1,10 @@
 import * as monaco from 'monaco-editor';
 
 export const SPIRIT_MONACO_DARK = 'spirit-desktop-dark';
+export const SPIRIT_MONACO_TOOL_CALL_DIFF = 'spirit-desktop-tool-call-diff';
 
 const FALLBACK_DARK_BG = '#252525';
+const FALLBACK_LIGHT_BG = '#ffffff';
 const MONACO_DARK_EDITOR_SURFACE = '#151515';
 const FALLBACK_DARK_FG = '#fafafa';
 const FALLBACK_MUTED_FG = '#a0a0a0';
@@ -75,13 +77,16 @@ function resolveCssColor(expression: string, fallback: string): string {
   return normalizeColorForMonaco(resolved, fallback);
 }
 
-/** 深色下 Monaco 画布固定色值；浅色仍用内置 `vs`。 */
-export function registerSpiritDesktopDarkMonacoTheme(): void {
-  const editorSurface = MONACO_DARK_EDITOR_SURFACE;
-  const fg = resolveCssColor('var(--foreground)', FALLBACK_DARK_FG);
-  const mutedFg = resolveCssColor('var(--muted-foreground)', FALLBACK_MUTED_FG);
+function defineSpiritDesktopMonacoTheme(
+  themeId: string,
+  base: 'vs' | 'vs-dark',
+  editorSurface: string,
+): void {
+  const isDark = base === 'vs-dark';
+  const fg = resolveCssColor('var(--foreground)', isDark ? FALLBACK_DARK_FG : '#0a0a0a');
+  const mutedFg = resolveCssColor('var(--muted-foreground)', isDark ? FALLBACK_MUTED_FG : '#737373');
   const lineHighlight = resolveCssBackground(
-    `color-mix(in oklab, var(--foreground) 8%, ${MONACO_DARK_EDITOR_SURFACE})`,
+    `color-mix(in oklab, var(--foreground) 8%, ${editorSurface})`,
     editorSurface,
   );
   const selection = resolveCssBackground(
@@ -112,8 +117,8 @@ export function registerSpiritDesktopDarkMonacoTheme(): void {
   );
 
   try {
-    monaco.editor.defineTheme(SPIRIT_MONACO_DARK, {
-      base: 'vs-dark',
+    monaco.editor.defineTheme(themeId, {
+      base,
       inherit: true,
       rules: [],
       colors: {
@@ -147,13 +152,32 @@ export function registerSpiritDesktopDarkMonacoTheme(): void {
       },
     });
   } catch {
-    monaco.editor.defineTheme(SPIRIT_MONACO_DARK, {
-      base: 'vs-dark',
+    monaco.editor.defineTheme(themeId, {
+      base,
       inherit: true,
       rules: [],
       colors: {},
     });
   }
+}
+
+/** 深色下 Workspace 编辑区固定深灰底，与侧栏分界。 */
+export function registerSpiritDesktopDarkMonacoTheme(): void {
+  defineSpiritDesktopMonacoTheme(SPIRIT_MONACO_DARK, 'vs-dark', MONACO_DARK_EDITOR_SURFACE);
+}
+
+/** 工具卡内联 Diff：画布与 `var(--background)` 一致。 */
+export function registerSpiritDesktopToolCallDiffMonacoTheme(): void {
+  const isDark = document.documentElement.classList.contains('dark');
+  const appSurface = resolveCssBackground(
+    'var(--background)',
+    isDark ? FALLBACK_DARK_BG : FALLBACK_LIGHT_BG,
+  );
+  defineSpiritDesktopMonacoTheme(
+    SPIRIT_MONACO_TOOL_CALL_DIFF,
+    isDark ? 'vs-dark' : 'vs',
+    appSurface,
+  );
 }
 
 export function syncMonacoThemeFromDocument(): void {
@@ -164,4 +188,9 @@ export function syncMonacoThemeFromDocument(): void {
   }
   registerSpiritDesktopDarkMonacoTheme();
   monaco.editor.setTheme(SPIRIT_MONACO_DARK);
+}
+
+export function syncMonacoThemeForToolCallDiff(): void {
+  registerSpiritDesktopToolCallDiffMonacoTheme();
+  monaco.editor.setTheme(SPIRIT_MONACO_TOOL_CALL_DIFF);
 }
