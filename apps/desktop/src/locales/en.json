@@ -632,6 +632,7 @@
     "diffFileTooLarge": "Diff preview unavailable: file exceeds the size limit.",
     "regexPrefix": "Regex: ",
     "search": "Search",
+    "webSearch": "Web search",
     "match": "Match",
     "fetch": "Fetch",
     "listDirectory": "List directory",
