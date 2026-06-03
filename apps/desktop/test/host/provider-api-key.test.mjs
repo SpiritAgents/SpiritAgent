@@ -3,6 +3,8 @@ import { test } from 'node:test';
 
 import {
   buildModelSecretKeyPresence,
+  filterNewProviderModelIds,
+  modelExistsInProviderScope,
   modelProviderKeyScope,
   providerKeyAccount,
 } from '../../dist-electron/src/host/provider-api-key.js';
@@ -53,4 +55,28 @@ test('buildModelSecretKeyPresence prefers provider key over per-model key', () =
     () => false,
   );
   assert.equal(presence['gpt-4'], true);
+});
+
+test('modelExistsInProviderScope only matches same provider scope', () => {
+  const existing = [
+    { name: 'gpt-4', provider: 'openai' },
+    { name: 'gpt-4', provider: 'vercel-ai-gateway' },
+  ];
+  assert.equal(modelExistsInProviderScope(existing, 'gpt-4', 'openai'), true);
+  assert.equal(modelExistsInProviderScope(existing, 'gpt-4', 'anthropic'), false);
+  assert.equal(modelExistsInProviderScope(existing, 'gpt-4'), false);
+});
+
+test('filterNewProviderModelIds skips only duplicates within provider scope', () => {
+  const existing = [{ name: 'shared-id', provider: 'openai' }];
+  const filtered = filterNewProviderModelIds(
+    existing,
+    ['shared-id', 'new-id'],
+    'vercel-ai-gateway',
+  );
+  assert.deepEqual(filtered, ['shared-id', 'new-id']);
+  assert.deepEqual(
+    filterNewProviderModelIds(existing, ['shared-id', 'new-id'], 'openai'),
+    ['new-id'],
+  );
 });
