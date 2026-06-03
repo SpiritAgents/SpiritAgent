@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 
 import {
   Diff,
@@ -11,10 +11,15 @@ import {
 import type { HunkData } from 'react-diff-view';
 import 'react-diff-view/style/index.css';
 
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { buildToolCallUnifiedDiff } from '@/lib/tool-call-unified-diff';
 import { refractorLanguageForPath, toolDiffRefractor } from '@/lib/refractor-tool-diff';
 
 import '@/styles/tool-call-diff-view.css';
+
+function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLElement | null {
+  return root?.querySelector('[data-radix-scroll-area-viewport]') ?? null;
+}
 
 const TOKENIZE_DEBOUNCE_MS = 32;
 
@@ -62,7 +67,7 @@ export function ToolCallDiffView({
   modified,
   followTail = false,
 }: ToolCallDiffViewProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
 
   const parsedFile = useMemo(() => {
     const diffText = buildToolCallUnifiedDiff(relativePath, original, modified);
@@ -89,11 +94,14 @@ export function ToolCallDiffView({
   }, [followTail, hunks, original, languageId]);
 
   useEffect(() => {
-    if (!followTail || !scrollRef.current) {
+    if (!followTail) {
       return;
     }
-    const el = scrollRef.current;
-    el.scrollTop = el.scrollHeight;
+    const viewport = scrollAreaViewport(scrollAreaRef.current);
+    if (!viewport) {
+      return;
+    }
+    viewport.scrollTop = viewport.scrollHeight;
   }, [followTail, modified, tokens]);
 
   if (hunks.length === 0) {
@@ -105,10 +113,17 @@ export function ToolCallDiffView({
   }
 
   return (
-    <div
-      ref={scrollRef}
-      className="tool-call-diff h-[min(420px,50vh)] min-h-[120px] w-full min-w-0 overflow-auto rounded-md border border-border/20 bg-background"
+    <ScrollArea
+      ref={scrollAreaRef}
+      type="always"
+      className="tool-call-diff h-[min(420px,50vh)] min-h-[120px] w-full min-w-0 rounded-md border border-border/20 bg-background pr-2 [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
       data-tool-diff-path={relativePath}
+      onWheel={(event) => {
+        event.stopPropagation();
+      }}
+      onTouchMove={(event) => {
+        event.stopPropagation();
+      }}
     >
       <Diff
         viewType="unified"
@@ -121,6 +136,6 @@ export function ToolCallDiffView({
           renderedHunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)
         }
       </Diff>
-    </div>
+    </ScrollArea>
   );
 }
