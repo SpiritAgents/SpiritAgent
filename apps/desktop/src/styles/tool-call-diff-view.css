@@ -27,3 +27,111 @@
 .tool-call-diff .diff-line {
   font-family: var(--font-mono, ui-monospace, monospace);
 }
+
+/* refractor / Prism token 着色（react-diff-view 仅生成 span.token，颜色需自行提供） */
+.tool-call-diff {
+  --diff-syntax-comment: oklch(0.58 0.04 145);
+  --diff-syntax-string: oklch(0.72 0.09 55);
+  --diff-syntax-keyword: oklch(0.68 0.12 250);
+  --diff-syntax-function: oklch(0.82 0.08 95);
+  --diff-syntax-number: oklch(0.72 0.08 145);
+  --diff-syntax-builtin: oklch(0.72 0.1 195);
+  --diff-syntax-class: oklch(0.72 0.1 195);
+  --diff-syntax-property: oklch(0.78 0.08 230);
+  --diff-syntax-variable: oklch(0.78 0.06 230);
+  --diff-syntax-operator: oklch(0.72 0.02 260);
+  --diff-syntax-punctuation: oklch(0.62 0.01 260);
+  --diff-syntax-tag: oklch(0.68 0.12 250);
+  --diff-syntax-attr-name: oklch(0.78 0.08 230);
+  --diff-syntax-regex: oklch(0.68 0.14 25);
+  --diff-syntax-important: oklch(0.68 0.14 25);
+}
+
+.dark .tool-call-diff {
+  --diff-syntax-comment: oklch(0.62 0.06 145);
+  --diff-syntax-string: oklch(0.75 0.1 55);
+  --diff-syntax-keyword: oklch(0.72 0.12 250);
+  --diff-syntax-function: oklch(0.86 0.09 95);
+  --diff-syntax-number: oklch(0.76 0.09 145);
+  --diff-syntax-builtin: oklch(0.76 0.11 195);
+  --diff-syntax-class: oklch(0.76 0.11 195);
+  --diff-syntax-property: oklch(0.82 0.09 230);
+  --diff-syntax-variable: oklch(0.82 0.07 230);
+  --diff-syntax-operator: oklch(0.78 0.02 260);
+  --diff-syntax-punctuation: oklch(0.68 0.01 260);
+  --diff-syntax-tag: oklch(0.72 0.12 250);
+  --diff-syntax-attr-name: oklch(0.82 0.09 230);
+  --diff-syntax-regex: oklch(0.72 0.14 25);
+  --diff-syntax-important: oklch(0.72 0.14 25);
+}
+
+.tool-call-diff .diff-code .token.comment,
+.tool-call-diff .diff-code .token.prolog,
+.tool-call-diff .diff-code .token.doctype,
+.tool-call-diff .diff-code .token.cdata {
+  color: var(--diff-syntax-comment);
+}
+
+.tool-call-diff .diff-code .token.string,
+.tool-call-diff .diff-code .token.char,
+.tool-call-diff .diff-code .token.attr-value,
+.tool-call-diff .diff-code .token.regex,
+.tool-call-diff .diff-code .token.inserted {
+  color: var(--diff-syntax-string);
+}
+
+.tool-call-diff .diff-code .token.keyword,
+.tool-call-diff .diff-code .token.atrule,
+.tool-call-diff .diff-code .token.boolean,
+.tool-call-diff .diff-code .token.constant,
+.tool-call-diff .diff-code .token.symbol,
+.tool-call-diff .diff-code .token.deleted {
+  color: var(--diff-syntax-keyword);
+}
+
+.tool-call-diff .diff-code .token.function,
+.tool-call-diff .diff-code .token.function-variable {
+  color: var(--diff-syntax-function);
+}
+
+.tool-call-diff .diff-code .token.number {
+  color: var(--diff-syntax-number);
+}
+
+.tool-call-diff .diff-code .token.builtin,
+.tool-call-diff .diff-code .token.class-name,
+.tool-call-diff .diff-code .token.maybe-class-name {
+  color: var(--diff-syntax-class);
+}
+
+.tool-call-diff .diff-code .token.property,
+.tool-call-diff .diff-code .token.attr-name,
+.tool-call-diff .diff-code .token.selector,
+.tool-call-diff .diff-code .token.namespace {
+  color: var(--diff-syntax-property);
+}
+
+.tool-call-diff .diff-code .token.variable,
+.tool-call-diff .diff-code .token.parameter,
+.tool-call-diff .diff-code .token.interpolation {
+  color: var(--diff-syntax-variable);
+}
+
+.tool-call-diff .diff-code .token.operator,
+.tool-call-diff .diff-code .token.entity,
+.tool-call-diff .diff-code .token.url {
+  color: var(--diff-syntax-operator);
+}
+
+.tool-call-diff .diff-code .token.punctuation {
+  color: var(--diff-syntax-punctuation);
+}
+
+.tool-call-diff .diff-code .token.tag {
+  color: var(--diff-syntax-tag);
+}
+
+.tool-call-diff .diff-code .token.important {
+  color: var(--diff-syntax-important);
+  font-weight: 600;
+}
