@@ -151,7 +151,7 @@ async function runAlibabaResponsesSmoke(): Promise<void> {
   }
 
   const tools = capturedBody?.tools as Array<{ type?: string }> | undefined;
-  for (const type of ['web_search', 'web_extractor', 'code_interpreter'] as const) {
+  for (const type of ['web_search', 'code_interpreter'] as const) {
     if (!tools?.some((tool) => tool.type === type)) {
       throw new Error(`alibaba responses smoke 请求体缺少 ${type}。`);
     }

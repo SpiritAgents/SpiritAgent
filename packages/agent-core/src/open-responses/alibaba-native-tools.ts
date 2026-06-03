@@ -7,14 +7,13 @@ import {
 
 export const ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES = [
   'web_search',
-  'web_extractor',
   'code_interpreter',
 ] as const;
 
 export type AlibabaResponsesBuiltinToolType = (typeof ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES)[number];
 
 export interface AlibabaChatCompletionsExtraBodyOptions {
-  /** Agent rounds use streaming; required for code interpreter and web extractor on Chat API. */
+  /** Agent rounds use streaming; required for code interpreter on Chat API. */
   streaming?: boolean;
 }
 
@@ -90,8 +89,9 @@ export function mergeAlibabaResponsesBuiltinTools(
 export function buildAlibabaNativeToolsPromptSection(): string {
   return [
     'Provider-native capabilities on Alibaba (Bailian):',
-    'On Chat Completions, web search, web extraction, and code interpreter run via API-side flags (not host function tools). Do not call undeclared functions such as web_search.',
-    'On Open Responses, use the declared built-in tools (web_search, web_extractor, code_interpreter) when you need current public information or computation.',
+    'On Chat Completions, web search and code interpreter run via API-side flags (not host function tools). Do not call undeclared functions such as web_search.',
+    'On Open Responses, use the declared built-in tools (web_search, code_interpreter) when you need current public information or computation.',
+    'To fetch readable content from a specific URL, use the host web_fetch tool instead of a provider web-extraction builtin.',
     'Prefer these provider capabilities over guessing facts that may have changed after your knowledge cutoff.',
   ].join('\n');
 }

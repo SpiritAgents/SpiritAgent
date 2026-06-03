@@ -8,7 +8,6 @@ export const RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES = [
 
 const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<string, (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number]> = {
   web_search_call: 'web_search',
-  web_extractor_call: 'web_extractor',
   code_interpreter_call: 'code_interpreter',
 };
 
@@ -137,8 +136,6 @@ export function buildResponsesProviderBuiltinToolCardData(
   switch (toolName) {
     case 'web_search':
       return buildWebSearchCardData(item, status);
-    case 'web_extractor':
-      return buildWebExtractorCardData(item, status);
     case 'code_interpreter':
       return buildCodeInterpreterCardData(item, status);
     default:
@@ -180,31 +177,6 @@ function buildWebSearchCardData(
 export function isGenericProviderWebSearchQuery(query: string): boolean {
   const normalized = query.trim().toLowerCase().replace(/\s+/g, ' ');
   return normalized === 'web search' || normalized === 'websearch';
-}
-
-function buildWebExtractorCardData(
-  item: JsonObject,
-  status: string | undefined,
-): ResponsesProviderBuiltinToolCardData {
-  const urls = readStringArrayField(item, 'urls');
-  const goal = readStringField(item, 'goal');
-  const output = readStringField(item, 'output');
-  const headlineDetail = urls[0]
-    ? truncateHeadlineDetail(urls[0])
-    : goal
-      ? truncateHeadlineDetail(goal)
-      : undefined;
-  const inputPayload: JsonObject = {
-    ...(urls.length > 0 ? { urls } : {}),
-    ...(goal ? { goal } : {}),
-    ...(status ? { status } : {}),
-  };
-  return {
-    ...(status ? { status } : {}),
-    ...(headlineDetail ? { headlineDetail } : {}),
-    inputExcerpt: JSON.stringify(inputPayload, null, 2),
-    ...(output ? { outputExcerpt: output } : {}),
-  };
 }
 
 function buildCodeInterpreterCardData(
@@ -357,14 +329,6 @@ function readStringField(record: JsonObject, key: string): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function readStringArrayField(record: JsonObject, key: string): string[] {
-  const value = record[key];
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
-}
-
 function truncateHeadlineDetail(value: string, max = HEADLINE_DETAIL_MAX): string {
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length <= max) {
@@ -438,8 +402,6 @@ function providerBuiltinOutputItemTypeForToolName(
   switch (toolName) {
     case 'web_search':
       return 'web_search_call';
-    case 'web_extractor':
-      return 'web_extractor_call';
     case 'code_interpreter':
       return 'code_interpreter_call';
     default:

@@ -15,7 +15,7 @@ import {
 
 test('responsesProviderBuiltinToolNameFromOutputItemType maps Responses output items', () => {
   assert.equal(responsesProviderBuiltinToolNameFromOutputItemType('web_search_call'), 'web_search');
-  assert.equal(responsesProviderBuiltinToolNameFromOutputItemType('web_extractor_call'), 'web_extractor');
+  assert.equal(responsesProviderBuiltinToolNameFromOutputItemType('web_extractor_call'), undefined);
   assert.equal(
     responsesProviderBuiltinToolNameFromOutputItemType('code_interpreter_call'),
     'code_interpreter',
@@ -73,22 +73,6 @@ test('buildResponsesProviderBuiltinToolCardData formats web_search sources', () 
   assert.equal(card.headlineDetail, undefined);
   assert.match(card.outputExcerpt ?? '', /deepseek\.com/);
   assert.equal(card.detailLines?.length, 2);
-});
-
-test('buildResponsesProviderBuiltinToolCardData formats web_extractor output', () => {
-  const card = buildResponsesProviderBuiltinToolCardData(
-    {
-      type: 'web_extractor_call',
-      status: 'completed',
-      urls: ['https://cn.aliyun.com/'],
-      goal: 'Extract homepage summary',
-      output: 'Summary: Alibaba Cloud homepage…',
-    },
-    'web_extractor',
-  );
-  assert.equal(card.headlineDetail, 'https://cn.aliyun.com/');
-  assert.equal(card.outputExcerpt, 'Summary: Alibaba Cloud homepage…');
-  assert.match(card.inputExcerpt, /cn\.aliyun\.com/);
 });
 
 test('buildResponsesProviderBuiltinToolCardData formats code_interpreter logs', () => {

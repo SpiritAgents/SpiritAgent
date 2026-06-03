@@ -442,7 +442,7 @@ test('failed finish_task clears notice when preview and tool-finished are split 
 
 test('inter-tool thinking finalizes before the next provider builtin tool card', () => {
   const harness = createHarness();
-  harness.pushUser('search and extract');
+  harness.pushUser('search and run code');
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: 'begin-assistant-response' },
@@ -453,17 +453,17 @@ test('inter-tool thinking finalizes before the next provider builtin tool card',
       toolName: 'web_search',
       argumentsJson: JSON.stringify({ query: 'DeepSeek', status: 'completed' }),
     },
-    { kind: 'update-pending-assistant-thinking', text: 'Need to extract a result page next.' },
+    { kind: 'update-pending-assistant-thinking', text: 'Need to run a quick computation next.' },
     {
       kind: 'assistant-thinking-segment-finalized',
-      text: 'Need to extract a result page next.',
+      text: 'Need to run a quick computation next.',
       placement: 'before-next-tool',
     },
     {
       kind: 'streaming-tool-preview',
-      toolCallId: 'ex_1',
-      toolName: 'web_extractor',
-      argumentsJson: JSON.stringify({ url: 'https://example.com', status: 'completed' }),
+      toolCallId: 'ci_1',
+      toolName: 'code_interpreter',
+      argumentsJson: JSON.stringify({ code: 'print(1+1)', status: 'completed' }),
     },
   ]);
 
@@ -483,8 +483,8 @@ test('inter-tool thinking finalizes before the next provider builtin tool card',
     [
       'thinking:Plan web search.',
       'tool:web_search',
-      'thinking:Need to extract a result page next.',
-      'tool:web_extractor',
+      'thinking:Need to run a quick computation next.',
+      'tool:code_interpreter',
     ],
   );
 });

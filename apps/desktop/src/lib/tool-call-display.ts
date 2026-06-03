@@ -15,7 +15,6 @@ export { toolCallPhaseShowsShimmer } from './tool-call-shimmer.js';
 
 const RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES = new Set([
   'web_search',
-  'web_extractor',
   'code_interpreter',
 ]);
 
