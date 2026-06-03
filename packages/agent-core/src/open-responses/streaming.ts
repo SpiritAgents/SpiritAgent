@@ -14,9 +14,9 @@ import { attachResponseIdToAssistantMessage } from './provider-state.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 import { renderResponsesTransportError } from './ai-sdk-message-bridge.js';
 import {
-  accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk,
-  createResponsesProviderBuiltinPreviewStreamState,
-} from './responses-provider-builtin-tools.js';
+  accumulateResponsesBuiltInToolPreviewsFromRawChunk,
+  createResponsesBuiltInPreviewStreamState,
+} from './responses-built-in-tools.js';
 
 interface AggregatedStreamingToolCall {
   index: number;
@@ -59,7 +59,7 @@ export async function* responsesEventStreamToRuntimeEvents(
   let reasoningContent = '';
   let sawAnswerOrToolOutput = false;
   let nextToolIndex = 0;
-  let providerPreviewState = createResponsesProviderBuiltinPreviewStreamState();
+  let providerPreviewState = createResponsesBuiltInPreviewStreamState();
   let responseId: string | undefined;
 
   try {
@@ -112,7 +112,7 @@ export async function* responsesEventStreamToRuntimeEvents(
             }
           }
 
-          const providerPreviews = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+          const providerPreviews = accumulateResponsesBuiltInToolPreviewsFromRawChunk(
             part.rawValue,
             providerPreviewState,
           );

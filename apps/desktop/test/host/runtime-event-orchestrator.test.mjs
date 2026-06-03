@@ -9,7 +9,7 @@ import { createDesktopRewindMetadata } from '../../dist-electron/src/host/rewind
 import {
   DesktopRuntimeEventOrchestrator,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
-  splitRuntimeEventsForIncrementalProviderBuiltinToolPreview,
+  splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from '../../dist-electron/src/host/runtime-event-orchestrator.js';
 
 function createHarness() {
@@ -557,7 +557,7 @@ test('web_search provider builtin preview completes when output_item.done report
   assert.equal(completedTool?.phase, 'succeeded');
 });
 
-test('splitRuntimeEventsForIncrementalProviderBuiltinToolPreview defers terminal preview after in-progress', () => {
+test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal preview after in-progress', () => {
   const events = [
     {
       kind: 'streaming-tool-preview',
@@ -573,14 +573,14 @@ test('splitRuntimeEventsForIncrementalProviderBuiltinToolPreview defers terminal
     },
     { kind: 'assistant-chunk', text: 'done' },
   ];
-  const split = splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(events);
+  const split = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(events);
   assert.equal(split.toApply.length, 2);
   assert.equal(split.deferred.length, 1);
   assert.equal(split.toApply[0]?.toolCallId, 'ws_1');
   assert.equal(split.deferred[0]?.argumentsJson, JSON.stringify({ status: 'completed' }));
 });
 
-test('splitRuntimeEventsForIncrementalProviderBuiltinToolPreview defers terminal until preview seen in prior drain', () => {
+test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal until preview seen in prior drain', () => {
   const events = [
     {
       kind: 'streaming-tool-preview',
@@ -589,7 +589,7 @@ test('splitRuntimeEventsForIncrementalProviderBuiltinToolPreview defers terminal
       argumentsJson: JSON.stringify({ status: 'completed' }),
     },
   ];
-  const split = splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(events, new Set());
+  const split = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(events, new Set());
   assert.equal(split.toApply.length, 0);
   assert.equal(split.deferred.length, 1);
 });

@@ -72,8 +72,8 @@ import {
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
-  shouldUseAlibabaChatCompletionsNativeTools,
-} from '../open-responses/alibaba-native-tools.js';
+  shouldUseAlibabaChatCompletionsBuiltInTools,
+} from '../open-responses/alibaba-built-in-tools.js';
 import {
   clearMoonshotChatCompletionMessages,
   openAiMessagesContainVideoUrl,
@@ -607,7 +607,7 @@ function buildAiSdkRequestTrace(
             : 'openai_official_sdk_chat_completions';
 
   const alibabaExtraBody = isAlibabaOfficialAiSdkProvider(config)
-    && shouldUseAlibabaChatCompletionsNativeTools(config)
+    && shouldUseAlibabaChatCompletionsBuiltInTools(config)
     ? buildAlibabaChatCompletionsExtraBody({ streaming: stream })
     : undefined;
 
@@ -763,7 +763,7 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
 }
 
 function createAiSdkAlibabaProvider(config: OpenAiTransportConfig) {
-  const fetchWrapper = shouldUseAlibabaChatCompletionsNativeTools(config)
+  const fetchWrapper = shouldUseAlibabaChatCompletionsBuiltInTools(config)
     ? createAlibabaChatCompletionsAwareFetch(config)
     : undefined;
 
@@ -794,7 +794,7 @@ function buildAiSdkProviderOptions(
   config: OpenAiTransportConfig,
 ): Record<string, JsonObject> {
   if (isAlibabaOfficialAiSdkProvider(config)) {
-    const extraBody = shouldUseAlibabaChatCompletionsNativeTools(config)
+    const extraBody = shouldUseAlibabaChatCompletionsBuiltInTools(config)
       ? buildAlibabaChatCompletionsExtraBody({ streaming: true })
       : undefined;
 

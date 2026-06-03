@@ -3,16 +3,16 @@ import test from 'node:test';
 
 import {
   buildAlibabaChatCompletionsExtraBody,
-  buildAlibabaResponsesBuiltinTools,
-  mergeAlibabaResponsesBuiltinTools,
-  shouldUseAlibabaChatCompletionsNativeTools,
-  shouldUseAlibabaNativeTools,
-  shouldUseAlibabaResponsesNativeTools,
-} from './alibaba-native-tools.js';
+  buildAlibabaResponsesBuiltInTools,
+  mergeAlibabaResponsesBuiltInTools,
+  shouldUseAlibabaChatCompletionsBuiltInTools,
+  shouldUseAlibabaBuiltInTools,
+  shouldUseAlibabaResponsesBuiltInTools,
+} from './alibaba-built-in-tools.js';
 
-test('shouldUseAlibabaNativeTools for alibaba chat and responses', () => {
+test('shouldUseAlibabaBuiltInTools for alibaba chat and responses', () => {
   assert.equal(
-    shouldUseAlibabaNativeTools({
+    shouldUseAlibabaBuiltInTools({
       apiKey: 'k',
       model: 'qwen3-max',
       llmVendor: 'alibaba',
@@ -20,7 +20,7 @@ test('shouldUseAlibabaNativeTools for alibaba chat and responses', () => {
     true,
   );
   assert.equal(
-    shouldUseAlibabaNativeTools({
+    shouldUseAlibabaBuiltInTools({
       transportKind: 'open-responses',
       apiKey: 'k',
       model: 'qwen3-max',
@@ -29,7 +29,7 @@ test('shouldUseAlibabaNativeTools for alibaba chat and responses', () => {
     true,
   );
   assert.equal(
-    shouldUseAlibabaNativeTools({
+    shouldUseAlibabaBuiltInTools({
       apiKey: 'k',
       model: 'gpt-4.1',
       llmVendor: 'openai',
@@ -38,9 +38,9 @@ test('shouldUseAlibabaNativeTools for alibaba chat and responses', () => {
   );
 });
 
-test('shouldUseAlibabaChatCompletionsNativeTools only for alibaba chat transport', () => {
+test('shouldUseAlibabaChatCompletionsBuiltInTools only for alibaba chat transport', () => {
   assert.equal(
-    shouldUseAlibabaChatCompletionsNativeTools({
+    shouldUseAlibabaChatCompletionsBuiltInTools({
       apiKey: 'k',
       model: 'qwen3-max',
       llmVendor: 'alibaba',
@@ -48,7 +48,7 @@ test('shouldUseAlibabaChatCompletionsNativeTools only for alibaba chat transport
     true,
   );
   assert.equal(
-    shouldUseAlibabaChatCompletionsNativeTools({
+    shouldUseAlibabaChatCompletionsBuiltInTools({
       transportKind: 'open-responses',
       apiKey: 'k',
       model: 'qwen3-max',
@@ -64,9 +64,9 @@ test('buildAlibabaChatCompletionsExtraBody search-only when not streaming', () =
   });
 });
 
-test('shouldUseAlibabaResponsesNativeTools only for open-responses alibaba', () => {
+test('shouldUseAlibabaResponsesBuiltInTools only for open-responses alibaba', () => {
   assert.equal(
-    shouldUseAlibabaResponsesNativeTools({
+    shouldUseAlibabaResponsesBuiltInTools({
       transportKind: 'open-responses',
       apiKey: 'k',
       model: 'qwen3-max',
@@ -75,7 +75,7 @@ test('shouldUseAlibabaResponsesNativeTools only for open-responses alibaba', () 
     true,
   );
   assert.equal(
-    shouldUseAlibabaResponsesNativeTools({
+    shouldUseAlibabaResponsesBuiltInTools({
       apiKey: 'k',
       model: 'qwen3-max',
       llmVendor: 'alibaba',
@@ -92,8 +92,8 @@ test('buildAlibabaChatCompletionsExtraBody streaming bundle', () => {
   assert.deepEqual(body.search_options, { search_strategy: 'agent_max' });
 });
 
-test('buildAlibabaResponsesBuiltinTools returns two builtin types', () => {
-  const tools = buildAlibabaResponsesBuiltinTools();
+test('buildAlibabaResponsesBuiltInTools returns two builtin types', () => {
+  const tools = buildAlibabaResponsesBuiltInTools();
   assert.equal(tools.length, 2);
   assert.deepEqual(
     tools.map((tool) => tool.type),
@@ -101,8 +101,8 @@ test('buildAlibabaResponsesBuiltinTools returns two builtin types', () => {
   );
 });
 
-test('mergeAlibabaResponsesBuiltinTools does not duplicate', () => {
-  const merged = mergeAlibabaResponsesBuiltinTools([
+test('mergeAlibabaResponsesBuiltInTools does not duplicate', () => {
+  const merged = mergeAlibabaResponsesBuiltInTools([
     { type: 'function', function: { name: 'grep', parameters: {} } },
     { type: 'web_search' },
   ]);

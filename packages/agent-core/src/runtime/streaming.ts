@@ -27,7 +27,7 @@ import type {
 } from './types.js';
 import type { ToolExecutionResult } from './tool-execution.js';
 import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './turn-machine.js';
-import { isResponsesProviderBuiltinToolName } from '../open-responses/responses-provider-builtin-tools.js';
+import { isResponsesBuiltInToolName } from '../open-responses/responses-built-in-tools.js';
 import { startEarlyToolExecution } from './turn-machine.js';
 
 export interface StreamingRuntime<
@@ -409,7 +409,7 @@ export async function handlePendingStreamEvent<
 
   if (event.kind === 'streaming-tool-preview') {
     if (
-      isResponsesProviderBuiltinToolName(event.toolName)
+      isResponsesBuiltInToolName(event.toolName)
       && runtime.thinkingTextStore.trim()
     ) {
       runtime.emitEvent({
@@ -425,7 +425,7 @@ export async function handlePendingStreamEvent<
       toolName: event.toolName,
       argumentsJson: event.argumentsJson,
     });
-    if (!isResponsesProviderBuiltinToolName(event.toolName)) {
+    if (!isResponsesBuiltInToolName(event.toolName)) {
       startEarlyToolExecution(
         runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
         {

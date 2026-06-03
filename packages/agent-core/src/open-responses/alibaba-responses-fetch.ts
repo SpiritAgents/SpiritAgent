@@ -1,9 +1,9 @@
 import type { JsonObject, JsonValue } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
 import {
-  mergeAlibabaResponsesBuiltinTools,
-  shouldUseAlibabaResponsesNativeTools,
-} from './alibaba-native-tools.js';
+  mergeAlibabaResponsesBuiltInTools,
+  shouldUseAlibabaResponsesBuiltInTools,
+} from './alibaba-built-in-tools.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 
 type FetchFn = typeof fetch;
@@ -12,7 +12,7 @@ export function createAlibabaResponsesAwareFetch(
   config: OpenResponsesTransportConfig,
   baseFetch: FetchFn = globalThis.fetch,
 ): FetchFn {
-  if (!shouldUseAlibabaResponsesNativeTools(config)) {
+  if (!shouldUseAlibabaResponsesBuiltInTools(config)) {
     return baseFetch;
   }
 
@@ -40,7 +40,7 @@ function patchAlibabaResponsesRequestInit(
       ...init,
       body: JSON.stringify({
         ...body,
-        tools: mergeAlibabaResponsesBuiltinTools(existingTools),
+        tools: mergeAlibabaResponsesBuiltInTools(existingTools),
       }),
     };
   } catch {

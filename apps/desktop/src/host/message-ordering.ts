@@ -887,7 +887,7 @@ function hasBlockingToolAheadOfSameTurnPreview(
   return false;
 }
 
-export function toolCallSummaryCopyForProviderBuiltinTool(
+export function toolCallSummaryCopyForResponsesBuiltInTool(
   toolName: string,
   phase: ToolBlockSnapshot['phase'],
   previewSummary: ToolCallSummaryCopy,
