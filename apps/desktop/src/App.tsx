@@ -17,7 +17,6 @@ import {
   charCountToCodeUnitIndex,
   codeUnitIndexToCharCount,
   currentWorkspaceFileReferenceQuery,
-  replaceWorkspaceFileReferenceQuery,
 } from "@spirit-agent/host-internal/workspace-file-reference-query";
 
 import {
@@ -2229,15 +2228,9 @@ export default function App() {
       return;
     }
 
-    const next = replaceWorkspaceFileReferenceQuery(runtime.composer, query, path, true);
-    const nextCursorCodeUnits = charCountToCodeUnitIndex(next.text, next.cursorChars);
-    runtime.setComposer(next.text);
-    setComposerCursorCodeUnits(nextCursorCodeUnits);
+    composerRichInputRef.current?.insertWorkspaceFileReference(path, query, true);
     setFileReferenceSelectedIndex(-1);
     setDismissedFileReferenceKey(null);
-    queueMicrotask(() => {
-      composerRichInputRef.current?.focus();
-    });
   };
 
   const insertComposerText = (text: string) => {

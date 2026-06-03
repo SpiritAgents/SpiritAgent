@@ -1,4 +1,5 @@
 import { makeChipNode } from "@/lib/browser-element-chip-styles";
+import { makeFileChipNode } from "@/lib/workspace-file-chip-styles";
 import type { RichSegment } from "@/lib/composer-segment-model";
 import {
   emptySegments,
@@ -33,6 +34,7 @@ export {
 } from "@/lib/composer-loop-segments";
 
 export { makeChipNode } from "@/lib/browser-element-chip-styles";
+export { makeFileChipNode } from "@/lib/workspace-file-chip-styles";
 export { makeLoopChipNode } from "@/lib/loop-chip-styles";
 
 function mergeTextIntoLast(segs: RichSegment[], chunk: string): void {
@@ -89,6 +91,13 @@ function appendSegmentFromNode(node: Node, segs: RichSegment[]): void {
     }
     return;
   }
+  if (el.dataset.fileChip === "true" || el.getAttribute("data-file-chip") === "true") {
+    const filePath = el.dataset.filePath ?? el.getAttribute("data-file-path");
+    if (filePath) {
+      segs.push({ kind: "workspaceFile", path: filePath });
+    }
+    return;
+  }
   if (el.tagName === "BR") {
     mergeTextIntoLast(segs, "\n");
     return;
@@ -115,6 +124,8 @@ export function segmentsToDom(
       });
     } else if (seg.kind === "loop") {
       frag.appendChild(makeLoopChipNode(doc, opts?.loopLabel ?? "Loop"));
+    } else if (seg.kind === "workspaceFile") {
+      frag.appendChild(makeFileChipNode(seg.path, doc));
     } else {
       frag.appendChild(makeChipNode(seg.attachment, doc));
     }

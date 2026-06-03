@@ -9,11 +9,14 @@ import {
   mergeAdjacentTextSegments,
   normalizeComposerPlain,
   messageSegmentSeparator,
+  plainTextOffsetToCaret,
+  replaceWorkspaceFileReferenceInSegments,
   segmentsToMessageText,
   segmentsToPlainText,
   syncSegmentsFromExternalValue,
   trimMessageTextAroundElements,
   messageContentToRichSegments,
+  parseMessageContentParts,
 } from "../src/lib/composer-segment-model.ts";
 import {
   ensureLoopPinned,
@@ -112,6 +115,26 @@ test("insertSegmentAtCaret splits text and leaves trailing text segment", () => 
   ]);
   assert.equal(caret.segmentIndex, 2);
   assert.equal(caret.offset, 0);
+});
+
+test("parseMessageContentParts splits @path tokens in plain text", () => {
+  const parts = parseMessageContentParts("@apps/cli/src/main.rs 你好");
+  assert.equal(parts.length, 2);
+  assert.equal(parts[0]?.kind, "workspaceFile");
+  assert.equal(parts[0]?.kind === "workspaceFile" && parts[0].path, "apps/cli/src/main.rs");
+  assert.equal(parts[1]?.kind, "text");
+  assert.equal(parts[1]?.kind === "text" && parts[1].value, " 你好");
+});
+
+test("messageContentToRichSegments rebuilds workspace file chips from wire text", () => {
+  const segments = messageContentToRichSegments("@apps/cli/src/main.rs 你好", "msg-file");
+  assert.equal(segments.length, 2);
+  assert.equal(segments[0]?.kind, "workspaceFile");
+  assert.equal(
+    segments[0]?.kind === "workspaceFile" && segments[0].path,
+    "apps/cli/src/main.rs",
+  );
+  assert.equal(segments[1]?.kind === "text" && segments[1].value, " 你好");
 });
 
 test("messageContentToRichSegments rebuilds element chips from wire text", () => {
@@ -218,6 +241,64 @@ test("removeLoopSegment drops loop only", () => {
   ]);
   assert.equal(hasLoopSegment(next), false);
   assert.equal(next[0]?.kind === "text" && next[0].value, "keep");
+});
+
+test("segmentsToPlainText includes workspace file token", () => {
+  const segs = [
+    { kind: "text", value: "see " },
+    { kind: "workspaceFile", path: "apps/desktop/index.html" },
+    { kind: "text", value: " please" },
+  ];
+  assert.equal(segmentsToPlainText(segs), "see @apps/desktop/index.html please");
+});
+
+test("segmentsToMessageText includes workspace file token inline", () => {
+  const message = segmentsToMessageText([
+    { kind: "text", value: "fix " },
+    { kind: "workspaceFile", path: "src/App.tsx" },
+  ]);
+  assert.equal(message, "fix @src/App.tsx");
+});
+
+test("plainTextOffsetToCaret roundtrips with workspace file chip", () => {
+  const segs = [
+    { kind: "text", value: "see " },
+    { kind: "workspaceFile", path: "apps/desktop/index.html" },
+    { kind: "text", value: " tail" },
+  ];
+  const caret = { segmentIndex: 2, offset: 2 };
+  const offset = caretToPlainTextOffset(segs, caret);
+  const roundtrip = plainTextOffsetToCaret(segs, offset);
+  assert.deepEqual(roundtrip, caret);
+});
+
+test("replaceWorkspaceFileReferenceInSegments inserts chip and caret after finalize space", () => {
+  const { segments, caret } = replaceWorkspaceFileReferenceInSegments(
+    [{ kind: "text", value: "@app" }],
+    { start: 0, end: 4, raw: "@app" },
+    "apps/desktop/index.html",
+    true,
+  );
+  assert.deepEqual(segments, [
+    { kind: "workspaceFile", path: "apps/desktop/index.html" },
+    { kind: "text", value: " " },
+  ]);
+  assert.equal(caret.segmentIndex, 1);
+  assert.equal(caret.offset, 1);
+});
+
+test("syncSegmentsFromExternalValue keeps workspace file chips", () => {
+  const synced = syncSegmentsFromExternalValue(
+    [
+      { kind: "text", value: "old" },
+      { kind: "workspaceFile", path: "src/foo.ts" },
+    ],
+    "new",
+  );
+  assert.deepEqual(synced, [
+    { kind: "text", value: "new" },
+    { kind: "workspaceFile", path: "src/foo.ts" },
+  ]);
 });
 
 test("isComposerPlainEmpty treats lone newline as empty", () => {
