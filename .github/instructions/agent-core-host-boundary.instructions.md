@@ -12,11 +12,11 @@ applyTo: "**/*"
 
 `agent-core` 是唯一的 Agent 能力库；宿主内部库负责宿主侧发现、管理与执行细节；应用层只做薄适配与 UI。
 
-## 提供商原生联网 / 解释器能力
+## 提供商内置工具（Open Responses）
 
 - **不在** `host-internal` 注册可执行 `web_search` 宿主工具（Moonshot `$web_search` 亦不在范围内）。
 - **OpenAI / xAI 官方 Responses**：`@ai-sdk/openai` / `@ai-sdk/xai` 的 `tools.webSearch()`。
-- **Alibaba（`alibaba`）双路径**（`alibaba-native-tools` + `web-search-eligibility`）：
+- **Alibaba（`alibaba`）双路径**（`alibaba-built-in-tools` + `web-search-eligibility`）：
   - **Chat Completions**：经 `extra_body`（`enable_search`、`enable_thinking`、`enable_code_interpreter`、`search_options` 等）；代码解释器在 Chat API 上要求流式。抓取指定 URL 正文用宿主 `web_fetch`。
   - **Open Responses**：经 HTTP `tools` 注入 `{ type: web_search }`、`code_interpreter`（不含 `web_extractor`；URL 正文用宿主 `web_fetch`）。
 - 可见性由 eligibility 门控；system 提示段说明 Chat 为 API 侧能力、勿调用未声明的 function。

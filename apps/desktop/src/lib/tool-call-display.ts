@@ -13,15 +13,15 @@ export type ToolCallSummaryParts = {
 
 export { toolCallPhaseShowsShimmer } from './tool-call-shimmer.js';
 
-const RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES = new Set([
+const RESPONSES_BUILT_IN_TOOL_NAMES = new Set([
   'web_search',
   'code_interpreter',
 ]);
 
 const LEGACY_READ_FILE_HEADLINE = /^查看\s+(.+)$/u;
 
-export function isResponsesProviderBuiltinToolCard(toolName: string): boolean {
-  return RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES.has(toolName);
+export function isResponsesBuiltInToolCard(toolName: string): boolean {
+  return RESPONSES_BUILT_IN_TOOL_NAMES.has(toolName);
 }
 
 export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts {
@@ -72,8 +72,8 @@ function fileDiffToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
   return Boolean(tool.argsExcerpt?.trim());
 }
 
-function providerBuiltinToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
-  if (!isResponsesProviderBuiltinToolCard(tool.toolName)) {
+function responsesBuiltInToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
+  if (!isResponsesBuiltInToolCard(tool.toolName)) {
     return false;
   }
   return (
@@ -88,8 +88,8 @@ export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
     return fileDiffToolHasExpandableContent(tool);
   }
 
-  if (isResponsesProviderBuiltinToolCard(tool.toolName)) {
-    return providerBuiltinToolHasExpandableContent(tool);
+  if (isResponsesBuiltInToolCard(tool.toolName)) {
+    return responsesBuiltInToolHasExpandableContent(tool);
   }
 
   if (tool.toolName === 'run_shell_command') {

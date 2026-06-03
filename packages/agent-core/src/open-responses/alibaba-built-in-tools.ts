@@ -5,12 +5,12 @@ import {
   type LlmTransportConfig,
 } from '../provider-config.js';
 
-export const ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES = [
+export const ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES = [
   'web_search',
   'code_interpreter',
 ] as const;
 
-export type AlibabaResponsesBuiltinToolType = (typeof ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES)[number];
+export type AlibabaResponsesBuiltInToolType = (typeof ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES)[number];
 
 export interface AlibabaChatCompletionsExtraBodyOptions {
   /** Agent rounds use streaming; required for code interpreter on Chat API. */
@@ -25,7 +25,7 @@ function alibabaLlmVendor(config: LlmTransportConfig): string | undefined {
   return undefined;
 }
 
-export function shouldUseAlibabaNativeTools(config: LlmTransportConfig): boolean {
+export function shouldUseAlibabaBuiltInTools(config: LlmTransportConfig): boolean {
   if (alibabaLlmVendor(config) !== 'alibaba') {
     return false;
   }
@@ -33,11 +33,11 @@ export function shouldUseAlibabaNativeTools(config: LlmTransportConfig): boolean
   return isOpenAiCompatibleTransportConfig(config) || isOpenResponsesTransportConfig(config);
 }
 
-export function shouldUseAlibabaChatCompletionsNativeTools(config: LlmTransportConfig): boolean {
+export function shouldUseAlibabaChatCompletionsBuiltInTools(config: LlmTransportConfig): boolean {
   return isOpenAiCompatibleTransportConfig(config) && alibabaLlmVendor(config) === 'alibaba';
 }
 
-export function shouldUseAlibabaResponsesNativeTools(config: LlmTransportConfig): boolean {
+export function shouldUseAlibabaResponsesBuiltInTools(config: LlmTransportConfig): boolean {
   return isOpenResponsesTransportConfig(config) && alibabaLlmVendor(config) === 'alibaba';
 }
 
@@ -59,24 +59,24 @@ export function buildAlibabaChatCompletionsExtraBody(
   };
 }
 
-export function buildAlibabaResponsesBuiltinTools(): JsonObject[] {
-  return ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES.map((type) => ({ type }));
+export function buildAlibabaResponsesBuiltInTools(): JsonObject[] {
+  return ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES.map((type) => ({ type }));
 }
 
-export function mergeAlibabaResponsesBuiltinTools(
+export function mergeAlibabaResponsesBuiltInTools(
   existingTools: readonly JsonValue[],
 ): JsonValue[] {
   const merged = [...existingTools];
   const presentTypes = new Set<string>();
 
   for (const tool of merged) {
-    const type = readResponsesBuiltinToolType(tool);
+    const type = readResponsesBuiltInToolType(tool);
     if (type) {
       presentTypes.add(type);
     }
   }
 
-  for (const type of ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES) {
+  for (const type of ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES) {
     if (!presentTypes.has(type)) {
       merged.push({ type });
       presentTypes.add(type);
@@ -86,7 +86,7 @@ export function mergeAlibabaResponsesBuiltinTools(
   return merged;
 }
 
-function readResponsesBuiltinToolType(tool: JsonValue): string | undefined {
+function readResponsesBuiltInToolType(tool: JsonValue): string | undefined {
   if (typeof tool !== 'object' || tool === null || Array.isArray(tool)) {
     return undefined;
   }

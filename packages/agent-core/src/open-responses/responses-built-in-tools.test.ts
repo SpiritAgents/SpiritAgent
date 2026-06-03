@@ -2,34 +2,34 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk,
-  buildResponsesProviderBuiltinToolArgumentsJson,
-  buildResponsesProviderBuiltinToolCardData,
+  accumulateResponsesBuiltInToolPreviewsFromRawChunk,
+  buildResponsesBuiltInToolArgumentsJson,
+  buildResponsesBuiltInToolCardData,
   isGenericProviderWebSearchQuery,
-  isResponsesProviderBuiltinToolName,
-  parseProviderBuiltinToolUiFromArgumentsJson,
-  resolveResponsesProviderBuiltinToolStreamPhase,
-  resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
-  responsesProviderBuiltinToolNameFromOutputItemType,
-} from './responses-provider-builtin-tools.js';
+  isResponsesBuiltInToolName,
+  parseResponsesBuiltInToolUiFromArgumentsJson,
+  resolveResponsesBuiltInToolStreamPhase,
+  resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
+  responsesBuiltInToolNameFromOutputItemType,
+} from './responses-built-in-tools.js';
 
-test('responsesProviderBuiltinToolNameFromOutputItemType maps Responses output items', () => {
-  assert.equal(responsesProviderBuiltinToolNameFromOutputItemType('web_search_call'), 'web_search');
-  assert.equal(responsesProviderBuiltinToolNameFromOutputItemType('web_extractor_call'), undefined);
+test('responsesBuiltInToolNameFromOutputItemType maps Responses output items', () => {
+  assert.equal(responsesBuiltInToolNameFromOutputItemType('web_search_call'), 'web_search');
+  assert.equal(responsesBuiltInToolNameFromOutputItemType('web_extractor_call'), undefined);
   assert.equal(
-    responsesProviderBuiltinToolNameFromOutputItemType('code_interpreter_call'),
+    responsesBuiltInToolNameFromOutputItemType('code_interpreter_call'),
     'code_interpreter',
   );
-  assert.equal(responsesProviderBuiltinToolNameFromOutputItemType('function_call'), undefined);
+  assert.equal(responsesBuiltInToolNameFromOutputItemType('function_call'), undefined);
 });
 
-test('isResponsesProviderBuiltinToolName recognizes builtin tool names', () => {
-  assert.equal(isResponsesProviderBuiltinToolName('web_search'), true);
-  assert.equal(isResponsesProviderBuiltinToolName('web_fetch'), false);
+test('isResponsesBuiltInToolName recognizes builtin tool names', () => {
+  assert.equal(isResponsesBuiltInToolName('web_search'), true);
+  assert.equal(isResponsesBuiltInToolName('web_fetch'), false);
 });
 
-test('buildResponsesProviderBuiltinToolArgumentsJson extracts query and _spiritUi', () => {
-  const json = buildResponsesProviderBuiltinToolArgumentsJson(
+test('buildResponsesBuiltInToolArgumentsJson extracts query and _spiritUi', () => {
+  const json = buildResponsesBuiltInToolArgumentsJson(
     {
       type: 'web_search_call',
       status: 'completed',
@@ -53,8 +53,8 @@ test('isGenericProviderWebSearchQuery detects Bailian placeholder query', () => 
   assert.equal(isGenericProviderWebSearchQuery('DeepSeek V4'), false);
 });
 
-test('buildResponsesProviderBuiltinToolCardData formats web_search sources', () => {
-  const card = buildResponsesProviderBuiltinToolCardData(
+test('buildResponsesBuiltInToolCardData formats web_search sources', () => {
+  const card = buildResponsesBuiltInToolCardData(
     {
       type: 'web_search_call',
       status: 'completed',
@@ -75,8 +75,8 @@ test('buildResponsesProviderBuiltinToolCardData formats web_search sources', () 
   assert.equal(card.detailLines?.length, 2);
 });
 
-test('buildResponsesProviderBuiltinToolCardData formats code_interpreter logs', () => {
-  const card = buildResponsesProviderBuiltinToolCardData(
+test('buildResponsesBuiltInToolCardData formats code_interpreter logs', () => {
+  const card = buildResponsesBuiltInToolCardData(
     {
       type: 'code_interpreter_call',
       status: 'completed',
@@ -90,8 +90,8 @@ test('buildResponsesProviderBuiltinToolCardData formats code_interpreter logs', 
   assert.match(card.inputExcerpt, /print/);
 });
 
-test('parseProviderBuiltinToolUiFromArgumentsJson reads embedded ui', () => {
-  const json = buildResponsesProviderBuiltinToolArgumentsJson(
+test('parseResponsesBuiltInToolUiFromArgumentsJson reads embedded ui', () => {
+  const json = buildResponsesBuiltInToolArgumentsJson(
     {
       type: 'web_search_call',
       status: 'completed',
@@ -99,30 +99,30 @@ test('parseProviderBuiltinToolUiFromArgumentsJson reads embedded ui', () => {
     },
     'web_search',
   );
-  const ui = parseProviderBuiltinToolUiFromArgumentsJson(json);
+  const ui = parseResponsesBuiltInToolUiFromArgumentsJson(json);
   assert.equal(ui?.headlineDetail, undefined);
   assert.match(ui?.inputExcerpt ?? '', /test query/);
 });
 
-test('resolveResponsesProviderBuiltinToolStreamPhase maps terminal statuses', () => {
+test('resolveResponsesBuiltInToolStreamPhase maps terminal statuses', () => {
   assert.equal(
-    resolveResponsesProviderBuiltinToolStreamPhase({ type: 'web_search_call', status: 'completed' }),
+    resolveResponsesBuiltInToolStreamPhase({ type: 'web_search_call', status: 'completed' }),
     'succeeded',
   );
   assert.equal(
-    resolveResponsesProviderBuiltinToolStreamPhase({ type: 'web_search_call', status: 'in_progress' }),
+    resolveResponsesBuiltInToolStreamPhase({ type: 'web_search_call', status: 'in_progress' }),
     'preview',
   );
   assert.equal(
-    resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(
+    resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(
       JSON.stringify({ status: 'completed', query: 'test' }),
     ),
     'succeeded',
   );
 });
 
-test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk marks completed on output_item.done', () => {
-  const result = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+test('accumulateResponsesBuiltInToolPreviewsFromRawChunk marks completed on output_item.done', () => {
+  const result = accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     {
       type: 'response.output_item.done',
       item: {
@@ -146,10 +146,10 @@ test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk marks completed
   };
   assert.equal(args.status, 'completed');
   assert.equal(
-    resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(result.events[0].argumentsJson),
+    resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(result.events[0].argumentsJson),
     'succeeded',
   );
-  const ui = parseProviderBuiltinToolUiFromArgumentsJson(result.events[0].argumentsJson);
+  const ui = parseResponsesBuiltInToolUiFromArgumentsJson(result.events[0].argumentsJson);
   assert.equal(ui?.headlineDetail, undefined);
   assert.equal(ui?.sourceCount, undefined);
 });

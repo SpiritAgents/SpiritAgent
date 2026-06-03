@@ -1,8 +1,8 @@
 import {
-  isResponsesProviderBuiltinToolName,
-  parseProviderBuiltinToolUiFromArgumentsJson,
+  isResponsesBuiltInToolName,
+  parseResponsesBuiltInToolUiFromArgumentsJson,
   previewRequestFromStreamingArguments,
-  resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
+  resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
   type JsonObject,
   type RuntimeEvent,
   type RuntimeToolExecution,
@@ -40,7 +40,7 @@ import {
   applyToolCallSummaryCopy,
   hasActiveRunSubagentToolInMessages,
   isSubagentStatusSurfaceText,
-  toolCallSummaryCopyForProviderBuiltinTool,
+  toolCallSummaryCopyForResponsesBuiltInTool,
   toolCallSummaryForPhase,
   toolCallSummaryForStreamingPreview,
   isFinishTaskToolName,
@@ -260,7 +260,7 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind === 'assistant-response-completed') {
-        this.finalizeResponsesProviderBuiltinToolPreviews(messages);
+        this.finalizeResponsesBuiltInToolPreviews(messages);
         this.options.assistantMessages.completePendingAssistantMessage();
         this.options.messageTimeline?.()?.completeActiveAssistantSegment();
         continue;
@@ -358,9 +358,9 @@ export class DesktopRuntimeEventOrchestrator {
         }
         continue;
       }
-      const isProviderBuiltin = isResponsesProviderBuiltinToolName(event.toolName);
-      const providerUi = isProviderBuiltin
-        ? parseProviderBuiltinToolUiFromArgumentsJson(event.argumentsJson)
+      const isResponsesBuiltIn = isResponsesBuiltInToolName(event.toolName);
+      const providerUi = isResponsesBuiltIn
+        ? parseResponsesBuiltInToolUiFromArgumentsJson(event.argumentsJson)
         : undefined;
       const previewRequest = previewRequestFromStreamingArguments(
         event.toolName,
@@ -377,17 +377,17 @@ export class DesktopRuntimeEventOrchestrator {
         event.toolName,
         previewRequest,
       );
-      const providerBuiltinPhase = isProviderBuiltin
-        ? resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(event.argumentsJson)
+      const responsesBuiltInPhase = isResponsesBuiltIn
+        ? resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson)
         : undefined;
       const toolPhase: ToolBlockSnapshot['phase'] =
-        providerBuiltinPhase === 'succeeded'
+        responsesBuiltInPhase === 'succeeded'
           ? 'succeeded'
-          : providerBuiltinPhase === 'failed'
+          : responsesBuiltInPhase === 'failed'
             ? 'failed'
             : 'preview';
-      const summaryCopy = isProviderBuiltin
-        ? toolCallSummaryCopyForProviderBuiltinTool(
+      const summaryCopy = isResponsesBuiltIn
+        ? toolCallSummaryCopyForResponsesBuiltInTool(
             event.toolName,
             toolPhase,
             previewSummary,
@@ -414,7 +414,7 @@ export class DesktopRuntimeEventOrchestrator {
       );
       this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
       this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, runningTool);
-      if (isProviderBuiltin) {
+      if (isResponsesBuiltIn) {
         this.options.requestLiveSnapshotUpdate?.();
       }
     }
@@ -706,12 +706,12 @@ export class DesktopRuntimeEventOrchestrator {
     );
   }
 
-  private finalizeResponsesProviderBuiltinToolPreviews(
+  private finalizeResponsesBuiltInToolPreviews(
     messages: ConversationMessageSnapshot[],
   ): void {
     for (const message of messages) {
       const tool = message.tool;
-      if (!tool || !isResponsesProviderBuiltinToolName(tool.toolName)) {
+      if (!tool || !isResponsesBuiltInToolName(tool.toolName)) {
         continue;
       }
       if (!toolCallPhaseShowsShimmer(tool.phase)) {
@@ -860,7 +860,7 @@ function truncateText(value: string, maxChars: number): string {
   return `${chars.slice(0, maxChars).join('')}...<truncated>`;
 }
 
-export function splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(
+export function splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(
   events: RuntimeEvent<DesktopToolRequest>[],
   previewSeenCallIds: ReadonlySet<string> = new Set(),
 ): {
@@ -871,10 +871,10 @@ export function splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(
   const hasTerminal = new Set<string>();
 
   for (const event of events) {
-    if (event.kind !== 'streaming-tool-preview' || !isResponsesProviderBuiltinToolName(event.toolName)) {
+    if (event.kind !== 'streaming-tool-preview' || !isResponsesBuiltInToolName(event.toolName)) {
       continue;
     }
-    const phase = resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(event.argumentsJson);
+    const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
     if (phase === 'succeeded' || phase === 'failed') {
       hasTerminal.add(event.toolCallId);
       continue;
@@ -890,11 +890,11 @@ export function splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(
   const deferred: RuntimeEvent<DesktopToolRequest>[] = [];
 
   for (const event of events) {
-    if (event.kind !== 'streaming-tool-preview' || !isResponsesProviderBuiltinToolName(event.toolName)) {
+    if (event.kind !== 'streaming-tool-preview' || !isResponsesBuiltInToolName(event.toolName)) {
       toApply.push(event);
       continue;
     }
-    const phase = resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(event.argumentsJson);
+    const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
     if (phase === 'succeeded' || phase === 'failed') {
       const deferTerminal =
         inProgressCallIds.has(event.toolCallId) || !previewSeenCallIds.has(event.toolCallId);
@@ -909,14 +909,14 @@ export function splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(
   return { toApply, deferred };
 }
 
-export function runtimeEventsIncludeAppliedProviderBuiltinToolPreview(
+export function runtimeEventsIncludeAppliedResponsesBuiltInToolPreview(
   events: RuntimeEvent<DesktopToolRequest>[],
 ): boolean {
   return events.some(
     (event) =>
       event.kind === 'streaming-tool-preview'
-      && isResponsesProviderBuiltinToolName(event.toolName)
-      && resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(event.argumentsJson) === 'preview',
+      && isResponsesBuiltInToolName(event.toolName)
+      && resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson) === 'preview',
   );
 }
 

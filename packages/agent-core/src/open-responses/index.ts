@@ -28,7 +28,7 @@ export {
   type ApplyPatchOperationType,
   filterBuiltinFileToolsForApplyPatch,
   buildApplyPatchFileToolsPromptSection,
-  shouldUseNativeApplyPatchRequestItems,
+  shouldUseBuiltInApplyPatchRequestItems,
   shouldUseOpenAiSdkApplyPatchTool,
   filterLegacyHostFileToolDefinitions,
   isLegacyHostFileToolName,
@@ -44,15 +44,15 @@ export {
   shouldUseOpenAiApplyPatchTool,
 } from './apply-patch-eligibility.js';
 export {
-  ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES,
+  ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES,
   buildAlibabaChatCompletionsExtraBody,
-  buildAlibabaResponsesBuiltinTools,
-  mergeAlibabaResponsesBuiltinTools,
-  shouldUseAlibabaChatCompletionsNativeTools,
-  shouldUseAlibabaNativeTools,
-  shouldUseAlibabaResponsesNativeTools,
-  type AlibabaResponsesBuiltinToolType,
-} from './alibaba-native-tools.js';
+  buildAlibabaResponsesBuiltInTools,
+  mergeAlibabaResponsesBuiltInTools,
+  shouldUseAlibabaChatCompletionsBuiltInTools,
+  shouldUseAlibabaBuiltInTools,
+  shouldUseAlibabaResponsesBuiltInTools,
+  type AlibabaResponsesBuiltInToolType,
+} from './alibaba-built-in-tools.js';
 export {
   buildProviderWebSearchPromptSection,
   buildWebSearchResponsesTraceToolEntry,
@@ -61,15 +61,15 @@ export {
   type ProviderWebSearchMode,
 } from './web-search-eligibility.js';
 export {
-  buildResponsesProviderBuiltinToolCardData,
-  createResponsesProviderBuiltinPreviewStreamState,
+  buildResponsesBuiltInToolCardData,
+  createResponsesBuiltInPreviewStreamState,
   isGenericProviderWebSearchQuery,
-  isResponsesProviderBuiltinToolName,
-  parseProviderBuiltinToolUiFromArgumentsJson,
-  resolveResponsesProviderBuiltinToolStreamPhase,
-  resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
-  RESPONSES_PROVIDER_BUILTIN_SPIRIT_UI_KEY,
-  type ResponsesProviderBuiltinToolCardData,
-  type ResponsesProviderBuiltinToolSpiritUi,
-  type ResponsesProviderBuiltinToolStreamPhase,
-} from './responses-provider-builtin-tools.js';
+  isResponsesBuiltInToolName,
+  parseResponsesBuiltInToolUiFromArgumentsJson,
+  resolveResponsesBuiltInToolStreamPhase,
+  resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
+  RESPONSES_BUILT_IN_SPIRIT_UI_KEY,
+  type ResponsesBuiltInToolCardData,
+  type ResponsesBuiltInToolSpiritUi,
+  type ResponsesBuiltInToolStreamPhase,
+} from './responses-built-in-tools.js';

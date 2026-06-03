@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk,
-  createResponsesProviderBuiltinPreviewStreamState,
-  resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
-} from './responses-provider-builtin-tools.js';
+  accumulateResponsesBuiltInToolPreviewsFromRawChunk,
+  createResponsesBuiltInPreviewStreamState,
+  resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
+} from './responses-built-in-tools.js';
 
-test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk emits preview for web_search_call', () => {
-  const result = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+test('accumulateResponsesBuiltInToolPreviewsFromRawChunk emits preview for web_search_call', () => {
+  const result = accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     {
       type: 'response.output_item.added',
       item: {
@@ -31,14 +31,14 @@ test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk emits preview f
   assert.match(result.events[0].argumentsJson, /DeepSeek generation/);
 });
 
-test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk emits preview for web_search_call.in_progress', () => {
-  const result = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+test('accumulateResponsesBuiltInToolPreviewsFromRawChunk emits preview for web_search_call.in_progress', () => {
+  const result = accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     {
       type: 'response.web_search_call.in_progress',
       item_id: 'ws_1',
       output_index: 1,
     },
-    createResponsesProviderBuiltinPreviewStreamState(),
+    createResponsesBuiltInPreviewStreamState(),
   );
 
   assert.equal(result.events.length, 1);
@@ -48,14 +48,14 @@ test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk emits preview f
   assert.equal(result.events[0].toolName, 'web_search');
   assert.equal(result.events[0].toolCallId, 'ws_1');
   assert.equal(
-    resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(result.events[0].argumentsJson),
+    resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(result.events[0].argumentsJson),
     'preview',
   );
 });
 
-test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk preserves call id on output_item.done', () => {
-  let state = createResponsesProviderBuiltinPreviewStreamState(1);
-  const inProgress = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+test('accumulateResponsesBuiltInToolPreviewsFromRawChunk preserves call id on output_item.done', () => {
+  let state = createResponsesBuiltInPreviewStreamState(1);
+  const inProgress = accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     {
       type: 'response.web_search_call.in_progress',
       item_id: 'ws_1',
@@ -64,7 +64,7 @@ test('accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk preserves call 
   );
   state = inProgress.state;
 
-  const result = accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+  const result = accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     {
       type: 'response.output_item.done',
       item: {

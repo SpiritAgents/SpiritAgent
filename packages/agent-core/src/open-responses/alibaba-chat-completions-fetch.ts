@@ -3,8 +3,8 @@ import { isJsonObject } from '../tool-agent.js';
 import type { OpenAiTransportConfig } from '../openai/openai-compat.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
-  shouldUseAlibabaChatCompletionsNativeTools,
-} from './alibaba-native-tools.js';
+  shouldUseAlibabaChatCompletionsBuiltInTools,
+} from './alibaba-built-in-tools.js';
 
 type FetchFn = typeof fetch;
 
@@ -12,7 +12,7 @@ export function createAlibabaChatCompletionsAwareFetch(
   config: OpenAiTransportConfig,
   baseFetch: FetchFn = globalThis.fetch,
 ): FetchFn {
-  if (!shouldUseAlibabaChatCompletionsNativeTools(config)) {
+  if (!shouldUseAlibabaChatCompletionsBuiltInTools(config)) {
     return baseFetch;
   }
 

@@ -1,20 +1,20 @@
 import type { JsonObject, JsonValue, LlmStreamEvent } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
-import { ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES } from './alibaba-native-tools.js';
+import { ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES } from './alibaba-built-in-tools.js';
 
-export const RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES = [
-  ...ALIBABA_RESPONSES_BUILTIN_TOOL_TYPES,
+export const RESPONSES_BUILT_IN_TOOL_NAMES = [
+  ...ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES,
 ] as const;
 
-const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<string, (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number]> = {
+const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<string, (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number]> = {
   web_search_call: 'web_search',
   code_interpreter_call: 'code_interpreter',
 };
 
 /** Embedded in streaming-tool-preview argumentsJson for Desktop UI mapping. */
-export const RESPONSES_PROVIDER_BUILTIN_SPIRIT_UI_KEY = '_spiritUi';
+export const RESPONSES_BUILT_IN_SPIRIT_UI_KEY = '_spiritUi';
 
-export type ResponsesProviderBuiltinToolSpiritUi = {
+export type ResponsesBuiltInToolSpiritUi = {
   headlineDetail?: string;
   /** Set for completed web_search when action.sources is present (Bailian often omits real query text). */
   sourceCount?: number;
@@ -23,7 +23,7 @@ export type ResponsesProviderBuiltinToolSpiritUi = {
   detailLines?: string[];
 };
 
-export type ResponsesProviderBuiltinToolCardData = {
+export type ResponsesBuiltInToolCardData = {
   status?: string;
   headlineDetail?: string;
   sourceCount?: number;
@@ -34,21 +34,21 @@ export type ResponsesProviderBuiltinToolCardData = {
 
 const HEADLINE_DETAIL_MAX = 80;
 
-export function responsesProviderBuiltinToolNameFromOutputItemType(
+export function responsesBuiltInToolNameFromOutputItemType(
   outputItemType: string,
-): (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number] | undefined {
+): (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number] | undefined {
   return OUTPUT_ITEM_TYPE_TO_TOOL_NAME[outputItemType];
 }
 
-export function isResponsesProviderBuiltinToolName(toolName: string): boolean {
-  return (RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES as readonly string[]).includes(toolName);
+export function isResponsesBuiltInToolName(toolName: string): boolean {
+  return (RESPONSES_BUILT_IN_TOOL_NAMES as readonly string[]).includes(toolName);
 }
 
-export type ResponsesProviderBuiltinToolStreamPhase = 'preview' | 'succeeded' | 'failed';
+export type ResponsesBuiltInToolStreamPhase = 'preview' | 'succeeded' | 'failed';
 
-export function resolveResponsesProviderBuiltinToolStreamPhase(
+export function resolveResponsesBuiltInToolStreamPhase(
   item: JsonObject,
-): ResponsesProviderBuiltinToolStreamPhase {
+): ResponsesBuiltInToolStreamPhase {
   const status = typeof item.status === 'string' ? item.status.trim().toLowerCase() : '';
   if (
     status === 'completed' ||
@@ -70,29 +70,29 @@ export function resolveResponsesProviderBuiltinToolStreamPhase(
   return 'preview';
 }
 
-export function resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson(
+export function resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(
   argumentsJson: string,
-): ResponsesProviderBuiltinToolStreamPhase | undefined {
+): ResponsesBuiltInToolStreamPhase | undefined {
   try {
     const parsed = JSON.parse(argumentsJson) as JsonValue;
     if (!isJsonObject(parsed)) {
       return undefined;
     }
-    return resolveResponsesProviderBuiltinToolStreamPhase(parsed);
+    return resolveResponsesBuiltInToolStreamPhase(parsed);
   } catch {
     return undefined;
   }
 }
 
-export function parseProviderBuiltinToolUiFromArgumentsJson(
+export function parseResponsesBuiltInToolUiFromArgumentsJson(
   argumentsJson: string,
-): ResponsesProviderBuiltinToolSpiritUi | undefined {
+): ResponsesBuiltInToolSpiritUi | undefined {
   try {
     const parsed = JSON.parse(argumentsJson) as JsonValue;
     if (!isJsonObject(parsed)) {
       return undefined;
     }
-    const raw = parsed[RESPONSES_PROVIDER_BUILTIN_SPIRIT_UI_KEY];
+    const raw = parsed[RESPONSES_BUILT_IN_SPIRIT_UI_KEY];
     if (!isJsonObject(raw as JsonValue)) {
       return undefined;
     }
@@ -128,10 +128,10 @@ export function parseProviderBuiltinToolUiFromArgumentsJson(
   }
 }
 
-export function buildResponsesProviderBuiltinToolCardData(
+export function buildResponsesBuiltInToolCardData(
   item: JsonObject,
-  toolName: (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number],
-): ResponsesProviderBuiltinToolCardData {
+  toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
+): ResponsesBuiltInToolCardData {
   const status = readStringField(item, 'status');
   switch (toolName) {
     case 'web_search':
@@ -149,14 +149,14 @@ export function buildResponsesProviderBuiltinToolCardData(
 function buildWebSearchCardData(
   item: JsonObject,
   status: string | undefined,
-): ResponsesProviderBuiltinToolCardData {
+): ResponsesBuiltInToolCardData {
   const action = isJsonObject(item.action as JsonValue) ? (item.action as JsonObject) : undefined;
   const query =
     readStringField(action ?? {}, 'query')
     ?? readStringField(item, 'query')
     ?? readStringField(item, 'search_query');
   const sources = formatWebSearchSources(action);
-  const streamPhase = resolveResponsesProviderBuiltinToolStreamPhase(item);
+  const streamPhase = resolveResponsesBuiltInToolStreamPhase(item);
   const inputPayload: JsonObject = {
     ...(query && !isGenericProviderWebSearchQuery(query) ? { query } : {}),
     ...(status ? { status } : {}),
@@ -182,7 +182,7 @@ export function isGenericProviderWebSearchQuery(query: string): boolean {
 function buildCodeInterpreterCardData(
   item: JsonObject,
   status: string | undefined,
-): ResponsesProviderBuiltinToolCardData {
+): ResponsesBuiltInToolCardData {
   const code = readStringField(item, 'code');
   const logs = formatCodeInterpreterLogs(item.outputs);
   const headlineDetail = code
@@ -265,9 +265,9 @@ function formatCodeInterpreterLogs(outputs: JsonValue | undefined): {
   };
 }
 
-export function buildResponsesProviderBuiltinToolArgumentsJson(
+export function buildResponsesBuiltInToolArgumentsJson(
   item: JsonObject,
-  toolName: (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number],
+  toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
 ): string {
   const payload: JsonObject = {};
   const query = readStringField(item, 'query');
@@ -307,7 +307,7 @@ export function buildResponsesProviderBuiltinToolArgumentsJson(
     payload.status = item.status;
   }
 
-  const card = buildResponsesProviderBuiltinToolCardData(item, toolName);
+  const card = buildResponsesBuiltInToolCardData(item, toolName);
   const spiritUi: JsonObject = {
     inputExcerpt: card.inputExcerpt,
     ...(card.headlineDetail ? { headlineDetail: card.headlineDetail } : {}),
@@ -315,7 +315,7 @@ export function buildResponsesProviderBuiltinToolArgumentsJson(
     ...(card.outputExcerpt ? { outputExcerpt: card.outputExcerpt } : {}),
     ...(card.detailLines && card.detailLines.length > 0 ? { detailLines: card.detailLines } : {}),
   };
-  payload[RESPONSES_PROVIDER_BUILTIN_SPIRIT_UI_KEY] = spiritUi;
+  payload[RESPONSES_BUILT_IN_SPIRIT_UI_KEY] = spiritUi;
 
   return JSON.stringify(payload);
 }
@@ -337,29 +337,29 @@ function truncateHeadlineDetail(value: string, max = HEADLINE_DETAIL_MAX): strin
   return `${normalized.slice(0, max)}…`;
 }
 
-export type ResponsesProviderBuiltinPreviewStreamState = {
+export type ResponsesBuiltInPreviewStreamState = {
   nextPreviewIndex: number;
   items: Map<
     string,
     {
-      toolName: (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number];
+      toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number];
       item: JsonObject;
     }
   >;
 };
 
-export function createResponsesProviderBuiltinPreviewStreamState(
+export function createResponsesBuiltInPreviewStreamState(
   nextPreviewIndex = 0,
-): ResponsesProviderBuiltinPreviewStreamState {
+): ResponsesBuiltInPreviewStreamState {
   return {
     nextPreviewIndex,
     items: new Map(),
   };
 }
 
-const PROVIDER_BUILTIN_LIFECYCLE_CHUNK_TYPES: ReadonlyArray<{
+const RESPONSES_BUILT_IN_LIFECYCLE_CHUNK_TYPES: ReadonlyArray<{
   chunkType: string;
-  toolName: (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number];
+  toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number];
   status: string;
 }> = [
   {
@@ -384,7 +384,7 @@ const PROVIDER_BUILTIN_LIFECYCLE_CHUNK_TYPES: ReadonlyArray<{
   },
 ];
 
-function readProviderBuiltinItemId(chunk: JsonObject): string | undefined {
+function readResponsesBuiltInItemId(chunk: JsonObject): string | undefined {
   const itemId = readStringField(chunk, 'item_id');
   if (itemId) {
     return itemId;
@@ -396,8 +396,8 @@ function readProviderBuiltinItemId(chunk: JsonObject): string | undefined {
   return undefined;
 }
 
-function providerBuiltinOutputItemTypeForToolName(
-  toolName: (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number],
+function responsesBuiltInOutputItemTypeForToolName(
+  toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
 ): string {
   switch (toolName) {
     case 'web_search':
@@ -409,11 +409,11 @@ function providerBuiltinOutputItemTypeForToolName(
   }
 }
 
-function emitProviderBuiltinToolPreview(
+function emitResponsesBuiltInToolPreview(
   item: JsonObject,
-  toolName: (typeof RESPONSES_PROVIDER_BUILTIN_TOOL_NAMES)[number],
-  state: ResponsesProviderBuiltinPreviewStreamState,
-): { events: LlmStreamEvent[]; state: ResponsesProviderBuiltinPreviewStreamState } {
+  toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
+  state: ResponsesBuiltInPreviewStreamState,
+): { events: LlmStreamEvent[]; state: ResponsesBuiltInPreviewStreamState } {
   const callId =
     readStringField(item, 'id')
     ?? readStringField(item, 'call_id')
@@ -423,7 +423,7 @@ function emitProviderBuiltinToolPreview(
     ...(state.items.get(callId)?.item ?? {}),
     ...item,
     id: callId,
-    type: providerBuiltinOutputItemTypeForToolName(toolName),
+    type: responsesBuiltInOutputItemTypeForToolName(toolName),
   };
   state.items.set(callId, { toolName, item: mergedItem });
 
@@ -433,32 +433,32 @@ function emitProviderBuiltinToolPreview(
         kind: 'streaming-tool-preview',
         toolCallId: callId,
         toolName,
-        argumentsJson: buildResponsesProviderBuiltinToolArgumentsJson(mergedItem, toolName),
+        argumentsJson: buildResponsesBuiltInToolArgumentsJson(mergedItem, toolName),
       },
     ],
     state,
   };
 }
 
-function coerceProviderBuiltinPreviewStreamState(
-  stateOrIndex: ResponsesProviderBuiltinPreviewStreamState | number,
-): ResponsesProviderBuiltinPreviewStreamState {
+function coerceResponsesBuiltInPreviewStreamState(
+  stateOrIndex: ResponsesBuiltInPreviewStreamState | number,
+): ResponsesBuiltInPreviewStreamState {
   if (typeof stateOrIndex === 'number') {
-    return createResponsesProviderBuiltinPreviewStreamState(stateOrIndex);
+    return createResponsesBuiltInPreviewStreamState(stateOrIndex);
   }
   return stateOrIndex;
 }
 
-export function accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
+export function accumulateResponsesBuiltInToolPreviewsFromRawChunk(
   rawValue: unknown,
-  stateOrIndex: ResponsesProviderBuiltinPreviewStreamState | number = 0,
+  stateOrIndex: ResponsesBuiltInPreviewStreamState | number = 0,
 ): {
   events: LlmStreamEvent[];
-  state: ResponsesProviderBuiltinPreviewStreamState;
+  state: ResponsesBuiltInPreviewStreamState;
   /** @deprecated Use `state.nextPreviewIndex`. */
   nextPreviewIndex: number;
 } {
-  const state = coerceProviderBuiltinPreviewStreamState(stateOrIndex);
+  const state = coerceResponsesBuiltInPreviewStreamState(stateOrIndex);
 
   if (!isJsonObject(rawValue as JsonValue) || typeof (rawValue as JsonObject).type !== 'string') {
     return { events: [], state, nextPreviewIndex: state.nextPreviewIndex };
@@ -467,11 +467,11 @@ export function accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
   const chunk = rawValue as JsonObject;
   const chunkType = chunk.type;
 
-  for (const lifecycle of PROVIDER_BUILTIN_LIFECYCLE_CHUNK_TYPES) {
+  for (const lifecycle of RESPONSES_BUILT_IN_LIFECYCLE_CHUNK_TYPES) {
     if (chunkType !== lifecycle.chunkType) {
       continue;
     }
-    const itemId = readProviderBuiltinItemId(chunk);
+    const itemId = readResponsesBuiltInItemId(chunk);
     if (!itemId) {
       return { events: [], state, nextPreviewIndex: state.nextPreviewIndex };
     }
@@ -479,10 +479,10 @@ export function accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
     const item: JsonObject = {
       ...(existing?.item ?? {}),
       id: itemId,
-      type: providerBuiltinOutputItemTypeForToolName(lifecycle.toolName),
+      type: responsesBuiltInOutputItemTypeForToolName(lifecycle.toolName),
       status: lifecycle.status,
     };
-    const emitted = emitProviderBuiltinToolPreview(item, lifecycle.toolName, state);
+    const emitted = emitResponsesBuiltInToolPreview(item, lifecycle.toolName, state);
     return {
       events: emitted.events,
       state: emitted.state,
@@ -500,12 +500,12 @@ export function accumulateResponsesProviderBuiltinToolPreviewsFromRawChunk(
 
   const item = chunk.item as JsonObject;
   const itemType = typeof item.type === 'string' ? item.type : '';
-  const toolName = responsesProviderBuiltinToolNameFromOutputItemType(itemType);
+  const toolName = responsesBuiltInToolNameFromOutputItemType(itemType);
   if (!toolName) {
     return { events: [], state, nextPreviewIndex: state.nextPreviewIndex };
   }
 
-  const emitted = emitProviderBuiltinToolPreview(item, toolName, state);
+  const emitted = emitResponsesBuiltInToolPreview(item, toolName, state);
   const finalizedState = {
     ...emitted.state,
     nextPreviewIndex:

@@ -174,6 +174,6 @@ function isJsonObject(value: JsonValue | undefined): value is Record<string, Jso
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`ai-sdk alibaba native tools smoke failed: ${message}`);
+  console.error(`ai-sdk alibaba built-in tools smoke failed: ${message}`);
   process.exitCode = 1;
 });

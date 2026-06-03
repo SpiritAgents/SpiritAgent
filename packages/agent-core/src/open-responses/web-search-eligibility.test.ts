@@ -75,7 +75,7 @@ test('resolveProviderWebSearchMode alibaba open-responses', () => {
       model: 'qwen3-max',
       llmVendor: 'alibaba',
     }),
-    'alibaba-responses-native-tools',
+    'alibaba-responses-built-in-tools',
   );
   assert.equal(
     shouldUseProviderWebSearch({

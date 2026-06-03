@@ -18,7 +18,7 @@ import {
 import {
   genericExpandableDetailLines,
   getToolCallSummaryParts,
-  isResponsesProviderBuiltinToolCard,
+  isResponsesBuiltInToolCard,
   shellToolExpandableDetailLines,
   toolCallPhaseShowsShimmer,
   toolHasExpandableContent,
@@ -84,7 +84,7 @@ export function MinimalToolSummary({
   );
 }
 
-function ProviderBuiltinToolExpandedBody({
+function ResponsesBuiltInToolExpandedBody({
   tool,
   shimmerActive,
 }: {
@@ -297,7 +297,7 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
   const shimmerActive = toolCallPhaseShowsShimmer(tool.phase);
   const isShell = tool.toolName === "run_shell_command";
   const isFileDiff = isFileDiffTool(tool.toolName);
-  const isProviderBuiltin = isResponsesProviderBuiltinToolCard(tool.toolName);
+  const isResponsesBuiltIn = isResponsesBuiltInToolCard(tool.toolName);
   const shellCommand = useMemo(
     () => (isShell ? tool.headlineDetail?.trim() || parseShellCommand(tool) : undefined),
     [isShell, tool.argsExcerpt, tool.detailLines, tool.headlineDetail],
@@ -350,8 +350,8 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
             <ShellToolExpandedBody tool={tool} command={shellCommand} />
           ) : isFileDiff ? (
             <FileToolDiffExpandedBody tool={tool} open={open} />
-          ) : isProviderBuiltin ? (
-            <ProviderBuiltinToolExpandedBody tool={tool} shimmerActive={shimmerActive} />
+          ) : isResponsesBuiltIn ? (
+            <ResponsesBuiltInToolExpandedBody tool={tool} shimmerActive={shimmerActive} />
           ) : (
             <GenericToolExpandedBody tool={tool} />
           )}

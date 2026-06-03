@@ -284,9 +284,9 @@ import { DesktopAssistantMessageStateMachine } from './assistant-message-state.j
 import {
   DesktopRuntimeEventOrchestrator,
   runtimeEventsIncludeAppliedFinishTaskPreview,
-  runtimeEventsIncludeAppliedProviderBuiltinToolPreview,
+  runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
-  splitRuntimeEventsForIncrementalProviderBuiltinToolPreview,
+  splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
 import {
   extractSubagentSessionStreamingText,
@@ -2076,18 +2076,18 @@ class DesktopHostService {
     const queued = [...bundle.deferredRuntimeHostEvents, ...drained];
     bundle.deferredRuntimeHostEvents = [];
     const splitFinish = splitRuntimeEventsForIncrementalFinishTaskPreview(queued);
-    const splitBuiltin = splitRuntimeEventsForIncrementalProviderBuiltinToolPreview(
+    const splitBuiltin = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(
       splitFinish.toApply,
-      bundle.providerBuiltinPreviewSeenCallIds,
+      bundle.responsesBuiltInPreviewSeenCallIds,
     );
     bundle.deferredRuntimeHostEvents = [...splitFinish.deferred, ...splitBuiltin.deferred];
     orchestration.runtimeEvents.applyRuntimeHostEvents(splitBuiltin.toApply);
     for (const event of splitBuiltin.toApply) {
       if (
         event.kind === 'streaming-tool-preview'
-        && runtimeEventsIncludeAppliedProviderBuiltinToolPreview([event])
+        && runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
       ) {
-        bundle.providerBuiltinPreviewSeenCallIds.add(event.toolCallId);
+        bundle.responsesBuiltInPreviewSeenCallIds.add(event.toolCallId);
       }
     }
     bundle.messages = bundle.messageTimeline.toMessages();
@@ -2096,7 +2096,7 @@ class DesktopHostService {
     }
     if (
       runtimeEventsIncludeAppliedFinishTaskPreview(splitBuiltin.toApply)
-      || runtimeEventsIncludeAppliedProviderBuiltinToolPreview(splitBuiltin.toApply)
+      || runtimeEventsIncludeAppliedResponsesBuiltInToolPreview(splitBuiltin.toApply)
     ) {
       bundle.conversationRevision += 1;
       this.emitLiveSnapshotUpdate();
