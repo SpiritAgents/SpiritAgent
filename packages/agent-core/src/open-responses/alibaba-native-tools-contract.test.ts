@@ -13,7 +13,7 @@ const alibabaResponsesConfig: OpenResponsesTransportConfig = {
   transportKind: 'open-responses',
   apiKey: 'test-key',
   model: 'qwen3-max',
-  baseUrl: 'https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1',
+  baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   llmVendor: 'alibaba',
 };
 

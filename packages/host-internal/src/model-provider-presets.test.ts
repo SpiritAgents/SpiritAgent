@@ -63,7 +63,7 @@ test('resolveProviderConnectApiBase uses transport-specific preset bases', () =>
   );
   assert.equal(
     resolveProviderConnectApiBase('alibaba', 'open-responses'),
-    'https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1',
+    'https://dashscope.aliyuncs.com/compatible-mode/v1',
   );
   assert.equal(
     resolveProviderConnectApiBase('alibaba', 'anthropic'),
