@@ -17,7 +17,10 @@ import {
   preserveDeleteFileBaseline,
   preserveDeleteFileLineDelta,
 } from '../lib/edit-file-line-delta.js';
-import { FILE_DIFF_TOOL_NAMES } from '../lib/file-tool-diff-source.js';
+import {
+  FILE_DIFF_TOOL_NAMES,
+  serializeFileToolDiffArgumentsJson,
+} from '../lib/file-tool-diff-source.js';
 import i18n from '../lib/i18n-host.js';
 import type {
   ConversationMessageSnapshot,
@@ -653,6 +656,10 @@ export class DesktopRuntimeEventOrchestrator {
               execution.toolName,
               execution.request,
             );
+      const argsExcerpt = truncateJson(execution.request);
+      const fileToolDiffArgumentsJson = FILE_DIFF_TOOL_NAMES.has(execution.toolName)
+        ? serializeFileToolDiffArgumentsJson(execution.request)
+        : undefined;
       const toolBlock: ToolBlockSnapshot = this.attachLineDelta(
         applyToolCallSummaryCopy(
           {
@@ -661,8 +668,9 @@ export class DesktopRuntimeEventOrchestrator {
             phase: execution.failed ? 'failed' : 'succeeded',
             headline: executionSummary.headline,
             detailLines: [],
-            argsExcerpt: truncateJson(execution.request),
+            argsExcerpt,
             outputExcerpt: truncateText(execution.output, 4_000),
+            ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
             ...(imagePaths.length > 0 ? { imagePaths } : {}),
           },
           executionSummary,
