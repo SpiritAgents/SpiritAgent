@@ -150,7 +150,6 @@ import {
   DESKTOP_COMPACT_OVERLAY_ITEM,
   DESKTOP_COMPACT_OVERLAY_ITEM_PRIMARY,
   DESKTOP_COMPACT_OVERLAY_ITEM_SECONDARY,
-  DESKTOP_COMPACT_OVERLAY_SIMPLE_MENU,
   DESKTOP_COMPACT_OVERLAY_SUBCONTENT,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
@@ -810,16 +809,16 @@ function ComposerSurface({
                   <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top" className={DESKTOP_COMPACT_OVERLAY_SIMPLE_MENU}>
+              <DropdownMenuContent align="start" side="top" className="min-w-[8.5rem] text-xs">
                 <DropdownMenuItem
                   onSelect={() => onPlanModeChange(false)}
-                  className={cn(DESKTOP_COMPACT_OVERLAY_ITEM, !planMode && "bg-accent/40")}
+                  className={cn(!planMode && "bg-accent/40")}
                 >
                   Agent
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => onPlanModeChange(true)}
-                  className={cn(DESKTOP_COMPACT_OVERLAY_ITEM, planMode && "bg-accent/40")}
+                  className={cn(planMode && "bg-accent/40")}
                 >
                   Plan
                 </DropdownMenuItem>
