@@ -113,6 +113,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   pushGitBranch() {
     return ipcRenderer.invoke('desktop:invoke', 'pushGitBranch');
   },
+  refreshGitSnapshot() {
+    return ipcRenderer.invoke('desktop:invoke', 'refreshGitSnapshot');
+  },
   abortConversation() {
     return ipcRenderer.invoke('desktop:invoke', 'abortConversation');
   },

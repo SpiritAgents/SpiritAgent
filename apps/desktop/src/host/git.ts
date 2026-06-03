@@ -80,9 +80,22 @@ function truncateChars(text: string, maxChars: number): string {
   return `${chars.slice(0, maxChars).join('')}\n...<truncated>`;
 }
 
+export type WorkspaceGitSnapshotRead = Omit<DesktopGitSnapshot, 'revision'>;
+
+export function applyGitRevision(
+  snapshot: WorkspaceGitSnapshotRead,
+  previousRevision: number,
+  options: { reset?: boolean } = {},
+): DesktopGitSnapshot {
+  return {
+    ...snapshot,
+    revision: options.reset ? 1 : previousRevision + 1,
+  };
+}
+
 export async function readWorkspaceGitSnapshot(
   workspaceRoot: string,
-): Promise<DesktopGitSnapshot> {
+): Promise<WorkspaceGitSnapshotRead> {
   const snapshot = await readGitWorkspaceSnapshot(workspaceRoot);
   const worktreeContext = await readWorktreeContext(workspaceRoot);
   const defaultBranch = worktreeContext.isWorktree && worktreeContext.repoRoot
@@ -183,7 +196,7 @@ export async function checkoutWorkspaceGitBranch(
   workspaceRoot: string,
   branch: string,
   options: GitCheckoutOptions = {},
-): Promise<DesktopGitSnapshot> {
+): Promise<WorkspaceGitSnapshotRead> {
   try {
     await checkoutGitBranchInternal(workspaceRoot, branch, options);
   } catch (error) {

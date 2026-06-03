@@ -120,6 +120,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     pushGitBranch() {
       return bridge.pushGitBranch();
     },
+    refreshGitSnapshot() {
+      return bridge.refreshGitSnapshot();
+    },
     abortConversation() {
       return bridge.abortConversation();
     },

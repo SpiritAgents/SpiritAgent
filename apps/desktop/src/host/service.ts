@@ -316,6 +316,7 @@ import {
   createWorkspaceGitWorktree,
   mergeWorktreeBranchToMain,
   pushWorkspaceGitBranch,
+  applyGitRevision,
   readPrimaryRepoRoot,
   readWorkspaceGitHistory,
   readWorkspaceGitSnapshot,
@@ -376,6 +377,7 @@ type CommandPayloads = {
   checkoutGitBranch: CheckoutGitBranchRequest;
   mergeWorktreeToMain: undefined;
   pushGitBranch: undefined;
+  refreshGitSnapshot: undefined;
   readGitWorkingTree: undefined;
   readGitHistory: { request?: ReadGitHistoryRequest };
   setWebHostAuthTokenHash: { authTokenHash: string };
@@ -528,6 +530,8 @@ class DesktopHostService {
   private dreamCollectorLastTickUnixMs = 0;
   private dreamCollectorMonitorTimer: ReturnType<typeof setInterval> | undefined;
   private readonly dreamUpdateListeners = new Set<(snapshot: DesktopSnapshot) => void>();
+  private gitRefreshInFlight: Promise<void> | null = null;
+  private gitRefreshQueued = false;
   private readonly todoClearingBySession = new Map<
     string,
     {
@@ -1702,9 +1706,12 @@ class DesktopHostService {
         throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
       }
 
-      state.git = await checkoutWorkspaceGitBranch(state.workspaceRoot, normalized, {
-        discardLocalChanges: request.discardLocalChanges === true,
-      });
+      state.git = applyGitRevision(
+        await checkoutWorkspaceGitBranch(state.workspaceRoot, normalized, {
+          discardLocalChanges: request.discardLocalChanges === true,
+        }),
+        state.git.revision ?? 0,
+      );
       this.activeBundle().pendingGitBranch = undefined;
       await this.refreshRuntimeForBundle(this.activeBundle());
       this.syncActiveRuntimePointer();
@@ -1727,7 +1734,7 @@ class DesktopHostService {
       }
 
       await mergeWorktreeBranchToMain(git.primaryRepoRoot, git.worktreeBranch);
-      state.git = await readWorkspaceGitSnapshot(state.workspaceRoot);
+      await this.refreshGitState();
       return this.buildSnapshot();
     });
   }
@@ -1784,9 +1791,6 @@ class DesktopHostService {
       }
       await this.persistCurrentSessionIfNeeded();
       await this.flushDeferredRuntimeRefreshIfIdle();
-      if (!runtime.isBusy()) {
-        await this.refreshGitState();
-      }
       return this.buildSnapshot();
     });
   }
@@ -1839,9 +1843,6 @@ class DesktopHostService {
       this.activeOrchestration().runtimeEvents.syncPendingToolStates();
       this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       await this.flushDeferredRuntimeRefreshIfIdle();
-      if (!runtime.isBusy()) {
-        await this.refreshGitState();
-      }
       return this.buildSnapshot();
     });
   }
@@ -2002,9 +2003,6 @@ class DesktopHostService {
     this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
     await this.flushDeferredRuntimeRefreshIfIdle(bundle);
     await this.refreshTodoSnapshotForBundle(bundle);
-    if (!runtime.isBusy()) {
-      await this.refreshGitState();
-    }
     return this.buildSnapshot();
   }
 
@@ -2047,7 +2045,6 @@ class DesktopHostService {
     this.activeBundle().messageTimeline.beginAssistantSegment('initial');
     this.activeBundle().messageTimeline.materializeCompletedAssistantText(assistantText);
     await this.persistCurrentSessionIfNeeded();
-    await this.refreshGitState();
     return this.buildSnapshot();
   }
 
@@ -2064,9 +2061,6 @@ class DesktopHostService {
         await this.tickSession(active, { light: true });
       }
       this.syncActiveRuntimePointer();
-      if (this.sessionRegistry.allBusy((bundle) => bundle.runtime?.isBusy() === true).length === 0) {
-        await this.refreshGitState();
-      }
       this.startDreamCollectorIfNeeded();
       return this.buildSnapshot();
     });
@@ -2129,9 +2123,6 @@ class DesktopHostService {
       this.activeOrchestration().runtimeEvents.syncPendingToolStates();
       this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       await this.flushDeferredRuntimeRefreshIfIdle();
-      if (!runtime.isBusy()) {
-        await this.refreshGitState();
-      }
       return this.buildSnapshot();
     });
   }
@@ -2147,9 +2138,6 @@ class DesktopHostService {
       this.activeOrchestration().runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
       await this.persistCurrentSessionIfNeeded();
       await this.flushDeferredRuntimeRefreshIfIdle();
-      if (!runtime.isBusy()) {
-        await this.refreshGitState();
-      }
       return this.buildSnapshot();
     });
   }
@@ -2285,7 +2273,6 @@ class DesktopHostService {
       await this.ensureInitialized();
       const state = this.requireState();
       await writeWorkspaceTextFileToDisk(state.workspaceRoot, request);
-      await this.refreshGitState();
     });
   }
 
@@ -2573,6 +2560,8 @@ class DesktopHostService {
         return this.mergeWorktreeToMain();
       case 'pushGitBranch':
         return this.pushGitBranch();
+      case 'refreshGitSnapshot':
+        return this.refreshGitSnapshot();
       case 'abortConversation':
         return this.abortConversation();
       case 'continueAssistantCompletion': {
@@ -2719,7 +2708,7 @@ class DesktopHostService {
     ) {
       const currentState = this.requireState();
       currentState.config = config;
-      currentState.git = git;
+      currentState.git = applyGitRevision(git, currentState.git.revision ?? 0);
       currentState.workspaceBinding = workspaceBinding;
       currentState.plan = await loadDesktopPlanSnapshot(
         currentState.metadata.planMetadata.path,
@@ -2756,7 +2745,7 @@ class DesktopHostService {
       workspaceRoot,
       workspaceBinding,
       config,
-      git,
+      git: applyGitRevision(git, 0, { reset: true }),
       metadata,
       plan,
       extensionsList: state?.extensionsList ?? [],
@@ -3005,12 +2994,43 @@ class DesktopHostService {
     };
   }
 
-  private async refreshGitState(): Promise<void> {
+  private async refreshGitState(options: { resetRevision?: boolean } = {}): Promise<void> {
     const state = this.state;
     if (!state) {
       return;
     }
-    state.git = await readWorkspaceGitSnapshot(state.workspaceRoot);
+    const snapshot = await readWorkspaceGitSnapshot(state.workspaceRoot);
+    state.git = applyGitRevision(snapshot, state.git.revision ?? 0, {
+      reset: options.resetRevision === true,
+    });
+  }
+
+  private async runCoalescedGitRefresh(options: { resetRevision?: boolean } = {}): Promise<void> {
+    if (this.gitRefreshInFlight) {
+      this.gitRefreshQueued = true;
+      return this.gitRefreshInFlight;
+    }
+
+    this.gitRefreshInFlight = (async () => {
+      try {
+        do {
+          this.gitRefreshQueued = false;
+          await this.refreshGitState(options);
+        } while (this.gitRefreshQueued);
+      } finally {
+        this.gitRefreshInFlight = null;
+      }
+    })();
+
+    return this.gitRefreshInFlight;
+  }
+
+  async refreshGitSnapshot(): Promise<DesktopSnapshot> {
+    await this.runCoalescedGitRefresh();
+    if (!this.state) {
+      throw new Error(i18n.t('error.hostNotReady'));
+    }
+    return this.buildSnapshot();
   }
 
   private startDreamCollectorIfNeeded(): void {
@@ -3682,7 +3702,11 @@ class DesktopHostService {
     }
 
     state.workspaceRoot = resolved;
-    state.git = await readWorkspaceGitSnapshot(resolved);
+    state.git = applyGitRevision(
+      await readWorkspaceGitSnapshot(resolved),
+      0,
+      { reset: true },
+    );
     bundle.workspaceRoot = resolved;
     await this.syncPlanStateForBundle(bundle);
     await this.refreshRuntimeForBundle(bundle);

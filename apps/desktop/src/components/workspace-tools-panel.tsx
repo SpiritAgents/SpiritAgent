@@ -84,7 +84,6 @@ export type WorkspaceToolsDockProps = {
   commitChanges: (request: CommitChangesRequest) => Promise<boolean>;
   pushGitBranch: () => Promise<boolean>;
   mergeWorktreeToMain: () => Promise<boolean>;
-  gitRefreshNonce?: number;
   className?: string;
 };
 
@@ -135,7 +134,6 @@ export function WorkspaceToolsDock({
   commitChanges,
   pushGitBranch,
   mergeWorktreeToMain,
-  gitRefreshNonce = 0,
   className,
 }: WorkspaceToolsDockProps) {
   const { t } = useTranslation();
@@ -463,7 +461,6 @@ export function WorkspaceToolsDock({
                       <WorkspaceGitTab
                         gitSnapshot={gitSnapshot}
                         isActive={selected}
-                        refreshNonce={gitRefreshNonce}
                         commitBusy={gitCommitBusy}
                         runtimeError={gitRuntimeError}
                         readGitWorkingTree={readGitWorkingTree}

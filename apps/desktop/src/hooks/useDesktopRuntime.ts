@@ -84,6 +84,7 @@ type BusyAction =
   | "git";
 
 const DREAM_IDLE_POLL_INTERVAL_MS = 30_000;
+const GIT_STATE_POLL_INTERVAL_MS = 5_000;
 const COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS = 400;
 
 type SessionUiState = {
@@ -854,6 +855,63 @@ export function useDesktopRuntime() {
       }
     };
   }, [api, applySnapshot, refreshSessions, snapshot]);
+
+  useEffect(() => {
+    if (!api?.refreshGitSnapshot) {
+      return;
+    }
+    if (!snapshot || snapshot.workspaceBinding !== 'project' || !snapshot.git.isRepository) {
+      return;
+    }
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let inFlight = false;
+
+    const tick = async () => {
+      if (cancelled) {
+        return;
+      }
+      if (inFlight) {
+        timer = setTimeout(tick, GIT_STATE_POLL_INTERVAL_MS);
+        return;
+      }
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        timer = setTimeout(tick, GIT_STATE_POLL_INTERVAL_MS);
+        return;
+      }
+
+      inFlight = true;
+      try {
+        const next = await api.refreshGitSnapshot();
+        if (!cancelled) {
+          applySnapshot(next);
+        }
+      } catch {
+        // 后台轮询失败不打断主流程；用户操作触发的 Git API 仍会 surfacing 错误。
+      } finally {
+        inFlight = false;
+        if (!cancelled) {
+          timer = setTimeout(tick, GIT_STATE_POLL_INTERVAL_MS);
+        }
+      }
+    };
+
+    timer = setTimeout(tick, GIT_STATE_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [
+    api,
+    applySnapshot,
+    snapshot?.workspaceBinding,
+    snapshot?.git.isRepository,
+    snapshot?.workspaceRoot,
+  ]);
 
   const updateQuestionDraft = useCallback(
     (questionId: string, updater: (draft: QuestionDraft) => QuestionDraft) => {

@@ -711,6 +711,11 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/git/refresh-snapshot') {
+    writeJson(request, response, 200, await runHostCommand('refreshGitSnapshot'));
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/git/commit') {
     writeJson(
       request,
