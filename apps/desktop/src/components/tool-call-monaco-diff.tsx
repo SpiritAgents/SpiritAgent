@@ -4,7 +4,7 @@ import * as monaco from 'monaco-editor';
 import 'monaco-editor/min/vs/editor/editor.main.css';
 
 import { ensureMonacoWorkers } from '@/lib/monaco-environment';
-import { syncMonacoThemeFromDocument } from '@/lib/monaco-theme';
+import { syncMonacoThemeForToolCallDiff } from '@/lib/monaco-theme';
 
 export type ToolCallMonacoDiffProps = {
   relativePath: string;
@@ -36,7 +36,7 @@ export function ToolCallMonacoDiff({
       return;
     }
 
-    syncMonacoThemeFromDocument();
+    syncMonacoThemeForToolCallDiff();
     languageRef.current = languageId;
     pathRef.current = relativePath;
 
@@ -64,7 +64,7 @@ export function ToolCallMonacoDiff({
     diffEditorRef.current = diffEditor;
 
     const obs = new MutationObserver(() => {
-      syncMonacoThemeFromDocument();
+      syncMonacoThemeForToolCallDiff();
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
@@ -113,7 +113,7 @@ export function ToolCallMonacoDiff({
   return (
     <div
       ref={containerRef}
-      className="h-[min(420px,50vh)] min-h-[120px] w-full min-w-0 overflow-hidden rounded-md border border-border/20"
+      className="h-[min(420px,50vh)] min-h-[120px] w-full min-w-0 overflow-hidden rounded-md border border-border/20 bg-background"
       data-tool-diff-path={pathRef.current}
     />
   );

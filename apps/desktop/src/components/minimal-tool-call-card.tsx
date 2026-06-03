@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -6,9 +6,11 @@ import { useTranslation } from "react-i18next";
 import { EditFileLineDeltaBadge } from "@/components/edit-file-line-delta-badge";
 import { ToolCallMonacoDiff } from "@/components/tool-call-monaco-diff";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
+import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { resolveToolLineDelta } from "@/lib/edit-file-line-delta";
 import {
+  type FileToolDiffSource,
   isFileDiffTool,
   resolveFileToolDiffSource,
   resolvePlanRelativePath,
@@ -118,6 +120,8 @@ function FileToolDiffExpandedBody({
 }) {
   const { t } = useTranslation();
   const diffHost = useToolCallDiffHost();
+  const diffMounted = useCollapsibleChildMount(open);
+  const cachedDiffRef = useRef<FileToolDiffSource | null>(null);
   const [planBaselineText, setPlanBaselineText] = useState<string | undefined>();
 
   const planRelativePath = useMemo(() => {
@@ -173,6 +177,21 @@ function FileToolDiffExpandedBody({
     ],
   );
 
+  if (diffResult && typeof diffResult === "object") {
+    cachedDiffRef.current = diffResult;
+  }
+
+  const displayDiff =
+    diffResult && typeof diffResult === "object"
+      ? diffResult
+      : diffMounted
+        ? cachedDiffRef.current
+        : null;
+
+  if (!diffMounted) {
+    return null;
+  }
+
   if (diffResult === "truncated") {
     return (
       <div className="space-y-2">
@@ -188,14 +207,14 @@ function FileToolDiffExpandedBody({
     );
   }
 
-  if (diffResult && typeof diffResult === "object") {
+  if (displayDiff) {
     return (
       <ToolCallMonacoDiff
-        relativePath={diffResult.relativePath}
-        languageId={diffResult.languageId}
-        original={diffResult.original}
-        modified={diffResult.modified}
-        followTail={tool.phase === "preview"}
+        relativePath={displayDiff.relativePath}
+        languageId={displayDiff.languageId}
+        original={displayDiff.original}
+        modified={displayDiff.modified}
+        followTail={open && tool.phase === "preview"}
       />
     );
   }
