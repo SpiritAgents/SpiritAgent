@@ -6,9 +6,13 @@ import {
   type SpiritLlmTransport,
   appendLlmToolResultMessage,
   appendLlmUserMessage,
+  buildApplyPatchFileToolsPromptSection,
+  buildProviderWebSearchPromptSection,
   continueLlmToolAgentState,
   extractLastLlmAssistantText,
   rebuildLlmToolAgentStateAfterCompaction,
+  shouldUseApplyPatchFileTools,
+  shouldUseProviderWebSearch,
   startLlmToolAgentState,
   truncateLlmHistoryForCompaction,
   truncateLlmToolAgentStateForContextRetry,
@@ -49,6 +53,13 @@ export function createDesktopRuntime(input: {
   workspaceRoot: string;
   basicInfo: LlmToolAgentBasicInfo;
 }): DesktopRuntime {
+  const applyPatchFileToolsPromptSection = resolveApplyPatchFileToolsPromptSection(
+    input.transportConfig,
+  );
+  const providerWebSearchPromptSection = resolveProviderWebSearchPromptSection(
+    input.transportConfig,
+  );
+
   return new AgentRuntime({
     config: input.transportConfig,
     llmTransport: input.llmTransport,
@@ -67,6 +78,8 @@ export function createDesktopRuntime(input: {
         input.dreamsContextText,
         input.todosContextText,
         input.basicInfo,
+        applyPatchFileToolsPromptSection,
+        providerWebSearchPromptSection,
       ),
     createContinuationState: (messages) =>
       continueLlmToolAgentState(
@@ -81,6 +94,8 @@ export function createDesktopRuntime(input: {
         input.dreamsContextText,
         input.todosContextText,
         input.basicInfo,
+        applyPatchFileToolsPromptSection,
+        providerWebSearchPromptSection,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -104,6 +119,8 @@ export function createDesktopRuntime(input: {
         input.dreamsContextText,
         input.todosContextText,
         input.basicInfo,
+        applyPatchFileToolsPromptSection,
+        providerWebSearchPromptSection,
       ),
     resolveWorkspaceFilesFromInput: (userInput) =>
       resolveWorkspaceFileReferenceAttachmentsFromInput(input.workspaceRoot, userInput),
@@ -121,4 +138,20 @@ export function cloneActiveSkills(skills: LlmActiveSkill[]): LlmActiveSkill[] {
     ...skill,
     resources: skill.resources.map((resource) => ({ ...resource })),
   }));
+}
+
+function resolveApplyPatchFileToolsPromptSection(
+  config: LlmTransportConfig,
+): string | undefined {
+  return config.transportKind === 'open-responses' && shouldUseApplyPatchFileTools(config)
+    ? buildApplyPatchFileToolsPromptSection()
+    : undefined;
+}
+
+function resolveProviderWebSearchPromptSection(
+  config: LlmTransportConfig,
+): string | undefined {
+  return shouldUseProviderWebSearch(config)
+    ? buildProviderWebSearchPromptSection(config)
+    : undefined;
 }
