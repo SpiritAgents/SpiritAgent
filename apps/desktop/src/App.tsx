@@ -1802,8 +1802,8 @@ export default function App() {
     [compactionDemo.active, messages],
   );
   const isEmptySession = !compactionDemo.active && sessionMessages.length === 0;
-  const showWorkspaceBindingControls =
-    isEmptySession || snapshot?.workspaceBinding === "none";
+  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
+  const showWorkspaceBindingControls = isEmptySession;
   const conversationPendingAuxState = compactionDemo.active
     ? compactionDemo.pendingAuxState
     : snapshot?.conversation.pendingAuxState;
