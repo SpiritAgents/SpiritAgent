@@ -204,7 +204,7 @@ function mergeParentRowIndex(
   return undefined;
 }
 
-type RowGeometry = { tops: number[]; heights: number[]; total: number };
+type RowGeometry = { tops: number[]; heights: number[]; centers: number[]; total: number };
 
 function CommitGraphGutter({
   rows,
@@ -221,7 +221,8 @@ function CommitGraphGutter({
     geometry && geometry.tops[i] !== undefined ? geometry.tops[i]! : rowTopY(i);
   const rowHeight = (i: number): number =>
     geometry && geometry.heights[i] !== undefined ? geometry.heights[i]! : ROW_HEIGHT_PX;
-  const rowCenter = (i: number): number => rowTop(i) + rowHeight(i) / 2;
+  const rowCenter = (i: number): number =>
+    geometry?.centers[i] !== undefined ? geometry.centers[i]! : rowTop(i) + rowHeight(i) / 2;
   const rowBottom = (i: number): number => rowTop(i) + rowHeight(i);
   const height = geometry ? geometry.total : rows.length * ROW_HEIGHT_PX;
   const builder = new LanePathBuilder();
@@ -572,10 +573,23 @@ export function GitCommitGraph({
       const children = Array.from(container.children) as HTMLElement[];
       const tops: number[] = [];
       const heights: number[] = [];
+      const centers: number[] = [];
       for (let i = 0; i < rows.length; i += 1) {
         const el = children[i];
-        tops.push(el ? el.offsetTop : i * ROW_HEIGHT_PX);
-        heights.push(el ? el.offsetHeight : ROW_HEIGHT_PX);
+        const top = el ? el.offsetTop : i * ROW_HEIGHT_PX;
+        const height = el ? el.offsetHeight : ROW_HEIGHT_PX;
+        tops.push(top);
+        heights.push(height);
+        if (el) {
+          const button = el.querySelector("button");
+          if (button instanceof HTMLElement) {
+            centers.push(top + button.offsetTop + button.offsetHeight / 2);
+          } else {
+            centers.push(top + height / 2);
+          }
+        } else {
+          centers.push(top + height / 2);
+        }
       }
       setGeometry((prev) => {
         const total = container.offsetHeight;
@@ -584,11 +598,12 @@ export function GitCommitGraph({
           prev.total === total &&
           prev.tops.length === tops.length &&
           prev.tops.every((v, i) => v === tops[i]) &&
-          prev.heights.every((v, i) => v === heights[i])
+          prev.heights.every((v, i) => v === heights[i]) &&
+          prev.centers.every((v, i) => v === centers[i])
         ) {
           return prev;
         }
-        return { tops, heights, total };
+        return { tops, heights, centers, total };
       });
     };
     measure();
