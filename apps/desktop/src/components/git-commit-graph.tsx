@@ -548,6 +548,7 @@ export function GitCommitGraph({
   const rowsContainerRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const loadMoreInFlightRef = useRef(false);
   const [geometry, setGeometry] = useState<RowGeometry | null>(null);
   const [hoveredRow, setHoveredRow] = useState<GitCommitGraphRow | null>(null);
   // Keeps the anchor row mounted through Radix's close animation so the
@@ -658,6 +659,10 @@ export function GitCommitGraph({
         if (!entries.some((entry) => entry.isIntersecting)) {
           return;
         }
+        if (loadMoreInFlightRef.current || loadingMore) {
+          return;
+        }
+        loadMoreInFlightRef.current = true;
         onLoadMore();
       },
       { root, rootMargin: "160px 0px" },
@@ -665,6 +670,12 @@ export function GitCommitGraph({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasMore, loadingMore, onLoadMore, rows.length]);
+
+  useEffect(() => {
+    if (!loadingMore) {
+      loadMoreInFlightRef.current = false;
+    }
+  }, [loadingMore]);
 
   useLayoutEffect(() => {
     const container = rowsContainerRef.current;

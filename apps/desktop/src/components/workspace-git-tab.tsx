@@ -81,6 +81,7 @@ export function WorkspaceGitTab({
   const [changesPaneHeightPx, setChangesPaneHeightPx] = useState<number | null>(null);
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const splitDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const historyLoadMoreInFlightRef = useRef(false);
 
   const clampChangesPaneHeight = useCallback((height: number): number => {
     const container = splitContainerRef.current;
@@ -189,12 +190,13 @@ export function WorkspaceGitTab({
   }, [readGitHistory]);
 
   const loadMoreHistory = useCallback(async () => {
-    if (loadingMoreHistory || loadingHistory) {
+    if (historyLoadMoreInFlightRef.current || loadingMoreHistory || loadingHistory) {
       return;
     }
     if (!history?.hasMore || history.logCommits.length === 0) {
       return;
     }
+    historyLoadMoreInFlightRef.current = true;
     setLoadingMoreHistory(true);
     setHistoryError("");
     try {
@@ -206,21 +208,31 @@ export function WorkspaceGitTab({
     } catch (loadError) {
       setHistoryError(describeError(loadError));
     } finally {
+      historyLoadMoreInFlightRef.current = false;
       setLoadingMoreHistory(false);
     }
   }, [history, loadingHistory, loadingMoreHistory, readGitHistory]);
-
-  const reloadAll = useCallback(() => {
-    void loadWorkingTree();
-    void loadHistory();
-  }, [loadWorkingTree, loadHistory]);
 
   useEffect(() => {
     if (!isActive) {
       return;
     }
-    reloadAll();
-  }, [isActive, reloadAll, refreshNonce, localRefreshNonce, gitSnapshot?.hasChanges, gitSnapshot?.branch]);
+    void loadHistory();
+  }, [isActive, loadHistory, refreshNonce, localRefreshNonce, gitSnapshot?.branch]);
+
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    void loadWorkingTree();
+  }, [
+    isActive,
+    loadWorkingTree,
+    refreshNonce,
+    localRefreshNonce,
+    gitSnapshot?.hasChanges,
+    gitSnapshot?.branch,
+  ]);
 
   useEffect(() => {
     return () => {

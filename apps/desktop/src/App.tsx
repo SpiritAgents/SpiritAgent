@@ -1874,6 +1874,8 @@ export default function App() {
   );
   const activeWorkspaceToolTabIdRef = useRef(activeWorkspaceToolTabId);
   activeWorkspaceToolTabIdRef.current = activeWorkspaceToolTabId;
+  const workspaceToolTabsRef = useRef(workspaceToolTabs);
+  workspaceToolTabsRef.current = workspaceToolTabs;
   const workspaceToolsHostSyncedRef = useRef<typeof runtime.hostKind | null>(null);
   const browserTabEnabled = runtime.hostKind === "electron";
   const [workspaceFilesPlanRevealNonce, setWorkspaceFilesPlanRevealNonce] = useState(0);
@@ -1912,20 +1914,18 @@ export default function App() {
   const openWorkspaceFile = useCallback(
     (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => {
       const viewMode = options?.viewMode ?? "edit";
-      setWorkspaceToolsOpen(true);
-      setWorkspaceToolTabs((prevTabs) => {
-        const navigation = buildOpenWorkspaceFileNavigation({
-          tabs: prevTabs,
-          activeTabId: activeWorkspaceToolTabIdRef.current,
-          request: { relativePath, viewMode },
-        });
-        setActiveWorkspaceToolTabId(navigation.activeTabId);
-        setWorkspaceFileRevealTargetId(navigation.filesTabId);
-        setWorkspaceFileRevealPath(relativePath);
-        setWorkspaceFileRevealViewMode(viewMode);
-        setWorkspaceFileRevealNonce((value) => value + 1);
-        return navigation.tabs;
+      const navigation = buildOpenWorkspaceFileNavigation({
+        tabs: workspaceToolTabsRef.current,
+        activeTabId: activeWorkspaceToolTabIdRef.current,
+        request: { relativePath, viewMode },
       });
+      setWorkspaceToolsOpen(true);
+      setWorkspaceToolTabs(navigation.tabs);
+      setActiveWorkspaceToolTabId(navigation.activeTabId);
+      setWorkspaceFileRevealTargetId(navigation.filesTabId);
+      setWorkspaceFileRevealPath(relativePath);
+      setWorkspaceFileRevealViewMode(viewMode);
+      setWorkspaceFileRevealNonce((value) => value + 1);
     },
     [],
   );
