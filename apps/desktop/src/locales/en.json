@@ -419,7 +419,7 @@
     "openSystemTerminal": "Open System Terminal",
     "files": "Files",
     "shell": "Shell",
-    "git": "Git",
+    "gitTab": "Git",
     "browser": "Browser",
     "browserPlaceholder": "Browser tab loading…",
     "browserElectronOnly": "Browser is only available in the Electron desktop version.",

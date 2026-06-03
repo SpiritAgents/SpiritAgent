@@ -14,7 +14,7 @@ export type WorkspaceToolTab = {
 const KIND_BASE_LABEL_KEY: Record<WorkspaceToolTabKind, string> = {
   files: 'workspace.files',
   shell: 'workspace.shell',
-  git: 'workspace.git',
+  git: 'workspace.gitTab',
   browser: 'workspace.browser',
 };
 
