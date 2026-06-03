@@ -38,21 +38,30 @@ test('shouldUseAlibabaNativeTools for alibaba chat and responses', () => {
   );
 });
 
-test('shouldUseAlibabaChatCompletionsNativeTools requires streaming for full bundle', () => {
+test('shouldUseAlibabaChatCompletionsNativeTools only for alibaba chat transport', () => {
   assert.equal(
-    shouldUseAlibabaChatCompletionsNativeTools(
-      { apiKey: 'k', model: 'qwen3-max', llmVendor: 'alibaba' },
-      { streaming: true },
-    ),
+    shouldUseAlibabaChatCompletionsNativeTools({
+      apiKey: 'k',
+      model: 'qwen3-max',
+      llmVendor: 'alibaba',
+    }),
     true,
   );
   assert.equal(
-    shouldUseAlibabaChatCompletionsNativeTools(
-      { apiKey: 'k', model: 'qwen3-max', llmVendor: 'alibaba' },
-      { streaming: false },
-    ),
+    shouldUseAlibabaChatCompletionsNativeTools({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'qwen3-max',
+      llmVendor: 'alibaba',
+    }),
     false,
   );
+});
+
+test('buildAlibabaChatCompletionsExtraBody search-only when not streaming', () => {
+  assert.deepEqual(buildAlibabaChatCompletionsExtraBody({ streaming: false }), {
+    enable_search: true,
+  });
 });
 
 test('shouldUseAlibabaResponsesNativeTools only for open-responses alibaba', () => {
