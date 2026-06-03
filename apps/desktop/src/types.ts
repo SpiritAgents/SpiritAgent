@@ -783,6 +783,10 @@ export interface ToolBlockSnapshot {
   headlineDetail?: string;
   /** create_file / create_plan / edit_file / delete_file: line +/- counts on tool card headline. */
   editLineDelta?: { added: number; removed: number };
+  /** delete_file：删除前冻结的全文，供展开 Diff（完成后磁盘已无文件）。 */
+  deleteFileBaselineText?: string;
+  /** preview 阶段完整参数 JSON，供展开区流式 Diff；完成后清除。 */
+  streamingArgumentsJson?: string;
   detailLines: string[];
   argsExcerpt?: string;
   outputExcerpt?: string;
