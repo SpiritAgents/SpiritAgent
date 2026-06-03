@@ -447,7 +447,9 @@
       "noHistory": "暂无提交记录。",
       "copySha": "复制 SHA",
       "copiedSha": "已复制",
-      "resizeChangesHistory": "调整更改与历史区域高度"
+      "resizeChangesHistory": "调整更改与历史区域高度",
+      "push": "推送",
+      "moreActions": "更多 Git 操作"
     },
     "resizeToolsWidth": "调整工具区宽度",
     "workspaceTools": "工作区工具",
