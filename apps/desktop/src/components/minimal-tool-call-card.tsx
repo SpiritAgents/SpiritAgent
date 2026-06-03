@@ -1,10 +1,17 @@
 import { useMemo, useState } from "react";
 
 import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { EditFileLineDeltaBadge } from "@/components/edit-file-line-delta-badge";
+import { ToolCallMonacoDiff } from "@/components/tool-call-monaco-diff";
+import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { resolveToolLineDelta } from "@/lib/edit-file-line-delta";
+import {
+  isFileDiffTool,
+  resolveFileToolDiffSource,
+} from "@/lib/file-tool-diff-source";
 import {
   genericExpandableDetailLines,
   getToolCallSummaryParts,
@@ -101,6 +108,64 @@ function GenericToolExpandedBody({ tool }: { tool: ToolBlockSnapshot }) {
   );
 }
 
+function FileToolDiffExpandedBody({
+  tool,
+  open,
+}: {
+  tool: ToolBlockSnapshot;
+  open: boolean;
+}) {
+  const { t } = useTranslation();
+  const diffHost = useToolCallDiffHost();
+
+  const diffResult = useMemo(
+    () =>
+      resolveFileToolDiffSource(tool, {
+        open,
+        workspaceRoot: diffHost?.workspaceRoot,
+      }),
+    [
+      open,
+      tool.toolCallId,
+      tool.toolName,
+      tool.phase,
+      tool.argsExcerpt,
+      tool.deleteFileBaselineText,
+      open ? tool.streamingArgumentsJson : undefined,
+      diffHost?.workspaceRoot,
+    ],
+  );
+
+  if (diffResult === "truncated") {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs leading-relaxed text-muted-foreground">{t("tool.diffArgsTruncated")}</p>
+        <GenericToolExpandedBody tool={tool} />
+      </div>
+    );
+  }
+
+  if (diffResult === "too-large") {
+    return (
+      <p className="text-xs leading-relaxed text-muted-foreground">{t("tool.diffFileTooLarge")}</p>
+    );
+  }
+
+  if (diffResult && typeof diffResult === "object") {
+    return (
+      <ToolCallMonacoDiff
+        relativePath={diffResult.relativePath}
+        languageId={diffResult.languageId}
+        original={diffResult.original}
+        modified={diffResult.modified}
+        followTail={tool.phase === "preview"}
+      />
+    );
+  }
+
+  return <GenericToolExpandedBody tool={tool} />;
+}
+
 function ShellToolExpandedBody({
   tool,
   command,
@@ -138,6 +203,7 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
   const summary = getToolCallSummaryParts(tool);
   const shimmerActive = toolCallPhaseShowsShimmer(tool.phase);
   const isShell = tool.toolName === "run_shell_command";
+  const isFileDiff = isFileDiffTool(tool.toolName);
   const shellCommand = useMemo(
     () => (isShell ? tool.headlineDetail?.trim() || parseShellCommand(tool) : undefined),
     [isShell, tool.argsExcerpt, tool.detailLines, tool.headlineDetail],
@@ -188,6 +254,8 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
         <div className="pt-1.5">
           {isShell ? (
             <ShellToolExpandedBody tool={tool} command={shellCommand} />
+          ) : isFileDiff ? (
+            <FileToolDiffExpandedBody tool={tool} open={open} />
           ) : (
             <GenericToolExpandedBody tool={tool} />
           )}

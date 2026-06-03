@@ -628,6 +628,8 @@
     "create": "创建",
     "edit": "编辑",
     "delete": "删除",
+    "diffArgsTruncated": "无法展示 Diff：工具参数在会话记录中已被截断。",
+    "diffFileTooLarge": "无法展示 Diff：文件超过大小限制。",
     "regexPrefix": "正则: ",
     "search": "搜索",
     "match": "匹配",

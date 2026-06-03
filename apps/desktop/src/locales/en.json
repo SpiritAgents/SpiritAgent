@@ -628,6 +628,8 @@
     "create": "Create",
     "edit": "Edit",
     "delete": "Delete",
+    "diffArgsTruncated": "Diff preview unavailable: tool arguments were truncated in the transcript.",
+    "diffFileTooLarge": "Diff preview unavailable: file exceeds the size limit.",
     "regexPrefix": "Regex: ",
     "search": "Search",
     "match": "Match",

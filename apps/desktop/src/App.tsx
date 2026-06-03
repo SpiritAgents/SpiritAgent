@@ -100,6 +100,7 @@ import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { ComposerTodoCard } from "@/components/composer-todo-card";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
+import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-context";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import {
   isGenericPendingThinkingStatusText,
@@ -2828,6 +2829,12 @@ export default function App() {
                         CONVERSATION_MAX_W,
                       )}
                     >
+                      <ToolCallDiffHostProvider
+                        value={{
+                          workspaceRoot: snapshot?.workspaceRoot ?? "",
+                          readWorkspaceTextFile: runtime.readWorkspaceTextFile,
+                        }}
+                      >
                       <div
                         key={composerSessionKey || "__no-session__"}
                         data-spirit-surface="conversation-list"
@@ -2916,6 +2923,7 @@ export default function App() {
                           );
                         })}
                       </div>
+                      </ToolCallDiffHostProvider>
                     </div>
                   ) : null}
                 </div>
