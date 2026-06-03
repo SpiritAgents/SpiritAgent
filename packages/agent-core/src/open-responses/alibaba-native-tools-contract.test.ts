@@ -22,9 +22,9 @@ test('alibaba responses provider options enable thinking', () => {
   assert.equal(options.alibaba?.enable_thinking, true);
 });
 
-test('alibaba responses trace lists three builtin tools with host function tools', () => {
+test('alibaba responses trace lists builtin tools with host function tools', () => {
   const traceTools = buildResponsesTraceTools(alibabaResponsesConfig, [demoToolDefinition()]);
-  for (const type of ['web_search', 'web_extractor', 'code_interpreter'] as const) {
+  for (const type of ['web_search', 'code_interpreter'] as const) {
     assert.ok(
       traceTools.some(
         (tool) =>

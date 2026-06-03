@@ -102,11 +102,11 @@ test('first answer text chunk settles in-flight post-tool thinking without dupli
     detailLines: [],
     argsExcerpt: '{}',
   });
-  timeline.upsertToolMessage('extract-1', {
-    toolCallId: 'extract-1',
-    toolName: 'web_extractor',
+  timeline.upsertToolMessage('fetch-1', {
+    toolCallId: 'fetch-1',
+    toolName: 'web_fetch',
     phase: 'succeeded',
-    headline: 'Web extract',
+    headline: 'Fetch',
     detailLines: [],
     argsExcerpt: '{}',
   });
@@ -124,7 +124,7 @@ test('first answer text chunk settles in-flight post-tool thinking without dupli
     'user:search DeepSeek',
     'thinking:Need web search first.',
     'tool:web-1:succeeded',
-    'tool:extract-1:succeeded',
+    'tool:fetch-1:succeeded',
     'thinking:Fetched page content; can summarize now.',
     'assistant:DeepSeek is at V4.',
   ]);
@@ -148,11 +148,11 @@ test('inter-tool thinking stays between provider builtin tool cards', () => {
     'Search results mention versions; need a page fetch.',
     'before-next-tool',
   );
-  timeline.upsertToolMessage('extract-1', {
-    toolCallId: 'extract-1',
-    toolName: 'web_extractor',
+  timeline.upsertToolMessage('fetch-1', {
+    toolCallId: 'fetch-1',
+    toolName: 'web_fetch',
     phase: 'succeeded',
-    headline: 'Web extract',
+    headline: 'Fetch',
     detailLines: [],
     argsExcerpt: '{}',
   });
@@ -166,7 +166,7 @@ test('inter-tool thinking stays between provider builtin tool cards', () => {
     'thinking:Need web search first.',
     'tool:web-1:succeeded',
     'thinking:Search results mention versions; need a page fetch.',
-    'tool:extract-1:succeeded',
+    'tool:fetch-1:succeeded',
     'thinking:Fetched page content; can summarize now.',
     'assistant:DeepSeek is at V4.',
   ]);

@@ -634,7 +634,6 @@
     "search": "搜索",
     "webSearch": "联网搜索",
     "webSearchSourceCount": "{{count}} 个来源",
-    "webExtract": "网页抓取",
     "codeInterpreter": "代码解释器",
     "match": "匹配",
     "fetch": "抓取",

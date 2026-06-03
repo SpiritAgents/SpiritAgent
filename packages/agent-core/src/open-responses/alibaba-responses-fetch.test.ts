@@ -31,8 +31,8 @@ test('alibaba responses fetch merges builtin tools', async () => {
 
   const tools = capturedBody?.tools as Array<{ type?: string }> | undefined;
   assert.ok(tools?.some((tool) => tool.type === 'web_search'));
-  assert.ok(tools?.some((tool) => tool.type === 'web_extractor'));
   assert.ok(tools?.some((tool) => tool.type === 'code_interpreter'));
+  assert.equal(tools?.some((tool) => tool.type === 'web_extractor'), false);
   assert.ok(tools?.some((tool) => tool.type === 'function'));
 });
 
@@ -49,7 +49,7 @@ test('alibaba responses fetch does not duplicate builtin tools', async () => {
     body: JSON.stringify({
       model: 'qwen3-max',
       input: [],
-      tools: [{ type: 'web_search' }, { type: 'web_extractor' }, { type: 'code_interpreter' }],
+      tools: [{ type: 'web_search' }, { type: 'code_interpreter' }],
     }),
   });
 

@@ -92,12 +92,12 @@ test('buildAlibabaChatCompletionsExtraBody streaming bundle', () => {
   assert.deepEqual(body.search_options, { search_strategy: 'agent_max' });
 });
 
-test('buildAlibabaResponsesBuiltinTools returns three builtin types', () => {
+test('buildAlibabaResponsesBuiltinTools returns two builtin types', () => {
   const tools = buildAlibabaResponsesBuiltinTools();
-  assert.equal(tools.length, 3);
+  assert.equal(tools.length, 2);
   assert.deepEqual(
     tools.map((tool) => tool.type),
-    ['web_search', 'web_extractor', 'code_interpreter'],
+    ['web_search', 'code_interpreter'],
   );
 });
 
@@ -112,7 +112,6 @@ test('mergeAlibabaResponsesBuiltinTools does not duplicate', () => {
       : undefined))
     .filter((type): type is string => typeof type === 'string');
   assert.equal(types.filter((type) => type === 'web_search').length, 1);
-  assert.ok(types.includes('web_extractor'));
   assert.ok(types.includes('code_interpreter'));
   assert.ok(types.includes('function'));
 });
