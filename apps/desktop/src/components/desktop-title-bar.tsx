@@ -12,8 +12,8 @@ const MENU_ENTRIES = [
   { labelKey: "titleBar.help", section: "help" as const },
 ];
 
-/** 与 [`App.tsx`](../App.tsx) 侧栏壳层宽度一致 */
-const SESSION_SIDEBAR_WIDTH_CLASS = "w-[min(16rem,40vw)]";
+/** 与 [`App.tsx`](../App.tsx) 侧栏壳层最小宽度一致；顶栏菜单区可 `w-max` 超出该值以免裁切 Help 等项 */
+const SESSION_SIDEBAR_WIDTH_MIN_CLASS = "min-w-[min(16rem,40vw)]";
 
 function popupMenuAtAnchor(
   el: HTMLElement,
@@ -75,7 +75,7 @@ function TitleBarMenuCluster() {
     <>
       <TitleBarAppIcon />
       <nav
-        className="electron-no-drag flex items-center gap-0.5 text-[13px] leading-none"
+        className="electron-no-drag flex shrink-0 items-center gap-0.5 text-[13px] leading-none"
         aria-label={t('titleBar.appMenu')}
       >
         {MENU_ENTRIES.map(({ labelKey, section }) => (
@@ -107,7 +107,9 @@ export function DesktopTitleBar({ useMicaBackdrop, sessionSidebarOpen }: Desktop
       <div
         className={cn(
           "flex h-full min-h-0 shrink-0 items-center gap-1 pl-2",
-          sessionSidebarOpen ? SESSION_SIDEBAR_WIDTH_CLASS : "min-w-0 flex-1",
+          sessionSidebarOpen
+            ? cn(SESSION_SIDEBAR_WIDTH_MIN_CLASS, "w-max max-w-[calc(100%-9rem)]")
+            : "min-w-0 flex-1",
           titleBarSurfaceClass(useMicaBackdrop, false, "sidebar"),
         )}
       >
