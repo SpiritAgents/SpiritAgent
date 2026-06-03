@@ -700,7 +700,6 @@ function createAiSdkMoonshotProvider(config: OpenAiTransportConfig) {
     const moonshotMessages = requestUrl.includes('/chat/completions')
       ? takeMoonshotChatCompletionMessages()
       : undefined;
-
     return fetch(input, {
       ...init,
       body: JSON.stringify({
