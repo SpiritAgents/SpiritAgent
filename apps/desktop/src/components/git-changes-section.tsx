@@ -23,6 +23,7 @@ export type GitChangesSectionProps = {
   mergeBusy?: boolean;
   mergeButtonFlashMerged?: boolean;
   onOpenMergeDialog?: () => void;
+  onOpenChangedFile?: (relativePath: string) => void;
   className?: string;
 };
 
@@ -51,34 +52,47 @@ function splitChangePath(path: string): { fileName: string; dirLabel: string } {
   };
 }
 
-// TODO: 点击变更行打开工作区代码编辑器并定位到该文件（hover 样式参考 Git 提交历史行）
-function ChangeRow({ change }: { change: GitWorkingTreeChange }) {
+function ChangeRow({
+  change,
+  onOpen,
+}: {
+  change: GitWorkingTreeChange;
+  onOpen?: (relativePath: string) => void;
+}) {
   const { fileName, dirLabel } = splitChangePath(change.path);
   const Icon = workspaceExplorerIcon(fileName, "file");
   const statusLabel = change.code.trim() || "·";
+  const clickable = Boolean(onOpen);
 
   return (
-    <li className="flex min-w-0 items-center gap-1.5 px-2 py-1 text-xs">
-      <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-        <span className="shrink-0 truncate text-foreground/90" title={change.path}>
-          {fileName}
-        </span>
-        {dirLabel ? (
-          <span className="min-w-0 truncate text-[10px] text-muted-foreground" title={dirLabel}>
-            {dirLabel}
-          </span>
-        ) : null}
-      </div>
-      <span
+    <li className="min-w-0">
+      <button
+        type="button"
+        disabled={!clickable}
         className={cn(
-          "ml-1 shrink-0 font-mono text-[10px] font-medium tabular-nums",
-          statusCodeClass(change.code),
+          "flex w-full min-w-0 items-center gap-1.5 px-2 py-1 text-left text-xs",
+          clickable && "cursor-pointer hover:bg-muted/30",
         )}
-        title={change.code}
+        title={change.path}
+        onClick={() => onOpen?.(change.path)}
       >
-        {statusLabel}
-      </span>
+        <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+          <span className="shrink-0 truncate text-foreground/90">{fileName}</span>
+          {dirLabel ? (
+            <span className="min-w-0 truncate text-[10px] text-muted-foreground">{dirLabel}</span>
+          ) : null}
+        </div>
+        <span
+          className={cn(
+            "ml-1 shrink-0 font-mono text-[10px] font-medium tabular-nums",
+            statusCodeClass(change.code),
+          )}
+          title={change.code}
+        >
+          {statusLabel}
+        </span>
+      </button>
     </li>
   );
 }
@@ -97,6 +111,7 @@ export function GitChangesSection({
   mergeBusy = false,
   mergeButtonFlashMerged = false,
   onOpenMergeDialog,
+  onOpenChangedFile,
   className,
 }: GitChangesSectionProps) {
   const { t } = useTranslation();
@@ -162,7 +177,11 @@ export function GitChangesSection({
           <ScrollArea className="h-full max-h-48">
             <ul className="py-1">
               {changes.map((change) => (
-                <ChangeRow key={`${change.code}:${change.path}`} change={change} />
+                <ChangeRow
+                  key={`${change.code}:${change.path}`}
+                  change={change}
+                  onOpen={onOpenChangedFile}
+                />
               ))}
             </ul>
           </ScrollArea>

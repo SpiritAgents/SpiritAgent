@@ -173,6 +173,10 @@ import {
   focusFirstTabOfKind,
 } from "@/lib/workspace-tool-tabs";
 import { normalizeBrowserUrl } from "@/lib/browser-url";
+import {
+  buildOpenWorkspaceFileNavigation,
+  type WorkspaceEditorViewMode,
+} from "@/lib/workspace-editor-navigation";
 import type {
   AskQuestionsQuestionSpec,
   DesktopModelReasoningEffort,
@@ -1876,6 +1880,13 @@ export default function App() {
   const [workspaceFilesPlanRevealTargetId, setWorkspaceFilesPlanRevealTargetId] = useState<
     string | null
   >(null);
+  const [workspaceFileRevealNonce, setWorkspaceFileRevealNonce] = useState(0);
+  const [workspaceFileRevealTargetId, setWorkspaceFileRevealTargetId] = useState<string | null>(
+    null,
+  );
+  const [workspaceFileRevealPath, setWorkspaceFileRevealPath] = useState("");
+  const [workspaceFileRevealViewMode, setWorkspaceFileRevealViewMode] =
+    useState<WorkspaceEditorViewMode>("edit");
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(420);
 
   const openBrowserUrlInNewTab = useCallback((rawUrl: string) => {
@@ -1897,6 +1908,27 @@ export default function App() {
       setActiveWorkspaceToolTabId(nextActiveId);
     }
   }, [runtime.hostKind]);
+
+  const openWorkspaceFile = useCallback(
+    (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => {
+      const viewMode = options?.viewMode ?? "edit";
+      setWorkspaceToolsOpen(true);
+      setWorkspaceToolTabs((prevTabs) => {
+        const navigation = buildOpenWorkspaceFileNavigation({
+          tabs: prevTabs,
+          activeTabId: activeWorkspaceToolTabIdRef.current,
+          request: { relativePath, viewMode },
+        });
+        setActiveWorkspaceToolTabId(navigation.activeTabId);
+        setWorkspaceFileRevealTargetId(navigation.filesTabId);
+        setWorkspaceFileRevealPath(relativePath);
+        setWorkspaceFileRevealViewMode(viewMode);
+        setWorkspaceFileRevealNonce((value) => value + 1);
+        return navigation.tabs;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!runtime.apiReady || runtime.hostKind == null) {
@@ -3196,6 +3228,11 @@ export default function App() {
               }
               autoRevealPlanNonce={workspaceFilesPlanRevealNonce}
               planRevealTabId={workspaceFilesPlanRevealTargetId}
+              autoRevealFileNonce={workspaceFileRevealNonce}
+              fileRevealTabId={workspaceFileRevealTargetId}
+              fileRevealPath={workspaceFileRevealPath}
+              fileRevealViewMode={workspaceFileRevealViewMode}
+              onOpenWorkspaceFile={openWorkspaceFile}
               tabs={workspaceToolTabs}
               activeTabId={activeWorkspaceToolTabId}
               onTabsChange={setWorkspaceToolTabs}
