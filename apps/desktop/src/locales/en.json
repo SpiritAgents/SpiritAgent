@@ -633,6 +633,7 @@
     "regexPrefix": "Regex: ",
     "search": "Search",
     "webSearch": "Web search",
+    "webSearchSourceCount": "{{count}} sources",
     "webExtract": "Web extract",
     "codeInterpreter": "Code interpreter",
     "match": "Match",

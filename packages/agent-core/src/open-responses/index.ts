@@ -62,8 +62,14 @@ export {
   type ProviderWebSearchMode,
 } from './web-search-eligibility.js';
 export {
+  buildResponsesProviderBuiltinToolCardData,
+  isGenericProviderWebSearchQuery,
   isResponsesProviderBuiltinToolName,
+  parseProviderBuiltinToolUiFromArgumentsJson,
   resolveResponsesProviderBuiltinToolStreamPhase,
   resolveResponsesProviderBuiltinToolStreamPhaseFromArgumentsJson,
+  RESPONSES_PROVIDER_BUILTIN_SPIRIT_UI_KEY,
+  type ResponsesProviderBuiltinToolCardData,
+  type ResponsesProviderBuiltinToolSpiritUi,
   type ResponsesProviderBuiltinToolStreamPhase,
 } from './responses-provider-builtin-tools.js';

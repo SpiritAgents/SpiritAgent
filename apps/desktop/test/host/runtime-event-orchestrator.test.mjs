@@ -485,6 +485,44 @@ test('inter-tool thinking finalizes before the next provider builtin tool card',
   );
 });
 
+test('provider builtin tool card maps _spiritUi to headline detail and output excerpt', () => {
+  const harness = createHarness();
+  harness.pushUser('search DeepSeek');
+
+  const argumentsJson = JSON.stringify({
+    query: 'DeepSeek V4',
+    status: 'completed',
+    action: {
+      type: 'search',
+      query: 'DeepSeek V4',
+      sources: [{ type: 'url', url: 'https://www.deepseek.com/' }],
+    },
+    _spiritUi: {
+      sourceCount: 1,
+      inputExcerpt:
+        '{\n  "query": "DeepSeek V4",\n  "status": "completed",\n  "action": {\n    "type": "search",\n    "query": "DeepSeek V4"\n  }\n}',
+      outputExcerpt: '1. https://www.deepseek.com/',
+    },
+  });
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson,
+    },
+  ]);
+
+  const tool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
+  assert.equal(tool?.phase, 'succeeded');
+  assert.equal(tool?.headlineDetail, '1 个来源');
+  assert.equal(tool?.outputExcerpt, '1. https://www.deepseek.com/');
+  assert.match(tool?.argsExcerpt ?? '', /DeepSeek V4/);
+  assert.ok(tool?.outputExcerpt?.trim() && tool?.argsExcerpt?.trim());
+});
+
 test('web_search provider builtin preview completes when output_item.done reports completed', () => {
   const harness = createHarness();
   harness.pushUser('search DeepSeek generation');
