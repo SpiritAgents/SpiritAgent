@@ -107,8 +107,8 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     );
     const segmentsRef = useRef(segments);
     segmentsRef.current = segments;
-    const valueRef = useRef(value);
-    valueRef.current = value;
+    const isComposingRef = useRef(false);
+    const [isComposing, setIsComposing] = useState(false);
     const pendingCaretRef = useRef<SegmentCaret | null>(null);
     const skipExternalValueSyncRef = useRef(Boolean(initialSegments?.length));
     const skipRenderRef = useRef(false);
@@ -119,10 +119,6 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const loopEnabledRef = useRef(loopEnabled);
     const prevLoopEnabledRef = useRef(false);
     const hadLoopRef = useRef(hasLoopSegment(segments));
-
-    useEffect(() => {
-      valueRef.current = value;
-    }, [value]);
 
     useEffect(() => {
       loopEnabledRef.current = loopEnabled;
@@ -319,12 +315,17 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
     useLayoutEffect(() => {
       const div = divRef.current;
-      if (!div) {
+      if (!div || isComposingRef.current) {
         return;
       }
 
       const domSegs = domToSegments(div);
-      skipRenderRef.current = false;
+      if (skipRenderRef.current) {
+        skipRenderRef.current = false;
+        pendingCaretRef.current = null;
+        reportSelectionChange();
+        return;
+      }
 
       if (segmentsEqual(domSegs, segments)) {
         if (pendingCaretRef.current) {
@@ -351,25 +352,8 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
       const current = segmentsRef.current;
       const plain = segmentsToPlainText(current);
-      const div = divRef.current;
-      const domPlainRaw = div ? segmentsToPlainText(domToSegments(div)) : null;
-      const domPlain = domPlainRaw !== null ? normalizeComposerPlain(domPlainRaw) : null;
       const hasElements = current.some((s) => s.kind === "element");
       const attachmentCount = elementAttachments?.length ?? 0;
-
-      if (
-        domPlain !== null &&
-        isComposerPlainEmpty(domPlain) &&
-        !isComposerPlainEmpty(value) &&
-        attachmentCount === 0 &&
-        !hasLoopSegment(current) &&
-        !loopEnabled &&
-        !loopEnabledRef.current
-      ) {
-        skipExternalValueSyncRef.current = true;
-        commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
-        return;
-      }
 
       if (
         attachmentCount > 0 &&
@@ -397,18 +381,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         return;
       }
 
-      const normalizedPlain = normalizeComposerPlain(plain);
-      const normalizedValue = normalizeComposerPlain(value);
-      if (normalizedPlain === normalizedValue) {
-        if (domPlain !== null && domPlain !== normalizedPlain) {
-          skipExternalValueSyncRef.current = true;
-          if (isComposerPlainEmpty(domPlain)) {
-            commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
-          } else {
-            const next = syncSegmentsFromExternalValue(current, domPlain);
-            commitSegments(next, caretAtEnd(next));
-          }
-        }
+      if (normalizeComposerPlain(plain) === normalizeComposerPlain(value)) {
         return;
       }
 
@@ -420,9 +393,11 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       }
     }, [value, elementAttachments?.length, initialSegments, applySegments, commitSegments, loopEnabled]);
 
-    const applyDomSnapshot = useCallback(() => {
+    const syncFromDom = useCallback(() => {
       const div = divRef.current;
-      if (!div) return;
+      if (!div || isComposingRef.current) {
+        return;
+      }
       const caret = selectionToCaret(div, segmentsRef.current);
       let next = mergeAdjacentTextSegments(domToSegments(div));
       if (loopEnabledRef.current) {
@@ -442,18 +417,6 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         reportSelectionChange();
         return;
       }
-      let domPlain = normalizeComposerPlain(segmentsToPlainText(next));
-
-      if (isComposerPlainEmpty(domPlain)) {
-        next = emptySegments();
-        domPlain = "";
-      }
-
-      const segmentPlain = normalizeComposerPlain(segmentsToPlainText(segmentsRef.current));
-      const parentPlain = normalizeComposerPlain(valueRef.current);
-      if (domPlain === segmentPlain && domPlain === parentPlain) {
-        return;
-      }
       skipRenderRef.current = true;
       next = ensureLoopPinned(next);
       pendingCaretRef.current = caret;
@@ -465,8 +428,19 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     }, [commitSegments, notifyParents, reportSelectionChange, syncLoopEnabledFromSegments]);
 
     const handleInput = useCallback(() => {
-      applyDomSnapshot();
-    }, [applyDomSnapshot]);
+      syncFromDom();
+    }, [syncFromDom]);
+
+    const handleCompositionStart = useCallback(() => {
+      isComposingRef.current = true;
+      setIsComposing(true);
+    }, []);
+
+    const handleCompositionEnd = useCallback(() => {
+      isComposingRef.current = false;
+      setIsComposing(false);
+      syncFromDom();
+    }, [syncFromDom]);
 
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
@@ -489,10 +463,10 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     const handleKeyUp = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
         if ((e.key === "Backspace" || e.key === "Delete") && !e.defaultPrevented) {
-          applyDomSnapshot();
+          syncFromDom();
         }
       },
-      [applyDomSnapshot],
+      [syncFromDom],
     );
 
     const handleCopy = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
@@ -582,6 +556,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
     const plainForEmptyCheck = segmentsToPlainText(segments);
     const isEmpty =
+      !isComposing &&
       isComposerPlainEmpty(plainForEmptyCheck) &&
       !(elementAttachments?.length) &&
       !hasLoopSegment(segments);
@@ -603,6 +578,8 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
           aria-multiline="true"
           aria-label={placeholder}
           onInput={handleInput}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           onCopy={handleCopy}

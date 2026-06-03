@@ -35,9 +35,16 @@ export function segmentsToPlainText(segs: RichSegment[]): string {
   return segs.map((s) => (s.kind === "text" ? s.value : "")).join("");
 }
 
-/** True when composer text is empty for UI purposes (incl. lone newlines from contenteditable `<br>`). */
+/** True when composer has no user-visible text (incl. lone `<br>` newlines, not intentional line breaks). */
 export function isComposerPlainEmpty(plain: string): boolean {
-  return plain.length === 0 || /^[\s\u00a0]*$/u.test(plain);
+  if (plain.length === 0) {
+    return true;
+  }
+  const withoutNewlines = plain.replace(/\r?\n/g, "");
+  if (withoutNewlines.length === 0) {
+    return true;
+  }
+  return /^[\t \u00a0]*$/u.test(withoutNewlines);
 }
 
 export function normalizeComposerPlain(plain: string): string {
