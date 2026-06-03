@@ -5,7 +5,9 @@ import {
   caretToPlainTextOffset,
   emptySegments,
   insertSegmentAtCaret,
+  isComposerPlainEmpty,
   mergeAdjacentTextSegments,
+  normalizeComposerPlain,
   messageSegmentSeparator,
   segmentsToMessageText,
   segmentsToPlainText,
@@ -216,4 +218,12 @@ test("removeLoopSegment drops loop only", () => {
   ]);
   assert.equal(hasLoopSegment(next), false);
   assert.equal(next[0]?.kind === "text" && next[0].value, "keep");
+});
+
+test("isComposerPlainEmpty treats lone newline as empty", () => {
+  assert.equal(isComposerPlainEmpty(""), true);
+  assert.equal(isComposerPlainEmpty("\n"), true);
+  assert.equal(isComposerPlainEmpty(" \n "), true);
+  assert.equal(isComposerPlainEmpty("/"), false);
+  assert.equal(normalizeComposerPlain("\n"), "");
 });

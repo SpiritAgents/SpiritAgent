@@ -341,6 +341,7 @@ export function useDesktopRuntime() {
   const restoreSessionUi = useCallback(
     (targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession"> | null | undefined) => {
       const snapshotLike = targetSnapshot ?? snapshotRef.current;
+      const key = sessionUiKey(snapshotLike?.composerSessionKey);
       if (snapshotLike?.activeSession?.readOnly) {
         setComposer("");
         setQuestionDrafts({});
@@ -348,7 +349,6 @@ export function useDesktopRuntime() {
         setQuestionError("");
         return;
       }
-      const key = sessionUiKey(snapshotLike?.composerSessionKey);
       if (!key) {
         setComposer("");
         setQuestionDrafts({});
