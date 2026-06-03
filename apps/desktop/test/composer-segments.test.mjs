@@ -225,5 +225,6 @@ test("isComposerPlainEmpty treats lone newline as empty", () => {
   assert.equal(isComposerPlainEmpty("\n"), true);
   assert.equal(isComposerPlainEmpty(" \n "), true);
   assert.equal(isComposerPlainEmpty("/"), false);
+  assert.equal(isComposerPlainEmpty("a\n"), false);
   assert.equal(normalizeComposerPlain("\n"), "");
 });
