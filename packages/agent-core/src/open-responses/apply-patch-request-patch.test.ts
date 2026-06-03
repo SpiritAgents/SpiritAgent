@@ -8,7 +8,12 @@ import {
   registerPendingApplyPatchCallIds,
   runWithApplyPatchBridgeContext,
 } from './apply-patch-bridge.js';
-import { APPLY_PATCH_HOST_TOOL_NAME } from './apply-patch-eligibility.js';
+import {
+  APPLY_PATCH_HOST_TOOL_NAME,
+  buildApplyPatchResponsesFunctionToolDefinition,
+  hasApplyPatchToolInResponsesTools,
+  isApplyPatchFunctionToolDefinition,
+} from './apply-patch-eligibility.js';
 
 const openAiConfig = {
   transportKind: 'open-responses' as const,
@@ -21,7 +26,7 @@ const openAiConfig = {
 const gatewayConfig = {
   transportKind: 'open-responses' as const,
   apiKey: 'test',
-  model: 'openai/gpt-5.4-mini',
+  model: 'openai/gpt-5.4',
   llmVendor: 'vercel-ai-gateway' as const,
 };
 
@@ -61,6 +66,36 @@ test('patchResponsesRequestBodyForApplyPatch openai uses native apply_patch_call
     assert.equal(input[0]?.type, 'apply_patch_call');
     assert.equal(input[1]?.type, 'apply_patch_call_output');
   });
+});
+
+test('patchResponsesRequestBodyForApplyPatch gateway adds Responses flat apply_patch tool', () => {
+  const body = { tools: [{ type: 'function', name: 'read_file', parameters: {} }] } as JsonObject;
+  patchResponsesRequestBodyForApplyPatch(body, gatewayConfig);
+  const tools = body.tools as JsonObject[];
+  assert.equal(hasApplyPatchToolInResponsesTools(tools), true);
+  const applyPatch = tools.find((tool) => tool.name === APPLY_PATCH_HOST_TOOL_NAME);
+  assert.equal(applyPatch?.type, 'function');
+  assert.equal(applyPatch?.function, undefined);
+  assert.equal(
+    tools.some((tool) => tool.type === 'apply_patch'),
+    false,
+  );
+});
+
+test('patchResponsesRequestBodyForApplyPatch gateway skips duplicate apply_patch tool', () => {
+  const body = {
+    tools: [
+      { type: 'function', name: 'read_file', parameters: {} },
+      buildApplyPatchResponsesFunctionToolDefinition(),
+    ],
+  } as JsonObject;
+  patchResponsesRequestBodyForApplyPatch(body, gatewayConfig);
+  const tools = body.tools as JsonObject[];
+  assert.equal(tools.length, 2);
+  assert.equal(
+    tools.filter((tool) => tool.name === APPLY_PATCH_HOST_TOOL_NAME).length,
+    1,
+  );
 });
 
 test('patchResponsesRequestBodyForApplyPatch gateway openai route keeps function_call pairs with callId in arguments', () => {

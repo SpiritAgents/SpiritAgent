@@ -6,6 +6,7 @@ import {
   buildApplyPatchFileToolsPromptSection,
   normalizeGatewayOpenAiModelId,
   shouldUseApplyPatchFileTools,
+  shouldUseApplyPatchFunctionTool,
 } from './apply-patch-eligibility.js';
 
 test('isOpenAiGptModelAtLeast51 boundaries', () => {
@@ -60,6 +61,14 @@ test('shouldUseApplyPatchFileTools vercel gateway', () => {
     shouldUseApplyPatchFileTools({
       transportKind: 'open-responses',
       llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.4',
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseApplyPatchFileTools({
+      transportKind: 'open-responses',
+      llmVendor: 'vercel-ai-gateway',
       responsesProvider: 'open-responses-compatible',
       model: 'openai/gpt-5.1',
     }),
@@ -89,6 +98,26 @@ test('shouldUseApplyPatchFileTools vercel gateway', () => {
       llmVendor: 'vercel-ai-gateway',
       responsesProvider: 'open-responses-compatible',
       model: 'gpt-5.1',
+    }),
+    false,
+  );
+});
+
+test('shouldUseApplyPatchFunctionTool only on gateway-compatible routes', () => {
+  assert.equal(
+    shouldUseApplyPatchFunctionTool({
+      transportKind: 'open-responses',
+      llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.4',
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseApplyPatchFunctionTool({
+      transportKind: 'open-responses',
+      llmVendor: 'openai',
+      responsesProvider: 'openai',
+      model: 'gpt-5.4',
     }),
     false,
   );

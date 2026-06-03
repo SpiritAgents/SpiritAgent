@@ -12,7 +12,9 @@ import {
   type OpenAiFunctionToolDefinition,
 } from './ai-sdk-message-bridge.js';
 import {
+  buildApplyPatchFunctionToolDefinition,
   shouldUseApplyPatchFileTools,
+  shouldUseApplyPatchFunctionTool,
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
 import {
@@ -87,6 +89,15 @@ export function buildResponsesGenerateTools(
   normalizedTools: readonly OpenAiFunctionToolDefinition[],
 ): Record<string, unknown> {
   const tools = buildResponsesAiSdkTools([...normalizedTools]) as Record<string, unknown>;
+  if (shouldUseApplyPatchFunctionTool(config)) {
+    return {
+      ...tools,
+      ...buildResponsesAiSdkTools([
+        buildApplyPatchFunctionToolDefinition() as OpenAiFunctionToolDefinition,
+      ]),
+    };
+  }
+
   if (!shouldUseOpenAiSdkApplyPatchTool(config)) {
     return tools;
   }
