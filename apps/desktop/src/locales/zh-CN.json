@@ -419,7 +419,7 @@
     "openSystemTerminal": "打开系统终端",
     "files": "文件",
     "shell": "Shell",
-    "git": "Git",
+    "gitTab": "Git",
     "browser": "浏览器",
     "browserPlaceholder": "浏览器选项卡加载中…",
     "browserElectronOnly": "浏览器仅在 Electron 桌面版可用。",

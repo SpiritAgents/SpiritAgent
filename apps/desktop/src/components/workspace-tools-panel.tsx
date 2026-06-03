@@ -40,7 +40,7 @@ const TAB_KIND_META: Record<
 > = {
   files: { labelKey: 'workspace.files', icon: FileText },
   shell: { labelKey: 'workspace.shell', icon: Terminal },
-  git: { labelKey: 'workspace.git', icon: GitBranch },
+  git: { labelKey: 'workspace.gitTab', icon: GitBranch },
   browser: { labelKey: 'workspace.browser', icon: Globe },
 };
 
