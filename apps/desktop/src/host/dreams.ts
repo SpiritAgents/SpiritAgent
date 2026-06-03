@@ -39,7 +39,7 @@ import {
   chatsDirPath,
   listStoredSessions,
   loadStoredSession,
-  resolveApiKeyForModel,
+  resolveApiKeyForConfigModel,
   saveStoredSession,
   spiritAgentDataDir,
   type DesktopConfigFile,
@@ -238,7 +238,7 @@ export async function runDesktopDreamCollectorOnce(
       pendingCount: pendingSessions.length,
     }));
 
-    const apiKey = await resolveApiKeyForModel(input.collectorModel);
+    const apiKey = await resolveApiKeyForConfigModel(input.config, input.collectorModel);
     if (!apiKey) {
       throw new Error(i18n.t('error.dreamCollectorApiKeyMissing'));
     }

@@ -182,11 +182,14 @@ import {
   normalizeWorkspaceBinding,
   resolveDesktopHomeDirectory,
   loadStoredSession,
+  modelProviderKeyScope,
   modelSecretKeyPresence,
   mergeRecentWorkspaceRoots,
   removeModelApiKey,
-  resolveApiKeyForModel,
+  removeProviderApiKey,
+  resolveApiKeyForConfigModel,
   saveApiKeyForModel,
+  saveApiKeyForProvider,
   createDesktopExtensionStateStore,
   saveConfig,
   saveStoredSession,
@@ -782,7 +785,8 @@ class DesktopHostService {
       }
       await saveConfig(state.config);
       if (request.apiKey?.trim()) {
-        await saveApiKeyForModel(activeModel, request.apiKey);
+        const keyScope = modelProviderKeyScope(existing?.provider);
+        await saveApiKeyForProvider(keyScope, request.apiKey);
       }
 
       const planModeNow = state.config.planMode === true;
@@ -932,16 +936,11 @@ class DesktopHostService {
         throw new Error(i18n.t('error.modelsAlreadyExist'));
       }
 
-      const keySaveOrder: string[] = [];
+      const providerKeyScope = modelProviderKeyScope(provider);
       try {
-        for (const { name } of toAdd) {
-          await saveApiKeyForModel(name, apiKey);
-          keySaveOrder.push(name);
-        }
+        await saveApiKeyForProvider(providerKeyScope, apiKey);
       } catch (err) {
-        for (const name of keySaveOrder) {
-          await removeModelApiKey(name);
-        }
+        await removeProviderApiKey(providerKeyScope);
         throw err;
       }
 
@@ -1041,7 +1040,11 @@ class DesktopHostService {
         state.config.imageGenerationModel = name;
       }
       await saveConfig(state.config);
-      await saveApiKeyForModel(name, apiKey);
+      if (provider !== undefined) {
+        await saveApiKeyForProvider(modelProviderKeyScope(provider), apiKey);
+      } else {
+        await saveApiKeyForModel(name, apiKey);
+      }
 
       await this.refreshRuntime();
       this.lastRuntimeError = '';
@@ -1069,7 +1072,7 @@ class DesktopHostService {
         throw new Error(i18n.t('error.modelNotFound', { name }));
       }
 
-      return this.finalizeModelRemoval(state, [name]);
+      return this.finalizeModelRemoval(state, [name], { removeLegacyModelKeys: true });
     });
   }
 
@@ -1096,20 +1099,29 @@ class DesktopHostService {
 
       const namesToRemove = targets.map((model) => model.name);
       state.config.models = unmatched;
-      return this.finalizeModelRemoval(state, namesToRemove);
+      return this.finalizeModelRemoval(state, namesToRemove, { removeProviderKey: provider });
     });
   }
 
   private async finalizeModelRemoval(
     state: HostState,
     namesToRemove: readonly string[],
+    options?: {
+      removeProviderKey?: DesktopModelProvider;
+      removeLegacyModelKeys?: boolean;
+    },
   ): Promise<DesktopSnapshot> {
     if (state.config.imageGenerationModel && namesToRemove.includes(state.config.imageGenerationModel)) {
       delete state.config.imageGenerationModel;
     }
     await saveConfig(state.config);
-    for (const name of namesToRemove) {
-      await removeModelApiKey(name);
+    if (options?.removeProviderKey) {
+      await removeProviderApiKey(options.removeProviderKey);
+    }
+    if (options?.removeLegacyModelKeys) {
+      for (const name of namesToRemove) {
+        await removeModelApiKey(name);
+      }
     }
     await this.refreshModelKeyPresence();
     await this.persistCurrentSessionIfNeeded();
@@ -2836,7 +2848,7 @@ class DesktopHostService {
     await this.syncPlanStateForBundle(bundle);
     await this.ensureToolExecutor(bundle);
     bundle.currentTurnSkills = [];
-    const apiKey = await resolveApiKeyForModel(state.config.activeModel);
+    const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
     this.activeApiKeyConfigured = Boolean(apiKey);
     const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
     const activeProfile = state.config.models.find((m) => m.name === state.config.activeModel);
@@ -2844,7 +2856,7 @@ class DesktopHostService {
       ? state.config.models.find((model) => model.name === state.config.imageGenerationModel)
       : undefined;
     const imageGenerationApiKey = imageGenerationProfile
-      ? await resolveApiKeyForModel(imageGenerationProfile.name)
+      ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.name)
       : undefined;
     bundle.runtimeTransport = createLlmTransport();
     if (!apiKey) {
@@ -3234,9 +3246,7 @@ class DesktopHostService {
       this.modelKeyPresence = {};
       return;
     }
-    this.modelKeyPresence = await modelSecretKeyPresence(
-      state.config.models.map((model) => model.name),
-    );
+    this.modelKeyPresence = await modelSecretKeyPresence(state.config.models);
   }
 
   private createRuntime(
@@ -3554,7 +3564,7 @@ class DesktopHostService {
   private async generateCommitMessageFromModel(): Promise<string> {
     const state = this.requireState();
     const activeProfile = state.config.models.find((model) => model.name === state.config.activeModel);
-    const apiKey = await resolveApiKeyForModel(state.config.activeModel);
+    const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
     if (!apiKey) {
       throw new Error(i18n.t('error.autoCommitFailedNoKey'));
     }
@@ -3770,7 +3780,7 @@ class DesktopHostService {
   ): Promise<{ worktreeName: string; branchName: string }> {
     const state = this.requireState();
     const activeProfile = state.config.models.find((model) => model.name === state.config.activeModel);
-    const apiKey = await resolveApiKeyForModel(state.config.activeModel);
+    const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
     if (!apiKey) {
       throw new Error(i18n.t('error.autoWorktreeNameFailedNoKey'));
     }
