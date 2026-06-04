@@ -279,13 +279,14 @@ export class DesktopToolExecutor
       );
     }
 
-    if (isLspDiagnosticsToolRequest(request as JsonValue)) {
+    const jsonRequest = request as JsonValue;
+    if (isLspDiagnosticsToolRequest(jsonRequest)) {
       if (!this.lsp?.enabled) {
         throw new Error(
           'get_diagnostics is not available because typescript-language-server was not found on PATH',
         );
       }
-      const result = await this.lsp.getDiagnosticsForPath(request.path);
+      const result = await this.lsp.getDiagnosticsForPath(jsonRequest.path);
       return createToolExecutionTextOutput(result.formatted);
     }
 
