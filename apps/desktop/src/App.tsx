@@ -1059,7 +1059,7 @@ function AssistantThinkingCollapsible({
           <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
             <AgentMarkdownMessage
               content={thinking}
-              streaming={thinkingActive}
+              streaming={thinkingActive && expanded}
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             />
@@ -1250,8 +1250,6 @@ function MessageCard({
         : null,
     [rewindSelected, message.content, message.id],
   );
-  const nextMessage = messages[listIndex + 1];
-
   return (
     <div
       id={conversationMessageStableId(message, composerSessionKey)}
