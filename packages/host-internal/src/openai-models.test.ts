@@ -6,6 +6,7 @@ import {
   parseAnthropicModelEntriesPayload,
   parseOpenAiCompatibleModelEntriesPayload,
   parseMoonshotModelEntriesPayload,
+  parseVercelAiGatewayModelEntriesPayload,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -112,5 +113,82 @@ test('parseOpenAiCompatibleModelEntriesPayload keeps xAI models as plain ids', (
   assert.deepEqual(entries, [
     { id: 'grok-4.3' },
     { id: 'grok-code-fast-1' },
+  ]);
+});
+
+test('parseVercelAiGatewayModelEntriesPayload maps language and image types', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'openai/gpt-5',
+        type: 'language',
+        tags: ['vision', 'tool-use'],
+        context_window: 128000,
+      },
+      {
+        id: 'google/imagen-4',
+        type: 'image',
+      },
+      {
+        id: 'openai/text-embedding-3-small',
+        type: 'embedding',
+      },
+      {
+        id: 'legacy/model-without-type',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'openai/gpt-5',
+      supportsImageInput: true,
+      contextLength: 128000,
+    },
+    {
+      id: 'google/imagen-4',
+      supportsImageGeneration: true,
+    },
+    {
+      id: 'legacy/model-without-type',
+    },
+  ]);
+});
+
+test('parseVercelAiGatewayModelEntriesPayload infers vision from architecture input_modalities', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'anthropic/claude-opus-4.7',
+        type: 'language',
+        architecture: {
+          input_modalities: ['text', 'image'],
+          output_modalities: ['text'],
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'anthropic/claude-opus-4.7',
+      supportsImageInput: true,
+    },
+  ]);
+});
+
+test('parseOpenAiCompatibleModelEntriesPayload routes vercel-ai-gateway to typed parser', () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload({
+    data: [
+      { id: 'openai/gpt-5', type: 'language' },
+      { id: 'google/imagen-4', type: 'image' },
+      { id: 'cohere/rerank-english-v3.0', type: 'reranking' },
+    ],
+  }, 'vercel-ai-gateway');
+
+  assert.deepEqual(entries, [
+    { id: 'openai/gpt-5' },
+    { id: 'google/imagen-4', supportsImageGeneration: true },
   ]);
 });
