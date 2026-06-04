@@ -15,7 +15,6 @@ import {
   assertFinishTaskToolAllowed,
   filterHostToolDefinitionsForAgentMode,
   isPlanAgentMode,
-  type SpiritAgentMode,
   enrichUnknownToolError,
   toolNamesFromDefinitions,
   buildFinishTaskHostToolDefinitions,
@@ -52,6 +51,7 @@ import {
 
 import type { AskQuestionsQuestionSpec } from '../types.js';
 import { spiritAgentDataDir } from './storage.js';
+import type { DesktopAgentMode } from '../lib/agent-mode.js';
 import type { DesktopToolRequest } from './contracts.js';
 
 type DesktopDreamToolMode = 'read-only' | 'collector';
@@ -76,7 +76,7 @@ export class DesktopToolExecutor
   private loopToolDefinitions: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitions: JsonValue[] = [];
-  private agentMode: SpiritAgentMode = 'agent';
+  private agentMode: DesktopAgentMode = 'agent';
   private activeModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
   private activeTransportConfig: LlmTransportConfig | undefined;
   private imageGenerationAvailable = false;
@@ -138,7 +138,7 @@ export class DesktopToolExecutor
     this.loopToolDefinitions = loopEnabled ? buildFinishTaskHostToolDefinitions() : [];
   }
 
-  setAgentModeToolExposure(agentMode: SpiritAgentMode): void {
+  setAgentModeToolExposure(agentMode: DesktopAgentMode): void {
     this.agentMode = agentMode;
     this.planToolDefinitions = isPlanAgentMode(agentMode) ? buildPlanModeHostToolDefinitions() : [];
   }
