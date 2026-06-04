@@ -8,6 +8,7 @@
     "alibaba": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "anthropic": "https://api.anthropic.com/v1",
     "vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
     "openai": "https://api.openai.com/v1"
   },
   "presetApiBaseByTransport": {
@@ -25,7 +26,7 @@
       "open-responses": "https://dashscope.aliyuncs.com/compatible-mode/v1"
     }
   },
-  "pickerOrder": ["openai", "xai", "anthropic", "deepseek", "vercel-ai-gateway", "moonshot-ai", "alibaba", "minimax", "custom"],
+  "pickerOrder": ["openai", "xai", "anthropic", "deepseek", "vercel-ai-gateway", "openrouter", "moonshot-ai", "alibaba", "minimax", "custom"],
   "pickerLabels": {
     "deepseek": {
       "labelKey": "providers.deepseek",
@@ -54,6 +55,10 @@
     "vercel-ai-gateway": {
       "labelKey": "providers.vercelAiGateway",
       "fallbackLabel": "Vercel AI Gateway"
+    },
+    "openrouter": {
+      "labelKey": "providers.openrouter",
+      "fallbackLabel": "OpenRouter"
     },
     "openai": {
       "labelKey": "providers.openai",
