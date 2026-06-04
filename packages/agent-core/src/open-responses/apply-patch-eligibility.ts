@@ -92,24 +92,40 @@ function isEligibleResponsesProvider(
   if (provider === 'openai') {
     return (
       config.llmVendor === 'openai'
-      || (isAggregatedOpenAiRoutedVendor(config.llmVendor)
+      || (config.llmVendor === 'vercel-ai-gateway'
         && normalizeGatewayOpenAiModelId(config.model) !== undefined)
     );
   }
 
-  return isAggregatedOpenAiRoutedVendor(config.llmVendor);
+  // Gateway：function apply_patch；OpenRouter：built-in apply_patch（均走 open-responses-compatible）。
+  return config.llmVendor === 'vercel-ai-gateway' || config.llmVendor === 'openrouter';
 }
 
-/** OpenAI 官方 Responses 使用 apply_patch_call/output；Gateway 等兼容端点用 function_call 对。 */
+function isEligibleOpenRouterBuiltInApplyPatchModel(
+  config: Pick<OpenResponsesTransportConfig, 'model'>,
+): boolean {
+  const routed = normalizeGatewayOpenAiModelId(config.model);
+  return routed !== undefined && isOpenAiGptModelAtLeast51(routed);
+}
+
+/** OpenAI / OpenRouter 官方形态：apply_patch_call/output；Vercel AI Gateway 用 function_call 对。 */
 export function shouldUseBuiltInApplyPatchRequestItems(
   config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
 ): boolean {
-  return config.llmVendor === 'openai';
+  if (config.llmVendor === 'openai') {
+    return true;
+  }
+
+  if (config.llmVendor === 'openrouter') {
+    return isEligibleOpenRouterBuiltInApplyPatchModel(config);
+  }
+
+  return false;
 }
 
 /**
- * Gateway / 第三方兼容端点：在 tools 中注册标准 function 工具（非 built-in `type: apply_patch`），
- * 并与请求 input 中的 function_call 对保持一致。
+ * Vercel AI Gateway 不支持 built-in `type: apply_patch`，须在 tools 中注册 flat function 工具。
+ * OpenRouter 走 built-in，不得落入此路径。
  */
 export function shouldUseApplyPatchFunctionTool(
   config: Pick<
@@ -117,7 +133,11 @@ export function shouldUseApplyPatchFunctionTool(
     'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
   >,
 ): boolean {
-  return shouldUseApplyPatchFileTools(config) && !shouldUseOpenAiSdkApplyPatchTool(config);
+  return (
+    shouldUseApplyPatchFileTools(config)
+    && !shouldUseOpenAiSdkApplyPatchTool(config)
+    && config.llmVendor === 'vercel-ai-gateway'
+  );
 }
 
 /** OpenAI 官方：`@ai-sdk/openai` 3.x `openai.tools.applyPatch`；Gateway 走 fetch function_call。 */
