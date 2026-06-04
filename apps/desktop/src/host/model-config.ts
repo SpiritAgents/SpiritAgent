@@ -198,7 +198,7 @@ export function buildPrimaryTransportConfig(input: {
   };
 }
 
-function modelCapabilitiesFromConfig(
+export function modelCapabilitiesFromConfig(
   capabilities: readonly DesktopModelCapability[],
 ): LlmModelCapabilities {
   return {

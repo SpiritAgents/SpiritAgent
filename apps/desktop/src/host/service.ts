@@ -145,6 +145,7 @@ import {
   defaultApiBaseForTransport,
   findCatalogEntryForModel,
   loadPreviewModelsForTransport,
+  modelCapabilitiesFromConfig,
   openAiCompatibleVendorFromProvider,
   previewCatalogMapForAddProviderRequest,
   reasoningProviderForTransport,
