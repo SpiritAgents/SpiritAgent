@@ -489,8 +489,8 @@ export function SessionSidebar({
       className={cn(
         "flex h-full w-full min-w-0 flex-col overflow-hidden text-sidebar-foreground dark:text-foreground",
         micaStyle
-          ? "border-r border-black/5 bg-transparent dark:border-white/10"
-          : "border-r border-border/30 bg-sidebar dark:border-border/40 dark:bg-background",
+          ? "border-r border-black/5 bg-transparent dark:border-border/40"
+          : "border-r border-border/40 bg-sidebar",
         className,
       )}
       data-narrow={narrow || undefined}
