@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { FontPreference } from "@/lib/font";
 import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
@@ -79,7 +80,7 @@ export type SettingsFormState = {
   uiLocale: string;
   apiKey: string;
   windowsMica: boolean;
-  planMode: boolean;
+  agentMode: DesktopAgentMode;
   webHostEnabled: boolean;
   webHostHost: string;
   webHostPort: number;

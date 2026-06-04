@@ -82,7 +82,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
       ...(input.config.uiLocale ? { uiLocale: input.config.uiLocale } : {}),
       activeApiKeyConfigured: input.activeApiKeyConfigured,
       windowsMica: input.config.windowsMica !== false,
-      planMode: input.config.planMode === true,
+      agentMode: input.config.agentMode ?? 'agent',
       modelCatalogHints: buildModelCatalogHints(input.config),
     },
     webHost: buildWebHostSnapshot(input.config.webHost),

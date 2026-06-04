@@ -19,6 +19,8 @@ import {
   currentWorkspaceFileReferenceQuery,
 } from "@spirit-agent/host-internal/workspace-file-reference-query";
 
+import { runModeLabel, type DesktopAgentMode } from "@/lib/agent-mode";
+
 import {
   ArrowUp,
   Check,
@@ -653,7 +655,7 @@ type ComposerSurfaceProps = {
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
   activeModel: string;
-  planMode: boolean;
+  agentMode: DesktopAgentMode;
   loopEnabled: boolean;
   canSend: boolean;
   canAbort?: boolean;
@@ -664,7 +666,7 @@ type ComposerSurfaceProps = {
   onAbort?(): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onPlanModeChange(planMode: boolean): void;
+  onAgentModeChange(mode: DesktopAgentMode): void;
   onLoopEnabledChange?(enabled: boolean): void;
   richInputRef?: React.RefObject<ComposerRichInputHandle | null>;
   onKeyDown?(event: ReactKeyboardEvent<HTMLTextAreaElement>): void;
@@ -688,7 +690,7 @@ function ComposerSurface({
   models,
   catalogHints,
   activeModel,
-  planMode,
+  agentMode,
   loopEnabled = false,
   canSend,
   canAbort = false,
@@ -699,7 +701,7 @@ function ComposerSurface({
   onAbort,
   onModelSelect,
   onModelReasoningEffortSelect,
-  onPlanModeChange,
+  onAgentModeChange,
   onLoopEnabledChange,
   richInputRef,
   onKeyDown,
@@ -803,24 +805,30 @@ function ComposerSurface({
                     instantHoverMotionClass,
                   )}
                 >
-                  <span className="min-w-0 flex-1 truncate" title={planMode ? "Plan" : "Agent"}>
-                    {planMode ? "Plan" : "Agent"}
+                  <span className="min-w-0 flex-1 truncate" title={runModeLabel(agentMode)}>
+                    {runModeLabel(agentMode)}
                   </span>
                   <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="min-w-[8.5rem] text-xs">
                 <DropdownMenuItem
-                  onSelect={() => onPlanModeChange(false)}
-                  className={cn(!planMode && "bg-accent/40")}
+                  onSelect={() => onAgentModeChange("agent")}
+                  className={cn(agentMode === "agent" && "bg-accent/40")}
                 >
                   Agent
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() => onPlanModeChange(true)}
-                  className={cn(planMode && "bg-accent/40")}
+                  onSelect={() => onAgentModeChange("plan")}
+                  className={cn(agentMode === "plan" && "bg-accent/40")}
                 >
                   Plan
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => onAgentModeChange("ask")}
+                  className={cn(agentMode === "ask" && "bg-accent/40")}
+                >
+                  Ask
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1195,7 +1203,7 @@ function MessageCard({
   models,
   catalogHints,
   activeModel,
-  planMode,
+  agentMode,
   onContinue,
   onRewindChange,
   onRewindStart,
@@ -1205,7 +1213,7 @@ function MessageCard({
   onRewindPaste,
   onModelSelect,
   onModelReasoningEffortSelect,
-  onPlanModeChange,
+  onAgentModeChange,
   pendingAuxState,
   readManagedImagePreviewDataUrl,
   readLocalImagePreviewDataUrl,
@@ -1233,7 +1241,7 @@ function MessageCard({
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
   activeModel: string;
-  planMode: boolean;
+  agentMode: DesktopAgentMode;
   onContinue(message: ConversationMessageSnapshot): void;
   onRewindChange(value: string): void;
   onRewindStart(message: ConversationMessageSnapshot, listIndex: number): void;
@@ -1243,7 +1251,7 @@ function MessageCard({
   onRewindPaste(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onPlanModeChange(planMode: boolean): void;
+  onAgentModeChange(mode: DesktopAgentMode): void;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   saveLocalImageAs: SaveLocalImageAs;
@@ -1318,11 +1326,11 @@ function MessageCard({
             models={models}
             catalogHints={catalogHints}
             activeModel={activeModel}
-            planMode={planMode}
+            agentMode={agentMode}
             loopEnabled={false}
             onModelSelect={onModelSelect}
             onModelReasoningEffortSelect={onModelReasoningEffortSelect}
-            onPlanModeChange={onPlanModeChange}
+            onAgentModeChange={onAgentModeChange}
             onLoopEnabledChange={() => {}}
             canSend={rewindCanSubmit}
             busy={rewindBusy}
@@ -2860,7 +2868,7 @@ export default function App() {
                               models={models}
                               catalogHints={snapshot?.config.modelCatalogHints}
                               activeModel={runtime.settings.activeModel}
-                              planMode={runtime.settings.planMode}
+                              agentMode={runtime.settings.agentMode}
                               onContinue={(targetMessage) => {
                                 void runtime.continueAssistantCompletion(targetMessage.id);
                               }}
@@ -2876,8 +2884,8 @@ export default function App() {
                               onRewindPaste={handleRewindComposerPaste}
                               onModelSelect={runtime.setActiveModel}
                               onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
-                              onPlanModeChange={(planMode) => {
-                                void runtime.saveSettingsPatch({ planMode });
+                              onAgentModeChange={(agentMode) => {
+                                void runtime.saveSettingsPatch({ agentMode });
                               }}
                               readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
                               readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
@@ -3133,12 +3141,12 @@ export default function App() {
                     models={models}
                     catalogHints={snapshot?.config.modelCatalogHints}
                     activeModel={runtime.settings.activeModel}
-                    planMode={runtime.settings.planMode}
+                    agentMode={runtime.settings.agentMode}
                     loopEnabled={snapshot?.conversation.loopEnabled === true}
                     onModelSelect={runtime.setActiveModel}
                     onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
-                    onPlanModeChange={(planMode) => {
-                      void runtime.saveSettingsPatch({ planMode });
+                    onAgentModeChange={(agentMode) => {
+                      void runtime.saveSettingsPatch({ agentMode });
                     }}
                     onLoopEnabledChange={(enabled) => {
                       void runtime.setLoopEnabled(enabled);
