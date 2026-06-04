@@ -289,6 +289,22 @@ test('updatePendingAssistantAux preserves finish_task notice preview on assistan
   );
 });
 
+test('appendAssistantTextChunk keeps no-tool thinking on the same row as the body', () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn('hi');
+  timeline.beginAssistantSegment('initial');
+  timeline.updatePendingAssistantAux('thinking', 'Planning the greeting.');
+  timeline.appendAssistantTextChunk('Hello!');
+  timeline.completeActiveAssistantSegment();
+
+  const assistantRows = timeline
+    .toMessages()
+    .filter((message) => message.role === 'assistant' && !message.tool);
+  assert.equal(assistantRows.length, 1);
+  assert.equal(assistantRows[0].content, 'Hello!');
+  assert.equal(assistantRows[0].aux?.thinking, 'Planning the greeting.');
+});
+
 test('finalized thinking stays above completed assistant text in the same segment', () => {
   const timeline = createTimeline();
   timeline.beginUserTurn('你好啊');
