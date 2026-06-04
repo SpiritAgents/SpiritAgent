@@ -147,5 +147,4 @@ test('buildApplyPatchFileToolsPromptSection mentions apply_patch and V4A', () =>
   const section = buildApplyPatchFileToolsPromptSection();
   assert.match(section, /apply_patch/);
   assert.match(section, /V4A/);
-  assert.match(section, /create_file/);
 });

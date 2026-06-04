@@ -59,19 +59,11 @@ function resolveOpenResponsesWebSearchMode(
 
 /** Model-visible guidance when OpenAI/xAI SDK web search is available (not injected for Alibaba). */
 export function buildProviderWebSearchPromptSection(
-  config: LlmTransportConfig,
+  _config: LlmTransportConfig,
 ): string | undefined {
-  const mode = resolveProviderWebSearchMode(config);
-  if (mode !== 'openai-sdk-web-search' && mode !== 'xai-sdk-web-search') {
-    return undefined;
-  }
-
-  return [
-    'Web search on this transport:',
-    'Use the provider web search capability when you need current public information.',
-    'Prefer web search over guessing facts that may have changed after your knowledge cutoff.',
-    'Do not invent search tools or APIs that are not declared in this request.',
-  ].join('\n');
+  // Built-in web search is declared in the request tools field; host prompt already
+  // states that only declared tools may be used. Do not duplicate in system message.
+  return undefined;
 }
 
 export function buildWebSearchResponsesTraceToolEntry(): JsonObject {

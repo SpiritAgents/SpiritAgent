@@ -99,15 +99,27 @@ test('resolveProviderWebSearchMode excludes openai-compatible openai vendor', ()
   );
 });
 
-test('buildProviderWebSearchPromptSection mentions web search for openai responses', () => {
-  const section = buildProviderWebSearchPromptSection({
-    transportKind: 'open-responses',
-    apiKey: 'k',
-    model: 'gpt-5.4',
-    llmVendor: 'openai',
-    responsesProvider: 'openai',
-  });
-  assert.match(section ?? '', /web search/i);
+test('buildProviderWebSearchPromptSection is not injected into system message', () => {
+  assert.equal(
+    buildProviderWebSearchPromptSection({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'gpt-5.4',
+      llmVendor: 'openai',
+      responsesProvider: 'openai',
+    }),
+    undefined,
+  );
+  assert.equal(
+    buildProviderWebSearchPromptSection({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'grok-4',
+      llmVendor: 'xai',
+      responsesProvider: 'xai',
+    }),
+    undefined,
+  );
 });
 
 test('buildProviderWebSearchPromptSection omits alibaba', () => {
