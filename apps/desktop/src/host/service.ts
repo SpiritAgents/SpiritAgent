@@ -40,9 +40,7 @@ import {
   extractActivePlanPathFromLlmHistory,
   createHostExtensionMarketplace,
   createHostExtensionManager,
-  createHostDreamStore,
   localFileAttachmentFromPath,
-  listWorkspaceFileReferenceSuggestions as listWorkspaceFileReferenceSuggestionsFromHostInternal,
   restoreHostFileChanges,
   type HostDreamScope,
   type HostTodoRecord,
@@ -144,10 +142,27 @@ import {
   type HostExtensionCommandContext,
 } from './host-extension-commands.js';
 import {
+  checkoutGitBranchCommand,
+  commitChangesCommand,
+  listDreamsOverviewCommand,
+  listSessionsCommand,
+  listWorkspaceExplorerChildrenCommand,
+  listWorkspaceFileReferenceSuggestionsCommand,
+  mergeWorktreeToMainCommand,
+  pushGitBranchCommand,
+  readGitHistoryCommand,
+  readGitWorkingTreeCommand,
+  readWorkspaceTextFileCommand,
+  refreshGitSnapshotCommand,
+  rememberWorkspaceRootCommand,
+  setWebHostAuthTokenHashCommand,
+  writeWorkspaceTextFileCommand,
+  type HostWorkspaceGitCommandContext,
+} from './host-workspace-git-commands.js';
+import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   deriveDisplayNameFromSeed,
-  ephemeralSessionsToListItems,
   type EphemeralSessionRecord,
   isEphemeralDebugSessionPath,
   nextMessageIdFromMessages,
@@ -180,9 +195,7 @@ import {
   resolveApiKeyForConfigModel,
   createDesktopExtensionStateStore,
   saveConfig,
-  listStoredSessions,
   spiritAgentDataDir,
-  normalizeWebHostConfig,
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
   type DesktopWorkspaceBinding,
@@ -290,21 +303,10 @@ import {
   type DesktopTimelineTurnSnapshot,
 } from './message-timeline.js';
 import {
-  listWorkspaceExplorerChildren as listWorkspaceExplorerChildrenFromDisk,
-  readWorkspaceTextFile as readWorkspaceTextFileFromDisk,
-  writeWorkspaceTextFile as writeWorkspaceTextFileToDisk,
-} from './workspace-files.js';
-import {
-  checkoutWorkspaceGitBranch,
-  commitWorkspaceChanges,
   createWorkspaceGitWorktree,
-  mergeWorktreeBranchToMain,
-  pushWorkspaceGitBranch,
   applyGitRevision,
   readPrimaryRepoRoot,
-  readWorkspaceGitHistory,
   readWorkspaceGitSnapshot,
-  readWorkspaceGitWorkingTree,
 } from './git.js';
 import {
   generateCommitMessageFromModelTask,
@@ -520,6 +522,26 @@ class DesktopHostService {
     };
   }
 
+  private workspaceGitCommandContext(): HostWorkspaceGitCommandContext {
+    return {
+      runSerialized: (work) => this.runSerialized(work),
+      ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
+      requireState: () => this.requireState(),
+      isRuntimeBusy: () => this.runtime?.isBusy() === true,
+      activeBundle: () => this.activeBundle(),
+      activeSessionId: () => this.sessionRegistry.activeSessionId(),
+      bundleRuntimeIsBusy: (sessionPath) => this.sessionRegistry.get(sessionPath)?.runtime?.isBusy() === true,
+      generateCommitMessageFromModel: () => this.generateCommitMessageFromModel(),
+      refreshGitState: () => this.refreshGitState(),
+      refreshRuntimeForActiveBundle: () => this.refreshRuntimeForBundle(this.activeBundle()),
+      syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
+      startDreamCollectorIfNeeded: () => this.startDreamCollectorIfNeeded(),
+      runCoalescedGitRefresh: () => this.runCoalescedGitRefresh(),
+      hasState: () => Boolean(this.state),
+      buildSnapshot: () => this.buildSnapshot(),
+    };
+  }
+
   private createBundleOrchestration(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
     runtimeEvents: DesktopRuntimeEventOrchestrator;
@@ -611,48 +633,11 @@ class DesktopHostService {
   }
 
   async rememberWorkspaceRoot(request: RememberWorkspaceRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const workspaceRoot = request.workspaceRoot?.trim()
-        ? path.resolve(request.workspaceRoot.trim())
-        : '';
-      if (!workspaceRoot) {
-        throw new Error(i18n.t('error.workspacePathRequired'));
-      }
-
-      const state = this.requireState();
-      state.config = {
-        ...state.config,
-        recentWorkspaces: mergeRecentWorkspaceRoots(state.config.recentWorkspaces, workspaceRoot),
-      };
-      await saveConfig(state.config);
-      return this.buildSnapshot();
-    });
+    return rememberWorkspaceRootCommand(this.workspaceGitCommandContext(), request);
   }
 
   async commitChanges(request: CommitChangesRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const state = this.requireState();
-      if (!state.git.isRepository) {
-        throw new Error(i18n.t('error.notGitRepo'));
-      }
-      if (!state.git.hasChanges) {
-        throw new Error(i18n.t('error.noChangesToCommit'));
-      }
-
-      const commitMessage = request.message?.trim()
-        ? request.message.trim()
-        : await this.generateCommitMessageFromModel();
-
-      await commitWorkspaceChanges(state.workspaceRoot, commitMessage);
-      await this.refreshGitState();
-      return this.buildSnapshot();
-    });
+    return commitChangesCommand(this.workspaceGitCommandContext(), request);
   }
 
   async updateConfig(request: UpdateConfigRequest): Promise<DesktopSnapshot> {
@@ -660,16 +645,7 @@ class DesktopHostService {
   }
 
   async setWebHostAuthTokenHash(authTokenHash: string): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      state.config.webHost = normalizeWebHostConfig({
-        ...state.config.webHost,
-        authTokenHash,
-      });
-      await saveConfig(state.config);
-      return this.buildSnapshot();
-    });
+    return setWebHostAuthTokenHashCommand(this.workspaceGitCommandContext(), authTokenHash);
   }
 
   async previewModels(request: PreviewModelsRequest): Promise<PreviewModelsResponse> {
@@ -983,76 +959,15 @@ class DesktopHostService {
   }
 
   async checkoutGitBranch(request: CheckoutGitBranchRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const state = this.requireState();
-      const normalized = request.branch.trim();
-      if (!state.git.isRepository) {
-        throw new Error(i18n.t('error.notGitRepo'));
-      }
-      if (!normalized) {
-        throw new Error(i18n.t('error.branchNameRequired'));
-      }
-      if (!state.git.branches.includes(normalized)) {
-        throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
-      }
-
-      state.git = applyGitRevision(
-        await checkoutWorkspaceGitBranch(state.workspaceRoot, normalized, {
-          discardLocalChanges: request.discardLocalChanges === true,
-        }),
-        state.git.revision ?? 0,
-      );
-      this.activeBundle().pendingGitBranch = undefined;
-      await this.refreshRuntimeForBundle(this.activeBundle());
-      this.syncActiveRuntimePointer();
-      this.startDreamCollectorIfNeeded();
-      return this.buildSnapshot();
-    });
+    return checkoutGitBranchCommand(this.workspaceGitCommandContext(), request);
   }
 
   async mergeWorktreeToMain(): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const state = this.requireState();
-      const git = state.git;
-      if (!git.isWorktreeSession || !git.primaryRepoRoot || !git.worktreeBranch) {
-        throw new Error(i18n.t('error.notInWorktree'));
-      }
-
-      await mergeWorktreeBranchToMain(git.primaryRepoRoot, git.worktreeBranch);
-      await this.refreshGitState();
-      return this.buildSnapshot();
-    });
+    return mergeWorktreeToMainCommand(this.workspaceGitCommandContext());
   }
 
   async pushGitBranch(): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const state = this.requireState();
-      if (!state.git.isRepository) {
-        throw new Error(i18n.t('error.notGitRepo'));
-      }
-      if (!state.git.needsPush) {
-        throw new Error(i18n.t('error.nothingToPush'));
-      }
-
-      await pushWorkspaceGitBranch(state.workspaceRoot);
-      await this.refreshGitState();
-      return this.buildSnapshot();
-    });
+    return pushGitBranchCommand(this.workspaceGitCommandContext());
   }
 
   async abortConversation(): Promise<DesktopSnapshot> {
@@ -1497,109 +1412,37 @@ class DesktopHostService {
   }
 
   async listSessions(): Promise<SessionListItem[]> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      const state = this.requireState();
-      const activeId = this.sessionRegistry.activeSessionId();
-      const stored = await listStoredSessions();
-      const ephemeral: SessionListItem[] = ephemeralSessionsToListItems(state.ephemeralSessions);
-      const merged = [...stored, ...ephemeral].sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
-      return merged.map((item) => {
-        const bundle = this.sessionRegistry.get(item.path);
-        return {
-          ...item,
-          ...(bundle?.runtime?.isBusy() ? { isBusy: true } : {}),
-          ...(item.path === activeId ? { isActive: true } : {}),
-        };
-      });
-    });
+    return listSessionsCommand(this.workspaceGitCommandContext());
   }
 
   async listDreamsOverview(): Promise<DesktopDreamOverviewItem[]> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      const state = this.requireState();
-      const gitBranch = state.git.branch?.trim();
-      if (!state.git.isRepository || !gitBranch) {
-        return [];
-      }
-
-      const dreamStore = createHostDreamStore({
-        spiritDataDir: spiritAgentDataDir(),
-        scope: {
-          workspaceRoot: state.workspaceRoot,
-          gitBranch,
-        },
-      });
-      await dreamStore.pruneExpired();
-      const dreams = await dreamStore.list({ includeDeleted: false, includeExpired: false });
-      return dreams.map((dream) => ({
-        id: dream.id,
-        title: dream.title,
-        summary: dream.summary,
-        ...(dream.details ? { details: dream.details } : {}),
-        tags: dream.tags ?? [],
-        workspaceRoot: dream.scope.workspaceRoot,
-        gitBranch: dream.scope.gitBranch,
-        updatedAtUnixMs: dream.updatedAtUnixMs,
-      }));
-    });
+    return listDreamsOverviewCommand(this.workspaceGitCommandContext());
   }
 
   async listWorkspaceExplorerChildren(relativePath: string): Promise<WorkspaceExplorerListResult> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      return listWorkspaceExplorerChildrenFromDisk(state.workspaceRoot, relativePath);
-    });
+    return listWorkspaceExplorerChildrenCommand(this.workspaceGitCommandContext(), relativePath);
   }
 
   async readGitWorkingTree(): Promise<GitWorkingTreeSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      return readWorkspaceGitWorkingTree(state.workspaceRoot);
-    });
+    return readGitWorkingTreeCommand(this.workspaceGitCommandContext());
   }
 
   async readGitHistory(request: ReadGitHistoryRequest = {}): Promise<GitHistorySnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      return readWorkspaceGitHistory(state.workspaceRoot, request);
-    });
+    return readGitHistoryCommand(this.workspaceGitCommandContext(), request);
   }
 
   async listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,
   ): Promise<WorkspaceFileReferenceSuggestionsResponse> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      return (
-        (await listWorkspaceFileReferenceSuggestionsFromHostInternal(
-          state.workspaceRoot,
-          request.input,
-          request.cursorChars,
-        )) ?? null
-      );
-    });
+    return listWorkspaceFileReferenceSuggestionsCommand(this.workspaceGitCommandContext(), request);
   }
 
   async readWorkspaceTextFile(relativePath: string): Promise<WorkspaceReadTextFileResult> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      return readWorkspaceTextFileFromDisk(state.workspaceRoot, relativePath);
-    });
+    return readWorkspaceTextFileCommand(this.workspaceGitCommandContext(), relativePath);
   }
 
   async writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      await writeWorkspaceTextFileToDisk(state.workspaceRoot, request);
-    });
+    return writeWorkspaceTextFileCommand(this.workspaceGitCommandContext(), request);
   }
 
   async openSession(filePath: string): Promise<DesktopSnapshot> {
@@ -2151,11 +1994,7 @@ class DesktopHostService {
   }
 
   async refreshGitSnapshot(): Promise<DesktopSnapshot> {
-    await this.runCoalescedGitRefresh();
-    if (!this.state) {
-      throw new Error(i18n.t('error.hostNotReady'));
-    }
-    return this.buildSnapshot();
+    return refreshGitSnapshotCommand(this.workspaceGitCommandContext());
   }
 
   private startDreamCollectorIfNeeded(): void {
