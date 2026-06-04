@@ -67,6 +67,8 @@
     "@ai-sdk/xai": "^3.0.93",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ai": "^6.0.175",
+    "vscode-jsonrpc": "^8.2.1",
+    "vscode-languageserver-protocol": "^3.17.5",
     "spirit-agent-repo": "file:../.."
   }
 }
