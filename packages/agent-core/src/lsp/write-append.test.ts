@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createToolExecutionTextOutput } from '../ports.js';
+import { DEFAULT_LSP_TIMING } from './config.js';
 import { appendLspDiagnosticsAfterWriteIfNeeded } from './write-append.js';
 import type { LspService } from './service.js';
 
@@ -47,4 +48,28 @@ test('appendLspDiagnosticsAfterWriteIfNeeded attaches hostUi for write tools', a
   assert.equal(result.hostUi?.lspWriteDiagnostics?.items.length, 2);
   assert.equal(result.hostUi?.lspWriteDiagnostics?.items[0]?.severity, 'error');
   assert.equal(result.hostUi?.lspWriteDiagnostics?.items[0]?.line, 1);
+});
+
+test('appendLspDiagnosticsAfterWriteIfNeeded waits with writeAppendDiagnosticsWaitMs', async () => {
+  let waitMs: number | undefined;
+  const lsp = {
+    enabled: true,
+    workspaceRoot: 'D:\\SpiritAgent',
+    getDiagnosticsForPath: async (_path: string, timeoutMs?: number) => {
+      waitMs = timeoutMs;
+      return {
+        relativePath: 'packages/agent-core/src/a.ts',
+        diagnostics: [],
+        formatted: '',
+      };
+    },
+  } satisfies Pick<LspService, 'enabled' | 'workspaceRoot' | 'getDiagnosticsForPath'>;
+
+  await appendLspDiagnosticsAfterWriteIfNeeded(
+    lsp as unknown as LspService,
+    { name: 'edit_file', path: 'packages/agent-core/src/a.ts' },
+    createToolExecutionTextOutput('ok'),
+  );
+
+  assert.equal(waitMs, DEFAULT_LSP_TIMING.writeAppendDiagnosticsWaitMs);
 });
