@@ -11,6 +11,7 @@ import type {
   DesktopModelReasoningEffort,
   DesktopTransportKind,
   PreviewModelCatalogEntry,
+  PreviewModelCatalogPricing,
 } from '../types.js';
 
 import { spiritAgentDataDir } from './storage.js';
@@ -201,16 +202,60 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
     if (!id) {
       continue;
     }
+    const displayName =
+      typeof record.displayName === 'string' && record.displayName.trim().length > 0
+        ? record.displayName.trim()
+        : undefined;
+    const description =
+      typeof record.description === 'string' && record.description.trim().length > 0
+        ? record.description.trim()
+        : undefined;
+    const pricing = normalizeCachedPricing(record.pricing);
     const capabilities = normalizeCachedCapabilities(record.capabilities);
     const supportedReasoningEfforts = normalizeCachedSupportedReasoningEfforts(record.supportedReasoningEfforts);
     normalized.push({
       id,
+      ...(displayName !== undefined ? { displayName } : {}),
+      ...(description !== undefined ? { description } : {}),
+      ...(pricing !== undefined ? { pricing } : {}),
       ...(capabilities !== undefined ? { capabilities } : {}),
       ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
     });
   }
 
   return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | undefined {
+  if (typeof value !== 'object' || value === null) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const inputPerTokenUsd = readCachedPricingField(record, 'inputPerTokenUsd');
+  const outputPerTokenUsd = readCachedPricingField(record, 'outputPerTokenUsd');
+  const imagePerUnitUsd = readCachedPricingField(record, 'imagePerUnitUsd');
+  const requestPerCallUsd = readCachedPricingField(record, 'requestPerCallUsd');
+  if (!inputPerTokenUsd && !outputPerTokenUsd && !imagePerUnitUsd && requestPerCallUsd === undefined) {
+    return undefined;
+  }
+  return {
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+    ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
+    ...(requestPerCallUsd !== undefined ? { requestPerCallUsd } : {}),
+  };
+}
+
+function readCachedPricingField(
+  record: Record<string, unknown>,
+  key: keyof PreviewModelCatalogPricing,
+): string | undefined {
+  const value = record[key];
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function normalizeCachedCapabilities(value: unknown): DesktopModelCapability[] | undefined {
@@ -265,6 +310,9 @@ function clonePreviewModelCatalog(
 ): PreviewModelCatalogEntry[] {
   return entries.map((entry) => ({
     id: entry.id,
+    ...(entry.displayName !== undefined ? { displayName: entry.displayName } : {}),
+    ...(entry.description !== undefined ? { description: entry.description } : {}),
+    ...(entry.pricing !== undefined ? { pricing: { ...entry.pricing } } : {}),
     ...(entry.capabilities ? { capabilities: [...entry.capabilities] } : {}),
     ...(entry.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }

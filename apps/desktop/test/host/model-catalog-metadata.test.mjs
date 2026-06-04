@@ -79,6 +79,45 @@ test('moonshot-ai provider consumes Moonshot model catalog metadata', () => {
   ]);
 });
 
+test('openrouter provider passes through display metadata and pricing', () => {
+  const preview = previewModelCatalogForTransport({
+    provider: 'openrouter',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'anthropic/claude-sonnet-4',
+        displayName: 'Claude Sonnet 4',
+        description: 'Balanced reasoning model.',
+        pricing: {
+          inputPerTokenUsd: '0.000003',
+          outputPerTokenUsd: '0.000015',
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'anthropic/claude-sonnet-4',
+      displayName: 'Claude Sonnet 4',
+      description: 'Balanced reasoning model.',
+      pricing: {
+        inputPerTokenUsd: '0.000003',
+        outputPerTokenUsd: '0.000015',
+      },
+      capabilities: ['chat'],
+    },
+  ]);
+
+  const catalogMap = previewCatalogMapForTransport({
+    provider: 'openrouter',
+    transportKind: 'openai-compatible',
+    modelCatalog: preview,
+  });
+
+  assert.deepEqual(catalogMap.get('anthropic/claude-sonnet-4'), preview[0]);
+});
+
 test('openrouter provider maps output_modalities to catalog capabilities', () => {
   assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'openrouter' }), true);
 

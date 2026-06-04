@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import i18n from "@/lib/i18n";
@@ -37,7 +37,17 @@ import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { FontPreference } from "@/lib/font";
 import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
+import {
+  buildModelCatalogDetailMap,
+  formatModelCatalogPricingLines,
+  modelCatalogDisplayTitle,
+  providerSupportsModelCatalogDetail,
+} from "@/lib/model-catalog-detail";
 import { cn } from "@/lib/utils";
+import {
+  HoverDetailTooltip,
+  useHoverDetailTooltipContext,
+} from "@/components/ui/hover-detail-tooltip";
 import type {
   AddModelRequest,
   AddMcpServerRequest,
@@ -63,6 +73,7 @@ import type {
   DesktopSkillListItem,
   DesktopSkillRootKind,
   DesktopSnapshot,
+  PreviewModelCatalogEntry,
   PreviewModelsRequest,
   PreviewModelsResponse,
 } from "@/types";
@@ -2061,6 +2072,126 @@ function McpsSettingsPanel({
   );
 }
 
+function ModelSettingsRowButton({
+  model,
+  isActive,
+  isImageDefault,
+  defaultActionLabel,
+  disabled,
+  isHighlighted = false,
+  onPointerEnter,
+  onDefaultAction,
+}: {
+  model: SettingsModelProfile;
+  isActive: boolean;
+  isImageDefault: boolean;
+  defaultActionLabel: string;
+  disabled: boolean;
+  isHighlighted?: boolean;
+  onPointerEnter?: () => void;
+  onDefaultAction: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "flex w-full appearance-none flex-col gap-3 bg-transparent px-4 py-3 text-left outline-none enabled:cursor-pointer enabled:hover:bg-foreground/[0.06] dark:enabled:hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+        isHighlighted && "bg-muted/30",
+      )}
+      disabled={disabled}
+      title={defaultActionLabel}
+      aria-label={`${defaultActionLabel}：${model.name}`}
+      onPointerEnter={onPointerEnter}
+      onClick={onDefaultAction}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-foreground">{model.name}</span>
+          {isActive ? (
+            <Badge variant="secondary" className="text-muted-foreground">
+              {t("settings.currentInference")}
+            </Badge>
+          ) : null}
+          {isImageDefault ? (
+            <Badge variant="secondary" className="text-muted-foreground">
+              {t("settings.currentImageGen")}
+            </Badge>
+          ) : null}
+          {model.capabilities?.map((capability) => (
+            <Badge key={capability} variant="outline" className="text-muted-foreground">
+              {modelCapabilityLabel(capability)}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function ModelSettingsRowWithHover({
+  model,
+  isActive,
+  isImageDefault,
+  defaultActionLabel,
+  disabled,
+  onDefaultAction,
+}: {
+  model: SettingsModelProfile;
+  isActive: boolean;
+  isImageDefault: boolean;
+  defaultActionLabel: string;
+  disabled: boolean;
+  onDefaultAction: () => void;
+}) {
+  const { getTriggerProps } = useHoverDetailTooltipContext<SettingsModelProfile>();
+  const { onPointerEnter, isHighlighted } = getTriggerProps(model);
+
+  return (
+    <HoverDetailTooltip.Anchor itemId={model.name}>
+      <ModelSettingsRowButton
+        model={model}
+        isActive={isActive}
+        isImageDefault={isImageDefault}
+        defaultActionLabel={defaultActionLabel}
+        disabled={disabled}
+        isHighlighted={isHighlighted}
+        onPointerEnter={onPointerEnter}
+        onDefaultAction={onDefaultAction}
+      />
+    </HoverDetailTooltip.Anchor>
+  );
+}
+
+function ModelCatalogDetailPanel({
+  model,
+  catalogEntry,
+}: {
+  model: SettingsModelProfile;
+  catalogEntry: PreviewModelCatalogEntry;
+}) {
+  const { t } = useTranslation();
+  const title = modelCatalogDisplayTitle(model, catalogEntry);
+  const pricingLines = formatModelCatalogPricingLines(catalogEntry.pricing, t);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium leading-snug text-foreground">{title}</p>
+      {catalogEntry.description?.trim() ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">{catalogEntry.description}</p>
+      ) : null}
+      {pricingLines.length > 0 ? (
+        <ul className="space-y-1 text-[11px] text-muted-foreground">
+          {pricingLines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 function ModelsSettingsPanel({
   settings,
   snapshot,
@@ -2133,6 +2264,11 @@ function ModelsSettingsPanel({
     (modelDefaultAssignments.activeModel !== isModelDefaultsDialogModelActive ||
       modelDefaultAssignments.imageGenerationModel !==
         (modelDefaultsDialogModel.name === imageGenerationModel));
+
+  const catalogDetailByModelName = useMemo(
+    () => buildModelCatalogDetailMap(models, snapshot?.config.modelCatalogHints),
+    [models, snapshot?.config.modelCatalogHints],
+  );
 
   const providerGroups = new Map<DesktopModelProvider, typeof models>();
   const standaloneModels: typeof models = [];
@@ -2409,52 +2545,94 @@ function ModelsSettingsPanel({
                       {t('settings.deleteGroup')}
                     </Button>
                   </div>
-                  <div className="divide-y divide-border/35">
-                    {groupModels.map((model) => {
-                      const isActive = model.name === activeModel;
-                      const isImageDefault = model.name === imageGenerationModel;
-                      const supportedDefaultRoles = getSupportedModelDefaultRoles(
-                        model,
-                        activeModel,
-                        imageGenerationModel,
-                      );
-                      const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
-                      return (
-                        <button
-                          key={model.name}
-                          type="button"
-                          className="flex w-full appearance-none flex-col gap-3 bg-transparent px-4 py-3 text-left outline-none enabled:cursor-pointer enabled:hover:bg-foreground/[0.06] dark:enabled:hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-                          disabled={modelsBusy || modelsPreviewBusy}
-                          title={defaultActionLabel}
-                          aria-label={`${defaultActionLabel}：${model.name}`}
-                          onClick={() => handleModelDefaultAction(model)}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium text-foreground">
-                                {model.name}
-                              </span>
-                              {isActive ? (
-                                <Badge variant="secondary" className="text-muted-foreground">
-                                  {t('settings.currentInference')}
-                                </Badge>
-                              ) : null}
-                              {isImageDefault ? (
-                                <Badge variant="secondary" className="text-muted-foreground">
-                                  {t('settings.currentImageGen')}
-                                </Badge>
-                              ) : null}
-                              {model.capabilities?.map((capability) => (
-                                <Badge key={capability} variant="outline" className="text-muted-foreground">
-                                  {modelCapabilityLabel(capability)}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {providerSupportsModelCatalogDetail(provider)
+                  && groupModels.some((model) => catalogDetailByModelName.has(model.name)) ? (
+                    <HoverDetailTooltip<SettingsModelProfile> getItemId={(model) => model.name}>
+                      <HoverDetailTooltip.TriggerZone className="divide-y divide-border/35">
+                        {groupModels.map((model) => {
+                          const isActive = model.name === activeModel;
+                          const isImageDefault = model.name === imageGenerationModel;
+                          const supportedDefaultRoles = getSupportedModelDefaultRoles(
+                            model,
+                            activeModel,
+                            imageGenerationModel,
+                          );
+                          const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
+                          const rowDisabled = modelsBusy || modelsPreviewBusy;
+                          const hasDetail = catalogDetailByModelName.has(model.name);
+
+                          if (!hasDetail) {
+                            return (
+                              <ModelSettingsRowButton
+                                key={model.name}
+                                model={model}
+                                isActive={isActive}
+                                isImageDefault={isImageDefault}
+                                defaultActionLabel={defaultActionLabel}
+                                disabled={rowDisabled}
+                                onDefaultAction={() => handleModelDefaultAction(model)}
+                              />
+                            );
+                          }
+
+                          return (
+                            <ModelSettingsRowWithHover
+                              key={model.name}
+                              model={model}
+                              isActive={isActive}
+                              isImageDefault={isImageDefault}
+                              defaultActionLabel={defaultActionLabel}
+                              disabled={rowDisabled}
+                              onDefaultAction={() => handleModelDefaultAction(model)}
+                            />
+                          );
+                        })}
+                      </HoverDetailTooltip.TriggerZone>
+                      <HoverDetailTooltip.Content
+                        side="right"
+                        align="start"
+                        sideOffset={8}
+                        collisionPadding={12}
+                        className="w-80 max-w-[min(20rem,calc(100vw-2rem))] p-3"
+                      >
+                        {(activeRow) => {
+                          const row = activeRow as SettingsModelProfile | null;
+                          if (!row) {
+                            return null;
+                          }
+                          const catalogEntry = catalogDetailByModelName.get(row.name);
+                          if (!catalogEntry) {
+                            return null;
+                          }
+                          return <ModelCatalogDetailPanel model={row} catalogEntry={catalogEntry} />;
+                        }}
+                      </HoverDetailTooltip.Content>
+                    </HoverDetailTooltip>
+                  ) : (
+                    <div className="divide-y divide-border/35">
+                      {groupModels.map((model) => {
+                        const isActive = model.name === activeModel;
+                        const isImageDefault = model.name === imageGenerationModel;
+                        const supportedDefaultRoles = getSupportedModelDefaultRoles(
+                          model,
+                          activeModel,
+                          imageGenerationModel,
+                        );
+                        const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
+                        return (
+                          <ModelSettingsRowButton
+                            key={model.name}
+                            model={model}
+                            isActive={isActive}
+                            isImageDefault={isImageDefault}
+                            defaultActionLabel={defaultActionLabel}
+                            disabled={modelsBusy || modelsPreviewBusy}
+                            onDefaultAction={() => handleModelDefaultAction(model)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}

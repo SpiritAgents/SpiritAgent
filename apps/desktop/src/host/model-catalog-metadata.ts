@@ -40,6 +40,9 @@ export function previewModelCatalogForTransport(input: {
   return input.listedModels.map((entry) => ({
     id: entry.id,
     capabilities: previewCapabilitiesFromListedEntry(entry),
+    ...(entry.displayName !== undefined ? { displayName: entry.displayName } : {}),
+    ...(entry.description !== undefined ? { description: entry.description } : {}),
+    ...(entry.pricing !== undefined ? { pricing: { ...entry.pricing } } : {}),
     ...(entry.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
       : {}),
@@ -65,6 +68,9 @@ export function previewCatalogMapForTransport(input: {
       id,
       {
         id,
+        ...(entry.displayName !== undefined ? { displayName: entry.displayName } : {}),
+        ...(entry.description !== undefined ? { description: entry.description } : {}),
+        ...(entry.pricing !== undefined ? { pricing: { ...entry.pricing } } : {}),
         ...(entry.capabilities ? { capabilities: entry.capabilities } : {}),
         ...(entry.supportedReasoningEfforts !== undefined
           ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }

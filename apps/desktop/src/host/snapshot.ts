@@ -132,6 +132,7 @@ export function buildModelCatalogHints(config: DesktopConfigFile): DesktopModelC
         ...(hit.transportKind ? { transportKind: hit.transportKind } : {}),
         apiBase: hit.apiBase,
         modelIds: hit.modelIds,
+        ...(hit.modelCatalog ? { modelCatalog: hit.modelCatalog } : {}),
         fetchedAtUnixMs: hit.fetchedAtUnixMs,
       });
     }
