@@ -40,7 +40,7 @@ function titleBarSurfaceClass(
     useMicaBackdrop
       ? "bg-transparent"
       : zone === "sidebar"
-        ? "bg-sidebar dark:bg-background"
+        ? "bg-sidebar"
         : "bg-background",
   );
 }

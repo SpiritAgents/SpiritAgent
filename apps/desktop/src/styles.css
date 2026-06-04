@@ -75,6 +75,70 @@
   --terminal-ansi-bright-white: #a5a5a5;
 }
 
+/* Void 暗色语义 token：必须写在 :root 之后，否则 Dialog/Select 等仍用 oklch(1 0 0) */
+html.dark,
+.dark,
+[data-spirit-theme="dark"] {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #090909;
+  --card-foreground: #d4d4d4;
+  --popover: #090909;
+  --popover-foreground: #d4d4d4;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #181818;
+  --secondary-foreground: #d4d4d4;
+  --muted: #181818;
+  --muted-foreground: #a1a1a1;
+  --accent: #181818;
+  --accent-foreground: #d4d4d4;
+  /* shadcn neutral 暗色默认 destructive（勿用 Void 灰或 :root 浅色红） */
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #272727;
+  --input: #272727;
+  --ring: #3f3f3f;
+  --chart-1: #e4e4e4;
+  --chart-2: #a1a1a1;
+  --chart-3: #717171;
+  --chart-4: #525252;
+  --chart-5: #3f3f3f;
+  --radius: 0.5rem;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #181818;
+  --sidebar-accent-foreground: #d4d4d4;
+  --sidebar-border: #272727;
+  --sidebar-ring: #3f3f3f;
+  --sidebar-list-foreground: #717171;
+  --sidebar-faint-foreground: #525252;
+  --dialog-panel-border: #272727;
+  --git-action-split: #3f3f3f;
+  --terminal-bg: #000000;
+  --terminal-fg: #d4d4d4;
+  --terminal-cursor: #ffffff;
+  --terminal-cursor-accent: #000000;
+  --terminal-selection-bg: rgba(255, 255, 255, 0.12);
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #cd3131;
+  --terminal-ansi-green: #0dbc79;
+  --terminal-ansi-yellow: #e5e510;
+  --terminal-ansi-blue: #2472c8;
+  --terminal-ansi-magenta: #bc3fbc;
+  --terminal-ansi-cyan: #11a8cd;
+  --terminal-ansi-white: #e5e5e5;
+  --terminal-ansi-bright-black: #666666;
+  --terminal-ansi-bright-red: #f14c4c;
+  --terminal-ansi-bright-green: #23d18b;
+  --terminal-ansi-bright-yellow: #f5f543;
+  --terminal-ansi-bright-blue: #3b8eea;
+  --terminal-ansi-bright-magenta: #d670d6;
+  --terminal-ansi-bright-cyan: #29b8db;
+  --terminal-ansi-bright-white: #e5e5e5;
+}
+
 html,
 body {
   min-height: 100%;
@@ -177,65 +241,6 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
     height: 0;
     opacity: 0;
   }
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  --sidebar-list-foreground: oklch(0.8 0 0);
-  --sidebar-faint-foreground: oklch(0.55 0 0);
-  --git-action-split: oklch(0.72 0 0);
-  /* 集成终端（xterm）：ANSI 色板参考 VS Code Dark+ 默认 */
-  --terminal-bg: #0a0a0a;
-  --terminal-fg: #fafafa;
-  --terminal-cursor: #fafafa;
-  --terminal-cursor-accent: #0a0a0a;
-  --terminal-selection-bg: rgba(100, 100, 100, 0.35);
-  --terminal-ansi-black: #000000;
-  --terminal-ansi-red: #cd3131;
-  --terminal-ansi-green: #0dbc79;
-  --terminal-ansi-yellow: #e5e510;
-  --terminal-ansi-blue: #2472c8;
-  --terminal-ansi-magenta: #bc3fbc;
-  --terminal-ansi-cyan: #11a8cd;
-  --terminal-ansi-white: #e5e5e5;
-  --terminal-ansi-bright-black: #666666;
-  --terminal-ansi-bright-red: #f14c4c;
-  --terminal-ansi-bright-green: #23d18b;
-  --terminal-ansi-bright-yellow: #f5f543;
-  --terminal-ansi-bright-blue: #3b8eea;
-  --terminal-ansi-bright-magenta: #d670d6;
-  --terminal-ansi-bright-cyan: #29b8db;
-  --terminal-ansi-bright-white: #e5e5e5;
 }
 
 @layer base {
