@@ -7,9 +7,8 @@ import {
   lineDeltaForDeleteFilePath,
 } from './delete-file-line-delta.js';
 import i18n from '../lib/i18n-host.js';
-import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
+import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
-  appendLlmToolResultMessages,
   buildActiveSkillsSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamCollectorSystemMessage,
@@ -23,9 +22,6 @@ import {
   createLlmTransport,
   McpService,
   invalidateSharedUserMcpToolingCache,
-  extractLastLlmAssistantText,
-  buildDreamReadHostToolDefinitions,
-  startLlmToolAgentState,
   type AssistantAuxArchiveEntry,
   type ChatArchive,
   type LlmActiveSkill,
@@ -105,7 +101,6 @@ import type {
   DesktopModelReasoningEffort,
   DesktopTransportKind,
   PlanSnapshot,
-  PreviewModelCatalogEntry,
   DeleteSkillRequest,
   DesktopSnapshot,
   FileRewindWarning,
@@ -135,11 +130,7 @@ import type { DesktopToolRequest, HostCommandName } from './contracts.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
-  buildCommitEphemeralSessionRecord,
   buildStoredDesktopSession,
-  buildWorktreeEphemeralSessionRecord,
-  createEphemeralCommitSessionPath,
-  createEphemeralWorktreeSessionPath,
   deriveDisplayNameFromSeed,
   ephemeralSessionsToListItems,
   type EphemeralSessionRecord,
@@ -203,7 +194,6 @@ import {
   type DesktopRuntime,
 } from './runtime.js';
 import {
-  buildCommitMessageGenerationPrompt,
   buildDreamCollectorPlanMetadata,
   buildDreamContextText,
   clearDreamCollectorIssue,
@@ -251,8 +241,6 @@ import {
   cloneDesktopConfig,
   currentApiBase,
   mapPendingQuestions,
-  parseGeneratedCommitMessageResponse,
-  parseGeneratedWorktreeNamingResponse,
   sameDreamCollectorSnapshot,
   resolveWorkspaceBindingForRequestedRoot,
   sameWorkspaceRoot,
@@ -308,7 +296,6 @@ import {
   writeWorkspaceTextFile as writeWorkspaceTextFileToDisk,
 } from './workspace-files.js';
 import {
-  buildWorkspaceGitCommitMessageContext,
   checkoutWorkspaceGitBranch,
   commitWorkspaceChanges,
   createWorkspaceGitWorktree,
@@ -320,7 +307,10 @@ import {
   readWorkspaceGitSnapshot,
   readWorkspaceGitWorkingTree,
 } from './git.js';
-import { buildWorktreeNamingPrompt } from './worktree-naming.js';
+import {
+  generateCommitMessageFromModelTask,
+  generateWorktreeNamesFromModelTask,
+} from './ephemeral-llm-tasks.js';
 import { SessionRegistry } from './session-registry.js';
 import type { SessionBundle } from './session-bundle.js';
 import {
@@ -3573,136 +3563,19 @@ class DesktopHostService {
     }
 
     const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
-    const commitContext = await buildWorkspaceGitCommitMessageContext(state.workspaceRoot);
-    const dreamContextText = await buildDreamContextText({
+    const toolExecutor = await this.ensureToolExecutor();
+    return generateCommitMessageFromModelTask({
       workspaceRoot: state.workspaceRoot,
       gitBranch: state.git.branch,
-    });
-    const prompt = buildCommitMessageGenerationPrompt({
-      workspaceRoot: state.workspaceRoot,
-      branch: state.git.branch,
-      statusText: commitContext.statusText,
-      diffStatText: commitContext.diffStatText,
-      diffText: commitContext.diffText,
-    });
-    const transportConfig = buildPrimaryTransportConfig({
+      config: state.config,
+      activeProfile,
       apiKey,
-      model: state.config.activeModel,
-      baseUrl: currentApiBase(state.config),
-      workspaceRoot: state.workspaceRoot,
-      profile: activeProfile,
-      agentMode: resolveDesktopAgentMode(state.config),
-    });
-    const llmTransport = createLlmTransport(transportConfig);
-    const toolExecutor = await this.ensureToolExecutor();
-    toolExecutor.setActiveTransportConfig(transportConfig);
-    const dreamToolDefinitions = state.git.branch ? buildDreamReadHostToolDefinitions() : [];
-    let toolState = startLlmToolAgentState(
-      [],
-      prompt,
-      state.workspaceRoot,
-      state.metadata.rules.enabledRules,
-      state.metadata.skills.enabledSkillCatalog,
-      [],
-      transportConfig.model,
-      state.metadata.planMetadata,
+      metadata: state.metadata,
       extensionSystemPrompts,
-      dreamContextText || undefined,
-      undefined,
-      this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
-    );
-    const sessionPath = createEphemeralCommitSessionPath();
-    const baseMessages: ConversationMessageSnapshot[] = [
-      {
-        id: 1,
-        role: 'user',
-        content: prompt,
-        pending: false,
-      },
-    ];
-
-    try {
-      for (let round = 0; round < 6; round += 1) {
-        const completion = await llmTransport.startToolAgentRound(
-          transportConfig,
-          toolState,
-          dreamToolDefinitions,
-        );
-
-        if (completion.kind !== 'success') {
-          throw new Error(i18n.t('error.autoCommitFailed', { error: completion.error }));
-        }
-
-        toolState = completion.result.state;
-
-        if (completion.result.step.kind === 'final-response-ready') {
-          const assistantText = extractLastLlmAssistantText(toolState)?.trim();
-          if (!assistantText) {
-            throw new Error(i18n.t('error.autoCommitFailedNoBody'));
-          }
-
-          const message = parseGeneratedCommitMessageResponse(assistantText);
-          const finalMessages = [
-            ...baseMessages,
-            {
-              id: 2,
-              role: 'assistant' as const,
-              content: message,
-              pending: false,
-            },
-          ];
-          this.rememberEphemeralSession(buildCommitEphemeralSessionRecord({
-            path: sessionPath,
-            displayName: `[Commit] ${deriveDisplayNameFromSeed(message)}`,
-            workspaceRoot: state.workspaceRoot,
-            messages: finalMessages,
-          }));
-          return message;
-        }
-
-        const toolResults = [];
-        for (const call of completion.result.step.calls) {
-          const request = await toolExecutor.requestFromFunctionCall(call.name, call.argumentsJson);
-          const requestWithMetadata = toolExecutor.attachRequestMetadata
-            ? toolExecutor.attachRequestMetadata(request, {
-                toolCallId: call.id,
-                toolName: call.name,
-              })
-            : request;
-          const authorization = await toolExecutor.authorize(requestWithMetadata);
-          if (authorization.kind !== 'allowed') {
-            throw new Error(i18n.t('error.autoCommitFailedInteractiveTool', { name: call.name }));
-          }
-          const output = await toolExecutor.execute(requestWithMetadata);
-          toolResults.push({
-            toolCallId: call.id,
-            content: output.summaryText,
-          });
-        }
-
-        toolState = appendLlmToolResultMessages(toolState, toolResults);
-      }
-
-      throw new Error(i18n.t('error.autoCommitFailedIncomplete'));
-    } catch (error) {
-      const failureMessage = i18n.t('error.generationFailed', { message: error instanceof Error ? error.message : String(error) });
-      const finalMessages = [
-        ...baseMessages,
-        {
-          id: 2,
-          role: 'assistant' as const,
-          content: failureMessage,
-          pending: false,
-        },
-      ];
-      this.rememberEphemeralSession(buildCommitEphemeralSessionRecord({
-        path: sessionPath,
-        displayName: i18n.t('error.commitAutoGenFailed'),
-        workspaceRoot: state.workspaceRoot,
-        messages: finalMessages,
-      }));
-      throw error;
-    }
+      toolExecutor,
+      runtimeBasicInfo: this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
+      rememberEphemeralSession: (record) => this.rememberEphemeralSession(record),
+    });
   }
 
   private rememberEphemeralWorktreeSession(record: EphemeralSessionRecord): void {
@@ -3790,134 +3663,22 @@ class DesktopHostService {
     }
 
     const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
-    const dreamContextText = await buildDreamContextText({
+    const toolExecutor = await this.ensureToolExecutor();
+    return generateWorktreeNamesFromModelTask({
       workspaceRoot: state.workspaceRoot,
       gitBranch: state.git.branch,
-    });
-    const prompt = buildWorktreeNamingPrompt({
+      config: state.config,
+      activeProfile,
+      apiKey,
+      metadata: state.metadata,
+      extensionSystemPrompts,
+      toolExecutor,
+      runtimeBasicInfo: this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
+      rememberEphemeralSession: (record) => this.rememberEphemeralWorktreeSession(record),
       userPrompt,
       baseBranch,
       repoRoot,
     });
-    const transportConfig = buildPrimaryTransportConfig({
-      apiKey,
-      model: state.config.activeModel,
-      baseUrl: currentApiBase(state.config),
-      workspaceRoot: state.workspaceRoot,
-      profile: activeProfile,
-      agentMode: resolveDesktopAgentMode(state.config),
-    });
-    const llmTransport = createLlmTransport(transportConfig);
-    const toolExecutor = await this.ensureToolExecutor();
-    toolExecutor.setActiveTransportConfig(transportConfig);
-    const dreamToolDefinitions = state.git.branch ? buildDreamReadHostToolDefinitions() : [];
-    let toolState = startLlmToolAgentState(
-      [],
-      prompt,
-      state.workspaceRoot,
-      state.metadata.rules.enabledRules,
-      state.metadata.skills.enabledSkillCatalog,
-      [],
-      transportConfig.model,
-      state.metadata.planMetadata,
-      extensionSystemPrompts,
-      dreamContextText || undefined,
-      undefined,
-      this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
-    );
-    const sessionPath = createEphemeralWorktreeSessionPath();
-    const baseMessages: ConversationMessageSnapshot[] = [
-      {
-        id: 1,
-        role: 'user',
-        content: prompt,
-        pending: false,
-      },
-    ];
-
-    try {
-      for (let round = 0; round < 6; round += 1) {
-        const completion = await llmTransport.startToolAgentRound(
-          transportConfig,
-          toolState,
-          dreamToolDefinitions,
-        );
-
-        if (completion.kind !== 'success') {
-          throw new Error(i18n.t('error.autoWorktreeNameFailed', { error: completion.error }));
-        }
-
-        toolState = completion.result.state;
-
-        if (completion.result.step.kind === 'final-response-ready') {
-          const assistantText = extractLastLlmAssistantText(toolState)?.trim();
-          if (!assistantText) {
-            throw new Error(i18n.t('error.autoWorktreeNameFailedNoBody'));
-          }
-
-          const names = parseGeneratedWorktreeNamingResponse(assistantText);
-          const summary = JSON.stringify(names);
-          const finalMessages = [
-            ...baseMessages,
-            {
-              id: 2,
-              role: 'assistant' as const,
-              content: summary,
-              pending: false,
-            },
-          ];
-          this.rememberEphemeralWorktreeSession(buildWorktreeEphemeralSessionRecord({
-            path: sessionPath,
-            displayName: `[Worktree] ${names.worktreeName}`,
-            workspaceRoot: state.workspaceRoot,
-            messages: finalMessages,
-          }));
-          return names;
-        }
-
-        const toolResults = [];
-        for (const call of completion.result.step.calls) {
-          const request = await toolExecutor.requestFromFunctionCall(call.name, call.argumentsJson);
-          const requestWithMetadata = toolExecutor.attachRequestMetadata
-            ? toolExecutor.attachRequestMetadata(request, {
-                toolCallId: call.id,
-                toolName: call.name,
-              })
-            : request;
-          const authorization = await toolExecutor.authorize(requestWithMetadata);
-          if (authorization.kind !== 'allowed') {
-            throw new Error(i18n.t('error.autoWorktreeNameFailedInteractiveTool', { name: call.name }));
-          }
-          const output = await toolExecutor.execute(requestWithMetadata);
-          toolResults.push({
-            toolCallId: call.id,
-            content: output.summaryText,
-          });
-        }
-
-        toolState = appendLlmToolResultMessages(toolState, toolResults);
-      }
-
-      throw new Error(i18n.t('error.autoWorktreeNameFailedIncomplete'));
-    } catch (error) {
-      const failureMessage = i18n.t('error.generationFailed', { message: error instanceof Error ? error.message : String(error) });
-      const finalMessages = [
-        ...baseMessages,
-        {
-          id: 2,
-          role: 'assistant' as const,
-          content: failureMessage,
-          pending: false,
-        },
-      ];
-      this.rememberEphemeralWorktreeSession(buildWorktreeEphemeralSessionRecord({
-        path: sessionPath,
-        displayName: i18n.t('error.worktreeAutoGenFailed'),
-        workspaceRoot: state.workspaceRoot,
-        messages: finalMessages,
-      }));
-      throw error;
-    }
   }
 
   private extensionManager() {
