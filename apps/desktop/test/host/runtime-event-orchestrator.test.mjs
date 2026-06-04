@@ -194,6 +194,73 @@ test('completed Chinese greeting keeps finalized thinking above the final assist
   ]);
 });
 
+test('after-stream thinking stays on the body row until completion (same-instance collapse)', () => {
+  const harness = createHarness();
+  harness.pushUser('hi');
+
+  // Real streaming order: thinking deltas, then after-stream finalize emitted right before
+  // the first body chunk. The thinking must NOT split yet — it stays on the streaming body
+  // row so the Collapsible can collapse on the same instance once the body arrives.
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    { kind: 'update-pending-assistant-thinking', text: 'Planning the greeting.' },
+    {
+      kind: 'assistant-thinking-segment-finalized',
+      text: 'Planning the greeting.',
+      placement: 'after-stream',
+    },
+    { kind: 'assistant-chunk', text: 'Hello!' },
+  ]);
+
+  const streaming = harness.timeline
+    .toMessages()
+    .filter((message) => message.role === 'assistant' && !message.tool);
+  assert.equal(streaming.length, 1);
+  assert.equal(streaming[0].content, 'Hello!');
+  assert.equal(streaming[0].aux?.thinking, 'Planning the greeting.');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'assistant-response-completed' },
+  ]);
+
+  assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
+    'user',
+    'thinking:Planning the greeting.',
+    'assistant:Hello!',
+  ]);
+});
+
+test('empty assistant turn flushes deferred after-stream thinking on consumeCompletedTurnResult', () => {
+  const harness = createHarness();
+  harness.pushUser('hi');
+
+  // Mirrors agent-core `done` with empty pendingAssistantTextStore:
+  // remove-pending-assistant, then clearStreamingUiState thinking finalize — no
+  // assistant-response-completed.
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    { kind: 'update-pending-assistant-thinking', text: 'Only thinking, no body.' },
+    { kind: 'remove-pending-assistant' },
+    {
+      kind: 'assistant-thinking-segment-finalized',
+      text: 'Only thinking, no body.',
+      placement: 'after-stream',
+    },
+  ]);
+
+  harness.setCompletedTurnResult({
+    kind: 'completed',
+    assistantText: '',
+    toolExecutions: [],
+  });
+  harness.orchestrator.consumeCompletedTurnResult();
+
+  assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
+    'user',
+    'thinking:Only thinking, no body.',
+  ]);
+});
+
 test('read_file streaming preview shows filename from partial arguments JSON', () => {
   const harness = createHarness();
   harness.pushUser('read Cargo.toml');
