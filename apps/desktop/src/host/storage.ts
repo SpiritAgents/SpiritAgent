@@ -28,6 +28,8 @@ import {
   type HostSkillDiscoveryResult,
 } from '@spirit-agent/host-internal';
 
+import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
+
 import type {
   ConversationMessageSnapshot,
   DesktopModelCapability,
@@ -78,6 +80,8 @@ export interface DesktopConfigFile {
   lastProjectWorkspaceRoot?: string;
   uiLocale?: string;
   windowsMica?: boolean;
+  agentMode?: DesktopAgentMode;
+  /** @deprecated 使用 agentMode。 */
   planMode?: boolean;
   webHost: DesktopWebHostConfigFile;
   dreams: DesktopDreamConfigFile;
@@ -378,7 +382,7 @@ export function createDesktopExtensionStateStore(
 
 export async function loadHostMetadata(
   workspaceRoot: string,
-  planMode = false,
+  agentMode: DesktopAgentMode = 'agent',
   options?: { activePlanPath?: string; workspaceBinding?: DesktopWorkspaceBinding },
 ): Promise<HostMetadataSummary> {
   const workspaceBinding = options?.workspaceBinding ?? 'project';
@@ -387,7 +391,7 @@ export async function loadHostMetadata(
     spiritDataDir: spiritAgentDataDir(),
     includeWorkspaceScope: workspaceBinding === 'project',
   }, {
-    planMode,
+    agentMode,
     activePlanPath: options?.activePlanPath,
   });
 }
@@ -493,7 +497,7 @@ function defaultConfig(): DesktopConfigFile {
     activeModel: DEFAULT_MODEL,
     recentWorkspaces: [],
     windowsMica: true,
-    planMode: false,
+    agentMode: 'agent',
     webHost: defaultWebHostConfig(),
     dreams: defaultDreamConfig(),
   };
@@ -569,7 +573,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
       ? { uiLocale: raw.uiLocale.trim() }
       : {}),
     windowsMica: raw.windowsMica !== false,
-    planMode: raw.planMode === true,
+    agentMode: resolveDesktopAgentMode({ agentMode: raw.agentMode, planMode: raw.planMode }),
     webHost: normalizeWebHostConfig(raw.webHost),
     dreams: normalizeDreamConfig(raw.dreams),
   };

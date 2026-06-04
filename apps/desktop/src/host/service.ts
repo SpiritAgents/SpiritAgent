@@ -7,6 +7,7 @@ import {
   lineDeltaForDeleteFilePath,
 } from './delete-file-line-delta.js';
 import i18n from '../lib/i18n-host.js';
+import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
   appendLlmToolResultMessages,
   buildActiveSkillsSystemMessage,
@@ -43,6 +44,7 @@ import {
   type RuntimeEvent,
   type PendingWorkspaceFile,
   type RuntimeToolExecution,
+  type SpiritAgentMode,
   type SpiritLlmTransport,
 } from '@spirit-agent/agent-core';
 import {
@@ -713,7 +715,7 @@ class DesktopHostService {
       const prevActiveModel = state.config.activeModel;
       const prevImageGenerationModel = state.config.imageGenerationModel;
       const prevApiBase = currentApiBase(state.config);
-      const prevPlanMode = state.config.planMode === true;
+      const prevAgentMode = resolveDesktopAgentMode(state.config);
 
       if (this.runtime?.isBusy() && Boolean(request.apiKey?.trim())) {
         throw new Error(i18n.t('error.runtimeBusy'));
@@ -762,8 +764,10 @@ class DesktopHostService {
         }
       }
       state.config.windowsMica = request.windowsMica !== false;
-      if (request.planMode !== undefined) {
-        state.config.planMode = request.planMode;
+      if (request.agentMode !== undefined) {
+        state.config.agentMode = request.agentMode;
+      } else if (request.planMode !== undefined) {
+        state.config.agentMode = request.planMode ? 'plan' : 'agent';
       }
       if (request.webHost !== undefined) {
         const nextWebHost = normalizeWebHostConfig({
@@ -791,21 +795,21 @@ class DesktopHostService {
         await saveApiKeyForProvider(keyScope, request.apiKey);
       }
 
-      const planModeNow = state.config.planMode === true;
+      const agentModeNow = resolveDesktopAgentMode(state.config);
       const modelOrEndpointChanged =
         state.config.activeModel !== prevActiveModel ||
         currentApiBase(state.config) !== prevApiBase;
       const imageGenerationModelChanged = state.config.imageGenerationModel !== prevImageGenerationModel;
 
-      if (planModeNow !== prevPlanMode) {
-        state.metadata = await loadHostMetadata(state.workspaceRoot, planModeNow, {
+      if (agentModeNow !== prevAgentMode) {
+        state.metadata = await loadHostMetadata(state.workspaceRoot, agentModeNow, {
           activePlanPath: this.activeBundle().activePlanPath,
           workspaceBinding: state.workspaceBinding,
         });
       }
 
       const transportOrPlanChanged =
-        planModeNow !== prevPlanMode || modelOrEndpointChanged || imageGenerationModelChanged;
+        agentModeNow !== prevAgentMode || modelOrEndpointChanged || imageGenerationModelChanged;
       const deferRuntimeRefresh =
         wasBusy &&
         transportOrPlanChanged &&
@@ -818,7 +822,7 @@ class DesktopHostService {
         await this.refreshRuntime();
       }
       this.lastRuntimeError = '';
-      // 勿在此处 persist：仅改 config（如 planMode）不应刷新 savedAtUnixMs，否则会话在侧栏会误排到首位
+      // 勿在此处 persist：仅改 config（如 agentMode）不应刷新 savedAtUnixMs，否则会话在侧栏会误排到首位
       await this.flushDeferredRuntimeRefreshIfIdle();
       return this.buildSnapshot();
     });
@@ -1504,6 +1508,15 @@ class DesktopHostService {
 
       const state = this.requireState();
       const bundle = this.activeBundle();
+      if (resolveDesktopAgentMode(state.config) !== 'agent') {
+        state.config.agentMode = 'agent';
+        await saveConfig(state.config);
+        state.metadata = await loadHostMetadata(state.workspaceRoot, 'agent', {
+          activePlanPath: bundle.activePlanPath,
+          workspaceBinding: state.workspaceBinding,
+        });
+        bundle.toolExecutor?.setAgentModeToolExposure('agent');
+      }
       return this.submitUserTurnAfterInitialized(
         buildStartImplementingUserTurn(
           {
@@ -2425,7 +2438,7 @@ class DesktopHostService {
       imageModel: state.config.imageGenerationModel ?? '',
       apiBase: currentApiBase(state.config),
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-      planMode: state.config.planMode === true,
+      agentMode: resolveDesktopAgentMode(state.config),
       approvalLevel: bundle.approvalLevel,
       loopEnabled: bundle.loopEnabled,
       todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
@@ -2764,7 +2777,7 @@ class DesktopHostService {
       return;
     }
 
-    const metadata = await loadHostMetadata(workspaceRoot, config.planMode === true, {
+    const metadata = await loadHostMetadata(workspaceRoot, resolveDesktopAgentMode(config), {
       workspaceBinding,
     });
     const plan = await loadDesktopPlanSnapshot(metadata.planMetadata.path, metadata.planMetadata.exists);
@@ -2835,7 +2848,7 @@ class DesktopHostService {
     const activePlanPath = this.resolveBundleActivePlanPath(bundle);
     state.metadata = await loadHostMetadata(
       state.workspaceRoot,
-      state.config.planMode === true,
+      resolveDesktopAgentMode(state.config),
       { activePlanPath, workspaceBinding: state.workspaceBinding },
     );
     state.plan = await loadDesktopPlanSnapshot(
@@ -2876,6 +2889,7 @@ class DesktopHostService {
       baseUrl: currentApiBase(state.config),
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       profile: activeProfile,
+      agentMode: resolveDesktopAgentMode(state.config),
     });
     if (
       runtimeTransportConfig.transportKind === 'openai-compatible'
@@ -2973,7 +2987,7 @@ class DesktopHostService {
     }
     bundle.toolExecutor.setApprovalLevel(bundle.approvalLevel);
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
-    bundle.toolExecutor.setPlanModeToolExposure(this.requireState().config.planMode === true);
+    bundle.toolExecutor.setAgentModeToolExposure(resolveDesktopAgentMode(this.requireState().config));
     await bundle.toolExecutor.ensureMcpToolingReady();
     return bundle.toolExecutor;
   }
@@ -3589,6 +3603,7 @@ class DesktopHostService {
       baseUrl: currentApiBase(state.config),
       workspaceRoot: state.workspaceRoot,
       profile: activeProfile,
+      agentMode: resolveDesktopAgentMode(state.config),
     });
     const llmTransport = createLlmTransport(transportConfig);
     const toolExecutor = await this.ensureToolExecutor();
@@ -3802,6 +3817,7 @@ class DesktopHostService {
       baseUrl: currentApiBase(state.config),
       workspaceRoot: state.workspaceRoot,
       profile: activeProfile,
+      agentMode: resolveDesktopAgentMode(state.config),
     });
     const llmTransport = createLlmTransport(transportConfig);
     const toolExecutor = await this.ensureToolExecutor();
@@ -4452,7 +4468,7 @@ class DesktopHostService {
       )
     ) {
       if (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath)) {
-        state.metadata = await loadHostMetadata(state.workspaceRoot, state.config.planMode === true, {
+        state.metadata = await loadHostMetadata(state.workspaceRoot, resolveDesktopAgentMode(state.config), {
           activePlanPath: bundle.activePlanPath,
           workspaceBinding: state.workspaceBinding,
         });
@@ -4899,11 +4915,13 @@ function buildPrimaryTransportConfig(input: {
   model: string;
   baseUrl: string;
   workspaceRoot: string;
+  agentMode?: SpiritAgentMode;
   profile?: Pick<
     ModelProfileSnapshot,
     'provider' | 'transportKind' | 'capabilities' | 'reasoningEffort' | 'supportedReasoningEfforts'
   >;
 }): LlmTransportConfig {
+  const spiritAgentMode = input.agentMode ?? 'agent';
   const transportKind = resolveDesktopTransportKind(input.profile);
   if (transportKind === 'open-responses') {
     const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
@@ -4938,6 +4956,7 @@ function buildPrimaryTransportConfig(input: {
       model: input.model,
       baseUrl: input.baseUrl,
       workspaceRoot: input.workspaceRoot,
+      spiritAgentMode,
       ...(responsesProvider ? { responsesProvider } : {}),
       store: false,
       ...(llmVendor ? { llmVendor } : {}),

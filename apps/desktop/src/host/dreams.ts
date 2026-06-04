@@ -137,6 +137,7 @@ export function buildDreamCollectorPlanMetadata(
 ): LlmPlanMetadata {
   return {
     ...planMetadata,
+    agentMode: 'agent',
     planMode: false,
   };
 }

@@ -1,5 +1,8 @@
+import type { SpiritAgentMode } from '@spirit-agent/agent-core';
 import type { ModelProviderId } from '@spirit-agent/host-internal/model-provider-presets';
 import type { ModelReasoningEffort } from '@spirit-agent/agent-core/reasoning-effort';
+
+export type DesktopAgentMode = SpiritAgentMode;
 import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel } from '@spirit-agent/host-internal';
 
 import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
@@ -34,7 +37,9 @@ export interface UpdateConfigRequest {
   apiKey?: string;
   /** 与 Rust `UpdateConfigRequest.windows_mica` 一致；缺省不修改已保存的 Mica 开关。 */
   windowsMica?: boolean;
-  /** 缺省时不修改已保存的 Plan 模式。 */
+  /** 缺省时不修改运行方式（Agent / Plan / Ask）。 */
+  agentMode?: DesktopAgentMode;
+  /** @deprecated 使用 agentMode。 */
   planMode?: boolean;
   /** 缺省时不修改已保存的 Desktop Web 远程访问配置。 */
   webHost?: DesktopWebHostConfigUpdate;
@@ -547,8 +552,8 @@ export interface DesktopConfigSnapshot {
   activeApiKeyConfigured: boolean;
   /** 桌面宿主在 Windows 上是否使用 Mica 风格；无字段时按 true 处理。 */
   windowsMica?: boolean;
-  /** 与 CLI Plan 模式一致：影响宿主指令元数据与运行时 plan 元数据。 */
-  planMode: boolean;
+  /** 运行方式：影响宿主指令元数据、工具暴露与 SPIRIT_AGENT_MODE。 */
+  agentMode: DesktopAgentMode;
   /** 与 `spiritAgentDataDir()/model-catalog-cache` 对齐；无缓存时为空数组。 */
   modelCatalogHints?: DesktopModelCatalogHint[];
 }

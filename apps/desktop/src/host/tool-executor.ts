@@ -11,7 +11,11 @@ import {
   buildBuiltinHostToolDefinitions,
   buildDreamHostToolDefinitions,
   buildDreamReadHostToolDefinitions,
+  assertAgentModeAllowsHostTool,
   assertFinishTaskToolAllowed,
+  filterHostToolDefinitionsForAgentMode,
+  isPlanAgentMode,
+  type SpiritAgentMode,
   enrichUnknownToolError,
   toolNamesFromDefinitions,
   buildFinishTaskHostToolDefinitions,
@@ -72,7 +76,7 @@ export class DesktopToolExecutor
   private loopToolDefinitions: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitions: JsonValue[] = [];
-  private planToolExposureEnabled = false;
+  private agentMode: SpiritAgentMode = 'agent';
   private activeModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
   private activeTransportConfig: LlmTransportConfig | undefined;
   private imageGenerationAvailable = false;
@@ -134,9 +138,13 @@ export class DesktopToolExecutor
     this.loopToolDefinitions = loopEnabled ? buildFinishTaskHostToolDefinitions() : [];
   }
 
+  setAgentModeToolExposure(agentMode: SpiritAgentMode): void {
+    this.agentMode = agentMode;
+    this.planToolDefinitions = isPlanAgentMode(agentMode) ? buildPlanModeHostToolDefinitions() : [];
+  }
+
   setPlanModeToolExposure(planMode: boolean): void {
-    this.planToolExposureEnabled = planMode;
-    this.planToolDefinitions = planMode ? buildPlanModeHostToolDefinitions() : [];
+    this.setAgentModeToolExposure(planMode ? 'plan' : 'agent');
   }
 
   approvalLevelSnapshot(): ApprovalLevel {
@@ -173,17 +181,25 @@ export class DesktopToolExecutor
     if (
       this.activeTransportConfig !== undefined
       && isOpenResponsesTransportConfig(this.activeTransportConfig)
-      && shouldUseApplyPatchFileTools(this.activeTransportConfig)
+      && shouldUseApplyPatchFileTools(this.activeTransportConfig, { agentMode: this.agentMode })
     ) {
       builtinDefinitions = filterLegacyHostFileToolDefinitions(builtinDefinitions);
     }
 
+    const mergedHostDefinitions = filterHostToolDefinitionsForAgentMode(
+      [
+        ...builtinDefinitions,
+        ...this.loopToolDefinitions,
+        ...this.planToolDefinitions,
+        ...this.dreamToolDefinitions,
+        ...this.todoToolDefinitions,
+      ],
+      this.agentMode,
+    );
+    const hostDefinitionItems = Array.isArray(mergedHostDefinitions) ? mergedHostDefinitions : [];
+
     return mergeToolDefinitions(
-      ...builtinDefinitions,
-      ...this.loopToolDefinitions,
-      ...this.planToolDefinitions,
-      ...this.dreamToolDefinitions,
-      ...this.todoToolDefinitions,
+      ...hostDefinitionItems,
       ...this.extensionToolDefinitions,
       ...this.mcp.toolDefinitionsJson(),
     );
@@ -203,6 +219,7 @@ export class DesktopToolExecutor
   ): Promise<DesktopToolRequest> {
     const availableDefinitions = this.toolDefinitionsJson();
     assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled, availableDefinitions);
+    assertAgentModeAllowsHostTool(name, this.agentMode, availableDefinitions);
     try {
       const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
       if (localMcpRequest) {

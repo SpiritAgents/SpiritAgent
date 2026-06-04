@@ -54,6 +54,7 @@ export function createDesktopRuntime(input: {
 }): DesktopRuntime {
   const applyPatchFileToolsPromptSection = resolveApplyPatchFileToolsPromptSection(
     input.transportConfig,
+    input.planMetadata,
   );
   const providerWebSearchPromptSection = resolveProviderWebSearchPromptSection(
     input.transportConfig,
@@ -141,8 +142,10 @@ export function cloneActiveSkills(skills: LlmActiveSkill[]): LlmActiveSkill[] {
 
 function resolveApplyPatchFileToolsPromptSection(
   config: LlmTransportConfig,
+  planMetadata: LlmPlanMetadata,
 ): string | undefined {
-  return config.transportKind === 'open-responses' && shouldUseApplyPatchFileTools(config)
+  const agentMode = planMetadata.agentMode ?? 'agent';
+  return config.transportKind === 'open-responses' && shouldUseApplyPatchFileTools(config, { agentMode })
     ? buildApplyPatchFileToolsPromptSection()
     : undefined;
 }

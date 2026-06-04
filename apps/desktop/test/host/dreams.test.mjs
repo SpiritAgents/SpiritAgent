@@ -97,9 +97,11 @@ test('dream collector plan metadata is always normalized to agent mode', () => {
   const collectorPlanMetadata = buildDreamCollectorPlanMetadata({
     path: 'D:/SpiritAgent/plans/demo-plan.md',
     exists: true,
+    agentMode: 'plan',
     planMode: true,
   });
 
+  assert.equal(collectorPlanMetadata.agentMode, 'agent');
   assert.equal(collectorPlanMetadata.planMode, false);
 
   const planSystemMessage = buildPlanSystemMessage(collectorPlanMetadata);
