@@ -634,12 +634,12 @@ mod tests {
     fn shell_tool_args_excerpt_keeps_reason_field() {
         let excerpt = tool_request_args_excerpt(&ToolUiRequest::new(
             "run_shell_command",
-            json!({ "command": "echo 牛逼", "reason": "确认终端输出" }),
+            json!({ "command": "echo hello", "reason": "smoke test" }),
         ));
         let parsed: Value = serde_json::from_str(&excerpt).expect("args excerpt json");
         assert_eq!(
             parsed,
-            json!({ "command": "echo 牛逼", "reason": "确认终端输出" })
+            json!({ "command": "echo hello", "reason": "smoke test" })
         );
     }
 
@@ -648,11 +648,11 @@ mod tests {
         let block = build_tool_result_block(
             &ToolUiRequest::new(
                 "run_shell_command",
-                json!({ "command": "echo 牛逼", "reason": "确认终端输出" }),
+                json!({ "command": "echo hello", "reason": "smoke test" }),
             ),
             "run_shell_command",
             Some("call_00_demo"),
-            "牛逼\n",
+            "hello\n",
         );
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_00_demo"));
@@ -660,7 +660,7 @@ mod tests {
         assert_eq!(block.headline, "命令已执行");
         assert_eq!(
             block.args_excerpt.as_deref(),
-            Some("{\n  \"command\": \"echo 牛逼\",\n  \"reason\": \"确认终端输出\"\n}")
+            Some("{\n  \"command\": \"echo hello\",\n  \"reason\": \"smoke test\"\n}")
         );
     }
 

@@ -3731,9 +3731,9 @@ mod tests {
                 "toolName": "run_shell_command",
                 "request": {
                     "name": "run_shell_command",
-                    "command": "echo DeepSeek-V4 牛逼"
+                    "command": "echo hello"
                 },
-                "output": "DeepSeek-V4 牛逼",
+                "output": "hello",
                 "failed": false
             }
         });
