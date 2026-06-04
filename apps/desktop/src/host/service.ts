@@ -433,7 +433,7 @@ class DesktopHostService {
   private lastToolSnapshotLogSignature: string | undefined;
   /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
-  private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/agent-core').LspService>();
+  private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/host-internal/lsp').LspService>();
   private lspSnapshot = defaultDesktopLspSnapshot();
 
   private orchestrationFor(bundle: SessionBundle): {

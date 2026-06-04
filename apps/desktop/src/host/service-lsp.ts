@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { LspService, type LspUserConfig } from '@spirit-agent/agent-core';
+import { LspService, type LspUserConfig } from '@spirit-agent/host-internal/lsp';
 
 export function lspUserConfigFromEnabled(enabled: boolean): LspUserConfig {
   return { enabled };
