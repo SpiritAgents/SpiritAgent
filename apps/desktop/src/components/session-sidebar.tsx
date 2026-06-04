@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -183,31 +183,35 @@ function sortSessionsByModified(sessions: SessionListItem[]): SessionListItem[] 
 }
 
 type SessionListRowProps = {
-  session: SessionListItem;
+  sessionPath: string;
+  displayName: string;
+  isBusy?: boolean;
   nested: boolean;
   selected: boolean;
   disabled?: boolean;
   micaStyle?: boolean;
-  onSelect(): void;
-  onRequestDelete?(session: SessionListItem): void;
+  onSelectPath(path: string): void;
 };
 
-function SessionListRow({
-  session,
+const SessionListRow = memo(function SessionListRow({
+  sessionPath,
+  displayName,
+  isBusy,
   nested,
   selected,
   disabled,
   micaStyle,
-  onSelect,
-  onRequestDelete,
+  onSelectPath,
 }: SessionListRowProps) {
   const { t } = useTranslation();
-  const rowButton = (
+
+  return (
     <button
       type="button"
+      data-session-path={sessionPath}
       disabled={disabled}
       aria-current={selected ? "true" : undefined}
-      onClick={onSelect}
+      onClick={() => onSelectPath(sessionPath)}
       className={cn(
         "group flex w-full min-w-0 items-center overflow-hidden rounded-md text-left text-sm outline-none",
         sidebarInteractionMotionClass,
@@ -220,11 +224,11 @@ function SessionListRow({
     >
       <span
         className="min-w-0 flex-1 basis-0 truncate text-xs font-medium"
-        title={session.displayName}
+        title={displayName}
       >
-        {session.displayName}
+        {displayName}
       </span>
-      {session.isBusy ? (
+      {isBusy ? (
         <Spinner
           className="size-3 shrink-0 text-primary"
           aria-label={t('common.running')}
@@ -232,22 +236,63 @@ function SessionListRow({
       ) : null}
     </button>
   );
+});
 
-  if (disabled || !onRequestDelete) {
-    return rowButton;
+type SessionListNavProps = {
+  ariaLabel: string;
+  canDeleteSession: boolean;
+  contextMenuSession: SessionListItem | null;
+  contextMenuSessionRef: RefObject<SessionListItem | null>;
+  deleteSessionBusy?: boolean;
+  onSessionContextMenuCapture(event: MouseEvent<HTMLElement>): void;
+  onContextMenuOpenChange(open: boolean): void;
+  onRequestDelete(session: SessionListItem): void;
+  children: ReactNode;
+};
+
+function SessionListNav({
+  ariaLabel,
+  canDeleteSession,
+  contextMenuSession,
+  contextMenuSessionRef,
+  deleteSessionBusy,
+  onSessionContextMenuCapture,
+  onContextMenuOpenChange,
+  onRequestDelete,
+  children,
+}: SessionListNavProps) {
+  const { t } = useTranslation();
+
+  const nav = (
+    <nav
+      className="flex min-w-0 flex-col gap-0.5"
+      aria-label={ariaLabel}
+      onContextMenuCapture={canDeleteSession ? onSessionContextMenuCapture : undefined}
+    >
+      {children}
+    </nav>
+  );
+
+  if (!canDeleteSession) {
+    return nav;
   }
 
-  const busy = session.isBusy === true;
+  const busy = (contextMenuSession ?? contextMenuSessionRef.current)?.isBusy === true;
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{rowButton}</ContextMenuTrigger>
+    <ContextMenu onOpenChange={onContextMenuOpenChange}>
+      <ContextMenuTrigger asChild>{nav}</ContextMenuTrigger>
       <ContextMenuContent aria-label={t("sidebar.sessionActions")}>
         <ContextMenuItem
           variant="destructive"
-          disabled={busy}
+          disabled={deleteSessionBusy || busy}
           title={busy ? t("sidebar.cannotDeleteBusySession") : undefined}
-          onSelect={() => onRequestDelete(session)}
+          onSelect={() => {
+            const session = contextMenuSessionRef.current ?? contextMenuSession;
+            if (session) {
+              onRequestDelete(session);
+            }
+          }}
         >
           <Trash2 aria-hidden />
           {t("sidebar.deleteSession")}
@@ -386,6 +431,48 @@ export function SessionSidebar({
   const unboundSessions = useMemo(() => sortSessionsByModified(unbound), [unbound]);
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Record<string, boolean>>({});
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
+  const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
+  const contextMenuSessionRef = useRef<SessionListItem | null>(null);
+  const sessionByPath = useMemo(() => {
+    const map = new Map<string, SessionListItem>();
+    for (const session of sessions) {
+      map.set(session.path, session);
+    }
+    return map;
+  }, [sessions]);
+  const canDeleteSession = Boolean(onDeleteSession) && !disabled;
+
+  const handleSessionContextMenuCapture = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      const row = (event.target as HTMLElement).closest("[data-session-path]");
+      if (!row) {
+        event.preventDefault();
+        return;
+      }
+      const sessionPath = row.getAttribute("data-session-path");
+      const session = sessionPath ? sessionByPath.get(sessionPath) : undefined;
+      if (!session) {
+        event.preventDefault();
+        return;
+      }
+      contextMenuSessionRef.current = session;
+      setContextMenuSession(session);
+    },
+    [sessionByPath],
+  );
+
+  const handleContextMenuOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      contextMenuSessionRef.current = null;
+      setContextMenuSession(null);
+    }
+  }, []);
+
+  const handleContextMenuDelete = useCallback((session: SessionListItem) => {
+    contextMenuSessionRef.current = null;
+    setContextMenuSession(null);
+    setDeleteTarget(session);
+  }, []);
 
   const isSessionSelected = (sessionPath: string) =>
     !marketplaceActive && activeFilePath !== null && samePath(sessionPath, activeFilePath);
@@ -559,7 +646,16 @@ export function SessionSidebar({
             </nav>
           ) : (
             <div className="min-w-0 px-1.5 pb-1.5">
-              <nav className="flex min-w-0 flex-col gap-0.5" aria-label={t('sidebar.workspaceSessionsAria')}>
+              <SessionListNav
+                ariaLabel={t('sidebar.workspaceSessionsAria')}
+                canDeleteSession={canDeleteSession}
+                contextMenuSession={contextMenuSession}
+                contextMenuSessionRef={contextMenuSessionRef}
+                deleteSessionBusy={deleteSessionBusy}
+                onSessionContextMenuCapture={handleSessionContextMenuCapture}
+                onContextMenuOpenChange={handleContextMenuOpenChange}
+                onRequestDelete={handleContextMenuDelete}
+              >
                 {unboundSessions.length > 0 ? (
                   <>
                     <p className="px-2.5 pt-2 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
@@ -568,13 +664,14 @@ export function SessionSidebar({
                     {unboundSessions.map((session) => (
                       <SessionListRow
                         key={session.path}
-                        session={session}
+                        sessionPath={session.path}
+                        displayName={session.displayName}
+                        isBusy={session.isBusy}
                         nested={false}
                         selected={isSessionSelected(session.path)}
                         disabled={disabled}
                         micaStyle={micaStyle}
-                        onSelect={() => onSelectSession(session.path)}
-                        onRequestDelete={onDeleteSession ? setDeleteTarget : undefined}
+                        onSelectPath={onSelectSession}
                       />
                     ))}
                   </>
@@ -622,13 +719,14 @@ export function SessionSidebar({
                           {group.sessions.map((session) => (
                             <SessionListRow
                               key={session.path}
-                              session={session}
+                              sessionPath={session.path}
+                              displayName={session.displayName}
+                              isBusy={session.isBusy}
                               nested
                               selected={isSessionSelected(session.path)}
                               disabled={disabled}
                               micaStyle={micaStyle}
-                              onSelect={() => onSelectSession(session.path)}
-                              onRequestDelete={onDeleteSession ? setDeleteTarget : undefined}
+                              onSelectPath={onSelectSession}
                             />
                           ))}
                         </div>
@@ -636,7 +734,7 @@ export function SessionSidebar({
                     </div>
                   );
                 })}
-              </nav>
+              </SessionListNav>
             </div>
           )}
         </ScrollArea>
