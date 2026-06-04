@@ -1,4 +1,10 @@
-import { DEFAULT_IMAGE_GENERATION_SIZE, type JsonObject, type JsonValue } from './ports.js';
+import { APPLY_PATCH_HOST_TOOL_NAME } from './open-responses/apply-patch-eligibility.js';
+import {
+  DEFAULT_IMAGE_GENERATION_SIZE,
+  type JsonObject,
+  type JsonValue,
+  type SpiritAgentMode,
+} from './ports.js';
 import { throwUnknownToolError, toolNamesFromDefinitions } from './unknown-tool-error.js';
 
 export { enrichUnknownToolError, toolNamesFromDefinitions, unknownToolErrorMessage } from './unknown-tool-error.js';
@@ -28,6 +34,60 @@ export type TodoHostToolName =
   | 'todo_complete';
 
 export const FINISH_TASK_TOOL_NAME = 'finish_task';
+
+export const ASK_MODE_EXCLUDED_HOST_TOOL_NAMES = new Set<string>([
+  'run_shell_command',
+  'create_file',
+  'edit_file',
+  'delete_file',
+  APPLY_PATCH_HOST_TOOL_NAME,
+  'generate_image',
+  'create_plan',
+]);
+
+export function isAskAgentMode(agentMode: SpiritAgentMode): boolean {
+  return agentMode === 'ask';
+}
+
+export function isPlanAgentMode(agentMode: SpiritAgentMode): boolean {
+  return agentMode === 'plan';
+}
+
+export function readHostFunctionToolName(definition: JsonValue): string | undefined {
+  if (typeof definition !== 'object' || definition === null || Array.isArray(definition)) {
+    return undefined;
+  }
+  const fn = definition.function;
+  if (typeof fn !== 'object' || fn === null || Array.isArray(fn)) {
+    return undefined;
+  }
+  return typeof fn.name === 'string' ? fn.name : undefined;
+}
+
+export function filterHostToolDefinitionsForAgentMode(
+  definitions: JsonValue,
+  agentMode: SpiritAgentMode,
+): JsonValue {
+  if (!isAskAgentMode(agentMode) || !Array.isArray(definitions)) {
+    return definitions;
+  }
+  return definitions.filter((definition) => {
+    const name = readHostFunctionToolName(definition);
+    return name === undefined || !ASK_MODE_EXCLUDED_HOST_TOOL_NAMES.has(name);
+  });
+}
+
+/** Reject edit-class host tools in Ask mode (model may still call them from prior turns). */
+export function assertAgentModeAllowsHostTool(
+  toolName: string,
+  agentMode: SpiritAgentMode,
+  availableToolDefinitions: JsonValue,
+): void {
+  const trimmed = toolName.trim();
+  if (isAskAgentMode(agentMode) && ASK_MODE_EXCLUDED_HOST_TOOL_NAMES.has(trimmed)) {
+    throwUnknownToolError(trimmed, toolNamesFromDefinitions(availableToolDefinitions));
+  }
+}
 
 /** Reject finish_task when Loop is off (model may still call it from prior turns). */
 export function assertFinishTaskToolAllowed(

@@ -1,4 +1,4 @@
-import type { JsonObject, JsonValue } from '../ports.js';
+import type { JsonObject, JsonValue, SpiritAgentMode } from '../ports.js';
 import type { LlmModelCapabilities } from '../llm-provider-shared.js';
 import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
@@ -36,6 +36,8 @@ export interface OpenResponsesTransportConfig {
   reasoningEffort?: 'default' | 'minimal' | 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   reasoningSummary?: OpenResponsesReasoningSummary;
   truncation?: 'disabled' | 'auto';
+  /** Host run mode; Ask disables apply_patch injection. */
+  spiritAgentMode?: SpiritAgentMode;
 }
 
 export type OpenResponsesRequestTraceKind =

@@ -41,6 +41,11 @@ import {
 } from './open-responses/apply-patch-eligibility.js';
 import { buildProviderWebSearchPromptSection } from './open-responses/web-search-eligibility.js';
 import type { LlmTransportConfig } from './provider-config.js';
+import {
+  normalizeSpiritAgentMode,
+  readSpiritAgentModeFromTransportConfig,
+  type SpiritAgentMode,
+} from './ports.js';
 import { createLlmTransport } from './transport-factory.js';
 import type {
   GeneratedImageSaveRequest,
@@ -134,7 +139,7 @@ interface CliHostInternalModule {
   buildTodoContextText?: (records: unknown[]) => string | undefined;
   loadHostInstructionMetadata: (
     context: { workspaceRoot: string; spiritDataDir: string },
-    options?: { planMode?: boolean; activePlanPath?: string },
+    options?: { planMode?: boolean; agentMode?: SpiritAgentMode; activePlanPath?: string },
   ) => Promise<{
     rules: { enabledRules: LlmEnabledRule[] };
     skills: { enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] };
@@ -144,7 +149,7 @@ interface CliHostInternalModule {
   discoverSkillEntries: (context: { workspaceRoot: string; spiritDataDir: string }) => Promise<JsonValue>;
   planMetadataSnapshot: (
     context: { workspaceRoot: string; spiritDataDir: string },
-    planMode: boolean,
+    agentMode: SpiritAgentMode | boolean,
     options?: { useApplyPatchFileTools?: boolean; activePlanPath?: string },
   ) => LlmPlanMetadata;
   listWorkspaceFileReferenceSuggestions?: (
@@ -769,11 +774,14 @@ async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInte
 
 function transportUsesApplyPatchFileTools(
   config: LlmTransportConfig | undefined,
+  agentMode?: SpiritAgentMode,
 ): boolean {
   return (
     config !== undefined
     && config.transportKind === 'open-responses'
-    && shouldUseApplyPatchFileTools(config)
+    && shouldUseApplyPatchFileTools(config, {
+      agentMode: agentMode ?? readSpiritAgentModeFromTransportConfig(config),
+    })
   );
 }
 
@@ -799,8 +807,9 @@ function planMetadataSnapshotOptions(activePath?: string): {
 
 function applyPatchFileToolsPromptSectionForConfig(
   config: LlmTransportConfig,
+  agentMode?: SpiritAgentMode,
 ): string | undefined {
-  return transportUsesApplyPatchFileTools(config)
+  return transportUsesApplyPatchFileTools(config, agentMode)
     ? buildApplyPatchFileToolsPromptSection()
     : undefined;
 }
@@ -812,7 +821,7 @@ function providerWebSearchPromptSectionForConfig(
 }
 
 async function reloadHostMetadataFromInternal(
-  planMode: boolean,
+  agentMode: SpiritAgentMode,
   nextActivePlanPath?: string,
 ): Promise<boolean> {
   if (nextActivePlanPath !== undefined) {
@@ -829,7 +838,8 @@ async function reloadHostMetadataFromInternal(
       spiritDataDir: hostInternal.spiritDataDir,
     },
     {
-      planMode,
+      planMode: agentMode === 'plan',
+      agentMode,
       ...planMetadataSnapshotOptions(activePlanPath),
     },
   );
@@ -1407,7 +1417,8 @@ async function createRuntime(
     configuredServers: toolExecutor.mcpStatusSnapshot().configuredServers,
     cachedTools: toolExecutor.mcpStatusSnapshot().cachedTools,
   });
-  const applyPatchPromptSection = applyPatchFileToolsPromptSectionForConfig(config);
+  const runtimeAgentMode = normalizeSpiritAgentMode(planMetadata);
+  const applyPatchPromptSection = applyPatchFileToolsPromptSectionForConfig(config, runtimeAgentMode);
   const providerWebSearchPromptSection = providerWebSearchPromptSectionForConfig(config);
   const createToolAgentState = (messages: LlmMessage[], userInput: string) =>
     startLlmToolAgentState(
@@ -1599,8 +1610,9 @@ peer.on('runtime.init', async (rawParams) => {
   const params = rawParams as RuntimeInitParams;
   logBridge('runtime.init', { historyCount: params.history?.length ?? 0 });
   transportConfig = params.transportConfig;
+  const initAgentMode = normalizeSpiritAgentMode(params.planMetadata);
   const loadedFromInternal = await reloadHostMetadataFromInternal(
-    params.planMetadata?.planMode ?? false,
+    initAgentMode,
     params.planMetadata?.path?.trim() || undefined,
   );
   await refreshExtensionToolDefinitions(
@@ -1619,7 +1631,7 @@ peer.on('runtime.init', async (rawParams) => {
   }
   runtime = await createRuntime(params.transportConfig, params.history ?? []);
   toolExecutor.setLoopToolExposure(params.loopEnabled === true);
-  toolExecutor.setPlanModeToolExposure(params.planMetadata?.planMode === true);
+  toolExecutor.setAgentModeToolExposure(initAgentMode);
   runtime.setLoopEnabled(params.loopEnabled === true);
   const workspaceRoot =
     params.transportConfig.workspaceRoot?.trim() || currentWorkspaceRoot();
@@ -1634,36 +1646,40 @@ peer.on('runtime.replaceConfig', async (rawParams) => {
   const params = rawParams as RuntimeReplaceConfigParams;
   logBridge('runtime.replaceConfig', { model: params.transportConfig.model });
   transportConfig = params.transportConfig;
-  await reloadHostMetadataFromInternal(planMetadata?.planMode ?? false);
+  await reloadHostMetadataFromInternal(normalizeSpiritAgentMode(planMetadata));
   await refreshExtensionToolDefinitions();
   await refreshExtensionSystemPrompts();
   const target = requireRuntime();
   const loopEnabled = target.loopEnabled();
   runtime = await createRuntime(params.transportConfig, [...target.history()]);
   runtime.setLoopEnabled(loopEnabled);
-  toolExecutor.setPlanModeToolExposure(planMetadata?.planMode === true);
+  toolExecutor.setAgentModeToolExposure(normalizeSpiritAgentMode(planMetadata));
   return buildSnapshot(runtime);
 });
 
 peer.on('runtime.replacePlanMetadata', async (rawParams) => {
   const params = rawParams as RuntimeReplacePlanMetadataParams;
+  const nextAgentMode = normalizeSpiritAgentMode(params.planMetadata);
   const loadedFromInternal = await reloadHostMetadataFromInternal(
-    params.planMetadata.planMode === true,
+    nextAgentMode,
     params.planMetadata.path?.trim() || activePlanPath,
   );
   if (!loadedFromInternal) {
     planMetadata = params.planMetadata;
   }
-  toolExecutor.setPlanModeToolExposure(params.planMetadata.planMode === true);
+  toolExecutor.setAgentModeToolExposure(nextAgentMode);
   return buildSnapshot(requireRuntime());
 });
 
 peer.on('runtime.reloadHostMetadata', async (rawParams) => {
-  const params = (rawParams ?? {}) as { planMode?: boolean; activePlanPath?: string };
-  await reloadHostMetadataFromInternal(
-    params.planMode === true,
-    params.activePlanPath,
-  );
+  const params = (rawParams ?? {}) as {
+    planMode?: boolean;
+    agentMode?: SpiritAgentMode;
+    activePlanPath?: string;
+  };
+  const agentMode = normalizeSpiritAgentMode(params);
+  await reloadHostMetadataFromInternal(agentMode, params.activePlanPath);
+  toolExecutor.setAgentModeToolExposure(agentMode);
   return buildSnapshot(requireRuntime());
 });
 
@@ -1684,21 +1700,25 @@ peer.on('hostInternal.loadCliMetadata', async (rawParams) => {
         workspaceRoot: hostInternal.workspaceRoot,
         spiritDataDir: hostInternal.spiritDataDir,
       },
-      params.planMode === true,
+      normalizeSpiritAgentMode(params),
       planMetadataSnapshotOptions(params.activePlanPath ?? activePlanPath),
     ),
   };
 });
 
 peer.on('hostInternal.loadPlanMetadata', async (rawParams) => {
-  const params = (rawParams ?? {}) as { planMode?: boolean; activePlanPath?: string };
+  const params = (rawParams ?? {}) as {
+    planMode?: boolean;
+    agentMode?: SpiritAgentMode;
+    activePlanPath?: string;
+  };
   const hostInternal = await requireCliHostInternal();
   return hostInternal.module.planMetadataSnapshot(
     {
       workspaceRoot: hostInternal.workspaceRoot,
       spiritDataDir: hostInternal.spiritDataDir,
     },
-    params.planMode === true,
+    normalizeSpiritAgentMode(params),
     planMetadataSnapshotOptions(params.activePlanPath ?? activePlanPath),
   );
 });

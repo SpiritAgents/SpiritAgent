@@ -6,7 +6,9 @@ import {
   type JsonObject,
   type JsonValue,
   type LlmMessage,
+  type SpiritAgentMode,
   type ToolCallRequest,
+  normalizeSpiritAgentMode,
 } from './ports.js';
 
 const TOOL_OUTPUT_RETRY_MAX_CHARS = 12_000;
@@ -60,6 +62,8 @@ export interface ToolAgentActiveSkill {
 export interface ToolAgentPlanMetadata {
   path: string;
   exists: boolean;
+  agentMode?: SpiritAgentMode;
+  /** @deprecated Use agentMode. Still accepted from older hosts. */
   planMode?: boolean;
 }
 
@@ -459,28 +463,35 @@ export function buildPlanSystemMessage(
 export function buildAgentModeSystemMessage(
   planMetadata?: ToolAgentPlanMetadata,
 ): string {
-  const planMode = planMetadata?.planMode === true;
-  const modeLabel = planMode ? 'Plan' : 'Agent';
+  const agentMode = normalizeSpiritAgentMode(planMetadata);
+  const lines = [AGENT_MODE_SECTION_PREFIX, `You are in ${agentModeLabel(agentMode)} mode.`, ''];
 
-  const lines = [
-    AGENT_MODE_SECTION_PREFIX,
-    `You are in ${modeLabel} mode.`,
-    '',
-  ];
-
-  if (planMode) {
+  if (agentMode === 'plan') {
     lines.push(
-      'Focus on planning: explore the repository when needed, then draft or refine implementation plans (for example with create_plan).',
-      'Do not begin substantial implementation work in this mode unless the user clearly asks for a small, planning-related change.',
-      'When a plan is ready, tell the user they can click **Start implementing** beside the Plan control, or switch to Agent mode and ask you to execute the plan.',
+      'Draft implementation plans when appropriate (for example with create_plan). When a plan is ready, tell the user to click Start implementing beside the Plan control, or switch to Agent mode and ask you to implement it.',
+    );
+  } else if (agentMode === 'ask') {
+    lines.push(
+      'Help read-only. Only call tools that are available in this request. If the user wants edits or execution, ask them to switch to Agent mode.',
     );
   } else {
     lines.push(
-      'Handle the user\'s requests efficiently, professionally, and carefully across analysis, code changes, shell commands, and verification when appropriate.',
+      'Handle the user\'s requests efficiently, professionally, and carefully—including analysis, edits, shell commands, and verification when appropriate.',
     );
   }
 
   return lines.join('\n').trimEnd();
+}
+
+function agentModeLabel(agentMode: SpiritAgentMode): string {
+  switch (agentMode) {
+    case 'plan':
+      return 'Plan';
+    case 'ask':
+      return 'Ask';
+    default:
+      return 'Agent';
+  }
 }
 
 export function hasAgentModeSystemMessage(content: string): boolean {
