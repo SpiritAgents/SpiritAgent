@@ -10,6 +10,7 @@ export interface ProviderListedModelEntry {
   id: string;
   supportsImageInput?: boolean;
   supportsVideoInput?: boolean;
+  supportsImageGeneration?: boolean;
   supportsReasoning?: boolean;
   contextLength?: number;
   supportedReasoningEfforts?: string[];
@@ -51,6 +52,10 @@ export function parseOpenAiCompatibleModelEntriesPayload(
 ): ProviderListedModelEntry[] {
   if (provider === 'moonshot-ai') {
     return parseMoonshotModelEntriesPayload(body);
+  }
+
+  if (provider === 'vercel-ai-gateway') {
+    return parseVercelAiGatewayModelEntriesPayload(body);
   }
 
   if (typeof body !== 'object' || body === null || !('data' in body)) {
@@ -112,6 +117,67 @@ export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedM
       modelEntry.contextLength = contextLength;
     }
     entries.push(modelEntry);
+  }
+  return entries;
+}
+
+const SKIPPED_VERCEL_GATEWAY_MODEL_TYPES = new Set(['embedding', 'reranking']);
+
+export function parseVercelAiGatewayModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  if (typeof body !== 'object' || body === null || !('data' in body)) {
+    return [];
+  }
+  const raw = (body as { data?: unknown }).data;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const id = record.id;
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      continue;
+    }
+
+    const type = typeof record.type === 'string' ? record.type.trim().toLowerCase() : undefined;
+    if (type && SKIPPED_VERCEL_GATEWAY_MODEL_TYPES.has(type)) {
+      continue;
+    }
+
+    if (!type) {
+      entries.push({ id: id.trim() });
+      continue;
+    }
+
+    if (type === 'image') {
+      entries.push({ id: id.trim(), supportsImageGeneration: true });
+      continue;
+    }
+
+    if (type === 'language') {
+      const modelEntry: ProviderListedModelEntry = { id: id.trim() };
+      const supportsImageInput = vercelGatewayModelSupportsImageInput(record);
+      if (supportsImageInput === true) {
+        modelEntry.supportsImageInput = true;
+      }
+      const contextLength = readPositiveIntegerModelTrait(record, 'context_window');
+      if (contextLength !== undefined) {
+        modelEntry.contextLength = contextLength;
+      }
+      entries.push(modelEntry);
+      continue;
+    }
+
+    if (type === 'video') {
+      entries.push({ id: id.trim(), supportsVideoInput: true });
+      continue;
+    }
+
+    entries.push({ id: id.trim() });
   }
   return entries;
 }
@@ -349,6 +415,10 @@ export async function listProviderModels(
     return listXaiModels(options);
   }
 
+  if (options.provider === 'vercel-ai-gateway') {
+    return listVercelAiGatewayModels(options);
+  }
+
   return listOpenAiCompatibleModels(options);
 }
 
@@ -362,6 +432,12 @@ export async function listXaiModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   return listOpenAiCompatibleModelsForProvider(options, 'xai');
+}
+
+export async function listVercelAiGatewayModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  return listOpenAiCompatibleModelsForProvider(options, 'vercel-ai-gateway');
 }
 
 export async function listProviderModelIds(
@@ -407,6 +483,27 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined;
 }
 
+function vercelGatewayModelSupportsImageInput(record: Record<string, unknown>): boolean | undefined {
+  const tags = record.tags;
+  if (
+    Array.isArray(tags)
+    && tags.some((tag) => typeof tag === 'string' && tag.trim().toLowerCase() === 'vision')
+  ) {
+    return true;
+  }
+
+  const architecture = asRecord(record.architecture);
+  const inputModalities = architecture?.input_modalities;
+  if (
+    Array.isArray(inputModalities)
+    && inputModalities.some((modality) => typeof modality === 'string' && modality.trim().toLowerCase() === 'image')
+  ) {
+    return true;
+  }
+
+  return undefined;
+}
+
 function dedupeProviderListedModelEntries(
   entries: readonly ProviderListedModelEntry[],
 ): ProviderListedModelEntry[] {
@@ -424,6 +521,9 @@ function dedupeProviderListedModelEntries(
         : {}),
       ...(entry.supportsVideoInput !== undefined
         ? { supportsVideoInput: entry.supportsVideoInput }
+        : {}),
+      ...(entry.supportsImageGeneration !== undefined
+        ? { supportsImageGeneration: entry.supportsImageGeneration }
         : {}),
       ...(entry.supportsReasoning !== undefined ? { supportsReasoning: entry.supportsReasoning } : {}),
       ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
