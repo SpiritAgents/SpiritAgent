@@ -88,7 +88,6 @@ test('vercel-ai-gateway provider maps language and image model types to catalog 
     listedModels: [
       {
         id: 'openai/gpt-5',
-        supportsImageInput: true,
       },
       {
         id: 'google/imagen-4',
@@ -100,7 +99,7 @@ test('vercel-ai-gateway provider maps language and image model types to catalog 
   assert.deepEqual(preview, [
     {
       id: 'openai/gpt-5',
-      capabilities: ['chat', 'image'],
+      capabilities: ['chat'],
     },
     {
       id: 'google/imagen-4',

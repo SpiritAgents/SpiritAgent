@@ -143,7 +143,6 @@ test('parseVercelAiGatewayModelEntriesPayload maps language and image types', ()
   assert.deepEqual(entries, [
     {
       id: 'openai/gpt-5',
-      supportsImageInput: true,
       contextLength: 128000,
     },
     {
@@ -152,28 +151,6 @@ test('parseVercelAiGatewayModelEntriesPayload maps language and image types', ()
     },
     {
       id: 'legacy/model-without-type',
-    },
-  ]);
-});
-
-test('parseVercelAiGatewayModelEntriesPayload infers vision from architecture input_modalities', () => {
-  const entries = parseVercelAiGatewayModelEntriesPayload({
-    data: [
-      {
-        id: 'anthropic/claude-opus-4.7',
-        type: 'language',
-        architecture: {
-          input_modalities: ['text', 'image'],
-          output_modalities: ['text'],
-        },
-      },
-    ],
-  });
-
-  assert.deepEqual(entries, [
-    {
-      id: 'anthropic/claude-opus-4.7',
-      supportsImageInput: true,
     },
   ]);
 });

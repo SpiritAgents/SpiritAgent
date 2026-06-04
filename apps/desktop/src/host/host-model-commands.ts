@@ -321,6 +321,12 @@ export async function addProviderModelsCommand(
     }
 
     state.config.activeModel = firstNew ?? state.config.activeModel;
+    if (!state.config.imageGenerationModel) {
+      const imageGenerationProfile = toAdd.find((profile) => supportsImageGeneration(profile));
+      if (imageGenerationProfile) {
+        state.config.imageGenerationModel = imageGenerationProfile.name;
+      }
+    }
     await saveConfig(state.config);
     await ctx.refreshRuntime();
     ctx.setLastRuntimeError('');

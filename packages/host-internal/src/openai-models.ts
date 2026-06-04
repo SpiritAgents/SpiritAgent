@@ -160,10 +160,6 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
 
     if (type === 'language') {
       const modelEntry: ProviderListedModelEntry = { id: id.trim() };
-      const supportsImageInput = vercelGatewayModelSupportsImageInput(record);
-      if (supportsImageInput === true) {
-        modelEntry.supportsImageInput = true;
-      }
       const contextLength = readPositiveIntegerModelTrait(record, 'context_window');
       if (contextLength !== undefined) {
         modelEntry.contextLength = contextLength;
@@ -481,27 +477,6 @@ function capabilitySupported(value: unknown): boolean | undefined {
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined;
-}
-
-function vercelGatewayModelSupportsImageInput(record: Record<string, unknown>): boolean | undefined {
-  const tags = record.tags;
-  if (
-    Array.isArray(tags)
-    && tags.some((tag) => typeof tag === 'string' && tag.trim().toLowerCase() === 'vision')
-  ) {
-    return true;
-  }
-
-  const architecture = asRecord(record.architecture);
-  const inputModalities = architecture?.input_modalities;
-  if (
-    Array.isArray(inputModalities)
-    && inputModalities.some((modality) => typeof modality === 'string' && modality.trim().toLowerCase() === 'image')
-  ) {
-    return true;
-  }
-
-  return undefined;
 }
 
 function dedupeProviderListedModelEntries(
