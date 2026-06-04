@@ -1,5 +1,6 @@
 import type { ModelProviderId } from '@spirit-agent/host-internal/model-provider-presets';
 import type { ModelReasoningEffort } from '@spirit-agent/agent-core/reasoning-effort';
+import type { LspWriteDiagnosticsUi } from '@spirit-agent/agent-core';
 
 import type { DesktopAgentMode } from './lib/agent-mode.js';
 
@@ -812,6 +813,8 @@ export interface ToolBlockSnapshot {
   argsExcerpt?: string;
   outputExcerpt?: string;
   imagePaths?: string[];
+  /** 写文件类工具 LSP 自动检查后的 error/warning 摘要（供工具卡徽章与 hover）。 */
+  lspWriteDiagnostics?: LspWriteDiagnosticsUi;
 }
 
 export interface MessageAuxSnapshot {

@@ -39,3 +39,17 @@ export interface LspDiagnosticsToolRequest extends JsonObject {
   name: 'get_diagnostics';
   path: string;
 }
+
+export interface LspDiagnosticUiItem {
+  severity: 'error' | 'warning';
+  line: number;
+  column: number;
+  message: string;
+  code?: string | number;
+  source?: string;
+}
+
+export interface LspWriteDiagnosticsUi {
+  relativePath: string;
+  items: LspDiagnosticUiItem[];
+}

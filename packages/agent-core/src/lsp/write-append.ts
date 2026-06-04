@@ -1,6 +1,9 @@
 import { APPEND_DIAGNOSTICS_AFTER_WRITES, HOST_WRITE_TOOL_NAMES } from './constants.js';
 import { DEFAULT_LSP_TIMING } from './config.js';
-import { formatDiagnosticsSummaryBlock } from './format-diagnostics.js';
+import {
+  buildLspWriteDiagnosticsUi,
+  formatDiagnosticsSummaryBlock,
+} from './format-diagnostics.js';
 import { isTypescriptJavascriptPath, resolveWorkspaceFilePath } from './paths.js';
 import type { LspService } from './service.js';
 import type { JsonValue } from '../ports.js';
@@ -23,11 +26,17 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
   try {
     const diagnostics = await lsp.getDiagnosticsForPath(
       resolvedPath,
-      DEFAULT_LSP_TIMING.writeAppendDiagnosticsWaitMs,
+      DEFAULT_LSP_TIMING.diagnosticsWaitMs,
     );
     const block = formatDiagnosticsSummaryBlock(diagnostics.relativePath, diagnostics.diagnostics);
+    const lspWriteDiagnostics = buildLspWriteDiagnosticsUi(
+      diagnostics.relativePath,
+      diagnostics.diagnostics,
+    );
     if (!block) {
-      return output;
+      return lspWriteDiagnostics
+        ? { ...output, hostUi: { lspWriteDiagnostics } }
+        : output;
     }
     const summaryText = `${output.summaryText ?? ''}${block}`.trim();
     return {
@@ -39,6 +48,7 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
         }
         return { type: 'text', text: `${part.text}${block}` };
       }),
+      ...(lspWriteDiagnostics ? { hostUi: { lspWriteDiagnostics } } : {}),
     };
   } catch {
     const note = '\n\n[lsp]\n(diagnostics pending or timed out)';

@@ -111,7 +111,9 @@ export class LspService {
     this.diagnosticsByUri.delete(uri);
     await this.flushDebounce(uri);
     await this.openOrSyncDocument(resolvedPath);
-    const diagnostics = await this.waitForDiagnostics(uri, waitMs);
+    const diagnostics = await this.waitForDiagnostics(uri, waitMs, {
+      settleQuietMs: this.timing.syncDebounceMs,
+    });
     return {
       relativePath,
       diagnostics,
@@ -269,38 +271,92 @@ export class LspService {
     if (!waiters) {
       return;
     }
-    for (const resolve of waiters) {
-      resolve(diagnostics);
+    for (const notify of waiters) {
+      notify(diagnostics);
     }
-    this.diagnosticWaiters.delete(canonicalUri);
   }
 
-  private async waitForDiagnostics(uri: string, waitMs: number): Promise<LspDiagnostic[]> {
-    const cached = this.diagnosticsByUri.get(uri);
-    if (cached) {
-      return [...cached];
+  private async waitForDiagnostics(
+    uri: string,
+    waitMs: number,
+    options?: { settleQuietMs?: number },
+  ): Promise<LspDiagnostic[]> {
+    const settleQuietMs = options?.settleQuietMs ?? 0;
+    const canonicalUri = normalizeLspFileUri(uri);
+
+    if (settleQuietMs <= 0) {
+      const cached = this.diagnosticsByUri.get(canonicalUri);
+      if (cached) {
+        return [...cached];
+      }
+
+      return new Promise<LspDiagnostic[]>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          const waiters = this.diagnosticWaiters.get(canonicalUri);
+          waiters?.delete(resolveWithDiagnostics);
+          reject(new LspTimeoutError());
+        }, waitMs);
+
+        const resolveWithDiagnostics = (diagnostics: LspDiagnostic[]) => {
+          clearTimeout(timeout);
+          const waiters = this.diagnosticWaiters.get(canonicalUri);
+          waiters?.delete(resolveWithDiagnostics);
+          if (waiters?.size === 0) {
+            this.diagnosticWaiters.delete(canonicalUri);
+          }
+          resolve([...diagnostics]);
+        };
+
+        const waiters = this.diagnosticWaiters.get(canonicalUri) ?? new Set();
+        waiters.add(resolveWithDiagnostics);
+        this.diagnosticWaiters.set(canonicalUri, waiters);
+      }).catch((error) => {
+        if (error instanceof LspTimeoutError) {
+          return [...(this.diagnosticsByUri.get(canonicalUri) ?? [])];
+        }
+        throw error;
+      });
     }
 
-    return new Promise<LspDiagnostic[]>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        const waiters = this.diagnosticWaiters.get(uri);
-        waiters?.delete(resolveWithDiagnostics);
-        reject(new LspTimeoutError());
+    return new Promise<LspDiagnostic[]>((resolve) => {
+      let settleTimer: ReturnType<typeof setTimeout> | undefined;
+      const overallTimer = setTimeout(() => {
+        cleanup();
+        resolve([...(this.diagnosticsByUri.get(canonicalUri) ?? [])]);
       }, waitMs);
 
-      const resolveWithDiagnostics = (diagnostics: LspDiagnostic[]) => {
-        clearTimeout(timeout);
-        resolve([...diagnostics]);
+      const cleanup = () => {
+        clearTimeout(overallTimer);
+        if (settleTimer) {
+          clearTimeout(settleTimer);
+        }
+        const waiters = this.diagnosticWaiters.get(canonicalUri);
+        waiters?.delete(onPublish);
+        if (waiters?.size === 0) {
+          this.diagnosticWaiters.delete(canonicalUri);
+        }
       };
 
-      const waiters = this.diagnosticWaiters.get(uri) ?? new Set();
-      waiters.add(resolveWithDiagnostics);
-      this.diagnosticWaiters.set(uri, waiters);
-    }).catch((error) => {
-      if (error instanceof LspTimeoutError) {
-        return [...(this.diagnosticsByUri.get(uri) ?? [])];
+      const finish = () => {
+        cleanup();
+        resolve([...(this.diagnosticsByUri.get(canonicalUri) ?? [])]);
+      };
+
+      const onPublish = (_diagnostics: LspDiagnostic[]) => {
+        if (settleTimer) {
+          clearTimeout(settleTimer);
+        }
+        settleTimer = setTimeout(finish, settleQuietMs);
+      };
+
+      const waiters = this.diagnosticWaiters.get(canonicalUri) ?? new Set();
+      waiters.add(onPublish);
+      this.diagnosticWaiters.set(canonicalUri, waiters);
+
+      const cached = this.diagnosticsByUri.get(canonicalUri);
+      if (cached) {
+        onPublish(cached);
       }
-      throw error;
     });
   }
 }

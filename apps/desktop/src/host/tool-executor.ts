@@ -307,7 +307,8 @@ export class DesktopToolExecutor
               return createLlmImageContentPart(part.path);
             }),
           };
-    return appendLspDiagnosticsAfterWriteIfNeeded(this.lsp, request as JsonValue, normalized);
+    const withLsp = await appendLspDiagnosticsAfterWriteIfNeeded(this.lsp, request as JsonValue, normalized);
+    return withLsp;
   }
 
   async saveGeneratedImage(request: HostGeneratedImageSaveRequest): Promise<HostGeneratedImageFile> {

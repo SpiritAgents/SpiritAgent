@@ -810,3 +810,49 @@ test('splitRuntimeEventsForIncrementalFinishTaskPreview applies one finish_task 
   assert.equal(split.toApply[1].argumentsJson, '{"summary":"a"}');
   assert.equal(split.deferred[0].argumentsJson, '{"summary":"ab"}');
 });
+
+test('edit_file tool-execution-finished preserves lspWriteDiagnostics on tool snapshot', () => {
+  const harness = createHarness();
+  harness.pushUser('fix types');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    {
+      kind: 'tool-execution-finished',
+      execution: {
+        toolCallId: 'call-edit',
+        toolName: 'edit_file',
+        request: {
+          name: 'edit_file',
+          path: 'packages/agent-core/src/a.ts',
+          old_text: 'const x = 1',
+          new_text: 'const x = "1"',
+        },
+        output: '[write]\naction: edit_file\n\n[lsp]\nDiagnostics for packages/agent-core/src/a.ts (1 shown):',
+        failed: false,
+        hostUi: {
+          lspWriteDiagnostics: {
+            relativePath: 'packages/agent-core/src/a.ts',
+            items: [
+              {
+                severity: 'error',
+                line: 81,
+                column: 7,
+                message: "Type 'string' is not assignable to type 'number'.",
+                code: 2322,
+                source: 'typescript',
+              },
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  const toolMessage = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === 'call-edit');
+  assert.equal(toolMessage?.tool?.toolName, 'edit_file');
+  assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items.length, 1);
+  assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items[0]?.severity, 'error');
+});

@@ -719,6 +719,9 @@ export class DesktopRuntimeEventOrchestrator {
             outputExcerpt: truncateText(execution.output, 4_000),
             ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
             ...(imagePaths.length > 0 ? { imagePaths } : {}),
+            ...(execution.hostUi?.lspWriteDiagnostics
+              ? { lspWriteDiagnostics: execution.hostUi.lspWriteDiagnostics }
+              : {}),
           },
           executionSummary,
         ),
