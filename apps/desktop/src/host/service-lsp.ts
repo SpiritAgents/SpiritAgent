@@ -19,3 +19,17 @@ export async function ensureLspServiceReady(service: LspService): Promise<LspSer
   await service.probe();
   return service.enabled ? service : undefined;
 }
+
+export async function disposeLspServicesExcept(
+  cache: Map<string, LspService>,
+  keepWorkspaceRoot?: string,
+): Promise<void> {
+  const keepKey = keepWorkspaceRoot ? path.resolve(keepWorkspaceRoot) : undefined;
+  for (const [key, service] of cache) {
+    if (keepKey !== undefined && key === keepKey) {
+      continue;
+    }
+    await service.dispose();
+    cache.delete(key);
+  }
+}

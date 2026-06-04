@@ -290,6 +290,7 @@ import {
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
 import {
+  disposeLspServicesExcept,
   ensureLspServiceReady,
   sharedLspServiceForWorkspace,
 } from './service-lsp.js';
@@ -1528,6 +1529,12 @@ class DesktopHostService {
       || !bundle.toolExecutor.matchesTodoAccess(todoScope);
 
     if (needsRebuild) {
+      if (
+        bundle.toolExecutorWorkspaceRoot
+        && bundle.toolExecutorWorkspaceRoot !== workspaceRoot
+      ) {
+        await disposeLspServicesExcept(this.lspServiceByWorkspaceRoot, workspaceRoot);
+      }
       bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope, todoScope);
       bundle.toolExecutorWorkspaceRoot = workspaceRoot;
       bundle.toolExecutorTodoSessionKey = todoScope.sessionKey;
