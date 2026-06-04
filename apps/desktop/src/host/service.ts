@@ -7,7 +7,7 @@ import {
   lineDeltaForDeleteFilePath,
 } from './delete-file-line-delta.js';
 import i18n from '../lib/i18n-host.js';
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
+import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
 import {
   appendLlmToolResultMessages,
   buildActiveSkillsSystemMessage,
@@ -44,7 +44,6 @@ import {
   type RuntimeEvent,
   type PendingWorkspaceFile,
   type RuntimeToolExecution,
-  type SpiritAgentMode,
   type SpiritLlmTransport,
 } from '@spirit-agent/agent-core';
 import {
@@ -4915,7 +4914,7 @@ function buildPrimaryTransportConfig(input: {
   model: string;
   baseUrl: string;
   workspaceRoot: string;
-  agentMode?: SpiritAgentMode;
+  agentMode?: DesktopAgentMode;
   profile?: Pick<
     ModelProfileSnapshot,
     'provider' | 'transportKind' | 'capabilities' | 'reasoningEffort' | 'supportedReasoningEfforts'

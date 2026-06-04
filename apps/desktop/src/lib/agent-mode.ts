@@ -1,12 +1,16 @@
-import { normalizeSpiritAgentMode, type SpiritAgentMode } from '@spirit-agent/agent-core';
+/** Renderer-safe agent mode types and labels. Do not import agent-core / host-internal here. */
 
-export type DesktopAgentMode = SpiritAgentMode;
+export type DesktopAgentMode = 'agent' | 'plan' | 'ask';
 
 export function resolveDesktopAgentMode(input?: {
-  agentMode?: DesktopAgentMode;
+  agentMode?: DesktopAgentMode | string;
   planMode?: boolean;
 }): DesktopAgentMode {
-  return normalizeSpiritAgentMode(input);
+  const mode = input?.agentMode;
+  if (mode === 'agent' || mode === 'plan' || mode === 'ask') {
+    return mode;
+  }
+  return input?.planMode === true ? 'plan' : 'agent';
 }
 
 export function runModeLabel(mode: DesktopAgentMode): string {

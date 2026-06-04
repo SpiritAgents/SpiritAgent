@@ -1,8 +1,9 @@
-import type { SpiritAgentMode } from '@spirit-agent/agent-core';
 import type { ModelProviderId } from '@spirit-agent/host-internal/model-provider-presets';
 import type { ModelReasoningEffort } from '@spirit-agent/agent-core/reasoning-effort';
 
-export type DesktopAgentMode = SpiritAgentMode;
+import type { DesktopAgentMode } from './lib/agent-mode.js';
+
+export type { DesktopAgentMode };
 import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel } from '@spirit-agent/host-internal';
 
 import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
