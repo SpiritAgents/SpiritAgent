@@ -290,6 +290,10 @@ import {
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
 import {
+  ensureLspServiceReady,
+  sharedLspServiceForWorkspace,
+} from './service-lsp.js';
+import {
   currentApiBase,
   mapPendingQuestions,
   sameDreamCollectorSnapshot,
@@ -423,6 +427,7 @@ class DesktopHostService {
   private lastToolSnapshotLogSignature: string | undefined;
   /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
+  private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/agent-core').LspService>();
 
   private orchestrationFor(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
@@ -1553,6 +1558,10 @@ class DesktopHostService {
     );
   }
 
+  private sharedLspServiceForWorkspace(workspaceRoot: string) {
+    return sharedLspServiceForWorkspace(this.lspServiceByWorkspaceRoot, workspaceRoot);
+  }
+
   private async buildToolExecutorForBundle(
     bundle: SessionBundle,
     dreamScope?: HostDreamScope,
@@ -1561,8 +1570,10 @@ class DesktopHostService {
     const state = this.requireState();
     const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
     const extensions = await this.extensionManager().list();
+    const lsp = await ensureLspServiceReady(this.sharedLspServiceForWorkspace(workspaceRoot));
     return new DesktopToolExecutor(workspaceRoot, {
       mcp: this.sharedMcpServiceForWorkspace(workspaceRoot, state.workspaceBinding),
+      ...(lsp ? { lsp } : {}),
       extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
       fileChangeObserver: {
         recordFileChange: (change) => {
