@@ -37,11 +37,6 @@ import {
   type SpiritLlmTransport,
 } from '@spirit-agent/agent-core';
 import {
-  defaultModelReasoningEffort,
-  resolveModelReasoningEffortForContext,
-  type ModelReasoningEffort,
-} from '@spirit-agent/agent-core/reasoning-effort';
-import {
   buildStartImplementingUserTurn,
   extractActivePlanPathFromLlmHistory,
   createHostExtensionMarketplace,
@@ -49,9 +44,6 @@ import {
   createHostDreamStore,
   localFileAttachmentFromPath,
   listWorkspaceFileReferenceSuggestions as listWorkspaceFileReferenceSuggestionsFromHostInternal,
-  parseModelProviderId,
-  parsePresetModelProviderId,
-  partitionModelsByProvider,
   restoreHostFileChanges,
   type HostDreamScope,
   type HostTodoRecord,
@@ -95,10 +87,6 @@ import type {
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
   DesktopDreamCollectorSnapshot,
-  DesktopModelCapability,
-  DesktopModelProvider,
-  DesktopModelReasoningEffort,
-  DesktopTransportKind,
   PlanSnapshot,
   DeleteSkillRequest,
   DesktopSnapshot,
@@ -128,6 +116,15 @@ import type {
 import type { DesktopToolRequest, HostCommandName } from './contracts.js';
 import { createHostInvokeDispatch } from './host-invoke-dispatch.js';
 import {
+  addModelCommand,
+  addProviderModelsCommand,
+  previewModelsCommand,
+  removeModelCommand,
+  removeProviderModelsCommand,
+  updateConfigCommand,
+  type HostModelCommandContext,
+} from './host-model-commands.js';
+import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   deriveDisplayNameFromSeed,
@@ -143,18 +140,11 @@ import {
 } from './sessions.js';
 import {
   buildPrimaryTransportConfig,
-  defaultApiBaseForTransport,
-  findCatalogEntryForModel,
-  loadPreviewModelsForTransport,
   modelCapabilitiesFromConfig,
   openAiCompatibleVendorFromProvider,
-  previewCatalogMapForAddProviderRequest,
-  reasoningProviderForTransport,
-  resolveAddedModelCapabilities,
   resolveDesktopTransportKind,
   supportsImageGeneration,
 } from './model-config.js';
-import { modelExistsInProviderScope, resolveActiveModelAfterRemoval } from './provider-api-key.js';
 import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
@@ -166,20 +156,13 @@ import {
   normalizeWorkspaceBinding,
   resolveDesktopHomeDirectory,
   loadStoredSession,
-  modelProviderKeyScope,
   modelSecretKeyPresence,
   mergeRecentWorkspaceRoots,
-  removeModelApiKey,
-  removeProviderApiKey,
   resolveApiKeyForConfigModel,
-  saveApiKeyForModel,
-  saveApiKeyForProvider,
   createDesktopExtensionStateStore,
   saveConfig,
   listStoredSessions,
   spiritAgentDataDir,
-  normalizeDreamConfig,
-  normalizeModelCapabilities,
   normalizeWebHostConfig,
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
@@ -485,6 +468,24 @@ class DesktopHostService {
     return this.orchestrationFor(this.activeBundle());
   }
 
+  private modelCommandContext(): HostModelCommandContext {
+    return {
+      runSerialized: (work) => this.runSerialized(work),
+      ensureInitialized: () => this.ensureInitialized(),
+      requireState: () => this.requireState(),
+      activeBundle: () => this.activeBundle(),
+      isRuntimeBusy: () => this.runtime?.isBusy() === true,
+      refreshRuntime: () => this.refreshRuntime(),
+      refreshModelKeyPresence: () => this.refreshModelKeyPresence(),
+      flushDeferredRuntimeRefreshIfIdle: () => this.flushDeferredRuntimeRefreshIfIdle(),
+      persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
+      setLastRuntimeError: (error) => {
+        this.lastRuntimeError = error;
+      },
+      buildSnapshot: () => this.buildSnapshot(),
+    };
+  }
+
   private createBundleOrchestration(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
     runtimeEvents: DesktopRuntimeEventOrchestrator;
@@ -621,124 +622,7 @@ class DesktopHostService {
   }
 
   async updateConfig(request: UpdateConfigRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-      const wasBusy = this.runtime?.isBusy() === true;
-      const prevActiveModel = state.config.activeModel;
-      const prevImageGenerationModel = state.config.imageGenerationModel;
-      const prevApiBase = currentApiBase(state.config);
-      const prevAgentMode = resolveDesktopAgentMode(state.config);
-
-      if (this.runtime?.isBusy() && Boolean(request.apiKey?.trim())) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const activeModel = request.activeModel.trim();
-      const apiBase = request.apiBase.trim();
-      const reasoningEffort = request.reasoningEffort;
-      const existing = state.config.models.find((model) => model.name === activeModel);
-      if (existing) {
-        existing.apiBase = apiBase;
-        if (reasoningEffort !== undefined) {
-          existing.reasoningEffort = resolveModelReasoningEffortForContext(reasoningEffort, {
-            ...(existing.provider ? { provider: existing.provider } : {}),
-            model: existing.name,
-            ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
-            ...(existing.supportedReasoningEfforts !== undefined
-              ? { supportedEfforts: existing.supportedReasoningEfforts }
-              : {}),
-          });
-        }
-      } else {
-        state.config.models.push({
-          name: activeModel,
-          apiBase,
-          reasoningEffort: resolveModelReasoningEffortForContext(reasoningEffort, {
-            model: activeModel,
-          }),
-        });
-      }
-      state.config.activeModel = activeModel;
-      state.config.uiLocale = request.uiLocale?.trim() || undefined;
-      if (request.imageGenerationModel !== undefined) {
-        const imageGenerationModel = request.imageGenerationModel.trim();
-        if (!imageGenerationModel) {
-          delete state.config.imageGenerationModel;
-        } else {
-          const imageProfile = state.config.models.find((model) => model.name === imageGenerationModel);
-          if (!imageProfile) {
-            throw new Error(i18n.t('error.imageGenModelNotFound', { model: imageGenerationModel }));
-          }
-          if (!supportsImageGeneration(imageProfile)) {
-            throw new Error(i18n.t('error.modelNoImageGenCapability', { model: imageGenerationModel }));
-          }
-          state.config.imageGenerationModel = imageProfile.name;
-        }
-      }
-      state.config.windowsMica = request.windowsMica !== false;
-      if (request.agentMode !== undefined) {
-        state.config.agentMode = request.agentMode;
-      } else if (request.planMode !== undefined) {
-        state.config.agentMode = request.planMode ? 'plan' : 'agent';
-      }
-      if (request.webHost !== undefined) {
-        const nextWebHost = normalizeWebHostConfig({
-          ...state.config.webHost,
-          ...request.webHost,
-        });
-        if (request.webHost.resetPairing === true) {
-          delete nextWebHost.authTokenHash;
-        }
-        state.config.webHost = nextWebHost;
-      }
-      if (request.dreams !== undefined) {
-        const nextDreamConfig = {
-          ...state.config.dreams,
-          ...request.dreams,
-        };
-        if (request.dreams.clearCollectorModel === true) {
-          delete nextDreamConfig.collectorModel;
-        }
-        state.config.dreams = normalizeDreamConfig(nextDreamConfig);
-      }
-      await saveConfig(state.config);
-      if (request.apiKey?.trim()) {
-        const keyScope = modelProviderKeyScope(existing?.provider);
-        await saveApiKeyForProvider(keyScope, request.apiKey);
-      }
-
-      const agentModeNow = resolveDesktopAgentMode(state.config);
-      const modelOrEndpointChanged =
-        state.config.activeModel !== prevActiveModel ||
-        currentApiBase(state.config) !== prevApiBase;
-      const imageGenerationModelChanged = state.config.imageGenerationModel !== prevImageGenerationModel;
-
-      if (agentModeNow !== prevAgentMode) {
-        state.metadata = await loadHostMetadata(state.workspaceRoot, agentModeNow, {
-          activePlanPath: this.activeBundle().activePlanPath,
-          workspaceBinding: state.workspaceBinding,
-        });
-      }
-
-      const transportOrPlanChanged =
-        agentModeNow !== prevAgentMode || modelOrEndpointChanged || imageGenerationModelChanged;
-      const deferRuntimeRefresh =
-        wasBusy &&
-        transportOrPlanChanged &&
-        !Boolean(request.apiKey?.trim());
-
-      if (deferRuntimeRefresh) {
-        this.activeBundle().deferredRuntimeRefreshWhileBusy = true;
-      } else {
-        this.activeBundle().deferredRuntimeRefreshWhileBusy = false;
-        await this.refreshRuntime();
-      }
-      this.lastRuntimeError = '';
-      // 勿在此处 persist：仅改 config（如 agentMode）不应刷新 savedAtUnixMs，否则会话在侧栏会误排到首位
-      await this.flushDeferredRuntimeRefreshIfIdle();
-      return this.buildSnapshot();
-    });
+    return updateConfigCommand(this.modelCommandContext(), request);
   }
 
   async setWebHostAuthTokenHash(authTokenHash: string): Promise<DesktopSnapshot> {
@@ -755,293 +639,23 @@ class DesktopHostService {
   }
 
   async previewModels(request: PreviewModelsRequest): Promise<PreviewModelsResponse> {
-    const provider = parseModelProviderId(request.provider);
-    const transportKind = resolveDesktopTransportKind({
-      provider,
-      transportKind: request.transportKind,
-    });
-    const apiBaseRaw = request.apiBase.trim();
-    const apiBase = apiBaseRaw || defaultApiBaseForTransport(provider, transportKind);
-    const apiKey = request.apiKey.trim();
-    if (!apiKey) {
-      throw new Error(i18n.t('error.apiKeyRequired'));
-    }
-    const result = await loadPreviewModelsForTransport({
-      provider,
-      transportKind,
-      apiBase,
-      apiKey,
-      forceRefresh: request.forceRefresh === true,
-    });
-    return {
-      modelIds: result.modelIds,
-      ...(result.modelCatalog ? { models: result.modelCatalog } : {}),
-      fromCache: result.fromCache,
-    };
+    return previewModelsCommand(request);
   }
 
   async addProviderModels(request: AddProviderModelsRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const provider = parseModelProviderId(request.provider);
-      const transportKind = resolveDesktopTransportKind({
-        provider,
-        transportKind: request.transportKind,
-      });
-      const apiBaseRaw = request.apiBase.trim();
-      const apiBase = apiBaseRaw || defaultApiBaseForTransport(provider, transportKind);
-      const apiKey = request.apiKey.trim();
-      if (!apiKey) {
-        throw new Error(i18n.t('error.apiKeyRequired'));
-      }
-
-      const rawIds = request.modelIds.map((id) => id.trim()).filter((id) => id.length > 0);
-      const uniqueIds = [...new Set(rawIds)];
-      if (uniqueIds.length === 0) {
-        throw new Error(i18n.t('error.emptyModelList'));
-      }
-
-      type NewProfile = {
-        name: string;
-        apiBase: string;
-        reasoningEffort: ModelReasoningEffort;
-        supportedReasoningEfforts?: DesktopModelReasoningEffort[];
-        capabilities?: DesktopModelCapability[];
-        provider?: DesktopModelProvider;
-        transportKind?: DesktopTransportKind;
-      };
-      const catalogEntries = previewCatalogMapForAddProviderRequest(request, provider, transportKind);
-      const toAdd: NewProfile[] = [];
-      for (const name of uniqueIds) {
-        if (modelExistsInProviderScope(state.config.models, name, provider)) {
-          continue;
-        }
-        const catalogEntry = catalogEntries.get(name);
-        const profile: NewProfile = {
-          name,
-          apiBase,
-          reasoningEffort: defaultModelReasoningEffort({
-            ...(reasoningProviderForTransport(provider, transportKind)
-              ? { provider: reasoningProviderForTransport(provider, transportKind) }
-              : {}),
-            model: name,
-            ...(catalogEntry?.supportedReasoningEfforts !== undefined
-              ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
-              : {}),
-          }),
-        };
-        if (catalogEntry?.supportedReasoningEfforts !== undefined) {
-          profile.supportedReasoningEfforts = catalogEntry.supportedReasoningEfforts;
-        }
-        if (catalogEntry?.capabilities) {
-          profile.capabilities = catalogEntry.capabilities;
-        }
-        if (provider !== undefined) {
-          profile.provider = provider;
-          if (transportKind === 'anthropic' || transportKind === 'open-responses') {
-            profile.transportKind = transportKind;
-          }
-        }
-        toAdd.push(profile);
-      }
-
-      if (toAdd.length === 0) {
-        throw new Error(i18n.t('error.modelsAlreadyExist'));
-      }
-
-      const providerKeyScope = modelProviderKeyScope(provider);
-      try {
-        await saveApiKeyForProvider(providerKeyScope, apiKey);
-      } catch (err) {
-        await removeProviderApiKey(providerKeyScope);
-        throw err;
-      }
-
-      const firstNew = toAdd[0]?.name;
-      for (const profile of toAdd) {
-        state.config.models.push(profile);
-      }
-
-      state.config.activeModel = firstNew ?? state.config.activeModel;
-      await saveConfig(state.config);
-      await this.refreshRuntime();
-      this.lastRuntimeError = '';
-      await this.persistCurrentSessionIfNeeded();
-      return this.buildSnapshot();
-    });
+    return addProviderModelsCommand(this.modelCommandContext(), request);
   }
 
   async addModel(request: AddModelRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const name = request.name.trim();
-      const provider = parseModelProviderId(request.provider);
-      const transportKind = resolveDesktopTransportKind({
-        provider,
-        transportKind: request.transportKind,
-      });
-      const apiBaseRaw = request.apiBase.trim();
-      const apiBase = apiBaseRaw || defaultApiBaseForTransport(provider, transportKind);
-      const apiKey = request.apiKey.trim();
-
-      if (!name) {
-        throw new Error(i18n.t('error.modelNameRequired'));
-      }
-      if (!apiKey) {
-        throw new Error(i18n.t('error.apiKeyRequired'));
-      }
-      if (state.config.models.some((model) => model.name === name)) {
-        throw new Error(i18n.t('error.modelExists', { name }));
-      }
-
-      const catalogEntry = await findCatalogEntryForModel({
-        provider,
-        transportKind,
-        apiBase,
-        apiKey,
-        model: name,
-      });
-      const requestedCapabilities = normalizeModelCapabilities(request.capabilities);
-
-      const profile: {
-        name: string;
-        apiBase: string;
-        reasoningEffort: ModelReasoningEffort;
-        supportedReasoningEfforts?: DesktopModelReasoningEffort[];
-        provider?: DesktopModelProvider;
-        transportKind?: DesktopTransportKind;
-        capabilities?: DesktopModelCapability[];
-      } = {
-        name,
-        apiBase,
-        reasoningEffort: defaultModelReasoningEffort({
-          ...(reasoningProviderForTransport(provider, transportKind)
-            ? { provider: reasoningProviderForTransport(provider, transportKind) }
-            : {}),
-          model: name,
-          ...(catalogEntry?.supportedReasoningEfforts !== undefined
-            ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
-            : {}),
-        }),
-      };
-      if (catalogEntry?.supportedReasoningEfforts !== undefined) {
-        profile.supportedReasoningEfforts = catalogEntry.supportedReasoningEfforts;
-      }
-      if (provider !== undefined) {
-        profile.provider = provider;
-        if (transportKind === 'anthropic' || transportKind === 'open-responses') {
-          profile.transportKind = transportKind;
-        }
-      }
-      const capabilities = resolveAddedModelCapabilities({
-        provider,
-        requestedCapabilities,
-        catalogEntry,
-      });
-      if (capabilities) {
-        profile.capabilities = capabilities;
-      }
-      state.config.models.push(profile);
-      state.config.activeModel = name;
-      if (!state.config.imageGenerationModel && supportsImageGeneration(profile)) {
-        state.config.imageGenerationModel = name;
-      }
-      await saveConfig(state.config);
-      if (provider !== undefined) {
-        await saveApiKeyForProvider(modelProviderKeyScope(provider), apiKey);
-      } else {
-        await saveApiKeyForModel(name, apiKey);
-      }
-
-      await this.refreshRuntime();
-      this.lastRuntimeError = '';
-      await this.persistCurrentSessionIfNeeded();
-      return this.buildSnapshot();
-    });
+    return addModelCommand(this.modelCommandContext(), request);
   }
 
   async removeModel(request: RemoveModelRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-
-      const name = request.name.trim();
-      if (!name) {
-        throw new Error(i18n.t('error.modelNameRequired'));
-      }
-      const before = state.config.models.length;
-      state.config.models = state.config.models.filter((model) => model.name !== name);
-      if (state.config.models.length === before) {
-        throw new Error(i18n.t('error.modelNotFound', { name }));
-      }
-
-      return this.finalizeModelRemoval(state, [name], { removeLegacyModelKeys: true });
-    });
+    return removeModelCommand(this.modelCommandContext(), request);
   }
 
   async removeProviderModels(request: RemoveProviderModelsRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-
-      const provider = parsePresetModelProviderId(request.provider);
-      if (!provider) {
-        throw new Error(i18n.t('error.providerDeleteOnly'));
-      }
-
-      const { matched: targets, unmatched } = partitionModelsByProvider(state.config.models, provider);
-      if (targets.length === 0) {
-        throw new Error(i18n.t('error.noModelsInProvider'));
-      }
-
-      const namesToRemove = targets.map((model) => model.name);
-      state.config.models = unmatched;
-      return this.finalizeModelRemoval(state, namesToRemove, { removeProviderKey: provider });
-    });
-  }
-
-  private async finalizeModelRemoval(
-    state: HostState,
-    namesToRemove: readonly string[],
-    options?: {
-      removeProviderKey?: DesktopModelProvider;
-      removeLegacyModelKeys?: boolean;
-    },
-  ): Promise<DesktopSnapshot> {
-    state.config.activeModel = resolveActiveModelAfterRemoval(
-      state.config.activeModel,
-      state.config.models,
-      namesToRemove,
-    );
-    if (state.config.imageGenerationModel && namesToRemove.includes(state.config.imageGenerationModel)) {
-      delete state.config.imageGenerationModel;
-    }
-    await saveConfig(state.config);
-    if (options?.removeProviderKey) {
-      await removeProviderApiKey(options.removeProviderKey);
-    }
-    if (options?.removeLegacyModelKeys) {
-      for (const name of namesToRemove) {
-        await removeModelApiKey(name);
-      }
-    }
-    await this.refreshModelKeyPresence();
-    await this.refreshRuntime();
-    this.lastRuntimeError = '';
-    await this.persistCurrentSessionIfNeeded();
-    return this.buildSnapshot();
+    return removeProviderModelsCommand(this.modelCommandContext(), request);
   }
 
   async createSkill(request: CreateSkillRequest): Promise<DesktopSnapshot> {
