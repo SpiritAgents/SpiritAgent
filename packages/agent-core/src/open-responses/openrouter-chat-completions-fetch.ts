@@ -1,3 +1,4 @@
+/** OpenRouter POST /chat/completions：合并 `plugins: [{ id: 'web' }]`。 */
 import type { JsonObject, JsonValue } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
 import type { OpenAiTransportConfig } from '../openai/openai-compat.js';

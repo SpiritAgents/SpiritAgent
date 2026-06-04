@@ -1,3 +1,13 @@
+/**
+ * OpenRouter 请求层内置能力（不在 system 复述，见 llm-visible-copy）。
+ *
+ * - Web Search：Chat `plugins: [{ id: 'web' }]`；Responses `tools: [{ type: 'web_search' }]`。
+ * - Apply Patch：仅 Responses，由 `apply-patch-eligibility` + `createApplyPatchAwareFetch` 注入
+ *   `{ type: 'apply_patch' }` 与 apply_patch_call 对；**非** Gateway 的 flat function apply_patch。
+ *
+ * 手动验收（`provider::openrouter` + API Key）：Responses `openai/gpt-5.1+` 见 built-in apply_patch；
+ * 联网见 web_search / plugins；`anthropic/*` 无 apply_patch；Gateway 仍走 function apply_patch。
+ */
 import type { JsonObject, JsonValue } from '../ports.js';
 import {
   isOpenAiCompatibleTransportConfig,
