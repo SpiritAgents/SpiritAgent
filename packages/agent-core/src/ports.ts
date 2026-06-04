@@ -1,3 +1,24 @@
+export type SpiritAgentMode = 'agent' | 'plan' | 'ask';
+
+export function normalizeSpiritAgentMode(input?: {
+  agentMode?: unknown;
+  planMode?: boolean;
+}): SpiritAgentMode {
+  if (input?.agentMode === 'agent' || input?.agentMode === 'plan' || input?.agentMode === 'ask') {
+    return input.agentMode;
+  }
+  return input?.planMode === true ? 'plan' : 'agent';
+}
+
+export function readSpiritAgentModeFromTransportConfig(
+  config: { spiritAgentMode?: SpiritAgentMode; planMode?: boolean } | undefined,
+): SpiritAgentMode {
+  if (config?.spiritAgentMode === 'agent' || config?.spiritAgentMode === 'plan' || config?.spiritAgentMode === 'ask') {
+    return config.spiritAgentMode;
+  }
+  return config?.planMode === true ? 'plan' : 'agent';
+}
+
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 
@@ -521,6 +542,8 @@ export interface ToolExecutor<
   toolDefinitionsJson(): JsonValue;
   /** When Loop is off, omit finish_task from toolDefinitionsJson(). */
   setLoopToolExposure?(loopEnabled: boolean): void;
+  setAgentModeToolExposure?(agentMode: SpiritAgentMode): void;
+  /** @deprecated Use {@link setAgentModeToolExposure}. */
   setPlanModeToolExposure?(planMode: boolean): void;
   parseCommand(message: string): Promise<ToolRequest>;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;

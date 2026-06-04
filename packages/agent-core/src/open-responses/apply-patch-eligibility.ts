@@ -1,4 +1,9 @@
-import type { JsonObject, JsonValue } from '../ports.js';
+import {
+  readSpiritAgentModeFromTransportConfig,
+  type JsonObject,
+  type JsonValue,
+  type SpiritAgentMode,
+} from '../ports.js';
 import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
 import {
   normalizeGatewayOpenAiModelId,
@@ -126,9 +131,15 @@ export function shouldUseOpenAiSdkApplyPatchTool(
 export function shouldUseApplyPatchFileTools(
   config: Pick<
     OpenResponsesTransportConfig,
-    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider' | 'spiritAgentMode'
   >,
+  options?: { agentMode?: SpiritAgentMode },
 ): boolean {
+  const agentMode = options?.agentMode ?? readSpiritAgentModeFromTransportConfig(config);
+  if (agentMode === 'ask') {
+    return false;
+  }
+
   if (config.transportKind !== 'open-responses') {
     return false;
   }

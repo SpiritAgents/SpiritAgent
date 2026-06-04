@@ -16,11 +16,15 @@ import {
   shouldUseApplyPatchFileTools,
 } from '../open-responses/apply-patch-eligibility.js';
 import { isOpenResponsesTransportConfig } from '../provider-config.js';
+import type { SpiritAgentMode } from '../ports.js';
 import {
+  assertAgentModeAllowsHostTool,
   assertFinishTaskToolAllowed,
   buildBuiltinHostToolDefinitions,
   buildFinishTaskHostToolDefinitions,
   buildPlanModeHostToolDefinitions,
+  filterHostToolDefinitionsForAgentMode,
+  isPlanAgentMode,
   type BuiltinHostToolDefinitionEnvironment,
 } from '../host-tools.js';
 import { enrichUnknownToolError, toolNamesFromDefinitions } from '../unknown-tool-error.js';
@@ -56,7 +60,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private loopToolDefinitionsCache: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitionsCache: JsonValue[] = [];
-  private planToolExposureEnabled = false;
+  private agentMode: SpiritAgentMode = 'agent';
   private hostToolDefinitionsLoaded = false;
   private toolDefinitionsCache: JsonValue = [];
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
@@ -100,10 +104,14 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     this.refreshMergedToolDefinitions();
   }
 
-  setPlanModeToolExposure(planMode: boolean): void {
-    this.planToolExposureEnabled = planMode;
-    this.planToolDefinitionsCache = planMode ? buildPlanModeHostToolDefinitions() : [];
+  setAgentModeToolExposure(agentMode: SpiritAgentMode): void {
+    this.agentMode = agentMode;
+    this.planToolDefinitionsCache = isPlanAgentMode(agentMode) ? buildPlanModeHostToolDefinitions() : [];
     this.refreshMergedToolDefinitions();
+  }
+
+  setPlanModeToolExposure(planMode: boolean): void {
+    this.setAgentModeToolExposure(planMode ? 'plan' : 'agent');
   }
 
   async refreshCaches(): Promise<void> {
@@ -137,6 +145,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<JsonValue> {
     const availableDefinitions = this.toolDefinitionsJson();
     assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled, availableDefinitions);
+    assertAgentModeAllowsHostTool(name, this.agentMode, availableDefinitions);
     try {
       const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
       if (localMcpRequest) {
@@ -428,19 +437,22 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       : filterToolDefinitionByName(this.hostToolDefinitionsCache, 'generate_image');
     if (
       isOpenResponsesTransportConfig(this.transportConfigForToolDefinitions)
-      && shouldUseApplyPatchFileTools(this.transportConfigForToolDefinitions)
+      && shouldUseApplyPatchFileTools(this.transportConfigForToolDefinitions, { agentMode: this.agentMode })
       && Array.isArray(hostDefinitions)
     ) {
       hostDefinitions = filterLegacyHostFileToolDefinitions(hostDefinitions);
     }
-    const mergedHostDefinitions = Array.isArray(hostDefinitions)
-      ? [
-          ...hostDefinitions,
-          ...this.loopToolDefinitionsCache,
-          ...this.planToolDefinitionsCache,
-          ...this.todoToolDefinitionsCache,
-        ]
-      : [...this.loopToolDefinitionsCache, ...this.planToolDefinitionsCache, ...this.todoToolDefinitionsCache];
+    const mergedHostDefinitions = filterHostToolDefinitionsForAgentMode(
+      Array.isArray(hostDefinitions)
+        ? [
+            ...hostDefinitions,
+            ...this.loopToolDefinitionsCache,
+            ...this.planToolDefinitionsCache,
+            ...this.todoToolDefinitionsCache,
+          ]
+        : [...this.loopToolDefinitionsCache, ...this.planToolDefinitionsCache, ...this.todoToolDefinitionsCache],
+      this.agentMode,
+    );
     this.toolDefinitionsCache = mergeToolDefinitions(
       mergedHostDefinitions,
       this.extensionToolDefinitionsCache,
