@@ -282,7 +282,7 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
     const item = chunk.item;
     const index = toolIndex;
     toolIndex += 1;
-    toolCalls.set(index, {
+    const call: AggregatedStreamingToolCall = {
       index,
       id: typeof item.call_id === 'string' ? item.call_id : `stream-tool-call-${index}`,
       ...(typeof item.id === 'string' ? { streamItemId: item.id } : {}),
@@ -290,7 +290,16 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
       functionName: typeof item.name === 'string' ? item.name : '',
       functionArguments: typeof item.arguments === 'string' ? item.arguments : '',
       readyPreviewEmitted: false,
-    });
+    };
+    toolCalls.set(index, call);
+    if (call.functionName.trim()) {
+      events.push({
+        kind: 'streaming-tool-preview',
+        toolCallId: call.id,
+        toolName: call.functionName,
+        argumentsJson: call.functionArguments,
+      });
+    }
   }
 
   if (chunk.type === 'response.function_call_arguments.delta' && typeof chunk.item_id === 'string') {

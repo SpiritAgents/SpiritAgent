@@ -447,6 +447,7 @@ export interface PendingStreamingRound<State, ToolRequest> {
   completion: ToolAgentRoundCompletion<State> | undefined;
   completionHandled: boolean;
   streamEnded: boolean;
+  streamConsumerFinished: boolean;
   cancel: (() => void) | undefined;
 }
 

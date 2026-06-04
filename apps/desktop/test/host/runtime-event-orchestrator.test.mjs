@@ -11,6 +11,7 @@ import {
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
   runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate,
+  runtimeEventsIncludeAppliedHostToolStreamingUpdate,
 } from '../../dist-electron/src/host/runtime-event-orchestrator.js';
 
 function createHarness() {
@@ -609,6 +610,51 @@ test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview applies deferr
   assert.equal(split.deferred.length, 0);
   assert.ok(
     runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(split.toApply),
+  );
+});
+
+test('runtimeEventsIncludeAppliedHostToolStreamingUpdate matches host tool preview and started events', () => {
+  assert.ok(
+    runtimeEventsIncludeAppliedHostToolStreamingUpdate([
+      {
+        kind: 'streaming-tool-preview',
+        toolCallId: 'glob_1',
+        toolName: 'glob',
+        argumentsJson: '{"pattern":"**/*.md"}',
+      },
+    ]),
+  );
+  assert.ok(
+    runtimeEventsIncludeAppliedHostToolStreamingUpdate([
+      {
+        kind: 'tool-call-started',
+        toolCallId: 'glob_1',
+        toolName: 'glob',
+        request: { name: 'glob', pattern: '**/*.md' },
+      },
+    ]),
+  );
+  assert.equal(
+    runtimeEventsIncludeAppliedHostToolStreamingUpdate([
+      {
+        kind: 'streaming-tool-preview',
+        toolCallId: 'ws_1',
+        toolName: 'web_search',
+        argumentsJson: '{}',
+      },
+    ]),
+    false,
+  );
+  assert.equal(
+    runtimeEventsIncludeAppliedHostToolStreamingUpdate([
+      {
+        kind: 'streaming-tool-preview',
+        toolCallId: 'finish_1',
+        toolName: 'finish_task',
+        argumentsJson: '{"summary":"done"}',
+      },
+    ]),
+    false,
   );
 });
 

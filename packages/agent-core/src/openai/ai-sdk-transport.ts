@@ -31,7 +31,10 @@ import {
   type TextStreamPart,
 } from 'ai';
 
-import { resolveStreamingToolPreviewEmit } from '../tool-streaming-preview-gate.js';
+import {
+  resolveStreamingToolPreviewEmit,
+  shouldEmitStreamingToolNamePreview,
+} from '../tool-streaming-preview-gate.js';
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   createLlmMessageContentFromTextAndImages,
@@ -1277,6 +1280,7 @@ function accumulateStreamingToolCallProgressFromRawChunk(
       }
 
       const existing = toolCalls.get(delta.index);
+      const previousFunctionName = existing?.functionName ?? '';
       const current: AggregatedStreamingToolCall = existing ?? {
         index: delta.index,
         id: nonEmptyToolCallIdOrUndefined(delta.id) ?? `stream-tool-call-${delta.index}`,
@@ -1297,6 +1301,18 @@ function accumulateStreamingToolCallProgressFromRawChunk(
       }
       if (isJsonObject(delta.function) && typeof delta.function.arguments === 'string') {
         current.functionArguments += delta.function.arguments;
+      }
+
+      if (
+        shouldEmitStreamingToolNamePreview(current.functionName, previousFunctionName)
+        && !isGeneratedStreamingToolCallId(current.id)
+      ) {
+        updates.push({
+          kind: 'streaming-tool-preview',
+          toolCallId: current.id,
+          toolName: current.functionName,
+          argumentsJson: current.functionArguments,
+        });
       }
 
       if (current.functionName === 'finish_task') {

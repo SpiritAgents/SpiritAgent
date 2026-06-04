@@ -21,6 +21,7 @@ import type { SessionBundle } from './session-bundle.js';
 import { toolMessageKey } from './message-ordering.js';
 import {
   runtimeEventsIncludeAppliedFinishTaskPreview,
+  runtimeEventsIncludeAppliedHostToolStreamingUpdate,
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
   runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
@@ -397,10 +398,11 @@ export function applyDrainedRuntimeHostEvents(
   if (bundle.id !== ctx.activeSessionId()) {
     return;
   }
-  if (
+  const shouldEmitLiveUpdate =
     runtimeEventsIncludeAppliedFinishTaskPreview(splitBuiltin.toApply)
     || runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(splitBuiltin.toApply)
-  ) {
+    || runtimeEventsIncludeAppliedHostToolStreamingUpdate(splitBuiltin.toApply);
+  if (shouldEmitLiveUpdate) {
     bundle.conversationRevision += 1;
     ctx.emitLiveSnapshotUpdate();
   }
