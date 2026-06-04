@@ -1,3 +1,4 @@
+/** OpenRouter POST /responses：合并 web_search built-in（在 apply_patch fetch 之前链接）。 */
 import type { JsonObject, JsonValue } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
 import {

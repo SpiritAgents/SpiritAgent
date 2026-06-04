@@ -77,7 +77,10 @@ export function isGatewayOpenAiRoutedModel(model: string): boolean {
   return normalizeGatewayOpenAiModelId(model) !== undefined;
 }
 
-/** Aggregators that route `openai/*` model ids through a unified API (Gateway, OpenRouter, …). */
+/**
+ * 聚合商统一 `openai/*` 模型 id 剥离（`resolveOpenResponsesLanguageModelId` 等）。
+ * 勿用于 apply_patch 形态决策：Gateway 用 function tool，OpenRouter 用 built-in（见 apply-patch-eligibility）。
+ */
 export function isAggregatedOpenAiRoutedVendor(
   llmVendor: OpenAiLlmVendor | undefined,
 ): llmVendor is 'vercel-ai-gateway' | 'openrouter' {
