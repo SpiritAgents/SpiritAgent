@@ -7,6 +7,7 @@ import {
   normalizeGatewayOpenAiModelId,
   shouldUseApplyPatchFileTools,
   shouldUseApplyPatchFunctionTool,
+  shouldUseBuiltInApplyPatchRequestItems,
 } from './apply-patch-eligibility.js';
 
 test('isOpenAiGptModelAtLeast51 boundaries', () => {
@@ -103,6 +104,25 @@ test('shouldUseApplyPatchFileTools vercel gateway', () => {
   );
 });
 
+test('shouldUseApplyPatchFileTools openrouter aggregator', () => {
+  assert.equal(
+    shouldUseApplyPatchFileTools({
+      transportKind: 'open-responses',
+      llmVendor: 'openrouter',
+      model: 'openai/gpt-5.1',
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseApplyPatchFileTools({
+      transportKind: 'open-responses',
+      llmVendor: 'openrouter',
+      model: 'anthropic/claude-sonnet-4',
+    }),
+    false,
+  );
+});
+
 test('shouldUseApplyPatchFunctionTool only on gateway-compatible routes', () => {
   assert.equal(
     shouldUseApplyPatchFunctionTool({
@@ -115,9 +135,41 @@ test('shouldUseApplyPatchFunctionTool only on gateway-compatible routes', () => 
   assert.equal(
     shouldUseApplyPatchFunctionTool({
       transportKind: 'open-responses',
+      llmVendor: 'openrouter',
+      model: 'openai/gpt-5.4',
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseApplyPatchFunctionTool({
+      transportKind: 'open-responses',
       llmVendor: 'openai',
       responsesProvider: 'openai',
       model: 'gpt-5.4',
+    }),
+    false,
+  );
+});
+
+test('shouldUseBuiltInApplyPatchRequestItems openrouter openai route gpt-5.1+', () => {
+  assert.equal(
+    shouldUseBuiltInApplyPatchRequestItems({
+      llmVendor: 'openrouter',
+      model: 'openai/gpt-5.4',
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseBuiltInApplyPatchRequestItems({
+      llmVendor: 'openrouter',
+      model: 'anthropic/claude-sonnet-4',
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseBuiltInApplyPatchRequestItems({
+      llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.4',
     }),
     false,
   );

@@ -9,6 +9,7 @@ export type ModelProviderId =
   | 'alibaba'
   | 'anthropic'
   | 'vercel-ai-gateway'
+  | 'openrouter'
   | 'openai'
   | 'custom';
 export type PresetModelProviderId = Exclude<ModelProviderId, 'custom'>;
@@ -28,6 +29,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'anthropic',
   'deepseek',
   'vercel-ai-gateway',
+  'openrouter',
   'moonshot-ai',
   'alibaba',
   'minimax',
@@ -49,7 +51,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","xai","anthropic","deepseek","vercel-ai-gateway","moonshot-ai","alibaba","minimax","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","xai","anthropic","deepseek","vercel-ai-gateway","openrouter","moonshot-ai","alibaba","minimax","custom"]',
     );
   }
 }
@@ -70,7 +72,7 @@ export interface ProviderPickerRow extends ProviderPickerLabel {
 interface ParsedModelProviderPresets {
   defaultCustomApiBase: string;
   presetApiBaseByProvider: Record<
-    'deepseek' | 'xai' | 'moonshot-ai' | 'minimax' | 'alibaba' | 'anthropic' | 'vercel-ai-gateway' | 'openai',
+    'deepseek' | 'xai' | 'moonshot-ai' | 'minimax' | 'alibaba' | 'anthropic' | 'vercel-ai-gateway' | 'openrouter' | 'openai',
     string
   >;
   presetApiBaseByTransport: PresetApiBaseByTransport;
@@ -169,6 +171,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     alibaba: requireStringField(presetRaw, 'alibaba'),
     anthropic: requireStringField(presetRaw, 'anthropic'),
     'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
+    openrouter: requireStringField(presetRaw, 'openrouter'),
     openai: requireStringField(presetRaw, 'openai'),
   };
 
@@ -210,6 +213,7 @@ const minimaxBase = raw.presetApiBaseByProvider.minimax;
 const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
 const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
+const openrouterBase = raw.presetApiBaseByProvider.openrouter;
 const openaiBase = raw.presetApiBaseByProvider.openai;
 
 export const PROVIDER_PRESET_API_BASE = {
@@ -220,6 +224,7 @@ export const PROVIDER_PRESET_API_BASE = {
   alibaba: alibabaBase,
   anthropic: anthropicBase,
   'vercel-ai-gateway': vercelAiGatewayBase,
+  openrouter: openrouterBase,
   openai: openaiBase,
 } as const satisfies Record<Exclude<ModelProviderId, 'custom'>, string>;
 
@@ -287,6 +292,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.anthropic;
     case 'vercel-ai-gateway':
       return PROVIDER_PRESET_API_BASE['vercel-ai-gateway'];
+    case 'openrouter':
+      return PROVIDER_PRESET_API_BASE.openrouter;
     case 'openai':
       return PROVIDER_PRESET_API_BASE.openai;
     case 'custom': {

@@ -42,6 +42,21 @@ test('buildResponsesGenerateTools omits web_search for gateway', () => {
   assert.equal('web_search' in tools, false);
 });
 
+test('buildResponsesGenerateTools omits sdk web_search for openrouter', () => {
+  const tools = buildResponsesGenerateTools(
+    {
+      transportKind: 'open-responses',
+      apiKey: 'test-key',
+      model: 'openai/gpt-4o',
+      llmVendor: 'openrouter',
+    },
+    [hostTool],
+  );
+
+  assert.equal('web_search' in tools, false);
+  assert.ok('grep' in tools);
+});
+
 test('buildResponsesGenerateTools adds web_search for xai when enabled', () => {
   const tools = buildResponsesGenerateTools(
     {
