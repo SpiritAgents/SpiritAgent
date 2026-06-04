@@ -4,6 +4,7 @@ import {
   type LlmTransportConfig,
 } from '../provider-config.js';
 import { shouldUseAlibabaBuiltInTools } from './alibaba-built-in-tools.js';
+import { shouldUseOpenRouterResponsesBuiltInTools } from './openrouter-built-in-tools.js';
 import {
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
@@ -18,10 +19,15 @@ export const XAI_WEB_SEARCH_WITH_LOCAL_TOOLS_ENABLED = true;
 export type ProviderWebSearchMode =
   | 'openai-sdk-web-search'
   | 'xai-sdk-web-search'
-  | 'alibaba-responses-built-in-tools';
+  | 'alibaba-responses-built-in-tools'
+  | 'openrouter-responses-built-in-tools';
 
 export function shouldUseProviderWebSearch(config: LlmTransportConfig): boolean {
-  return resolveProviderWebSearchMode(config) !== undefined || shouldUseAlibabaBuiltInTools(config);
+  return (
+    resolveProviderWebSearchMode(config) !== undefined
+    || shouldUseAlibabaBuiltInTools(config)
+    || shouldUseOpenRouterResponsesBuiltInTools(config)
+  );
 }
 
 export function resolveProviderWebSearchMode(
@@ -52,6 +58,10 @@ function resolveOpenResponsesWebSearchMode(
 
   if (config.llmVendor === 'alibaba') {
     return 'alibaba-responses-built-in-tools';
+  }
+
+  if (config.llmVendor === 'openrouter') {
+    return 'openrouter-responses-built-in-tools';
   }
 
   return undefined;
