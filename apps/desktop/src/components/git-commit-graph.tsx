@@ -6,14 +6,16 @@ import {
   useRef,
   useState,
   type ComponentRef,
-  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Copy, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
+import {
+  HoverDetailTooltip,
+  useHoverDetailTooltipContext,
+} from "@/components/ui/hover-detail-tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { GitCommitGraphRow, GitHistorySnapshot } from "@/types";
@@ -435,11 +437,6 @@ function CommitGraphGutter({
   );
 }
 
-const HOVER_OPEN_DELAY_MS = 400;
-const HOVER_CLOSE_DELAY_MS = 120;
-/** Keep the anchor row mounted long enough for Radix's close animation to finish. */
-const ANCHOR_LINGER_MS = 220;
-
 function CommitGraphRowDetail({ row }: { row: GitCommitGraphRow }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -495,27 +492,24 @@ function CommitGraphRowDetail({ row }: { row: GitCommitGraphRow }) {
   );
 }
 
-function CommitGraphRow({
+function CommitGraphRowWithHover({
   row,
   textInset,
-  isHovered,
-  isPopoverAnchor,
-  onRowPointerEnter,
 }: {
   row: GitCommitGraphRow;
   textInset: number;
-  isHovered: boolean;
-  isPopoverAnchor: boolean;
-  onRowPointerEnter: (row: GitCommitGraphRow) => void;
 }) {
+  const { getTriggerProps } = useHoverDetailTooltipContext<GitCommitGraphRow>();
+  const { onPointerEnter, isHighlighted } = getTriggerProps(row);
+
   const rowButton = (
     <button
       type="button"
       className={cn(
         "flex w-full min-w-0 items-center py-1 pr-2 text-left",
-        isHovered ? "bg-muted/30" : "hover:bg-muted/30",
+        isHighlighted ? "bg-muted/30" : "hover:bg-muted/30",
       )}
-      onPointerEnter={() => onRowPointerEnter(row)}
+      onPointerEnter={onPointerEnter}
     >
       <span className="min-w-0 flex-1 truncate text-xs leading-snug text-foreground">
         {row.commit.subject}
@@ -528,7 +522,9 @@ function CommitGraphRow({
       className="relative min-w-0 border-b border-border/20 last:border-b-0"
       style={{ minHeight: ROW_HEIGHT_PX, paddingLeft: textInset }}
     >
-      {isPopoverAnchor ? <PopoverAnchor asChild>{rowButton}</PopoverAnchor> : rowButton}
+      <HoverDetailTooltip.Anchor itemId={row.commit.oid}>
+        {rowButton}
+      </HoverDetailTooltip.Anchor>
     </div>
   );
 }
@@ -551,135 +547,6 @@ export function GitCommitGraph({
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const loadMoreInFlightRef = useRef(false);
   const [geometry, setGeometry] = useState<RowGeometry | null>(null);
-  const [hoveredRow, setHoveredRow] = useState<GitCommitGraphRow | null>(null);
-  const [pointerRowOid, setPointerRowOid] = useState<string | null>(null);
-  // Keeps the anchor row mounted through Radix's close animation so the
-  // PopoverContent never loses its anchor and snaps to (0,0).
-  const [lingerAnchorOid, setLingerAnchorOid] = useState<string | null>(null);
-  const hoverOpenTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const lingerClearTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const hoveredRowRef = useRef<GitCommitGraphRow | null>(null);
-  const pointerRowRef = useRef<GitCommitGraphRow | null>(null);
-  const popoverContentRef = useRef<HTMLDivElement>(null);
-
-  hoveredRowRef.current = hoveredRow;
-
-  const clearHoverOpenTimer = useCallback(() => {
-    if (hoverOpenTimerRef.current !== undefined) {
-      clearTimeout(hoverOpenTimerRef.current);
-      hoverOpenTimerRef.current = undefined;
-    }
-  }, []);
-
-  const clearHoverCloseTimer = useCallback(() => {
-    if (hoverCloseTimerRef.current !== undefined) {
-      clearTimeout(hoverCloseTimerRef.current);
-      hoverCloseTimerRef.current = undefined;
-    }
-  }, []);
-
-  const commitClose = useCallback((closingOid: string) => {
-    clearHoverOpenTimer();
-    pointerRowRef.current = null;
-    setPointerRowOid(null);
-    setLingerAnchorOid(closingOid);
-    setHoveredRow(null);
-    if (lingerClearTimerRef.current !== undefined) {
-      clearTimeout(lingerClearTimerRef.current);
-    }
-    lingerClearTimerRef.current = setTimeout(() => {
-      lingerClearTimerRef.current = undefined;
-      setLingerAnchorOid(null);
-    }, ANCHOR_LINGER_MS);
-  }, [clearHoverOpenTimer]);
-
-  const scheduleHoverClose = useCallback(() => {
-    clearHoverOpenTimer();
-    clearHoverCloseTimer();
-    const closingOid = hoveredRowRef.current?.commit.oid ?? null;
-    if (!closingOid) {
-      pointerRowRef.current = null;
-      setPointerRowOid(null);
-      return;
-    }
-    hoverCloseTimerRef.current = setTimeout(() => {
-      hoverCloseTimerRef.current = undefined;
-      commitClose(closingOid);
-    }, HOVER_CLOSE_DELAY_MS);
-  }, [clearHoverCloseTimer, clearHoverOpenTimer, commitClose]);
-
-  const handleRowPointerEnter = useCallback(
-    (row: GitCommitGraphRow) => {
-      clearHoverCloseTimer();
-      if (lingerClearTimerRef.current !== undefined) {
-        clearTimeout(lingerClearTimerRef.current);
-        lingerClearTimerRef.current = undefined;
-      }
-      setLingerAnchorOid(null);
-      pointerRowRef.current = row;
-      setPointerRowOid(row.commit.oid);
-
-      if (hoveredRowRef.current !== null) {
-        clearHoverOpenTimer();
-        setHoveredRow(row);
-        return;
-      }
-
-      clearHoverOpenTimer();
-      hoverOpenTimerRef.current = setTimeout(() => {
-        hoverOpenTimerRef.current = undefined;
-        if (pointerRowRef.current?.commit.oid !== row.commit.oid) {
-          return;
-        }
-        setHoveredRow(row);
-      }, HOVER_OPEN_DELAY_MS);
-    },
-    [clearHoverCloseTimer, clearHoverOpenTimer],
-  );
-
-  // Pointer left the whole commit list. Close unless we are heading into the popover.
-  const handleListPointerLeave = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const related = event.relatedTarget;
-      if (related instanceof Node && popoverContentRef.current?.contains(related)) {
-        return;
-      }
-      pointerRowRef.current = null;
-      setPointerRowOid(null);
-      scheduleHoverClose();
-    },
-    [scheduleHoverClose],
-  );
-
-  // Pointer left the popover. Close unless we are heading back into the list.
-  const handlePopoverPointerLeave = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const related = event.relatedTarget;
-      if (related instanceof Node && rowsContainerRef.current?.contains(related)) {
-        return;
-      }
-      scheduleHoverClose();
-    },
-    [scheduleHoverClose],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (hoverOpenTimerRef.current !== undefined) {
-        clearTimeout(hoverOpenTimerRef.current);
-      }
-      if (hoverCloseTimerRef.current !== undefined) {
-        clearTimeout(hoverCloseTimerRef.current);
-      }
-      if (lingerClearTimerRef.current !== undefined) {
-        clearTimeout(lingerClearTimerRef.current);
-      }
-    };
-  }, []);
-
-  const popoverOpen = hoveredRow !== null;
-  const anchorOid = hoveredRow?.commit.oid ?? lingerAnchorOid;
 
   useEffect(() => {
     if (!hasMore || !onLoadMore || loadingMore) {
@@ -794,28 +661,18 @@ export function GitCommitGraph({
 
   return (
     <ScrollArea ref={scrollAreaRef} className={cn("min-h-0 flex-1", className)}>
-      <Popover open={popoverOpen} modal={false}>
+      <HoverDetailTooltip<GitCommitGraphRow> getItemId={(row) => row.commit.oid}>
         <div className="relative min-w-0 pr-1">
           <CommitGraphGutter rows={rows} graphWidth={graphWidth} geometry={geometry} />
-          <div
-            className="relative"
-            ref={rowsContainerRef}
-            onPointerLeave={handleListPointerLeave}
-          >
+          <HoverDetailTooltip.TriggerZone ref={rowsContainerRef} className="relative">
             {rows.map((row, rowIndex) => (
-              <CommitGraphRow
+              <CommitGraphRowWithHover
                 key={row.commit.oid}
                 row={row}
                 textInset={textInsetForRow(row, rowIndex, rows)}
-                isHovered={
-                  pointerRowOid === row.commit.oid ||
-                  hoveredRow?.commit.oid === row.commit.oid
-                }
-                isPopoverAnchor={anchorOid === row.commit.oid}
-                onRowPointerEnter={handleRowPointerEnter}
               />
             ))}
-          </div>
+          </HoverDetailTooltip.TriggerZone>
           {showLoadMoreFooter ? (
             <div
               ref={loadMoreSentinelRef}
@@ -840,38 +697,17 @@ export function GitCommitGraph({
             </div>
           ) : null}
         </div>
-        <PopoverContent
-          ref={popoverContentRef}
+        <HoverDetailTooltip.Content
           side="right"
           align="start"
           sideOffset={6}
           collisionPadding={12}
           className="w-72 p-3"
-          onOpenAutoFocus={(event) => event.preventDefault()}
-          onCloseAutoFocus={(event) => event.preventDefault()}
-          onPointerDownOutside={(event) => {
-            const target = event.target as Node;
-            if (rowsContainerRef.current?.contains(target)) {
-              event.preventDefault();
-              return;
-            }
-            scheduleHoverClose();
-          }}
-          onFocusOutside={(event) => event.preventDefault()}
-          onInteractOutside={(event) => {
-            const target = event.target as Node;
-            if (rowsContainerRef.current?.contains(target)) {
-              event.preventDefault();
-              return;
-            }
-            scheduleHoverClose();
-          }}
-          onPointerEnter={clearHoverCloseTimer}
-          onPointerLeave={handlePopoverPointerLeave}
         >
-          {hoveredRow ? <CommitGraphRowDetail row={hoveredRow} /> : null}
-        </PopoverContent>
-      </Popover>
+          {(activeRow) =>
+            activeRow ? <CommitGraphRowDetail row={activeRow as GitCommitGraphRow} /> : null}
+        </HoverDetailTooltip.Content>
+      </HoverDetailTooltip>
     </ScrollArea>
   );
 }
