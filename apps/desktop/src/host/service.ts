@@ -257,19 +257,22 @@ import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import { buildDesktopSnapshot } from './snapshot.js';
 import {
   applyToolCallSummaryCopy,
-  displayTitleForTool,
   messageOrderDebugLevel,
   messageIndexIsInCurrentTurn,
   hasActiveRunSubagentToolInMessages,
   isSubagentStatusSurfaceMessage,
   parsePendingSubagentStatusText,
   restoreMessagesFromArchive,
-  stripReasonLineFromShellPrompt,
   summarizeMessagesTailForOrderDebug,
   summarizeToolRowsForDebug,
   toolMessageKey,
   truncateOneLineForDebug,
 } from './message-ordering.js';
+import {
+  mapPendingAuxState,
+  mapPendingMcpResources,
+  mapPendingToolApproval,
+} from './snapshot-mappers.js';
 import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
 import {
   DesktopRuntimeEventOrchestrator,
@@ -3446,39 +3449,12 @@ class DesktopHostService {
           ? { pendingUserTurn: this.runtime.pendingUserTurn() }
           : {}),
         pendingImagePaths: [...(this.runtime?.pendingImagePaths() ?? [])],
-        pendingMcpResources: (this.runtime?.pendingMcpResources() ?? []).map((resource) => ({
-          server: resource.server,
-          displayName: resource.displayName,
-          uri: resource.uri,
-          ...(resource.mimeType ? { mimeType: resource.mimeType } : {}),
-          readAtUnixMs: resource.readAtUnixMs,
-          content: resource.content,
-        })),
+        pendingMcpResources: mapPendingMcpResources(this.runtime?.pendingMcpResources() ?? []),
         ...(pendingAux
-          ? {
-              pendingAuxState: {
-                kind: pendingAux.kind,
-                statusText: pendingAux.statusText,
-                ...(pendingAux.detailText ? { detailText: pendingAux.detailText } : {}),
-              },
-            }
+          ? { pendingAuxState: mapPendingAuxState(pendingAux)! }
           : {}),
         ...(pendingApproval
-          ? {
-              pendingToolApproval: {
-                toolName: displayTitleForTool(
-                  pendingApproval.toolName,
-                  pendingApproval.request,
-                ),
-                prompt: stripReasonLineFromShellPrompt(
-                  pendingApproval.toolName,
-                  pendingApproval.prompt,
-                ),
-                ...(typeof pendingApproval.trustTarget === 'string'
-                  ? { trustTarget: pendingApproval.trustTarget }
-                  : {}),
-              },
-            }
+          ? { pendingToolApproval: mapPendingToolApproval(pendingApproval) }
           : {}),
         ...(pendingQuestions
           ? { pendingQuestions: mapPendingQuestions(pendingQuestions) }
