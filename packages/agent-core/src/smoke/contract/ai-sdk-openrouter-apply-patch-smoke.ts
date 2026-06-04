@@ -21,18 +21,20 @@ async function main(): Promise<void> {
     }
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     const tools = Array.isArray(body.tools) ? body.tools : [];
-    const hasApplyPatchTool = tools.some((tool: {
+    const hasBuiltInApplyPatch = tools.some((tool: { type?: string }) => tool?.type === 'apply_patch');
+    const hasFunctionApplyPatch = tools.some((tool: {
       type?: string;
       name?: string;
       function?: { name?: string };
     }) => (
-      tool?.type === 'apply_patch'
-      || (tool?.type === 'function' && tool?.name === 'apply_patch')
-      || (tool?.type === 'function' && tool?.function?.name === 'apply_patch')
+      tool?.type === 'function' && (
+        tool?.name === 'apply_patch'
+        || tool?.function?.name === 'apply_patch'
+      )
     ));
-    if (!hasApplyPatchTool) {
+    if (!hasBuiltInApplyPatch || hasFunctionApplyPatch) {
       response.statusCode = 400;
-      response.end('missing apply_patch tool');
+      response.end('expected built-in apply_patch tool only');
       return;
     }
 
