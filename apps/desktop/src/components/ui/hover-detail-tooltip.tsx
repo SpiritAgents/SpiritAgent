@@ -39,7 +39,6 @@ type HoverDetailTooltipContextValue<TItem> = {
     onCloseAutoFocus: (event: Event) => void;
     onFocusOutside: (event: Event) => void;
     onPointerEnter: () => void;
-    onPointerLeave: (event: ReactPointerEvent<HTMLDivElement>) => void;
     onPointerDownOutside: (event: { target: EventTarget | null; preventDefault(): void }) => void;
     onInteractOutside: (event: { target: EventTarget | null; preventDefault(): void }) => void;
   };
@@ -173,23 +172,11 @@ export function useHoverDetailTooltipState<TItem>({
       if (related instanceof Node && contentRef.current?.contains(related)) {
         return;
       }
+      // 关闭由文档级 pointermove 判定；此处仅清理悬停高亮（切换 active 行会重建 DOM，leave 可能丢失）。
       pointerItemRef.current = null;
       setPointerItemId(null);
-      scheduleHoverClose();
     },
-    [scheduleHoverClose],
-  );
-
-  // Pointer left the panel. Close unless we are heading back into the trigger zone.
-  const handleContentPointerLeave = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const related = event.relatedTarget;
-      if (related instanceof Node && triggerZoneRef.current?.contains(related)) {
-        return;
-      }
-      scheduleHoverClose();
-    },
-    [scheduleHoverClose],
+    [],
   );
 
   useEffect(() => {
@@ -209,6 +196,32 @@ export function useHoverDetailTooltipState<TItem>({
   const popoverOpen = activeItem !== null;
   const activeItemId = activeItem ? getItemId(activeItem) : null;
   const anchorItemId = activeItemId ?? lingerAnchorId;
+
+  // 关闭决策的单一可信来源：弹层打开期间，按光标的实际位置判定。
+  // 切换 active 行会重建被悬停行的 DOM，导致其 pointerleave 丢失、弹层卡住不关；
+  // 文档级 pointermove 不依赖成对的 enter/leave，光标移出两区即排程关闭，移回即取消。
+  useEffect(() => {
+    if (!popoverOpen) {
+      return;
+    }
+    const handleDocumentPointerMove = (event: PointerEvent) => {
+      const target = event.target;
+      const inside =
+        target instanceof Node &&
+        (Boolean(triggerZoneRef.current?.contains(target)) ||
+          Boolean(contentRef.current?.contains(target)));
+      if (inside) {
+        clearHoverCloseTimer();
+        return;
+      }
+      if (hoverCloseTimerRef.current === undefined) {
+        scheduleHoverClose();
+      }
+    };
+    document.addEventListener("pointermove", handleDocumentPointerMove, true);
+    return () =>
+      document.removeEventListener("pointermove", handleDocumentPointerMove, true);
+  }, [popoverOpen, clearHoverCloseTimer, scheduleHoverClose]);
 
   const getTriggerProps = useCallback(
     (item: TItem): HoverDetailTooltipTriggerProps => {
@@ -234,7 +247,6 @@ export function useHoverDetailTooltipState<TItem>({
       onCloseAutoFocus: (event: Event) => event.preventDefault(),
       onFocusOutside: (event: Event) => event.preventDefault(),
       onPointerEnter: clearHoverCloseTimer,
-      onPointerLeave: handleContentPointerLeave,
       onPointerDownOutside: (event: {
         target: EventTarget | null;
         preventDefault(): void;
@@ -258,7 +270,7 @@ export function useHoverDetailTooltipState<TItem>({
         scheduleHoverClose();
       },
     }),
-    [clearHoverCloseTimer, handleContentPointerLeave, scheduleHoverClose],
+    [clearHoverCloseTimer, scheduleHoverClose],
   );
 
   return {
@@ -392,7 +404,6 @@ function HoverDetailTooltipContent({
       onCloseAutoFocus={contentInteractionProps.onCloseAutoFocus}
       onFocusOutside={contentInteractionProps.onFocusOutside}
       onPointerEnter={contentInteractionProps.onPointerEnter}
-      onPointerLeave={contentInteractionProps.onPointerLeave}
       onPointerDownOutside={contentInteractionProps.onPointerDownOutside}
       onInteractOutside={contentInteractionProps.onInteractOutside}
       {...props}
