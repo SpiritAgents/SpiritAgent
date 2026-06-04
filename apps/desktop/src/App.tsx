@@ -1612,6 +1612,7 @@ function DesktopLayoutChromeBar({
     <div
       role="toolbar"
       aria-label={t('app.sidebarAndTools')}
+      data-spirit-surface="layout-chrome"
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-1.5",
         showTrailingActions ? "justify-between" : "justify-start",
@@ -2912,9 +2913,11 @@ export default function App() {
                   )}
                 >
                 {isEmptySession ? (
-                  <p className="mb-6 text-center text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
-                    Start something.
-                  </p>
+                  <div data-spirit-surface="conversation-empty">
+                    <p className="mb-6 text-center text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+                      Start something.
+                    </p>
+                  </div>
                 ) : null}
                 <div className="space-y-2">
                 {showWorkspaceBindingControls ? (
