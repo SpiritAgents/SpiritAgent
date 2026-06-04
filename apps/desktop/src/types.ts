@@ -47,6 +47,35 @@ export interface UpdateConfigRequest {
   webHost?: DesktopWebHostConfigUpdate;
   /** 缺省时不修改已保存的梦境配置。 */
   dreams?: DesktopDreamConfigUpdate;
+  /** 缺省时不修改已保存的智能体配置。 */
+  agents?: DesktopAgentsConfigUpdate;
+}
+
+export interface DesktopAgentsConfigUpdate {
+  lsp?: {
+    enabled?: boolean;
+  };
+}
+
+export interface InstallLspProviderRequest {
+  providerId: string;
+}
+
+export type DesktopLspProviderStatus = 'ready' | 'not_found' | 'disabled';
+
+export interface DesktopLspProviderSnapshot {
+  id: string;
+  displayName: string;
+  languages: string[];
+  status: DesktopLspProviderStatus;
+  npmPackage: string;
+  command?: string;
+}
+
+export interface DesktopLspSnapshot {
+  userEnabled: boolean;
+  active: boolean;
+  providers: DesktopLspProviderSnapshot[];
 }
 
 export interface DesktopWebHostConfigUpdate {
@@ -542,6 +571,7 @@ export interface DesktopSnapshot {
   plan: PlanSnapshot;
   mcpStatus: McpStatusSnapshot;
   mcpServers: DesktopMcpServerListItem[];
+  lsp: DesktopLspSnapshot;
   conversation: ConversationSnapshot;
   /** 从磁盘打开的会话；未从文件打开时为 `undefined`（新会话/未保存）。 */
   activeSession?: ActiveSessionSnapshot;

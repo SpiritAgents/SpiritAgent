@@ -2675,8 +2675,10 @@ export default function App() {
               mcpsBusy={runtime.busyAction === "mcps"}
               skillsBusy={runtime.busyAction === "skills"}
               extensionsBusy={runtime.busyAction === "extensions"}
+              lspInstallBusy={runtime.lspInstallBusy}
               isElectronShell={isElectronShell}
               onSavePatch={runtime.saveSettingsPatch}
+              onInstallLspProvider={runtime.installLspProvider}
               onResetWebHostPairing={runtime.resetWebHostPairing}
               onAddModel={runtime.addModel}
               onAddProviderModels={runtime.addProviderModels}
