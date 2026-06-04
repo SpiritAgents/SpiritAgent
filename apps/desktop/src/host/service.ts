@@ -126,6 +126,7 @@ import type {
   WriteWorkspaceTextFileRequest,
 } from '../types.js';
 import type { DesktopToolRequest, HostCommandName } from './contracts.js';
+import { createHostInvokeDispatch } from './host-invoke-dispatch.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
@@ -344,64 +345,6 @@ import {
 
 export { setDesktopExtensionHostAdapter };
 
-type CommandPayloads = {
-  bootstrap: { request?: BootstrapRequest };
-  rememberWorkspaceRoot: { request: RememberWorkspaceRequest };
-  commitChanges: { request: CommitChangesRequest };
-  updateConfig: { request: UpdateConfigRequest };
-  setLoopEnabled: { enabled: boolean };
-  setApprovalLevel: { approvalLevel: ApprovalLevel };
-  setPendingGitBranch: { branch: string };
-  setWorkLocation: { workLocation: WorkLocationKind };
-  checkoutGitBranch: CheckoutGitBranchRequest;
-  mergeWorktreeToMain: undefined;
-  pushGitBranch: undefined;
-  refreshGitSnapshot: undefined;
-  readGitWorkingTree: undefined;
-  readGitHistory: { request?: ReadGitHistoryRequest };
-  setWebHostAuthTokenHash: { authTokenHash: string };
-  addModel: { request: AddModelRequest };
-  addProviderModels: { request: AddProviderModelsRequest };
-  previewModels: { request: PreviewModelsRequest };
-  removeModel: { request: RemoveModelRequest };
-  removeProviderModels: { request: RemoveProviderModelsRequest };
-  addMcpServer: { request: AddMcpServerRequest };
-  deleteMcpServer: { request: DeleteMcpServerRequest };
-  inspectMcpServer: { name: string };
-  importExtension: { request: ImportExtensionRequest };
-  listMarketplaceExtensions: undefined;
-  getMarketplaceExtensionDetail: { extensionId: string };
-  getMarketplaceExtensionReadme: { extensionId: string };
-  prepareMarketplaceExtensionInstall: { request: PrepareMarketplaceExtensionInstallRequest };
-  installMarketplaceExtension: { request: InstallMarketplaceExtensionRequest };
-  deleteExtension: { request: DeleteExtensionRequest };
-  runExtension: { request: RunExtensionRequest };
-  updateExtensionSettings: { request: UpdateExtensionSettingsRequest };
-  updateExtensionSecret: { request: UpdateExtensionSecretRequest };
-  createSkill: { request: CreateSkillRequest };
-  deleteSkill: { request: DeleteSkillRequest };
-  submitCreateSkillSlash: { request: SubmitCreateSkillSlashRequest };
-  submitSkillSlash: { request: SubmitSkillSlashRequest };
-  submitStartImplementing: undefined;
-  exportSessionLog: undefined;
-  compactHistory: undefined;
-  submitUserTurn: SubmitUserTurnRequest;
-  abortConversation: undefined;
-  continueAssistantCompletion: { messageId: number };
-  poll: undefined;
-  listDreamsOverview: undefined;
-  replyPendingApproval: { decision: DesktopApprovalDecision };
-  replyPendingQuestions: { result: AskQuestionsResult };
-  resetSession: undefined;
-  listSessions: undefined;
-  openSession: { path: string };
-  listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
-  listWorkspaceExplorerChildren: { relativePath: string };
-  readWorkspaceTextFile: { relativePath: string };
-  writeWorkspaceTextFile: { request: WriteWorkspaceTextFileRequest };
-  rewindAndSubmitMessage: { request: RewindAndSubmitMessageRequest };
-};
-
 interface HostState {
   workspaceRoot: string;
   workspaceBinding: DesktopWorkspaceBinding;
@@ -474,6 +417,7 @@ async function loadDesktopPlanSnapshot(planPath: string, existsHint?: boolean): 
 }
 
 class DesktopHostService {
+  private readonly invokeDispatch = createHostInvokeDispatch(this);
   private runtimeTransport: SpiritLlmTransport = createLlmTransport();
   private readonly extensionStateStore = createDesktopExtensionStateStore({
     spiritDataDir: spiritAgentDataDir(),
@@ -2413,205 +2357,7 @@ class DesktopHostService {
   }
 
   async invoke(command: HostCommandName, payload?: unknown): Promise<unknown> {
-    switch (command) {
-      case 'bootstrap': {
-        const typedPayload = payload as CommandPayloads['bootstrap'] | undefined;
-        return this.bootstrap(typedPayload?.request);
-      }
-      case 'rememberWorkspaceRoot': {
-        const typedPayload = payload as CommandPayloads['rememberWorkspaceRoot'];
-        return this.rememberWorkspaceRoot(typedPayload.request);
-      }
-      case 'commitChanges': {
-        const typedPayload = payload as CommandPayloads['commitChanges'];
-        return this.commitChanges(typedPayload.request);
-      }
-      case 'updateConfig': {
-        const typedPayload = payload as CommandPayloads['updateConfig'];
-        return this.updateConfig(typedPayload.request);
-      }
-      case 'setWebHostAuthTokenHash': {
-        const typedPayload = payload as CommandPayloads['setWebHostAuthTokenHash'];
-        return this.setWebHostAuthTokenHash(typedPayload.authTokenHash);
-      }
-      case 'addModel': {
-        const typedPayload = payload as CommandPayloads['addModel'];
-        return this.addModel(typedPayload.request);
-      }
-      case 'addProviderModels': {
-        const typedPayload = payload as CommandPayloads['addProviderModels'];
-        return this.addProviderModels(typedPayload.request);
-      }
-      case 'previewModels': {
-        const typedPayload = payload as CommandPayloads['previewModels'];
-        return this.previewModels(typedPayload.request);
-      }
-      case 'removeModel': {
-        const typedPayload = payload as CommandPayloads['removeModel'];
-        return this.removeModel(typedPayload.request);
-      }
-      case 'removeProviderModels': {
-        const typedPayload = payload as CommandPayloads['removeProviderModels'];
-        return this.removeProviderModels(typedPayload.request);
-      }
-      case 'addMcpServer': {
-        const typedPayload = payload as CommandPayloads['addMcpServer'];
-        return this.addMcpServer(typedPayload.request);
-      }
-      case 'deleteMcpServer': {
-        const typedPayload = payload as CommandPayloads['deleteMcpServer'];
-        return this.deleteMcpServer(typedPayload.request);
-      }
-      case 'inspectMcpServer': {
-        const typedPayload = payload as CommandPayloads['inspectMcpServer'];
-        return this.inspectMcpServer(typedPayload.name);
-      }
-      case 'importExtension': {
-        const typedPayload = payload as CommandPayloads['importExtension'];
-        return this.importExtension(typedPayload.request);
-      }
-      case 'listMarketplaceExtensions': {
-        return this.listMarketplaceExtensions();
-      }
-      case 'getMarketplaceExtensionDetail': {
-        const typedPayload = payload as CommandPayloads['getMarketplaceExtensionDetail'];
-        return this.getMarketplaceExtensionDetail(typedPayload.extensionId);
-      }
-      case 'getMarketplaceExtensionReadme': {
-        const typedPayload = payload as CommandPayloads['getMarketplaceExtensionReadme'];
-        return this.getMarketplaceExtensionReadme(typedPayload.extensionId);
-      }
-      case 'installMarketplaceExtension': {
-        const typedPayload = payload as CommandPayloads['installMarketplaceExtension'];
-        return this.installMarketplaceExtension(typedPayload.request);
-      }
-      case 'prepareMarketplaceExtensionInstall': {
-        const typedPayload = payload as CommandPayloads['prepareMarketplaceExtensionInstall'];
-        return this.prepareMarketplaceExtensionInstall(typedPayload.request);
-      }
-      case 'deleteExtension': {
-        const typedPayload = payload as CommandPayloads['deleteExtension'];
-        return this.deleteExtension(typedPayload.request);
-      }
-      case 'runExtension': {
-        const typedPayload = payload as CommandPayloads['runExtension'];
-        return this.runExtension(typedPayload.request);
-      }
-      case 'updateExtensionSettings': {
-        const typedPayload = payload as CommandPayloads['updateExtensionSettings'];
-        return this.updateExtensionSettings(typedPayload.request);
-      }
-      case 'updateExtensionSecret': {
-        const typedPayload = payload as CommandPayloads['updateExtensionSecret'];
-        return this.updateExtensionSecret(typedPayload.request);
-      }
-      case 'createSkill': {
-        const typedPayload = payload as CommandPayloads['createSkill'];
-        return this.createSkill(typedPayload.request);
-      }
-      case 'deleteSkill': {
-        const typedPayload = payload as CommandPayloads['deleteSkill'];
-        return this.deleteSkill(typedPayload.request);
-      }
-      case 'submitCreateSkillSlash': {
-        const typedPayload = payload as CommandPayloads['submitCreateSkillSlash'];
-        return this.submitCreateSkillSlash(typedPayload.request);
-      }
-      case 'submitSkillSlash': {
-        const typedPayload = payload as CommandPayloads['submitSkillSlash'];
-        return this.submitSkillSlash(typedPayload.request);
-      }
-      case 'submitStartImplementing':
-        return this.submitStartImplementing();
-      case 'exportSessionLog':
-        return this.exportSessionLog();
-      case 'compactHistory':
-        return this.compactHistory();
-      case 'submitUserTurn': {
-        const typedPayload = payload as CommandPayloads['submitUserTurn'];
-        return this.submitUserTurn(typedPayload);
-      }
-      case 'setLoopEnabled': {
-        const typedPayload = payload as CommandPayloads['setLoopEnabled'];
-        return this.setLoopEnabled(typedPayload.enabled === true);
-      }
-      case 'setApprovalLevel': {
-        const typedPayload = payload as CommandPayloads['setApprovalLevel'];
-        return this.setApprovalLevel(typedPayload.approvalLevel);
-      }
-      case 'setPendingGitBranch': {
-        const typedPayload = payload as CommandPayloads['setPendingGitBranch'];
-        return this.setPendingGitBranch(typedPayload.branch);
-      }
-      case 'setWorkLocation': {
-        const typedPayload = payload as CommandPayloads['setWorkLocation'];
-        return this.setWorkLocation(typedPayload.workLocation);
-      }
-      case 'checkoutGitBranch': {
-        const typedPayload = payload as CommandPayloads['checkoutGitBranch'];
-        return this.checkoutGitBranch(typedPayload);
-      }
-      case 'mergeWorktreeToMain':
-        return this.mergeWorktreeToMain();
-      case 'pushGitBranch':
-        return this.pushGitBranch();
-      case 'refreshGitSnapshot':
-        return this.refreshGitSnapshot();
-      case 'abortConversation':
-        return this.abortConversation();
-      case 'continueAssistantCompletion': {
-        const typedPayload = payload as CommandPayloads['continueAssistantCompletion'];
-        return this.continueAssistantCompletion(typedPayload.messageId);
-      }
-      case 'poll':
-        return this.poll();
-      case 'listDreamsOverview':
-        return this.listDreamsOverview();
-      case 'replyPendingApproval': {
-        const typedPayload = payload as CommandPayloads['replyPendingApproval'];
-        return this.replyPendingApproval(typedPayload.decision);
-      }
-      case 'replyPendingQuestions': {
-        const typedPayload = payload as CommandPayloads['replyPendingQuestions'];
-        return this.replyPendingQuestions(typedPayload.result);
-      }
-      case 'resetSession':
-        return this.resetSession();
-      case 'listSessions':
-        return this.listSessions();
-      case 'openSession': {
-        const typedPayload = payload as CommandPayloads['openSession'];
-        return this.openSession(typedPayload.path);
-      }
-      case 'listWorkspaceFileReferenceSuggestions': {
-        const typedPayload = payload as CommandPayloads['listWorkspaceFileReferenceSuggestions'];
-        return this.listWorkspaceFileReferenceSuggestions(typedPayload.request);
-      }
-      case 'listWorkspaceExplorerChildren': {
-        const typedPayload = payload as CommandPayloads['listWorkspaceExplorerChildren'];
-        return this.listWorkspaceExplorerChildren(typedPayload.relativePath);
-      }
-      case 'readGitWorkingTree':
-        return this.readGitWorkingTree();
-      case 'readGitHistory': {
-        const typedPayload = payload as CommandPayloads['readGitHistory'];
-        return this.readGitHistory(typedPayload.request ?? {});
-      }
-      case 'readWorkspaceTextFile': {
-        const typedPayload = payload as CommandPayloads['readWorkspaceTextFile'];
-        return this.readWorkspaceTextFile(typedPayload.relativePath);
-      }
-      case 'writeWorkspaceTextFile': {
-        const typedPayload = payload as CommandPayloads['writeWorkspaceTextFile'];
-        return this.writeWorkspaceTextFile(typedPayload.request);
-      }
-      case 'rewindAndSubmitMessage': {
-        const typedPayload = payload as CommandPayloads['rewindAndSubmitMessage'];
-        return this.rewindAndSubmitMessage(typedPayload.request);
-      }
-      default:
-        throw new Error(`Unsupported host command: ${command satisfies never}`);
-    }
+    return this.invokeDispatch(command, payload);
   }
 
   private async ensureInitialized(
