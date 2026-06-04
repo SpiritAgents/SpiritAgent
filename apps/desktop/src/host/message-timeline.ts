@@ -477,6 +477,20 @@ export class DesktopMessageTimeline {
     return turn.segments.some((segment) => segmentHasToolRows(segment));
   }
 
+  /** Active segment already has pre-tool assistant body (do not defer after-stream thinking to aux). */
+  activeSegmentHasPreToolAssistantBody(): boolean {
+    const segment = this.activeSegment();
+    if (!segment) {
+      return false;
+    }
+    return segment.rows.some(
+      (row) =>
+        row.kind === 'assistant-text' &&
+        row.section !== 'after-tools' &&
+        row.content.trim(),
+    );
+  }
+
   finalizeCompactionSegment(text: string): ConversationMessageSnapshot | undefined {
     if (!text.trim()) {
       return undefined;
@@ -1302,7 +1316,7 @@ export class DesktopMessageTimeline {
         continue;
       }
       const current = kind === 'thinking' ? row.aux.thinking : row.aux.compaction;
-      if (!current?.trim()) {
+      if (!current?.trim() || current.trim() !== text.trim()) {
         continue;
       }
       if (kind === 'thinking') {
@@ -1498,7 +1512,7 @@ function resolveThinkingRowSection(
     return 'before-tools';
   }
   if (placement === 'before-next-tool') {
-    return 'tools';
+    return segmentHasToolRows(segment) ? 'tools' : 'before-tools';
   }
   if (placement === 'after-stream') {
     if (segmentHasPostToolAssistantAnswer(segment)) {

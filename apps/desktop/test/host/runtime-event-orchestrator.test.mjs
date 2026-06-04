@@ -141,6 +141,32 @@ test('runtime events are mirrored into continuation timeline segments', () => {
   ]);
 });
 
+test('deferred after-stream thinking is materialized before the first tool preview', () => {
+  const harness = createHarness();
+  harness.pushUser('制造一个错误');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    { kind: 'assistant-chunk', text: '先看看文件结尾。' },
+    {
+      kind: 'assistant-thinking-segment-finalized',
+      text: 'Plan to read the file end first.',
+      placement: 'after-stream',
+    },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'read-1',
+      toolName: 'read_file',
+      argumentsJson: '{"path":"packages/agent-core/src/ports.ts"}',
+    },
+  ]);
+
+  const tokens = visibleRowTokens(harness.timeline.toMessages());
+  const thinkingIndex = tokens.findIndex((token) => token === 'thinking:Plan to read the file end first.');
+  const toolIndex = tokens.findIndex((token) => token === 'tool:read-1');
+  assert.ok(thinkingIndex >= 0 && toolIndex >= 0 && thinkingIndex < toolIndex);
+});
+
 test('after-stream thinking is finalized before later tools when the turn already has a tool preview', () => {
   const harness = createHarness();
   harness.pushUser('run diagnostics');
