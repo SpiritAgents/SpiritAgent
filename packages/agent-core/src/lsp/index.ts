@@ -8,4 +8,6 @@ export * from './parse-change.js';
 export * from './paths.js';
 export * from './resolve-server.js';
 export * from './service.js';
+export * from './tool-definitions.js';
+export * from './tool-request.js';
 export * from './types.js';

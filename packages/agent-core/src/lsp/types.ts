@@ -1,3 +1,5 @@
+import type { JsonObject } from '../ports.js';
+
 export type LspDiagnosticSeverity = 1 | 2 | 3 | 4;
 
 export interface LspPosition {
@@ -33,7 +35,7 @@ export interface LspFileChangeNotification {
   after: LspFileSnapshot;
 }
 
-export interface LspDiagnosticsToolRequest {
+export interface LspDiagnosticsToolRequest extends JsonObject {
   name: 'get_diagnostics';
   path: string;
 }

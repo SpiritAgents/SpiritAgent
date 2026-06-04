@@ -692,6 +692,7 @@ async function rebuildCliHostToolService(workspaceRoot: string): Promise<void> {
   const service = new module.NodeHostToolService({ workspaceRoot, spiritDataDir }, serviceOptions);
   cliHostInternal.service = service;
   toolExecutor.setLocalHostService(service);
+  await toolExecutor.setLspWorkspaceRoot(workspaceRoot);
   await toolExecutor.refreshCaches();
 }
 
@@ -731,6 +732,7 @@ async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInte
     toolExecutor.setLocalHostService(undefined);
     toolExecutor.setExtensionToolDefinitions([]);
     toolExecutor.setTodoToolDefinitions([]);
+    await toolExecutor.disposeLsp();
     extensionSystemPrompts = [];
     return undefined;
   }
@@ -760,6 +762,7 @@ async function ensureCliHostInternal(workspaceRoot: string): Promise<CliHostInte
   );
   toolExecutor.setLocalHostService(service);
   toolExecutor.setTodoToolDefinitions(currentTodoSessionKey ? buildTodoHostToolDefinitions() : []);
+  await toolExecutor.setLspWorkspaceRoot(workspaceRoot);
   cliHostInternal = {
     module,
     service,
@@ -1409,6 +1412,7 @@ async function createRuntime(
   const todosContextText = await buildTodosContextTextForSession(currentTodoSessionKey);
   toolExecutor.setImageGenerationAvailable('imageGeneration' in config && config.imageGeneration !== undefined);
   toolExecutor.setTransportConfigForToolDefinitions(config);
+  await toolExecutor.setLspWorkspaceRoot(workspaceRoot);
   await toolExecutor.refreshCaches();
   logBridge('createRuntime', {
     workspaceRoot,
