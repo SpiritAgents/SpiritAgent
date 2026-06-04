@@ -259,12 +259,7 @@ function applyPatchFunctionToolParameters(): JsonObject {
 
 /** Model-visible guidance when legacy file tools are hidden in favor of apply_patch. */
 export function buildApplyPatchFileToolsPromptSection(): string {
-  return [
-    'File changes on this transport:',
-    'Use the apply_patch tool with headerless V4A unified diffs.',
-    'Each call must include operation.type (create_file, update_file, or delete_file), operation.path, and operation.diff for create/update.',
-    'Do not call create_file, edit_file, or delete_file host tools—they are not available on this model.',
-  ].join('\n');
+  return 'File edits on this transport: use apply_patch with headerless V4A unified diffs only.';
 }
 
 function readFunctionToolName(definition: JsonValue): string | undefined {
