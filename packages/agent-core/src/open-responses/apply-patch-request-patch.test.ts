@@ -38,6 +38,14 @@ const gatewayAnthropicConfig = {
   responsesProvider: 'open-responses-compatible' as const,
 };
 
+const openrouterConfig = {
+  transportKind: 'open-responses' as const,
+  apiKey: 'test',
+  model: 'openai/gpt-5.1',
+  llmVendor: 'openrouter' as const,
+  responsesProvider: 'open-responses-compatible' as const,
+};
+
 test('patchResponsesRequestBodyForApplyPatch openai uses built-in apply_patch_call items', () => {
   runWithApplyPatchBridgeContext(() => {
     const callId = 'call_test_1';
@@ -61,6 +69,44 @@ test('patchResponsesRequestBodyForApplyPatch openai uses built-in apply_patch_ca
     } as JsonObject;
 
     patchResponsesRequestBodyForApplyPatch(body, openAiConfig);
+
+    const input = body.input as JsonObject[];
+    assert.equal(input[0]?.type, 'apply_patch_call');
+    assert.equal(input[1]?.type, 'apply_patch_call_output');
+  });
+});
+
+test('patchResponsesRequestBodyForApplyPatch openrouter uses built-in apply_patch tool and call items', () => {
+  runWithApplyPatchBridgeContext(() => {
+    const callId = 'call_openrouter_1';
+    const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
+    registerPendingApplyPatchCallIds([callId]);
+
+    const body = {
+      tools: [{ type: 'function', name: 'read_file', parameters: {} }],
+      input: [
+        {
+          type: 'function_call',
+          call_id: callId,
+          name: APPLY_PATCH_HOST_TOOL_NAME,
+          arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
+        },
+        {
+          type: 'function_call_output',
+          call_id: callId,
+          output: 'ok',
+        },
+      ],
+    } as JsonObject;
+
+    patchResponsesRequestBodyForApplyPatch(body, openrouterConfig);
+
+    const tools = body.tools as JsonObject[];
+    assert.equal(tools.some((tool) => tool.type === 'apply_patch'), true);
+    assert.equal(
+      tools.some((tool) => tool.name === APPLY_PATCH_HOST_TOOL_NAME),
+      false,
+    );
 
     const input = body.input as JsonObject[];
     assert.equal(input[0]?.type, 'apply_patch_call');

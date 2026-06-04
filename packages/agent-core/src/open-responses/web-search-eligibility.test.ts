@@ -88,6 +88,27 @@ test('resolveProviderWebSearchMode alibaba open-responses', () => {
   );
 });
 
+test('resolveProviderWebSearchMode excludes openrouter', () => {
+  assert.equal(
+    resolveProviderWebSearchMode({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'openai/gpt-4o',
+      llmVendor: 'openrouter',
+    }),
+    undefined,
+  );
+  assert.equal(
+    shouldUseProviderWebSearch({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'openai/gpt-4o',
+      llmVendor: 'openrouter',
+    }),
+    false,
+  );
+});
+
 test('resolveProviderWebSearchMode excludes openai-compatible openai vendor', () => {
   assert.equal(
     resolveProviderWebSearchMode({
