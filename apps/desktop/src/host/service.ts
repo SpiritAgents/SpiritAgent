@@ -20,7 +20,6 @@ import {
   buildSkillsCatalogSystemMessage,
   buildToolAgentHostPrompt,
   createLlmTransport,
-  invalidateSharedUserMcpToolingCache,
   type AssistantAuxArchiveEntry,
   type ChatArchive,
   type LlmActiveSkill,
@@ -125,6 +124,26 @@ import {
   type HostModelCommandContext,
 } from './host-model-commands.js';
 import {
+  addMcpServerCommand,
+  createSkillCommand,
+  deleteExtensionCommand,
+  deleteMcpServerCommand,
+  deleteSkillCommand,
+  getMarketplaceExtensionDetailCommand,
+  getMarketplaceExtensionReadmeCommand,
+  importExtensionCommand,
+  inspectMcpServerCommand,
+  installMarketplaceExtensionCommand,
+  listMarketplaceExtensionsCommand,
+  prepareMarketplaceExtensionInstallCommand,
+  runExtensionCommand,
+  submitCreateSkillSlashCommand,
+  submitSkillSlashCommand,
+  updateExtensionSecretCommand,
+  updateExtensionSettingsCommand,
+  type HostExtensionCommandContext,
+} from './host-extension-commands.js';
+import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   deriveDisplayNameFromSeed,
@@ -205,9 +224,6 @@ import {
   buildDesktopExtensionToolDefinitions,
   collectDesktopExtensionCssLayers,
   collectExtensionSystemPrompts,
-  toDesktopMarketplaceCatalogItem,
-  toDesktopMarketplaceDetail,
-  toDesktopMarketplacePreparedInstall,
 } from './extensions.js';
 import {
   getDesktopExtensionHostAdapter,
@@ -220,9 +236,6 @@ import {
   listDesktopMcpServersFromDisk,
 } from './mcp-config.js';
 import {
-  addDesktopMcpServer,
-  deleteDesktopMcpServer,
-  inspectDesktopMcpServer,
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
 import {
@@ -276,15 +289,6 @@ import {
   type DesktopTimelineSegmentKind,
   type DesktopTimelineTurnSnapshot,
 } from './message-timeline.js';
-import {
-  buildActiveSkillPayload,
-  buildActivateSkillUserTurn,
-  buildCreateSkillUserTurn,
-  createSkillFile,
-  deleteSkillDir,
-  desktopInstructionPaths,
-  parseCreateSkillSlashPrompt,
-} from './skills.js';
 import {
   listWorkspaceExplorerChildren as listWorkspaceExplorerChildrenFromDisk,
   readWorkspaceTextFile as readWorkspaceTextFileFromDisk,
@@ -486,6 +490,36 @@ class DesktopHostService {
     };
   }
 
+  private extensionCommandContext(): HostExtensionCommandContext {
+    return {
+      runSerialized: (work) => this.runSerialized(work),
+      ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
+      requireState: () => this.requireState(),
+      isRuntimeBusy: () => this.runtime?.isBusy() === true,
+      requireRuntime: () => this.requireRuntime(),
+      requireToolExecutor: () => this.requireToolExecutor(),
+      toolExecutor: () => this.toolExecutor,
+      sharedMcpServiceForWorkspace: (workspaceRoot, workspaceBinding) =>
+        this.sharedMcpServiceForWorkspace(workspaceRoot, workspaceBinding),
+      extensionManager: () => this.extensionManager(),
+      marketplace: () => this.marketplace(),
+      requireExtensionHostAdapter: () => this.requireExtensionHostAdapter(),
+      refreshExtensionsList: () => this.refreshExtensionsList(),
+      refreshRuntime: () => this.refreshRuntime(),
+      refreshRuntimeAfterExtensionMutation: () => this.refreshRuntimeAfterExtensionMutation(),
+      persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
+      dispatchExtensionEvent: (event, options) => this.dispatchExtensionEvent(event, options),
+      requireEnabledSkillEntry: (skillName) => this.requireEnabledSkillEntry(skillName),
+      submitUserTurnAfterInitialized: (text, options) => this.submitUserTurnAfterInitialized(text, options),
+      appendInlineAssistantReply: (displayText, assistantText) =>
+        this.appendInlineAssistantReply(displayText, assistantText),
+      setLastRuntimeError: (error) => {
+        this.lastRuntimeError = error;
+      },
+      buildSnapshot: () => this.buildSnapshot(),
+    };
+  }
+
   private createBundleOrchestration(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
     runtimeEvents: DesktopRuntimeEventOrchestrator;
@@ -659,336 +693,75 @@ class DesktopHostService {
   }
 
   async createSkill(request: CreateSkillRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusySkill'));
-      }
-      const state = this.requireState();
-      const rootKind = request.rootKind ?? 'workspaceSpirit';
-      if (
-        state.workspaceBinding === 'none'
-        && (rootKind === 'workspaceSpirit' || rootKind === 'workspaceAgents')
-      ) {
-        throw new Error(
-          'Workspace-scoped skills are unavailable when workspace binding is disabled.',
-        );
-      }
-      await createSkillFile(state.workspaceRoot, request);
-
-      await this.refreshRuntime();
-      this.lastRuntimeError = '';
-      await this.persistCurrentSessionIfNeeded();
-      return this.buildSnapshot();
-    });
+    return createSkillCommand(this.extensionCommandContext(), request);
   }
 
   async addMcpServer(request: AddMcpServerRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-
-      const { scope } = await addDesktopMcpServer({
-        request,
-        workspaceRoot: state.workspaceRoot,
-        workspaceBinding: state.workspaceBinding,
-      });
-      if (scope === 'user') {
-        invalidateSharedUserMcpToolingCache();
-      }
-      this.sharedMcpServiceForWorkspace(state.workspaceRoot, state.workspaceBinding)
-        .startBackgroundRefreshInBackground(true);
-      this.toolExecutor?.startMcpBackgroundRefresh();
-      return this.buildSnapshot();
-    });
+    return addMcpServerCommand(this.extensionCommandContext(), request);
   }
 
   async deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const state = this.requireState();
-
-      const { scope } = await deleteDesktopMcpServer({
-        request,
-        workspaceRoot: state.workspaceRoot,
-      });
-      if (scope === 'user') {
-        invalidateSharedUserMcpToolingCache();
-      }
-      this.sharedMcpServiceForWorkspace(state.workspaceRoot, state.workspaceBinding)
-        .startBackgroundRefreshInBackground(true);
-      this.toolExecutor?.startMcpBackgroundRefresh();
-      return this.buildSnapshot();
-    });
+    return deleteMcpServerCommand(this.extensionCommandContext(), request);
   }
 
   async inspectMcpServer(name: string): Promise<DesktopMcpServerInspection> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      return inspectDesktopMcpServer({
-        name,
-        inspect: (serverName) => this.requireToolExecutor().inspectMcpServer(serverName),
-      });
-    });
+    return inspectMcpServerCommand(this.extensionCommandContext(), name);
   }
 
   async importExtension(request: ImportExtensionRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const archiveBase64 = request.archiveBase64.trim();
-      if (!archiveBase64) {
-        throw new Error(i18n.t('error.extensionZipRequired'));
-      }
-
-      const installed = await this.extensionManager().importArchive({
-        archiveBase64,
-        ...(request.fileName?.trim() ? { fileName: request.fileName.trim() } : {}),
-      });
-      await this.refreshExtensionsList();
-      await this.refreshRuntimeAfterExtensionMutation();
-      await this.dispatchExtensionEvent(
-        {
-          type: 'onExtensionInstalled',
-          detail: {
-            extensionId: installed.id,
-            name: installed.manifest.name,
-            version: installed.manifest.version,
-          },
-        },
-        { targetExtensionIds: [installed.id] },
-      );
-      return this.buildSnapshot();
-    });
+    return importExtensionCommand(this.extensionCommandContext(), request);
   }
 
   async listMarketplaceExtensions(): Promise<DesktopMarketplaceCatalogItem[]> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const items = await this.marketplace().listCatalog();
-      return items.map((item) => toDesktopMarketplaceCatalogItem(item));
-    });
+    return listMarketplaceExtensionsCommand(this.extensionCommandContext());
   }
 
   async getMarketplaceExtensionDetail(extensionId: string): Promise<DesktopMarketplaceDetail> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const trimmedId = extensionId.trim();
-      if (!trimmedId) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      const detail = await this.marketplace().getDetail(trimmedId);
-      return toDesktopMarketplaceDetail(detail);
-    });
+    return getMarketplaceExtensionDetailCommand(this.extensionCommandContext(), extensionId);
   }
 
   async getMarketplaceExtensionReadme(extensionId: string): Promise<string> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const trimmedId = extensionId.trim();
-      if (!trimmedId) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      return this.marketplace().getReadme(trimmedId);
-    });
+    return getMarketplaceExtensionReadmeCommand(this.extensionCommandContext(), extensionId);
   }
 
   async prepareMarketplaceExtensionInstall(
     request: PrepareMarketplaceExtensionInstallRequest,
   ): Promise<DesktopMarketplacePreparedInstall> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const extensionId = request.extensionId.trim();
-      if (!extensionId) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      const prepared = await this.marketplace().prepareInstall({
-        extensionId,
-        ...(request.version?.trim() ? { version: request.version.trim() } : {}),
-      });
-      return toDesktopMarketplacePreparedInstall(prepared);
-    });
+    return prepareMarketplaceExtensionInstallCommand(this.extensionCommandContext(), request);
   }
 
   async installMarketplaceExtension(
     request: InstallMarketplaceExtensionRequest,
   ): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const extensionId = request.extensionId.trim();
-      if (!extensionId) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      const installed = await this.marketplace().install({
-        extensionId,
-        ...(request.version?.trim() ? { version: request.version.trim() } : {}),
-        ...(request.reviewAcknowledged === true ? { reviewAcknowledged: true } : {}),
-      });
-      await this.refreshExtensionsList();
-      await this.refreshRuntimeAfterExtensionMutation();
-      await this.dispatchExtensionEvent(
-        {
-          type: 'onExtensionInstalled',
-          detail: {
-            extensionId: installed.id,
-            name: installed.manifest.name,
-            version: installed.manifest.version,
-          },
-        },
-        { targetExtensionIds: [installed.id] },
-      );
-      return this.buildSnapshot();
-    });
+    return installMarketplaceExtensionCommand(this.extensionCommandContext(), request);
   }
 
   async deleteExtension(request: DeleteExtensionRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const id = request.id.trim();
-      if (!id) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      await this.extensionManager().remove(id);
-      await this.refreshExtensionsList();
-      await this.refreshRuntimeAfterExtensionMutation();
-      return this.buildSnapshot();
-    });
+    return deleteExtensionCommand(this.extensionCommandContext(), request);
   }
 
   async runExtension(request: RunExtensionRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const id = request.id.trim();
-      if (!id) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      await this.extensionManager().run({
-        id,
-        host: this.requireExtensionHostAdapter(),
-        logger: console,
-      });
-      return this.buildSnapshot();
-    });
+    return runExtensionCommand(this.extensionCommandContext(), request);
   }
 
   async updateExtensionSettings(request: UpdateExtensionSettingsRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const id = request.id.trim();
-      if (!id) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-
-      await this.extensionManager().setSettingsValues({
-        id,
-        values: request.values,
-      });
-      await this.refreshExtensionsList();
-      await this.refreshRuntimeAfterExtensionMutation();
-      return this.buildSnapshot();
-    });
+    return updateExtensionSettingsCommand(this.extensionCommandContext(), request);
   }
 
   async updateExtensionSecret(request: UpdateExtensionSecretRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      const id = request.id.trim();
-      const key = request.key.trim();
-      if (!id) {
-        throw new Error(i18n.t('error.extensionIdRequired'));
-      }
-      if (!key) {
-        throw new Error(i18n.t('error.secretKeyRequired'));
-      }
-
-      await this.extensionManager().setSecretValue({
-        id,
-        key,
-        ...(request.value !== undefined ? { value: request.value } : {}),
-      });
-      await this.refreshExtensionsList();
-      await this.refreshRuntimeAfterExtensionMutation();
-      return this.buildSnapshot();
-    });
+    return updateExtensionSecretCommand(this.extensionCommandContext(), request);
   }
 
   async deleteSkill(request: DeleteSkillRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized();
-      if (this.runtime?.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusyDeleteSkill'));
-      }
-      const state = this.requireState();
-      await deleteSkillDir(state.workspaceRoot, request);
-
-      await this.refreshRuntime();
-      this.lastRuntimeError = '';
-      await this.persistCurrentSessionIfNeeded();
-      return this.buildSnapshot();
-    });
+    return deleteSkillCommand(this.extensionCommandContext(), request);
   }
 
   async submitSkillSlash(request: SubmitSkillSlashRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      const runtime = this.requireRuntime();
-      if (runtime.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const skillName = request.skillName.trim();
-      if (!skillName) {
-        throw new Error(i18n.t('error.skillNameRequired'));
-      }
-
-      const skill = this.requireEnabledSkillEntry(skillName);
-      const payload = await buildActiveSkillPayload(skill);
-
-      return this.submitUserTurnAfterInitialized(
-        buildActivateSkillUserTurn(skillName, request.extraNote ?? ''),
-        {
-          displayText: request.rawText,
-          turnSkills: [payload],
-        },
-      );
-    });
+    return submitSkillSlashCommand(this.extensionCommandContext(), request);
   }
 
   async submitCreateSkillSlash(request: SubmitCreateSkillSlashRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
-      await this.ensureInitialized(undefined, { fastPath: true });
-      const runtime = this.requireRuntime();
-      if (runtime.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
-      }
-
-      const rawText = request.rawText.trim();
-      if (!rawText) {
-        throw new Error(i18n.t('error.messageRequired'));
-      }
-
-      const prompt = parseCreateSkillSlashPrompt(rawText);
-      if (prompt instanceof Error) {
-        return this.appendInlineAssistantReply(rawText, prompt.message);
-      }
-
-      const state = this.requireState();
-      return this.submitUserTurnAfterInitialized(
-        buildCreateSkillUserTurn(
-          state.workspaceRoot,
-          desktopInstructionPaths(state.workspaceRoot),
-          prompt,
-        ),
-        {
-          displayText: rawText,
-        },
-      );
-    });
+    return submitCreateSkillSlashCommand(this.extensionCommandContext(), request);
   }
 
   async submitStartImplementing(): Promise<DesktopSnapshot> {
