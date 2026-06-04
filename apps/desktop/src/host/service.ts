@@ -28,7 +28,6 @@ import {
   type LlmEnabledSkillCatalogEntry,
   type LlmExtensionSystemPrompt,
   type LlmPlanMetadata,
-  type LlmToolAgentBasicInfo,
   type LlmTransportConfig,
   type McpService,
   type RuntimeApprovalDecision,
@@ -187,6 +186,7 @@ import {
 } from './storage.js';
 import { DesktopToolExecutor } from './tool-executor.js';
 import {
+  buildDesktopRuntimeBasicInfo,
   cloneActiveSkills,
   createDesktopRuntime,
   type DesktopRuntime,
@@ -1522,7 +1522,7 @@ class DesktopHostService {
         }),
       );
       const basicInfoSystemPrompt = buildBasicInfoSystemMessage(
-        this.buildRuntimeBasicInfo(state.workspaceRoot, this.requireToolExecutor()),
+        buildDesktopRuntimeBasicInfo(state.workspaceRoot, this.requireToolExecutor()),
       );
       const exportedAtUnixSecs = Math.floor(Date.now() / 1000);
       const filePath = path.join(
@@ -3222,7 +3222,7 @@ class DesktopHostService {
       llmTransport,
       activeSkills: bundle.currentTurnSkills,
       workspaceRoot,
-      basicInfo: this.buildRuntimeBasicInfo(workspaceRoot, toolExecutor),
+      basicInfo: buildDesktopRuntimeBasicInfo(workspaceRoot, toolExecutor),
     });
   }
 
@@ -3351,18 +3351,6 @@ class DesktopHostService {
 
     return {
       items: records.map(mapHostTodoToDesktopItem),
-    };
-  }
-
-  private buildRuntimeBasicInfo(
-    workspaceRoot: string,
-    toolExecutor: DesktopToolExecutor,
-  ): LlmToolAgentBasicInfo {
-    const shell = toolExecutor.toolDefinitionEnvironment();
-    return {
-      workspaceRoot,
-      terminal: shell.shellDisplayName,
-      system: toolExecutor.operatingSystemInfo(),
     };
   }
 
@@ -3498,7 +3486,7 @@ class DesktopHostService {
       metadata: state.metadata,
       extensionSystemPrompts,
       toolExecutor,
-      runtimeBasicInfo: this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
+      runtimeBasicInfo: buildDesktopRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
       rememberEphemeralSession: (record) => this.rememberEphemeralSession(record),
     });
   }
@@ -3598,7 +3586,7 @@ class DesktopHostService {
       metadata: state.metadata,
       extensionSystemPrompts,
       toolExecutor,
-      runtimeBasicInfo: this.buildRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
+      runtimeBasicInfo: buildDesktopRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
       rememberEphemeralSession: (record) => this.rememberEphemeralWorktreeSession(record),
       userPrompt,
       baseBranch,
