@@ -2220,4 +2220,8 @@ peer.on('runtime.exportArchive', async (rawParams) => {
   return requireRuntime().toArchive(params.messages, params.assistantAux);
 });
 
+process.on('beforeExit', () => {
+  void toolExecutor.disposeLsp();
+});
+
 peer.start();
