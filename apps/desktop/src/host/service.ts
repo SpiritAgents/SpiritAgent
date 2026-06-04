@@ -195,6 +195,27 @@ import {
   syncSubagentToolStreamingOutput as syncSubagentToolStreamingOutputFromService,
   type ConversationContinuationContext,
 } from './conversation-continuation.js';
+import { syncLivePendingAuxSnapshot } from './live-snapshot-sync.js';
+import {
+  buildConversationTodoSnapshot as buildConversationTodoSnapshotFromService,
+  cancelTodoClearing as cancelTodoClearingFromService,
+  finalizeTodoScopeForNewActiveBundle as finalizeTodoScopeForNewActiveBundleFromService,
+  maybeRefreshRuntimeAfterTodoScopeChange as maybeRefreshRuntimeAfterTodoScopeChangeFromService,
+  reconcileTodoScopeAfterSessionPathChange as reconcileTodoScopeAfterSessionPathChangeFromService,
+  refreshTodoSnapshotForBundle as refreshTodoSnapshotForBundleFromService,
+  resolveTodoSessionKeyForBundle as resolveTodoSessionKeyForBundleFromService,
+  scheduleTodoClearing as scheduleTodoClearingFromService,
+  type SessionTodosHostContext,
+} from './session-todos-host.js';
+import {
+  applyTodosAfterRewind as applyTodosAfterRewindFromService,
+  bindFileChangesToToolMessage as bindFileChangesToToolMessageFromService,
+  buildRewindCheckpointSnapshot as buildRewindCheckpointSnapshotFromService,
+  recordHostFileChange as recordHostFileChangeFromService,
+  recordRewindCheckpoint as recordRewindCheckpointFromService,
+  restoreBeforeRewindCheckpoint as restoreBeforeRewindCheckpointFromService,
+  type RewindHostContext,
+} from './rewind-host.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
@@ -203,7 +224,6 @@ import {
   nextMessageIdFromMessages,
   rememberEphemeralSessionRecord,
   rememberEphemeralWorktreeSessionRecord,
-  sanitizeConversationMessagesForPersistence,
 } from './sessions.js';
 import {
   buildPrimaryTransportConfig,
@@ -247,16 +267,7 @@ import {
 } from './dreams.js';
 import {
   buildSessionTodosContextText,
-  cloneHostTodoRecords,
-  listSessionTodos,
-  purgeSessionTodos,
-  replaceSessionTodos,
-  resolveTodoSessionKey,
   createTodoScope,
-  mapHostTodoToDesktopItem,
-  migrateSessionTodos,
-  createTodoSessionScopeKey,
-  normalizeTodoSessionStorageKey,
 } from './todos.js';
 import {
   buildDesktopExtensionListItems,
@@ -278,10 +289,6 @@ import {
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
 import {
-  archiveBeforeLastUser,
-  cloneArchiveHistory,
-  cloneArchiveSubagentSessions,
-  cloneChatArchive,
   currentApiBase,
   mapPendingQuestions,
   sameDreamCollectorSnapshot,
@@ -292,7 +299,6 @@ import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import { buildDesktopSnapshot } from './snapshot.js';
 import {
   applyToolCallSummaryCopy,
-  parsePendingSubagentStatusText,
 } from './message-ordering.js';
 import {
   mapPendingAuxState,
@@ -322,20 +328,10 @@ import { persistDesktopSessionBundle } from './session-persistence.js';
 import { SessionRegistry } from './session-registry.js';
 import type { SessionBundle } from './session-bundle.js';
 import {
-  bindRewindFileChangesToToolMessage,
   createDesktopRewindMetadata,
-  createRewindCheckpointMetadata,
-  fileChangeMetadata,
   loadRewindCheckpointSnapshot,
   loadRewindFileChange,
-  nextDesktopRewindSequence,
-  pruneRewindMetadataAfterCheckpoint,
-  saveRewindCheckpointSnapshot,
-  saveRewindFileChange,
-  toDesktopFileChange,
-  upsertRewindCheckpointMetadata,
   type DesktopRewindCheckpointSnapshot,
-  type StoredDesktopRewindMetadata,
 } from './rewind.js';
 
 export { setDesktopExtensionHostAdapter };
@@ -350,14 +346,6 @@ interface HostState {
   extensionsList: DesktopExtensionListItem[];
   extensionCss: DesktopExtensionCssLayer[];
   ephemeralSessions: EphemeralSessionRecord[];
-}
-
-function normalizeFsPath(value: string): string {
-  return path.normalize(value).replace(/\\/g, '/').toLowerCase();
-}
-
-function sameFsPath(left: string, right: string): boolean {
-  return normalizeFsPath(left) === normalizeFsPath(right);
 }
 
 async function loadDesktopPlanSnapshot(planPath: string, existsHint?: boolean): Promise<PlanSnapshot> {
@@ -654,6 +642,38 @@ class DesktopHostService {
       setLastToolSnapshotLogSignature: (signature) => {
         this.lastToolSnapshotLogSignature = signature;
       },
+    };
+  }
+
+  private sessionTodosContext(): SessionTodosHostContext {
+    return {
+      todoClearingBySession: () => this.todoClearingBySession,
+      runSerialized: (work) => this.runSerialized(work),
+      getActiveBundle: () => this.sessionRegistry.getActive(),
+      ensureToolExecutor: (bundle) => this.ensureToolExecutor(bundle),
+      refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
+      syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
+      activeSessionId: () => this.sessionRegistry.activeSessionId(),
+      emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
+    };
+  }
+
+  private rewindHostContext(): RewindHostContext {
+    return {
+      state: () => this.state,
+      requireState: () => this.requireState(),
+      activeBundle: () => this.activeBundle(),
+      activeSessionId: () => this.sessionRegistry.activeSessionId(),
+      runtime: () => this.runtime,
+      requireRuntime: () => this.requireRuntime(),
+      desktopMessages: () => this.desktopMessages(),
+      archiveMessages: () => this.archiveMessages(),
+      archiveAssistantAux: () => this.archiveAssistantAux(),
+      resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
+      cancelTodoClearing: (sessionKey) => this.cancelTodoClearing(sessionKey),
+      refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
+      createMessageTimelineFromMessages: (messages) => this.createMessageTimelineFromMessages(messages),
+      resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
     };
   }
 
@@ -1799,131 +1819,46 @@ class DesktopHostService {
   }
 
   private resolveTodoSessionKeyForBundle(bundle: SessionBundle): string {
-    return resolveTodoSessionKey({
-      sessionFilePath: bundle.activeSession?.filePath,
-      bundleId: bundle.id,
-      todoSessionScopeKey: bundle.todoSessionScopeKey,
-    });
+    return resolveTodoSessionKeyForBundleFromService(bundle);
   }
 
   private async maybeRefreshRuntimeAfterTodoScopeChange(
     bundle: SessionBundle,
     previousSessionKey: string,
   ): Promise<void> {
-    const nextSessionKey = this.resolveTodoSessionKeyForBundle(bundle);
-    if (
-      normalizeTodoSessionStorageKey(previousSessionKey)
-      === normalizeTodoSessionStorageKey(nextSessionKey)
-    ) {
-      return;
-    }
-    if (!bundle.runtime) {
-      return;
-    }
-    await this.refreshRuntimeForBundle(bundle);
-    if (bundle.id === this.sessionRegistry.activeSessionId()) {
-      this.syncActiveRuntimePointer();
-    }
+    return maybeRefreshRuntimeAfterTodoScopeChangeFromService(this.sessionTodosContext(), bundle, previousSessionKey);
   }
 
   private async finalizeTodoScopeForNewActiveBundle(
     bundle: SessionBundle,
     workspaceRoot: string,
   ): Promise<void> {
-    if (!bundle.todoSessionScopeKey) {
-      bundle.todoSessionScopeKey = createTodoSessionScopeKey();
-    }
-    bundle.cachedTodoSnapshot = undefined;
-    const legacyProvisionalKey = path.resolve(provisionalNewSessionPath(workspaceRoot));
-    this.cancelTodoClearing(legacyProvisionalKey);
-    await purgeSessionTodos(legacyProvisionalKey);
-    await this.ensureToolExecutor(bundle);
-    await this.refreshTodoSnapshotForBundle(bundle);
+    return finalizeTodoScopeForNewActiveBundleFromService(this.sessionTodosContext(), bundle, workspaceRoot);
   }
 
   private async reconcileTodoScopeAfterSessionPathChange(
     bundle: SessionBundle,
     previousSessionKey: string,
   ): Promise<void> {
-    const nextSessionKey = this.resolveTodoSessionKeyForBundle(bundle);
-    if (
-      normalizeTodoSessionStorageKey(previousSessionKey)
-      === normalizeTodoSessionStorageKey(nextSessionKey)
-    ) {
-      return;
-    }
-
-    this.cancelTodoClearing(previousSessionKey);
-    this.cancelTodoClearing(nextSessionKey);
-    await migrateSessionTodos(previousSessionKey, nextSessionKey);
-    await this.ensureToolExecutor(bundle);
-    await this.refreshTodoSnapshotForBundle(bundle);
+    return reconcileTodoScopeAfterSessionPathChangeFromService(this.sessionTodosContext(), bundle, previousSessionKey);
   }
 
   private cancelTodoClearing(sessionKey: string): void {
-    const pending = this.todoClearingBySession.get(sessionKey);
-    if (!pending) {
-      return;
-    }
-    clearTimeout(pending.timer);
-    this.todoClearingBySession.delete(sessionKey);
+    cancelTodoClearingFromService(this.sessionTodosContext(), sessionKey);
   }
 
   private scheduleTodoClearing(sessionKey: string, items: HostTodoRecord[]): void {
-    this.cancelTodoClearing(sessionKey);
-    const untilUnixMs = Date.now() + 1000;
-    const timer = setTimeout(() => {
-      void this.runSerialized(async () => {
-        const pending = this.todoClearingBySession.get(sessionKey);
-        if (!pending || pending.timer !== timer) {
-          return;
-        }
-        this.todoClearingBySession.delete(sessionKey);
-        await purgeSessionTodos(sessionKey);
-        const active = this.sessionRegistry.getActive();
-        if (active) {
-          await this.refreshTodoSnapshotForBundle(active);
-        }
-        this.emitLiveSnapshotUpdate();
-      });
-    }, 1000);
-    this.todoClearingBySession.set(sessionKey, { untilUnixMs, items: cloneHostTodoRecords(items), timer });
+    scheduleTodoClearingFromService(this.sessionTodosContext(), sessionKey, items);
   }
 
   private async refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void> {
-    bundle.cachedTodoSnapshot = await this.buildConversationTodoSnapshot(bundle);
+    return refreshTodoSnapshotForBundleFromService(this.sessionTodosContext(), bundle);
   }
 
   private async buildConversationTodoSnapshot(
     bundle: SessionBundle,
   ): Promise<ConversationTodoSnapshot | undefined> {
-    const sessionKey = this.resolveTodoSessionKeyForBundle(bundle);
-    const executorKey = bundle.toolExecutorTodoSessionKey;
-    const pendingClearing = this.todoClearingBySession.get(sessionKey);
-    if (pendingClearing) {
-      return {
-        items: pendingClearing.items.map(mapHostTodoToDesktopItem),
-        clearingUntilUnixMs: pendingClearing.untilUnixMs,
-      };
-    }
-
-    const records = await listSessionTodos(sessionKey);
-    if (records.length === 0) {
-      return undefined;
-    }
-
-    const allCompleted = records.every((record) => record.status === 'completed');
-    if (allCompleted) {
-      this.scheduleTodoClearing(sessionKey, records);
-      return {
-        items: records.map(mapHostTodoToDesktopItem),
-        clearingUntilUnixMs: Date.now() + 1000,
-      };
-    }
-
-    return {
-      items: records.map(mapHostTodoToDesktopItem),
-    };
+    return buildConversationTodoSnapshotFromService(this.sessionTodosContext(), bundle);
   }
 
   private buildSnapshot(): DesktopSnapshot {
@@ -1931,34 +1866,12 @@ class DesktopHostService {
     const pendingApproval = this.runtime?.currentPendingApproval();
     const pendingQuestions = this.runtime?.currentPendingQuestions();
     const pendingAux = this.runtime?.pendingAuxState();
-    const standaloneAnchorState = this.activeOrchestration().assistantMessages.standaloneAnchorState();
-    this.activeOrchestration().conversationSnapshotView.syncStandalonePendingAux({
-      livePendingAux: pendingAux,
-      pendingAssistantMessageId: standaloneAnchorState.pendingAssistantMessageId,
-      lastSettledAssistantMessageId: standaloneAnchorState.lastSettledAssistantMessageId,
+    syncLivePendingAuxSnapshot({
+      pendingAux,
+      activeBundle: this.activeBundle(),
+      assistantMessages: this.activeOrchestration().assistantMessages,
+      conversationSnapshotView: this.activeOrchestration().conversationSnapshotView,
     });
-    if (pendingAux && !parsePendingSubagentStatusText(pendingAux.statusText)) {
-      const auxText = pendingAux.detailText?.trim();
-      if (auxText) {
-        this.activeOrchestration().assistantMessages.updatePendingAssistantAux(
-          pendingAux.kind,
-          auxText,
-        );
-        const alreadyFinalized = this.activeBundle().messageTimeline.hasFinalizedAuxInActiveSegment(
-          pendingAux.kind,
-          auxText,
-        );
-        const skipDuplicatePendingThinking =
-          pendingAux.kind === 'thinking' &&
-          this.activeBundle().messageTimeline.hasPendingThinkingAuxInActiveSegment(auxText);
-        if (!alreadyFinalized && !skipDuplicatePendingThinking) {
-          this.activeBundle().messageTimeline.updatePendingAssistantAux(
-            pendingAux.kind,
-            auxText,
-          );
-        }
-      }
-    }
 
     const rawMessages = this.activeBundle().messages;
     const rawConversationMessages = this.desktopMessages();
@@ -2406,54 +2319,7 @@ class DesktopHostService {
   }
 
   private async recordHostFileChange(bundle: SessionBundle, change: HostRecordedFileChange): Promise<void> {
-    const state = this.state;
-    if (!state) {
-      return;
-    }
-
-    if (
-      change.toolName === 'create_plan'
-      && change.after.exists
-      && change.after.file
-    ) {
-      bundle.activePlanPath = change.resolvedPath;
-    }
-
-    if (
-      bundle.id === this.sessionRegistry.activeSessionId()
-      && (
-        (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath))
-        || sameFsPath(change.resolvedPath, state.plan.path)
-      )
-    ) {
-      if (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath)) {
-        state.metadata = await loadHostMetadata(state.workspaceRoot, resolveDesktopAgentMode(state.config), {
-          activePlanPath: bundle.activePlanPath,
-          workspaceBinding: state.workspaceBinding,
-        });
-      }
-      state.metadata.planMetadata.exists = change.after.exists && change.after.file;
-      state.plan = {
-        path: change.resolvedPath,
-        exists: change.after.exists && change.after.file,
-        ...(change.after.content !== undefined ? { content: change.after.content } : {}),
-        ...(typeof change.after.mtimeMs === 'number'
-          ? { modifiedAtUnixMs: change.after.mtimeMs }
-          : {}),
-      };
-    }
-
-    if (!bundle.activeSession) {
-      return;
-    }
-
-    const stored = toDesktopFileChange(change, nextDesktopRewindSequence(bundle.rewind));
-    await saveRewindFileChange(spiritAgentDataDir(), bundle.rewind.sessionId, stored);
-    const metadata = fileChangeMetadata(stored);
-    bundle.rewind.fileChanges.push(metadata);
-    if (!metadata.toolCallId) {
-      bundle.pendingUnboundFileChangeIds.push(metadata.id);
-    }
+    return recordHostFileChangeFromService(this.rewindHostContext(), bundle, change);
   }
 
   private bindFileChangesToToolMessage(
@@ -2461,116 +2327,29 @@ class DesktopHostService {
     execution: RuntimeToolExecution<DesktopToolRequest>,
     messageId: number,
   ): void {
-    bundle.pendingUnboundFileChangeIds = bindRewindFileChangesToToolMessage(
-      bundle.rewind,
-      bundle.pendingUnboundFileChangeIds,
-      execution,
-      messageId,
-    );
+    bindFileChangesToToolMessageFromService(bundle, execution, messageId);
   }
 
   private async recordRewindCheckpoint(
     messageId: number,
     beforeUserCheckpoint?: DesktopRewindCheckpointSnapshot,
   ): Promise<void> {
-    const state = this.requireState();
-    if (!this.activeBundle().activeSession) {
-      return;
-    }
-    const desktopMessages = this.desktopMessages();
-    const messageIndex = desktopMessages.findIndex((message) => message.id === messageId);
-    if (messageIndex < 0) {
-      return;
-    }
-
-    const checkpoint = createRewindCheckpointMetadata(
-      messageId,
-      messageIndex,
-      nextDesktopRewindSequence(this.activeBundle().rewind),
-    );
-    const archive = this.runtime
-      ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
-      : {
-          messages: this.archiveMessages(),
-          assistantAux: this.archiveAssistantAux(),
-          llmHistory: this.activeBundle().archiveHistory,
-          subagentSessions: this.activeBundle().archiveSubagentSessions ?? [],
-          loopEnabled: this.activeBundle().loopEnabled,
-        } satisfies ChatArchive;
-    const sessionKey = this.resolveTodoSessionKeyForBundle(this.activeBundle());
-    const currentTodos = cloneHostTodoRecords(await listSessionTodos(sessionKey));
-    await saveRewindCheckpointSnapshot(
-      spiritAgentDataDir(),
-      this.activeBundle().rewind.sessionId,
-      checkpoint.id,
-      {
-        archive,
-        desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
-        todos: currentTodos,
-        ...(beforeUserCheckpoint
-          ? {
-              beforeArchive: cloneChatArchive(beforeUserCheckpoint.archive),
-              beforeDesktopMessages: beforeUserCheckpoint.desktopMessages.map((message) => ({ ...message })),
-              ...(beforeUserCheckpoint.todos
-                ? { beforeTodos: cloneHostTodoRecords(beforeUserCheckpoint.todos) }
-                : {}),
-            }
-          : {}),
-      },
-    );
-
-    upsertRewindCheckpointMetadata(this.activeBundle().rewind, checkpoint);
+    return recordRewindCheckpointFromService(this.rewindHostContext(), messageId, beforeUserCheckpoint);
   }
 
   private async applyTodosAfterRewind(snapshot: DesktopRewindCheckpointSnapshot): Promise<void> {
-    const bundle = this.activeBundle();
-    const sessionKey = this.resolveTodoSessionKeyForBundle(bundle);
-    this.cancelTodoClearing(sessionKey);
-    const restored = snapshot.beforeTodos ?? snapshot.todos ?? [];
-    await replaceSessionTodos(sessionKey, restored);
-    await this.refreshTodoSnapshotForBundle(bundle);
+    return applyTodosAfterRewindFromService(this.rewindHostContext(), snapshot);
   }
 
   private async buildRewindCheckpointSnapshot(): Promise<DesktopRewindCheckpointSnapshot> {
-    const state = this.requireState();
-    const desktopMessages = this.desktopMessages();
-    const archive = this.runtime
-      ? this.runtime.toArchive(this.archiveMessages(), this.archiveAssistantAux())
-      : {
-          messages: this.archiveMessages(),
-          assistantAux: this.archiveAssistantAux(),
-          llmHistory: this.activeBundle().archiveHistory,
-          subagentSessions: this.activeBundle().archiveSubagentSessions ?? [],
-          loopEnabled: this.activeBundle().loopEnabled,
-        } satisfies ChatArchive;
-    const sessionKey = this.resolveTodoSessionKeyForBundle(this.activeBundle());
-    const todos = cloneHostTodoRecords(await listSessionTodos(sessionKey));
-    return {
-      archive,
-      desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
-      todos,
-    };
+    return buildRewindCheckpointSnapshotFromService(this.rewindHostContext());
   }
 
   private restoreBeforeRewindCheckpoint(
     snapshot: DesktopRewindCheckpointSnapshot,
     checkpointSequence: number,
   ): void {
-    const state = this.requireState();
-    const archive = snapshot.beforeArchive ?? archiveBeforeLastUser(snapshot.archive);
-    const desktopMessages = snapshot.beforeDesktopMessages ?? snapshot.desktopMessages.slice(0, -1);
-
-    this.activeBundle().messages = desktopMessages.map((message) => ({ ...message }));
-    this.activeBundle().messageTimeline = this.createMessageTimelineFromMessages(this.activeBundle().messages);
-    this.activeBundle().archiveHistory = cloneArchiveHistory(archive.llmHistory);
-    this.activeBundle().archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
-    this.activeBundle().loopEnabled = archive.loopEnabled === true;
-    pruneRewindMetadataAfterCheckpoint(this.activeBundle().rewind, checkpointSequence);
-    this.activeBundle().pendingUnboundFileChangeIds = [];
-    this.activeBundle().messageIdCounter = nextMessageIdFromMessages(this.activeBundle().messages);
-    this.activeBundle().conversationRevision += 1;
-    this.resetStreamingPlacementState(true);
-    this.requireRuntime().replaceFromArchive(archive);
+    restoreBeforeRewindCheckpointFromService(this.rewindHostContext(), snapshot, checkpointSequence);
   }
 
   private async persistCurrentSessionIfNeeded(): Promise<void> {
