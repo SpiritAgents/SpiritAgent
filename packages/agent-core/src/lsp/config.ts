@@ -8,6 +8,7 @@ export interface LspTimingConfig {
 
 export const DEFAULT_LSP_TIMING: LspTimingConfig = {
   diagnosticsWaitMs: 4_000,
-  writeAppendDiagnosticsWaitMs: 1_500,
+  // 写后 append 需等 TLS publishDiagnostics；1.5s 实测常拿不到结果，与 agent 主动 get_diagnostics 对齐为 4s
+  writeAppendDiagnosticsWaitMs: 4_000,
   syncDebounceMs: 300,
 };

@@ -26,7 +26,7 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
   try {
     const diagnostics = await lsp.getDiagnosticsForPath(
       resolvedPath,
-      DEFAULT_LSP_TIMING.diagnosticsWaitMs,
+      DEFAULT_LSP_TIMING.writeAppendDiagnosticsWaitMs,
     );
     const block = formatDiagnosticsSummaryBlock(diagnostics.relativePath, diagnostics.diagnostics);
     const lspWriteDiagnostics = buildLspWriteDiagnosticsUi(

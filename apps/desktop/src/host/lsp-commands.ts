@@ -47,8 +47,15 @@ export async function installLspProviderCommand(
     await ctx.disposeAllLspServices();
     ctx.invalidateToolExecutors();
     await ctx.refreshLspSnapshot();
-    ctx.activeBundle().deferredRuntimeRefreshWhileBusy = false;
-    await ctx.refreshRuntime();
+
+    const wasBusy = ctx.isRuntimeBusy();
+    if (wasBusy) {
+      ctx.activeBundle().deferredRuntimeRefreshWhileBusy = true;
+    } else {
+      ctx.activeBundle().deferredRuntimeRefreshWhileBusy = false;
+      await ctx.refreshRuntime();
+    }
+    await ctx.flushDeferredRuntimeRefreshIfIdle();
     return ctx.buildSnapshot();
   });
 }
