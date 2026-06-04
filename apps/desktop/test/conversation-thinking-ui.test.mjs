@@ -218,3 +218,21 @@ test('shouldShowAssistantThinkingCollapsible keeps substantive standalone thinki
   );
   assert.equal(hasAssistantToolLaterInTurn(messages, 1), true);
 });
+
+test('shouldShowAssistantThinkingCollapsible keeps Thought visible when thinking + body share one row', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: 'Hello there',
+      pending: false,
+      aux: { thinking: 'Planning the reply.' },
+    },
+  ];
+
+  assert.equal(
+    shouldShowAssistantThinkingCollapsible(messages[1], undefined, messages, 1),
+    true,
+  );
+});

@@ -9,12 +9,7 @@ import {
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
-import {
-  Block,
-  parseMarkdownIntoBlocks,
-  Streamdown,
-  type BlockProps,
-} from "streamdown";
+import { Block, parseMarkdownIntoBlocks, Streamdown, type BlockProps } from "streamdown";
 import type { Pluggable } from "unified";
 
 import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";

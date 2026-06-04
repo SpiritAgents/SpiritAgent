@@ -88,6 +88,11 @@ export class DesktopRuntimeEventOrchestrator {
   private lastApplyEventBatchId = 0;
   private messageOrderDebugLastVerboseLogMs = 0;
   private activeGenerateImageTools = new Map<string, ToolBlockSnapshot>();
+  /**
+   * 无工具回合里 after-stream 思考暂不拆行：先留在当前 assistant 行的 aux 上，等正文到来在
+   * 同一个 Collapsible 实例上收起；本段 completed 时再拆成独立思考行。
+   */
+  private deferredAfterStreamThinking: string | undefined;
 
   constructor(private readonly options: DesktopRuntimeEventOrchestratorOptions) {}
 
@@ -215,6 +220,7 @@ export class DesktopRuntimeEventOrchestrator {
       events.length > 0 ? (this.lastApplyEventBatchId += 1) : this.lastApplyEventBatchId;
     for (const event of events) {
       if (event.kind === 'begin-assistant-response') {
+        this.deferredAfterStreamThinking = undefined;
         const insertAt = messages.length;
         const shouldReanchorStandalonePendingAux =
           this.options.conversationSnapshotView.shouldReanchorPersistedStandaloneSubagentStatusOnBeginAssistantResponse(
@@ -265,7 +271,13 @@ export class DesktopRuntimeEventOrchestrator {
       if (event.kind === 'assistant-response-completed') {
         this.finalizeResponsesBuiltInToolPreviews(messages);
         this.options.assistantMessages.completePendingAssistantMessage();
-        this.options.messageTimeline?.()?.completeActiveAssistantSegment();
+        const timeline = this.options.messageTimeline?.();
+        if (this.deferredAfterStreamThinking) {
+          // 收起动画此时已在同一实例上播完，再把思考拆成独立行（与持久化结构一致）。
+          timeline?.finalizeThinkingSegment(this.deferredAfterStreamThinking, 'after-stream');
+          this.deferredAfterStreamThinking = undefined;
+        }
+        timeline?.completeActiveAssistantSegment();
         continue;
       }
       if (event.kind === 'remove-pending-assistant') {
@@ -277,7 +289,18 @@ export class DesktopRuntimeEventOrchestrator {
         if (event.text.trim()) {
           const timeline = this.options.messageTimeline?.();
           this.options.assistantMessages.appendAssistantThinkingSegment(event.text);
-          timeline?.finalizeThinkingSegment(event.text, event.placement);
+          if (
+            event.placement === 'after-stream' &&
+            timeline &&
+            !timeline.activeSegmentHasToolRows()
+          ) {
+            // 无工具：暂不拆行。把思考挂在当前 assistant 行 aux 上，正文到来后在同一个
+            // Collapsible 实例上由展开过渡到收起（Radix collapsible-up）；本段 completed 再拆行。
+            timeline.updatePendingAssistantAux('thinking', event.text);
+            this.deferredAfterStreamThinking = event.text;
+          } else {
+            timeline?.finalizeThinkingSegment(event.text, event.placement);
+          }
         }
         continue;
       }
