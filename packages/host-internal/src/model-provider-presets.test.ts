@@ -11,6 +11,7 @@ import {
 test('parse model provider helpers accept canonical ids and reject invalid values', () => {
   assert.equal(parseModelProviderId('alibaba'), 'alibaba');
   assert.equal(parseModelProviderId('vercel-ai-gateway'), 'vercel-ai-gateway');
+  assert.equal(parseModelProviderId('openrouter'), 'openrouter');
   assert.equal(parseModelProviderId('openai'), 'openai');
   assert.equal(parseModelProviderId('xai'), 'xai');
   assert.equal(parseModelProviderId('custom'), 'custom');
@@ -72,6 +73,21 @@ test('resolveProviderConnectApiBase uses transport-specific preset bases', () =>
   assert.equal(
     resolveProviderConnectApiBase('openai', 'open-responses'),
     'https://api.openai.com/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns OpenRouter preset base', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('openrouter', 'openai-compatible'),
+    'https://openrouter.ai/api/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('openrouter', 'open-responses'),
+    'https://openrouter.ai/api/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('openrouter', 'anthropic'),
+    'https://openrouter.ai/api/v1',
   );
 });
 
