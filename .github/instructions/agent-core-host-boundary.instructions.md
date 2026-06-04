@@ -19,7 +19,7 @@ applyTo: "**/*"
 - **Alibaba（`alibaba`）双路径**（`alibaba-built-in-tools` + `web-search-eligibility`）：
   - **Chat Completions**：经 `extra_body`（`enable_search`、`enable_thinking`、`enable_code_interpreter`、`search_options` 等）；代码解释器在 Chat API 上要求流式。抓取指定 URL 正文用宿主 `web_fetch`。
   - **Open Responses**：经 HTTP `tools` 注入 `{ type: web_search }`、`code_interpreter`（不含 `web_extractor`；URL 正文用宿主 `web_fetch`）。
-- 可见性由 eligibility 门控；system 提示段说明 Chat 为 API 侧能力、勿调用未声明的 function。
+- 可见性由 eligibility 与 fetch 层门控。**勿**在 system message 追加 provider built-in 使用说明（模型已从请求 `tools` 看见）；Chat Completions 能力经 `extra_body`，亦无 function 名可声明时**不**写 system 小作文。细则见 `llm-visible-copy.instructions.md`。
 
 ## 术语
 
