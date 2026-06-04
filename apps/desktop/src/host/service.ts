@@ -217,6 +217,10 @@ import {
   type RewindHostContext,
 } from './rewind-host.js';
 import {
+  ensureInitializedCommand,
+  type HostInitializationContext,
+} from './host-initialization.js';
+import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   deriveDisplayNameFromSeed,
@@ -235,15 +239,10 @@ import {
 import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
-  discoverWorkspaceRoot,
   isProvisionalSessionPath,
   provisionalNewSessionPath,
-  loadConfig,
   loadHostMetadata,
-  normalizeWorkspaceBinding,
-  resolveDesktopHomeDirectory,
   modelSecretKeyPresence,
-  mergeRecentWorkspaceRoots,
   resolveApiKeyForConfigModel,
   createDesktopExtensionStateStore,
   saveConfig,
@@ -292,7 +291,6 @@ import {
   currentApiBase,
   mapPendingQuestions,
   sameDreamCollectorSnapshot,
-  resolveWorkspaceBindingForRequestedRoot,
   sameWorkspaceRoot,
 } from './service-utils.js';
 import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
@@ -674,6 +672,38 @@ class DesktopHostService {
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
       createMessageTimelineFromMessages: (messages) => this.createMessageTimelineFromMessages(messages),
       resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
+    };
+  }
+
+  private hostInitializationContext(): HostInitializationContext {
+    return {
+      initialized: () => this.initialized,
+      state: () => this.state,
+      setState: (state) => {
+        this.state = state;
+      },
+      setInitialized: (initialized) => {
+        this.initialized = initialized;
+      },
+      setLastRuntimeError: (error) => {
+        this.lastRuntimeError = error;
+      },
+      setToolExecutor: (executor) => {
+        this.toolExecutor = executor;
+      },
+      sessionRegistry: () => this.sessionRegistry,
+      resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
+      refreshExtensionsList: () => this.refreshExtensionsList(),
+      refreshRuntime: () => this.refreshRuntime(),
+      deactivateExtensions: () => this.extensionManager().deactivateAll(),
+      dispatchStartupEvent: (workspaceRoot) =>
+        this.dispatchExtensionEvent({
+          type: 'onStartup',
+          detail: {
+            workspaceRoot,
+          },
+        }),
+      loadDesktopPlanSnapshot,
     };
   }
 
@@ -1323,141 +1353,7 @@ class DesktopHostService {
       workspaceBinding?: DesktopWorkspaceBinding;
     } = {},
   ): Promise<void> {
-    const requestedWorkspaceRoot = workspaceRootOverride?.trim()
-      ? path.resolve(workspaceRootOverride.trim())
-      : undefined;
-
-    const loadedConfig = await loadConfig();
-    const previousState = this.state;
-    const previousBinding = normalizeWorkspaceBinding(
-      previousState?.workspaceBinding ?? loadedConfig.workspaceBinding,
-    );
-    const workspaceBinding = resolveWorkspaceBindingForRequestedRoot({
-      requestedWorkspaceRoot,
-      explicitBinding: options.workspaceBinding,
-      previousBinding,
-      persistedBinding: normalizeWorkspaceBinding(loadedConfig.workspaceBinding),
-    });
-
-    const workspaceRoot =
-      workspaceBinding === 'none'
-        ? resolveDesktopHomeDirectory()
-        : requestedWorkspaceRoot
-          ?? (previousState?.workspaceBinding === 'project' ? previousState.workspaceRoot : undefined)
-          ?? loadedConfig.lastProjectWorkspaceRoot
-          ?? loadedConfig.recentWorkspaces?.[0]
-          ?? discoverWorkspaceRoot();
-
-    if (
-      options.fastPath === true &&
-      this.initialized &&
-      previousState?.workspaceRoot &&
-      sameWorkspaceRoot(previousState.workspaceRoot, workspaceRoot) &&
-      previousBinding === workspaceBinding
-    ) {
-      return;
-    }
-
-    const git = await readWorkspaceGitSnapshot(workspaceRoot);
-    let lastProjectWorkspaceRoot = loadedConfig.lastProjectWorkspaceRoot;
-    if (
-      workspaceBinding === 'none'
-      && previousBinding === 'project'
-      && previousState?.workspaceRoot
-      && !sameWorkspaceRoot(previousState.workspaceRoot, resolveDesktopHomeDirectory())
-    ) {
-      lastProjectWorkspaceRoot = previousState.workspaceRoot;
-    }
-
-    const preserveRecent =
-      workspaceBinding === 'none'
-      || options.preserveRecentWorkspaces === true;
-    const config = {
-      ...loadedConfig,
-      workspaceBinding,
-      ...(lastProjectWorkspaceRoot ? { lastProjectWorkspaceRoot } : {}),
-      recentWorkspaces: preserveRecent
-        ? (loadedConfig.recentWorkspaces ?? [])
-        : mergeRecentWorkspaceRoots(
-            loadedConfig.recentWorkspaces,
-            git.primaryRepoRoot ?? workspaceRoot,
-          ),
-    } satisfies DesktopConfigFile;
-
-    const recentWorkspacesChanged =
-      !loadedConfig.recentWorkspaces ||
-      config.recentWorkspaces.length !== loadedConfig.recentWorkspaces.length ||
-      config.recentWorkspaces.some((entry, index) => entry !== loadedConfig.recentWorkspaces?.[index]);
-    const bindingChanged = normalizeWorkspaceBinding(loadedConfig.workspaceBinding) !== workspaceBinding;
-    const lastProjectChanged = loadedConfig.lastProjectWorkspaceRoot !== config.lastProjectWorkspaceRoot;
-    if (recentWorkspacesChanged || bindingChanged || lastProjectChanged) {
-      await saveConfig(config);
-    }
-
-    if (
-      this.initialized
-      && previousState?.workspaceRoot
-      && sameWorkspaceRoot(previousState.workspaceRoot, workspaceRoot)
-      && previousBinding === workspaceBinding
-    ) {
-      const currentState = this.requireState();
-      currentState.config = config;
-      currentState.git = applyGitRevision(git, currentState.git.revision ?? 0);
-      currentState.workspaceBinding = workspaceBinding;
-      currentState.plan = await loadDesktopPlanSnapshot(
-        currentState.metadata.planMetadata.path,
-        currentState.metadata.planMetadata.exists,
-      );
-      return;
-    }
-
-    const metadata = await loadHostMetadata(workspaceRoot, resolveDesktopAgentMode(config), {
-      workspaceBinding,
-    });
-    const plan = await loadDesktopPlanSnapshot(metadata.planMetadata.path, metadata.planMetadata.exists);
-    const state = this.state;
-    const previousWorkspaceRoot = state?.workspaceRoot;
-    const switchingWorkspace = Boolean(
-      previousWorkspaceRoot && !sameWorkspaceRoot(previousWorkspaceRoot, workspaceRoot),
-    );
-    if (switchingWorkspace) {
-      await this.extensionManager().deactivateAll();
-    }
-
-    if (switchingWorkspace) {
-      this.lastRuntimeError = '';
-      this.toolExecutor = undefined;
-      this.sessionRegistry.clearForWorkspaceSwitch(workspaceRoot);
-      this.resetStreamingPlacementState(true);
-    } else if (!this.sessionRegistry.hasActive()) {
-      this.sessionRegistry.ensureDraft(workspaceRoot);
-    } else {
-      this.sessionRegistry.requireActive().workspaceRoot = workspaceRoot;
-    }
-
-    this.state = {
-      workspaceRoot,
-      workspaceBinding,
-      config,
-      git: applyGitRevision(git, 0, { reset: true }),
-      metadata,
-      plan,
-      extensionsList: state?.extensionsList ?? [],
-      extensionCss: state?.extensionCss ?? [],
-      ephemeralSessions: state?.ephemeralSessions ?? [],
-    };
-    this.initialized = true;
-    await this.refreshExtensionsList();
-    const skipRuntimeRefresh = switchingWorkspace && options.deferRuntimeRefresh === true;
-    if (!skipRuntimeRefresh) {
-      await this.refreshRuntime();
-    }
-    await this.dispatchExtensionEvent({
-      type: 'onStartup',
-      detail: {
-        workspaceRoot,
-      },
-    });
+    return ensureInitializedCommand(this.hostInitializationContext(), workspaceRootOverride, options);
   }
 
   private async refreshRuntime(): Promise<void> {
