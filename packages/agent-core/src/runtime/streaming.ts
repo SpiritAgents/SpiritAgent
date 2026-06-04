@@ -73,6 +73,15 @@ export interface StreamingRuntime<
     streamingEmitBeginResponse?: boolean,
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): Promise<void>;
+  queuePendingToolCallContinuation(
+    state: State,
+    pendingUserInput: string,
+    calls: ToolCallRequest[],
+    turn: RuntimeTurnContext<ToolRequest>,
+    resumeAsStreaming?: boolean,
+    streamingEmitBeginResponse?: boolean,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  ): void;
   performToolExecution(
     request: ToolRequest,
     toolName: string,
@@ -159,6 +168,7 @@ export async function startStreamingRound<
     completion: undefined,
     completionHandled: false,
     streamEnded: false,
+    streamConsumerFinished: false,
     cancel: undefined,
   };
   runtime.pendingStreamingRound = pending;
@@ -261,6 +271,12 @@ export async function pollPendingStreamingRound<
   }
 
   if (runtime.pendingStreamingRound !== pending || pending.completionHandled || !pending.completion) {
+    return;
+  }
+
+  // completion resolves in parallel with consumeStreamEvents; wait until the
+  // stream iterator is fully ingested and every queued event is handled.
+  if (pending.rawEvents.length > 0 || !pending.streamConsumerFinished) {
     return;
   }
 
@@ -383,6 +399,8 @@ export async function consumeStreamEvents<
       kind: 'error',
       error: renderError(error),
     });
+  } finally {
+    pending.streamConsumerFinished = true;
   }
 }
 
@@ -425,7 +443,12 @@ export async function handlePendingStreamEvent<
       toolName: event.toolName,
       argumentsJson: event.argumentsJson,
     });
-    if (!isResponsesBuiltInToolName(event.toolName)) {
+    const allowEarlyExecutionDuringStream =
+      event.toolName === 'read_file' || event.toolName === 'list_directory_files';
+    if (
+      !isResponsesBuiltInToolName(event.toolName)
+      && (allowEarlyExecutionDuringStream || pending.streamConsumerFinished)
+    ) {
       startEarlyToolExecution(
         runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
         {
@@ -486,15 +509,16 @@ export async function handlePendingStreamEvent<
     if (pending.completionHandled && pending.completion?.kind === 'success') {
       const round = pending.completion.result;
       if (round.step.kind === 'tool-calls') {
+        const earlyToolExecutions = pending.earlyToolExecutions;
         clearPendingStreamingState(runtime);
-        await runtime.processToolCallsAsync(
+        runtime.queuePendingToolCallContinuation(
           round.state,
           pending.pendingUserInput,
           round.step.calls,
           pending.turn,
           true,
           true,
-          pending.earlyToolExecutions,
+          earlyToolExecutions,
         );
         return true;
       }
@@ -654,15 +678,16 @@ export async function handlePendingStreamingCompletion<
       runtime.pendingUserTurnStore = undefined;
       runtime.emitEvent({ kind: 'assistant-response-completed' });
     }
+    const earlyToolExecutions = pending.earlyToolExecutions;
     clearPendingStreamingState(runtime);
-    await runtime.processToolCallsAsync(
+    runtime.queuePendingToolCallContinuation(
       round.state,
       pending.pendingUserInput,
       round.step.calls,
       pending.turn,
       true,
       true,
-      pending.earlyToolExecutions,
+      earlyToolExecutions,
     );
     return;
   }

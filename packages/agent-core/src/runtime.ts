@@ -840,8 +840,8 @@ export class AgentRuntime<
   }
 
   async poll(): Promise<void> {
-    await this.pollPendingToolCallContinuation();
     await this.pollPendingStreamingRound();
+    await this.pollPendingToolCallContinuation();
     await this.pollPendingToolAgentRound();
     await this.pollPendingHistoryCompaction();
     await this.pollPendingBackgroundToolExecution();

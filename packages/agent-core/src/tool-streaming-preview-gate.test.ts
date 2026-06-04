@@ -9,10 +9,17 @@ import {
   readFilePartialAllowsEarlyExecution,
   readFileStreamingPreviewSignature,
   resolveStreamingToolPreviewEmit,
+  shouldEmitStreamingToolNamePreview,
   tryExtractPartialPlanName,
   tryExtractPartialReadFileFields,
   tryExtractPartialToolPath,
 } from './tool-streaming-preview-gate.js';
+
+test('shouldEmitStreamingToolNamePreview fires once when name first appears', () => {
+  assert.equal(shouldEmitStreamingToolNamePreview('glob', ''), true);
+  assert.equal(shouldEmitStreamingToolNamePreview('glob', 'glob'), false);
+  assert.equal(shouldEmitStreamingToolNamePreview('finish_task', ''), false);
+});
 
 test('tryExtractPartialToolPath reads path from incomplete JSON', () => {
   const partial = '{"path":"D:\\\\SpiritAgent\\\\README.md","old_text":"';

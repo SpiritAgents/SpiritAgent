@@ -968,3 +968,17 @@ export function runtimeEventsIncludeAppliedFinishTaskPreview(
       event.kind === 'streaming-tool-preview' && isFinishTaskToolName(event.toolName),
   );
 }
+
+export function runtimeEventsIncludeAppliedHostToolStreamingUpdate(
+  events: RuntimeEvent<DesktopToolRequest>[],
+): boolean {
+  return events.some((event) => {
+    if (event.kind === 'tool-call-started') {
+      return !isFinishTaskToolName(event.toolName);
+    }
+    if (event.kind !== 'streaming-tool-preview') {
+      return false;
+    }
+    return !isFinishTaskToolName(event.toolName) && !isResponsesBuiltInToolName(event.toolName);
+  });
+}

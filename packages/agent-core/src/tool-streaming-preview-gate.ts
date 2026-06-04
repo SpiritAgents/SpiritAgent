@@ -529,6 +529,15 @@ export interface StreamingToolPreviewEmitState {
   lastPreviewDetailSignature?: string;
 }
 
+/** Emit a tool card as soon as the streamed function name first becomes available. */
+export function shouldEmitStreamingToolNamePreview(
+  toolName: string,
+  previousToolName: string,
+): boolean {
+  const trimmed = toolName.trim();
+  return trimmed.length > 0 && previousToolName.trim().length === 0 && trimmed !== 'finish_task';
+}
+
 export function resolveStreamingToolPreviewEmit(
   toolName: string,
   argumentsJson: string,
