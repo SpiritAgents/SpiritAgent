@@ -11,7 +11,6 @@ import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
   buildActiveSkillsSystemMessage,
   buildBasicInfoSystemMessage,
-  buildDreamCollectorSystemMessage,
   buildDreamsSystemMessage,
   buildExtensionsSystemMessage,
   buildAgentModeSystemMessage,
@@ -180,6 +179,12 @@ import {
   runtimeActivationSignature,
 } from './runtime-lifecycle.js';
 import {
+  dreamCollectorExtensionPrompt,
+  startDreamCollectorIfNeeded as startDreamCollectorIfNeededFromService,
+  startDreamCollectorMonitorIfNeeded as startDreamCollectorMonitorIfNeededFromService,
+  type DreamCollectorServiceContext,
+} from './dream-collector-service.js';
+import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   deriveDisplayNameFromSeed,
@@ -224,15 +229,10 @@ import {
   type DesktopRuntime,
 } from './runtime.js';
 import {
-  buildDreamCollectorPlanMetadata,
   buildDreamContextText,
   clearDreamCollectorIssue,
-  DREAM_COLLECTOR_BACKOFF_MS,
-  DREAM_COLLECTOR_MONITOR_INTERVAL_MS,
-  DREAM_COLLECTOR_TICK_INTERVAL_MS,
   emptyDreamCollectorSnapshot,
   isDreamCollectorDebugSessionPath,
-  runDesktopDreamCollectorOnce,
 } from './dreams.js';
 import {
   buildSessionTodosContextText,
@@ -271,7 +271,6 @@ import {
   cloneArchiveHistory,
   cloneArchiveSubagentSessions,
   cloneChatArchive,
-  cloneDesktopConfig,
   currentApiBase,
   mapPendingQuestions,
   sameDreamCollectorSnapshot,
@@ -608,6 +607,41 @@ class DesktopHostService {
       },
       dispatchSessionEvent: (event) => this.dispatchExtensionEvent(event),
       buildSnapshot: () => this.buildSnapshot(),
+    };
+  }
+
+  private dreamCollectorContext(): DreamCollectorServiceContext {
+    return {
+      state: () => this.state,
+      initialized: () => this.initialized,
+      runtimeBusy: () => this.runtime?.isBusy() === true,
+      running: () => this.dreamCollectorRunning,
+      setRunning: (running) => {
+        this.dreamCollectorRunning = running;
+      },
+      lastTickUnixMs: () => this.dreamCollectorLastTickUnixMs,
+      setLastTickUnixMs: (value) => {
+        this.dreamCollectorLastTickUnixMs = value;
+      },
+      status: () => this.dreamCollectorStatus,
+      setStatus: (next) => this.setDreamCollectorStatus(next),
+      createRuntime: (transportConfig, planMetadata, toolExecutor) => this.createRuntime(
+        transportConfig,
+        [],
+        [],
+        [],
+        planMetadata,
+        [dreamCollectorExtensionPrompt()],
+        undefined,
+        undefined,
+        toolExecutor,
+      ),
+      runSerialized: (work) => this.runSerialized(work),
+      activeBundle: () => this.activeBundle(),
+      refreshRuntime: () => this.refreshRuntime(),
+      clearLastRuntimeError: () => {
+        this.lastRuntimeError = '';
+      },
     };
   }
 
@@ -1655,121 +1689,17 @@ class DesktopHostService {
   }
 
   private startDreamCollectorIfNeeded(): void {
-    const state = this.state;
-    if (!state) {
-      return;
-    }
-
-    const settings = state.config.dreams;
-    const now = Date.now();
-    if (!settings.enabled) {
-      this.setDreamCollectorStatus(emptyDreamCollectorSnapshot('disabled'));
-      return;
-    }
-    if (!settings.collectorModel) {
-      this.setDreamCollectorStatus({
-        ...emptyDreamCollectorSnapshot('missing-model'),
-        lastError: i18n.t('error.dreamCollectorModelNotConfigured'),
-      });
-      return;
-    }
-    if (!state.git.isRepository || !state.git.branch) {
-      this.setDreamCollectorStatus(emptyDreamCollectorSnapshot('idle'));
-      return;
-    }
-    if (this.runtime?.isBusy() || this.dreamCollectorRunning) {
-      return;
-    }
-    if (this.dreamCollectorStatus.backoffUntilUnixMs && now < this.dreamCollectorStatus.backoffUntilUnixMs) {
-      this.setDreamCollectorStatus({
-        ...this.dreamCollectorStatus,
-        state: 'backoff',
-      });
-      return;
-    }
-    if (now - this.dreamCollectorLastTickUnixMs < DREAM_COLLECTOR_TICK_INTERVAL_MS) {
-      return;
-    }
-
-    this.dreamCollectorLastTickUnixMs = now;
-    this.dreamCollectorRunning = true;
-    this.setDreamCollectorStatus({
-      ...this.dreamCollectorStatus,
-      state: 'running',
-      lastRunAtUnixMs: now,
-      pendingCount: this.dreamCollectorStatus.pendingCount,
-      processedCount: this.dreamCollectorStatus.processedCount,
-    });
-
-    const collectorInput = {
-      workspaceRoot: state.workspaceRoot,
-      gitBranch: state.git.branch,
-      collectorModel: settings.collectorModel,
-      config: cloneDesktopConfig(state.config),
-      planMetadata: buildDreamCollectorPlanMetadata(state.metadata.planMetadata),
-    };
-
-    void runDesktopDreamCollectorOnce(collectorInput, {
-      createRuntime: (transportConfig, planMetadata, toolExecutor) => this.createRuntime(
-        transportConfig,
-        [],
-        [],
-        [],
-        planMetadata,
-        [
-          {
-            extensionId: 'dream-collector',
-            extensionName: i18n.t('error.dreamCollector'),
-            content: buildDreamCollectorSystemMessage(),
-          },
-        ],
-        undefined,
-        undefined,
-        toolExecutor,
-      ),
-      getStatus: () => this.dreamCollectorStatus,
-      setStatus: (next) => this.setDreamCollectorStatus(next),
-    })
-      .catch((error) => {
-        const backoffUntilUnixMs = Date.now() + DREAM_COLLECTOR_BACKOFF_MS;
-        this.setDreamCollectorStatus({
-          ...this.dreamCollectorStatus,
-          state: 'backoff',
-          lastError: error instanceof Error ? error.message : String(error),
-          backoffUntilUnixMs,
-        });
-      })
-      .finally(() => {
-        this.dreamCollectorRunning = false;
-        void this.runSerialized(async () => {
-          if (!this.initialized || !this.state) {
-            return;
-          }
-          if (this.runtime?.isBusy()) {
-            this.activeBundle().deferredRuntimeRefreshWhileBusy = true;
-            return;
-          }
-          this.activeBundle().deferredRuntimeRefreshWhileBusy = false;
-          await this.refreshRuntime();
-          this.lastRuntimeError = '';
-        });
-      });
+    startDreamCollectorIfNeededFromService(this.dreamCollectorContext());
   }
 
   private startDreamCollectorMonitorIfNeeded(): void {
-    if (this.dreamCollectorMonitorTimer) {
-      return;
-    }
-
-    this.dreamCollectorMonitorTimer = setInterval(() => {
-      void this.runSerialized(async () => {
-        if (!this.initialized || !this.state || this.runtime?.isBusy()) {
-          return;
-        }
-        this.startDreamCollectorIfNeeded();
-      });
-    }, DREAM_COLLECTOR_MONITOR_INTERVAL_MS);
-    this.dreamCollectorMonitorTimer.unref?.();
+    startDreamCollectorMonitorIfNeededFromService(
+      this.dreamCollectorMonitorTimer,
+      (timer) => {
+        this.dreamCollectorMonitorTimer = timer;
+      },
+      this.dreamCollectorContext(),
+    );
   }
 
   private setDreamCollectorStatus(next: DesktopDreamCollectorSnapshot): void {
