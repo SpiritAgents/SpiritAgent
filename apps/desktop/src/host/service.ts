@@ -96,6 +96,7 @@ import type {
   QueryWorkspaceFileReferenceSuggestionsRequest,
   SessionListItem,
   ImportExtensionRequest,
+  InstallLspProviderRequest,
   InstallMarketplaceExtensionRequest,
   PrepareMarketplaceExtensionInstallRequest,
   SubmitUserTurnRequest,
@@ -290,10 +291,14 @@ import {
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
 import {
+  disposeAllLspServices,
   disposeLspServicesExcept,
   ensureLspServiceReady,
+  lspUserConfigFromEnabled,
   sharedLspServiceForWorkspace,
 } from './service-lsp.js';
+import { buildDesktopLspSnapshot, defaultDesktopLspSnapshot } from './lsp-snapshot.js';
+import { installLspProviderCommand } from './lsp-commands.js';
 import {
   currentApiBase,
   mapPendingQuestions,
@@ -429,6 +434,7 @@ class DesktopHostService {
   /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
   private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/agent-core').LspService>();
+  private lspSnapshot = defaultDesktopLspSnapshot();
 
   private orchestrationFor(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
@@ -463,7 +469,28 @@ class DesktopHostService {
         this.lastRuntimeError = error;
       },
       buildSnapshot: () => this.buildSnapshot(),
+      disposeAllLspServices: () => this.disposeAllLspServices(),
+      invalidateToolExecutors: () => this.invalidateToolExecutors(),
+      refreshLspSnapshot: () => this.refreshLspSnapshot(),
     };
+  }
+
+  private async refreshLspSnapshot(): Promise<void> {
+    const state = this.state;
+    this.lspSnapshot = state
+      ? await buildDesktopLspSnapshot(state.config)
+      : defaultDesktopLspSnapshot();
+  }
+
+  private async disposeAllLspServices(): Promise<void> {
+    await disposeAllLspServices(this.lspServiceByWorkspaceRoot);
+  }
+
+  private invalidateToolExecutors(): void {
+    this.toolExecutor = undefined;
+    for (const bundle of this.sessionRegistry.all()) {
+      bundle.toolExecutor = undefined;
+    }
   }
 
   private extensionCommandContext(): HostExtensionCommandContext {
@@ -703,6 +730,7 @@ class DesktopHostService {
       resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
       refreshExtensionsList: () => this.refreshExtensionsList(),
       refreshRuntime: () => this.refreshRuntime(),
+      refreshLspSnapshot: () => this.refreshLspSnapshot(),
       deactivateExtensions: () => this.extensionManager().deactivateAll(),
       dispatchStartupEvent: (workspaceRoot) =>
         this.dispatchExtensionEvent({
@@ -815,6 +843,10 @@ class DesktopHostService {
 
   async updateConfig(request: UpdateConfigRequest): Promise<DesktopSnapshot> {
     return updateConfigCommand(this.modelCommandContext(), request);
+  }
+
+  async installLspProvider(request: InstallLspProviderRequest): Promise<DesktopSnapshot> {
+    return installLspProviderCommand(this.modelCommandContext(), request);
   }
 
   async setWebHostAuthTokenHash(authTokenHash: string): Promise<DesktopSnapshot> {
@@ -1566,7 +1598,8 @@ class DesktopHostService {
   }
 
   private sharedLspServiceForWorkspace(workspaceRoot: string) {
-    return sharedLspServiceForWorkspace(this.lspServiceByWorkspaceRoot, workspaceRoot);
+    const userConfig = lspUserConfigFromEnabled(this.requireState().config.agents.lsp.enabled);
+    return sharedLspServiceForWorkspace(this.lspServiceByWorkspaceRoot, workspaceRoot, userConfig);
   }
 
   private async buildToolExecutorForBundle(
@@ -1848,6 +1881,7 @@ class DesktopHostService {
         ?? this.toolExecutor?.mcpStatusSnapshot()
         ?? emptyMcpStatusSnapshot(),
       mcpServers: listDesktopMcpServersFromDisk(state.workspaceRoot, state.workspaceBinding),
+      lsp: this.lspSnapshot,
       conversation: {
         revision: activeBundle.conversationRevision,
         messages: conversationMessages,

@@ -16,6 +16,14 @@ import {
 import { resolveTypescriptLanguageServerOnPath } from './resolve-server.js';
 import type { LspDiagnostic, LspFileChangeNotification } from './types.js';
 
+export interface LspUserConfig {
+  enabled: boolean;
+}
+
+const DEFAULT_LSP_USER_CONFIG: LspUserConfig = {
+  enabled: true,
+};
+
 export class LspService {
   private readonly documentStore = new LspDocumentStore();
   private readonly diagnosticsByUri = new Map<string, LspDiagnostic[]>();
@@ -32,7 +40,16 @@ export class LspService {
   constructor(
     private readonly workspaceRootStore: string,
     private readonly timing: LspTimingConfig = DEFAULT_LSP_TIMING,
+    private userConfig: LspUserConfig = DEFAULT_LSP_USER_CONFIG,
   ) {}
+
+  setUserConfig(userConfig: LspUserConfig): void {
+    this.userConfig = userConfig;
+  }
+
+  getUserConfig(): LspUserConfig {
+    return this.userConfig;
+  }
 
   get workspaceRoot(): string {
     return this.workspaceRootStore;
@@ -47,15 +64,31 @@ export class LspService {
       return this.enabledStore;
     }
     this.probed = true;
+    if (!this.userConfig.enabled) {
+      this.enabledStore = false;
+      this.serverCommand = undefined;
+      return false;
+    }
     const resolved = await resolveTypescriptLanguageServerOnPath();
     if (!resolved) {
       console.error('[lsp] typescript-language-server not found on PATH; diagnostics disabled');
       this.enabledStore = false;
+      this.serverCommand = undefined;
       return false;
     }
     this.serverCommand = resolved;
     this.enabledStore = true;
     return true;
+  }
+
+  getResolvedServer(): { command: string; args: string[] } | undefined {
+    return this.serverCommand ? { ...this.serverCommand } : undefined;
+  }
+
+  resetProbe(): void {
+    this.probed = false;
+    this.enabledStore = false;
+    this.serverCommand = undefined;
   }
 
   toolDefinitionsJson(): import('../ports.js').JsonValue[] {
