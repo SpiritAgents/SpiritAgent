@@ -204,6 +204,68 @@ test('parseOpenRouterModelEntriesPayload classifies output_modalities', () => {
   ]);
 });
 
+test('parseVercelAiGatewayModelEntriesPayload extracts display metadata and pricing', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'openai/gpt-5',
+        name: 'GPT-5',
+        description: 'General-purpose language model.',
+        type: 'language',
+        context_window: 128000,
+        pricing: {
+          input: '0.000001',
+          output: '0.000002',
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'openai/gpt-5',
+      displayName: 'GPT-5',
+      description: 'General-purpose language model.',
+      pricing: {
+        inputPerTokenUsd: '0.000001',
+        outputPerTokenUsd: '0.000002',
+      },
+      contextLength: 128000,
+    },
+  ]);
+});
+
+test('parseOpenRouterModelEntriesPayload extracts display metadata and pricing', () => {
+  const entries = parseOpenRouterModelEntriesPayload({
+    data: [
+      {
+        id: 'anthropic/claude-sonnet-4',
+        name: 'Claude Sonnet 4',
+        description: 'Balanced reasoning model.',
+        architecture: { output_modalities: ['text'] },
+        pricing: {
+          prompt: '0.000003',
+          completion: '0.000015',
+          request: '0',
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'anthropic/claude-sonnet-4',
+      displayName: 'Claude Sonnet 4',
+      description: 'Balanced reasoning model.',
+      pricing: {
+        inputPerTokenUsd: '0.000003',
+        outputPerTokenUsd: '0.000015',
+        requestPerCallUsd: '0',
+      },
+    },
+  ]);
+});
+
 test('parseOpenAiCompatibleModelEntriesPayload routes openrouter to typed parser', () => {
   const entries = parseOpenAiCompatibleModelEntriesPayload({
     data: [

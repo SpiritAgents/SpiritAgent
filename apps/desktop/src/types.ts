@@ -72,8 +72,18 @@ export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
 export type DesktopModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration';
 
+export interface PreviewModelCatalogPricing {
+  inputPerTokenUsd?: string;
+  outputPerTokenUsd?: string;
+  imagePerUnitUsd?: string;
+  requestPerCallUsd?: string;
+}
+
 export interface PreviewModelCatalogEntry {
   id: string;
+  displayName?: string;
+  description?: string;
+  pricing?: PreviewModelCatalogPricing;
   capabilities?: DesktopModelCapability[];
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];
 }
@@ -110,6 +120,7 @@ export interface DesktopModelCatalogHint {
   transportKind?: DesktopTransportKind;
   apiBase: string;
   modelIds: string[];
+  modelCatalog?: PreviewModelCatalogEntry[];
   fetchedAtUnixMs: number;
 }
 

@@ -6,8 +6,18 @@ import type { ModelProviderId, ProviderModelTransportKind } from './model-provid
 
 export type { ProviderModelTransportKind };
 
+export interface ProviderListedModelPricing {
+  inputPerTokenUsd?: string;
+  outputPerTokenUsd?: string;
+  imagePerUnitUsd?: string;
+  requestPerCallUsd?: string;
+}
+
 export interface ProviderListedModelEntry {
   id: string;
+  displayName?: string;
+  description?: string;
+  pricing?: ProviderListedModelPricing;
   supportsImageInput?: boolean;
   supportsVideoInput?: boolean;
   supportsImageGeneration?: boolean;
@@ -153,12 +163,20 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
     }
 
     if (!type) {
-      entries.push({ id: id.trim() });
+      entries.push(
+        attachListedModelMetadata({ id: id.trim() }, record, readVercelGatewayPricing(record)),
+      );
       continue;
     }
 
     if (type === 'image') {
-      entries.push({ id: id.trim(), supportsImageGeneration: true });
+      entries.push(
+        attachListedModelMetadata(
+          { id: id.trim(), supportsImageGeneration: true },
+          record,
+          readVercelGatewayPricing(record),
+        ),
+      );
       continue;
     }
 
@@ -168,16 +186,26 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
       if (contextLength !== undefined) {
         modelEntry.contextLength = contextLength;
       }
-      entries.push(modelEntry);
+      entries.push(
+        attachListedModelMetadata(modelEntry, record, readVercelGatewayPricing(record)),
+      );
       continue;
     }
 
     if (type === 'video') {
-      entries.push({ id: id.trim(), supportsVideoInput: true });
+      entries.push(
+        attachListedModelMetadata(
+          { id: id.trim(), supportsVideoInput: true },
+          record,
+          readVercelGatewayPricing(record),
+        ),
+      );
       continue;
     }
 
-    entries.push({ id: id.trim() });
+    entries.push(
+      attachListedModelMetadata({ id: id.trim() }, record, readVercelGatewayPricing(record)),
+    );
   }
   return entries;
 }
@@ -238,12 +266,20 @@ export function parseOpenRouterModelEntriesPayload(body: unknown): ProviderListe
         continue;
       }
       if (hasImage && !hasText) {
-        entries.push({ id: id.trim(), supportsImageGeneration: true });
+        entries.push(
+          attachListedModelMetadata(
+            { id: id.trim(), supportsImageGeneration: true },
+            record,
+            readOpenRouterPricing(record),
+          ),
+        );
         continue;
       }
     }
 
-    entries.push({ id: id.trim() });
+    entries.push(
+      attachListedModelMetadata({ id: id.trim() }, record, readOpenRouterPricing(record)),
+    );
   }
   return entries;
 }
@@ -571,6 +607,9 @@ function dedupeProviderListedModelEntries(
     seen.add(entry.id);
     deduped.push({
       id: entry.id,
+      ...(entry.displayName !== undefined ? { displayName: entry.displayName } : {}),
+      ...(entry.description !== undefined ? { description: entry.description } : {}),
+      ...(entry.pricing !== undefined ? { pricing: { ...entry.pricing } } : {}),
       ...(entry.supportsImageInput !== undefined
         ? { supportsImageInput: entry.supportsImageInput }
         : {}),
@@ -601,6 +640,84 @@ function readPositiveIntegerModelTrait(record: Record<string, unknown>, key: str
     return undefined;
   }
   return Math.floor(value);
+}
+
+function readOptionalTrimmedString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function readPricingField(pricing: Record<string, unknown>, key: string): string | undefined {
+  return readOptionalTrimmedString(pricing[key]);
+}
+
+function buildProviderListedModelPricing(fields: ProviderListedModelPricing): ProviderListedModelPricing | undefined {
+  if (
+    !fields.inputPerTokenUsd
+    && !fields.outputPerTokenUsd
+    && !fields.imagePerUnitUsd
+    && !fields.requestPerCallUsd
+  ) {
+    return undefined;
+  }
+  return {
+    ...(fields.inputPerTokenUsd ? { inputPerTokenUsd: fields.inputPerTokenUsd } : {}),
+    ...(fields.outputPerTokenUsd ? { outputPerTokenUsd: fields.outputPerTokenUsd } : {}),
+    ...(fields.imagePerUnitUsd ? { imagePerUnitUsd: fields.imagePerUnitUsd } : {}),
+    ...(fields.requestPerCallUsd ? { requestPerCallUsd: fields.requestPerCallUsd } : {}),
+  };
+}
+
+function readVercelGatewayPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(record.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+  const inputPerTokenUsd = readPricingField(pricing, 'input');
+  const outputPerTokenUsd = readPricingField(pricing, 'output');
+  const imagePerUnitUsd = readPricingField(pricing, 'image');
+  const requestPerCallUsd = readPricingField(pricing, 'request');
+  return buildProviderListedModelPricing({
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+    ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
+    ...(requestPerCallUsd !== undefined ? { requestPerCallUsd } : {}),
+  });
+}
+
+function readOpenRouterPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(record.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+  const inputPerTokenUsd = readPricingField(pricing, 'prompt');
+  const outputPerTokenUsd = readPricingField(pricing, 'completion');
+  const imagePerUnitUsd = readPricingField(pricing, 'image');
+  const requestPerCallUsd = readPricingField(pricing, 'request');
+  return buildProviderListedModelPricing({
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+    ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
+    ...(requestPerCallUsd !== undefined ? { requestPerCallUsd } : {}),
+  });
+}
+
+function attachListedModelMetadata(
+  modelEntry: ProviderListedModelEntry,
+  record: Record<string, unknown>,
+  pricing?: ProviderListedModelPricing,
+): ProviderListedModelEntry {
+  const displayName = readOptionalTrimmedString(record.name);
+  const description = readOptionalTrimmedString(record.description);
+  return {
+    ...modelEntry,
+    ...(displayName ? { displayName } : {}),
+    ...(description ? { description } : {}),
+    ...(pricing ? { pricing } : {}),
+  };
 }
 
 export function moonshotSupportedReasoningEfforts(supportsReasoning: boolean): string[] {
