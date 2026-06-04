@@ -11,6 +11,7 @@ export type OpenAiLlmVendor =
   | 'minimax'
   | 'alibaba'
   | 'vercel-ai-gateway'
+  | 'openrouter'
   | 'openai'
   | 'custom';
 
