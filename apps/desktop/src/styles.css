@@ -94,7 +94,8 @@ html.dark,
   --muted-foreground: #a1a1a1;
   --accent: #181818;
   --accent-foreground: #d4d4d4;
-  --destructive: #5a5a5a;
+  /* shadcn neutral 暗色默认 destructive（勿用 Void 灰或 :root 浅色红） */
+  --destructive: oklch(0.704 0.191 22.216);
   --border: #272727;
   --input: #272727;
   --ring: #3f3f3f;
