@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatDiagnosticsForLlm, formatDiagnosticsSummaryBlock } from './format-diagnostics.js';
+import { formatDiagnosticsForLlm, formatDiagnosticsSummaryBlock, buildLspWriteDiagnosticsUi } from './format-diagnostics.js';
 import type { LspDiagnostic } from './types.js';
 
 const sample: LspDiagnostic[] = [
@@ -42,4 +42,16 @@ test('formatDiagnosticsSummaryBlock returns undefined when only clean', () => {
 test('formatDiagnosticsSummaryBlock wraps non-empty output', () => {
   const block = formatDiagnosticsSummaryBlock('src/a.ts', sample);
   assert.ok(block?.startsWith('\n\n[lsp]\n'));
+});
+
+test('buildLspWriteDiagnosticsUi maps severity and 1-based positions', () => {
+  const ui = buildLspWriteDiagnosticsUi('src/a.ts', sample);
+  assert.ok(ui);
+  assert.equal(ui?.relativePath, 'src/a.ts');
+  assert.equal(ui?.items.length, 2);
+  assert.equal(ui?.items[0]?.severity, 'error');
+  assert.equal(ui?.items[0]?.line, 2);
+  assert.equal(ui?.items[0]?.column, 1);
+  assert.equal(ui?.items[1]?.severity, 'warning');
+  assert.equal(ui?.items[1]?.line, 5);
 });

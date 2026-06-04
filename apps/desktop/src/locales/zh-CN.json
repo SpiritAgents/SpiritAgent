@@ -682,7 +682,11 @@
     "answerFormQuestions": "请回答表单问题",
     "imageGenFailed": "图片生成失败",
     "imageGenComplete": "图片生成完成",
-    "commandPrefix": "命令:"
+    "commandPrefix": "命令:",
+    "lspErrorCount_one": "{{count}} 个错误",
+    "lspErrorCount_other": "{{count}} 个错误",
+    "lspWarningCount_one": "{{count}} 个警告",
+    "lspWarningCount_other": "{{count}} 个警告"
   },
   "demo": {
     "compactionUserText": "请继续实现 Desktop 连接向导：在上下文接近上限时自动压缩历史，并保留最近一轮工具结果。",

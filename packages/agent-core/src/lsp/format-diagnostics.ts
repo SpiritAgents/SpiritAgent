@@ -2,7 +2,7 @@ import {
   DEFAULT_DIAGNOSTICS_MAX_ITEMS,
   DEFAULT_DIAGNOSTICS_MESSAGE_MAX_CHARS,
 } from './constants.js';
-import type { LspDiagnostic, LspDiagnosticSeverity } from './types.js';
+import type { LspDiagnostic, LspDiagnosticSeverity, LspWriteDiagnosticsUi } from './types.js';
 
 export interface FormatDiagnosticsOptions {
   maxItems?: number;
@@ -59,6 +59,32 @@ export function formatDiagnosticsSummaryBlock(
     return undefined;
   }
   return `\n\n[lsp]\n${body}`;
+}
+
+export function buildLspWriteDiagnosticsUi(
+  relativePath: string,
+  diagnostics: LspDiagnostic[],
+): LspWriteDiagnosticsUi | undefined {
+  const items = sortDiagnostics(diagnostics)
+    .filter((item) => {
+      const severity = item.severity ?? 1;
+      return severity === 1 || severity === 2;
+    })
+    .map((item) => {
+      const severity = (item.severity ?? 1) === 2 ? 'warning' : 'error';
+      return {
+        severity: severity as 'error' | 'warning',
+        line: item.range.start.line + 1,
+        column: item.range.start.character + 1,
+        message: item.message.replace(/\s+/g, ' ').trim(),
+        ...(item.code !== undefined ? { code: item.code } : {}),
+        ...(item.source ? { source: item.source } : {}),
+      };
+    });
+  if (items.length === 0) {
+    return undefined;
+  }
+  return { relativePath, items };
 }
 
 function sortDiagnostics(diagnostics: LspDiagnostic[]): LspDiagnostic[] {
