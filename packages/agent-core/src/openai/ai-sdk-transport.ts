@@ -73,10 +73,12 @@ import {
   type OpenAiTransportConfig,
 } from './openai-compat.js';
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
+import { createOpenRouterChatCompletionsAwareFetch } from '../open-responses/openrouter-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
   shouldUseAlibabaChatCompletionsBuiltInTools,
 } from '../open-responses/alibaba-built-in-tools.js';
+import { shouldUseOpenRouterChatCompletionsBuiltInTools } from '../open-responses/openrouter-built-in-tools.js';
 import {
   clearMoonshotChatCompletionMessages,
   openAiMessagesContainVideoUrl,
@@ -664,7 +666,10 @@ function createAiSdkOpenAiCompatibleProvider(
   const vendorExtras = options.includeChatVendorExtras === false
     ? {}
     : openAiVendorChatCompletionBodyExtras(transportConfig);
-  const fetchWrapper =
+  const openRouterFetch = shouldUseOpenRouterChatCompletionsBuiltInTools(transportConfig)
+    ? createOpenRouterChatCompletionsAwareFetch(transportConfig)
+    : undefined;
+  const vendorExtrasFetch =
     Object.keys(vendorExtras).length === 0
       ? undefined
       : async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -681,6 +686,7 @@ function createAiSdkOpenAiCompatibleProvider(
             }),
           });
         };
+  const fetchWrapper = openRouterFetch ?? vendorExtrasFetch;
 
   const headers = {
     ...(config.organization ? { 'OpenAI-Organization': config.organization } : {}),
