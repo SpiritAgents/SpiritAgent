@@ -130,7 +130,6 @@ import type { DesktopToolRequest, HostCommandName } from './contracts.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
-  buildStoredDesktopSession,
   deriveDisplayNameFromSeed,
   ephemeralSessionsToListItems,
   type EphemeralSessionRecord,
@@ -176,7 +175,6 @@ import {
   saveApiKeyForProvider,
   createDesktopExtensionStateStore,
   saveConfig,
-  saveStoredSession,
   listStoredSessions,
   spiritAgentDataDir,
   normalizeDreamConfig,
@@ -320,6 +318,7 @@ import {
   generateCommitMessageFromModelTask,
   generateWorktreeNamesFromModelTask,
 } from './ephemeral-llm-tasks.js';
+import { persistDesktopSessionBundle } from './session-persistence.js';
 import { SessionRegistry } from './session-registry.js';
 import type { SessionBundle } from './session-bundle.js';
 import {
@@ -4332,59 +4331,21 @@ class DesktopHostService {
     } = {},
   ): Promise<void> {
     const state = this.requireState();
-    const activeSession = bundle.activeSession;
-    if (!activeSession || activeSession.kind === 'ephemeral') {
-      return;
-    }
-
-    const desktopMessages = bundle.messageTimeline.toMessages();
-    if (desktopMessages.length === 0) {
-      return;
-    }
-    const archiveMessages = buildArchiveMessagesFromConversation(desktopMessages);
-    const archiveAssistantAux = buildArchiveAssistantAuxFromConversation(desktopMessages);
-    const archive = options.fromRuntime
-      ? options.fromRuntime.toArchive(archiveMessages, archiveAssistantAux)
-      : {
-          messages: archiveMessages,
-          assistantAux: archiveAssistantAux,
-          llmHistory: bundle.archiveHistory,
-          subagentSessions: bundle.archiveSubagentSessions ?? [],
-          loopEnabled: bundle.loopEnabled,
-        } satisfies ChatArchive;
-
-    bundle.archiveHistory = archive.llmHistory;
-    bundle.archiveSubagentSessions = archive.subagentSessions ?? [];
-    bundle.loopEnabled = archive.loopEnabled === true;
-
-    const bumpListSortAt = options.bumpListSortAt === true;
-    const savedAtUnixMs = bumpListSortAt
-      ? Date.now()
-      : (bundle.listSortSavedAtUnixMs ?? Date.now());
-    const stored = buildStoredDesktopSession({
-      archive,
-      savedAtUnixMs,
-      sessionDisplayName: activeSession.displayName,
+    const result = await persistDesktopSessionBundle({
+      bundle,
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       gitBranch: state.git.branch,
-      ...(bundle.activePlanPath ? { activePlanPath: bundle.activePlanPath } : {}),
-      desktopMessages: sanitizeConversationMessagesForPersistence(desktopMessages),
-      desktopMessageTimeline: bundle.messageTimeline.snapshot(),
-      rewind: bundle.rewind,
-      loopEnabled: bundle.loopEnabled,
-      approvalLevel: bundle.approvalLevel,
+      fromRuntime: options.fromRuntime,
+      bumpListSortAt: options.bumpListSortAt,
     });
-    if (bumpListSortAt) {
-      bundle.listSortSavedAtUnixMs = savedAtUnixMs;
+    if (!result.nextId) {
+      return;
     }
-    const previousId = bundle.id;
-    activeSession.filePath = await saveStoredSession(activeSession.filePath, stored);
-    if (path.resolve(previousId) !== path.resolve(activeSession.filePath)) {
-      this.sessionRegistry.rekeyBundle(bundle, activeSession.filePath);
+    if (result.rekeyNeeded) {
+      this.sessionRegistry.rekeyBundle(bundle, result.nextId);
     } else {
-      bundle.id = activeSession.filePath;
+      bundle.id = result.nextId;
     }
-    bundle.lastPersistedAtUnixMs = Date.now();
   }
 
   private activeBundle(): SessionBundle {
