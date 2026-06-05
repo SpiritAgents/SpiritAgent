@@ -98,7 +98,6 @@ export type SettingsFormState = {
   webHostHost: string;
   webHostPort: number;
   dreamEnabled: boolean;
-  dreamCollectorModel: string;
   dreamDebugMode: boolean;
   lspEnabled: boolean;
 };
@@ -3412,10 +3411,8 @@ function DreamSettingsPanel({
   onListDreamsOverview,
 }: Pick<SettingsViewProps, "theme" | "settings" | "snapshot" | "onSavePatch" | "onListDreamsOverview">) {
   const { t } = useTranslation();
-  const models = snapshot?.config.models ?? [];
   const collector = snapshot?.dreams.collector;
   const disabled = !settings.dreamEnabled;
-  const selectValue = settings.dreamCollectorModel.trim() || "__none";
   const [dreamItems, setDreamItems] = useState<DesktopDreamOverviewItem[]>([]);
   const [dreamsLoading, setDreamsLoading] = useState(false);
 
@@ -3483,32 +3480,6 @@ function DreamSettingsPanel({
         </SettingsRow>
 
         <SettingsRow
-          label={t('settings.collectorModel')}
-          description={t('settings.collectorModelDescription')}
-          htmlFor="settings-dream-model"
-        >
-          <Select
-            value={selectValue}
-            disabled={disabled || models.length === 0}
-            onValueChange={(value) =>
-              void onSavePatch({ dreamCollectorModel: value === "__none" ? "" : value })
-            }
-          >
-            <SelectTrigger id="settings-dream-model" className="w-full sm:min-w-[14rem]">
-              <SelectValue placeholder={t('settings.selectModel')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none">{t('settings.notSelected')}</SelectItem>
-              {models.map((model) => (
-                <SelectItem key={model.name} value={model.name}>
-                  {model.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </SettingsRow>
-
-        <SettingsRow
           label={t('settings.debugMode')}
           description={t('settings.debugModeDescription')}
           htmlFor="settings-dream-debug"
@@ -3543,9 +3514,6 @@ function DreamSettingsPanel({
             ) : null}
             {collector?.lastError ? (
               <p className="break-words text-destructive">{collector.lastError}</p>
-            ) : null}
-            {settings.dreamEnabled && !settings.dreamCollectorModel.trim() ? (
-              <p className="text-amber-600 dark:text-amber-400">{t('settings.selectCollectorModelHint')}</p>
             ) : null}
           </div>
         </div>
