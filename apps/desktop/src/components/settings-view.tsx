@@ -39,8 +39,11 @@ import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
 import {
   buildModelCatalogDetailMap,
+  buildModelCatalogDisplayTitleMap,
   formatModelCatalogPricingLines,
   modelCatalogDisplayTitle,
+  modelDisplayTitleFromMap,
+  modelSettingsRowAriaLabel,
   providerSupportsModelCatalogDetail,
 } from "@/lib/model-catalog-detail";
 import { cn } from "@/lib/utils";
@@ -2098,6 +2101,7 @@ function McpsSettingsPanel({
 
 function ModelSettingsRowButton({
   model,
+  displayTitle,
   isActive,
   isImageDefault,
   isLightweightDefault,
@@ -2109,6 +2113,7 @@ function ModelSettingsRowButton({
   onDefaultAction,
 }: {
   model: SettingsModelProfile;
+  displayTitle: string;
   isActive: boolean;
   isImageDefault: boolean;
   isLightweightDefault: boolean;
@@ -2121,6 +2126,7 @@ function ModelSettingsRowButton({
   onDefaultAction: () => void;
 }) {
   const { t } = useTranslation();
+  const rowAriaLabel = modelSettingsRowAriaLabel(defaultActionLabel, model.name, displayTitle);
 
   return (
     <button
@@ -2130,14 +2136,14 @@ function ModelSettingsRowButton({
         isHighlighted && "bg-muted/30",
       )}
       disabled={disabled}
-      title={showNativeTitle ? defaultActionLabel : undefined}
-      aria-label={`${defaultActionLabel}：${model.name}`}
+      title={showNativeTitle ? rowAriaLabel : undefined}
+      aria-label={rowAriaLabel}
       onPointerEnter={onPointerEnter}
       onClick={onDefaultAction}
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-foreground">{model.name}</span>
+          <span className="text-sm font-medium text-foreground">{displayTitle}</span>
           {isActive ? (
             <Badge variant="secondary" className="text-muted-foreground">
               {t("settings.currentInference")}
@@ -2166,6 +2172,7 @@ function ModelSettingsRowButton({
 
 function ModelSettingsRowWithHover({
   model,
+  displayTitle,
   isActive,
   isImageDefault,
   isLightweightDefault,
@@ -2174,6 +2181,7 @@ function ModelSettingsRowWithHover({
   onDefaultAction,
 }: {
   model: SettingsModelProfile;
+  displayTitle: string;
   isActive: boolean;
   isImageDefault: boolean;
   isLightweightDefault: boolean;
@@ -2188,6 +2196,7 @@ function ModelSettingsRowWithHover({
     <HoverDetailTooltip.Anchor itemId={model.name}>
       <ModelSettingsRowButton
         model={model}
+        displayTitle={displayTitle}
         isActive={isActive}
         isImageDefault={isImageDefault}
         isLightweightDefault={isLightweightDefault}
@@ -2317,6 +2326,10 @@ function ModelsSettingsPanel({
 
   const catalogDetailByModelName = useMemo(
     () => buildModelCatalogDetailMap(models, snapshot?.config.modelCatalogHints),
+    [models, snapshot?.config.modelCatalogHints],
+  );
+  const displayTitleByModelName = useMemo(
+    () => buildModelCatalogDisplayTitleMap(models, snapshot?.config.modelCatalogHints),
     [models, snapshot?.config.modelCatalogHints],
   );
 
@@ -2640,12 +2653,17 @@ function ModelsSettingsPanel({
                           const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
                           const rowDisabled = modelsBusy || modelsPreviewBusy;
                           const hasDetail = catalogDetailByModelName.has(model.name);
+                          const displayTitle = modelDisplayTitleFromMap(
+                            model.name,
+                            displayTitleByModelName,
+                          );
 
                           if (!hasDetail) {
                             return (
                               <ModelSettingsRowButton
                                 key={model.name}
                                 model={model}
+                                displayTitle={displayTitle}
                                 isActive={isActive}
                                 isImageDefault={isImageDefault}
                                 isLightweightDefault={isLightweightDefault}
@@ -2660,6 +2678,7 @@ function ModelsSettingsPanel({
                             <ModelSettingsRowWithHover
                               key={model.name}
                               model={model}
+                              displayTitle={displayTitle}
                               isActive={isActive}
                               isImageDefault={isImageDefault}
                               isLightweightDefault={isLightweightDefault}
@@ -2703,10 +2722,15 @@ function ModelsSettingsPanel({
                           lightweightChatModel,
                         );
                         const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
+                        const displayTitle = modelDisplayTitleFromMap(
+                          model.name,
+                          displayTitleByModelName,
+                        );
                         return (
                           <ModelSettingsRowButton
                             key={model.name}
                             model={model}
+                            displayTitle={displayTitle}
                             isActive={isActive}
                             isImageDefault={isImageDefault}
                             isLightweightDefault={isLightweightDefault}
@@ -2735,14 +2759,23 @@ function ModelsSettingsPanel({
                   );
                   const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
                   const isStandaloneModelDisabled = modelsBusy || modelsPreviewBusy;
+                  const displayTitle = modelDisplayTitleFromMap(
+                    model.name,
+                    displayTitleByModelName,
+                  );
+                  const rowAriaLabel = modelSettingsRowAriaLabel(
+                    defaultActionLabel,
+                    model.name,
+                    displayTitle,
+                  );
                   return (
                     <div
                       key={model.name}
                       role="button"
                       tabIndex={isStandaloneModelDisabled ? -1 : 0}
                       aria-disabled={isStandaloneModelDisabled}
-                      title={defaultActionLabel}
-                      aria-label={`${defaultActionLabel}：${model.name}`}
+                      title={rowAriaLabel}
+                      aria-label={rowAriaLabel}
                       className={cn(
                         "flex flex-col gap-3 px-4 py-4 outline-none sm:flex-row sm:items-center sm:justify-between sm:gap-4",
                         !isStandaloneModelDisabled &&
@@ -2769,7 +2802,7 @@ function ModelsSettingsPanel({
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-medium text-foreground">
-                            {model.name}
+                            {displayTitle}
                           </span>
                           {isActive ? (
                             <Badge variant="secondary" className="text-muted-foreground">

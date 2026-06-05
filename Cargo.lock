@@ -3332,6 +3332,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2",
  "tokio",
  "unicode-width 0.2.0",
  "uuid",

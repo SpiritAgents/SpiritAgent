@@ -294,6 +294,9 @@ impl TuiShell {
             .iter()
             .position(|m| m.name == self.runtime.config().active_model)
             .unwrap_or(0);
+        self.model_display_titles = crate::model_catalog_display::build_model_display_titles(
+            &self.runtime.config().models,
+        );
         self.reset_primary_picker_overlay();
         self.model_picker_active = true;
     }

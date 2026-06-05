@@ -168,6 +168,10 @@ import {
   SESSION_SIDEBAR_DEFAULT_WIDTH_PX,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
+import {
+  buildModelCatalogDisplayTitleMap,
+  modelDisplayTitleFromMap,
+} from "@/lib/model-catalog-detail";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
 import {
   buildSkillSlashSuggestions,
@@ -709,8 +713,15 @@ function ComposerSurface({
     () => models.find((model) => model.name === activeModel),
     [activeModel, models],
   );
+  const displayTitleByModelName = useMemo(
+    () => buildModelCatalogDisplayTitleMap(models, catalogHints),
+    [catalogHints, models],
+  );
   const activeModelSummary = activeModelProfile
-    ? formatModelPickerLabel(activeModelProfile.name, activeModelProfile.reasoningEffort)
+    ? formatModelPickerLabel(
+        modelDisplayTitleFromMap(activeModelProfile.name, displayTitleByModelName),
+        activeModelProfile.reasoningEffort,
+      )
     : activeModel;
   const modelGroups = useMemo(
     () => groupModelsForPicker(models, catalogHints),
@@ -725,10 +736,16 @@ function ComposerSurface({
     return modelGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter((model) => model.name.toLowerCase().includes(query)),
+        items: group.items.filter((model) => {
+          const displayTitle = modelDisplayTitleFromMap(model.name, displayTitleByModelName);
+          return (
+            model.name.toLowerCase().includes(query)
+            || displayTitle.toLowerCase().includes(query)
+          );
+        }),
       }))
       .filter((group) => group.items.length > 0);
-  }, [modelFilter, modelGroups]);
+  }, [displayTitleByModelName, modelFilter, modelGroups]);
 
   return (
     <div
@@ -827,8 +844,12 @@ function ComposerSurface({
                         {t(group.labelKey, { defaultValue: group.fallbackLabel })}
                       </div>
                       {group.items.map((model) => {
-                        const modelSummary = formatModelPickerLabel(
+                        const displayTitle = modelDisplayTitleFromMap(
                           model.name,
+                          displayTitleByModelName,
+                        );
+                        const modelSummary = formatModelPickerLabel(
+                          displayTitle,
                           model.reasoningEffort,
                         );
 
@@ -863,7 +884,7 @@ function ComposerSurface({
                                     "min-w-0 truncate",
                                   )}
                                 >
-                                  {model.name}
+                                  {displayTitle}
                                 </span>
                                 <span className="shrink-0 text-xs font-normal text-muted-foreground">
                                   {modelReasoningEffortLabel(model.reasoningEffort)}

@@ -28,9 +28,54 @@ export function modelCatalogHintKey(input: {
   return `${input.provider ?? 'custom'}::${input.transportKind ?? 'openai-compatible'}::${base}`;
 }
 
+function catalogEntryIndexKey(hintKey: string, modelId: string): string {
+  return `${hintKey}::${modelId}`;
+}
+
+export function buildModelCatalogEntryIndex(
+  hints: readonly DesktopModelCatalogHint[] | undefined,
+): Map<string, PreviewModelCatalogEntry> {
+  const index = new Map<string, PreviewModelCatalogEntry>();
+  for (const hint of hints ?? []) {
+    const hintKey = modelCatalogHintKey({
+      provider: hint.provider,
+      transportKind: hint.transportKind,
+      apiBase: hint.apiBase,
+    });
+    for (const entry of hint.modelCatalog ?? []) {
+      const id = entry.id.trim();
+      if (!id) {
+        continue;
+      }
+      index.set(catalogEntryIndexKey(hintKey, id), entry);
+    }
+  }
+  return index;
+}
+
+export function findModelCatalogEntry(
+  model: ModelProfileSnapshot,
+  hints: readonly DesktopModelCatalogHint[] | undefined,
+  entryIndex?: Map<string, PreviewModelCatalogEntry>,
+): PreviewModelCatalogEntry | undefined {
+  if (!providerSupportsModelCatalogDetail(model.provider)) {
+    return undefined;
+  }
+  const index = entryIndex ?? buildModelCatalogEntryIndex(hints);
+  const hintKey = modelCatalogHintKey({
+    provider: model.provider,
+    transportKind: model.transportKind,
+    apiBase: model.apiBase,
+  });
+  return index.get(catalogEntryIndexKey(hintKey, model.name));
+}
+
 export function modelHasCatalogDetail(entry: PreviewModelCatalogEntry | undefined): boolean {
   if (!entry) {
     return false;
+  }
+  if (entry.displayName?.trim()) {
+    return true;
   }
   if (entry.description?.trim()) {
     return true;
@@ -51,31 +96,10 @@ export function buildModelCatalogDetailMap(
   models: readonly ModelProfileSnapshot[],
   hints: readonly DesktopModelCatalogHint[] | undefined,
 ): Map<string, PreviewModelCatalogEntry> {
-  const hintByKey = new Map<string, DesktopModelCatalogHint>();
-  for (const hint of hints ?? []) {
-    hintByKey.set(
-      modelCatalogHintKey({
-        provider: hint.provider,
-        transportKind: hint.transportKind,
-        apiBase: hint.apiBase,
-      }),
-      hint,
-    );
-  }
-
+  const entryIndex = buildModelCatalogEntryIndex(hints);
   const detailByModelName = new Map<string, PreviewModelCatalogEntry>();
   for (const model of models) {
-    if (!providerSupportsModelCatalogDetail(model.provider)) {
-      continue;
-    }
-    const hint = hintByKey.get(
-      modelCatalogHintKey({
-        provider: model.provider,
-        transportKind: model.transportKind,
-        apiBase: model.apiBase,
-      }),
-    );
-    const catalogEntry = hint?.modelCatalog?.find((entry) => entry.id === model.name);
+    const catalogEntry = findModelCatalogEntry(model, hints, entryIndex);
     if (modelHasCatalogDetail(catalogEntry)) {
       detailByModelName.set(model.name, catalogEntry as PreviewModelCatalogEntry);
     }
@@ -84,12 +108,47 @@ export function buildModelCatalogDetailMap(
   return detailByModelName;
 }
 
+/** Gateway/OpenRouter：上游 `name` → catalog `displayName`；其余或未命中时回退 model.name（id）。 */
+export function buildModelCatalogDisplayTitleMap(
+  models: readonly ModelProfileSnapshot[],
+  hints: readonly DesktopModelCatalogHint[] | undefined,
+): Map<string, string> {
+  const entryIndex = buildModelCatalogEntryIndex(hints);
+  const titles = new Map<string, string>();
+  for (const model of models) {
+    if (!providerSupportsModelCatalogDetail(model.provider)) {
+      continue;
+    }
+    const catalogEntry = findModelCatalogEntry(model, hints, entryIndex);
+    titles.set(model.name, modelCatalogDisplayTitle(model, catalogEntry));
+  }
+  return titles;
+}
+
+export function modelDisplayTitleFromMap(
+  modelName: string,
+  displayTitleByModelName: Map<string, string>,
+): string {
+  return displayTitleByModelName.get(modelName) ?? modelName;
+}
+
 export function modelCatalogDisplayTitle(
   model: ModelProfileSnapshot,
   catalogEntry: PreviewModelCatalogEntry | undefined,
 ): string {
   const displayName = catalogEntry?.displayName?.trim();
   return displayName && displayName.length > 0 ? displayName : model.name;
+}
+
+export function modelSettingsRowAriaLabel(
+  defaultActionLabel: string,
+  modelId: string,
+  displayTitle: string,
+): string {
+  if (displayTitle !== modelId) {
+    return `${defaultActionLabel}：${displayTitle}（${modelId}）`;
+  }
+  return `${defaultActionLabel}：${modelId}`;
 }
 
 type PricingLabelKey =
