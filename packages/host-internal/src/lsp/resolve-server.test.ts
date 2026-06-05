@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildTypescriptLanguageServerCandidates } from './resolve-server.js';
+import { buildCommandCandidates, buildTypescriptLanguageServerCandidates } from './resolve-server.js';
 
-test('buildTypescriptLanguageServerCandidates expands Windows PATHEXT', () => {
-  const candidates = buildTypescriptLanguageServerCandidates(
+test('buildCommandCandidates expands Windows PATHEXT', () => {
+  const candidates = buildCommandCandidates(
+    'typescript-language-server',
     {
       Path: 'C:\\Tools;D:\\bin',
       PATHEXT: '.EXE;.CMD',
@@ -15,13 +16,12 @@ test('buildTypescriptLanguageServerCandidates expands Windows PATHEXT', () => {
   assert.ok(candidates.includes('D:\\bin\\typescript-language-server.cmd'));
 });
 
-test('buildTypescriptLanguageServerCandidates uses POSIX PATH segments', () => {
-  const candidates = buildTypescriptLanguageServerCandidates(
-    { PATH: '/usr/bin:/opt/bin' },
-    'linux',
-  );
-  assert.deepEqual(candidates, [
-    '/usr/bin/typescript-language-server',
-    '/opt/bin/typescript-language-server',
-  ]);
+test('buildCommandCandidates uses POSIX PATH segments', () => {
+  const candidates = buildCommandCandidates('gopls', { PATH: '/usr/bin:/opt/bin' }, 'linux');
+  assert.deepEqual(candidates, ['/usr/bin/gopls', '/opt/bin/gopls']);
+});
+
+test('buildTypescriptLanguageServerCandidates delegates to buildCommandCandidates', () => {
+  const candidates = buildTypescriptLanguageServerCandidates({ PATH: '/usr/bin' }, 'linux');
+  assert.deepEqual(candidates, ['/usr/bin/typescript-language-server']);
 });
