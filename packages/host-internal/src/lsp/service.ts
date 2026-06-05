@@ -1,8 +1,8 @@
-import type { JsonValue } from '@spirit-agent/agent-core';
-import type { LspDiagnostic } from '@spirit-agent/agent-core';
+import type { JsonValue, LspDiagnostic, LspReadyProviderSummary } from '@spirit-agent/agent-core';
 
 import { DEFAULT_LSP_TIMING, type LspTimingConfig } from './config.js';
 import { LspOrchestrator } from './orchestrator.js';
+import { readyProvidersForToolDefinitions } from './ready-providers.js';
 
 export interface LspUserConfig {
   enabled: boolean;
@@ -54,6 +54,10 @@ export class LspService {
 
   toolDefinitionsJson(): JsonValue[] {
     return [];
+  }
+
+  readyProvidersForToolDefinitions(): LspReadyProviderSummary[] {
+    return readyProvidersForToolDefinitions(this.orchestrator);
   }
 
   async syncFromRecordedChange(change: unknown): Promise<void> {

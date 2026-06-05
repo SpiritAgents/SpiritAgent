@@ -212,7 +212,9 @@ export class DesktopToolExecutor
       ...hostDefinitionItems,
       ...this.extensionToolDefinitions,
       ...this.mcp.toolDefinitionsJson(),
-      ...(this.lsp?.enabled ? buildLspHostToolDefinitions() : []),
+      ...(this.lsp?.enabled
+        ? buildLspHostToolDefinitions(this.lsp.readyProvidersForToolDefinitions())
+        : []),
     );
   }
 
