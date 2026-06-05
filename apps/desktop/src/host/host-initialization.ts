@@ -19,7 +19,9 @@ import type { SessionRegistry } from './session-registry.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 import type { DesktopGitSnapshot, DesktopExtensionCssLayer, DesktopExtensionListItem } from '../types.js';
 import type { EphemeralSessionRecord } from './sessions.js';
+import { ensureBuiltinUserSkills } from './builtin-skills.js';
 import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from './service-utils.js';
+import { spiritAgentDataDir } from './storage.js';
 
 export interface InitializationState {
   workspaceRoot: string;
@@ -66,6 +68,7 @@ export async function ensureInitializedCommand(
     : undefined;
 
   const loadedConfig = await loadConfig();
+  await ensureBuiltinUserSkills(spiritAgentDataDir());
   const previousState = ctx.state();
   const previousBinding = normalizeWorkspaceBinding(
     previousState?.workspaceBinding ?? loadedConfig.workspaceBinding,
