@@ -2,26 +2,13 @@ import i18n from '../lib/i18n-host.js';
 import { gitClapActionToSkillName } from './builtin-skills.js';
 import { buildActiveSkillPayload, buildActivateSkillUserTurn } from './skills.js';
 import type { HostExtensionCommandContext } from './host-extension-commands.js';
-import type {
-  DesktopGitSnapshot,
-  DesktopSnapshot,
-  GitClapAction,
-  SubmitGitClapRequest,
-} from '../types.js';
+import type { DesktopGitSnapshot, DesktopSnapshot, SubmitGitClapRequest } from '../types.js';
 
-function gitClapDisplayText(action: GitClapAction): string {
-  switch (action) {
-    case 'commit':
-      return i18n.t('gitClap.display.commit');
-    case 'push':
-      return i18n.t('gitClap.display.push');
-    case 'merge':
-      return i18n.t('gitClap.display.merge');
-    default: {
-      const _exhaustive: never = action;
-      return _exhaustive;
-    }
-  }
+/** Same visible line as composer skill slash (e.g. `/git-commit`). */
+function buildGitSkillSlashRawText(skillName: string, extraNote: string): string {
+  const base = `/${skillName}`;
+  const note = extraNote.trim();
+  return note ? `${base} ${note}` : base;
 }
 
 function assertMergeAllowed(git: DesktopGitSnapshot): void {
@@ -67,10 +54,10 @@ export async function submitGitClapCommand(
     const skill = ctx.requireEnabledSkillEntry(skillName);
     const payload = await buildActiveSkillPayload(skill);
     const extraNote = request.extraNote?.trim() ?? '';
-    const text = extraNote || buildActivateSkillUserTurn(skillName, '');
+    const rawText = buildGitSkillSlashRawText(skillName, extraNote);
 
-    return ctx.submitUserTurnAfterInitialized(text, {
-      displayText: gitClapDisplayText(action),
+    return ctx.submitUserTurnAfterInitialized(buildActivateSkillUserTurn(skillName, extraNote), {
+      displayText: rawText,
       turnSkills: [payload],
     });
   });

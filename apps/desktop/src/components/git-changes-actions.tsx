@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 
 import { ChevronDown, GitMerge, LoaderCircle, Upload } from "lucide-react";
 
-import { GitClapPopover } from "@/components/git-clap-popover";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
@@ -11,8 +10,10 @@ import {
   DESKTOP_GIT_ACTION_BTN,
   DESKTOP_GIT_ACTION_MENU_TRIGGER,
   DESKTOP_GIT_ACTION_SPLIT,
+  instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { buildGitChangesMenuItemIds } from "@/lib/git-changes-menu-items";
+import { cn } from "@/lib/utils";
 import type { GitClapAction, SubmitGitClapRequest } from "@/types";
 
 export type GitChangesMenuLabels = {
@@ -113,20 +114,35 @@ export function GitChangesActions({
   if (!hasChanges) {
     return (
       <ButtonGroup>
-        <GitClapPopover
-          action="push"
+        <Button
+          type="button"
+          variant="default"
+          size="xs"
+          className={cn(DESKTOP_GIT_ACTION_BTN, instantHoverMotionClass)}
           disabled={!needsPush || gitBusy}
-          busy={gitBusy}
-          triggerTitle={!needsPush ? pushDisabledTitle : undefined}
-          onSubmit={onGitClap}
-        />
+          title={!needsPush ? pushDisabledTitle : undefined}
+          onClick={() => runGitClap("push")}
+        >
+          {busyIcon}
+          <span>{t("workspace.git.push")}</span>
+        </Button>
       </ButtonGroup>
     );
   }
 
   return (
     <ButtonGroup>
-      <GitClapPopover action="commit" disabled={gitBusy} busy={gitBusy} onSubmit={onGitClap} />
+      <Button
+        type="button"
+        variant="default"
+        size="xs"
+        className={cn(DESKTOP_GIT_ACTION_BTN, instantHoverMotionClass)}
+        disabled={gitBusy}
+        onClick={() => runGitClap("commit")}
+      >
+        {busyIcon}
+        <span>{t("app.commit")}</span>
+      </Button>
       {menuItems.length > 0 ? (
         <>
           <ButtonGroupSeparator className={DESKTOP_GIT_ACTION_SPLIT} />
