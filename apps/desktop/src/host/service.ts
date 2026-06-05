@@ -1468,7 +1468,7 @@ class DesktopHostService {
     const state = this.requireState();
     await this.syncPlanStateForBundle(bundle);
     await this.ensureToolExecutor(bundle);
-    bundle.currentTurnSkills = [];
+    // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 promote/refresh 后仍进入 createRuntime。
     const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
     this.activeApiKeyConfigured = Boolean(apiKey);
     const extensionSystemPrompts = await this.collectExtensionSystemPrompts();

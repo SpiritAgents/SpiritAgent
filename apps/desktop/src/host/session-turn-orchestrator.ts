@@ -100,10 +100,6 @@ export async function submitUserTurnAfterInitializedCommand(
   options: SubmitUserTurnAfterInitializedOptions = {},
 ): Promise<DesktopSnapshot> {
   const bundle = ctx.activeBundle();
-  if (!bundle.runtime) {
-    await ctx.refreshRuntimeForBundle(bundle);
-    ctx.syncActiveRuntimePointer();
-  }
   const trimmed = text.trim();
   const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
   const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)).trim();
@@ -114,6 +110,13 @@ export async function submitUserTurnAfterInitializedCommand(
     throw new Error(i18n.t('error.messageRequired'));
   }
 
+  const turnSkills = cloneActiveSkills(options.turnSkills ?? []);
+  bundle.currentTurnSkills = turnSkills;
+  if (!bundle.runtime) {
+    await ctx.refreshRuntimeForBundle(bundle);
+    ctx.syncActiveRuntimePointer();
+  }
+
   ctx.requireState();
   if (ctx.activeBundle().activeSession?.readOnly) {
     throw new Error(i18n.t('error.readonlySessionSend'));
@@ -122,7 +125,6 @@ export async function submitUserTurnAfterInitializedCommand(
     ctx.activeBundle().rewindWarnings = [];
   }
   ctx.clearAssistantContinuationMarkers();
-  bundle.currentTurnSkills = cloneActiveSkills(options.turnSkills ?? []);
   const todoSessionKeyBeforeEnsure = ctx.resolveTodoSessionKeyForBundle(bundle);
   ctx.ensureActiveSession(displayText);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforeEnsure);
@@ -150,6 +152,10 @@ export async function submitUserTurnAfterInitializedCommand(
   ctx.scheduleSessionTitleGenerationIfNeeded(displayText);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
+  if (turnSkills.length > 0) {
+    await ctx.refreshRuntimeForBundle(bundle);
+    ctx.syncActiveRuntimePointer();
+  }
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);
 
   // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
