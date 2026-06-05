@@ -668,9 +668,13 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         next = removeAgentModeSegment(next);
       }
       if (!segmentsEqual(next, current)) {
-        pendingCaretRef.current = null;
-        segmentsRef.current = next;
-        setSegments(next);
+        const nextCaret = normalizeCaretForPinnedAgentModeChip(next, caretAtEnd(next));
+        // 勿设 skipRenderRef：DOM 仍为旧正文时跳过 render 会导致斜杠替换只留在 React state、界面仍显示 "/"。
+        commitSegments(next, nextCaret, {
+          notifyParent: false,
+          syncLoop: false,
+          syncAgentMode: false,
+        });
       }
     }, [
       value,
