@@ -486,20 +486,6 @@
     "noOpenTabs": "No open tabs.",
     "fileReferenceCandidates": "Workspace file reference candidates"
   },
-  "gitClap": {
-    "display": {
-      "commit": "Commit",
-      "push": "Push",
-      "merge": "Merge"
-    },
-    "heading": {
-      "commit": "Commit",
-      "push": "Push",
-      "merge": "Merge"
-    },
-    "extraNotePlaceholder": "Optional instructions for the agent",
-    "send": "Send"
-  },
   "composer": {
     "insertWorkspaceFile": "Reference Workspace File",
     "selectLocalFile": "Select Local File",

@@ -486,20 +486,6 @@
     "noOpenTabs": "暂无打开的选项卡。",
     "fileReferenceCandidates": "工作区文件引用候选"
   },
-  "gitClap": {
-    "display": {
-      "commit": "提交",
-      "push": "推送",
-      "merge": "合并"
-    },
-    "heading": {
-      "commit": "提交",
-      "push": "推送",
-      "merge": "合并"
-    },
-    "extraNotePlaceholder": "可选：给 Agent 的附加说明",
-    "send": "发送"
-  },
   "composer": {
     "insertWorkspaceFile": "引用工作区文件",
     "selectLocalFile": "选择本地文件",
