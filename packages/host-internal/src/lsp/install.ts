@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 
 import { findLspProvider, type LspProviderId } from './providers.js';
+import { jdtlsInstallHint } from './resolve-server-jdtls.js';
 
 export class LspInstallError extends Error {
   constructor(message: string) {
@@ -71,9 +72,7 @@ export async function installLspProvider(providerId: LspProviderId): Promise<voi
       );
     }
     case 'manual': {
-      throw new LspInstallError(
-        'Eclipse JDT Language Server (jdtls) requires manual setup. See the official eclipse.jdt.ls documentation.',
-      );
+      throw new LspInstallError(jdtlsInstallHint());
     }
     case 'dotnet': {
       throw new LspInstallError(
