@@ -299,7 +299,6 @@ export function useDesktopRuntime() {
     webHostHost: "127.0.0.1",
     webHostPort: 7788,
     dreamEnabled: false,
-    dreamCollectorModel: "",
     dreamDebugMode: false,
     lspEnabled: true,
   });
@@ -506,7 +505,6 @@ export function useDesktopRuntime() {
         webHostHost: next.webHost.config.host,
         webHostPort: next.webHost.config.port,
         dreamEnabled: next.dreams.settings.enabled,
-        dreamCollectorModel: next.dreams.settings.collectorModel ?? "",
         dreamDebugMode: next.dreams.settings.debugMode,
         lspEnabled: next.lsp.userEnabled,
       };

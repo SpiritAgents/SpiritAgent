@@ -59,7 +59,6 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
     dreams: {
       settings: {
         enabled: input.config.dreams.enabled === true,
-        ...(input.config.dreams.collectorModel ? { collectorModel: input.config.dreams.collectorModel } : {}),
         debugMode: input.config.dreams.debugMode === true,
       },
       collector: { ...input.dreamCollectorStatus },
