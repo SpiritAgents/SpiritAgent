@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { WorkspaceBrowserTab, type WorkspaceBrowserTabProps } from "@/components/workspace-browser-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitTab } from "@/components/workspace-git-tab";
@@ -320,11 +321,17 @@ export function WorkspaceToolsDock({
           aria-label={t('workspace.workspaceTools')}
         >
           <div className="flex shrink-0 items-end gap-0 border-b border-border/40 pt-1.5 pb-0 pl-1 pr-1">
-            <div
-              role="tablist"
-              aria-label={t('workspace.toolTabs')}
-              className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto overscroll-x-contain"
+            <ScrollArea
+              scrollbars="horizontal"
+              type="hover"
+              scrollHideDelay={450}
+              className="min-h-0 min-w-0 flex-1 self-stretch"
             >
+              <div
+                role="tablist"
+                aria-label={t('workspace.toolTabs')}
+                className="flex items-end gap-0"
+              >
               {tabs.map((item) => {
                 const meta = TAB_KIND_META[item.kind];
                 const Icon = meta.icon;
@@ -378,7 +385,8 @@ export function WorkspaceToolsDock({
                   </div>
                 );
               })}
-            </div>
+              </div>
+            </ScrollArea>
             <ActionPopover
               ariaLabel={t('workspace.newToolTab')}
               title={t('common.new')}
