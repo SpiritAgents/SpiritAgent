@@ -1,4 +1,8 @@
-import { resolveTypescriptLanguageServerOnPath } from './resolve-server.js';
+import {
+  resolveGoplsOnPath,
+  resolvePyrightOnPath,
+  resolveTypescriptLanguageServerOnPath,
+} from './resolve-server.js';
 
 export type LspProviderId =
   | 'typescript-language-server'
@@ -127,6 +131,8 @@ type ProviderResolver = (
 
 const PROVIDER_RESOLVERS: Partial<Record<LspProviderId, ProviderResolver>> = {
   'typescript-language-server': resolveTypescriptLanguageServerOnPath,
+  pyright: resolvePyrightOnPath,
+  gopls: resolveGoplsOnPath,
 };
 
 export async function discoverLspProvider(

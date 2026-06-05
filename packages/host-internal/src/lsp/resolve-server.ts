@@ -50,6 +50,20 @@ export function buildCommandCandidates(
   );
 }
 
+export async function resolvePyrightOnPath(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): Promise<ResolvedLanguageServerCommand | undefined> {
+  return resolveCommandOnPath('pyright-langserver', env, platform, ['--stdio']);
+}
+
+export async function resolveGoplsOnPath(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): Promise<ResolvedLanguageServerCommand | undefined> {
+  return resolveCommandOnPath('gopls', env, platform, []);
+}
+
 export async function resolveTypescriptLanguageServerOnPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
