@@ -79,6 +79,10 @@ export class LspService {
     return this.orchestrator.getCachedDiagnosticsForResolvedPath(resolvedPath);
   }
 
+  hasReadyProviderForPath(resolvedPath: string): boolean {
+    return this.orchestrator.hasReadyProviderForPath(resolvedPath);
+  }
+
   async dispose(): Promise<void> {
     return this.orchestrator.dispose();
   }
