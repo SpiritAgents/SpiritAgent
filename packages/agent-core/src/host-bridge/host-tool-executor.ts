@@ -518,7 +518,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       mergedHostDefinitions,
       this.extensionToolDefinitionsCache,
       this.mcp.toolDefinitionsJson(),
-      this.lsp?.enabled ? buildLspHostToolDefinitions() : [],
+      this.lsp?.enabled
+        ? buildLspHostToolDefinitions(this.lsp.readyProvidersForToolDefinitions())
+        : [],
     );
   }
 
