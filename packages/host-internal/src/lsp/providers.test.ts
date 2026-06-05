@@ -68,7 +68,7 @@ test('discoverLspProvider returns not_found when PATH has no server', async () =
   assert.equal(result.command, undefined);
 });
 
-test('discoverLspProvider returns not_found for providers without resolver', async () => {
+test('discoverLspProvider returns not_found for providers without PATH match', async () => {
   const result = await discoverLspProvider('pyright', { PATH: '' }, 'linux');
   assert.equal(result.status, 'not_found');
 });

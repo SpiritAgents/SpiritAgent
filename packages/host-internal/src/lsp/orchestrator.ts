@@ -11,6 +11,7 @@ import {
 import { LspProviderSession } from './provider-session.js';
 import {
   discoverLspProvider,
+  LSP_PROVIDERS,
   routeLspProviderForPath,
   type LspProviderId,
 } from './providers.js';
@@ -67,18 +68,21 @@ export class LspOrchestrator {
       return false;
     }
 
-    const typescriptSession = this.sessionForProvider('typescript-language-server');
-    const ready = await typescriptSession.probe(async () => {
-      const discovery = await discoverLspProvider('typescript-language-server');
-      if (discovery.status !== 'ready' || !discovery.command) {
-        return undefined;
-      }
-      return { command: discovery.command, args: discovery.args ?? [] };
-    });
-
-    if (!ready) {
-      console.error('[lsp] typescript-language-server not found on PATH; diagnostics disabled');
-    }
+    await Promise.all(
+      LSP_PROVIDERS.map(async (provider) => {
+        const session = this.sessionForProvider(provider.id);
+        const ready = await session.probe(async () => {
+          const discovery = await discoverLspProvider(provider.id);
+          if (discovery.status !== 'ready' || !discovery.command) {
+            return undefined;
+          }
+          return { command: discovery.command, args: discovery.args ?? [] };
+        });
+        if (!ready && provider.id === 'typescript-language-server') {
+          console.error('[lsp] typescript-language-server not found on PATH; TypeScript diagnostics disabled');
+        }
+      }),
+    );
 
     return this.enabled;
   }
