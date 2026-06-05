@@ -58,7 +58,6 @@ export function ComposerInsertMenu({
     <ActionPopover
       ariaLabel={t('composer.openInsertPanel')}
       title={t('composer.insert')}
-      heading={t('composer.insert')}
       disabled={disabled}
       triggerIcon={<Plus className="size-3.5" aria-hidden />}
       items={items}
