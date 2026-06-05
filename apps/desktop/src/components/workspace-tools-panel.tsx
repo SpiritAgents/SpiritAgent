@@ -315,7 +315,7 @@ export function WorkspaceToolsDock({
         <aside
           id="workspace-tools-panel"
           data-spirit-surface="workspace-panel"
-          className="flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden border-l border-border/40 bg-card text-foreground"
+          className="flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden border-l border-border/40 bg-background text-foreground"
           style={{ width: widthPx }}
           aria-label={t('workspace.workspaceTools')}
         >
