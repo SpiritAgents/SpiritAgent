@@ -9,6 +9,7 @@ import {
   resolveWorkspaceFilePath,
 } from './paths.js';
 import { LspProviderSession } from './provider-session.js';
+import { buildJdtlsServerCommand } from './resolve-server-jdtls.js';
 import {
   discoverLspProvider,
   LSP_PROVIDERS,
@@ -72,6 +73,9 @@ export class LspOrchestrator {
       LSP_PROVIDERS.map(async (provider) => {
         const session = this.sessionForProvider(provider.id);
         const ready = await session.probe(async () => {
+          if (provider.id === 'jdtls') {
+            return buildJdtlsServerCommand(this.workspaceRootStore);
+          }
           const discovery = await discoverLspProvider(provider.id);
           if (discovery.status !== 'ready' || !discovery.command) {
             return undefined;

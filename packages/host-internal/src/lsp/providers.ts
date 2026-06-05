@@ -5,6 +5,8 @@ import {
   resolveRustAnalyzerOnPath,
   resolveTypescriptLanguageServerOnPath,
 } from './resolve-server.js';
+import { resolveJdtlsOnPath } from './resolve-server-jdtls.js';
+import { resolveOmnisharpOnPath } from './resolve-server-omnisharp.js';
 
 export type LspProviderId =
   | 'typescript-language-server'
@@ -137,6 +139,8 @@ const PROVIDER_RESOLVERS: Partial<Record<LspProviderId, ProviderResolver>> = {
   gopls: resolveGoplsOnPath,
   'rust-analyzer': resolveRustAnalyzerOnPath,
   clangd: resolveClangdOnPath,
+  jdtls: resolveJdtlsOnPath,
+  omnisharp: resolveOmnisharpOnPath,
 };
 
 export async function discoverLspProvider(

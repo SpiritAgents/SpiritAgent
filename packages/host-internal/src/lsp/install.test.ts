@@ -15,5 +15,5 @@ test('installLspProvider rejects platform install kind with guidance', async () 
 });
 
 test('installLspProvider rejects manual jdtls with guidance', async () => {
-  await assert.rejects(() => installLspProvider('jdtls'), /manual/i);
+  await assert.rejects(() => installLspProvider('jdtls'), /JDTLS_HOME/i);
 });
