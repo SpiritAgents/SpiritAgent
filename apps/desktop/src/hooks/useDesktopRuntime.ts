@@ -54,6 +54,7 @@ import type {
   QueryWorkspaceFileReferenceSuggestionsRequest,
   RewindAndSubmitMessageRequest,
   SessionListItem,
+  SubmitGitClapRequest,
   SubmitUserTurnRequest,
   UpdateConfigRequest,
   WorkspaceExplorerListResult,
@@ -1627,6 +1628,29 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, clearActiveComposerDraft, composer, refreshSessions, snapshot]);
 
+  const submitGitClap = useCallback(
+    async (request: SubmitGitClapRequest): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+
+      try {
+        setBusyAction("send");
+        const next = await api.submitGitClap(request);
+        applySnapshot(next);
+        setRuntimeError("");
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
   const submitStartImplementing = useCallback(async (): Promise<boolean> => {
     if (!api) {
       return false;
@@ -2175,6 +2199,7 @@ export function useDesktopRuntime() {
     readManagedImagePreviewDataUrl,
     saveLocalImageAs,
     commitChanges,
+    submitGitClap,
     addModel,
     addProviderModels,
     previewModels,

@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ChevronDown, GitMerge, LoaderCircle, Upload } from "lucide-react";
 
+import { GitClapPopover } from "@/components/git-clap-popover";
 import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
@@ -12,6 +13,7 @@ import {
   DESKTOP_GIT_ACTION_SPLIT,
 } from "@/lib/desktop-chrome";
 import { buildGitChangesMenuItemIds } from "@/lib/git-changes-menu-items";
+import type { GitClapAction, SubmitGitClapRequest } from "@/types";
 
 export type GitChangesMenuLabels = {
   push: string;
@@ -56,9 +58,7 @@ export type GitChangesActionsProps = {
   gitBusy: boolean;
   mergeFlashMerged?: boolean;
   pushDisabledTitle?: string;
-  onCommit: () => void;
-  onPush: () => void;
-  onMerge: () => void;
+  onGitClap(request: SubmitGitClapRequest): Promise<boolean>;
 };
 
 export function GitChangesActions({
@@ -69,9 +69,7 @@ export function GitChangesActions({
   gitBusy,
   mergeFlashMerged = false,
   pushDisabledTitle,
-  onCommit,
-  onPush,
-  onMerge,
+  onGitClap,
 }: GitChangesActionsProps) {
   const { t } = useTranslation();
 
@@ -84,6 +82,13 @@ export function GitChangesActions({
     [t],
   );
 
+  const runGitClap = useCallback(
+    (action: GitClapAction) => {
+      void onGitClap({ action });
+    },
+    [onGitClap],
+  );
+
   const menuItems = useMemo(
     () =>
       buildGitChangesMenuItems({
@@ -91,10 +96,10 @@ export function GitChangesActions({
         canMerge,
         mergeFlashMerged,
         labels: menuLabels,
-        onPush,
-        onMerge,
+        onPush: () => runGitClap("push"),
+        onMerge: () => runGitClap("merge"),
       }),
-    [canMerge, mergeFlashMerged, menuLabels, needsPush, onMerge, onPush],
+    [canMerge, mergeFlashMerged, menuLabels, needsPush, runGitClap],
   );
 
   if (!isRepository) {
@@ -108,35 +113,20 @@ export function GitChangesActions({
   if (!hasChanges) {
     return (
       <ButtonGroup>
-        <Button
-          type="button"
-          variant="default"
-          size="xs"
-          className={DESKTOP_GIT_ACTION_BTN}
+        <GitClapPopover
+          action="push"
           disabled={!needsPush || gitBusy}
-          title={!needsPush ? pushDisabledTitle : undefined}
-          onClick={onPush}
-        >
-          {busyIcon}
-          <span>{t("workspace.git.push")}</span>
-        </Button>
+          busy={gitBusy}
+          triggerTitle={!needsPush ? pushDisabledTitle : undefined}
+          onSubmit={onGitClap}
+        />
       </ButtonGroup>
     );
   }
 
   return (
     <ButtonGroup>
-      <Button
-        type="button"
-        variant="default"
-        size="xs"
-        className={DESKTOP_GIT_ACTION_BTN}
-        disabled={gitBusy}
-        onClick={onCommit}
-      >
-        {busyIcon}
-        <span>{t("app.commit")}</span>
-      </Button>
+      <GitClapPopover action="commit" disabled={gitBusy} busy={gitBusy} onSubmit={onGitClap} />
       {menuItems.length > 0 ? (
         <>
           <ButtonGroupSeparator className={DESKTOP_GIT_ACTION_SPLIT} />

@@ -7,7 +7,12 @@ import { GitChangesActions } from "@/components/git-changes-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { workspaceExplorerIcon } from "@/components/workspace-files-panel";
 import { cn } from "@/lib/utils";
-import type { DesktopGitSnapshot, GitWorkingTreeChange, GitWorkingTreeSnapshot } from "@/types";
+import type {
+  DesktopGitSnapshot,
+  GitWorkingTreeChange,
+  GitWorkingTreeSnapshot,
+  SubmitGitClapRequest,
+} from "@/types";
 
 export type GitChangesSectionProps = {
   gitSnapshot?: DesktopGitSnapshot;
@@ -20,9 +25,7 @@ export type GitChangesSectionProps = {
   gitBusy?: boolean;
   mergeFlashMerged?: boolean;
   pushDisabledTitle?: string;
-  onCommit?: () => void;
-  onPush?: () => void;
-  onMerge?: () => void;
+  onGitClap: (request: SubmitGitClapRequest) => Promise<boolean>;
   onOpenChangedFile?: (relativePath: string) => void;
   className?: string;
   style?: CSSProperties;
@@ -109,9 +112,7 @@ export function GitChangesSection({
   gitBusy = false,
   mergeFlashMerged = false,
   pushDisabledTitle,
-  onCommit,
-  onPush,
-  onMerge,
+  onGitClap,
   onOpenChangedFile,
   className,
   style,
@@ -145,9 +146,7 @@ export function GitChangesSection({
           gitBusy={gitBusy}
           mergeFlashMerged={mergeFlashMerged}
           pushDisabledTitle={pushDisabledTitle}
-          onCommit={() => onCommit?.()}
-          onPush={() => onPush?.()}
-          onMerge={() => onMerge?.()}
+          onGitClap={onGitClap}
         />
       </div>
       <div className="relative min-h-0 flex-1">
