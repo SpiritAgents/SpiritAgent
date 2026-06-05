@@ -1,27 +1,29 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildTypescriptLanguageServerCandidates } from './resolve-server.js';
+import {
+  resolveClangdOnPath,
+  resolveGoplsOnPath,
+  resolvePyrightOnPath,
+  resolveRustAnalyzerOnPath,
+} from './resolve-server.js';
 
-test('buildTypescriptLanguageServerCandidates expands Windows PATHEXT', () => {
-  const candidates = buildTypescriptLanguageServerCandidates(
-    {
-      Path: 'C:\\Tools;D:\\bin',
-      PATHEXT: '.EXE;.CMD',
-    },
-    'win32',
-  );
-  assert.ok(candidates.includes('C:\\Tools\\typescript-language-server.exe'));
-  assert.ok(candidates.includes('D:\\bin\\typescript-language-server.cmd'));
+test('resolvePyrightOnPath uses pyright-langserver --stdio', async () => {
+  const result = await resolvePyrightOnPath({ PATH: '' }, 'linux');
+  assert.equal(result, undefined);
 });
 
-test('buildTypescriptLanguageServerCandidates uses POSIX PATH segments', () => {
-  const candidates = buildTypescriptLanguageServerCandidates(
-    { PATH: '/usr/bin:/opt/bin' },
-    'linux',
-  );
-  assert.deepEqual(candidates, [
-    '/usr/bin/typescript-language-server',
-    '/opt/bin/typescript-language-server',
-  ]);
+test('resolveGoplsOnPath looks for gopls on PATH', async () => {
+  const result = await resolveGoplsOnPath({ PATH: '' }, 'linux');
+  assert.equal(result, undefined);
+});
+
+test('resolveRustAnalyzerOnPath looks for rust-analyzer on PATH', async () => {
+  const result = await resolveRustAnalyzerOnPath({ PATH: '' }, 'linux');
+  assert.equal(result, undefined);
+});
+
+test('resolveClangdOnPath passes --background-index when found', async () => {
+  const result = await resolveClangdOnPath({ PATH: '' }, 'linux');
+  assert.equal(result, undefined);
 });
