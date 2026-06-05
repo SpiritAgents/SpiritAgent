@@ -19,6 +19,7 @@ import {
   buildSkillsCatalogSystemMessage,
   buildToolAgentHostPrompt,
   createLlmTransport,
+  isOpenAiCompatibleTransportConfig,
   type AssistantAuxArchiveEntry,
   type ChatArchive,
   type LlmEnabledRule,
@@ -1499,7 +1500,7 @@ class DesktopHostService {
       agentMode: resolveDesktopAgentMode(state.config),
     });
     if (
-      runtimeTransportConfig.transportKind === 'openai-compatible'
+      isOpenAiCompatibleTransportConfig(runtimeTransportConfig)
       && imageGenerationProfile
       && imageGenerationApiKey
       && supportsImageGeneration(imageGenerationProfile)
