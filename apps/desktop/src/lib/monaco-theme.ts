@@ -2,8 +2,7 @@ import * as monaco from 'monaco-editor';
 
 export const SPIRIT_MONACO_DARK = 'spirit-desktop-dark';
 
-const FALLBACK_DARK_BG = '#252525';
-const MONACO_DARK_EDITOR_SURFACE = '#151515';
+const FALLBACK_DARK_BG = '#000000';
 const FALLBACK_DARK_FG = '#fafafa';
 const FALLBACK_MUTED_FG = '#a0a0a0';
 
@@ -75,13 +74,13 @@ function resolveCssColor(expression: string, fallback: string): string {
   return normalizeColorForMonaco(resolved, fallback);
 }
 
-/** 深色下 Workspace 编辑区固定深灰底，与侧栏分界。 */
+/** 深色下 Workspace 编辑区与 Void Theme 主背景一致（--background）。 */
 export function registerSpiritDesktopDarkMonacoTheme(): void {
-  const editorSurface = MONACO_DARK_EDITOR_SURFACE;
+  const editorSurface = resolveCssBackground('var(--background)', FALLBACK_DARK_BG);
   const fg = resolveCssColor('var(--foreground)', FALLBACK_DARK_FG);
   const mutedFg = resolveCssColor('var(--muted-foreground)', FALLBACK_MUTED_FG);
   const lineHighlight = resolveCssBackground(
-    `color-mix(in oklab, var(--foreground) 8%, ${MONACO_DARK_EDITOR_SURFACE})`,
+    `color-mix(in oklab, var(--foreground) 8%, ${editorSurface})`,
     editorSurface,
   );
   const selection = resolveCssBackground(
