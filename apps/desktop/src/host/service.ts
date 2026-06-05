@@ -1814,6 +1814,12 @@ class DesktopHostService {
       sessionPath: filePath,
       title: result.title,
       registry: this.sessionRegistry,
+      runSerialized: (work) => this.runSerialized(work),
+      persistBundle: (target) =>
+        this.persistSessionBundle(target, {
+          fromRuntime: target.runtime,
+          bumpListSortAt: false,
+        }),
       notifySessionListUpdated: () => this.notifySessionListUpdated(),
     });
   }
