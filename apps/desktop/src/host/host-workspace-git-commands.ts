@@ -69,7 +69,6 @@ export interface HostWorkspaceGitCommandContext {
   activeBundle(): HostWorkspaceGitBundle;
   activeSessionId(): string | undefined;
   bundleRuntimeIsBusy(sessionPath: string): boolean;
-  generateCommitMessageFromModel(): Promise<string>;
   refreshGitState(): Promise<void>;
   refreshRuntimeForActiveBundle(): Promise<void>;
   syncActiveRuntimePointer(): void;
@@ -120,9 +119,10 @@ export async function commitChangesCommand(
       throw new Error(i18n.t('error.noChangesToCommit'));
     }
 
-    const commitMessage = request.message?.trim()
-      ? request.message.trim()
-      : await ctx.generateCommitMessageFromModel();
+    const commitMessage = request.message?.trim();
+    if (!commitMessage) {
+      throw new Error(i18n.t('error.commitMessageRequired'));
+    }
 
     await commitWorkspaceChanges(state.workspaceRoot, commitMessage);
     await ctx.refreshGitState();

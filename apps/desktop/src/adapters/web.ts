@@ -134,6 +134,9 @@ export function createWebHostApi(): HostApi {
     submitSkillSlash(request: SubmitSkillSlashRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/skills/submit', request);
     },
+    submitGitClap(request) {
+      return post<DesktopSnapshot>(baseUrl, '/api/git/clap', request);
+    },
     submitStartImplementing() {
       return post<DesktopSnapshot>(baseUrl, '/api/start-implementing');
     },

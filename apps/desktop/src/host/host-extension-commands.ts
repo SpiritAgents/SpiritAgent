@@ -46,11 +46,13 @@ import type {
 import type { LlmActiveSkill } from '@spirit-agent/agent-core';
 import type { DesktopExtensionHostAdapter } from './extension-host-adapter.js';
 import type { DesktopConfigFile, DesktopWorkspaceBinding, HostMetadataSummary } from './storage.js';
+import type { DesktopGitSnapshot } from '../types.js';
 
 interface HostExtensionState {
   workspaceRoot: string;
   workspaceBinding: DesktopWorkspaceBinding;
   config: DesktopConfigFile;
+  git: DesktopGitSnapshot;
   metadata: HostMetadataSummary;
 }
 

@@ -29,6 +29,7 @@ import type {
   RewindAndSubmitMessageRequest,
   RunExtensionRequest,
   SubmitCreateSkillSlashRequest,
+  SubmitGitClapRequest,
   SubmitSkillSlashRequest,
   SubmitUserTurnRequest,
   UpdateConfigRequest,
@@ -76,6 +77,7 @@ export type CommandPayloads = {
   deleteSkill: { request: DeleteSkillRequest };
   submitCreateSkillSlash: { request: SubmitCreateSkillSlashRequest };
   submitSkillSlash: { request: SubmitSkillSlashRequest };
+  submitGitClap: { request: SubmitGitClapRequest };
   submitStartImplementing: undefined;
   exportSessionLog: undefined;
   compactHistory: undefined;

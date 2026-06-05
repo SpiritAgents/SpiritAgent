@@ -101,6 +101,7 @@ import type {
   PrepareMarketplaceExtensionInstallRequest,
   SubmitUserTurnRequest,
   SubmitCreateSkillSlashRequest,
+  SubmitGitClapRequest,
   SubmitSkillSlashRequest,
   UpdateConfigRequest,
   WorkspaceExplorerListResult,
@@ -139,6 +140,7 @@ import {
   updateExtensionSettingsCommand,
   type HostExtensionCommandContext,
 } from './host-extension-commands.js';
+import { submitGitClapCommand } from './host-git-clap-commands.js';
 import {
   checkoutGitBranchCommand,
   commitChangesCommand,
@@ -330,10 +332,7 @@ import {
   readPrimaryRepoRoot,
   readWorkspaceGitSnapshot,
 } from './git.js';
-import {
-  generateCommitMessageFromModelTask,
-  generateWorktreeNamesFromModelTask,
-} from './ephemeral-llm-tasks.js';
+import { generateWorktreeNamesFromModelTask } from './ephemeral-llm-tasks.js';
 import { persistDesktopSessionBundle } from './session-persistence.js';
 import { SessionRegistry } from './session-registry.js';
 import type { SessionBundle } from './session-bundle.js';
@@ -532,7 +531,6 @@ class DesktopHostService {
       activeBundle: () => this.activeBundle(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       bundleRuntimeIsBusy: (sessionPath) => this.sessionRegistry.get(sessionPath)?.runtime?.isBusy() === true,
-      generateCommitMessageFromModel: () => this.generateCommitMessageFromModel(),
       refreshGitState: () => this.refreshGitState(),
       refreshRuntimeForActiveBundle: () => this.refreshRuntimeForBundle(this.activeBundle()),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
@@ -939,6 +937,12 @@ class DesktopHostService {
 
   async submitSkillSlash(request: SubmitSkillSlashRequest): Promise<DesktopSnapshot> {
     return submitSkillSlashCommand(this.extensionCommandContext(), request);
+  }
+
+  async submitGitClap(request: SubmitGitClapRequest): Promise<DesktopSnapshot> {
+    const snapshot = await submitGitClapCommand(this.extensionCommandContext(), request);
+    void this.runCoalescedGitRefresh();
+    return snapshot;
   }
 
   async submitCreateSkillSlash(request: SubmitCreateSkillSlashRequest): Promise<DesktopSnapshot> {
@@ -1919,30 +1923,6 @@ class DesktopHostService {
   private rememberEphemeralSession(record: EphemeralSessionRecord): void {
     const state = this.requireState();
     state.ephemeralSessions = rememberEphemeralSessionRecord(state.ephemeralSessions, record);
-  }
-
-  private async generateCommitMessageFromModel(): Promise<string> {
-    const state = this.requireState();
-    const activeProfile = state.config.models.find((model) => model.name === state.config.activeModel);
-    const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
-    if (!apiKey) {
-      throw new Error(i18n.t('error.autoCommitFailedNoKey'));
-    }
-
-    const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
-    const toolExecutor = await this.ensureToolExecutor();
-    return generateCommitMessageFromModelTask({
-      workspaceRoot: state.workspaceRoot,
-      gitBranch: state.git.branch,
-      config: state.config,
-      activeProfile,
-      apiKey,
-      metadata: state.metadata,
-      extensionSystemPrompts,
-      toolExecutor,
-      runtimeBasicInfo: buildDesktopRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
-      rememberEphemeralSession: (record) => this.rememberEphemeralSession(record),
-    });
   }
 
   private rememberEphemeralWorktreeSession(record: EphemeralSessionRecord): void {

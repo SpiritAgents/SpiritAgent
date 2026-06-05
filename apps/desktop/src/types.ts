@@ -468,6 +468,13 @@ export interface SubmitSkillSlashRequest {
   extraNote?: string;
 }
 
+export type GitClapAction = 'commit' | 'push' | 'merge';
+
+export interface SubmitGitClapRequest {
+  action: GitClapAction;
+  extraNote?: string;
+}
+
 export interface SubmitCreateSkillSlashRequest {
   rawText: string;
 }

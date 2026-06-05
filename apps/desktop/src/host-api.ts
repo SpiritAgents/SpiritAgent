@@ -39,6 +39,7 @@ import type {
   WorkspaceReadTextFileResult,
   WriteWorkspaceTextFileRequest,
   SubmitCreateSkillSlashRequest,
+  SubmitGitClapRequest,
   SubmitSkillSlashRequest,
   UpdateConfigRequest,
   InstallLspProviderRequest,
@@ -78,6 +79,7 @@ export interface HostApi {
   deleteSkill(request: DeleteSkillRequest): Promise<DesktopSnapshot>;
   submitCreateSkillSlash(request: SubmitCreateSkillSlashRequest): Promise<DesktopSnapshot>;
   submitSkillSlash(request: SubmitSkillSlashRequest): Promise<DesktopSnapshot>;
+  submitGitClap(request: SubmitGitClapRequest): Promise<DesktopSnapshot>;
   submitStartImplementing(): Promise<DesktopSnapshot>;
   exportSessionLog?(): Promise<DesktopSnapshot>;
   compactHistory(): Promise<DesktopSnapshot>;
