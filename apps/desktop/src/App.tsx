@@ -2660,10 +2660,19 @@ export default function App() {
         <div
           data-spirit-surface="session-sidebar-shell"
           className={cn(
-            "h-full min-h-0 shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",
+            "relative h-full min-h-0 shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",
             sessionSidebarOpen ? "w-[min(16rem,40vw)]" : "w-0",
           )}
         >
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-hidden={!sessionSidebarOpen}
+            className={cn(
+              "pointer-events-none absolute inset-y-0 right-0 z-10 w-px",
+              useMicaBackdrop ? "bg-black/5 dark:bg-border/40" : "bg-border/40",
+            )}
+          />
           <div
             data-spirit-surface="session-sidebar"
             className={cn(

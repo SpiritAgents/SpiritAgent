@@ -500,9 +500,7 @@ export function SessionSidebar({
     <aside
       className={cn(
         "flex h-full w-full min-w-0 flex-col overflow-hidden text-sidebar-foreground dark:text-foreground",
-        micaStyle
-          ? "border-r border-black/5 bg-transparent dark:border-border/40"
-          : "border-r border-border/40 bg-sidebar",
+        micaStyle ? "bg-transparent" : "bg-sidebar",
         className,
       )}
       data-narrow={narrow || undefined}
