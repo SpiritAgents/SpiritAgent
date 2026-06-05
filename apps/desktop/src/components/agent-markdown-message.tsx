@@ -19,6 +19,7 @@ import {
   markdownMessageRootClassName,
   type MarkdownTone,
 } from "@/lib/markdown-message-components";
+import { streamdownRehypePlugins } from "@/lib/markdown-streamdown-plugins";
 import { streamdownUrlTransform } from "@/lib/markdown-url-transform";
 
 const streamdownPlugins = { code, math, mermaid };
@@ -159,6 +160,7 @@ export function AgentMarkdownMessage({
         plugins={streamdownPlugins}
         components={components}
         urlTransform={streamdownUrlTransform}
+        rehypePlugins={streamdownRehypePlugins}
         controls={{
           code: { copy: true, download: true },
           mermaid: { copy: true, download: true, fullscreen: true, panZoom: true },
