@@ -596,6 +596,28 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/git/clap') {
+    const action = jsonBody?.action;
+    if (action !== 'commit' && action !== 'push' && action !== 'merge') {
+      writeJson(request, response, 400, { error: 'Invalid git clap action' });
+      return;
+    }
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('submitGitClap', {
+        request: {
+          action,
+          ...(typeof jsonBody?.extraNote === 'string' && jsonBody.extraNote.trim()
+            ? { extraNote: jsonBody.extraNote }
+            : {}),
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/start-implementing') {
     writeJson(
       request,
