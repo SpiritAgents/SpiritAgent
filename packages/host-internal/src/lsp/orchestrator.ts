@@ -154,6 +154,12 @@ export class LspOrchestrator {
     return session?.getCachedDiagnosticsForResolvedPath(resolvedPath) ?? [];
   }
 
+  /** True when a probed-ready language server handles this workspace file path. */
+  hasReadyProviderForPath(resolvedPath: string): boolean {
+    const session = this.sessionForPath(resolvedPath);
+    return session?.enabled ?? false;
+  }
+
   async dispose(): Promise<void> {
     for (const session of this.sessions.values()) {
       await session.dispose();
