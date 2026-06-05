@@ -398,6 +398,8 @@ pub(in crate::ui) fn build_model_picker_lines(
         let model = &app.config.models[idx];
         let is_selected = idx == selected;
         let is_active = model.name == app.config.active_model;
+        let display_title =
+            crate::model_catalog_display::model_display_title(&model.name, &app.model_display_titles);
 
         let active_suffix = if is_active {
             t!("ui.picker.models.current_suffix").into_owned()
@@ -406,11 +408,16 @@ pub(in crate::ui) fn build_model_picker_lines(
         };
         let row_style = inline_picker_text_style(is_selected);
         let meta_style = inline_picker_meta_style(is_selected);
+        let meta_suffix = if display_title != model.name {
+            format!(" ({})", model.name)
+        } else {
+            format!(" ({})", model.api_base)
+        };
 
         lines.push(Line::from(vec![
             Span::styled(picker_selection_prefix(is_selected), row_style),
-            Span::styled(model.name.to_string(), row_style),
-            Span::styled(format!(" ({})", model.api_base), meta_style),
+            Span::styled(display_title.to_string(), row_style),
+            Span::styled(meta_suffix, meta_style),
             Span::styled(active_suffix, meta_style),
         ]));
     }

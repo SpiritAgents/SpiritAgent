@@ -67,6 +67,7 @@ impl TuiShell {
             rewind_picker,
             model_picker_active: self.model_picker_active,
             model_picker_index: self.model_picker_index,
+            model_display_titles: self.model_display_titles.clone(),
             language_picker_active: self.language_picker_active,
             language_picker_index: self.language_picker_index,
             approval_picker_active: self.approval_picker_active,

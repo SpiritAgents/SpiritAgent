@@ -89,6 +89,7 @@ fn build_view_model(message: ChatMessage) -> TuiViewModel {
         rewind_picker: None,
         model_picker_active: false,
         model_picker_index: 0,
+        model_display_titles: HashMap::new(),
         language_picker_active: false,
         language_picker_index: 0,
         approval_picker_active: false,

@@ -377,6 +377,7 @@ pub struct TuiViewModel {
     pub rewind_picker: Option<RewindPickerView>,
     pub model_picker_active: bool,
     pub model_picker_index: usize,
+    pub model_display_titles: std::collections::HashMap<String, String>,
     pub language_picker_active: bool,
     pub language_picker_index: usize,
     pub approval_picker_active: bool,
