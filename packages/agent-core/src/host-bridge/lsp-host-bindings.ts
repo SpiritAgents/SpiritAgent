@@ -1,4 +1,5 @@
 import type { JsonValue, ToolExecutionOutput } from '../ports.js';
+import type { LspReadyProviderSummary } from '../lsp/tool-definitions.js';
 
 export interface LspHostServiceInstance {
   readonly enabled: boolean;
@@ -9,6 +10,7 @@ export interface LspHostServiceInstance {
     path: string,
     waitMs?: number,
   ): Promise<{ relativePath: string; diagnostics: unknown[]; formatted: string }>;
+  readyProvidersForToolDefinitions(): readonly LspReadyProviderSummary[];
 }
 
 export interface LspHostBindings {

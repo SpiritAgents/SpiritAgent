@@ -6,7 +6,8 @@ import {
 } from '@spirit-agent/agent-core';
 
 import { DEFAULT_LSP_TIMING } from './config.js';
-import { isTypescriptJavascriptPath, resolveWorkspaceFilePath } from './paths.js';
+import { LspTimeoutError } from './errors.js';
+import { resolveWorkspaceFilePath } from './paths.js';
 import type { LspService } from './service.js';
 
 export async function appendLspDiagnosticsAfterWriteIfNeeded(
@@ -19,7 +20,7 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
   }
 
   const resolvedPath = resolvedPathFromWriteRequest(lsp.workspaceRoot, request);
-  if (!resolvedPath || !isTypescriptJavascriptPath(resolvedPath)) {
+  if (!resolvedPath || !lsp.hasReadyProviderForPath(resolvedPath)) {
     return output;
   }
 
@@ -50,7 +51,10 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
       }),
       ...(lspWriteDiagnostics ? { hostUi: { lspWriteDiagnostics } } : {}),
     };
-  } catch {
+  } catch (error) {
+    if (!(error instanceof LspTimeoutError)) {
+      return output;
+    }
     const note = '\n\n[lsp]\n(diagnostics pending or timed out)';
     return {
       ...output,
