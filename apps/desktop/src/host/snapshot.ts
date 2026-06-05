@@ -81,6 +81,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
       })),
       activeModel: input.config.activeModel,
       ...(input.config.imageGenerationModel ? { imageGenerationModel: input.config.imageGenerationModel } : {}),
+      ...(input.config.lightweightChatModel ? { lightweightChatModel: input.config.lightweightChatModel } : {}),
       ...(input.config.uiLocale ? { uiLocale: input.config.uiLocale } : {}),
       activeApiKeyConfigured: input.activeApiKeyConfigured,
       windowsMica: input.config.windowsMica !== false,
