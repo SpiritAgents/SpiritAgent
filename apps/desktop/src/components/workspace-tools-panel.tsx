@@ -19,10 +19,10 @@ import {
   type WorkspaceToolTabKind,
 } from "@/lib/workspace-tool-tabs";
 import type {
-  CommitChangesRequest,
   DesktopGitSnapshot,
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
+  SubmitGitClapRequest,
   PlanSnapshot,
   ReadGitHistoryRequest,
   WorkspaceExplorerListResult,
@@ -78,13 +78,10 @@ export type WorkspaceToolsDockProps = {
   onWidthPxChange(next: number): void;
   open: boolean;
   gitSnapshot?: DesktopGitSnapshot;
-  gitCommitBusy?: boolean;
-  gitRuntimeError?: string;
+  gitClapBusy?: boolean;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
-  commitChanges: (request: CommitChangesRequest) => Promise<boolean>;
-  pushGitBranch: () => Promise<boolean>;
-  mergeWorktreeToMain: () => Promise<boolean>;
+  submitGitClap: (request: SubmitGitClapRequest) => Promise<boolean>;
   className?: string;
 };
 
@@ -128,13 +125,10 @@ export function WorkspaceToolsDock({
   onWidthPxChange,
   open,
   gitSnapshot,
-  gitCommitBusy = false,
-  gitRuntimeError = "",
+  gitClapBusy = false,
   readGitWorkingTree,
   readGitHistory,
-  commitChanges,
-  pushGitBranch,
-  mergeWorktreeToMain,
+  submitGitClap,
   className,
 }: WorkspaceToolsDockProps) {
   const { t } = useTranslation();
@@ -469,13 +463,10 @@ export function WorkspaceToolsDock({
                       <WorkspaceGitTab
                         gitSnapshot={gitSnapshot}
                         isActive={selected}
-                        commitBusy={gitCommitBusy}
-                        runtimeError={gitRuntimeError}
+                        gitClapBusy={gitClapBusy}
                         readGitWorkingTree={readGitWorkingTree}
                         readGitHistory={readGitHistory}
-                        commitChanges={commitChanges}
-                        pushGitBranch={pushGitBranch}
-                        mergeWorktreeToMain={mergeWorktreeToMain}
+                        submitGitClap={submitGitClap}
                         onOpenChangedFile={onOpenWorkspaceFile}
                       />
                     </div>

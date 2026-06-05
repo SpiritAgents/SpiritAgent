@@ -3,18 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { GitChangesSection } from "@/components/git-changes-section";
 import { GitCommitGraph } from "@/components/git-commit-graph";
-import {
-  WorkspaceGitCommitDialog,
-  WorkspaceGitMergeDialog,
-} from "@/components/workspace-git-dialogs";
 import type { WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
 import { cn } from "@/lib/utils";
 import type {
-  CommitChangesRequest,
   DesktopGitSnapshot,
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
+  SubmitGitClapRequest,
 } from "@/types";
 
 function describeError(error: unknown): string {
@@ -33,13 +29,10 @@ const GIT_CHANGES_DEFAULT_RATIO = 0.45;
 export type WorkspaceGitTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
   isActive: boolean;
-  commitBusy: boolean;
-  runtimeError: string;
+  gitClapBusy: boolean;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
-  commitChanges: (request: CommitChangesRequest) => Promise<boolean>;
-  pushGitBranch: () => Promise<boolean>;
-  mergeWorktreeToMain: () => Promise<boolean>;
+  submitGitClap: (request: SubmitGitClapRequest) => Promise<boolean>;
   onOpenChangedFile?: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode },
@@ -50,13 +43,10 @@ export type WorkspaceGitTabProps = {
 export function WorkspaceGitTab({
   gitSnapshot,
   isActive,
-  commitBusy,
-  runtimeError,
+  gitClapBusy,
   readGitWorkingTree,
   readGitHistory,
-  commitChanges,
-  pushGitBranch,
-  mergeWorktreeToMain,
+  submitGitClap,
   onOpenChangedFile,
   className,
 }: WorkspaceGitTabProps) {
@@ -72,11 +62,8 @@ export function WorkspaceGitTab({
   const prevBranchRef = useRef<string | undefined>(undefined);
   const prevHasChangesRef = useRef<boolean | undefined>(undefined);
 
-  const [commitDialogOpen, setCommitDialogOpen] = useState(false);
-  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [mergeButtonFlashMerged, setMergeButtonFlashMerged] = useState(false);
   const mergeFlashTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [commitMessageDraft, setCommitMessageDraft] = useState("");
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const [changesPaneHeightPx, setChangesPaneHeightPx] = useState<number | null>(null);
   const [isResizingSplit, setIsResizingSplit] = useState(false);
@@ -150,16 +137,6 @@ export function WorkspaceGitTab({
     }
   }, []);
 
-  const canOpenCommitDialog = gitSnapshot?.isRepository === true;
-  const isWorktreeSession = gitSnapshot?.isWorktreeSession === true;
-  const canOpenMergeDialog =
-    isWorktreeSession &&
-    Boolean(gitSnapshot?.worktreeBranch) &&
-    Boolean(gitSnapshot?.primaryRepoRoot);
-  const commitActionDisabled =
-    !canOpenCommitDialog ||
-    gitSnapshot?.hasChanges !== true ||
-    commitBusy;
   const needsPush = gitSnapshot?.needsPush === true;
   const hasChanges = gitSnapshot?.hasChanges === true;
   const pushDisabledTitle = !needsPush
@@ -282,31 +259,21 @@ export function WorkspaceGitTab({
     }, 1000);
   }, []);
 
-  const submitCommitDialog = () => {
-    void commitChanges({
-      ...(commitMessageDraft.trim() ? { message: commitMessageDraft.trim() } : {}),
-    }).then((ok) => {
-      if (!ok) {
-        return;
+  const handleGitClap = useCallback(
+    async (request: SubmitGitClapRequest) => {
+      const ok = await submitGitClap(request);
+      if (ok && request.action === "merge") {
+        flashMergeButtonSucceeded();
       }
-      setCommitDialogOpen(false);
-      setCommitMessageDraft("");
-    });
-  };
+      return ok;
+    },
+    [flashMergeButtonSucceeded, submitGitClap],
+  );
 
-  const submitMergeDialog = () => {
-    void mergeWorktreeToMain().then((ok) => {
-      if (!ok) {
-        return;
-      }
-      setMergeDialogOpen(false);
-      flashMergeButtonSucceeded();
-    });
-  };
-
-  const handlePush = () => {
-    void pushGitBranch();
-  };
+  const canMerge =
+    gitSnapshot?.isWorktreeSession === true &&
+    Boolean(gitSnapshot?.worktreeBranch) &&
+    Boolean(gitSnapshot?.primaryRepoRoot);
 
   return (
     <div
@@ -328,13 +295,11 @@ export function WorkspaceGitTab({
         error={treeError}
         hasChanges={hasChanges}
         needsPush={needsPush}
-        canMerge={canOpenMergeDialog}
-        gitBusy={commitBusy}
+        canMerge={canMerge}
+        gitBusy={gitClapBusy}
         mergeFlashMerged={mergeButtonFlashMerged}
         pushDisabledTitle={pushDisabledTitle}
-        onCommit={() => setCommitDialogOpen(true)}
-        onPush={handlePush}
-        onMerge={() => setMergeDialogOpen(true)}
+        onGitClap={handleGitClap}
         onOpenChangedFile={onOpenChangedFile}
       />
       <div
@@ -369,33 +334,6 @@ export function WorkspaceGitTab({
           error={historyError}
         />
       </div>
-
-      <WorkspaceGitCommitDialog
-        open={commitDialogOpen}
-        onOpenChange={(open) => {
-          setCommitDialogOpen(open);
-          if (!open) {
-            setCommitMessageDraft("");
-          }
-        }}
-        gitSnapshot={gitSnapshot}
-        commitMessageDraft={commitMessageDraft}
-        onCommitMessageDraftChange={setCommitMessageDraft}
-        commitBusy={commitBusy}
-        commitActionDisabled={commitActionDisabled}
-        runtimeError={commitDialogOpen ? runtimeError : ""}
-        onSubmit={submitCommitDialog}
-      />
-
-      <WorkspaceGitMergeDialog
-        open={mergeDialogOpen}
-        onOpenChange={setMergeDialogOpen}
-        gitSnapshot={gitSnapshot}
-        commitBusy={commitBusy}
-        mergeActionDisabled={!canOpenMergeDialog || commitBusy}
-        runtimeError={mergeDialogOpen ? runtimeError : ""}
-        onSubmit={submitMergeDialog}
-      />
     </div>
   );
 }

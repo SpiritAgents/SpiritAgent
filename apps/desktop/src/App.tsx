@@ -1946,6 +1946,8 @@ export default function App() {
   } | null>(null);
   const activeFilePath = snapshot?.activeSession?.filePath ?? null;
   const commitBusy = runtime.busyAction === "git";
+  const gitClapBusy =
+    runtime.busyAction === "send" || snapshot?.conversation.isBusy === true;
   const sessionNavigationBusy = runtime.busyAction === "session";
   const newSessionBusy = runtime.busyAction === "reset";
   const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
@@ -3263,13 +3265,10 @@ export default function App() {
               widthPx={workspaceToolsWidthPx}
               onWidthPxChange={setWorkspaceToolsWidthPx}
               gitSnapshot={snapshot?.git}
-              gitCommitBusy={commitBusy}
-              gitRuntimeError={runtime.runtimeError}
+              gitClapBusy={gitClapBusy}
               readGitWorkingTree={runtime.readGitWorkingTree}
               readGitHistory={runtime.readGitHistory}
-              commitChanges={runtime.commitChanges}
-              pushGitBranch={runtime.pushGitBranch}
-              mergeWorktreeToMain={runtime.mergeWorktreeToMain}
+              submitGitClap={runtime.submitGitClap}
             />
             </div>
           </div>
