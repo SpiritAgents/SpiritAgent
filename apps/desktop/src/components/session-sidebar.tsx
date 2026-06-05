@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Bot,
   ArrowLeft,
+  ChevronRight,
   FolderClosed,
   FolderOpen,
   Layers,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -484,12 +486,12 @@ export function SessionSidebar({
   const isSessionSelected = (sessionPath: string) =>
     !marketplaceActive && activeFilePath !== null && samePath(sessionPath, activeFilePath);
 
-  const toggleWorkspaceGroup = (groupId: string) => {
+  const setWorkspaceGroupExpanded = useCallback((groupId: string, open: boolean) => {
     setCollapsedWorkspaceIds((current) => ({
       ...current,
-      [groupId]: current[groupId] === false ? true : false,
+      [groupId]: open,
     }));
-  };
+  }, []);
 
   return (
     <aside
@@ -696,32 +698,53 @@ export function SessionSidebar({
                   const panelId = `workspace-session-group-${group.id.replace(/[^a-z0-9_-]/g, "-")}`;
 
                   return (
-                    <div key={group.id} className="min-w-0">
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        aria-expanded={expanded}
-                        aria-controls={panelId}
-                        onClick={() => toggleWorkspaceGroup(group.id)}
-                        className={cn(
-                          "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
-                          "outline-none",
-                          sidebarInteractionMotionClass,
-                          "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-                          "text-sidebar-foreground/90",
-                          sessionRowHoverClass(micaStyle),
-                        )}
-                        title={group.rootPath ?? group.label}
-                      >
-                        {expanded ? (
-                          <FolderOpen className="size-3.5 shrink-0" aria-hidden />
-                        ) : (
-                          <FolderClosed className="size-3.5 shrink-0" aria-hidden />
-                        )}
-                        <span className="min-w-0 flex-1 truncate text-xs font-medium">{group.label}</span>
-                      </button>
+                    <Collapsible
+                      key={group.id}
+                      open={expanded}
+                      onOpenChange={(open) => {
+                        if (disabled) {
+                          return;
+                        }
+                        setWorkspaceGroupExpanded(group.id, open);
+                      }}
+                      className="min-w-0"
+                    >
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          aria-controls={panelId}
+                          className={cn(
+                            "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
+                            "outline-none",
+                            sidebarInteractionMotionClass,
+                            "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+                            "text-sidebar-foreground/90",
+                            sessionRowHoverClass(micaStyle),
+                          )}
+                          title={group.rootPath ?? group.label}
+                        >
+                          {expanded ? (
+                            <FolderOpen className="size-3.5 shrink-0" aria-hidden />
+                          ) : (
+                            <FolderClosed className="size-3.5 shrink-0" aria-hidden />
+                          )}
+                          <span className="flex min-w-0 flex-1 items-center overflow-hidden">
+                            <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                              <span className="truncate text-xs font-medium">{group.label}</span>
+                              <ChevronRight
+                                className={cn(
+                                  "hidden size-3 shrink-0 text-muted-foreground/55 group-hover:inline-flex group-focus-visible:inline-flex",
+                                  expanded && "rotate-90",
+                                )}
+                                aria-hidden
+                              />
+                            </span>
+                          </span>
+                        </button>
+                      </CollapsibleTrigger>
 
-                      <div id={panelId} className={cn("min-w-0", !expanded && "hidden") }>
+                      <CollapsibleContent id={panelId} className="min-w-0">
                         <div className="mt-0.5 flex min-w-0 flex-col gap-0.5">
                           {group.sessions.map((session) => (
                             <SessionListRow
@@ -737,8 +760,8 @@ export function SessionSidebar({
                             />
                           ))}
                         </div>
-                      </div>
-                    </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   );
                 })}
               </SessionListNav>
