@@ -55,6 +55,7 @@ export function previewModelCatalogForTransport(input: {
     ...(entry.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
       : {}),
+    ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
   }));
 }
 
@@ -87,6 +88,7 @@ export function previewCatalogMapForTransport(input: {
         ...(entry.supportedReasoningEfforts !== undefined
           ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
           : {}),
+        ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
       },
     ]);
   }

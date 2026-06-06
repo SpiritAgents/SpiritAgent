@@ -822,11 +822,14 @@ function attachListedModelMetadata(
 ): ProviderListedModelEntry {
   const displayName = readOptionalTrimmedString(record.name);
   const description = readOptionalTrimmedString(record.description);
+  const contextLength =
+    modelEntry.contextLength ?? readPositiveIntegerModelTrait(record, 'context_length');
   return {
     ...modelEntry,
     ...(displayName ? { displayName } : {}),
     ...(description ? { description } : {}),
     ...(pricing ? { pricing } : {}),
+    ...(contextLength !== undefined ? { contextLength } : {}),
   };
 }
 
