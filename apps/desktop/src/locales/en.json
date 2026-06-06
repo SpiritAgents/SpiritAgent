@@ -95,7 +95,7 @@
     "themeDescription": "Applied immediately.",
     "windowsMicaDescription": "Solid background when off.",
     "llmHttpVersion": "LLM HTTP Version",
-    "llmHttpVersionDescription": "Protocol for outbound LLM API requests. Takes effect on the next request without restart.",
+    "llmHttpVersionDescription": "Protocol for outbound LLM API requests",
     "llmHttpVersionHttp11": "HTTP/1.1",
     "llmHttpVersionHttp2": "HTTP/2",
     "windowsMicaUnsupported": "Current host does not support this option.",
