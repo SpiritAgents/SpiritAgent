@@ -760,6 +760,53 @@ export function useDesktopRuntime() {
     [api],
   );
 
+  const readLocalVideoPreviewUrl = useCallback(
+    async (filePath: string): Promise<string | null> => {
+      if (!api?.readLocalVideoPreviewUrl) {
+        return null;
+      }
+
+      try {
+        return await api.readLocalVideoPreviewUrl(filePath);
+      } catch {
+        return null;
+      }
+    },
+    [api],
+  );
+
+  const readManagedVideoPreviewUrl = useCallback(
+    async (reference: string): Promise<string | null> => {
+      if (!api?.readManagedVideoPreviewUrl) {
+        return null;
+      }
+
+      try {
+        return await api.readManagedVideoPreviewUrl(reference);
+      } catch {
+        return null;
+      }
+    },
+    [api],
+  );
+
+  const saveLocalVideoAs = useCallback(
+    async (filePath: string): Promise<boolean> => {
+      if (!api?.saveLocalVideoAs) {
+        setRuntimeError(i18n.t('error.hostNotSupportSaveVideo'));
+        return false;
+      }
+
+      try {
+        return await api.saveLocalVideoAs(filePath);
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api],
+  );
+
   const commitChanges = useCallback(
     async (request: CommitChangesRequest): Promise<boolean> => {
       if (!api) {
@@ -2288,7 +2335,10 @@ export function useDesktopRuntime() {
     ingestClipboardImage,
     readLocalImagePreviewDataUrl,
     readManagedImagePreviewDataUrl,
+    readLocalVideoPreviewUrl,
+    readManagedVideoPreviewUrl,
     saveLocalImageAs,
+    saveLocalVideoAs,
     commitChanges,
     submitGitChip,
     addModel,

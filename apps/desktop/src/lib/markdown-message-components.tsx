@@ -1,5 +1,6 @@
 import type {
   AnchorHTMLAttributes,
+  ComponentPropsWithoutRef,
   ComponentType,
   HTMLAttributes,
   ImgHTMLAttributes,
@@ -7,6 +8,7 @@ import type {
 } from "react";
 
 import { MarkdownImage, type ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
+import { MarkdownVideo, type ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
 import { cn } from "@/lib/utils";
 
 export type MarkdownTone = "default" | "muted";
@@ -15,6 +17,7 @@ export type MarkdownTone = "default" | "muted";
 export function createMarkdownMessageComponents(
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl,
   tone: MarkdownTone = "default",
+  readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl,
 ): Record<string, ComponentType<Record<string, unknown>>> {
   const muted = tone === "muted";
   const bodyText = muted
@@ -182,6 +185,13 @@ export function createMarkdownMessageComponents(
       <MarkdownImage
         className={className}
         readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+        {...props}
+      />
+    ),
+    video: ({ className, ...props }: ComponentPropsWithoutRef<"video">) => (
+      <MarkdownVideo
+        className={className}
+        readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
         {...props}
       />
     ),

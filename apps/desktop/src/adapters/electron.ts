@@ -201,8 +201,17 @@ export async function createElectronHostApi(): Promise<HostApi> {
     readManagedImagePreviewDataUrl(reference) {
       return bridge.readManagedImagePreviewDataUrl(reference);
     },
+    readLocalVideoPreviewUrl(filePath) {
+      return bridge.readLocalVideoPreviewUrl(filePath);
+    },
+    readManagedVideoPreviewUrl(reference) {
+      return bridge.readManagedVideoPreviewUrl(reference);
+    },
     saveLocalImageAs(filePath) {
       return bridge.saveLocalImageAs(filePath);
+    },
+    saveLocalVideoAs(filePath) {
+      return bridge.saveLocalVideoAs(filePath);
     },
   };
 }

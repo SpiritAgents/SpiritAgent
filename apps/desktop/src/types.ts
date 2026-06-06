@@ -857,6 +857,7 @@ export interface ToolBlockSnapshot {
   argsExcerpt?: string;
   outputExcerpt?: string;
   imagePaths?: string[];
+  videoPaths?: string[];
   /** 写文件类工具 LSP 自动检查后的 error/warning 摘要（供工具卡徽章与 hover）。 */
   lspWriteDiagnostics?: LspWriteDiagnosticsUi;
 }

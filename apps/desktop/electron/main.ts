@@ -754,6 +754,15 @@ if (gotSpiritSingleInstanceLock) {
     return readLocalVideoPreviewUrlFromPath(filePath);
   });
 
+  ipcMain.handle('desktop:read-local-video-preview', async (_event, payload: { filePath?: string }) => {
+    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
+    if (!filePath) {
+      return null;
+    }
+
+    return readLocalVideoPreviewUrlFromPath(filePath);
+  });
+
   ipcMain.handle(
     'desktop:save-local-image-as',
     async (event, payload: { filePath?: string }) => {
@@ -777,6 +786,43 @@ if (gotSpiritSingleInstanceLock) {
       const saveResult = targetWindow
         ? await dialog.showSaveDialog(targetWindow, buildSaveImageDialogOptions(sourcePath, extension))
         : await dialog.showSaveDialog(buildSaveImageDialogOptions(sourcePath, extension));
+
+      if (saveResult.canceled || !saveResult.filePath) {
+        return false;
+      }
+
+      if (path.resolve(saveResult.filePath) === path.resolve(sourcePath)) {
+        return true;
+      }
+
+      await copyFile(sourcePath, saveResult.filePath);
+      return true;
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:save-local-video-as',
+    async (event, payload: { filePath?: string }) => {
+      const sourcePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
+      if (!sourcePath) {
+        return false;
+      }
+
+      const extension = path.extname(sourcePath).toLowerCase();
+      const mimeType = videoPreviewMimeType(extension);
+      if (!mimeType) {
+        throw new Error('当前仅支持另存常见视频格式。');
+      }
+
+      const sourceStat = await stat(sourcePath);
+      if (!sourceStat.isFile()) {
+        throw new Error('要另存的视频文件不存在。');
+      }
+
+      const targetWindow = BrowserWindow.fromWebContents(event.sender);
+      const saveResult = targetWindow
+        ? await dialog.showSaveDialog(targetWindow, buildSaveVideoDialogOptions(sourcePath, extension))
+        : await dialog.showSaveDialog(buildSaveVideoDialogOptions(sourcePath, extension));
 
       if (saveResult.canceled || !saveResult.filePath) {
         return false;
@@ -1101,6 +1147,23 @@ function buildSaveImageDialogOptions(sourcePath: string, extension: string): Ele
       {
         name: 'Image',
         extensions: normalizedExtension ? [normalizedExtension] : ['png'],
+      },
+      {
+        name: 'All Files',
+        extensions: ['*'],
+      },
+    ],
+  };
+}
+
+function buildSaveVideoDialogOptions(sourcePath: string, extension: string): Electron.SaveDialogOptions {
+  const normalizedExtension = extension.startsWith('.') ? extension.slice(1) : extension;
+  return {
+    defaultPath: path.basename(sourcePath),
+    filters: [
+      {
+        name: 'Video',
+        extensions: normalizedExtension ? [normalizedExtension] : ['mp4'],
       },
       {
         name: 'All Files',
