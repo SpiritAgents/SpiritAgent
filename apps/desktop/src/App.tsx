@@ -2001,8 +2001,8 @@ export default function App() {
     if (!snapshot?.config) {
       return null;
     }
-    return resolveComposerDirectMediaTool(runtime.settings.activeModel, snapshot.config);
-  }, [runtime.settings.activeModel, snapshot?.config]);
+    return resolveComposerDirectMediaTool(snapshot.config.activeModel, snapshot.config);
+  }, [snapshot?.config]);
   const composerPlaceholder = activeSessionReadOnly
     ? t("app.readOnlySession")
     : composerDirectMediaMode === "generate_image"
@@ -2653,10 +2653,10 @@ export default function App() {
       }
     }
 
-    composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
     void runtime.sendMessage(payload).then((ok) => {
       if (ok) {
         setComposerBrowserElementAttachments([]);
+        composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
       }
     });
   };
