@@ -23,6 +23,7 @@ import {
   type DirectMediaTool as HostDirectMediaTool,
 } from './model-config.js';
 import type { SessionBundle } from './session-bundle.js';
+import { syncRuntimeHistoryFromBundleArchive } from './conversation-continuation.js';
 import type { SessionTurnOrchestratorContext } from './session-turn-orchestrator.js';
 import type { DesktopConfigFile } from './storage.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
@@ -200,6 +201,8 @@ export async function executeDirectMediaTurn(
       summaryText: failedOutput.summaryText,
     });
   }
+
+  syncRuntimeHistoryFromBundleArchive(input.bundle);
 
   input.bundle.messages = input.bundle.messageTimeline.toMessages();
   await ctx.recordRewindCheckpoint(input.userMessageId, input.beforeUserCheckpoint);
