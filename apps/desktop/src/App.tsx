@@ -3041,8 +3041,8 @@ export default function App() {
                 showWorkspaceToggle
                 workspaceToolsOpen={workspaceToolsOpen}
                 onToggleWorkspaceTools={() => setWorkspaceToolsOpen((c) => !c)}
-                sessionTitle={snapshot?.activeSession?.displayName}
-                onNewSession={handleNewSession}
+                sessionTitle={isEmptySession ? null : snapshot?.activeSession?.displayName}
+                onNewSession={isEmptySession ? undefined : handleNewSession}
                 newSessionBusy={newSessionBusy}
               />
             <div data-spirit-surface="conversation-stage" className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background text-sm">
