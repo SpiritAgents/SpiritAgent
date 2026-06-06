@@ -763,7 +763,8 @@ export function SessionSidebar({
                               <span className="truncate text-xs font-medium">{group.label}</span>
                               <ChevronRight
                                 className={cn(
-                                  "hidden size-3 shrink-0 text-muted-foreground/55 group-hover:inline-flex group-focus-visible:inline-flex",
+                                  "hidden size-3 shrink-0 text-muted-foreground/55 transition-transform duration-150",
+                                  "group-hover:inline-flex group-focus-visible:inline-flex",
                                   expanded && "rotate-90",
                                 )}
                                 aria-hidden
