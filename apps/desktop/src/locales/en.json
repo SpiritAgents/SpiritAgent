@@ -254,6 +254,8 @@
     "noModelsReturned": "No models returned. Please check the key or endpoint.",
     "modelNameRequired": "Model name cannot be empty.",
     "modelNameExample": "e.g. my-model",
+    "contextLength": "Context length",
+    "contextLengthInvalid": "Context length must be a positive integer.",
     "extensionSettingsDescription": "Settings for extension {{id}}.",
     "noExtensionSettings": "This extension has declared an independent settings page, but has not yet declared any settings or secret slots.",
     "configured": "Configured",
@@ -522,7 +524,10 @@
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",
     "placeholderGenerateImage": "Describe the image to generate…",
-    "placeholderGenerateVideo": "Describe the video to generate…"
+    "placeholderGenerateVideo": "Describe the video to generate…",
+    "contextUsageAria": "Context used {{percent}}%, {{inputTokens}} / {{contextLength}} tokens",
+    "contextUsageHoverPercent": "{{percent}}% context used",
+    "contextUsageHoverTokens": "{{input}} / {{total}} tokens"
   },
   "error": {
     "runtimeBusy": "A response or approval is already being processed. Please wait.",
@@ -530,6 +535,7 @@
     "runtimeBusyDeleteSkill": "A response or approval is currently in progress. Please try deleting Skill later.",
     "apiKeyRequired": "API Key cannot be empty.",
     "modelNameRequired": "Model name cannot be empty.",
+    "contextLengthInvalid": "Context length must be a positive integer.",
     "modelExists": "Model already exists: {{name}}",
     "modelNotFound": "Model not found: {{name}}",
     "cannotDeleteActiveModel": "Cannot delete the current model. Please switch to another model first.",

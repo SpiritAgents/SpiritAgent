@@ -1,3 +1,4 @@
+import { emitContextUsageUpdated } from './context-usage.js';
 import {
   createLlmMessageContentFromText,
   type LlmMessage,
@@ -671,6 +672,7 @@ export async function handlePendingStreamingCompletion<
 
   const round = completion.result;
   runtime.appendTrace(round.requestTrace, pending.turn);
+  emitContextUsageUpdated(runtime.emitEvent.bind(runtime), round.usage);
 
   if (round.step.kind === 'tool-calls') {
     if (!pending.streamEnded && !runtime.pendingAssistantTextStore.trim()) {

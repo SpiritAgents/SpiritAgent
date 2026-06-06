@@ -382,3 +382,22 @@ test('parseOpenAiCompatibleModelEntriesPayload routes openrouter to typed parser
     { id: 'stability/sdxl', supportsImageGeneration: true },
   ]);
 });
+
+test('parseOpenRouterModelEntriesPayload maps context_length', () => {
+  const entries = parseOpenRouterModelEntriesPayload({
+    data: [
+      {
+        id: 'anthropic/claude-sonnet-4',
+        context_length: 200000,
+        architecture: { output_modalities: ['text'] },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'anthropic/claude-sonnet-4',
+      contextLength: 200000,
+    },
+  ]);
+});

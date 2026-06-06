@@ -1,5 +1,6 @@
 import type { TextStreamPart } from 'ai';
 
+import { readAiSdkUsage } from '../ai-sdk-usage.js';
 import type { JsonObject, JsonValue, LlmStreamEvent, ToolAgentRoundCompletion } from '../ports.js';
 import { APPLY_PATCH_HOST_TOOL_NAME } from './apply-patch-eligibility.js';
 import {
@@ -49,6 +50,7 @@ export function createDeferred<T>(): Deferred<T> {
 export async function* responsesEventStreamToRuntimeEvents(
   config: OpenResponsesTransportConfig,
   stream: AsyncIterable<TextStreamPart<any>>,
+  usageSource: Parameters<typeof readAiSdkUsage>[0],
   nextState: ToolAgentState,
   requestTrace: JsonValue[],
   completion: Deferred<ToolAgentRoundCompletion<ToolAgentState>>,
@@ -162,12 +164,14 @@ export async function* responsesEventStreamToRuntimeEvents(
     if (applyPatchCallIds.length > 0) {
       registerPendingApplyPatchCallIds(applyPatchCallIds);
     }
+    const usage = await readAiSdkUsage(usageSource);
     completion.resolve({
       kind: 'success',
       result: {
         state: nextState,
         step: calls.length > 0 ? { kind: 'tool-calls', calls } : { kind: 'final-response-ready' },
         requestTrace,
+        ...(usage ? { usage } : {}),
       },
     });
     yield { kind: 'done' };

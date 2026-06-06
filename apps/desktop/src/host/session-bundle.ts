@@ -12,6 +12,7 @@ import type { DesktopToolExecutor } from './tool-executor.js';
 
 import type {
   ActiveSessionSnapshot,
+  ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
   FileRewindWarning,
 } from '../types.js';
@@ -64,6 +65,7 @@ export interface SessionBundle {
   activePlanPath?: string;
   /** Tracks whether the sidebar title is seed-truncated or LLM-generated. */
   sessionTitleSource?: SessionTitleSource;
+  contextUsage?: ConversationContextUsageSnapshot;
 }
 
 export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {
@@ -136,6 +138,7 @@ export function sessionBundleFromRestored(
     conversationRevision: 0,
     ...(restored.activePlanPath ? { activePlanPath: restored.activePlanPath } : {}),
     ...(restored.sessionTitleSource ? { sessionTitleSource: restored.sessionTitleSource } : {}),
+    ...(restored.contextUsage ? { contextUsage: { ...restored.contextUsage } } : {}),
   };
 }
 
@@ -166,4 +169,5 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.conversationRevision = 0;
   bundle.activePlanPath = undefined;
   bundle.sessionTitleSource = undefined;
+  bundle.contextUsage = undefined;
 }

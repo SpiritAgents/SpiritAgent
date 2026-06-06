@@ -25,6 +25,7 @@ async function collectThinkingChunks(
   for await (const event of responsesEventStreamToRuntimeEvents(
     config,
     stream,
+    {},
     state,
     [],
     completion,

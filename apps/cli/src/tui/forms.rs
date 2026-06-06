@@ -302,6 +302,7 @@ impl TuiShell {
                     parsed.api_key.as_str(),
                     Some(parsed.provider),
                     parsed.transport_kind,
+                    parsed.context_length,
                 ) {
                     Ok(()) => {
                         self.messages.push(ChatMessage {
@@ -465,6 +466,7 @@ impl TuiShell {
                 api_base: parsed.api_base.clone(),
                 provider: Some(parsed.provider),
                 reasoning_effort: None,
+                context_length: None,
                 extra,
             });
             if let Err(err) = self

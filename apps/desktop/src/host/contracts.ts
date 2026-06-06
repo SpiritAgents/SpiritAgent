@@ -6,6 +6,7 @@ import type { StoredDesktopRewindMetadata } from './rewind.js';
 import type {
   CommitChangesRequest,
   AskQuestionsQuestionSpec,
+  ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
 } from '../types.js';
 
@@ -85,6 +86,7 @@ export interface StoredDesktopSession extends ChatArchive {
   desktopMessageTimeline?: DesktopTimelineTurnSnapshot[];
   rewind?: StoredDesktopRewindMetadata;
   approvalLevel?: ApprovalLevel;
+  contextUsage?: ConversationContextUsageSnapshot;
 }
 
 export type DesktopHostCommitRequest = CommitChangesRequest;
