@@ -42,7 +42,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  /* 侧栏内分级：列表正文（比主色略淡）/ 极淡说明（如状态行、分区小标题） */
+  /* 侧栏内分级：交互项默认 / 列表正文 / 极淡说明（分区小标题等） */
+  --sidebar-item-foreground: oklch(0.42 0 0);
   --sidebar-list-foreground: oklch(0.4 0 0);
   --sidebar-faint-foreground: oklch(0.5 0 0);
   /* Dialog 内部描边面板统一使用“连接提供商”选择框的边框色；后续仅 Dialog 内部块级边框复用，非 Dialog 场景不要使用。 */
@@ -112,6 +113,7 @@ html.dark,
   --sidebar-accent-foreground: #d4d4d4;
   --sidebar-border: #272727;
   --sidebar-ring: #3f3f3f;
+  --sidebar-item-foreground: #a3a3a3;
   --sidebar-list-foreground: #717171;
   --sidebar-faint-foreground: #525252;
   --dialog-panel-border: #272727;
@@ -179,6 +181,7 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-item-foreground: var(--sidebar-item-foreground);
   --color-sidebar-list-foreground: var(--sidebar-list-foreground);
   --color-sidebar-faint-foreground: var(--sidebar-faint-foreground);
   --color-sidebar: var(--sidebar);
