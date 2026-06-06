@@ -676,6 +676,11 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
 }
 
 function createAiSdkImageModel(config: OpenAiImageGenerationConfig): any {
+  if (isVercelAiGatewayImageConfig(config)) {
+    // Gateway 生图走 v3 image-model 协议，不能复用 chat 预设的 /v1 baseUrl。
+    return createGateway({ apiKey: config.apiKey }).image(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config, { includeChatVendorExtras: false }).imageModel(config.model);
 }
 
@@ -1590,6 +1595,12 @@ function isVercelAiGatewayProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'vercel-ai-gateway';
 }
 
+function isVercelAiGatewayImageConfig(
+  config: OpenAiImageGenerationConfig,
+): boolean {
+  return config.llmVendor === 'vercel-ai-gateway';
+}
+
 function isOpenAiOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'openai';
 }
@@ -1605,6 +1616,10 @@ function xaiChatReasoningEffort(
 }
 
 function buildAiSdkImageGenerationUrl(config: OpenAiImageGenerationConfig): string {
+  if (isVercelAiGatewayImageConfig(config)) {
+    return 'https://ai-gateway.vercel.sh/v3/ai/image-model';
+  }
+
   const baseUrl = (config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL).replace(/\/$/, '');
   return `${baseUrl}/images/generations`;
 }
@@ -1615,7 +1630,7 @@ function logAiSdkImageGenerationStart(
   requestUrl: string,
 ): void {
   console.error('[agent-core][generate-image] request.start', {
-    adapter: 'openai-compatible-image',
+    adapter: isVercelAiGatewayImageConfig(config) ? 'ai-sdk-gateway-image' : 'openai-compatible-image',
     vendor: config.llmVendor ?? 'custom',
     model: config.model,
     baseUrl: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
