@@ -37,7 +37,7 @@ import {
 } from '@spirit-agent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
-import { parseModelContextLength } from '../lib/context-usage.js';
+import { parseModelContextLength } from '../lib/model-context-length.js';
 
 import type {
   ConversationMessageSnapshot,
