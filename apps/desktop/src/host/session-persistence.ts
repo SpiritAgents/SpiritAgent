@@ -74,6 +74,7 @@ export async function persistDesktopSessionBundle(
     rewind: bundle.rewind,
     loopEnabled: bundle.loopEnabled,
     approvalLevel: bundle.approvalLevel,
+    ...(bundle.contextUsage ? { contextUsage: { ...bundle.contextUsage } } : {}),
   });
   if (bumpListSortAt) {
     bundle.listSortSavedAtUnixMs = savedAtUnixMs;

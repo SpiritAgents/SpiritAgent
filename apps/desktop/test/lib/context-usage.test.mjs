@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { parseModelContextLength } from '../../src/lib/model-context-length.ts';
-import { resolveModelContextLength } from '../../src/lib/context-usage.ts';
+import {
+  buildContextUsagePercent,
+  normalizeContextUsageSnapshot,
+  resolveModelContextLength,
+} from '../../src/lib/context-usage.ts';
 
 test('parseModelContextLength accepts positive integers only', () => {
   assert.equal(parseModelContextLength(128000), 128000);
@@ -62,4 +66,18 @@ test('resolveModelContextLength returns undefined for custom without profile ove
   };
 
   assert.equal(resolveModelContextLength(activeModel, []), undefined);
+});
+
+test('normalizeContextUsageSnapshot accepts valid snapshots and recomputes percent', () => {
+  assert.deepEqual(
+    normalizeContextUsageSnapshot({ inputTokens: 1200, contextLength: 128000, percent: 1 }),
+    { inputTokens: 1200, contextLength: 128000, percent: 1 },
+  );
+  assert.deepEqual(
+    normalizeContextUsageSnapshot({ inputTokens: 64000, contextLength: 128000 }),
+    { inputTokens: 64000, contextLength: 128000, percent: buildContextUsagePercent(64000, 128000) },
+  );
+  assert.equal(normalizeContextUsageSnapshot(null), undefined);
+  assert.equal(normalizeContextUsageSnapshot({ inputTokens: -1, contextLength: 128000 }), undefined);
+  assert.equal(normalizeContextUsageSnapshot({ inputTokens: 1, contextLength: 0 }), undefined);
 });

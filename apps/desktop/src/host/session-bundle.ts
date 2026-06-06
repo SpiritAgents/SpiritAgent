@@ -138,6 +138,7 @@ export function sessionBundleFromRestored(
     conversationRevision: 0,
     ...(restored.activePlanPath ? { activePlanPath: restored.activePlanPath } : {}),
     ...(restored.sessionTitleSource ? { sessionTitleSource: restored.sessionTitleSource } : {}),
+    ...(restored.contextUsage ? { contextUsage: { ...restored.contextUsage } } : {}),
   };
 }
 
@@ -168,4 +169,5 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.conversationRevision = 0;
   bundle.activePlanPath = undefined;
   bundle.sessionTitleSource = undefined;
+  bundle.contextUsage = undefined;
 }
