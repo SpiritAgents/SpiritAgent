@@ -1,8 +1,18 @@
+import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal';
+
+import { DEFAULT_API_BASE } from '@/host/storage';
 import type {
   DesktopModelCatalogHint,
   DesktopModelProvider,
-  DesktopSnapshot,
+  DesktopTransportKind,
 } from '@/types';
+
+export interface ContextUsageModelProfile {
+  name: string;
+  apiBase: string;
+  provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
+}
 
 const CONTEXT_USAGE_PROVIDERS = new Set<DesktopModelProvider>([
   'openrouter',
@@ -14,7 +24,7 @@ export function supportsContextUsageProvider(provider: DesktopModelProvider | un
 }
 
 export function resolveModelContextLength(
-  activeModel: DesktopSnapshot['config']['models'][number] | undefined,
+  activeModel: ContextUsageModelProfile | undefined,
   catalogHints: DesktopModelCatalogHint[] | undefined,
 ): number | undefined {
   if (!activeModel || !supportsContextUsageProvider(activeModel.provider)) {
@@ -26,7 +36,7 @@ export function resolveModelContextLength(
     return undefined;
   }
 
-  const apiBase = activeModel.apiBase.trim();
+  const apiBase = activeModel.apiBase.trim() || DEFAULT_API_BASE;
   const transportKind = activeModel.transportKind
     ?? (activeModel.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
   const hint = catalogHints?.find((entry) => {
@@ -36,7 +46,7 @@ export function resolveModelContextLength(
     if (entry.transportKind !== undefined && entry.transportKind !== transportKind) {
       return false;
     }
-    return entry.apiBase.trim() === apiBase;
+    return normalizeOpenAiApiBase(entry.apiBase) === normalizeOpenAiApiBase(apiBase);
   });
 
   const catalogEntry = hint?.modelCatalog?.find((entry) => entry.id === modelName);

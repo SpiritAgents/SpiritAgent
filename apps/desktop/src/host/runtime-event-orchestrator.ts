@@ -22,8 +22,15 @@ import {
   serializeFileToolDiffArgumentsJson,
 } from '../lib/file-tool-diff-source.js';
 import i18n from '../lib/i18n-host.js';
+import {
+  buildContextUsagePercent,
+  resolveModelContextLength,
+  supportsContextUsageProvider,
+} from '../lib/context-usage.js';
 import type {
+  ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
+  DesktopModelCatalogHint,
   MessageAuxSnapshot,
   ToolBlockSnapshot,
 } from '../types.js';
@@ -79,6 +86,16 @@ export interface DesktopRuntimeEventOrchestratorOptions {
   lineDeltaForDeleteFile?: (inputPath: string) => EditFileLineDelta | undefined;
   /** delete_file：删除前按路径读取磁盘全文 baseline */
   deleteFileBaselineForPath?: (inputPath: string) => string | undefined;
+  resolveActiveModel?: () =>
+    | {
+        name: string;
+        apiBase: string;
+        provider?: import('../types.js').DesktopModelProvider;
+        transportKind?: import('../types.js').DesktopTransportKind;
+      }
+    | undefined;
+  resolveCatalogHints?: () => DesktopModelCatalogHint[] | undefined;
+  setContextUsage?: (usage: ConversationContextUsageSnapshot | undefined) => void;
 }
 
 function isMcpLikeToolName(toolName: string): boolean {
@@ -240,6 +257,7 @@ export class DesktopRuntimeEventOrchestrator {
     for (const event of events) {
       if (event.kind === 'begin-assistant-response') {
         this.deferredAfterStreamThinking = undefined;
+        this.options.setContextUsage?.(undefined);
         const insertAt = messages.length;
         const shouldReanchorStandalonePendingAux =
           this.options.conversationSnapshotView.shouldReanchorPersistedStandaloneSubagentStatusOnBeginAssistantResponse(
@@ -254,6 +272,27 @@ export class DesktopRuntimeEventOrchestrator {
           this.options.conversationSnapshotView.reanchorPersistedStandalonePendingAux(
             timelinePendingAssistant?.id ?? pendingAssistant.id,
           );
+        }
+        continue;
+      }
+      if (event.kind === 'context-usage-updated') {
+        const activeModel = this.options.resolveActiveModel?.();
+        const contextLength = resolveModelContextLength(
+          activeModel,
+          this.options.resolveCatalogHints?.(),
+        );
+        if (
+          !activeModel
+          || !supportsContextUsageProvider(activeModel.provider)
+          || contextLength === undefined
+        ) {
+          this.options.setContextUsage?.(undefined);
+        } else {
+          this.options.setContextUsage?.({
+            inputTokens: event.usage.inputTokens,
+            contextLength,
+            percent: buildContextUsagePercent(event.usage.inputTokens, contextLength),
+          });
         }
         continue;
       }

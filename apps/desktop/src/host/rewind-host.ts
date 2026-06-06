@@ -234,6 +234,7 @@ export function restoreBeforeRewindCheckpoint(
   ctx.activeBundle().pendingUnboundFileChangeIds = [];
   ctx.activeBundle().messageIdCounter = nextMessageIdFromMessages(ctx.activeBundle().messages);
   ctx.activeBundle().conversationRevision += 1;
+  ctx.activeBundle().contextUsage = undefined;
   ctx.resetStreamingPlacementState(true);
   ctx.requireRuntime().replaceFromArchive(archive);
 }
