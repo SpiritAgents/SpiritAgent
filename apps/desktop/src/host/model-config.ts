@@ -35,9 +35,16 @@ import {
   usesProviderListedModelCatalogMetadata,
 } from './model-catalog-metadata.js';
 import {
+  resolveComposerDirectMediaTool,
+  type DirectMediaTool,
+} from '../lib/composer-direct-media.js';
+import {
   DEFAULT_API_BASE,
   defaultCustomModelCapabilities,
+  type DesktopConfigFile,
 } from './storage.js';
+
+export { resolveComposerDirectMediaTool, type DirectMediaTool };
 
 export function resolveDesktopTransportKind(
   profile?: Pick<ModelProfileSnapshot, 'provider' | 'transportKind'>,
@@ -234,6 +241,22 @@ export function supportsVideoGeneration(model: { capabilities?: readonly Desktop
   return model.capabilities?.includes('videoGeneration') === true;
 }
 
+export function buildImageGenerationSubConfig(input: {
+  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
+  apiKey: string;
+}) {
+  const imageGenerationVendor = openAiCompatibleVendorFromProvider(input.profile.provider);
+  return {
+    apiKey: input.apiKey,
+    model: input.profile.name,
+    baseUrl: input.profile.apiBase || DEFAULT_API_BASE,
+    ...(imageGenerationVendor ? { llmVendor: imageGenerationVendor } : {}),
+    ...(input.profile.capabilities
+      ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
+      : {}),
+  };
+}
+
 export function buildVideoGenerationSubConfig(input: {
   profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
   apiKey: string;
@@ -248,6 +271,33 @@ export function buildVideoGenerationSubConfig(input: {
       ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
       : {}),
   };
+}
+
+export function buildMediaOnlyTransportConfig(
+  toolName: DirectMediaTool,
+  input: {
+    profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
+    apiKey: string;
+  },
+): LlmTransportConfig {
+  const shell = {
+    transportKind: 'openai-compatible' as const,
+    apiKey: input.apiKey,
+    model: input.profile.name,
+    baseUrl: input.profile.apiBase || DEFAULT_API_BASE,
+  };
+
+  if (toolName === 'generate_image') {
+    return {
+      ...shell,
+      imageGeneration: buildImageGenerationSubConfig(input),
+    } as LlmTransportConfig;
+  }
+
+  return {
+    ...shell,
+    videoGeneration: buildVideoGenerationSubConfig(input),
+  } as LlmTransportConfig;
 }
 
 export function attachVideoGenerationToTransportConfig(
