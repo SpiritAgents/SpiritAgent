@@ -174,7 +174,7 @@ import {
   DESKTOP_OVERLAY_SHORT_SUBCONTENT,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
-import { readSessionSidebarWidthPx } from "@/lib/layout-prefs";
+import { readSessionSidebarWidthPx, readWorkspaceToolsWidthPx } from "@/lib/layout-prefs";
 import {
   buildModelCatalogDisplayTitleMap,
   modelDisplayTitleFromMap,
@@ -2084,7 +2084,7 @@ export default function App() {
   const [workspaceFileRevealPath, setWorkspaceFileRevealPath] = useState("");
   const [workspaceFileRevealViewMode, setWorkspaceFileRevealViewMode] =
     useState<WorkspaceEditorViewMode>("edit");
-  const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(420);
+  const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(readWorkspaceToolsWidthPx);
 
   const openBrowserUrlInNewTab = useCallback((rawUrl: string) => {
     if (runtime.hostKind !== "electron") {
