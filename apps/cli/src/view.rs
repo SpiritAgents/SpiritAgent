@@ -210,6 +210,8 @@ pub struct ToolUiBlock {
     pub detail_lines: Vec<String>,
     /// 工具结果关联的本地图片路径；用于折叠态稳定展示与后续图片渲染。
     pub image_paths: Vec<String>,
+    /// 工具结果关联的本地或托管视频路径/URI。
+    pub video_paths: Vec<String>,
     /// 可选：参数的紧凑 JSON（多行），TUI 内单独着色。
     pub args_excerpt: Option<String>,
     /// 可选：输出摘要（已截断）。

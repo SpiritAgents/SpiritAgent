@@ -171,6 +171,7 @@ pub(crate) fn build_tool_preview_block(
         headline,
         detail_lines,
         image_paths: Vec::new(),
+        video_paths: Vec::new(),
         args_excerpt: Some(tool_request_args_excerpt(request)),
         output_excerpt: None,
     }
@@ -279,6 +280,7 @@ pub(crate) fn tool_approval_block(
         headline: shell_reason.unwrap_or_else(|| "待确认".to_string()),
         detail_lines,
         image_paths: Vec::new(),
+        video_paths: Vec::new(),
         args_excerpt: None,
         output_excerpt: None,
     }
@@ -297,6 +299,7 @@ pub(crate) fn tool_failed_block(
         headline: summary.to_string(),
         detail_lines: Vec::new(),
         image_paths: Vec::new(),
+        video_paths: Vec::new(),
         args_excerpt: None,
         output_excerpt: Some(truncate_output_for_tool_ui(err, 2000)),
     }
@@ -327,6 +330,7 @@ pub(crate) fn build_tool_result_block(
                 ),
             ],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -340,6 +344,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "url").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -353,6 +358,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "path").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -366,6 +372,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "pattern").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -387,6 +394,7 @@ pub(crate) fn build_tool_result_block(
                     format!("行范围: {} - {}", start, end),
                 ],
                 image_paths: Vec::new(),
+            video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: None,
             }
@@ -401,6 +409,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "query").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -414,6 +423,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "task").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -424,6 +434,7 @@ pub(crate) fn build_tool_result_block(
             headline: "问卷答案已返回".to_string(),
             detail_lines: vec![format!("问题数: {}", question_count(request))],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -439,6 +450,24 @@ pub(crate) fn build_tool_result_block(
                     .map(|path| format!("路径: {}", path))
                     .collect(),
                 image_paths,
+                video_paths: Vec::new(),
+                args_excerpt: Some(args_excerpt),
+                output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            }
+        }
+        "generate_video" => {
+            let video_paths = generated_video_paths_from_output(output);
+            ToolUiBlock {
+                tool_call_id: tool_call_id.map(String::from),
+                tool_name: tool_name.to_string(),
+                phase: ToolUiPhase::Succeeded,
+                headline: "视频生成完成".to_string(),
+                detail_lines: video_paths
+                    .iter()
+                    .map(|path| format!("路径: {}", path))
+                    .collect(),
+                image_paths: Vec::new(),
+                video_paths,
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
             }
@@ -453,6 +482,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "path").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
         },
@@ -466,6 +496,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "path").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
         },
@@ -479,6 +510,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "path").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
         },
@@ -497,6 +529,7 @@ pub(crate) fn build_tool_result_block(
                 headline: headline.to_string(),
                 detail_lines: vec![format!("路径: {}", path)],
                 image_paths: Vec::new(),
+            video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: None,
             }
@@ -511,6 +544,7 @@ pub(crate) fn build_tool_result_block(
                 string_arg(request, "command").unwrap_or("<unknown>")
             )],
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -521,6 +555,7 @@ pub(crate) fn build_tool_result_block(
             headline: "工具执行完成".to_string(),
             detail_lines: Vec::new(),
             image_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
@@ -576,6 +611,10 @@ pub(crate) fn format_tool_ui_message(
             "[tool] 图片生成完成。\n{}",
             truncate_for_preview(output, 1200)
         ),
+        "generate_video" => format!(
+            "[tool] 视频生成完成。\n{}",
+            truncate_for_preview(output, 1200)
+        ),
         "create_file" => format!(
             "[tool] 已创建文件 {}",
             string_arg(request, "path").unwrap_or("<unknown>")
@@ -606,16 +645,26 @@ pub(crate) fn format_tool_ui_message(
 }
 
 fn generated_image_paths_from_output(output: &str) -> Vec<String> {
+    generated_media_paths_from_output(output, &["path:", "image_ref:", "read_file_path:"])
+}
+
+fn generated_video_paths_from_output(output: &str) -> Vec<String> {
+    generated_media_paths_from_output(output, &["path:", "video_ref:", "read_file_path:"])
+}
+
+fn generated_media_paths_from_output(output: &str, prefixes: &[&str]) -> Vec<String> {
     let mut paths = Vec::new();
     for line in output.lines() {
-        let Some(path) = line
-            .trim()
-            .strip_prefix("path:")
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
+        let trimmed = line.trim();
+        let Some((_, path)) = prefixes
+            .iter()
+            .find_map(|prefix| trimmed.strip_prefix(prefix).map(|value| (*prefix, value.trim())))
         else {
             continue;
         };
+        if path.is_empty() {
+            continue;
+        }
         if !paths.iter().any(|existing| existing == path) {
             paths.push(path.to_string());
         }
@@ -688,6 +737,27 @@ mod tests {
                 .output_excerpt
                 .as_deref()
                 .is_some_and(|text| text.contains("path:"))
+        );
+    }
+
+    #[test]
+    fn generate_video_result_block_shows_managed_uri() {
+        let output = "[generated video]\nvideo_ref: spirit-agent://generated/video/example.mp4\nread_file_path: spirit-agent://generated/video/example.mp4\nmime_type: video/mp4\nmodel: video-model";
+        let block = build_tool_result_block(
+            &ToolUiRequest::new("generate_video", json!({ "prompt": "生成一段视频" })),
+            "generate_video",
+            Some("tool-call-video"),
+            output,
+        );
+
+        assert_eq!(block.headline, "视频生成完成");
+        assert_eq!(
+            block.detail_lines,
+            vec!["路径: spirit-agent://generated/video/example.mp4"]
+        );
+        assert_eq!(
+            block.video_paths,
+            vec!["spirit-agent://generated/video/example.mp4"]
         );
     }
 
