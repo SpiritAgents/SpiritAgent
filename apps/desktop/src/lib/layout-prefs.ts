@@ -58,3 +58,35 @@ export function writeSessionSidebarWidthPx(widthPx: number): void {
     clampInt(widthPx, SESSION_SIDEBAR_MIN_WIDTH_PX, max),
   );
 }
+
+const WORKSPACE_TOOLS_WIDTH_STORAGE_KEY = "spirit-desktop-workspace-tools-width-px";
+
+export const WORKSPACE_TOOLS_MIN_WIDTH_PX = 240;
+export const WORKSPACE_TOOLS_DEFAULT_WIDTH_PX = 420;
+const WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO = 0.62;
+
+export function computeWorkspaceToolsMaxWidthPx(
+  viewportWidthPx = typeof window !== "undefined" ? window.innerWidth : 1200,
+): number {
+  return Math.round(viewportWidthPx * WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO);
+}
+
+export function readWorkspaceToolsWidthPx(
+  viewportWidthPx = typeof window !== "undefined" ? window.innerWidth : 1200,
+): number {
+  const max = computeWorkspaceToolsMaxWidthPx(viewportWidthPx);
+  return readStoredPositiveInt(
+    WORKSPACE_TOOLS_WIDTH_STORAGE_KEY,
+    WORKSPACE_TOOLS_DEFAULT_WIDTH_PX,
+    WORKSPACE_TOOLS_MIN_WIDTH_PX,
+    max,
+  );
+}
+
+export function writeWorkspaceToolsWidthPx(widthPx: number): void {
+  const max = computeWorkspaceToolsMaxWidthPx();
+  writeStoredPositiveInt(
+    WORKSPACE_TOOLS_WIDTH_STORAGE_KEY,
+    clampInt(widthPx, WORKSPACE_TOOLS_MIN_WIDTH_PX, max),
+  );
+}
