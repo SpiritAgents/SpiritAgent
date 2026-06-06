@@ -66,6 +66,7 @@ test('responses streaming does not duplicate tool calls when SDK emits raw and t
   for await (const event of responsesEventStreamToRuntimeEvents(
     config,
     streamWithDuplicateToolCallParts(),
+    {},
     state,
     [],
     completion,

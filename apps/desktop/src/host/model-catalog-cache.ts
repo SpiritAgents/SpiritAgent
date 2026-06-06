@@ -97,7 +97,7 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
       || obj.transportKind === 'anthropic'
       ? obj.transportKind
       : undefined;
-  return {
+  const entry: ModelCatalogCacheEntry = {
     apiBase: base.trim(),
     fetchedAtUnixMs: fetchedAt,
     modelIds: ids,
@@ -106,6 +106,23 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
     ...(transportKind !== undefined ? { transportKind } : {}),
     ...(apiKeyFingerprint !== undefined ? { apiKeyFingerprint } : {}),
   };
+  if (isContextUsageCatalogCacheStale(entry)) {
+    return undefined;
+  }
+  return entry;
+}
+
+/** Gateway/OpenRouter 圆环依赖 contextLength；旧版写入漏字段时视为未命中以触发重拉。 */
+function isContextUsageCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
+  if (entry.provider !== 'vercel-ai-gateway' && entry.provider !== 'openrouter') {
+    return false;
+  }
+  if (!entry.modelCatalog || entry.modelCatalog.length === 0) {
+    return false;
+  }
+  return !entry.modelCatalog.some(
+    (item) => typeof item.contextLength === 'number' && item.contextLength > 0,
+  );
 }
 
 /**
@@ -213,6 +230,12 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
     const pricing = normalizeCachedPricing(record.pricing);
     const capabilities = normalizeCachedCapabilities(record.capabilities);
     const supportedReasoningEfforts = normalizeCachedSupportedReasoningEfforts(record.supportedReasoningEfforts);
+    const contextLength =
+      typeof record.contextLength === 'number'
+      && Number.isFinite(record.contextLength)
+      && record.contextLength > 0
+        ? Math.trunc(record.contextLength)
+        : undefined;
     normalized.push({
       id,
       ...(displayName !== undefined ? { displayName } : {}),
@@ -220,6 +243,7 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
       ...(pricing !== undefined ? { pricing } : {}),
       ...(capabilities !== undefined ? { capabilities } : {}),
       ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
+      ...(contextLength !== undefined ? { contextLength } : {}),
     });
   }
 
@@ -317,5 +341,6 @@ function clonePreviewModelCatalog(
     ...(entry.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }
       : {}),
+    ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
   }));
 }

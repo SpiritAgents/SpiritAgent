@@ -4,6 +4,7 @@ import type {
   JsonValue,
   LlmMessage,
   LlmMessageContent,
+  LlmTokenUsage,
   LlmStreamEvent,
   LlmTransport,
   SubagentSessionArchiveEntry,
@@ -163,6 +164,10 @@ export type RuntimeEvent<ToolRequest> =
   | {
       kind: 'tool-execution-finished';
       execution: RuntimeToolExecution<ToolRequest>;
+    }
+  | {
+      kind: 'context-usage-updated';
+      usage: LlmTokenUsage;
     };
 
 export interface RuntimePendingApproval<ToolRequest, TrustTarget> {

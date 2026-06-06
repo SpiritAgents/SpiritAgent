@@ -284,3 +284,24 @@ test('openai-compatible transport does not treat metadata as Anthropic-specific 
     0,
   );
 });
+
+test('openrouter provider passes contextLength through catalog metadata', () => {
+  const preview = previewModelCatalogForTransport({
+    provider: 'openrouter',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'anthropic/claude-sonnet-4',
+        contextLength: 200000,
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'anthropic/claude-sonnet-4',
+      capabilities: ['chat'],
+      contextLength: 200000,
+    },
+  ]);
+});

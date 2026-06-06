@@ -121,6 +121,9 @@ async function main(): Promise<void> {
   if (firstRound.kind !== 'success' || firstRound.result.step.kind !== 'tool-calls') {
     throw new Error('ai-sdk openai smoke step 1 未进入 tool-calls。');
   }
+  if (firstRound.result.usage?.inputTokens !== 1 || firstRound.result.usage.outputTokens !== 1) {
+    throw new Error('ai-sdk openai smoke step 1 未附带 usage。');
+  }
 
   const firstCall = firstRound.result.step.calls.at(0);
   if (!firstCall) {
@@ -139,6 +142,9 @@ async function main(): Promise<void> {
 
   if (secondRound.kind !== 'success' || secondRound.result.step.kind !== 'final-response-ready') {
     throw new Error('ai-sdk openai smoke step 2 未进入 final-response-ready。');
+  }
+  if (secondRound.result.usage?.inputTokens !== 1 || secondRound.result.usage.outputTokens !== 1) {
+    throw new Error('ai-sdk openai smoke step 2 未附带 usage。');
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondRound.result.state)?.trim();

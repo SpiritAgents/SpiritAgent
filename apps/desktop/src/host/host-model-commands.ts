@@ -10,6 +10,7 @@ import {
 } from '@spirit-agent/core/reasoning-effort';
 
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
+import { parseModelContextLength } from '../lib/context-usage.js';
 import i18n from '../lib/i18n-host.js';
 import type {
   AddModelRequest,
@@ -80,6 +81,7 @@ export interface HostModelCommandContext {
   refreshModelKeyPresence(): Promise<void>;
   flushDeferredRuntimeRefreshIfIdle(): Promise<void>;
   persistCurrentSessionIfNeeded(): Promise<void>;
+  clearActiveContextUsage(): void;
   setLastRuntimeError(error: string): void;
   buildSnapshot(): DesktopSnapshot;
   disposeAllLspServices(): Promise<void>;
@@ -246,6 +248,10 @@ export async function updateConfigCommand(
       ctx.invalidateToolExecutors();
     }
     await ctx.refreshLspSnapshot();
+
+    if (state.config.activeModel !== prevActiveModel) {
+      ctx.clearActiveContextUsage();
+    }
 
     const transportOrPlanChanged =
       agentModeNow !== prevAgentMode
@@ -457,6 +463,7 @@ export async function addModelCommand(
       provider?: DesktopModelProvider;
       transportKind?: DesktopTransportKind;
       capabilities?: DesktopModelCapability[];
+      contextLength?: number;
     } = {
       name,
       apiBase,
@@ -487,8 +494,16 @@ export async function addModelCommand(
     if (capabilities) {
       profile.capabilities = capabilities;
     }
+    if (request.contextLength !== undefined) {
+      const contextLength = parseModelContextLength(request.contextLength);
+      if (contextLength === undefined) {
+        throw new Error(i18n.t('error.contextLengthInvalid'));
+      }
+      profile.contextLength = contextLength;
+    }
     state.config.models.push(profile);
     state.config.activeModel = name;
+    ctx.clearActiveContextUsage();
     if (!state.config.imageGenerationModel && supportsImageGeneration(profile)) {
       state.config.imageGenerationModel = name;
     }

@@ -37,6 +37,8 @@ import {
 } from '@spirit-agent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
+import { normalizeContextUsageSnapshot } from '../lib/context-usage.js';
+import { parseModelContextLength } from '../lib/model-context-length.js';
 
 import type {
   ConversationMessageSnapshot,
@@ -421,6 +423,7 @@ export async function loadHostMetadata(
 }
 
 function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDesktopSession {
+  const contextUsage = normalizeContextUsageSnapshot(parsed.contextUsage);
   return {
     savedAtUnixMs:
       typeof parsed.savedAtUnixMs === 'number' ? parsed.savedAtUnixMs : Date.now(),
@@ -449,6 +452,7 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
     ...(Array.isArray(parsed.desktopMessageTimeline)
       ? { desktopMessageTimeline: parsed.desktopMessageTimeline }
       : {}),
+    ...(contextUsage ? { contextUsage } : {}),
     rewind: normalizeDesktopRewindMetadata(parsed.rewind),
   } satisfies StoredDesktopSession;
 }
@@ -614,6 +618,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
           const transportKind = normalizeDesktopTransportKind(model.transportKind, provider);
           const capabilities = normalizeModelCapabilities(model.capabilities);
           const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(model.supportedReasoningEfforts);
+          const contextLength = parseModelContextLength(model.contextLength);
           return {
             name: model.name.trim(),
             apiBase: model.apiBase?.trim() || DEFAULT_API_BASE,
@@ -627,6 +632,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             ...(capabilities ? { capabilities } : {}),
             ...(provider ? { provider } : {}),
             ...(transportKind ? { transportKind } : {}),
+            ...(contextLength !== undefined ? { contextLength } : {}),
           };
         })
     : [];

@@ -66,6 +66,7 @@ import {
   isJsonObject,
   type ToolAgentState,
 } from '../tool-agent.js';
+import { readAiSdkUsage } from '../ai-sdk-usage.js';
 import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
 import {
   buildOpenAiRequestTrace,
@@ -338,6 +339,7 @@ export class AiSdkOpenAiCompatibleTransport
       );
       nextState.messages.push(assistantMessage);
 
+      const usage = await readAiSdkUsage(result);
       const calls = extractToolCallsFromAiSdk(result.toolCalls);
       if (calls.length > 0) {
         return {
@@ -349,6 +351,7 @@ export class AiSdkOpenAiCompatibleTransport
               calls,
             },
             requestTrace: tracedRequest,
+            ...(usage ? { usage } : {}),
           },
         };
       }
@@ -361,6 +364,7 @@ export class AiSdkOpenAiCompatibleTransport
             kind: 'final-response-ready',
           },
           requestTrace: tracedRequest,
+          ...(usage ? { usage } : {}),
         },
       };
     } catch (error) {
@@ -428,6 +432,7 @@ export class AiSdkOpenAiCompatibleTransport
       return {
         eventStream: aiSdkEventStreamToRuntimeEvents(
           result.fullStream,
+          result,
           nextState,
           requestTrace,
           completion,
@@ -808,9 +813,9 @@ function createAiSdkAlibabaProvider(config: OpenAiTransportConfig) {
 }
 
 function createAiSdkGatewayProvider(config: OpenAiTransportConfig) {
+  // Gateway chat 走 v3 AI 协议（默认 …/v3/ai/language-model），不能用模型目录预设的 /v1 baseUrl。
   return createGateway({
     apiKey: config.apiKey,
-    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: getLlmFetch(),
   });
 }
@@ -1178,6 +1183,7 @@ function normalizeRawAssistantMessage(message: JsonObject): JsonValue {
 
 async function* aiSdkEventStreamToRuntimeEvents(
   stream: AsyncIterable<TextStreamPart<any>>,
+  usageSource: Parameters<typeof readAiSdkUsage>[0],
   nextState: ToolAgentState,
   requestTrace: JsonValue[],
   completion: Deferred<ToolAgentRoundCompletion<ToolAgentState>>,
@@ -1249,12 +1255,14 @@ async function* aiSdkEventStreamToRuntimeEvents(
       buildStreamingAssistantMessage(assistantContent, reasoningContent, toolCalls),
     );
     const calls = extractToolCallsFromAggregatedMap(toolCalls);
+    const usage = await readAiSdkUsage(usageSource);
     completion.resolve({
       kind: 'success',
       result: {
         state: nextState,
         step: calls.length > 0 ? { kind: 'tool-calls', calls } : { kind: 'final-response-ready' },
         requestTrace,
+        ...(usage ? { usage } : {}),
       },
     });
     yield { kind: 'done' };

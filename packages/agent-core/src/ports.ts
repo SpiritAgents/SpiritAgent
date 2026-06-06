@@ -464,10 +464,19 @@ export type ToolAgentStep =
   | { kind: 'tool-calls'; calls: ToolCallRequest[] }
   | { kind: 'final-response-ready' };
 
+export interface LlmTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  reasoningTokens?: number;
+  cachedInputTokens?: number;
+}
+
 export interface ToolAgentRoundResult<State = JsonValue> {
   state: State;
   step: ToolAgentStep;
   requestTrace: JsonValue[];
+  usage?: LlmTokenUsage;
 }
 
 export type ToolAgentRoundCompletion<State = JsonValue> =

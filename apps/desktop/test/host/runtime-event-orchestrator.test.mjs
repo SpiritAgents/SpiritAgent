@@ -856,3 +856,118 @@ test('edit_file tool-execution-finished preserves lspWriteDiagnostics on tool sn
   assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items.length, 1);
   assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items[0]?.severity, 'error');
 });
+
+function createContextUsageHarness(options = {}) {
+  let messages = [];
+  let nextMessageId = 1;
+  let nextTimelineMessageId = 1;
+  let contextUsage = options.initialContextUsage;
+  const refreshCatalogCalls = [];
+  const timeline = new DesktopMessageTimeline({
+    allocateMessageId: () => nextTimelineMessageId++,
+    reserveMessageId: (messageId) => {
+      if (messageId >= nextTimelineMessageId) {
+        nextTimelineMessageId = messageId + 1;
+      }
+    },
+  });
+  const assistantMessages = new DesktopAssistantMessageStateMachine({
+    messages: () => messages,
+    setMessages: (nextMessages) => {
+      messages = nextMessages;
+    },
+    allocateMessageId: () => nextMessageId++,
+    isRuntimeBusy: () => false,
+  });
+  const orchestrator = new DesktopRuntimeEventOrchestrator({
+    runtime: () => ({
+      takeCompletedTurnResult: () => undefined,
+    }),
+    messages: () => messages,
+    allocateMessageId: () => nextMessageId++,
+    assistantMessages,
+    messageTimeline: () => timeline,
+    takeNextAssistantSegmentKind: () => 'initial',
+    conversationSnapshotView: new DesktopConversationSnapshotView(() => nextMessageId++),
+    clearCurrentTurnSkills: () => {},
+    setLastRuntimeError: () => {},
+    refreshArchiveFromRuntime: () => {},
+    dispatchExtensionEvent: () => {},
+    bindFileChangesToToolMessage: () => {},
+    resolveActiveModel: options.resolveActiveModel,
+    resolveCatalogHints: options.resolveCatalogHints ?? (() => []),
+    setContextUsage: (usage) => {
+      contextUsage = usage;
+    },
+    refreshContextUsageCatalog: (input) => {
+      refreshCatalogCalls.push(input);
+    },
+  });
+
+  return {
+    orchestrator,
+    getContextUsage: () => contextUsage,
+    refreshCatalogCalls,
+  };
+}
+
+test('context-usage-updated queues catalog refresh without clearing cached usage', () => {
+  const previousUsage = { inputTokens: 1000, contextLength: 128000, percent: 1 };
+  const harness = createContextUsageHarness({
+    initialContextUsage: previousUsage,
+    resolveActiveModel: () => ({
+      name: 'openai/gpt-5',
+      apiBase: 'https://gateway.example/v1',
+      provider: 'vercel-ai-gateway',
+      transportKind: 'openai-compatible',
+    }),
+    resolveCatalogHints: () => [],
+  });
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'context-usage-updated', usage: { inputTokens: 2000 } },
+  ]);
+
+  assert.equal(harness.refreshCatalogCalls.length, 1);
+  assert.deepEqual(harness.refreshCatalogCalls[0]?.usage, { inputTokens: 2000 });
+  assert.deepEqual(harness.getContextUsage(), previousUsage);
+});
+
+test('context-usage-updated clears usage when provider cannot resolve context length', () => {
+  const harness = createContextUsageHarness({
+    initialContextUsage: { inputTokens: 1000, contextLength: 128000, percent: 1 },
+    resolveActiveModel: () => ({
+      name: 'custom-model',
+      apiBase: 'https://example.invalid/v1',
+      provider: 'custom',
+    }),
+  });
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'context-usage-updated', usage: { inputTokens: 2000 } },
+  ]);
+
+  assert.equal(harness.refreshCatalogCalls.length, 0);
+  assert.equal(harness.getContextUsage(), undefined);
+});
+
+test('context-usage-updated updates usage when context length is already known', () => {
+  const harness = createContextUsageHarness({
+    resolveActiveModel: () => ({
+      name: 'custom-model',
+      apiBase: 'https://example.invalid/v1',
+      provider: 'custom',
+      contextLength: 128000,
+    }),
+  });
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'context-usage-updated', usage: { inputTokens: 64000 } },
+  ]);
+
+  assert.deepEqual(harness.getContextUsage(), {
+    inputTokens: 64000,
+    contextLength: 128000,
+    percent: 50,
+  });
+});
