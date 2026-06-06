@@ -269,6 +269,21 @@ export function syncSubagentToolStreamingOutput(
   }
 }
 
+export function syncRuntimeHistoryFromBundleArchive(bundle: SessionBundle): void {
+  if (!bundle.runtime) {
+    return;
+  }
+
+  const desktopMessages = bundle.messageTimeline.toMessages();
+  bundle.runtime.replaceFromArchive({
+    messages: buildArchiveMessagesFromConversation(desktopMessages),
+    assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
+    llmHistory: bundle.archiveHistory,
+    subagentSessions: bundle.archiveSubagentSessions ?? [],
+    loopEnabled: bundle.loopEnabled,
+  });
+}
+
 export function refreshArchiveFromRuntime(
   ctx: ConversationContinuationContext,
   bundle: SessionBundle = ctx.activeBundle(),

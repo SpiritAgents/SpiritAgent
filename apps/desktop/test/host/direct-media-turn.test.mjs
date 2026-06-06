@@ -64,10 +64,22 @@ function createDirectMediaHarness() {
     bindFileChangesToToolMessage: () => {},
   });
 
+  const runtimeHistory = [];
   const bundle = {
     archiveHistory: [],
     messages: [],
     messageTimeline: timeline,
+    loopEnabled: false,
+    archiveSubagentSessions: [],
+    runtime: {
+      history() {
+        return runtimeHistory;
+      },
+      replaceFromArchive(archive) {
+        runtimeHistory.length = 0;
+        runtimeHistory.push(...archive.llmHistory);
+      },
+    },
     runtimeTransport: {
       async generateImage(_config, request, saveGenerated) {
         await saveGenerated({
@@ -133,4 +145,7 @@ test('executeDirectMediaTurn emits succeeded generate_image tool card and archiv
   assert.deepEqual(toolMessage.tool.imagePaths, ['generated/direct-test.png']);
   assert.equal(harness.bundle.archiveHistory.length, 3);
   assert.match(harness.bundle.archiveHistory[2].content[0].text, /spirit-agent:\/\/generated\/image/);
+  assert.equal(harness.bundle.runtime.history().length, 3);
+  assert.equal(harness.bundle.runtime.history()[1].role, 'assistant');
+  assert.equal(harness.bundle.runtime.history()[1].toolCalls?.[0]?.name, 'generate_image');
 });
