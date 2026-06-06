@@ -1879,40 +1879,48 @@ impl TsBridgeRuntime {
                     }
                 }
             }
-            if let Some(video_profile) = config.video_generation_model_profile() {
-                if video_profile.supports_video_generation()
-                    && video_profile.transport_kind()
-                        == crate::model_registry::ModelTransportKind::OpenAiCompatible
-                {
-                    if let Some(video_api_key) =
-                        self.resolve_optional_key_from_store(&video_profile.name)?
-                    {
-                        let mut video_generation = serde_json::json!({
-                            "apiKey": video_api_key,
-                            "model": video_profile.name,
-                            "baseUrl": video_profile.api_base,
-                        });
-                        if let Some(provider) = video_profile.provider {
-                            if let Some(obj) = video_generation.as_object_mut() {
-                                obj.insert(
-                                    "llmVendor".to_string(),
-                                    json!(model_provider_vendor(provider)),
-                                );
-                            }
-                        }
-                        if let Some(model_capabilities) = model_capabilities_json(video_profile) {
-                            if let Some(obj) = video_generation.as_object_mut() {
-                                obj.insert("modelCapabilities".to_string(), model_capabilities);
-                            }
-                        }
-                        if let Some(obj) = transport.as_object_mut() {
-                            obj.insert("videoGeneration".to_string(), video_generation);
-                        }
-                    }
-                }
+        }
+        self.attach_video_generation_config(&mut transport, config)?;
+        Ok(transport)
+    }
+
+    fn attach_video_generation_config(
+        &self,
+        transport: &mut Value,
+        config: &AppConfig,
+    ) -> Result<()> {
+        let Some(video_profile) = config.video_generation_model_profile() else {
+            return Ok(());
+        };
+        if !video_profile.supports_video_generation() {
+            return Ok(());
+        }
+        let Some(video_api_key) = self.resolve_optional_key_from_store(&video_profile.name)? else {
+            return Ok(());
+        };
+
+        let mut video_generation = serde_json::json!({
+            "apiKey": video_api_key,
+            "model": video_profile.name,
+            "baseUrl": video_profile.api_base,
+        });
+        if let Some(provider) = video_profile.provider {
+            if let Some(obj) = video_generation.as_object_mut() {
+                obj.insert(
+                    "llmVendor".to_string(),
+                    json!(model_provider_vendor(provider)),
+                );
             }
         }
-        Ok(transport)
+        if let Some(model_capabilities) = model_capabilities_json(video_profile) {
+            if let Some(obj) = video_generation.as_object_mut() {
+                obj.insert("modelCapabilities".to_string(), model_capabilities);
+            }
+        }
+        if let Some(obj) = transport.as_object_mut() {
+            obj.insert("videoGeneration".to_string(), video_generation);
+        }
+        Ok(())
     }
 
     fn transport_config_will_change(&self, config: &AppConfig) -> bool {
@@ -3417,6 +3425,53 @@ mod tests {
         assert_eq!(
             transport.get("reasoningEffort").and_then(Value::as_str),
             Some("default")
+        );
+    }
+
+    #[test]
+    fn resolve_transport_config_json_includes_video_generation_model_for_open_responses() {
+        let Some(runtime) = make_test_runtime() else {
+            return;
+        };
+
+        let mut next = runtime.config().clone();
+        let active = next
+            .active_model_profile_mut()
+            .expect("active model should exist");
+        active.provider = Some(ModelProvider::Volcengine);
+        active
+            .extra
+            .insert("transportKind".to_string(), json!("open-responses"));
+        next.models.push(ModelProfile {
+            name: "seedance-video".to_string(),
+            api_base: "https://ark.cn-beijing.volces.com/api/v3".to_string(),
+            provider: Some(ModelProvider::Volcengine),
+            reasoning_effort: None,
+            extra: serde_json::Map::from_iter([(
+                "capabilities".to_string(),
+                json!(["videoGeneration"]),
+            )]),
+        });
+        next.video_generation_model = Some("seedance-video".to_string());
+
+        let transport = runtime
+            .resolve_transport_config_json_for(&next)
+            .expect("resolve transport config");
+
+        assert_eq!(
+            transport.get("transportKind").and_then(Value::as_str),
+            Some("open-responses")
+        );
+        let video_generation = transport
+            .get("videoGeneration")
+            .expect("video generation config");
+        assert_eq!(
+            video_generation.get("model").and_then(Value::as_str),
+            Some("seedance-video")
+        );
+        assert_eq!(
+            video_generation.get("llmVendor").and_then(Value::as_str),
+            Some("volcengine")
         );
     }
 

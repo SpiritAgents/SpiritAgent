@@ -1,6 +1,10 @@
 import type { JsonObject, JsonValue, SpiritAgentMode } from '../ports.js';
 import type { LlmModelCapabilities } from '../llm-provider-shared.js';
-import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
+import type {
+  OpenAiImageGenerationConfig,
+  OpenAiLlmVendor,
+  OpenAiVideoGenerationConfig,
+} from '../openai/openai-compat.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import { cloneJsonValue } from '../tool-agent.js';
 
@@ -38,6 +42,10 @@ export interface OpenResponsesTransportConfig {
   truncation?: 'disabled' | 'auto';
   /** Host run mode; Ask disables apply_patch injection. */
   spiritAgentMode?: SpiritAgentMode;
+  /** Optional dedicated model role used by the `generate_image` tool. */
+  imageGeneration?: OpenAiImageGenerationConfig;
+  /** Optional dedicated model role used by the `generate_video` tool. */
+  videoGeneration?: OpenAiVideoGenerationConfig;
 }
 
 export type OpenResponsesRequestTraceKind =
