@@ -2,11 +2,15 @@ import type { LspWriteDiagnosticsUi } from '@spirit-agent/agent-core';
 
 import type { ToolBlockSnapshot } from '@/types';
 
-/** 与工具卡 headlineDetail 文件名（如 utils.ts）同色阶。 */
+/** 短工具卡次级文字（shell 原因、文件名、LSP 摘要等）。 */
+export const toolCardSecondaryTextClass =
+  'text-muted-foreground/75 dark:text-muted-foreground/65';
+
+/** shell `{命令}` 等更浅第三级；与原因色分开以免摘要行糊成一段。 */
 export const toolCardFileNameDetailClass =
   'text-muted-foreground/42 dark:text-muted-foreground/45';
 
-/** @deprecated 与 {@link toolCardFileNameDetailClass} 相同；shell `{command}` 暂共用。 */
+/** @deprecated 与 {@link toolCardFileNameDetailClass} 相同。 */
 export const toolCardMutedDetailClass = toolCardFileNameDetailClass;
 
 export function lspDiagnosticsCounts(diagnostics: LspWriteDiagnosticsUi): {

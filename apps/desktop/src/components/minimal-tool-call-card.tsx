@@ -33,6 +33,7 @@ import { parseShellCommand } from "@/lib/shell-tool-display";
 import {
   shouldShowLspDiagnosticsOnToolCard,
   toolCardFileNameDetailClass,
+  toolCardSecondaryTextClass,
 } from "@/lib/file-tool-lsp-diagnostics-display";
 import { cn } from "@/lib/utils";
 import type { ToolBlockSnapshot } from "@/types";
@@ -42,17 +43,12 @@ const summaryClass = "text-xs leading-relaxed text-muted-foreground";
 export type ToolSummaryDetailTone = "default" | "shell-command";
 
 /**
- * Shell summary grey ramp (verb → reason → command), aligned across themes:
- * light: 100% → 75% → 42% opacity; dark: 100% → 65% → 45%.
+ * 短工具卡摘要灰阶：主 100% + 次级 {@link toolCardSecondaryTextClass}；
+ * shell 命令另保留更浅的 {@link toolCardFileNameDetailClass}。
  */
-const summaryShellReasonClass =
-  "text-muted-foreground/75 dark:text-muted-foreground/65";
-
-const summaryShellCommandClass = toolCardFileNameDetailClass;
-
 const summaryDetailToneClass: Record<ToolSummaryDetailTone, string> = {
-  default: summaryShellCommandClass,
-  "shell-command": summaryShellCommandClass,
+  default: toolCardSecondaryTextClass,
+  "shell-command": toolCardFileNameDetailClass,
 };
 
 function ToolCallSummaryRow({
@@ -116,7 +112,7 @@ export function MinimalToolSummary({
         <>
           <span className={shimmerClass}>{shellSummary.verb}</span>
           {" "}
-          <span className={summaryShellReasonClass}>{shellSummary.reason}</span>
+          <span className={toolCardSecondaryTextClass}>{shellSummary.reason}</span>
         </>
       ) : (
         <span className={shimmerClass}>{headline}</span>
