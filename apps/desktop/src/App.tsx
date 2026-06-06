@@ -145,10 +145,12 @@ import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useFont } from "@/hooks/useFont";
 import { useTheme } from "@/hooks/useTheme";
+import { isManagedGeneratedVideoRef } from "@/lib/managed-generated-asset";
 import {
   appendComposerLocalFileAttachment,
   composerAttachmentViewFromPath,
   isPreviewableImagePath,
+  isPreviewableVideoPath,
   normalizeSlashPath as normalizeAttachmentPath,
   removeComposerLocalFileAttachment,
   snapshotsToComposerAttachmentViews,
@@ -416,16 +418,25 @@ function EmptyStateWorkspaceSelector({
 
 type ReadLocalImagePreview = (filePath: string) => Promise<string | null>;
 type ReadManagedImagePreview = (reference: string) => Promise<string | null>;
+type ReadLocalVideoPreview = (filePath: string) => Promise<string | null>;
+type ReadManagedVideoPreview = (reference: string) => Promise<string | null>;
 type SaveLocalImageAs = (filePath: string) => Promise<boolean>;
+type SaveLocalVideoAs = (filePath: string) => Promise<boolean>;
 
 function ToolCallCollapsible({
   tool,
   readLocalImagePreviewDataUrl,
+  readLocalVideoPreviewUrl,
+  readManagedVideoPreviewUrl,
   saveLocalImageAs,
+  saveLocalVideoAs,
 }: {
   tool: ToolBlockSnapshot;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
+  readLocalVideoPreviewUrl: ReadLocalVideoPreview;
+  readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
+  saveLocalVideoAs: SaveLocalVideoAs;
 }) {
   if (tool.toolName === "finish_task") {
     return null;
@@ -437,6 +448,17 @@ function ToolCallCollapsible({
         tool={tool}
         readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
         saveLocalImageAs={saveLocalImageAs}
+      />
+    );
+  }
+
+  if (tool.toolName === "generate_video") {
+    return (
+      <VideoGenerationToolCard
+        tool={tool}
+        readLocalVideoPreviewUrl={readLocalVideoPreviewUrl}
+        readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+        saveLocalVideoAs={saveLocalVideoAs}
       />
     );
   }
@@ -690,6 +712,141 @@ function ImageGenerationToolCard({
           ) : null}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function VideoGenerationToolCard({
+  tool,
+  readLocalVideoPreviewUrl,
+  readManagedVideoPreviewUrl,
+  saveLocalVideoAs,
+}: {
+  tool: ToolBlockSnapshot;
+  readLocalVideoPreviewUrl: ReadLocalVideoPreview;
+  readManagedVideoPreviewUrl: ReadManagedVideoPreview;
+  saveLocalVideoAs: SaveLocalVideoAs;
+}) {
+  const { t } = useTranslation();
+  const videoPath = tool.videoPaths?.find((path) => path.trim().length > 0) ?? "";
+  const previewSourcePath =
+    tool.videoPaths?.find((path) => isManagedGeneratedVideoRef(path) || isPreviewableVideoPath(path)) ?? "";
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPreviewUrl(null);
+    if (!previewSourcePath) {
+      setPreviewState("unavailable");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setPreviewState("loading");
+    const resolvePreview = isManagedGeneratedVideoRef(previewSourcePath)
+      ? readManagedVideoPreviewUrl(previewSourcePath)
+      : readLocalVideoPreviewUrl(previewSourcePath);
+
+    void resolvePreview
+      .then((url) => {
+        if (cancelled) {
+          return;
+        }
+        setPreviewUrl(url);
+        setPreviewState(url ? "ready" : "unavailable");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviewState("unavailable");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewSourcePath, readLocalVideoPreviewUrl, readManagedVideoPreviewUrl]);
+
+  const loading = tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
+  const canDownload = Boolean(videoPath);
+  const floatingActionButtonClass =
+    "size-8 rounded-full border border-border/50 bg-background/55 text-foreground shadow-sm backdrop-blur-xl transition-[opacity,background-color,border-color,box-shadow] duration-200 ease-out hover:border-border/60 hover:bg-background/72 dark:border-white/12 dark:bg-input/30 dark:hover:bg-input/40 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25";
+  const floatingActionCardRevealClass =
+    "opacity-0 group-hover/video-card:opacity-100 group-focus-within/video-card:opacity-100";
+
+  const handleSaveVideo = async () => {
+    if (!videoPath || saving) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await saveLocalVideoAs(videoPath);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-[min(28rem,100%)] py-1">
+      <div
+        className={cn(
+          "group/video-card relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200",
+          tool.phase === "failed" && "border-destructive/45 bg-destructive/5",
+        )}
+      >
+        {previewUrl ? (
+          <video
+            src={previewUrl}
+            className="size-full object-contain"
+            controls
+            preload="metadata"
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center px-4 text-center">
+            <span
+              className={cn(
+                "text-sm font-medium",
+                loading ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
+              )}
+            >
+              {loading ? t('common.loading') : t('app.previewUnavailable')}
+            </span>
+          </div>
+        )}
+        {canDownload ? (
+          <div className="pointer-events-none absolute inset-0 z-10">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className={cn(
+                "pointer-events-auto absolute bottom-3 left-3",
+                floatingActionButtonClass,
+                floatingActionCardRevealClass,
+              )}
+              onClick={() => void handleSaveVideo()}
+              disabled={saving}
+              title={t('app.downloadVideo')}
+              aria-label={t('app.downloadVideo')}
+            >
+              {saving ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      {!previewUrl && videoPath ? (
+        <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground" title={videoPath}>
+          {videoPath}
+        </p>
+      ) : null}
+      {tool.phase === "failed" && tool.outputExcerpt ? (
+        <pre className="mt-2 whitespace-pre-wrap rounded-md border border-destructive/20 bg-destructive/5 p-2 font-mono text-xs leading-relaxed text-destructive">
+          {tool.outputExcerpt}
+        </pre>
+      ) : null}
     </div>
   );
 }
@@ -1064,6 +1221,7 @@ function AssistantThinkingCollapsible({
   listIndex,
   collapseDuringToolPreview,
   readManagedImagePreviewDataUrl,
+  readManagedVideoPreviewUrl,
 }: {
   message: ConversationMessageSnapshot;
   pendingAuxState?: PendingAssistantAux;
@@ -1071,6 +1229,7 @@ function AssistantThinkingCollapsible({
   listIndex: number;
   collapseDuringToolPreview: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
+  readManagedVideoPreviewUrl: ReadManagedVideoPreview;
 }) {
   const thinking = message.aux?.thinking?.trim() ?? "";
   const reasoningLive = isAssistantReasoningLive(message, pendingAuxState, messages, listIndex);
@@ -1136,6 +1295,7 @@ function AssistantThinkingCollapsible({
               streaming={thinkingActive && expanded}
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+              readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             />
           </div>
         </CollapsibleContent>
@@ -1148,10 +1308,12 @@ function AssistantCompactionCollapsible({
   message,
   pendingAuxState,
   readManagedImagePreviewDataUrl,
+  readManagedVideoPreviewUrl,
 }: {
   message: ConversationMessageSnapshot;
   pendingAuxState?: PendingAssistantAux;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
+  readManagedVideoPreviewUrl: ReadManagedVideoPreview;
 }) {
   const compaction = message.aux?.compaction?.trim() ?? "";
   const compactionLive = assistantCompactionLive(message, pendingAuxState);
@@ -1213,6 +1375,7 @@ function AssistantCompactionCollapsible({
               streaming={compactionActive}
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+              readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             />
           </div>
         </CollapsibleContent>
@@ -1256,8 +1419,11 @@ function MessageCard({
   onAgentModeChange,
   pendingAuxState,
   readManagedImagePreviewDataUrl,
+  readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
+  readLocalVideoPreviewUrl,
   saveLocalImageAs,
+  saveLocalVideoAs,
 }: {
   composerSessionKey: string;
   messages: readonly ConversationMessageSnapshot[];
@@ -1293,8 +1459,11 @@ function MessageCard({
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
   onAgentModeChange(mode: DesktopAgentMode): void;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
+  readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
+  readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
+  saveLocalVideoAs: SaveLocalVideoAs;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
@@ -1387,6 +1556,7 @@ function MessageCard({
             listIndex={listIndex}
             collapseDuringToolPreview={collapseThinkingDuringToolPreview}
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+            readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
           />
         ) : null}
         {showCompactionCollapsible ? (
@@ -1394,6 +1564,7 @@ function MessageCard({
             message={message}
             pendingAuxState={pendingAuxState}
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+            readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
           />
         ) : null}
         {isUser && !rewindSelected ? (
@@ -1415,6 +1586,7 @@ function MessageCard({
               streaming={message.pending}
               className="font-sans"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+              readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             />
           </div>
           )
@@ -1428,7 +1600,10 @@ function MessageCard({
           <ToolCallCollapsible
             tool={message.tool}
             readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+            readLocalVideoPreviewUrl={readLocalVideoPreviewUrl}
+            readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             saveLocalImageAs={saveLocalImageAs}
+            saveLocalVideoAs={saveLocalVideoAs}
           />
         ) : null}
         {!isUser && showContinueButton && continueTarget ? (
@@ -3018,8 +3193,11 @@ export default function App() {
                               onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
                               onAgentModeChange={handleComposerAgentModeChange}
                               readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
+                              readManagedVideoPreviewUrl={runtime.readManagedVideoPreviewUrl}
                               readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
+                              readLocalVideoPreviewUrl={runtime.readLocalVideoPreviewUrl}
                               saveLocalImageAs={runtime.saveLocalImageAs}
+                              saveLocalVideoAs={runtime.saveLocalVideoAs}
                             />
                           );
                         })}

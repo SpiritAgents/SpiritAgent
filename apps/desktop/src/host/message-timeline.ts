@@ -1608,6 +1608,7 @@ function cloneTool(tool: ToolBlockSnapshot): ToolBlockSnapshot {
     ...normalized,
     detailLines: [...normalized.detailLines],
     ...(normalized.imagePaths ? { imagePaths: [...normalized.imagePaths] } : {}),
+    ...(normalized.videoPaths ? { videoPaths: [...normalized.videoPaths] } : {}),
   };
 }
 

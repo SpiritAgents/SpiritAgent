@@ -213,8 +213,17 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   readManagedImagePreviewDataUrl(reference: string) {
     return ipcRenderer.invoke('desktop:read-managed-image-preview', { reference });
   },
+  readLocalVideoPreviewUrl(filePath: string) {
+    return ipcRenderer.invoke('desktop:read-local-video-preview', { filePath });
+  },
+  readManagedVideoPreviewUrl(reference: string) {
+    return ipcRenderer.invoke('desktop:read-managed-video-preview', { reference });
+  },
   saveLocalImageAs(filePath: string) {
     return ipcRenderer.invoke('desktop:save-local-image-as', { filePath });
+  },
+  saveLocalVideoAs(filePath: string) {
+    return ipcRenderer.invoke('desktop:save-local-video-as', { filePath });
   },
   syncWindowFrame(request: {
     dark: boolean;

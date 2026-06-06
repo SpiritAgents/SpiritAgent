@@ -618,6 +618,7 @@ async function persistDreamCollectorDebugSession(input: {
       role: message.role,
       content: message.content,
       imagePaths: [],
+      videoPaths: [],
     })),
     subagentSessions: [],
     savedAtUnixMs: now,
