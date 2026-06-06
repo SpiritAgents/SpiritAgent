@@ -111,6 +111,7 @@ fn model_add_provider_choice_labels() -> Vec<String> {
         t!("form.model.provider.moonshot-ai").into_owned(),
         t!("form.model.provider.alibaba").into_owned(),
         t!("form.model.provider.minimax").into_owned(),
+        t!("form.model.provider.volcengine").into_owned(),
         t!("form.model.provider.custom").into_owned(),
     ]
 }
@@ -276,7 +277,8 @@ fn model_add_provider_to_enum(idx: usize) -> Option<ModelProvider> {
         6 => Some(ModelProvider::Moonshot),
         7 => Some(ModelProvider::Alibaba),
         8 => Some(ModelProvider::Minimax),
-        9 => Some(ModelProvider::Custom),
+        9 => Some(ModelProvider::Volcengine),
+        10 => Some(ModelProvider::Custom),
         _ => None,
     }
 }

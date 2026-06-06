@@ -1879,6 +1879,38 @@ impl TsBridgeRuntime {
                     }
                 }
             }
+            if let Some(video_profile) = config.video_generation_model_profile() {
+                if video_profile.supports_video_generation()
+                    && video_profile.transport_kind()
+                        == crate::model_registry::ModelTransportKind::OpenAiCompatible
+                {
+                    if let Some(video_api_key) =
+                        self.resolve_optional_key_from_store(&video_profile.name)?
+                    {
+                        let mut video_generation = serde_json::json!({
+                            "apiKey": video_api_key,
+                            "model": video_profile.name,
+                            "baseUrl": video_profile.api_base,
+                        });
+                        if let Some(provider) = video_profile.provider {
+                            if let Some(obj) = video_generation.as_object_mut() {
+                                obj.insert(
+                                    "llmVendor".to_string(),
+                                    json!(model_provider_vendor(provider)),
+                                );
+                            }
+                        }
+                        if let Some(model_capabilities) = model_capabilities_json(video_profile) {
+                            if let Some(obj) = video_generation.as_object_mut() {
+                                obj.insert("modelCapabilities".to_string(), model_capabilities);
+                            }
+                        }
+                        if let Some(obj) = transport.as_object_mut() {
+                            obj.insert("videoGeneration".to_string(), video_generation);
+                        }
+                    }
+                }
+            }
         }
         Ok(transport)
     }
@@ -1938,6 +1970,28 @@ impl TsBridgeRuntime {
                 profile.provider,
                 profile.transport_kind(),
                 profile.supports_image_generation(),
+            )
+        }) {
+            return true;
+        }
+
+        if self.config.video_generation_model != config.video_generation_model {
+            return true;
+        }
+
+        if self.config.video_generation_model_profile().map(|profile| {
+            (
+                profile.api_base.as_str(),
+                profile.provider,
+                profile.transport_kind(),
+                profile.supports_video_generation(),
+            )
+        }) != config.video_generation_model_profile().map(|profile| {
+            (
+                profile.api_base.as_str(),
+                profile.provider,
+                profile.transport_kind(),
+                profile.supports_video_generation(),
             )
         }) {
             return true;
@@ -3082,6 +3136,7 @@ fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::VercelAiGateway => "vercel-ai-gateway",
         ModelProvider::Openrouter => "openrouter",
         ModelProvider::Openai => "openai",
+        ModelProvider::Volcengine => "volcengine",
         ModelProvider::Custom => "custom",
     }
 }
@@ -3116,6 +3171,9 @@ fn model_capabilities_json(profile: &crate::model_registry::ModelProfile) -> Opt
             }
             "imageGeneration" => {
                 object.insert("imageGeneration".to_string(), Value::Bool(true));
+            }
+            "videoGeneration" => {
+                object.insert("videoGeneration".to_string(), Value::Bool(true));
             }
             _ => {}
         }
@@ -3218,6 +3276,7 @@ mod tests {
             ],
             active_model: "gpt-4o-mini".to_string(),
             image_generation_model: None,
+            video_generation_model: None,
             ui_locale: None,
             extra: Default::default(),
         };

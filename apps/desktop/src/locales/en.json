@@ -52,6 +52,7 @@
     "moonshotAi": "Moonshot AI",
     "alibaba": "Alibaba",
     "minimax": "MiniMax",
+    "volcengine": "Volcengine",
     "custom": "Custom"
   },
   "settings": {
@@ -215,6 +216,9 @@
     "activeModelUsage": "Used for chat, planning, and tool orchestration.",
     "imageGenModelLabel": "Default Image Generation Model",
     "imageGenModelUsage": "Used for generate_image and other image outputs; after unchecking, no default image model will be specified.",
+    "videoGenModelLabel": "Default Video Generation Model",
+    "videoGenModelUsage": "Used for generate_video and other video outputs; after unchecking, no default video model will be specified.",
+    "setVideoGenModel": "Set as default video generation model",
     "lightweightChatModelLabel": "Lightweight Chat Model",
     "lightweightChatModelUsage": "Used for dream collection, worktree naming, and other lightweight background tasks. When unset, falls back by name rules then the current inference model.",
     "noDefaultRolesForModel": "This model currently has no default roles that can be set.",
@@ -554,6 +558,8 @@
     "branchNotFound": "Branch does not exist: {{branch}}",
     "notInWorktree": "The current session is not in a Worktree and cannot be merged.",
     "imageGenModelNotFound": "Image generation model not found: {{model}}",
+    "videoGenModelNotFound": "Video generation model not found: {{model}}",
+    "modelNoVideoGenCapability": "Model {{model}} does not declare video generation capability",
     "modelNoImageGenCapability": "Model does not declare image generation capability: {{model}}",
     "lightweightChatModelNotFound": "Lightweight chat model not found: {{model}}",
     "modelNoChatCapability": "Model does not declare chat capability: {{model}}",

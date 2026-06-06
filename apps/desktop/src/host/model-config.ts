@@ -230,6 +230,10 @@ export function supportsImageGeneration(model: { capabilities?: readonly Desktop
   return model.capabilities?.includes('imageGeneration') === true;
 }
 
+export function supportsVideoGeneration(model: { capabilities?: readonly DesktopModelCapability[] }): boolean {
+  return model.capabilities?.includes('videoGeneration') === true;
+}
+
 interface LoadedPreviewModelsResult {
   modelIds: string[];
   modelCatalog?: PreviewModelCatalogEntry[];

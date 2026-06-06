@@ -243,6 +243,7 @@ import {
   openAiCompatibleVendorFromProvider,
   resolveDesktopTransportKind,
   supportsImageGeneration,
+  supportsVideoGeneration,
 } from './model-config.js';
 import {
   DEFAULT_API_BASE,
@@ -1477,8 +1478,14 @@ class DesktopHostService {
     const imageGenerationProfile = state.config.imageGenerationModel
       ? state.config.models.find((model) => model.name === state.config.imageGenerationModel)
       : undefined;
+    const videoGenerationProfile = state.config.videoGenerationModel
+      ? state.config.models.find((model) => model.name === state.config.videoGenerationModel)
+      : undefined;
     const imageGenerationApiKey = imageGenerationProfile
       ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.name)
+      : undefined;
+    const videoGenerationApiKey = videoGenerationProfile
+      ? await resolveApiKeyForConfigModel(state.config, videoGenerationProfile.name)
       : undefined;
     bundle.runtimeTransport = createLlmTransport();
     if (!apiKey) {
@@ -1516,6 +1523,27 @@ class DesktopHostService {
           ...(imageGenerationVendor ? { llmVendor: imageGenerationVendor } : {}),
           ...(imageGenerationProfile.capabilities
             ? { modelCapabilities: modelCapabilitiesFromConfig(imageGenerationProfile.capabilities) }
+            : {}),
+        },
+      };
+    }
+    if (
+      isOpenAiCompatibleTransportConfig(runtimeTransportConfig)
+      && videoGenerationProfile
+      && videoGenerationApiKey
+      && supportsVideoGeneration(videoGenerationProfile)
+      && resolveDesktopTransportKind(videoGenerationProfile) === 'openai-compatible'
+    ) {
+      const videoGenerationVendor = openAiCompatibleVendorFromProvider(videoGenerationProfile.provider);
+      runtimeTransportConfig = {
+        ...runtimeTransportConfig,
+        videoGeneration: {
+          apiKey: videoGenerationApiKey,
+          model: videoGenerationProfile.name,
+          baseUrl: videoGenerationProfile.apiBase || DEFAULT_API_BASE,
+          ...(videoGenerationVendor ? { llmVendor: videoGenerationVendor } : {}),
+          ...(videoGenerationProfile.capabilities
+            ? { modelCapabilities: modelCapabilitiesFromConfig(videoGenerationProfile.capabilities) }
             : {}),
         },
       };

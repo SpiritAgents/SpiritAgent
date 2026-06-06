@@ -97,13 +97,13 @@ enum ModelAction {
         name: String,
         #[arg(long)]
         api_base: Option<String>,
-        #[arg(long, value_parser = ["deepseek", "xai", "moonshot-ai", "minimax", "alibaba", "anthropic", "openai", "custom"])]
+        #[arg(long, value_parser = ["deepseek", "xai", "moonshot-ai", "minimax", "alibaba", "anthropic", "vercel-ai-gateway", "openrouter", "openai", "volcengine", "custom"])]
         provider: Option<String>,
         #[arg(long, value_parser = ["openai-compatible", "open-responses", "anthropic"])]
         transport_kind: Option<String>,
         #[arg(long)]
         reasoning_effort: Option<String>,
-        #[arg(long = "capability", value_parser = ["chat", "image", "imageGeneration", "video"])]
+        #[arg(long = "capability", value_parser = ["chat", "image", "imageGeneration", "video", "videoGeneration"])]
         capabilities: Vec<String>,
         #[arg(long)]
         key: Option<String>,
@@ -127,6 +127,10 @@ enum ConfigAction {
         name: String,
     },
     ClearImageModel,
+    SetVideoModel {
+        name: String,
+    },
+    ClearVideoModel,
     Key {
         #[command(subcommand)]
         action: KeyAction,
@@ -290,6 +294,8 @@ fn into_config_command(action: ConfigAction) -> ConfigCommand {
         ConfigAction::SetBase { url } => ConfigCommand::SetBase { url },
         ConfigAction::SetImageModel { name } => ConfigCommand::SetImageModel { name },
         ConfigAction::ClearImageModel => ConfigCommand::ClearImageModel,
+        ConfigAction::SetVideoModel { name } => ConfigCommand::SetVideoModel { name },
+        ConfigAction::ClearVideoModel => ConfigCommand::ClearVideoModel,
         ConfigAction::Key { action } => ConfigCommand::Key {
             action: into_key_command(action),
         },

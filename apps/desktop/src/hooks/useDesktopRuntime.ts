@@ -172,6 +172,7 @@ function updateConfigFromSettingsForm(
   return {
     activeModel: s.activeModel,
     imageGenerationModel: s.imageGenerationModel,
+    videoGenerationModel: s.videoGenerationModel,
     lightweightChatModel: s.lightweightChatModel,
     apiBase: s.apiBase,
     windowsMica: s.windowsMica,
@@ -289,6 +290,7 @@ export function useDesktopRuntime() {
   const [settings, setSettings] = useState({
     activeModel: "",
     imageGenerationModel: "",
+    videoGenerationModel: "",
     lightweightChatModel: "",
     apiBase: "",
     uiLocale: "",
@@ -433,12 +435,14 @@ export function useDesktopRuntime() {
         composer,
         questionDrafts,
         localFilePaths,
+        agentModeChipDismissed,
       });
       persistSessionUiDraft(key, { composer, localFilePaths });
     }, COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timeout);
   }, [
+    agentModeChipDismissed,
     busyAction,
     composer,
     composerLocalFileAttachments,
@@ -499,6 +503,7 @@ export function useDesktopRuntime() {
       return {
         activeModel: next.config.activeModel,
         imageGenerationModel: next.config.imageGenerationModel ?? "",
+        videoGenerationModel: next.config.videoGenerationModel ?? "",
         lightweightChatModel: next.config.lightweightChatModel ?? "",
         apiBase: activeModelProfile?.apiBase ?? current.apiBase,
         uiLocale: next.config.uiLocale ?? "",
