@@ -34,7 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
-import { parseModelContextLength } from "@/lib/context-usage";
+import { parseModelContextLength } from "@/lib/model-context-length";
 import type { FontPreference } from "@/lib/font";
 import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";

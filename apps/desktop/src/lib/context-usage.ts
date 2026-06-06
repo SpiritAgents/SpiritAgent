@@ -1,5 +1,6 @@
 import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal';
 
+import { parseModelContextLength } from './model-context-length.js';
 import { DEFAULT_API_BASE } from '../host/storage.js';
 import type {
   DesktopModelCatalogHint,
@@ -15,13 +16,9 @@ export interface ContextUsageModelProfile {
   contextLength?: number;
 }
 
-export function parseModelContextLength(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value <= 0) {
-    return undefined;
-  }
-
-  return value;
-}
+export {
+  parseModelContextLength,
+} from './model-context-length.js';
 
 const CONTEXT_USAGE_PROVIDERS = new Set<DesktopModelProvider>([
   'openrouter',

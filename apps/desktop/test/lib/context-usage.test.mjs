@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-  parseModelContextLength,
-  resolveModelContextLength,
-} from '../../src/lib/context-usage.ts';
+import { parseModelContextLength } from '../../src/lib/model-context-length.ts';
+import { resolveModelContextLength } from '../../src/lib/context-usage.ts';
 
 test('parseModelContextLength accepts positive integers only', () => {
   assert.equal(parseModelContextLength(128000), 128000);
