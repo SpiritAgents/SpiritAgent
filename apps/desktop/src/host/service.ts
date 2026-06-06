@@ -238,12 +238,12 @@ import {
 import { generateSessionTitleFromModelTask } from './session-title-generation.js';
 import { applyGeneratedSessionTitle } from './session-title-service.js';
 import {
+  attachVideoGenerationToTransportConfig,
   buildPrimaryTransportConfig,
   modelCapabilitiesFromConfig,
   openAiCompatibleVendorFromProvider,
   resolveDesktopTransportKind,
   supportsImageGeneration,
-  supportsVideoGeneration,
 } from './model-config.js';
 import {
   DEFAULT_API_BASE,
@@ -1527,27 +1527,10 @@ class DesktopHostService {
         },
       };
     }
-    if (
-      isOpenAiCompatibleTransportConfig(runtimeTransportConfig)
-      && videoGenerationProfile
-      && videoGenerationApiKey
-      && supportsVideoGeneration(videoGenerationProfile)
-      && resolveDesktopTransportKind(videoGenerationProfile) === 'openai-compatible'
-    ) {
-      const videoGenerationVendor = openAiCompatibleVendorFromProvider(videoGenerationProfile.provider);
-      runtimeTransportConfig = {
-        ...runtimeTransportConfig,
-        videoGeneration: {
-          apiKey: videoGenerationApiKey,
-          model: videoGenerationProfile.name,
-          baseUrl: videoGenerationProfile.apiBase || DEFAULT_API_BASE,
-          ...(videoGenerationVendor ? { llmVendor: videoGenerationVendor } : {}),
-          ...(videoGenerationProfile.capabilities
-            ? { modelCapabilities: modelCapabilitiesFromConfig(videoGenerationProfile.capabilities) }
-            : {}),
-        },
-      };
-    }
+    runtimeTransportConfig = attachVideoGenerationToTransportConfig(runtimeTransportConfig, {
+      profile: videoGenerationProfile,
+      apiKey: videoGenerationApiKey,
+    });
     bundle.runtimeTransport = createLlmTransport(runtimeTransportConfig);
 
     const desktopMessages = bundle.messageTimeline.toMessages();
