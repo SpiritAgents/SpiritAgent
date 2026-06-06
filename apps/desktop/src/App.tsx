@@ -2051,7 +2051,7 @@ export default function App() {
   const [lastNonSettingsSurface, setLastNonSettingsSurface] = useState<"conversation" | "marketplace">(
     "conversation",
   );
-  const [settingsTab, setSettingsTab] = useState<SettingsSidebarTab>("basic");
+  const [settingsTab, setSettingsTab] = useState<SettingsSidebarTab>("models");
   const [extensionSettingsId, setExtensionSettingsId] = useState<string | null>(null);
   const [sessionSidebarOpen, setSessionSidebarOpen] = useState(true);
   const [sessionSidebarWidthPx, setSessionSidebarWidthPx] = useState(readSessionSidebarWidthPx);
