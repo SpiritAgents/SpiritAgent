@@ -24,6 +24,7 @@ import {
 import i18n from '../lib/i18n-host.js';
 import {
   buildContextUsagePercent,
+  type ContextUsageModelProfile,
   parseModelContextLength,
   resolveModelContextLength,
   supportsContextUsageProvider,
@@ -87,19 +88,12 @@ export interface DesktopRuntimeEventOrchestratorOptions {
   lineDeltaForDeleteFile?: (inputPath: string) => EditFileLineDelta | undefined;
   /** delete_file：删除前按路径读取磁盘全文 baseline */
   deleteFileBaselineForPath?: (inputPath: string) => string | undefined;
-  resolveActiveModel?: () =>
-    | {
-        name: string;
-        apiBase: string;
-        provider?: import('../types.js').DesktopModelProvider;
-        transportKind?: import('../types.js').DesktopTransportKind;
-      }
-    | undefined;
+  resolveActiveModel?: () => ContextUsageModelProfile | undefined;
   resolveCatalogHints?: () => DesktopModelCatalogHint[] | undefined;
   setContextUsage?: (usage: ConversationContextUsageSnapshot | undefined) => void;
   refreshContextUsageCatalog?: (input: {
     usage: { inputTokens: number };
-    activeModel: NonNullable<ReturnType<NonNullable<DesktopRuntimeEventOrchestratorOptions['resolveActiveModel']>>>;
+    activeModel: ContextUsageModelProfile;
   }) => void;
 }
 

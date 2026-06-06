@@ -239,6 +239,7 @@ import { generateSessionTitleFromModelTask } from './session-title-generation.js
 import { applyGeneratedSessionTitle } from './session-title-service.js';
 import {
   buildContextUsagePercent,
+  type ContextUsageModelProfile,
   resolveModelContextLength,
 } from '../lib/context-usage.js';
 import {
@@ -1895,12 +1896,7 @@ class DesktopHostService {
   private async refreshContextUsageCatalogForBundle(
     bundle: SessionBundle,
     usage: { inputTokens: number },
-    activeModel: {
-      name: string;
-      apiBase: string;
-      provider?: import('../types.js').DesktopModelProvider;
-      transportKind?: import('../types.js').DesktopTransportKind;
-    },
+    activeModel: ContextUsageModelProfile,
   ): Promise<void> {
     if (this.contextUsageCatalogRefreshInFlight || !activeModel.provider) {
       return;
