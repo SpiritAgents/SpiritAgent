@@ -133,6 +133,9 @@ impl TuiShell {
                 if config.image_generation_model.as_deref() == Some(model) {
                     config.image_generation_model = None;
                 }
+                if config.video_generation_model.as_deref() == Some(model) {
+                    config.video_generation_model = None;
+                }
                 if let Err(err) = self.config_store.save(&config) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,

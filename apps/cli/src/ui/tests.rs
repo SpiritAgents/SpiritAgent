@@ -630,6 +630,7 @@ fn rewind_picker_deemphasizes_tool_messages() {
             headline: "读取了一个文件".to_string(),
             detail_lines: vec!["/tmp/demo.txt".to_string()],
             image_paths: Vec::new(),
+        video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -684,6 +685,7 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
             headline: "执行命令".to_string(),
             detail_lines: vec!["echo hello".to_string()],
             image_paths: Vec::new(),
+        video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1122,6 +1124,7 @@ fn subagent_tool_card_hides_output_when_aux_details_collapsed() {
         headline: "搜索完成".to_string(),
         detail_lines: vec!["查询: 最近变更".to_string()],
         image_paths: Vec::new(),
+        video_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
         output_excerpt: Some("命中 3 个结果。".to_string()),
     };
@@ -1143,6 +1146,7 @@ fn subagent_tool_card_shows_output_when_aux_details_expanded() {
         headline: "搜索完成".to_string(),
         detail_lines: vec!["查询: 最近变更".to_string()],
         image_paths: Vec::new(),
+        video_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
         output_excerpt: Some("命中 3 个结果。".to_string()),
     };
@@ -1170,6 +1174,7 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
                 "命令: cargo test -p spirit-agent".to_string(),
             ],
             image_paths: Vec::new(),
+        video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1199,6 +1204,7 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
                 "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"
                     .to_string(),
             ],
+            video_paths: Vec::new(),
             args_excerpt: Some("{\n  \"prompt\": \"画一张图\"\n}".to_string()),
             output_excerpt: Some("[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png".to_string()),
         },
@@ -1220,6 +1226,36 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
 }
 
 #[test]
+fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
+    let mut app = build_view_model(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call-video-1".to_string()),
+            tool_name: "generate_video".to_string(),
+            phase: ToolUiPhase::Succeeded,
+            headline: "视频生成完成".to_string(),
+            detail_lines: Vec::new(),
+            image_paths: Vec::new(),
+            video_paths: vec!["spirit-agent://generated/video/example.mp4".to_string()],
+            args_excerpt: Some("{\n  \"prompt\": \"生成一段视频\"\n}".to_string()),
+            output_excerpt: Some(
+                "[generated video]\nvideo_ref: spirit-agent://generated/video/example.mp4"
+                    .to_string(),
+            ),
+        },
+    ));
+    app.show_aux_details = false;
+
+    let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
+
+    assert!(lines.iter().any(|line| line.contains("视频生成完成")));
+    assert!(lines.iter().any(|line| {
+        line.contains("路径: spirit-agent://generated/video/example.mp4")
+    }));
+}
+
+#[test]
 fn generate_image_tool_card_keeps_rail_on_wrapped_path_lines() {
     let mut app = build_view_model(ChatMessage::with_tool_block(
         MessageRole::Agent,
@@ -1234,6 +1270,7 @@ fn generate_image_tool_card_keeps_rail_on_wrapped_path_lines() {
                     .to_string(),
             ],
             image_paths: Vec::new(),
+        video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1274,6 +1311,7 @@ fn generate_image_tool_card_selection_highlights_wrapped_rail_consistently() {
                     .to_string(),
             ],
             image_paths: Vec::new(),
+        video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1337,6 +1375,7 @@ fn generate_image_history_render_reserves_image_block() {
             headline: "图片生成完成".to_string(),
             detail_lines: vec!["路径: demo.png".to_string()],
             image_paths: vec!["demo.png".to_string()],
+            video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },
@@ -1368,6 +1407,7 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
             headline: "图片生成完成".to_string(),
             detail_lines: vec![format!("路径: {}", file_path.display())],
             image_paths: vec![file_path.to_string_lossy().to_string()],
+            video_paths: Vec::new(),
             args_excerpt: None,
             output_excerpt: None,
         },

@@ -708,6 +708,7 @@ export function normalizeToolBlockSnapshot(
   const argsExcerpt = tool.argsExcerpt?.trim() ? tool.argsExcerpt : undefined;
   const outputExcerpt = tool.outputExcerpt?.trim() ? tool.outputExcerpt : undefined;
   const imagePaths = tool.imagePaths?.map((entry) => entry.trim()).filter(Boolean);
+  const videoPaths = tool.videoPaths?.map((entry) => entry.trim()).filter(Boolean);
   const lspWriteDiagnostics = normalizeLspWriteDiagnosticsSnapshot(tool.lspWriteDiagnostics);
 
   return {
@@ -719,6 +720,7 @@ export function normalizeToolBlockSnapshot(
     ...(argsExcerpt ? { argsExcerpt } : {}),
     ...(outputExcerpt ? { outputExcerpt } : {}),
     ...(imagePaths && imagePaths.length > 0 ? { imagePaths } : {}),
+    ...(videoPaths && videoPaths.length > 0 ? { videoPaths } : {}),
     ...(lspWriteDiagnostics ? { lspWriteDiagnostics } : {}),
   };
 }

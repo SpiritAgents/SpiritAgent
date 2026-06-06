@@ -118,6 +118,8 @@ export interface HostApi {
   ingestClipboardImage?(): Promise<string | null>;
   readLocalImagePreviewDataUrl?(filePath: string): Promise<string | null>;
   readManagedImagePreviewDataUrl?(reference: string): Promise<string | null>;
+  readLocalVideoPreviewUrl?(filePath: string): Promise<string | null>;
+  readManagedVideoPreviewUrl?(reference: string): Promise<string | null>;
   saveLocalImageAs?(filePath: string): Promise<boolean>;
   pairWebHost?(code: string): Promise<void>;
 }

@@ -35,6 +35,23 @@ export function isPreviewableImagePath(value: string): boolean {
   return PREVIEWABLE_IMAGE_EXTENSIONS.has(lower.slice(dot));
 }
 
+const PREVIEWABLE_VIDEO_EXTENSIONS = new Set([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.mpeg',
+  '.mpg',
+]);
+
+export function isPreviewableVideoPath(value: string): boolean {
+  const lower = basenameFromPath(value).toLowerCase();
+  const dot = lower.lastIndexOf('.');
+  if (dot < 0) {
+    return false;
+  }
+  return PREVIEWABLE_VIDEO_EXTENSIONS.has(lower.slice(dot));
+}
+
 export function normalizeSlashPath(value: string): string {
   return value.replace(/\\/g, '/');
 }

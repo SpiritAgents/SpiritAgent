@@ -90,6 +90,7 @@ export interface DesktopConfigFile {
   models: ModelProfileSnapshot[];
   activeModel: string;
   imageGenerationModel?: string;
+  videoGenerationModel?: string;
   lightweightChatModel?: string;
   recentWorkspaces?: string[];
   /** When `none`, cwd is the user home directory and workspace-scoped instructions/MCP are skipped. */
@@ -609,6 +610,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
         ? raw.activeModel!.trim()
         : normalizedModels[0]!.name;
   const imageGenerationModel = normalizeImageGenerationModel(raw.imageGenerationModel, normalizedModels);
+  const videoGenerationModel = normalizeVideoGenerationModel(raw.videoGenerationModel, normalizedModels);
   const dreams = normalizeDreamConfig(raw.dreams);
   const lightweightChatModel = normalizeLightweightChatModel(
     raw.lightweightChatModel ?? dreams.collectorModel,
@@ -619,6 +621,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
     models: normalizedModels,
     activeModel,
     ...(imageGenerationModel ? { imageGenerationModel } : {}),
+    ...(videoGenerationModel ? { videoGenerationModel } : {}),
     ...(lightweightChatModel ? { lightweightChatModel } : {}),
     recentWorkspaces: normalizeRecentWorkspaceRoots(raw.recentWorkspaces),
     workspaceBinding: normalizeWorkspaceBinding(raw.workspaceBinding),
@@ -651,6 +654,23 @@ function normalizeImageGenerationModel(
 
 function modelSupportsImageGeneration(model: ModelProfileSnapshot): boolean {
   return model.capabilities?.includes('imageGeneration') === true;
+}
+
+function normalizeVideoGenerationModel(
+  value: unknown,
+  models: readonly ModelProfileSnapshot[],
+): string | undefined {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return undefined;
+  }
+
+  const modelName = value.trim();
+  const profile = models.find((model) => model.name === modelName);
+  return profile && modelSupportsVideoGeneration(profile) ? profile.name : undefined;
+}
+
+function modelSupportsVideoGeneration(model: ModelProfileSnapshot): boolean {
+  return model.capabilities?.includes('videoGeneration') === true;
 }
 
 function normalizeDesktopTransportKind(

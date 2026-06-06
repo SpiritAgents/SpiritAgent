@@ -30,6 +30,10 @@ import {
   refreshDesktopAttention,
 } from './desktop-attention.js';
 import {
+  installSpiritGeneratedAssetProtocolHandler,
+  registerSpiritGeneratedAssetPrivilegedScheme,
+} from './generated-asset-protocol.js';
+import {
   bindSpiritNotificationProtocolHandlers,
   handleSpiritNotificationProtocolArgv,
   installSpiritNotificationProtocolRouting,
@@ -48,6 +52,7 @@ import type { DesktopSnapshot } from '../src/types.js';
 
 const spiritWebviewHooksAttached = new WeakSet<WebContents>();
 
+registerSpiritGeneratedAssetPrivilegedScheme();
 registerSpiritNotificationProtocolClient();
 installSpiritNotificationProtocolRouting();
 
@@ -150,9 +155,10 @@ import i18nHost from '../src/lib/i18n-host.js';
 /** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
 const LOCAL_IMAGE_PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
-const MANAGED_IMAGE_PROTOCOL = 'spirit-image:';
-const MANAGED_IMAGE_HOST = 'generated';
+const MANAGED_ASSET_PROTOCOL = 'spirit-agent:';
+const MANAGED_ASSET_HOST = 'generated';
 const MANAGED_GENERATED_IMAGES_DIR = 'generated-images';
+const MANAGED_GENERATED_VIDEOS_DIR = 'generated-videos';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -615,6 +621,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
 
 if (gotSpiritSingleInstanceLock) {
   app.whenReady().then(async () => {
+  installSpiritGeneratedAssetProtocolHandler({
+    resolveManagedGeneratedAssetPath,
+    videoPreviewMimeType,
+    imagePreviewMimeType,
+  });
   bindSpiritNotificationProtocolHandlers({
     onApproval: handleApprovalNotificationAction,
     onFocus: focusSpiritDesktopWindows,
@@ -731,12 +742,35 @@ if (gotSpiritSingleInstanceLock) {
       return null;
     }
 
-    const filePath = await resolveManagedGeneratedImagePath(reference);
+    const filePath = await resolveManagedGeneratedAssetPath(reference);
     if (!filePath) {
       return null;
     }
 
     return readImagePreviewDataUrlFromPath(filePath);
+  });
+
+  ipcMain.handle('desktop:read-managed-video-preview', async (_event, payload: { reference?: string }) => {
+    const reference = typeof payload?.reference === 'string' ? payload.reference.trim() : '';
+    if (!reference) {
+      return null;
+    }
+
+    const filePath = await resolveManagedGeneratedAssetPath(reference);
+    if (!filePath) {
+      return null;
+    }
+
+    return managedGeneratedVideoRefFromPath(filePath);
+  });
+
+  ipcMain.handle('desktop:read-local-video-preview', async (_event, payload: { filePath?: string }) => {
+    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
+    if (!filePath) {
+      return null;
+    }
+
+    return readLocalVideoPreviewUrlFromPath(filePath);
   });
 
   ipcMain.handle(
@@ -960,6 +994,63 @@ function imagePreviewMimeType(extension: string): string | undefined {
   }
 }
 
+function videoPreviewMimeType(extension: string): string | null {
+  switch (extension) {
+    case '.mp4':
+      return 'video/mp4';
+    case '.webm':
+      return 'video/webm';
+    case '.mov':
+      return 'video/quicktime';
+    case '.mpeg':
+    case '.mpg':
+      return 'video/mpeg';
+    default:
+      return null;
+  }
+}
+
+async function readLocalVideoPreviewUrlFromPath(filePath: string): Promise<string | null> {
+  const extension = path.extname(filePath).toLowerCase();
+  if (!videoPreviewMimeType(extension)) {
+    return null;
+  }
+
+  try {
+    const managedRoot = path.join(spiritAgentDataDir(), MANAGED_GENERATED_VIDEOS_DIR);
+    const [rootStats, candidateStats] = await Promise.all([lstat(managedRoot), lstat(filePath)]);
+    if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
+      return null;
+    }
+    if (!candidateStats.isFile() || candidateStats.isSymbolicLink()) {
+      return null;
+    }
+
+    const [canonicalRoot, canonicalPath] = await Promise.all([realpath(managedRoot), realpath(filePath)]);
+    if (!pathIsWithinRoot(canonicalPath, canonicalRoot)) {
+      return null;
+    }
+
+    return managedGeneratedVideoRefFromPath(canonicalPath);
+  } catch {
+    return null;
+  }
+}
+
+function managedGeneratedVideoRefFromPath(filePath: string): string | null {
+  const extension = path.extname(filePath).toLowerCase();
+  if (!videoPreviewMimeType(extension)) {
+    return null;
+  }
+
+  const assetId = path.basename(filePath);
+  if (!assetId || assetId === '.' || assetId === '..') {
+    return null;
+  }
+
+  return `${MANAGED_ASSET_PROTOCOL}//${MANAGED_ASSET_HOST}/video/${encodeURIComponent(assetId)}`;
+}
+
 async function readImagePreviewDataUrlFromPath(filePath: string): Promise<string | null> {
   const extension = path.extname(filePath).toLowerCase();
   const mimeType = imagePreviewMimeType(extension);
@@ -980,7 +1071,7 @@ async function readImagePreviewDataUrlFromPath(filePath: string): Promise<string
   }
 }
 
-async function resolveManagedGeneratedImagePath(reference: string): Promise<string | null> {
+async function resolveManagedGeneratedAssetPath(reference: string): Promise<string | null> {
   let url: URL;
   try {
     url = new URL(reference);
@@ -988,25 +1079,36 @@ async function resolveManagedGeneratedImagePath(reference: string): Promise<stri
     return null;
   }
 
-  if (url.protocol !== MANAGED_IMAGE_PROTOCOL || url.hostname !== MANAGED_IMAGE_HOST) {
+  if (url.protocol !== MANAGED_ASSET_PROTOCOL || url.hostname !== MANAGED_ASSET_HOST) {
     return null;
   }
   if (url.search.length > 0 || url.hash.length > 0) {
     return null;
   }
 
-  let imageId: string;
-  try {
-    imageId = decodeURIComponent(url.pathname.replace(/^\/+/, '')).trim();
-  } catch {
-    return null;
-  }
-  if (!imageId || imageId !== path.basename(imageId) || imageId === '.' || imageId === '..') {
+  const segments = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+  if (segments.length !== 2) {
     return null;
   }
 
-  const managedRoot = path.join(spiritAgentDataDir(), MANAGED_GENERATED_IMAGES_DIR);
-  const candidatePath = path.join(managedRoot, imageId);
+  const kind = segments[0]?.toLowerCase();
+  if (kind !== 'image' && kind !== 'video') {
+    return null;
+  }
+
+  let assetId: string;
+  try {
+    assetId = decodeURIComponent(segments[1] ?? '').trim();
+  } catch {
+    return null;
+  }
+  if (!assetId || assetId !== path.basename(assetId) || assetId === '.' || assetId === '..') {
+    return null;
+  }
+
+  const managedDir = kind === 'image' ? MANAGED_GENERATED_IMAGES_DIR : MANAGED_GENERATED_VIDEOS_DIR;
+  const managedRoot = path.join(spiritAgentDataDir(), managedDir);
+  const candidatePath = path.join(managedRoot, assetId);
 
   try {
     const [rootStats, candidateStats] = await Promise.all([lstat(managedRoot), lstat(candidatePath)]);

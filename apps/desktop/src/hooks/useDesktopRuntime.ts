@@ -172,6 +172,7 @@ function updateConfigFromSettingsForm(
   return {
     activeModel: s.activeModel,
     imageGenerationModel: s.imageGenerationModel,
+    videoGenerationModel: s.videoGenerationModel,
     lightweightChatModel: s.lightweightChatModel,
     apiBase: s.apiBase,
     windowsMica: s.windowsMica,
@@ -289,6 +290,7 @@ export function useDesktopRuntime() {
   const [settings, setSettings] = useState({
     activeModel: "",
     imageGenerationModel: "",
+    videoGenerationModel: "",
     lightweightChatModel: "",
     apiBase: "",
     uiLocale: "",
@@ -433,12 +435,14 @@ export function useDesktopRuntime() {
         composer,
         questionDrafts,
         localFilePaths,
+        agentModeChipDismissed,
       });
       persistSessionUiDraft(key, { composer, localFilePaths });
     }, COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timeout);
   }, [
+    agentModeChipDismissed,
     busyAction,
     composer,
     composerLocalFileAttachments,
@@ -499,6 +503,7 @@ export function useDesktopRuntime() {
       return {
         activeModel: next.config.activeModel,
         imageGenerationModel: next.config.imageGenerationModel ?? "",
+        videoGenerationModel: next.config.videoGenerationModel ?? "",
         lightweightChatModel: next.config.lightweightChatModel ?? "",
         apiBase: activeModelProfile?.apiBase ?? current.apiBase,
         uiLocale: next.config.uiLocale ?? "",
@@ -750,6 +755,36 @@ export function useDesktopRuntime() {
       } catch (error) {
         setRuntimeError(describeError(error));
         return false;
+      }
+    },
+    [api],
+  );
+
+  const readLocalVideoPreviewUrl = useCallback(
+    async (filePath: string): Promise<string | null> => {
+      if (!api?.readLocalVideoPreviewUrl) {
+        return null;
+      }
+
+      try {
+        return await api.readLocalVideoPreviewUrl(filePath);
+      } catch {
+        return null;
+      }
+    },
+    [api],
+  );
+
+  const readManagedVideoPreviewUrl = useCallback(
+    async (reference: string): Promise<string | null> => {
+      if (!api?.readManagedVideoPreviewUrl) {
+        return null;
+      }
+
+      try {
+        return await api.readManagedVideoPreviewUrl(reference);
+      } catch {
+        return null;
       }
     },
     [api],
@@ -2283,6 +2318,8 @@ export function useDesktopRuntime() {
     ingestClipboardImage,
     readLocalImagePreviewDataUrl,
     readManagedImagePreviewDataUrl,
+    readLocalVideoPreviewUrl,
+    readManagedVideoPreviewUrl,
     saveLocalImageAs,
     commitChanges,
     submitGitChip,

@@ -238,6 +238,7 @@ import {
 import { generateSessionTitleFromModelTask } from './session-title-generation.js';
 import { applyGeneratedSessionTitle } from './session-title-service.js';
 import {
+  attachVideoGenerationToTransportConfig,
   buildPrimaryTransportConfig,
   modelCapabilitiesFromConfig,
   openAiCompatibleVendorFromProvider,
@@ -1477,8 +1478,14 @@ class DesktopHostService {
     const imageGenerationProfile = state.config.imageGenerationModel
       ? state.config.models.find((model) => model.name === state.config.imageGenerationModel)
       : undefined;
+    const videoGenerationProfile = state.config.videoGenerationModel
+      ? state.config.models.find((model) => model.name === state.config.videoGenerationModel)
+      : undefined;
     const imageGenerationApiKey = imageGenerationProfile
       ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.name)
+      : undefined;
+    const videoGenerationApiKey = videoGenerationProfile
+      ? await resolveApiKeyForConfigModel(state.config, videoGenerationProfile.name)
       : undefined;
     bundle.runtimeTransport = createLlmTransport();
     if (!apiKey) {
@@ -1520,6 +1527,10 @@ class DesktopHostService {
         },
       };
     }
+    runtimeTransportConfig = attachVideoGenerationToTransportConfig(runtimeTransportConfig, {
+      profile: videoGenerationProfile,
+      apiKey: videoGenerationApiKey,
+    });
     bundle.runtimeTransport = createLlmTransport(runtimeTransportConfig);
 
     const desktopMessages = bundle.messageTimeline.toMessages();

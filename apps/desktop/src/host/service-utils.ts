@@ -261,6 +261,11 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
       role: message.role,
       content: message.content,
       imagePaths: [...(('imagePaths' in message ? message.imagePaths : []) ?? [])],
+      videoPaths: [
+        ...((('videoPaths' in message && Array.isArray(message.videoPaths))
+          ? message.videoPaths
+          : []) ?? []),
+      ],
       ...('toolCallId' in message && typeof message.toolCallId === 'string'
         ? { toolCallId: message.toolCallId }
         : {}),

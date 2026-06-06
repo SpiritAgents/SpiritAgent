@@ -89,6 +89,7 @@ export class DesktopRuntimeEventOrchestrator {
   private lastApplyEventBatchId = 0;
   private messageOrderDebugLastVerboseLogMs = 0;
   private activeGenerateImageTools = new Map<string, ToolBlockSnapshot>();
+  private activeGenerateVideoTools = new Map<string, ToolBlockSnapshot>();
   /**
    * 无工具回合里 after-stream 思考暂不拆行：先留在当前 assistant 行的 aux 上，等正文到来在
    * 同一个 Collapsible 实例上收起；本段 completed 时再拆成独立思考行。
@@ -137,6 +138,7 @@ export class DesktopRuntimeEventOrchestrator {
     this.lastApplyEventBatchId = 0;
     this.messageOrderDebugLastVerboseLogMs = 0;
     this.activeGenerateImageTools.clear();
+    this.activeGenerateVideoTools.clear();
     this.deferredAfterStreamThinking = undefined;
   }
 
@@ -333,7 +335,9 @@ export class DesktopRuntimeEventOrchestrator {
         const runningSummary =
           event.toolName === 'generate_image'
             ? { headline: i18n.t('tool.generateImage') }
-            : toolCallSummaryForPhase('running', event.toolName, event.request);
+            : event.toolName === 'generate_video'
+              ? { headline: i18n.t('tool.generateVideo') }
+              : toolCallSummaryForPhase('running', event.toolName, event.request);
         const runningTool: ToolBlockSnapshot = this.attachLineDelta(
           applyToolCallSummaryCopy(
             {
@@ -350,6 +354,9 @@ export class DesktopRuntimeEventOrchestrator {
         );
         if (event.toolName === 'generate_image') {
           this.activeGenerateImageTools.set(event.toolCallId, runningTool);
+        }
+        if (event.toolName === 'generate_video') {
+          this.activeGenerateVideoTools.set(event.toolCallId, runningTool);
         }
         this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
         this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, runningTool);
@@ -379,6 +386,9 @@ export class DesktopRuntimeEventOrchestrator {
       if (event.kind === 'tool-execution-finished') {
         if (event.execution.toolName === 'generate_image' && event.execution.toolCallId) {
           this.activeGenerateImageTools.delete(event.execution.toolCallId);
+        }
+        if (event.execution.toolName === 'generate_video' && event.execution.toolCallId) {
+          this.activeGenerateVideoTools.delete(event.execution.toolCallId);
         }
         this.integrateToolExecutions([event.execution], 'event');
         if (isMcpLikeToolName(event.execution.toolName)) {
@@ -646,17 +656,19 @@ export class DesktopRuntimeEventOrchestrator {
       this.options.messageTimeline?.()?.upsertToolMessage(toolMessageKey(questions), pendingTool);
     }
 
-    for (const [toolCallId, tool] of this.activeGenerateImageTools) {
-      const runningTool: ToolBlockSnapshot = {
-        ...tool,
-        phase: 'running',
-      };
-      this.options.assistantMessages.upsertToolMessage(
-        toolCallId,
-        runningTool,
-        this.lastApplyEventBatchId,
-      );
-      this.options.messageTimeline?.()?.upsertToolMessage(toolCallId, runningTool);
+    for (const toolMap of [this.activeGenerateImageTools, this.activeGenerateVideoTools]) {
+      for (const [toolCallId, tool] of toolMap) {
+        const runningTool: ToolBlockSnapshot = {
+          ...tool,
+          phase: 'running',
+        };
+        this.options.assistantMessages.upsertToolMessage(
+          toolCallId,
+          runningTool,
+          this.lastApplyEventBatchId,
+        );
+        this.options.messageTimeline?.()?.upsertToolMessage(toolCallId, runningTool);
+      }
     }
   }
 
@@ -692,13 +704,21 @@ export class DesktopRuntimeEventOrchestrator {
       if (execution.toolName === 'generate_image' && execution.toolCallId) {
         this.activeGenerateImageTools.delete(execution.toolCallId);
       }
+      if (execution.toolName === 'generate_video' && execution.toolCallId) {
+        this.activeGenerateVideoTools.delete(execution.toolCallId);
+      }
       const imagePaths = imagePathsFromExecution(execution);
+      const videoPaths = videoPathsFromExecution(execution);
       const executionSummary =
         execution.toolName === 'generate_image'
           ? {
               headline: execution.failed ? i18n.t('tool.imageGenFailed') : i18n.t('tool.imageGenComplete'),
             }
-          : toolCallSummaryForPhase(
+          : execution.toolName === 'generate_video'
+            ? {
+                headline: execution.failed ? i18n.t('tool.videoGenFailed') : i18n.t('tool.videoGenComplete'),
+              }
+            : toolCallSummaryForPhase(
               execution.failed ? 'failed' : 'succeeded',
               execution.toolName,
               execution.request,
@@ -719,6 +739,7 @@ export class DesktopRuntimeEventOrchestrator {
             outputExcerpt: truncateText(execution.output, 4_000),
             ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
             ...(imagePaths.length > 0 ? { imagePaths } : {}),
+            ...(videoPaths.length > 0 ? { videoPaths } : {}),
             ...(execution.hostUi?.lspWriteDiagnostics
               ? { lspWriteDiagnostics: execution.hostUi.lspWriteDiagnostics }
               : {}),
@@ -759,8 +780,9 @@ export class DesktopRuntimeEventOrchestrator {
     const messages = this.options.messages();
     const callId = execution.toolCallId || `tool:${execution.toolName}`;
     const images = imagePathsFromExecution(execution).length;
+    const videos = videoPathsFromExecution(execution).length;
     console.log(
-      `[desktop-host][tool-flow] integrate source=${source} call=${callId} name=${execution.toolName} phase=${execution.failed ? 'failed' : 'succeeded'} msg=${messageId} images=${images} tools=${summarizeToolRowsForDebug(messages, 8)} tail=${summarizeMessagesTailForOrderDebug(messages, 8)}`,
+      `[desktop-host][tool-flow] integrate source=${source} call=${callId} name=${execution.toolName} phase=${execution.failed ? 'failed' : 'succeeded'} msg=${messageId} images=${images} videos=${videos} tools=${summarizeToolRowsForDebug(messages, 8)} tail=${summarizeMessagesTailForOrderDebug(messages, 8)}`,
     );
   }
 
@@ -795,6 +817,7 @@ export class DesktopRuntimeEventOrchestrator {
     const denied = event.decisionKind === 'deny' || event.decisionKind === 'guidance';
     if (denied) {
       this.activeGenerateImageTools.delete(event.toolCallId);
+      this.activeGenerateVideoTools.delete(event.toolCallId);
       this.options.assistantMessages.removeToolMessage(event.toolCallId);
       this.options.messageTimeline?.()?.removeToolMessage(event.toolCallId);
       return;
@@ -903,6 +926,12 @@ export class DesktopRuntimeEventOrchestrator {
 function imagePathsFromExecution(execution: RuntimeToolExecution<DesktopToolRequest>): string[] {
   return (execution.artifacts ?? [])
     .filter((artifact) => artifact.kind === 'image' && artifact.path.trim().length > 0)
+    .map((artifact) => artifact.path.trim());
+}
+
+function videoPathsFromExecution(execution: RuntimeToolExecution<DesktopToolRequest>): string[] {
+  return (execution.artifacts ?? [])
+    .filter((artifact) => artifact.kind === 'video' && artifact.path.trim().length > 0)
     .map((artifact) => artifact.path.trim());
 }
 

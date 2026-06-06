@@ -331,6 +331,9 @@ function cloneDesktopMessageTimeline(
                     ...(turn.userRow.tool.imagePaths
                       ? { imagePaths: [...turn.userRow.tool.imagePaths] }
                       : {}),
+                    ...(turn.userRow.tool.videoPaths
+                      ? { videoPaths: [...turn.userRow.tool.videoPaths] }
+                      : {}),
                   },
                 }
               : {}),
@@ -355,6 +358,7 @@ function cloneDesktopMessageTimeline(
                 ...row.tool,
                 detailLines: [...row.tool.detailLines],
                 ...(row.tool.imagePaths ? { imagePaths: [...row.tool.imagePaths] } : {}),
+                ...(row.tool.videoPaths ? { videoPaths: [...row.tool.videoPaths] } : {}),
               },
             }
           : {}),

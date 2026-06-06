@@ -157,5 +157,5 @@ export function isMinimalToolCallMessage(message: {
   if (!message.tool) {
     return false;
   }
-  return message.tool.toolName !== 'generate_image';
+  return message.tool.toolName !== 'generate_image' && message.tool.toolName !== 'generate_video';
 }
