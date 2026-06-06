@@ -118,7 +118,6 @@ declare global {
     readLocalVideoPreviewUrl(filePath: string): Promise<string | null>;
     readManagedVideoPreviewUrl(reference: string): Promise<string | null>;
     saveLocalImageAs(filePath: string): Promise<boolean>;
-    saveLocalVideoAs(filePath: string): Promise<boolean>;
     syncWindowFrame(request: {
       dark: boolean;
       nativeTheme: 'system' | 'light' | 'dark';

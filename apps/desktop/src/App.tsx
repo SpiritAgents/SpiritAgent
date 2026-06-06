@@ -421,7 +421,6 @@ type ReadManagedImagePreview = (reference: string) => Promise<string | null>;
 type ReadLocalVideoPreview = (filePath: string) => Promise<string | null>;
 type ReadManagedVideoPreview = (reference: string) => Promise<string | null>;
 type SaveLocalImageAs = (filePath: string) => Promise<boolean>;
-type SaveLocalVideoAs = (filePath: string) => Promise<boolean>;
 
 function ToolCallCollapsible({
   tool,
@@ -429,14 +428,12 @@ function ToolCallCollapsible({
   readLocalVideoPreviewUrl,
   readManagedVideoPreviewUrl,
   saveLocalImageAs,
-  saveLocalVideoAs,
 }: {
   tool: ToolBlockSnapshot;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
-  saveLocalVideoAs: SaveLocalVideoAs;
 }) {
   if (tool.toolName === "finish_task") {
     return null;
@@ -458,7 +455,6 @@ function ToolCallCollapsible({
         tool={tool}
         readLocalVideoPreviewUrl={readLocalVideoPreviewUrl}
         readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
-        saveLocalVideoAs={saveLocalVideoAs}
       />
     );
   }
@@ -720,12 +716,10 @@ function VideoGenerationToolCard({
   tool,
   readLocalVideoPreviewUrl,
   readManagedVideoPreviewUrl,
-  saveLocalVideoAs,
 }: {
   tool: ToolBlockSnapshot;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
-  saveLocalVideoAs: SaveLocalVideoAs;
 }) {
   const { t } = useTranslation();
   const videoPath = tool.videoPaths?.find((path) => path.trim().length > 0) ?? "";
@@ -733,7 +727,6 @@ function VideoGenerationToolCard({
     tool.videoPaths?.find((path) => isManagedGeneratedVideoRef(path) || isPreviewableVideoPath(path)) ?? "";
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewState, setPreviewState] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -770,30 +763,12 @@ function VideoGenerationToolCard({
   }, [previewSourcePath, readLocalVideoPreviewUrl, readManagedVideoPreviewUrl]);
 
   const loading = tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
-  const canDownload = Boolean(videoPath);
-  const floatingActionButtonClass =
-    "size-8 rounded-full border border-border/50 bg-background/55 text-foreground shadow-sm backdrop-blur-xl transition-[opacity,background-color,border-color,box-shadow] duration-200 ease-out hover:border-border/60 hover:bg-background/72 dark:border-white/12 dark:bg-input/30 dark:hover:bg-input/40 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25";
-  const floatingActionCardRevealClass =
-    "opacity-0 group-hover/video-card:opacity-100 group-focus-within/video-card:opacity-100";
-
-  const handleSaveVideo = async () => {
-    if (!videoPath || saving) {
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await saveLocalVideoAs(videoPath);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <div className="w-full max-w-[min(28rem,100%)] py-1">
       <div
         className={cn(
-          "group/video-card relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200",
+          "relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200",
           tool.phase === "failed" && "border-destructive/45 bg-destructive/5",
         )}
       >
@@ -816,26 +791,6 @@ function VideoGenerationToolCard({
             </span>
           </div>
         )}
-        {canDownload ? (
-          <div className="pointer-events-none absolute inset-0 z-10">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "pointer-events-auto absolute bottom-3 left-3",
-                floatingActionButtonClass,
-                floatingActionCardRevealClass,
-              )}
-              onClick={() => void handleSaveVideo()}
-              disabled={saving}
-              title={t('app.downloadVideo')}
-              aria-label={t('app.downloadVideo')}
-            >
-              {saving ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
-            </Button>
-          </div>
-        ) : null}
       </div>
       {!previewUrl && videoPath ? (
         <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground" title={videoPath}>
@@ -1423,7 +1378,6 @@ function MessageCard({
   readLocalImagePreviewDataUrl,
   readLocalVideoPreviewUrl,
   saveLocalImageAs,
-  saveLocalVideoAs,
 }: {
   composerSessionKey: string;
   messages: readonly ConversationMessageSnapshot[];
@@ -1463,7 +1417,6 @@ function MessageCard({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
-  saveLocalVideoAs: SaveLocalVideoAs;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
@@ -1603,7 +1556,6 @@ function MessageCard({
             readLocalVideoPreviewUrl={readLocalVideoPreviewUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             saveLocalImageAs={saveLocalImageAs}
-            saveLocalVideoAs={saveLocalVideoAs}
           />
         ) : null}
         {!isUser && showContinueButton && continueTarget ? (
@@ -3197,7 +3149,6 @@ export default function App() {
                               readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
                               readLocalVideoPreviewUrl={runtime.readLocalVideoPreviewUrl}
                               saveLocalImageAs={runtime.saveLocalImageAs}
-                              saveLocalVideoAs={runtime.saveLocalVideoAs}
                             />
                           );
                         })}

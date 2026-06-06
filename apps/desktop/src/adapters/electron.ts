@@ -210,8 +210,5 @@ export async function createElectronHostApi(): Promise<HostApi> {
     saveLocalImageAs(filePath) {
       return bridge.saveLocalImageAs(filePath);
     },
-    saveLocalVideoAs(filePath) {
-      return bridge.saveLocalVideoAs(filePath);
-    },
   };
 }
