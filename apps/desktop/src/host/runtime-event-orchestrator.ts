@@ -279,21 +279,19 @@ export class DesktopRuntimeEventOrchestrator {
           activeModel,
           this.options.resolveCatalogHints?.(),
         );
-        if (
-          !activeModel
-          || contextLength === undefined
-        ) {
-          if (
-            activeModel
-            && supportsContextUsageProvider(activeModel.provider)
-            && parseModelContextLength(activeModel.contextLength) === undefined
-            && contextLength === undefined
-          ) {
-            this.options.refreshContextUsageCatalog?.({
-              usage: event.usage,
-              activeModel,
-            });
-          }
+        const shouldRefreshCatalog =
+          activeModel !== undefined
+          && contextLength === undefined
+          && supportsContextUsageProvider(activeModel.provider)
+          && parseModelContextLength(activeModel.contextLength) === undefined;
+        if (shouldRefreshCatalog) {
+          this.options.refreshContextUsageCatalog?.({
+            usage: event.usage,
+            activeModel,
+          });
+          continue;
+        }
+        if (!activeModel || contextLength === undefined) {
           this.options.setContextUsage?.(undefined);
         } else {
           this.options.setContextUsage?.({

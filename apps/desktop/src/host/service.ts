@@ -438,7 +438,14 @@ class DesktopHostService {
   private readonly sessionListUpdateListeners = new Set<() => void>();
   private readonly sessionTitleGenerationInFlight = new Set<string>();
   private gitRefreshInFlight: Promise<void> | null = null;
-  private contextUsageCatalogRefreshInFlight = false;
+  private contextUsageCatalogRefreshInFlight: Promise<void> | null = null;
+  private pendingContextUsageCatalogRefresh:
+    | {
+        bundle: SessionBundle;
+        usage: { inputTokens: number };
+        activeModel: ContextUsageModelProfile;
+      }
+    | undefined;
   private gitRefreshQueued = false;
   private readonly todoClearingBySession = new Map<
     string,
@@ -483,6 +490,7 @@ class DesktopHostService {
       refreshModelKeyPresence: () => this.refreshModelKeyPresence(),
       flushDeferredRuntimeRefreshIfIdle: () => this.flushDeferredRuntimeRefreshIfIdle(),
       persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
+      clearActiveContextUsage: () => this.clearActiveBundleContextUsage(),
       setLastRuntimeError: (error) => {
         this.lastRuntimeError = error;
       },
@@ -1893,51 +1901,84 @@ class DesktopHostService {
     this.modelKeyPresence = await modelSecretKeyPresence(state.config.models);
   }
 
+  private clearActiveBundleContextUsage(): void {
+    const bundle = this.sessionRegistry.getActive();
+    if (!bundle) {
+      return;
+    }
+    bundle.contextUsage = undefined;
+  }
+
   private async refreshContextUsageCatalogForBundle(
     bundle: SessionBundle,
     usage: { inputTokens: number },
     activeModel: ContextUsageModelProfile,
   ): Promise<void> {
-    if (this.contextUsageCatalogRefreshInFlight || !activeModel.provider) {
+    if (!activeModel.provider) {
       return;
     }
-    this.contextUsageCatalogRefreshInFlight = true;
-    try {
-      await this.runSerialized(async () => {
-        const state = this.state;
-        if (!state) {
-          return;
+    this.pendingContextUsageCatalogRefresh = { bundle, usage, activeModel };
+    await this.runCoalescedContextUsageCatalogRefresh();
+  }
+
+  private async runCoalescedContextUsageCatalogRefresh(): Promise<void> {
+    if (this.contextUsageCatalogRefreshInFlight) {
+      return this.contextUsageCatalogRefreshInFlight;
+    }
+
+    this.contextUsageCatalogRefreshInFlight = (async () => {
+      try {
+        while (this.pendingContextUsageCatalogRefresh) {
+          const pending = this.pendingContextUsageCatalogRefresh;
+          this.pendingContextUsageCatalogRefresh = undefined;
+          await this.runSerialized(async () => {
+            await this.applyContextUsageCatalogRefresh(pending);
+          });
         }
-        const apiKey = await resolveApiKeyForConfigModel(state.config, activeModel.name);
-        if (!apiKey?.trim()) {
-          return;
-        }
-        const transportKind = resolveDesktopTransportKind(activeModel);
-        await loadPreviewModelsForTransport({
-          provider: activeModel.provider,
-          transportKind,
-          apiBase: activeModel.apiBase.trim() || DEFAULT_API_BASE,
-          apiKey: apiKey.trim(),
-          forceRefresh: true,
-        });
-        const contextLength = resolveModelContextLength(
-          activeModel,
-          buildModelCatalogHints(state.config),
-        );
-        if (contextLength === undefined) {
-          return;
-        }
-        bundle.contextUsage = {
-          inputTokens: usage.inputTokens,
-          contextLength,
-          percent: buildContextUsagePercent(usage.inputTokens, contextLength),
-        };
-        if (bundle.id === this.sessionRegistry.activeSessionId()) {
-          this.emitLiveSnapshotUpdate();
-        }
-      });
-    } finally {
-      this.contextUsageCatalogRefreshInFlight = false;
+      } finally {
+        this.contextUsageCatalogRefreshInFlight = null;
+      }
+    })();
+
+    return this.contextUsageCatalogRefreshInFlight;
+  }
+
+  private async applyContextUsageCatalogRefresh(input: {
+    bundle: SessionBundle;
+    usage: { inputTokens: number };
+    activeModel: ContextUsageModelProfile;
+  }): Promise<void> {
+    const { bundle, usage, activeModel } = input;
+    const state = this.state;
+    if (!state || !activeModel.provider) {
+      return;
+    }
+    const apiKey = await resolveApiKeyForConfigModel(state.config, activeModel.name);
+    if (!apiKey?.trim()) {
+      return;
+    }
+    const transportKind = resolveDesktopTransportKind(activeModel);
+    await loadPreviewModelsForTransport({
+      provider: activeModel.provider,
+      transportKind,
+      apiBase: activeModel.apiBase.trim() || DEFAULT_API_BASE,
+      apiKey: apiKey.trim(),
+      forceRefresh: true,
+    });
+    const contextLength = resolveModelContextLength(
+      activeModel,
+      buildModelCatalogHints(state.config),
+    );
+    if (contextLength === undefined) {
+      return;
+    }
+    bundle.contextUsage = {
+      inputTokens: usage.inputTokens,
+      contextLength,
+      percent: buildContextUsagePercent(usage.inputTokens, contextLength),
+    };
+    if (bundle.id === this.sessionRegistry.activeSessionId()) {
+      this.emitLiveSnapshotUpdate();
     }
   }
 
