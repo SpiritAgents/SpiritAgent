@@ -111,6 +111,7 @@ import {
 } from "@/lib/composer-segment-model";
 import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { ApprovalLevelMenu } from "@/components/approval-level-menu";
+import { ComposerContextUsageRing } from "@/components/composer-context-usage-ring";
 import { BranchSelectMenu } from "@/components/branch-select-menu";
 import { WorkLocationMenu } from "@/components/work-location-menu";
 import { SkillSlashMenu } from "@/components/skill-slash-menu";
@@ -3487,13 +3488,17 @@ export default function App() {
                         CONVERSATION_GUTTER_X,
                       )}
                     >
-                      <div className="flex justify-start px-3">
+                      <div className="flex items-center justify-between gap-3 px-3">
                         <ApprovalLevelMenu
                           approvalLevel={snapshot?.conversation.approvalLevel ?? "default"}
                           disabled={activeSessionReadOnly}
                           onApprovalLevelChange={(level) => {
                             void runtime.setApprovalLevel(level);
                           }}
+                        />
+                        <ComposerContextUsageRing
+                          usage={snapshot?.conversation.contextUsage}
+                          busy={snapshot?.conversation.isBusy}
                         />
                       </div>
                       {snapshot?.conversation.pendingQuestions ? (
