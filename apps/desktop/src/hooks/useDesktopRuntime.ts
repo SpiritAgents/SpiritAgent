@@ -1701,6 +1701,17 @@ export function useDesktopRuntime() {
     }
 
     setBusyAction("send");
+    const composerDraftBeforeSend = {
+      text: request.text,
+      localFilePaths: [...localFilePaths],
+    };
+    clearActiveComposerDraft();
+    const restoreComposerDraftOnFailure = () => {
+      setComposer(composerDraftBeforeSend.text);
+      setComposerLocalFileAttachments(
+        attachmentsFromPaths(composerDraftBeforeSend.localFilePaths),
+      );
+    };
     try {
       if (interruptible) {
         const aborted = await api.abortConversation();
@@ -1714,6 +1725,7 @@ export function useDesktopRuntime() {
           isCompactSlashInput(text) ||
           skillSlash)
       ) {
+        restoreComposerDraftOnFailure();
         setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
         return false;
       }
@@ -1732,11 +1744,11 @@ export function useDesktopRuntime() {
             ...(hasLocalFiles ? { localFilePaths } : {}),
           });
       applySnapshot(next);
-      clearActiveComposerDraft();
       setRuntimeError("");
       void refreshSessions();
       return true;
     } catch (error) {
+      restoreComposerDraftOnFailure();
       setRuntimeError(describeError(error));
       return false;
     } finally {

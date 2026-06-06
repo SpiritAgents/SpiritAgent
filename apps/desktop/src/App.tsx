@@ -2669,10 +2669,10 @@ export default function App() {
       }
     }
 
+    composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
     void runtime.sendMessage(payload).then((ok) => {
       if (ok) {
         setComposerBrowserElementAttachments([]);
-        composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
       }
     });
   };
