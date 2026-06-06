@@ -116,9 +116,7 @@ export function MinimalToolSummary({
         <>
           <span className={shimmerClass}>{shellSummary.verb}</span>
           {" "}
-          <span className={shimmerActive ? shimmerClass : summaryShellReasonClass}>
-            {shellSummary.reason}
-          </span>
+          <span className={summaryShellReasonClass}>{shellSummary.reason}</span>
         </>
       ) : (
         <span className={shimmerClass}>{headline}</span>
