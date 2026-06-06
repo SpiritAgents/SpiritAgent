@@ -28,6 +28,7 @@ const MCP_ADD_FIELD_ENDPOINT: usize = 3;
 const MCP_ADD_FIELD_METADATA: usize = 4;
 
 const MODEL_ADD_FIELD_PROVIDER: usize = 0;
+const MODEL_ADD_VOLCENGINE_PROVIDER_INDEX: usize = 9;
 
 const MCP_DEFAULT_TIMEOUT_MS: u64 = 20_000;
 
@@ -160,9 +161,33 @@ fn model_add_transport_field(selected: usize) -> BottomFormFieldView {
     }
 }
 
+fn model_add_volcengine_transport_field(selected: usize) -> BottomFormFieldView {
+    BottomFormFieldView {
+        label: t!("form.model.field.api_kind.label").into_owned(),
+        help: String::new(),
+        editor: BottomFormFieldEditorView::Choice {
+            options: vec![
+                t!("form.model.api_kind.openai_compatible").into_owned(),
+                t!("form.model.api_kind.open_responses").into_owned(),
+            ],
+            selected: selected.min(1),
+        },
+    }
+}
+
 fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> ModelTransportKind {
     match provider {
         ModelProvider::Anthropic => ModelTransportKind::Anthropic,
+        ModelProvider::Volcengine => match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                if *selected == 1 {
+                    ModelTransportKind::OpenResponses
+                } else {
+                    ModelTransportKind::OpenAiCompatible
+                }
+            }
+            _ => ModelTransportKind::OpenAiCompatible,
+        },
         ModelProvider::Custom => match form.fields.get(2).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
                 match *selected {
@@ -177,7 +202,7 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
     }
 }
 
-/// API Key 始终在「连接模型」表单最后一项（预设 3 项、自定义单条 6 项、自定义批量 5 项）。
+/// API Key 始终在「连接模型」表单最后一项（预设 3 项、火山 4 项、自定义单条 6 项、自定义批量 5 项）。
 fn model_add_api_key_field_index(form: &BottomFormView) -> usize {
     form.fields.len().saturating_sub(1)
 }
@@ -305,6 +330,12 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
         _ => 0,
     };
+    let volcengine_transport_selected = match form.fields.get(2).map(|f| &f.editor) {
+        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+            (*selected).min(1)
+        }
+        _ => 0,
+    };
 
     let name_raw = if old_len == 6 {
         bottom_form_text_value(form, 3)
@@ -321,7 +352,15 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
 
     let bulk_custom = !model_add_is_preset_provider(provider_idx) && mode_custom == 1;
 
-    let new_fields: Vec<BottomFormFieldView> = if model_add_is_preset_provider(provider_idx) {
+    let new_fields: Vec<BottomFormFieldView> =
+        if provider_idx == MODEL_ADD_VOLCENGINE_PROVIDER_INDEX {
+        vec![
+            model_add_provider_field(provider_idx),
+            model_add_mode_field_preset(),
+            model_add_volcengine_transport_field(volcengine_transport_selected),
+            model_add_api_key_field(api_key_raw),
+        ]
+    } else if model_add_is_preset_provider(provider_idx) {
         vec![
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),
@@ -1733,6 +1772,37 @@ mod tests {
         assert!(parsed.model_name.is_none());
         assert_eq!(parsed.api_base, "https://api.anthropic.com/v1");
         assert_eq!(parsed.api_key, "sk-anthropic");
+    }
+
+    #[test]
+    fn model_add_form_parses_volcengine_preset_connection() {
+        let mut form = new_model_add_form();
+        if let Some(f) = form.fields.get_mut(0) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 9;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 1;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 3;
+        insert_text(&mut form, "sk-volc");
+
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::Volcengine);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenResponses);
+        assert!(parsed.bulk);
+        assert!(parsed.model_name.is_none());
+        assert_eq!(
+            parsed.api_base,
+            "https://ark.cn-beijing.volces.com/api/v3"
+        );
+        assert_eq!(parsed.api_key, "sk-volc");
     }
 
     fn sample_rule_entry(scope: RuleScope, exists: bool, enabled: bool) -> RuleEntry {
