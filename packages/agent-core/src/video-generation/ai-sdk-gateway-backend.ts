@@ -2,6 +2,13 @@ import { createGateway, type GatewayVideoModelId } from '@ai-sdk/gateway';
 import { experimental_generateVideo as generateVideo } from 'ai';
 
 import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+
+/** Gateway 视频走 v3 AI 协议（默认 `…/v3/ai/video-model`），不能用 chat 预设的 `/v1` baseUrl。 */
+export function resolveAiGatewayVideoProviderOptions(
+  config: Pick<OpenAiVideoGenerationConfig, 'apiKey' | 'baseUrl'>,
+): { apiKey: string } {
+  return { apiKey: config.apiKey };
+}
 import {
   DEFAULT_VIDEO_GENERATION_DURATION,
   type GeneratedVideoFile,
@@ -20,27 +27,24 @@ export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
     request: VideoGenerationRequest,
     saveGeneratedVideo: (request: GeneratedVideoSaveRequest) => Promise<GeneratedVideoFile>,
   ): Promise<ToolExecutionOutput> {
-    const provider = createGateway({
-      apiKey: config.apiKey,
-      ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
-    });
+    const provider = createGateway(resolveAiGatewayVideoProviderOptions(config));
 
     console.error('[agent-core][generate-video] request.start', {
       adapter: this.id,
       model: config.model,
-      baseUrl: config.baseUrl,
+      gatewayBaseUrl: 'https://ai-gateway.vercel.sh/v3/ai',
+      profileBaseUrl: config.baseUrl,
     });
 
     const result = await generateVideo({
-      model: provider.videoModel(config.model as GatewayVideoModelId),
+      model: provider.video(config.model as GatewayVideoModelId),
       prompt: request.prompt,
       duration: request.duration ?? DEFAULT_VIDEO_GENERATION_DURATION,
       ...(request.aspectRatio
         ? { aspectRatio: request.aspectRatio as `${number}:${number}` }
         : {}),
-      ...(request.resolution
-        ? { resolution: request.resolution as `${number}x${number}` }
-        : {}),
+      // Gateway Seedance 使用 720p/1080p 等标签，SDK 类型仍写 WxH。
+      ...(request.resolution ? { resolution: request.resolution as never } : {}),
       maxRetries: 0,
     });
 
