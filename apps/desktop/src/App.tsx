@@ -1803,6 +1803,7 @@ function DesktopLayoutChromeBar({
   showWorkspaceToggle,
   workspaceToolsOpen = false,
   onToggleWorkspaceTools,
+  sessionTitle,
 }: {
   useMicaBackdrop: boolean;
   sessionSidebarOpen: boolean;
@@ -1810,9 +1811,11 @@ function DesktopLayoutChromeBar({
   showWorkspaceToggle: boolean;
   workspaceToolsOpen?: boolean;
   onToggleWorkspaceTools?: () => void;
+  sessionTitle?: string | null;
 }) {
   const { t } = useTranslation();
   const showTrailingActions = showWorkspaceToggle;
+  const trimmedSessionTitle = sessionTitle?.trim() ?? "";
   return (
     <div
       role="toolbar"
@@ -1824,18 +1827,28 @@ function DesktopLayoutChromeBar({
         useMicaBackdrop ? "bg-transparent" : "bg-background",
       )}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
-        onClick={onToggleSessionSidebar}
-        aria-label={sessionSidebarOpen ? t('app.hideSidebar') : t('app.showSidebar')}
-        aria-expanded={sessionSidebarOpen}
-        {...(sessionSidebarOpen ? { "aria-controls": "session-sidebar-panel" } : {})}
-      >
-        {sessionSidebarOpen ? <PanelLeftClose className="size-3.5" aria-hidden /> : <PanelLeftOpen className="size-3.5" aria-hidden />}
-      </Button>
+      <div className="flex min-w-0 items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
+          onClick={onToggleSessionSidebar}
+          aria-label={sessionSidebarOpen ? t('app.hideSidebar') : t('app.showSidebar')}
+          aria-expanded={sessionSidebarOpen}
+          {...(sessionSidebarOpen ? { "aria-controls": "session-sidebar-panel" } : {})}
+        >
+          {sessionSidebarOpen ? <PanelLeftClose className="size-3.5" aria-hidden /> : <PanelLeftOpen className="size-3.5" aria-hidden />}
+        </Button>
+        {trimmedSessionTitle ? (
+          <span
+            className="min-w-0 max-w-[min(20rem,40vw)] truncate text-xs font-medium text-foreground/90"
+            title={trimmedSessionTitle}
+          >
+            {trimmedSessionTitle}
+          </span>
+        ) : null}
+      </div>
       {showTrailingActions ? (
         <div className="flex items-center gap-1">
           {showWorkspaceToggle ? (
@@ -3010,6 +3023,7 @@ export default function App() {
                 showWorkspaceToggle
                 workspaceToolsOpen={workspaceToolsOpen}
                 onToggleWorkspaceTools={() => setWorkspaceToolsOpen((c) => !c)}
+                sessionTitle={snapshot?.activeSession?.displayName}
               />
             <div data-spirit-surface="conversation-stage" className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background text-sm">
               {compactionDemo.active ? (
