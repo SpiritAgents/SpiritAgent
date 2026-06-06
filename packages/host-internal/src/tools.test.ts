@@ -221,6 +221,11 @@ test('web_fetch returns blocked-image text without image part for remote image r
   }
 });
 
+const MINIMAL_MP4_BYTES = Buffer.from([
+  0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+]);
+
 test('saveGeneratedImage returns a managed markdown reference instead of a raw local path', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-generated-image-ref-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
@@ -237,7 +242,29 @@ test('saveGeneratedImage returns a managed markdown reference instead of a raw l
     });
 
     assert.equal(dirname(saved.path), join(spiritDataDir, 'generated-images'));
-    assert.equal(saved.markdownRef, `spirit-image://generated/${encodeURIComponent(basename(saved.path))}`);
+    assert.equal(saved.markdownRef, `spirit-agent://generated/image/${encodeURIComponent(basename(saved.path))}`);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('saveGeneratedVideo returns a managed markdown reference instead of a raw local path', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-generated-video-ref-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+
+    const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
+    const saved = await service.saveGeneratedVideo({
+      data: MINIMAL_MP4_BYTES,
+      mediaType: 'video/mp4',
+      prompt: 'concept video',
+      model: 'test-video-model',
+    });
+
+    assert.equal(dirname(saved.path), join(spiritDataDir, 'generated-videos'));
+    assert.equal(saved.markdownRef, `spirit-agent://generated/video/${encodeURIComponent(basename(saved.path))}`);
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
@@ -311,8 +338,8 @@ test('read_file accepts Spirit-managed generated image refs with mixed-case URL 
       model: 'test-image-model',
     });
     const mixedCaseRef = saved.markdownRef.replace(
-      'spirit-image://generated/',
-      'SPIRIT-IMAGE://GENERATED/',
+      'spirit-agent://generated/image/',
+      'SPIRIT-AGENT://GENERATED/image/',
     );
 
     const authorization = await service.authorize({
@@ -336,7 +363,7 @@ test('read_file accepts Spirit-managed generated image refs with mixed-case URL 
 test('read_file missing Spirit-managed generated image ref reports sanitized error', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-missing-managed-image-read-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const missingRef = 'spirit-image://generated/missing-image.png';
+  const missingRef = 'spirit-agent://generated/image/missing-image.png';
   const leakedLocalPath = join(spiritDataDir, 'generated-images', 'missing-image.png');
 
   try {

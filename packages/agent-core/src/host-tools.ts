@@ -180,7 +180,7 @@ export function buildBuiltinHostToolDefinitions(
         properties: {
           path: {
             type: 'string',
-            description: 'Path to the file to read, or a Spirit-managed generated image ref such as spirit-image://generated/<name>.',
+            description: 'Path to the file to read, or a Spirit-managed generated asset ref such as spirit-agent://generated/image/<name> or spirit-agent://generated/video/<name>.',
           },
           start_line: {
             type: 'integer',

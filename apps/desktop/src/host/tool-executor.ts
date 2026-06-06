@@ -48,6 +48,8 @@ import {
   type HostFileChangeObserver,
   type HostGeneratedImageFile,
   type HostGeneratedImageSaveRequest,
+  type HostGeneratedVideoFile,
+  type HostGeneratedVideoSaveRequest,
   type HostBuiltinToolDefinitionEnvironment,
   type HostOperatingSystemInfo,
   type ApprovalLevel,
@@ -317,6 +319,10 @@ export class DesktopToolExecutor
 
   async saveGeneratedImage(request: HostGeneratedImageSaveRequest): Promise<HostGeneratedImageFile> {
     return this.tools.saveGeneratedImage(request);
+  }
+
+  async saveGeneratedVideo(request: HostGeneratedVideoSaveRequest): Promise<HostGeneratedVideoFile> {
+    return this.tools.saveGeneratedVideo(request);
   }
 
   attachRequestMetadata(
