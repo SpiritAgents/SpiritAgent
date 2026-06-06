@@ -245,7 +245,7 @@ const SessionListRow = memo(function SessionListRow({
         nested ? "py-2 pr-2.5 pl-8" : "h-8 gap-2 px-2.5",
         selected
           ? sessionRowSelectedClass(micaStyle)
-          : cn("text-sidebar-foreground/90", sessionRowHoverClass(micaStyle)),
+          : cn(sidebarItemDefaultTextClass, sessionRowHoverClass(micaStyle)),
       )}
     >
       <span
@@ -389,29 +389,42 @@ const settingsTabs: Array<{
 const sidebarInteractionMotionClass =
   "!transition-[opacity,transform,box-shadow] duration-150 active:!translate-y-0";
 
-const sidebarMenuHoverClass =
-  "hover:!bg-accent hover:!text-accent-foreground focus-visible:!bg-accent focus-visible:!text-accent-foreground";
+/** 侧栏交互项默认字色/图标色；hover 与选中回到 sidebar-foreground */
+const sidebarItemDefaultTextClass = "text-sidebar-item-foreground";
 
-/** 工作区 / 会话行：hover 只铺底，不把文案提亮（与 composer 区下拉一致） */
-const sidebarSessionListHoverClass =
-  "hover:!bg-accent focus-visible:!bg-accent focus-visible:!text-accent-foreground";
+const sidebarItemActiveTextClass = "!text-sidebar-foreground";
 
-const sidebarSelectedHoverClass =
-  "hover:!bg-secondary hover:!text-secondary-foreground";
+const sidebarMenuHoverClass = cn(
+  "hover:!bg-accent focus-visible:!bg-accent",
+  "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
+);
+
+const sidebarSessionListHoverClass = sidebarMenuHoverClass;
+
+const sidebarSelectedHoverClass = cn(
+  "hover:!bg-secondary hover:!text-sidebar-foreground",
+);
 
 /** Mica 透明壳：选中/悬停使用半透明铺底，避免实心 secondary 挡住云母 */
-const sidebarMicaMenuHoverClass =
-  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06] dark:hover:!bg-white/[0.06]";
+const sidebarMicaMenuHoverClass = cn(
+  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06] dark:hover:!bg-white/[0.06]",
+  "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
+);
 
-const sidebarMicaSelectedClass =
-  "!bg-foreground/[0.08] !text-foreground hover:!bg-foreground/[0.12] focus-visible:!bg-foreground/[0.12] dark:!bg-white/[0.08] dark:hover:!bg-white/[0.12]";
+const sidebarMicaSelectedClass = cn(
+  "!bg-foreground/[0.08] hover:!bg-foreground/[0.12] focus-visible:!bg-foreground/[0.12]",
+  "dark:!bg-white/[0.08] dark:hover:!bg-white/[0.12]",
+  sidebarItemActiveTextClass,
+);
 
 function sidebarItemHoverClass(micaStyle?: boolean) {
   return micaStyle ? sidebarMicaMenuHoverClass : sidebarMenuHoverClass;
 }
 
 function sidebarItemSelectedClass(micaStyle?: boolean) {
-  return micaStyle ? sidebarMicaSelectedClass : sidebarSelectedHoverClass;
+  return micaStyle
+    ? sidebarMicaSelectedClass
+    : cn(sidebarItemActiveTextClass, sidebarSelectedHoverClass);
 }
 
 function sidebarNavButtonVariant(micaStyle: boolean | undefined, selected: boolean) {
@@ -420,8 +433,14 @@ function sidebarNavButtonVariant(micaStyle: boolean | undefined, selected: boole
 
 function sessionRowSelectedClass(micaStyle?: boolean) {
   return micaStyle
-    ? "bg-foreground/[0.08] text-foreground hover:!bg-foreground/[0.12] dark:bg-white/[0.08] dark:hover:!bg-white/[0.12]"
-    : "bg-secondary text-secondary-foreground hover:!bg-secondary hover:!text-secondary-foreground";
+    ? cn(
+        "bg-foreground/[0.08] hover:!bg-foreground/[0.12] dark:bg-white/[0.08] dark:hover:!bg-white/[0.12]",
+        sidebarItemActiveTextClass,
+      )
+    : cn(
+        "bg-secondary hover:!bg-secondary",
+        sidebarItemActiveTextClass,
+      );
 }
 
 function sessionRowHoverClass(micaStyle?: boolean) {
@@ -526,7 +545,7 @@ export function SessionSidebar({
   return (
     <aside
       className={cn(
-        "flex h-full w-full min-w-0 flex-col overflow-hidden text-sidebar-foreground dark:text-foreground",
+        "flex h-full w-full min-w-0 flex-col overflow-hidden text-sidebar-item-foreground",
         micaStyle ? "bg-transparent" : "bg-sidebar",
         className,
       )}
@@ -546,7 +565,8 @@ export function SessionSidebar({
             variant="ghost"
             size={narrow ? "icon" : "sm"}
             className={cn(
-              "text-xs text-sidebar-foreground/90",
+              "text-xs",
+              sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
               sidebarItemHoverClass(micaStyle),
               narrow ? "size-8" : "h-8 w-full justify-start gap-2",
@@ -569,7 +589,8 @@ export function SessionSidebar({
             variant="ghost"
             size={narrow ? "icon" : "sm"}
             className={cn(
-              "text-xs text-sidebar-foreground/90",
+              "text-xs",
+              sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
               sidebarItemHoverClass(micaStyle),
               narrow
@@ -589,7 +610,8 @@ export function SessionSidebar({
             title={narrow ? t('sidebar.extensions') : undefined}
             aria-current={marketplaceActive ? "page" : undefined}
             className={cn(
-              "text-xs text-sidebar-foreground/90",
+              "text-xs",
+              sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
               marketplaceActive
                 ? sidebarItemSelectedClass(micaStyle)
@@ -633,7 +655,8 @@ export function SessionSidebar({
                         variant: sidebarNavButtonVariant(micaStyle, selected),
                         size: narrow ? "icon" : "sm",
                       }),
-                      "text-xs text-sidebar-foreground/90",
+                      "text-xs",
+                      sidebarItemDefaultTextClass,
                       sidebarInteractionMotionClass,
                       selected ? sidebarItemSelectedClass(micaStyle) : sidebarItemHoverClass(micaStyle),
                       narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
@@ -667,7 +690,8 @@ export function SessionSidebar({
                             variant: sidebarNavButtonVariant(micaStyle, selected),
                             size: narrow ? "icon" : "sm",
                           }),
-                          "text-xs text-sidebar-foreground/90",
+                          "text-xs",
+                          sidebarItemDefaultTextClass,
                           sidebarInteractionMotionClass,
                           selected ? sidebarItemSelectedClass(micaStyle) : sidebarItemHoverClass(micaStyle),
                           narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
@@ -749,7 +773,7 @@ export function SessionSidebar({
                             "outline-none",
                             sidebarInteractionMotionClass,
                             "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-                            "text-sidebar-foreground/90",
+                            sidebarItemDefaultTextClass,
                             sessionRowHoverClass(micaStyle),
                           )}
                           title={group.rootPath ?? group.label}
@@ -814,7 +838,7 @@ export function SessionSidebar({
             variant="ghost"
             size={narrow ? "icon" : "sm"}
             className={cn(
-              "text-sidebar-foreground/90",
+              sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
               sidebarItemHoverClass(micaStyle),
               narrow ? "size-8" : "h-8 w-full justify-start gap-2",
