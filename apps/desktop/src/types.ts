@@ -125,6 +125,7 @@ export interface PreviewModelCatalogEntry {
   pricing?: PreviewModelCatalogPricing;
   capabilities?: DesktopModelCapability[];
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];
+  contextLength?: number;
 }
 
 /** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */

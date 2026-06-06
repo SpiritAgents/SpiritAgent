@@ -213,6 +213,12 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
     const pricing = normalizeCachedPricing(record.pricing);
     const capabilities = normalizeCachedCapabilities(record.capabilities);
     const supportedReasoningEfforts = normalizeCachedSupportedReasoningEfforts(record.supportedReasoningEfforts);
+    const contextLength =
+      typeof record.contextLength === 'number'
+      && Number.isFinite(record.contextLength)
+      && record.contextLength > 0
+        ? Math.trunc(record.contextLength)
+        : undefined;
     normalized.push({
       id,
       ...(displayName !== undefined ? { displayName } : {}),
@@ -220,6 +226,7 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
       ...(pricing !== undefined ? { pricing } : {}),
       ...(capabilities !== undefined ? { capabilities } : {}),
       ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
+      ...(contextLength !== undefined ? { contextLength } : {}),
     });
   }
 
