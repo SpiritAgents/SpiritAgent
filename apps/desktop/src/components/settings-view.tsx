@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
+import { parseModelContextLength } from "@/lib/context-usage";
 import type { FontPreference } from "@/lib/font";
 import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
@@ -2138,6 +2139,7 @@ function ModelsSettingsPanel({
   const [connectCapabilities, setConnectCapabilities] = useState<DesktopModelCapability[]>(
     defaultCustomModelCapabilities,
   );
+  const [connectContextLength, setConnectContextLength] = useState("");
   const [connectTransportKind, setConnectTransportKind] = useState<DesktopTransportKind>(
     "openai-compatible",
   );
@@ -2230,6 +2232,7 @@ function ModelsSettingsPanel({
     setConnectName("");
     setConnectApiBase("");
     setConnectCapabilities(defaultCustomModelCapabilities);
+    setConnectContextLength("");
     setConnectTransportKind("openai-compatible");
     setCustomConnectMode("single");
     setSelectedProvider(null);
@@ -2462,6 +2465,15 @@ function ModelsSettingsPanel({
     if (!connectApiKey.trim()) {
       throw new Error(t('settings.apiKeyRequired'));
     }
+    const contextLengthRaw = connectContextLength.trim();
+    let contextLength: number | undefined;
+    if (contextLengthRaw) {
+      const parsed = parseModelContextLength(Number(contextLengthRaw));
+      if (parsed === undefined) {
+        throw new Error(t('settings.contextLengthInvalid'));
+      }
+      contextLength = parsed;
+    }
     await onAddModel({
       name,
       apiBase,
@@ -2469,6 +2481,7 @@ function ModelsSettingsPanel({
       provider: "custom",
       transportKind: connectTransportKind,
       capabilities: normalizeModelCapabilitySelection(connectCapabilities),
+      ...(contextLength !== undefined ? { contextLength } : {}),
     });
     setConnectDialogOpen(false);
     resetConnectWizard();
@@ -3189,6 +3202,24 @@ function ModelsSettingsPanel({
                   disabled={modelsBusy || modelsPreviewBusy}
                   onChange={setConnectCapabilities}
                 />
+              </div>
+            ) : null}
+            {selectedProvider === "custom" && customConnectMode === "single" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-context-length">{t('settings.contextLength')}</Label>
+                <Input
+                  id="connect-context-length"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={connectContextLength}
+                  onChange={(e) => setConnectContextLength(e.target.value)}
+                  placeholder={t('settings.optional')}
+                  autoComplete="off"
+                />
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {t('settings.contextLengthHint')}
+                </p>
               </div>
             ) : null}
             {selectedProvider === "custom" ? (
