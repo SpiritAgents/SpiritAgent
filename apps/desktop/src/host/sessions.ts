@@ -4,6 +4,7 @@ import type { ChatArchive } from '@spirit-agent/core';
 
 import type {
   ActiveSessionSnapshot,
+  ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
   SessionListItem,
 } from '../types.js';
@@ -48,6 +49,7 @@ export interface RestoredSessionState {
   approvalLevel: ApprovalLevel;
   activePlanPath?: string;
   sessionTitleSource?: SessionTitleSource;
+  contextUsage?: ConversationContextUsageSnapshot;
 }
 
 export function isEphemeralCommitSessionPath(filePath: string): boolean {
@@ -187,6 +189,7 @@ export function restoreStoredSessionState(input: {
     ...(input.loaded.sessionTitleSource === 'seed' || input.loaded.sessionTitleSource === 'llm'
       ? { sessionTitleSource: input.loaded.sessionTitleSource }
       : {}),
+    ...(input.loaded.contextUsage ? { contextUsage: { ...input.loaded.contextUsage } } : {}),
   };
 }
 
@@ -203,6 +206,7 @@ export function buildStoredDesktopSession(input: {
   rewind: StoredDesktopRewindMetadata;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
+  contextUsage?: ConversationContextUsageSnapshot;
 }): StoredDesktopSession {
   return {
     ...input.archive,
@@ -219,6 +223,7 @@ export function buildStoredDesktopSession(input: {
       ? { desktopMessageTimeline: cloneDesktopMessageTimeline(input.desktopMessageTimeline) }
       : {}),
     rewind: input.rewind,
+    ...(input.contextUsage ? { contextUsage: { ...input.contextUsage } } : {}),
   };
 }
 

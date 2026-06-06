@@ -37,6 +37,7 @@ import {
 } from '@spirit-agent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
+import { normalizeContextUsageSnapshot } from '../lib/context-usage.js';
 import { parseModelContextLength } from '../lib/model-context-length.js';
 
 import type {
@@ -422,6 +423,7 @@ export async function loadHostMetadata(
 }
 
 function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDesktopSession {
+  const contextUsage = normalizeContextUsageSnapshot(parsed.contextUsage);
   return {
     savedAtUnixMs:
       typeof parsed.savedAtUnixMs === 'number' ? parsed.savedAtUnixMs : Date.now(),
@@ -450,6 +452,7 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
     ...(Array.isArray(parsed.desktopMessageTimeline)
       ? { desktopMessageTimeline: parsed.desktopMessageTimeline }
       : {}),
+    ...(contextUsage ? { contextUsage } : {}),
     rewind: normalizeDesktopRewindMetadata(parsed.rewind),
   } satisfies StoredDesktopSession;
 }

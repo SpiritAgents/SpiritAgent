@@ -3,6 +3,7 @@ import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal';
 import { parseModelContextLength } from './model-context-length.js';
 import { DEFAULT_API_BASE } from '../host/storage.js';
 import type {
+  ConversationContextUsageSnapshot,
   DesktopModelCatalogHint,
   DesktopModelProvider,
   DesktopTransportKind,
@@ -79,4 +80,35 @@ export function buildContextUsagePercent(inputTokens: number, contextLength: num
   }
 
   return Math.max(0, Math.min(100, Math.round((inputTokens / contextLength) * 100)));
+}
+
+export function normalizeContextUsageSnapshot(
+  value: unknown,
+): ConversationContextUsageSnapshot | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const record = value as Record<string, unknown>;
+  const rawInputTokens = typeof record.inputTokens === 'number' && Number.isFinite(record.inputTokens)
+    ? Math.trunc(record.inputTokens)
+    : undefined;
+  const contextLength = typeof record.contextLength === 'number' && Number.isFinite(record.contextLength)
+    ? Math.max(0, Math.trunc(record.contextLength))
+    : undefined;
+  if (
+    rawInputTokens === undefined
+    || rawInputTokens < 0
+    || contextLength === undefined
+    || contextLength <= 0
+  ) {
+    return undefined;
+  }
+
+  const inputTokens = rawInputTokens;
+
+  const percent = typeof record.percent === 'number' && Number.isFinite(record.percent)
+    ? Math.max(0, Math.min(100, Math.round(record.percent)))
+    : buildContextUsagePercent(inputTokens, contextLength);
+  return { inputTokens, contextLength, percent };
 }
