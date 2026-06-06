@@ -91,6 +91,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export type SettingsFormState = {
   activeModel: string;
   imageGenerationModel: string;
+  videoGenerationModel: string;
   lightweightChatModel: string;
   apiBase: string;
   uiLocale: string;
@@ -203,6 +204,7 @@ type SettingsModelProfile = DesktopSnapshot["config"]["models"][number];
 type ModelDefaultAssignments = {
   activeModel: boolean;
   imageGenerationModel: boolean;
+  videoGenerationModel: boolean;
   lightweightChatModel: boolean;
 };
 
@@ -361,6 +363,13 @@ function canAssignAsImageGenerationModel(
   return isCurrentImageGenerationModel || model.capabilities?.includes("imageGeneration") === true;
 }
 
+function canAssignAsVideoGenerationModel(
+  model: SettingsModelProfile,
+  isCurrentVideoGenerationModel: boolean,
+): boolean {
+  return isCurrentVideoGenerationModel || model.capabilities?.includes("videoGeneration") === true;
+}
+
 function canAssignAsLightweightChatModel(
   model: SettingsModelProfile,
   isCurrentLightweightChatModel: boolean,
@@ -372,6 +381,7 @@ function getSupportedModelDefaultRoles(
   model: SettingsModelProfile,
   activeModel: string,
   imageGenerationModel: string,
+  videoGenerationModel: string,
   lightweightChatModel: string,
 ): ModelDefaultRole[] {
   const roles: ModelDefaultRole[] = [];
@@ -382,6 +392,10 @@ function getSupportedModelDefaultRoles(
 
   if (canAssignAsImageGenerationModel(model, model.name === imageGenerationModel)) {
     roles.push("imageGenerationModel");
+  }
+
+  if (canAssignAsVideoGenerationModel(model, model.name === videoGenerationModel)) {
+    roles.push("videoGenerationModel");
   }
 
   if (canAssignAsLightweightChatModel(model, model.name === lightweightChatModel)) {
@@ -402,6 +416,9 @@ function modelDefaultActionLabel(roles: readonly ModelDefaultRole[]): string {
     }
     if (roles[0] === "imageGenerationModel") {
       return i18n.t('settings.setImageGenModel');
+    }
+    if (roles[0] === "videoGenerationModel") {
+      return i18n.t('settings.setVideoGenModel');
     }
     return i18n.t('settings.setLightweightChatModel');
   }
@@ -2285,6 +2302,7 @@ function ModelsSettingsPanel({
   const [modelDefaultAssignments, setModelDefaultAssignments] = useState<ModelDefaultAssignments>({
     activeModel: false,
     imageGenerationModel: false,
+    videoGenerationModel: false,
     lightweightChatModel: false,
   });
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -2294,6 +2312,8 @@ function ModelsSettingsPanel({
   const activeModel = settings.activeModel.trim() || (snapshot?.config.activeModel ?? "");
   const imageGenerationModel =
     settings.imageGenerationModel.trim() || (snapshot?.config.imageGenerationModel ?? "");
+  const videoGenerationModel =
+    settings.videoGenerationModel.trim() || (snapshot?.config.videoGenerationModel ?? "");
   const lightweightChatModel =
     settings.lightweightChatModel.trim() || (snapshot?.config.lightweightChatModel ?? "");
   const modelDefaultsDialogModel =
@@ -2309,6 +2329,12 @@ function ModelsSettingsPanel({
       modelDefaultsDialogModel,
       modelDefaultsDialogModel.name === imageGenerationModel,
     );
+  const canAssignVideoGenerationRole =
+    modelDefaultsDialogModel !== null &&
+    canAssignAsVideoGenerationModel(
+      modelDefaultsDialogModel,
+      modelDefaultsDialogModel.name === videoGenerationModel,
+    );
   const canAssignLightweightChatRole =
     modelDefaultsDialogModel !== null &&
     canAssignAsLightweightChatModel(
@@ -2323,6 +2349,8 @@ function ModelsSettingsPanel({
     (modelDefaultAssignments.activeModel !== isModelDefaultsDialogModelActive ||
       modelDefaultAssignments.imageGenerationModel !==
         (modelDefaultsDialogModel.name === imageGenerationModel) ||
+      modelDefaultAssignments.videoGenerationModel !==
+        (modelDefaultsDialogModel.name === videoGenerationModel) ||
       modelDefaultAssignments.lightweightChatModel !== isModelDefaultsDialogModelLightweight);
 
   const catalogDetailByModelName = useMemo(
@@ -2399,6 +2427,7 @@ function ModelsSettingsPanel({
     setModelDefaultAssignments({
       activeModel: model.name === activeModel,
       imageGenerationModel: model.name === imageGenerationModel,
+      videoGenerationModel: model.name === videoGenerationModel,
       lightweightChatModel: model.name === lightweightChatModel,
     });
   };
@@ -2408,6 +2437,7 @@ function ModelsSettingsPanel({
     setModelDefaultAssignments({
       activeModel: false,
       imageGenerationModel: false,
+      videoGenerationModel: false,
       lightweightChatModel: false,
     });
   };
@@ -2434,6 +2464,20 @@ function ModelsSettingsPanel({
         modelDefaultsDialogModel.name === imageGenerationModel
       ) {
         patch.imageGenerationModel = "";
+      }
+    }
+
+    if (canAssignVideoGenerationRole) {
+      if (
+        modelDefaultAssignments.videoGenerationModel &&
+        modelDefaultsDialogModel.name !== videoGenerationModel
+      ) {
+        patch.videoGenerationModel = modelDefaultsDialogModel.name;
+      } else if (
+        !modelDefaultAssignments.videoGenerationModel &&
+        modelDefaultsDialogModel.name === videoGenerationModel
+      ) {
+        patch.videoGenerationModel = "";
       }
     }
 
@@ -2474,6 +2518,10 @@ function ModelsSettingsPanel({
       if (model.name !== imageGenerationModel) {
         patch.imageGenerationModel = model.name;
       }
+    } else if (role === "videoGenerationModel") {
+      if (model.name !== videoGenerationModel) {
+        patch.videoGenerationModel = model.name;
+      }
     } else if (model.name !== lightweightChatModel) {
       patch.lightweightChatModel = model.name;
     }
@@ -2490,6 +2538,7 @@ function ModelsSettingsPanel({
       model,
       activeModel,
       imageGenerationModel,
+      videoGenerationModel,
       lightweightChatModel,
     );
 
@@ -2649,6 +2698,7 @@ function ModelsSettingsPanel({
                             model,
                             activeModel,
                             imageGenerationModel,
+                            videoGenerationModel,
                             lightweightChatModel,
                           );
                           const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
@@ -2720,6 +2770,7 @@ function ModelsSettingsPanel({
                           model,
                           activeModel,
                           imageGenerationModel,
+                          videoGenerationModel,
                           lightweightChatModel,
                         );
                         const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
@@ -2756,6 +2807,7 @@ function ModelsSettingsPanel({
                     model,
                     activeModel,
                     imageGenerationModel,
+                    videoGenerationModel,
                     lightweightChatModel,
                   );
                   const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
@@ -2935,6 +2987,35 @@ function ModelsSettingsPanel({
                 </div>
               </div>
             ) : null}
+            {canAssignVideoGenerationRole ? (
+              <div
+                className="group/field flex items-start gap-3 rounded-lg border border-dialog-panel-border px-3 py-3 transition-colors data-[disabled=true]:opacity-70"
+                data-disabled={modelsBusy || modelsPreviewBusy || undefined}
+              >
+                <Checkbox
+                  id="model-default-video-generation"
+                  checked={modelDefaultAssignments.videoGenerationModel}
+                  disabled={modelsBusy || modelsPreviewBusy}
+                  onCheckedChange={(checked) =>
+                    setModelDefaultAssignments((current) => ({
+                      ...current,
+                      videoGenerationModel: checked === true,
+                    }))
+                  }
+                />
+                <div className="grid gap-1.5">
+                  <Label
+                    htmlFor="model-default-video-generation"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    {t('settings.videoGenModelLabel')}
+                  </Label>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {t('settings.videoGenModelUsage')}
+                  </p>
+                </div>
+              </div>
+            ) : null}
             {canAssignLightweightChatRole ? (
               <div
                 className="group/field flex items-start gap-3 rounded-lg border border-dialog-panel-border px-3 py-3 transition-colors data-[disabled=true]:opacity-70"
@@ -2964,7 +3045,10 @@ function ModelsSettingsPanel({
                 </div>
               </div>
             ) : null}
-            {!canAssignActiveRole && !canAssignImageGenerationRole && !canAssignLightweightChatRole ? (
+            {!canAssignActiveRole
+            && !canAssignImageGenerationRole
+            && !canAssignVideoGenerationRole
+            && !canAssignLightweightChatRole ? (
               <div className="rounded-lg border border-dashed border-dialog-panel-border px-3 py-4 text-sm text-muted-foreground">
                 {t('settings.noDefaultRolesForModel')}
               </div>

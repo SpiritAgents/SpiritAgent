@@ -9,7 +9,8 @@
     "anthropic": "https://api.anthropic.com/v1",
     "vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1",
     "openrouter": "https://openrouter.ai/api/v1",
-    "openai": "https://api.openai.com/v1"
+    "openai": "https://api.openai.com/v1",
+    "volcengine": "https://ark.cn-beijing.volces.com/api/v3"
   },
   "presetApiBaseByTransport": {
     "minimax": {
@@ -26,7 +27,7 @@
       "open-responses": "https://dashscope.aliyuncs.com/compatible-mode/v1"
     }
   },
-  "pickerOrder": ["openai", "xai", "anthropic", "deepseek", "vercel-ai-gateway", "openrouter", "moonshot-ai", "alibaba", "minimax", "custom"],
+  "pickerOrder": ["openai", "xai", "anthropic", "deepseek", "vercel-ai-gateway", "openrouter", "moonshot-ai", "alibaba", "minimax", "volcengine", "custom"],
   "pickerLabels": {
     "deepseek": {
       "labelKey": "providers.deepseek",
@@ -63,6 +64,10 @@
     "openai": {
       "labelKey": "providers.openai",
       "fallbackLabel": "OpenAI"
+    },
+    "volcengine": {
+      "labelKey": "providers.volcengine",
+      "fallbackLabel": "Volcengine"
     },
     "custom": {
       "labelKey": "providers.custom",

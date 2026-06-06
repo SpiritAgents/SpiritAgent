@@ -13,6 +13,7 @@ export type OpenAiLlmVendor =
   | 'vercel-ai-gateway'
   | 'openrouter'
   | 'openai'
+  | 'volcengine'
   | 'custom';
 
 export type OpenAiModelCapabilities = LlmModelCapabilities;

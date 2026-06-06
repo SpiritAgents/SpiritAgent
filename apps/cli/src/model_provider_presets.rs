@@ -93,7 +93,11 @@ mod tests {
             model_add_preset_api_base_by_choice_index(8).as_deref(),
             Some("https://api.minimaxi.com/v1")
         );
-        assert!(model_add_preset_api_base_by_choice_index(9).is_none());
+        assert_eq!(
+            model_add_preset_api_base_by_choice_index(9).as_deref(),
+            Some("https://ark.cn-beijing.volces.com/api/v3")
+        );
+        assert!(model_add_preset_api_base_by_choice_index(10).is_none());
     }
 
     #[test]

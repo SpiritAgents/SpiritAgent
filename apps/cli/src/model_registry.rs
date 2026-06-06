@@ -27,6 +27,7 @@ pub enum ModelProvider {
     VercelAiGateway,
     Openrouter,
     Openai,
+    Volcengine,
     Custom,
 }
 
@@ -42,6 +43,7 @@ impl ModelProvider {
             Self::VercelAiGateway => "vercel-ai-gateway",
             Self::Openrouter => "openrouter",
             Self::Openai => "openai",
+            Self::Volcengine => "volcengine",
             Self::Custom => "custom",
         }
     }
@@ -61,6 +63,7 @@ impl FromStr for ModelProvider {
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
             "openrouter" => Ok(Self::Openrouter),
             "openai" => Ok(Self::Openai),
+            "volcengine" => Ok(Self::Volcengine),
             "custom" => Ok(Self::Custom),
             other => Err(format!("不支持的 provider: {other}")),
         }
@@ -145,6 +148,7 @@ impl ModelProfile {
             | Some(ModelProvider::VercelAiGateway)
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::Openai)
+            | Some(ModelProvider::Volcengine)
             | Some(ModelProvider::Custom)
             | None => true,
         }
@@ -155,6 +159,14 @@ impl ModelProfile {
             capabilities
                 .iter()
                 .any(|capability| capability == "imageGeneration")
+        })
+    }
+
+    pub fn supports_video_generation(&self) -> bool {
+        self.explicit_capabilities().is_some_and(|capabilities| {
+            capabilities
+                .iter()
+                .any(|capability| capability == "videoGeneration")
         })
     }
 
@@ -188,6 +200,13 @@ pub struct AppConfig {
     )]
     pub image_generation_model: Option<String>,
     #[serde(
+        rename = "videoGenerationModel",
+        alias = "video_generation_model",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub video_generation_model: Option<String>,
+    #[serde(
         rename = "uiLocale",
         alias = "ui_locale",
         default,
@@ -217,6 +236,7 @@ impl Default for AppConfig {
             }],
             active_model: "gpt-4o-mini".to_string(),
             image_generation_model: None,
+            video_generation_model: None,
             ui_locale: None,
             extra: Map::new(),
         }
@@ -234,6 +254,11 @@ impl AppConfig {
 
     pub fn image_generation_model_profile(&self) -> Option<&ModelProfile> {
         let name = self.image_generation_model.as_deref()?;
+        self.models.iter().find(|m| m.name == name)
+    }
+
+    pub fn video_generation_model_profile(&self) -> Option<&ModelProfile> {
+        let name = self.video_generation_model.as_deref()?;
         self.models.iter().find(|m| m.name == name)
     }
 
@@ -298,6 +323,7 @@ fn deserialize_config(content: &str, path: &Path) -> Result<AppConfig> {
             .collect(),
         active_model: legacy.active_model,
         image_generation_model: None,
+        video_generation_model: None,
         ui_locale: None,
         extra: Map::new(),
     };
@@ -326,6 +352,7 @@ fn normalize_config(cfg: &mut AppConfig) {
     if cfg.models.is_empty() {
         cfg.active_model.clear();
         cfg.image_generation_model = None;
+        cfg.video_generation_model = None;
         return;
     }
 
@@ -335,6 +362,8 @@ fn normalize_config(cfg: &mut AppConfig) {
 
     cfg.image_generation_model =
         normalize_image_generation_model(cfg.image_generation_model.take(), cfg.models.as_slice());
+    cfg.video_generation_model =
+        normalize_video_generation_model(cfg.video_generation_model.take(), cfg.models.as_slice());
 
     for model in &mut cfg.models {
         if model.api_base.trim().is_empty() {
@@ -418,6 +447,19 @@ fn normalize_image_generation_model(
     let name = normalize_optional_string(value)?;
     let profile = models.iter().find(|model| model.name == name)?;
     if profile.supports_image_generation() {
+        Some(name)
+    } else {
+        None
+    }
+}
+
+fn normalize_video_generation_model(
+    value: Option<String>,
+    models: &[ModelProfile],
+) -> Option<String> {
+    let name = normalize_optional_string(value)?;
+    let profile = models.iter().find(|model| model.name == name)?;
+    if profile.supports_video_generation() {
         Some(name)
     } else {
         None
@@ -641,6 +683,38 @@ mod tests {
         let invalid = config.replace("image-model\"", "chat-model\"");
         let parsed = deserialize_config(&invalid, Path::new("config.json")).expect("parse config");
         assert_eq!(parsed.image_generation_model, None);
+    }
+
+    #[test]
+    fn video_generation_model_requires_explicit_capability() {
+        let config = r#"
+{
+    "models": [
+        {
+            "name": "chat-model",
+            "apiBase": "https://example.invalid/v1",
+            "capabilities": ["chat"]
+        },
+        {
+            "name": "video-model",
+            "apiBase": "https://example.invalid/v1",
+            "capabilities": ["videoGeneration"]
+        }
+    ],
+    "activeModel": "chat-model",
+    "videoGenerationModel": "video-model"
+}
+"#;
+
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        assert_eq!(
+            parsed.video_generation_model.as_deref(),
+            Some("video-model")
+        );
+
+        let invalid = config.replace("video-model\"", "chat-model\"");
+        let parsed = deserialize_config(&invalid, Path::new("config.json")).expect("parse config");
+        assert_eq!(parsed.video_generation_model, None);
     }
 
     #[test]

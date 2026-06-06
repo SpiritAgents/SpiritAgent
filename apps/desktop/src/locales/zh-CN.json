@@ -52,6 +52,7 @@
     "moonshotAi": "Moonshot AI",
     "alibaba": "Alibaba",
     "minimax": "MiniMax",
+    "volcengine": "火山引擎",
     "custom": "自定义"
   },
   "settings": {
@@ -215,6 +216,9 @@
     "activeModelUsage": "用于对话、规划与工具编排。",
     "imageGenModelLabel": "默认图片生成模型",
     "imageGenModelUsage": "用于 generate_image 等图片输出；取消后将不再指定默认图片模型。",
+    "videoGenModelLabel": "默认视频生成模型",
+    "videoGenModelUsage": "用于 generate_video 等视频输出；取消后将不再指定默认视频模型。",
+    "setVideoGenModel": "设为默认视频生成模型",
     "lightweightChatModelLabel": "轻量对话模型",
     "lightweightChatModelUsage": "用于梦境收集、工作树命名等轻量后台任务；未指定时按名称回退规则使用当前推理模型。",
     "noDefaultRolesForModel": "这个模型当前没有可设置的默认角色。",
@@ -554,6 +558,8 @@
     "branchNotFound": "分支不存在：{{branch}}",
     "notInWorktree": "当前会话不在 Worktree 中，无法合并。",
     "imageGenModelNotFound": "图片生成模型不存在：{{model}}",
+    "videoGenModelNotFound": "视频生成模型不存在：{{model}}",
+    "modelNoVideoGenCapability": "模型 {{model}} 未声明视频生成能力",
     "modelNoImageGenCapability": "模型未声明图片生成能力：{{model}}",
     "lightweightChatModelNotFound": "轻量对话模型不存在：{{model}}",
     "modelNoChatCapability": "模型未声明对话能力：{{model}}",

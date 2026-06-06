@@ -43,6 +43,8 @@ pub enum ConfigCommand {
     SetBase { url: String },
     SetImageModel { name: String },
     ClearImageModel,
+    SetVideoModel { name: String },
+    ClearVideoModel,
     Key { action: KeyCommand },
 }
 
@@ -205,6 +207,15 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 {
                     cfg.image_generation_model = Some(name.clone());
                 }
+                if cfg.video_generation_model.is_none()
+                    && cfg
+                        .models
+                        .iter()
+                        .find(|model| model.name == name)
+                        .is_some_and(ModelProfile::supports_video_generation)
+                {
+                    cfg.video_generation_model = Some(name.clone());
+                }
                 cfg.active_model = name.clone();
                 secret_store.save_model_api_key(&name, &key_value)?;
                 config_store.save(&cfg)?;
@@ -236,6 +247,9 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 }
                 if cfg.image_generation_model.as_deref() == Some(name.as_str()) {
                     cfg.image_generation_model = None;
+                }
+                if cfg.video_generation_model.as_deref() == Some(name.as_str()) {
+                    cfg.video_generation_model = None;
                 }
                 config_store.save(&cfg)?;
                 let _ = secret_store.remove_model_api_key(&name);
@@ -271,6 +285,10 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             println!(
                 "image_generation_model: {}",
                 cfg.image_generation_model.as_deref().unwrap_or("未设置")
+            );
+            println!(
+                "video_generation_model: {}",
+                cfg.video_generation_model.as_deref().unwrap_or("未设置")
             );
             println!("models:");
             for model in &cfg.models {
@@ -338,6 +356,27 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             cfg.image_generation_model = None;
             config_store.save(&cfg)?;
             println!("已清除图片生成模型。CLI 当前仅在配置图片模型后暴露 generate_image 工具。");
+        }
+        ConfigCommand::SetVideoModel { name } => {
+            let profile = cfg
+                .models
+                .iter()
+                .find(|model| model.name == name)
+                .ok_or_else(|| anyhow!("模型不存在，请先添加: {}", name))?;
+            if !profile.supports_video_generation() {
+                return Err(anyhow!(
+                    "模型 {} 未声明 videoGeneration capability，不能作为视频生成模型",
+                    name
+                ));
+            }
+            cfg.video_generation_model = Some(name.clone());
+            config_store.save(&cfg)?;
+            println!("已设置视频生成模型: {}", name);
+        }
+        ConfigCommand::ClearVideoModel => {
+            cfg.video_generation_model = None;
+            config_store.save(&cfg)?;
+            println!("已清除视频生成模型。CLI 当前仅在配置视频模型后暴露 generate_video 工具。");
         }
         ConfigCommand::Key { action } => handle_key_cli(action, &secret_store)?,
     }

@@ -12,6 +12,7 @@ export type ModelReasoningProvider =
   | 'vercel-ai-gateway'
   | 'openrouter'
   | 'openai'
+  | 'volcengine'
   | 'custom';
 
 export type ModelReasoningEffort = string;
