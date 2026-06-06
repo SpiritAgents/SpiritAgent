@@ -97,6 +97,7 @@ export function SessionSidebarShell({
   }, []);
 
   const shellWidth = sessionSidebarShellWidth(open, widthPx);
+  const innerWidth = `calc(0.25rem + ${widthPx}px)`;
 
   return (
     <div
@@ -111,45 +112,45 @@ export function SessionSidebarShell({
       style={{ width: shellWidth }}
     >
       <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t("sidebar.resizeWidth")}
+        aria-hidden={!open}
+        className={cn(
+          "group absolute inset-y-0 right-0 z-10 w-1 touch-none select-none",
+          open ? "cursor-col-resize" : "pointer-events-none",
+          "before:absolute before:inset-y-0 before:-right-1 before:w-3 before:content-['']",
+        )}
+        onPointerDown={onResizePointerDown}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={endResize}
+        onPointerCancel={endResize}
+      >
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-y-0 right-0 w-px transition-colors",
+            useMicaBackdrop
+              ? "bg-black/5 group-hover:bg-border/55 dark:bg-border/40"
+              : "bg-border/40 group-hover:bg-border/55",
+          )}
+          aria-hidden
+        />
+      </div>
+      <div
         className={cn(
           "flex h-full min-h-0 shrink-0 flex-row self-stretch",
           !open && "pointer-events-none select-none",
         )}
-        style={{ width: shellWidth }}
+        style={{ width: innerWidth }}
         aria-hidden={!open}
         inert={!open}
       >
         <div
           data-spirit-surface="session-sidebar"
           className="h-full min-w-0 shrink-0 overflow-hidden"
-          style={{ width: open ? widthPx : 0 }}
+          style={{ width: widthPx }}
         >
           {children}
-        </div>
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={t("sidebar.resizeWidth")}
-          aria-hidden={!open}
-          className={cn(
-            "group relative z-10 w-1 shrink-0 touch-none select-none",
-            open ? "cursor-col-resize" : "pointer-events-none",
-            "before:absolute before:inset-y-0 before:-right-1 before:w-3 before:content-['']",
-          )}
-          onPointerDown={onResizePointerDown}
-          onPointerMove={onResizePointerMove}
-          onPointerUp={endResize}
-          onPointerCancel={endResize}
-        >
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-y-0 right-0 w-px transition-colors",
-              useMicaBackdrop
-                ? "bg-black/5 group-hover:bg-border/55 dark:bg-border/40"
-                : "bg-border/40 group-hover:bg-border/55",
-            )}
-            aria-hidden
-          />
         </div>
       </div>
     </div>
