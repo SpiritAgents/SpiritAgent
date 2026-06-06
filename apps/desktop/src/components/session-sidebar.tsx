@@ -27,7 +27,6 @@ import {
   Plus,
   Plug,
   Settings2,
-  SlidersHorizontal,
   Sparkles,
   Trash2,
   type LucideIcon,
@@ -99,7 +98,6 @@ type SessionSidebarProps = {
 };
 
 export type SettingsSidebarTab =
-  | "basic"
   | "appearance"
   | "networks"
   | "models"
@@ -357,11 +355,6 @@ const settingsTabs: Array<{
   icon: LucideIcon;
 }> = [
   {
-    id: "basic",
-    labelKey: "settings.basic",
-    icon: SlidersHorizontal,
-  },
-  {
     id: "models",
     labelKey: "settings.models",
     icon: Layers,
@@ -515,7 +508,7 @@ export function SessionSidebar({
   onOpenSettings,
   onBackToSessions,
   marketplaceActive = false,
-  settingsTab = "basic",
+  settingsTab = "models",
   extensionSettingsId = null,
   extensionSettingsItems = [],
   onSettingsTabChange,

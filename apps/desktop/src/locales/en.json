@@ -57,7 +57,6 @@
   },
   "settings": {
     "title": "Settings",
-    "basic": "Workspace & Connection",
     "models": "Models",
     "extensions": "Extensions",
     "mcps": "MCPs",
@@ -106,7 +105,7 @@
     "pairingDone": "Completed",
     "pairingPending": "Waiting for first-time pairing",
     "resetPairing": "Reset Pairing",
-    "runtimeOverview": "Runtime Overview",
+    "remoteAccessSection": "Remote Access",
     "capabilityChatLabel": "Chat",
     "capabilityImageLabel": "Image",
     "capabilityVideoLabel": "Video",

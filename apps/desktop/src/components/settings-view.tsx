@@ -158,7 +158,6 @@ const themeSelectOptions: Array<{ value: ThemePreference; labelKey: string }> = 
 ];
 
 const settingsPageTitleKey: Record<SettingsSidebarTab, string> = {
-  basic: "settings.basic",
   models: "settings.models",
   agents: "settings.agents",
   extensions: "settings.extensions",
@@ -707,176 +706,6 @@ function SettingsRow({
       <div className="min-w-0 w-full sm:w-auto sm:max-w-[min(24rem,52vw)] sm:flex-1 sm:flex sm:justify-end">
         {children}
       </div>
-    </div>
-  );
-}
-
-function BasicSettingsPanel({
-  settings,
-  snapshot,
-  onSavePatch,
-  onResetWebHostPairing,
-}: Pick<
-  SettingsViewProps,
-  "settings" | "snapshot" | "onSavePatch" | "onResetWebHostPairing"
->) {
-  const { t } = useTranslation();
-  const webHost = snapshot?.webHost;
-  const webHostUrl =
-    webHost?.status.url ?? `http://${settings.webHostHost}:${settings.webHostPort}`;
-  const webHostStatus = webHostStatusLabel(webHost?.status.state ?? "disabled");
-
-  const [webHostHostDraft, setWebHostHostDraft] = useState(settings.webHostHost);
-  const [webHostPortDraft, setWebHostPortDraft] = useState(String(settings.webHostPort));
-
-  useEffect(() => {
-    setWebHostHostDraft(settings.webHostHost);
-  }, [settings.webHostHost]);
-
-  useEffect(() => {
-    setWebHostPortDraft(String(settings.webHostPort));
-  }, [settings.webHostPort]);
-
-  return (
-    <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-      <SettingsRow label={t('settings.uiLocale')} description={t('settings.uiLocaleDescription')} htmlFor="settings-locale">
-        <Select
-          value={settings.uiLocale}
-          onValueChange={(value) => {
-            void changeLanguage(value);
-            void onSavePatch({ uiLocale: value });
-          }}
-        >
-          <SelectTrigger id="settings-locale" className="w-40 sm:text-right">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {VALID_LANGUAGES.map((lang) => (
-              <SelectItem key={lang} value={lang}>
-                {lang === 'zh-CN' ? t('settings.langZhCN') : t('settings.langEn')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsRow>
-
-      <SettingsRow
-        label={t('settings.webRemoteAccess')}
-        description={t('settings.webRemoteAccessDescription')}
-        htmlFor="settings-web-host-enabled"
-      >
-        <div className="flex items-center justify-end gap-3">
-          <span className="truncate text-sm text-muted-foreground">
-            {settings.webHostEnabled ? webHostStatus : t('settings.webHostClosed')}
-          </span>
-          <Checkbox
-            id="settings-web-host-enabled"
-            checked={settings.webHostEnabled}
-            onCheckedChange={(value) =>
-              void onSavePatch({ webHostEnabled: value === true })
-            }
-            className="size-5"
-          />
-        </div>
-      </SettingsRow>
-
-      <SettingsRow
-        label={t('settings.listenAddress')}
-        description={t('settings.listenAddressDescription')}
-        htmlFor="settings-web-host-host"
-      >
-        <Input
-          id="settings-web-host-host"
-          className="sm:text-right"
-          value={webHostHostDraft}
-          onChange={(event) => setWebHostHostDraft(event.target.value)}
-          onBlur={() => {
-            const next = webHostHostDraft.trim();
-            if (next && next !== settings.webHostHost) {
-              void onSavePatch({ webHostHost: next });
-            }
-          }}
-          disabled={!settings.webHostEnabled}
-          placeholder="127.0.0.1"
-        />
-      </SettingsRow>
-
-      <SettingsRow label={t('settings.listenPort')} htmlFor="settings-web-host-port">
-        <Input
-          id="settings-web-host-port"
-          className="sm:text-right"
-          type="number"
-          min={1}
-          max={65535}
-          value={webHostPortDraft}
-          onChange={(event) => setWebHostPortDraft(event.target.value)}
-          onBlur={() => {
-            const port = Number.parseInt(webHostPortDraft, 10);
-            if (Number.isInteger(port) && port >= 1 && port <= 65535 && port !== settings.webHostPort) {
-              void onSavePatch({ webHostPort: port });
-            }
-          }}
-          disabled={!settings.webHostEnabled}
-          placeholder="7788"
-        />
-      </SettingsRow>
-
-      <div className="py-4">
-        <p className="text-sm font-medium text-foreground">{t('settings.remoteStatus')}</p>
-        <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:text-right">
-          <p className="truncate">
-            <span className="text-foreground">{settings.webHostEnabled ? webHostStatus : t('settings.webHostClosed')}</span>
-            {settings.webHostEnabled ? ` · ${webHostUrl}` : null}
-          </p>
-          {webHost?.status.error ? (
-            <p className="break-words text-destructive">{webHost.status.error}</p>
-          ) : null}
-          <p>
-            {t('settings.pairing')}{webHost?.config.paired ? t('settings.pairingDone') : t('settings.pairingPending')}
-          </p>
-          {webHost?.status.pairingCode ? (
-            <p className="font-mono text-foreground">{webHost.status.pairingCode}</p>
-          ) : null}
-          {settings.webHostEnabled && webHost?.config.paired && onResetWebHostPairing ? (
-            <div className="mt-3 flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground"
-                onClick={() => void onResetWebHostPairing()}
-              >
-                {t('settings.resetPairing')}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="py-4">
-        <p className="text-sm font-medium text-foreground">{t('settings.runtimeOverview')}</p>
-        <p className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-          <span>
-            Rules{" "}
-            <span className="font-medium text-foreground">
-              {snapshot ? `${snapshot.rules.enabled}/${snapshot.rules.discovered}` : "—"}
-            </span>
-          </span>
-          <span>
-            Skills{" "}
-            <span className="font-medium text-foreground">
-              {snapshot ? `${snapshot.skills.enabled}/${snapshot.skills.discovered}` : "—"}
-            </span>
-          </span>
-          <span>
-            MCP{" "}
-            <span className="font-medium text-foreground">
-              {snapshot ? String(snapshot.mcpStatus.cachedTools) : "—"}
-            </span>
-          </span>
-        </p>
-      </div>
-
     </div>
   );
 }
@@ -3483,32 +3312,153 @@ const llmHttpVersionSelectOptions = [
 
 function NetworksSettingsPanel({
   settings,
+  snapshot,
   onSavePatch,
-}: Pick<SettingsViewProps, "settings" | "onSavePatch">) {
+  onResetWebHostPairing,
+}: Pick<
+  SettingsViewProps,
+  "settings" | "snapshot" | "onSavePatch" | "onResetWebHostPairing"
+>) {
   const { t } = useTranslation();
+  const webHost = snapshot?.webHost;
+  const webHostUrl =
+    webHost?.status.url ?? `http://${settings.webHostHost}:${settings.webHostPort}`;
+  const webHostStatus = webHostStatusLabel(webHost?.status.state ?? "disabled");
+
+  const [webHostHostDraft, setWebHostHostDraft] = useState(settings.webHostHost);
+  const [webHostPortDraft, setWebHostPortDraft] = useState(String(settings.webHostPort));
+
+  useEffect(() => {
+    setWebHostHostDraft(settings.webHostHost);
+  }, [settings.webHostHost]);
+
+  useEffect(() => {
+    setWebHostPortDraft(String(settings.webHostPort));
+  }, [settings.webHostPort]);
+
   return (
-    <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-      <SettingsRow
-        label={t('settings.llmHttpVersion')}
-        description={t('settings.llmHttpVersionDescription')}
-        htmlFor="settings-llm-http-version-select"
-      >
-        <Select
-          value={settings.llmHttpVersion}
-          onValueChange={(value) => void onSavePatch({ llmHttpVersion: value as 'http1.1' | 'http2' })}
+    <div className="space-y-6">
+      <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+        <SettingsRow
+          label={t('settings.llmHttpVersion')}
+          description={t('settings.llmHttpVersionDescription')}
+          htmlFor="settings-llm-http-version-select"
         >
-          <SelectTrigger id="settings-llm-http-version-select" className="w-full sm:min-w-[12rem]">
-            <SelectValue placeholder={t('settings.llmHttpVersion')} />
-          </SelectTrigger>
-          <SelectContent>
-            {llmHttpVersionSelectOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsRow>
+          <Select
+            value={settings.llmHttpVersion}
+            onValueChange={(value) => void onSavePatch({ llmHttpVersion: value as 'http1.1' | 'http2' })}
+          >
+            <SelectTrigger id="settings-llm-http-version-select" className="w-full sm:min-w-[12rem]">
+              <SelectValue placeholder={t('settings.llmHttpVersion')} />
+            </SelectTrigger>
+            <SelectContent>
+              {llmHttpVersionSelectOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {t(opt.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingsRow>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">{t('settings.remoteAccessSection')}</p>
+        <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+          <SettingsRow
+            label={t('settings.webRemoteAccess')}
+            description={t('settings.webRemoteAccessDescription')}
+            htmlFor="settings-web-host-enabled"
+          >
+            <div className="flex items-center justify-end gap-3">
+              <span className="truncate text-sm text-muted-foreground">
+                {settings.webHostEnabled ? webHostStatus : t('settings.webHostClosed')}
+              </span>
+              <Checkbox
+                id="settings-web-host-enabled"
+                checked={settings.webHostEnabled}
+                onCheckedChange={(value) =>
+                  void onSavePatch({ webHostEnabled: value === true })
+                }
+                className="size-5"
+              />
+            </div>
+          </SettingsRow>
+
+          <SettingsRow
+            label={t('settings.listenAddress')}
+            description={t('settings.listenAddressDescription')}
+            htmlFor="settings-web-host-host"
+          >
+            <Input
+              id="settings-web-host-host"
+              className="sm:text-right"
+              value={webHostHostDraft}
+              onChange={(event) => setWebHostHostDraft(event.target.value)}
+              onBlur={() => {
+                const next = webHostHostDraft.trim();
+                if (next && next !== settings.webHostHost) {
+                  void onSavePatch({ webHostHost: next });
+                }
+              }}
+              disabled={!settings.webHostEnabled}
+              placeholder="127.0.0.1"
+            />
+          </SettingsRow>
+
+          <SettingsRow label={t('settings.listenPort')} htmlFor="settings-web-host-port">
+            <Input
+              id="settings-web-host-port"
+              className="sm:text-right"
+              type="number"
+              min={1}
+              max={65535}
+              value={webHostPortDraft}
+              onChange={(event) => setWebHostPortDraft(event.target.value)}
+              onBlur={() => {
+                const port = Number.parseInt(webHostPortDraft, 10);
+                if (Number.isInteger(port) && port >= 1 && port <= 65535 && port !== settings.webHostPort) {
+                  void onSavePatch({ webHostPort: port });
+                }
+              }}
+              disabled={!settings.webHostEnabled}
+              placeholder="7788"
+            />
+          </SettingsRow>
+
+          <div className="py-4">
+            <p className="text-sm font-medium text-foreground">{t('settings.remoteStatus')}</p>
+            <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:text-right">
+              <p className="truncate">
+                <span className="text-foreground">{settings.webHostEnabled ? webHostStatus : t('settings.webHostClosed')}</span>
+                {settings.webHostEnabled ? ` · ${webHostUrl}` : null}
+              </p>
+              {webHost?.status.error ? (
+                <p className="break-words text-destructive">{webHost.status.error}</p>
+              ) : null}
+              <p>
+                {t('settings.pairing')}{webHost?.config.paired ? t('settings.pairingDone') : t('settings.pairingPending')}
+              </p>
+              {webHost?.status.pairingCode ? (
+                <p className="font-mono text-foreground">{webHost.status.pairingCode}</p>
+              ) : null}
+              {settings.webHostEnabled && webHost?.config.paired && onResetWebHostPairing ? (
+                <div className="mt-3 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-muted-foreground"
+                    onClick={() => void onResetWebHostPairing()}
+                  >
+                    {t('settings.resetPairing')}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -3553,6 +3503,31 @@ function AppearanceSettingsPanel({
         htmlFor="settings-font-select"
       >
         <FontSelect id="settings-font-select" value={font} onValueChange={onFontChange} />
+      </SettingsRow>
+
+      <SettingsRow
+        label={t('settings.uiLocale')}
+        description={t('settings.uiLocaleDescription')}
+        htmlFor="settings-locale"
+      >
+        <Select
+          value={settings.uiLocale}
+          onValueChange={(value) => {
+            void changeLanguage(value);
+            void onSavePatch({ uiLocale: value });
+          }}
+        >
+          <SelectTrigger id="settings-locale" className="w-full sm:min-w-[12rem]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {VALID_LANGUAGES.map((lang) => (
+              <SelectItem key={lang} value={lang}>
+                {lang === 'zh-CN' ? t('settings.langZhCN') : t('settings.langEn')}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </SettingsRow>
 
       <SettingsRow
@@ -3765,13 +3740,6 @@ export function SettingsView({
                 onUpdateExtensionSettings={onUpdateExtensionSettings}
                 onUpdateExtensionSecret={onUpdateExtensionSecret}
               />
-            ) : tab === "basic" ? (
-              <BasicSettingsPanel
-                settings={settings}
-                snapshot={snapshot}
-                onSavePatch={onSavePatch}
-                onResetWebHostPairing={onResetWebHostPairing}
-              />
             ) : tab === "developer" ? (
               <DeveloperSettingsPanel onStartCompactionUiDemo={onStartCompactionUiDemo} />
             ) : tab === "dreams" ? (
@@ -3839,7 +3807,12 @@ export function SettingsView({
                 onSavePatch={onSavePatch}
               />
             ) : tab === "networks" ? (
-              <NetworksSettingsPanel settings={settings} onSavePatch={onSavePatch} />
+              <NetworksSettingsPanel
+                settings={settings}
+                snapshot={snapshot}
+                onSavePatch={onSavePatch}
+                onResetWebHostPairing={onResetWebHostPairing}
+              />
             ) : null}
           </div>
         </div>
