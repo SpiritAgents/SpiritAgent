@@ -21,6 +21,10 @@ import {
 
 import { type DesktopAgentMode } from "@/lib/agent-mode";
 import {
+  resolveComposerDirectMediaTool,
+  type DirectMediaTool,
+} from "@/lib/composer-direct-media";
+import {
   pickEmptySessionGreetingVariant,
   resolveEmptySessionGreeting,
   type EmptySessionGreetingVariantId,
@@ -842,6 +846,7 @@ type ComposerSurfaceProps = {
   conversationBusy?: boolean;
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
+  directMediaMode?: DirectMediaTool | null;
 };
 
 function ComposerSurface({
@@ -880,6 +885,7 @@ function ComposerSurface({
   conversationBusy = false,
   agentModeChipDismissed = false,
   onAgentModeChipDismissChange,
+  directMediaMode = null,
 }: ComposerSurfaceProps) {
   const { t } = useTranslation();
   const [modelFilter, setModelFilter] = useState("");
@@ -898,6 +904,12 @@ function ComposerSurface({
         activeModelProfile.reasoningEffort,
       )
     : activeModel;
+  const directMediaBadgeLabel =
+    directMediaMode === "generate_image"
+      ? t("composer.directMediaImageBadge")
+      : directMediaMode === "generate_video"
+        ? t("composer.directMediaVideoBadge")
+        : null;
   const modelGroups = useMemo(
     () => groupModelsForPicker(models, catalogHints),
     [models, catalogHints],
@@ -1005,6 +1017,14 @@ function ComposerSurface({
                       <span className="min-w-0 flex-1 truncate" title={activeModelSummary}>
                         {activeModelSummary}
                       </span>
+                      {directMediaBadgeLabel ? (
+                        <Badge
+                          variant="secondary"
+                          className="h-4 shrink-0 px-1 text-[10px] font-medium leading-none"
+                        >
+                          {directMediaBadgeLabel}
+                        </Badge>
+                      ) : null}
                       <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
                     </button>
                   </FilteredOverlayMenuTrigger>
@@ -1993,6 +2013,19 @@ export default function App() {
   const [composerBrowserElementAttachments, setComposerBrowserElementAttachments] = useState<BrowserElementAttachment[]>([]);
 
   const activeSessionReadOnly = snapshot?.activeSession?.readOnly === true;
+  const composerDirectMediaMode = useMemo(() => {
+    if (!snapshot?.config) {
+      return null;
+    }
+    return resolveComposerDirectMediaTool(runtime.settings.activeModel, snapshot.config);
+  }, [runtime.settings.activeModel, snapshot?.config]);
+  const composerPlaceholder = activeSessionReadOnly
+    ? t("app.readOnlySession")
+    : composerDirectMediaMode === "generate_image"
+      ? t("composer.placeholderGenerateImage")
+      : composerDirectMediaMode === "generate_video"
+        ? t("composer.placeholderGenerateVideo")
+        : t("app.typeMessage");
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const composerCanSend =
@@ -3392,11 +3425,12 @@ export default function App() {
                     browserElementAttachments={composerBrowserElementAttachments}
                     onElementAttachmentsChange={setComposerBrowserElementAttachments}
                     onAbort={() => void runtime.abortConversation()}
-                    placeholder={activeSessionReadOnly ? t('app.readOnlySession') : t('app.typeMessage')}
+                    placeholder={composerPlaceholder}
                     localFileAttachments={runtime.composerLocalFileAttachments}
                     models={models}
                     catalogHints={snapshot?.config.modelCatalogHints}
                     activeModel={runtime.settings.activeModel}
+                    directMediaMode={composerDirectMediaMode}
                     agentMode={runtime.settings.agentMode}
                     loopEnabled={snapshot?.conversation.loopEnabled === true}
                     onModelSelect={runtime.setActiveModel}
