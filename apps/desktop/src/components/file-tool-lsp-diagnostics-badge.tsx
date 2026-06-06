@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   formatLspDiagnosticsSummaryLabel,
   lspDiagnosticsCounts,
-  toolCardFileNameDetailClass,
+  toolCardSecondaryTextClass,
 } from "@/lib/file-tool-lsp-diagnostics-display";
 import { cn } from "@/lib/utils";
 import type { LspWriteDiagnosticsUi } from "@spirit-agent/agent-core";
@@ -24,7 +24,7 @@ export function FileToolLspDiagnosticsBadge({
     <span
       className={cn(
         "inline-flex shrink-0 text-xs leading-relaxed",
-        toolCardFileNameDetailClass,
+        toolCardSecondaryTextClass,
       )}
     >
       {label}
