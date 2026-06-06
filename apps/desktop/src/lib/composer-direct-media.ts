@@ -19,6 +19,10 @@ function supportsVideoGeneration(model: ModelWithCapabilities): boolean {
   return model.capabilities?.includes('videoGeneration') === true;
 }
 
+function supportsChat(model: ModelWithCapabilities): boolean {
+  return model.capabilities?.includes('chat') === true;
+}
+
 export function resolveComposerDirectMediaTool(
   activeModel: string,
   config: ComposerDirectMediaConfig,
@@ -48,6 +52,16 @@ export function resolveComposerDirectMediaTool(
   if (matchesImageSlot) {
     const profile = config.models.find((model) => model.name === trimmedActive);
     if (profile && supportsImageGeneration(profile)) {
+      return 'generate_image';
+    }
+  }
+
+  const profile = config.models.find((model) => model.name === trimmedActive);
+  if (profile && !supportsChat(profile)) {
+    if (supportsVideoGeneration(profile)) {
+      return 'generate_video';
+    }
+    if (supportsImageGeneration(profile)) {
       return 'generate_image';
     }
   }

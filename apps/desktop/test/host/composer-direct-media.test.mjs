@@ -72,6 +72,21 @@ test('resolveComposerDirectMediaTool returns null when slot matches but capabili
   );
 });
 
+test('resolveComposerDirectMediaTool routes image-only active model without slot match', () => {
+  assert.equal(
+    resolveComposerDirectMediaTool('openai/gpt-image-2', {
+      models: [
+        {
+          name: 'openai/gpt-image-2',
+          capabilities: ['imageGeneration'],
+        },
+      ],
+      imageGenerationModel: 'openai/gpt-image-1',
+    }),
+    'generate_image',
+  );
+});
+
 test('resolveComposerDirectMediaTool prefers video when same model fills both slots', () => {
   assert.equal(
     resolveComposerDirectMediaTool('dual-media', {
