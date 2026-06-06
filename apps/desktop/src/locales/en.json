@@ -517,9 +517,7 @@
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",
     "placeholderGenerateImage": "Describe the image to generate…",
-    "placeholderGenerateVideo": "Describe the video to generate…",
-    "directMediaImageBadge": "Image",
-    "directMediaVideoBadge": "Video"
+    "placeholderGenerateVideo": "Describe the video to generate…"
   },
   "error": {
     "runtimeBusy": "A response or approval is already being processed. Please wait.",
