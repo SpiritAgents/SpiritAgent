@@ -51,6 +51,10 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  readWorkspaceSidebarExpandedById,
+  writeWorkspaceSidebarExpandedById,
+} from "@/lib/layout-prefs";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
@@ -535,7 +539,9 @@ export function SessionSidebar({
     [bound, i18n.language],
   );
   const unboundSessions = useMemo(() => sortSessionsByModified(unbound), [unbound]);
-  const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState<Record<string, boolean>>({});
+  const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState(
+    readWorkspaceSidebarExpandedById,
+  );
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
   const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
@@ -634,10 +640,11 @@ export function SessionSidebar({
   ]);
 
   const setWorkspaceGroupExpanded = useCallback((groupId: string, open: boolean) => {
-    setCollapsedWorkspaceIds((current) => ({
-      ...current,
-      [groupId]: open,
-    }));
+    setCollapsedWorkspaceIds((current) => {
+      const next = { ...current, [groupId]: open };
+      writeWorkspaceSidebarExpandedById(next);
+      return next;
+    });
   }, []);
 
   return (

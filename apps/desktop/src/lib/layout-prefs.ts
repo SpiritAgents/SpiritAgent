@@ -178,3 +178,68 @@ export function writeGitChangesPaneRatio(
 ): void {
   writeStoredRatio(GIT_CHANGES_PANE_RATIO_STORAGE_KEY, ratio, containerHeightPx);
 }
+
+const WORKSPACE_SIDEBAR_EXPANDED_STORAGE_KEY =
+  "spirit-desktop-workspace-sidebar-expanded-by-id";
+
+const WORKSPACE_SIDEBAR_EXPANDED_MAX_ENTRIES = 200;
+
+/** `false` = 收起；缺省或 `true` = 展开（与 SessionSidebar Collapsible 一致）。 */
+export type WorkspaceSidebarExpandedById = Record<string, boolean>;
+
+function sanitizeWorkspaceSidebarExpandedById(
+  value: unknown,
+): WorkspaceSidebarExpandedById {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  const record: WorkspaceSidebarExpandedById = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof key !== "string" || key.length === 0 || key.length > 512) {
+      continue;
+    }
+    if (typeof entry === "boolean") {
+      record[key] = entry;
+    }
+  }
+  const keys = Object.keys(record);
+  if (keys.length <= WORKSPACE_SIDEBAR_EXPANDED_MAX_ENTRIES) {
+    return record;
+  }
+  const trimmed: WorkspaceSidebarExpandedById = {};
+  for (const key of keys.slice(0, WORKSPACE_SIDEBAR_EXPANDED_MAX_ENTRIES)) {
+    trimmed[key] = record[key]!;
+  }
+  return trimmed;
+}
+
+export function readWorkspaceSidebarExpandedById(): WorkspaceSidebarExpandedById {
+  try {
+    if (typeof localStorage === "undefined") {
+      return {};
+    }
+    const raw = localStorage.getItem(WORKSPACE_SIDEBAR_EXPANDED_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+    return sanitizeWorkspaceSidebarExpandedById(JSON.parse(raw));
+  } catch {
+    return {};
+  }
+}
+
+export function writeWorkspaceSidebarExpandedById(
+  value: WorkspaceSidebarExpandedById,
+): void {
+  try {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    localStorage.setItem(
+      WORKSPACE_SIDEBAR_EXPANDED_STORAGE_KEY,
+      JSON.stringify(sanitizeWorkspaceSidebarExpandedById(value)),
+    );
+  } catch {
+    // ignore
+  }
+}
