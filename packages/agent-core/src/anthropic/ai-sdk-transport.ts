@@ -19,6 +19,7 @@ import {
   type OpenAiJsonSchemaCompletionRequest,
   type OpenAiJsonSchemaCompletionResult,
 } from '../openai/json-schema.js';
+import { readAiSdkUsage } from '../ai-sdk-usage.js';
 import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
 import {
   hostToolArgumentsReadyForEarlyStreamingPreview,
@@ -191,6 +192,7 @@ export class AiSdkAnthropicTransport
         ),
       );
 
+      const usage = await readAiSdkUsage(result);
       const calls = extractToolCallsFromAiSdk(result.toolCalls);
       if (calls.length > 0) {
         return {
@@ -199,6 +201,7 @@ export class AiSdkAnthropicTransport
             state: nextState,
             step: { kind: 'tool-calls', calls },
             requestTrace,
+            ...(usage ? { usage } : {}),
           },
         };
       }
@@ -209,6 +212,7 @@ export class AiSdkAnthropicTransport
           state: nextState,
           step: { kind: 'final-response-ready' },
           requestTrace,
+          ...(usage ? { usage } : {}),
         },
       };
     } catch (error) {
@@ -721,7 +725,7 @@ function buildAssistantMessageFromGenerateTextResult(
 
 async function* anthropicEventStreamToRuntimeEvents(
   stream: AsyncIterable<TextStreamPart<any>>,
-  result: {
+  result: Parameters<typeof readAiSdkUsage>[0] & {
     reasoning?: PromiseLike<unknown>;
   },
   nextState: ToolAgentState,
@@ -863,12 +867,14 @@ async function* anthropicEventStreamToRuntimeEvents(
     );
 
     const calls = extractToolCallsFromStreamingMap(toolCalls, toolCallOrder);
+    const usage = await readAiSdkUsage(result);
     completion.resolve({
       kind: 'success',
       result: {
         state: nextState,
         step: calls.length > 0 ? { kind: 'tool-calls', calls } : { kind: 'final-response-ready' },
         requestTrace,
+        ...(usage ? { usage } : {}),
       },
     });
     yield { kind: 'done' };

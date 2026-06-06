@@ -1,5 +1,7 @@
 import { generateObject, generateText, jsonSchema, streamText } from 'ai';
 
+import { readAiSdkUsage } from '../ai-sdk-usage.js';
+
 import type {
   GeneratedVideoFile,
   GeneratedVideoSaveRequest,
@@ -197,6 +199,7 @@ export class AiSdkOpenResponsesTransport
         if (applyPatchCalls.length > 0) {
           registerPendingApplyPatchCallIds(applyPatchCalls.map((call) => call.id));
         }
+        const usage = await readAiSdkUsage(result);
         const calls = mergeToolCallsWithApplyPatch(
           extractToolCallsFromAiSdk(result.toolCalls),
           applyPatchCalls,
@@ -211,6 +214,7 @@ export class AiSdkOpenResponsesTransport
                 calls,
               },
               requestTrace: tracedRequest,
+              ...(usage ? { usage } : {}),
             },
           } as ToolAgentRoundCompletion<ToolAgentState>;
         }
@@ -223,6 +227,7 @@ export class AiSdkOpenResponsesTransport
               kind: 'final-response-ready',
             },
             requestTrace: tracedRequest,
+            ...(usage ? { usage } : {}),
           },
         } as ToolAgentRoundCompletion<ToolAgentState>;
       });
@@ -277,7 +282,7 @@ export class AiSdkOpenResponsesTransport
       const generateTools = buildResponsesGenerateTools(config, normalizedTools);
       const hasGenerateTools = Object.keys(generateTools).length > 0;
       const providerOptions = buildResponsesProviderOptions(config, previousResponseId);
-      const result: { fullStream: AsyncIterable<unknown> } = streamText({
+      const result: { fullStream: AsyncIterable<unknown> } & Parameters<typeof readAiSdkUsage>[0] = streamText({
         model: createResponsesLanguageModel(config) as any,
         messages: openAiMessagesToResponsesAiSdkMessages(requestMessages, config) as any,
         allowSystemInMessages: true,
@@ -299,6 +304,7 @@ export class AiSdkOpenResponsesTransport
         eventStream: responsesEventStreamToRuntimeEvents(
           config,
           result.fullStream as any,
+          result,
           nextState,
           requestTrace,
           completion,

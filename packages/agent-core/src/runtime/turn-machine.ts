@@ -14,6 +14,7 @@ import {
   cloneLlmProviderState,
   createLlmMessageContentFromText,
 } from '../ports.js';
+import { emitContextUsageUpdated } from './context-usage.js';
 import { isOpenResponsesTransportConfig } from '../provider-config.js';
 import {
   buildApplyPatchToolResultProviderState,
@@ -908,6 +909,7 @@ export async function handlePendingToolAgentRoundCompletion<
 
   const round = completion.result;
   runtime.appendTrace(round.requestTrace, pending.turn);
+  emitContextUsageUpdated(runtime.emitEvent.bind(runtime), round.usage);
 
   if (round.step.kind === 'tool-calls') {
     await processToolCallsAsync(
