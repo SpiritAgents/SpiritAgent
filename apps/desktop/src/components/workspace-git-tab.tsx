@@ -4,6 +4,14 @@ import { useTranslation } from "react-i18next";
 import { GitChangesSection } from "@/components/git-changes-section";
 import { GitCommitGraph } from "@/components/git-commit-graph";
 import type { WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
+import {
+  GIT_CHANGES_MIN_PX,
+  GIT_HISTORY_HEADER_PX,
+  GIT_HISTORY_MIN_PX,
+  GIT_SPLITTER_PX,
+  readGitChangesPaneRatio,
+  writeGitChangesPaneRatio,
+} from "@/lib/layout-prefs";
 import { cn } from "@/lib/utils";
 import type {
   DesktopGitSnapshot,
@@ -19,12 +27,6 @@ function describeError(error: unknown): string {
   }
   return String(error);
 }
-
-const GIT_CHANGES_MIN_PX = 88;
-const GIT_HISTORY_MIN_PX = 120;
-const GIT_HISTORY_HEADER_PX = 32;
-const GIT_SPLITTER_PX = 4;
-const GIT_CHANGES_DEFAULT_RATIO = 0.45;
 
 export type WorkspaceGitTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
@@ -65,7 +67,9 @@ export function WorkspaceGitTab({
   const [mergeButtonFlashMerged, setMergeButtonFlashMerged] = useState(false);
   const mergeFlashTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const splitContainerRef = useRef<HTMLDivElement>(null);
+  const latestChangesPaneHeightPxRef = useRef<number | null>(null);
   const [changesPaneHeightPx, setChangesPaneHeightPx] = useState<number | null>(null);
+  latestChangesPaneHeightPxRef.current = changesPaneHeightPx;
   const [isResizingSplit, setIsResizingSplit] = useState(false);
   const splitDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const historyLoadMoreInFlightRef = useRef(false);
@@ -91,7 +95,9 @@ export function WorkspaceGitTab({
         if (prev !== null) {
           return clampChangesPaneHeight(prev);
         }
-        return clampChangesPaneHeight(container.clientHeight * GIT_CHANGES_DEFAULT_RATIO);
+        return clampChangesPaneHeight(
+          container.clientHeight * readGitChangesPaneRatio(container.clientHeight),
+        );
       });
     };
     syncDefaultHeight();
@@ -104,10 +110,11 @@ export function WorkspaceGitTab({
     (event: React.PointerEvent<HTMLDivElement>) => {
       event.preventDefault();
       setIsResizingSplit(true);
+      const containerHeight = splitContainerRef.current?.clientHeight ?? 0;
       const startHeight =
         changesPaneHeightPx ??
         clampChangesPaneHeight(
-          (splitContainerRef.current?.clientHeight ?? 0) * GIT_CHANGES_DEFAULT_RATIO,
+          containerHeight * readGitChangesPaneRatio(containerHeight || undefined),
         );
       splitDragRef.current = { startY: event.clientY, startHeight };
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -122,13 +129,22 @@ export function WorkspaceGitTab({
         return;
       }
       const delta = event.clientY - drag.startY;
-      setChangesPaneHeightPx(clampChangesPaneHeight(drag.startHeight + delta));
+      const next = clampChangesPaneHeight(drag.startHeight + delta);
+      latestChangesPaneHeightPxRef.current = next;
+      setChangesPaneHeightPx(next);
     },
     [clampChangesPaneHeight],
   );
 
   const endSplitResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     setIsResizingSplit(false);
+    if (splitDragRef.current) {
+      const container = splitContainerRef.current;
+      const height = latestChangesPaneHeightPxRef.current;
+      if (container && container.clientHeight > 0 && height !== null) {
+        writeGitChangesPaneRatio(height / container.clientHeight, container.clientHeight);
+      }
+    }
     splitDragRef.current = null;
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
