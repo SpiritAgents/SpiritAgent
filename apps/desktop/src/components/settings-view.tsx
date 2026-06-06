@@ -3217,9 +3217,6 @@ function ModelsSettingsPanel({
                   placeholder={t('settings.optional')}
                   autoComplete="off"
                 />
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {t('settings.contextLengthHint')}
-                </p>
               </div>
             ) : null}
             {selectedProvider === "custom" ? (

@@ -255,7 +255,6 @@
     "modelNameRequired": "模型名称不能为空。",
     "modelNameExample": "例如 my-model",
     "contextLength": "上下文长度",
-    "contextLengthHint": "可选。用作上下文 usage 圆环的分母（token 数）；留空则自定义模型不显示圆环。",
     "contextLengthInvalid": "上下文长度必须是正整数。",
     "extensionSettingsDescription": "扩展 {{id}} 的设置。",
     "noExtensionSettings": "此扩展已声明独立设置页，但尚未声明设置项或 secret slot。",
