@@ -161,12 +161,12 @@ import {
 } from "@/components/ui/filtered-overlay-menu";
 import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
+  DESKTOP_OVERLAY_LIST_ACTION_ITEM,
   DESKTOP_OVERLAY_LIST_GROUP_LABEL,
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
   DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
-  DESKTOP_OVERLAY_SHORT_ITEM,
   DESKTOP_OVERLAY_SHORT_SUBCONTENT,
   SESSION_SIDEBAR_DEFAULT_WIDTH_PX,
   instantHoverMotionClass,
@@ -368,19 +368,19 @@ function EmptyStateWorkspaceSelector({
         }
         footer={
           <>
-            <DropdownMenuItem onSelect={onAddWorkspace} className={cn("gap-2", DESKTOP_OVERLAY_SHORT_ITEM)}>
-              <FolderPlus className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <DropdownMenuItem onSelect={onAddWorkspace} className={cn("gap-1.5", DESKTOP_OVERLAY_LIST_ACTION_ITEM)}>
+              <FolderPlus className="size-3 shrink-0 text-muted-foreground" aria-hidden />
               <span>{t('app.addWorkspace')}</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={onSelectNoWorkspace}
               className={cn(
-                "gap-2",
-                DESKTOP_OVERLAY_SHORT_ITEM,
+                "gap-1.5",
+                DESKTOP_OVERLAY_LIST_ACTION_ITEM,
                 workspaceBinding === "none" && "bg-accent/40",
               )}
             >
-              <MessageSquareText className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <MessageSquareText className="size-3 shrink-0 text-muted-foreground" aria-hidden />
               <span>{t('app.noWorkspace')}</span>
             </DropdownMenuItem>
           </>

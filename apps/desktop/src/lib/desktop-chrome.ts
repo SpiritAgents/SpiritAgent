@@ -94,6 +94,9 @@ export const DESKTOP_OVERLAY_LIST_GROUP_LABEL =
 
 export const DESKTOP_OVERLAY_LIST_ITEM = "px-2 py-2";
 
+/** 长列表底部单行操作（添加工作区等），密度对齐 LIST 而非 Dropdown 默认 SHORT */
+export const DESKTOP_OVERLAY_LIST_ACTION_ITEM = "px-2 py-1.5 text-xs";
+
 export const DESKTOP_OVERLAY_LIST_ITEM_PRIMARY =
   "truncate text-xs font-medium text-foreground";
 
