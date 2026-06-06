@@ -151,10 +151,40 @@ declare global {
       onData: (payload: { id: string; data: string }) => void;
       onExit: (payload: { id: string; exitCode: number; signal?: number }) => void;
     }): () => void;
-    captureWebviewRect(
-      webContentsId: number,
+    syncBrowserPageView(payload: {
+      tabId: string;
+      bounds: { x: number; y: number; width: number; height: number };
+      visible: boolean;
+      url?: string;
+    }): Promise<void>;
+    navigateBrowserPageView(payload: {
+      tabId: string;
+      action: 'back' | 'forward' | 'reload' | 'load';
+      url?: string;
+    }): Promise<void>;
+    toggleBrowserPageDevTools(tabId: string): Promise<void>;
+    executeBrowserPageView(payload: {
+      tabId: string;
+      kind: 'script' | 'insert-css' | 'remove-css';
+      script?: string;
+      css?: string;
+      cssKey?: string;
+    }): Promise<unknown>;
+    captureBrowserPageView(
+      tabId: string,
       rect: { x: number; y: number; width: number; height: number },
     ): Promise<string>;
+    destroyBrowserPageView(tabId: string): Promise<void>;
+    subscribeBrowserPageEvents(
+      callback: (event: {
+        tabId: string;
+        type: 'url' | 'title' | 'nav-state';
+        url?: string;
+        title?: string;
+        canGoBack?: boolean;
+        canGoForward?: boolean;
+      }) => void,
+    ): () => void;
     ingestBrowserElementScreenshot(base64: string): Promise<string | null>;
     readClipboardText(): string;
     writeClipboardText(text: string): void;
@@ -177,18 +207,6 @@ declare global {
     spiritDesktop?: SpiritDesktopApi;
   }
 
-  namespace JSX {
-    interface IntrinsicElements {
-      webview: React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string;
-          allowpopups?: boolean | string;
-          partition?: string;
-        },
-        HTMLElement
-      >;
-    }
-  }
 }
 
 export {};

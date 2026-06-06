@@ -270,6 +270,7 @@ export function WorkspaceToolsDock({
 
   return (
     <div
+      id="workspace-tools-panel-shell"
       className={cn(
         "flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
         isResizing
@@ -450,8 +451,10 @@ export function WorkspaceToolsDock({
                   ) : item.kind === "browser" ? (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                       <WorkspaceBrowserTab
+                        browserTabId={item.id}
                         browserUrl={item.browserUrl}
                         browserTabEnabled={browserTabEnabled}
+                        isActive={selected}
                         onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
                         onOpenUrlInNewTab={onBrowserOpenInNewTab}
                         onTitleChange={(title) => handleTabTitleChange(item.id, title)}

@@ -13,18 +13,14 @@ import {
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { truncateOuterHtml } from "@/lib/browser-element-attachment";
 import {
-  applyPickerOverlayBox,
   buildPickerInjectScript,
-  clearPickerOverlayInlineStyles,
-  hidePickerOverlayBox,
   PICKER_INJECT_CSS,
-  pickerRectsEqual,
   type PickerMarqueeResult,
-  type PickerOverlayMode,
 } from "@/lib/browser-element-picker";
 import { cn } from "@/lib/utils";
 
 export type WorkspaceBrowserTabProps = {
+  browserTabId: string;
   browserUrl: string | undefined;
   onBrowserUrlChange(url: string): void;
   /** 站外 / 新窗口链接：在工作区新建浏览器标签并打开 */
@@ -33,8 +29,10 @@ export type WorkspaceBrowserTabProps = {
   onTitleChange?: (title: string | undefined) => void;
   /** 用户选中元素后的回调 */
   onElementPicked?: (attachment: BrowserElementAttachment) => void;
-  /** Electron 桌面宿主为 true；Web Host 为 false（即使 UA 为 Electron 也不嵌入 webview） */
+  /** Electron 桌面宿主为 true；Web Host 为 false */
   browserTabEnabled?: boolean;
+  /** 当前浏览器工具标签是否为右侧工作区激活页 */
+  isActive?: boolean;
 };
 
 type LocalListeningEndpoint = {
@@ -45,18 +43,11 @@ type LocalListeningEndpoint = {
   title?: string;
 };
 
-type WebviewElement = HTMLElement & {
-  src?: string;
-  getURL?(): string;
-  getWebContentsId?(): number;
-  canGoBack?(): boolean;
-  canGoForward?(): boolean;
-  goBack?(): void;
-  goForward?(): void;
-  reload?(): void;
-  executeJavaScript?(code: string): Promise<unknown>;
-  insertCSS?(css: string): Promise<string>;
-  removeInsertedCSS?(key: string): Promise<void>;
+type PageViewBounds = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 function isElectronDesktop(): boolean {
@@ -73,16 +64,46 @@ function canUseEmbeddedBrowser(): boolean {
   return isElectronDesktop();
 }
 
-function safeWebviewCall<T>(fn: () => T, fallback: T): T {
-  try {
-    return fn();
-  } catch {
-    return fallback;
-  }
-}
+/** 与 workspace-tools-panel 分隔条 w-1（0.25rem）一致 */
+const WORKSPACE_PANEL_HANDLE_PX = 4;
 
-function safeWebviewGetUrl(el: WebviewElement): string {
-  return safeWebviewCall(() => el.getURL?.() ?? "", "");
+/**
+ * 按工具栏 shell 可见宽度计算 BrowserView bounds，使展开/收起与 CSS width 过渡同步。
+ * slot 在折叠重开时 left 会漂到屏外，故水平位置以 shell 裁剪区为准。
+ */
+function readBrowserPageBounds(slot: HTMLElement): PageViewBounds | null {
+  const slotRect = slot.getBoundingClientRect();
+  const y = Math.round(slotRect.top);
+  const height = Math.max(0, Math.round(slotRect.height));
+  if (height < 1) {
+    return null;
+  }
+
+  const shell = document.getElementById("workspace-tools-panel-shell");
+  if (!shell) {
+    return {
+      x: Math.round(slotRect.left),
+      y,
+      width: Math.max(0, Math.round(slotRect.width)),
+      height,
+    };
+  }
+
+  const shellRect = shell.getBoundingClientRect();
+  if (shellRect.width < 1) {
+    return null;
+  }
+
+  const contentLeft = shellRect.left + WORKSPACE_PANEL_HANDLE_PX;
+  const contentWidth = Math.max(0, shellRect.width - WORKSPACE_PANEL_HANDLE_PX);
+  const width = Math.max(0, Math.round(Math.min(contentWidth, slotRect.width)));
+  if (width < 1) {
+    return null;
+  }
+
+  const x = Math.round(contentLeft);
+
+  return { x, y, width, height };
 }
 
 function BrowserNewTabPage({
@@ -187,24 +208,25 @@ function BrowserNewTabPage({
 }
 
 export function WorkspaceBrowserTab({
+  browserTabId,
   browserUrl,
   onBrowserUrlChange,
   onOpenUrlInNewTab,
   onTitleChange,
   onElementPicked,
   browserTabEnabled = false,
+  isActive = false,
 }: WorkspaceBrowserTabProps) {
   const { t } = useTranslation();
-  const webviewRef = useRef<WebviewElement | null>(null);
-  const pickerOverlayRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const pageSlotRef = useRef<HTMLDivElement | null>(null);
   const showNewTab = isBrowserNewTabUrl(browserUrl);
   const [addressDraft, setAddressDraft] = useState("");
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
   const [lastVisitedUrl, setLastVisitedUrl] = useState<string | undefined>(undefined);
   const [isPickerActive, setIsPickerActive] = useState(false);
-  const [overlayRect, setOverlayRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [overlayMode, setOverlayMode] = useState<PickerOverlayMode | null>(null);
+  const [currentPageUrl, setCurrentPageUrl] = useState<string | undefined>(browserUrl);
   const onElementPickedRef = useRef(onElementPicked);
   useLayoutEffect(() => {
     onElementPickedRef.current = onElementPicked;
@@ -220,18 +242,7 @@ export function WorkspaceBrowserTab({
     onOpenUrlInNewTabRef.current = onOpenUrlInNewTab;
   });
 
-  const syncNavState = useCallback(() => {
-    const el = webviewRef.current;
-    if (!el) {
-      setCanGoBack(false);
-      setCanGoForward(false);
-      return;
-    }
-    const back = safeWebviewCall(() => el.canGoBack?.() ?? false, false);
-    const forward = safeWebviewCall(() => el.canGoForward?.() ?? false, false);
-    setCanGoBack((prev) => (prev === back ? prev : back));
-    setCanGoForward((prev) => (prev === forward ? prev : forward));
-  }, []);
+  const pageEmbeddable = isActive && !showNewTab && canEmbed;
 
   useEffect(() => {
     const prevUrl = prevBrowserUrlRef.current;
@@ -245,10 +256,118 @@ export function WorkspaceBrowserTab({
       return;
     }
     setAddressDraft(browserUrl ?? "");
+    setCurrentPageUrl(browserUrl);
     if (browserUrl) {
       setLastVisitedUrl(browserUrl);
     }
   }, [browserUrl, showNewTab]);
+
+  useEffect(() => {
+    const bridge = window.spiritDesktop;
+    if (!bridge?.subscribeBrowserPageEvents) {
+      return;
+    }
+    return bridge.subscribeBrowserPageEvents((event) => {
+      if (event.tabId !== browserTabId) {
+        return;
+      }
+      if (event.type === "url" && event.url) {
+        setAddressDraft(event.url);
+        setCurrentPageUrl(event.url);
+      } else if (event.type === "title") {
+        onTitleChangeRef.current?.(event.title || undefined);
+      } else if (event.type === "nav-state") {
+        setCanGoBack(event.canGoBack ?? false);
+        setCanGoForward(event.canGoForward ?? false);
+      }
+    });
+  }, [browserTabId]);
+
+  const syncPageView = useCallback(() => {
+    const bridge = window.spiritDesktop;
+    const slot = pageSlotRef.current;
+    if (!bridge?.syncBrowserPageView || !slot) {
+      return;
+    }
+
+    if (!pageEmbeddable) {
+      void bridge.syncBrowserPageView({
+        tabId: browserTabId,
+        bounds: { x: 0, y: 0, width: 0, height: 0 },
+        visible: false,
+      });
+      return;
+    }
+
+    const bounds = readBrowserPageBounds(slot);
+    if (!bounds) {
+      void bridge.syncBrowserPageView({
+        tabId: browserTabId,
+        bounds: { x: 0, y: 0, width: 0, height: 0 },
+        visible: false,
+      });
+      return;
+    }
+
+    void bridge.syncBrowserPageView({
+      tabId: browserTabId,
+      bounds,
+      visible: true,
+      url: browserUrl,
+    });
+  }, [browserTabId, browserUrl, pageEmbeddable]);
+
+  useEffect(() => {
+    if (!canEmbed || showNewTab) {
+      const bridge = window.spiritDesktop;
+      if (bridge?.syncBrowserPageView) {
+        void bridge.syncBrowserPageView({
+          tabId: browserTabId,
+          bounds: { x: 0, y: 0, width: 0, height: 0 },
+          visible: false,
+        });
+      }
+      return;
+    }
+
+    const slot = pageSlotRef.current;
+    const root = rootRef.current;
+    if (!slot) {
+      return;
+    }
+
+    syncPageView();
+    const resizeObserver = new ResizeObserver(() => syncPageView());
+    resizeObserver.observe(slot);
+    if (root) {
+      resizeObserver.observe(root);
+    }
+    window.addEventListener("resize", syncPageView);
+
+    const shell = document.getElementById("workspace-tools-panel-shell");
+    if (shell) {
+      resizeObserver.observe(shell);
+    }
+    const onShellTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== shell || event.propertyName !== "width") {
+        return;
+      }
+      syncPageView();
+    };
+    shell?.addEventListener("transitionend", onShellTransitionEnd);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", syncPageView);
+      shell?.removeEventListener("transitionend", onShellTransitionEnd);
+    };
+  }, [browserTabId, canEmbed, showNewTab, syncPageView]);
+
+  useEffect(() => {
+    return () => {
+      void window.spiritDesktop?.destroyBrowserPageView(browserTabId);
+    };
+  }, [browserTabId]);
 
   const submitAddress = useCallback(() => {
     const normalized = normalizeBrowserUrl(addressDraft);
@@ -256,72 +375,15 @@ export function WorkspaceBrowserTab({
       return;
     }
     onBrowserUrlChange(normalized);
-  }, [addressDraft, onBrowserUrlChange]);
-
-  useLayoutEffect(() => {
-    if (showNewTab || !canEmbed) {
-      return;
-    }
-    const el = webviewRef.current;
-    if (!el) {
-      return;
-    }
-
-    const scheduleSyncNavState = () => {
-      queueMicrotask(() => syncNavState());
-    };
-
-    const onDidNavigate = (event: Event) => {
-      const url = (event as Event & { url?: string }).url;
-      if (url && url !== "about:blank") {
-        setAddressDraft(url);
-      }
-      scheduleSyncNavState();
-    };
-
-    const onDidStopLoading = () => {
-      const url = safeWebviewGetUrl(el);
-      if (url && url !== "about:blank") {
-        setAddressDraft(url);
-      }
-      scheduleSyncNavState();
-    };
-
-    const onNewWindow = (event: Event) => {
-      const detail = event as Event & { url?: string; preventDefault?: () => void };
-      detail.preventDefault?.();
-      const url = detail.url;
-      if (url) {
-        onOpenUrlInNewTabRef.current?.(url);
-      }
-    };
-
-    const onPageTitleUpdated = (event: Event) => {
-      const title = (event as Event & { title?: string }).title;
-      onTitleChangeRef.current?.(title || undefined);
-    };
-
-    el.addEventListener("did-navigate", onDidNavigate);
-    el.addEventListener("did-navigate-in-page", onDidNavigate);
-    el.addEventListener("did-stop-loading", onDidStopLoading);
-    el.addEventListener("new-window", onNewWindow);
-    el.addEventListener("dom-ready", scheduleSyncNavState);
-    el.addEventListener("page-title-updated", onPageTitleUpdated);
-
-    return () => {
-      el.removeEventListener("did-navigate", onDidNavigate);
-      el.removeEventListener("did-navigate-in-page", onDidNavigate);
-      el.removeEventListener("did-stop-loading", onDidStopLoading);
-      el.removeEventListener("new-window", onNewWindow);
-      el.removeEventListener("dom-ready", scheduleSyncNavState);
-      el.removeEventListener("page-title-updated", onPageTitleUpdated);
-    };
-  }, [browserUrl, canEmbed, showNewTab, syncNavState]);
+    void window.spiritDesktop?.navigateBrowserPageView({
+      tabId: browserTabId,
+      action: "load",
+      url: normalized,
+    });
+  }, [addressDraft, browserTabId, onBrowserUrlChange]);
 
   const exitPicker = useCallback(() => {
     setIsPickerActive(false);
-    setOverlayRect(null);
-    setOverlayMode(null);
   }, []);
 
   useEffect(() => {
@@ -330,20 +392,32 @@ export function WorkspaceBrowserTab({
   }, [browserUrl]);
 
   useEffect(() => {
-    const el = webviewRef.current;
-    if (!isPickerActive || showNewTab || !canEmbed || !el) return;
+    const bridge = window.spiritDesktop;
+    if (!isPickerActive || showNewTab || !canEmbed || !pageEmbeddable || !bridge?.executeBrowserPageView) {
+      return;
+    }
 
-    void el.executeJavaScript?.(buildPickerInjectScript());
-
-    let cssKey: string | undefined;
-    void el.insertCSS?.(PICKER_INJECT_CSS).then((key) => {
-      cssKey = key;
+    void bridge.executeBrowserPageView({
+      tabId: browserTabId,
+      kind: "script",
+      script: buildPickerInjectScript(),
     });
 
+    let cssKey: string | undefined;
+    void bridge
+      .executeBrowserPageView({
+        tabId: browserTabId,
+        kind: "insert-css",
+        css: PICKER_INJECT_CSS,
+      })
+      .then((key) => {
+        cssKey = typeof key === "string" ? key : undefined;
+      });
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') exitPicker();
+      if (e.key === "Escape") exitPicker();
     };
-    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener("keydown", handleKeyDown, true);
 
     let frameId = 0;
     let cancelled = false;
@@ -357,69 +431,50 @@ export function WorkspaceBrowserTab({
       syncInFlight = true;
       void (async () => {
         try {
-          const done = await el.executeJavaScript?.("window.__spiritPickerDone || false");
+          const done = await bridge.executeBrowserPageView({
+            tabId: browserTabId,
+            kind: "script",
+            script: "window.__spiritPickerDone || false",
+          });
           if (done) {
-            const result = await el.executeJavaScript?.("window.__spiritPickerResult");
-            await el.executeJavaScript?.(
-              "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
-            );
+            const result = await bridge.executeBrowserPageView({
+              tabId: browserTabId,
+              kind: "script",
+              script: "window.__spiritPickerResult",
+            });
+            await bridge.executeBrowserPageView({
+              tabId: browserTabId,
+              kind: "script",
+              script:
+                "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
+            });
             const r = result as PickerMarqueeResult | null;
-            if (r && r.tagName && r.outerHTML && !cancelled) {
-              const webContentsId = safeWebviewCall(() => el.getWebContentsId?.(), undefined);
-              const bridge = window.spiritDesktop;
-              if (webContentsId && bridge?.captureWebviewRect) {
-                try {
-                  const base64 = await bridge.captureWebviewRect(webContentsId, {
-                    x: r.x,
-                    y: r.y,
-                    width: Math.max(r.width, 1),
-                    height: Math.max(r.height, 1),
+            if (r && r.tagName && r.outerHTML && !cancelled && bridge.captureBrowserPageView) {
+              try {
+                const base64 = await bridge.captureBrowserPageView(browserTabId, {
+                  x: r.x,
+                  y: r.y,
+                  width: Math.max(r.width, 1),
+                  height: Math.max(r.height, 1),
+                });
+                if (!cancelled) {
+                  onElementPickedRef.current?.({
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    tagName: r.tagName.toLowerCase(),
+                    outerHtml: truncateOuterHtml(r.outerHTML),
+                    screenshotDataUrl: `data:image/png;base64,${base64}`,
+                    pageUrl: currentPageUrl || browserUrl || "",
                   });
-                  if (!cancelled) {
-                    onElementPickedRef.current?.({
-                      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                      tagName: r.tagName.toLowerCase(),
-                      outerHtml: truncateOuterHtml(r.outerHTML),
-                      screenshotDataUrl: `data:image/png;base64,${base64}`,
-                      pageUrl: safeWebviewGetUrl(el) || browserUrl || "",
-                    });
-                  }
-                } catch (err) {
-                  console.warn("[picker] capturePage failed:", err);
                 }
+              } catch (err) {
+                console.warn("[picker] capturePage failed:", err);
               }
               exitPicker();
               return;
             }
-          } else {
-            const snapshot = await el.executeJavaScript?.(
-              "({ rect: window.__spiritPickerRect, mode: window.__spiritPickerRectMode })",
-            );
-            const { rect, mode } = (snapshot ?? {}) as {
-              rect: { x: number; y: number; width: number; height: number } | null;
-              mode: PickerOverlayMode | null;
-            };
-            if (cancelled) return;
-
-            const overlayEl = pickerOverlayRef.current;
-
-            if (rect && overlayEl && (mode === "element" || mode === "marquee")) {
-              applyPickerOverlayBox(overlayEl, rect);
-              setOverlayMode((prev) => (prev === mode ? prev : mode));
-              if (mode === "element") {
-                setOverlayRect((prev) => (pickerRectsEqual(prev, rect) ? prev : rect));
-              }
-              return;
-            }
-
-            if (overlayEl) {
-              hidePickerOverlayBox(overlayEl);
-            }
-            setOverlayRect((prev) => (prev === null ? prev : null));
-            setOverlayMode((prev) => (prev === null ? prev : null));
           }
         } catch {
-          // webview may not be ready
+          // page view may not be ready
         } finally {
           syncInFlight = false;
         }
@@ -432,42 +487,84 @@ export function WorkspaceBrowserTab({
       cancelled = true;
       cancelAnimationFrame(frameId);
       window.removeEventListener("keydown", handleKeyDown, true);
-      void el.executeJavaScript?.(
-        "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
-      );
-      if (cssKey) void el.removeInsertedCSS?.(cssKey);
-      const overlayEl = pickerOverlayRef.current;
-      if (overlayEl) clearPickerOverlayInlineStyles(overlayEl);
-      setOverlayRect(null);
-      setOverlayMode(null);
+      void bridge.executeBrowserPageView({
+        tabId: browserTabId,
+        kind: "script",
+        script:
+          "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
+      });
+      if (cssKey) {
+        void bridge.executeBrowserPageView({
+          tabId: browserTabId,
+          kind: "remove-css",
+          cssKey,
+        });
+      }
     };
-  }, [isPickerActive, showNewTab, canEmbed, browserUrl, exitPicker]);
+  }, [
+    browserTabId,
+    browserUrl,
+    canEmbed,
+    currentPageUrl,
+    exitPicker,
+    isPickerActive,
+    pageEmbeddable,
+    showNewTab,
+  ]);
 
   const handleGoBack = useCallback(() => {
-    const el = webviewRef.current;
-    if (safeWebviewCall(() => el?.canGoBack?.() ?? false, false)) {
-      safeWebviewCall(() => {
-        el?.goBack?.();
-      }, undefined);
-    } else {
-      onBrowserUrlChange(BROWSER_NEW_TAB_SENTINEL);
+    if (canGoBack) {
+      void window.spiritDesktop?.navigateBrowserPageView({
+        tabId: browserTabId,
+        action: "back",
+      });
+      return;
     }
-  }, [onBrowserUrlChange]);
+    onBrowserUrlChange(BROWSER_NEW_TAB_SENTINEL);
+  }, [browserTabId, canGoBack, onBrowserUrlChange]);
 
   const handleGoForward = useCallback(() => {
     if (showNewTab && lastVisitedUrl) {
       onBrowserUrlChange(lastVisitedUrl);
       return;
     }
-    webviewRef.current?.goForward?.();
-  }, [showNewTab, lastVisitedUrl, onBrowserUrlChange]);
+    void window.spiritDesktop?.navigateBrowserPageView({
+      tabId: browserTabId,
+      action: "forward",
+    });
+  }, [browserTabId, lastVisitedUrl, onBrowserUrlChange, showNewTab]);
 
   const handleReload = useCallback(() => {
     if (showNewTab) {
       return;
     }
-    webviewRef.current?.reload?.();
-  }, [showNewTab]);
+    void window.spiritDesktop?.navigateBrowserPageView({
+      tabId: browserTabId,
+      action: "reload",
+    });
+  }, [browserTabId, showNewTab]);
+
+  useEffect(() => {
+    if (!isActive || showNewTab || !canEmbed) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "F12") {
+        return;
+      }
+      const root = rootRef.current;
+      const active = document.activeElement;
+      if (!root || !active || !root.contains(active)) {
+        return;
+      }
+      event.preventDefault();
+      void window.spiritDesktop?.toggleBrowserPageDevTools(browserTabId);
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [browserTabId, canEmbed, isActive, showNewTab]);
 
   const navDisabled = showNewTab;
 
@@ -480,7 +577,7 @@ export function WorkspaceBrowserTab({
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <div ref={rootRef} className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div className="electron-no-drag flex shrink-0 items-center gap-0.5 border-b border-border/40 px-1.5 py-1.5">
         <Button
           type="button"
@@ -553,28 +650,13 @@ export function WorkspaceBrowserTab({
         {showNewTab ? (
           <BrowserNewTabPage onNavigate={onBrowserUrlChange} />
         ) : (
-          <>
-            <webview
-              ref={webviewRef as React.RefObject<HTMLElement>}
-              src={browserUrl}
-              allowpopups={true}
-              className={cn(
-                "electron-no-drag h-full w-full flex-1 border-0 bg-background",
-                isPickerActive && "cursor-crosshair",
-              )}
-            />
-            {isPickerActive ? (
-              <div
-                ref={pickerOverlayRef}
-                aria-hidden
-                className={cn(
-                  "pointer-events-none absolute z-10 box-border opacity-0",
-                  overlayMode === "element" &&
-                    "transition-[left,top,width,height,opacity] duration-200 ease-out",
-                )}
-              />
-            ) : null}
-          </>
+          <div
+            ref={pageSlotRef}
+            className={cn(
+              "electron-no-drag min-h-0 min-w-0 flex-1 bg-background",
+              isPickerActive && "cursor-crosshair",
+            )}
+          />
         )}
       </div>
     </div>
