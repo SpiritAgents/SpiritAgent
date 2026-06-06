@@ -974,13 +974,15 @@ function ComposerSurface({
         <div className="flex w-full max-w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             {showInsertButton ? (
-              <ComposerInsertMenu
-                disabled={readOnly}
-                canPickLocalFile={canPickLocalFile}
-                onInsertWorkspaceReference={() => onInsertWorkspaceFileReferenceTrigger?.()}
-                onPickLocalFile={() => onPickLocalFile?.()}
-                onInsertSkillTrigger={() => onInsertSkillTrigger?.()}
-              />
+              <div className="shrink-0">
+                <ComposerInsertMenu
+                  disabled={readOnly}
+                  canPickLocalFile={canPickLocalFile}
+                  onInsertWorkspaceReference={() => onInsertWorkspaceFileReferenceTrigger?.()}
+                  onPickLocalFile={() => onPickLocalFile?.()}
+                  onInsertSkillTrigger={() => onInsertSkillTrigger?.()}
+                />
+              </div>
             ) : null}
             {models.length > 0 ? (
               <FilteredOverlayMenu
@@ -1002,11 +1004,11 @@ function ComposerSurface({
                       aria-label={t('app.selectModel')}
                       disabled={readOnly}
                       className={cn(
-                        "inline-flex h-7 max-w-[12rem] shrink-0 items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                        "inline-flex h-7 min-w-0 max-w-[min(12rem,100%)] items-center gap-0.5 rounded-md border-0 bg-transparent pr-0.5 pl-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
                         instantHoverMotionClass,
                       )}
                     >
-                      <span className="min-w-0 flex-1 truncate" title={activeModelSummary}>
+                      <span className="min-w-0 truncate" title={activeModelSummary}>
                         {activeModelSummary}
                       </span>
                       <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
