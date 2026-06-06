@@ -47,10 +47,36 @@ import {
 import { openSystemTerminalInDirectory } from './open-system-terminal.js';
 import { WorkspacePtyManager } from './workspace-pty.js';
 import { isAllowedExternalUrl, getCachedLocalListeningEndpoints, getScanningPromise, startLocalListenersScan } from './local-listeners.js';
+import {
+  capturePageView,
+  destroyAllPageViewsForHostId,
+  destroyPageView,
+  executeInPageView,
+  insertCssInPageView,
+  navigatePageView,
+  removeInsertedCssInPageView,
+  syncPageView,
+  togglePageDevTools,
+  type PageViewBounds,
+} from './workspace-browser-view.js';
 
 import type { DesktopSnapshot } from '../src/types.js';
 
-const spiritWebviewHooksAttached = new WeakSet<WebContents>();
+function parsePageViewBounds(bounds: PageViewBounds | undefined): PageViewBounds {
+  const x = bounds?.x;
+  const y = bounds?.y;
+  const width = bounds?.width;
+  const height = bounds?.height;
+  if (
+    typeof x !== 'number' ||
+    typeof y !== 'number' ||
+    typeof width !== 'number' ||
+    typeof height !== 'number'
+  ) {
+    throw new Error('Invalid page view bounds');
+  }
+  return { x, y, width, height };
+}
 
 registerSpiritGeneratedAssetPrivilegedScheme();
 registerSpiritNotificationProtocolClient();
@@ -78,54 +104,6 @@ function focusSpiritDesktopWindows(): void {
   }
 }
 
-function sendBrowserOpenUrlToHost(guestContents: WebContents, url: string): void {
-  if (!isAllowedExternalUrl(url)) {
-    return;
-  }
-  const host = guestContents.hostWebContents;
-  if (!host || host.isDestroyed()) {
-    return;
-  }
-  host.send('desktop:browser-open-url', { url });
-}
-
-function attachSpiritWebviewGuestHandlers(guestContents: WebContents): void {
-  if (spiritWebviewHooksAttached.has(guestContents)) {
-    return;
-  }
-  spiritWebviewHooksAttached.add(guestContents);
-
-  guestContents.setWindowOpenHandler((details) => {
-    if (details.url) {
-      sendBrowserOpenUrlToHost(guestContents, details.url);
-    }
-    return { action: 'deny' };
-  });
-
-  guestContents.on('will-navigate', (event, url) => {
-    const current = guestContents.getURL();
-    if (!current || current === 'about:blank') {
-      return;
-    }
-    try {
-      const currentOrigin = new URL(current).origin;
-      const nextOrigin = new URL(url).origin;
-      if (currentOrigin !== nextOrigin) {
-        event.preventDefault();
-        sendBrowserOpenUrlToHost(guestContents, url);
-      }
-    } catch {
-      // ignore malformed URLs
-    }
-  });
-}
-
-app.on('web-contents-created', (_event, contents) => {
-  if (contents.getType() !== 'webview') {
-    return;
-  }
-  attachSpiritWebviewGuestHandlers(contents);
-});
 import {
   invokeDesktopHostCommand,
   setDesktopMarketplaceFetchImplementation,
@@ -586,15 +564,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
       nodeIntegration: false,
       sandbox: false,
       spellcheck: false,
-      webviewTag: true,
     },
-  });
-
-  window.webContents.on('will-attach-webview', (_event, webPreferences) => {
-    delete webPreferences.preload;
-    webPreferences.nodeIntegration = false;
-    webPreferences.contextIsolation = true;
-    webPreferences.sandbox = true;
   });
 
   if (DEV_SERVER_URL) {
@@ -606,7 +576,8 @@ async function createMainWindow(): Promise<BrowserWindow> {
   await syncBrowserWindowFrameFromRendererStorage(window);
 
   const webContentsId = window.webContents.id;
-  window.webContents.once('destroyed', () => {
+  window.once('closed', () => {
+    destroyAllPageViewsForHostId(webContentsId);
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
 
@@ -880,21 +851,125 @@ if (gotSpiritSingleInstanceLock) {
   });
 
   ipcMain.handle(
-    'desktop:capture-webview-rect',
-    async (
-      _event: IpcMainInvokeEvent,
-      payload: { webContentsId: number; rect: { x: number; y: number; width: number; height: number } },
+    'desktop:browser-page-sync',
+    (
+      event: IpcMainInvokeEvent,
+      payload: {
+        tabId?: string;
+        bounds?: PageViewBounds;
+        visible?: boolean;
+        url?: string;
+      },
     ) => {
-      const { webContentsId, rect } = payload ?? {};
-      if (typeof webContentsId !== 'number') {
-        throw new Error('Invalid webContentsId');
+      const tabId = payload?.tabId;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
       }
-      const wc = webContents.fromId(webContentsId);
-      if (!wc) {
-        throw new Error(`No webContents found for id ${webContentsId}`);
+      syncPageView(event.sender, {
+        tabId,
+        bounds: parsePageViewBounds(payload?.bounds),
+        visible: payload?.visible === true,
+        url: typeof payload?.url === 'string' ? payload.url : undefined,
+      });
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-page-nav',
+    (
+      event: IpcMainInvokeEvent,
+      payload: {
+        tabId?: string;
+        action?: 'back' | 'forward' | 'reload' | 'load';
+        url?: string;
+      },
+    ) => {
+      const tabId = payload?.tabId;
+      const action = payload?.action;
+      if (typeof tabId !== 'string' || !tabId || !action) {
+        throw new Error('Invalid browser page navigation request');
       }
-      const image = await wc.capturePage(rect);
-      return image.toPNG().toString('base64');
+      navigatePageView(event.sender, tabId, action, payload?.url);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-page-toggle-devtools',
+    (event: IpcMainInvokeEvent, payload: { tabId?: string }) => {
+      const tabId = payload?.tabId;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
+      }
+      togglePageDevTools(event.sender, tabId);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-page-execute',
+    async (
+      event: IpcMainInvokeEvent,
+      payload: {
+        tabId?: string;
+        kind?: 'script' | 'insert-css' | 'remove-css';
+        script?: string;
+        css?: string;
+        cssKey?: string;
+      },
+    ) => {
+      const tabId = payload?.tabId;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
+      }
+      switch (payload?.kind) {
+        case 'insert-css': {
+          const css = payload?.css;
+          if (typeof css !== 'string') {
+            throw new Error('Invalid CSS payload');
+          }
+          return insertCssInPageView(event.sender, tabId, css);
+        }
+        case 'remove-css': {
+          const cssKey = payload?.cssKey;
+          if (typeof cssKey !== 'string') {
+            throw new Error('Invalid CSS key');
+          }
+          await removeInsertedCssInPageView(event.sender, tabId, cssKey);
+          return;
+        }
+        case 'script':
+        default: {
+          const script = payload?.script;
+          if (typeof script !== 'string') {
+            throw new Error('Invalid script payload');
+          }
+          return executeInPageView(event.sender, tabId, script);
+        }
+      }
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-page-capture',
+    async (
+      event: IpcMainInvokeEvent,
+      payload: { tabId?: string; rect?: PageViewBounds },
+    ) => {
+      const tabId = payload?.tabId;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
+      }
+      return capturePageView(event.sender, tabId, parsePageViewBounds(payload?.rect));
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-page-destroy',
+    (event: IpcMainInvokeEvent, payload: { tabId?: string }) => {
+      const tabId = payload?.tabId;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
+      }
+      destroyPageView(event.sender, tabId);
     },
   );
 
