@@ -81,6 +81,7 @@ export interface HostModelCommandContext {
   refreshModelKeyPresence(): Promise<void>;
   flushDeferredRuntimeRefreshIfIdle(): Promise<void>;
   persistCurrentSessionIfNeeded(): Promise<void>;
+  clearActiveContextUsage(): void;
   setLastRuntimeError(error: string): void;
   buildSnapshot(): DesktopSnapshot;
   disposeAllLspServices(): Promise<void>;
@@ -247,6 +248,10 @@ export async function updateConfigCommand(
       ctx.invalidateToolExecutors();
     }
     await ctx.refreshLspSnapshot();
+
+    if (state.config.activeModel !== prevActiveModel) {
+      ctx.clearActiveContextUsage();
+    }
 
     const transportOrPlanChanged =
       agentModeNow !== prevAgentMode
@@ -498,6 +503,7 @@ export async function addModelCommand(
     }
     state.config.models.push(profile);
     state.config.activeModel = name;
+    ctx.clearActiveContextUsage();
     if (!state.config.imageGenerationModel && supportsImageGeneration(profile)) {
       state.config.imageGenerationModel = name;
     }
