@@ -33,6 +33,7 @@ export interface CheckoutGitBranchRequest {
 export interface UpdateConfigRequest {
   activeModel: string;
   imageGenerationModel?: string;
+  videoGenerationModel?: string;
   lightweightChatModel?: string;
   apiBase: string;
   reasoningEffort?: DesktopModelReasoningEffort;
@@ -602,6 +603,7 @@ export interface DesktopConfigSnapshot {
   models: ModelProfileSnapshot[];
   activeModel: string;
   imageGenerationModel?: string;
+  videoGenerationModel?: string;
   lightweightChatModel?: string;
   uiLocale?: string;
   activeApiKeyConfigured: boolean;
@@ -855,6 +857,7 @@ export interface ToolBlockSnapshot {
   argsExcerpt?: string;
   outputExcerpt?: string;
   imagePaths?: string[];
+  videoPaths?: string[];
   /** 写文件类工具 LSP 自动检查后的 error/warning 摘要（供工具卡徽章与 hover）。 */
   lspWriteDiagnostics?: LspWriteDiagnosticsUi;
 }

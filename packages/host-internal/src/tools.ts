@@ -52,6 +52,14 @@ import {
   type HostTodoStore,
 } from './todos.js';
 import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
+import {
+  GENERATED_IMAGES_DIR,
+  GENERATED_VIDEOS_DIR,
+  generatedDirForKind,
+  generatedImageMarkdownRef,
+  generatedVideoMarkdownRef,
+  parseManagedGeneratedAssetReference,
+} from './managed-generated-asset.js';
 import { detectSupportedVideoFile, hasSupportedVideoExtension } from './video-file-support.js';
 
 const exec = promisify(execCallback);
@@ -62,9 +70,6 @@ const MAX_DIRECTORY_LIST_RESULTS = 4000;
 const MAX_WEB_FETCH_OUTPUT_CHARS = 24_000;
 const WEB_FETCH_TIMEOUT_MS = 20_000;
 const WEB_FETCH_IMAGE_CACHE_DIR = 'tool-web-fetch-images';
-const GENERATED_IMAGES_DIR = 'generated-images';
-const MANAGED_GENERATED_IMAGE_PROTOCOL = 'spirit-image:';
-const MANAGED_GENERATED_IMAGE_HOST = 'generated';
 const WEB_FETCH_IMAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
 const WEB_FETCH_IMAGE_CACHE_MAX_FILES = 128;
 const MAX_COMMAND_OUTPUT_CHARS = 16_000;
@@ -150,67 +155,23 @@ export interface HostGeneratedImageFile {
   markdownRef: string;
 }
 
-function generatedImageMarkdownRef(filePath: string): string {
-  return `${MANAGED_GENERATED_IMAGE_PROTOCOL}//${MANAGED_GENERATED_IMAGE_HOST}/${encodeURIComponent(path.basename(filePath))}`;
+export interface HostGeneratedVideoSaveRequest {
+  data: Uint8Array;
+  mediaType: string;
+  prompt: string;
+  model: string;
+}
+
+export interface HostGeneratedVideoFile {
+  path: string;
+  mimeType: string;
+  markdownRef: string;
 }
 
 interface ResolvedReadFileTarget {
   canonicalPath: string;
   displayPath: string;
   managed: boolean;
-}
-
-interface ParsedManagedGeneratedImageReference {
-  basename: string;
-  reference: string;
-}
-
-function parseManagedGeneratedImageReference(
-  reference: string,
-): ParsedManagedGeneratedImageReference | undefined {
-  const trimmed = reference.trim();
-
-  let url: URL;
-  try {
-    url = new URL(trimmed);
-  } catch {
-    return undefined;
-  }
-
-  if (url.protocol.toLowerCase() !== MANAGED_GENERATED_IMAGE_PROTOCOL) {
-    return undefined;
-  }
-
-  if (
-    url.hostname.toLowerCase() !== MANAGED_GENERATED_IMAGE_HOST ||
-    url.search.length > 0 ||
-    url.hash.length > 0
-  ) {
-    throw new Error(`无效的 Spirit 托管图片引用: ${trimmed}`);
-  }
-
-  let basename: string;
-  try {
-    basename = decodeURIComponent(url.pathname.replace(/^\/+/, '')).trim();
-  } catch {
-    throw new Error(`无效的 Spirit 托管图片引用: ${trimmed}`);
-  }
-
-  if (
-    !basename ||
-    basename !== path.basename(basename) ||
-    basename === '.' ||
-    basename === '..' ||
-    basename.includes('/') ||
-    basename.includes('\\')
-  ) {
-    throw new Error(`无效的 Spirit 托管图片引用: ${trimmed}`);
-  }
-
-  return {
-    basename,
-    reference: trimmed,
-  };
 }
 
 export interface HostBuiltinToolDefinitionEnvironment {
@@ -285,6 +246,13 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       name: 'generate_image';
       prompt: string;
       size?: string;
+    }
+  | {
+      name: 'generate_video';
+      prompt: string;
+      duration?: number;
+      aspect_ratio?: string;
+      resolution?: string;
     }
   | {
       name: 'ask_questions';
@@ -724,6 +692,19 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           ...(size ? { size } : {}),
         };
         }
+      case 'generate_video':
+        {
+          const duration = optionalPositiveInt(parsed, 'duration');
+          const aspectRatio = optionalStringStrict(parsed, 'aspect_ratio');
+          const resolution = optionalStringStrict(parsed, 'resolution');
+        return {
+          name,
+          prompt: requiredString(parsed, 'prompt'),
+          ...(duration !== undefined ? { duration } : {}),
+          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+          ...(resolution ? { resolution } : {}),
+        };
+        }
       case 'ask_questions':
         return parseAskQuestionsRequest(parsed) as HostToolRequest<QuestionSpec>;
       case 'create_file':
@@ -849,6 +830,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'grep':
       case 'run_subagent':
       case 'generate_image':
+      case 'generate_video':
         return { kind: 'allowed' };
       case 'ask_questions':
         return {
@@ -1000,6 +982,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'generate_image':
         throw new Error('generate_image 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
+      case 'generate_video':
+        throw new Error('generate_video 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'ask_questions':
         throw new Error('ask_questions 应由运行时挂起并等待用户填写，不应直接执行');
       case 'extension_tool':
@@ -1100,6 +1084,20 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       path: filePath,
       mimeType: imageType.mimeType,
       markdownRef: generatedImageMarkdownRef(filePath),
+    };
+  }
+
+  async saveGeneratedVideo(request: HostGeneratedVideoSaveRequest): Promise<HostGeneratedVideoFile> {
+    const videoType = detectGeneratedVideoType(request.mediaType, request.data);
+    const outputDir = path.join(this.spiritDataDir, GENERATED_VIDEOS_DIR);
+    await mkdir(outputDir, { recursive: true });
+
+    const filePath = path.join(outputDir, `${Date.now()}-${randomUUID()}${videoType.extension}`);
+    await writeFile(filePath, request.data);
+    return {
+      path: filePath,
+      mimeType: videoType.mimeType,
+      markdownRef: generatedVideoMarkdownRef(filePath),
     };
   }
 
@@ -1277,7 +1275,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       throw new Error('path 不能为空');
     }
 
-    const managedCanonical = await this.tryResolveManagedGeneratedImagePath(trimmed);
+    const managedCanonical = await this.tryResolveManagedGeneratedAssetPath(trimmed);
     if (managedCanonical) {
       return {
         canonicalPath: managedCanonical,
@@ -1294,28 +1292,29 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     };
   }
 
-  private async tryResolveManagedGeneratedImagePath(reference: string): Promise<string | undefined> {
-    const parsed = parseManagedGeneratedImageReference(reference);
+  private async tryResolveManagedGeneratedAssetPath(reference: string): Promise<string | undefined> {
+    const parsed = parseManagedGeneratedAssetReference(reference);
     if (!parsed) {
       return undefined;
     }
 
-    const { basename, reference: trimmed } = parsed;
+    const { kind, basename, reference: trimmed } = parsed;
+    const assetLabel = kind === 'image' ? '图片' : '视频';
 
-    const managedRoot = path.join(this.spiritDataDir, GENERATED_IMAGES_DIR);
+    const managedRoot = path.join(this.spiritDataDir, generatedDirForKind(kind));
     const candidatePath = path.join(managedRoot, basename);
     try {
       const managedRootStats = await lstat(managedRoot);
       if (!managedRootStats.isDirectory() || managedRootStats.isSymbolicLink()) {
-        throw new Error(`Spirit 托管图片目录无效: ${trimmed}`);
+        throw new Error(`Spirit 托管${assetLabel}目录无效: ${trimmed}`);
       }
 
       const candidate = await lstat(candidatePath);
       if (candidate.isSymbolicLink()) {
-        throw new Error(`Spirit 托管图片引用不能指向符号链接: ${trimmed}`);
+        throw new Error(`Spirit 托管${assetLabel}引用不能指向符号链接: ${trimmed}`);
       }
       if (!candidate.isFile()) {
-        throw new Error(`Spirit 托管图片不存在: ${trimmed}`);
+        throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`);
       }
 
       const [canonicalSpiritRoot, canonicalRoot, canonical] = await Promise.all([
@@ -1324,15 +1323,15 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         realpath(candidatePath),
       ]);
       if (!pathHasPrefix(canonicalRoot, canonicalSpiritRoot)) {
-        throw new Error(`Spirit 托管图片目录越界: ${trimmed}`);
+        throw new Error(`Spirit 托管${assetLabel}目录越界: ${trimmed}`);
       }
       if (!pathHasPrefix(canonical, canonicalRoot)) {
-        throw new Error(`Spirit 托管图片引用越界: ${trimmed}`);
+        throw new Error(`Spirit 托管${assetLabel}引用越界: ${trimmed}`);
       }
 
       const st = await lstat(canonical);
       if (st.isSymbolicLink() || !st.isFile()) {
-        throw new Error(`Spirit 托管图片不存在: ${trimmed}`);
+        throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`);
       }
 
       return canonical;
@@ -1340,7 +1339,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       if (error instanceof Error && error.message.includes(trimmed)) {
         throw error;
       }
-      throw new Error(`Spirit 托管图片不存在: ${trimmed}`);
+      throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`);
     }
   }
 
@@ -2732,6 +2731,64 @@ function mimeTypeForImageExtension(extension: string): string | undefined {
       return 'image/png';
     case '.webp':
       return 'image/webp';
+    default:
+      return undefined;
+  }
+}
+
+function detectGeneratedVideoType(mediaType: string, bytes: Uint8Array): { extension: string; mimeType: string } {
+  const normalizedMediaType = mediaType.toLowerCase().split(';', 1)[0]?.trim() ?? '';
+  const preferredExtension = videoExtensionForMediaType(normalizedMediaType);
+  if (preferredExtension && detectSupportedVideoFile(`generated${preferredExtension}`, bytes)) {
+    return {
+      extension: preferredExtension,
+      mimeType: mimeTypeForVideoExtension(preferredExtension) ?? 'video/mp4',
+    };
+  }
+
+  for (const extension of ['.mp4', '.webm', '.mov', '.mpeg', '.mpg'] as const) {
+    const detected = detectSupportedVideoFile(`generated${extension}`, bytes);
+    if (detected) {
+      return {
+        extension: detected.extension,
+        mimeType: detected.mimeType,
+      };
+    }
+  }
+
+  const fallbackExtension = preferredExtension ?? '.mp4';
+  return {
+    extension: fallbackExtension,
+    mimeType: mimeTypeForVideoExtension(fallbackExtension) ?? 'video/mp4',
+  };
+}
+
+function videoExtensionForMediaType(mediaType: string): string | undefined {
+  switch (mediaType) {
+    case 'video/mp4':
+      return '.mp4';
+    case 'video/webm':
+      return '.webm';
+    case 'video/quicktime':
+      return '.mov';
+    case 'video/mpeg':
+      return '.mpeg';
+    default:
+      return undefined;
+  }
+}
+
+function mimeTypeForVideoExtension(extension: string): string | undefined {
+  switch (extension) {
+    case '.mp4':
+      return 'video/mp4';
+    case '.webm':
+      return 'video/webm';
+    case '.mov':
+      return 'video/quicktime';
+    case '.mpeg':
+    case '.mpg':
+      return 'video/mpeg';
     default:
       return undefined;
   }

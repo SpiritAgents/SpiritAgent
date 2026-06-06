@@ -899,6 +899,7 @@ pub(in crate::ui) fn render_tool_card_lines(
     for path in tool
         .image_paths
         .iter()
+        .chain(tool.video_paths.iter())
         .filter(|value| !value.trim().is_empty())
     {
         let prefixed = format!("路径: {}", path);

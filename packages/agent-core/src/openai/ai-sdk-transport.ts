@@ -45,7 +45,10 @@ import {
 import type {
   GeneratedImageFile,
   GeneratedImageSaveRequest,
+  GeneratedVideoFile,
+  GeneratedVideoSaveRequest,
   ImageGenerationRequest,
+  VideoGenerationRequest,
   JsonObject,
   JsonValue,
   LlmMessage,
@@ -71,7 +74,9 @@ import {
   resolveOpenAiModelCompatibilityProfile,
   type OpenAiImageGenerationConfig,
   type OpenAiTransportConfig,
+  type OpenAiVideoGenerationConfig,
 } from './openai-compat.js';
+import { generateVideoWithRouter } from '../video-generation/router.js';
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
@@ -128,8 +133,8 @@ interface Deferred<T> {
   reject(error: unknown): void;
 }
 
-const MANAGED_GENERATED_IMAGE_PROTOCOL = 'spirit-image:';
-const MANAGED_GENERATED_IMAGE_HOST = 'generated';
+const MANAGED_GENERATED_ASSET_PROTOCOL = 'spirit-agent:';
+const MANAGED_GENERATED_ASSET_HOST = 'generated';
 
 export function normalizeGeneratedImageMarkdownRef(markdownRef: string): string {
   const trimmed = markdownRef.trim();
@@ -145,17 +150,22 @@ export function normalizeGeneratedImageMarkdownRef(markdownRef: string): string 
   }
 
   if (
-    url.protocol.toLowerCase() !== MANAGED_GENERATED_IMAGE_PROTOCOL ||
-    url.hostname.toLowerCase() !== MANAGED_GENERATED_IMAGE_HOST ||
+    url.protocol.toLowerCase() !== MANAGED_GENERATED_ASSET_PROTOCOL ||
+    url.hostname.toLowerCase() !== MANAGED_GENERATED_ASSET_HOST ||
     url.search.length > 0 ||
     url.hash.length > 0
   ) {
     throw new Error('Host returned an invalid generated image markdownRef.');
   }
 
+  const segments = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+  if (segments.length !== 2 || segments[0]?.toLowerCase() !== 'image') {
+    throw new Error('Host returned an invalid generated image markdownRef.');
+  }
+
   let imageId: string;
   try {
-    imageId = decodeURIComponent(url.pathname.replace(/^\/+/, '')).trim();
+    imageId = decodeURIComponent(segments[1] ?? '').trim();
   } catch {
     throw new Error('Host returned an invalid generated image markdownRef.');
   }
@@ -171,7 +181,7 @@ export function normalizeGeneratedImageMarkdownRef(markdownRef: string): string 
     throw new Error('Host returned an invalid generated image markdownRef.');
   }
 
-  return `spirit-image://generated/${encodeURIComponent(imageId)}`;
+  return `spirit-agent://generated/image/${encodeURIComponent(imageId)}`;
 }
 
 export class AiSdkOpenAiCompatibleTransport
@@ -230,6 +240,19 @@ export class AiSdkOpenAiCompatibleTransport
       content: createLlmMessageContentFromTextAndImages(summaryText, [saved.path]),
       summaryText,
     };
+  }
+
+  async generateVideo(
+    config: OpenAiTransportConfig,
+    request: VideoGenerationRequest,
+    saveGeneratedVideo: (request: GeneratedVideoSaveRequest) => Promise<GeneratedVideoFile>,
+  ): Promise<ToolExecutionOutput> {
+    const videoConfig = config.videoGeneration;
+    if (!videoConfig) {
+      throw new Error('No video generation model is configured.');
+    }
+
+    return generateVideoWithRouter(videoConfig, request, saveGeneratedVideo);
   }
 
   async createJsonSchemaCompletion<T extends JsonValue = JsonValue>(

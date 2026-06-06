@@ -115,6 +115,8 @@ declare global {
     listSystemFonts(): Promise<string[]>;
     readLocalImagePreviewDataUrl(filePath: string): Promise<string | null>;
     readManagedImagePreviewDataUrl(reference: string): Promise<string | null>;
+    readLocalVideoPreviewUrl(filePath: string): Promise<string | null>;
+    readManagedVideoPreviewUrl(reference: string): Promise<string | null>;
     saveLocalImageAs(filePath: string): Promise<boolean>;
     syncWindowFrame(request: {
       dark: boolean;

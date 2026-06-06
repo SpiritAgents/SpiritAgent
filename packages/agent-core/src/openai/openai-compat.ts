@@ -13,6 +13,7 @@ export type OpenAiLlmVendor =
   | 'vercel-ai-gateway'
   | 'openrouter'
   | 'openai'
+  | 'volcengine'
   | 'custom';
 
 export type OpenAiModelCapabilities = LlmModelCapabilities;
@@ -34,6 +35,16 @@ export interface OpenAiModelCompatibilityProfile {
 }
 
 export interface OpenAiImageGenerationConfig {
+  apiKey: string;
+  model: string;
+  baseUrl?: string;
+  organization?: string;
+  project?: string;
+  llmVendor?: OpenAiLlmVendor;
+  modelCapabilities?: OpenAiModelCapabilities;
+}
+
+export interface OpenAiVideoGenerationConfig {
   apiKey: string;
   model: string;
   baseUrl?: string;
@@ -65,6 +76,10 @@ export interface OpenAiTransportConfig {
    * Optional dedicated model role used by the `generate_image` tool.
    */
   imageGeneration?: OpenAiImageGenerationConfig;
+  /**
+   * Optional dedicated model role used by the `generate_video` tool.
+   */
+  videoGeneration?: OpenAiVideoGenerationConfig;
   /**
    * 抽象推理强度；`default` 表示不指定，交给上游或模型默认行为。
    * 非 `default` 时直接走 OpenAI chat.completions 官方字段 `reasoning_effort`。

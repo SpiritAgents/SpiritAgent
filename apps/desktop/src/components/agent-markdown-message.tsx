@@ -13,6 +13,7 @@ import { Block, parseMarkdownIntoBlocks, Streamdown, type BlockProps } from "str
 import type { Pluggable } from "unified";
 
 import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
+import type { ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import {
   createMarkdownMessageComponents,
@@ -107,17 +108,19 @@ export function AgentMarkdownMessage({
   className,
   tone = "default",
   readManagedImagePreviewDataUrl,
+  readManagedVideoPreviewUrl,
 }: {
   content: string;
   streaming?: boolean;
   className?: string;
   tone?: MarkdownTone;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
+  readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const components = useMemo(
-    () => createMarkdownMessageComponents(readManagedImagePreviewDataUrl, tone),
-    [readManagedImagePreviewDataUrl, tone],
+    () => createMarkdownMessageComponents(readManagedImagePreviewDataUrl, tone, readManagedVideoPreviewUrl),
+    [readManagedImagePreviewDataUrl, readManagedVideoPreviewUrl, tone],
   );
 
   const motionActive = streaming && !prefersReducedMotion;

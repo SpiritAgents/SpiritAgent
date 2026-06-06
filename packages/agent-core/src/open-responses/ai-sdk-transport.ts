@@ -1,12 +1,16 @@
 import { generateObject, generateText, jsonSchema, streamText } from 'ai';
 
 import type {
+  GeneratedVideoFile,
+  GeneratedVideoSaveRequest,
   JsonObject,
   JsonValue,
   LlmMessage,
   LlmTransport,
   StartedToolAgentRound,
   ToolAgentRoundCompletion,
+  ToolExecutionOutput,
+  VideoGenerationRequest,
 } from '../ports.js';
 import type { JsonSchemaCompletionRequest, JsonSchemaCompletionResult, JsonSchemaTransport } from '../json-schema.js';
 import {
@@ -57,6 +61,7 @@ import {
   type OpenResponsesTransportConfig,
 } from './responses-compat.js';
 import { createDeferred, responsesEventStreamToRuntimeEvents } from './streaming.js';
+import { generateVideoWithRouter } from '../video-generation/router.js';
 
 function saturatingSub(value: number, delta: number): number {
   return Math.max(0, value - delta);
@@ -75,6 +80,19 @@ export class AiSdkOpenResponsesTransport
     LlmTransport<OpenResponsesTransportConfig, ToolAgentState>,
     JsonSchemaTransport
 {
+  async generateVideo(
+    config: OpenResponsesTransportConfig,
+    request: VideoGenerationRequest,
+    saveGeneratedVideo: (request: GeneratedVideoSaveRequest) => Promise<GeneratedVideoFile>,
+  ): Promise<ToolExecutionOutput> {
+    const videoConfig = config.videoGeneration;
+    if (!videoConfig) {
+      throw new Error('No video generation model is configured.');
+    }
+
+    return generateVideoWithRouter(videoConfig, request, saveGeneratedVideo);
+  }
+
   async createJsonSchemaCompletion<T extends JsonValue = JsonValue>(
     config: OpenResponsesTransportConfig,
     request: JsonSchemaCompletionRequest,

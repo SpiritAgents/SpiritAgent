@@ -34,6 +34,7 @@ import {
   resolveAddedModelCapabilities,
   resolveDesktopTransportKind,
   supportsImageGeneration,
+  supportsVideoGeneration,
 } from './model-config.js';
 import { modelSupportsChat } from './lightweight-chat-model.js';
 import { modelExistsInProviderScope, resolveActiveModelAfterRemoval } from './provider-api-key.js';
@@ -94,6 +95,7 @@ export async function updateConfigCommand(
     const wasBusy = ctx.isRuntimeBusy();
     const prevActiveModel = state.config.activeModel;
     const prevImageGenerationModel = state.config.imageGenerationModel;
+    const prevVideoGenerationModel = state.config.videoGenerationModel;
     const prevApiBase = currentApiBase(state.config);
     const prevAgentMode = resolveDesktopAgentMode(state.config);
     const prevLspEnabled = state.config.agents.lsp.enabled;
@@ -142,6 +144,21 @@ export async function updateConfigCommand(
           throw new Error(i18n.t('error.modelNoImageGenCapability', { model: imageGenerationModel }));
         }
         state.config.imageGenerationModel = imageProfile.name;
+      }
+    }
+    if (request.videoGenerationModel !== undefined) {
+      const videoGenerationModel = request.videoGenerationModel.trim();
+      if (!videoGenerationModel) {
+        delete state.config.videoGenerationModel;
+      } else {
+        const videoProfile = state.config.models.find((model) => model.name === videoGenerationModel);
+        if (!videoProfile) {
+          throw new Error(i18n.t('error.videoGenModelNotFound', { model: videoGenerationModel }));
+        }
+        if (!supportsVideoGeneration(videoProfile)) {
+          throw new Error(i18n.t('error.modelNoVideoGenCapability', { model: videoGenerationModel }));
+        }
+        state.config.videoGenerationModel = videoProfile.name;
       }
     }
     if (request.lightweightChatModel !== undefined) {
@@ -206,6 +223,7 @@ export async function updateConfigCommand(
       state.config.activeModel !== prevActiveModel ||
       currentApiBase(state.config) !== prevApiBase;
     const imageGenerationModelChanged = state.config.imageGenerationModel !== prevImageGenerationModel;
+    const videoGenerationModelChanged = state.config.videoGenerationModel !== prevVideoGenerationModel;
 
     if (agentModeNow !== prevAgentMode) {
       state.metadata = await loadHostMetadata(state.workspaceRoot, agentModeNow, {
@@ -221,7 +239,10 @@ export async function updateConfigCommand(
     await ctx.refreshLspSnapshot();
 
     const transportOrPlanChanged =
-      agentModeNow !== prevAgentMode || modelOrEndpointChanged || imageGenerationModelChanged;
+      agentModeNow !== prevAgentMode
+      || modelOrEndpointChanged
+      || imageGenerationModelChanged
+      || videoGenerationModelChanged;
     const deferRuntimeRefresh =
       wasBusy &&
       transportOrPlanChanged &&
@@ -364,6 +385,12 @@ export async function addProviderModelsCommand(
         state.config.imageGenerationModel = imageGenerationProfile.name;
       }
     }
+    if (!state.config.videoGenerationModel) {
+      const videoGenerationProfile = toAdd.find((profile) => supportsVideoGeneration(profile));
+      if (videoGenerationProfile) {
+        state.config.videoGenerationModel = videoGenerationProfile.name;
+      }
+    }
     await saveConfig(state.config);
     await ctx.refreshRuntime();
     ctx.setLastRuntimeError('');
@@ -456,6 +483,9 @@ export async function addModelCommand(
     if (!state.config.imageGenerationModel && supportsImageGeneration(profile)) {
       state.config.imageGenerationModel = name;
     }
+    if (!state.config.videoGenerationModel && supportsVideoGeneration(profile)) {
+      state.config.videoGenerationModel = name;
+    }
     await saveConfig(state.config);
     if (provider !== undefined) {
       await saveApiKeyForProvider(modelProviderKeyScope(provider), apiKey);
@@ -532,6 +562,9 @@ async function finalizeModelRemoval(
   );
   if (state.config.imageGenerationModel && namesToRemove.includes(state.config.imageGenerationModel)) {
     delete state.config.imageGenerationModel;
+  }
+  if (state.config.videoGenerationModel && namesToRemove.includes(state.config.videoGenerationModel)) {
+    delete state.config.videoGenerationModel;
   }
   if (state.config.lightweightChatModel && namesToRemove.includes(state.config.lightweightChatModel)) {
     delete state.config.lightweightChatModel;

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import { isManagedGeneratedImageRef } from "@/lib/managed-generated-image";
+import { isManagedGeneratedImageRef } from "@/lib/managed-generated-asset";
 import { cn } from "@/lib/utils";
 
 export type ReadManagedImagePreviewDataUrl = (reference: string) => Promise<string | null>;

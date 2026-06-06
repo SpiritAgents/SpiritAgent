@@ -230,6 +230,49 @@ export function supportsImageGeneration(model: { capabilities?: readonly Desktop
   return model.capabilities?.includes('imageGeneration') === true;
 }
 
+export function supportsVideoGeneration(model: { capabilities?: readonly DesktopModelCapability[] }): boolean {
+  return model.capabilities?.includes('videoGeneration') === true;
+}
+
+export function buildVideoGenerationSubConfig(input: {
+  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
+  apiKey: string;
+}) {
+  const videoGenerationVendor = openAiCompatibleVendorFromProvider(input.profile.provider);
+  return {
+    apiKey: input.apiKey,
+    model: input.profile.name,
+    baseUrl: input.profile.apiBase || DEFAULT_API_BASE,
+    ...(videoGenerationVendor ? { llmVendor: videoGenerationVendor } : {}),
+    ...(input.profile.capabilities
+      ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
+      : {}),
+  };
+}
+
+export function attachVideoGenerationToTransportConfig(
+  transportConfig: LlmTransportConfig,
+  input: {
+    profile?: ModelProfileSnapshot;
+    apiKey?: string;
+  },
+): LlmTransportConfig {
+  if (!input.profile || !input.apiKey || !supportsVideoGeneration(input.profile)) {
+    return transportConfig;
+  }
+  if (transportConfig.transportKind === 'anthropic') {
+    return transportConfig;
+  }
+
+  return {
+    ...transportConfig,
+    videoGeneration: buildVideoGenerationSubConfig({
+      profile: input.profile,
+      apiKey: input.apiKey,
+    }),
+  } as LlmTransportConfig;
+}
+
 interface LoadedPreviewModelsResult {
   modelIds: string[];
   modelCatalog?: PreviewModelCatalogEntry[];
