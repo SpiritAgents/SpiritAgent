@@ -9,6 +9,7 @@ import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { maskFadeHorizontalEnd } from "@/lib/mask-styles";
 import {
   WORKSPACE_TOOLS_MIN_WIDTH_PX,
   computeWorkspaceToolsMaxWidthPx,
@@ -362,8 +363,7 @@ export function WorkspaceToolsDock({
                         type="button"
                         className="absolute inset-y-0 right-0 hidden items-center justify-end rounded-tr-md pr-1 outline-none group-hover/tab:flex"
                         style={{
-                          maskImage: "linear-gradient(to right, transparent, black 50%)",
-                          WebkitMaskImage: "linear-gradient(to right, transparent, black 50%)",
+                          ...maskFadeHorizontalEnd,
                           width: "2rem",
                           background: "inherit",
                         }}
