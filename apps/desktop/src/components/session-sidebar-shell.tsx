@@ -138,7 +138,7 @@ export function SessionSidebarShell({
           className={cn(
             "pointer-events-none absolute inset-y-0 right-0 w-px transition-colors",
             useMicaBackdrop
-              ? "bg-black/5 group-hover:bg-border/55 dark:bg-border/40"
+              ? "bg-black/5 group-hover:bg-black/10 dark:bg-white/10 dark:group-hover:bg-white/14"
               : "bg-border/40 group-hover:bg-border/55",
           )}
           aria-hidden
