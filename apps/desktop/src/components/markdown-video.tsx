@@ -74,27 +74,30 @@ export function MarkdownVideo({
     };
   }, [managedRef, normalizedSrc, readManagedVideoPreviewUrl]);
 
+  const placeholderClassName =
+    "my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground";
+
   if (managedRef && !readManagedVideoPreviewUrl) {
     return (
-      <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
+      <span className={cn("block", placeholderClassName)}>
         {t("error.hostNotSupported")}
-      </div>
+      </span>
     );
   }
 
   if (managedRef && managedLoadState === "loading") {
     return (
-      <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
+      <span className={cn("block", placeholderClassName)}>
         {t("error.loading")}
-      </div>
+      </span>
     );
   }
 
   if (managedRef && managedLoadState === "unavailable") {
     return (
-      <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
+      <span className={cn("block", placeholderClassName)}>
         {t("error.unavailable")}
-      </div>
+      </span>
     );
   }
 

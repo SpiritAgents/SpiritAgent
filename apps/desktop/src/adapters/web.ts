@@ -244,9 +244,6 @@ export function createWebHostApi(): HostApi {
     async saveLocalImageAs() {
       return false;
     },
-    async saveLocalVideoAs() {
-      return false;
-    },
     async pairWebHost(code: string) {
       const result = await post<WebHostPairingResponse>(baseUrl, '/api/pairing', { code }, {
         auth: false,

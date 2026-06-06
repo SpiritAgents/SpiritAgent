@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import {
   BrowserWindow,
@@ -30,6 +30,10 @@ import {
   refreshDesktopAttention,
 } from './desktop-attention.js';
 import {
+  installSpiritGeneratedAssetProtocolHandler,
+  registerSpiritGeneratedAssetPrivilegedScheme,
+} from './generated-asset-protocol.js';
+import {
   bindSpiritNotificationProtocolHandlers,
   handleSpiritNotificationProtocolArgv,
   installSpiritNotificationProtocolRouting,
@@ -48,6 +52,7 @@ import type { DesktopSnapshot } from '../src/types.js';
 
 const spiritWebviewHooksAttached = new WeakSet<WebContents>();
 
+registerSpiritGeneratedAssetPrivilegedScheme();
 registerSpiritNotificationProtocolClient();
 installSpiritNotificationProtocolRouting();
 
@@ -616,6 +621,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
 
 if (gotSpiritSingleInstanceLock) {
   app.whenReady().then(async () => {
+  installSpiritGeneratedAssetProtocolHandler({
+    resolveManagedGeneratedAssetPath,
+    videoPreviewMimeType,
+    imagePreviewMimeType,
+  });
   bindSpiritNotificationProtocolHandlers({
     onApproval: handleApprovalNotificationAction,
     onFocus: focusSpiritDesktopWindows,
@@ -751,7 +761,7 @@ if (gotSpiritSingleInstanceLock) {
       return null;
     }
 
-    return readLocalVideoPreviewUrlFromPath(filePath);
+    return managedGeneratedVideoRefFromPath(filePath);
   });
 
   ipcMain.handle('desktop:read-local-video-preview', async (_event, payload: { filePath?: string }) => {
@@ -786,43 +796,6 @@ if (gotSpiritSingleInstanceLock) {
       const saveResult = targetWindow
         ? await dialog.showSaveDialog(targetWindow, buildSaveImageDialogOptions(sourcePath, extension))
         : await dialog.showSaveDialog(buildSaveImageDialogOptions(sourcePath, extension));
-
-      if (saveResult.canceled || !saveResult.filePath) {
-        return false;
-      }
-
-      if (path.resolve(saveResult.filePath) === path.resolve(sourcePath)) {
-        return true;
-      }
-
-      await copyFile(sourcePath, saveResult.filePath);
-      return true;
-    },
-  );
-
-  ipcMain.handle(
-    'desktop:save-local-video-as',
-    async (event, payload: { filePath?: string }) => {
-      const sourcePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
-      if (!sourcePath) {
-        return false;
-      }
-
-      const extension = path.extname(sourcePath).toLowerCase();
-      const mimeType = videoPreviewMimeType(extension);
-      if (!mimeType) {
-        throw new Error('当前仅支持另存常见视频格式。');
-      }
-
-      const sourceStat = await stat(sourcePath);
-      if (!sourceStat.isFile()) {
-        throw new Error('要另存的视频文件不存在。');
-      }
-
-      const targetWindow = BrowserWindow.fromWebContents(event.sender);
-      const saveResult = targetWindow
-        ? await dialog.showSaveDialog(targetWindow, buildSaveVideoDialogOptions(sourcePath, extension))
-        : await dialog.showSaveDialog(buildSaveVideoDialogOptions(sourcePath, extension));
 
       if (saveResult.canceled || !saveResult.filePath) {
         return false;
@@ -1044,15 +1017,38 @@ async function readLocalVideoPreviewUrlFromPath(filePath: string): Promise<strin
   }
 
   try {
-    const metadata = await stat(filePath);
-    if (!metadata.isFile()) {
+    const managedRoot = path.join(spiritAgentDataDir(), MANAGED_GENERATED_VIDEOS_DIR);
+    const [rootStats, candidateStats] = await Promise.all([lstat(managedRoot), lstat(filePath)]);
+    if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
+      return null;
+    }
+    if (!candidateStats.isFile() || candidateStats.isSymbolicLink()) {
       return null;
     }
 
-    return pathToFileURL(filePath).href;
+    const [canonicalRoot, canonicalPath] = await Promise.all([realpath(managedRoot), realpath(filePath)]);
+    if (!pathIsWithinRoot(canonicalPath, canonicalRoot)) {
+      return null;
+    }
+
+    return managedGeneratedVideoRefFromPath(canonicalPath);
   } catch {
     return null;
   }
+}
+
+function managedGeneratedVideoRefFromPath(filePath: string): string | null {
+  const extension = path.extname(filePath).toLowerCase();
+  if (!videoPreviewMimeType(extension)) {
+    return null;
+  }
+
+  const assetId = path.basename(filePath);
+  if (!assetId || assetId === '.' || assetId === '..') {
+    return null;
+  }
+
+  return `${MANAGED_ASSET_PROTOCOL}//${MANAGED_ASSET_HOST}/video/${encodeURIComponent(assetId)}`;
 }
 
 async function readImagePreviewDataUrlFromPath(filePath: string): Promise<string | null> {
@@ -1147,23 +1143,6 @@ function buildSaveImageDialogOptions(sourcePath: string, extension: string): Ele
       {
         name: 'Image',
         extensions: normalizedExtension ? [normalizedExtension] : ['png'],
-      },
-      {
-        name: 'All Files',
-        extensions: ['*'],
-      },
-    ],
-  };
-}
-
-function buildSaveVideoDialogOptions(sourcePath: string, extension: string): Electron.SaveDialogOptions {
-  const normalizedExtension = extension.startsWith('.') ? extension.slice(1) : extension;
-  return {
-    defaultPath: path.basename(sourcePath),
-    filters: [
-      {
-        name: 'Video',
-        extensions: normalizedExtension ? [normalizedExtension] : ['mp4'],
       },
       {
         name: 'All Files',

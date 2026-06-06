@@ -790,23 +790,6 @@ export function useDesktopRuntime() {
     [api],
   );
 
-  const saveLocalVideoAs = useCallback(
-    async (filePath: string): Promise<boolean> => {
-      if (!api?.saveLocalVideoAs) {
-        setRuntimeError(i18n.t('error.hostNotSupportSaveVideo'));
-        return false;
-      }
-
-      try {
-        return await api.saveLocalVideoAs(filePath);
-      } catch (error) {
-        setRuntimeError(describeError(error));
-        return false;
-      }
-    },
-    [api],
-  );
-
   const commitChanges = useCallback(
     async (request: CommitChangesRequest): Promise<boolean> => {
       if (!api) {
@@ -2338,7 +2321,6 @@ export function useDesktopRuntime() {
     readLocalVideoPreviewUrl,
     readManagedVideoPreviewUrl,
     saveLocalImageAs,
-    saveLocalVideoAs,
     commitChanges,
     submitGitChip,
     addModel,

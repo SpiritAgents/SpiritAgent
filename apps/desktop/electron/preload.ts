@@ -222,9 +222,6 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   saveLocalImageAs(filePath: string) {
     return ipcRenderer.invoke('desktop:save-local-image-as', { filePath });
   },
-  saveLocalVideoAs(filePath: string) {
-    return ipcRenderer.invoke('desktop:save-local-video-as', { filePath });
-  },
   syncWindowFrame(request: {
     dark: boolean;
     nativeTheme: 'system' | 'light' | 'dark';
