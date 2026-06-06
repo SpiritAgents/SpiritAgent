@@ -1,4 +1,14 @@
-import { memo, useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -23,6 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { sidebarScrollEdgeFadeClass, sidebarSessionsScrollTopGapClass } from "@/lib/mask-styles";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -418,6 +429,39 @@ const sidebarMicaMenuHoverClass = cn(
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
 
+const SIDEBAR_SCROLL_EDGE_THRESHOLD_PX = 1;
+
+type SidebarScrollEdgeFades = {
+  top: boolean;
+  bottom: boolean;
+};
+
+function readSidebarScrollEdgeFades(viewport: HTMLElement): SidebarScrollEdgeFades {
+  const { scrollTop, scrollHeight, clientHeight } = viewport;
+  return {
+    top: scrollTop > SIDEBAR_SCROLL_EDGE_THRESHOLD_PX,
+    bottom: scrollTop + clientHeight < scrollHeight - SIDEBAR_SCROLL_EDGE_THRESHOLD_PX,
+  };
+}
+
+function sidebarScrollEdgeOverlayTopClass(active: boolean): string {
+  return cn(
+    "pointer-events-none absolute inset-x-0 top-0 z-10 transition-opacity duration-150",
+    sidebarScrollEdgeFadeClass,
+    active ? "opacity-100" : "opacity-0",
+    "bg-gradient-to-b from-sidebar to-transparent",
+  );
+}
+
+function sidebarScrollEdgeOverlayBottomClass(active: boolean): string {
+  return cn(
+    "pointer-events-none absolute inset-x-0 bottom-0 z-10 transition-opacity duration-150",
+    sidebarScrollEdgeFadeClass,
+    active ? "opacity-100" : "opacity-0",
+    "bg-gradient-to-t from-sidebar to-transparent",
+  );
+}
+
 const sidebarMicaSelectedClass = cn(
   "!bg-foreground/[0.08] hover:!bg-foreground/[0.12] focus-visible:!bg-foreground/[0.12]",
   "dark:!bg-white/[0.08] dark:hover:!bg-white/[0.12]",
@@ -495,6 +539,11 @@ export function SessionSidebar({
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
   const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
+  const scrollFadeRegionRef = useRef<HTMLDivElement>(null);
+  const [scrollEdgeFades, setScrollEdgeFades] = useState<SidebarScrollEdgeFades>({
+    top: false,
+    bottom: false,
+  });
   const sessionByPath = useMemo(() => {
     const map = new Map<string, SessionListItem>();
     for (const session of sessions) {
@@ -541,6 +590,48 @@ export function SessionSidebar({
     !newSessionBusy &&
     activeFilePath !== null &&
     samePath(sessionPath, activeFilePath);
+
+  useEffect(() => {
+    if (micaStyle || (!settingsMode && narrow)) {
+      setScrollEdgeFades({ top: false, bottom: false });
+      return;
+    }
+
+    const region = scrollFadeRegionRef.current;
+    if (!region) {
+      return;
+    }
+
+    const viewport = region.querySelector("[data-radix-scroll-area-viewport]");
+    if (!(viewport instanceof HTMLElement)) {
+      return;
+    }
+
+    const syncScrollEdgeFades = () => {
+      setScrollEdgeFades(readSidebarScrollEdgeFades(viewport));
+    };
+
+    syncScrollEdgeFades();
+    viewport.addEventListener("scroll", syncScrollEdgeFades, { passive: true });
+    const resizeObserver = new ResizeObserver(syncScrollEdgeFades);
+    resizeObserver.observe(viewport);
+
+    return () => {
+      viewport.removeEventListener("scroll", syncScrollEdgeFades);
+      resizeObserver.disconnect();
+    };
+  }, [
+    micaStyle,
+    settingsMode,
+    narrow,
+    settingsTab,
+    extensionSettingsId,
+    extensionSettingsItems.length,
+    sessions.length,
+    workspaceGroups.length,
+    unboundSessions.length,
+    collapsedWorkspaceIds,
+  ]);
 
   const setWorkspaceGroupExpanded = useCallback((groupId: string, open: boolean) => {
     setCollapsedWorkspaceIds((current) => ({
@@ -637,8 +728,10 @@ export function SessionSidebar({
       )}
 
       <div
+        ref={scrollFadeRegionRef}
         className={cn(
-          "min-h-0 w-full min-w-0 flex-1 overflow-hidden",
+          "relative min-h-0 w-full min-w-0 flex-1 overflow-hidden",
+          !settingsMode && sidebarSessionsScrollTopGapClass,
           !settingsMode && narrow && "hidden min-h-0 flex-none",
         )}
         aria-hidden={!settingsMode && narrow}
@@ -832,13 +925,19 @@ export function SessionSidebar({
             </div>
           )}
         </ScrollArea>
+        {!micaStyle ? (
+          <>
+            <div className={sidebarScrollEdgeOverlayTopClass(scrollEdgeFades.top)} aria-hidden />
+            <div className={sidebarScrollEdgeOverlayBottomClass(scrollEdgeFades.bottom)} aria-hidden />
+          </>
+        ) : null}
       </div>
 
       {!settingsMode ? (
         <div
           className={cn(
-            "shrink-0 border-t border-sidebar-border/30 p-2 dark:border-border/40",
-            narrow && "mt-auto flex flex-col items-center border-t py-2",
+            "shrink-0 p-2",
+            narrow && "mt-auto flex flex-col items-center py-2",
           )}
         >
           <Button
