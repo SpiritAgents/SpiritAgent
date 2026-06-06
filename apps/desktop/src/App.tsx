@@ -846,7 +846,6 @@ type ComposerSurfaceProps = {
   conversationBusy?: boolean;
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
-  directMediaMode?: DirectMediaTool | null;
 };
 
 function ComposerSurface({
@@ -885,7 +884,6 @@ function ComposerSurface({
   conversationBusy = false,
   agentModeChipDismissed = false,
   onAgentModeChipDismissChange,
-  directMediaMode = null,
 }: ComposerSurfaceProps) {
   const { t } = useTranslation();
   const [modelFilter, setModelFilter] = useState("");
@@ -904,12 +902,6 @@ function ComposerSurface({
         activeModelProfile.reasoningEffort,
       )
     : activeModel;
-  const directMediaBadgeLabel =
-    directMediaMode === "generate_image"
-      ? t("composer.directMediaImageBadge")
-      : directMediaMode === "generate_video"
-        ? t("composer.directMediaVideoBadge")
-        : null;
   const modelGroups = useMemo(
     () => groupModelsForPicker(models, catalogHints),
     [models, catalogHints],
@@ -1017,14 +1009,6 @@ function ComposerSurface({
                       <span className="min-w-0 flex-1 truncate" title={activeModelSummary}>
                         {activeModelSummary}
                       </span>
-                      {directMediaBadgeLabel ? (
-                        <Badge
-                          variant="secondary"
-                          className="h-4 shrink-0 px-1 text-[10px] font-medium leading-none"
-                        >
-                          {directMediaBadgeLabel}
-                        </Badge>
-                      ) : null}
                       <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
                     </button>
                   </FilteredOverlayMenuTrigger>
@@ -3430,7 +3414,6 @@ export default function App() {
                     models={models}
                     catalogHints={snapshot?.config.modelCatalogHints}
                     activeModel={runtime.settings.activeModel}
-                    directMediaMode={composerDirectMediaMode}
                     agentMode={runtime.settings.agentMode}
                     loopEnabled={snapshot?.conversation.loopEnabled === true}
                     onModelSelect={runtime.setActiveModel}
