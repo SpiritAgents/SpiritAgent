@@ -495,6 +495,7 @@
       "pushDisabledUpToDate": "This branch is already up to date with its remote."
     },
     "resizeToolsWidth": "Resize Tools Width",
+    "browserResizeDevtoolsWidth": "Resize DevTools width",
     "workspaceTools": "Workspace Tools",
     "toolTabs": "Tool Tabs",
     "closeTab": "Close {{label}} tab",

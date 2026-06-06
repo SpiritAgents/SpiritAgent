@@ -296,6 +296,7 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
     bounds: { x: number; y: number; width: number; height: number };
     visible: boolean;
     url?: string;
+    devtoolsWidthPx?: number;
   }): Promise<void> {
     return ipcRenderer.invoke('desktop:browser-page-sync', payload);
   },
@@ -306,8 +307,16 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   }): Promise<void> {
     return ipcRenderer.invoke('desktop:browser-page-nav', payload);
   },
-  toggleBrowserPageDevTools(tabId: string): Promise<void> {
+  toggleBrowserPageDevTools(
+    tabId: string,
+  ): Promise<{ open: boolean; widthPx: number } | undefined> {
     return ipcRenderer.invoke('desktop:browser-page-toggle-devtools', { tabId });
+  },
+  setBrowserPageDevtoolsWidth(
+    tabId: string,
+    widthPx: number,
+  ): Promise<{ open: boolean; widthPx: number } | undefined> {
+    return ipcRenderer.invoke('desktop:browser-page-set-devtools-width', { tabId, widthPx });
   },
   executeBrowserPageView(payload: {
     tabId: string;
@@ -330,22 +339,26 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   subscribeBrowserPageEvents(
     callback: (event: {
       tabId: string;
-      type: 'url' | 'title' | 'nav-state';
+      type: 'url' | 'title' | 'nav-state' | 'devtools';
       url?: string;
       title?: string;
       canGoBack?: boolean;
       canGoForward?: boolean;
+      open?: boolean;
+      widthPx?: number;
     }) => void,
   ) {
     const onEvent = (
       _event: Electron.IpcRendererEvent,
       payload: {
         tabId?: string;
-        type?: 'url' | 'title' | 'nav-state';
+        type?: 'url' | 'title' | 'nav-state' | 'devtools';
         url?: string;
         title?: string;
         canGoBack?: boolean;
         canGoForward?: boolean;
+        open?: boolean;
+        widthPx?: number;
       },
     ) => {
       if (typeof payload?.tabId !== 'string' || !payload.type) {
@@ -358,6 +371,8 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
         title: payload.title,
         canGoBack: payload.canGoBack,
         canGoForward: payload.canGoForward,
+        open: payload.open,
+        widthPx: payload.widthPx,
       });
     };
     ipcRenderer.on('desktop:browser-page-event', onEvent);

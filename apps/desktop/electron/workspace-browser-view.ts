@@ -14,12 +14,14 @@ export type PageViewSyncPayload = {
   bounds: PageViewBounds;
   visible: boolean;
   url?: string;
+  devtoolsWidthPx?: number;
 };
 
 export type BrowserPageEvent =
   | { tabId: string; type: 'url'; url: string }
   | { tabId: string; type: 'title'; title: string }
-  | { tabId: string; type: 'nav-state'; canGoBack: boolean; canGoForward: boolean };
+  | { tabId: string; type: 'nav-state'; canGoBack: boolean; canGoForward: boolean }
+  | { tabId: string; type: 'devtools'; open: boolean; widthPx: number };
 
 type PageViewSession = {
   tabId: string;
@@ -29,6 +31,7 @@ type PageViewSession = {
   devtoolsAttached: boolean;
   devtoolsOpen: boolean;
   devtoolsTargetSet: boolean;
+  devtoolsWidthPx: number | undefined;
   lastUrl: string | undefined;
   pageBounds: PageViewBounds;
 };
@@ -37,8 +40,11 @@ const pageViewHooksAttached = new WeakSet<WebContents>();
 const sessionsByKey = new Map<string, PageViewSession>();
 const visibleTabByHostId = new Map<number, string>();
 
-/** 与 workspace-browser-tab 原 devtools 槽位比例一致 */
-const DEVTOOLS_WIDTH_RATIO = 0.42;
+/** 首次打开 DevTools 时按页面宽度估算的默认占比 */
+const DEFAULT_DEVTOOLS_WIDTH_RATIO = 0.42;
+const DEVTOOLS_MIN_WIDTH_PX = 200;
+/** 与 workspace-browser-tab 拖拽条宽度一致，留出缝隙供 renderer 接收指针事件 */
+export const DEVTOOLS_SPLITTER_WIDTH_PX = 4;
 
 function sessionKey(hostId: number, tabId: string): string {
   return `${hostId}:${tabId}`;
@@ -92,18 +98,62 @@ function createPageBrowserView(): BrowserView {
   });
 }
 
-function splitBoundsForDevtools(full: PageViewBounds): { page: PageViewBounds; devtools: PageViewBounds } {
-  const devtoolsWidth = Math.max(1, Math.round(full.width * DEVTOOLS_WIDTH_RATIO));
-  const pageWidth = Math.max(1, full.width - devtoolsWidth);
+function defaultDevtoolsWidthPx(fullWidth: number): number {
+  return Math.max(
+    DEVTOOLS_MIN_WIDTH_PX,
+    Math.round(fullWidth * DEFAULT_DEVTOOLS_WIDTH_RATIO),
+  );
+}
+
+function clampDevtoolsWidthPx(fullWidth: number, widthPx: number): number {
+  const splitter = DEVTOOLS_SPLITTER_WIDTH_PX;
+  const maxDevtools = Math.max(
+    DEVTOOLS_MIN_WIDTH_PX,
+    fullWidth - DEVTOOLS_MIN_WIDTH_PX - splitter,
+  );
+  return Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.min(maxDevtools, Math.round(widthPx)));
+}
+
+function resolveDevtoolsWidthPx(session: PageViewSession): number {
+  const fullWidth = session.pageBounds.width;
+  if (fullWidth < 1) {
+    return DEVTOOLS_MIN_WIDTH_PX;
+  }
+  const requested =
+    session.devtoolsWidthPx ?? defaultDevtoolsWidthPx(fullWidth);
+  const clamped = clampDevtoolsWidthPx(fullWidth, requested);
+  session.devtoolsWidthPx = clamped;
+  return clamped;
+}
+
+function splitBoundsForDevtools(
+  full: PageViewBounds,
+  devtoolsWidthPx: number,
+): { page: PageViewBounds; devtools: PageViewBounds } {
+  const splitter = DEVTOOLS_SPLITTER_WIDTH_PX;
+  const devtoolsWidth = clampDevtoolsWidthPx(full.width, devtoolsWidthPx);
+  const pageWidth = Math.max(DEVTOOLS_MIN_WIDTH_PX, full.width - devtoolsWidth - splitter);
   return {
     page: { x: full.x, y: full.y, width: pageWidth, height: full.height },
     devtools: {
-      x: full.x + pageWidth,
+      x: full.x + pageWidth + splitter,
       y: full.y,
       width: devtoolsWidth,
       height: full.height,
     },
   };
+}
+
+function emitDevtoolsState(host: WebContents, session: PageViewSession): void {
+  const widthPx = session.devtoolsOpen
+    ? resolveDevtoolsWidthPx(session)
+    : session.devtoolsWidthPx ?? DEVTOOLS_MIN_WIDTH_PX;
+  emitPageEvent(host, {
+    tabId: session.tabId,
+    type: 'devtools',
+    open: session.devtoolsOpen,
+    widthPx,
+  });
 }
 
 function reloadDevtoolsBrowserView(devtoolsView: BrowserView): void {
@@ -132,7 +182,8 @@ function applyPageLayout(host: WebContents, session: PageViewSession): void {
     return;
   }
 
-  const { page, devtools } = splitBoundsForDevtools(session.pageBounds);
+  const devtoolsWidthPx = resolveDevtoolsWidthPx(session);
+  const { page, devtools } = splitBoundsForDevtools(session.pageBounds, devtoolsWidthPx);
   session.browserView.setBounds(page);
   if (!session.devtoolsAttached) {
     win.addBrowserView(session.devtoolsBrowserView);
@@ -149,6 +200,7 @@ function closeEmbeddedDevtools(host: WebContents, session: PageViewSession): voi
   session.devtoolsOpen = false;
   detachDevtoolsBrowserView(host, session);
   applyPageLayout(host, session);
+  emitDevtoolsState(host, session);
 }
 
 function openEmbeddedDevtools(host: WebContents, session: PageViewSession): void {
@@ -176,6 +228,7 @@ function openEmbeddedDevtools(host: WebContents, session: PageViewSession): void
     page.openDevTools({ mode: 'detach', activate: true });
     reloadDevtoolsBrowserView(session.devtoolsBrowserView);
   }
+  emitDevtoolsState(host, session);
 }
 
 function attachPageViewHandlers(host: WebContents, tabId: string, page: WebContents): void {
@@ -255,6 +308,7 @@ function getOrCreateSession(host: WebContents, tabId: string): PageViewSession {
       devtoolsAttached: false,
       devtoolsOpen: false,
       devtoolsTargetSet: false,
+      devtoolsWidthPx: undefined,
       lastUrl: undefined,
       pageBounds: { x: 0, y: 0, width: 0, height: 0 },
     };
@@ -297,12 +351,15 @@ function attachSession(host: WebContents, session: PageViewSession, bounds: Page
 }
 
 export function syncPageView(host: WebContents, payload: PageViewSyncPayload): void {
-  const { tabId, bounds, visible, url } = payload;
+  const { tabId, bounds, visible, url, devtoolsWidthPx } = payload;
   if (!tabId) {
     throw new Error('Invalid browser tab id');
   }
 
   const session = getOrCreateSession(host, tabId);
+  if (typeof devtoolsWidthPx === 'number' && Number.isFinite(devtoolsWidthPx)) {
+    session.devtoolsWidthPx = devtoolsWidthPx;
+  }
 
   if (!visible) {
     hidePageView(host, session);
@@ -378,16 +435,41 @@ export function navigatePageView(
   }
 }
 
-export function togglePageDevTools(host: WebContents, tabId: string): void {
+export function togglePageDevTools(
+  host: WebContents,
+  tabId: string,
+): { open: boolean; widthPx: number } | undefined {
   const session = getSession(host, tabId);
   if (!session || !session.attached) {
-    return;
+    return undefined;
   }
   if (session.devtoolsOpen) {
     closeEmbeddedDevtools(host, session);
-    return;
+  } else {
+    openEmbeddedDevtools(host, session);
   }
-  openEmbeddedDevtools(host, session);
+  return {
+    open: session.devtoolsOpen,
+    widthPx: resolveDevtoolsWidthPx(session),
+  };
+}
+
+export function setPageDevtoolsWidth(
+  host: WebContents,
+  tabId: string,
+  widthPx: number,
+): { open: boolean; widthPx: number } | undefined {
+  const session = getSession(host, tabId);
+  if (!session || !session.attached || !session.devtoolsOpen) {
+    return undefined;
+  }
+  session.devtoolsWidthPx = widthPx;
+  applyPageLayout(host, session);
+  emitDevtoolsState(host, session);
+  return {
+    open: session.devtoolsOpen,
+    widthPx: resolveDevtoolsWidthPx(session),
+  };
 }
 
 export async function executeInPageView(
