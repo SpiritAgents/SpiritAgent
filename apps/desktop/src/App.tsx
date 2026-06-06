@@ -21,6 +21,10 @@ import {
 
 import { type DesktopAgentMode } from "@/lib/agent-mode";
 import {
+  resolveComposerDirectMediaTool,
+  type DirectMediaTool,
+} from "@/lib/composer-direct-media";
+import {
   pickEmptySessionGreetingVariant,
   resolveEmptySessionGreeting,
   type EmptySessionGreetingVariantId,
@@ -1993,6 +1997,19 @@ export default function App() {
   const [composerBrowserElementAttachments, setComposerBrowserElementAttachments] = useState<BrowserElementAttachment[]>([]);
 
   const activeSessionReadOnly = snapshot?.activeSession?.readOnly === true;
+  const composerDirectMediaMode = useMemo(() => {
+    if (!snapshot?.config) {
+      return null;
+    }
+    return resolveComposerDirectMediaTool(snapshot.config.activeModel, snapshot.config);
+  }, [snapshot?.config]);
+  const composerPlaceholder = activeSessionReadOnly
+    ? t("app.readOnlySession")
+    : composerDirectMediaMode === "generate_image"
+      ? t("composer.placeholderGenerateImage")
+      : composerDirectMediaMode === "generate_video"
+        ? t("composer.placeholderGenerateVideo")
+        : t("app.typeMessage");
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const composerCanSend =
@@ -3392,7 +3409,7 @@ export default function App() {
                     browserElementAttachments={composerBrowserElementAttachments}
                     onElementAttachmentsChange={setComposerBrowserElementAttachments}
                     onAbort={() => void runtime.abortConversation()}
-                    placeholder={activeSessionReadOnly ? t('app.readOnlySession') : t('app.typeMessage')}
+                    placeholder={composerPlaceholder}
                     localFileAttachments={runtime.composerLocalFileAttachments}
                     models={models}
                     catalogHints={snapshot?.config.modelCatalogHints}

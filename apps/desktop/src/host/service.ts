@@ -561,6 +561,9 @@ class DesktopHostService {
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireRuntime: () => this.requireRuntime(),
       requireState: () => this.requireState(),
+      requireConfig: () => this.requireState().config,
+      resolveApiKeyForConfigModel: (model) =>
+        resolveApiKeyForConfigModel(this.requireState().config, model),
       activeBundle: () => this.activeBundle(),
       allBundles: () => this.sessionRegistry.all(),
       getActiveBundle: () => this.sessionRegistry.getActive(),

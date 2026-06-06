@@ -27,6 +27,7 @@ import {
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
+import { executeDirectMediaTurn, shouldUseComposerDirectMediaTurn } from './direct-media-turn.js';
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
 
 type RuntimeEventsFacade = {
@@ -57,6 +58,8 @@ export interface SessionTurnOrchestratorContext {
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
   requireRuntime(): DesktopRuntime;
   requireState(): { workspaceRoot: string };
+  requireConfig(): import('./storage.js').DesktopConfigFile;
+  resolveApiKeyForConfigModel(model: string): Promise<string | undefined>;
   activeBundle(): SessionBundle;
   allBundles(): Iterable<SessionBundle>;
   getActiveBundle(): SessionBundle | undefined;
@@ -157,6 +160,43 @@ export async function submitUserTurnAfterInitializedCommand(
     ctx.syncActiveRuntimePointer();
   }
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);
+
+  const config = ctx.requireConfig();
+  const directMediaTool = shouldUseComposerDirectMediaTurn(
+    config,
+    config.activeModel,
+    explicitWorkspaceFiles.length,
+  );
+
+  if (directMediaTool && trimmed) {
+    await ctx.ensureToolExecutor(bundle);
+    try {
+      await executeDirectMediaTurn(ctx, {
+        bundle,
+        toolName: directMediaTool,
+        prompt: trimmed,
+        userMessageId: userMessage.id,
+        beforeUserCheckpoint,
+      });
+    } catch (error) {
+      ctx.activeBundle().currentTurnSkills = [];
+      ctx.orchestrationFor(ctx.activeBundle()).assistantMessages.handleMessageRemoved(
+        ctx.activeBundle().messages.length - 1,
+        userMessage.id,
+        'send-user-rollback',
+      );
+      ctx.activeBundle().messages.pop();
+      ctx.rebuildMessageTimelineFromMessages();
+      throw error;
+    }
+
+    const directOrchestration = ctx.orchestrationFor(ctx.activeBundle());
+    directOrchestration.runtimeEvents.syncPendingToolStates();
+    directOrchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+    await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
+    await ctx.refreshTodoSnapshotForBundle(bundle);
+    return ctx.buildSnapshot();
+  }
 
   // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
   const runtime = ctx.requireRuntime();
