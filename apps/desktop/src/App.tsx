@@ -3483,12 +3483,12 @@ export default function App() {
                   {!isEmptySession ? (
                     <div
                       className={cn(
-                        "relative z-0 -mt-4 bg-background pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+                        "pointer-events-none relative -mt-4 pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
                         CONVERSATION_GUTTER_NEG_X,
                         CONVERSATION_GUTTER_X,
                       )}
                     >
-                      <div className="flex items-center justify-between gap-3 px-3">
+                      <div className="pointer-events-auto relative z-[11] flex items-center justify-between gap-3 px-3">
                         <ApprovalLevelMenu
                           approvalLevel={snapshot?.conversation.approvalLevel ?? "default"}
                           disabled={activeSessionReadOnly}

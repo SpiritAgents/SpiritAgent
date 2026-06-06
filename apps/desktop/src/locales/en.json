@@ -525,7 +525,9 @@
     "askChipLabel": "Ask",
     "placeholderGenerateImage": "Describe the image to generate…",
     "placeholderGenerateVideo": "Describe the video to generate…",
-    "contextUsageAria": "Context used {{percent}}%, {{inputTokens}} / {{contextLength}} tokens"
+    "contextUsageAria": "Context used {{percent}}%, {{inputTokens}} / {{contextLength}} tokens",
+    "contextUsageHoverPercent": "{{percent}}% context used",
+    "contextUsageHoverTokens": "{{input}} / {{total}} tokens"
   },
   "error": {
     "runtimeBusy": "A response or approval is already being processed. Please wait.",
