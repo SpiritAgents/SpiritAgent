@@ -317,7 +317,7 @@ import {
   sameWorkspaceRoot,
 } from './service-utils.js';
 import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
-import { buildDesktopSnapshot } from './snapshot.js';
+import { buildDesktopSnapshot, buildModelCatalogHints } from './snapshot.js';
 import {
   applyToolCallSummaryCopy,
 } from './message-ordering.js';
@@ -819,6 +819,18 @@ class DesktopHostService {
           { workspaceRoot: bundle.workspaceRoot, spiritDataDir: spiritAgentDataDir() },
           inputPath,
         ),
+      resolveActiveModel: () => {
+        const state = this.state;
+        if (!state) {
+          return undefined;
+        }
+        const activeModelName = state.config.activeModel.trim();
+        return state.config.models.find((model) => model.name === activeModelName);
+      },
+      resolveCatalogHints: () => buildModelCatalogHints(this.requireState().config),
+      setContextUsage: (usage) => {
+        bundle.contextUsage = usage;
+      },
     });
     return { assistantMessages, runtimeEvents, conversationSnapshotView };
   }
@@ -2024,6 +2036,7 @@ class DesktopHostService {
           ? { rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })) }
           : {}),
         ...(activeBundle.cachedTodoSnapshot ? { todos: activeBundle.cachedTodoSnapshot } : {}),
+        ...(activeBundle.contextUsage ? { contextUsage: { ...activeBundle.contextUsage } } : {}),
       },
       ...(activeBundle.activeSession ? { activeSession: activeBundle.activeSession } : {}),
       composerSessionKey: this.resolveTodoSessionKeyForBundle(activeBundle),

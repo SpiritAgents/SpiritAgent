@@ -793,6 +793,12 @@ export interface ConversationTodoSnapshot {
   clearingUntilUnixMs?: number;
 }
 
+export interface ConversationContextUsageSnapshot {
+  inputTokens: number;
+  contextLength: number;
+  percent: number;
+}
+
 export interface ConversationSnapshot {
   /** Monotonic per session bundle; bumps on rewind restore so stale poll snapshots are ignored. */
   revision: number;
@@ -808,6 +814,7 @@ export interface ConversationSnapshot {
   isBusy: boolean;
   rewindWarnings?: FileRewindWarning[];
   todos?: ConversationTodoSnapshot;
+  contextUsage?: ConversationContextUsageSnapshot;
 }
 
 export interface ConversationLocalFileAttachmentSnapshot {
