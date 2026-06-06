@@ -515,7 +515,11 @@
     "removeAttachment": "Remove {{name}}",
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
-    "askChipLabel": "Ask"
+    "askChipLabel": "Ask",
+    "placeholderGenerateImage": "Describe the image to generate…",
+    "placeholderGenerateVideo": "Describe the video to generate…",
+    "directMediaImageBadge": "Image",
+    "directMediaVideoBadge": "Video"
   },
   "error": {
     "runtimeBusy": "A response or approval is already being processed. Please wait.",
