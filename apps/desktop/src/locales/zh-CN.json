@@ -525,7 +525,9 @@
     "askChipLabel": "Ask",
     "placeholderGenerateImage": "描述要生成的图片…",
     "placeholderGenerateVideo": "描述要生成的视频…",
-    "contextUsageAria": "上下文已用 {{percent}}%，{{inputTokens}} / {{contextLength}} tokens"
+    "contextUsageAria": "上下文已用 {{percent}}%，{{inputTokens}} / {{contextLength}} tokens",
+    "contextUsageHoverPercent": "{{percent}}% 上下文已用",
+    "contextUsageHoverTokens": "{{input}} / {{total}} tokens"
   },
   "error": {
     "runtimeBusy": "当前已有响应或审批在处理中，请稍候。",
