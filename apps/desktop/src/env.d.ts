@@ -156,13 +156,20 @@ declare global {
       bounds: { x: number; y: number; width: number; height: number };
       visible: boolean;
       url?: string;
+      devtoolsWidthPx?: number;
     }): Promise<void>;
     navigateBrowserPageView(payload: {
       tabId: string;
       action: 'back' | 'forward' | 'reload' | 'load';
       url?: string;
     }): Promise<void>;
-    toggleBrowserPageDevTools(tabId: string): Promise<void>;
+    toggleBrowserPageDevTools(
+      tabId: string,
+    ): Promise<{ open: boolean; widthPx: number } | undefined>;
+    setBrowserPageDevtoolsWidth(
+      tabId: string,
+      widthPx: number,
+    ): Promise<{ open: boolean; widthPx: number } | undefined>;
     executeBrowserPageView(payload: {
       tabId: string;
       kind: 'script' | 'insert-css' | 'remove-css';
@@ -178,11 +185,13 @@ declare global {
     subscribeBrowserPageEvents(
       callback: (event: {
         tabId: string;
-        type: 'url' | 'title' | 'nav-state';
+        type: 'url' | 'title' | 'nav-state' | 'devtools';
         url?: string;
         title?: string;
         canGoBack?: boolean;
         canGoForward?: boolean;
+        open?: boolean;
+        widthPx?: number;
       }) => void,
     ): () => void;
     ingestBrowserElementScreenshot(base64: string): Promise<string | null>;

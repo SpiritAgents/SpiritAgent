@@ -66,6 +66,40 @@ function canUseEmbeddedBrowser(): boolean {
 
 /** 与 workspace-tools-panel 分隔条 w-1（0.25rem）一致 */
 const WORKSPACE_PANEL_HANDLE_PX = 4;
+/** 与 workspace-browser-view DEVTOOLS_SPLITTER_WIDTH_PX 一致 */
+const DEVTOOLS_SPLITTER_WIDTH_PX = 4;
+const DEVTOOLS_MIN_WIDTH_PX = 200;
+const DEFAULT_DEVTOOLS_WIDTH_PX = 320;
+const DEVTOOLS_WIDTH_STORAGE_KEY = "spirit-desktop-browser-devtools-width";
+
+function readStoredDevtoolsWidthPx(): number {
+  try {
+    const raw = localStorage.getItem(DEVTOOLS_WIDTH_STORAGE_KEY);
+    const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+    if (Number.isFinite(parsed) && parsed >= DEVTOOLS_MIN_WIDTH_PX) {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_DEVTOOLS_WIDTH_PX;
+}
+
+function writeStoredDevtoolsWidthPx(widthPx: number): void {
+  try {
+    localStorage.setItem(DEVTOOLS_WIDTH_STORAGE_KEY, String(Math.round(widthPx)));
+  } catch {
+    // ignore
+  }
+}
+
+function clampDevtoolsWidthPx(totalWidth: number, widthPx: number): number {
+  const maxDevtools = Math.max(
+    DEVTOOLS_MIN_WIDTH_PX,
+    totalWidth - DEVTOOLS_MIN_WIDTH_PX - DEVTOOLS_SPLITTER_WIDTH_PX,
+  );
+  return Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.min(maxDevtools, Math.round(widthPx)));
+}
 
 /**
  * 按工具栏 shell 可见宽度计算 BrowserView bounds，使展开/收起与 CSS width 过渡同步。
@@ -226,6 +260,10 @@ export function WorkspaceBrowserTab({
   const [canGoForward, setCanGoForward] = useState(false);
   const [lastVisitedUrl, setLastVisitedUrl] = useState<string | undefined>(undefined);
   const [isPickerActive, setIsPickerActive] = useState(false);
+  const [devtoolsOpen, setDevtoolsOpen] = useState(false);
+  const [devtoolsWidthPx, setDevtoolsWidthPx] = useState(readStoredDevtoolsWidthPx);
+  const [isDevtoolsResizing, setIsDevtoolsResizing] = useState(false);
+  const devtoolsDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const [currentPageUrl, setCurrentPageUrl] = useState<string | undefined>(browserUrl);
   const onElementPickedRef = useRef(onElementPicked);
   useLayoutEffect(() => {
@@ -279,6 +317,12 @@ export function WorkspaceBrowserTab({
       } else if (event.type === "nav-state") {
         setCanGoBack(event.canGoBack ?? false);
         setCanGoForward(event.canGoForward ?? false);
+      } else if (event.type === "devtools") {
+        setDevtoolsOpen(event.open === true);
+        if (typeof event.widthPx === "number" && Number.isFinite(event.widthPx)) {
+          setDevtoolsWidthPx(event.widthPx);
+          writeStoredDevtoolsWidthPx(event.widthPx);
+        }
       }
     });
   }, [browserTabId]);
@@ -309,13 +353,26 @@ export function WorkspaceBrowserTab({
       return;
     }
 
+    const syncedDevtoolsWidth = devtoolsOpen
+      ? clampDevtoolsWidthPx(bounds.width, devtoolsWidthPx)
+      : undefined;
+    if (
+      syncedDevtoolsWidth !== undefined &&
+      syncedDevtoolsWidth !== devtoolsWidthPx
+    ) {
+      setDevtoolsWidthPx(syncedDevtoolsWidth);
+      writeStoredDevtoolsWidthPx(syncedDevtoolsWidth);
+    }
     void bridge.syncBrowserPageView({
       tabId: browserTabId,
       bounds,
       visible: true,
       url: browserUrl,
+      ...(syncedDevtoolsWidth !== undefined
+        ? { devtoolsWidthPx: syncedDevtoolsWidth }
+        : {}),
     });
-  }, [browserTabId, browserUrl, pageEmbeddable]);
+  }, [browserTabId, browserUrl, devtoolsOpen, devtoolsWidthPx, pageEmbeddable]);
 
   useEffect(() => {
     if (!canEmbed || showNewTab) {
@@ -544,6 +601,60 @@ export function WorkspaceBrowserTab({
     });
   }, [browserTabId, showNewTab]);
 
+  const applyDevtoolsWidth = useCallback(
+    (nextWidthPx: number) => {
+      const slot = pageSlotRef.current;
+      const totalWidth = slot ? Math.round(slot.getBoundingClientRect().width) : 0;
+      const clamped =
+        totalWidth > 0
+          ? clampDevtoolsWidthPx(totalWidth, nextWidthPx)
+          : Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.round(nextWidthPx));
+      setDevtoolsWidthPx(clamped);
+      writeStoredDevtoolsWidthPx(clamped);
+      void window.spiritDesktop?.setBrowserPageDevtoolsWidth(browserTabId, clamped);
+    },
+    [browserTabId],
+  );
+
+  const onDevtoolsResizePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDevtoolsResizing(true);
+      devtoolsDragRef.current = { startX: event.clientX, startWidth: devtoolsWidthPx };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [devtoolsWidthPx],
+  );
+
+  const onDevtoolsResizePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const drag = devtoolsDragRef.current;
+      if (!drag) {
+        return;
+      }
+      const delta = drag.startX - event.clientX;
+      applyDevtoolsWidth(drag.startWidth + delta);
+    },
+    [applyDevtoolsWidth],
+  );
+
+  const endDevtoolsResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    setIsDevtoolsResizing(false);
+    devtoolsDragRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // 已释放或无 capture
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!devtoolsOpen) {
+      setIsDevtoolsResizing(false);
+      devtoolsDragRef.current = null;
+    }
+  }, [devtoolsOpen]);
+
   useEffect(() => {
     if (!isActive || showNewTab || !canEmbed) {
       return;
@@ -559,7 +670,14 @@ export function WorkspaceBrowserTab({
         return;
       }
       event.preventDefault();
-      void window.spiritDesktop?.toggleBrowserPageDevTools(browserTabId);
+      void window.spiritDesktop?.toggleBrowserPageDevTools(browserTabId).then((result) => {
+        if (!result) {
+          return;
+        }
+        setDevtoolsOpen(result.open);
+        setDevtoolsWidthPx(result.widthPx);
+        writeStoredDevtoolsWidthPx(result.widthPx);
+      });
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
@@ -650,13 +768,37 @@ export function WorkspaceBrowserTab({
         {showNewTab ? (
           <BrowserNewTabPage onNavigate={onBrowserUrlChange} />
         ) : (
-          <div
-            ref={pageSlotRef}
-            className={cn(
-              "electron-no-drag min-h-0 min-w-0 flex-1 bg-background",
-              isPickerActive && "cursor-crosshair",
-            )}
-          />
+          <div className="relative min-h-0 min-w-0 flex-1">
+            <div
+              ref={pageSlotRef}
+              className={cn(
+                "electron-no-drag absolute inset-0 bg-background",
+                isPickerActive && "cursor-crosshair",
+              )}
+            />
+            {devtoolsOpen ? (
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={t("workspace.browserResizeDevtoolsWidth")}
+                className={cn(
+                  "electron-no-drag group absolute top-0 bottom-0 z-20 w-1 cursor-col-resize touch-none select-none",
+                  "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
+                  isDevtoolsResizing && "cursor-col-resize",
+                )}
+                style={{ right: devtoolsWidthPx }}
+                onPointerDown={onDevtoolsResizePointerDown}
+                onPointerMove={onDevtoolsResizePointerMove}
+                onPointerUp={endDevtoolsResize}
+                onPointerCancel={endDevtoolsResize}
+              >
+                <div
+                  className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+                  aria-hidden
+                />
+              </div>
+            ) : null}
+          </div>
         )}
       </div>
     </div>

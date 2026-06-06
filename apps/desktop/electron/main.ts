@@ -55,6 +55,7 @@ import {
   insertCssInPageView,
   navigatePageView,
   removeInsertedCssInPageView,
+  setPageDevtoolsWidth,
   syncPageView,
   togglePageDevTools,
   type PageViewBounds,
@@ -859,17 +860,22 @@ if (gotSpiritSingleInstanceLock) {
         bounds?: PageViewBounds;
         visible?: boolean;
         url?: string;
+        devtoolsWidthPx?: number;
       },
     ) => {
       const tabId = payload?.tabId;
       if (typeof tabId !== 'string' || !tabId) {
         throw new Error('Invalid browser tab id');
       }
+      const devtoolsWidthPx = payload?.devtoolsWidthPx;
       syncPageView(event.sender, {
         tabId,
         bounds: parsePageViewBounds(payload?.bounds),
         visible: payload?.visible === true,
         url: typeof payload?.url === 'string' ? payload.url : undefined,
+        ...(typeof devtoolsWidthPx === 'number' && Number.isFinite(devtoolsWidthPx)
+          ? { devtoolsWidthPx }
+          : {}),
       });
     },
   );
@@ -900,7 +906,22 @@ if (gotSpiritSingleInstanceLock) {
       if (typeof tabId !== 'string' || !tabId) {
         throw new Error('Invalid browser tab id');
       }
-      togglePageDevTools(event.sender, tabId);
+      return togglePageDevTools(event.sender, tabId);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-page-set-devtools-width',
+    (event: IpcMainInvokeEvent, payload: { tabId?: string; widthPx?: number }) => {
+      const tabId = payload?.tabId;
+      const widthPx = payload?.widthPx;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
+      }
+      if (typeof widthPx !== 'number' || !Number.isFinite(widthPx)) {
+        throw new Error('Invalid DevTools width');
+      }
+      return setPageDevtoolsWidth(event.sender, tabId, widthPx);
     },
   );
 

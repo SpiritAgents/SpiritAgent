@@ -495,6 +495,7 @@
       "pushDisabledUpToDate": "当前分支已与远端同步，无需推送。"
     },
     "resizeToolsWidth": "调整工具区宽度",
+    "browserResizeDevtoolsWidth": "调整 DevTools 宽度",
     "workspaceTools": "工作区工具",
     "toolTabs": "工具分页",
     "closeTab": "关闭{{label}}选项卡",
