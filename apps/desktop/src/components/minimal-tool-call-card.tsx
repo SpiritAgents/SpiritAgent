@@ -13,6 +13,7 @@ import { ToolCallDiffView } from "@/components/tool-call-diff-view";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { resolveToolLineDelta } from "@/lib/edit-file-line-delta";
 import {
   type FileToolDiffSource,
@@ -39,6 +40,27 @@ import { cn } from "@/lib/utils";
 import type { ToolBlockSnapshot } from "@/types";
 
 const summaryClass = "text-xs leading-relaxed text-muted-foreground";
+
+const toolCallDetailScrollAreaClass =
+  "w-full min-w-0 rounded-md border border-border/20 bg-muted/15 pr-2 [&>[data-radix-scroll-area-viewport]]:max-h-96 [&>[data-radix-scroll-area-viewport]]:overscroll-contain";
+
+const toolCallDetailPreClass =
+  "whitespace-pre-wrap break-words p-2 font-mono text-xs leading-relaxed text-muted-foreground";
+
+function ToolCallDetailScrollPre({ children }: { children: string }) {
+  return (
+    <ScrollArea
+      type="hover"
+      scrollHideDelay={450}
+      className={toolCallDetailScrollAreaClass}
+      onWheel={(event) => {
+        event.stopPropagation();
+      }}
+    >
+      <pre className={toolCallDetailPreClass}>{children}</pre>
+    </ScrollArea>
+  );
+}
 
 export type ToolSummaryDetailTone = "default" | "shell-command";
 
@@ -142,17 +164,13 @@ function ResponsesBuiltInToolExpandedBody({
       {input ? (
         <div className="space-y-1">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">Input</p>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/20 bg-muted/15 p-2 font-mono text-xs leading-relaxed text-muted-foreground">
-            {input}
-          </pre>
+          <ToolCallDetailScrollPre>{input}</ToolCallDetailScrollPre>
         </div>
       ) : null}
       {output ? (
         <div className="space-y-1">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">Output</p>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/20 bg-muted/15 p-2 font-mono text-xs leading-relaxed text-muted-foreground">
-            {output}
-          </pre>
+          <ToolCallDetailScrollPre>{output}</ToolCallDetailScrollPre>
         </div>
       ) : shimmerActive ? (
         <p className="text-xs leading-relaxed text-muted-foreground/70 spirit-thinking-shimmer-text">
