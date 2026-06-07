@@ -9,6 +9,7 @@ import { getLlmFetch } from '../llm-fetch.js';
 import type { JsonObject } from '../ports.js';
 import { createAlibabaResponsesAwareFetch } from './alibaba-responses-fetch.js';
 import { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
+import { createGatewayWebSearchAwareFetch } from './gateway-responses-fetch.js';
 import { shouldUseAlibabaResponsesBuiltInTools } from './alibaba-built-in-tools.js';
 import {
   buildResponsesAiSdkTools,
@@ -20,7 +21,7 @@ import {
   shouldUseApplyPatchFunctionTool,
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
-import { buildGatewayWebSearchTool } from './gateway-web-search.js';
+import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
 import {
   openResponsesPostUrl,
@@ -37,6 +38,9 @@ function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof f
   let fetchFn: typeof fetch = getLlmFetch();
   if (shouldUseAlibabaResponsesBuiltInTools(config)) {
     fetchFn = createAlibabaResponsesAwareFetch(config, fetchFn);
+  }
+  if (shouldUseGatewayWebSearch(config)) {
+    fetchFn = createGatewayWebSearchAwareFetch(config, fetchFn);
   }
   if (shouldUseApplyPatchFileTools(config)) {
     fetchFn = createApplyPatchAwareFetch(config, fetchFn);
