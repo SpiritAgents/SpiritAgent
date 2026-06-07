@@ -147,6 +147,7 @@ import {
   shouldTightenAfterPreviousMetaMessage,
 } from "@/lib/message-card-spacing";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
+import { WorkspaceFilePickerDialog } from "@/components/workspace-file-picker-dialog";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useElementBoxHeight } from "@/hooks/use-element-box-height";
@@ -2267,12 +2268,28 @@ export default function App() {
     }
     return bridge.subscribeBrowserOpenUrl(openBrowserUrlInNewTab);
   }, [openBrowserUrlInNewTab]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') {
+        return;
+      }
+      event.preventDefault();
+      setFilePickerOpen(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
   const [composerCursorCodeUnits, setComposerCursorCodeUnits] = useState(0);
   const [slashSelectedIndex, setSlashSelectedIndex] = useState(-1);
   const [fileReferenceSuggestions, setFileReferenceSuggestions] =
     useState<WorkspaceFileReferenceSuggestionsResponse>(null);
   const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
   const [branchCheckoutBlockedByChanges, setBranchCheckoutBlockedByChanges] = useState(false);
   const pendingComposerSendRef = useRef<{
@@ -3600,6 +3617,16 @@ export default function App() {
         )}
         </div>
       </div>
+
+      <WorkspaceFilePickerDialog
+        open={filePickerOpen}
+        onOpenChange={setFilePickerOpen}
+        workspaceRoot={snapshot?.workspaceRoot ?? ''}
+        workspaceBinding={snapshot?.workspaceBinding ?? 'project'}
+        onOpenWorkspaceFile={() => {}}
+        onOpenExternalFile={() => {}}
+        listWorkspaceFileReferenceSuggestions={runtime.listWorkspaceFileReferenceSuggestions}
+      />
 
       <Dialog open={Boolean(pendingQuestions)}>
         <DialogContent className="max-w-4xl p-0" showCloseButton={false}>

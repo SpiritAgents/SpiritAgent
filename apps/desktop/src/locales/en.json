@@ -510,6 +510,12 @@
     "closeTab": "Close {{label}} tab",
     "newToolTab": "New Tool Tab",
     "noOpenTabs": "No open tabs.",
+    "filePickerTitle": "Open File",
+    "filePickerDescription": "Search workspace files or enter an absolute path to open any file.",
+    "filePickerPlaceholder": "Search by file name or path…",
+    "filePickerEmpty": "No matching files",
+    "filePickerOpenAbsolutePath": "Open path: {{path}}",
+    "filePickerAbsolutePathUnavailable": "Opening absolute paths is not available yet",
     "fileReferenceCandidates": "Workspace file reference candidates"
   },
   "composer": {
