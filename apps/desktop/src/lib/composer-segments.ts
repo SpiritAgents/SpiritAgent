@@ -32,8 +32,17 @@ export {
   hasLoopSegment,
   insertLoopSegment,
   isCaretAtLoopRemovalPoint,
+  normalizeCaretForPinnedLoopChip,
   removeLoopSegment,
 } from "@/lib/composer-loop-segments";
+
+export {
+  isCaretAtInlineChipRemovalPoint,
+  normalizeCaretForInlineAttachmentChips,
+  removeInlineChipAtRemovalPoint,
+} from "@/lib/composer-inline-chip-caret";
+
+export { normalizeCaretForComposer } from "@/lib/composer-caret-normalize";
 
 export { makeChipNode } from "@/lib/browser-element-chip-styles";
 export { makeFileChipNode } from "@/lib/workspace-file-chip-styles";
