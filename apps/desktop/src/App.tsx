@@ -124,7 +124,7 @@ import { SettingsView } from "@/components/settings-view";
 import { ComposerTodoCard } from "@/components/composer-todo-card";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
 import { PendingApprovalCard } from "@/components/pending-approval-card";
-import { SubagentViewerBanner } from "@/components/subagent-viewer-banner";
+import { SessionChromeBreadcrumb } from "@/components/session-chrome-breadcrumb";
 import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-context";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import {
@@ -1828,6 +1828,8 @@ function DesktopLayoutChromeBar({
   workspaceToolsOpen = false,
   onToggleWorkspaceTools,
   sessionTitle,
+  subagentPromptText,
+  onExitSubagentViewer,
   onNewSession,
   newSessionBusy = false,
 }: {
@@ -1836,6 +1838,8 @@ function DesktopLayoutChromeBar({
   workspaceToolsOpen?: boolean;
   onToggleWorkspaceTools?: () => void;
   sessionTitle?: string | null;
+  subagentPromptText?: string | null;
+  onExitSubagentViewer?: () => void;
   onNewSession?: () => void;
   newSessionBusy?: boolean;
 }) {
@@ -1893,12 +1897,11 @@ function DesktopLayoutChromeBar({
           </div>
         ) : null}
         {trimmedSessionTitle ? (
-          <span
-            className="min-w-0 max-w-[min(20rem,40vw)] truncate text-xs font-medium text-foreground/90"
-            title={trimmedSessionTitle}
-          >
-            {trimmedSessionTitle}
-          </span>
+          <SessionChromeBreadcrumb
+            sessionTitle={trimmedSessionTitle}
+            subagentPromptText={subagentPromptText}
+            onExitSubagentViewer={onExitSubagentViewer}
+          />
         ) : null}
       </div>
       {showTrailingActions ? (
@@ -3214,6 +3217,16 @@ export default function App() {
                 workspaceToolsOpen={workspaceToolsOpen}
                 onToggleWorkspaceTools={() => setWorkspaceToolsOpen((c) => !c)}
                 sessionTitle={isEmptySession ? null : snapshot?.activeSession?.displayName}
+                subagentPromptText={
+                  subagentViewActive ? snapshot?.subagentViewer?.promptText : null
+                }
+                onExitSubagentViewer={
+                  subagentViewActive
+                    ? () => {
+                        void subagentViewer.close();
+                      }
+                    : undefined
+                }
                 onNewSession={isEmptySession ? undefined : handleNewSession}
                 newSessionBusy={newSessionBusy}
               />
@@ -3242,16 +3255,6 @@ export default function App() {
                     </Button>
                   </div>
                 </div>
-              ) : null}
-              {subagentViewActive && snapshot?.subagentViewer ? (
-                <SubagentViewerBanner
-                  promptText={snapshot.subagentViewer.promptText}
-                  gutterClassName={CONVERSATION_GUTTER_X}
-                  maxWidthClassName={CONVERSATION_MAX_W}
-                  onExit={() => {
-                    void subagentViewer.close();
-                  }}
-                />
               ) : null}
               {rewindDraft ? (
                 <button
