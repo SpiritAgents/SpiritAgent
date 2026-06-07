@@ -798,6 +798,21 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/subagent-viewer-target') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setSubagentViewerTarget', {
+        parentToolCallId:
+          typeof jsonBody?.parentToolCallId === 'string' || jsonBody?.parentToolCallId === null
+            ? jsonBody.parentToolCallId
+            : null,
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/abort') {
     writeJson(request, response, 200, await runHostCommand('abortConversation'));
     return;
