@@ -412,6 +412,7 @@
     "exitDemo": "退出演示",
     "subagentViewerTitle": "子智能体",
     "exitSubagentViewer": "退出",
+    "subagentViewerEmpty": "子智能体尚未产生可见消息。",
     "cancelRewind": "取消回溯编辑",
     "commitMode": "提交方式",
     "commitMessagePlaceholder": "提交信息，为空将自动生成",

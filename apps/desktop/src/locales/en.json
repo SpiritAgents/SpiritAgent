@@ -412,6 +412,7 @@
     "exitDemo": "Exit Demo",
     "subagentViewerTitle": "Subagent",
     "exitSubagentViewer": "Exit",
+    "subagentViewerEmpty": "This subagent has no visible messages yet.",
     "cancelRewind": "Cancel Rewind Edit",
     "commitMode": "Commit Mode",
     "commitMessagePlaceholder": "Commit message; will be auto-generated if left empty",
