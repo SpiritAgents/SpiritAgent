@@ -71,6 +71,21 @@ test('spirit-win-uia snapshot requires target window', async (t) => {
   assert.equal(snapshot.error.code, 'process_name or window_title is required.');
 });
 
+test('spirit-win-uia action rejects unknown ref', async (t) => {
+  if (process.platform !== 'win32') {
+    t.skip('Windows only');
+    return;
+  }
+
+  const { lines } = await sendHelperCommands([
+    { cmd: 'action', ref: 'wdeadbeefn1', action: 'invoke' },
+    { cmd: 'shutdown' },
+  ]);
+  const action = JSON.parse(lines[0]);
+  assert.equal(action.ok, false);
+  assert.equal(action.error.code, 'ref_not_found');
+});
+
 test('spirit-win-uia list_windows returns array', async (t) => {
   if (process.platform !== 'win32') {
     t.skip('Windows only');

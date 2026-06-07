@@ -13,6 +13,7 @@ internal sealed class CommandHandler
             "ping" => JsonProtocol.Ok(new { pong = true }),
             "list_windows" => HandleListWindows(),
             "snapshot" => HandleSnapshot(root),
+            "action" => HandleAction(root),
             "shutdown" => JsonProtocol.Ok(),
             _ => JsonProtocol.Error("unknown_cmd", $"Unknown cmd: {cmd}"),
         };
@@ -54,6 +55,20 @@ internal sealed class CommandHandler
 
         var text = value.GetString();
         return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    private object HandleAction(JsonElement root)
+    {
+        var refId = ReadOptionalString(root, "ref");
+        var action = ReadOptionalString(root, "action");
+        if (string.IsNullOrWhiteSpace(refId) || string.IsNullOrWhiteSpace(action))
+        {
+            return JsonProtocol.Error("invalid_request", "ref and action are required.");
+        }
+
+        var text = ReadOptionalString(root, "text");
+        var invokeTimeoutMs = ReadOptionalInt(root, "invoke_timeout_ms", 30_000, 1_000, 120_000);
+        return UiActions.Execute(_registry, refId, action, text, invokeTimeoutMs);
     }
 
     private static int ReadOptionalInt(JsonElement root, string name, int defaultValue, int min, int max)
