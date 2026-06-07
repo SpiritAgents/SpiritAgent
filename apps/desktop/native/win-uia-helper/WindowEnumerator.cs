@@ -44,7 +44,7 @@ internal static class WindowEnumerator
             .ToList();
     }
 
-    private static string ResolveProcessName(int hwnd)
+    public static string ResolveProcessName(int hwnd)
     {
         try
         {

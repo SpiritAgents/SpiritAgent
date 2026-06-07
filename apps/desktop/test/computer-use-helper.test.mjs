@@ -59,6 +59,18 @@ test('spirit-win-uia ping returns pong', async (t) => {
   assert.equal(ping.data.pong, true);
 });
 
+test('spirit-win-uia snapshot requires target window', async (t) => {
+  if (process.platform !== 'win32') {
+    t.skip('Windows only');
+    return;
+  }
+
+  const { lines } = await sendHelperCommands([{ cmd: 'snapshot' }, { cmd: 'shutdown' }]);
+  const snapshot = JSON.parse(lines[0]);
+  assert.equal(snapshot.ok, false);
+  assert.equal(snapshot.error.code, 'process_name or window_title is required.');
+});
+
 test('spirit-win-uia list_windows returns array', async (t) => {
   if (process.platform !== 'win32') {
     t.skip('Windows only');

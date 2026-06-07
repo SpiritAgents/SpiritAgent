@@ -4,12 +4,15 @@ namespace Spirit.WinUia;
 
 internal sealed class CommandHandler
 {
+    private readonly RefRegistry _registry = new();
+
     public object Handle(string cmd, JsonElement root)
     {
         return cmd switch
         {
             "ping" => JsonProtocol.Ok(new { pong = true }),
             "list_windows" => HandleListWindows(),
+            "snapshot" => HandleSnapshot(root),
             "shutdown" => JsonProtocol.Ok(),
             _ => JsonProtocol.Error("unknown_cmd", $"Unknown cmd: {cmd}"),
         };
@@ -28,5 +31,39 @@ internal sealed class CommandHandler
             .ToList();
 
         return JsonProtocol.Ok(new { windows });
+    }
+
+    private object HandleSnapshot(JsonElement root)
+    {
+        var processName = ReadOptionalString(root, "process_name");
+        var windowTitle = ReadOptionalString(root, "window_title");
+        var maxDepth = ReadOptionalInt(root, "max_depth", 8, 1, 32);
+        var maxNodes = ReadOptionalInt(root, "max_nodes", 400, 1, 5000);
+
+        return UiSnapshot.Capture(
+            new UiSnapshot.SnapshotRequest(processName, windowTitle, maxDepth, maxNodes),
+            _registry);
+    }
+
+    private static string? ReadOptionalString(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var text = value.GetString();
+        return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    private static int ReadOptionalInt(JsonElement root, string name, int defaultValue, int min, int max)
+    {
+        if (!root.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Number)
+        {
+            return defaultValue;
+        }
+
+        var parsed = value.GetInt32();
+        return Math.Clamp(parsed, min, max);
     }
 }
