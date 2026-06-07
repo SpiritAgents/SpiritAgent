@@ -35,6 +35,7 @@ import type {
   UpdateConfigRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
+  WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
 } from '../types.js';
 
@@ -96,6 +97,9 @@ export type CommandPayloads = {
   listWorkspaceExplorerChildren: { relativePath: string };
   readWorkspaceTextFile: { relativePath: string };
   writeWorkspaceTextFile: { request: WriteWorkspaceTextFileRequest };
+  readHostTextFile: { absolutePath: string };
+  writeHostTextFile: { request: WriteHostTextFileRequest };
+  statHostTextFile: { absolutePath: string };
   rewindAndSubmitMessage: { request: RewindAndSubmitMessageRequest };
   setSubagentViewerTarget: { parentToolCallId: string | null };
 };

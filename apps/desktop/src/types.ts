@@ -571,6 +571,16 @@ export interface WriteWorkspaceTextFileRequest {
   text: string;
 }
 
+export interface HostTextFileStatResult {
+  exists: boolean;
+  isFile: boolean;
+}
+
+export interface WriteHostTextFileRequest {
+  absolutePath: string;
+  text: string;
+}
+
 export interface DesktopSnapshot {
   workspaceRoot: string;
   /** 用户主目录；侧栏划分「无工作区」会话与项目工作区会话时使用。 */

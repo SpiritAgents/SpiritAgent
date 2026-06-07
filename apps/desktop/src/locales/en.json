@@ -515,7 +515,7 @@
     "filePickerPlaceholder": "Search by file name or path…",
     "filePickerEmpty": "No matching files",
     "filePickerOpenAbsolutePath": "Open path: {{path}}",
-    "filePickerAbsolutePathUnavailable": "Opening absolute paths is not available yet",
+    "filePickerAbsolutePathNotFound": "No file exists at that path",
     "fileReferenceCandidates": "Workspace file reference candidates"
   },
   "composer": {

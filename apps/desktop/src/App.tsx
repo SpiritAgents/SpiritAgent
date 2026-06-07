@@ -3601,6 +3601,8 @@ export default function App() {
               listExplorerChildren={runtime.listWorkspaceExplorerChildren}
               readWorkspaceTextFile={runtime.readWorkspaceTextFile}
               writeWorkspaceTextFile={runtime.writeWorkspaceTextFile}
+              readHostTextFile={runtime.readHostTextFile}
+              writeHostTextFile={runtime.writeHostTextFile}
               readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
               plan={snapshot?.plan ?? { path: "", exists: false }}
               onStartImplementing={() => {
@@ -3650,7 +3652,14 @@ export default function App() {
             viewMode: isMarkdownPath(relativePath) ? "preview" : "edit",
           });
         }}
-        onOpenExternalFile={() => {}}
+        onOpenExternalFile={(absolutePath) => {
+          openEditorFile({
+            scope: "external",
+            absolutePath,
+            viewMode: isMarkdownPath(absolutePath) ? "preview" : "edit",
+          });
+        }}
+        statHostTextFile={runtime.statHostTextFile}
         listWorkspaceFileReferenceSuggestions={runtime.listWorkspaceFileReferenceSuggestions}
       />
 

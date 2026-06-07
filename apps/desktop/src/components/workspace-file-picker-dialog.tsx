@@ -32,6 +32,7 @@ type WorkspaceFilePickerDialogProps = {
     input: string
     cursorChars: number
   }): Promise<{ suggestions: string[] } | null | undefined>
+  statHostTextFile(absolutePath: string): Promise<{ exists: boolean; isFile: boolean }>
 }
 
 export function WorkspaceFilePickerDialog({
@@ -42,16 +43,20 @@ export function WorkspaceFilePickerDialog({
   onOpenWorkspaceFile,
   onOpenExternalFile,
   listWorkspaceFileReferenceSuggestions,
+  statHostTextFile,
 }: WorkspaceFilePickerDialogProps) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [absolutePathExists, setAbsolutePathExists] = useState<boolean | null>(null)
   const requestIdRef = useRef(0)
+  const absoluteStatRequestIdRef = useRef(0)
 
   useEffect(() => {
     if (!open) {
       setQuery('')
       setSuggestions([])
+      setAbsolutePathExists(null)
       return
     }
   }, [open])
@@ -108,6 +113,33 @@ export function WorkspaceFilePickerDialog({
     ? normalizeAbsolutePathInput(trimmedQuery)
     : null
 
+  useEffect(() => {
+    if (!open || !absolutePathCandidate) {
+      setAbsolutePathExists(null)
+      return
+    }
+
+    const requestId = absoluteStatRequestIdRef.current + 1
+    absoluteStatRequestIdRef.current = requestId
+    const timeout = window.setTimeout(() => {
+      void statHostTextFile(absolutePathCandidate)
+        .then((result) => {
+          if (absoluteStatRequestIdRef.current !== requestId) {
+            return
+          }
+          setAbsolutePathExists(result.exists && result.isFile)
+        })
+        .catch(() => {
+          if (absoluteStatRequestIdRef.current !== requestId) {
+            return
+          }
+          setAbsolutePathExists(false)
+        })
+    }, FILE_PICKER_SEARCH_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeout)
+  }, [absolutePathCandidate, open, statHostTextFile])
+
   const closeAndOpenWorkspaceFile = (relativePath: string) => {
     onOpenChange(false)
     onOpenWorkspaceFile(relativePath)
@@ -119,7 +151,8 @@ export function WorkspaceFilePickerDialog({
   }
 
   const showEmpty =
-    suggestions.length === 0 && !absolutePathCandidate
+    suggestions.length === 0
+    && (!absolutePathCandidate || absolutePathExists === false)
 
   return (
     <CommandDialog
@@ -137,7 +170,7 @@ export function WorkspaceFilePickerDialog({
       >
         <CommandInput placeholder={t('workspace.filePickerPlaceholder')} />
         <CommandList>
-          {absolutePathCandidate ? (
+          {absolutePathCandidate && absolutePathExists !== false ? (
             <CommandItem
               key={`absolute:${absolutePathCandidate}`}
               value={`absolute:${absolutePathCandidate}`}
@@ -167,7 +200,11 @@ export function WorkspaceFilePickerDialog({
             </CommandItem>
           ))}
           {showEmpty ? (
-            <CommandEmpty>{t('workspace.filePickerEmpty')}</CommandEmpty>
+            <CommandEmpty>
+              {absolutePathCandidate && absolutePathExists === false
+                ? t('workspace.filePickerAbsolutePathNotFound')
+                : t('workspace.filePickerEmpty')}
+            </CommandEmpty>
           ) : null}
         </CommandList>
       </Command>

@@ -63,6 +63,9 @@ export interface HostCommandDelegate {
   readGitHistory(request: NonNullable<CommandPayloads['readGitHistory']['request']>): Promise<unknown>;
   readWorkspaceTextFile(relativePath: string): Promise<unknown>;
   writeWorkspaceTextFile(request: CommandPayloads['writeWorkspaceTextFile']['request']): Promise<unknown>;
+  readHostTextFile(absolutePath: string): Promise<unknown>;
+  writeHostTextFile(request: CommandPayloads['writeHostTextFile']['request']): Promise<unknown>;
+  statHostTextFile(absolutePath: string): Promise<unknown>;
   rewindAndSubmitMessage(request: CommandPayloads['rewindAndSubmitMessage']['request']): Promise<unknown>;
   setSubagentViewerTarget(parentToolCallId: string | null): Promise<unknown>;
 }
@@ -131,6 +134,9 @@ const hostCommandDispatch = {
   readGitHistory: (host, payload) => host.readGitHistory(payload.request ?? {}),
   readWorkspaceTextFile: (host, payload) => host.readWorkspaceTextFile(payload.relativePath),
   writeWorkspaceTextFile: (host, payload) => host.writeWorkspaceTextFile(payload.request),
+  readHostTextFile: (host, payload) => host.readHostTextFile(payload.absolutePath),
+  writeHostTextFile: (host, payload) => host.writeHostTextFile(payload.request),
+  statHostTextFile: (host, payload) => host.statHostTextFile(payload.absolutePath),
   rewindAndSubmitMessage: (host, payload) => host.rewindAndSubmitMessage(payload.request),
   setSubagentViewerTarget: (host, payload) => host.setSubagentViewerTarget(payload.parentToolCallId),
 } satisfies { [Command in HostCommandName]: HostCommandHandler<Command> };

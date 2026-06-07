@@ -33,7 +33,9 @@ import type {
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
+  HostTextFileStatResult,
   WorkspaceReadTextFileResult,
+  WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
   SubmitCreateSkillSlashRequest,
   SubmitSkillSlashRequest,
@@ -231,6 +233,15 @@ export function createWebHostApi(): HostApi {
     },
     writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest) {
       return post<void>(baseUrl, '/api/workspace/file/write', request);
+    },
+    readHostTextFile(absolutePath: string) {
+      return post<WorkspaceReadTextFileResult>(baseUrl, '/api/host/file', { absolutePath });
+    },
+    writeHostTextFile(request: WriteHostTextFileRequest) {
+      return post<void>(baseUrl, '/api/host/file/write', request);
+    },
+    statHostTextFile(absolutePath: string) {
+      return post<HostTextFileStatResult>(baseUrl, '/api/host/file/stat', { absolutePath });
     },
     async readLocalImagePreviewDataUrl() {
       return null;

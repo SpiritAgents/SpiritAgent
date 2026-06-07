@@ -68,6 +68,9 @@ export type HostCommandName =
   | 'listWorkspaceExplorerChildren'
   | 'readWorkspaceTextFile'
   | 'writeWorkspaceTextFile'
+  | 'readHostTextFile'
+  | 'writeHostTextFile'
+  | 'statHostTextFile'
   | 'rewindAndSubmitMessage'
   | 'setSubagentViewerTarget';
 

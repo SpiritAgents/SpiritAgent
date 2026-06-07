@@ -924,6 +924,46 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/host/file') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('readHostTextFile', {
+        absolutePath: typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/host/file/write') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('writeHostTextFile', {
+        request: {
+          absolutePath:
+            typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+          text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/host/file/stat') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('statHostTextFile', {
+        absolutePath: typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+      }),
+    );
+    return;
+  }
+
   writeJson(request, response, 404, { error: `Unknown route: ${request.method} ${pathname}` });
 }
 
