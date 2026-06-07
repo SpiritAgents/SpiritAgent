@@ -40,11 +40,13 @@ import {
   insertSegmentAtCaret,
   isAgentModeChipKind,
   isCaretAtAgentModeRemovalPoint,
+  isCaretAtInlineChipRemovalPoint,
   isCaretAtLoopRemovalPoint,
   isComposerPlainEmpty,
   mergeAdjacentTextSegments,
-  normalizeCaretForPinnedAgentModeChip,
+  normalizeCaretForComposer,
   normalizeComposerPlain,
+  removeInlineChipAtRemovalPoint,
   removeAgentModeSegment,
   removeLoopSegment,
   renderSegmentsToElement,
@@ -317,7 +319,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         const merged = applyComposerPolicy(next);
         let resolvedCaret = caret ?? null;
         if (shouldPinAgentModeChip(chipPolicy()) && hasAgentModeSegment(merged)) {
-          resolvedCaret = normalizeCaretForPinnedAgentModeChip(merged, resolvedCaret);
+          resolvedCaret = normalizeCaretForComposer(merged, resolvedCaret);
         }
         segmentsRef.current = merged;
         pendingCaretRef.current = resolvedCaret;
@@ -554,7 +556,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       if (skipRenderRef.current) {
         skipRenderRef.current = false;
         if (pendingCaretRef.current) {
-          const caret = normalizeCaretForPinnedAgentModeChip(segments, pendingCaretRef.current);
+          const caret = normalizeCaretForComposer(segments, pendingCaretRef.current);
           caretToDomRange(div, segments, caret);
           pendingCaretRef.current = null;
         }
@@ -564,7 +566,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
       if (segmentsEqual(domSegs, segments)) {
         if (pendingCaretRef.current) {
-          const caret = normalizeCaretForPinnedAgentModeChip(segments, pendingCaretRef.current);
+          const caret = normalizeCaretForComposer(segments, pendingCaretRef.current);
           caretToDomRange(div, segments, caret);
           pendingCaretRef.current = null;
           reportSelectionChange();
@@ -578,7 +580,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         askLabel: askChipLabel,
       });
       if (pendingCaretRef.current) {
-        const caret = normalizeCaretForPinnedAgentModeChip(segments, pendingCaretRef.current);
+        const caret = normalizeCaretForComposer(segments, pendingCaretRef.current);
         caretToDomRange(div, segments, caret);
         pendingCaretRef.current = null;
         reportSelectionChange();
@@ -587,7 +589,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         hasAgentModeSegment(segments) &&
         isComposerPlainEmpty(segmentsToPlainText(segments))
       ) {
-        const caret = normalizeCaretForPinnedAgentModeChip(segments, selectionToCaret(div, segments));
+        const caret = normalizeCaretForComposer(segments, selectionToCaret(div, segments));
         caretToDomRange(div, segments, caret);
         reportSelectionChange();
       }
@@ -668,7 +670,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         next = removeAgentModeSegment(next);
       }
       if (!segmentsEqual(next, current)) {
-        const nextCaret = normalizeCaretForPinnedAgentModeChip(next, caretAtEnd(next));
+        const nextCaret = normalizeCaretForComposer(next, caretAtEnd(next));
         // 勿设 skipRenderRef：DOM 仍为旧正文时跳过 render 会导致斜杠替换只留在 React state、界面仍显示 "/"。
         commitSegments(next, nextCaret, {
           notifyParent: false,
@@ -718,7 +720,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
           return;
         }
         skipRenderRef.current = false;
-        pendingCaretRef.current = normalizeCaretForPinnedAgentModeChip(
+        pendingCaretRef.current = normalizeCaretForComposer(
           shell,
           selectionToCaret(div, shell),
         );
@@ -744,9 +746,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         }
       }
 
-      if (shouldPinAgentModeChip(policy) && hasAgentModeSegment(next)) {
-        caret = normalizeCaretForPinnedAgentModeChip(next, caret);
-      }
+      caret = normalizeCaretForComposer(next, caret);
 
       skipRenderRef.current = true;
       pendingCaretRef.current = caret;
@@ -787,12 +787,37 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       syncFromDom();
     }, [syncFromDom]);
 
+    const restoreNormalizedCaret = useCallback(() => {
+      const div = divRef.current;
+      if (!div) {
+        return;
+      }
+      const raw = selectionToCaret(div, segmentsRef.current);
+      if (!raw) {
+        return;
+      }
+      const caret = normalizeCaretForComposer(segmentsRef.current, raw);
+      if (
+        caret.segmentIndex === raw.segmentIndex &&
+        caret.offset === raw.offset
+      ) {
+        return;
+      }
+      pendingCaretRef.current = caret;
+      skipRenderRef.current = true;
+      caretToDomRange(div, segmentsRef.current, caret);
+      reportSelectionChange();
+    }, [reportSelectionChange]);
+
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
         if (e.key === "Backspace" && !e.defaultPrevented) {
           const div = divRef.current;
           if (div) {
-            const caret = selectionToCaret(div, segmentsRef.current);
+            const rawCaret = selectionToCaret(div, segmentsRef.current);
+            const caret = rawCaret
+              ? normalizeCaretForComposer(segmentsRef.current, rawCaret)
+              : null;
             if (caret && isCaretAtLoopRemovalPoint(segmentsRef.current, caret)) {
               e.preventDefault();
               removeLoopChip();
@@ -803,20 +828,35 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
               removeAgentModeChip();
               return;
             }
+            if (caret && isCaretAtInlineChipRemovalPoint(segmentsRef.current, caret)) {
+              const removed = removeInlineChipAtRemovalPoint(segmentsRef.current, caret);
+              if (removed) {
+                e.preventDefault();
+                commitSegments(removed.segments, removed.caret);
+                return;
+              }
+            }
           }
         }
         onKeyDown?.(e);
       },
-      [onKeyDown, removeLoopChip, removeAgentModeChip],
+      [commitSegments, onKeyDown, removeLoopChip, removeAgentModeChip],
     );
 
     const handleKeyUp = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
-        if ((e.key === "Backspace" || e.key === "Delete") && !e.defaultPrevented) {
+        if (
+          (e.key === "Backspace" || e.key === "Delete") &&
+          !e.defaultPrevented
+        ) {
           syncFromDom();
+          return;
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          restoreNormalizedCaret();
         }
       },
-      [syncFromDom],
+      [restoreNormalizedCaret, syncFromDom],
     );
 
     const handleCopy = useCallback((e: ClipboardEvent<HTMLDivElement>) => {

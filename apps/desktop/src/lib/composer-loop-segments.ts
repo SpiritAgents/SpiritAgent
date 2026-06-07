@@ -65,6 +65,27 @@ export function caretAfterLoopChip(segs: RichSegment[]): SegmentCaret {
   return { segmentIndex: 1, offset: 0 };
 }
 
+/** DOM/selection often reports segment 0 on the chip; snap to the typed position after it. */
+export function normalizeCaretForPinnedLoopChip(
+  segs: RichSegment[],
+  caret: SegmentCaret | null,
+): SegmentCaret {
+  if (!hasLoopSegment(segs)) {
+    return caret ?? { segmentIndex: 0, offset: 0 };
+  }
+  if (!caret) {
+    return caretAfterLoopChip(segs);
+  }
+  const merged = mergeAdjacentTextSegments(segs);
+  if (merged[0]?.kind !== "loop") {
+    return caret;
+  }
+  if (caret.segmentIndex <= 0) {
+    return caretAfterLoopChip(merged);
+  }
+  return caret;
+}
+
 /** True when caret is immediately after the pinned loop chip (Backspace removes loop). */
 export function isCaretAtLoopRemovalPoint(
   segs: RichSegment[],

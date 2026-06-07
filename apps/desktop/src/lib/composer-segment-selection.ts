@@ -447,11 +447,8 @@ export function caretToDomRange(
     }
 
     if (segIdx === index && caret.offset === 0) {
-      if (currentSeg.kind === "plan" || currentSeg.kind === "ask") {
-        range.setStartAfter(node);
-      } else {
-        range.setStartBefore(node);
-      }
+      // Caret on a chip segment means "after chip" for typing (Ask/Plan fix generalized).
+      range.setStartAfter(node);
       range.collapse(true);
       placed = true;
       break;

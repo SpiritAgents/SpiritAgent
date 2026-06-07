@@ -22,8 +22,16 @@ import {
   ensureLoopPinned,
   hasLoopSegment,
   insertLoopSegment,
+  isCaretAtLoopRemovalPoint,
+  normalizeCaretForPinnedLoopChip,
   removeLoopSegment,
 } from "../src/lib/composer-loop-segments.ts";
+import {
+  isCaretAtInlineChipRemovalPoint,
+  normalizeCaretForInlineAttachmentChips,
+  removeInlineChipAtRemovalPoint,
+} from "../src/lib/composer-inline-chip-caret.ts";
+import { normalizeCaretForComposer } from "../src/lib/composer-caret-normalize.ts";
 import {
   currentAgentModeSegment,
   ensureAgentModePinned,
@@ -442,6 +450,60 @@ test("synchronizeTextFromDom keeps shell chips and adopts dom text", () => {
   const merged = synchronizeTextFromDom(shell, dom);
   assert.equal(merged[0]?.kind, "ask");
   assert.equal(merged[1]?.kind === "text" && merged[1].value, "hello");
+});
+
+test("normalizeCaretForPinnedLoopChip snaps caret before loop to after chip", () => {
+  const segs = [{ kind: "loop" }, { kind: "text", value: " " }];
+  const snapped = normalizeCaretForPinnedLoopChip(segs, { segmentIndex: 0, offset: 0 });
+  assert.equal(snapped.segmentIndex, 1);
+  assert.equal(snapped.offset, 1);
+  assert.equal(
+    isCaretAtLoopRemovalPoint(segs, snapped),
+    false,
+  );
+  assert.equal(
+    isCaretAtLoopRemovalPoint(segs, { segmentIndex: 1, offset: 0 }),
+    true,
+  );
+});
+
+test("normalizeCaretForInlineAttachmentChips snaps caret on file chip", () => {
+  const segs = [
+    { kind: "workspaceFile", path: "src/App.tsx" },
+    { kind: "text", value: " tail" },
+  ];
+  const snapped = normalizeCaretForInlineAttachmentChips(segs, {
+    segmentIndex: 0,
+    offset: 0,
+  });
+  assert.equal(snapped.segmentIndex, 1);
+  assert.equal(snapped.offset, 0);
+});
+
+test("isCaretAtInlineChipRemovalPoint and removeInlineChipAtRemovalPoint", () => {
+  const segs = [
+    { kind: "text", value: "see " },
+    { kind: "workspaceFile", path: "src/foo.ts" },
+    { kind: "text", value: " please" },
+  ];
+  const caret = { segmentIndex: 2, offset: 0 };
+  assert.equal(isCaretAtInlineChipRemovalPoint(segs, caret), true);
+  const removed = removeInlineChipAtRemovalPoint(segs, caret);
+  assert.deepEqual(removed?.segments, [
+    { kind: "text", value: "see " },
+    { kind: "text", value: " please" },
+  ]);
+});
+
+test("normalizeCaretForComposer chains loop and inline chip fixes", () => {
+  const segs = [
+    { kind: "loop" },
+    { kind: "workspaceFile", path: "a.ts" },
+    { kind: "text", value: " " },
+  ];
+  const snapped = normalizeCaretForComposer(segs, { segmentIndex: 1, offset: 0 });
+  assert.equal(snapped.segmentIndex, 2);
+  assert.equal(snapped.offset, 1);
 });
 
 test("domParsedMissingRequiredAgentChip when shell has ask but dom lost it", () => {
