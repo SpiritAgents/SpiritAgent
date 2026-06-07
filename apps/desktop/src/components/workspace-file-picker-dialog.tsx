@@ -1,12 +1,25 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { FolderOpen } from 'lucide-react'
+
+import { WorkspaceFilePickerRow } from '@/components/workspace-file-picker-row'
 import {
   Command,
   CommandDialog,
   CommandEmpty,
   CommandInput,
+  CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import {
+  looksLikeAbsolutePath,
+  normalizeAbsolutePathInput,
+} from '@/lib/file-picker-path'
+import { instantHoverMotionClass } from '@/lib/desktop-chrome'
+import { cn } from '@/lib/utils'
+
+const FILE_PICKER_SEARCH_DEBOUNCE_MS = 90
 
 type WorkspaceFilePickerDialogProps = {
   open: boolean
@@ -24,8 +37,89 @@ type WorkspaceFilePickerDialogProps = {
 export function WorkspaceFilePickerDialog({
   open,
   onOpenChange,
+  workspaceRoot,
+  workspaceBinding,
+  onOpenWorkspaceFile,
+  onOpenExternalFile,
+  listWorkspaceFileReferenceSuggestions,
 }: WorkspaceFilePickerDialogProps) {
   const { t } = useTranslation()
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const requestIdRef = useRef(0)
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+      setSuggestions([])
+      return
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const trimmed = query.trim()
+    const workspaceSearchEnabled =
+      workspaceBinding === 'project' && workspaceRoot.trim().length > 0
+
+    if (!workspaceSearchEnabled) {
+      setSuggestions([])
+      return
+    }
+
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    const syntheticInput = trimmed ? `@${trimmed}` : '@'
+    const cursorChars = trimmed.length + 1
+
+    const timeout = window.setTimeout(() => {
+      void listWorkspaceFileReferenceSuggestions({
+        input: syntheticInput,
+        cursorChars,
+      })
+        .then((result) => {
+          if (requestIdRef.current !== requestId) {
+            return
+          }
+          setSuggestions(result?.suggestions ?? [])
+        })
+        .catch(() => {
+          if (requestIdRef.current !== requestId) {
+            return
+          }
+          setSuggestions([])
+        })
+    }, FILE_PICKER_SEARCH_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeout)
+  }, [
+    listWorkspaceFileReferenceSuggestions,
+    open,
+    query,
+    workspaceBinding,
+    workspaceRoot,
+  ])
+
+  const trimmedQuery = query.trim()
+  const absolutePathCandidate = looksLikeAbsolutePath(trimmedQuery)
+    ? normalizeAbsolutePathInput(trimmedQuery)
+    : null
+
+  const closeAndOpenWorkspaceFile = (relativePath: string) => {
+    onOpenChange(false)
+    onOpenWorkspaceFile(relativePath)
+  }
+
+  const closeAndOpenExternalFile = (absolutePath: string) => {
+    onOpenChange(false)
+    onOpenExternalFile(absolutePath)
+  }
+
+  const showEmpty =
+    suggestions.length === 0 && !absolutePathCandidate
 
   return (
     <CommandDialog
@@ -35,10 +129,46 @@ export function WorkspaceFilePickerDialog({
       description={t('workspace.filePickerDescription')}
       className="max-w-2xl"
     >
-      <Command shouldFilter={false} aria-label={t('workspace.filePickerTitle')}>
+      <Command
+        shouldFilter={false}
+        value={query}
+        onValueChange={setQuery}
+        aria-label={t('workspace.filePickerTitle')}
+      >
         <CommandInput placeholder={t('workspace.filePickerPlaceholder')} />
         <CommandList>
-          <CommandEmpty>{t('workspace.filePickerEmpty')}</CommandEmpty>
+          {absolutePathCandidate ? (
+            <CommandItem
+              key={`absolute:${absolutePathCandidate}`}
+              value={`absolute:${absolutePathCandidate}`}
+              className={cn(
+                'min-w-0 cursor-pointer [&>svg:last-child]:hidden',
+                instantHoverMotionClass,
+              )}
+              onSelect={() => closeAndOpenExternalFile(absolutePathCandidate)}
+            >
+              <FolderOpen className="size-3.5 shrink-0 text-muted-foreground/75" aria-hidden />
+              <span className="min-w-0 truncate text-sm text-popover-foreground">
+                {t('workspace.filePickerOpenAbsolutePath', { path: absolutePathCandidate })}
+              </span>
+            </CommandItem>
+          ) : null}
+          {suggestions.map((path) => (
+            <CommandItem
+              key={path}
+              value={path}
+              className={cn(
+                'min-w-0 cursor-pointer [&>svg:last-child]:hidden',
+                instantHoverMotionClass,
+              )}
+              onSelect={() => closeAndOpenWorkspaceFile(path)}
+            >
+              <WorkspaceFilePickerRow path={path} />
+            </CommandItem>
+          ))}
+          {showEmpty ? (
+            <CommandEmpty>{t('workspace.filePickerEmpty')}</CommandEmpty>
+          ) : null}
         </CommandList>
       </Command>
     </CommandDialog>
