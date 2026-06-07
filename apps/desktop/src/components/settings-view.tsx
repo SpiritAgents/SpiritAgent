@@ -268,7 +268,6 @@ function connectTransportOptionsForProvider(provider: DesktopModelProvider): Con
         connectTransportOptionCatalog.messagesApi,
         connectTransportOptionCatalog.openResponsesApi,
       ];
-    case "vercel-ai-gateway":
     case "openrouter":
     case "custom":
       return [
@@ -287,6 +286,10 @@ function connectTransportOptionsForProvider(provider: DesktopModelProvider): Con
 }
 
 function defaultConnectTransportKind(provider: DesktopModelProvider): DesktopTransportKind {
+  if (provider === "vercel-ai-gateway") {
+    return "open-responses";
+  }
+
   return connectTransportOptionsForProvider(provider)[0]?.value ?? "openai-compatible";
 }
 
@@ -300,10 +303,30 @@ function providerSupportsConnectTransportPicker(
     provider === "deepseek" ||
     provider === "alibaba" ||
     provider === "custom" ||
-    provider === "vercel-ai-gateway" ||
     provider === "openrouter" ||
     provider === "volcengine"
   );
+}
+
+function providerShowsConnectTransportPicker(provider: DesktopModelProvider | null): boolean {
+  return provider !== null
+    && provider !== "vercel-ai-gateway"
+    && providerSupportsConnectTransportPicker(provider);
+}
+
+function resolveConnectTransportKindForProvider(
+  provider: DesktopModelProvider | null,
+  connectTransportKind: DesktopTransportKind,
+): DesktopTransportKind | undefined {
+  if (provider === "vercel-ai-gateway") {
+    return "open-responses";
+  }
+
+  if (provider === null || !providerSupportsConnectTransportPicker(provider)) {
+    return undefined;
+  }
+
+  return connectTransportKind;
 }
 
 function connectTransportOptionSummary(
@@ -312,10 +335,6 @@ function connectTransportOptionSummary(
 ): string {
   if (option.value === "open-responses" && provider === "xai") {
     return i18n.t('settings.transportXaiResponses');
-  }
-
-  if (option.value === "open-responses" && provider === "vercel-ai-gateway") {
-    return i18n.t('settings.transportVercelAiGateway');
   }
 
   if (option.value === "open-responses" && provider === "alibaba") {
@@ -2410,13 +2429,22 @@ function ModelsSettingsPanel({
     openModelDefaultsDialog(model);
   };
 
+  const connectTransportKindForRequest = resolveConnectTransportKindForProvider(
+    selectedProvider,
+    connectTransportKind,
+  );
+
   const effectiveApiBase =
     selectedProvider === null
       ? ""
       : selectedProvider === "custom"
         ? resolveCustomConnectApiBase(connectTransportKind, connectApiBase)
-        : providerSupportsConnectTransportPicker(selectedProvider)
-          ? resolveProviderConnectApiBase(selectedProvider, connectTransportKind, connectApiBase)
+        : connectTransportKindForRequest !== undefined
+          ? resolveProviderConnectApiBase(
+              selectedProvider,
+              connectTransportKindForRequest,
+              connectApiBase,
+            )
           : resolveConnectApiBase(selectedProvider, connectApiBase);
 
   const syncCatalogFromUpstream = async (forceRefresh: boolean) => {
@@ -2430,8 +2458,8 @@ function ModelsSettingsPanel({
       apiBase: effectiveApiBase,
       apiKey: connectApiKey,
       provider: selectedProvider,
-      ...(providerSupportsConnectTransportPicker(selectedProvider)
-        ? { transportKind: connectTransportKind }
+      ...(connectTransportKindForRequest !== undefined
+        ? { transportKind: connectTransportKindForRequest }
         : {}),
       forceRefresh,
     });
@@ -2444,8 +2472,8 @@ function ModelsSettingsPanel({
       modelIds: res.modelIds,
       ...(res.models ? { modelCatalog: res.models } : {}),
       provider: selectedProvider,
-      ...(providerSupportsConnectTransportPicker(selectedProvider)
-        ? { transportKind: connectTransportKind }
+      ...(connectTransportKindForRequest !== undefined
+        ? { transportKind: connectTransportKindForRequest }
         : {}),
     };
     await onAddProviderModels(bulk);
@@ -3120,14 +3148,16 @@ function ModelsSettingsPanel({
                 ? t('settings.customConnectionDescription')
                 : selectedProvider === "volcengine"
                   ? t('settings.volcengineConnectionDescription')
-                  : providerSupportsConnectTransportPicker(selectedProvider)
-                    ? t('settings.providerConnectionDescription')
-                    : t('settings.providerSimpleDescription')}
+                  : selectedProvider === "vercel-ai-gateway"
+                    ? t('settings.vercelAiGatewayConnectionDescription')
+                    : providerShowsConnectTransportPicker(selectedProvider)
+                      ? t('settings.providerConnectionDescription')
+                      : t('settings.providerSimpleDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3 py-1">
-            {providerSupportsConnectTransportPicker(selectedProvider) ? (
+            {providerShowsConnectTransportPicker(selectedProvider) ? (
               <div className="grid gap-2">
                 <Label htmlFor="connect-api-transport">{t('settings.apiType')}</Label>
                 <Select

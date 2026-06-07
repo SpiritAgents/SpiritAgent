@@ -8,7 +8,7 @@ import {
   buildGatewayWebSearchTraceToolEntry,
   shouldUseGatewayWebSearch,
 } from './gateway-web-search.js';
-import { buildResponsesGenerateTools } from './model-factory.js';
+import { buildResponsesGenerateTools, createResponsesLanguageModel } from './model-factory.js';
 import {
   resolveProviderWebSearchMode,
   shouldUseProviderWebSearch,
@@ -70,6 +70,11 @@ test('buildGatewayWebSearchTraceToolEntry names web_search for UI parity', () =>
     id: 'gateway.perplexity_search',
     name: 'web_search',
   });
+});
+
+test('createResponsesLanguageModel uses gateway v3 when web search enabled', () => {
+  const model = createResponsesLanguageModel(gatewayConfig) as { provider?: string };
+  assert.equal(model.provider, 'gateway');
 });
 
 test('gateway responses trace lists web_search alongside host tools when eligible', () => {

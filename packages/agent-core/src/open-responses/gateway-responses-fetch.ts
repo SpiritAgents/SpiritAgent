@@ -1,4 +1,4 @@
-// @ai-sdk/open-responses 序列化 HTTP 请求时会丢弃 gateway provider tools，故在 fetch 层补注入。
+// 备用：@ai-sdk/open-responses 会丢弃 provider tools。Gateway Web Search 主路径已改走 createGateway v3 language-model。
 import { getLlmFetch } from '../llm-fetch.js';
 import type { JsonObject, JsonValue } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
@@ -59,11 +59,12 @@ function patchGatewayWebSearchRequestInit(
     }
 
     const existingTools = Array.isArray(body.tools) ? body.tools : [];
+    const mergedTools = mergeGatewayResponsesWebSearchTools(existingTools);
     return {
       ...init,
       body: JSON.stringify({
         ...body,
-        tools: mergeGatewayResponsesWebSearchTools(existingTools),
+        tools: mergedTools,
       }),
     };
   } catch {
