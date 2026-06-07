@@ -374,7 +374,11 @@ export function toolCallSummaryCopyForRequest(
           : typeof record.window_title === 'string'
             ? record.window_title.trim()
             : '';
-      const detailParts = [mode, target].filter((part) => part.length > 0);
+      const debugPort =
+        typeof record.debug_port === 'number' && Number.isFinite(record.debug_port)
+          ? `CDP:${Math.trunc(record.debug_port)}`
+          : '';
+      const detailParts = [mode, target, debugPort].filter((part) => part.length > 0);
       return {
         headline: reason || i18n.t('tool.computerUseSnapshot'),
         ...(detailParts.length > 0

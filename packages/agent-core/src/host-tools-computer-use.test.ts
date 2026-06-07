@@ -19,6 +19,24 @@ test('buildComputerUseHostToolDefinitions exposes snapshot and action tools', ()
   assert.deepEqual(names, [COMPUTER_USE_SNAPSHOT_TOOL_NAME, COMPUTER_USE_ACTION_TOOL_NAME]);
 });
 
+test('computer_use_snapshot schema includes optional debug_port', () => {
+  const definitions = buildComputerUseHostToolDefinitions();
+  const snapshot = definitions[0] as {
+    function?: { parameters?: { properties?: Record<string, unknown> } };
+  };
+  const properties = snapshot.function?.parameters?.properties ?? {};
+  assert.ok(properties.debug_port);
+});
+
+test('computer_use_action schema includes optional debug_port', () => {
+  const definitions = buildComputerUseHostToolDefinitions();
+  const action = definitions[1] as {
+    function?: { parameters?: { properties?: Record<string, unknown> } };
+  };
+  const properties = action.function?.parameters?.properties ?? {};
+  assert.ok(properties.debug_port);
+});
+
 test('Ask mode excludes computer_use_action but keeps snapshot', () => {
   const definitions = buildComputerUseHostToolDefinitions();
   const filtered = filterHostToolDefinitionsForAgentMode(definitions, 'ask');

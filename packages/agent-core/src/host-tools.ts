@@ -724,7 +724,7 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
   return [
     functionTool(
       COMPUTER_USE_SNAPSHOT_TOOL_NAME,
-      'Inspect Windows desktop UI through the UI Automation element tree (not screenshots). Windows Electron host only. For mode=list_windows, enumerate top-level windows. For mode=tree, return a structured control tree with stable refs; you must specify process_name and/or window_title to target one window. Pattern-only automation is supported separately via computer_use_action.',
+      'Inspect Windows desktop UI (not screenshots). Windows Electron host only. For mode=list_windows, enumerate top-level windows. For mode=tree, return a structured element tree with stable refs; specify process_name and/or window_title. Chromium/CEF host windows automatically use the target app CDP accessibility tree when it was started with --remote-debugging-port (default debug_port 9222); other windows use UI Automation. Pattern or CDP actions are performed via computer_use_action.',
       {
         type: 'object',
         properties: {
@@ -758,6 +758,13 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
             maximum: 5000,
             description: 'Maximum nodes returned for mode=tree. Defaults to 400.',
           },
+          debug_port: {
+            type: 'integer',
+            minimum: 1024,
+            maximum: 65535,
+            description:
+              'Localhost CDP port for Chromium/CEF fallback when mode=tree. Defaults to 9222. The target app must already be running with --remote-debugging-port.',
+          },
         },
         required: ['reason', 'mode'],
         additionalProperties: false,
@@ -765,7 +772,7 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
     ),
     functionTool(
       COMPUTER_USE_ACTION_TOOL_NAME,
-      'Act on a Windows UI element by ref from computer_use_snapshot using UI Automation control patterns only (invoke, set_value, toggle, expand, collapse, select). Does not move the mouse or send synthetic key events. If the pattern is unsupported, the tool fails with pattern_unsupported. Windows Electron host only. High risk: requires user approval.',
+      'Act on a Windows UI element by ref from computer_use_snapshot. UIA refs (w…) use control patterns only. CDP refs (c…) use DOM focus/click/text on the target app debug port. Supported actions: invoke, set_value, toggle, expand, collapse, select. If unsupported, returns pattern_unsupported. Windows Electron host only. High risk: requires user approval.',
       {
         type: 'object',
         properties: {
@@ -775,7 +782,7 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
           },
           ref: {
             type: 'string',
-            description: 'Element ref from computer_use_snapshot, e.g. w1a2b3n4.',
+            description: 'Element ref from computer_use_snapshot, e.g. w1a2b3n4 (UIA) or c9222n1042 (CDP).',
           },
           action: {
             type: 'string',
@@ -798,7 +805,14 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
             type: 'integer',
             minimum: 1000,
             maximum: 120000,
-            description: 'Timeout for invoke actions. Defaults to 30000.',
+            description: 'Timeout for UIA invoke actions. Defaults to 30000.',
+          },
+          debug_port: {
+            type: 'integer',
+            minimum: 1024,
+            maximum: 65535,
+            description:
+              'Localhost CDP port when ref is a CDP ref (c…). Defaults to 9222 for reconnecting the CDP session.',
           },
         },
         required: ['reason', 'ref', 'action'],

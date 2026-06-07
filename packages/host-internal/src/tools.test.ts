@@ -734,6 +734,32 @@ test('authorize returns need-approval for computer_use_action by default', async
   }
 });
 
+test('parse computer_use_snapshot accepts debug_port', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-computer-use-debug-port-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+    const service = new NodeHostToolService(
+      { workspaceRoot, spiritDataDir },
+      { getApprovalLevel: () => 'default' },
+    );
+    const request = await service.requestFromFunctionCall(
+      'computer_use_snapshot',
+      JSON.stringify({
+        reason: 'Inspect CEF app',
+        mode: 'tree',
+        process_name: 'cloudmusic.exe',
+        debug_port: 9222,
+      }),
+    );
+    assert.equal(request.name, 'computer_use_snapshot');
+    assert.equal(request.debug_port, 9222);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test('authorize allows computer_use_snapshot without approval', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-computer-use-snapshot-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');

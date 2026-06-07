@@ -293,6 +293,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       window_title?: string;
       max_depth?: number;
       max_nodes?: number;
+      debug_port?: number;
     }
   | {
       name: 'computer_use_action';
@@ -303,6 +304,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       process_name?: string;
       window_title?: string;
       invoke_timeout_ms?: number;
+      debug_port?: number;
     };
 
 export type HostAuthorizationDecision<QuestionSpec = HostAskQuestionsQuestionSpec> =
@@ -833,6 +835,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           const windowTitle = optionalStringStrict(parsed, 'window_title');
           const maxDepth = optionalPositiveInt(parsed, 'max_depth');
           const maxNodes = optionalPositiveInt(parsed, 'max_nodes');
+          const debugPort = optionalDebugPort(parsed, 'debug_port');
           return {
             name,
             reason: requiredString(parsed, 'reason'),
@@ -841,6 +844,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
             ...(windowTitle ? { window_title: windowTitle } : {}),
             ...(maxDepth !== undefined ? { max_depth: maxDepth } : {}),
             ...(maxNodes !== undefined ? { max_nodes: maxNodes } : {}),
+            ...(debugPort !== undefined ? { debug_port: debugPort } : {}),
           };
         }
       case 'computer_use_action':
@@ -849,6 +853,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           const processName = optionalStringStrict(parsed, 'process_name');
           const windowTitle = optionalStringStrict(parsed, 'window_title');
           const invokeTimeoutMs = optionalPositiveInt(parsed, 'invoke_timeout_ms');
+          const debugPort = optionalDebugPort(parsed, 'debug_port');
           return {
             name,
             reason: requiredString(parsed, 'reason'),
@@ -858,6 +863,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
             ...(processName ? { process_name: processName } : {}),
             ...(windowTitle ? { window_title: windowTitle } : {}),
             ...(invokeTimeoutMs !== undefined ? { invoke_timeout_ms: invokeTimeoutMs } : {}),
+            ...(debugPort !== undefined ? { debug_port: debugPort } : {}),
           };
         }
       default:
@@ -2298,6 +2304,21 @@ function optionalPositiveInt(obj: HostJsonObject, key: string): number | undefin
   const n = Math.trunc(value);
   if (n < 1) {
     throw new Error(`字段 ${key} 必须 >= 1`);
+  }
+  return n;
+}
+
+function optionalDebugPort(obj: HostJsonObject, key: string): number | undefined {
+  const value = obj[key];
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`字段 ${key} 必须是整数`);
+  }
+  const n = Math.trunc(value);
+  if (n < 1024 || n > 65535) {
+    throw new Error(`字段 ${key} 必须在 1024 到 65535 之间`);
   }
   return n;
 }

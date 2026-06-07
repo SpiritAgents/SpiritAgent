@@ -60,9 +60,8 @@ export async function executeComputerUseSnapshot(
     });
   }
 
-  const debugPort = (request as { debug_port?: number }).debug_port;
   const cdpResponse = await snapshotViaCdp({
-    debug_port: debugPort,
+    debug_port: request.debug_port,
     window_title: request.window_title ?? uiaData.window?.title,
     process_name: request.process_name ?? uiaData.window?.process_name,
     max_depth: request.max_depth,
@@ -91,12 +90,11 @@ export async function executeComputerUseAction(
   assertWindowsElectronHost();
 
   if (isCdpComputerUseRef(request.ref)) {
-    const debugPort = (request as { debug_port?: number }).debug_port;
     const response = await actViaCdp({
       ref: request.ref,
       action: request.action,
       text: request.text,
-      debug_port: debugPort,
+      debug_port: request.debug_port,
       window_title: request.window_title,
       process_name: request.process_name,
     });
