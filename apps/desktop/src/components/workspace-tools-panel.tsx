@@ -149,6 +149,10 @@ function WorkspaceToolsDockInner({
 }: WorkspaceToolsDockProps) {
   const { t } = useTranslation();
   const [isResizing, setIsResizing] = useState(false);
+  /** 仅用户首次切到 Shell 选项卡后才挂载终端（避免默认标签即触发 node-pty）；切走后保持挂载。 */
+  const [mountedShellTabIds, setMountedShellTabIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const latestWidthPxRef = useRef(widthPx);
   latestWidthPxRef.current = widthPx;
@@ -171,6 +175,25 @@ function WorkspaceToolsDockInner({
       setIsResizing(false);
     }
   }, [open]);
+
+  const activeTab = useMemo(
+    () => tabs.find((tab) => tab.id === activeTabId),
+    [activeTabId, tabs],
+  );
+
+  useEffect(() => {
+    if (activeTab?.kind !== "shell") {
+      return;
+    }
+    setMountedShellTabIds((prev) => {
+      if (prev.has(activeTabId)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.add(activeTabId);
+      return next;
+    });
+  }, [activeTab?.kind, activeTabId]);
 
   const clampWidth = useCallback(
     (value: number) => Math.min(maxWidthPx, Math.max(minWidthPx, value)),
@@ -247,6 +270,14 @@ function WorkspaceToolsDockInner({
       });
       onTabsChange(next.tabs);
       onActiveTabIdChange(next.activeId);
+      setMountedShellTabIds((prev) => {
+        if (!prev.has(closeId)) {
+          return prev;
+        }
+        const updated = new Set(prev);
+        updated.delete(closeId);
+        return updated;
+      });
     },
     [activeTabId, browserTabEnabled, onActiveTabIdChange, onTabsChange, tabs],
   );
@@ -465,13 +496,15 @@ function WorkspaceToolsDockInner({
                       />
                     </div>
                   ) : item.kind === "shell" ? (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-                      <WorkspaceShellTab
-                        workspaceRoot={workspaceRoot}
-                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
-                        suspendTerminalResize={isResizing}
-                      />
-                    </div>
+                    mountedShellTabIds.has(item.id) ? (
+                      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                        <WorkspaceShellTab
+                          workspaceRoot={workspaceRoot}
+                          onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                          suspendTerminalResize={isResizing}
+                        />
+                      </div>
+                    ) : null
                   ) : item.kind === "browser" ? (
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                       <WorkspaceBrowserTab
