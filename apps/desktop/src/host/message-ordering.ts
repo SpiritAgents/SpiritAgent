@@ -365,6 +365,32 @@ export function toolCallSummaryCopyForRequest(
     }
     case 'todo_list':
       return { headline: i18n.t('tool.todoList') };
+    case 'computer_use_snapshot': {
+      const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
+      const mode = typeof record.mode === 'string' ? record.mode.trim() : '';
+      const target =
+        typeof record.process_name === 'string'
+          ? record.process_name.trim()
+          : typeof record.window_title === 'string'
+            ? record.window_title.trim()
+            : '';
+      const detailParts = [mode, target].filter((part) => part.length > 0);
+      return {
+        headline: reason || i18n.t('tool.computerUseSnapshot'),
+        ...(detailParts.length > 0
+          ? { headlineDetail: truncateSummaryDetail(detailParts.join(' · ')) }
+          : {}),
+      };
+    }
+    case 'computer_use_action': {
+      const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
+      const ref = typeof record.ref === 'string' ? record.ref.trim() : '';
+      const action = typeof record.action === 'string' ? record.action.trim() : '';
+      return {
+        headline: reason || i18n.t('tool.computerUseAction'),
+        headlineDetail: truncateSummaryDetail([action, ref].filter((part) => part.length > 0).join(' · ')),
+      };
+    }
     case 'extension_tool': {
       const extensionToolName =
         typeof record.tool_name === 'string' ? record.tool_name.trim() : '';

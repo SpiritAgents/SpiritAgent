@@ -36,6 +36,9 @@ export type TodoHostToolName =
 
 export const FINISH_TASK_TOOL_NAME = 'finish_task';
 
+export const COMPUTER_USE_SNAPSHOT_TOOL_NAME = 'computer_use_snapshot';
+export const COMPUTER_USE_ACTION_TOOL_NAME = 'computer_use_action';
+
 export const ASK_MODE_EXCLUDED_HOST_TOOL_NAMES = new Set<string>([
   'run_shell_command',
   'create_file',
@@ -45,6 +48,7 @@ export const ASK_MODE_EXCLUDED_HOST_TOOL_NAMES = new Set<string>([
   'generate_image',
   'generate_video',
   'create_plan',
+  COMPUTER_USE_ACTION_TOOL_NAME,
 ]);
 
 export function isAskAgentMode(agentMode: SpiritAgentMode): boolean {
@@ -714,6 +718,94 @@ export function buildDreamCollectorSystemMessage(): string {
     'Do not summarize every message mechanically. Preserve signal that helps future host consumers understand the current work direction.',
     'Do not perform production work. Only read the provided context and maintain dreams through the dream tools.',
   ].join('\n');
+}
+
+export function buildComputerUseHostToolDefinitions(): JsonValue[] {
+  return [
+    functionTool(
+      COMPUTER_USE_SNAPSHOT_TOOL_NAME,
+      'Inspect Windows desktop UI through the UI Automation element tree (not screenshots). Windows Electron host only. For mode=list_windows, enumerate top-level windows. For mode=tree, return a structured control tree with stable refs; you must specify process_name and/or window_title to target one window. Pattern-only automation is supported separately via computer_use_action.',
+      {
+        type: 'object',
+        properties: {
+          reason: {
+            type: 'string',
+            description:
+              'Short imperative phrase for the UI, e.g. "List open windows" or "Inspect Notepad controls".',
+          },
+          mode: {
+            type: 'string',
+            enum: ['list_windows', 'tree'],
+            description: 'list_windows enumerates top-level windows; tree returns the UIA subtree for one target window.',
+          },
+          process_name: {
+            type: 'string',
+            description: 'Target process file name, e.g. notepad.exe. Required for mode=tree unless window_title is set.',
+          },
+          window_title: {
+            type: 'string',
+            description: 'Substring match against the target window title. Required for mode=tree unless process_name is set.',
+          },
+          max_depth: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 32,
+            description: 'Maximum tree depth for mode=tree. Defaults to 8.',
+          },
+          max_nodes: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 5000,
+            description: 'Maximum nodes returned for mode=tree. Defaults to 400.',
+          },
+        },
+        required: ['reason', 'mode'],
+        additionalProperties: false,
+      },
+    ),
+    functionTool(
+      COMPUTER_USE_ACTION_TOOL_NAME,
+      'Act on a Windows UI element by ref from computer_use_snapshot using UI Automation control patterns only (invoke, set_value, toggle, expand, collapse, select). Does not move the mouse or send synthetic key events. If the pattern is unsupported, the tool fails with pattern_unsupported. Windows Electron host only. High risk: requires user approval.',
+      {
+        type: 'object',
+        properties: {
+          reason: {
+            type: 'string',
+            description: 'Short imperative phrase for the UI, e.g. "Click OK" or "Type greeting".',
+          },
+          ref: {
+            type: 'string',
+            description: 'Element ref from computer_use_snapshot, e.g. w1a2b3n4.',
+          },
+          action: {
+            type: 'string',
+            enum: ['invoke', 'set_value', 'toggle', 'expand', 'collapse', 'select'],
+            description: 'UIA pattern action to perform on the element.',
+          },
+          text: {
+            type: 'string',
+            description: 'Required when action is set_value.',
+          },
+          process_name: {
+            type: 'string',
+            description: 'Optional target process for approval trust scoping, e.g. notepad.exe.',
+          },
+          window_title: {
+            type: 'string',
+            description: 'Optional target window title substring for approval trust scoping.',
+          },
+          invoke_timeout_ms: {
+            type: 'integer',
+            minimum: 1000,
+            maximum: 120000,
+            description: 'Timeout for invoke actions. Defaults to 30000.',
+          },
+        },
+        required: ['reason', 'ref', 'action'],
+        additionalProperties: false,
+      },
+    ),
+  ];
 }
 
 function buildShellToolDescription(shellDisplayName: string): string {

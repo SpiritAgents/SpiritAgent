@@ -706,6 +706,57 @@ test('create_file is rejected for new files under plans/', async () => {
   }
 });
 
+test('authorize returns need-approval for computer_use_action by default', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-computer-use-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+
+    const service = new NodeHostToolService(
+      { workspaceRoot, spiritDataDir },
+      { getApprovalLevel: () => 'default' },
+    );
+    const decision = await service.authorize({
+      name: 'computer_use_action',
+      reason: 'Click OK',
+      ref: 'w10n2',
+      action: 'invoke',
+      process_name: 'notepad.exe',
+    });
+
+    assert.equal(decision.kind, 'need-approval');
+    if (decision.kind === 'need-approval') {
+      assert.equal(decision.trustTarget, 'computer_use:notepad.exe');
+    }
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('authorize allows computer_use_snapshot without approval', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-computer-use-snapshot-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+
+    const service = new NodeHostToolService(
+      { workspaceRoot, spiritDataDir },
+      { getApprovalLevel: () => 'default' },
+    );
+    const decision = await service.authorize({
+      name: 'computer_use_snapshot',
+      reason: 'List windows',
+      mode: 'list_windows',
+    });
+
+    assert.deepEqual(decision, { kind: 'allowed' });
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 function assertHostToolExecutionOutput(
   output: HostToolExecutionOutput | string,
 ): asserts output is HostToolExecutionOutput {
