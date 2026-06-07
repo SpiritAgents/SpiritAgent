@@ -11,6 +11,14 @@ export function buildGatewayWebSearchTool(config: OpenResponsesTransportConfig):
   return createGateway({ apiKey: config.apiKey }).tools.perplexitySearch();
 }
 
+export function buildGatewayResponsesWebSearchToolRequestEntry(): JsonObject {
+  return {
+    type: 'provider',
+    id: 'gateway.perplexity_search',
+    args: {},
+  };
+}
+
 export function buildGatewayWebSearchTraceToolEntry(): JsonObject {
   return {
     type: 'provider_tool',
