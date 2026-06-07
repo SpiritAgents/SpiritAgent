@@ -228,19 +228,17 @@ const modelCapabilityOptions: Array<{
 type ConnectTransportOption = {
   value: DesktopTransportKind;
   label: string;
-  summaryKey: string;
+  summaryKey?: string;
 };
 
 const connectTransportOptionCatalog = {
   chatCompletions: {
     value: "openai-compatible" as const,
     label: "Chat Completions API",
-    summaryKey: 'settings.transportChatCompletions',
   },
   messagesApi: {
     value: "anthropic" as const,
     label: "Messages API",
-    summaryKey: 'settings.transportMessagesApi',
   },
   responsesApi: {
     value: "open-responses" as const,
@@ -250,7 +248,6 @@ const connectTransportOptionCatalog = {
   openResponsesApi: {
     value: "open-responses" as const,
     label: "Open Responses API",
-    summaryKey: 'settings.transportOpenResponses',
   },
 } satisfies Record<string, ConnectTransportOption>;
 
@@ -332,7 +329,7 @@ function resolveConnectTransportKindForProvider(
 function connectTransportOptionSummary(
   option: ConnectTransportOption,
   provider: DesktopModelProvider | null,
-): string {
+): string | undefined {
   if (option.value === "open-responses" && provider === "xai") {
     return i18n.t('settings.transportXaiResponses');
   }
@@ -341,15 +338,11 @@ function connectTransportOptionSummary(
     return i18n.t('settings.transportAlibabaResponses');
   }
 
-  if (option.value === "open-responses" && provider === "custom") {
-    return i18n.t(connectTransportOptionCatalog.openResponsesApi.summaryKey);
-  }
-
   if (option.value === "open-responses" && provider === "volcengine") {
     return i18n.t('settings.transportVolcengineResponses');
   }
 
-  return i18n.t(option.summaryKey);
+  return option.summaryKey ? i18n.t(option.summaryKey) : undefined;
 }
 
 function resolveCustomConnectApiBase(
@@ -3121,9 +3114,7 @@ function ModelsSettingsPanel({
                 ? t('settings.customConnectionDescription')
                 : selectedProvider === "volcengine"
                   ? t('settings.volcengineConnectionDescription')
-                  : selectedProvider === "vercel-ai-gateway"
-                    ? t('settings.vercelAiGatewayConnectionDescription')
-                    : providerShowsConnectTransportPicker(selectedProvider)
+                  : providerShowsConnectTransportPicker(selectedProvider)
                       ? t('settings.providerConnectionDescription')
                       : t('settings.providerSimpleDescription')}
             </DialogDescription>
@@ -3148,12 +3139,15 @@ function ModelsSettingsPanel({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {connectTransportOptionsForProvider(selectedProvider)
+                {(() => {
+                  const transportSummary = connectTransportOptionsForProvider(selectedProvider)
                     .filter((option) => option.value === connectTransportKind)
                     .map((option) => connectTransportOptionSummary(option, selectedProvider))
-                    .join("")}
-                </p>
+                    .find(Boolean);
+                  return transportSummary ? (
+                    <p className="text-xs leading-5 text-muted-foreground">{transportSummary}</p>
+                  ) : null;
+                })()}
               </div>
             ) : null}
             {selectedProvider === "custom" ? (
