@@ -19,6 +19,11 @@ import {
   currentWorkspaceFileReferenceQuery,
 } from "@spirit-agent/host-internal/workspace-file-reference-query";
 
+import {
+  SessionSidebarChromeProvider,
+  type SessionSidebarChromeApi,
+  useSessionSidebarChrome,
+} from "@/contexts/session-sidebar-chrome-context";
 import { type DesktopAgentMode } from "@/lib/agent-mode";
 import {
   resolveComposerDirectMediaTool,
@@ -183,7 +188,7 @@ import {
   DESKTOP_OVERLAY_SHORT_SUBCONTENT,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
-import { readSessionSidebarWidthPx, readWorkspaceToolsWidthPx } from "@/lib/layout-prefs";
+import { readWorkspaceToolsWidthPx } from "@/lib/layout-prefs";
 import {
   buildModelCatalogDisplayTitleMap,
   modelDisplayTitleFromMap,
@@ -1815,8 +1820,6 @@ function WebHostPairingGate({
 
 function DesktopLayoutChromeBar({
   useMicaBackdrop,
-  sessionSidebarOpen,
-  onToggleSessionSidebar,
   showWorkspaceToggle,
   workspaceToolsOpen = false,
   onToggleWorkspaceTools,
@@ -1825,8 +1828,6 @@ function DesktopLayoutChromeBar({
   newSessionBusy = false,
 }: {
   useMicaBackdrop: boolean;
-  sessionSidebarOpen: boolean;
-  onToggleSessionSidebar(): void;
   showWorkspaceToggle: boolean;
   workspaceToolsOpen?: boolean;
   onToggleWorkspaceTools?: () => void;
@@ -1835,6 +1836,7 @@ function DesktopLayoutChromeBar({
   newSessionBusy?: boolean;
 }) {
   const { t } = useTranslation();
+  const { open: sessionSidebarOpen, toggle: onToggleSessionSidebar } = useSessionSidebarChrome();
   const showTrailingActions = showWorkspaceToggle;
   const trimmedSessionTitle = sessionTitle?.trim() ?? "";
   return (
@@ -2170,8 +2172,8 @@ export default function App() {
   );
   const [settingsTab, setSettingsTab] = useState<SettingsSidebarTab>("models");
   const [extensionSettingsId, setExtensionSettingsId] = useState<string | null>(null);
-  const [sessionSidebarOpen, setSessionSidebarOpen] = useState(true);
-  const [sessionSidebarWidthPx, setSessionSidebarWidthPx] = useState(readSessionSidebarWidthPx);
+  const sessionSidebarChromeApiRef = useRef<SessionSidebarChromeApi | null>(null);
+
   const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
   const initialWorkspaceToolsRef = useRef<ReturnType<
     typeof createInitialWorkspaceToolsState
@@ -2983,6 +2985,7 @@ export default function App() {
   }
 
   return (
+    <SessionSidebarChromeProvider apiRef={sessionSidebarChromeApiRef}>
     <div
       data-spirit-surface="app-shell"
       data-spirit-shell-kind={isElectronShell ? "electron" : "web"}
@@ -2995,11 +2998,7 @@ export default function App() {
     >
       <LaunchSplash active={launchSplashActive} />
       {winElectronChrome ? (
-        <DesktopTitleBar
-          useMicaBackdrop={useMicaBackdrop}
-          sessionSidebarOpen={sessionSidebarOpen}
-          sessionSidebarWidthPx={sessionSidebarWidthPx}
-        />
+        <DesktopTitleBar useMicaBackdrop={useMicaBackdrop} />
       ) : null}
       <div data-spirit-surface="app-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {!winElectronChrome ? (
@@ -3016,12 +3015,7 @@ export default function App() {
           />
         ) : null}
         <div data-spirit-surface="main-frame" className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-        <SessionSidebarShell
-          open={sessionSidebarOpen}
-          widthPx={sessionSidebarWidthPx}
-          onWidthPxChange={setSessionSidebarWidthPx}
-          useMicaBackdrop={useMicaBackdrop}
-        >
+        <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
           <SessionSidebar
             narrow={false}
             mode={settingsMode ? "settings" : "sessions"}
@@ -3035,12 +3029,12 @@ export default function App() {
               void runtime.openSession(path);
             }}
             onOpenMarketplace={() => {
-              setSessionSidebarOpen(true);
+              sessionSidebarChromeApiRef.current?.openSidebar();
               setLastNonSettingsSurface("marketplace");
               setActiveSurface("marketplace");
             }}
             onOpenSettings={() => {
-              setSessionSidebarOpen(true);
+              sessionSidebarChromeApiRef.current?.openSidebar();
               if (activeSurface !== "settings") {
                 setLastNonSettingsSurface(activeSurface === "marketplace" ? "marketplace" : "conversation");
               }
@@ -3071,8 +3065,6 @@ export default function App() {
           <div data-spirit-surface="settings-shell" className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
             <DesktopLayoutChromeBar
               useMicaBackdrop={useMicaBackdrop}
-              sessionSidebarOpen={sessionSidebarOpen}
-              onToggleSessionSidebar={() => setSessionSidebarOpen((o) => !o)}
               showWorkspaceToggle={false}
             />
             <SettingsView
@@ -3128,8 +3120,6 @@ export default function App() {
           <div data-spirit-surface="marketplace-layout" className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
             <DesktopLayoutChromeBar
               useMicaBackdrop={useMicaBackdrop}
-              sessionSidebarOpen={sessionSidebarOpen}
-              onToggleSessionSidebar={() => setSessionSidebarOpen((o) => !o)}
               showWorkspaceToggle={false}
             />
             <MarketplaceView
@@ -3149,8 +3139,6 @@ export default function App() {
             <div data-spirit-surface="conversation-shell" className="flex min-h-0 min-w-0 flex-1 flex-col bg-background min-w-0">
               <DesktopLayoutChromeBar
                 useMicaBackdrop={useMicaBackdrop}
-                sessionSidebarOpen={sessionSidebarOpen}
-                onToggleSessionSidebar={() => setSessionSidebarOpen((o) => !o)}
                 showWorkspaceToggle
                 workspaceToolsOpen={workspaceToolsOpen}
                 onToggleWorkspaceTools={() => setWorkspaceToolsOpen((c) => !c)}
@@ -3821,5 +3809,6 @@ export default function App() {
       </Dialog>
 
     </div>
+    </SessionSidebarChromeProvider>
   );
 }
