@@ -16,6 +16,7 @@ import {
 } from './apply-patch-eligibility.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 import { buildAlibabaResponsesBuiltInTools, shouldUseAlibabaResponsesBuiltInTools } from './alibaba-built-in-tools.js';
+import { buildGatewayWebSearchTraceToolEntry, shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import {
   buildWebSearchResponsesTraceToolEntry,
   shouldUseProviderWebSearch,
@@ -189,6 +190,8 @@ export function buildResponsesTraceTools(
       for (const tool of buildAlibabaResponsesBuiltInTools()) {
         traceTools.push(cloneJsonValue(tool as JsonValue));
       }
+    } else if (shouldUseGatewayWebSearch(config)) {
+      traceTools.push(cloneJsonValue(buildGatewayWebSearchTraceToolEntry() as JsonValue));
     } else {
       traceTools.push(cloneJsonValue(buildWebSearchResponsesTraceToolEntry() as JsonValue));
     }

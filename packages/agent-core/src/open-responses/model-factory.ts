@@ -20,6 +20,7 @@ import {
   shouldUseApplyPatchFunctionTool,
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
+import { buildGatewayWebSearchTool } from './gateway-web-search.js';
 import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
 import {
   openResponsesPostUrl,
@@ -129,6 +130,13 @@ export function buildResponsesGenerateTools(
     return {
       ...merged,
       web_search: xai.tools.webSearch({}),
+    };
+  }
+
+  if (webSearchMode === 'gateway-sdk-web-search') {
+    return {
+      ...merged,
+      web_search: buildGatewayWebSearchTool(config),
     };
   }
 
