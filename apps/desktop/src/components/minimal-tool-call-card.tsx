@@ -94,18 +94,33 @@ function ToolCallSummaryRow({
     tool.argsExcerpt,
   ]);
 
+  const truncateSummary = detailTone === "shell-command";
+
   return (
-    <span className="inline-flex min-w-0 flex-wrap items-baseline gap-2">
-      <MinimalToolSummary
-        headline={headline}
-        detail={detail}
-        shellSummary={shellSummary}
-        shimmerActive={shimmerActive}
-        detailTone={detailTone}
-      />
-      {editLineDelta ? <EditFileLineDeltaBadge delta={editLineDelta} /> : null}
+    <span
+      className={cn(
+        "inline-flex min-w-0 max-w-full items-center gap-2",
+        !truncateSummary && "flex-wrap items-baseline",
+      )}
+    >
+      <span className={cn("min-w-0", truncateSummary ? "flex-1 overflow-hidden" : undefined)}>
+        <MinimalToolSummary
+          headline={headline}
+          detail={detail}
+          shellSummary={shellSummary}
+          shimmerActive={shimmerActive}
+          detailTone={detailTone}
+        />
+      </span>
+      {editLineDelta ? (
+        <span className="shrink-0">
+          <EditFileLineDeltaBadge delta={editLineDelta} />
+        </span>
+      ) : null}
       {shouldShowLspDiagnosticsOnToolCard(tool) ? (
-        <FileToolLspDiagnosticsBadge diagnostics={tool.lspWriteDiagnostics} />
+        <span className="shrink-0">
+          <FileToolLspDiagnosticsBadge diagnostics={tool.lspWriteDiagnostics} />
+        </span>
       ) : null}
     </span>
   );
@@ -127,9 +142,17 @@ export function MinimalToolSummary({
   const shimmerClass = shimmerActive
     ? "spirit-thinking-shimmer-text font-medium tracking-wide"
     : summaryClass;
+  const truncateSummary = detailTone === "shell-command";
 
   return (
-    <span className={cn("min-w-0 break-words text-xs leading-relaxed")}>
+    <span
+      className={cn(
+        "min-w-0 text-xs leading-relaxed",
+        truncateSummary
+          ? cn("block truncate", toolCardFileNameDetailClass)
+          : "break-words",
+      )}
+    >
       {shellSummary ? (
         <>
           <span className={shimmerClass}>{shellSummary.verb}</span>
@@ -422,19 +445,23 @@ export function MinimalToolCallCard({
   );
 
   if (!expandable) {
+    const plainSummaryClass = cn(
+      shimmerActive ? undefined : summaryClass,
+      isShell && "min-w-0 overflow-hidden",
+    );
     const plainCard = canOpenSubagentViewer ? (
       <button
         type="button"
         onClick={() => onOpenSubagentViewer?.(subagentToolCallId)}
         className={cn(
-          "w-full min-w-0 text-left outline-none",
+          "w-full min-w-0 overflow-hidden text-left outline-none",
           "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
         )}
       >
-        <p className={shimmerActive ? undefined : summaryClass}>{summaryRow}</p>
+        <p className={plainSummaryClass}>{summaryRow}</p>
       </button>
     ) : (
-      <p className={shimmerActive ? undefined : summaryClass}>{summaryRow}</p>
+      <p className={plainSummaryClass}>{summaryRow}</p>
     );
     if (!lspDiagnostics) {
       return plainCard;
@@ -463,12 +490,12 @@ export function MinimalToolCallCard({
   );
 
   const collapsibleTriggerButton = canOpenSubagentViewer ? (
-    <div className="group inline-flex max-w-full min-w-0 items-center gap-1">
+    <div className="group flex w-full min-w-0 items-center gap-1">
       <button
         type="button"
         onClick={() => onOpenSubagentViewer?.(subagentToolCallId)}
         className={cn(
-          "min-w-0 text-left outline-none",
+          "min-w-0 flex-1 overflow-hidden text-left outline-none",
           "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
         )}
       >
@@ -507,7 +534,7 @@ export function MinimalToolCallCard({
         "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
       )}
     >
-      {summaryRow}
+      <span className="min-w-0 flex-1 overflow-hidden">{summaryRow}</span>
       <ChevronRight
         className={cn(
           "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
