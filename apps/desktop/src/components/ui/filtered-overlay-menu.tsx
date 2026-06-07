@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
   DESKTOP_OVERLAY_LIST_CONTENT,
   DESKTOP_OVERLAY_LIST_FILTER_HEADER,
   DESKTOP_OVERLAY_LIST_FILTER_INPUT,
+  DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
   DESKTOP_OVERLAY_LIST_SCROLL_AREA,
   DESKTOP_OVERLAY_LIST_SHELL,
@@ -64,6 +65,7 @@ export function FilteredOverlayMenu({
   footer,
 }: FilteredOverlayMenuProps) {
   const showFilter = onFilterChange != null;
+  const filterInputRef = useRef<HTMLInputElement>(null);
 
   const contentClasses =
     variant === "workspace-panel"
@@ -83,17 +85,32 @@ export function FilteredOverlayMenu({
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       {trigger}
-      <DropdownMenuContent align={align} side={side} className={contentClasses}>
+      <DropdownMenuContent
+        align={align}
+        side={side}
+        className={contentClasses}
+        onOpenAutoFocus={
+          showFilter
+            ? (event) => {
+                event.preventDefault();
+                filterInputRef.current?.focus();
+              }
+            : undefined
+        }
+      >
         {showFilter ? (
           <div className={DESKTOP_OVERLAY_LIST_FILTER_HEADER}>
-            <Input
-              value={filterValue}
-              onChange={(event) => onFilterChange(event.target.value)}
-              placeholder={filterPlaceholder}
-              className={DESKTOP_OVERLAY_LIST_FILTER_INPUT}
-              onKeyDown={(event) => event.stopPropagation()}
-              autoComplete="off"
-            />
+            <div className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL}>
+              <Input
+                ref={filterInputRef}
+                value={filterValue}
+                onChange={(event) => onFilterChange(event.target.value)}
+                placeholder={filterPlaceholder}
+                className={DESKTOP_OVERLAY_LIST_FILTER_INPUT}
+                onKeyDown={(event) => event.stopPropagation()}
+                autoComplete="off"
+              />
+            </div>
           </div>
         ) : null}
         <ScrollArea

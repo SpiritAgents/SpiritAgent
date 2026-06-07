@@ -83,7 +83,12 @@ export const DESKTOP_OVERLAY_LIST_WIDTH =
 export const DESKTOP_OVERLAY_LIST_FILTER_HEADER =
   "shrink-0 border-b border-border/40 p-1.5";
 
-export const DESKTOP_OVERLAY_LIST_FILTER_INPUT = "h-7 w-full min-w-0 text-xs";
+/** 与 PendingApprovalCard 指引输入一致：外壳细边框，内层 Input 无 ring */
+export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL =
+  "overflow-hidden rounded-md border border-input bg-transparent focus-within:border-ring/60 focus-within:ring-2 focus-within:ring-ring/20";
+
+export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
+  "h-7 min-h-7 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0";
 
 /** Root 与 viewport 同步 max-h：仅约束 viewport 时 Root 会随内容撑高，滚动条轨道 h-full 失真 */
 export const DESKTOP_OVERLAY_LIST_SCROLL_AREA =
