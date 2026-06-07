@@ -60,7 +60,7 @@ function ActionPopoverItemButton({
       className={cn(
         'flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none',
         DESKTOP_OVERLAY_SHORT_ITEM,
-        'text-foreground hover:bg-accent hover:text-accent-foreground',
+        'text-popover-foreground hover:bg-accent hover:text-accent-foreground',
         'focus-visible:bg-accent focus-visible:text-accent-foreground',
         'disabled:pointer-events-none disabled:opacity-50',
       )}
