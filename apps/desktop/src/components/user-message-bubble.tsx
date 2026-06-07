@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { File, PenTool } from "lucide-react";
+import { PenTool } from "lucide-react";
 
 import { BROWSER_ELEMENT_CHIP_CLASS } from "@/components/browser-element-card";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
@@ -15,11 +15,12 @@ import {
   parseMessageContentParts,
   trimMessageTextAroundElements,
 } from "@/lib/composer-segment-model";
+import { workspaceFileBasename } from "@/lib/file-picker-path";
 import {
   WORKSPACE_FILE_CHIP_CLASS,
   WORKSPACE_FILE_CHIP_ICON_CLASS,
-  workspaceFileBasename,
 } from "@/lib/workspace-file-chip-styles";
+import { workspaceExplorerIconForPath } from "@/lib/workspace-explorer-icon";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
@@ -37,9 +38,10 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
 
 function WorkspaceFileCard({ path }: { path: string }) {
   const normalized = path.replace(/\\/gu, "/");
+  const Icon = workspaceExplorerIconForPath(normalized);
   return (
     <span title={normalized} className={WORKSPACE_FILE_CHIP_CLASS}>
-      <File className={cn("size-[10px] shrink-0", WORKSPACE_FILE_CHIP_ICON_CLASS)} aria-hidden />
+      <Icon className={cn("size-[10px] shrink-0", WORKSPACE_FILE_CHIP_ICON_CLASS)} aria-hidden />
       {workspaceFileBasename(normalized)}
     </span>
   );

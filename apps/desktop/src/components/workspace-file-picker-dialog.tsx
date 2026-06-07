@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { FolderOpen } from 'lucide-react'
-
 import { WorkspaceFilePickerRow } from '@/components/workspace-file-picker-row'
 import {
   Command,
@@ -18,6 +16,7 @@ import {
   toWorkspaceFileReferenceQueryInput,
 } from '@/lib/file-picker-path'
 import { instantHoverMotionClass } from '@/lib/desktop-chrome'
+import { workspaceExplorerIconForPath } from '@/lib/workspace-explorer-icon'
 import { cn } from '@/lib/utils'
 
 type WorkspaceFilePickerDialogProps = {
@@ -117,6 +116,9 @@ export function WorkspaceFilePickerDialog({
   const showEmpty =
     suggestions.length === 0
     && (!absolutePathCandidate || absolutePathExists === false)
+  const AbsolutePathIcon = absolutePathCandidate
+    ? workspaceExplorerIconForPath(absolutePathCandidate)
+    : null
 
   return (
     <CommandDialog
@@ -137,7 +139,7 @@ export function WorkspaceFilePickerDialog({
           placeholder={t('workspace.filePickerPlaceholder')}
         />
         <CommandList className="max-h-96">
-          {absolutePathCandidate && absolutePathExists !== false ? (
+          {absolutePathCandidate && absolutePathExists !== false && AbsolutePathIcon ? (
             <CommandItem
               key={`absolute:${absolutePathCandidate}`}
               value={`absolute:${absolutePathCandidate}`}
@@ -147,7 +149,7 @@ export function WorkspaceFilePickerDialog({
               )}
               onSelect={() => closeAndOpenExternalFile(absolutePathCandidate)}
             >
-              <FolderOpen className="size-3.5 shrink-0 text-muted-foreground/75" aria-hidden />
+              <AbsolutePathIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
               <span className="min-w-0 truncate text-sm text-popover-foreground">
                 {t('workspace.filePickerOpenAbsolutePath', { path: absolutePathCandidate })}
               </span>

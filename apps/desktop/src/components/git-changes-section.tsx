@@ -5,7 +5,7 @@ import { LoaderCircle } from "lucide-react";
 
 import { GitChangesActions } from "@/components/git-changes-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { workspaceExplorerIcon } from "@/components/workspace-files-panel";
+import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 import { cn } from "@/lib/utils";
 import type {
   DesktopGitSnapshot,
