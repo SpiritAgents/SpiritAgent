@@ -69,6 +69,47 @@ export function shellDisplayNameForResolvedShell(file: string): string {
   return path.basename(file);
 }
 
+export function isWindowsPowerShellExecutable(file: string): boolean {
+  const base = path.basename(file).toLowerCase();
+  return base === 'pwsh.exe' || base === 'powershell.exe';
+}
+
+export function isWindowsCmdExecutable(file: string): boolean {
+  return path.basename(file).toLowerCase() === 'cmd.exe';
+}
+
+/**
+ * 非交互子进程（run_shell_command）在 Windows 上默认不走 ConPTY，需显式对齐 UTF-8 输出。
+ * PowerShell：设置 OutputEncoding；cmd：保留 chcp 65001 前缀（输出解码见 {@link decodeShellHostOutput}）。
+ */
+export function prepareShellCommandForHostExecution(shellFile: string, command: string): string {
+  if (process.platform !== 'win32') {
+    return command;
+  }
+  if (isWindowsPowerShellExecutable(shellFile)) {
+    return `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8; ${command}`;
+  }
+  if (isWindowsCmdExecutable(shellFile)) {
+    return `chcp 65001 >nul & ${command}`;
+  }
+  return command;
+}
+
+/** cmd.exe 子进程在中文 Windows 上常输出 GBK；PowerShell 经 UTF-8 前缀后按 utf8 解码。 */
+export function decodeShellHostOutput(shellFile: string, chunk: Buffer): string {
+  if (chunk.length === 0) {
+    return '';
+  }
+  if (process.platform === 'win32' && isWindowsCmdExecutable(shellFile)) {
+    return new TextDecoder('gbk').decode(chunk);
+  }
+  return chunk.toString('utf8');
+}
+
+export function shellHostExecUsesBufferOutput(shellFile: string): boolean {
+  return process.platform === 'win32' && isWindowsCmdExecutable(shellFile);
+}
+
 export function shellCommandParameterDescriptionForResolvedShell(file: string): string {
   const base = path.basename(file).toLowerCase();
   if (base === 'pwsh.exe' || base === 'powershell.exe') {

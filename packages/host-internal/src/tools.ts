@@ -25,9 +25,12 @@ import {
 
 import { applyDiff } from './apply-diff.js';
 import {
+  decodeShellHostOutput,
   defaultShellForPty,
+  prepareShellCommandForHostExecution,
   shellCommandParameterDescriptionForResolvedShell,
   shellDisplayNameForResolvedShell,
+  shellHostExecUsesBufferOutput,
 } from './default-terminal-shell.js';
 import {
   readHostFileSnapshot,
@@ -1651,22 +1654,43 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
   private async executeShell(command: string): Promise<string> {
     const shell = this.toolDefinitionEnvironment();
     const { file: shellExecutable } = defaultShellForPty();
+    const preparedCommand = prepareShellCommandForHostExecution(shellExecutable, command);
+    const decodeBufferOutput = shellHostExecUsesBufferOutput(shellExecutable);
     let stdout = '';
     let stderr = '';
     let code = 0;
     try {
-      const result = await exec(command, {
+      const result = await exec(preparedCommand, {
         cwd: this.workspaceRoot,
         maxBuffer: 8 * 1024 * 1024,
         windowsHide: true,
         shell: shellExecutable,
+        encoding: decodeBufferOutput ? 'buffer' : 'utf8',
       });
-      stdout = result.stdout ?? '';
-      stderr = result.stderr ?? '';
+      if (decodeBufferOutput) {
+        const out = result.stdout as Buffer | undefined;
+        const err = result.stderr as Buffer | undefined;
+        stdout = decodeShellHostOutput(shellExecutable, out ?? Buffer.alloc(0));
+        stderr = decodeShellHostOutput(shellExecutable, err ?? Buffer.alloc(0));
+      } else {
+        stdout = (result.stdout as string | undefined) ?? '';
+        stderr = (result.stderr as string | undefined) ?? '';
+      }
     } catch (error: unknown) {
-      const ex = error as { stdout?: string; stderr?: string; code?: number };
-      stdout = ex.stdout ?? '';
-      stderr = ex.stderr ?? '';
+      const ex = error as { stdout?: string | Buffer; stderr?: string | Buffer; code?: number };
+      if (decodeBufferOutput) {
+        stdout = decodeShellHostOutput(
+          shellExecutable,
+          Buffer.isBuffer(ex.stdout) ? ex.stdout : Buffer.alloc(0),
+        );
+        stderr = decodeShellHostOutput(
+          shellExecutable,
+          Buffer.isBuffer(ex.stderr) ? ex.stderr : Buffer.alloc(0),
+        );
+      } else {
+        stdout = typeof ex.stdout === 'string' ? ex.stdout : '';
+        stderr = typeof ex.stderr === 'string' ? ex.stderr : '';
+      }
       code = typeof ex.code === 'number' ? ex.code : -1;
     }
 
