@@ -187,6 +187,20 @@ export function hasActiveRunSubagentToolInMessages(
   );
 }
 
+/** run_subagent 仍在当前回合执行/等待审批时，主 timeline 不应展示子会话工具卡。 */
+export function hasInFlightSubagentDelegationInMessages(
+  messages: ReadonlyArray<ConversationMessageSnapshot>,
+): boolean {
+  return messages.some(
+    (message) =>
+      message.role === 'assistant' &&
+      message.tool?.toolName === 'run_subagent' &&
+      (message.tool.phase === 'preview' ||
+        message.tool.phase === 'running' ||
+        message.tool.phase === 'pending-approval'),
+  );
+}
+
 export function isSubagentStatusSurfaceMessage(
   message: ConversationMessageSnapshot | undefined,
 ): boolean {

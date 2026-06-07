@@ -97,6 +97,65 @@ function parseToolRequest(argumentsJson: string): unknown {
   }
 }
 
+function extractAssistantReasoningFromHistoryEntry(entry: SubagentLlmHistoryEntry): string {
+  if (entry.role !== 'assistant') {
+    return '';
+  }
+
+  const providerState =
+    'providerState' in entry &&
+    entry.providerState &&
+    typeof entry.providerState === 'object' &&
+    !Array.isArray(entry.providerState)
+      ? (entry.providerState as Record<string, unknown>)
+      : undefined;
+  if (providerState) {
+    for (const key of ['reasoning_content', 'reasoningContent', 'reasoning', 'thinking'] as const) {
+      const value = providerState[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+  }
+
+  if (Array.isArray(entry.content)) {
+    const reasoningParts: string[] = [];
+    for (const part of entry.content) {
+      if (!part || typeof part !== 'object') {
+        continue;
+      }
+      const record = part as Record<string, unknown>;
+      if (record.type === 'reasoning' && typeof record.text === 'string' && record.text.trim()) {
+        reasoningParts.push(record.text.trim());
+      }
+    }
+    if (reasoningParts.length > 0) {
+      return reasoningParts.join('\n\n');
+    }
+  }
+
+  return '';
+}
+
+function pushAssistantThinkingMessage(
+  messages: SubagentViewerMessage[],
+  nextIdRef: { value: number },
+  thinking: string,
+): void {
+  const trimmed = thinking.trim();
+  if (!trimmed) {
+    return;
+  }
+  messages.push({
+    id: nextIdRef.value,
+    role: 'assistant',
+    content: '',
+    aux: { thinking: trimmed },
+    pending: false,
+  });
+  nextIdRef.value += 1;
+}
+
 export function buildSubagentConversationSnapshots(
   llmHistory: ReadonlyArray<SubagentLlmHistoryEntry>,
   options: BuildSubagentConversationSnapshotsOptions,
@@ -149,7 +208,7 @@ export function buildSubagentConversationSnapshots(
   }
 
   const messages: SubagentViewerMessage[] = [];
-  let nextId = 1;
+  const nextIdRef = { value: 1 };
 
   for (const entry of llmHistory) {
     if (entry.role === 'tool') {
@@ -162,12 +221,12 @@ export function buildSubagentConversationSnapshots(
         continue;
       }
       messages.push({
-        id: nextId,
+        id: nextIdRef.value,
         role: 'user',
         content,
         pending: false,
       });
-      nextId += 1;
+      nextIdRef.value += 1;
       continue;
     }
 
@@ -177,16 +236,20 @@ export function buildSubagentConversationSnapshots(
 
     const toolCalls = entry.toolCalls ?? [];
     const text = historyText(entry.content).trim();
+    const reasoning = extractAssistantReasoningFromHistoryEntry(entry);
 
     if (toolCalls.length > 0) {
+      if (reasoning && reasoning !== text) {
+        pushAssistantThinkingMessage(messages, nextIdRef, reasoning);
+      }
       if (text) {
         messages.push({
-          id: nextId,
+          id: nextIdRef.value,
           role: 'assistant',
           content: text,
           pending: false,
         });
-        nextId += 1;
+        nextIdRef.value += 1;
       }
 
       for (const toolCall of toolCalls) {
@@ -216,25 +279,30 @@ export function buildSubagentConversationSnapshots(
           });
         }
         messages.push({
-          id: nextId,
+          id: nextIdRef.value,
           role: 'assistant',
           content: '',
           tool,
           pending: phase === 'running' || phase === 'preview' || phase === 'pending-approval',
         });
-        nextId += 1;
+        nextIdRef.value += 1;
       }
       continue;
     }
 
     if (text) {
+      if (reasoning && reasoning !== text) {
+        pushAssistantThinkingMessage(messages, nextIdRef, reasoning);
+      }
       messages.push({
-        id: nextId,
+        id: nextIdRef.value,
         role: 'assistant',
         content: text,
         pending: false,
       });
-      nextId += 1;
+      nextIdRef.value += 1;
+    } else if (reasoning) {
+      pushAssistantThinkingMessage(messages, nextIdRef, reasoning);
     }
   }
 

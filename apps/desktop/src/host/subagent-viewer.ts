@@ -17,6 +17,10 @@ import {
 } from './message-ordering.js';
 import { mapPendingAuxState } from './snapshot-mappers.js';
 import type { SessionBundle } from './session-bundle.js';
+import {
+  ensureSubagentConversationProjection,
+  syncSubagentConversationProjections,
+} from './subagent-conversation-projection.js';
 
 function enrichSubagentToolBlock(input: {
   toolName: string;
@@ -97,6 +101,43 @@ export function resolveSubagentPromptText(
   });
 }
 
+function countThinkingRows(messages: readonly ConversationMessageSnapshot[]): number {
+  return messages.filter((message) => message.aux?.thinking?.trim()).length;
+}
+
+function resolveSubagentViewerMessages(input: {
+  projected?: ConversationMessageSnapshot[];
+  historyMessages: ConversationMessageSnapshot[];
+  isLiveSession: boolean;
+}): { messages: ConversationMessageSnapshot[]; source: string } {
+  const projected = input.projected?.map((message) => ({ ...message })) ?? [];
+  const history = input.historyMessages;
+
+  if (input.isLiveSession && projected.length > 0) {
+    return { messages: projected, source: 'projected-live' };
+  }
+  if (projected.length === 0) {
+    return { messages: history, source: history.length > 0 ? 'history-only' : 'empty' };
+  }
+  if (history.length === 0) {
+    return { messages: projected, source: 'projected-only' };
+  }
+
+  const projectedThinking = countThinkingRows(projected);
+  const historyThinking = countThinkingRows(history);
+  if (projectedThinking > historyThinking) {
+    return { messages: projected, source: 'projected-richer-thinking' };
+  }
+  if (historyThinking > projectedThinking) {
+    return { messages: history, source: 'history-richer-thinking' };
+  }
+
+  if (projected.length >= history.length) {
+    return { messages: projected, source: 'projected-parity' };
+  }
+  return { messages: history, source: 'history-parity' };
+}
+
 export function buildSubagentViewerSnapshot(
   bundle: SessionBundle,
   toolCallId: string,
@@ -117,13 +158,33 @@ export function buildSubagentViewerSnapshot(
     ? mapPendingAuxState(pendingAuxRuntime)
     : undefined;
 
-  const messages = toConversationMessages(
+  syncSubagentConversationProjections(bundle, runtime);
+
+  const historyMessages = toConversationMessages(
     buildSubagentConversationSnapshots(session.llmHistory, {
       sessionStatus: session.summary.status,
       enrichToolBlock: ({ toolName, phase, request, tool }) =>
         enrichSubagentToolBlock({ toolName, phase, request, tool }),
     }),
   );
+
+  const projected = bundle.subagentDesktopMessagesBySessionId.get(session.summary.sessionId);
+  const isLiveSession =
+    session.summary.status === 'running' || session.summary.status === 'blocked';
+
+  const resolved = resolveSubagentViewerMessages({
+    projected,
+    historyMessages,
+    isLiveSession,
+  });
+  const messages = resolved.messages;
+
+  if (
+    isLiveSession
+    && !projected?.length
+  ) {
+    ensureSubagentConversationProjection(bundle, session);
+  }
 
   return {
     parentToolCallId: trimmed,

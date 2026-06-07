@@ -52,6 +52,7 @@ import {
   finishTaskSummaryFromExecution,
   applyToolCallSummaryCopy,
   hasActiveRunSubagentToolInMessages,
+  hasInFlightSubagentDelegationInMessages,
   isSubagentStatusSurfaceText,
   toolCallSummaryCopyForResponsesBuiltInTool,
   toolCallSummaryForPhase,
@@ -113,6 +114,15 @@ export class DesktopRuntimeEventOrchestrator {
   private deferredAfterStreamThinking: string | undefined;
 
   constructor(private readonly options: DesktopRuntimeEventOrchestratorOptions) {}
+
+  private shouldSuppressMainTimelineChildToolSurface(toolName: string): boolean {
+    if (toolName === 'run_subagent') {
+      return false;
+    }
+    const timelineMessages =
+      this.options.messageTimeline?.()?.toMessages() ?? this.options.messages();
+    return hasInFlightSubagentDelegationInMessages(timelineMessages);
+  }
 
   private findExistingToolSnapshot(toolCallId: string | undefined): ToolBlockSnapshot | undefined {
     if (!toolCallId) {
@@ -377,6 +387,9 @@ export class DesktopRuntimeEventOrchestrator {
         if (isFinishTaskToolName(event.toolName)) {
           continue;
         }
+        if (this.shouldSuppressMainTimelineChildToolSurface(event.toolName)) {
+          continue;
+        }
         const runningSummary =
           event.toolName === 'generate_image'
             ? { headline: i18n.t('tool.generateImage') }
@@ -429,6 +442,9 @@ export class DesktopRuntimeEventOrchestrator {
         continue;
       }
       if (event.kind === 'tool-execution-finished') {
+        if (this.shouldSuppressMainTimelineChildToolSurface(event.execution.toolName)) {
+          continue;
+        }
         if (event.execution.toolName === 'generate_image' && event.execution.toolCallId) {
           this.activeGenerateImageTools.delete(event.execution.toolCallId);
         }
@@ -459,6 +475,9 @@ export class DesktopRuntimeEventOrchestrator {
         if (notice) {
           this.applyFinishTaskNoticePreview(notice);
         }
+        continue;
+      }
+      if (this.shouldSuppressMainTimelineChildToolSurface(event.toolName)) {
         continue;
       }
       // 工具预览前先把 defer 在正文 aux 上的思考固化为独立行（before-tools），避免插入工具后 strip 抹掉。
@@ -662,8 +681,16 @@ export class DesktopRuntimeEventOrchestrator {
 
   syncPendingToolStates(): void {
     const runtime = this.options.runtime();
+    const timelineMessages =
+      this.options.messageTimeline?.()?.toMessages() ?? this.options.messages();
+    const suppressSubagentChildToolSurface =
+      hasInFlightSubagentDelegationInMessages(timelineMessages);
     const approval = runtime?.currentPendingApproval();
-    if (approval) {
+    if (
+      approval &&
+      !approval.subagentSessionId &&
+      !suppressSubagentChildToolSurface
+    ) {
       const approvalSummary = toolCallSummaryForPhase(
         'pending-approval',
         approval.toolName,
@@ -688,7 +715,7 @@ export class DesktopRuntimeEventOrchestrator {
     }
 
     const questions = runtime?.currentPendingQuestions();
-    if (questions) {
+    if (questions && !suppressSubagentChildToolSurface) {
       const pendingTool: ToolBlockSnapshot = {
         toolCallId: toolMessageKey(questions),
         toolName: questions.toolName,
@@ -732,6 +759,9 @@ export class DesktopRuntimeEventOrchestrator {
     source: 'event' | 'turn-result',
   ): void {
     for (const execution of executions) {
+      if (this.shouldSuppressMainTimelineChildToolSurface(execution.toolName)) {
+        continue;
+      }
       if (isFinishTaskToolName(execution.toolName)) {
         const toolCallId = execution.toolCallId || `tool:${execution.toolName}`;
         this.options.assistantMessages.removeToolMessage(toolCallId);

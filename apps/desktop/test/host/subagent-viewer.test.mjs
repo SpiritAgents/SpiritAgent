@@ -88,6 +88,27 @@ test('buildSubagentConversationSnapshots marks last unresolved tool as pending-a
   assert.equal(messages[1]?.tool?.phase, 'pending-approval');
 });
 
+test('buildSubagentConversationSnapshots maps assistant reasoning to thinking aux rows', () => {
+  const messages = buildSubagentConversationSnapshots(
+    [
+      { role: 'user', content: 'Say hello' },
+      {
+        role: 'assistant',
+        content: '你好',
+        providerState: { reasoning_content: '子智能体输出你好' },
+      },
+    ],
+    { sessionStatus: 'completed' },
+  );
+
+  assert.equal(messages.length, 3);
+  assert.equal(messages[0]?.role, 'user');
+  assert.equal(messages[1]?.role, 'assistant');
+  assert.equal(messages[1]?.content, '');
+  assert.equal(messages[1]?.aux?.thinking, '子智能体输出你好');
+  assert.equal(messages[2]?.content, '你好');
+});
+
 test('resolveSubagentPromptFromTaskFields prefers task then context summary', () => {
   assert.equal(
     resolveSubagentPromptFromTaskFields({
