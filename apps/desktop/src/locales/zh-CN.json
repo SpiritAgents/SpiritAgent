@@ -519,6 +519,13 @@
     "filePickerAbsolutePathNotFound": "找不到该路径对应的文件",
     "fileReferenceCandidates": "工作区文件引用候选"
   },
+  "actionPalette": {
+    "title": "命令面板",
+    "description": "搜索并运行工作区操作。",
+    "placeholder": "搜索命令…",
+    "empty": "无匹配命令",
+    "newSessionDescription": "开始新的对话会话"
+  },
   "composer": {
     "insertWorkspaceFile": "引用工作区文件",
     "selectLocalFile": "选择本地文件",
