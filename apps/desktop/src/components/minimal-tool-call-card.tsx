@@ -163,13 +163,13 @@ function ResponsesBuiltInToolExpandedBody({
     <div className="space-y-3">
       {input ? (
         <div className="space-y-1">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">Input</p>
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground/70">Input</p>
           <ToolCallDetailScrollPre>{input}</ToolCallDetailScrollPre>
         </div>
       ) : null}
       {output ? (
         <div className="space-y-1">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">Output</p>
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground/70">Output</p>
           <ToolCallDetailScrollPre>{output}</ToolCallDetailScrollPre>
         </div>
       ) : shimmerActive ? (
