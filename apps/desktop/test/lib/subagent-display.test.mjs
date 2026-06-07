@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  hasInFlightSubagentDelegationInMessages,
   isGenericPendingCompactionStatusText,
   isGenericPendingThinkingStatusText,
   isSubagentStatusSurfaceText,
@@ -75,5 +76,42 @@ test('parsePendingSubagentStatusText only accepts subagent runtime status', () =
   assert.equal(
     parsePendingSubagentStatusText('| 用户想回退：删除未跟踪文件'),
     undefined,
+  );
+});
+
+test('hasInFlightSubagentDelegationInMessages includes pending-approval run_subagent', () => {
+  assert.equal(
+    hasInFlightSubagentDelegationInMessages([
+      {
+        id: 1,
+        role: 'assistant',
+        content: '',
+        pending: false,
+        tool: {
+          toolName: 'run_subagent',
+          phase: 'pending-approval',
+          headline: 'SubAgent',
+          detailLines: [],
+        },
+      },
+    ]),
+    true,
+  );
+  assert.equal(
+    hasInFlightSubagentDelegationInMessages([
+      {
+        id: 1,
+        role: 'assistant',
+        content: '',
+        pending: false,
+        tool: {
+          toolName: 'run_subagent',
+          phase: 'succeeded',
+          headline: 'SubAgent',
+          detailLines: [],
+        },
+      },
+    ]),
+    false,
   );
 });

@@ -21,6 +21,7 @@ import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from '.
 import { createTodoSessionScopeKey } from './todos.js';
 import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import { nextMessageIdFromMessages, type RestoredSessionState } from './sessions.js';
+import type { SubagentConversationProjection } from './subagent-conversation-projection.js';
 import { DesktopMessageTimeline as TimelineCtor } from './message-timeline.js';
 
 export interface SessionBundle {
@@ -68,6 +69,9 @@ export interface SessionBundle {
   contextUsage?: ConversationContextUsageSnapshot;
   /** Composer 直连生图/生视频后台执行中；与 runtime.isBusy 一并驱动 snapshot.isBusy。 */
   directMediaTurnInFlight?: boolean;
+  /** SubAgent 子会话 desktop 投影（与主 timeline 同构，含 Thought/Compaction/工具卡）。 */
+  subagentDesktopMessagesBySessionId: Map<string, ConversationMessageSnapshot[]>;
+  subagentConversationProjections: Map<string, SubagentConversationProjection>;
 }
 
 export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {
@@ -96,6 +100,8 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     responsesBuiltInPreviewSeenCallIds: new Set(),
     todoSessionScopeKey: createTodoSessionScopeKey(),
     conversationRevision: 0,
+    subagentDesktopMessagesBySessionId: new Map(),
+    subagentConversationProjections: new Map(),
   };
 }
 
@@ -141,6 +147,15 @@ export function sessionBundleFromRestored(
     ...(restored.activePlanPath ? { activePlanPath: restored.activePlanPath } : {}),
     ...(restored.sessionTitleSource ? { sessionTitleSource: restored.sessionTitleSource } : {}),
     ...(restored.contextUsage ? { contextUsage: { ...restored.contextUsage } } : {}),
+    subagentDesktopMessagesBySessionId: restored.subagentDesktopMessagesBySessionId
+      ? new Map(
+          [...restored.subagentDesktopMessagesBySessionId.entries()].map(([sessionId, messages]) => [
+            sessionId,
+            messages.map((message) => ({ ...message })),
+          ]),
+        )
+      : new Map(),
+    subagentConversationProjections: new Map(),
   };
 }
 
@@ -173,4 +188,6 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.sessionTitleSource = undefined;
   bundle.contextUsage = undefined;
   bundle.directMediaTurnInFlight = false;
+  bundle.subagentDesktopMessagesBySessionId = new Map();
+  bundle.subagentConversationProjections = new Map();
 }

@@ -13,6 +13,7 @@ import {
 import { isStandaloneThinkingMessage } from '../lib/conversation-thinking-ui.js';
 import {
   hasActiveRunSubagentToolInMessages,
+  hasInFlightSubagentDelegationInMessages,
   hasRunSubagentToolInCurrentTurn,
   isLivePendingReasoningAux,
   isSubagentStatusSurfaceMessage,
@@ -29,6 +30,7 @@ import type { DesktopToolRequest, StoredDesktopSession } from './contracts.js';
 
 export {
   hasActiveRunSubagentToolInMessages,
+  hasInFlightSubagentDelegationInMessages,
   hasRunSubagentToolInCurrentTurn,
   isSubagentStatusSurfaceMessage,
   isSubagentStatusSurfaceText,

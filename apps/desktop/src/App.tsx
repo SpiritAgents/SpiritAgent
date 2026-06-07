@@ -118,6 +118,8 @@ import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { ComposerTodoCard } from "@/components/composer-todo-card";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
+import { PendingApprovalCard } from "@/components/pending-approval-card";
+import { SubagentViewerBanner } from "@/components/subagent-viewer-banner";
 import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-context";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import {
@@ -147,6 +149,7 @@ import {
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useFont } from "@/hooks/useFont";
@@ -224,17 +227,10 @@ import type {
   WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
 
-/** Stable list identity — must not include list index (rows insert above tools during finalize-thinking). */
-function conversationMessageStableId(
-  message: ConversationMessageSnapshot,
-  composerSessionKey = "",
-): string {
-  const sessionPart = composerSessionKey.trim() ? `${composerSessionKey.trim()}:` : "";
-  const toolPart =
-    message.tool?.toolCallId ??
-    (message.tool ? `${message.tool.toolName}:${message.tool.phase}` : "");
-  return `${sessionPart}message-${message.id}-${message.pending ? "p" : "m"}-${toolPart}`;
-}
+import {
+  conversationMessageStableId,
+  resolveConversationListScopeKey,
+} from "@/lib/conversation-list-scope";
 
 /** 主会话列最大宽度（居中） */
 const CONVERSATION_MAX_W = "max-w-[min(86vw,44rem)]";
@@ -434,12 +430,14 @@ function ToolCallCollapsible({
   readLocalVideoPreviewUrl,
   readManagedVideoPreviewUrl,
   saveLocalImageAs,
+  onOpenSubagentViewer,
 }: {
   tool: ToolBlockSnapshot;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
+  onOpenSubagentViewer?: (toolCallId: string) => void;
 }) {
   if (tool.toolName === "finish_task") {
     return null;
@@ -465,7 +463,9 @@ function ToolCallCollapsible({
     );
   }
 
-  return <MinimalToolCallCard tool={tool} />;
+  return (
+    <MinimalToolCallCard tool={tool} onOpenSubagentViewer={onOpenSubagentViewer} />
+  );
 }
 
 function ImageGenerationToolCard({
@@ -1349,6 +1349,7 @@ function AssistantCompactionCollapsible({
 
 function MessageCard({
   composerSessionKey,
+  conversationListScopeKey,
   messages,
   message,
   listIndex,
@@ -1386,8 +1387,10 @@ function MessageCard({
   readLocalImagePreviewDataUrl,
   readLocalVideoPreviewUrl,
   saveLocalImageAs,
+  onOpenSubagentViewer,
 }: {
   composerSessionKey: string;
+  conversationListScopeKey: string;
   messages: readonly ConversationMessageSnapshot[];
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
@@ -1425,6 +1428,7 @@ function MessageCard({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
+  onOpenSubagentViewer?: (toolCallId: string) => void;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
@@ -1456,7 +1460,7 @@ function MessageCard({
   );
   return (
     <div
-      id={conversationMessageStableId(message, composerSessionKey)}
+      id={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
       data-spirit-surface="message-row"
       data-spirit-message-role={message.role}
       data-spirit-message-pending={message.pending ? "true" : "false"}
@@ -1564,6 +1568,7 @@ function MessageCard({
             readLocalVideoPreviewUrl={readLocalVideoPreviewUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             saveLocalImageAs={saveLocalImageAs}
+            onOpenSubagentViewer={onOpenSubagentViewer}
           />
         ) : null}
         {!isUser && showContinueButton && continueTarget ? (
@@ -1970,6 +1975,15 @@ export default function App() {
   }, [isElectronShell, snapshot?.config.windowsMica]);
 
   const compactionDemo = useCompactionUiDemo();
+  const subagentViewer = useSubagentViewer(runtime.setSubagentViewerTarget);
+  const subagentViewActive = subagentViewer.active && Boolean(snapshot?.subagentViewer);
+  const handleOpenSubagentViewer = useCallback(
+    (toolCallId: string) => {
+      compactionDemo.stop();
+      void subagentViewer.open(toolCallId);
+    },
+    [compactionDemo, subagentViewer],
+  );
   const models = snapshot?.config.models ?? [];
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
   const emptySessionGreetingCacheRef = useRef(new Map<string, EmptySessionGreetingVariantId>());
@@ -2008,19 +2022,37 @@ export default function App() {
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const messagesDuringRewindSuppressed =
     runtime.busyAction === "rewind" ? [] : sessionMessages;
-  const messages = compactionDemo.active ? compactionDemo.messages : messagesDuringRewindSuppressed;
+  const messages = subagentViewActive
+    ? (snapshot?.subagentViewer?.messages ?? [])
+    : compactionDemo.active
+      ? compactionDemo.messages
+      : messagesDuringRewindSuppressed;
+  const conversationListScopeKey = resolveConversationListScopeKey({
+    subagentViewActive,
+    subagentToolCallId: subagentViewer.toolCallId,
+    compactionDemoActive: compactionDemo.active,
+  });
   const turnContinue = useMemo(
-    () => (compactionDemo.active ? undefined : resolveTurnContinuePresentation(messages)),
-    [compactionDemo.active, messages],
+    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
+    [compactionDemo.active, messages, subagentViewActive],
   );
-  const isEmptySession = !compactionDemo.active && sessionMessages.length === 0;
+  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
   /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
   const showWorkspaceBindingControls = isEmptySession;
-  const conversationPendingAuxState = compactionDemo.active
-    ? compactionDemo.pendingAuxState
-    : snapshot?.conversation.pendingAuxState;
+  const conversationPendingAuxState = subagentViewActive
+    ? snapshot?.subagentViewer?.pendingAuxState
+    : compactionDemo.active
+      ? compactionDemo.pendingAuxState
+      : snapshot?.conversation.pendingAuxState;
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
+  const showPendingApprovalInComposer = Boolean(
+    pendingApproval
+    && (
+      !subagentViewActive
+      || pendingApproval.subagentSessionId === snapshot?.subagentViewer?.sessionId
+    ),
+  );
   const pendingQuestions = runtime.pendingQuestions;
   useLocalFileAttachmentPreviews(
     runtime.composerLocalFileAttachments,
@@ -2048,6 +2080,7 @@ export default function App() {
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const composerCanSend =
     !compactionDemo.active &&
+    !subagentViewActive &&
     (Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0) &&
     !activeSessionReadOnly &&
     runtime.busyAction !== "session" &&
@@ -2062,6 +2095,28 @@ export default function App() {
     Boolean(pendingQuestions) ||
     (runtime.busyAction === "send" && !conversationInterruptible);
   const [rewindDraft, setRewindDraft] = useState<MessageRewindDraftState | null>(null);
+  const previousComposerSessionKeyRef = useRef(composerSessionKey);
+
+  useEffect(() => {
+    if (previousComposerSessionKeyRef.current !== composerSessionKey) {
+      previousComposerSessionKeyRef.current = composerSessionKey;
+      if (subagentViewer.active) {
+        void subagentViewer.close();
+      }
+    }
+  }, [composerSessionKey, subagentViewer]);
+
+  useEffect(() => {
+    if (subagentViewer.active && !snapshot?.subagentViewer) {
+      void subagentViewer.close();
+    }
+  }, [snapshot?.subagentViewer, subagentViewer]);
+
+  useEffect(() => {
+    if (rewindDraft && subagentViewer.active) {
+      void subagentViewer.close();
+    }
+  }, [rewindDraft, subagentViewer]);
   useLocalFileAttachmentPreviews(
     rewindDraft?.localFileAttachments ?? [],
     (update) => {
@@ -3072,6 +3127,16 @@ export default function App() {
                   </div>
                 </div>
               ) : null}
+              {subagentViewActive && snapshot?.subagentViewer ? (
+                <SubagentViewerBanner
+                  promptText={snapshot.subagentViewer.promptText}
+                  gutterClassName={CONVERSATION_GUTTER_X}
+                  maxWidthClassName={CONVERSATION_MAX_W}
+                  onExit={() => {
+                    void subagentViewer.close();
+                  }}
+                />
+              ) : null}
               {rewindDraft ? (
                 <button
                   type="button"
@@ -3091,10 +3156,12 @@ export default function App() {
                   data-spirit-surface="conversation-scroll-body"
                   className={cn(
                     "min-h-full w-full bg-background",
-                    !isEmptySession && "pb-[calc(12rem+env(safe-area-inset-bottom,0px))]",
+                    !isEmptySession || subagentViewActive
+                      ? "pb-[calc(12rem+env(safe-area-inset-bottom,0px))]"
+                      : undefined,
                   )}
                 >
-                  {!isEmptySession ? (
+                  {!isEmptySession || subagentViewActive ? (
                     <div
                       data-spirit-surface="conversation-list-shell"
                       className={cn(
@@ -3110,18 +3177,24 @@ export default function App() {
                         }}
                       >
                       <div
-                        key={composerSessionKey || "__no-session__"}
+                        key={`${composerSessionKey || "__no-session__"}:${conversationListScopeKey}`}
                         data-spirit-surface="conversation-list"
                         className="space-y-3"
                       >
+                        {subagentViewActive && messages.length === 0 ? (
+                          <p className="text-sm leading-relaxed text-muted-foreground">
+                            {t("app.subagentViewerEmpty")}
+                          </p>
+                        ) : null}
                         {messages.map((message, index) => {
                           const previous = messages[index - 1];
                           const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
                           const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
                           return (
                             <MessageCard
-                              key={conversationMessageStableId(message, composerSessionKey)}
+                              key={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
                               composerSessionKey={composerSessionKey}
+                              conversationListScopeKey={conversationListScopeKey}
                               messages={messages}
                               pendingAuxState={conversationPendingAuxState}
                               listIndex={index}
@@ -3193,6 +3266,9 @@ export default function App() {
                               readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
                               readLocalVideoPreviewUrl={runtime.readLocalVideoPreviewUrl}
                               saveLocalImageAs={runtime.saveLocalImageAs}
+                              onOpenSubagentViewer={
+                                subagentViewActive ? undefined : handleOpenSubagentViewer
+                              }
                             />
                           );
                         })}
@@ -3319,88 +3395,30 @@ export default function App() {
                   </div>
                 ) : null}
 
-                {pendingApproval ? (
-                  <Card className="border-border/50 bg-background/55 text-sm shadow-sm backdrop-blur-xl dark:border-white/12 supports-[backdrop-filter]:bg-background/40">
-                    <CardHeader className="space-y-1.5 px-3 py-2.5">
-                      <CardTitle className="min-w-0 truncate text-sm leading-tight">
-                        {pendingApproval.toolName}
-                      </CardTitle>
-                      <CardDescription className="text-xs leading-relaxed">
-                        <ScrollArea
-                          type="always"
-                          className="pr-3 [&>[data-radix-scroll-area-viewport]]:max-h-24 [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
-                        >
-                          <div className="whitespace-pre-wrap">
-                            {pendingApproval.prompt}
-                          </div>
-                        </ScrollArea>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-2 px-3 pb-3 pt-0">
-                      <div className="grid gap-1.5">
-                        <Button
-                          size="sm"
-                          className="h-8 w-full justify-start px-2.5"
-                          onClick={() => void runtime.submitApproval({ kind: "allow" })}
-                          disabled={runtime.busyAction === "approve"}
-                        >
-                          <Check data-icon="inline-start" />
-                          {t('app.allow')}
-                          <CornerDownLeft className="ml-auto size-3.5 shrink-0 opacity-70" aria-hidden />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-full justify-start px-2.5"
-                          onClick={() =>
-                            void runtime.submitApproval({ kind: "allow", persistTrust: true })
-                          }
-                          disabled={
-                            runtime.busyAction === "approve" || !pendingApproval.trustTarget
-                          }
-                        >
-                          <ShieldCheck data-icon="inline-start" />
-                          {t('app.alwaysTrust')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-full justify-start px-2.5"
-                          onClick={() => void runtime.submitApproval({ kind: "deny" })}
-                          disabled={runtime.busyAction === "approve"}
-                        >
-                          <X data-icon="inline-start" />
-                          {t('app.deny')}
-                        </Button>
-                      </div>
-                      <div className="flex min-h-9 items-stretch overflow-hidden rounded-md border border-input bg-transparent focus-within:border-ring/60 focus-within:ring-2 focus-within:ring-ring/20">
-                        <Textarea
-                          value={runtime.approvalGuidance}
-                          onChange={(event) => runtime.setApprovalGuidance(event.target.value)}
-                          placeholder={t('app.approvalGuidancePlaceholder')}
-                          className="min-h-9 flex-1 resize-none rounded-none border-0 bg-transparent px-2.5 py-2 text-sm shadow-none focus-visible:ring-0"
-                        />
-                        <Button
-                          size="icon-sm"
-                          variant="outline"
-                          className="h-auto w-9 self-stretch rounded-none border-0 border-l border-border/60 bg-transparent text-muted-foreground shadow-none hover:bg-muted/35 hover:text-foreground disabled:bg-transparent"
-                          onClick={() =>
-                            void runtime.submitApproval({
-                              kind: "guidance",
-                              userMessage: runtime.approvalGuidance,
-                            })
-                          }
-                          disabled={
-                            runtime.busyAction === "approve" ||
-                            runtime.approvalGuidance.trim().length === 0
-                          }
-                        >
-                          <MessageSquareText />
-                          <span className="sr-only">{t('app.sendGuidance')}</span>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {showPendingApprovalInComposer && pendingApproval ? (
+                  <PendingApprovalCard
+                    pendingApproval={pendingApproval}
+                    approvalGuidance={runtime.approvalGuidance}
+                    approveBusy={runtime.busyAction === "approve"}
+                    onApprovalGuidanceChange={runtime.setApprovalGuidance}
+                    onSubmitApproval={(decision) => {
+                      if (decision.kind === "allow") {
+                        void runtime.submitApproval({
+                          kind: "allow",
+                          ...(decision.persistTrust ? { persistTrust: true } : {}),
+                        });
+                        return;
+                      }
+                      if (decision.kind === "deny") {
+                        void runtime.submitApproval({ kind: "deny" });
+                        return;
+                      }
+                      void runtime.submitApproval({
+                        kind: "guidance",
+                        userMessage: decision.userMessage ?? "",
+                      });
+                    }}
+                  />
                 ) : null}
 
                 <div className="relative">

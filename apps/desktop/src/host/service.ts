@@ -349,6 +349,7 @@ import {
   readWorkspaceGitSnapshot,
 } from './git.js';
 import { generateWorktreeNamesFromModelTask } from './ephemeral-llm-tasks.js';
+import { buildSubagentViewerSnapshot } from './subagent-viewer.js';
 import { persistDesktopSessionBundle } from './session-persistence.js';
 import { SessionRegistry } from './session-registry.js';
 import type { SessionBundle } from './session-bundle.js';
@@ -438,6 +439,7 @@ class DesktopHostService {
   private readonly dreamUpdateListeners = new Set<(snapshot: DesktopSnapshot) => void>();
   private readonly sessionListUpdateListeners = new Set<() => void>();
   private readonly sessionTitleGenerationInFlight = new Set<string>();
+  private subagentViewerTargetToolCallId: string | null = null;
   private gitRefreshInFlight: Promise<void> | null = null;
   private contextUsageCatalogRefreshInFlight: Promise<void> | null = null;
   private pendingContextUsageCatalogRefresh:
@@ -663,6 +665,7 @@ class DesktopHostService {
       scheduleSessionExtensionWarmup: (event) =>
         this.scheduleExtensionWarmup({ type: 'session', event }),
       buildSnapshot: () => this.buildSnapshot(),
+      clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
     };
   }
 
@@ -1361,6 +1364,16 @@ class DesktopHostService {
 
   async poll(): Promise<DesktopSnapshot> {
     return pollCommand(this.sessionTurnContext());
+  }
+
+  async setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot> {
+    const trimmed = parentToolCallId?.trim();
+    this.subagentViewerTargetToolCallId = trimmed && trimmed.length > 0 ? trimmed : null;
+    return this.buildSnapshot();
+  }
+
+  private clearSubagentViewerTarget(): void {
+    this.subagentViewerTargetToolCallId = null;
   }
 
   private applyDrainedRuntimeHostEvents(
@@ -2129,7 +2142,15 @@ class DesktopHostService {
           ? { pendingAuxState: mapPendingAuxState(pendingAux)! }
           : {}),
         ...(pendingApproval
-          ? { pendingToolApproval: mapPendingToolApproval(pendingApproval) }
+          ? {
+              pendingToolApproval: mapPendingToolApproval({
+                toolName: pendingApproval.toolName,
+                request: pendingApproval.request as DesktopToolRequest,
+                prompt: pendingApproval.prompt,
+                trustTarget: pendingApproval.trustTarget,
+                subagentSessionId: pendingApproval.subagentSessionId,
+              }),
+            }
           : {}),
         ...(pendingQuestions
           ? { pendingQuestions: mapPendingQuestions(pendingQuestions) }
@@ -2143,6 +2164,15 @@ class DesktopHostService {
       },
       ...(activeBundle.activeSession ? { activeSession: activeBundle.activeSession } : {}),
       composerSessionKey: this.resolveTodoSessionKeyForBundle(activeBundle),
+      ...(this.subagentViewerTargetToolCallId
+        ? (() => {
+            const subagentViewer = buildSubagentViewerSnapshot(
+              activeBundle,
+              this.subagentViewerTargetToolCallId,
+            );
+            return subagentViewer ? { subagentViewer } : {};
+          })()
+        : {}),
     });
   }
 
