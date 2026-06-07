@@ -495,7 +495,7 @@ function sessionRowHoverClass(micaStyle?: boolean) {
   return micaStyle ? sidebarMicaMenuHoverClass : sidebarSessionListHoverClass;
 }
 
-export function SessionSidebar({
+function SessionSidebarInner({
   className,
   narrow,
   mode = "sessions",
@@ -1008,3 +1008,5 @@ export function SessionSidebar({
     </aside>
   );
 }
+
+export const SessionSidebar = memo(SessionSidebarInner);

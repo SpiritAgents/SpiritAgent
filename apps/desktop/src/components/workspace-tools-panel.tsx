@@ -1,4 +1,13 @@
-import { useCallback, useMemo, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  memo,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
@@ -99,7 +108,7 @@ export type WorkspaceToolsDockProps = {
   className?: string;
 };
 
-export function WorkspaceToolsDock({
+function WorkspaceToolsDockInner({
   workspaceRoot,
   listExplorerChildren,
   readWorkspaceTextFile,
@@ -501,3 +510,5 @@ export function WorkspaceToolsDock({
     </div>
   );
 }
+
+export const WorkspaceToolsDock = memo(WorkspaceToolsDockInner);

@@ -6,13 +6,11 @@ import {
   computeSessionSidebarMaxWidthPx,
   sessionSidebarShellWidth,
 } from "@/lib/desktop-chrome";
+import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-context";
 import { writeSessionSidebarWidthPx } from "@/lib/layout-prefs";
 import { cn } from "@/lib/utils";
 
 export type SessionSidebarShellProps = {
-  open: boolean;
-  widthPx: number;
-  onWidthPxChange(next: number): void;
   minWidthPx?: number;
   maxWidthPx?: number;
   useMicaBackdrop?: boolean;
@@ -21,9 +19,6 @@ export type SessionSidebarShellProps = {
 };
 
 export function SessionSidebarShell({
-  open,
-  widthPx,
-  onWidthPxChange,
   minWidthPx = SESSION_SIDEBAR_MIN_WIDTH_PX,
   maxWidthPx: maxWidthPxProp,
   useMicaBackdrop = false,
@@ -31,6 +26,7 @@ export function SessionSidebarShell({
   className,
 }: SessionSidebarShellProps) {
   const { t } = useTranslation();
+  const { open, widthPx, setWidthPx } = useSessionSidebarChrome();
   const [isResizing, setIsResizing] = useState(false);
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const latestWidthPxRef = useRef(widthPx);
@@ -64,8 +60,8 @@ export function SessionSidebarShell({
     if (widthPx <= maxWidthPx) {
       return;
     }
-    onWidthPxChange(clampWidth(widthPx));
-  }, [clampWidth, maxWidthPx, onWidthPxChange, widthPx]);
+    setWidthPx(clampWidth(widthPx));
+  }, [clampWidth, maxWidthPx, setWidthPx, widthPx]);
 
   const onResizePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -86,9 +82,9 @@ export function SessionSidebarShell({
       const delta = event.clientX - drag.startX;
       const next = clampWidth(drag.startWidth + delta);
       latestWidthPxRef.current = next;
-      onWidthPxChange(next);
+      setWidthPx(next);
     },
-    [clampWidth, onWidthPxChange],
+    [clampWidth, setWidthPx],
   );
 
   const endResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
