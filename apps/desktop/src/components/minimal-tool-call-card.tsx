@@ -490,12 +490,12 @@ export function MinimalToolCallCard({
   );
 
   const collapsibleTriggerButton = canOpenSubagentViewer ? (
-    <div className="group flex w-full min-w-0 items-center gap-1">
+    <div className="group inline-flex max-w-full min-w-0 items-center gap-1">
       <button
         type="button"
         onClick={() => onOpenSubagentViewer?.(subagentToolCallId)}
         className={cn(
-          "min-w-0 flex-1 overflow-hidden text-left outline-none",
+          "min-w-0 overflow-hidden text-left outline-none",
           "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
         )}
       >
@@ -534,7 +534,7 @@ export function MinimalToolCallCard({
         "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
       )}
     >
-      <span className="min-w-0 flex-1 overflow-hidden">{summaryRow}</span>
+      <span className="min-w-0 overflow-hidden">{summaryRow}</span>
       <ChevronRight
         className={cn(
           "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
