@@ -34,7 +34,7 @@ export const LOOP_SLASH_ALIAS = '/loop'
 export const PLAN_SLASH_ALIAS = '/plan'
 export const ASK_SLASH_ALIAS = '/ask'
 
-const STATIC_SLASH_SUGGESTIONS: readonly SkillSlashSuggestion[] = [
+export const STATIC_SLASH_COMMANDS: readonly SkillSlashSuggestion[] = [
   {
     id: 'command:create-skill',
     alias: CREATE_SKILL_SLASH_ALIAS,
@@ -105,7 +105,7 @@ export function buildSkillSlashSuggestions(
   }
 
   return [
-    ...STATIC_SLASH_SUGGESTIONS.filter((suggestion) => suggestion.alias.startsWith(query)),
+    ...STATIC_SLASH_COMMANDS.filter((suggestion) => suggestion.alias.startsWith(query)),
     ...skills
       .filter((skill) => skill.enabled)
       .filter((skill) => skillSlashAlias(skill.name).startsWith(query))
