@@ -89,17 +89,66 @@ export async function* responsesEventStreamToRuntimeEvents(
           break;
         }
         case 'tool-call': {
-          // Parity with openai/ai-sdk-transport: tool calls are aggregated from raw
-          // response.output_item.* chunks only. Also handling tool-call here duplicates
-          // the same function_call when the SDK emits both raw and normalized parts.
           sawAnswerOrToolOutput = true;
+          // Open Responses SSE 仍只从 raw output_item 聚合；Vercel AI Gateway v3 language-model 无该形态。
+          if (!shouldAggregateGatewaySdkToolCalls(config)) {
+            break;
+          }
+          const gatewayUpdates = accumulateGatewaySdkToolCallPart(
+            toolCalls,
+            nextToolIndex,
+            part.toolCallId,
+            part.toolName,
+            JSON.stringify(part.input ?? {}),
+          );
+          nextToolIndex = gatewayUpdates.nextToolIndex;
+          for (const update of gatewayUpdates.events) {
+            yield update;
+          }
+          break;
+        }
+        case 'tool-input-start': {
+          if (!shouldAggregateGatewaySdkToolCalls(config)) {
+            break;
+          }
+          sawAnswerOrToolOutput = true;
+          const gatewayUpdates = accumulateGatewaySdkToolCallPart(
+            toolCalls,
+            nextToolIndex,
+            part.id,
+            part.toolName,
+            '',
+          );
+          nextToolIndex = gatewayUpdates.nextToolIndex;
+          for (const update of gatewayUpdates.events) {
+            yield update;
+          }
           break;
         }
         case 'tool-input-delta': {
           sawAnswerOrToolOutput = true;
-          const existing = [...toolCalls.values()].find((call) => call.id === part.id);
-          if (existing) {
+          let existing = findToolCallByStreamId(toolCalls, part.id);
+          if (!existing && shouldAggregateGatewaySdkToolCalls(config)) {
+            const gatewayUpdates = accumulateGatewaySdkToolCallPart(
+              toolCalls,
+              nextToolIndex,
+              part.id,
+              'toolName' in part && typeof part.toolName === 'string' ? part.toolName : '',
+              '',
+            );
+            nextToolIndex = gatewayUpdates.nextToolIndex;
+            existing = gatewayUpdates.call;
+            for (const update of gatewayUpdates.events) {
+              yield update;
+            }
+          }
+          if (existing && typeof part.delta === 'string') {
             existing.functionArguments += part.delta;
+            const previewEvents: LlmStreamEvent[] = [];
+            maybeEmitPreview(previewEvents, existing);
+            for (const update of previewEvents) {
+              yield update;
+            }
           }
           break;
         }
@@ -390,6 +439,65 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
   }
 
   return { events, nextToolIndex: toolIndex };
+}
+
+function shouldAggregateGatewaySdkToolCalls(config: OpenResponsesTransportConfig): boolean {
+  return config.llmVendor === 'vercel-ai-gateway';
+}
+
+function findToolCallByStreamId(
+  toolCalls: Map<number, AggregatedStreamingToolCall>,
+  streamId: string | undefined,
+): AggregatedStreamingToolCall | undefined {
+  if (!streamId) {
+    return undefined;
+  }
+
+  return [...toolCalls.values()].find((call) => call.id === streamId || call.streamItemId === streamId);
+}
+
+function accumulateGatewaySdkToolCallPart(
+  toolCalls: Map<number, AggregatedStreamingToolCall>,
+  nextToolIndex: number,
+  toolCallId: string | undefined,
+  toolName: string | undefined,
+  functionArguments: string,
+): {
+  call: AggregatedStreamingToolCall;
+  nextToolIndex: number;
+  events: LlmStreamEvent[];
+} {
+  const normalizedId = typeof toolCallId === 'string' && toolCallId.length > 0
+    ? toolCallId
+    : `stream-tool-call-${nextToolIndex}`;
+  const normalizedName = typeof toolName === 'string' ? toolName : '';
+  const existing = findToolCallByStreamId(toolCalls, normalizedId);
+  const events: LlmStreamEvent[] = [];
+
+  if (existing) {
+    if (normalizedName) {
+      existing.functionName = normalizedName;
+    }
+    if (functionArguments) {
+      existing.functionArguments = functionArguments;
+    }
+    maybeEmitPreview(events, existing);
+    return { call: existing, nextToolIndex, events };
+  }
+
+  const index = nextToolIndex;
+  nextToolIndex += 1;
+  const call: AggregatedStreamingToolCall = {
+    index,
+    id: normalizedId,
+    type: 'function',
+    functionName: normalizedName,
+    functionArguments,
+    readyPreviewEmitted: false,
+  };
+  toolCalls.set(index, call);
+  maybeEmitPreview(events, call);
+  return { call, nextToolIndex, events };
 }
 
 function findToolCallByItemId(
