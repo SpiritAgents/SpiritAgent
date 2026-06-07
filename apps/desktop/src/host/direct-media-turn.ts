@@ -112,9 +112,70 @@ function renderDirectMediaError(error: unknown): string {
   return String(error);
 }
 
-export async function executeDirectMediaTurn(
+export function isSessionBundleBusy(bundle: SessionBundle | undefined): boolean {
+  if (!bundle) {
+    return false;
+  }
+  if (bundle.directMediaTurnInFlight === true) {
+    return true;
+  }
+  return bundle.runtime?.isBusy() === true;
+}
+
+export function beginDirectMediaTurn(
+  ctx: SessionTurnOrchestratorContext,
+  input: DirectMediaTurnInput & { toolCallId: string },
+): DesktopToolRequest {
+  const request = buildMediaToolRequest(input.toolName, input.prompt);
+  const startedEvent: RuntimeEvent<DesktopToolRequest> = {
+    kind: 'tool-call-started',
+    toolCallId: input.toolCallId,
+    toolName: input.toolName,
+    request,
+  };
+  ctx.orchestrationFor(input.bundle).runtimeEvents.applyRuntimeHostEvents([startedEvent]);
+  input.bundle.messages = input.bundle.messageTimeline.toMessages();
+  input.bundle.directMediaTurnInFlight = true;
+  return request;
+}
+
+function rollbackDirectMediaUserTurn(
   ctx: SessionTurnOrchestratorContext,
   input: DirectMediaTurnInput,
+): void {
+  input.bundle.currentTurnSkills = [];
+  ctx.orchestrationFor(input.bundle).assistantMessages.handleMessageRemoved(
+    input.bundle.messages.length - 1,
+    input.userMessageId,
+    'send-user-rollback',
+  );
+  input.bundle.messages.pop();
+  ctx.rebuildMessageTimelineFromMessages();
+}
+
+async function validateDirectMediaTurnSetup(
+  ctx: SessionTurnOrchestratorContext,
+  input: DirectMediaTurnInput,
+): Promise<void> {
+  const config = ctx.requireConfig();
+  const profile = config.models.find((model) => model.name === config.activeModel);
+  if (!profile) {
+    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel }));
+  }
+
+  const apiKey = await ctx.resolveApiKeyForConfigModel(profile.name);
+  if (!apiKey) {
+    throw new Error(i18n.t('error.apiKeyNotConfigured'));
+  }
+
+  await ctx.ensureToolExecutor(input.bundle);
+}
+
+async function runDirectMediaGeneration(
+  ctx: SessionTurnOrchestratorContext,
+  input: DirectMediaTurnInput,
+  toolCallId: string,
+  request: DesktopToolRequest,
 ): Promise<void> {
   const config = ctx.requireConfig();
   const profile = config.models.find((model) => model.name === config.activeModel);
@@ -133,19 +194,7 @@ export async function executeDirectMediaTurn(
   });
   const toolExecutor = (await ctx.ensureToolExecutor(input.bundle)) as DesktopToolExecutor;
   const llmTransport = input.bundle.runtimeTransport ?? createLlmTransport();
-  const toolCallId = randomUUID();
-  const request = buildMediaToolRequest(input.toolName, input.prompt);
   const orchestration = ctx.orchestrationFor(input.bundle);
-
-  const startedEvent: RuntimeEvent<DesktopToolRequest> = {
-    kind: 'tool-call-started',
-    toolCallId,
-    toolName: input.toolName,
-    request,
-  };
-  orchestration.runtimeEvents.applyRuntimeHostEvents([startedEvent]);
-  input.bundle.messages = input.bundle.messageTimeline.toMessages();
-  ctx.emitLiveSnapshotUpdate();
 
   try {
     let output: ToolExecutionOutput;
@@ -207,7 +256,54 @@ export async function executeDirectMediaTurn(
   input.bundle.messages = input.bundle.messageTimeline.toMessages();
   await ctx.recordRewindCheckpoint(input.userMessageId, input.beforeUserCheckpoint);
   await ctx.persistSessionBundle(input.bundle, { bumpListSortAt: false });
-  ctx.emitLiveSnapshotUpdate();
+}
+
+/** 同步执行整轮直连媒体（测试与旧调用路径）。 */
+export async function executeDirectMediaTurn(
+  ctx: SessionTurnOrchestratorContext,
+  input: DirectMediaTurnInput,
+): Promise<void> {
+  const toolCallId = randomUUID();
+  const request = beginDirectMediaTurn(ctx, { ...input, toolCallId });
+  try {
+    await runDirectMediaGeneration(ctx, input, toolCallId, request);
+  } finally {
+    input.bundle.directMediaTurnInFlight = false;
+  }
+}
+
+/** 与 LLM 流式回合一致：先展示工具卡并立即返回 snapshot，生成在后台 runSerialized 中完成。 */
+export function scheduleDirectMediaTurn(
+  ctx: SessionTurnOrchestratorContext,
+  input: DirectMediaTurnInput,
+): void {
+  input.bundle.directMediaTurnInFlight = true;
+
+  void ctx.runSerialized(async () => {
+    const toolCallId = randomUUID();
+    let beganTurn = false;
+    try {
+      await validateDirectMediaTurnSetup(ctx, input);
+      const request = beginDirectMediaTurn(ctx, { ...input, toolCallId });
+      beganTurn = true;
+      ctx.emitLiveSnapshotUpdate();
+      await runDirectMediaGeneration(ctx, input, toolCallId, request);
+      const orchestration = ctx.orchestrationFor(input.bundle);
+      orchestration.runtimeEvents.syncPendingToolStates();
+      orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+      await ctx.flushDeferredRuntimeRefreshIfIdle(input.bundle);
+      await ctx.refreshTodoSnapshotForBundle(input.bundle);
+    } catch (error) {
+      if (!beganTurn) {
+        rollbackDirectMediaUserTurn(ctx, input);
+      }
+      throw error;
+    } finally {
+      input.bundle.directMediaTurnInFlight = false;
+      input.bundle.currentTurnSkills = [];
+      ctx.emitLiveSnapshotUpdate();
+    }
+  });
 }
 
 export function shouldUseComposerDirectMediaTurn(

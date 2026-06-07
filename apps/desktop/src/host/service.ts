@@ -172,6 +172,7 @@ import {
   type SessionTurnOrchestratorContext,
   type SubmitUserTurnAfterInitializedOptions,
 } from './session-turn-orchestrator.js';
+import { isSessionBundleBusy } from './direct-media-turn.js';
 import {
   openSessionCommand,
   resetSessionCommand,
@@ -558,7 +559,8 @@ class DesktopHostService {
       isRuntimeBusy: () => this.runtime?.isBusy() === true,
       activeBundle: () => this.activeBundle(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
-      bundleRuntimeIsBusy: (sessionPath) => this.sessionRegistry.get(sessionPath)?.runtime?.isBusy() === true,
+      bundleRuntimeIsBusy: (sessionPath) =>
+        isSessionBundleBusy(this.sessionRegistry.get(sessionPath)),
       bundleForSessionPath: (sessionPath) => this.sessionRegistry.findBySessionPath(sessionPath),
       refreshGitState: () => this.refreshGitState(),
       refreshRuntimeForActiveBundle: () => this.refreshRuntimeForBundle(this.activeBundle()),
@@ -1438,7 +1440,7 @@ class DesktopHostService {
       },
       bundleRuntimeIsBusy: (sessionPath) => {
         const bundle = this.sessionRegistry.findBySessionPath(sessionPath);
-        return bundle?.runtime?.isBusy() === true;
+        return isSessionBundleBusy(bundle);
       },
     };
   }
@@ -2077,19 +2079,21 @@ class DesktopHostService {
       livePendingAux: pendingAux,
       rewind: this.activeBundle().rewind,
     });
+    const activeBundle = this.activeBundle();
+    const conversationBusy = isSessionBundleBusy(activeBundle);
+
     this.logContinuationSnapshotState({
       rawMessages: rawConversationMessages,
       visibleMessages: conversationMessages,
-      isBusy: this.runtime?.isBusy() ?? false,
+      isBusy: conversationBusy,
       pendingAux,
     });
     this.logToolSnapshotState({
       rawMessages,
       timelineMessages: rawConversationMessages,
       visibleMessages: conversationMessages,
-      isBusy: this.runtime?.isBusy() ?? false,
+      isBusy: conversationBusy,
     });
-    const activeBundle = this.activeBundle();
 
     return buildDesktopSnapshot({
       workspaceRoot: state.workspaceRoot,
@@ -2130,7 +2134,7 @@ class DesktopHostService {
         ...(pendingQuestions
           ? { pendingQuestions: mapPendingQuestions(pendingQuestions) }
           : {}),
-        isBusy: this.runtime?.isBusy() ?? false,
+        isBusy: conversationBusy,
         ...(this.activeBundle().rewindWarnings.length > 0
           ? { rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })) }
           : {}),

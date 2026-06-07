@@ -66,6 +66,8 @@ export interface SessionBundle {
   /** Tracks whether the sidebar title is seed-truncated or LLM-generated. */
   sessionTitleSource?: SessionTitleSource;
   contextUsage?: ConversationContextUsageSnapshot;
+  /** Composer 直连生图/生视频后台执行中；与 runtime.isBusy 一并驱动 snapshot.isBusy。 */
+  directMediaTurnInFlight?: boolean;
 }
 
 export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {
@@ -170,4 +172,5 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.activePlanPath = undefined;
   bundle.sessionTitleSource = undefined;
   bundle.contextUsage = undefined;
+  bundle.directMediaTurnInFlight = false;
 }
