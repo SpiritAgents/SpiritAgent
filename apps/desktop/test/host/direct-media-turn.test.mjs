@@ -6,6 +6,8 @@ import { DesktopMessageTimeline } from '../../dist-electron/src/host/message-tim
 import { DesktopRuntimeEventOrchestrator } from '../../dist-electron/src/host/runtime-event-orchestrator.js';
 import {
   executeDirectMediaTurn,
+  isSessionBundleBusy,
+  scheduleDirectMediaTurn,
   shouldUseComposerDirectMediaTurn,
 } from '../../dist-electron/src/host/direct-media-turn.js';
 
@@ -48,6 +50,10 @@ function createDirectMediaHarness() {
   const orchestrator = new DesktopRuntimeEventOrchestrator({
     runtime: () => ({
       takeCompletedTurnResult: () => undefined,
+      currentPendingApproval: () => undefined,
+      currentPendingQuestions: () => undefined,
+      pendingAssistantText: () => '',
+      history: () => [],
     }),
     messages: () => messages,
     allocateMessageId: () => nextMessageId++,
@@ -79,6 +85,8 @@ function createDirectMediaHarness() {
         runtimeHistory.length = 0;
         runtimeHistory.push(...archive.llmHistory);
       },
+      currentPendingApproval: () => undefined,
+      currentPendingQuestions: () => undefined,
     },
     runtimeTransport: {
       async generateImage(_config, request, saveGenerated) {
@@ -119,10 +127,14 @@ function createDirectMediaHarness() {
     }),
     orchestrationFor: () => ({
       runtimeEvents: orchestrator,
+      assistantMessages,
     }),
     emitLiveSnapshotUpdate: () => {},
     recordRewindCheckpoint: async () => {},
     persistSessionBundle: async () => {},
+    flushDeferredRuntimeRefreshIfIdle: async () => {},
+    refreshTodoSnapshotForBundle: async () => {},
+    rebuildMessageTimelineFromMessages: () => {},
   };
 
   return { bundle, ctx, messages: () => messages };
@@ -148,4 +160,64 @@ test('executeDirectMediaTurn emits succeeded generate_image tool card and archiv
   assert.equal(harness.bundle.runtime.history().length, 3);
   assert.equal(harness.bundle.runtime.history()[1].role, 'assistant');
   assert.equal(harness.bundle.runtime.history()[1].toolCalls?.[0]?.name, 'generate_image');
+});
+
+test('isSessionBundleBusy includes direct media in-flight flag', () => {
+  assert.equal(isSessionBundleBusy(undefined), false);
+  assert.equal(isSessionBundleBusy({ runtime: { isBusy: () => false } }), false);
+  assert.equal(isSessionBundleBusy({ directMediaTurnInFlight: true, runtime: { isBusy: () => false } }), true);
+});
+
+test('scheduleDirectMediaTurn returns before generation completes', async () => {
+  const harness = createDirectMediaHarness();
+  let releaseGenerate;
+  const generateGate = new Promise((resolve) => {
+    releaseGenerate = resolve;
+  });
+  harness.bundle.runtimeTransport.generateImage = async (_config, request, saveGenerated) => {
+    await generateGate;
+    await saveGenerated({
+      data: new Uint8Array([1, 2, 3]),
+      mediaType: 'image/png',
+      prompt: request.prompt,
+      model: 'dall-e-3',
+    });
+    return {
+      content: [
+        { type: 'text', text: '[generated image]' },
+        { type: 'image', path: 'generated/direct-test.png' },
+      ],
+      summaryText: [
+        '[generated image]',
+        'image_ref: spirit-agent://generated/image/direct-test.png',
+      ].join('\n'),
+    };
+  };
+
+  const pendingJobs = [];
+  const ctx = {
+    ...harness.ctx,
+    runSerialized: (work) => {
+      pendingJobs.push(work);
+      return Promise.resolve();
+    },
+  };
+
+  scheduleDirectMediaTurn(ctx, {
+    bundle: harness.bundle,
+    toolName: 'generate_image',
+    prompt: 'draw a square poster',
+    userMessageId: 1,
+    beforeUserCheckpoint: undefined,
+  });
+
+  assert.equal(harness.bundle.directMediaTurnInFlight, true);
+  assert.equal(pendingJobs.length, 1);
+
+  releaseGenerate();
+  await pendingJobs[0]();
+
+  assert.equal(harness.bundle.directMediaTurnInFlight, false);
+  const finishedTool = harness.messages().find((message) => message.tool?.toolName === 'generate_image');
+  assert.equal(finishedTool?.tool?.phase, 'succeeded');
 });
