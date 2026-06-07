@@ -2095,6 +2095,28 @@ export default function App() {
     Boolean(pendingQuestions) ||
     (runtime.busyAction === "send" && !conversationInterruptible);
   const [rewindDraft, setRewindDraft] = useState<MessageRewindDraftState | null>(null);
+  const previousComposerSessionKeyRef = useRef(composerSessionKey);
+
+  useEffect(() => {
+    if (previousComposerSessionKeyRef.current !== composerSessionKey) {
+      previousComposerSessionKeyRef.current = composerSessionKey;
+      if (subagentViewer.active) {
+        void subagentViewer.close();
+      }
+    }
+  }, [composerSessionKey, subagentViewer]);
+
+  useEffect(() => {
+    if (subagentViewer.active && !snapshot?.subagentViewer) {
+      void subagentViewer.close();
+    }
+  }, [snapshot?.subagentViewer, subagentViewer]);
+
+  useEffect(() => {
+    if (rewindDraft && subagentViewer.active) {
+      void subagentViewer.close();
+    }
+  }, [rewindDraft, subagentViewer]);
   useLocalFileAttachmentPreviews(
     rewindDraft?.localFileAttachments ?? [],
     (update) => {
@@ -3134,10 +3156,12 @@ export default function App() {
                   data-spirit-surface="conversation-scroll-body"
                   className={cn(
                     "min-h-full w-full bg-background",
-                    !isEmptySession && "pb-[calc(12rem+env(safe-area-inset-bottom,0px))]",
+                    !isEmptySession || subagentViewActive
+                      ? "pb-[calc(12rem+env(safe-area-inset-bottom,0px))]"
+                      : undefined,
                   )}
                 >
-                  {!isEmptySession ? (
+                  {!isEmptySession || subagentViewActive ? (
                     <div
                       data-spirit-surface="conversation-list-shell"
                       className={cn(
@@ -3157,6 +3181,11 @@ export default function App() {
                         data-spirit-surface="conversation-list"
                         className="space-y-3"
                       >
+                        {subagentViewActive && messages.length === 0 ? (
+                          <p className="text-sm leading-relaxed text-muted-foreground">
+                            {t("app.subagentViewerEmpty")}
+                          </p>
+                        ) : null}
                         {messages.map((message, index) => {
                           const previous = messages[index - 1];
                           const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
