@@ -5,6 +5,7 @@ import { computeWorkspaceFileReferenceSuggestions } from '@spirit-agent/host-int
 import type { WorkspaceFileReferenceIndexSnapshot } from '@/types'
 
 const INDEX_POLL_INTERVAL_MS = 50
+const INDEX_PRIME_RETRY_POLLS = 40
 
 type UseWorkspaceFileIndexOptions = {
   workspaceRoot: string
@@ -36,9 +37,16 @@ export function useWorkspaceFileIndex({
     setReady(false)
     setFileCount(0)
 
-    void primeWorkspaceFileReferenceIndex().catch(() => undefined)
-
     const poll = async () => {
+      let pollsSincePrime = 0
+
+      const requestPrime = () => {
+        pollsSincePrime = 0
+        void primeWorkspaceFileReferenceIndex().catch(() => undefined)
+      }
+
+      requestPrime()
+
       while (!cancelled) {
         try {
           const snapshot = await getWorkspaceFileReferenceIndex()
@@ -53,6 +61,11 @@ export function useWorkspaceFileIndex({
           }
         } catch {
           // 索引构建中或宿主未就绪，继续轮询。
+        }
+
+        pollsSincePrime += 1
+        if (pollsSincePrime >= INDEX_PRIME_RETRY_POLLS) {
+          requestPrime()
         }
 
         await new Promise<void>((resolve) => {

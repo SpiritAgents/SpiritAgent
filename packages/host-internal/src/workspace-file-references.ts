@@ -30,6 +30,11 @@ interface WorkspaceFileIndexCacheEntry {
   files?: string[];
 }
 
+interface IgnoreMatcherEntry {
+  baseRelPath: string;
+  matcher: Ignore;
+}
+
 const workspaceFileIndexCache = new Map<string, WorkspaceFileIndexCacheEntry>();
 
 export interface WorkspaceFileReferenceTextAttachment {
@@ -313,7 +318,6 @@ async function collectWorkspaceFileIndexViaGit(workspaceRoot: string): Promise<s
 }
 
 async function collectWorkspaceFileIndexViaFastGlob(workspaceRoot: string): Promise<string[]> {
-  const rootIgnorePatterns = await readRootIgnorePatterns(workspaceRoot);
   const globIgnore = [
     '**/.git/**',
     ...Array.from(DEFAULT_IGNORED_DIRECTORY_NAMES).map((directory) => `**/${directory}/**`),
@@ -328,35 +332,158 @@ async function collectWorkspaceFileIndexViaFastGlob(workspaceRoot: string): Prom
     ignore: globIgnore,
   });
 
-  const normalizedEntries = entries.map((entry) => entry.replace(/\\/gu, '/'));
-  if (rootIgnorePatterns.length === 0) {
-    return normalizedEntries;
-  }
+  const files: string[] = [];
+  const matcherCache = new Map<string, IgnoreMatcherEntry[]>();
 
-  const matcher = createIgnore({ allowRelativePaths: true }).add(rootIgnorePatterns);
-  return normalizedEntries.filter((entry) => !matcher.ignores(entry));
-}
-
-async function readRootIgnorePatterns(workspaceRoot: string): Promise<string[]> {
-  const patterns: string[] = [];
-
-  for (const ignoreFileName of IGNORE_FILE_NAMES) {
-    let content: string;
-    try {
-      content = await readFile(resolve(workspaceRoot, ignoreFileName), 'utf8');
-    } catch {
+  for (const entry of entries) {
+    const relativePath = entry.replace(/\\/gu, '/');
+    const parentDirRelPath = relativePath.includes('/')
+      ? relativePath.slice(0, relativePath.lastIndexOf('/'))
+      : '';
+    if (
+      parentDirRelPath
+        .split('/')
+        .some((segment) => DEFAULT_IGNORED_DIRECTORY_NAMES.has(segment))
+    ) {
       continue;
     }
 
-    patterns.push(
-      ...content
-        .split(/\r?\n/u)
-        .map((line) => line.trimEnd())
-        .filter((line) => line.length > 0 && !line.startsWith('#')),
+    const matchers = await cachedIgnoreMatchersForRelativeDir(
+      workspaceRoot,
+      parentDirRelPath,
+      matcherCache,
     );
+    if (shouldIgnoreWorkspacePath(relativePath, false, matchers)) {
+      continue;
+    }
+
+    files.push(relativePath);
   }
 
-  return patterns;
+  return files;
+}
+
+async function cachedIgnoreMatchersForRelativeDir(
+  workspaceRoot: string,
+  dirRelPath: string,
+  cache: Map<string, IgnoreMatcherEntry[]>,
+): Promise<IgnoreMatcherEntry[]> {
+  const cached = cache.get(dirRelPath);
+  if (cached) {
+    return cached;
+  }
+
+  const segments = dirRelPath ? dirRelPath.split('/').filter((segment) => segment.length > 0) : [];
+  let matchers: IgnoreMatcherEntry[] = [];
+  let currentRelPath = '';
+
+  for (let index = 0; index <= segments.length; index += 1) {
+    matchers = [...matchers, ...(await readIgnoreMatchers(workspaceRoot, currentRelPath))];
+    if (index < segments.length) {
+      currentRelPath = currentRelPath
+        ? `${currentRelPath}/${segments[index]}`
+        : segments[index]!;
+    }
+  }
+
+  cache.set(dirRelPath, matchers);
+  return matchers;
+}
+
+async function readIgnoreMatchers(
+  workspaceRoot: string,
+  currentDirRelPath: string,
+): Promise<IgnoreMatcherEntry[]> {
+  const matchers: IgnoreMatcherEntry[] = [];
+
+  for (const ignoreFileName of IGNORE_FILE_NAMES) {
+    const ignoreFileAbsolutePath = currentDirRelPath
+      ? resolve(workspaceRoot, ...currentDirRelPath.split('/'), ignoreFileName)
+      : resolve(workspaceRoot, ignoreFileName);
+    const matcher = await readIgnoreMatcher(ignoreFileAbsolutePath, currentDirRelPath);
+    if (matcher) {
+      matchers.push(matcher);
+    }
+  }
+
+  if (!currentDirRelPath) {
+    const excludeMatcher = await readIgnoreMatcher(
+      resolve(workspaceRoot, '.git', 'info', 'exclude'),
+      '',
+    );
+    if (excludeMatcher) {
+      matchers.push(excludeMatcher);
+    }
+  }
+
+  return matchers;
+}
+
+async function readIgnoreMatcher(
+  absolutePath: string,
+  baseRelPath: string,
+): Promise<IgnoreMatcherEntry | undefined> {
+  let content: string;
+  try {
+    content = await readFile(absolutePath, 'utf8');
+  } catch {
+    return undefined;
+  }
+
+  const patterns = content
+    .split(/\r?\n/u)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0 && !line.startsWith('#'));
+  if (patterns.length === 0) {
+    return undefined;
+  }
+
+  return {
+    baseRelPath,
+    matcher: createIgnore({ allowRelativePaths: true }).add(patterns),
+  };
+}
+
+function shouldIgnoreWorkspacePath(
+  relativePath: string,
+  isDirectory: boolean,
+  matchers: readonly IgnoreMatcherEntry[],
+): boolean {
+  let ignored = false;
+  const pathWithDirectorySuffix = isDirectory ? `${relativePath}/` : relativePath;
+
+  for (const entry of matchers) {
+    const matcherRelativePath = relativePathFromMatcherBase(entry.baseRelPath, pathWithDirectorySuffix);
+    if (!matcherRelativePath) {
+      continue;
+    }
+
+    const result = entry.matcher.test(matcherRelativePath);
+    if (result.ignored) {
+      ignored = true;
+    }
+    if (result.unignored) {
+      ignored = false;
+    }
+  }
+
+  return ignored;
+}
+
+function relativePathFromMatcherBase(baseRelPath: string, targetRelativePath: string): string | undefined {
+  if (!baseRelPath) {
+    return targetRelativePath;
+  }
+
+  if (targetRelativePath === `${baseRelPath}/`) {
+    return undefined;
+  }
+
+  if (!targetRelativePath.startsWith(`${baseRelPath}/`)) {
+    return undefined;
+  }
+
+  return targetRelativePath.slice(baseRelPath.length + 1);
 }
 
 function pathPassesDefaultIgnoredDirectories(relativePath: string): boolean {

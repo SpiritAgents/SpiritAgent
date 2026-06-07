@@ -15,6 +15,7 @@ import {
 import {
   looksLikeAbsolutePath,
   normalizeAbsolutePathInput,
+  toWorkspaceFileReferenceQueryInput,
 } from '@/lib/file-picker-path'
 import { instantHoverMotionClass } from '@/lib/desktop-chrome'
 import { cn } from '@/lib/utils'
@@ -71,8 +72,7 @@ export function WorkspaceFilePickerDialog({
       return
     }
 
-    const syntheticInput = trimmed ? `@${trimmed}` : '@'
-    setSuggestions(searchWorkspaceFiles(syntheticInput))
+    setSuggestions(searchWorkspaceFiles(toWorkspaceFileReferenceQueryInput(trimmed)))
   }, [indexReady, open, query, searchWorkspaceFiles, workspaceBinding, workspaceRoot])
 
   const trimmedQuery = query.trim()
