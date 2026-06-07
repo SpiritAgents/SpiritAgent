@@ -11,8 +11,10 @@ export function useSubagentViewer(
       if (!trimmed) {
         return;
       }
-      setActiveToolCallId(trimmed);
-      await setSubagentViewerTarget(trimmed);
+      const ok = await setSubagentViewerTarget(trimmed);
+      if (ok) {
+        setActiveToolCallId(trimmed);
+      }
     },
     [setSubagentViewerTarget],
   );
