@@ -16,7 +16,10 @@ import {
   writeWorkspaceToolsWidthPx,
 } from "@/lib/layout-prefs";
 import { cn } from "@/lib/utils";
-import type { WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
+import type {
+  EditorFileTarget,
+  WorkspaceEditorViewMode,
+} from "@/lib/workspace-editor-navigation";
 import {
   addWorkspaceToolTab,
   closeWorkspaceToolTab,
@@ -67,6 +70,8 @@ export type WorkspaceToolsDockProps = {
   autoRevealFileNonce?: number;
   fileRevealTabId?: string | null;
   fileRevealPath?: string;
+  fileRevealAbsolutePath?: string;
+  fileRevealScope?: EditorFileTarget["scope"];
   fileRevealViewMode?: WorkspaceEditorViewMode;
   onOpenWorkspaceFile?: (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => void;
   tabs: WorkspaceToolTab[];
@@ -105,6 +110,8 @@ export function WorkspaceToolsDock({
   autoRevealFileNonce = 0,
   fileRevealTabId = null,
   fileRevealPath = "",
+  fileRevealAbsolutePath = "",
+  fileRevealScope = "workspace",
   fileRevealViewMode = "edit",
   onOpenWorkspaceFile,
   tabs,
@@ -435,6 +442,8 @@ export function WorkspaceToolsDock({
                         autoRevealFileNonce={fileRevealEnabled ? autoRevealFileNonce : 0}
                         fileRevealEnabled={fileRevealEnabled}
                         fileRevealPath={fileRevealPath}
+                        fileRevealAbsolutePath={fileRevealAbsolutePath}
+                        fileRevealScope={fileRevealScope}
                         fileRevealViewMode={fileRevealViewMode}
                         onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       />
