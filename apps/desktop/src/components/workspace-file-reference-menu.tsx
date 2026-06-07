@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { File } from 'lucide-react'
-
+import { WorkspaceFilePickerRow } from '@/components/workspace-file-picker-row'
 import {
   Command,
   CommandEmpty,
@@ -20,11 +19,6 @@ type WorkspaceFileReferenceMenuProps = {
   selectedIndex: number
   onSelectIndex(index: number): void
   onApplySuggestion(path: string): void
-}
-
-function basename(path: string): string {
-  const segments = path.split('/')
-  return segments[segments.length - 1] || path
 }
 
 export function WorkspaceFileReferenceMenu({
@@ -75,15 +69,7 @@ export function WorkspaceFileReferenceMenu({
               onFocus={() => onSelectIndex(index)}
               onSelect={() => onApplySuggestion(path)}
             >
-              <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_minmax(0,68%)] items-baseline gap-2 overflow-hidden">
-                <File className="size-3.5 shrink-0 text-muted-foreground/75" aria-hidden />
-                <div className="min-w-0 truncate text-sm font-medium leading-6 text-foreground">
-                  {basename(path)}
-                </div>
-                <div className="min-w-0 truncate text-right text-xs leading-5 text-muted-foreground">
-                  {path}
-                </div>
-              </div>
+              <WorkspaceFilePickerRow path={path} tone="menu" />
             </CommandItem>
           ))}
           <CommandEmpty className="px-3 py-2.5 text-left text-sm text-muted-foreground">
