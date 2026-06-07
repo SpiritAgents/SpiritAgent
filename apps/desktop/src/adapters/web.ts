@@ -188,6 +188,9 @@ export function createWebHostApi(): HostApi {
     poll() {
       return post<DesktopSnapshot>(baseUrl, '/api/poll');
     },
+    setSubagentViewerTarget(parentToolCallId: string | null) {
+      return post<DesktopSnapshot>(baseUrl, '/api/subagent-viewer-target', { parentToolCallId });
+    },
     listDreamsOverview() {
       return get<DesktopDreamOverviewItem[]>(baseUrl, '/api/dreams');
     },

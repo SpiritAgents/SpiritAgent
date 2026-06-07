@@ -118,6 +118,7 @@ import { SkillSlashMenu } from "@/components/skill-slash-menu";
 import { SettingsView } from "@/components/settings-view";
 import { ComposerTodoCard } from "@/components/composer-todo-card";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
+import { SubagentViewerBanner } from "@/components/subagent-viewer-banner";
 import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-context";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import {
@@ -147,6 +148,7 @@ import {
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useFont } from "@/hooks/useFont";
@@ -434,12 +436,14 @@ function ToolCallCollapsible({
   readLocalVideoPreviewUrl,
   readManagedVideoPreviewUrl,
   saveLocalImageAs,
+  onOpenSubagentViewer,
 }: {
   tool: ToolBlockSnapshot;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
+  onOpenSubagentViewer?: (toolCallId: string) => void;
 }) {
   if (tool.toolName === "finish_task") {
     return null;
@@ -465,7 +469,9 @@ function ToolCallCollapsible({
     );
   }
 
-  return <MinimalToolCallCard tool={tool} />;
+  return (
+    <MinimalToolCallCard tool={tool} onOpenSubagentViewer={onOpenSubagentViewer} />
+  );
 }
 
 function ImageGenerationToolCard({
@@ -1386,6 +1392,7 @@ function MessageCard({
   readLocalImagePreviewDataUrl,
   readLocalVideoPreviewUrl,
   saveLocalImageAs,
+  onOpenSubagentViewer,
 }: {
   composerSessionKey: string;
   messages: readonly ConversationMessageSnapshot[];
@@ -1425,6 +1432,7 @@ function MessageCard({
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
+  onOpenSubagentViewer?: (toolCallId: string) => void;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
@@ -1564,6 +1572,7 @@ function MessageCard({
             readLocalVideoPreviewUrl={readLocalVideoPreviewUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             saveLocalImageAs={saveLocalImageAs}
+            onOpenSubagentViewer={onOpenSubagentViewer}
           />
         ) : null}
         {!isUser && showContinueButton && continueTarget ? (
@@ -1970,6 +1979,15 @@ export default function App() {
   }, [isElectronShell, snapshot?.config.windowsMica]);
 
   const compactionDemo = useCompactionUiDemo();
+  const subagentViewer = useSubagentViewer(runtime.setSubagentViewerTarget);
+  const subagentViewActive = subagentViewer.active && Boolean(snapshot?.subagentViewer);
+  const handleOpenSubagentViewer = useCallback(
+    (toolCallId: string) => {
+      compactionDemo.stop();
+      void subagentViewer.open(toolCallId);
+    },
+    [compactionDemo, subagentViewer],
+  );
   const models = snapshot?.config.models ?? [];
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
   const emptySessionGreetingCacheRef = useRef(new Map<string, EmptySessionGreetingVariantId>());
@@ -2008,17 +2026,23 @@ export default function App() {
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const messagesDuringRewindSuppressed =
     runtime.busyAction === "rewind" ? [] : sessionMessages;
-  const messages = compactionDemo.active ? compactionDemo.messages : messagesDuringRewindSuppressed;
+  const messages = subagentViewActive
+    ? (snapshot?.subagentViewer?.messages ?? [])
+    : compactionDemo.active
+      ? compactionDemo.messages
+      : messagesDuringRewindSuppressed;
   const turnContinue = useMemo(
-    () => (compactionDemo.active ? undefined : resolveTurnContinuePresentation(messages)),
-    [compactionDemo.active, messages],
+    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
+    [compactionDemo.active, messages, subagentViewActive],
   );
-  const isEmptySession = !compactionDemo.active && sessionMessages.length === 0;
+  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
   /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
   const showWorkspaceBindingControls = isEmptySession;
-  const conversationPendingAuxState = compactionDemo.active
-    ? compactionDemo.pendingAuxState
-    : snapshot?.conversation.pendingAuxState;
+  const conversationPendingAuxState = subagentViewActive
+    ? snapshot?.subagentViewer?.pendingAuxState
+    : compactionDemo.active
+      ? compactionDemo.pendingAuxState
+      : snapshot?.conversation.pendingAuxState;
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
   const pendingQuestions = runtime.pendingQuestions;
@@ -2048,6 +2072,7 @@ export default function App() {
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const composerCanSend =
     !compactionDemo.active &&
+    !subagentViewActive &&
     (Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0) &&
     !activeSessionReadOnly &&
     runtime.busyAction !== "session" &&
@@ -3072,6 +3097,16 @@ export default function App() {
                   </div>
                 </div>
               ) : null}
+              {subagentViewActive && snapshot?.subagentViewer ? (
+                <SubagentViewerBanner
+                  promptText={snapshot.subagentViewer.promptText}
+                  gutterClassName={CONVERSATION_GUTTER_X}
+                  maxWidthClassName={CONVERSATION_MAX_W}
+                  onExit={() => {
+                    void subagentViewer.close();
+                  }}
+                />
+              ) : null}
               {rewindDraft ? (
                 <button
                   type="button"
@@ -3193,6 +3228,9 @@ export default function App() {
                               readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
                               readLocalVideoPreviewUrl={runtime.readLocalVideoPreviewUrl}
                               saveLocalImageAs={runtime.saveLocalImageAs}
+                              onOpenSubagentViewer={
+                                subagentViewActive ? undefined : handleOpenSubagentViewer
+                              }
                             />
                           );
                         })}

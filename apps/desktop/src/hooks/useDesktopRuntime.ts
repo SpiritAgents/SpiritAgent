@@ -1829,6 +1829,22 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, refreshSessions]);
 
+  const setSubagentViewerTarget = useCallback(async (parentToolCallId: string | null): Promise<boolean> => {
+    if (!api?.setSubagentViewerTarget) {
+      return false;
+    }
+
+    try {
+      const next = await api.setSubagentViewerTarget(parentToolCallId);
+      applySnapshot(next);
+      setRuntimeError("");
+      return true;
+    } catch (error) {
+      setRuntimeError(describeError(error));
+      return false;
+    }
+  }, [api, applySnapshot]);
+
   const setApprovalLevel = useCallback(async (approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel): Promise<boolean> => {
     if (!api) {
       return false;
@@ -2350,6 +2366,7 @@ export function useDesktopRuntime() {
     inspectMcpServer,
     abortConversation,
     setLoopEnabled,
+    setSubagentViewerTarget,
     setApprovalLevel,
     setPendingGitBranch,
     setWorkLocation,
