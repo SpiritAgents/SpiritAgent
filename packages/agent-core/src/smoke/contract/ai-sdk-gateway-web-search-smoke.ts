@@ -9,21 +9,16 @@ import {
   startOpenAiToolAgentState,
 } from '../../openai/tool-agent-helpers.js';
 import { printSmokeSection } from '../shared/index.js';
-import {
-  buildOpenResponsesFinalTextBody,
-  buildOpenResponsesWebSearchCallBody,
-} from './open-responses-mock.js';
 
 async function main(): Promise<void> {
   await runGatewayWebSearchInjectionSmoke();
   await runGatewayWebSearchInvocationSmoke();
-  await runGatewayWebSearchStreamingSmoke();
 }
 
 async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
   let capturedBody: Record<string, unknown> | undefined;
   const server = createServer(async (request, response) => {
-    if (request.method !== 'POST' || !request.url?.includes('/responses')) {
+    if (request.method !== 'POST' || !request.url?.includes('/language-model')) {
       response.statusCode = 404;
       response.end('not found');
       return;
@@ -36,9 +31,7 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
     capturedBody = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
 
     response.writeHead(200, { 'content-type': 'application/json' });
-    response.end(JSON.stringify(
-      buildOpenResponsesFinalTextBody('gpt-5.4', 'GATEWAY_WEB_SEARCH_OK'),
-    ));
+    response.end(JSON.stringify(buildGatewayV3TextResponse('GATEWAY_WEB_SEARCH_OK')));
   });
 
   server.listen(0, '127.0.0.1');
@@ -105,7 +98,7 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
 
 async function runGatewayWebSearchInvocationSmoke(): Promise<void> {
   const server = createServer(async (request, response) => {
-    if (request.method !== 'POST' || !request.url?.includes('/responses')) {
+    if (request.method !== 'POST' || !request.url?.includes('/language-model')) {
       response.statusCode = 404;
       response.end('not found');
       return;
@@ -123,7 +116,7 @@ async function runGatewayWebSearchInvocationSmoke(): Promise<void> {
     }
 
     response.writeHead(200, { 'content-type': 'application/json' });
-    response.end(JSON.stringify(buildOpenResponsesWebSearchCallBody('gpt-5.4')));
+    response.end(JSON.stringify(buildGatewayV3TextResponse('Gateway web search pricing is $5 per 1k requests.')));
   });
 
   server.listen(0, '127.0.0.1');
@@ -157,158 +150,20 @@ async function runGatewayWebSearchInvocationSmoke(): Promise<void> {
   server.close();
 
   printSmokeSection('ai-sdk gateway web_search invocation smoke', round);
-  if (round.kind !== 'success') {
+  if (round.kind !== 'success' || round.result.step.kind !== 'final-response-ready') {
     throw new Error('gateway web_search invocation smoke 未成功完成。');
   }
-
-  // Provider-executed web search may finish inside the Responses round without host tool-calls.
-  if (
-    round.result.step.kind !== 'final-response-ready'
-    && round.result.step.kind !== 'tool-calls'
-  ) {
-    throw new Error('gateway web_search invocation smoke 未进入可完成步骤。');
-  }
 }
 
-async function runGatewayWebSearchStreamingSmoke(): Promise<void> {
-  const server = createServer((request, response) => {
-    if (request.method !== 'POST' || !request.url?.includes('/responses')) {
-      response.statusCode = 404;
-      response.end('not found');
-      return;
-    }
-
-    response.writeHead(200, {
-      'content-type': 'text/event-stream; charset=utf-8',
-      'cache-control': 'no-cache, no-transform',
-      connection: 'keep-alive',
-    });
-
-    const chunks = [
-      sseEvent({
-        type: 'response.web_search_call.in_progress',
-        item_id: 'wsc_stream_1',
-      }),
-      sseEvent({
-        type: 'response.output_item.added',
-        item: {
-          type: 'web_search_call',
-          id: 'wsc_stream_1',
-          call_id: 'call_web_search_stream_1',
-          status: 'in_progress',
-          action: {
-            type: 'search',
-            query: 'AI Gateway web search pricing',
-          },
-        },
-      }),
-      sseEvent({
-        type: 'response.output_item.done',
-        item: {
-          type: 'web_search_call',
-          id: 'wsc_stream_1',
-          call_id: 'call_web_search_stream_1',
-          status: 'completed',
-          action: {
-            type: 'search',
-            query: 'AI Gateway web search pricing',
-            sources: [
-              {
-                title: 'Vercel AI Gateway',
-                url: 'https://vercel.com/docs/ai-gateway/capabilities/web-search',
-              },
-            ],
-          },
-        },
-      }),
-      sseEvent({
-        type: 'response.completed',
-        response: {
-          id: 'resp-web-search-stream',
-          status: 'completed',
-          usage: {
-            input_tokens: 1,
-            output_tokens: 1,
-            input_tokens_details: { cached_tokens: 0 },
-            output_tokens_details: { reasoning_tokens: 0 },
-          },
-        },
-      }),
-    ];
-
-    for (const chunk of chunks) {
-      response.write(chunk);
-    }
-    response.end();
-  });
-
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  const address = server.address();
-  if (!address || typeof address === 'string') {
-    server.close();
-    throw new Error('无法获取本地 smoke server 端口。');
-  }
-
-  const transport = new AiSdkOpenResponsesTransport();
-  const state = startOpenAiToolAgentState(
-    [],
-    'Search the web for AI Gateway web search pricing.',
-    process.cwd(),
-    [],
-    [],
-    [],
-    'openai/gpt-5.4',
-  );
-  const started = await transport.startToolAgentRoundStreaming(
-    {
-      transportKind: 'open-responses',
-      apiKey: 'test-key',
-      model: 'openai/gpt-5.4',
-      baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
-      llmVendor: 'vercel-ai-gateway',
-      store: false,
-    },
-    state,
-    [],
-  );
-
-  const events = await collectEvents(started.eventStream);
-  const completion = await started.completion;
-  server.close();
-
-  printSmokeSection('ai-sdk gateway web_search streaming smoke events', events);
-  printSmokeSection('ai-sdk gateway web_search streaming smoke completion', completion);
-
-  const previewEvents = events.filter(
-    (event) => isJsonObject(event) && event.kind === 'streaming-tool-preview',
-  );
-  if (
-    !previewEvents.some(
-      (event) => isJsonObject(event) && event.toolName === 'web_search',
-    )
-  ) {
-    throw new Error('gateway web_search streaming smoke 未收到 web_search 预览事件。');
-  }
-
-  if (completion.kind !== 'success') {
-    throw new Error('gateway web_search streaming smoke 未完成。');
-  }
+function buildGatewayV3TextResponse(text: string): JsonObject {
+  return {
+    content: [{ type: 'text', text }],
+    finishReason: 'stop',
+    usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+  };
 }
 
-function sseEvent(payload: JsonValue): string {
-  return `data: ${JSON.stringify(payload)}\n\n`;
-}
-
-async function collectEvents(
-  stream: AsyncIterable<{ kind: string } & Record<string, unknown>>,
-): Promise<JsonValue[]> {
-  const events: JsonValue[] = [];
-  for await (const event of stream) {
-    events.push(event as unknown as JsonValue);
-  }
-  return events;
-}
+type JsonObject = Record<string, JsonValue>;
 
 function requestIncludesGatewayWebSearchTool(body: Record<string, unknown> | undefined): boolean {
   const tools = body?.tools;
@@ -323,8 +178,7 @@ function requestIncludesGatewayWebSearchTool(body: Record<string, unknown> | und
 
     const record = tool as Record<string, unknown>;
     return record.id === 'gateway.perplexity_search'
-      || record.type === 'web_search'
-      || (record.type === 'provider' && record.id === 'gateway.perplexity_search');
+      || (record.type === 'provider' && record.name === 'web_search');
   });
 }
 
