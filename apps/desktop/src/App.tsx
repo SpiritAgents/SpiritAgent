@@ -2044,13 +2044,11 @@ export default function App() {
     i18n.language,
   ]);
   const sessionMessages = snapshot?.conversation.messages ?? [];
-  const messagesDuringRewindSuppressed =
-    runtime.busyAction === "rewind" ? [] : sessionMessages;
   const messages = subagentViewActive
     ? (snapshot?.subagentViewer?.messages ?? [])
     : compactionDemo.active
       ? compactionDemo.messages
-      : messagesDuringRewindSuppressed;
+      : sessionMessages;
   const conversationListScopeKey = resolveConversationListScopeKey({
     subagentViewActive,
     subagentToolCallId: subagentViewer.toolCallId,
@@ -2068,6 +2066,17 @@ export default function App() {
     : compactionDemo.active
       ? compactionDemo.pendingAuxState
       : snapshot?.conversation.pendingAuxState;
+  const [conversationListRemountEpoch, setConversationListRemountEpoch] = useState(0);
+  const prevSessionMessageCountRef = useRef(sessionMessages.length);
+
+  useEffect(() => {
+    const count = sessionMessages.length;
+    if (count < prevSessionMessageCountRef.current) {
+      setConversationListRemountEpoch((epoch) => epoch + 1);
+    }
+    prevSessionMessageCountRef.current = count;
+  }, [sessionMessages.length]);
+
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
   const showPendingApprovalInComposer = Boolean(
@@ -3222,7 +3231,7 @@ export default function App() {
                         }}
                       >
                       <div
-                        key={`${composerSessionKey || "__no-session__"}:${conversationListScopeKey}`}
+                        key={`${composerSessionKey || "__no-session__"}:${conversationListScopeKey}:e${conversationListRemountEpoch}`}
                         data-spirit-surface="conversation-list"
                         className="space-y-3"
                       >
