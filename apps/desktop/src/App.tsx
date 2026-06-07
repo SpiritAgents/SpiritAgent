@@ -129,7 +129,6 @@ import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-conte
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
 import {
   isGenericPendingThinkingStatusText,
-  isLivePendingReasoningAux,
   isSubagentStatusSurfaceMessage,
 } from "@/lib/subagent-display";
 import {
