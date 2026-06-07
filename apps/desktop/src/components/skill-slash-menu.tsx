@@ -1,20 +1,11 @@
 import { useEffect, useRef } from 'react'
-import type { LucideIcon } from 'lucide-react'
-import {
-  CircleHelp,
-  ClipboardList,
-  FoldVertical,
-  Repeat,
-  ScrollText,
-  Sparkles,
-  Wand2,
-} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import {
   DESKTOP_COMPOSER_SUGGESTION_MENU_SCROLL_VIEWPORT,
   instantHoverMotionClass,
 } from '@/lib/desktop-chrome'
+import { SLASH_SUGGESTION_ICONS } from '@/lib/slash-command-icons'
 import { cn } from '@/lib/utils'
 import type { SkillSlashSuggestion, SkillSlashSuggestionKind } from '@/lib/skill-slash'
 
@@ -23,16 +14,6 @@ type SkillSlashMenuProps = {
   selectedIndex: number
   onSelectIndex(index: number): void
   onApplySuggestion(suggestion: SkillSlashSuggestion): void
-}
-
-const SLASH_SUGGESTION_ICONS: Record<SkillSlashSuggestionKind, LucideIcon> = {
-  'create-skill': Wand2,
-  'log-session': ScrollText,
-  compact: FoldVertical,
-  loop: Repeat,
-  plan: ClipboardList,
-  ask: CircleHelp,
-  skill: Sparkles,
 }
 
 function SlashSuggestionIcon({ kind }: { kind: SkillSlashSuggestionKind }) {

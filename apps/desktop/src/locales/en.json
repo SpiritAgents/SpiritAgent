@@ -519,6 +519,13 @@
     "filePickerAbsolutePathNotFound": "No file exists at that path",
     "fileReferenceCandidates": "Workspace file reference candidates"
   },
+  "actionPalette": {
+    "title": "Command Palette",
+    "description": "Search and run workspace actions.",
+    "placeholder": "Search commands…",
+    "empty": "No matching commands",
+    "newSessionDescription": "Start a new conversation session"
+  },
   "composer": {
     "insertWorkspaceFile": "Reference Workspace File",
     "selectLocalFile": "Select Local File",
