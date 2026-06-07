@@ -227,17 +227,10 @@ import type {
   WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
 
-/** Stable list identity — must not include list index (rows insert above tools during finalize-thinking). */
-function conversationMessageStableId(
-  message: ConversationMessageSnapshot,
-  composerSessionKey = "",
-): string {
-  const sessionPart = composerSessionKey.trim() ? `${composerSessionKey.trim()}:` : "";
-  const toolPart =
-    message.tool?.toolCallId ??
-    (message.tool ? `${message.tool.toolName}:${message.tool.phase}` : "");
-  return `${sessionPart}message-${message.id}-${message.pending ? "p" : "m"}-${toolPart}`;
-}
+import {
+  conversationMessageStableId,
+  resolveConversationListScopeKey,
+} from "@/lib/conversation-list-scope";
 
 /** 主会话列最大宽度（居中） */
 const CONVERSATION_MAX_W = "max-w-[min(86vw,44rem)]";
@@ -1356,6 +1349,7 @@ function AssistantCompactionCollapsible({
 
 function MessageCard({
   composerSessionKey,
+  conversationListScopeKey,
   messages,
   message,
   listIndex,
@@ -1396,6 +1390,7 @@ function MessageCard({
   onOpenSubagentViewer,
 }: {
   composerSessionKey: string;
+  conversationListScopeKey: string;
   messages: readonly ConversationMessageSnapshot[];
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
@@ -1465,7 +1460,7 @@ function MessageCard({
   );
   return (
     <div
-      id={conversationMessageStableId(message, composerSessionKey)}
+      id={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
       data-spirit-surface="message-row"
       data-spirit-message-role={message.role}
       data-spirit-message-pending={message.pending ? "true" : "false"}
@@ -2032,6 +2027,11 @@ export default function App() {
     : compactionDemo.active
       ? compactionDemo.messages
       : messagesDuringRewindSuppressed;
+  const conversationListScopeKey = resolveConversationListScopeKey({
+    subagentViewActive,
+    subagentToolCallId: subagentViewer.toolCallId,
+    compactionDemoActive: compactionDemo.active,
+  });
   const turnContinue = useMemo(
     () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
     [compactionDemo.active, messages, subagentViewActive],
@@ -3177,7 +3177,7 @@ export default function App() {
                         }}
                       >
                       <div
-                        key={composerSessionKey || "__no-session__"}
+                        key={`${composerSessionKey || "__no-session__"}:${conversationListScopeKey}`}
                         data-spirit-surface="conversation-list"
                         className="space-y-3"
                       >
@@ -3192,8 +3192,9 @@ export default function App() {
                           const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
                           return (
                             <MessageCard
-                              key={conversationMessageStableId(message, composerSessionKey)}
+                              key={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
                               composerSessionKey={composerSessionKey}
+                              conversationListScopeKey={conversationListScopeKey}
                               messages={messages}
                               pendingAuxState={conversationPendingAuxState}
                               listIndex={index}
