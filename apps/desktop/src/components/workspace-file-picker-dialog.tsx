@@ -124,7 +124,7 @@ export function WorkspaceFilePickerDialog({
       onOpenChange={onOpenChange}
       title={t('workspace.filePickerTitle')}
       description={t('workspace.filePickerDescription')}
-      className="max-w-2xl"
+      className="sm:max-w-xl"
     >
       <Command
         shouldFilter={false}
@@ -136,7 +136,7 @@ export function WorkspaceFilePickerDialog({
           onValueChange={setQuery}
           placeholder={t('workspace.filePickerPlaceholder')}
         />
-        <CommandList>
+        <CommandList className="max-h-96">
           {absolutePathCandidate && absolutePathExists !== false ? (
             <CommandItem
               key={`absolute:${absolutePathCandidate}`}
