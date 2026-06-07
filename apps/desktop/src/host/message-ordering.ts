@@ -369,11 +369,13 @@ export function toolCallSummaryCopyForRequest(
       const reason = typeof record.reason === 'string' ? record.reason.trim() : '';
       const mode = typeof record.mode === 'string' ? record.mode.trim() : '';
       const target =
-        typeof record.process_name === 'string'
-          ? record.process_name.trim()
-          : typeof record.window_title === 'string'
-            ? record.window_title.trim()
-            : '';
+        typeof record.surface === 'string'
+          ? record.surface.trim()
+          : typeof record.process_name === 'string'
+            ? record.process_name.trim()
+            : typeof record.window_title === 'string'
+              ? record.window_title.trim()
+              : '';
       const debugPort =
         typeof record.debug_port === 'number' && Number.isFinite(record.debug_port)
           ? `CDP:${Math.trunc(record.debug_port)}`

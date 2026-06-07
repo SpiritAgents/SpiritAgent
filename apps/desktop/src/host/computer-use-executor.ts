@@ -29,13 +29,20 @@ export async function executeComputerUseSnapshot(
     return formatHelperResponse(response);
   }
 
-  if (!request.process_name?.trim() && !request.window_title?.trim()) {
-    throw new Error('computer_use_snapshot mode=tree requires process_name and/or window_title.');
+  if (
+    !request.process_name?.trim()
+    && !request.window_title?.trim()
+    && !request.surface?.trim()
+  ) {
+    throw new Error(
+      'computer_use_snapshot mode=tree requires surface, process_name, and/or window_title.',
+    );
   }
 
   const uiaResponse = await snapshotWindowsUi({
     process_name: request.process_name,
     window_title: request.window_title,
+    surface: request.surface,
     max_depth: request.max_depth,
     max_nodes: request.max_nodes,
   });
@@ -50,7 +57,8 @@ export async function executeComputerUseSnapshot(
     tree?: unknown;
   } | undefined;
 
-  if (uiaData?.host_kind !== 'cef') {
+  const shellSurface = request.surface?.trim();
+  if (uiaData?.host_kind !== 'cef' || shellSurface) {
     return formatHelperResponse({
       ...uiaResponse,
       data: {

@@ -7,6 +7,7 @@ internal static class UiSnapshot
     public sealed record SnapshotRequest(
         string? ProcessName,
         string? WindowTitle,
+        string? Surface,
         int MaxDepth,
         int MaxNodes);
 
@@ -22,7 +23,12 @@ internal static class UiSnapshot
 
     public static object Capture(SnapshotRequest request, RefRegistry registry)
     {
-        if (!WindowResolver.TryResolveWindow(request.ProcessName, request.WindowTitle, out var window, out var resolveError))
+        if (!WindowResolver.TryResolveWindow(
+                request.ProcessName,
+                request.WindowTitle,
+                request.Surface,
+                out var window,
+                out var resolveError))
         {
             return JsonProtocol.Error(resolveError ?? "window_not_found", "Target window could not be resolved.");
         }
@@ -33,16 +39,32 @@ internal static class UiSnapshot
         var nodeBudget = new NodeBudget(request.MaxNodes);
         var tree = BuildNode(window, hwnd, walker, registry, depth: 0, request.MaxDepth, nodeBudget, isRoot: true);
         var coverage = nodeBudget.Truncated ? "partial" : "full";
+        var resolvedTitle = window.Current.Name ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(resolvedTitle) && !string.IsNullOrWhiteSpace(request.Surface))
+        {
+            resolvedTitle = ShellSurfaceCatalog.DisplayTitleFor(request.Surface) ?? string.Empty;
+        }
+
+        var processName = WindowEnumerator.ResolveProcessName(hwnd);
+        object windowPayload = string.IsNullOrWhiteSpace(request.Surface)
+            ? new
+            {
+                hwnd,
+                title = resolvedTitle,
+                process_name = processName,
+            }
+            : new
+            {
+                hwnd,
+                title = resolvedTitle,
+                process_name = processName,
+                surface = request.Surface.Trim().ToLowerInvariant(),
+            };
 
         return JsonProtocol.Ok(new
         {
             host_kind = hostKind,
-            window = new
-            {
-                hwnd,
-                title = window.Current.Name ?? string.Empty,
-                process_name = WindowEnumerator.ResolveProcessName(hwnd),
-            },
+            window = windowPayload,
             coverage,
             tree,
             nodes_returned = nodeBudget.Count,

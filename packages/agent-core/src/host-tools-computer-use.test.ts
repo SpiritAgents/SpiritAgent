@@ -28,6 +28,16 @@ test('computer_use_snapshot schema includes optional debug_port', () => {
   assert.ok(properties.debug_port);
 });
 
+test('computer_use_snapshot schema includes taskbar surface', () => {
+  const definitions = buildComputerUseHostToolDefinitions();
+  const snapshot = definitions[0] as {
+    function?: { parameters?: { properties?: Record<string, { enum?: string[] }> } };
+  };
+  const surface = snapshot.function?.parameters?.properties?.surface;
+  assert.ok(surface);
+  assert.deepEqual(surface?.enum, ['taskbar', 'secondary_taskbar']);
+});
+
 test('computer_use_action schema includes optional debug_port', () => {
   const definitions = buildComputerUseHostToolDefinitions();
   const action = definitions[1] as {

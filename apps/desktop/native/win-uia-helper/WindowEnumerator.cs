@@ -64,7 +64,13 @@ internal static class WindowEnumerator
     }
 }
 
-internal readonly record struct WindowInfo(int Hwnd, string Title, string ProcessName, bool IsEnabled);
+internal readonly record struct WindowInfo(
+    int Hwnd,
+    string Title,
+    string ProcessName,
+    bool IsEnabled,
+    string? Surface = null,
+    string? ClassName = null);
 
 internal static class NativeMethods
 {

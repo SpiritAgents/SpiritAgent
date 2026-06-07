@@ -160,6 +160,7 @@ export async function listWindowsViaComputerUse(): Promise<WinComputerUseHelperR
 export async function snapshotWindowsUi(input: {
   process_name?: string;
   window_title?: string;
+  surface?: string;
   max_depth?: number;
   max_nodes?: number;
 }): Promise<WinComputerUseHelperResponse> {

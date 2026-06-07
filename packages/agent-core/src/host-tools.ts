@@ -724,7 +724,7 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
   return [
     functionTool(
       COMPUTER_USE_SNAPSHOT_TOOL_NAME,
-      'Inspect Windows desktop UI (not screenshots). Windows Electron host only. For mode=list_windows, enumerate top-level windows. For mode=tree, return a structured element tree with stable refs; specify process_name and/or window_title. Chromium/CEF host windows automatically use the target app CDP accessibility tree when it was started with --remote-debugging-port (default debug_port 9222); other windows use UI Automation. Pattern or CDP actions are performed via computer_use_action.',
+      'Inspect Windows desktop UI (not screenshots). Windows Electron host only. For mode=list_windows, enumerate top-level windows plus shell surfaces (taskbar). For mode=tree, return a structured element tree with stable refs; specify surface, process_name, and/or window_title. Use surface=taskbar for the Windows taskbar (Shell_TrayWnd). Chromium/CEF host windows automatically use the target app CDP accessibility tree when it was started with --remote-debugging-port (default debug_port 9222); other windows use UI Automation. Pattern or CDP actions are performed via computer_use_action.',
       {
         type: 'object',
         properties: {
@@ -736,15 +736,21 @@ export function buildComputerUseHostToolDefinitions(): JsonValue[] {
           mode: {
             type: 'string',
             enum: ['list_windows', 'tree'],
-            description: 'list_windows enumerates top-level windows; tree returns the UIA subtree for one target window.',
+            description: 'list_windows enumerates top-level windows and shell surfaces; tree returns the UIA subtree for one target.',
+          },
+          surface: {
+            type: 'string',
+            enum: ['taskbar', 'secondary_taskbar'],
+            description:
+              'Shell UI surface for mode=tree. taskbar targets Shell_TrayWnd; secondary_taskbar targets Shell_SecondaryTrayWnd when present.',
           },
           process_name: {
             type: 'string',
-            description: 'Target process file name, e.g. notepad.exe. Required for mode=tree unless window_title is set.',
+            description: 'Target process file name, e.g. notepad.exe. Required for mode=tree unless window_title or surface is set.',
           },
           window_title: {
             type: 'string',
-            description: 'Substring match against the target window title. Required for mode=tree unless process_name is set.',
+            description: 'Substring match against the target window title. Required for mode=tree unless process_name or surface is set.',
           },
           max_depth: {
             type: 'integer',

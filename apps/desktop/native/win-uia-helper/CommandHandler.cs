@@ -34,27 +34,47 @@ internal sealed class CommandHandler
     private static object HandleListWindows()
     {
         var windows = WindowEnumerator.ListTopLevelWindows()
-            .Select(w => new
-            {
-                hwnd = w.Hwnd,
-                title = w.Title,
-                process_name = w.ProcessName,
-                is_enabled = w.IsEnabled,
-            })
+            .Select(FormatWindowListEntry)
+            .Concat(ShellSurfaceCatalog.ListAvailableSurfaces().Select(FormatWindowListEntry))
             .ToList();
 
         return JsonProtocol.Ok(new { windows });
+    }
+
+    private static object FormatWindowListEntry(WindowInfo window)
+    {
+        if (!string.IsNullOrWhiteSpace(window.Surface))
+        {
+            return new
+            {
+                hwnd = window.Hwnd,
+                title = window.Title,
+                process_name = window.ProcessName,
+                is_enabled = window.IsEnabled,
+                surface = window.Surface,
+                class_name = window.ClassName,
+            };
+        }
+
+        return new
+        {
+            hwnd = window.Hwnd,
+            title = window.Title,
+            process_name = window.ProcessName,
+            is_enabled = window.IsEnabled,
+        };
     }
 
     private object HandleSnapshot(JsonElement root)
     {
         var processName = ReadOptionalString(root, "process_name");
         var windowTitle = ReadOptionalString(root, "window_title");
+        var surface = ReadOptionalString(root, "surface");
         var maxDepth = ReadOptionalInt(root, "max_depth", 8, 1, 32);
         var maxNodes = ReadOptionalInt(root, "max_nodes", 400, 1, 5000);
 
         return UiSnapshot.Capture(
-            new UiSnapshot.SnapshotRequest(processName, windowTitle, maxDepth, maxNodes),
+            new UiSnapshot.SnapshotRequest(processName, windowTitle, surface, maxDepth, maxNodes),
             _registry);
     }
 

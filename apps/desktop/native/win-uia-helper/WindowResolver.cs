@@ -4,14 +4,24 @@ namespace Spirit.WinUia;
 
 internal static class WindowResolver
 {
-    public static bool TryResolveWindow(string? processName, string? windowTitle, out AutomationElement window, out string? error)
+    public static bool TryResolveWindow(
+        string? processName,
+        string? windowTitle,
+        string? surface,
+        out AutomationElement window,
+        out string? error)
     {
         window = null!;
         error = null;
 
+        if (!string.IsNullOrWhiteSpace(surface))
+        {
+            return ShellSurfaceCatalog.TryResolveBySurfaceId(surface, out window, out error);
+        }
+
         if (string.IsNullOrWhiteSpace(processName) && string.IsNullOrWhiteSpace(windowTitle))
         {
-            error = "process_name or window_title is required.";
+            error = "process_name, window_title, or surface is required.";
             return false;
         }
 

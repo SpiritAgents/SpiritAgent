@@ -84,7 +84,7 @@ test('spirit-win-uia snapshot requires target window', async (t) => {
   const { lines } = await sendHelperCommands([{ cmd: 'snapshot' }, { cmd: 'shutdown' }]);
   const snapshot = JSON.parse(lines[0]);
   assert.equal(snapshot.ok, false);
-  assert.equal(snapshot.error.code, 'process_name or window_title is required.');
+  assert.equal(snapshot.error.code, 'process_name, window_title, or surface is required.');
 });
 
 test('spirit-win-uia action rejects unknown ref', async (t) => {
@@ -136,6 +136,38 @@ test('spirit-win-uia snapshot cloudmusic reports host_kind cef when running', as
     return;
   }
   assert.equal(snapshot.data.host_kind, 'cef');
+});
+
+test('spirit-win-uia list_windows includes taskbar shell surface', async (t) => {
+  if (process.platform !== 'win32') {
+    t.skip('Windows only');
+    return;
+  }
+
+  const { lines } = await sendHelperCommands([{ cmd: 'list_windows' }, { cmd: 'shutdown' }]);
+  const listed = JSON.parse(lines[0]);
+  assert.equal(listed.ok, true);
+  const taskbar = listed.data.windows.find((window) => window.surface === 'taskbar');
+  assert.ok(taskbar, 'expected taskbar surface in list_windows');
+  assert.equal(taskbar.class_name, 'Shell_TrayWnd');
+  assert.ok(taskbar.hwnd > 0);
+});
+
+test('spirit-win-uia snapshot taskbar surface returns UIA tree', async (t) => {
+  if (process.platform !== 'win32') {
+    t.skip('Windows only');
+    return;
+  }
+
+  const { lines } = await sendHelperCommands([
+    { cmd: 'snapshot', surface: 'taskbar', max_depth: 6, max_nodes: 120 },
+    { cmd: 'shutdown' },
+  ]);
+  const snapshot = JSON.parse(lines[0]);
+  assert.equal(snapshot.ok, true);
+  assert.equal(snapshot.data.host_kind, 'native');
+  assert.equal(snapshot.data.window.surface, 'taskbar');
+  assert.ok(snapshot.data.nodes_returned > 1);
 });
 
 test('spirit-win-uia list_windows returns array', async (t) => {

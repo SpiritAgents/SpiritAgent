@@ -291,6 +291,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       mode: 'list_windows' | 'tree';
       process_name?: string;
       window_title?: string;
+      surface?: 'taskbar' | 'secondary_taskbar';
       max_depth?: number;
       max_nodes?: number;
       debug_port?: number;
@@ -833,6 +834,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           }
           const processName = optionalStringStrict(parsed, 'process_name');
           const windowTitle = optionalStringStrict(parsed, 'window_title');
+          const surface = parseComputerUseSurface(parsed);
           const maxDepth = optionalPositiveInt(parsed, 'max_depth');
           const maxNodes = optionalPositiveInt(parsed, 'max_nodes');
           const debugPort = optionalDebugPort(parsed, 'debug_port');
@@ -842,6 +844,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
             mode: modeRaw,
             ...(processName ? { process_name: processName } : {}),
             ...(windowTitle ? { window_title: windowTitle } : {}),
+            ...(surface ? { surface } : {}),
             ...(maxDepth !== undefined ? { max_depth: maxDepth } : {}),
             ...(maxNodes !== undefined ? { max_nodes: maxNodes } : {}),
             ...(debugPort !== undefined ? { debug_port: debugPort } : {}),
@@ -2306,6 +2309,20 @@ function optionalPositiveInt(obj: HostJsonObject, key: string): number | undefin
     throw new Error(`字段 ${key} 必须 >= 1`);
   }
   return n;
+}
+
+const COMPUTER_USE_SHELL_SURFACES = ['taskbar', 'secondary_taskbar'] as const;
+type ComputerUseShellSurface = (typeof COMPUTER_USE_SHELL_SURFACES)[number];
+
+function parseComputerUseSurface(obj: HostJsonObject): ComputerUseShellSurface | undefined {
+  const value = optionalStringStrict(obj, 'surface');
+  if (!value) {
+    return undefined;
+  }
+  if (!COMPUTER_USE_SHELL_SURFACES.includes(value as ComputerUseShellSurface)) {
+    throw new Error('computer_use_snapshot surface must be taskbar or secondary_taskbar.');
+  }
+  return value as ComputerUseShellSurface;
 }
 
 function optionalDebugPort(obj: HostJsonObject, key: string): number | undefined {

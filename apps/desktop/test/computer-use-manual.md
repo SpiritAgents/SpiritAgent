@@ -21,10 +21,11 @@ node --test test/computer-use-cdp-e2e.test.mjs
 
 在 Agent 模式中让模型：
 
-1. 调用 `computer_use_snapshot`（`mode=list_windows`）— 应返回顶层窗口列表，无需审批。
-2. 打开记事本后调用 `computer_use_snapshot`（`mode=tree`, `process_name=notepad.exe`）— 应返回 `host_kind=native`、`transport=uia` 与带 `w…` ref 的控件树。
-3. 调用 `computer_use_action`（`action=set_value`）— 应弹出审批；批准后编辑器出现文本。
-4. 打开计算器后对数字按钮 `invoke` — 应通过 Pattern 点击，不移动用户鼠标。
+1. 调用 `computer_use_snapshot`（`mode=list_windows`）— 应返回顶层窗口列表及 `surface=taskbar` 任务栏项，无需审批。
+2. 调用 `computer_use_snapshot`（`mode=tree`, `surface=taskbar`）— 应返回 `host_kind=native`、`transport=uia` 与任务栏 UIA 子树（`w…` ref）。
+3. 打开记事本后调用 `computer_use_snapshot`（`mode=tree`, `process_name=notepad.exe`）— 应返回 `host_kind=native`、`transport=uia` 与带 `w…` ref 的控件树。
+4. 调用 `computer_use_action`（`action=set_value`）— 应弹出审批；批准后编辑器出现文本。
+5. 打开计算器后对数字按钮 `invoke` — 应通过 Pattern 点击，不移动用户鼠标。
 
 ## CDP 回退（CEF / Chromium 宿主）
 
