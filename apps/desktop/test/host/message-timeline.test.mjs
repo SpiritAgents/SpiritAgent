@@ -645,6 +645,26 @@ test('user local file attachments survive timeline round trip', () => {
   assert.deepEqual(roundTripped[0].localFileAttachments, messages[0].localFileAttachments);
 });
 
+test('interrupted deferred thinking finalizes to one row without duplicate pending aux', () => {
+  const timeline = createTimeline();
+  const thinking = 'The user just sent "A" — random typing.';
+  timeline.beginUserTurn('A');
+  timeline.beginAssistantSegment('initial');
+  timeline.updatePendingAssistantAux('thinking', thinking);
+  // abortConversation: drain remove-pending-assistant before abortActiveAssistantSegment
+  timeline.removePendingAssistantText();
+  timeline.finalizeThinkingSegment(thinking, 'after-stream');
+  timeline.abortActiveAssistantSegment();
+
+  const messages = timeline.toMessages();
+  assert.equal(messages.length, 2);
+  assert.deepEqual(messages.map(rowToken), [
+    'user:A',
+    `thinking:${thinking}`,
+  ]);
+  assert.equal(messages[1].pending, false);
+});
+
 test('user local file attachments survive timeline snapshot restore', () => {
   const timeline = createTimeline();
   timeline.beginUserTurn('哈哈哈', {

@@ -180,6 +180,30 @@ export class DesktopRuntimeEventOrchestrator {
     this.options.messageTimeline?.()?.finalizeThinkingSegment(deferred, placement);
   }
 
+  /**
+   * 用户中断流式思考：先 drain 再定稿 deferred aux，避免拆行与 pending 行重复、布局下移。
+   */
+  finalizeInterruptedDeferredThinking(input: {
+    thinkingText?: string;
+    compactionText?: string;
+  } = {}): void {
+    const thinking =
+      input.thinkingText?.trim() || this.deferredAfterStreamThinking?.trim() || '';
+    this.deferredAfterStreamThinking = undefined;
+    const timeline = this.options.messageTimeline?.();
+    if (!timeline) {
+      return;
+    }
+    if (thinking) {
+      timeline.finalizeThinkingSegment(thinking, 'after-stream');
+      return;
+    }
+    const compaction = input.compactionText?.trim() ?? '';
+    if (compaction) {
+      timeline.finalizeCompactionSegment(compaction);
+    }
+  }
+
   consumeCompletedTurnResult(): void {
     const runtime = this.options.runtime();
     if (!runtime) {

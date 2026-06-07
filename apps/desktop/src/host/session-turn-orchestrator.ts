@@ -33,6 +33,10 @@ import { toRuntimeAskQuestionsResult } from './service-utils.js';
 
 type RuntimeEventsFacade = {
   applyRuntimeHostEvents(events: RuntimeEvent<DesktopToolRequest>[]): void;
+  finalizeInterruptedDeferredThinking(input?: {
+    thinkingText?: string;
+    compactionText?: string;
+  }): void;
   consumeCompletedTurnResult(): void;
   syncPendingToolStates(): void;
   syncAssistantPrefixFromHistoryBeforeToolRow(): void;
@@ -270,8 +274,10 @@ export async function abortConversationCommand(ctx: SessionTurnOrchestratorConte
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const runtime = ctx.requireRuntime();
     const interruptedAssistantText = runtime.pendingAssistantText().trim();
+    const interruptedThinkingText = runtime.thinkingText().trim();
+    const interruptedCompactionText = runtime.compactionText().trim();
     const interruptedAssistantAuxText =
-      runtime.thinkingText().trim() || runtime.compactionText().trim();
+      interruptedThinkingText || interruptedCompactionText;
     const interruptible =
       runtime.isBusy() &&
       !runtime.currentPendingApproval() &&
@@ -282,10 +288,14 @@ export async function abortConversationCommand(ctx: SessionTurnOrchestratorConte
     }
 
     runtime.abort();
-    ctx.activeBundle().messageTimeline.abortActiveAssistantSegment();
     ctx.activeBundle().currentTurnSkills = [];
     const orchestration = ctx.orchestrationFor(ctx.activeBundle());
     orchestration.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+    orchestration.runtimeEvents.finalizeInterruptedDeferredThinking({
+      thinkingText: interruptedThinkingText,
+      compactionText: interruptedCompactionText,
+    });
+    ctx.activeBundle().messageTimeline.abortActiveAssistantSegment();
     orchestration.runtimeEvents.consumeCompletedTurnResult();
     orchestration.runtimeEvents.syncPendingToolStates();
     orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
