@@ -454,6 +454,9 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
       : {}),
     ...(contextUsage ? { contextUsage } : {}),
     rewind: normalizeDesktopRewindMetadata(parsed.rewind),
+    ...(parsed.subagentDesktopMessages && typeof parsed.subagentDesktopMessages === 'object'
+      ? { subagentDesktopMessages: parsed.subagentDesktopMessages as Record<string, ConversationMessageSnapshot[]> }
+      : {}),
   } satisfies StoredDesktopSession;
 }
 

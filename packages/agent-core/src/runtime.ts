@@ -15,6 +15,7 @@ import type {
   ToolRequestExecutionMetadata,
   ToolAgentRoundCompletion,
   ToolCallRequest,
+  StoredLlmMessageArchiveEntry,
 } from './ports.js';
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
@@ -290,10 +291,7 @@ export class AgentRuntime<
   childSessionArchives(): readonly RuntimeSubagentSessionArchiveEntry[] {
     return this.childSessionsStore.map((entry) => ({
       summary: { ...entry.summary },
-      llmHistory: entry.llmHistory.map((message) => ({
-        role: message.role,
-        content: cloneLlmMessageContent(message.content),
-      })),
+      llmHistory: entry.llmHistory.map((message) => serializeRuntimeLlmMessageForArchive(message)),
     }));
   }
 
@@ -305,10 +303,24 @@ export class AgentRuntime<
 
     return {
       summary: { ...entry.summary },
-      llmHistory: entry.llmHistory.map((message) => ({
-        role: message.role,
-        content: cloneLlmMessageContent(message.content),
-      })),
+      llmHistory: entry.llmHistory.map((message) => serializeRuntimeLlmMessageForArchive(message)),
+    };
+  }
+
+  drainActiveChildSessionEvents(): {
+    sessionId: string;
+    parentToolCallId: string;
+    events: RuntimeEvent<ToolRequest>[];
+  } | undefined {
+    const pending = this.pendingSubagentExecution;
+    if (!pending) {
+      return undefined;
+    }
+
+    return {
+      sessionId: pending.childRecord.summary.sessionId,
+      parentToolCallId: pending.childRecord.summary.parentToolCallId,
+      events: pending.childRuntime.drainEvents(),
     };
   }
 
@@ -2749,10 +2761,7 @@ export class AgentRuntime<
     record: RuntimeSubagentSessionArchiveEntry,
     childRuntime: AgentRuntime<Config, State, ToolRequest, TrustTarget>,
   ): void {
-    record.llmHistory = childRuntime.history().map((message) => ({
-      role: message.role,
-      content: cloneLlmMessageContent(message.content),
-    }));
+    record.llmHistory = childRuntime.history().map((message) => serializeRuntimeLlmMessageForArchive(message));
     const pendingAssistant = childRuntime.pendingAssistantText().trim();
     if (pendingAssistant.length > 0) {
       record.llmHistory.push({
@@ -2801,7 +2810,7 @@ export class AgentRuntime<
     }
 
     await pending.childRuntime.poll();
-    pending.childRuntime.drainEvents();
+    // 不在此处 drain：子会话事件由 desktop syncSubagentConversationProjections 消费。
     this.refreshChildSessionRecord(pending.childRecord, pending.childRuntime);
 
     const childApproval = pending.childRuntime.currentPendingApproval();
@@ -3316,4 +3325,24 @@ function readOptionalStringArrayField(
 
 function isJsonObject(value: unknown): value is Record<string, JsonValue> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function serializeRuntimeLlmMessageForArchive(message: LlmMessage): StoredLlmMessageArchiveEntry {
+  return {
+    role: message.role,
+    content: cloneLlmMessageContent(message.content),
+    ...(message.toolCallId !== undefined ? { toolCallId: message.toolCallId } : {}),
+    ...(message.toolCalls !== undefined
+      ? {
+          toolCalls: message.toolCalls.map((toolCall) => ({
+            id: toolCall.id,
+            name: toolCall.name,
+            argumentsJson: toolCall.argumentsJson,
+          })),
+        }
+      : {}),
+    ...(message.providerState !== undefined
+      ? { providerState: cloneLlmProviderState(message.providerState) }
+      : {}),
+  };
 }

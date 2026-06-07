@@ -354,10 +354,19 @@ function ShellToolExpandedBody({
   );
 }
 
-export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
+export function MinimalToolCallCard({
+  tool,
+  onOpenSubagentViewer,
+}: {
+  tool: ToolBlockSnapshot;
+  onOpenSubagentViewer?: (toolCallId: string) => void;
+}) {
   const summary = getToolCallSummaryParts(tool);
   const shimmerActive = toolCallPhaseShowsShimmer(tool.phase);
   const isShell = tool.toolName === "run_shell_command";
+  const isSubagent = tool.toolName === "run_subagent";
+  const subagentToolCallId = tool.toolCallId?.trim() ?? "";
+  const canOpenSubagentViewer = Boolean(isSubagent && onOpenSubagentViewer && subagentToolCallId);
   const isFileDiff = isFileDiffTool(tool.toolName);
   const isResponsesBuiltIn = isResponsesBuiltInToolCard(tool.toolName);
   const shellCommand = useMemo(
@@ -382,7 +391,18 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
   );
 
   if (!expandable) {
-    const plainCard = (
+    const plainCard = canOpenSubagentViewer ? (
+      <button
+        type="button"
+        onClick={() => onOpenSubagentViewer?.(subagentToolCallId)}
+        className={cn(
+          "w-full min-w-0 text-left outline-none",
+          "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+        )}
+      >
+        <p className={shimmerActive ? undefined : summaryClass}>{summaryRow}</p>
+      </button>
+    ) : (
       <p className={shimmerActive ? undefined : summaryClass}>{summaryRow}</p>
     );
     if (!lspDiagnostics) {
@@ -411,7 +431,42 @@ export function MinimalToolCallCard({ tool }: { tool: ToolBlockSnapshot }) {
     </div>
   );
 
-  const collapsibleTriggerButton = (
+  const collapsibleTriggerButton = canOpenSubagentViewer ? (
+    <div className="group inline-flex max-w-full min-w-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={() => onOpenSubagentViewer?.(subagentToolCallId)}
+        className={cn(
+          "min-w-0 text-left outline-none",
+          "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+        )}
+      >
+        {summaryRow}
+      </button>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={open ? "Collapse tool details" : "Expand tool details"}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
+        className={cn(
+          "shrink-0 outline-none",
+          "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+        )}
+      >
+        <ChevronRight
+          className={cn(
+            "size-3 text-muted-foreground/55 transition-all duration-150",
+            "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+            open && "rotate-90",
+          )}
+          aria-hidden
+        />
+      </button>
+    </div>
+  ) : (
     <button
       type="button"
       aria-expanded={open}
