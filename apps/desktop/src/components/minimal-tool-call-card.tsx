@@ -340,18 +340,31 @@ function ShellToolExpandedBody({
   const detailLines = shellToolExpandableDetailLines(tool, command);
   const showArgsExcerpt = !command && Boolean(tool.argsExcerpt?.trim());
 
+  const commandLine = command?.trim();
+  const showShellPanel = Boolean(commandLine || shellOutput);
+
   return (
     <div className="space-y-2">
-      {shellOutput ? (
+      {showShellPanel ? (
         <div className="space-y-1">
-          {shellOutput.text.length > 0 ? (
-            <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border/20 bg-muted/15 p-2 font-mono text-xs leading-relaxed text-muted-foreground">
-              {shellOutput.text}
-            </pre>
-          ) : (
-            <p className="text-xs leading-relaxed text-muted-foreground/70">{t("tool.shellOutputEmpty")}</p>
-          )}
-          {shellOutput.truncated ? (
+          <div className="overflow-hidden rounded-md border border-border/20 bg-muted/15 p-2 text-xs leading-relaxed text-muted-foreground">
+            {commandLine ? (
+              <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono">
+                <span className="select-none text-muted-foreground/75">$ </span>
+                {commandLine}
+              </pre>
+            ) : null}
+            {shellOutput ? (
+              <div className={commandLine ? "mt-2" : undefined}>
+                {shellOutput.text.length > 0 ? (
+                  <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono">{shellOutput.text}</pre>
+                ) : (
+                  <p className="text-muted-foreground/70">{t("tool.shellOutputEmpty")}</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+          {shellOutput?.truncated ? (
             <p className="text-xs leading-relaxed text-muted-foreground/70">{t("tool.shellOutputTruncated")}</p>
           ) : null}
         </div>
