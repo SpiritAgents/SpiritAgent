@@ -99,7 +99,9 @@ export function WorkspaceFilePickerDialog({
         })
     }, FILE_PICKER_SEARCH_DEBOUNCE_MS)
 
-    return () => window.clearTimeout(timeout)
+    return () => {
+      window.clearTimeout(timeout)
+    }
   }, [
     listWorkspaceFileReferenceSuggestions,
     open,
@@ -162,13 +164,12 @@ export function WorkspaceFilePickerDialog({
       description={t('workspace.filePickerDescription')}
       className="max-w-2xl"
     >
-      <Command
-        shouldFilter={false}
-        value={query}
-        onValueChange={setQuery}
-        aria-label={t('workspace.filePickerTitle')}
-      >
-        <CommandInput placeholder={t('workspace.filePickerPlaceholder')} />
+      <Command shouldFilter={false} aria-label={t('workspace.filePickerTitle')}>
+        <CommandInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder={t('workspace.filePickerPlaceholder')}
+        />
         <CommandList>
           {absolutePathCandidate && absolutePathExists !== false ? (
             <CommandItem
