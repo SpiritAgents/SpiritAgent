@@ -1,3 +1,4 @@
+import { createGateway } from '@ai-sdk/gateway';
 import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
 import { createOpenResponses } from '@ai-sdk/open-responses';
 import {
@@ -20,6 +21,7 @@ import {
   shouldUseApplyPatchFunctionTool,
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
+import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
 import {
   openResponsesPostUrl,
@@ -31,6 +33,25 @@ import {
 } from './responses-compat.js';
 
 const DEFAULT_XAI_BASE_URL = 'https://api.x.ai/v1';
+
+/** 本地 contract smoke 将 …/v1 mock 映射到 Gateway SDK 的 …/v3/ai。 */
+function resolveGatewaySdkBaseUrl(config: OpenResponsesTransportConfig): string | undefined {
+  const baseUrl = config.baseUrl?.trim();
+  if (!baseUrl) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(baseUrl);
+    if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
+      return undefined;
+    }
+    url.pathname = '/v3/ai';
+    return url.toString().replace(/\/$/u, '');
+  } catch {
+    return undefined;
+  }
+}
 
 function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof fetch {
   let fetchFn: typeof fetch = getLlmFetch();
@@ -72,6 +93,16 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
 
   if (provider === 'xai') {
     return createXaiResponsesProvider(config).responses(languageModelId);
+  }
+
+  // Gateway Perplexity 须走 @ai-sdk/gateway v3 language-model；@ai-sdk/open-responses 会丢弃 provider tools。
+  if (shouldUseGatewayWebSearch(config)) {
+    const gatewayBaseUrl = resolveGatewaySdkBaseUrl(config);
+    return createGateway({
+      apiKey: config.apiKey,
+      fetch: getLlmFetch(),
+      ...(gatewayBaseUrl !== undefined ? { baseURL: gatewayBaseUrl } : {}),
+    }).languageModel(config.model);
   }
 
   const openResponses = createOpenResponses({
@@ -132,6 +163,13 @@ export function buildResponsesGenerateTools(
     };
   }
 
+  if (webSearchMode === 'gateway-sdk-web-search') {
+    return {
+      ...merged,
+      web_search: buildGatewayWebSearchTool(config),
+    };
+  }
+
   return merged;
 }
 
@@ -141,6 +179,13 @@ export function buildResponsesProviderOptions(
 ): Record<string, JsonObject> {
   const reasoningEffort = openResponsesReasoningEffort(config);
   const reasoningSummary = resolveOpenResponsesReasoningSummary(config);
+
+  if (shouldUseGatewayWebSearch(config)) {
+    const gatewayOptions: JsonObject = {
+      ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+    };
+    return Object.keys(gatewayOptions).length > 0 ? { gateway: gatewayOptions } : {};
+  }
 
   const provider = resolveOpenResponsesSdkProvider(config);
   if (provider === 'xai') {

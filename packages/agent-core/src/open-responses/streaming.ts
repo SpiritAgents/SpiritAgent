@@ -16,8 +16,18 @@ import type { OpenResponsesTransportConfig } from './responses-compat.js';
 import { renderResponsesTransportError } from './ai-sdk-message-bridge.js';
 import {
   accumulateResponsesBuiltInToolPreviewsFromRawChunk,
+  buildGatewaySdkProviderBuiltinToolResultArgumentsJson,
   createResponsesBuiltInPreviewStreamState,
+  isResponsesBuiltInToolName,
 } from './responses-built-in-tools.js';
+import {
+  type AccumulatedProviderBuiltinToolResult,
+  filterPendingHostToolCalls,
+  persistProviderBuiltinToolRoundToState,
+  resolveAiSdkStreamAssistantText,
+  shouldResumeStreamingAfterProviderSearch,
+  shouldUseGatewaySdkProviderWebSearchStreamPatch,
+} from './sdk-provider-web-search-loop.js';
 interface AggregatedStreamingToolCall {
   index: number;
   id: string;
@@ -61,6 +71,8 @@ export async function* responsesEventStreamToRuntimeEvents(
   let sawAnswerOrToolOutput = false;
   let nextToolIndex = 0;
   let providerPreviewState = createResponsesBuiltInPreviewStreamState();
+  const executedProviderBuiltinToolCallIds = new Set<string>();
+  const providerBuiltinToolResults = new Map<string, AccumulatedProviderBuiltinToolResult>();
   let responseId: string | undefined;
   /** Open Responses SDK 已发 reasoning-delta；raw SSE 为同内容镜像，再 yield 会 TheThe / says says。 */
   let activeReasoningDeltaId: string | undefined;
@@ -88,18 +100,139 @@ export async function* responsesEventStreamToRuntimeEvents(
           yield { kind: 'assistant-chunk', text: part.text };
           break;
         }
-        case 'tool-call': {
-          // Parity with openai/ai-sdk-transport: tool calls are aggregated from raw
-          // response.output_item.* chunks only. Also handling tool-call here duplicates
-          // the same function_call when the SDK emits both raw and normalized parts.
+        case 'tool-result': {
           sawAnswerOrToolOutput = true;
+          if (
+            shouldUseGatewaySdkProviderWebSearchStreamPatch(config)
+            && typeof part.toolCallId === 'string'
+            && isResponsesBuiltInToolName(part.toolName)
+          ) {
+            executedProviderBuiltinToolCallIds.add(part.toolCallId);
+            providerBuiltinToolResults.set(part.toolCallId, {
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              argumentsJson: JSON.stringify(part.input ?? {}),
+              output: part.output,
+            });
+            const succeededArgumentsJson = buildGatewaySdkProviderBuiltinToolResultArgumentsJson(
+              part.toolName,
+              part.input,
+              part.output,
+              false,
+            );
+            if (succeededArgumentsJson) {
+              const existing = findToolCallByStreamId(toolCalls, part.toolCallId);
+              if (existing) {
+                existing.functionArguments = succeededArgumentsJson;
+                existing.readyPreviewEmitted = true;
+              }
+              yield {
+                kind: 'streaming-tool-preview',
+                toolCallId: part.toolCallId,
+                toolName: part.toolName,
+                argumentsJson: succeededArgumentsJson,
+              };
+            }
+          }
+          break;
+        }
+        case 'tool-error': {
+          sawAnswerOrToolOutput = true;
+          if (
+            shouldUseGatewaySdkProviderWebSearchStreamPatch(config)
+            && typeof part.toolCallId === 'string'
+            && isResponsesBuiltInToolName(part.toolName)
+          ) {
+            executedProviderBuiltinToolCallIds.add(part.toolCallId);
+            providerBuiltinToolResults.set(part.toolCallId, {
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              argumentsJson: JSON.stringify(part.input ?? {}),
+              output: part,
+            });
+            const failedArgumentsJson = buildGatewaySdkProviderBuiltinToolResultArgumentsJson(
+              part.toolName,
+              part.input,
+              part,
+              true,
+            );
+            if (failedArgumentsJson) {
+              const existing = findToolCallByStreamId(toolCalls, part.toolCallId);
+              if (existing) {
+                existing.functionArguments = failedArgumentsJson;
+                existing.readyPreviewEmitted = true;
+              }
+              yield {
+                kind: 'streaming-tool-preview',
+                toolCallId: part.toolCallId,
+                toolName: part.toolName,
+                argumentsJson: failedArgumentsJson,
+              };
+            }
+          }
+          break;
+        }
+        case 'tool-call': {
+          sawAnswerOrToolOutput = true;
+          // Open Responses SSE 仍只从 raw output_item 聚合；Vercel AI Gateway v3 language-model 无该形态。
+          if (!shouldAggregateGatewaySdkToolCalls(config)) {
+            break;
+          }
+          const gatewayUpdates = accumulateGatewaySdkToolCallPart(
+            toolCalls,
+            nextToolIndex,
+            part.toolCallId,
+            part.toolName,
+            JSON.stringify(part.input ?? {}),
+          );
+          nextToolIndex = gatewayUpdates.nextToolIndex;
+          for (const update of gatewayUpdates.events) {
+            yield update;
+          }
+          break;
+        }
+        case 'tool-input-start': {
+          if (!shouldAggregateGatewaySdkToolCalls(config)) {
+            break;
+          }
+          sawAnswerOrToolOutput = true;
+          const gatewayUpdates = accumulateGatewaySdkToolCallPart(
+            toolCalls,
+            nextToolIndex,
+            part.id,
+            part.toolName,
+            '',
+          );
+          nextToolIndex = gatewayUpdates.nextToolIndex;
+          for (const update of gatewayUpdates.events) {
+            yield update;
+          }
           break;
         }
         case 'tool-input-delta': {
           sawAnswerOrToolOutput = true;
-          const existing = [...toolCalls.values()].find((call) => call.id === part.id);
-          if (existing) {
+          let existing = findToolCallByStreamId(toolCalls, part.id);
+          if (!existing && shouldAggregateGatewaySdkToolCalls(config)) {
+            const gatewayUpdates = accumulateGatewaySdkToolCallPart(
+              toolCalls,
+              nextToolIndex,
+              part.id,
+              'toolName' in part && typeof part.toolName === 'string' ? part.toolName : '',
+              '',
+            );
+            nextToolIndex = gatewayUpdates.nextToolIndex;
+            existing = gatewayUpdates.call;
+            for (const update of gatewayUpdates.events) {
+              yield update;
+            }
+          }
+          if (existing && typeof part.delta === 'string') {
             existing.functionArguments += part.delta;
+            const previewEvents: LlmStreamEvent[] = [];
+            maybeEmitPreview(previewEvents, existing);
+            for (const update of previewEvents) {
+              yield update;
+            }
           }
           break;
         }
@@ -150,14 +283,57 @@ export async function* responsesEventStreamToRuntimeEvents(
       throw new Error('流式 Responses 响应无任何 text / tool 输出。');
     }
 
-    const assistantMessage = attachResponseIdToAssistantMessage(
-      config,
-      buildStreamingAssistantMessage(assistantContent, reasoningContent, toolCalls),
-      responseId,
-    );
-    nextState.messages.push(assistantMessage);
+    const resolvedAssistant = await resolveAiSdkStreamAssistantText(usageSource, assistantContent);
+    const resolvedAssistantContent = resolvedAssistant.text;
+    if (resolvedAssistantContent.length > assistantContent.length) {
+      const tail = resolvedAssistantContent.slice(assistantContent.length);
+      if (tail) {
+        yield { kind: 'assistant-chunk', text: tail };
+        sawAnswerOrToolOutput = true;
+      }
+    }
 
-    const calls = extractToolCallsFromAggregatedMap(toolCalls);
+    const calls = filterPendingHostToolCalls(
+      extractToolCallsFromAggregatedMap(toolCalls),
+      executedProviderBuiltinToolCallIds,
+    );
+    const resumeStreamingAfterProviderSearch = shouldResumeStreamingAfterProviderSearch(
+      config,
+      executedProviderBuiltinToolCallIds,
+      calls.length,
+      assistantContent,
+      resolvedAssistant,
+    );
+
+    if (resumeStreamingAfterProviderSearch) {
+      persistProviderBuiltinToolRoundToState(
+        nextState,
+        attachResponseIdToAssistantMessage(
+          config,
+          buildStreamingAssistantMessage(
+            resolvedAssistantContent,
+            reasoningContent,
+            toolCalls,
+            new Set(),
+          ),
+          responseId,
+        ),
+        providerBuiltinToolResults,
+        executedProviderBuiltinToolCallIds,
+      );
+    } else {
+      const assistantMessage = attachResponseIdToAssistantMessage(
+        config,
+        buildStreamingAssistantMessage(
+          resolvedAssistantContent,
+          reasoningContent,
+          toolCalls,
+          executedProviderBuiltinToolCallIds,
+        ),
+        responseId,
+      );
+      nextState.messages.push(assistantMessage);
+    }
     const applyPatchCallIds = calls
       .filter((call) => call.name === APPLY_PATCH_HOST_TOOL_NAME)
       .map((call) => call.id);
@@ -172,6 +348,9 @@ export async function* responsesEventStreamToRuntimeEvents(
         step: calls.length > 0 ? { kind: 'tool-calls', calls } : { kind: 'final-response-ready' },
         requestTrace,
         ...(usage ? { usage } : {}),
+        ...(resumeStreamingAfterProviderSearch
+          ? { resumeStreamingAfterProviderSearch: true }
+          : {}),
       },
     });
     yield { kind: 'done' };
@@ -193,8 +372,10 @@ function buildStreamingAssistantMessage(
   assistantContent: string,
   reasoningContent: string,
   toolCalls: Map<number, AggregatedStreamingToolCall>,
+  omitToolCallIds: ReadonlySet<string> = new Set(),
 ): JsonValue {
   const functionToolCalls = [...toolCalls.values()]
+    .filter((call) => !omitToolCallIds.has(call.id))
     .sort((left, right) => left.index - right.index)
     .map((call) => ({
       index: call.index,
@@ -390,6 +571,65 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
   }
 
   return { events, nextToolIndex: toolIndex };
+}
+
+function shouldAggregateGatewaySdkToolCalls(config: OpenResponsesTransportConfig): boolean {
+  return config.llmVendor === 'vercel-ai-gateway';
+}
+
+function findToolCallByStreamId(
+  toolCalls: Map<number, AggregatedStreamingToolCall>,
+  streamId: string | undefined,
+): AggregatedStreamingToolCall | undefined {
+  if (!streamId) {
+    return undefined;
+  }
+
+  return [...toolCalls.values()].find((call) => call.id === streamId || call.streamItemId === streamId);
+}
+
+function accumulateGatewaySdkToolCallPart(
+  toolCalls: Map<number, AggregatedStreamingToolCall>,
+  nextToolIndex: number,
+  toolCallId: string | undefined,
+  toolName: string | undefined,
+  functionArguments: string,
+): {
+  call: AggregatedStreamingToolCall;
+  nextToolIndex: number;
+  events: LlmStreamEvent[];
+} {
+  const normalizedId = typeof toolCallId === 'string' && toolCallId.length > 0
+    ? toolCallId
+    : `stream-tool-call-${nextToolIndex}`;
+  const normalizedName = typeof toolName === 'string' ? toolName : '';
+  const existing = findToolCallByStreamId(toolCalls, normalizedId);
+  const events: LlmStreamEvent[] = [];
+
+  if (existing) {
+    if (normalizedName) {
+      existing.functionName = normalizedName;
+    }
+    if (functionArguments) {
+      existing.functionArguments = functionArguments;
+    }
+    maybeEmitPreview(events, existing);
+    return { call: existing, nextToolIndex, events };
+  }
+
+  const index = nextToolIndex;
+  nextToolIndex += 1;
+  const call: AggregatedStreamingToolCall = {
+    index,
+    id: normalizedId,
+    type: 'function',
+    functionName: normalizedName,
+    functionArguments,
+    readyPreviewEmitted: false,
+  };
+  toolCalls.set(index, call);
+  maybeEmitPreview(events, call);
+  return { call, nextToolIndex, events };
 }
 
 function findToolCallByItemId(
