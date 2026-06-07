@@ -54,6 +54,11 @@ export {
   type AlibabaResponsesBuiltInToolType,
 } from './alibaba-built-in-tools.js';
 export {
+  buildGatewayWebSearchTool,
+  buildGatewayWebSearchTraceToolEntry,
+  shouldUseGatewayWebSearch,
+} from './gateway-web-search.js';
+export {
   buildProviderWebSearchPromptSection,
   buildWebSearchResponsesTraceToolEntry,
   resolveProviderWebSearchMode,
