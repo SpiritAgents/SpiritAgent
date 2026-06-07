@@ -515,7 +515,7 @@
     "filePickerPlaceholder": "按文件名或路径搜索…",
     "filePickerEmpty": "无匹配文件",
     "filePickerOpenAbsolutePath": "打开路径：{{path}}",
-    "filePickerAbsolutePathUnavailable": "绝对路径打开将在后续版本可用",
+    "filePickerAbsolutePathNotFound": "找不到该路径对应的文件",
     "fileReferenceCandidates": "工作区文件引用候选"
   },
   "composer": {

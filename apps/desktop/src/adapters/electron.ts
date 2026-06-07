@@ -189,6 +189,15 @@ export async function createElectronHostApi(): Promise<HostApi> {
     writeWorkspaceTextFile(request) {
       return bridge.writeWorkspaceTextFile(request);
     },
+    readHostTextFile(absolutePath) {
+      return bridge.readHostTextFile(absolutePath);
+    },
+    writeHostTextFile(request) {
+      return bridge.writeHostTextFile(request);
+    },
+    statHostTextFile(absolutePath) {
+      return bridge.statHostTextFile(absolutePath);
+    },
     pickWorkspaceDirectory() {
       return bridge.pickWorkspaceDirectory();
     },

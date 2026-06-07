@@ -21,12 +21,14 @@ import type {
   PlanSnapshot,
   WorkspaceExplorerListResult,
   WorkspaceReadTextFileResult,
+  WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
 } from "@/types";
 
 type SelectedWorkspaceEntry = { kind: "workspace"; relativePath: string };
+type SelectedExternalEntry = { kind: "external"; absolutePath: string };
 type SelectedPlanEntry = { kind: "plan" };
-type SelectedEntry = SelectedWorkspaceEntry | SelectedPlanEntry | null;
+type SelectedEntry = SelectedWorkspaceEntry | SelectedExternalEntry | SelectedPlanEntry | null;
 type MarkdownViewMode = "preview" | "edit";
 
 type LoadedDoc =
@@ -58,6 +60,8 @@ export type WorkspaceFilesTabProps = {
   listExplorerChildren: (relativePath: string) => Promise<WorkspaceExplorerListResult>;
   readWorkspaceTextFile: (relativePath: string) => Promise<WorkspaceReadTextFileResult>;
   writeWorkspaceTextFile: (request: WriteWorkspaceTextFileRequest) => Promise<void>;
+  readHostTextFile: (absolutePath: string) => Promise<WorkspaceReadTextFileResult>;
+  writeHostTextFile: (request: WriteHostTextFileRequest) => Promise<void>;
   readManagedImagePreviewDataUrl?: (reference: string) => Promise<string | null>;
   onStartImplementing?: () => void;
   startImplementingDisabled?: boolean;
@@ -81,6 +85,8 @@ export function WorkspaceFilesTab({
   listExplorerChildren,
   readWorkspaceTextFile,
   writeWorkspaceTextFile,
+  readHostTextFile,
+  writeHostTextFile,
   readManagedImagePreviewDataUrl,
   onStartImplementing,
   startImplementingDisabled = false,
@@ -119,6 +125,8 @@ export function WorkspaceFilesTab({
       }
     } else if (selectedEntry.kind === "plan") {
       onTitleChangeRef.current?.("Plan");
+    } else if (selectedEntry.kind === "external") {
+      onTitleChangeRef.current?.(pathBasename(selectedEntry.absolutePath));
     } else {
       onTitleChangeRef.current?.(pathBasename(selectedEntry.relativePath));
     }
@@ -129,17 +137,22 @@ export function WorkspaceFilesTab({
       ? plan.path
       : selectedEntry?.kind === "workspace"
         ? selectedEntry.relativePath
-        : "";
+        : selectedEntry?.kind === "external"
+          ? selectedEntry.absolutePath
+          : "";
   const headerTitle =
     doc?.title ??
     (selectedEntry?.kind === "plan"
       ? "Plan"
       : selectedEntry?.kind === "workspace"
         ? pathBasename(selectedEntry.relativePath)
-        : "");
+        : selectedEntry?.kind === "external"
+          ? pathBasename(selectedEntry.absolutePath)
+          : "");
   const headerSubtitle = doc?.subtitle ?? selectedPath;
   const isMarkdownDocument = Boolean(selectedPath && isMarkdownPath(selectedPath));
-  const isWorkspaceFileSelected = selectedEntry?.kind === "workspace";
+  const isEditableFileSelected =
+    selectedEntry?.kind === "workspace" || selectedEntry?.kind === "external";
 
   useEffect(() => {
     if (!planRevealEnabled) {
@@ -154,16 +167,21 @@ export function WorkspaceFilesTab({
     if (!fileRevealEnabled || autoRevealFileNonce <= 0) {
       return;
     }
+    setMarkdownViewMode(fileRevealViewMode);
     if (fileRevealScope === "external") {
+      if (!fileRevealAbsolutePath) {
+        return;
+      }
+      setSelectedEntry({ kind: "external", absolutePath: fileRevealAbsolutePath });
       return;
     }
     if (!fileRevealPath) {
       return;
     }
-    setMarkdownViewMode(fileRevealViewMode);
     setSelectedEntry({ kind: "workspace", relativePath: fileRevealPath });
   }, [
     autoRevealFileNonce,
+    fileRevealAbsolutePath,
     fileRevealEnabled,
     fileRevealPath,
     fileRevealScope,
@@ -208,19 +226,24 @@ export function WorkspaceFilesTab({
       return;
     }
 
-    const selectedRel = selectedEntry.relativePath;
+    const filePath =
+      selectedEntry.kind === "external"
+        ? selectedEntry.absolutePath
+        : selectedEntry.relativePath;
+    const readFile =
+      selectedEntry.kind === "external" ? readHostTextFile : readWorkspaceTextFile;
     let cancelled = false;
     setDoc({
       status: "loading",
       readOnly: false,
-      title: pathBasename(selectedRel),
-      subtitle: selectedRel,
+      title: pathBasename(filePath),
+      subtitle: filePath,
     });
     setDirty(false);
     setSaveError("");
     setDraftText("");
     setSavedText("");
-    void readWorkspaceTextFile(selectedRel)
+    void readFile(filePath)
       .then((r) => {
         if (!cancelled) {
           setDraftText(r.text);
@@ -229,8 +252,8 @@ export function WorkspaceFilesTab({
             status: "ready",
             text: r.text,
             readOnly: false,
-            title: pathBasename(selectedRel),
-            subtitle: selectedRel,
+            title: pathBasename(filePath),
+            subtitle: filePath,
           });
         }
       })
@@ -242,25 +265,37 @@ export function WorkspaceFilesTab({
             status: "error",
             message: describeError(e),
             readOnly: false,
-            title: pathBasename(selectedRel),
-            subtitle: selectedRel,
+            title: pathBasename(filePath),
+            subtitle: filePath,
           });
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [plan.content, plan.exists, plan.path, readWorkspaceTextFile, selectedEntry, selectedPath]);
+  }, [
+    plan.content,
+    plan.exists,
+    plan.path,
+    readHostTextFile,
+    readWorkspaceTextFile,
+    selectedEntry,
+    selectedPath,
+  ]);
 
-  const persistWorkspaceText = useCallback(
+  const persistEditorText = useCallback(
     async (text: string) => {
-      if (!selectedEntry || selectedEntry.kind !== "workspace") {
+      if (!selectedEntry || (selectedEntry.kind !== "workspace" && selectedEntry.kind !== "external")) {
         return;
       }
       setSaving(true);
       setSaveError("");
       try {
-        await writeWorkspaceTextFile({ relativePath: selectedEntry.relativePath, text });
+        if (selectedEntry.kind === "external") {
+          await writeHostTextFile({ absolutePath: selectedEntry.absolutePath, text });
+        } else {
+          await writeWorkspaceTextFile({ relativePath: selectedEntry.relativePath, text });
+        }
         setDoc((current) =>
           current?.status === "ready"
             ? {
@@ -279,14 +314,14 @@ export function WorkspaceFilesTab({
         setSaving(false);
       }
     },
-    [selectedEntry, writeWorkspaceTextFile],
+    [selectedEntry, writeHostTextFile, writeWorkspaceTextFile],
   );
 
   const onEditorSave = useCallback(
     async (text: string) => {
-      await persistWorkspaceText(text);
+      await persistEditorText(text);
     },
-    [persistWorkspaceText],
+    [persistEditorText],
   );
 
   const isPreviewVisible =
@@ -294,11 +329,11 @@ export function WorkspaceFilesTab({
 
   const onClickSave = useCallback(() => {
     if (isPreviewVisible) {
-      void persistWorkspaceText(draftText);
+      void persistEditorText(draftText);
       return;
     }
     void editorRef.current?.save();
-  }, [draftText, isPreviewVisible, persistWorkspaceText]);
+  }, [draftText, isPreviewVisible, persistEditorText]);
 
   const onToggleMarkdownViewMode = useCallback((value: string) => {
     if (value === "preview" || value === "edit") {
@@ -322,7 +357,9 @@ export function WorkspaceFilesTab({
   const selectedEntryKey = selectedEntry
     ? selectedEntry.kind === "plan"
       ? "plan"
-      : `workspace:${selectedEntry.relativePath}`
+      : selectedEntry.kind === "workspace"
+        ? `workspace:${selectedEntry.relativePath}`
+        : null
     : null;
 
   return (
@@ -400,7 +437,7 @@ export function WorkspaceFilesTab({
                   <Play className="size-3.5" aria-hidden />
                 </button>
               ) : null}
-              {isWorkspaceFileSelected ? (
+              {isEditableFileSelected ? (
                 <button
                   type="button"
                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground disabled:opacity-50 dark:enabled:hover:bg-foreground/10"

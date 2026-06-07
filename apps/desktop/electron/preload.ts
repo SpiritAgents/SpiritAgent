@@ -198,6 +198,15 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   writeWorkspaceTextFile(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'writeWorkspaceTextFile', { request });
   },
+  readHostTextFile(absolutePath: string) {
+    return ipcRenderer.invoke('desktop:invoke', 'readHostTextFile', { absolutePath });
+  },
+  writeHostTextFile(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'writeHostTextFile', { request });
+  },
+  statHostTextFile(absolutePath: string) {
+    return ipcRenderer.invoke('desktop:invoke', 'statHostTextFile', { absolutePath });
+  },
   pickWorkspaceDirectory() {
     return ipcRenderer.invoke('desktop:pick-workspace-directory');
   },

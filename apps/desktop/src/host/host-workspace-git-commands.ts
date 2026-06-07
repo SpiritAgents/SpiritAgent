@@ -15,6 +15,7 @@ import type {
   DesktopSnapshot,
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
+  HostTextFileStatResult,
   QueryWorkspaceFileReferenceSuggestionsRequest,
   ReadGitHistoryRequest,
   RememberWorkspaceRequest,
@@ -22,6 +23,7 @@ import type {
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
   WorkspaceReadTextFileResult,
+  WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
 } from '../types.js';
 import {
@@ -345,6 +347,39 @@ export async function writeWorkspaceTextFileCommand(
     await ctx.ensureInitialized();
     const state = ctx.requireState();
     await writeWorkspaceTextFileToDisk(state.workspaceRoot, request);
+  });
+}
+
+export async function readHostTextFileCommand(
+  ctx: HostWorkspaceGitCommandContext,
+  absolutePath: string,
+): Promise<WorkspaceReadTextFileResult> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized();
+    const { readHostTextFile } = await import('./host-text-file.js');
+    return readHostTextFile(absolutePath);
+  });
+}
+
+export async function writeHostTextFileCommand(
+  ctx: HostWorkspaceGitCommandContext,
+  request: WriteHostTextFileRequest,
+): Promise<void> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized();
+    const { writeHostTextFile } = await import('./host-text-file.js');
+    await writeHostTextFile(request.absolutePath, request.text);
+  });
+}
+
+export async function statHostTextFileCommand(
+  ctx: HostWorkspaceGitCommandContext,
+  absolutePath: string,
+): Promise<HostTextFileStatResult> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized();
+    const { statHostTextFile } = await import('./host-text-file.js');
+    return statHostTextFile(absolutePath);
   });
 }
 
