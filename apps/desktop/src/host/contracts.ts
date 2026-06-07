@@ -88,6 +88,7 @@ export interface StoredDesktopSession extends ChatArchive {
   rewind?: StoredDesktopRewindMetadata;
   approvalLevel?: ApprovalLevel;
   contextUsage?: ConversationContextUsageSnapshot;
+  subagentDesktopMessages?: Record<string, ConversationMessageSnapshot[]>;
 }
 
 export type DesktopHostCommitRequest = CommitChangesRequest;

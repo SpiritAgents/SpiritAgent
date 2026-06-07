@@ -21,6 +21,7 @@ import {
   shouldHideEmptyPendingAssistantSnapshot,
 } from './message-ordering.js';
 import { cloneArchiveHistory, cloneArchiveSubagentSessions } from './service-utils.js';
+import { cloneSubagentDesktopMessagesRecord } from './subagent-conversation-projection.js';
 import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
 
 export const EPHEMERAL_COMMIT_SESSION_PREFIX = 'ephemeral://commit-message/';
@@ -51,6 +52,7 @@ export interface RestoredSessionState {
   activePlanPath?: string;
   sessionTitleSource?: SessionTitleSource;
   contextUsage?: ConversationContextUsageSnapshot;
+  subagentDesktopMessagesBySessionId?: Map<string, ConversationMessageSnapshot[]>;
 }
 
 export function isEphemeralCommitSessionPath(filePath: string): boolean {
@@ -191,6 +193,13 @@ export function restoreStoredSessionState(input: {
       ? { sessionTitleSource: input.loaded.sessionTitleSource }
       : {}),
     ...(input.loaded.contextUsage ? { contextUsage: { ...input.loaded.contextUsage } } : {}),
+    ...(input.loaded.subagentDesktopMessages
+      ? {
+          subagentDesktopMessagesBySessionId: cloneSubagentDesktopMessagesRecord(
+            input.loaded.subagentDesktopMessages,
+          ),
+        }
+      : {}),
   };
 }
 
@@ -208,6 +217,7 @@ export function buildStoredDesktopSession(input: {
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
   contextUsage?: ConversationContextUsageSnapshot;
+  subagentDesktopMessages?: Record<string, ConversationMessageSnapshot[]>;
 }): StoredDesktopSession {
   return {
     ...input.archive,
@@ -225,6 +235,7 @@ export function buildStoredDesktopSession(input: {
       : {}),
     rewind: input.rewind,
     ...(input.contextUsage ? { contextUsage: { ...input.contextUsage } } : {}),
+    ...(input.subagentDesktopMessages ? { subagentDesktopMessages: input.subagentDesktopMessages } : {}),
   };
 }
 

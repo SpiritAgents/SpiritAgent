@@ -28,6 +28,7 @@ import {
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
 import { scheduleDirectMediaTurn, shouldUseComposerDirectMediaTurn } from './direct-media-turn.js';
+import { syncSubagentConversationProjections } from './subagent-conversation-projection.js';
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
 
 type RuntimeEventsFacade = {
@@ -235,8 +236,10 @@ export async function tickSessionCommand(
   const orchestration = ctx.orchestrationFor(bundle);
   if (bundle.runtime) {
     bundle.runtime.tickThinkingSpinner();
+    syncSubagentConversationProjections(bundle, bundle.runtime);
     if (!options.light) {
       await bundle.runtime.poll();
+      syncSubagentConversationProjections(bundle, bundle.runtime);
       applyDrainedRuntimeHostEvents(ctx, bundle, bundle.runtime.drainEvents());
     } else {
       const drained = bundle.runtime.drainEvents();

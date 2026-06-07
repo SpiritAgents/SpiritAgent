@@ -8,6 +8,7 @@ import {
   buildStoredDesktopSession,
   sanitizeConversationMessagesForPersistence,
 } from './sessions.js';
+import { serializeSubagentDesktopMessagesRecord } from './subagent-conversation-projection.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { DesktopRuntime } from './runtime.js';
 import { saveStoredSession } from './storage.js';
@@ -75,6 +76,13 @@ export async function persistDesktopSessionBundle(
     loopEnabled: bundle.loopEnabled,
     approvalLevel: bundle.approvalLevel,
     ...(bundle.contextUsage ? { contextUsage: { ...bundle.contextUsage } } : {}),
+    ...(serializeSubagentDesktopMessagesRecord(bundle.subagentDesktopMessagesBySessionId)
+      ? {
+          subagentDesktopMessages: serializeSubagentDesktopMessagesRecord(
+            bundle.subagentDesktopMessagesBySessionId,
+          ),
+        }
+      : {}),
   });
   if (bumpListSortAt) {
     bundle.listSortSavedAtUnixMs = savedAtUnixMs;
