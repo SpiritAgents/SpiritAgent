@@ -255,6 +255,10 @@ export function extractLastAssistantText(
       return message.content;
     }
 
+    if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+      continue;
+    }
+
     const reasoningText = extractStoredAssistantReasoningText(message);
     if (reasoningText) {
       return reasoningText;

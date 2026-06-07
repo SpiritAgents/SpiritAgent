@@ -54,6 +54,32 @@ export function buildOpenResponsesToolCallBody(model: string): JsonObject {
   };
 }
 
+export function buildOpenResponsesWebSearchCallBody(model: string): JsonObject {
+  return {
+    id: 'resp-web-search',
+    object: 'response',
+    created_at: 0,
+    model,
+    status: 'completed',
+    usage: openResponsesUsage(),
+    output: [
+      {
+        type: 'web_search_call',
+        id: 'wsc_1',
+        call_id: 'call_web_search_1',
+        status: 'completed',
+        action: {
+          type: 'search',
+          query: 'AI Gateway web search pricing',
+          sources: [
+            { title: 'Vercel AI Gateway', url: 'https://vercel.com/docs/ai-gateway/capabilities/web-search' },
+          ],
+        },
+      },
+    ],
+  };
+}
+
 export function buildOpenResponsesFinalTextBody(model: string, text: string): JsonObject {
   return {
     id: 'resp-final',

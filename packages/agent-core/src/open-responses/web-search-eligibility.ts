@@ -4,6 +4,7 @@ import {
   type LlmTransportConfig,
 } from '../provider-config.js';
 import { shouldUseAlibabaBuiltInTools } from './alibaba-built-in-tools.js';
+import { shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import {
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
@@ -18,6 +19,7 @@ export const XAI_WEB_SEARCH_WITH_LOCAL_TOOLS_ENABLED = true;
 export type ProviderWebSearchMode =
   | 'openai-sdk-web-search'
   | 'xai-sdk-web-search'
+  | 'gateway-sdk-web-search'
   | 'alibaba-responses-built-in-tools';
 
 export function shouldUseProviderWebSearch(config: LlmTransportConfig): boolean {
@@ -52,6 +54,10 @@ function resolveOpenResponsesWebSearchMode(
 
   if (config.llmVendor === 'alibaba') {
     return 'alibaba-responses-built-in-tools';
+  }
+
+  if (shouldUseGatewayWebSearch(config)) {
+    return 'gateway-sdk-web-search';
   }
 
   return undefined;
