@@ -28,6 +28,7 @@ internal static class UiSnapshot
         }
 
         var hwnd = window.Current.NativeWindowHandle;
+        var hostKind = CefHostDetector.DetectHostKind(window, hwnd);
         var walker = TreeWalker.ControlViewWalker;
         var nodeBudget = new NodeBudget(request.MaxNodes);
         var tree = BuildNode(window, hwnd, walker, registry, depth: 0, request.MaxDepth, nodeBudget, isRoot: true);
@@ -35,6 +36,7 @@ internal static class UiSnapshot
 
         return JsonProtocol.Ok(new
         {
+            host_kind = hostKind,
             window = new
             {
                 hwnd,

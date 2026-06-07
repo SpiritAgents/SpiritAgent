@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import {
   flattenComputerUseTree,
+  isCdpComputerUseRef,
   isComputerUseRef,
+  parseCdpComputerUseRef,
   parseComputerUseRef,
   pruneComputerUseTree,
 } from '../src/lib/computer-use-tree.ts';
@@ -13,6 +15,12 @@ test('parseComputerUseRef accepts w{hwnd}n{ordinal}', () => {
   const parsed = parseComputerUseRef('w1a2b3n4');
   assert.deepEqual(parsed, { windowHwndHex: '1a2b3', ordinal: 4 });
   assert.equal(isComputerUseRef('bad-ref'), false);
+});
+
+test('parseCdpComputerUseRef is re-exported from computer-use-tree', () => {
+  assert.equal(isCdpComputerUseRef('c9222n42'), true);
+  assert.deepEqual(parseCdpComputerUseRef('c9222n42'), { port: 9222, backendDomNodeId: 42 });
+  assert.equal(isComputerUseRef('c9222n42'), true);
 });
 
 test('flattenComputerUseTree preserves depth order', () => {

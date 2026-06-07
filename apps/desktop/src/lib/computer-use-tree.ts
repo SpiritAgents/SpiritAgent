@@ -9,10 +9,14 @@ export interface ComputerUseTreeNode {
   children?: ComputerUseTreeNode[];
 }
 
+import { isCdpComputerUseRef, parseCdpComputerUseRef } from './cdp-ax-tree.js';
+
+export { isCdpComputerUseRef, parseCdpComputerUseRef };
+
 const REF_PATTERN = /^w[0-9a-f]+n\d+$/i;
 
 export function isComputerUseRef(value: string): boolean {
-  return REF_PATTERN.test(value);
+  return REF_PATTERN.test(value) || isCdpComputerUseRef(value);
 }
 
 export function parseComputerUseRef(value: string): { windowHwndHex: string; ordinal: number } | null {

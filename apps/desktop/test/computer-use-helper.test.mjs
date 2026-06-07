@@ -102,6 +102,24 @@ test('spirit-win-uia action rejects unknown ref', async (t) => {
   assert.equal(action.error.code, 'ref_not_found');
 });
 
+test('spirit-win-uia snapshot notepad reports host_kind native', async (t) => {
+  if (process.platform !== 'win32') {
+    t.skip('Windows only');
+    return;
+  }
+
+  const { lines } = await sendHelperCommands([
+    { cmd: 'snapshot', process_name: 'notepad.exe', max_depth: 4, max_nodes: 80 },
+    { cmd: 'shutdown' },
+  ]);
+  const snapshot = JSON.parse(lines[0]);
+  if (!snapshot.ok) {
+    t.skip(`notepad not available: ${snapshot.error?.code ?? 'unknown'}`);
+    return;
+  }
+  assert.equal(snapshot.data.host_kind, 'native');
+});
+
 test('spirit-win-uia list_windows returns array', async (t) => {
   if (process.platform !== 'win32') {
     t.skip('Windows only');
