@@ -120,6 +120,24 @@ test('spirit-win-uia snapshot notepad reports host_kind native', async (t) => {
   assert.equal(snapshot.data.host_kind, 'native');
 });
 
+test('spirit-win-uia snapshot cloudmusic reports host_kind cef when running', async (t) => {
+  if (process.platform !== 'win32') {
+    t.skip('Windows only');
+    return;
+  }
+
+  const { lines } = await sendHelperCommands([
+    { cmd: 'snapshot', process_name: 'cloudmusic.exe', max_depth: 4, max_nodes: 80 },
+    { cmd: 'shutdown' },
+  ]);
+  const snapshot = JSON.parse(lines[0]);
+  if (!snapshot.ok) {
+    t.skip(`cloudmusic not available: ${snapshot.error?.code ?? 'unknown'}`);
+    return;
+  }
+  assert.equal(snapshot.data.host_kind, 'cef');
+});
+
 test('spirit-win-uia list_windows returns array', async (t) => {
   if (process.platform !== 'win32') {
     t.skip('Windows only');

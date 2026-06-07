@@ -156,6 +156,10 @@ export function pickCdpTarget(
   if (titleNeedle || processNeedle) {
     const best = scored.sort((a, b) => b.score - a.score);
     if (best.length === 0) {
+      // CEF 应用常见：UIA 窗口标题为歌曲名，CDP page title 为应用名；单 page 时允许回退。
+      if (pageTargets.length === 1) {
+        return pageTargets[0]!;
+      }
       throw new Error('cdp_target_not_found');
     }
     const topScore = best[0]!.score;
@@ -297,7 +301,7 @@ export async function actViaCdp(input: {
     });
     const session = await connectSession(port, target);
     await session.send('DOM.enable', {});
-    await session.send('Input.enable', {});
+    // CEF 常见未实现 Input.enable，但 dispatchMouseEvent / insertText 可直接调用，勿先 enable。
 
     if (input.action === 'set_value') {
       if (!input.text) {

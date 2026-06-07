@@ -60,13 +60,16 @@ export async function executeComputerUseSnapshot(
     });
   }
 
-  const cdpResponse = await snapshotViaCdp({
+  const explicitWindowTitle = request.window_title?.trim() || undefined;
+  const cdpMatchInput = {
     debug_port: request.debug_port,
-    window_title: request.window_title ?? uiaData.window?.title,
+    // UIA 窗口标题在 CEF 应用里常为歌曲名等动态文案，与 CDP page title 不一致，不得隐式代入。
+    window_title: explicitWindowTitle,
     process_name: request.process_name ?? uiaData.window?.process_name,
     max_depth: request.max_depth,
     max_nodes: request.max_nodes,
-  });
+  };
+  const cdpResponse = await snapshotViaCdp(cdpMatchInput);
 
   if (!cdpResponse.ok || !cdpResponse.data) {
     return formatHelperResponse(cdpResponse);
