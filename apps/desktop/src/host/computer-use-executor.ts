@@ -1,13 +1,13 @@
 import type { HostToolRequest } from '@spirit-agent/host-internal';
 
-import { snapshotViaCdp } from '../../electron/win-computer-use-cdp.js';
+import { actViaCdp, snapshotViaCdp } from '../../electron/win-computer-use-cdp.js';
 import {
   actOnWindowsUi,
   listWindowsViaComputerUse,
   snapshotWindowsUi,
   type WinComputerUseHelperResponse,
 } from '../../electron/win-computer-use.js';
-import { pruneComputerUseTree } from '../lib/computer-use-tree.js';
+import { isCdpComputerUseRef, pruneComputerUseTree } from '../lib/computer-use-tree.js';
 
 function assertWindowsElectronHost(): void {
   if (process.platform !== 'win32') {
@@ -89,6 +89,19 @@ export async function executeComputerUseAction(
   request: Extract<HostToolRequest, { name: 'computer_use_action' }>,
 ): Promise<string> {
   assertWindowsElectronHost();
+
+  if (isCdpComputerUseRef(request.ref)) {
+    const debugPort = (request as { debug_port?: number }).debug_port;
+    const response = await actViaCdp({
+      ref: request.ref,
+      action: request.action,
+      text: request.text,
+      debug_port: debugPort,
+      window_title: request.window_title,
+      process_name: request.process_name,
+    });
+    return formatHelperResponse(response);
+  }
 
   const response = await actOnWindowsUi({
     ref: request.ref,
