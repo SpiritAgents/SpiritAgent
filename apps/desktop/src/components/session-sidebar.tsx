@@ -25,8 +25,8 @@ import {
   Network,
   Package,
   Palette,
-  Plus,
   Plug,
+  SquarePen,
   Settings2,
   Sparkles,
   Trash2,
@@ -705,7 +705,7 @@ function SessionSidebarInner({
             disabled={disabled || newSessionBusy}
             onClick={onNewSession}
           >
-            <Plus className="size-3.5" aria-hidden />
+            <SquarePen className="size-3.5" aria-hidden />
             <span className={cn(narrow && "sr-only")}>{t('sidebar.newSession')}</span>
           </Button>
           <Button
