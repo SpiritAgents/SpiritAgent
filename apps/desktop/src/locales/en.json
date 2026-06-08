@@ -167,7 +167,7 @@
     "ruleWorkspaceAgentsHint": "Workspace AGENTS.md",
     "deleteSkill": "Delete Skill",
     "deleteSkillConfirm": "Are you sure you want to delete \"{{name}}\" ({{location}})? The entire directory (including SKILL.md) will be removed.",
-    "rulesDescription": "Fixed Spirit rule slots: workspace .spirit/rule.md, AGENTS.md, and user rule.md.",
+    "rulesDescription": "User rules and rules discovered in the workspace.",
     "generateRuleTooltip": "Go to main chat area, prefill /create-rule, and describe requirements in natural language",
     "generateRule": "Generate Rule",
     "newRule": "New Rule",
