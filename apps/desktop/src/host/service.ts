@@ -187,6 +187,11 @@ import {
 } from './session-turn-orchestrator.js';
 import { isSessionBundleBusy } from './direct-media-turn.js';
 import {
+  appendQueuedUserTurnSnapshots,
+  canEnqueueUserTurn,
+  enqueueUserTurnCommand,
+} from './message-queue.js';
+import {
   openSessionCommand,
   resetSessionCommand,
   type SessionActivationContext,
@@ -1187,13 +1192,23 @@ class DesktopHostService {
         throw new Error(i18n.t('error.messageRequired'));
       }
 
+      const explicitWorkspaceFiles = await this.resolveExplicitLocalFileAttachments(
+        request.localFilePaths,
+      );
+      if (canEnqueueUserTurn(bundle)) {
+        return enqueueUserTurnCommand(this.sessionTurnContext(), {
+          text: request.text,
+          explicitWorkspaceFiles,
+        });
+      }
+
       const isFirstTurn = bundle.messages.length === 0;
       if (isFirstTurn && bundle.workLocation === 'worktree') {
         await this.bootstrapWorktreeForFirstTurn(trimmed);
       }
 
       return this.submitUserTurnAfterInitialized(request.text, {
-        explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
+        explicitWorkspaceFiles,
       });
     });
   }
@@ -2130,15 +2145,18 @@ class DesktopHostService {
       conversationSnapshotView: this.activeOrchestration().conversationSnapshotView,
     });
 
-    const rawMessages = this.activeBundle().messages;
+    const activeBundle = this.activeBundle();
+    const rawMessages = activeBundle.messages;
     const rawConversationMessages = this.desktopMessages();
 
-    const conversationMessages = this.activeOrchestration().conversationSnapshotView.buildMessagesWithPendingAssistant({
-      messages: rawConversationMessages,
-      livePendingAux: pendingAux,
-      rewind: this.activeBundle().rewind,
-    });
-    const activeBundle = this.activeBundle();
+    const conversationMessages = appendQueuedUserTurnSnapshots(
+      this.activeOrchestration().conversationSnapshotView.buildMessagesWithPendingAssistant({
+        messages: rawConversationMessages,
+        livePendingAux: pendingAux,
+        rewind: activeBundle.rewind,
+      }),
+      activeBundle.queuedUserTurns,
+    );
     const conversationBusy = isSessionBundleBusy(activeBundle);
 
     this.logContinuationSnapshotState({
