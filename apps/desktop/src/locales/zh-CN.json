@@ -167,7 +167,7 @@
     "ruleWorkspaceAgentsHint": "工作区 AGENTS.md",
     "deleteSkill": "删除 Skill",
     "deleteSkillConfirm": "确定删除「{{name}}」（{{location}}）？将移除整个目录（含 SKILL.md）。",
-    "rulesDescription": "Spirit 固定规则槽位：工作区 .spirit/rule.md、AGENTS.md 与用户 rule.md。",
+    "rulesDescription": "用户与工作区内已发现的规则。",
     "generateRuleTooltip": "进入主对话区，预填 /create-rule，并直接用自然语言描述需求",
     "generateRule": "生成规则",
     "newRule": "新建规则",
