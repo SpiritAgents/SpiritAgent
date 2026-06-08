@@ -14,6 +14,12 @@ const LLM_HTTP_VERSIONS: readonly LlmHttpVersion[] = ['http1.1', 'http2'];
 let configuredVersion: LlmHttpVersion = 'http2';
 let llmDispatcher: Agent | undefined;
 let configuredClientVersion: string = defaultClientVersion;
+let llmFetchTransportOverride: typeof fetch | undefined;
+
+/** @internal Unit tests may replace the underlying transport after UA merge. */
+export function setLlmFetchTransportOverrideForTests(fetchImpl: typeof fetch | undefined): void {
+  llmFetchTransportOverride = fetchImpl;
+}
 
 export function buildSpiritAgentUserAgent(version: string): string {
   return `${SPIRIT_AGENT_UA_PRODUCT}/${version.trim()}`;
@@ -97,10 +103,15 @@ function llmDispatcherInstance(): Agent {
 /** LLM 出站请求：undici fetch；HTTP/2 由配置决定（TLS ALPN，对端不支持时回退 HTTP/1.1）。 */
 export function getLlmFetch(): typeof fetch {
   const dispatcher = llmDispatcherInstance();
-  const fetchWithDispatcher = (input: RequestInfo | URL, init?: RequestInit) =>
-    undiciFetch(
+  const fetchWithDispatcher = (input: RequestInfo | URL, init?: RequestInit) => {
+    const mergedInit = mergeLlmFetchInit(init);
+    if (llmFetchTransportOverride) {
+      return llmFetchTransportOverride(input, mergedInit);
+    }
+    return undiciFetch(
       input as Parameters<typeof undiciFetch>[0],
-      { ...mergeLlmFetchInit(init), dispatcher } as Parameters<typeof undiciFetch>[1],
+      { ...mergedInit, dispatcher } as Parameters<typeof undiciFetch>[1],
     );
+  };
   return fetchWithDispatcher as unknown as typeof fetch;
 }
