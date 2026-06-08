@@ -357,7 +357,7 @@ export class HostAutomationStore {
     if (!file) {
       return undefined;
     }
-    return file.runs.find((run) => run.status === 'running' || run.status === 'blocked');
+    return file.runs.find((run) => run.status === 'running');
   }
 
   private async listAutomationFiles(): Promise<string[]> {

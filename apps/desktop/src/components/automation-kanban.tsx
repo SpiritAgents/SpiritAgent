@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { DesktopAutomationRun, SessionListItem } from "@/types";
@@ -62,7 +62,7 @@ function KanbanColumn({
   indicatorClassName: string;
   children: ReactNode;
 }) {
-  const hasItems = Boolean(children);
+  const hasItems = Children.count(children) > 0;
 
   return (
     <div className="flex min-h-[16rem] flex-col rounded-lg border border-border/40 bg-background/60">
