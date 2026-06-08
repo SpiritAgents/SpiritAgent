@@ -3,6 +3,7 @@ use std::{env, path::PathBuf};
 
 use crate::{
     chat_store, logging,
+    mcp::spirit_agent_data_dir,
     model_registry::{
         AppConfig, config_file_path, has_model_api_key, keyring_entry, load_config,
         remove_model_api_key, save_config, save_model_api_key,
@@ -38,19 +39,7 @@ impl AppPaths for DefaultAppPaths {
     }
 
     fn permissions_file(&self) -> PathBuf {
-        if let Ok(appdata) = env::var("APPDATA") {
-            return PathBuf::from(appdata)
-                .join("SpiritAgent")
-                .join(PERMISSIONS_FILE);
-        }
-
-        if let Ok(home) = env::var("USERPROFILE") {
-            return PathBuf::from(home)
-                .join(".spirit-agent")
-                .join(PERMISSIONS_FILE);
-        }
-
-        PathBuf::from(format!(".spirit-agent.{}", PERMISSIONS_FILE))
+        spirit_agent_data_dir().join(PERMISSIONS_FILE)
     }
 
     fn log_file(&self) -> PathBuf {
