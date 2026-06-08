@@ -1,5 +1,4 @@
-import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   mkdir,
   readdir,
@@ -11,6 +10,7 @@ import {
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { Entry } from '@napi-rs/keyring';
 import i18n from '../lib/i18n-host.js';
@@ -594,11 +594,26 @@ export function normalizeNetworksConfig(raw: unknown): DesktopNetworksConfigFile
   };
 }
 
-const require = createRequire(import.meta.url);
-const desktopPackageVersion = (require('../../package.json') as { version: string }).version;
+function resolveDesktopPackageJsonPath(): string {
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.join(moduleDir, '../../../package.json'),
+    path.join(moduleDir, '../../package.json'),
+  ];
+  const packageJsonPath = candidates.find((candidate) => existsSync(candidate));
+  if (!packageJsonPath) {
+    throw new Error(`未找到 Desktop package.json（自 ${moduleDir} 向上查找）`);
+  }
+  return packageJsonPath;
+}
+
+let cachedDesktopAppVersion: string | undefined;
 
 export function resolveDesktopAppVersion(): string {
-  return desktopPackageVersion;
+  cachedDesktopAppVersion ??= (JSON.parse(
+    readFileSync(resolveDesktopPackageJsonPath(), 'utf8'),
+  ) as { version: string }).version;
+  return cachedDesktopAppVersion;
 }
 
 export function applyLlmClientVersionFromApp(): void {
