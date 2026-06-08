@@ -652,6 +652,7 @@ export interface DesktopSnapshot {
   composerSessionKey: string;
   /** Active SubAgent viewer overlay; present while renderer has a tool card open in viewer mode. */
   subagentViewer?: SubagentViewerSnapshot;
+  automationsList: DesktopAutomationListItem[];
 }
 
 export type SubagentViewerSessionStatus = 'running' | 'completed' | 'failed' | 'blocked';
@@ -732,6 +733,24 @@ export interface DesktopDreamOverviewItem {
   gitBranch: string;
   updatedAtUnixMs: number;
 }
+
+export interface DesktopAutomationListItem {
+  id: string;
+  title: string;
+  scheduleLabel: string;
+  enabled: boolean;
+  lastRunAtUnixMs?: number;
+  updatedAtUnixMs: number;
+}
+
+export interface DesktopAutomationDetail {
+  definition: import('@spirit-agent/host-internal').HostAutomationDefinition;
+  runs: import('@spirit-agent/host-internal').HostAutomationRun[];
+}
+
+export type DesktopCreateAutomationRequest = import('@spirit-agent/host-internal').HostAutomationCreateInput;
+
+export type DesktopUpdateAutomationRequest = import('@spirit-agent/host-internal').HostAutomationUpdateInput;
 
 export interface DesktopGitSnapshot {
   /** Bumped on each successful workspace git summary refresh (poll or user git op). */
