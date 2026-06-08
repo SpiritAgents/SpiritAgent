@@ -1,4 +1,8 @@
+import { homedir } from 'node:os';
 import { join } from 'node:path';
+
+const APP_DATA_DIR_NAME = 'SpiritAgent';
+const ENV_SPIRIT_AGENT_DATA_DIR = 'SPIRIT_AGENT_DATA_DIR';
 
 import { McpConfigError } from './errors.js';
 import type {
@@ -32,10 +36,30 @@ export function mcpWorkspaceConfigPath(workspaceRoot: string): string {
   return join(workspaceRoot, SPIRIT_DIR_NAME, DEFAULT_MCP_CONFIG_FILE);
 }
 
-export function spiritAgentDataDir(): string {
+function resolveHomeDirectory(): string | undefined {
+  const home = process.env.HOME?.trim() || homedir()?.trim();
+  return home || undefined;
+}
+
+export function resolveDefaultSpiritAgentDataDir(): string {
   const appData = process.env.APPDATA?.trim();
   if (appData) {
-    return join(appData, 'SpiritAgent');
+    return join(appData, APP_DATA_DIR_NAME);
+  }
+
+  const home = resolveHomeDirectory();
+  if (home) {
+    if (process.platform === 'darwin') {
+      return join(home, 'Library', 'Application Support', APP_DATA_DIR_NAME);
+    }
+    if (process.platform === 'linux') {
+      const xdgDataHome = process.env.XDG_DATA_HOME?.trim();
+      if (xdgDataHome) {
+        return join(xdgDataHome, APP_DATA_DIR_NAME);
+      }
+      return join(home, '.local', 'share', APP_DATA_DIR_NAME);
+    }
+    return join(home, '.spirit-agent');
   }
 
   const userProfile = process.env.USERPROFILE?.trim();
@@ -43,7 +67,16 @@ export function spiritAgentDataDir(): string {
     return join(userProfile, '.spirit-agent');
   }
 
-  return '.spirit-agent';
+  return join(homedir(), '.spirit-agent');
+}
+
+export function spiritAgentDataDir(): string {
+  const envOverride = process.env[ENV_SPIRIT_AGENT_DATA_DIR]?.trim();
+  if (envOverride) {
+    return envOverride;
+  }
+
+  return resolveDefaultSpiritAgentDataDir();
 }
 
 export function mergeMcpConfigFiles(

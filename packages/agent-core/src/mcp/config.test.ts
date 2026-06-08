@@ -2,17 +2,97 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import test from 'node:test';
 
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+
 import {
   findMcpServerNameConflict,
   mcpServerScopesFromFiles,
   mcpWorkspaceConfigPath,
   mergeMcpConfigFiles,
+  resolveDefaultSpiritAgentDataDir,
+  spiritAgentDataDir,
 } from './config.js';
 import type { McpConfigFile } from './types.js';
 
 const stdioServer = {
   transport: { type: 'stdio' as const, command: 'echo' },
 };
+
+function withEnv(vars: Record<string, string | undefined>, run: () => void): void {
+  const previous = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(vars)) {
+    previous.set(key, process.env[key]);
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+  try {
+    run();
+  } finally {
+    for (const [key, value] of previous.entries()) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+test('resolveDefaultSpiritAgentDataDir uses APPDATA on Windows-style hosts', () => {
+  withEnv(
+    {
+      APPDATA: '/tmp/spirit-agent-appdata',
+      HOME: '/tmp/should-not-use',
+      USERPROFILE: undefined,
+      SPIRIT_AGENT_DATA_DIR: undefined,
+    },
+    () => {
+      assert.equal(resolveDefaultSpiritAgentDataDir(), join('/tmp/spirit-agent-appdata', 'SpiritAgent'));
+    },
+  );
+});
+
+test('resolveDefaultSpiritAgentDataDir uses Application Support on macOS', () => {
+  if (process.platform !== 'darwin') {
+    return;
+  }
+
+  const home = mkdtempSync(join(tmpdir(), 'spirit-agent-home-'));
+  try {
+    withEnv(
+      {
+        APPDATA: undefined,
+        HOME: home,
+        USERPROFILE: undefined,
+        SPIRIT_AGENT_DATA_DIR: undefined,
+      },
+      () => {
+        assert.equal(
+          resolveDefaultSpiritAgentDataDir(),
+          join(home, 'Library', 'Application Support', 'SpiritAgent'),
+        );
+      },
+    );
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('spiritAgentDataDir honors SPIRIT_AGENT_DATA_DIR override', () => {
+  withEnv(
+    {
+      SPIRIT_AGENT_DATA_DIR: '/tmp/spirit-agent-override',
+      APPDATA: '/tmp/spirit-agent-appdata',
+    },
+    () => {
+      assert.equal(spiritAgentDataDir(), '/tmp/spirit-agent-override');
+    },
+  );
+});
 
 test('mcpWorkspaceConfigPath resolves under .spirit directory', () => {
   assert.equal(
