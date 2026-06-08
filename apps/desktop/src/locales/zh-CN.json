@@ -175,8 +175,6 @@
     "settingsPage": "设置页",
     "installedAt": "安装时间：",
     "source": "来源：",
-    "contributedTools": "贡献工具",
-    "runManually": "手动运行",
     "deleteExtension": "删除扩展",
     "deleteExtensionConfirm": "确定删除扩展「{{name}}」？这会移除本地安装目录。",
     "desktopCssDescription": "该样式会以扩展层的形式注入 Desktop Renderer，可配合稳定的 `data-spirit-*` hooks 覆盖界面表现。",
