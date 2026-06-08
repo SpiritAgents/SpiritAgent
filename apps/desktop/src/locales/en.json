@@ -192,7 +192,9 @@
     "source": "Source: ",
     "deleteExtension": "Delete Extension",
     "deleteExtensionConfirm": "Are you sure you want to delete extension \"{{name}}\"? This will remove the local installation directory.",
+    "desktopCss": "Desktop CSS",
     "desktopCssDescription": "This style will be injected as an extension layer into Desktop Renderer and can override UI appearance with stable `data-spirit-*` hooks.",
+    "cliHooks": "CLI Hooks",
     "cliHookDescription": "This is a CLI-only controlled semantic hook and will not execute in Desktop Renderer.",
     "mcpsDescription": "Manage configured MCP servers on the Desktop side.",
     "addMcp": "Add MCP",
@@ -502,7 +504,6 @@
     "browserForward": "Forward",
     "browserReload": "Reload",
     "browserPickerToggle": "Pick / marquee",
-    "gitPlaceholder": "Git area placeholder",
     "git": {
       "changes": "Changes",
       "history": "History",

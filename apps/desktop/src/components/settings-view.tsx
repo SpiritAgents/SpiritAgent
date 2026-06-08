@@ -1707,7 +1707,7 @@ function ExtensionsSettingsPanel({
                 ) : null}
                 {item.desktopCss?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className="text-xs font-medium text-foreground">Desktop CSS</p>
+                    <p className="text-xs font-medium text-foreground">{t('settings.desktopCss')}</p>
                     {item.desktopCss.map((entry) => (
                       <div
                         key={`${item.id}:desktop-css:${entry.path}`}
@@ -1730,7 +1730,7 @@ function ExtensionsSettingsPanel({
                 ) : null}
                 {item.cliHooks?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className="text-xs font-medium text-foreground">CLI Hooks</p>
+                    <p className="text-xs font-medium text-foreground">{t('settings.cliHooks')}</p>
                     {item.cliHooks.map((hook, index) => (
                       <div
                         key={`${item.id}:cli-hook:${hook.slot}:${index}`}
