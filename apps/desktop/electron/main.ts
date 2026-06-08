@@ -109,6 +109,7 @@ import {
   invokeDesktopHostCommand,
   setDesktopMarketplaceFetchImplementation,
   setDesktopExtensionHostAdapter,
+  subscribeDesktopAutomationsUpdates,
   subscribeDesktopDreamUpdates,
   subscribeDesktopSessionListUpdates,
 } from '../src/host/service.js';
@@ -149,6 +150,7 @@ let desktopWebHostConfig: DesktopWebHostConfigFile | undefined;
 let desktopWebHostPairingCode = createDesktopWebPairingCode();
 let quittingAfterDesktopWebHostStop = false;
 let unsubscribeDesktopDreamUpdates: (() => void) | undefined;
+let unsubscribeDesktopAutomationsUpdates: (() => void) | undefined;
 let unsubscribeDesktopSessionListUpdates: (() => void) | undefined;
 
 const workspacePtyManager = new WorkspacePtyManager();
@@ -620,6 +622,14 @@ if (gotSpiritSingleInstanceLock) {
     }
   });
 
+  unsubscribeDesktopAutomationsUpdates = subscribeDesktopAutomationsUpdates((snapshot) => {
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (!window.isDestroyed()) {
+        window.webContents.send('desktop:automations-updated', snapshot);
+      }
+    }
+  });
+
   unsubscribeDesktopSessionListUpdates = subscribeDesktopSessionListUpdates(() => {
     for (const window of BrowserWindow.getAllWindows()) {
       if (!window.isDestroyed()) {
@@ -1059,6 +1069,8 @@ if (gotSpiritSingleInstanceLock) {
 app.on('before-quit', (event) => {
   unsubscribeDesktopDreamUpdates?.();
   unsubscribeDesktopDreamUpdates = undefined;
+  unsubscribeDesktopAutomationsUpdates?.();
+  unsubscribeDesktopAutomationsUpdates = undefined;
   unsubscribeDesktopSessionListUpdates?.();
   unsubscribeDesktopSessionListUpdates = undefined;
   if (quittingAfterDesktopWebHostStop || !desktopWebHost?.isRunning()) {
