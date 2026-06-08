@@ -32,7 +32,9 @@ import type {
   AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
+  CreateRuleRequest,
   CreateSkillRequest,
+  DeleteRuleRequest,
   DeleteExtensionRequest,
   DeleteMcpServerRequest,
   DeleteSkillRequest,
@@ -1250,6 +1252,50 @@ export function useDesktopRuntime() {
     [api, applySnapshot],
   );
 
+  const createRule = useCallback(
+    async (request: CreateRuleRequest) => {
+      if (!api) {
+        return;
+      }
+
+      setBusyAction("rules");
+      try {
+        const next = await api.createRule(request);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        const message = describeError(error);
+        setRuntimeError(message);
+        throw new Error(message);
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const deleteRule = useCallback(
+    async (request: DeleteRuleRequest) => {
+      if (!api) {
+        return;
+      }
+
+      setBusyAction("rules");
+      try {
+        const next = await api.deleteRule(request);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        const message = describeError(error);
+        setRuntimeError(message);
+        throw new Error(message);
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
   const addMcpServer = useCallback(
     async (request: AddMcpServerRequest) => {
       if (!api) {
@@ -2403,12 +2449,14 @@ export function useDesktopRuntime() {
     prepareMarketplaceExtensionInstall,
     installMarketplaceExtension,
     createSkill,
+    createRule,
     deleteExtension,
     runExtension,
     updateExtensionSettings,
     updateExtensionSecret,
     deleteMcpServer,
     deleteSkill,
+    deleteRule,
     inspectMcpServer,
     abortConversation,
     setLoopEnabled,
