@@ -6,9 +6,11 @@ import {
   configureLlmClientVersion,
   configureLlmHttpVersion,
   getLlmClientVersion,
+  getLlmFetch,
   getLlmHttpVersion,
   mergeLlmFetchInit,
   normalizeLlmHttpVersion,
+  setLlmFetchTransportOverrideForTests,
 } from './llm-fetch.js';
 
 test('normalizeLlmHttpVersion accepts common aliases and defaults to http2', () => {
@@ -71,4 +73,20 @@ test('mergeLlmFetchInit overwrites existing User-Agent', () => {
     },
   });
   assert.equal((merged.headers as Headers).get('User-Agent'), 'SpiritAgent/9.9.9');
+});
+
+test('getLlmFetch applies SpiritAgent User-Agent on outbound calls', async () => {
+  configureLlmClientVersion('4.5.6');
+  let capturedInit: RequestInit | undefined;
+  setLlmFetchTransportOverrideForTests(async (_input, init) => {
+    capturedInit = init;
+    return new Response('ok');
+  });
+  try {
+    await getLlmFetch()('https://example.com/v1/chat/completions', { method: 'POST' });
+    assert.ok(capturedInit?.headers instanceof Headers);
+    assert.equal((capturedInit.headers as Headers).get('User-Agent'), 'SpiritAgent/4.5.6');
+  } finally {
+    setLlmFetchTransportOverrideForTests(undefined);
+  }
 });
