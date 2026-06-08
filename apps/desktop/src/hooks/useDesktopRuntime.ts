@@ -14,6 +14,7 @@ import {
   type ComposerLocalFileAttachmentView,
 } from "@/lib/local-file-attachments";
 import {
+  isCreateRuleSlashInput,
   isCreateSkillSlashInput,
   isCompactSlashInput,
   isLogSessionSlashInput,
@@ -32,7 +33,9 @@ import type {
   AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
+  CreateRuleRequest,
   CreateSkillRequest,
+  DeleteRuleRequest,
   DeleteExtensionRequest,
   DeleteMcpServerRequest,
   DeleteSkillRequest,
@@ -1250,6 +1253,50 @@ export function useDesktopRuntime() {
     [api, applySnapshot],
   );
 
+  const createRule = useCallback(
+    async (request: CreateRuleRequest) => {
+      if (!api) {
+        return;
+      }
+
+      setBusyAction("rules");
+      try {
+        const next = await api.createRule(request);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        const message = describeError(error);
+        setRuntimeError(message);
+        throw new Error(message);
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const deleteRule = useCallback(
+    async (request: DeleteRuleRequest) => {
+      if (!api) {
+        return;
+      }
+
+      setBusyAction("rules");
+      try {
+        const next = await api.deleteRule(request);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        const message = describeError(error);
+        setRuntimeError(message);
+        throw new Error(message);
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
   const addMcpServer = useCallback(
     async (request: AddMcpServerRequest) => {
       if (!api) {
@@ -1717,14 +1764,19 @@ export function useDesktopRuntime() {
       const skillSlash = snapshot ? matchSkillSlashInput(text, snapshot.skillsList) : undefined;
       if (
         hasLocalFiles &&
-        (isCreateSkillSlashInput(text) ||
+        (isCreateRuleSlashInput(text) ||
+          isCreateSkillSlashInput(text) ||
           isCompactSlashInput(text) ||
           skillSlash)
       ) {
         setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
         return false;
       }
-      const next = isCreateSkillSlashInput(text)
+      const next = isCreateRuleSlashInput(text)
+        ? await api.submitCreateRuleSlash({
+            rawText: text,
+          })
+        : isCreateSkillSlashInput(text)
         ? await api.submitCreateSkillSlash({
             rawText: text,
           })
@@ -2403,12 +2455,14 @@ export function useDesktopRuntime() {
     prepareMarketplaceExtensionInstall,
     installMarketplaceExtension,
     createSkill,
+    createRule,
     deleteExtension,
     runExtension,
     updateExtensionSettings,
     updateExtensionSecret,
     deleteMcpServer,
     deleteSkill,
+    deleteRule,
     inspectMcpServer,
     abortConversation,
     setLoopEnabled,

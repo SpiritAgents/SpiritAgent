@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import {
+  BookText,
   Bot,
   ArrowLeft,
   ChevronRight,
@@ -104,6 +105,7 @@ export type SettingsSidebarTab =
   | "agents"
   | "mcps"
   | "skills"
+  | "rules"
   | "extensions"
   | "dreams"
   | "developer";
@@ -368,6 +370,11 @@ const settingsTabs: Array<{
     id: "skills",
     labelKey: "settings.skills",
     icon: Sparkles,
+  },
+  {
+    id: "rules",
+    labelKey: "settings.rules",
+    icon: BookText,
   },
   {
     id: "dreams",
