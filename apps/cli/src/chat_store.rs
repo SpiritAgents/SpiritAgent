@@ -9,6 +9,8 @@ use std::{
 
 use crate::rewind::{ConversationMessageRole, ConversationMessageSnapshot, MessageAuxSnapshot};
 
+use crate::mcp::spirit_agent_data_dir;
+
 const CHAT_DIR_NAME: &str = "chats";
 
 fn default_chat_approval_level() -> String {
@@ -102,19 +104,7 @@ pub struct LoadedChat {
 }
 
 pub fn chat_dir_path() -> PathBuf {
-    if let Ok(appdata) = env::var("APPDATA") {
-        return PathBuf::from(appdata)
-            .join("SpiritAgent")
-            .join(CHAT_DIR_NAME);
-    }
-
-    if let Ok(home) = env::var("USERPROFILE") {
-        return PathBuf::from(home)
-            .join(".spirit-agent")
-            .join(CHAT_DIR_NAME);
-    }
-
-    PathBuf::from(format!(".spirit-agent.{}", CHAT_DIR_NAME))
+    spirit_agent_data_dir().join(CHAT_DIR_NAME)
 }
 
 pub fn list_chat_files() -> Result<Vec<PathBuf>> {

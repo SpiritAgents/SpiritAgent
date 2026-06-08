@@ -11,6 +11,7 @@ use crate::logging;
 const MCP_CONFIG_FILE_NAME: &str = "mcp.json";
 const APP_DATA_DIR_NAME: &str = "SpiritAgent";
 const SPIRIT_DIR_NAME: &str = ".spirit";
+const ENV_SPIRIT_AGENT_DATA_DIR: &str = "SPIRIT_AGENT_DATA_DIR";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -137,16 +138,62 @@ pub struct LoadedMcpConfig {
     pub config: McpConfigFile,
 }
 
+fn unix_home_dir() -> Option<PathBuf> {
+    env::var("HOME")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .map(PathBuf::from)
+}
+
 pub fn spirit_agent_data_dir() -> PathBuf {
+    if let Ok(dir) = env::var(ENV_SPIRIT_AGENT_DATA_DIR) {
+        let trimmed = dir.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed);
+        }
+    }
+
     if let Ok(appdata) = env::var("APPDATA") {
-        return PathBuf::from(appdata).join(APP_DATA_DIR_NAME);
+        let trimmed = appdata.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed).join(APP_DATA_DIR_NAME);
+        }
+    }
+
+    if let Some(home) = unix_home_dir() {
+        #[cfg(target_os = "macos")]
+        {
+            return home
+                .join("Library")
+                .join("Application Support")
+                .join(APP_DATA_DIR_NAME);
+        }
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(xdg_data_home) = env::var("XDG_DATA_HOME") {
+                let trimmed = xdg_data_home.trim();
+                if !trimmed.is_empty() {
+                    return PathBuf::from(trimmed).join(APP_DATA_DIR_NAME);
+                }
+            }
+            return home.join(".local").join("share").join(APP_DATA_DIR_NAME);
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        {
+            return home.join(".spirit-agent");
+        }
     }
 
     if let Ok(home) = env::var("USERPROFILE") {
-        return PathBuf::from(home).join(".spirit-agent");
+        let trimmed = home.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed).join(".spirit-agent");
+        }
     }
 
-    PathBuf::from(".spirit-agent")
+    unix_home_dir()
+        .map(|home| home.join(".spirit-agent"))
+        .unwrap_or_else(|| PathBuf::from(".spirit-agent"))
 }
 
 pub fn user_mcp_config_path() -> PathBuf {
@@ -377,6 +424,50 @@ fn default_true() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::shared_env_lock;
+
+    #[test]
+    fn spirit_agent_data_dir_uses_application_support_on_macos() {
+        if !cfg!(target_os = "macos") {
+            return;
+        }
+
+        let _guard = shared_env_lock()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        let home = unique_test_workspace("macos-data-dir");
+        std::fs::create_dir_all(&home).expect("create temp home");
+        unsafe {
+            env::set_var("HOME", &home);
+            env::remove_var("APPDATA");
+            env::remove_var("USERPROFILE");
+            env::remove_var(ENV_SPIRIT_AGENT_DATA_DIR);
+        }
+
+        assert_eq!(
+            spirit_agent_data_dir(),
+            home.join("Library")
+                .join("Application Support")
+                .join(APP_DATA_DIR_NAME)
+        );
+
+        let _ = fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn spirit_agent_data_dir_honors_env_override() {
+        let _guard = shared_env_lock()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        let override_dir = unique_test_workspace("data-dir-override");
+        unsafe {
+            env::set_var(ENV_SPIRIT_AGENT_DATA_DIR, &override_dir);
+        }
+
+        assert_eq!(spirit_agent_data_dir(), override_dir);
+
+        let _ = fs::remove_dir_all(&override_dir);
+    }
 
     #[test]
     fn load_config_reads_single_user_file() {

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use crate::mcp::spirit_agent_data_dir;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
@@ -300,19 +301,7 @@ impl AppConfig {
 }
 
 pub fn config_file_path() -> PathBuf {
-    if let Ok(appdata) = env::var("APPDATA") {
-        return PathBuf::from(appdata)
-            .join("SpiritAgent")
-            .join("config.json");
-    }
-
-    if let Ok(home) = env::var("USERPROFILE") {
-        return PathBuf::from(home)
-            .join(".spirit-agent")
-            .join("config.json");
-    }
-
-    PathBuf::from(".spirit-agent.config.json")
+    spirit_agent_data_dir().join("config.json")
 }
 
 pub fn load_config() -> Result<AppConfig> {
