@@ -65,7 +65,7 @@ export function QueuedUserMessageHoverActions({
   const { t } = useTranslation();
 
   return (
-    <HoverCard openDelay={150} closeDelay={100}>
+    <HoverCard openDelay={50} closeDelay={80}>
       <HoverCardTrigger asChild>
         <div className="inline-flex max-w-full">{children}</div>
       </HoverCardTrigger>
