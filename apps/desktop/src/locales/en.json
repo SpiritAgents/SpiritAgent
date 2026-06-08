@@ -560,7 +560,14 @@
     "placeholderGenerateVideo": "Describe the video to generate…",
     "contextUsageAria": "Context used {{percent}}%, {{inputTokens}} / {{contextLength}} tokens",
     "contextUsageHoverPercent": "{{percent}}% context used",
-    "contextUsageHoverTokens": "{{input}} / {{total}} tokens"
+    "contextUsageHoverTokens": "{{input}} / {{total}} tokens",
+    "enqueueWhileBusy": "Add to message queue"
+  },
+  "queue": {
+    "moveUp": "Move up",
+    "sendNow": "Send now",
+    "delete": "Delete",
+    "actionsAria": "Queued message actions"
   },
   "error": {
     "runtimeBusy": "A response or approval is already being processed. Please wait.",
@@ -703,6 +710,7 @@
     "attachmentsNotSupportedWithSlash": "Attachments are not yet supported with Slash commands.",
     "hostNotSupportLogSession": "The current host does not support /log-session.",
     "pendingApprovalSend": "Currently waiting for approval or questionnaire; cannot send a new message directly.",
+    "queuedUserTurnNotFound": "Queued message was not found.",
     "completeQuestionnaire": "Please complete the questionnaire first.",
     "completeRequiredQuestion": "Please complete the required question first: {{title}}",
     "autoWorktreeNameFailedMissingFields": "Auto-generating Worktree name failed: model did not return worktreeName or branchName field.",

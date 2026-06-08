@@ -93,6 +93,7 @@ import type {
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
   PendingAssistantAux,
+  QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   RememberWorkspaceRequest,
   RemoveModelRequest,
@@ -180,12 +181,20 @@ import {
   pollCommand,
   replyPendingApprovalCommand,
   replyPendingQuestionsCommand,
+  sendQueuedUserTurnNowCommand,
   submitUserTurnAfterInitializedCommand,
   tickSessionCommand,
   type SessionTurnOrchestratorContext,
   type SubmitUserTurnAfterInitializedOptions,
 } from './session-turn-orchestrator.js';
 import { isSessionBundleBusy } from './direct-media-turn.js';
+import {
+  appendQueuedUserTurnSnapshots,
+  canEnqueueUserTurn,
+  enqueueUserTurnCommand,
+  removeQueuedUserTurnCommand,
+  reorderQueuedUserTurnCommand,
+} from './message-queue.js';
 import {
   openSessionCommand,
   resetSessionCommand,
@@ -1187,13 +1196,23 @@ class DesktopHostService {
         throw new Error(i18n.t('error.messageRequired'));
       }
 
+      const explicitWorkspaceFiles = await this.resolveExplicitLocalFileAttachments(
+        request.localFilePaths,
+      );
+      if (canEnqueueUserTurn(bundle)) {
+        return enqueueUserTurnCommand(this.sessionTurnContext(), {
+          text: request.text,
+          explicitWorkspaceFiles,
+        });
+      }
+
       const isFirstTurn = bundle.messages.length === 0;
       if (isFirstTurn && bundle.workLocation === 'worktree') {
         await this.bootstrapWorktreeForFirstTurn(trimmed);
       }
 
       return this.submitUserTurnAfterInitialized(request.text, {
-        explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
+        explicitWorkspaceFiles,
       });
     });
   }
@@ -1266,6 +1285,27 @@ class DesktopHostService {
 
   async abortConversation(): Promise<DesktopSnapshot> {
     return abortConversationCommand(this.sessionTurnContext());
+  }
+
+  async reorderQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      return reorderQueuedUserTurnCommand(this.sessionTurnContext(), request.queueId);
+    });
+  }
+
+  async sendQueuedUserTurnNow(request: QueuedUserTurnRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      return sendQueuedUserTurnNowCommand(this.sessionTurnContext(), request.queueId);
+    });
+  }
+
+  async removeQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      return removeQueuedUserTurnCommand(this.sessionTurnContext(), request.queueId);
+    });
   }
 
   async continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot> {
@@ -2130,15 +2170,18 @@ class DesktopHostService {
       conversationSnapshotView: this.activeOrchestration().conversationSnapshotView,
     });
 
-    const rawMessages = this.activeBundle().messages;
+    const activeBundle = this.activeBundle();
+    const rawMessages = activeBundle.messages;
     const rawConversationMessages = this.desktopMessages();
 
-    const conversationMessages = this.activeOrchestration().conversationSnapshotView.buildMessagesWithPendingAssistant({
-      messages: rawConversationMessages,
-      livePendingAux: pendingAux,
-      rewind: this.activeBundle().rewind,
-    });
-    const activeBundle = this.activeBundle();
+    const conversationMessages = appendQueuedUserTurnSnapshots(
+      this.activeOrchestration().conversationSnapshotView.buildMessagesWithPendingAssistant({
+        messages: rawConversationMessages,
+        livePendingAux: pendingAux,
+        rewind: activeBundle.rewind,
+      }),
+      activeBundle.queuedUserTurns,
+    );
     const conversationBusy = isSessionBundleBusy(activeBundle);
 
     this.logContinuationSnapshotState({

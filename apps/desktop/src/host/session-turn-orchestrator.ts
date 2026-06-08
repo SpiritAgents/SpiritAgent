@@ -27,7 +27,19 @@ import {
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
-import { scheduleDirectMediaTurn, shouldUseComposerDirectMediaTurn } from './direct-media-turn.js';
+import {
+  canDrainQueuedUserTurn,
+  explicitWorkspaceFilesFromQueuedItem,
+  findQueuedUserTurnIndex,
+  isSessionBundleQueueBlocked,
+  removeQueuedUserTurn,
+  shiftNextQueuedUserTurn,
+} from './message-queue.js';
+import {
+  isSessionBundleBusy,
+  scheduleDirectMediaTurn,
+  shouldUseComposerDirectMediaTurn,
+} from './direct-media-turn.js';
 import { syncSubagentConversationProjections } from './subagent-conversation-projection.js';
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
 
@@ -56,6 +68,8 @@ export interface SubmitUserTurnAfterInitializedOptions {
   displayText?: string;
   turnSkills?: LlmActiveSkill[];
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
+  /** Reuse message id from a queued turn when draining the queue. */
+  preallocatedMessageId?: number;
 }
 
 export interface SessionTurnOrchestratorContext {
@@ -143,7 +157,7 @@ export async function submitUserTurnAfterInitializedCommand(
       ? pendingWorkspaceFilesToAttachmentSnapshots(explicitWorkspaceFiles)
       : undefined;
   const userMessage: ConversationMessageSnapshot = {
-    id: ctx.allocateMessageId(),
+    id: options.preallocatedMessageId ?? ctx.allocateMessageId(),
     role: 'user',
     content: displayText,
     pending: false,
@@ -211,7 +225,72 @@ export async function submitUserTurnAfterInitializedCommand(
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
   await ctx.refreshTodoSnapshotForBundle(bundle);
+  await drainQueuedUserTurnIfIdle(ctx, bundle);
   return ctx.buildSnapshot();
+}
+
+export async function sendQueuedUserTurnNowCommand(
+  ctx: SessionTurnOrchestratorContext,
+  queueId: string,
+): Promise<DesktopSnapshot> {
+  const bundle = ctx.activeBundle();
+  const index = findQueuedUserTurnIndex(bundle, queueId);
+  if (index < 0) {
+    throw new Error(i18n.t('error.queuedUserTurnNotFound'));
+  }
+  if (bundle.activeSession?.readOnly === true) {
+    throw new Error(i18n.t('error.readonlySessionSend'));
+  }
+  if (isSessionBundleQueueBlocked(bundle)) {
+    throw new Error(i18n.t('error.pendingApprovalSend'));
+  }
+
+  const item = bundle.queuedUserTurns[index];
+  if (!item) {
+    throw new Error(i18n.t('error.queuedUserTurnNotFound'));
+  }
+
+  if (isSessionBundleBusy(bundle)) {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+    await abortConversationInContext(ctx);
+  }
+
+  bundle.queuedUserTurns.splice(index, 1);
+  try {
+    return await submitUserTurnAfterInitializedCommand(ctx, item.text, {
+      displayText: item.displayText,
+      preallocatedMessageId: item.messageId,
+      explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(item),
+    });
+  } catch (error) {
+    bundle.queuedUserTurns.splice(index, 0, item);
+    await ctx.persistCurrentSessionIfNeeded();
+    throw error;
+  }
+}
+
+export async function drainQueuedUserTurnIfIdle(
+  ctx: SessionTurnOrchestratorContext,
+  bundle: SessionBundle,
+): Promise<void> {
+  if (!canDrainQueuedUserTurn(bundle)) {
+    return;
+  }
+  const next = shiftNextQueuedUserTurn(bundle);
+  if (!next) {
+    return;
+  }
+  try {
+    await submitUserTurnAfterInitializedCommand(ctx, next.text, {
+      displayText: next.displayText,
+      preallocatedMessageId: next.messageId,
+      explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(next),
+    });
+  } catch (error) {
+    bundle.queuedUserTurns.unshift(next);
+    await ctx.persistCurrentSessionIfNeeded();
+    throw error;
+  }
 }
 
 export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
@@ -255,6 +334,7 @@ export async function tickSessionCommand(
     applyDrainedRuntimeHostEvents(ctx, bundle, []);
   }
   if (options.light) {
+    await drainQueuedUserTurnIfIdle(ctx, bundle);
     return;
   }
   orchestration.runtimeEvents.consumeCompletedTurnResult();
@@ -267,46 +347,55 @@ export async function tickSessionCommand(
   });
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
   await ctx.refreshTodoSnapshotForBundle(bundle);
+  await drainQueuedUserTurnIfIdle(ctx, bundle);
+}
+
+export async function abortConversationInContext(
+  ctx: SessionTurnOrchestratorContext,
+): Promise<boolean> {
+  const runtime = ctx.requireRuntime();
+  const interruptedAssistantText = runtime.pendingAssistantText().trim();
+  const interruptedThinkingText = runtime.thinkingText().trim();
+  const interruptedCompactionText = runtime.compactionText().trim();
+  const interruptedAssistantAuxText =
+    interruptedThinkingText || interruptedCompactionText;
+  const interruptible =
+    runtime.isBusy() &&
+    !runtime.currentPendingApproval() &&
+    !runtime.currentPendingQuestions();
+
+  if (!interruptible) {
+    return false;
+  }
+
+  runtime.abort();
+  ctx.activeBundle().currentTurnSkills = [];
+  const orchestration = ctx.orchestrationFor(ctx.activeBundle());
+  orchestration.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+  orchestration.runtimeEvents.finalizeInterruptedDeferredThinking({
+    thinkingText: interruptedThinkingText,
+    compactionText: interruptedCompactionText,
+  });
+  ctx.activeBundle().messageTimeline.abortActiveAssistantSegment();
+  orchestration.runtimeEvents.consumeCompletedTurnResult();
+  orchestration.runtimeEvents.syncPendingToolStates();
+  orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+  ctx.markInterruptedToolsInCurrentTurn();
+  if (interruptedAssistantText || interruptedAssistantAuxText) {
+    ctx.markAssistantMessageContinuable(interruptedAssistantText);
+  } else {
+    ctx.markLatestRenderableAssistantMessageContinuableInCurrentTurn();
+  }
+  await ctx.persistCurrentSessionIfNeeded();
+  await ctx.flushDeferredRuntimeRefreshIfIdle();
+  return true;
 }
 
 export async function abortConversationCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
-    const runtime = ctx.requireRuntime();
-    const interruptedAssistantText = runtime.pendingAssistantText().trim();
-    const interruptedThinkingText = runtime.thinkingText().trim();
-    const interruptedCompactionText = runtime.compactionText().trim();
-    const interruptedAssistantAuxText =
-      interruptedThinkingText || interruptedCompactionText;
-    const interruptible =
-      runtime.isBusy() &&
-      !runtime.currentPendingApproval() &&
-      !runtime.currentPendingQuestions();
-
-    if (!interruptible) {
-      return ctx.buildSnapshot();
-    }
-
-    runtime.abort();
-    ctx.activeBundle().currentTurnSkills = [];
-    const orchestration = ctx.orchestrationFor(ctx.activeBundle());
-    orchestration.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
-    orchestration.runtimeEvents.finalizeInterruptedDeferredThinking({
-      thinkingText: interruptedThinkingText,
-      compactionText: interruptedCompactionText,
-    });
-    ctx.activeBundle().messageTimeline.abortActiveAssistantSegment();
-    orchestration.runtimeEvents.consumeCompletedTurnResult();
-    orchestration.runtimeEvents.syncPendingToolStates();
-    orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-    ctx.markInterruptedToolsInCurrentTurn();
-    if (interruptedAssistantText || interruptedAssistantAuxText) {
-      ctx.markAssistantMessageContinuable(interruptedAssistantText);
-    } else {
-      ctx.markLatestRenderableAssistantMessageContinuableInCurrentTurn();
-    }
-    await ctx.persistCurrentSessionIfNeeded();
-    await ctx.flushDeferredRuntimeRefreshIfIdle();
+    await abortConversationInContext(ctx);
+    await drainQueuedUserTurnIfIdle(ctx, ctx.activeBundle());
     return ctx.buildSnapshot();
   });
 }

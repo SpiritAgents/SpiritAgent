@@ -1746,22 +1746,17 @@ export function useDesktopRuntime() {
       return false;
     }
 
-    const interruptible =
+    const canEnqueueWhileBusy =
       snapshot?.conversation.isBusy === true &&
       !snapshot.conversation.pendingToolApproval &&
       !snapshot.conversation.pendingQuestions;
-    if (snapshot?.conversation.isBusy && !interruptible) {
+    if (snapshot?.conversation.isBusy && !canEnqueueWhileBusy) {
       setRuntimeError(i18n.t('error.pendingApprovalSend'));
       return false;
     }
 
     setBusyAction("send");
     try {
-      if (interruptible) {
-        const aborted = await api.abortConversation();
-        applySnapshot(aborted);
-      }
-
       const skillSlash = snapshot ? matchSkillSlashInput(text, snapshot.skillsList) : undefined;
       if (
         hasLocalFiles &&
@@ -2050,6 +2045,70 @@ export function useDesktopRuntime() {
     [api, applySnapshot, refreshSessions],
   );
   
+  const reorderQueuedUserTurn = useCallback(
+    async (queueId: string): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+      setBusyAction('send');
+      try {
+        const next = await api.reorderQueuedUserTurn({ queueId });
+        applySnapshot(next);
+        setRuntimeError('');
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setBusyAction('');
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const sendQueuedUserTurnNow = useCallback(
+    async (queueId: string): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+      setBusyAction('send');
+      try {
+        const next = await api.sendQueuedUserTurnNow({ queueId });
+        applySnapshot(next);
+        setRuntimeError('');
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setBusyAction('');
+      }
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
+  const removeQueuedUserTurn = useCallback(
+    async (queueId: string): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+      setBusyAction('send');
+      try {
+        const next = await api.removeQueuedUserTurn({ queueId });
+        applySnapshot(next);
+        setRuntimeError('');
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setBusyAction('');
+      }
+    },
+    [api, applySnapshot],
+  );
+
   const rewindAndSubmitMessage = useCallback(
     async (request: RewindAndSubmitMessageRequest): Promise<boolean> => {
       if (!api) {
@@ -2342,17 +2401,19 @@ export function useDesktopRuntime() {
   }, [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
 
   const summary = useMemo(() => {
+    const canEnqueueWhileBusy =
+      !!snapshot?.runtimeReady &&
+      !!snapshot.conversation.isBusy &&
+      !snapshot.conversation.pendingToolApproval &&
+      !snapshot.conversation.pendingQuestions;
     return {
       canSend:
         !!snapshot?.runtimeReady &&
         !snapshot.conversation.isBusy &&
         !snapshot.conversation.pendingToolApproval &&
         !snapshot.conversation.pendingQuestions,
-      canInterrupt:
-        !!snapshot?.runtimeReady &&
-        !!snapshot.conversation.isBusy &&
-        !snapshot.conversation.pendingToolApproval &&
-        !snapshot.conversation.pendingQuestions,
+      canEnqueueWhileBusy,
+      canInterrupt: canEnqueueWhileBusy,
       hostStatus: hostError
         ? hostError
         : hostReady
@@ -2496,6 +2557,9 @@ export function useDesktopRuntime() {
     pairWebHost,
     resetSession,
     rewindAndSubmitMessage,
+    reorderQueuedUserTurn,
+    sendQueuedUserTurnNow,
+    removeQueuedUserTurn,
     saveSettingsPatch,
     resetWebHostPairing,
     installLspProvider,
