@@ -151,6 +151,7 @@ import {
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { ActionPickerDialog } from "@/components/action-picker-dialog";
 import { WorkspaceFilePickerDialog } from "@/components/workspace-file-picker-dialog";
+import { QueuedUserMessageHoverActions } from "@/components/queued-user-message-hover-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useElementBoxHeight } from "@/hooks/use-element-box-height";
@@ -1404,6 +1405,11 @@ function MessageCard({
   readLocalVideoPreviewUrl,
   saveLocalImageAs,
   onOpenSubagentViewer,
+  queuedCanMoveUp = false,
+  queueActionBusy = false,
+  onQueueMoveUp,
+  onQueueSendNow,
+  onQueueDelete,
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -1445,9 +1451,15 @@ function MessageCard({
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
   onOpenSubagentViewer?: (toolCallId: string) => void;
+  queuedCanMoveUp?: boolean;
+  queueActionBusy?: boolean;
+  onQueueMoveUp?(queueId: string): void;
+  onQueueSendNow?(queueId: string): void;
+  onQueueDelete?(queueId: string): void;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
+  const isQueuedUser = isUser && message.queued === true && typeof message.queueId === "string";
   const canStartRewind =
     isUser && message.canRewind === true && !message.pending && message.queued !== true;
   const userBubble =
@@ -1550,14 +1562,34 @@ function MessageCard({
           />
         ) : null}
         {isUser && !rewindSelected ? (
-          <UserMessageBubble
-            message={message}
-            userBubbleClassName={userBubble}
-            canStartRewind={canStartRewind}
-            queued={message.queued === true}
-            onRewindStart={() => onRewindStart(message, listIndex)}
-            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-          />
+          isQueuedUser && message.queueId && onQueueMoveUp && onQueueSendNow && onQueueDelete ? (
+            <QueuedUserMessageHoverActions
+              queueId={message.queueId}
+              canMoveUp={queuedCanMoveUp}
+              busy={queueActionBusy}
+              onMoveUp={onQueueMoveUp}
+              onSendNow={onQueueSendNow}
+              onDelete={onQueueDelete}
+            >
+              <UserMessageBubble
+                message={message}
+                userBubbleClassName={userBubble}
+                canStartRewind={false}
+                queued
+                onRewindStart={() => onRewindStart(message, listIndex)}
+                readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+              />
+            </QueuedUserMessageHoverActions>
+          ) : (
+            <UserMessageBubble
+              message={message}
+              userBubbleClassName={userBubble}
+              canStartRewind={canStartRewind}
+              queued={message.queued === true}
+              onRewindStart={() => onRewindStart(message, listIndex)}
+              readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+            />
+          )
         ) : null}
         {!isUser && message.content.trim() ? (
           subagentStatusSurface ? (
@@ -3325,6 +3357,11 @@ export default function App() {
                           const previous = messages[index - 1];
                           const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
                           const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
+                          const queuedBeforeCount = messages
+                            .slice(0, index)
+                            .filter((item) => item.queued === true).length;
+                          const queuedCanMoveUp =
+                            message.queued === true && queuedBeforeCount > 0;
                           return (
                             <MessageCard
                               key={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
@@ -3404,6 +3441,17 @@ export default function App() {
                               onOpenSubagentViewer={
                                 subagentViewActive ? undefined : handleOpenSubagentViewer
                               }
+                              queuedCanMoveUp={queuedCanMoveUp}
+                              queueActionBusy={runtime.busyAction === "send"}
+                              onQueueMoveUp={(queueId) => {
+                                void runtime.reorderQueuedUserTurn(queueId);
+                              }}
+                              onQueueSendNow={(queueId) => {
+                                void runtime.sendQueuedUserTurnNow(queueId);
+                              }}
+                              onQueueDelete={(queueId) => {
+                                void runtime.removeQueuedUserTurn(queueId);
+                              }}
                             />
                           );
                         })}
