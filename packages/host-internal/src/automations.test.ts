@@ -77,8 +77,19 @@ test('automation store tracks runs and active run', async () => {
     });
     assert.equal((await store.getActiveRun(created.id)), undefined);
 
+    const blockedRun = await store.addRun(created.id, {
+      id: 'run-2',
+      automationId: created.id,
+      sessionPath: '/tmp/session-2.json',
+      status: 'blocked',
+      startedAtUnixMs: Date.now(),
+    });
+    assert.equal(blockedRun.status, 'blocked');
+    assert.equal((await store.getActiveRun(created.id)), undefined);
+
     const loaded = await store.get(created.id);
     assert.equal(loaded?.runs[0]?.status, 'completed');
+    assert.equal(loaded?.runs[1]?.status, 'blocked');
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });
   }
