@@ -198,6 +198,7 @@ import {
 } from "@/lib/action-palette";
 import {
   buildSkillSlashSuggestions,
+  CREATE_RULE_SLASH_ALIAS,
   CREATE_SKILL_SLASH_ALIAS,
   currentSkillSlashQuery,
   type SkillSlashSuggestion,
@@ -3139,6 +3140,7 @@ export default function App() {
               modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
               mcpsBusy={runtime.busyAction === "mcps"}
               skillsBusy={runtime.busyAction === "skills"}
+              rulesBusy={runtime.busyAction === "rules"}
               extensionsBusy={runtime.busyAction === "extensions"}
               lspInstallBusy={runtime.lspInstallBusy}
               isElectronShell={isElectronShell}
@@ -3158,16 +3160,23 @@ export default function App() {
               onDeleteMcpServer={runtime.deleteMcpServer}
               onInspectMcpServer={runtime.inspectMcpServer}
               onCreateSkill={runtime.createSkill}
+              onCreateRule={runtime.createRule}
               onStartCompactionUiDemo={() => {
                 setActiveSurface("conversation");
                 compactionDemo.start();
               }}
               onDeleteSkill={runtime.deleteSkill}
+              onDeleteRule={runtime.deleteRule}
               onListDreamsOverview={runtime.listDreamsOverview}
               onGenerateSkillNavigate={() => {
                 setLastNonSettingsSurface("conversation");
                 setActiveSurface("conversation");
                 applySlashSuggestion(`${CREATE_SKILL_SLASH_ALIAS} `);
+              }}
+              onGenerateRuleNavigate={() => {
+                setLastNonSettingsSurface("conversation");
+                setActiveSurface("conversation");
+                applySlashSuggestion(`${CREATE_RULE_SLASH_ALIAS} `);
               }}
             />
           </div>
