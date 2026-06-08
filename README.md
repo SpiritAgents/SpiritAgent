@@ -10,6 +10,8 @@
 
 > This project is under active development. Behavior and APIs may change between releases.
 
+[Simplified Chinese](docs/README_zh-CN.md)
+
 </div>
 
 ## Overview
