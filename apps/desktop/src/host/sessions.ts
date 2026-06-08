@@ -224,6 +224,8 @@ export function buildStoredDesktopSession(input: {
   contextUsage?: ConversationContextUsageSnapshot;
   subagentDesktopMessages?: Record<string, ConversationMessageSnapshot[]>;
   queuedUserTurns?: QueuedUserTurn[];
+  automationId?: string;
+  automationRunId?: string;
 }): StoredDesktopSession {
   return {
     ...input.archive,
@@ -234,6 +236,8 @@ export function buildStoredDesktopSession(input: {
     ...(input.sessionTitleSource ? { sessionTitleSource: input.sessionTitleSource } : {}),
     workspaceRoot: input.workspaceRoot,
     ...(input.gitBranch ? { gitBranch: input.gitBranch } : {}),
+    ...(input.automationId ? { automationId: input.automationId } : {}),
+    ...(input.automationRunId ? { automationRunId: input.automationRunId } : {}),
     ...(input.activePlanPath ? { activePlanPath: input.activePlanPath } : {}),
     desktopMessages: sanitizeConversationMessagesForPersistence(input.desktopMessages),
     ...(input.desktopMessageTimeline
