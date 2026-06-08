@@ -75,8 +75,10 @@ export async function tickAutomationScheduler(ctx: AutomationSchedulerServiceCon
         syncSessionFromDisk: (sessionPath) => ctx.syncSessionFromDisk?.(sessionPath),
       },
     )
-      .then(async () => {
-        await store.markFired(definition.id, now);
+      .then(async (run) => {
+        if (run) {
+          await store.markFired(definition.id, now);
+        }
       })
       .catch(() => {
         /* run status persisted in store */
