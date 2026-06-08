@@ -3153,7 +3153,6 @@ export default function App() {
               onAddMcpServer={runtime.addMcpServer}
               onImportExtension={runtime.importExtension}
               onDeleteExtension={runtime.deleteExtension}
-              onRunExtension={runtime.runExtension}
               onUpdateExtensionSettings={runtime.updateExtensionSettings}
               onUpdateExtensionSecret={runtime.updateExtensionSecret}
               onDeleteMcpServer={runtime.deleteMcpServer}

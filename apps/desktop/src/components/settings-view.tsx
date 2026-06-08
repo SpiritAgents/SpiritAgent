@@ -68,7 +68,6 @@ import type {
   DesktopMcpServerListItem,
   DesktopMcpTransportType,
   ImportExtensionRequest,
-  RunExtensionRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
   DesktopModelProvider,
@@ -138,7 +137,6 @@ type SettingsViewProps = {
   onAddMcpServer: (request: AddMcpServerRequest) => Promise<void>;
   onImportExtension: (request: ImportExtensionRequest) => Promise<void>;
   onDeleteExtension: (request: DeleteExtensionRequest) => Promise<void>;
-  onRunExtension: (request: RunExtensionRequest) => Promise<void>;
   onUpdateExtensionSettings: (request: UpdateExtensionSettingsRequest) => Promise<void>;
   onUpdateExtensionSecret: (request: UpdateExtensionSecretRequest) => Promise<void>;
   onDeleteMcpServer: (request: DeleteMcpServerRequest) => Promise<void>;
@@ -1290,14 +1288,12 @@ function ExtensionsSettingsPanel({
   extensionsBusy,
   onImportExtension,
   onDeleteExtension,
-  onRunExtension,
 }: Pick<
   SettingsViewProps,
   | "snapshot"
   | "extensionsBusy"
   | "onImportExtension"
   | "onDeleteExtension"
-  | "onRunExtension"
 >) {
   const { t } = useTranslation();
   const [deleteTarget, setDeleteTarget] = useState<DesktopExtensionListItem | null>(null);
@@ -1373,11 +1369,6 @@ function ExtensionsSettingsPanel({
                       {item.author}
                     </Badge>
                   ) : null}
-                  {item.desktopSettingsPage ? (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      {t('settings.settingsPage')}
-                    </Badge>
-                  ) : null}
                 </div>
                 {item.description ? (
                   <p className="text-xs text-muted-foreground">{item.description}</p>
@@ -1388,35 +1379,11 @@ function ExtensionsSettingsPanel({
                 <p className="text-xs text-muted-foreground">
                   {t('settings.installedAt')}{formatExtensionInstalledAt(item.installedAtUnixMs)}
                   {item.archiveFileName ? ` · ${t('settings.source')}${item.archiveFileName}` : ""}
-                  {item.main ? ` · main: ${item.main}` : ""}
                 </p>
                 {item.activationEvents?.length ? (
                   <p className="text-xs text-muted-foreground">
                     activationEvents: {item.activationEvents.join(", ")}
                   </p>
-                ) : null}
-                {item.contributedTools?.length ? (
-                  <div className="space-y-1 pt-1">
-                    <p className="text-xs font-medium text-foreground">{t('settings.contributedTools')}</p>
-                    {item.contributedTools.map((tool) => (
-                      <div key={`${item.id}:${tool.name}`} className="rounded-md border border-border/40 bg-muted/20 px-2.5 py-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-medium text-foreground">{tool.name}</span>
-                          {tool.approvalMode ? (
-                            <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">
-                              {tool.approvalMode}
-                            </Badge>
-                          ) : null}
-                          {tool.executionMode ? (
-                            <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">
-                              {tool.executionMode}
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{tool.description}</p>
-                      </div>
-                    ))}
-                  </div>
                 ) : null}
                 {item.desktopCss?.length ? (
                   <div className="space-y-1 pt-1">
@@ -1466,23 +1433,6 @@ function ExtensionsSettingsPanel({
                 ) : null}
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:self-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={extensionsBusy || !item.main}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        await onRunExtension({ id: item.id });
-                      } catch {
-                        /* runtimeError */
-                      }
-                    })();
-                  }}
-                >
-                  {t('settings.runManually')}
-                </Button>
                 <Button
                   type="button"
                   variant="destructive"
@@ -3723,7 +3673,6 @@ export function SettingsView({
   onAddMcpServer,
   onImportExtension,
   onDeleteExtension,
-  onRunExtension,
   onUpdateExtensionSettings,
   onUpdateExtensionSecret,
   onDeleteMcpServer,
@@ -3811,7 +3760,6 @@ export function SettingsView({
                 extensionsBusy={extensionsBusy}
                 onImportExtension={onImportExtension}
                 onDeleteExtension={onDeleteExtension}
-                onRunExtension={onRunExtension}
               />
             ) : tab === "mcps" ? (
               <McpsSettingsPanel
