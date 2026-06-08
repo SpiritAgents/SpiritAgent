@@ -897,6 +897,8 @@ export interface ConversationMessageSnapshot {
   pending: boolean;
   canRewind?: boolean;
   canContinue?: boolean;
+  /** UI-only projection for unsent queued user turns (not in message timeline). */
+  queued?: boolean;
 }
 
 export interface MessageRewindDraftState {

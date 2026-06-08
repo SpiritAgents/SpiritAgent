@@ -27,6 +27,11 @@ import {
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
+import {
+  canDrainQueuedUserTurn,
+  explicitWorkspaceFilesFromQueuedItem,
+  shiftNextQueuedUserTurn,
+} from './message-queue.js';
 import { scheduleDirectMediaTurn, shouldUseComposerDirectMediaTurn } from './direct-media-turn.js';
 import { syncSubagentConversationProjections } from './subagent-conversation-projection.js';
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
@@ -56,6 +61,8 @@ export interface SubmitUserTurnAfterInitializedOptions {
   displayText?: string;
   turnSkills?: LlmActiveSkill[];
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
+  /** Reuse message id from a queued turn when draining the queue. */
+  preallocatedMessageId?: number;
 }
 
 export interface SessionTurnOrchestratorContext {
@@ -143,7 +150,7 @@ export async function submitUserTurnAfterInitializedCommand(
       ? pendingWorkspaceFilesToAttachmentSnapshots(explicitWorkspaceFiles)
       : undefined;
   const userMessage: ConversationMessageSnapshot = {
-    id: ctx.allocateMessageId(),
+    id: options.preallocatedMessageId ?? ctx.allocateMessageId(),
     role: 'user',
     content: displayText,
     pending: false,
@@ -211,7 +218,26 @@ export async function submitUserTurnAfterInitializedCommand(
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
   await ctx.refreshTodoSnapshotForBundle(bundle);
+  await drainQueuedUserTurnIfIdle(ctx, bundle);
   return ctx.buildSnapshot();
+}
+
+export async function drainQueuedUserTurnIfIdle(
+  ctx: SessionTurnOrchestratorContext,
+  bundle: SessionBundle,
+): Promise<void> {
+  if (!canDrainQueuedUserTurn(bundle)) {
+    return;
+  }
+  const next = shiftNextQueuedUserTurn(bundle);
+  if (!next) {
+    return;
+  }
+  await submitUserTurnAfterInitializedCommand(ctx, next.text, {
+    displayText: next.displayText,
+    preallocatedMessageId: next.messageId,
+    explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(next),
+  });
 }
 
 export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
@@ -267,6 +293,7 @@ export async function tickSessionCommand(
   });
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
   await ctx.refreshTodoSnapshotForBundle(bundle);
+  await drainQueuedUserTurnIfIdle(ctx, bundle);
 }
 
 export async function abortConversationCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
@@ -307,6 +334,7 @@ export async function abortConversationCommand(ctx: SessionTurnOrchestratorConte
     }
     await ctx.persistCurrentSessionIfNeeded();
     await ctx.flushDeferredRuntimeRefreshIfIdle();
+    await drainQueuedUserTurnIfIdle(ctx, ctx.activeBundle());
     return ctx.buildSnapshot();
   });
 }
