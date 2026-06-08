@@ -56,9 +56,11 @@ import type {
   AddModelRequest,
   AddMcpServerRequest,
   AddProviderModelsRequest,
+  CreateRuleRequest,
   CreateSkillRequest,
   DeleteExtensionRequest,
   DeleteMcpServerRequest,
+  DeleteRuleRequest,
   DeleteSkillRequest,
   DesktopDreamOverviewItem,
   DesktopExtensionListItem,
@@ -73,6 +75,7 @@ import type {
   DesktopModelProvider,
   DesktopModelCapability,
   DesktopTransportKind,
+  DesktopRuleListItem,
   DesktopSkillListItem,
   DesktopSkillRootKind,
   DesktopSnapshot,
@@ -123,6 +126,7 @@ type SettingsViewProps = {
   modelsPreviewBusy: boolean;
   mcpsBusy: boolean;
   skillsBusy: boolean;
+  rulesBusy: boolean;
   extensionsBusy: boolean;
   lspInstallBusy: boolean;
   isElectronShell: boolean;
@@ -143,9 +147,13 @@ type SettingsViewProps = {
   onInspectMcpServer: (name: string) => Promise<DesktopMcpServerInspection>;
   onCreateSkill: (request: CreateSkillRequest) => Promise<void>;
   onDeleteSkill: (request: DeleteSkillRequest) => Promise<void>;
+  onCreateRule: (request: CreateRuleRequest) => Promise<void>;
+  onDeleteRule: (request: DeleteRuleRequest) => Promise<void>;
   onListDreamsOverview: () => Promise<DesktopDreamOverviewItem[]>;
   /** Skills 页「生成 Skill」：回到主对话区并预填 `/create-skill `，后续直接写自然语言。 */
   onGenerateSkillNavigate?: () => void;
+  /** Rules 页「生成规则」：回到主对话区并预填 `/create-rule `。 */
+  onGenerateRuleNavigate?: () => void;
   /** 开发者页：在对话区播放上下文压缩 UI 演示（不调用模型）。 */
   onStartCompactionUiDemo?: () => void;
 };
@@ -162,6 +170,7 @@ const settingsPageTitleKey: Record<SettingsSidebarTab, string> = {
   extensions: "settings.extensions",
   mcps: "settings.mcps",
   skills: "settings.skills",
+  rules: "settings.rules",
   dreams: "settings.dreams",
   appearance: "settings.appearance",
   networks: "settings.networks",
@@ -1032,6 +1041,298 @@ function SkillsSettingsPanel({
               }}
             >
               {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+              {t('common.create')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+const ruleCreateRootOptions = skillCreateRootOptions;
+
+function ruleLocationLabel(item: DesktopRuleListItem): string {
+  return skillRootKindLabel(item.rootKind);
+}
+
+function RulesSettingsPanel({
+  snapshot,
+  rulesBusy,
+  apiReady,
+  onCreateRule,
+  onDeleteRule,
+  onGenerateRuleNavigate,
+}: Pick<
+  SettingsViewProps,
+  | "snapshot"
+  | "rulesBusy"
+  | "apiReady"
+  | "onCreateRule"
+  | "onDeleteRule"
+  | "onGenerateRuleNavigate"
+>) {
+  const { t } = useTranslation();
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DesktopRuleListItem | null>(null);
+  const [newDescription, setNewDescription] = useState("");
+  const [createRootKind, setCreateRootKind] = useState<DesktopSkillRootKind>("user");
+
+  const workspaceBindingDisabled = snapshot?.workspaceBinding === "none";
+  const items = (snapshot?.rulesList ?? []).filter(
+    (item) => !workspaceBindingDisabled || item.scope === "user",
+  );
+  const availableRuleCreateRootOptions = workspaceBindingDisabled
+    ? ruleCreateRootOptions.filter((option) => option.kind === "user")
+    : ruleCreateRootOptions;
+  const localizedRuleCreateRootOptions = availableRuleCreateRootOptions.map((option) => ({
+    ...option,
+    label: option.labelKey ? t(option.labelKey) : option.labelFallback,
+    hint: t(option.hintKey),
+  }));
+
+  const resetForm = () => {
+    setNewDescription("");
+    setCreateRootKind("user");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.rules')}</h1>
+          <p className="text-sm text-muted-foreground">{t('settings.rulesDescription')}</p>
+          {workspaceBindingDisabled ? (
+            <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {onGenerateRuleNavigate ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5"
+              disabled={!apiReady}
+              title={t('settings.generateRuleTooltip')}
+              onClick={() => onGenerateRuleNavigate()}
+            >
+              <Sparkles className="size-3.5 shrink-0" aria-hidden />
+              {t('settings.generateRule')}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              resetForm();
+              setAddDialogOpen(true);
+            }}
+            disabled={rulesBusy}
+          >
+            {t('settings.newRule')}
+          </Button>
+        </div>
+      </div>
+
+      <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
+        {items.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noRulesFound')}</p>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+            >
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">{item.title}</span>
+                  <Badge variant="secondary" className="text-muted-foreground">
+                    {ruleLocationLabel(item)}
+                  </Badge>
+                  {!item.exists ? (
+                    <Badge variant="secondary" className="text-muted-foreground">
+                      {t('settings.ruleNotCreated')}
+                    </Badge>
+                  ) : null}
+                  {item.exists && !item.enabled ? (
+                    <Badge variant="secondary" className="text-muted-foreground">
+                      {t('settings.ruleDisabled')}
+                    </Badge>
+                  ) : null}
+                </div>
+                {item.previewExcerpt ? (
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">{item.previewExcerpt}</p>
+                ) : null}
+                <p className="truncate font-mono text-[0.65rem] text-muted-foreground/90" title={item.shortLabel}>
+                  {item.shortLabel}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="shrink-0 self-start sm:self-center"
+                disabled={rulesBusy || !item.exists}
+                onClick={() => setDeleteTarget(item)}
+              >
+                {t('common.delete')}
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>{t('settings.deleteRule')}</DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.rootKind === "workspaceAgents"
+                ? t('settings.deleteRuleConfirmAgents', {
+                    name: deleteTarget?.title ?? '',
+                    location: deleteTarget ? ruleLocationLabel(deleteTarget) : '',
+                  })
+                : t('settings.deleteRuleConfirm', {
+                    name: deleteTarget?.title ?? '',
+                    location: deleteTarget ? ruleLocationLabel(deleteTarget) : '',
+                  })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteTarget(null)}
+              disabled={rulesBusy}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={rulesBusy || !deleteTarget}
+              onClick={() => {
+                const target = deleteTarget;
+                if (!target) {
+                  return;
+                }
+                void (async () => {
+                  try {
+                    await onDeleteRule({ id: target.id });
+                    setDeleteTarget(null);
+                  } catch {
+                    /* runtimeError */
+                  }
+                })();
+              }}
+            >
+              {rulesBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+              {t('common.delete')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={addDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>{t('settings.newRule')}</DialogTitle>
+            <DialogDescription>{t('settings.newRuleDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-1">
+            <div className="grid gap-2">
+              <Label>{t('settings.saveLocation')}</Label>
+              <div
+                role="tablist"
+                aria-label={t('settings.saveLocation')}
+                className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
+              >
+                {localizedRuleCreateRootOptions.map((opt) => (
+                  <button
+                    key={opt.kind}
+                    type="button"
+                    role="tab"
+                    aria-selected={createRootKind === opt.kind}
+                    className={cn(
+                      "rounded-md px-2.5 text-xs font-medium transition-colors",
+                      createRootKind === opt.kind
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    disabled={rulesBusy}
+                    title={opt.hint}
+                    onClick={() => setCreateRootKind(opt.kind)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {localizedRuleCreateRootOptions.find((o) => o.kind === createRootKind)?.hint}
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="new-rule-desc">{t('settings.description')}</Label>
+              <Input
+                id="new-rule-desc"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder={t('settings.ruleDescPlaceholder')}
+                autoComplete="off"
+                required
+              />
+            </div>
+          </div>
+          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAddDialogOpen(false)}
+              disabled={rulesBusy}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={rulesBusy || !newDescription.trim()}
+              onClick={() => {
+                void (async () => {
+                  try {
+                    const payload: CreateRuleRequest = {
+                      rootKind: createRootKind,
+                      description: newDescription.trim(),
+                    };
+                    await onCreateRule(payload);
+                    setAddDialogOpen(false);
+                    resetForm();
+                  } catch {
+                    /* runtimeError */
+                  }
+                })();
+              }}
+            >
+              {rulesBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t('common.create')}
             </Button>
           </div>
@@ -3661,6 +3962,7 @@ export function SettingsView({
   modelsPreviewBusy,
   mcpsBusy,
   skillsBusy,
+  rulesBusy,
   extensionsBusy,
   isElectronShell,
   onSavePatch,
@@ -3679,10 +3981,13 @@ export function SettingsView({
   onInspectMcpServer,
   onCreateSkill,
   onDeleteSkill,
+  onCreateRule,
+  onDeleteRule,
   onListDreamsOverview,
   onInstallLspProvider,
   lspInstallBusy,
   onGenerateSkillNavigate,
+  onGenerateRuleNavigate,
   onStartCompactionUiDemo,
 }: SettingsViewProps) {
   const { t } = useTranslation();
@@ -3695,7 +4000,7 @@ export function SettingsView({
       <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
         <div className="flex min-h-full flex-col justify-center">
           <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-            {!extensionSettingsItem && tab !== "models" && tab !== "skills" && tab !== "mcps" && tab !== "extensions" && tab !== "agents" ? (
+            {!extensionSettingsItem && tab !== "models" && tab !== "skills" && tab !== "rules" && tab !== "mcps" && tab !== "extensions" && tab !== "agents" ? (
               <h1 className="mb-6 text-xl font-semibold tracking-tight text-foreground">
                 {t(settingsPageTitleKey[tab])}
               </h1>
@@ -3753,6 +4058,15 @@ export function SettingsView({
                 onCreateSkill={onCreateSkill}
                 onDeleteSkill={onDeleteSkill}
                 onGenerateSkillNavigate={onGenerateSkillNavigate}
+              />
+            ) : tab === "rules" ? (
+              <RulesSettingsPanel
+                snapshot={snapshot}
+                rulesBusy={rulesBusy}
+                apiReady={apiReady}
+                onCreateRule={onCreateRule}
+                onDeleteRule={onDeleteRule}
+                onGenerateRuleNavigate={onGenerateRuleNavigate}
               />
             ) : tab === "extensions" ? (
               <ExtensionsSettingsPanel
