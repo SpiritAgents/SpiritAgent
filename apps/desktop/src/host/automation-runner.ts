@@ -3,8 +3,6 @@ import path from 'node:path';
 
 import {
   createLlmTransport,
-  llmMessageTextContent,
-  normalizeStoredLlmMessage,
   type AnthropicTransportConfig,
   type LlmModelCapabilities,
   type LlmPlanMetadata,
@@ -20,12 +18,14 @@ import {
   type HostAutomationDefinition,
   type HostAutomationRun,
 } from '@spirit-agent/host-internal';
-import { restoreMessagesFromArchive } from './message-ordering.js';
+import {
+  AutomationConversationProjection,
+  runAutomationStreamingTurn,
+} from './automation-conversation-projection.js';
 
-import type { ConversationMessageSnapshot, DesktopModelCapability } from '../types.js';
+import type { DesktopModelCapability } from '../types.js';
 import { createDesktopRewindMetadata } from './rewind.js';
 import { buildStoredDesktopSession } from './sessions.js';
-import type { StoredDesktopSession } from './contracts.js';
 import {
   chatsDirPath,
   loadHostMetadata,
@@ -120,13 +120,16 @@ export async function runDesktopAutomationOnce(
       workspaceRoot: input.definition.workspaceRoot,
       basicInfo: buildDesktopRuntimeBasicInfo(input.definition.workspaceRoot, toolExecutor),
     });
+    const projection = AutomationConversationProjection.create();
+    projection.bindRuntime(runtime);
+    projection.beginUserTurn(input.definition.overview);
 
     await persistAutomationSession(deps, {
       sessionPath,
       definition: input.definition,
       runId,
       runtime,
-      overview: input.definition.overview,
+      projection,
       workspaceRoot: input.definition.workspaceRoot,
       gitBranch: gitSnapshot.branch,
       sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
@@ -134,12 +137,24 @@ export async function runDesktopAutomationOnce(
     });
     deps.notifySessionListUpdated?.();
 
-    let result = await runtime.submitUserTurn(input.definition.overview);
+    let result = await runAutomationStreamingTurn(
+      runtime,
+      projection,
+      async () => {
+        await runtime.startUserTurnStreaming(input.definition.overview);
+      },
+    );
 
     for (let guard = 0; guard < AUTOMATION_RUN_MAX_GUARD_ROUNDS; guard += 1) {
       if (result.kind === 'requires-approval') {
         if (input.definition.approvalLevel === 'full-approval') {
-          result = await runtime.resumePendingApproval({ kind: 'allow' });
+          result = await runAutomationStreamingTurn(
+            runtime,
+            projection,
+            async () => {
+              await runtime.continuePendingApproval({ kind: 'allow' });
+            },
+          );
           continue;
         }
         run = await store.updateRun(input.definition.id, runId, { status: 'blocked' });
@@ -148,7 +163,7 @@ export async function runDesktopAutomationOnce(
           definition: input.definition,
           runId,
           runtime,
-          overview: input.definition.overview,
+          projection,
           workspaceRoot: input.definition.workspaceRoot,
           gitBranch: gitSnapshot.branch,
           sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
@@ -160,7 +175,13 @@ export async function runDesktopAutomationOnce(
       }
       if (result.kind === 'requires-questions') {
         if (input.definition.approvalLevel === 'full-approval') {
-          result = await runtime.resumePendingQuestions({ status: 'skipped' });
+          result = await runAutomationStreamingTurn(
+            runtime,
+            projection,
+            async () => {
+              await runtime.continuePendingQuestions({ status: 'skipped' });
+            },
+          );
           continue;
         }
         run = await store.updateRun(input.definition.id, runId, { status: 'blocked' });
@@ -169,7 +190,7 @@ export async function runDesktopAutomationOnce(
           definition: input.definition,
           runId,
           runtime,
-          overview: input.definition.overview,
+          projection,
           workspaceRoot: input.definition.workspaceRoot,
           gitBranch: gitSnapshot.branch,
           sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
@@ -194,7 +215,7 @@ export async function runDesktopAutomationOnce(
       definition: input.definition,
       runId,
       runtime,
-      overview: input.definition.overview,
+      projection,
       workspaceRoot: input.definition.workspaceRoot,
       gitBranch: gitSnapshot.branch,
       sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
@@ -238,31 +259,17 @@ async function persistAutomationSession(
   definition: HostAutomationDefinition;
   runId: string;
   runtime: DesktopRuntime;
-  overview: string;
+  projection: AutomationConversationProjection;
   workspaceRoot: string;
   gitBranch?: string;
   sessionDisplayName: string;
   approvalLevel: HostAutomationDefinition['approvalLevel'];
   },
 ): Promise<void> {
-  const archive = input.runtime.toArchive([], []);
-  const storedBase: StoredDesktopSession = {
-    ...archive,
-    savedAtUnixMs: Date.now(),
-    sessionDisplayName: input.sessionDisplayName,
-    sessionTitleSource: 'seed',
-    workspaceRoot: input.workspaceRoot,
-    ...(input.gitBranch ? { gitBranch: input.gitBranch } : {}),
-    approvalLevel: input.approvalLevel,
-    automationId: input.definition.id,
-    automationRunId: input.runId,
-    rewind: createDesktopRewindMetadata(),
-  };
-  const fallbackMessages = restoreMessagesFromArchive(storedBase);
-  const assistantText = lastAssistantTextFromHistory(archive.llmHistory);
-  const desktopMessages = fallbackMessages.length > 0
-    ? fallbackMessages
-    : buildSeedAutomationMessages(input.overview, assistantText);
+  const desktopMessages = input.projection.toMessages();
+  const archivePayload = input.projection.buildArchivePayload();
+  const archive = input.runtime.toArchive(archivePayload.messages, archivePayload.assistantAux);
+  const timelineSnapshot = input.projection.timelineSnapshot();
 
   await saveStoredSession(
     input.sessionPath,
@@ -274,6 +281,7 @@ async function persistAutomationSession(
       workspaceRoot: input.workspaceRoot,
       ...(input.gitBranch ? { gitBranch: input.gitBranch } : {}),
       desktopMessages,
+      desktopMessageTimeline: timelineSnapshot,
       rewind: createDesktopRewindMetadata(),
       loopEnabled: archive.loopEnabled === true,
       approvalLevel: input.approvalLevel,
@@ -282,44 +290,6 @@ async function persistAutomationSession(
     }),
   );
   await notifyAutomationSessionPersisted(deps, input.sessionPath);
-}
-
-function lastAssistantTextFromHistory(
-  history: StoredDesktopSession['llmHistory'],
-): string {
-  for (let index = history.length - 1; index >= 0; index -= 1) {
-    const message = history[index];
-    if (message?.role === 'assistant') {
-      const text = llmMessageTextContent(normalizeStoredLlmMessage(message).content).trim();
-      if (text.length > 0) {
-        return text;
-      }
-    }
-  }
-  return '';
-}
-
-function buildSeedAutomationMessages(
-  overview: string,
-  assistantText: string,
-): ConversationMessageSnapshot[] {
-  const messages: ConversationMessageSnapshot[] = [
-    {
-      id: 1,
-      role: 'user',
-      content: overview,
-      pending: false,
-    },
-  ];
-  if (assistantText.trim().length > 0) {
-    messages.push({
-      id: 2,
-      role: 'assistant',
-      content: assistantText,
-      pending: false,
-    });
-  }
-  return messages;
 }
 
 function buildAutomationTransportConfig(input: {
