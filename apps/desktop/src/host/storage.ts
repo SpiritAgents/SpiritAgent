@@ -152,16 +152,63 @@ export type RuleDiscoveryResult = HostRuleDiscoveryResult;
 export type SkillDiscoveryResult = HostSkillDiscoveryResult;
 export type HostMetadataSummary = HostInstructionMetadataSummary;
 
+const ENV_SPIRIT_AGENT_DATA_DIR = 'SPIRIT_AGENT_DATA_DIR';
+
+let spiritAgentDataDirOverride: string | undefined;
+
+export function setSpiritAgentDataDirOverride(dir: string | undefined): void {
+  spiritAgentDataDirOverride = dir;
+}
+
+function resolveHomeDirectory(): string | undefined {
+  const home = process.env.HOME?.trim() || homedir()?.trim();
+  return home || undefined;
+}
+
+export function resolveDefaultSpiritAgentDataDir(): string {
+  const appData = process.env.APPDATA?.trim();
+  if (appData) {
+    return path.join(appData, APP_DATA_DIR_NAME);
+  }
+
+  const home = resolveHomeDirectory();
+  if (home) {
+    if (process.platform === 'darwin') {
+      return path.join(home, 'Library', 'Application Support', APP_DATA_DIR_NAME);
+    }
+    if (process.platform === 'linux') {
+      const xdgDataHome = process.env.XDG_DATA_HOME?.trim();
+      if (xdgDataHome) {
+        return path.join(xdgDataHome, APP_DATA_DIR_NAME);
+      }
+      return path.join(home, '.local', 'share', APP_DATA_DIR_NAME);
+    }
+    return path.join(home, '.spirit-agent');
+  }
+
+  const userProfile = process.env.USERPROFILE?.trim();
+  if (userProfile) {
+    return path.join(userProfile, '.spirit-agent');
+  }
+
+  return path.join(homedir(), '.spirit-agent');
+}
+
+export function resolveConfiguredSpiritAgentDataDir(): string {
+  const envOverride = process.env[ENV_SPIRIT_AGENT_DATA_DIR]?.trim();
+  if (envOverride) {
+    return envOverride;
+  }
+
+  return resolveDefaultSpiritAgentDataDir();
+}
+
 export function spiritAgentDataDir(): string {
-  if (process.env.APPDATA?.trim()) {
-    return path.join(process.env.APPDATA.trim(), APP_DATA_DIR_NAME);
+  if (spiritAgentDataDirOverride) {
+    return spiritAgentDataDirOverride;
   }
 
-  if (process.env.USERPROFILE?.trim()) {
-    return path.join(process.env.USERPROFILE.trim(), '.spirit-agent');
-  }
-
-  return path.resolve('.spirit-agent');
+  return resolveConfiguredSpiritAgentDataDir();
 }
 
 export function chatsDirPath(): string {
