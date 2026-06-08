@@ -192,7 +192,9 @@
     "source": "来源：",
     "deleteExtension": "删除扩展",
     "deleteExtensionConfirm": "确定删除扩展「{{name}}」？这会移除本地安装目录。",
+    "desktopCss": "Desktop CSS",
     "desktopCssDescription": "该样式会以扩展层的形式注入 Desktop Renderer，可配合稳定的 `data-spirit-*` hooks 覆盖界面表现。",
+    "cliHooks": "CLI Hooks",
     "cliHookDescription": "这是 CLI 专属的受控语义 hook，不会在 Desktop Renderer 中执行。",
     "mcpsDescription": "管理 Desktop 侧已配置的 MCP servers。",
     "addMcp": "添加 MCP",
@@ -502,7 +504,6 @@
     "browserForward": "前进",
     "browserReload": "刷新",
     "browserPickerToggle": "选择 / 框选",
-    "gitPlaceholder": "Git 区占位",
     "git": {
       "changes": "更改",
       "history": "历史",
