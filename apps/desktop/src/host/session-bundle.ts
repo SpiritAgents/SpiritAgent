@@ -16,6 +16,7 @@ import type {
   ConversationMessageSnapshot,
   FileRewindWarning,
 } from '../types.js';
+import type { QueuedUserTurn } from './message-queue.js';
 import type { DesktopTimelineSegmentKind, DesktopMessageTimeline } from './message-timeline.js';
 import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
 import { createTodoSessionScopeKey } from './todos.js';
@@ -69,6 +70,8 @@ export interface SessionBundle {
   contextUsage?: ConversationContextUsageSnapshot;
   /** Composer 直连生图/生视频后台执行中；与 runtime.isBusy 一并驱动 snapshot.isBusy。 */
   directMediaTurnInFlight?: boolean;
+  /** Per-session user message queue (projected in snapshot until sent). */
+  queuedUserTurns: QueuedUserTurn[];
   /** SubAgent 子会话 desktop 投影（与主 timeline 同构，含 Thought/Compaction/工具卡）。 */
   subagentDesktopMessagesBySessionId: Map<string, ConversationMessageSnapshot[]>;
   subagentConversationProjections: Map<string, SubagentConversationProjection>;
@@ -98,6 +101,7 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
     responsesBuiltInPreviewSeenCallIds: new Set(),
+    queuedUserTurns: [],
     todoSessionScopeKey: createTodoSessionScopeKey(),
     conversationRevision: 0,
     subagentDesktopMessagesBySessionId: new Map(),
@@ -143,6 +147,7 @@ export function sessionBundleFromRestored(
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
     responsesBuiltInPreviewSeenCallIds: new Set(),
+    queuedUserTurns: restored.queuedUserTurns ? [...restored.queuedUserTurns] : [],
     conversationRevision: 0,
     ...(restored.activePlanPath ? { activePlanPath: restored.activePlanPath } : {}),
     ...(restored.sessionTitleSource ? { sessionTitleSource: restored.sessionTitleSource } : {}),
@@ -188,6 +193,7 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.sessionTitleSource = undefined;
   bundle.contextUsage = undefined;
   bundle.directMediaTurnInFlight = false;
+  bundle.queuedUserTurns = [];
   bundle.subagentDesktopMessagesBySessionId = new Map();
   bundle.subagentConversationProjections = new Map();
 }

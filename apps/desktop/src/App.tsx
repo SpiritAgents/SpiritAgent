@@ -151,6 +151,7 @@ import {
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { ActionPickerDialog } from "@/components/action-picker-dialog";
 import { WorkspaceFilePickerDialog } from "@/components/workspace-file-picker-dialog";
+import { QueuedUserMessageHoverActions } from "@/components/queued-user-message-hover-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useElementBoxHeight } from "@/hooks/use-element-box-height";
@@ -1110,17 +1111,28 @@ function ComposerSurface({
               <span className="px-1 text-xs text-muted-foreground">{t('app.noModelsAvailable')}</span>
             )}
           </div>
+          {(() => {
+            const hasComposerPayload =
+              value.trim().length > 0 || localFileAttachments.length > 0;
+            const showAbortButton = canAbort && Boolean(onAbort) && !hasComposerPayload;
+            return (
           <Button
             type="button"
             className={cn(
               "size-8 shrink-0 rounded-full p-0 shadow-none [&_svg]:size-3.5",
               instantHoverMotionClass,
             )}
-            onClick={canAbort ? onAbort : onSubmit}
-            disabled={canAbort ? false : !canSend || busy}
-            title={canAbort ? t('app.abort') : t('app.send')}
+            onClick={showAbortButton ? onAbort : onSubmit}
+            disabled={showAbortButton ? false : !canSend || (busy && !canAbort)}
+            title={
+              showAbortButton
+                ? t('app.abort')
+                : canAbort && hasComposerPayload
+                  ? t('composer.enqueueWhileBusy')
+                  : t('app.send')
+            }
           >
-            {canAbort ? (
+            {showAbortButton ? (
               <Square className="size-3.5" strokeWidth={2.4} aria-hidden />
             ) : busy ? (
               <LoaderCircle className="size-3.5 animate-spin" />
@@ -1128,6 +1140,8 @@ function ComposerSurface({
               <ArrowUp className="size-3.5" strokeWidth={2.25} aria-hidden />
             )}
           </Button>
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -1391,6 +1405,11 @@ function MessageCard({
   readLocalVideoPreviewUrl,
   saveLocalImageAs,
   onOpenSubagentViewer,
+  queuedCanMoveUp = false,
+  queueActionBusy = false,
+  onQueueMoveUp,
+  onQueueSendNow,
+  onQueueDelete,
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -1432,10 +1451,17 @@ function MessageCard({
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
   onOpenSubagentViewer?: (toolCallId: string) => void;
+  queuedCanMoveUp?: boolean;
+  queueActionBusy?: boolean;
+  onQueueMoveUp?(queueId: string): void;
+  onQueueSendNow?(queueId: string): void;
+  onQueueDelete?(queueId: string): void;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
-  const canStartRewind = isUser && message.canRewind === true && !message.pending;
+  const isQueuedUser = isUser && message.queued === true && typeof message.queueId === "string";
+  const canStartRewind =
+    isUser && message.canRewind === true && !message.pending && message.queued !== true;
   const userBubble =
     "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
   const subagentStatusSurface =
@@ -1536,13 +1562,34 @@ function MessageCard({
           />
         ) : null}
         {isUser && !rewindSelected ? (
-          <UserMessageBubble
-            message={message}
-            userBubbleClassName={userBubble}
-            canStartRewind={canStartRewind}
-            onRewindStart={() => onRewindStart(message, listIndex)}
-            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-          />
+          isQueuedUser && message.queueId && onQueueMoveUp && onQueueSendNow && onQueueDelete ? (
+            <QueuedUserMessageHoverActions
+              queueId={message.queueId}
+              canMoveUp={queuedCanMoveUp}
+              busy={queueActionBusy}
+              onMoveUp={onQueueMoveUp}
+              onSendNow={onQueueSendNow}
+              onDelete={onQueueDelete}
+            >
+              <UserMessageBubble
+                message={message}
+                userBubbleClassName={userBubble}
+                canStartRewind={false}
+                queued
+                onRewindStart={() => onRewindStart(message, listIndex)}
+                readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+              />
+            </QueuedUserMessageHoverActions>
+          ) : (
+            <UserMessageBubble
+              message={message}
+              userBubbleClassName={userBubble}
+              canStartRewind={canStartRewind}
+              queued={message.queued === true}
+              onRewindStart={() => onRewindStart(message, listIndex)}
+              readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+            />
+          )
         ) : null}
         {!isUser && message.content.trim() ? (
           subagentStatusSurface ? (
@@ -2110,14 +2157,17 @@ export default function App() {
         : t("app.typeMessage");
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
+  const composerHasPayload =
+    Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0;
   const composerCanSend =
     !compactionDemo.active &&
     !subagentViewActive &&
-    (Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0) &&
+    composerHasPayload &&
     !activeSessionReadOnly &&
     runtime.busyAction !== "session" &&
     !pendingApproval &&
     !pendingQuestions &&
+    (runtime.summary.canSend || conversationInterruptible) &&
     !(runtime.busyAction === "send" && !conversationInterruptible);
   const startImplementingDisabled =
     !snapshot?.runtimeReady ||
@@ -3307,6 +3357,11 @@ export default function App() {
                           const previous = messages[index - 1];
                           const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
                           const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
+                          const queuedBeforeCount = messages
+                            .slice(0, index)
+                            .filter((item) => item.queued === true).length;
+                          const queuedCanMoveUp =
+                            message.queued === true && queuedBeforeCount > 0;
                           return (
                             <MessageCard
                               key={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
@@ -3386,6 +3441,17 @@ export default function App() {
                               onOpenSubagentViewer={
                                 subagentViewActive ? undefined : handleOpenSubagentViewer
                               }
+                              queuedCanMoveUp={queuedCanMoveUp}
+                              queueActionBusy={runtime.busyAction === "send"}
+                              onQueueMoveUp={(queueId) => {
+                                void runtime.reorderQueuedUserTurn(queueId);
+                              }}
+                              onQueueSendNow={(queueId) => {
+                                void runtime.sendQueuedUserTurnNow(queueId);
+                              }}
+                              onQueueDelete={(queueId) => {
+                                void runtime.removeQueuedUserTurn(queueId);
+                              }}
                             />
                           );
                         })}
