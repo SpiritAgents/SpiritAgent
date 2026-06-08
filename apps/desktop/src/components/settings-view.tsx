@@ -811,7 +811,6 @@ function SkillsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Skills</h1>
-          <p className="text-sm text-muted-foreground">{t('settings.skillsDescription')}</p>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
@@ -1129,7 +1128,6 @@ function RulesSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.rules')}</h1>
-          <p className="text-sm text-muted-foreground">{t('settings.rulesDescription')}</p>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
@@ -1660,7 +1658,6 @@ function ExtensionsSettingsPanel({
               <LoaderCircle className="size-4 animate-spin text-muted-foreground" aria-label={t('common.loading')} />
             ) : null}
           </div>
-          <p className="text-sm text-muted-foreground">{t('settings.extensionsDescription')}</p>
         </div>
         <Button
           type="button"
@@ -1946,7 +1943,6 @@ function McpsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">MCPs</h1>
-          <p className="text-sm text-muted-foreground">{t('settings.mcpsDescription')}</p>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
