@@ -49,7 +49,7 @@ test('buildAgentModeSystemMessage: Debug mode guidance', () => {
   assert.ok(message.includes('at least 5 hypotheses'));
   assert.ok(message.includes('ranked by likelihood'));
   assert.ok(message.includes('.spirit/logs/'));
-  assert.ok(message.includes('snake_case'));
+  assert.ok(message.includes('kebab-case'));
   assert.ok(message.includes('"hypotheses"'));
   assert.ok(message.includes('"message"'));
   assert.ok(message.includes('"data"'));

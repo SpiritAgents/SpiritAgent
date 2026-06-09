@@ -487,7 +487,7 @@ export function buildAgentModeSystemMessage(
       '',
       'Log format and location:',
       '- Directory: .spirit/logs/ under the workspace root',
-      '- Filename: snake_case (e.g. auth_retry_failure.json)',
+      '- Filename: kebab-case (e.g. auth-retry-failure.json)',
       '- Format: compressed JSON (single line per entry)',
       '- Required fields:',
       '  - "hypotheses": array of hypotheses being tested',
