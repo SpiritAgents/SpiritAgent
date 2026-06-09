@@ -2788,6 +2788,10 @@ export default function App() {
         applyAskSlash();
         return;
       }
+      if (item.kind === "debug") {
+        applyDebugSlash();
+        return;
+      }
       if (item.kind === "log-session" || item.kind === "compact") {
         void runtime.sendMessage({ text: item.alias });
         return;
@@ -2796,6 +2800,7 @@ export default function App() {
     },
     [
       applyAskSlash,
+      applyDebugSlash,
       applyLoopSlash,
       applyPlanSlash,
       ensureConversationSurface,
