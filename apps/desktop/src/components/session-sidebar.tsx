@@ -376,7 +376,7 @@ function SessionListLoadMore({ hiddenCount, nested, disabled, onLoadMore }: Sess
       disabled={disabled}
       onClick={onLoadMore}
       className={cn(
-        "w-full py-1 text-left text-[0.65rem] text-sidebar-faint-foreground outline-none",
+        "w-full py-1 text-left text-[0.65rem] text-sidebar-item-foreground outline-none",
         nested ? "pr-2.5 pl-8" : "px-2.5",
         "rounded-md hover:text-sidebar-foreground/75 focus-visible:text-sidebar-foreground/75",
         "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
@@ -597,7 +597,7 @@ const sidebarInteractionMotionClass =
   "!transition-[opacity,transform,box-shadow] duration-150 active:!translate-y-0";
 
 /** 侧栏交互项默认字色/图标色；hover 与选中回到 sidebar-foreground */
-const sidebarItemDefaultTextClass = "text-sidebar-item-foreground";
+const sidebarItemDefaultTextClass = "text-popover-foreground";
 
 const sidebarItemActiveTextClass = "!text-sidebar-foreground";
 
@@ -1086,7 +1086,7 @@ function SessionSidebarInner({
                 onRequestDelete={handleContextMenuDelete}
               >
                 {workspaceGroups.length > 0 ? (
-                  <p className="px-2.5 pt-2 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
+                  <p className="px-2.5 pt-2 pb-1 text-[0.65rem] text-sidebar-item-foreground">
                     {t('sidebar.workspace')}
                   </p>
                 ) : null}
@@ -1125,7 +1125,7 @@ function SessionSidebarInner({
                 ) : null}
                 {unboundSessions.length > 0 ? (
                   <>
-                    <p className="px-2.5 pt-1 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
+                    <p className="px-2.5 pt-1 pb-1 text-[0.65rem] text-sidebar-item-foreground">
                       {t('sidebar.noWorkspaceSessions')}
                     </p>
                     {unboundSessions.slice(0, unboundVisibleCount).map((session) => (
