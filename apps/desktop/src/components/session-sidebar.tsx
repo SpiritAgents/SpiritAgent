@@ -2,9 +2,11 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type AnimationEvent,
   type MouseEvent,
   type ReactNode,
   type RefObject,
@@ -203,6 +205,186 @@ function partitionSessionsForSidebar(
 
 function sortSessionsByModified(sessions: SessionListItem[]): SessionListItem[] {
   return [...sessions].sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
+}
+
+const SIDEBAR_SESSION_PAGE_SIZE = 10;
+
+function visibleCountForSessionIndex(index: number): number {
+  if (index < 0) {
+    return SIDEBAR_SESSION_PAGE_SIZE;
+  }
+  return Math.ceil((index + 1) / SIDEBAR_SESSION_PAGE_SIZE) * SIDEBAR_SESSION_PAGE_SIZE;
+}
+
+type SessionListLoadMoreProps = {
+  hiddenCount: number;
+  nested?: boolean;
+  disabled?: boolean;
+  onLoadMore: () => void;
+};
+
+type WorkspaceSessionGroupCollapsibleProps = {
+  group: SessionWorkspaceGroup;
+  expanded: boolean;
+  panelId: string;
+  disabled?: boolean;
+  micaStyle?: boolean;
+  visibleSessions: SessionListItem[];
+  hiddenSessionCount: number;
+  unseenCompletedSessionPaths?: ReadonlySet<string>;
+  isSessionSelected(path: string): boolean;
+  onOpenChange(open: boolean): void;
+  onSelectSession(path: string): void;
+  onLoadMore(): void;
+};
+
+const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupCollapsible({
+  group,
+  expanded,
+  panelId,
+  disabled,
+  micaStyle,
+  visibleSessions,
+  hiddenSessionCount,
+  unseenCompletedSessionPaths,
+  isSessionSelected,
+  onOpenChange,
+  onSelectSession,
+  onLoadMore,
+}: WorkspaceSessionGroupCollapsibleProps) {
+  const [expandSettled, setExpandSettled] = useState(false);
+  const innerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!expanded) {
+      setExpandSettled(false);
+    }
+  }, [expanded]);
+
+  useLayoutEffect(() => {
+    const contentEl =
+      innerRef.current?.parentElement instanceof HTMLElement ? innerRef.current.parentElement : null;
+    if (!contentEl) {
+      return;
+    }
+    if (expanded && expandSettled) {
+      contentEl.style.height = "auto";
+      contentEl.style.animation = "none";
+      contentEl.style.overflow = "visible";
+      return;
+    }
+    if (!expanded) {
+      contentEl.style.height = "";
+      contentEl.style.animation = "";
+      contentEl.style.overflow = "";
+    }
+  }, [expanded, expandSettled, visibleSessions.length]);
+
+  const handleContentAnimationEnd = useCallback(
+    (event: AnimationEvent<HTMLDivElement>) => {
+      if (event.animationName === "collapsible-down" && expanded) {
+        setExpandSettled(true);
+      }
+    },
+    [expanded],
+  );
+
+  const handleLoadMore = useCallback(() => {
+    setExpandSettled(true);
+    onLoadMore();
+  }, [onLoadMore]);
+
+  return (
+    <Collapsible open={expanded} onOpenChange={onOpenChange} className="min-w-0">
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-controls={panelId}
+          className={cn(
+            "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
+            "outline-none",
+            sidebarInteractionMotionClass,
+            "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+            sidebarItemDefaultTextClass,
+            sessionRowHoverClass(micaStyle),
+          )}
+          title={group.rootPath ?? group.label}
+        >
+          {expanded ? (
+            <FolderOpen className="size-3.5 shrink-0" aria-hidden />
+          ) : (
+            <FolderClosed className="size-3.5 shrink-0" aria-hidden />
+          )}
+          <span className="flex min-w-0 flex-1 items-center overflow-hidden">
+            <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+              <span className="truncate text-xs font-medium">{group.label}</span>
+              <ChevronRight
+                className={cn(
+                  "hidden size-3 shrink-0 text-muted-foreground/55 transition-transform duration-150",
+                  "group-hover:inline-flex group-focus-visible:inline-flex",
+                  expanded && "rotate-90",
+                )}
+                aria-hidden
+              />
+            </span>
+          </span>
+        </button>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent
+        id={panelId}
+        className={cn("min-w-0", expandSettled && expanded && "h-auto [animation:none]")}
+        onAnimationEnd={handleContentAnimationEnd}
+      >
+        <div ref={innerRef} className="mt-0.5 flex min-w-0 flex-col gap-0.5">
+          {visibleSessions.map((session) => (
+            <SessionListRow
+              key={session.path}
+              sessionPath={session.path}
+              displayName={session.displayName}
+              isBusy={session.isBusy}
+              isBlocked={session.isBlocked}
+              showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
+              nested
+              selected={isSessionSelected(session.path)}
+              disabled={disabled}
+              micaStyle={micaStyle}
+              onSelectPath={onSelectSession}
+            />
+          ))}
+          <SessionListLoadMore
+            hiddenCount={hiddenSessionCount}
+            nested
+            disabled={disabled}
+            onLoadMore={handleLoadMore}
+          />
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+});
+
+function SessionListLoadMore({ hiddenCount, nested, disabled, onLoadMore }: SessionListLoadMoreProps) {
+  const { t } = useTranslation();
+  if (hiddenCount <= 0) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onLoadMore}
+      className={cn(
+        "w-full py-1 text-left text-[0.65rem] text-sidebar-faint-foreground outline-none",
+        nested ? "pr-2.5 pl-8" : "px-2.5",
+        "rounded-md focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+        disabled && "pointer-events-none opacity-50",
+      )}
+    >
+      {t("sidebar.loadMoreSessions")}
+    </button>
+  );
 }
 
 type SessionRowStatusTone = "blocked" | "completed";
@@ -546,6 +728,10 @@ function SessionSidebarInner({
   const [collapsedWorkspaceIds, setCollapsedWorkspaceIds] = useState(
     readWorkspaceSidebarExpandedById,
   );
+  const [visibleCountByWorkspaceGroupId, setVisibleCountByWorkspaceGroupId] = useState<
+    Record<string, number>
+  >({});
+  const [unboundVisibleCount, setUnboundVisibleCount] = useState(SIDEBAR_SESSION_PAGE_SIZE);
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
   const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
@@ -600,6 +786,51 @@ function SessionSidebarInner({
     !newSessionBusy &&
     activeFilePath !== null &&
     samePath(sessionPath, activeFilePath);
+
+  useEffect(() => {
+    if (!activeFilePath) {
+      return;
+    }
+    const unboundIndex = unboundSessions.findIndex((session) =>
+      samePath(session.path, activeFilePath),
+    );
+    if (unboundIndex >= 0) {
+      const needed = visibleCountForSessionIndex(unboundIndex);
+      setUnboundVisibleCount((current) => (current >= needed ? current : needed));
+      return;
+    }
+    for (const group of workspaceGroups) {
+      const index = group.sessions.findIndex((session) => samePath(session.path, activeFilePath));
+      if (index < 0) {
+        continue;
+      }
+      const needed = visibleCountForSessionIndex(index);
+      setVisibleCountByWorkspaceGroupId((current) => {
+        const previous = current[group.id] ?? SIDEBAR_SESSION_PAGE_SIZE;
+        if (previous >= needed) {
+          return current;
+        }
+        return { ...current, [group.id]: needed };
+      });
+      return;
+    }
+  }, [activeFilePath, unboundSessions, workspaceGroups]);
+
+  const loadMoreWorkspaceGroupSessions = useCallback((groupId: string, total: number) => {
+    setVisibleCountByWorkspaceGroupId((current) => {
+      const previous = current[groupId] ?? SIDEBAR_SESSION_PAGE_SIZE;
+      return {
+        ...current,
+        [groupId]: Math.min(previous + SIDEBAR_SESSION_PAGE_SIZE, total),
+      };
+    });
+  }, []);
+
+  const loadMoreUnboundSessions = useCallback(() => {
+    setUnboundVisibleCount((current) =>
+      Math.min(current + SIDEBAR_SESSION_PAGE_SIZE, unboundSessions.length),
+    );
+  }, [unboundSessions.length]);
 
   useEffect(() => {
     if (micaStyle || (!settingsMode && narrow)) {
@@ -861,75 +1092,31 @@ function SessionSidebarInner({
                 {workspaceGroups.map((group) => {
                   const expanded = collapsedWorkspaceIds[group.id] !== false;
                   const panelId = `workspace-session-group-${group.id.replace(/[^a-z0-9_-]/g, "-")}`;
+                  const visibleCount = visibleCountByWorkspaceGroupId[group.id] ?? SIDEBAR_SESSION_PAGE_SIZE;
+                  const visibleSessions = group.sessions.slice(0, visibleCount);
+                  const hiddenSessionCount = group.sessions.length - visibleSessions.length;
 
                   return (
-                    <Collapsible
+                    <WorkspaceSessionGroupCollapsible
                       key={group.id}
-                      open={expanded}
+                      group={group}
+                      expanded={expanded}
+                      panelId={panelId}
+                      disabled={disabled}
+                      micaStyle={micaStyle}
+                      visibleSessions={visibleSessions}
+                      hiddenSessionCount={hiddenSessionCount}
+                      unseenCompletedSessionPaths={unseenCompletedSessionPaths}
+                      isSessionSelected={isSessionSelected}
                       onOpenChange={(open) => {
                         if (disabled) {
                           return;
                         }
                         setWorkspaceGroupExpanded(group.id, open);
                       }}
-                      className="min-w-0"
-                    >
-                      <CollapsibleTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          aria-controls={panelId}
-                          className={cn(
-                            "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
-                            "outline-none",
-                            sidebarInteractionMotionClass,
-                            "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-                            sidebarItemDefaultTextClass,
-                            sessionRowHoverClass(micaStyle),
-                          )}
-                          title={group.rootPath ?? group.label}
-                        >
-                          {expanded ? (
-                            <FolderOpen className="size-3.5 shrink-0" aria-hidden />
-                          ) : (
-                            <FolderClosed className="size-3.5 shrink-0" aria-hidden />
-                          )}
-                          <span className="flex min-w-0 flex-1 items-center overflow-hidden">
-                            <span className="inline-flex min-w-0 max-w-full items-center gap-1">
-                              <span className="truncate text-xs font-medium">{group.label}</span>
-                              <ChevronRight
-                                className={cn(
-                                  "hidden size-3 shrink-0 text-muted-foreground/55 transition-transform duration-150",
-                                  "group-hover:inline-flex group-focus-visible:inline-flex",
-                                  expanded && "rotate-90",
-                                )}
-                                aria-hidden
-                              />
-                            </span>
-                          </span>
-                        </button>
-                      </CollapsibleTrigger>
-
-                      <CollapsibleContent id={panelId} className="min-w-0">
-                        <div className="mt-0.5 flex min-w-0 flex-col gap-0.5">
-                          {group.sessions.map((session) => (
-                            <SessionListRow
-                              key={session.path}
-                              sessionPath={session.path}
-                              displayName={session.displayName}
-                              isBusy={session.isBusy}
-                              isBlocked={session.isBlocked}
-                              showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
-                              nested
-                              selected={isSessionSelected(session.path)}
-                              disabled={disabled}
-                              micaStyle={micaStyle}
-                              onSelectPath={onSelectSession}
-                            />
-                          ))}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
+                      onSelectSession={onSelectSession}
+                      onLoadMore={() => loadMoreWorkspaceGroupSessions(group.id, group.sessions.length)}
+                    />
                   );
                 })}
                 {unboundSessions.length > 0 && workspaceGroups.length > 0 ? (
@@ -940,7 +1127,7 @@ function SessionSidebarInner({
                     <p className="px-2.5 pt-1 pb-1 text-[0.65rem] text-sidebar-faint-foreground">
                       {t('sidebar.noWorkspaceSessions')}
                     </p>
-                    {unboundSessions.map((session) => (
+                    {unboundSessions.slice(0, unboundVisibleCount).map((session) => (
                       <SessionListRow
                         key={session.path}
                         sessionPath={session.path}
@@ -955,6 +1142,11 @@ function SessionSidebarInner({
                         onSelectPath={onSelectSession}
                       />
                     ))}
+                    <SessionListLoadMore
+                      hiddenCount={unboundSessions.length - unboundVisibleCount}
+                      disabled={disabled}
+                      onLoadMore={loadMoreUnboundSessions}
+                    />
                   </>
                 ) : null}
               </SessionListNav>
