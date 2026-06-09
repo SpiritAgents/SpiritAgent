@@ -326,19 +326,19 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
     @apply font-sans;
   }
 
-  /* 可点击控件统一手型光标；disabled 保持 not-allowed（组件内 cursor-default 等 utility 仍可覆盖） */
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [role="menuitem"]:not([data-disabled]),
-  [role="option"]:not([data-disabled]),
-  [role="tab"]:not([aria-disabled="true"]),
-  [role="switch"]:not([aria-disabled="true"]),
-  [role="checkbox"]:not([aria-disabled="true"]),
-  [role="radio"]:not([aria-disabled="true"]),
-  [role="combobox"]:not([aria-disabled="true"]),
-  label[for],
-  summary,
-  a[href] {
+  /* 可点击控件手型光标：仅在开启「悬停显示手型」时生效；disabled 保持 not-allowed */
+  html.spirit-clickable-pointer button:not(:disabled),
+  html.spirit-clickable-pointer [role="button"]:not([aria-disabled="true"]),
+  html.spirit-clickable-pointer [role="menuitem"]:not([data-disabled]),
+  html.spirit-clickable-pointer [role="option"]:not([data-disabled]),
+  html.spirit-clickable-pointer [role="tab"]:not([aria-disabled="true"]),
+  html.spirit-clickable-pointer [role="switch"]:not([aria-disabled="true"]),
+  html.spirit-clickable-pointer [role="checkbox"]:not([aria-disabled="true"]),
+  html.spirit-clickable-pointer [role="radio"]:not([aria-disabled="true"]),
+  html.spirit-clickable-pointer [role="combobox"]:not([aria-disabled="true"]),
+  html.spirit-clickable-pointer label[for],
+  html.spirit-clickable-pointer summary,
+  html.spirit-clickable-pointer a[href] {
     cursor: pointer;
   }
 
@@ -514,8 +514,8 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
   }
 }
 
-/* Shell 内嵌 xterm：可点击链接显示手型光标 */
-.workspace-shell-xterm .xterm-link {
+/* Shell 内嵌 xterm：可点击链接在开启手型偏好时显示手型光标 */
+html.spirit-clickable-pointer .workspace-shell-xterm .xterm-link {
   cursor: pointer;
   text-decoration: underline;
 }
@@ -537,4 +537,12 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
 }
 .workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklab, var(--foreground) 24%, transparent);
+}
+
+/* 关闭手型偏好时压过 @layer utilities 的 cursor-pointer（含 enabled:cursor-pointer 等变体） */
+html:not(.spirit-clickable-pointer)
+  :is(.cursor-pointer, [class*="cursor-pointer"]):not(:disabled):not([aria-disabled="true"]):not(
+    [data-disabled]
+  ) {
+  cursor: default;
 }
