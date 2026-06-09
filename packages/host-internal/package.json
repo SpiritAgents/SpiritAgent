@@ -65,7 +65,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "builtin-skills"
   ],
   "engines": {
     "node": ">=22"

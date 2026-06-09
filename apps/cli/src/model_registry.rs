@@ -944,6 +944,17 @@ fn model_key_account(model_name: &str) -> String {
     format!("model::{}", model_name)
 }
 
+fn provider_key_account(provider_id: &str) -> String {
+    format!("provider::{}", provider_id)
+}
+
+pub fn load_provider_api_key_from_keyring(provider_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&provider_key_account(provider_id))?;
+    entry
+        .get_password()
+        .with_context(|| format!("读取 provider {} 的 API Key 失败", provider_id))
+}
+
 pub fn save_model_api_key(model_name: &str, api_key: &str) -> Result<()> {
     let entry = keyring_entry_for_account(&model_key_account(model_name))?;
     entry
