@@ -85,14 +85,15 @@ npm run test:host    # Host service tests
 apps/desktop/
   electron/          # Main process, preload, PTY, notifications, browser views
   src/               # React renderer (Vite + Tailwind)
-  builtin-skills/    # Seeded git-commit / git-push / git-merge skills
   scripts/           # Build helpers, icon generation
 ```
 
 Shared logic lives in monorepo packages:
 
 - `packages/agent-core` — agent runtime, tool definitions, prompts
-- `packages/host-internal` — host contracts, workspace/git helpers
+- `packages/host-internal` — host contracts, workspace/git helpers, shared authoring builtin skills
+
+Desktop-only Git builtin skills are seeded from `apps/desktop/builtin-skills/`.
 
 ## License
 
