@@ -784,6 +784,7 @@ function SessionSidebarInner({
 
   const isSessionSelected = (sessionPath: string) =>
     !marketplaceActive &&
+    !automationsActive &&
     !newSessionBusy &&
     activeFilePath !== null &&
     samePath(sessionPath, activeFilePath);
