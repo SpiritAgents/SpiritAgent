@@ -3,13 +3,17 @@ import { cp, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SKILL_FILE_NAME, SKILLS_DIR_NAME } from '@spirit-agent/host-internal';
+import {
+  SKILL_FILE_NAME,
+  SKILLS_DIR_NAME,
+  ensureBuiltinAuthoringSkills,
+} from '@spirit-agent/host-internal';
 
 export const BUILTIN_GIT_SKILL_NAMES = ['git-commit', 'git-push', 'git-merge'] as const;
 
 export type BuiltinGitSkillName = (typeof BUILTIN_GIT_SKILL_NAMES)[number];
 
-function resolveBuiltinSkillsTemplateRoot(): string {
+function resolveDesktopBuiltinSkillsTemplateRoot(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
     path.join(here, '../../builtin-skills'),
@@ -23,9 +27,9 @@ function resolveBuiltinSkillsTemplateRoot(): string {
   return candidates[0]!;
 }
 
-/** Copy shipped Git skills into user AppData when missing (never overwrite). */
+/** Copy Desktop-only Git skills, then shared authoring skills, into user AppData when missing. */
 export async function ensureBuiltinUserSkills(spiritDataDir: string): Promise<void> {
-  const templateRoot = resolveBuiltinSkillsTemplateRoot();
+  const templateRoot = resolveDesktopBuiltinSkillsTemplateRoot();
   const userSkillsRoot = path.join(spiritDataDir, SKILLS_DIR_NAME);
 
   await mkdir(userSkillsRoot, { recursive: true });
@@ -46,6 +50,8 @@ export async function ensureBuiltinUserSkills(spiritDataDir: string): Promise<vo
     await mkdir(targetSkillDir, { recursive: true });
     await cp(templateSkillFile, targetSkillFile);
   }
+
+  await ensureBuiltinAuthoringSkills(spiritDataDir);
 }
 
 export function gitChipActionToSkillName(action: 'commit' | 'push' | 'merge'): BuiltinGitSkillName {
