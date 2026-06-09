@@ -35,6 +35,7 @@ import {
   ensureLoopPinned,
   hasAgentModeSegment,
   hasLoopSegment,
+  hasSkillSegment,
   insertAgentModeSegment,
   insertLoopSegment,
   insertSegmentAtCaret,
@@ -623,7 +624,6 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       const plain = segmentsToPlainText(current);
       const localPlain = normalizeComposerPlain(plain);
       const externalPlain = normalizeComposerPlain(value);
-
       if (skipExternalValueSyncRef.current) {
         const expected = lastSyncedToParentPlainRef.current;
         if (expected !== null && externalPlain !== expected) {
@@ -669,6 +669,11 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
           return;
         }
         if (agentModeChipDismissedRef.current && !hasAgentModeSegment(current)) {
+          return;
+        }
+        // Skill chip 存在时，parent 侧 value 为空（segmentsToPlainText 对 skill 返回 ""），
+        // 但 chip 本身应保留，勿清空。
+        if (hasSkillSegment(current) && isComposerPlainEmpty(plain)) {
           return;
         }
         commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });

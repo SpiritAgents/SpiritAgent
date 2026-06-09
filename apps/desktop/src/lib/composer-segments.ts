@@ -15,6 +15,7 @@ import { makeSkillChipNode } from "@/lib/skill-chip-styles";
 export {
   caretAtEnd,
   emptySegments,
+  hasSkillSegment,
   insertSegmentAtCaret,
   isComposerPlainEmpty,
   mergeAdjacentTextSegments,
