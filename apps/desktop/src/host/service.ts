@@ -1900,14 +1900,15 @@ class DesktopHostService {
       hostContributedToolsEnabled: true,
       getAutomationCreateDefaults: () => {
         const currentState = this.requireState();
-        const activeModel = currentState.config.models.find(
-          (model) => model.name === currentState.config.activeModel,
-        );
+        const lightweightModel = resolveLightweightChatModelProfile(currentState.config);
+        if (!lightweightModel) {
+          throw new Error(i18n.t('error.lightweightChatModelNotConfigured'));
+        }
         return {
           workspaceRoot,
-          modelName: currentState.config.activeModel,
-          ...(activeModel?.reasoningEffort
-            ? { reasoningEffort: activeModel.reasoningEffort }
+          modelName: lightweightModel.name,
+          ...(lightweightModel.profile.reasoningEffort
+            ? { reasoningEffort: lightweightModel.profile.reasoningEffort }
             : {}),
           approvalLevel: bundle.approvalLevel,
         };
