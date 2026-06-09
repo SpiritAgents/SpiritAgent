@@ -204,8 +204,6 @@ import {
 } from "@/lib/action-palette";
 import {
   buildSkillSlashSuggestions,
-  CREATE_RULE_SLASH_ALIAS,
-  CREATE_SKILL_SLASH_ALIAS,
   currentSkillSlashQuery,
   type SkillSlashSuggestion,
 } from "@/lib/skill-slash";
@@ -3306,12 +3304,12 @@ export default function App() {
               onGenerateSkillNavigate={() => {
                 setLastNonSettingsSurface("conversation");
                 setActiveSurface("conversation");
-                applySlashSuggestion(`${CREATE_SKILL_SLASH_ALIAS} `);
+                applySlashSuggestion("/create-skill ");
               }}
               onGenerateRuleNavigate={() => {
                 setLastNonSettingsSurface("conversation");
                 setActiveSurface("conversation");
-                applySlashSuggestion(`${CREATE_RULE_SLASH_ALIAS} `);
+                applySlashSuggestion("/create-rule ");
               }}
             />
           </div>

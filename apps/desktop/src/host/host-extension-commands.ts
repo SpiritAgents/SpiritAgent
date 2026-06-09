@@ -1,19 +1,13 @@
 import {
   buildActiveSkillPayload,
   buildActivateSkillUserTurn,
-  buildCreateSkillUserTurn,
   createSkillFile,
   deleteSkillDir,
-  desktopInstructionPaths,
-  parseCreateSkillSlashPrompt,
 } from './skills.js';
 import {
-  buildCreateRuleUserTurn,
   buildRuleDiscoveryContext,
   createRuleFile,
   deleteRuleFile,
-  ensureWorkspaceSpiritDir,
-  parseCreateRuleSlashPrompt,
 } from './rules.js';
 import {
   addDesktopMcpServer,
@@ -44,8 +38,6 @@ import type {
   InstallMarketplaceExtensionRequest,
   PrepareMarketplaceExtensionInstallRequest,
   RunExtensionRequest,
-  SubmitCreateRuleSlashRequest,
-  SubmitCreateSkillSlashRequest,
   SubmitSkillSlashRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
@@ -517,75 +509,3 @@ export async function submitSkillSlashCommand(
   });
 }
 
-export async function submitCreateRuleSlashCommand(
-  ctx: HostExtensionCommandContext,
-  request: SubmitCreateRuleSlashRequest,
-): Promise<DesktopSnapshot> {
-  return ctx.runSerialized(async () => {
-    await ctx.ensureInitialized(undefined, { fastPath: true });
-    const runtime = ctx.requireRuntime();
-    if (runtime.isBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
-    }
-
-    const rawText = request.rawText.trim();
-    if (!rawText) {
-      throw new Error(i18n.t('error.messageRequired'));
-    }
-
-    const parsed = parseCreateRuleSlashPrompt(rawText);
-    if (parsed instanceof Error) {
-      return ctx.appendInlineAssistantReply(rawText, parsed.message);
-    }
-
-    const state = ctx.requireState();
-    if (parsed.scope === 'workspace') {
-      if (state.workspaceBinding === 'none') {
-        throw new Error(i18n.t('error.workspaceRulesUnavailable'));
-      }
-      await ensureWorkspaceSpiritDir(state.workspaceRoot);
-    }
-
-    return ctx.submitUserTurnAfterInitialized(
-      buildCreateRuleUserTurn(state.workspaceRoot, parsed),
-      {
-        displayText: rawText,
-      },
-    );
-  });
-}
-
-export async function submitCreateSkillSlashCommand(
-  ctx: HostExtensionCommandContext,
-  request: SubmitCreateSkillSlashRequest,
-): Promise<DesktopSnapshot> {
-  return ctx.runSerialized(async () => {
-    await ctx.ensureInitialized(undefined, { fastPath: true });
-    const runtime = ctx.requireRuntime();
-    if (runtime.isBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
-    }
-
-    const rawText = request.rawText.trim();
-    if (!rawText) {
-      throw new Error(i18n.t('error.messageRequired'));
-    }
-
-    const prompt = parseCreateSkillSlashPrompt(rawText);
-    if (prompt instanceof Error) {
-      return ctx.appendInlineAssistantReply(rawText, prompt.message);
-    }
-
-    const state = ctx.requireState();
-    return ctx.submitUserTurnAfterInitialized(
-      buildCreateSkillUserTurn(
-        state.workspaceRoot,
-        desktopInstructionPaths(state.workspaceRoot),
-        prompt,
-      ),
-      {
-        displayText: rawText,
-      },
-    );
-  });
-}

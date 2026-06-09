@@ -33,8 +33,6 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   RunExtensionRequest,
-  SubmitCreateRuleSlashRequest,
-  SubmitCreateSkillSlashRequest,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
   SubmitUserTurnRequest,
@@ -84,8 +82,6 @@ export type CommandPayloads = {
   createSkill: { request: CreateSkillRequest };
   deleteRule: { request: DeleteRuleRequest };
   deleteSkill: { request: DeleteSkillRequest };
-  submitCreateRuleSlash: { request: SubmitCreateRuleSlashRequest };
-  submitCreateSkillSlash: { request: SubmitCreateSkillSlashRequest };
   submitSkillSlash: { request: SubmitSkillSlashRequest };
   submitGitChip: { request: SubmitGitChipRequest };
   submitStartImplementing: undefined;

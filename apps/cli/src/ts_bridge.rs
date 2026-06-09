@@ -884,21 +884,6 @@ impl TsBridgeRuntime {
         Ok(PathBuf::from(path))
     }
 
-    pub fn build_create_skill_user_turn(&mut self, prompt: &str) -> Result<String> {
-        let value = self.call_bridge(
-            "hostInternal.buildCreateSkillUserTurn",
-            Some(json!({
-                "prompt": prompt,
-                "includeManagedUserRootNote": true,
-                "deliveryWriteInstruction": "如果你能直接在目标路径落盘，就在确认内容后使用 create_file 或 edit_file 写入。",
-            })),
-        )?;
-        value
-            .as_str()
-            .map(str::to_owned)
-            .ok_or_else(|| anyhow!("hostInternal.buildCreateSkillUserTurn 返回值无效"))
-    }
-
     pub fn list_extensions(&mut self) -> Result<Vec<CliExtensionEntry>> {
         let value = self.call_bridge("hostInternal.listExtensions", None)?;
         Ok(serde_json::from_value(value)?)
@@ -1825,12 +1810,12 @@ impl TsBridgeRuntime {
         let api_key = if let Ok(value) = env::var(ENV_API_KEY) {
             let trimmed = value.trim();
             if trimmed.is_empty() {
-                self.resolve_key_from_store(&active.name)?
+                self.resolve_key_from_store(&active.name, active.provider)?
             } else {
                 trimmed.to_string()
             }
         } else {
-            self.resolve_key_from_store(&active.name)?
+            self.resolve_key_from_store(&active.name, active.provider)?
         };
 
         let api_base = env::var(ENV_API_BASE).unwrap_or_else(|_| active.api_base.clone());
@@ -1923,8 +1908,8 @@ impl TsBridgeRuntime {
                     && image_profile.transport_kind()
                         == crate::model_registry::ModelTransportKind::OpenAiCompatible
                 {
-                    if let Some(image_api_key) =
-                        self.resolve_optional_key_from_store(&image_profile.name)?
+                    if let Some(image_api_key) = self
+                        .resolve_optional_key_from_store(&image_profile.name, image_profile.provider)?
                     {
                         let mut image_generation = serde_json::json!({
                             "apiKey": image_api_key,
@@ -1966,7 +1951,9 @@ impl TsBridgeRuntime {
         if !video_profile.supports_video_generation() {
             return Ok(());
         }
-        let Some(video_api_key) = self.resolve_optional_key_from_store(&video_profile.name)? else {
+        let Some(video_api_key) = self
+            .resolve_optional_key_from_store(&video_profile.name, video_profile.provider)?
+        else {
             return Ok(());
         };
 
@@ -2084,7 +2071,21 @@ impl TsBridgeRuntime {
                 .map(|profile| profile.provider)
     }
 
-    fn resolve_key_from_store(&self, model_name: &str) -> Result<String> {
+    fn resolve_key_from_store(
+        &self,
+        model_name: &str,
+        provider: Option<crate::model_registry::ModelProvider>,
+    ) -> Result<String> {
+        if let Some(provider) = provider {
+            if let Ok(value) =
+                crate::model_registry::load_provider_api_key_from_keyring(provider.as_str())
+            {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() {
+                    return Ok(trimmed.to_string());
+                }
+            }
+        }
         if let Some(value) = self.secret_store.load_model_api_key(model_name)? {
             return Ok(value);
         }
@@ -2100,11 +2101,25 @@ impl TsBridgeRuntime {
         ))
     }
 
-    fn resolve_optional_key_from_store(&self, model_name: &str) -> Result<Option<String>> {
+    fn resolve_optional_key_from_store(
+        &self,
+        model_name: &str,
+        provider: Option<crate::model_registry::ModelProvider>,
+    ) -> Result<Option<String>> {
         if let Ok(value) = env::var(ENV_API_KEY) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(Some(trimmed.to_string()));
+            }
+        }
+        if let Some(provider) = provider {
+            if let Ok(value) =
+                crate::model_registry::load_provider_api_key_from_keyring(provider.as_str())
+            {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() {
+                    return Ok(Some(trimmed.to_string()));
+                }
             }
         }
         if let Some(value) = self.secret_store.load_model_api_key(model_name)? {
