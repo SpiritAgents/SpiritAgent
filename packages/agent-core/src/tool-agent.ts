@@ -478,6 +478,26 @@ export function buildAgentModeSystemMessage(
     lines.push(
       'Help read-only. Only call tools that are available in this request. If the user wants edits or execution, ask them to switch to Agent mode.',
     );
+  } else if (agentMode === 'debug') {
+    lines.push(
+      'When the user reports a bug, do not attempt a fix immediately. Instead:',
+      '',
+      '1. Propose at least 5 hypotheses about the root cause, ranked by likelihood.',
+      '2. Embed structured log points to test each hypothesis.',
+      '',
+      'Log format and location:',
+      '- Directory: .spirit/logs/ under the workspace root',
+      '- Filename: kebab-case (e.g. auth-retry-failure.json)',
+      '- Format: compressed JSON (single line per entry)',
+      '- Required fields:',
+      '  - "hypotheses": array of hypotheses being tested',
+      '  - "message": short header describing what this log captures',
+      '  - "data": evidence source (stack traces, variable snapshots, timing, etc.)',
+      '',
+      '3. After embedding logs, tell the user the reproduction steps and ask them to reply "resolved" or "still reproducing".',
+      '   - If resolved: remove the log points and confirm.',
+      '   - If still reproducing: read the log files, analyze evidence, refine hypotheses, and continue.',
+    );
   } else {
     lines.push(
       'Handle the user\'s requests efficiently, professionally, and carefully—including analysis, edits, shell commands, and verification when appropriate.',
@@ -493,6 +513,8 @@ function agentModeLabel(agentMode: SpiritAgentMode): string {
       return 'Plan';
     case 'ask':
       return 'Ask';
+    case 'debug':
+      return 'Debug';
     default:
       return 'Agent';
   }
