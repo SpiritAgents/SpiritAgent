@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
-import { useTheme } from "@/hooks/useTheme";
-import { spiritAgentBrandIconSrc } from "@/lib/brand-icon";
+import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
 import { cn } from "@/lib/utils";
+
+const LAUNCH_LOGO_WIDTH_PX = 72;
 
 const EXIT_MS = 520;
 
@@ -22,22 +23,6 @@ type LaunchSplashProps = {
  * 首屏启动：居中品牌图标 + 骨架屏式线性闪光，宿主就绪后淡出。
  */
 export function LaunchSplash({ active, useMicaBackdrop = false }: LaunchSplashProps) {
-  const { resolvedDark } = useTheme();
-  const iconSrc = spiritAgentBrandIconSrc(resolvedDark);
-  const iconMaskStyle = useMemo<CSSProperties>(
-    () => ({
-      WebkitMaskImage: `url(${iconSrc})`,
-      maskImage: `url(${iconSrc})`,
-      WebkitMaskSize: "contain",
-      maskSize: "contain",
-      WebkitMaskRepeat: "no-repeat",
-      maskRepeat: "no-repeat",
-      WebkitMaskPosition: "center",
-      maskPosition: "center",
-    }),
-    [iconSrc],
-  );
-
   const [phase, setPhase] = useState<Phase>(() => (active ? "running" : "gone"));
 
   useEffect(() => {
@@ -98,21 +83,15 @@ export function LaunchSplash({ active, useMicaBackdrop = false }: LaunchSplashPr
     >
       <div
         className={cn(
-          "relative size-[4.5rem] shrink-0 transition-[opacity,transform] duration-[420ms] ease-out motion-reduce:duration-150",
+          "relative shrink-0 transition-[opacity,transform] duration-[420ms] ease-out motion-reduce:duration-150",
           exiting ? "scale-[0.97] opacity-0 motion-reduce:scale-100" : "scale-100 opacity-100",
         )}
+        style={{ width: LAUNCH_LOGO_WIDTH_PX }}
       >
-        <img
-          src={iconSrc}
-          alt=""
-          width={72}
-          height={72}
-          draggable={false}
-          className="block size-full object-contain select-none"
-        />
+        <SpiritGlassLogo width={LAUNCH_LOGO_WIDTH_PX} className="relative z-0" />
         <div
-          className="pointer-events-none absolute inset-0 overflow-hidden"
-          style={iconMaskStyle}
+          className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
+          style={spiritGlassLogoMaskStyle()}
           aria-hidden
         >
           <div className="spirit-launch-shimmer-sweep" />
