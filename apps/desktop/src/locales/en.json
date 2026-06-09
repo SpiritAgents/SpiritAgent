@@ -313,6 +313,7 @@
     "cannotDeleteBusySession": "Cannot delete while the session is running.",
     "sessionBlocked": "Waiting for input",
     "sessionCompleted": "Background task completed",
+    "loadMoreSessions": "Load more",
     "resizeWidth": "Resize sidebar width"
   },
   "titleBar": {
