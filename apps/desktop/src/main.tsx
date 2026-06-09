@@ -4,6 +4,10 @@ import { createRoot } from 'react-dom/client';
 import './lib/i18n';
 import App from './App';
 import { ThemeProvider } from './hooks/useTheme';
+import {
+  applyClickablePointerCursorToDocument,
+  getStoredClickablePointerCursor,
+} from './lib/clickable-pointer-cursor';
 import { applyFontToDocument, getStoredFont } from './lib/font';
 import { applyThemeToDocument, getStoredTheme } from './lib/theme';
 import 'katex/dist/katex.min.css';
@@ -20,6 +24,7 @@ if (typeof document !== 'undefined') {
   }
   applyThemeToDocument(getStoredTheme());
   applyFontToDocument(getStoredFont());
+  applyClickablePointerCursorToDocument(getStoredClickablePointerCursor());
 }
 
 const rootElement = document.getElementById('app');
