@@ -2458,6 +2458,20 @@ export default function App() {
     setActiveSurface("conversation");
     void runtime.resetSession();
   }, [runtime]);
+  const handleGenerateAutomation = useCallback(async () => {
+    setLastNonSettingsSurface("conversation");
+    setActiveSurface("conversation");
+    const seed = t("automations.generateComposerSeed");
+    const resetOk = await runtime.resetSession();
+    if (!resetOk) {
+      return;
+    }
+    runtime.setComposer(seed);
+    setSlashSelectedIndex(-1);
+    queueMicrotask(() => {
+      composerRichInputRef.current?.focus();
+    });
+  }, [runtime, t]);
   const previousPlanModifiedAtRef = useRef<number | undefined>(undefined);
   const previousPlanExistsRef = useRef<boolean | undefined>(undefined);
   const previousActiveSessionPathRef = useRef<string | null>(null);
@@ -3335,6 +3349,7 @@ export default function App() {
                 snapshot={snapshot}
                 apiReady={runtime.apiReady}
                 busyAction={runtime.busyAction}
+                onGenerateAutomation={() => void handleGenerateAutomation()}
                 onCreateAutomation={() => setCreateAutomationDialogOpen(true)}
                 onOpenAutomation={(automationId) => {
                   setSelectedAutomationId(automationId);
