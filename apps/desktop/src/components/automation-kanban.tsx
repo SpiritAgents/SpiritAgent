@@ -96,7 +96,7 @@ function AutomationRunCard({
       type="button"
       onClick={onOpen}
       className={cn(
-        "rounded-md border border-border/35 bg-background/90 px-3 py-3 text-left transition-colors",
+        "rounded-md border border-border/35 bg-background/90 px-3 py-3 text-left transition-none",
         "hover:border-border/60 hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
       )}
     >
