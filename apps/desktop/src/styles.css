@@ -342,11 +342,6 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
     cursor: pointer;
   }
 
-  html:not(.spirit-clickable-pointer)
-    .cursor-pointer:not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
-    cursor: default;
-  }
-
   button:disabled,
   [role="button"][aria-disabled="true"],
   [role="menuitem"][data-disabled],
@@ -542,4 +537,12 @@ html.spirit-clickable-pointer .workspace-shell-xterm .xterm-link {
 }
 .workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklab, var(--foreground) 24%, transparent);
+}
+
+/* 关闭手型偏好时压过 @layer utilities 的 cursor-pointer（含 enabled:cursor-pointer 等变体） */
+html:not(.spirit-clickable-pointer)
+  :is(.cursor-pointer, [class*="cursor-pointer"]):not(:disabled):not([aria-disabled="true"]):not(
+    [data-disabled]
+  ) {
+  cursor: default;
 }
