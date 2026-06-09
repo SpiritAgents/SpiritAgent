@@ -313,7 +313,7 @@
     "cannotDeleteBusySession": "会话运行中，无法删除。",
     "sessionBlocked": "等待处理",
     "sessionCompleted": "后台任务已完成",
-    "loadMoreSessions": "加载更多",
+    "loadMoreSessions": "查看更多",
     "resizeWidth": "调整侧栏宽度"
   },
   "titleBar": {
