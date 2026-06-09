@@ -94,11 +94,14 @@ function TitleBarMenuCluster({ useMicaBackdrop }: { useMicaBackdrop: boolean }) 
  */
 export function DesktopTitleBar({ useMicaBackdrop }: DesktopTitleBarProps) {
   const { open: sessionSidebarOpen, widthPx: sessionSidebarWidthPx } = useSessionSidebarChrome();
+  /** Mica 开启且侧边栏展开：横向分割线只渲染在侧边栏竖线右侧 */
+  const partialBorder = useMicaBackdrop && sessionSidebarOpen;
   return (
     <header
       className={cn(
         "electron-drag flex h-8 w-full shrink-0 overflow-hidden border-b",
-        titleBarSurfaceClass(useMicaBackdrop, true),
+        partialBorder && "border-transparent",
+        titleBarSurfaceClass(useMicaBackdrop, !partialBorder),
       )}
     >
       <div
@@ -114,7 +117,19 @@ export function DesktopTitleBar({ useMicaBackdrop }: DesktopTitleBarProps) {
       >
         <TitleBarMenuCluster useMicaBackdrop={useMicaBackdrop} />
       </div>
-      <div className="electron-drag h-full min-w-0 flex-1" aria-hidden />
+      <div
+        className={cn(
+          "electron-drag relative h-full min-w-0 flex-1",
+        )}
+        aria-hidden
+      >
+        {partialBorder ? (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-black/5 dark:bg-white/10"
+            aria-hidden
+          />
+        ) : null}
+      </div>
     </header>
   );
 }
