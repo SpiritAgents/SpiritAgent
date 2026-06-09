@@ -45,6 +45,20 @@ import {
   type HostExtensionToolApprovalMode,
   type HostExtensionToolExecutionMode,
 } from './extensions.js';
+import {
+  CREATE_AUTOMATION_TOOL_NAME,
+  deriveAutomationTitle,
+  formatCreateAutomationApprovalLabel,
+  parseCreateAutomationApprovalLevel,
+  parseCreateAutomationSchedule,
+} from './automation-host-tool.js';
+import {
+  createHostAutomationStore,
+  formatScheduleLabel,
+  type HostAutomationDefinition,
+  type HostAutomationSchedule,
+} from './automations.js';
+import type { ModelReasoningEffort } from './reasoning-effort.js';
 import { resolveInstructionPaths, type InstructionDiscoveryContext } from './storage.js';
 import { isPathUnderPlansDir, resolvePlanFilePath } from './plans.js';
 import {
@@ -292,7 +306,14 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { name: 'todo_list'; include_completed: boolean }
   | { name: 'todo_create'; items: HostTodoCreateItem[] }
   | { name: 'todo_update'; id: string; title: string }
-  | { name: 'todo_complete'; id: string };
+  | { name: 'todo_complete'; id: string }
+  | {
+      name: typeof CREATE_AUTOMATION_TOOL_NAME;
+      title: string;
+      overview: string;
+      schedule: HostAutomationSchedule;
+      approval_level: ApprovalLevel;
+    };
 
 export type HostAuthorizationDecision<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { kind: 'allowed' }
@@ -392,6 +413,12 @@ export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
   return 'default';
 }
 
+export interface HostAutomationCreateDefaults {
+  workspaceRoot: string;
+  modelName: string;
+  reasoningEffort?: ModelReasoningEffort;
+}
+
 export interface NodeHostToolServiceOptions {
   mcp?: HostMcpAdapter;
   fileChangeObserver?: HostFileChangeObserver;
@@ -401,6 +428,8 @@ export interface NodeHostToolServiceOptions {
   todoScope?: HostTodoScope;
   getModelCompatibilityProfile?: () => HostToolModelCompatibilityProfile | undefined;
   getApprovalLevel?: () => ApprovalLevel;
+  getAutomationCreateDefaults?: () => HostAutomationCreateDefaults;
+  onAutomationCreated?: (definition: HostAutomationDefinition) => void;
   /** Full tool list exposed to the model (builtin + extension + MCP). Used for unknown-tool errors. */
   availableToolDefinitions?: () => JsonValue;
 }
@@ -518,6 +547,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       : undefined;
     this.getModelCompatibilityProfile = options.getModelCompatibilityProfile;
     this.getApprovalLevel = options.getApprovalLevel;
+    this.getAutomationCreateDefaults = options.getAutomationCreateDefaults;
+    this.onAutomationCreated = options.onAutomationCreated;
     this.availableToolDefinitions = options.availableToolDefinitions;
   }
 
@@ -526,6 +557,10 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     | undefined;
 
   private readonly getApprovalLevel: (() => ApprovalLevel) | undefined;
+
+  private readonly getAutomationCreateDefaults: (() => HostAutomationCreateDefaults) | undefined;
+
+  private readonly onAutomationCreated: ((definition: HostAutomationDefinition) => void) | undefined;
 
   bindAvailableToolDefinitions(provider: () => JsonValue): void {
     this.availableToolDefinitions = provider;
@@ -721,6 +756,21 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           plan_name: requiredString(parsed, 'name'),
           content: requiredString(parsed, 'content'),
         };
+      case CREATE_AUTOMATION_TOOL_NAME: {
+        const overview = requiredString(parsed, 'overview');
+        const explicitTitle = optionalStringStrict(parsed, 'title');
+        const scheduleValue = parsed.schedule;
+        if (scheduleValue === undefined) {
+          throw new Error('create_automation 缺少 schedule。');
+        }
+        return {
+          name: CREATE_AUTOMATION_TOOL_NAME,
+          title: deriveAutomationTitle(overview, explicitTitle),
+          overview,
+          schedule: parseCreateAutomationSchedule(scheduleValue),
+          approval_level: parseCreateAutomationApprovalLevel(parsed.approval_level),
+        };
+      }
       case 'edit_file':
         return {
           name,
@@ -903,6 +953,16 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           kind: 'need-approval',
           prompt: `高风险工具调用: 创建计划\n名称: ${request.plan_name}\n内容长度: ${[...request.content].length} 字符`,
         };
+      case CREATE_AUTOMATION_TOOL_NAME:
+        return {
+          kind: 'need-approval',
+          prompt:
+            `高风险工具调用: 创建自动化\n` +
+            `标题: ${request.title}\n` +
+            `调度: ${formatScheduleLabel(request.schedule)}\n` +
+            `运行审批: ${formatCreateAutomationApprovalLabel(request.approval_level)}\n` +
+            `概述长度: ${[...request.overview].length} 字符`,
+        };
       case 'edit_file':
         return {
           kind: 'need-approval',
@@ -1010,6 +1070,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         return this.executeCreateFile(request);
       case 'create_plan':
         return this.executeCreatePlan(request);
+      case CREATE_AUTOMATION_TOOL_NAME:
+        return this.executeCreateAutomation(request);
       case 'edit_file':
         return this.executeEditFile(request);
       case 'delete_file':
@@ -1887,6 +1949,35 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     const after = await readHostFileSnapshot(target);
     await this.recordFileChange(request, target, before, after);
     return `[write]\naction: create_file\npath: ${target}\nchars: ${[...content].length}`;
+  }
+
+  private async executeCreateAutomation(
+    request: Extract<HostToolRequest<QuestionSpec>, { name: typeof CREATE_AUTOMATION_TOOL_NAME }>,
+  ): Promise<string> {
+    const defaults = this.getAutomationCreateDefaults?.();
+    if (!defaults) {
+      throw new Error('create_automation 仅在 Desktop 宿主可用。');
+    }
+    const store = createHostAutomationStore(this.spiritDataDir);
+    const definition = await store.create({
+      title: request.title,
+      overview: request.overview,
+      schedule: request.schedule,
+      workspaceRoot: defaults.workspaceRoot,
+      modelName: defaults.modelName,
+      ...(defaults.reasoningEffort ? { reasoningEffort: defaults.reasoningEffort } : {}),
+      approvalLevel: request.approval_level,
+      enabled: true,
+    });
+    this.onAutomationCreated?.(definition);
+    return (
+      `[automation]\n` +
+      `action: create_automation\n` +
+      `id: ${definition.id}\n` +
+      `title: ${definition.title}\n` +
+      `schedule: ${formatScheduleLabel(definition.schedule)}\n` +
+      `workspace: ${definition.workspaceRoot}`
+    );
   }
 
   private async executeCreatePlan(
