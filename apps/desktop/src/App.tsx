@@ -3127,6 +3127,55 @@ export default function App() {
 
   const handleComposerSuggestionKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     const fileReferenceItems = fileReferenceSuggestions?.suggestions ?? [];
+
+    if (slashQuery) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDismissedSlashQueryKey(skillSlashQueryKey(slashQuery));
+        setSlashSelectedIndex(-1);
+        return;
+      }
+
+      if (slashSuggestions.length > 0) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setSlashSelectedIndex((current) => {
+            if (current < 0) {
+              return 0;
+            }
+            return (current + 1) % slashSuggestions.length;
+          });
+          return;
+        }
+
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setSlashSelectedIndex((current) =>
+            current <= 0 ? slashSuggestions.length - 1 : current - 1,
+          );
+          return;
+        }
+
+        if (event.key === "Tab") {
+          event.preventDefault();
+          const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
+          if (selected) {
+            applySlashSuggestionItem(selected);
+          }
+          return;
+        }
+
+        if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+          event.preventDefault();
+          const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
+          if (selected) {
+            applySlashSuggestionItem(selected);
+          }
+          return;
+        }
+      }
+    }
+
     if (fileReferenceItems.length > 0) {
       if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -3169,56 +3218,6 @@ export default function App() {
         const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
         if (selected) {
           applyFileReferenceSuggestion(selected);
-        }
-        return;
-      }
-    }
-
-    if (slashQuery) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setDismissedSlashQueryKey(skillSlashQueryKey(slashQuery));
-        setSlashSelectedIndex(-1);
-        return;
-      }
-
-      if (slashSuggestions.length === 0) {
-        return;
-      }
-
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        setSlashSelectedIndex((current) => {
-          if (current < 0) {
-            return 0;
-          }
-          return (current + 1) % slashSuggestions.length;
-        });
-        return;
-      }
-
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setSlashSelectedIndex((current) =>
-          current <= 0 ? slashSuggestions.length - 1 : current - 1,
-        );
-        return;
-      }
-
-      if (event.key === "Tab") {
-        event.preventDefault();
-        const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
-        if (selected) {
-          applySlashSuggestionItem(selected);
-        }
-        return;
-      }
-
-      if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-        event.preventDefault();
-        const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
-        if (selected) {
-          applySlashSuggestionItem(selected);
         }
       }
     }

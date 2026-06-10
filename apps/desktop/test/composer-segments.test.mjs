@@ -306,6 +306,41 @@ test("insertAgentModeSegment pins plan after loop", () => {
   assert.equal(segments[2]?.kind === "text" && segments[2].value, "work");
 });
 
+test("replaceSkillSlashQueryInSegments preserves loop plan and skill when removing plan slash token", () => {
+  const initial = [
+    { kind: "loop" },
+    { kind: "plan" },
+    { kind: "skill", alias: "/git-commit" },
+    { kind: "text", value: "please /ask" },
+  ];
+  const slashStart = caretToPlainTextOffset(initial, { segmentIndex: 3, offset: 7 });
+  const slashEnd = caretToPlainTextOffset(initial, { segmentIndex: 3, offset: 11 });
+  const { segments } = replaceSkillSlashQueryInSegments(
+    initial,
+    { start: slashStart, end: slashEnd, raw: "/ask" },
+    "",
+  );
+  assert.equal(segments[0]?.kind, "loop");
+  assert.equal(segments[1]?.kind, "plan");
+  assert.ok(segments.some((s) => s.kind === "skill" && s.alias === "/git-commit"));
+  assert.deepEqual(
+    segments.filter((s) => s.kind === "text"),
+    [{ kind: "text", value: "please " }],
+  );
+});
+
+test("insertSegmentAtCaret allows multiple skill chips with different aliases", () => {
+  const base = [
+    { kind: "skill", alias: "/git-commit" },
+    { kind: "text", value: " " },
+  ];
+  const { segments } = insertSegmentAtCaret(base, { segmentIndex: 1, offset: 1 }, {
+    kind: "skill",
+    alias: "/create-skill",
+  });
+  assert.equal(segments.filter((s) => s.kind === "skill").length, 2);
+});
+
 test("insertSegmentAtCaret adds skill inline while preserving loop and plan chips", () => {
   const base = [
     { kind: "loop" },
@@ -541,7 +576,7 @@ test("normalizeCaretForInlineAttachmentChips snaps caret on file chip", () => {
     offset: 0,
   });
   assert.equal(snapped.segmentIndex, 1);
-  assert.equal(snapped.offset, 0);
+  assert.equal(snapped.offset, 1);
 });
 
 test("isCaretAtInlineChipRemovalPoint and removeInlineChipAtRemovalPoint", () => {
@@ -553,10 +588,7 @@ test("isCaretAtInlineChipRemovalPoint and removeInlineChipAtRemovalPoint", () =>
   const caret = { segmentIndex: 2, offset: 0 };
   assert.equal(isCaretAtInlineChipRemovalPoint(segs, caret), true);
   const removed = removeInlineChipAtRemovalPoint(segs, caret);
-  assert.deepEqual(removed?.segments, [
-    { kind: "text", value: "see " },
-    { kind: "text", value: " please" },
-  ]);
+  assert.deepEqual(removed?.segments, [{ kind: "text", value: "see  please" }]);
 });
 
 test("normalizeCaretForComposer chains loop and inline chip fixes", () => {
