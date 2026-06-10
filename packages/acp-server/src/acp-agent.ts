@@ -106,7 +106,7 @@ export class SpiritAcpAgent implements acp.Agent {
   async setSessionMode(
     params: schema.SetSessionModeRequest,
   ): Promise<schema.SetSessionModeResponse | void> {
-    const mode = this.sessionManager.setSessionMode(params.sessionId, params.modeId);
+    const mode = await this.sessionManager.setSessionMode(params.sessionId, params.modeId);
 
     // Notify client of mode change
     await this.connection.sessionUpdate({
