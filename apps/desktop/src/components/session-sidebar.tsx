@@ -59,8 +59,12 @@ import {
 } from "@/lib/layout-prefs";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { cn } from "@/lib/utils";
+import { shortcutLabel } from "@/lib/desktop-shell";
 import i18n from "@/lib/i18n";
 import type { SessionListItem } from "@/types";
+
+/** 平台快捷键提示，模块加载时计算（平台不会运行时变化）。 */
+const newSessionShortcutLabel = shortcutLabel("N");
 
 function samePath(a: string, b: string): boolean {
   return a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
@@ -944,6 +948,11 @@ function SessionSidebarInner({
           >
             <SquarePen className="size-3.5" aria-hidden />
             <span className={cn(narrow && "sr-only")}>{t('sidebar.newSession')}</span>
+            {!narrow && (
+              <span className="ml-auto text-[0.65rem] text-sidebar-item-foreground" aria-hidden>
+                {newSessionShortcutLabel}
+              </span>
+            )}
           </Button>
           <Button
             type="button"
