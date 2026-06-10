@@ -18,6 +18,7 @@ const RULES_SECTION_PREFIX = '[SPIRIT_RULES]';
 const SKILLS_CATALOG_SECTION_PREFIX = '[SPIRIT_SKILLS_CATALOG]';
 const PLAN_SECTION_PREFIX = '[SPIRIT_PLAN]';
 const AGENT_MODE_SECTION_PREFIX = '[SPIRIT_AGENT_MODE]';
+const LOOP_MODE_SECTION_PREFIX = '[SPIRIT_LOOP_MODE]';
 const ACTIVE_SKILLS_SECTION_PREFIX = '[SPIRIT_ACTIVE_SKILLS]';
 const EXTENSIONS_SECTION_PREFIX = '[SPIRIT_EXTENSIONS]';
 const DREAMS_SECTION_PREFIX = '[SPIRIT_DREAMS]';
@@ -141,11 +142,13 @@ export function buildToolAgentMessages(input: {
   basicInfo?: ToolAgentBasicInfo;
   applyPatchFileToolsPromptSection?: string;
   providerWebSearchPromptSection?: string;
+  loopEnabled?: boolean;
 }): JsonValue[] {
   const rulesSystemMessage = buildRulesSystemMessage(input.enabledRules ?? []);
   const skillsCatalogSystemMessage = buildSkillsCatalogSystemMessage(input.enabledSkillCatalog ?? []);
   const planSystemMessage = buildPlanSystemMessage(input.planMetadata);
   const agentModeSystemMessage = buildAgentModeSystemMessage(input.planMetadata);
+  const loopModeSystemMessage = buildLoopModeSystemMessage(input.loopEnabled);
   const activeSkillsSystemMessage = buildActiveSkillsSystemMessage(input.activeSkills ?? []);
   const extensionsSystemMessage = buildExtensionsSystemMessage(input.extensionSystemPrompts ?? []);
   const dreamsSystemMessage = buildDreamsSystemMessage(input.dreamsContextText);
@@ -160,6 +163,7 @@ export function buildToolAgentMessages(input: {
         rulesSystemMessage,
         skillsCatalogSystemMessage,
         agentModeSystemMessage,
+        loopModeSystemMessage,
         planSystemMessage,
         activeSkillsSystemMessage,
         extensionsSystemMessage,
@@ -524,6 +528,24 @@ export function hasAgentModeSystemMessage(content: string): boolean {
   return content.includes(AGENT_MODE_SECTION_PREFIX);
 }
 
+export function buildLoopModeSystemMessage(loopEnabled?: boolean): string | undefined {
+  if (loopEnabled !== true) {
+    return undefined;
+  }
+
+  return [
+    LOOP_MODE_SECTION_PREFIX,
+    'Loop mode is enabled.',
+    'Do not end the conversation until you are confident that the user\'s task is fully complete.',
+    'Ordinary assistant replies do not stop the loop; keep working, calling tools, and verifying results until the task is done.',
+    'Call `finish_task` only when no further work is needed.',
+  ].join('\n');
+}
+
+export function hasLoopModeSystemMessage(content: string): boolean {
+  return content.includes(LOOP_MODE_SECTION_PREFIX);
+}
+
 export function buildActiveSkillsSystemMessage(
   activeSkills: ToolAgentActiveSkill[],
 ): string | undefined {
@@ -693,6 +715,7 @@ export function findSpiritSystemMessageContent(messages: JsonValue[]): string | 
         SKILLS_CATALOG_SECTION_PREFIX,
         PLAN_SECTION_PREFIX,
         AGENT_MODE_SECTION_PREFIX,
+        LOOP_MODE_SECTION_PREFIX,
         ACTIVE_SKILLS_SECTION_PREFIX,
         EXTENSIONS_SECTION_PREFIX,
         DREAMS_SECTION_PREFIX,
