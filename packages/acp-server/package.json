@@ -11,7 +11,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test dist/test/*.test.js"
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "notice": "node scripts/gen-notice.mjs",
+    "notice:production": "node scripts/gen-notice.mjs --production"
   },
   "engines": {
     "node": ">=22"
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
+    "license-checker-rseidelsohn": "^4.4.2",
     "typescript": "^5.6.3"
   }
 }
