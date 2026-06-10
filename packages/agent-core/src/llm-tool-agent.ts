@@ -3,6 +3,7 @@ export {
   buildAgentModeSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
+  buildLoopModeSystemMessage,
   buildTodosSystemMessage,
   buildExtensionsSystemMessage,
   buildPlanSystemMessage,
