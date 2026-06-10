@@ -126,6 +126,10 @@ export class SpiritAcpAgent implements acp.Agent {
 
     // Abort any previous pending prompt
     session.pendingPrompt?.abort();
+    // Also abort the runtime to stop streaming/tool execution and release isBusy()
+    if (session.runtime.isBusy()) {
+      session.runtime.abort();
+    }
     session.pendingPrompt = new AbortController();
 
     // Extract text from prompt content blocks
