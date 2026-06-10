@@ -49,6 +49,8 @@ export interface AcpSessionState {
   readonly activeSkills: LlmActiveSkill[];
   /** Skill catalog entries discovered at session creation */
   readonly enabledSkillCatalog: LlmEnabledSkillCatalogEntry[];
+  /** Switch agent mode: updates tool exposure + system prompt planMetadata */
+  readonly setAgentMode: (mode: SpiritAgentMode) => Promise<void>;
 }
 
 /**
