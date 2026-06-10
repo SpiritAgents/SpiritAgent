@@ -10,6 +10,7 @@ import {
   normalizeComposerPlain,
   messageSegmentSeparator,
   plainTextOffsetToCaret,
+  replaceSkillSlashQueryInSegments,
   replaceWorkspaceFileReferenceInSegments,
   segmentsToMessageText,
   segmentsToPlainText,
@@ -249,12 +250,22 @@ test("syncSegmentsFromExternalValue replaces text while keeping elements", () =>
   ]);
 });
 
-test("insertLoopSegment pins loop at index 0", () => {
+test("insertLoopSegment pins loop before body text", () => {
   const { segments } = insertLoopSegment([
     { kind: "text", value: "hello" },
   ]);
   assert.equal(segments[0]?.kind, "loop");
   assert.equal(segments[1]?.kind === "text" && segments[1].value, "hello");
+  assert.equal(hasLoopSegment(segments), true);
+});
+
+test("insertLoopSegment appends loop after existing agent mode chip", () => {
+  const { segments } = insertLoopSegment([
+    { kind: "ask" },
+    { kind: "text", value: " " },
+  ]);
+  assert.equal(segments[0]?.kind, "ask");
+  assert.equal(segments[1]?.kind, "loop");
   assert.equal(hasLoopSegment(segments), true);
 });
 
@@ -268,7 +279,7 @@ test("insertLoopSegment adds trailing space after loop when composer empty", () 
   assert.equal(caret.offset, 1);
 });
 
-test("ensureLoopPinned deduplicates and moves loop to front", () => {
+test("ensureLoopPinned deduplicates and moves misplaced loop before body", () => {
   const pinned = ensureLoopPinned([
     { kind: "text", value: "tail" },
     { kind: "loop" },
@@ -276,6 +287,17 @@ test("ensureLoopPinned deduplicates and moves loop to front", () => {
   ]);
   assert.equal(pinned.filter((s) => s.kind === "loop").length, 1);
   assert.equal(pinned[0]?.kind, "loop");
+});
+
+test("ensureLoopPinned preserves ask then loop order", () => {
+  const pinned = ensureLoopPinned([
+    { kind: "ask" },
+    { kind: "loop" },
+    { kind: "text", value: "work" },
+  ]);
+  assert.equal(pinned[0]?.kind, "ask");
+  assert.equal(pinned[1]?.kind, "loop");
+  assert.equal(pinned[2]?.kind === "text" && pinned[2].value, "work");
 });
 
 test("segmentsToMessageText ignores loop chip", () => {
@@ -303,6 +325,57 @@ test("insertAgentModeSegment pins plan after loop", () => {
   assert.equal(segments[0]?.kind, "loop");
   assert.equal(segments[1]?.kind, "plan");
   assert.equal(segments[2]?.kind === "text" && segments[2].value, "work");
+});
+
+test("replaceSkillSlashQueryInSegments preserves loop plan and skill when removing plan slash token", () => {
+  const initial = [
+    { kind: "loop" },
+    { kind: "plan" },
+    { kind: "skill", alias: "/git-commit" },
+    { kind: "text", value: "please /ask" },
+  ];
+  const slashStart = caretToPlainTextOffset(initial, { segmentIndex: 3, offset: 7 });
+  const slashEnd = caretToPlainTextOffset(initial, { segmentIndex: 3, offset: 11 });
+  const { segments } = replaceSkillSlashQueryInSegments(
+    initial,
+    { start: slashStart, end: slashEnd, raw: "/ask" },
+    "",
+  );
+  assert.equal(segments[0]?.kind, "loop");
+  assert.equal(segments[1]?.kind, "plan");
+  assert.ok(segments.some((s) => s.kind === "skill" && s.alias === "/git-commit"));
+  assert.deepEqual(
+    segments.filter((s) => s.kind === "text"),
+    [{ kind: "text", value: "please " }],
+  );
+});
+
+test("insertSegmentAtCaret allows multiple skill chips with different aliases", () => {
+  const base = [
+    { kind: "skill", alias: "/git-commit" },
+    { kind: "text", value: " " },
+  ];
+  const { segments } = insertSegmentAtCaret(base, { segmentIndex: 1, offset: 1 }, {
+    kind: "skill",
+    alias: "/create-skill",
+  });
+  assert.equal(segments.filter((s) => s.kind === "skill").length, 2);
+});
+
+test("insertSegmentAtCaret adds skill inline while preserving loop and plan chips", () => {
+  const base = [
+    { kind: "loop" },
+    { kind: "plan" },
+    { kind: "text", value: "please " },
+  ];
+  const { segments } = insertSegmentAtCaret(base, { segmentIndex: 2, offset: 7 }, {
+    kind: "skill",
+    alias: "/git-commit",
+  });
+  assert.equal(segments[0]?.kind, "loop");
+  assert.equal(segments[1]?.kind, "plan");
+  assert.ok(segments.some((s) => s.kind === "skill" && s.alias === "/git-commit"));
+  assert.ok(segments.some((s) => s.kind === "text" && s.value.includes("please")));
 });
 
 test("insertAgentModeSegment replaces plan with ask", () => {
@@ -383,6 +456,52 @@ test("plainTextOffsetToCaret roundtrips with workspace file chip", () => {
   assert.deepEqual(roundtrip, caret);
 });
 
+test("replaceSkillSlashQueryInSegments removes slash token and keeps loop chip", () => {
+  const { segments } = replaceSkillSlashQueryInSegments(
+    [
+      { kind: "loop" },
+      { kind: "text", value: "hi /git" },
+    ],
+    { start: 3, end: 7, raw: "/git" },
+    "",
+  );
+  assert.deepEqual(segments, [
+    { kind: "loop" },
+    { kind: "text", value: "hi " },
+  ]);
+});
+
+test("replaceSkillSlashQueryInSegments replaces mid-text slash token with finalized text", () => {
+  const { segments, caret } = replaceSkillSlashQueryInSegments(
+    [{ kind: "text", value: "see /log" }],
+    { start: 4, end: 8, raw: "/log" },
+    "/log-session",
+    true,
+  );
+  assert.deepEqual(segments, [{ kind: "text", value: "see /log-session " }]);
+  assert.equal(caret.segmentIndex, 0);
+  assert.equal(caret.offset, 17);
+});
+
+test("replaceSkillSlashQueryInSegments keeps inline file chip when replacing nearby slash token", () => {
+  const initial = [
+    { kind: "workspaceFile", path: "src/foo.ts" },
+    { kind: "text", value: " /git" },
+  ];
+  const slashStart = caretToPlainTextOffset(initial, { segmentIndex: 1, offset: 1 });
+  const slashEnd = caretToPlainTextOffset(initial, { segmentIndex: 1, offset: 5 });
+  const { segments } = replaceSkillSlashQueryInSegments(
+    initial,
+    { start: slashStart, end: slashEnd, raw: "/git" },
+    "",
+  );
+  assert.equal(segments.some((s) => s.kind === "workspaceFile"), true);
+  assert.deepEqual(
+    segments.filter((s) => s.kind === "text"),
+    [{ kind: "text", value: " " }],
+  );
+});
+
 test("replaceWorkspaceFileReferenceInSegments inserts chip and caret after finalize space", () => {
   const { segments, caret } = replaceWorkspaceFileReferenceInSegments(
     [{ kind: "text", value: "@app" }],
@@ -453,6 +572,15 @@ test("synchronizeTextFromDom keeps shell chips and adopts dom text", () => {
   assert.equal(merged[1]?.kind === "text" && merged[1].value, "hello");
 });
 
+test("synchronizeTextFromDom preserves ask then loop shell order", () => {
+  const shell = [{ kind: "ask" }, { kind: "loop" }, { kind: "text", value: " " }];
+  const dom = [{ kind: "text", value: "hello" }];
+  const merged = synchronizeTextFromDom(shell, dom);
+  assert.equal(merged[0]?.kind, "ask");
+  assert.equal(merged[1]?.kind, "loop");
+  assert.equal(merged[2]?.kind === "text" && merged[2].value, "hello");
+});
+
 test("normalizeCaretForPinnedLoopChip snaps caret before loop to after chip", () => {
   const segs = [{ kind: "loop" }, { kind: "text", value: " " }];
   const snapped = normalizeCaretForPinnedLoopChip(segs, { segmentIndex: 0, offset: 0 });
@@ -468,6 +596,17 @@ test("normalizeCaretForPinnedLoopChip snaps caret before loop to after chip", ()
   );
 });
 
+test("normalizeCaretForPinnedLoopChip snaps caret on ask-then-loop chips", () => {
+  const segs = [{ kind: "ask" }, { kind: "loop" }, { kind: "text", value: " " }];
+  const snapped = normalizeCaretForPinnedLoopChip(segs, { segmentIndex: 1, offset: 0 });
+  assert.equal(snapped.segmentIndex, 2);
+  assert.equal(snapped.offset, 1);
+  assert.equal(
+    isCaretAtLoopRemovalPoint(segs, { segmentIndex: 2, offset: 0 }),
+    true,
+  );
+});
+
 test("normalizeCaretForInlineAttachmentChips snaps caret on file chip", () => {
   const segs = [
     { kind: "workspaceFile", path: "src/App.tsx" },
@@ -478,7 +617,7 @@ test("normalizeCaretForInlineAttachmentChips snaps caret on file chip", () => {
     offset: 0,
   });
   assert.equal(snapped.segmentIndex, 1);
-  assert.equal(snapped.offset, 0);
+  assert.equal(snapped.offset, 1);
 });
 
 test("isCaretAtInlineChipRemovalPoint and removeInlineChipAtRemovalPoint", () => {
@@ -490,10 +629,7 @@ test("isCaretAtInlineChipRemovalPoint and removeInlineChipAtRemovalPoint", () =>
   const caret = { segmentIndex: 2, offset: 0 };
   assert.equal(isCaretAtInlineChipRemovalPoint(segs, caret), true);
   const removed = removeInlineChipAtRemovalPoint(segs, caret);
-  assert.deepEqual(removed?.segments, [
-    { kind: "text", value: "see " },
-    { kind: "text", value: " please" },
-  ]);
+  assert.deepEqual(removed?.segments, [{ kind: "text", value: "see  please" }]);
 });
 
 test("normalizeCaretForComposer chains loop and inline chip fixes", () => {
