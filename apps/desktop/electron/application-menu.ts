@@ -10,7 +10,16 @@ function buildSectionTemplate(
 ): Electron.MenuItemConstructorOptions[] {
   switch (section) {
     case 'file':
-      return [{ role: 'quit', label: '退出' }];
+      return [
+        {
+          label: '新会话',
+          click: () => {
+            win.webContents.send('desktop:new-session');
+          },
+        },
+        { type: 'separator' },
+        { role: 'quit', label: '退出' },
+      ];
     case 'edit':
       return [
         { role: 'undo', label: '撤销' },
