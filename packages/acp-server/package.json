@@ -4,13 +4,14 @@
   "private": true,
   "description": "ACP (Agent Client Protocol) server adapter for Spirit Agent",
   "type": "module",
-  "main": "./dist/stdio-entry.js",
-  "types": "./dist/types.d.ts",
+  "main": "./dist/src/stdio-entry.js",
+  "types": "./dist/src/types.d.ts",
   "bin": {
-    "spirit-agent-acp": "./dist/stdio-entry.js"
+    "spirit-agent-acp": "./dist/src/stdio-entry.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/test/*.test.js"
   },
   "engines": {
     "node": ">=22"
