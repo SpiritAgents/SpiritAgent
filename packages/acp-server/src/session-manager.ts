@@ -45,6 +45,7 @@ export class SessionManager {
       pendingPrompt: null,
       activeSkills: result.activeSkills,
       enabledSkillCatalog: result.enabledSkillCatalog,
+      setAgentMode: result.setAgentMode,
     });
 
     return {
@@ -94,12 +95,12 @@ export class SessionManager {
   }
 
   /**
-   * Switches the mode for a session.
+   * Switches the mode for a session, updating both tool exposure and system prompt.
    */
-  setSessionMode(sessionId: string, modeId: string): SpiritAgentMode {
+  async setSessionMode(sessionId: string, modeId: string): Promise<SpiritAgentMode> {
     const session = this.requireSession(sessionId);
     const mode = normalizeModeId(modeId);
-    session.toolExecutor.setAgentModeToolExposure(mode);
+    await session.setAgentMode(mode);
     session.currentMode = mode;
     return mode;
   }

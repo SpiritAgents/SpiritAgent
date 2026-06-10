@@ -54,6 +54,8 @@ export interface AcpRuntimeResult {
   planMetadata: LlmPlanMetadata | undefined;
   /** Mutable array reference — mutations are seen by state factory closures */
   activeSkills: LlmActiveSkill[];
+  /** Switch agent mode: updates tool exposure + planMetadata seen by closures */
+  setAgentMode: (mode: SpiritAgentMode) => Promise<void>;
 }
 
 /**
@@ -96,7 +98,8 @@ export async function createAcpRuntime(
   );
   const enabledRules: LlmEnabledRule[] = [...metadata.rules.enabledRules];
   const enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [...metadata.skills.enabledSkillCatalog];
-  const planMetadata: LlmPlanMetadata | undefined = metadata.planMetadata;
+  // Mutable: closures capture the binding, setAgentMode() reassigns it
+  let currentPlanMetadata: LlmPlanMetadata | undefined = metadata.planMetadata;
 
   // 4. Set mode tool exposure
   toolExecutor.setAgentModeToolExposure(initialMode);
@@ -131,7 +134,7 @@ export async function createAcpRuntime(
       enabledSkillCatalog,
       activeSkills,
       transportConfig.model,
-      planMetadata,
+      currentPlanMetadata,
       [], // extensionSystemPrompts
       undefined, // dreamSystemMessage
       undefined, // todosContextText
@@ -149,7 +152,7 @@ export async function createAcpRuntime(
       enabledSkillCatalog,
       activeSkills,
       transportConfig.model,
-      planMetadata,
+      currentPlanMetadata,
       [], // extensionSystemPrompts
       undefined, // dreamSystemMessage
       undefined, // todosContextText
@@ -186,7 +189,7 @@ export async function createAcpRuntime(
         enabledSkillCatalog,
         activeSkills,
         transportConfig.model,
-        planMetadata,
+        currentPlanMetadata,
         [], // extensionSystemPrompts
         undefined, // dreamSystemMessage
         undefined, // todosContextText
@@ -215,12 +218,23 @@ export async function createAcpRuntime(
     onEvent,
   });
 
+  // 10. Mode switching: update planMetadata binding seen by closures + tool exposure
+  const setAgentMode = async (mode: SpiritAgentMode): Promise<void> => {
+    toolExecutor.setAgentModeToolExposure(mode);
+    const refreshed = await loadHostInstructionMetadata(
+      { workspaceRoot, spiritDataDir },
+      { planMode: mode === 'plan', agentMode: mode },
+    );
+    currentPlanMetadata = refreshed.planMetadata;
+  };
+
   return {
     runtime,
     toolExecutor,
     enabledRules,
     enabledSkillCatalog,
-    planMetadata,
+    planMetadata: currentPlanMetadata,
     activeSkills,
+    setAgentMode,
   };
 }
