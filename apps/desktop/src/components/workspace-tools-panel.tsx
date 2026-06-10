@@ -515,6 +515,7 @@ function WorkspaceToolsDockInner({
                       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
                         <WorkspaceShellTab
                           workspaceRoot={workspaceRoot}
+                          useMicaBackdrop={useMicaBackdrop}
                           onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                           suspendTerminalResize={isResizing}
                         />
