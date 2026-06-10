@@ -1,4 +1,4 @@
-import type { AgentRuntime, LlmTransportConfig, SpiritAgentMode } from '@spirit-agent/core';
+import type { AgentRuntime, LlmActiveSkill, LlmEnabledSkillCatalogEntry, LlmTransportConfig, SpiritAgentMode } from '@spirit-agent/core';
 import type { HostToolExecutorProxy } from '@spirit-agent/core/host-bridge';
 import type { JsonValue } from '@spirit-agent/core';
 
@@ -45,6 +45,10 @@ export interface AcpSessionState {
   currentMode: SpiritAgentMode;
   /** AbortController for the currently running prompt turn (null if idle) */
   pendingPrompt: AbortController | null;
+  /** Mutable active skills array — shared with runtime factory closures */
+  readonly activeSkills: LlmActiveSkill[];
+  /** Skill catalog entries discovered at session creation */
+  readonly enabledSkillCatalog: LlmEnabledSkillCatalogEntry[];
 }
 
 /**
