@@ -7,6 +7,7 @@ import { SessionManager } from './session-manager.js';
 import { mapRuntimeEventToUpdate, createEventMapperState, type EventMapperState } from './event-mapper.js';
 import { handleApprovalRequest, handleQuestionsRequest } from './permission-bridge.js';
 import { buildAvailableCommands, parseSlashCommand, buildActiveSkillPayload, upsertActiveSkill } from './skill-bridge.js';
+import { extractPromptImages } from './prompt-images.js';
 
 /**
  * Spirit Agent implementation of the ACP Agent interface.
@@ -150,8 +151,11 @@ export class SpiritAcpAgent implements acp.Agent {
     this.mapperStates.set(params.sessionId, createEventMapperState());
 
     try {
+      // Extract images from content blocks
+      const explicitImages = await extractPromptImages(params.prompt);
+
       // Use streaming start so onEvent fires real-time chunks
-      await session.runtime.startUserTurnStreaming(userInput);
+      await session.runtime.startUserTurnStreaming(userInput, explicitImages);
       const result = await session.runtime.waitForCompletedTurnResult();
 
       session.pendingPrompt = null;
