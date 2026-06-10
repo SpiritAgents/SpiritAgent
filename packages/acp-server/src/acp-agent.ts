@@ -167,25 +167,26 @@ export class SpiritAcpAgent implements acp.Agent {
       try {
         // Use streaming start so onEvent fires real-time chunks
         await session.runtime.startUserTurnStreaming(userInput, explicitImages);
+        const result = await session.runtime.waitForCompletedTurnResult();
+
+        // Check if a newer prompt has superseded this one
+        if (this.promptGenerations.get(params.sessionId) !== generation) {
+          return { stopReason: 'cancelled' };
+        }
+
+        session.pendingPrompt = null;
+
+        // Map turn result to stop reason
+        if (result.kind === 'failed') {
+          return { stopReason: 'refusal' };
+        }
+
+        return { stopReason: 'end_turn' };
       } finally {
-        // Clean up temp files regardless of turn outcome
+        // Clean up temp files after the entire turn completes (LLM may still
+        // read image files during processing between start and completion)
         cleanupImages().catch(() => {});
       }
-      const result = await session.runtime.waitForCompletedTurnResult();
-
-      // Check if a newer prompt has superseded this one
-      if (this.promptGenerations.get(params.sessionId) !== generation) {
-        return { stopReason: 'cancelled' };
-      }
-
-      session.pendingPrompt = null;
-
-      // Map turn result to stop reason
-      if (result.kind === 'failed') {
-        return { stopReason: 'refusal' };
-      }
-
-      return { stopReason: 'end_turn' };
     } catch (err) {
       // Stale generation — a newer prompt took over, treat as cancelled
       if (this.promptGenerations.get(params.sessionId) !== generation) {
