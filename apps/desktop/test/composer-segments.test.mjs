@@ -306,6 +306,22 @@ test("insertAgentModeSegment pins plan after loop", () => {
   assert.equal(segments[2]?.kind === "text" && segments[2].value, "work");
 });
 
+test("insertSegmentAtCaret adds skill inline while preserving loop and plan chips", () => {
+  const base = [
+    { kind: "loop" },
+    { kind: "plan" },
+    { kind: "text", value: "please " },
+  ];
+  const { segments } = insertSegmentAtCaret(base, { segmentIndex: 2, offset: 7 }, {
+    kind: "skill",
+    alias: "/git-commit",
+  });
+  assert.equal(segments[0]?.kind, "loop");
+  assert.equal(segments[1]?.kind, "plan");
+  assert.ok(segments.some((s) => s.kind === "skill" && s.alias === "/git-commit"));
+  assert.ok(segments.some((s) => s.kind === "text" && s.value.includes("please")));
+});
+
 test("insertAgentModeSegment replaces plan with ask", () => {
   const { segments } = insertAgentModeSegment(
     [{ kind: "plan" }, { kind: "text", value: " " }],
