@@ -2472,6 +2472,15 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleNewSession]);
 
+  // Electron File 菜单 → “新会话” IPC 订阅
+  useEffect(() => {
+    const bridge = window.spiritDesktop;
+    if (!bridge?.subscribeNewSession) {
+      return;
+    }
+    return bridge.subscribeNewSession(handleNewSession);
+  }, [handleNewSession]);
+
   const handleGenerateAutomation = useCallback(async () => {
     setLastNonSettingsSurface("conversation");
     setActiveSurface("conversation");
