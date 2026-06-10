@@ -62,18 +62,25 @@ export class SpiritAcpAgent implements acp.Agent {
     // Create fresh mapper state for this session
     this.mapperStates.set(result.sessionId, createEventMapperState());
 
-    // Advertise available slash commands from skill catalog
+    // Advertise available slash commands from skill catalog.
+    // IMPORTANT: Defer to after the session/new response is sent.
+    // If we await or even fire-and-forget the notification here, the SDK's
+    // internal message queue may send it before the session/new response,
+    // causing Zed to discard it (session ID not yet known to the client).
     const commands = buildAvailableCommands(result.enabledSkillCatalog);
     if (commands.length > 0) {
-      this.connection.sessionUpdate({
-        sessionId: result.sessionId,
-        update: {
-          sessionUpdate: 'available_commands_update',
-          availableCommands: commands,
-        },
-      } as unknown as schema.SessionNotification).catch((err) => {
-        console.error('Failed to send available commands:', err);
-      });
+      const sessionId = result.sessionId;
+      setTimeout(() => {
+        this.connection.sessionUpdate({
+          sessionId,
+          update: {
+            sessionUpdate: 'available_commands_update',
+            availableCommands: commands,
+          },
+        } as unknown as schema.SessionNotification).catch((err) => {
+          console.error('Failed to send available commands:', err);
+        });
+      }, 0);
     }
 
     return {
