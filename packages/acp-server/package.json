@@ -1,0 +1,27 @@
+{
+  "name": "@spirit-agent/acp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ACP (Agent Client Protocol) server adapter for Spirit Agent",
+  "type": "module",
+  "main": "./dist/stdio-entry.js",
+  "types": "./dist/types.d.ts",
+  "bin": {
+    "spirit-agent-acp": "./dist/stdio-entry.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@spirit-agent/core": "file:../agent-core",
+    "@spirit-agent/host-internal": "file:../host-internal",
+    "@agentclientprotocol/sdk": "^0.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "typescript": "^5.6.3"
+  }
+}
