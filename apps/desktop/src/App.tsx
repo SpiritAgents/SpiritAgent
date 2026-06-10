@@ -985,7 +985,9 @@ function ComposerSurface({
             e.key === 'Enter' &&
             !e.shiftKey &&
             !e.ctrlKey &&
-            !e.metaKey
+            !e.metaKey &&
+            // React synthetic event 的 isComposing 不可靠，必须用 nativeEvent 检测 IME 组合态
+            !e.nativeEvent.isComposing
           ) {
             e.preventDefault();
             if (canSend) onSubmit();
@@ -3238,6 +3240,8 @@ export default function App() {
       !event.shiftKey &&
       !event.ctrlKey &&
       !event.metaKey &&
+      // React synthetic event 的 isComposing 不可靠，必须用 nativeEvent 检测 IME 组合态
+      !event.nativeEvent.isComposing &&
       runtime.busyAction !== "approve"
     ) {
       event.preventDefault();
