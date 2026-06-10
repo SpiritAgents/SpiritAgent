@@ -6,6 +6,7 @@ import type { AcpServerConfig } from './types.js';
 import { SessionManager } from './session-manager.js';
 import { mapRuntimeEventToUpdate, createEventMapperState, type EventMapperState } from './event-mapper.js';
 import { handleApprovalRequest, handleQuestionsRequest } from './permission-bridge.js';
+import { buildAvailableCommands, parseSlashCommand, buildActiveSkillPayload, upsertActiveSkill } from './skill-bridge.js';
 
 /**
  * Spirit Agent implementation of the ACP Agent interface.
@@ -61,6 +62,20 @@ export class SpiritAcpAgent implements acp.Agent {
     // Create fresh mapper state for this session
     this.mapperStates.set(result.sessionId, createEventMapperState());
 
+    // Advertise available slash commands from skill catalog
+    const commands = buildAvailableCommands(result.enabledSkillCatalog);
+    if (commands.length > 0) {
+      this.connection.sessionUpdate({
+        sessionId: result.sessionId,
+        update: {
+          sessionUpdate: 'available_commands_update',
+          availableCommands: commands,
+        },
+      } as unknown as schema.SessionNotification).catch((err) => {
+        console.error('Failed to send available commands:', err);
+      });
+    }
+
     return {
       sessionId: result.sessionId,
       modes: {
@@ -106,7 +121,23 @@ export class SpiritAcpAgent implements acp.Agent {
     session.pendingPrompt = new AbortController();
 
     // Extract text from prompt content blocks
-    const userInput = extractPromptText(params.prompt);
+    let userInput = extractPromptText(params.prompt);
+
+    // Detect slash command and activate skill if matched
+    const parsed = parseSlashCommand(userInput);
+    if (parsed) {
+      const entry = session.enabledSkillCatalog.find((s) => s.name === parsed.skillName);
+      if (entry) {
+        try {
+          const payload = await buildActiveSkillPayload(entry);
+          upsertActiveSkill(session.activeSkills, payload);
+          userInput = parsed.remainingText
+            || `Please follow the activated skill "${parsed.skillName}" to handle the current task.`;
+        } catch (err) {
+          console.error(`Failed to activate skill "${parsed.skillName}":`, err);
+        }
+      }
+    }
 
     // Reset thinking delta tracker for the new prompt turn
     this.mapperStates.set(params.sessionId, createEventMapperState());

@@ -22,7 +22,7 @@ export class SessionManager {
     workspaceRoot: string,
     onEvent: (sessionId: string, event: RuntimeEvent<JsonValue>) => void,
     initialMode: SpiritAgentMode = 'agent',
-  ): Promise<{ sessionId: string; modes: typeof AVAILABLE_MODES }> {
+  ): Promise<{ sessionId: string; modes: typeof AVAILABLE_MODES; enabledSkillCatalog: import('@spirit-agent/core').LlmEnabledSkillCatalogEntry[] }> {
     const sessionId = generateSessionId();
 
     const sessionConfig: AcpServerConfig = {
@@ -43,11 +43,14 @@ export class SessionManager {
       workspaceRoot,
       currentMode: initialMode,
       pendingPrompt: null,
+      activeSkills: result.activeSkills,
+      enabledSkillCatalog: result.enabledSkillCatalog,
     });
 
     return {
       sessionId,
       modes: AVAILABLE_MODES,
+      enabledSkillCatalog: result.enabledSkillCatalog,
     };
   }
 
