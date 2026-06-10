@@ -2735,31 +2735,43 @@ export default function App() {
 
   const applyLoopSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.setLoopEnabled(true);
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertLoopChip({ clearText: true });
-  }, [runtime]);
+    composerRichInputRef.current?.insertLoopChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applyPlanSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.saveSettingsPatch({ agentMode: "plan" });
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertPlanChip({ clearText: true });
-  }, [runtime]);
+    composerRichInputRef.current?.insertPlanChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applyAskSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.saveSettingsPatch({ agentMode: "ask" });
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertAskChip({ clearText: true });
-  }, [runtime]);
+    composerRichInputRef.current?.insertAskChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applyDebugSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.saveSettingsPatch({ agentMode: "debug" });
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertDebugChip({ clearText: true });
-  }, [runtime]);
+    composerRichInputRef.current?.insertDebugChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applySlashSuggestionItem = useCallback(
     (suggestion: SkillSlashSuggestion) => {
@@ -2780,8 +2792,11 @@ export default function App() {
         return;
       }
       if (suggestion.kind === "skill") {
-        runtime.setComposer("");
         setSlashSelectedIndex(-1);
+        setDismissedSlashQueryKey(null);
+        if (slashQuery) {
+          composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+        }
         queueMicrotask(() => {
           composerRichInputRef.current?.insertSkillChip(suggestion.alias);
         });
@@ -2789,7 +2804,7 @@ export default function App() {
       }
       applySlashSuggestion(`${suggestion.alias} `);
     },
-    [applyLoopSlash, applyPlanSlash, applyAskSlash],
+    [applyAskSlash, applyDebugSlash, applyLoopSlash, applyPlanSlash, slashQuery],
   );
 
   const ensureConversationSurface = useCallback(() => {
@@ -2862,12 +2877,18 @@ export default function App() {
   };
 
   const insertComposerText = (text: string) => {
-    const selectionStart = composerCursorCodeUnits;
-    const selectionEnd = selectionStart;
-    const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
-    const nextCursorCodeUnits = selectionStart + text.length;
-    runtime.setComposer(nextValue);
-    setComposerCursorCodeUnits(nextCursorCodeUnits);
+    const segments = composerRichInputRef.current?.getSegments() ?? [];
+    const hasRichChips = segments.some((segment) => segment.kind !== "text");
+    if (hasRichChips) {
+      composerRichInputRef.current?.insertPlainTextAtCaret(text);
+    } else {
+      const selectionStart = composerCursorCodeUnits;
+      const selectionEnd = selectionStart;
+      const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
+      const nextCursorCodeUnits = selectionStart + text.length;
+      runtime.setComposer(nextValue);
+      setComposerCursorCodeUnits(nextCursorCodeUnits);
+    }
     setSlashSelectedIndex(-1);
     setFileReferenceSelectedIndex(-1);
     setFileReferenceSuggestions(null);
