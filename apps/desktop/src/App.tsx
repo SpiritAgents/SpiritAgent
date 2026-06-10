@@ -2447,6 +2447,31 @@ export default function App() {
     setActiveSurface("conversation");
     void runtime.resetSession();
   }, [runtime]);
+
+  // Cmd/Ctrl+N — 全局快捷键触发新会话
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'n') {
+        return;
+      }
+      // 用户在 composer / 富文本编辑区内按键时不触发
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+      }
+      event.preventDefault();
+      handleNewSession();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleNewSession]);
+
   const handleGenerateAutomation = useCallback(async () => {
     setLastNonSettingsSurface("conversation");
     setActiveSurface("conversation");
