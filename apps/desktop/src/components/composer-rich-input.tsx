@@ -16,7 +16,9 @@ import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-select
 import {
   caretAtEnd,
   caretToPlainTextOffset,
+  replaceSkillSlashQueryInSegments,
   replaceWorkspaceFileReferenceInSegments,
+  type ActiveSkillSlashQuery,
   type ActiveWorkspaceFileReferenceQuery,
 } from "@/lib/composer-segment-model";
 import {
@@ -122,6 +124,13 @@ export type ComposerRichInputHandle = {
   insertDebugChip(options?: InsertAgentModeChipOptions): void;
   removeAgentModeChip(): void;
   insertSkillChip(alias: string): void;
+  replaceSkillSlashQuery(
+    query: ActiveSkillSlashQuery,
+    replacement: string,
+    finalize?: boolean,
+  ): void;
+  removeSkillSlashQuery(query: ActiveSkillSlashQuery): void;
+  insertPlainTextAtCaret(text: string): void;
   /** 发送成功后由宿主调用：恢复 chip（若仍为 plan/ask）并将光标置于 chip 后。 */
   resetAfterSend(agentMode: DesktopAgentMode): void;
   getSegments(): RichSegment[];
@@ -381,6 +390,31 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments],
     );
 
+    const replaceSkillSlashQuery = useCallback(
+      (query: ActiveSkillSlashQuery, replacement: string, finalize = false) => {
+        const div = divRef.current;
+        if (!div) {
+          return;
+        }
+        div.focus();
+        const { segments: next, caret } = replaceSkillSlashQueryInSegments(
+          segmentsRef.current,
+          query,
+          replacement,
+          finalize,
+        );
+        commitSegments(next, caret);
+      },
+      [commitSegments],
+    );
+
+    const removeSkillSlashQuery = useCallback(
+      (query: ActiveSkillSlashQuery) => {
+        replaceSkillSlashQuery(query, "", false);
+      },
+      [replaceSkillSlashQuery],
+    );
+
     const applySegments = useCallback(
       (next: RichSegment[], caret?: SegmentCaret | null, notifyParent = true) => {
         commitSegments(next, caret ?? caretAtEnd(mergeAdjacentTextSegments(next)), {
@@ -415,6 +449,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         return;
       }
       const next = applyComposerPolicy(removeLoopSegment(segmentsRef.current));
+      loopEnabledRef.current = false;
       hadLoopRef.current = false;
       commitSegments(next, { segmentIndex: 0, offset: 0 }, { syncLoop: false });
       onLoopEnabledChangeRef.current?.(false);
@@ -430,6 +465,8 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         agentModeChipDismissedRef.current = false;
         onAgentModeChipDismissChangeRef.current?.(false);
         const { segments: next, caret } = insertAgentModeSegment(base, mode);
+        // Pin policy to the mode being inserted; host agentMode prop may lag saveSettingsPatch / poll.
+        agentModeRef.current = mode;
         hadAgentModeRef.current = true;
         commitSegments(next, caret, { syncAgentMode: false });
       },
@@ -451,18 +488,55 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [insertAgentModeChip],
     );
 
+    const insertPlainTextAtCaret = useCallback(
+      (text: string) => {
+        if (!text) {
+          return;
+        }
+        const div = divRef.current;
+        if (!div) {
+          return;
+        }
+        div.focus();
+        const current = mergeAdjacentTextSegments(segmentsRef.current);
+        const caret = selectionToCaret(div, current) ?? caretAtEnd(current);
+        const seg = current[caret.segmentIndex];
+        if (seg?.kind === "text") {
+          const before = seg.value.slice(0, caret.offset);
+          const after = seg.value.slice(caret.offset);
+          const next = mergeAdjacentTextSegments([
+            ...current.slice(0, caret.segmentIndex),
+            { kind: "text" as const, value: `${before}${text}${after}` },
+            ...current.slice(caret.segmentIndex + 1),
+          ]);
+          commitSegments(next, {
+            segmentIndex: caret.segmentIndex,
+            offset: caret.offset + text.length,
+          });
+          return;
+        }
+        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+          kind: "text",
+          value: text,
+        });
+        commitSegments(next, nextCaret);
+      },
+      [commitSegments],
+    );
+
     const insertSkillChip = useCallback(
       (alias: string) => {
         const div = divRef.current;
-        if (div) {
-          div.focus();
+        if (!div) {
+          return;
         }
-        // 始终从空 segments 开始，确保斜杠查询文本不会残留
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(
-          emptySegments(),
-          { segmentIndex: 0, offset: 0 },
-          { kind: "skill", alias },
-        );
+        div.focus();
+        const current = segmentsRef.current;
+        const caret = selectionToCaret(div, current) ?? caretAtEnd(current);
+        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+          kind: "skill",
+          alias,
+        });
         commitSegments(next, nextCaret);
       },
       [commitSegments],
@@ -515,6 +589,9 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         insertDebugChip,
         removeAgentModeChip,
         insertSkillChip,
+        replaceSkillSlashQuery,
+        removeSkillSlashQuery,
+        insertPlainTextAtCaret,
         resetAfterSend,
         getSegments,
         setSegments: (next: RichSegment[]) => applySegments(next),
@@ -522,6 +599,9 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [
         insertAttachment,
         insertWorkspaceFileReference,
+        replaceSkillSlashQuery,
+        removeSkillSlashQuery,
+        insertPlainTextAtCaret,
         insertLoopChip,
         removeLoopChip,
         insertPlanChip,
@@ -583,8 +663,17 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       }
 
       const domSegs = domToSegments(div);
+      const domEqual = segmentsEqual(domSegs, segments);
+
       if (skipRenderRef.current) {
         skipRenderRef.current = false;
+        if (!domEqual) {
+          renderSegmentsToElement(div, segments, {
+            loopLabel: loopChipLabel,
+            planLabel: planChipLabel,
+            askLabel: askChipLabel,
+          });
+        }
         if (pendingCaretRef.current) {
           const caret = normalizeCaretForComposer(segments, pendingCaretRef.current);
           caretToDomRange(div, segments, caret);
@@ -594,7 +683,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         return;
       }
 
-      if (segmentsEqual(domSegs, segments)) {
+      if (domEqual) {
         if (pendingCaretRef.current) {
           const caret = normalizeCaretForComposer(segments, pendingCaretRef.current);
           caretToDomRange(div, segments, caret);
@@ -656,12 +745,12 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
 
       // Parent cleared composer after send: 由 resetAfterSend 恢复 chip；此处仅处理 loop shell。
       if (!value && attachmentCount === 0 && (plain || hasElements || hasLoopSegment(current) || hasAgentModeSegment(current))) {
-        if (loopEnabled || loopEnabledRef.current) {
-          const { segments: next, caret } = insertLoopSegment(emptySegments());
-          commitSegments(applyComposerPolicy(next), caret, { syncLoop: false, syncAgentMode: false });
+        if (hasLoopSegment(current) && isComposerPlainEmpty(plain) && !hasElements) {
           return;
         }
-        if (hasLoopSegment(current) && !plain && !hasElements) {
+        if ((loopEnabled || loopEnabledRef.current) && !hasLoopSegment(current)) {
+          const { segments: next, caret } = insertLoopSegment(emptySegments());
+          commitSegments(applyComposerPolicy(next), caret, { syncLoop: false, syncAgentMode: false });
           return;
         }
         // 发消息后 resetAfterSend 已恢复 chip；busy poll 时勿反复 empty→policy 重插（日志 B 根因）。

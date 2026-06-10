@@ -204,7 +204,8 @@ import {
 } from "@/lib/action-palette";
 import {
   buildSkillSlashSuggestions,
-  currentSkillSlashQuery,
+  currentSkillSlashQueryAtCursor,
+  skillSlashQueryKey,
   type SkillSlashSuggestion,
 } from "@/lib/skill-slash";
 import {
@@ -2407,6 +2408,7 @@ export default function App() {
     useState<WorkspaceFileReferenceSuggestionsResponse>(null);
   const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
+  const [dismissedSlashQueryKey, setDismissedSlashQueryKey] = useState<string | null>(null);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
@@ -2505,12 +2507,6 @@ export default function App() {
   const marketplaceMode = activeSurface === "marketplace";
   const automationsMode = activeSurface === "automations" || activeSurface === "automation-detail";
   const automationDetailMode = activeSurface === "automation-detail";
-  const slashQuery = useMemo(() => currentSkillSlashQuery(runtime.composer), [runtime.composer]);
-  const slashSuggestions = useMemo(
-    () => buildSkillSlashSuggestions(slashQuery, snapshot?.skillsList ?? []),
-    [slashQuery, snapshot?.skillsList],
-  );
-
   useEffect(() => {
     const plan = snapshot?.plan;
     const sessionPath = snapshot?.activeSession?.filePath ?? null;
@@ -2577,6 +2573,20 @@ export default function App() {
     () => codeUnitIndexToCharCount(runtime.composer, composerCursorCodeUnits),
     [composerCursorCodeUnits, runtime.composer],
   );
+  const slashQuery = useMemo(() => {
+    const query = currentSkillSlashQueryAtCursor(runtime.composer, composerCursorChars);
+    if (!query) {
+      return undefined;
+    }
+    if (dismissedSlashQueryKey === skillSlashQueryKey(query)) {
+      return undefined;
+    }
+    return query;
+  }, [composerCursorChars, dismissedSlashQueryKey, runtime.composer]);
+  const slashSuggestions = useMemo(
+    () => buildSkillSlashSuggestions(slashQuery?.raw, snapshot?.skillsList ?? []),
+    [slashQuery, snapshot?.skillsList],
+  );
   const fileReferenceQuery = useMemo(
     () => currentWorkspaceFileReferenceQuery(runtime.composer, composerCursorChars),
     [composerCursorChars, runtime.composer],
@@ -2607,7 +2617,7 @@ export default function App() {
 
   useEffect(() => {
     setSlashSelectedIndex(-1);
-  }, [slashQuery]);
+  }, [slashQuery?.raw, slashQuery?.start, slashQuery?.end]);
 
   useEffect(() => {
     if (!fileReferenceQuery || dismissedFileReferenceKey === fileReferenceQueryKey) {
@@ -2711,8 +2721,13 @@ export default function App() {
   };
 
   const applySlashSuggestion = (replacement: string) => {
-    runtime.setComposer(replacement);
+    if (slashQuery) {
+      composerRichInputRef.current?.replaceSkillSlashQuery(slashQuery, replacement, true);
+    } else {
+      runtime.setComposer(replacement);
+    }
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     queueMicrotask(() => {
       composerRichInputRef.current?.focus();
     });
@@ -2720,31 +2735,46 @@ export default function App() {
 
   const applyLoopSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.setLoopEnabled(true);
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertLoopChip({ clearText: true });
-  }, [runtime]);
+    composerRichInputRef.current?.insertLoopChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applyPlanSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.saveSettingsPatch({ agentMode: "plan" });
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertPlanChip({ clearText: true });
-  }, [runtime]);
+    runtime.setAgentModeChipDismissed(false);
+    composerRichInputRef.current?.insertPlanChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applyAskSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.saveSettingsPatch({ agentMode: "ask" });
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertAskChip({ clearText: true });
-  }, [runtime]);
+    runtime.setAgentModeChipDismissed(false);
+    composerRichInputRef.current?.insertAskChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applyDebugSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
     void runtime.saveSettingsPatch({ agentMode: "debug" });
-    runtime.setComposer("");
-    composerRichInputRef.current?.insertDebugChip({ clearText: true });
-  }, [runtime]);
+    runtime.setAgentModeChipDismissed(false);
+    composerRichInputRef.current?.insertDebugChip({ clearText: false });
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+  }, [runtime, slashQuery]);
 
   const applySlashSuggestionItem = useCallback(
     (suggestion: SkillSlashSuggestion) => {
@@ -2765,8 +2795,11 @@ export default function App() {
         return;
       }
       if (suggestion.kind === "skill") {
-        runtime.setComposer("");
         setSlashSelectedIndex(-1);
+        setDismissedSlashQueryKey(null);
+        if (slashQuery) {
+          composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+        }
         queueMicrotask(() => {
           composerRichInputRef.current?.insertSkillChip(suggestion.alias);
         });
@@ -2774,7 +2807,7 @@ export default function App() {
       }
       applySlashSuggestion(`${suggestion.alias} `);
     },
-    [applyLoopSlash, applyPlanSlash, applyAskSlash],
+    [applyAskSlash, applyDebugSlash, applyLoopSlash, applyPlanSlash, slashQuery],
   );
 
   const ensureConversationSurface = useCallback(() => {
@@ -2847,16 +2880,23 @@ export default function App() {
   };
 
   const insertComposerText = (text: string) => {
-    const selectionStart = composerCursorCodeUnits;
-    const selectionEnd = selectionStart;
-    const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
-    const nextCursorCodeUnits = selectionStart + text.length;
-    runtime.setComposer(nextValue);
-    setComposerCursorCodeUnits(nextCursorCodeUnits);
+    const segments = composerRichInputRef.current?.getSegments() ?? [];
+    const hasRichChips = segments.some((segment) => segment.kind !== "text");
+    if (hasRichChips) {
+      composerRichInputRef.current?.insertPlainTextAtCaret(text);
+    } else {
+      const selectionStart = composerCursorCodeUnits;
+      const selectionEnd = selectionStart;
+      const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
+      const nextCursorCodeUnits = selectionStart + text.length;
+      runtime.setComposer(nextValue);
+      setComposerCursorCodeUnits(nextCursorCodeUnits);
+    }
     setSlashSelectedIndex(-1);
     setFileReferenceSelectedIndex(-1);
     setFileReferenceSuggestions(null);
     setDismissedFileReferenceKey(null);
+    setDismissedSlashQueryKey(null);
     queueMicrotask(() => {
       composerRichInputRef.current?.focus();
     });
@@ -3090,6 +3130,55 @@ export default function App() {
 
   const handleComposerSuggestionKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     const fileReferenceItems = fileReferenceSuggestions?.suggestions ?? [];
+
+    if (slashQuery) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDismissedSlashQueryKey(skillSlashQueryKey(slashQuery));
+        setSlashSelectedIndex(-1);
+        return;
+      }
+
+      if (slashSuggestions.length > 0) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setSlashSelectedIndex((current) => {
+            if (current < 0) {
+              return 0;
+            }
+            return (current + 1) % slashSuggestions.length;
+          });
+          return;
+        }
+
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setSlashSelectedIndex((current) =>
+            current <= 0 ? slashSuggestions.length - 1 : current - 1,
+          );
+          return;
+        }
+
+        if (event.key === "Tab") {
+          event.preventDefault();
+          const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
+          if (selected) {
+            applySlashSuggestionItem(selected);
+          }
+          return;
+        }
+
+        if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+          event.preventDefault();
+          const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
+          if (selected) {
+            applySlashSuggestionItem(selected);
+          }
+          return;
+        }
+      }
+    }
+
     if (fileReferenceItems.length > 0) {
       if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -3133,47 +3222,6 @@ export default function App() {
         if (selected) {
           applyFileReferenceSuggestion(selected);
         }
-        return;
-      }
-    }
-
-    if (!slashQuery || slashSuggestions.length === 0) {
-      return;
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setSlashSelectedIndex((current) => {
-        if (current < 0) {
-          return 0;
-        }
-        return (current + 1) % slashSuggestions.length;
-      });
-      return;
-    }
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setSlashSelectedIndex((current) =>
-        current <= 0 ? slashSuggestions.length - 1 : current - 1,
-      );
-      return;
-    }
-
-    if (event.key === "Tab") {
-      event.preventDefault();
-      const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
-      if (selected) {
-        applySlashSuggestionItem(selected);
-      }
-      return;
-    }
-
-    if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-      event.preventDefault();
-      const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
-      if (selected) {
-        applySlashSuggestionItem(selected);
       }
     }
   };
@@ -3390,7 +3438,7 @@ export default function App() {
                 settingsDisabled={!runtime.apiReady || runtime.busyAction === "automation"}
                 onAddWorkspace={() => void runtime.pickWorkspaceDirectory?.().then((path) => {
                   if (path) {
-                    void runtime.rememberWorkspaceRoot({ workspaceRoot: path });
+                    void runtime.rememberWorkspaceRoot(path);
                   }
                 })}
               />
@@ -3422,7 +3470,7 @@ export default function App() {
               onSubmit={(request) => void runtime.createAutomation(request)}
               onAddWorkspace={() => void runtime.pickWorkspaceDirectory?.().then((path) => {
                 if (path) {
-                  void runtime.rememberWorkspaceRoot({ workspaceRoot: path });
+                  void runtime.rememberWorkspaceRoot(path);
                 }
               })}
             />
