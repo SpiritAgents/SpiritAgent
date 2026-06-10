@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { currentWorkspaceFileReferenceQuery } from "@spirit-agent/host-internal";
+
 import {
   buildSkillSlashSuggestions,
   currentSkillSlashQuery,
@@ -86,4 +88,19 @@ test("currentSkillSlashQuery delegates to cursor-at-end behavior", () => {
 test("skillSlashQueryKey is stable for the same query", () => {
   const query = { start: 1, end: 5, raw: "/git" };
   assert.equal(skillSlashQueryKey(query), "1\u00005\u0000/git");
+});
+
+test("slash and file-reference queries target different caret tokens", () => {
+  const input = "see @src/foo.ts then /git";
+  const fileCaret = Array.from("see @").length;
+  const slashCaret = Array.from(input).length;
+  const fileQuery = currentWorkspaceFileReferenceQuery(input, fileCaret);
+  const slashQuery = currentSkillSlashQueryAtCursor(input, slashCaret);
+  assert.ok(fileQuery?.raw.startsWith("@"));
+  assert.equal(slashQuery?.raw, "/git");
+  assert.notEqual(fileQuery?.raw, slashQuery?.raw);
+});
+
+test("buildSkillSlashSuggestions returns empty for undefined query", () => {
+  assert.deepEqual(buildSkillSlashSuggestions(undefined, []), []);
 });
