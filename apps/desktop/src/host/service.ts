@@ -2286,6 +2286,7 @@ class DesktopHostService {
       activeSkills: bundle.currentTurnSkills,
       workspaceRoot,
       basicInfo: buildDesktopRuntimeBasicInfo(workspaceRoot, toolExecutor),
+      getLoopEnabled: () => bundle.loopEnabled,
     });
   }
 

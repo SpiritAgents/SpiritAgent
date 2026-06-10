@@ -51,7 +51,9 @@ export function createDesktopRuntime(input: {
   activeSkills: LlmActiveSkill[];
   workspaceRoot: string;
   basicInfo: LlmToolAgentBasicInfo;
+  getLoopEnabled?: () => boolean;
 }): DesktopRuntime {
+  const resolveLoopEnabled = () => input.getLoopEnabled?.() === true;
   const applyPatchFileToolsPromptSection = resolveApplyPatchFileToolsPromptSection(
     input.transportConfig,
     input.planMetadata,
@@ -80,6 +82,7 @@ export function createDesktopRuntime(input: {
         input.basicInfo,
         applyPatchFileToolsPromptSection,
         providerWebSearchPromptSection,
+        resolveLoopEnabled(),
       ),
     createContinuationState: (messages) =>
       continueLlmToolAgentState(
@@ -96,6 +99,7 @@ export function createDesktopRuntime(input: {
         input.basicInfo,
         applyPatchFileToolsPromptSection,
         providerWebSearchPromptSection,
+        resolveLoopEnabled(),
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -121,6 +125,7 @@ export function createDesktopRuntime(input: {
         input.basicInfo,
         applyPatchFileToolsPromptSection,
         providerWebSearchPromptSection,
+        resolveLoopEnabled(),
       ),
     resolveWorkspaceFilesFromInput: (userInput) =>
       resolveWorkspaceFileReferenceAttachmentsFromInput(input.workspaceRoot, userInput),

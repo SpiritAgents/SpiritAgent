@@ -13,6 +13,7 @@ import {
   appendUserMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
+  buildLoopModeSystemMessage,
   buildTodosSystemMessage,
   buildToolAgentMessages,
   buildToolAgentSystemMessage,
@@ -23,6 +24,7 @@ import {
   findSpiritSystemMessageContent,
   hasBasicInfoSystemMessage,
   hasDreamsSystemMessage,
+  hasLoopModeSystemMessage,
   hasTodosSystemMessage,
   isJsonObject,
   startToolAgentState,
@@ -44,6 +46,7 @@ export {
   buildAgentModeSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
+  buildLoopModeSystemMessage,
   buildTodosSystemMessage,
   buildExtensionsSystemMessage,
   buildPlanSystemMessage,
@@ -77,6 +80,7 @@ export function startOpenAiToolAgentState(
   basicInfo?: OpenAiToolAgentBasicInfo,
   applyPatchFileToolsPromptSection?: string,
   providerWebSearchPromptSection?: string,
+  loopEnabled?: boolean,
 ): OpenAiToolAgentState {
   return startToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -93,6 +97,7 @@ export function startOpenAiToolAgentState(
       basicInfo,
       applyPatchFileToolsPromptSection,
       providerWebSearchPromptSection,
+      loopEnabled,
     ),
     userInput,
   );
@@ -112,6 +117,7 @@ export function continueOpenAiToolAgentState(
   basicInfo?: OpenAiToolAgentBasicInfo,
   applyPatchFileToolsPromptSection?: string,
   providerWebSearchPromptSection?: string,
+  loopEnabled?: boolean,
 ): OpenAiToolAgentState {
   return continueToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -128,6 +134,7 @@ export function continueOpenAiToolAgentState(
       basicInfo,
       applyPatchFileToolsPromptSection,
       providerWebSearchPromptSection,
+      loopEnabled,
     ),
   );
 }
@@ -146,6 +153,7 @@ function buildOpenAiToolAgentMessages(
   basicInfo: OpenAiToolAgentBasicInfo | undefined,
   applyPatchFileToolsPromptSection: string | undefined,
   providerWebSearchPromptSection: string | undefined,
+  loopEnabled: boolean | undefined,
 ): JsonValue[] {
   return buildToolAgentMessages({
     historyMessages: llmHistoryToOpenAiMessages(history, assetRoot),
@@ -164,6 +172,7 @@ function buildOpenAiToolAgentMessages(
     ...(providerWebSearchPromptSection === undefined
       ? {}
       : { providerWebSearchPromptSection }),
+    ...(loopEnabled === true ? { loopEnabled: true } : {}),
   });
 }
 
@@ -241,6 +250,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
   basicInfo?: OpenAiToolAgentBasicInfo,
   applyPatchFileToolsPromptSection?: string,
   providerWebSearchPromptSection?: string,
+  loopEnabled?: boolean,
 ): OpenAiToolAgentState {
   const preservedSpiritSystemMessage = findSpiritSystemMessageContent(retryState.messages);
   const rebuilt = startOpenAiToolAgentState(
@@ -258,17 +268,20 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     basicInfo,
     applyPatchFileToolsPromptSection,
     providerWebSearchPromptSection,
+    loopEnabled,
   );
   if (preservedSpiritSystemMessage !== undefined) {
     const preservedDreams = hasDreamsSystemMessage(preservedSpiritSystemMessage);
     const preservedTodos = hasTodosSystemMessage(preservedSpiritSystemMessage);
     const preservedBasicInfo = hasBasicInfoSystemMessage(preservedSpiritSystemMessage);
+    const preservedLoop = hasLoopModeSystemMessage(preservedSpiritSystemMessage);
     rebuilt.messages[0] = {
       role: 'system',
       content: buildToolAgentSystemMessage(
         model,
         preservedSpiritSystemMessage,
         preservedDreams ? undefined : buildDreamsSystemMessage(dreamsContextText),
+        preservedLoop ? undefined : buildLoopModeSystemMessage(loopEnabled),
         preservedTodos ? undefined : buildTodosSystemMessage(todosContextText),
         preservedBasicInfo ? undefined : buildBasicInfoSystemMessage(basicInfo),
       ),

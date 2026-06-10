@@ -15,6 +15,7 @@ import {
   buildBasicInfoSystemMessage,
   buildExtensionsSystemMessage,
   buildAgentModeSystemMessage,
+  buildLoopModeSystemMessage,
   buildPlanSystemMessage,
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
@@ -604,6 +605,7 @@ interface CliHostInternalState {
 
 let cliHostInternal: CliHostInternalState | undefined;
 let currentApprovalLevel: import('./host-bridge/protocol.js').BridgeApprovalLevel = 'default';
+let bridgeLoopEnabled = false;
 
 function normalizeBridgeApprovalLevel(value: unknown): import('./host-bridge/protocol.js').BridgeApprovalLevel {
   if (value === 'full-approval' || value === 'full-access') {
@@ -1474,6 +1476,7 @@ async function createRuntime(
       basicInfo,
       applyPatchPromptSection,
       providerWebSearchPromptSection,
+      bridgeLoopEnabled,
     );
   const llmTransport = createLlmTransport(config);
 
@@ -1497,6 +1500,7 @@ async function createRuntime(
         basicInfo,
         applyPatchPromptSection,
         providerWebSearchPromptSection,
+        bridgeLoopEnabled,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -1522,6 +1526,7 @@ async function createRuntime(
         basicInfo,
         applyPatchPromptSection,
         providerWebSearchPromptSection,
+        bridgeLoopEnabled,
       ),
     generateImage: (request) =>
       llmTransport.generateImage(config, request, async (saveRequest: GeneratedImageSaveRequest) => {
@@ -1619,9 +1624,9 @@ peer.on('hostInternal.setTodoSessionKey', async (rawParams) => {
     && (previousKey?.trim() || '') !== (nextKey ?? '')
   ) {
     const target = requireRuntime();
-    const loopEnabled = target.loopEnabled();
+    bridgeLoopEnabled = target.loopEnabled();
     runtime = await createRuntime(transportConfig, [...target.history()]);
-    runtime.setLoopEnabled(loopEnabled);
+    runtime.setLoopEnabled(bridgeLoopEnabled);
   }
   return { ok: true };
 });
@@ -1676,10 +1681,11 @@ peer.on('runtime.init', async (rawParams) => {
   if (typeof params.todoSessionKey === 'string' && params.todoSessionKey.trim()) {
     await updateCliTodoScope(params.todoSessionKey.trim());
   }
+  bridgeLoopEnabled = params.loopEnabled === true;
   runtime = await createRuntime(params.transportConfig, params.history ?? []);
-  toolExecutor.setLoopToolExposure(params.loopEnabled === true);
+  toolExecutor.setLoopToolExposure(bridgeLoopEnabled);
   toolExecutor.setAgentModeToolExposure(initAgentMode);
-  runtime.setLoopEnabled(params.loopEnabled === true);
+  runtime.setLoopEnabled(bridgeLoopEnabled);
   const workspaceRoot =
     params.transportConfig.workspaceRoot?.trim() || currentWorkspaceRoot();
   await dispatchCliExtensionEvent({
@@ -1697,9 +1703,9 @@ peer.on('runtime.replaceConfig', async (rawParams) => {
   await refreshExtensionToolDefinitions();
   await refreshExtensionSystemPrompts();
   const target = requireRuntime();
-  const loopEnabled = target.loopEnabled();
+  bridgeLoopEnabled = target.loopEnabled();
   runtime = await createRuntime(params.transportConfig, [...target.history()]);
-  runtime.setLoopEnabled(loopEnabled);
+  runtime.setLoopEnabled(bridgeLoopEnabled);
   toolExecutor.setAgentModeToolExposure(normalizeSpiritAgentMode(planMetadata));
   return buildSnapshot(runtime);
 });
@@ -2061,7 +2067,8 @@ peer.on('runtime.snapshot', async () => buildSnapshot(requireRuntime()));
 
 peer.on('runtime.setLoopEnabled', async (rawParams) => {
   const params = rawParams as RuntimeSetLoopEnabledParams;
-  requireRuntime().setLoopEnabled(params.enabled === true);
+  bridgeLoopEnabled = params.enabled === true;
+  requireRuntime().setLoopEnabled(bridgeLoopEnabled);
   return buildSnapshot(requireRuntime());
 });
 
@@ -2241,6 +2248,7 @@ peer.on('runtime.exportState', async () => {
   const skillsCatalogSystemPrompt = buildSkillsCatalogSystemMessage(enabledSkillCatalog);
   const planSystemPrompt = buildPlanSystemMessage(planMetadata);
   const agentModeSystemPrompt = buildAgentModeSystemMessage(planMetadata);
+  const loopModeSystemPrompt = buildLoopModeSystemMessage(requireRuntime().loopEnabled());
   const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(activeSkills);
   const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);
   const workspaceRoot = config.workspaceRoot ?? currentWorkspaceRoot();
@@ -2260,6 +2268,7 @@ peer.on('runtime.exportState', async () => {
         : { skillsCatalog: skillsCatalogSystemPrompt }),
       ...(planSystemPrompt === undefined ? {} : { plan: planSystemPrompt }),
       agentMode: agentModeSystemPrompt,
+      ...(loopModeSystemPrompt === undefined ? {} : { loopMode: loopModeSystemPrompt }),
       ...(activeSkillsSystemPrompt === undefined
         ? {}
         : { activeSkills: activeSkillsSystemPrompt }),
