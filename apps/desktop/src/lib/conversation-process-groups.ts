@@ -8,7 +8,6 @@ export type ConversationRenderItem =
       kind: 'process-group';
       groupId: string;
       messageIndices: number[];
-      sealed: boolean;
       toolCounts: ProcessToolCounts;
     };
 
@@ -120,7 +119,6 @@ export function buildConversationRenderItems(
       kind: 'process-group',
       groupId: buildProcessGroupId(scopeKey, runStart),
       messageIndices: [...messageIndices],
-      sealed: true,
       toolCounts: collectToolCountsForIndices(messages, messageIndices),
     });
   };
@@ -183,7 +181,6 @@ export function messageIndexInSealedProcessGroup(
   return renderItems.find(
     (item) =>
       item.kind === 'process-group' &&
-      item.sealed &&
       item.messageIndices.includes(messageIndex),
   );
 }
