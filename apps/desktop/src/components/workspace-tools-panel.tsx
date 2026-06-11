@@ -11,13 +11,25 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { FileText, GitBranch, Globe, Plus, Terminal, X } from "lucide-react";
-import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WorkspaceBrowserTab, type WorkspaceBrowserTabProps } from "@/components/workspace-browser-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspaceShellTab } from "@/components/workspace-shell-tab";
-import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+  DESKTOP_OVERLAY_LIST_ITEM,
+  DESKTOP_OVERLAY_LIST_LIST_GAP,
+  DESKTOP_OVERLAY_LIST_LIST_PADDING,
+  instantHoverMotionClass,
+} from "@/lib/desktop-chrome";
 import {
   desktopMicaTintClass,
   desktopMicaWorkspaceTabSelectedClass,
@@ -307,24 +319,6 @@ function WorkspaceToolsDockInner({
     [onTabsChange],
   );
 
-  const newTabItems = useMemo<readonly ActionPopoverItem[]>(
-    () =>
-      (["files", "shell", "git", "browser"] as const).map((kind) => {
-        const meta = TAB_KIND_META[kind];
-        const Icon = meta.icon;
-        const browserDisabled = kind === "browser" && !browserTabEnabled;
-        return {
-          id: `new-${kind}`,
-          icon: <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />,
-          label: t(meta.labelKey),
-          disabled: browserDisabled,
-          title: browserDisabled ? t("workspace.browserElectronOnly") : undefined,
-          onSelect: () => handleAddTab(kind),
-        };
-      }),
-    [browserTabEnabled, handleAddTab, t],
-  );
-
   const shellWidth = open ? `calc(0.25rem + ${widthPx}px)` : "0px";
 
   return (
@@ -449,13 +443,62 @@ function WorkspaceToolsDockInner({
               })}
               </div>
             </ScrollArea>
-            <ActionPopover
-              ariaLabel={t('workspace.newToolTab')}
-              title={t('common.new')}
-              triggerIcon={<Plus className="size-3.5" aria-hidden />}
-              items={newTabItems}
-              triggerClassName="mb-1"
-            />
+            <DropdownMenu modal>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t('workspace.newToolTab')}
+                  title={t('common.new')}
+                  className={cn(
+                    'mb-1 size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground',
+                    'aria-expanded:bg-muted/35 aria-expanded:text-foreground aria-expanded:hover:bg-muted/50',
+                    instantHoverMotionClass,
+                  )}
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                side="top"
+                sideOffset={10}
+                onCloseAutoFocus={(event) => {
+                  event.preventDefault();
+                }}
+                className={cn(
+                  'flex w-max min-w-[11rem] max-w-[min(15rem,calc(100vw-1.25rem))] flex-col',
+                  DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+                  DESKTOP_OVERLAY_LIST_LIST_PADDING,
+                  DESKTOP_OVERLAY_LIST_LIST_GAP,
+                )}
+              >
+                {(["files", "shell", "git", "browser"] as const).map((kind) => {
+                  const meta = TAB_KIND_META[kind];
+                  const Icon = meta.icon;
+                  const browserDisabled = kind === "browser" && !browserTabEnabled;
+                  return (
+                    <DropdownMenuItem
+                      key={kind}
+                      disabled={browserDisabled}
+                      title={browserDisabled ? t("workspace.browserElectronOnly") : undefined}
+                      className={cn(
+                        'flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none',
+                        DESKTOP_OVERLAY_LIST_ITEM,
+                        'text-popover-foreground',
+                      )}
+                      onSelect={() => {
+                        handleAddTab(kind);
+                      }}
+                    >
+                      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{t(meta.labelKey)}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden text-xs" aria-live="polite">
