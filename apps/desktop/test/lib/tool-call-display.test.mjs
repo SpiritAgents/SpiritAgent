@@ -55,3 +55,77 @@ test('toolCallPhaseShowsShimmer is active until terminal phases', () => {
   assert.equal(toolCallPhaseShowsShimmer('succeeded'), false);
   assert.equal(toolCallPhaseShowsShimmer('failed'), false);
 });
+
+test('getToolCallSummaryParts: legacy English "Viewing" headline parsed correctly', async () => {
+  await i18n.changeLanguage('en');
+  try {
+    assert.deepEqual(
+      getToolCallSummaryParts({
+        toolName: 'read_file',
+        phase: 'succeeded',
+        headline: 'Viewing src/App.tsx',
+        detailLines: [],
+      }),
+      { headline: 'Viewed', detail: 'src/App.tsx' },
+    );
+    assert.deepEqual(
+      getToolCallSummaryParts({
+        toolName: 'read_file',
+        phase: 'running',
+        headline: 'View src/App.tsx',
+        detailLines: [],
+      }),
+      { headline: 'Viewing', detail: 'src/App.tsx' },
+    );
+  } finally {
+    await i18n.changeLanguage('zh-CN');
+  }
+});
+
+test('getToolCallSummaryParts: legacy Chinese "查看" headline still parsed', () => {
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'read_file',
+      phase: 'succeeded',
+      headline: '查看 src/App.tsx',
+      detailLines: [],
+    }),
+    { headline: '查看', detail: 'src/App.tsx' },
+  );
+});
+
+test('getToolCallSummaryParts: shell verb uses tense in English', async () => {
+  await i18n.changeLanguage('en');
+  try {
+    assert.deepEqual(
+      getToolCallSummaryParts({
+        toolName: 'run_shell_command',
+        phase: 'running',
+        headline: 'Install deps',
+        headlineDetail: 'npm install',
+        detailLines: [],
+      }),
+      {
+        headline: 'Running Install deps',
+        shellSummary: { verb: 'Running', reason: 'Install deps' },
+        detail: 'npm install',
+      },
+    );
+    assert.deepEqual(
+      getToolCallSummaryParts({
+        toolName: 'run_shell_command',
+        phase: 'succeeded',
+        headline: 'Install deps',
+        headlineDetail: 'npm install',
+        detailLines: [],
+      }),
+      {
+        headline: 'Ran Install deps',
+        shellSummary: { verb: 'Ran', reason: 'Install deps' },
+        detail: 'npm install',
+      },
+    );
+  } finally {
+    await i18n.changeLanguage('zh-CN');
+  }
+});
