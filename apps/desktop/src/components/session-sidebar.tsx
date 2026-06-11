@@ -102,6 +102,8 @@ type SessionSidebarProps = {
   sessionNavigationBusy?: boolean;
   deleteSessionBusy?: boolean;
   onDeleteSession?: (path: string) => void | Promise<void>;
+  deleteWorkspaceBusy?: boolean;
+  onDeleteWorkspace?: (workspacePath: string) => void | Promise<void>;
   disabled?: boolean;
   /** 后台会话完成后、用户尚未打开前显示蓝色圆点。 */
   unseenCompletedSessionPaths?: ReadonlySet<string>;
@@ -315,6 +317,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
             sessionRowHoverClass(micaStyle),
           )}
           title={group.rootPath ?? group.label}
+          data-workspace-path={group.rootPath ?? group.id}
         >
           {expanded ? (
             <FolderOpen className="size-3.5 shrink-0" aria-hidden />
@@ -550,6 +553,64 @@ function SessionListNav({
   );
 }
 
+type WorkspaceListNavProps = {
+  canDeleteWorkspace: boolean;
+  contextMenuWorkspaceGroup: SessionWorkspaceGroup | null;
+  contextMenuWorkspaceGroupRef: RefObject<SessionWorkspaceGroup | null>;
+  deleteWorkspaceBusy?: boolean;
+  onWorkspaceContextMenuCapture(event: MouseEvent<HTMLElement>): void;
+  onWorkspaceContextMenuOpenChange(open: boolean): void;
+  onRequestDeleteWorkspace(group: SessionWorkspaceGroup): void;
+  children: ReactNode;
+};
+
+function WorkspaceListNav({
+  canDeleteWorkspace,
+  contextMenuWorkspaceGroup,
+  contextMenuWorkspaceGroupRef,
+  deleteWorkspaceBusy,
+  onWorkspaceContextMenuCapture,
+  onWorkspaceContextMenuOpenChange,
+  onRequestDeleteWorkspace,
+  children,
+}: WorkspaceListNavProps) {
+  const { t } = useTranslation();
+
+  const inner = (
+    <div
+      className="min-w-0"
+      onContextMenuCapture={canDeleteWorkspace ? onWorkspaceContextMenuCapture : undefined}
+    >
+      {children}
+    </div>
+  );
+
+  if (!canDeleteWorkspace) {
+    return inner;
+  }
+
+  return (
+    <ContextMenu onOpenChange={onWorkspaceContextMenuOpenChange}>
+      <ContextMenuTrigger asChild>{inner}</ContextMenuTrigger>
+      <ContextMenuContent aria-label={t("sidebar.workspaceActions")}>
+        <ContextMenuItem
+          variant="destructive"
+          disabled={deleteWorkspaceBusy}
+          onSelect={() => {
+            const group = contextMenuWorkspaceGroupRef.current ?? contextMenuWorkspaceGroup;
+            if (group) {
+              onRequestDeleteWorkspace(group);
+            }
+          }}
+        >
+          <Trash2 aria-hidden />
+          {t("sidebar.deleteWorkspace")}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
 const settingsTabs: Array<{
   id: SettingsSidebarTab;
   labelKey: string;
@@ -721,6 +782,8 @@ function SessionSidebarInner({
   sessionNavigationBusy = false,
   deleteSessionBusy = false,
   onDeleteSession,
+  deleteWorkspaceBusy = false,
+  onDeleteWorkspace,
   disabled,
   unseenCompletedSessionPaths,
 }: SessionSidebarProps) {
@@ -743,8 +806,11 @@ function SessionSidebarInner({
   >({});
   const [unboundVisibleCount, setUnboundVisibleCount] = useState(SIDEBAR_SESSION_PAGE_SIZE);
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
+  const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<SessionWorkspaceGroup | null>(null);
   const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
+  const [contextMenuWorkspaceGroup, setContextMenuWorkspaceGroup] = useState<SessionWorkspaceGroup | null>(null);
+  const contextMenuWorkspaceGroupRef = useRef<SessionWorkspaceGroup | null>(null);
   const scrollFadeRegionRef = useRef<HTMLDivElement>(null);
   const [scrollEdgeFades, setScrollEdgeFades] = useState<SidebarScrollEdgeFades>({
     top: false,
@@ -758,6 +824,48 @@ function SessionSidebarInner({
     return map;
   }, [sessions]);
   const canDeleteSession = Boolean(onDeleteSession) && !disabled;
+  const canDeleteWorkspace = Boolean(onDeleteWorkspace) && !disabled;
+
+  const workspaceGroupById = useMemo(() => {
+    const map = new Map<string, SessionWorkspaceGroup>();
+    for (const group of workspaceGroups) {
+      map.set(group.rootPath ?? group.id, group);
+      map.set(group.id, group);
+    }
+    return map;
+  }, [workspaceGroups]);
+
+  const handleWorkspaceContextMenuCapture = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      const btn = (event.target as HTMLElement).closest("[data-workspace-path]");
+      if (!btn) {
+        event.preventDefault();
+        return;
+      }
+      const workspacePath = btn.getAttribute("data-workspace-path");
+      const group = workspacePath ? (workspaceGroupById.get(workspacePath) ?? workspaceGroupById.get(workspacePath)) : undefined;
+      if (!group) {
+        event.preventDefault();
+        return;
+      }
+      contextMenuWorkspaceGroupRef.current = group;
+      setContextMenuWorkspaceGroup(group);
+    },
+    [workspaceGroupById],
+  );
+
+  const handleWorkspaceContextMenuOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      contextMenuWorkspaceGroupRef.current = null;
+      setContextMenuWorkspaceGroup(null);
+    }
+  }, []);
+
+  const handleWorkspaceContextMenuDelete = useCallback((group: SessionWorkspaceGroup) => {
+    contextMenuWorkspaceGroupRef.current = null;
+    setContextMenuWorkspaceGroup(null);
+    setDeleteWorkspaceTarget(group);
+  }, []);
 
   const handleSessionContextMenuCapture = useCallback(
     (event: MouseEvent<HTMLElement>) => {
@@ -1115,6 +1223,15 @@ function SessionSidebarInner({
                     {t('sidebar.workspace')}
                   </p>
                 ) : null}
+                <WorkspaceListNav
+                  canDeleteWorkspace={canDeleteWorkspace}
+                  contextMenuWorkspaceGroup={contextMenuWorkspaceGroup}
+                  contextMenuWorkspaceGroupRef={contextMenuWorkspaceGroupRef}
+                  deleteWorkspaceBusy={deleteWorkspaceBusy}
+                  onWorkspaceContextMenuCapture={handleWorkspaceContextMenuCapture}
+                  onWorkspaceContextMenuOpenChange={handleWorkspaceContextMenuOpenChange}
+                  onRequestDeleteWorkspace={handleWorkspaceContextMenuDelete}
+                >
                 {workspaceGroups.map((group) => {
                   const expanded = collapsedWorkspaceIds[group.id] !== false;
                   const panelId = `workspace-session-group-${group.id.replace(/[^a-z0-9_-]/g, "-")}`;
@@ -1145,6 +1262,7 @@ function SessionSidebarInner({
                     />
                   );
                 })}
+                </WorkspaceListNav>
                 {unboundSessions.length > 0 && workspaceGroups.length > 0 ? (
                   <div className="h-2" aria-hidden />
                 ) : null}
@@ -1248,6 +1366,57 @@ function SessionSidebarInner({
               }}
             >
               {deleteSessionBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
+              {t("common.delete")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteWorkspaceTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteWorkspaceTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>{t("sidebar.deleteWorkspace")}</DialogTitle>
+            <DialogDescription>
+              {t("sidebar.deleteWorkspaceConfirm", {
+                name: deleteWorkspaceTarget?.label ?? "",
+                count: deleteWorkspaceTarget?.sessions.length ?? 0,
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteWorkspaceTarget(null)}
+              disabled={deleteWorkspaceBusy}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={deleteWorkspaceBusy || !deleteWorkspaceTarget || !onDeleteWorkspace}
+              onClick={() => {
+                const target = deleteWorkspaceTarget;
+                if (!target || !onDeleteWorkspace) {
+                  return;
+                }
+                void (async () => {
+                  await onDeleteWorkspace(target.rootPath ?? target.id);
+                  setDeleteWorkspaceTarget(null);
+                })();
+              }}
+            >
+              {deleteWorkspaceBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
               {t("common.delete")}
             </Button>
           </div>

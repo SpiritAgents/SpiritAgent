@@ -3363,6 +3363,10 @@ export default function App() {
             onDeleteSession={(path) => {
               void runtime.deleteSession(path);
             }}
+            deleteWorkspaceBusy={sessionNavigationBusy}
+            onDeleteWorkspace={(workspacePath) => {
+              void runtime.deleteWorkspace(workspacePath);
+            }}
             unseenCompletedSessionPaths={runtime.unseenCompletedSessionPaths}
           />
         </SessionSidebarShell>
