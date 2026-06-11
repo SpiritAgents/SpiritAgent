@@ -21,6 +21,14 @@ export function configFromEnv(): AcpServerConfig {
       + 'Set it to your LLM provider API key.',
     );
   }
+  if (apiKey.includes('${')) {
+    throw new Error(
+      'SPIRIT_ACP_API_KEY looks like an unexpanded placeholder (e.g. "${SPIRIT_ACP_API_KEY}"). '
+      + 'Zed settings.json does not expand ${VAR} syntax. '
+      + 'Either put the key directly in agent_servers.env, '
+      + 'or remove SPIRIT_ACP_API_KEY from agent_servers.env and set it as a system/user environment variable.',
+    );
+  }
 
   const model = process.env['SPIRIT_ACP_MODEL']?.trim() || 'gpt-4.1-mini';
   const workspaceRoot = process.env['SPIRIT_ACP_WORKSPACE']?.trim() || process.cwd();
