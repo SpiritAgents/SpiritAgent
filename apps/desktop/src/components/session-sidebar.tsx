@@ -868,6 +868,10 @@ function SessionSidebarInner({
     viewport.addEventListener("scroll", syncScrollEdgeFades, { passive: true });
     const resizeObserver = new ResizeObserver(syncScrollEdgeFades);
     resizeObserver.observe(viewport);
+    const scrollContent = viewport.firstElementChild;
+    if (scrollContent instanceof Element) {
+      resizeObserver.observe(scrollContent);
+    }
 
     return () => {
       viewport.removeEventListener("scroll", syncScrollEdgeFades);
