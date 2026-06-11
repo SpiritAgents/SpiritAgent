@@ -511,6 +511,14 @@ fn bootstrap_plan_metadata() -> PlanMetadata {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BridgeLlmTokenUsage {
+    input_tokens: u64,
+    output_tokens: u64,
+    total_tokens: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 enum BridgeRuntimeEvent {
     #[serde(rename = "begin-assistant-response")]
@@ -579,6 +587,8 @@ enum BridgeRuntimeEvent {
     },
     #[serde(rename = "tool-execution-finished")]
     ToolExecutionFinished { execution: BridgeToolExecution },
+    #[serde(rename = "context-usage-updated")]
+    ContextUsageUpdated { usage: BridgeLlmTokenUsage },
 }
 
 impl TsBridgeRuntime {
@@ -2493,6 +2503,7 @@ impl TsBridgeRuntime {
                     )));
                 }
                 BridgeRuntimeEvent::BackgroundToolStatus { .. } => {}
+                BridgeRuntimeEvent::ContextUsageUpdated { .. } => {}
                 BridgeRuntimeEvent::ToolExecutionFinished { execution } => {
                     if execution.tool_name.starts_with("todo_") {
                         continue;
