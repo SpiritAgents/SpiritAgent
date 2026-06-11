@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 
+import { setLlmFetchTransportOverrideForTests } from '../llm-fetch.js';
 import {
   createLlmMessageContentFromTextAndImages,
   createLlmVideoContentPart,
@@ -47,14 +48,12 @@ test('llmMessageToOpenAiMessage serializes video parts as video_url with local p
 test('resolveMoonshotVideoUrlsInOpenAiMessages uploads local video_url references', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-agent-core-moonshot-resolve-'));
   const videoPath = join(workspaceRoot, 'clip.mp4');
-  const originalFetch = globalThis.fetch;
-
   try {
     await writeFile(videoPath, MINIMAL_MP4_HEADER);
     clearMoonshotVideoUploadCache();
 
-    globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ id: 'file-uploaded' }), { status: 200 })) as typeof fetch;
+    setLlmFetchTransportOverrideForTests(async () =>
+      new Response(JSON.stringify({ id: 'file-uploaded' }), { status: 200 }));
 
     const messages = [
       llmMessageToOpenAiMessage(
@@ -81,7 +80,7 @@ test('resolveMoonshotVideoUrlsInOpenAiMessages uploads local video_url reference
     const content = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content;
     assert.equal(content[0]?.video_url.url, 'ms://file-uploaded');
   } finally {
-    globalThis.fetch = originalFetch;
+    setLlmFetchTransportOverrideForTests(undefined);
     clearMoonshotVideoUploadCache();
     await rm(workspaceRoot, { recursive: true, force: true });
   }

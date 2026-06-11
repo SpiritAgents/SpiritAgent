@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { setLlmFetchTransportOverrideForTests } from '../llm-fetch.js';
 import {
   clearMoonshotChatCompletionMessages,
   openAiMessagesContainVideoUrl,
@@ -23,16 +24,15 @@ test('Moonshot official provider fetch restores stashed video messages and reaso
   stashMoonshotChatCompletionMessages(requestMessages);
   assert.ok(peekMoonshotChatCompletionMessages());
 
-  const originalFetch = globalThis.fetch;
   const capturedBodies: Record<string, unknown>[] = [];
-  globalThis.fetch = (async (input, init) => {
+  setLlmFetchTransportOverrideForTests(async (_input, init) => {
     const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
     capturedBodies.push(body);
     return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'ok' } }] }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  }) as typeof fetch;
+  });
 
   const transport = new AiSdkOpenAiCompatibleTransport();
   try {
@@ -57,21 +57,20 @@ test('Moonshot official provider fetch restores stashed video messages and reaso
     assert.equal(chatCompletionBody.reasoning_effort, 'low');
     assert.deepEqual(chatCompletionBody.messages, requestMessages);
   } finally {
-    globalThis.fetch = originalFetch;
+    setLlmFetchTransportOverrideForTests(undefined);
     clearMoonshotChatCompletionMessages();
   }
 });
 
 test('Moonshot transport uses official provider trace kind and base URL', async () => {
-  const originalFetch = globalThis.fetch;
   let capturedUrl = '';
-  globalThis.fetch = (async (input) => {
+  setLlmFetchTransportOverrideForTests(async (input) => {
     capturedUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : 'request';
     return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'ok' } }] }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  }) as typeof fetch;
+  });
 
   const transport = new AiSdkOpenAiCompatibleTransport();
   try {
@@ -95,6 +94,6 @@ test('Moonshot transport uses official provider trace kind and base URL', async 
       'moonshot_sdk_chat_completions',
     );
   } finally {
-    globalThis.fetch = originalFetch;
+    setLlmFetchTransportOverrideForTests(undefined);
   }
 });
