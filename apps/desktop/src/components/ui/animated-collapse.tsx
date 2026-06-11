@@ -104,12 +104,23 @@ function AnimatedCollapseContent({
   const { open, contentId } = useAnimatedCollapseContext("AnimatedCollapseContent");
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const hasOpenedRef = useRef(open);
+  /** Mounted already open: skip the first expand animation (settings return / app restart). */
+  const allowAnimationRef = useRef(!open);
+  const hasOpenedRef = useRef(false);
+  const prevOpenRef = useRef(open);
   const mounted = useCollapsibleChildMount(open);
 
+  if (prevOpenRef.current !== open) {
+    allowAnimationRef.current = true;
+  }
   if (open) {
     hasOpenedRef.current = true;
   }
+  const shouldAnimate = allowAnimationRef.current && hasOpenedRef.current;
+
+  useLayoutEffect(() => {
+    prevOpenRef.current = open;
+  }, [open]);
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
@@ -143,8 +154,6 @@ function AnimatedCollapseContent({
       />
     );
   }
-
-  const shouldAnimate = hasOpenedRef.current;
 
   return (
     <div
