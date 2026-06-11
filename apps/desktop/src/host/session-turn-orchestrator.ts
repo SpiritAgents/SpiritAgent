@@ -478,6 +478,7 @@ export async function replyPendingApprovalCommand(
     orchestration.runtimeEvents.consumeCompletedTurnResult();
     orchestration.runtimeEvents.syncPendingToolStates();
     orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+    ctx.emitLiveSnapshotUpdate();
     await ctx.flushDeferredRuntimeRefreshIfIdle();
     return ctx.buildSnapshot();
   });
