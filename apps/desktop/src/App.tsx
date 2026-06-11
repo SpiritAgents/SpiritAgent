@@ -2061,6 +2061,14 @@ export default function App() {
         ? t("composer.placeholderGenerateVideo")
         : t("app.typeMessage");
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
+  const messageRewindComposerEnabled =
+    !compactionDemo.active &&
+    !subagentViewActive &&
+    !activeSessionReadOnly &&
+    !pendingApproval &&
+    !pendingQuestions &&
+    runtime.busyAction !== "rewind" &&
+    runtime.busyAction !== "session";
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const composerHasPayload =
     Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0;
@@ -2578,7 +2586,7 @@ export default function App() {
   }, [messages, rewindDraft]);
 
   const startMessageRewind = (message: ConversationMessageSnapshot, listIndex: number) => {
-    if (!runtime.summary.canSend || runtime.busyAction || message.canRewind !== true) {
+    if (!messageRewindComposerEnabled || message.canRewind !== true) {
       return;
     }
     const segments = messageContentToRichSegments(message.content, String(message.id));
@@ -3570,9 +3578,7 @@ export default function App() {
                                 );
                               }}
                               rewindCanSubmit={
-                                runtime.summary.canSend &&
-                                runtime.busyAction !== "rewind" &&
-                                runtime.busyAction !== "session" &&
+                                messageRewindComposerEnabled &&
                                 rewindDraft?.listIndex === index &&
                                 (Boolean(rewindDraft.text.trim()) ||
                                   rewindDraft.browserElementAttachments.length > 0 ||
