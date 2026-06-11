@@ -178,6 +178,7 @@ import {
 } from './host-workspace-git-commands.js';
 import {
   abortConversationCommand,
+  abortConversationInContext,
   applyDrainedRuntimeHostEvents,
   continueAssistantCompletionCommand,
   pollCommand,
@@ -1346,7 +1347,10 @@ class DesktopHostService {
       const state = this.requireState();
       const runtime = this.requireRuntime();
       if (runtime.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
+        const aborted = await abortConversationInContext(this.sessionTurnContext());
+        if (!aborted && this.requireRuntime().isBusy()) {
+          throw new Error(i18n.t('error.runtimeBusy'));
+        }
       }
       if (!Number.isFinite(request.messageId)) {
         throw new Error(i18n.t('error.invalidMessageId'));
