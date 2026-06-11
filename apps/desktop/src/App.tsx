@@ -205,6 +205,7 @@ import {
 import {
   buildSkillSlashSuggestions,
   currentSkillSlashQueryAtCursor,
+  skillSlashAlias,
   skillSlashQueryKey,
   type SkillSlashSuggestion,
 } from "@/lib/skill-slash";
@@ -2817,6 +2818,25 @@ export default function App() {
     setLastNonSettingsSurface("conversation");
     setActiveSurface("conversation");
   }, []);
+
+  const prefillComposerSkillChip = useCallback(
+    (skillName: string) => {
+      const alias = skillSlashAlias(skillName);
+      setLastNonSettingsSurface("conversation");
+      setActiveSurface("conversation");
+      runtime.setComposer("");
+      setSlashSelectedIndex(-1);
+      setDismissedSlashQueryKey(null);
+      queueMicrotask(() => {
+        composerRichInputRef.current?.insertSkillChip(alias, {
+          clearText: true,
+          appendTrailingSpace: true,
+        });
+        composerRichInputRef.current?.focus();
+      });
+    },
+    [runtime],
+  );
 
   const isActionPaletteItemDisabled = useCallback(
     (item: ActionPaletteItem) => {

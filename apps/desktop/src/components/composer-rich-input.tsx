@@ -109,6 +109,13 @@ export type InsertLoopChipOptions = {
 
 export type InsertAgentModeChipOptions = InsertLoopChipOptions;
 
+export type InsertSkillChipOptions = {
+  /** Drop existing composer text; use when prefilling from settings or similar. */
+  clearText?: boolean;
+  /** Append a trailing space after the chip for natural-language follow-up. */
+  appendTrailingSpace?: boolean;
+};
+
 export type ComposerRichInputHandle = {
   focus(): void;
   insertAttachment(a: BrowserElementAttachment): void;
@@ -123,7 +130,7 @@ export type ComposerRichInputHandle = {
   insertAskChip(options?: InsertAgentModeChipOptions): void;
   insertDebugChip(options?: InsertAgentModeChipOptions): void;
   removeAgentModeChip(): void;
-  insertSkillChip(alias: string): void;
+  insertSkillChip(alias: string, options?: InsertSkillChipOptions): void;
   replaceSkillSlashQuery(
     query: ActiveSkillSlashQuery,
     replacement: string,
@@ -525,18 +532,28 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
     );
 
     const insertSkillChip = useCallback(
-      (alias: string) => {
+      (alias: string, options?: InsertSkillChipOptions) => {
         const div = divRef.current;
         if (!div) {
           return;
         }
         div.focus();
-        const current = segmentsRef.current;
-        const caret = selectionToCaret(div, current) ?? caretAtEnd(current);
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+        const base = options?.clearText
+          ? emptySegments()
+          : mergeAdjacentTextSegments(segmentsRef.current);
+        const caret = options?.clearText
+          ? caretAtEnd(base)
+          : (selectionToCaret(div, base) ?? caretAtEnd(base));
+        let { segments: next, caret: nextCaret } = insertSegmentAtCaret(base, caret, {
           kind: "skill",
           alias,
         });
+        if (options?.appendTrailingSpace) {
+          ({ segments: next, caret: nextCaret } = insertSegmentAtCaret(next, nextCaret, {
+            kind: "text",
+            value: " ",
+          }));
+        }
         commitSegments(next, nextCaret);
       },
       [commitSegments],
