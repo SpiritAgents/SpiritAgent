@@ -620,7 +620,7 @@ export function MarketplaceView({
                         role="tab"
                         aria-selected={activeTab === tabId}
                         className={cn(
-                          "rounded-md px-3 py-2 text-sm transition-colors",
+                          "rounded-md px-3 py-2 text-sm",
                           activeTab === tabId
                             ? "font-medium text-foreground underline decoration-foreground/80 underline-offset-[10px]"
                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
