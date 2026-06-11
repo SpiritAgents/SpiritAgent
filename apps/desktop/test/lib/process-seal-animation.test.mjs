@@ -6,6 +6,7 @@ import {
   createInitialProcessSealPlanState,
   isLiveComposeViewKey,
   resolveProcessSealLiveTurnActive,
+  resolveProcessSealNavigationSignals,
 } from '../../src/lib/process-seal-animation.ts';
 
 const VIEW_A = '/tmp/a.json:main';
@@ -61,6 +62,47 @@ test('resolveProcessSealLiveTurnActive is true while pending aux is live', () =>
     }),
     true,
   );
+});
+
+test('resolveProcessSealNavigationSignals marks session navigation on busyAction session', () => {
+  const signals = resolveProcessSealNavigationSignals({
+    conversationViewKey: '/tmp/a.json:main',
+    busyAction: 'session',
+    isBusy: false,
+    sessionMessages: [],
+    stickyComposeTurnInFlight: true,
+  });
+
+  assert.equal(signals.sessionNavigationPending, true);
+  assert.equal(signals.composeTurnInFlight, false);
+  assert.equal(signals.nextStickyComposeTurnInFlight, false);
+});
+
+test('resolveProcessSealNavigationSignals keeps sticky compose turn across view landing', () => {
+  const signals = resolveProcessSealNavigationSignals({
+    conversationViewKey: '/tmp/a.json:main',
+    busyAction: 'send',
+    isBusy: false,
+    sessionMessages: [],
+    stickyComposeTurnInFlight: true,
+  });
+
+  assert.equal(signals.sessionNavigationPending, false);
+  assert.equal(signals.composeTurnInFlight, true);
+  assert.equal(signals.nextStickyComposeTurnInFlight, false);
+});
+
+test('resolveProcessSealNavigationSignals sets sticky compose turn on compose send', () => {
+  const signals = resolveProcessSealNavigationSignals({
+    conversationViewKey: '__no-session__:main',
+    busyAction: 'send',
+    isBusy: false,
+    sessionMessages: [],
+    stickyComposeTurnInFlight: false,
+  });
+
+  assert.equal(signals.composeTurnInFlight, true);
+  assert.equal(signals.nextStickyComposeTurnInFlight, true);
 });
 
 test('buildProcessSealAnimationPlan skips animation on first hydrate', () => {
