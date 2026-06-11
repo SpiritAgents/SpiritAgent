@@ -250,6 +250,7 @@ pub(in crate::ui) fn suggestion_summary(suggestion: &InputSuggestion) -> String 
         "/compact" => t!("ui.suggestion.summary.compact").into_owned(),
         "/sessions" => t!("ui.suggestion.summary.sessions").into_owned(),
         "/rewind" => t!("ui.suggestion.summary.rewind").into_owned(),
+        "/subagents" => t!("ui.suggestion.summary.subagents").into_owned(),
         "/image" => t!("ui.suggestion.summary.image").into_owned(),
         "/mcp" => t!("ui.suggestion.summary.mcp").into_owned(),
         "/rules" => t!("ui.suggestion.summary.rules").into_owned(),
@@ -309,6 +310,14 @@ pub(in crate::ui) fn suggestion_usage_lines(suggestion: &InputSuggestion) -> Vec
             "    /rewind".to_string(),
             "    /rewind <index> [new_message]".to_string(),
             t!("ui.suggestion.usage.rewind.note").into_owned(),
+        ],
+        "/subagents" => vec![
+            t!("ui.suggestion.usage.heading").into_owned(),
+            "    /subagents".to_string(),
+            "    /subagents list".to_string(),
+            "    /subagents open <session_id>".to_string(),
+            "    /subagents close".to_string(),
+            t!("ui.suggestion.usage.subagents.note").into_owned(),
         ],
         "/image" => vec![
             t!("ui.suggestion.usage.heading").into_owned(),
