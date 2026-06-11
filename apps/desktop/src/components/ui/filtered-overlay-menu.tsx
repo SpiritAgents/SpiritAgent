@@ -11,6 +11,7 @@ import {
   DESKTOP_OVERLAY_LIST_CONTENT,
   DESKTOP_OVERLAY_LIST_FILTER_HEADER,
   DESKTOP_OVERLAY_LIST_FILTER_INPUT,
+  DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST,
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
   DESKTOP_OVERLAY_LIST_SCROLL_AREA,
@@ -32,6 +33,8 @@ type FilteredOverlayMenuProps = {
   filterValue?: string;
   onFilterChange?(value: string): void;
   filterPlaceholder?: string;
+  /** 默认 `ghost`（透明底与 popover 一致）；`default` 为带边框搜索框 */
+  filterVariant?: "default" | "ghost";
   /** `workspace-panel`：flex 列 + 弹性 ScrollArea，供 footer 使用 */
   variant?: "filtered-list" | "workspace-panel";
   contentClassName?: string;
@@ -60,6 +63,7 @@ export function FilteredOverlayMenu({
   filterValue = "",
   onFilterChange,
   filterPlaceholder,
+  filterVariant = "ghost",
   variant = "filtered-list",
   contentClassName,
   footer,
@@ -107,17 +111,29 @@ export function FilteredOverlayMenu({
       >
         {showFilter ? (
           <div className={DESKTOP_OVERLAY_LIST_FILTER_HEADER}>
-            <div className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL}>
+            {filterVariant === "ghost" ? (
               <Input
                 ref={filterInputRef}
                 value={filterValue}
                 onChange={(event) => onFilterChange(event.target.value)}
                 placeholder={filterPlaceholder}
-                className={DESKTOP_OVERLAY_LIST_FILTER_INPUT}
+                className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST}
                 onKeyDown={(event) => event.stopPropagation()}
                 autoComplete="off"
               />
-            </div>
+            ) : (
+              <div className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL}>
+                <Input
+                  ref={filterInputRef}
+                  value={filterValue}
+                  onChange={(event) => onFilterChange(event.target.value)}
+                  placeholder={filterPlaceholder}
+                  className={DESKTOP_OVERLAY_LIST_FILTER_INPUT}
+                  onKeyDown={(event) => event.stopPropagation()}
+                  autoComplete="off"
+                />
+              </div>
+            )}
           </div>
         ) : null}
         <ScrollArea
