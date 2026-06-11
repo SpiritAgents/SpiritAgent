@@ -2,11 +2,9 @@ import {
   memo,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type AnimationEvent,
   type MouseEvent,
   type ReactNode,
   type RefObject,
@@ -37,7 +35,11 @@ import {
 
 import { sidebarSessionsScrollTopGapClass } from "@/lib/mask-styles";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AnimatedCollapse,
+  AnimatedCollapseContent,
+  AnimatedCollapseTrigger,
+} from "@/components/ui/animated-collapse";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -233,7 +235,6 @@ type SessionListLoadMoreProps = {
 type WorkspaceSessionGroupCollapsibleProps = {
   group: SessionWorkspaceGroup;
   expanded: boolean;
-  panelId: string;
   disabled?: boolean;
   micaStyle?: boolean;
   visibleSessions: SessionListItem[];
@@ -248,7 +249,6 @@ type WorkspaceSessionGroupCollapsibleProps = {
 const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupCollapsible({
   group,
   expanded,
-  panelId,
   disabled,
   micaStyle,
   visibleSessions,
@@ -259,93 +259,47 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
   onSelectSession,
   onLoadMore,
 }: WorkspaceSessionGroupCollapsibleProps) {
-  const [expandSettled, setExpandSettled] = useState(false);
-  const innerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!expanded) {
-      setExpandSettled(false);
-    }
-  }, [expanded]);
-
-  useLayoutEffect(() => {
-    const contentEl =
-      innerRef.current?.parentElement instanceof HTMLElement ? innerRef.current.parentElement : null;
-    if (!contentEl) {
-      return;
-    }
-    if (expanded && expandSettled) {
-      contentEl.style.height = "auto";
-      contentEl.style.animation = "none";
-      contentEl.style.overflow = "visible";
-      return;
-    }
-    if (!expanded) {
-      contentEl.style.height = "";
-      contentEl.style.animation = "";
-      contentEl.style.overflow = "";
-    }
-  }, [expanded, expandSettled, visibleSessions.length]);
-
-  const handleContentAnimationEnd = useCallback(
-    (event: AnimationEvent<HTMLDivElement>) => {
-      if (event.animationName === "collapsible-down" && expanded) {
-        setExpandSettled(true);
-      }
-    },
-    [expanded],
-  );
-
-  const handleLoadMore = useCallback(() => {
-    setExpandSettled(true);
-    onLoadMore();
-  }, [onLoadMore]);
-
   return (
-    <Collapsible open={expanded} onOpenChange={onOpenChange} className="min-w-0">
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          aria-controls={panelId}
-          className={cn(
-            "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
-            "outline-none",
-            sidebarInteractionMotionClass,
-            "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-            sidebarItemDefaultTextClass,
-            sessionRowHoverClass(micaStyle),
-          )}
-          title={group.rootPath ?? group.label}
-          data-workspace-path={group.rootPath ?? group.id}
-        >
-          {expanded ? (
-            <FolderOpen className="size-3.5 shrink-0" aria-hidden />
-          ) : (
-            <FolderClosed className="size-3.5 shrink-0" aria-hidden />
-          )}
-          <span className="flex min-w-0 flex-1 items-center overflow-hidden">
-            <span className="inline-flex min-w-0 max-w-full items-center gap-1">
-              <span className="truncate text-xs font-medium">{group.label}</span>
-              <ChevronRight
-                className={cn(
-                  "hidden size-3 shrink-0 text-muted-foreground/55 transition-transform duration-150",
-                  "group-hover:inline-flex group-focus-visible:inline-flex",
-                  expanded && "rotate-90",
-                )}
-                aria-hidden
-              />
-            </span>
-          </span>
-        </button>
-      </CollapsibleTrigger>
-
-      <CollapsibleContent
-        id={panelId}
-        className={cn("min-w-0", expandSettled && expanded && "h-auto [animation:none]")}
-        onAnimationEnd={handleContentAnimationEnd}
+    <AnimatedCollapse
+      open={expanded}
+      onOpenChange={onOpenChange}
+      className="min-w-0"
+    >
+      <AnimatedCollapseTrigger
+        disabled={disabled}
+        className={cn(
+          "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
+          "outline-none",
+          sidebarInteractionMotionClass,
+          "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+          sidebarItemDefaultTextClass,
+          sessionRowHoverClass(micaStyle),
+        )}
+        title={group.rootPath ?? group.label}
+        data-workspace-path={group.rootPath ?? group.id}
       >
-        <div ref={innerRef} className="mt-0.5 flex min-w-0 flex-col gap-0.5">
+        {expanded ? (
+          <FolderOpen className="size-3.5 shrink-0" aria-hidden />
+        ) : (
+          <FolderClosed className="size-3.5 shrink-0" aria-hidden />
+        )}
+        <span className="flex min-w-0 flex-1 items-center overflow-hidden">
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+            <span className="truncate text-xs font-medium">{group.label}</span>
+            <ChevronRight
+              className={cn(
+                "hidden size-3 shrink-0 text-muted-foreground/55 transition-transform duration-150",
+                "group-hover:inline-flex group-focus-visible:inline-flex",
+                expanded && "rotate-90",
+              )}
+              aria-hidden
+            />
+          </span>
+        </span>
+      </AnimatedCollapseTrigger>
+
+      <AnimatedCollapseContent className="min-w-0">
+        <div className="mt-0.5 flex min-w-0 flex-col gap-0.5">
           {visibleSessions.map((session) => (
             <SessionListRow
               key={session.path}
@@ -365,11 +319,11 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
             hiddenCount={hiddenSessionCount}
             nested
             disabled={disabled}
-            onLoadMore={handleLoadMore}
+            onLoadMore={onLoadMore}
           />
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      </AnimatedCollapseContent>
+    </AnimatedCollapse>
   );
 });
 
@@ -1276,7 +1230,6 @@ function SessionSidebarInner({
               >
                 {workspaceGroups.map((group) => {
                   const expanded = collapsedWorkspaceIds[group.id] !== false;
-                  const panelId = `workspace-session-group-${group.id.replace(/[^a-z0-9_-]/g, "-")}`;
                   const visibleCount = visibleCountByWorkspaceGroupId[group.id] ?? SIDEBAR_SESSION_PAGE_SIZE;
                   const visibleSessions = group.sessions.slice(0, visibleCount);
                   const hiddenSessionCount = group.sessions.length - visibleSessions.length;
@@ -1286,7 +1239,6 @@ function SessionSidebarInner({
                       key={group.id}
                       group={group}
                       expanded={expanded}
-                      panelId={panelId}
                       disabled={disabled}
                       micaStyle={micaStyle}
                       visibleSessions={visibleSessions}
