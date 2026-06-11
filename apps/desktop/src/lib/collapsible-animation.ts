@@ -1,3 +1,6 @@
+/** 与 `styles.css` 中 `--animate-collapsible-down` 时长一致。 */
+export const COLLAPSIBLE_OPEN_ANIMATION_MS = 280;
+
 /** 与 `styles.css` 中 `--animate-collapsible-up` 时长一致。 */
 export const COLLAPSIBLE_CLOSE_ANIMATION_MS = 220;
 
