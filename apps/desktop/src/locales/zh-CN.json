@@ -850,6 +850,7 @@
     "videoGenComplete": "视频生成完成",
     "commandPrefix": "命令:",
     "shellOutputEmpty": "（无输出）",
+    "shellTerminate": "终止命令",
     "shellOutputTruncated": "输出已截断。",
     "lspErrorCount_one": "{{count}} 个错误",
     "lspErrorCount_other": "{{count}} 个错误",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Square } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { EditFileLineDeltaBadge } from "@/components/edit-file-line-delta-badge";
@@ -12,6 +12,7 @@ import {
 import { ToolCallDiffView } from "@/components/tool-call-diff-view";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { resolveToolLineDeltaForDisplay } from "@/lib/edit-file-line-delta";
@@ -37,6 +38,7 @@ import {
   toolCardFileNameDetailClass,
   toolCardSecondaryTextClass,
 } from "@/lib/file-tool-lsp-diagnostics-display";
+import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type { ToolBlockSnapshot } from "@/types";
 
@@ -375,9 +377,11 @@ function FileToolDiffExpandedBody({
 function ShellToolExpandedBody({
   tool,
   command,
+  onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
   command: string | undefined;
+  onAbortShell?: (toolCallId: string) => void;
 }) {
   const { t } = useTranslation();
   const outputPreRef = useRef<HTMLPreElement>(null);
@@ -394,6 +398,9 @@ function ShellToolExpandedBody({
   const showArgsExcerpt = !command && Boolean(tool.argsExcerpt?.trim());
 
   const commandLine = command?.trim();
+  const toolCallId = tool.toolCallId?.trim() ?? "";
+  const showTerminateButton =
+    tool.phase === "running" && toolCallId.length > 0 && Boolean(onAbortShell);
   const showShellPanel = Boolean(commandLine || shellOutput);
 
   useEffect(() => {
@@ -413,10 +420,30 @@ function ShellToolExpandedBody({
         <div className="space-y-1">
           <div className="overflow-hidden rounded-md border border-border/20 bg-muted/15 p-2 text-xs leading-relaxed text-muted-foreground">
             {commandLine ? (
-              <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono">
-                <span className="select-none text-muted-foreground/75">$ </span>
-                {commandLine}
-              </pre>
+              <div className="flex items-center gap-2">
+                <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono">
+                  <span className="select-none text-muted-foreground/75">$ </span>
+                  {commandLine}
+                </pre>
+                {showTerminateButton ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={cn(
+                      "size-7 shrink-0 rounded-full p-0 shadow-none [&_svg]:size-3",
+                      instantHoverMotionClass,
+                    )}
+                    title={t("tool.shellTerminate")}
+                    aria-label={t("tool.shellTerminate")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onAbortShell?.(toolCallId);
+                    }}
+                  >
+                    <Square className="size-3" strokeWidth={2.4} aria-hidden />
+                  </Button>
+                ) : null}
+              </div>
             ) : null}
             {shellOutput ? (
               <div className={commandLine ? "mt-2" : undefined}>
@@ -460,9 +487,11 @@ function ShellToolExpandedBody({
 export function MinimalToolCallCard({
   tool,
   onOpenSubagentViewer,
+  onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
   onOpenSubagentViewer?: (toolCallId: string) => void;
+  onAbortShell?: (toolCallId: string) => void;
 }) {
   const summary = getToolCallSummaryParts(tool);
   const shimmerActive = toolCallPhaseShowsShimmer(tool.phase);
@@ -478,6 +507,11 @@ export function MinimalToolCallCard({
   );
   const expandable = toolHasExpandableContent(tool);
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (isShell && tool.phase === "running") {
+      setOpen(true);
+    }
+  }, [isShell, tool.phase]);
   const showLspHover = shouldShowLspDiagnosticsOnToolCard(tool);
   const lspHoverItemId = tool.toolCallId ?? tool.toolName;
   const lspDiagnostics = showLspHover ? tool.lspWriteDiagnostics : undefined;
@@ -527,7 +561,7 @@ export function MinimalToolCallCard({
   const expandedBody = (
     <div className="pt-1.5">
       {isShell ? (
-        <ShellToolExpandedBody tool={tool} command={shellCommand} />
+        <ShellToolExpandedBody tool={tool} command={shellCommand} onAbortShell={onAbortShell} />
       ) : isFileDiff ? (
         <FileToolDiffExpandedBody tool={tool} open={open} />
       ) : isResponsesBuiltIn ? (

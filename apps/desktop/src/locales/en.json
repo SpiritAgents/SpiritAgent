@@ -852,6 +852,7 @@
     "videoGenComplete": "Video generation complete",
     "commandPrefix": "Command:",
     "shellOutputEmpty": "(no output)",
+    "shellTerminate": "Terminate command",
     "shellOutputTruncated": "Output was truncated.",
     "lspErrorCount_one": "{{count}} error",
     "lspErrorCount_other": "{{count}} errors",
