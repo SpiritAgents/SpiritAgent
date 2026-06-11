@@ -380,6 +380,8 @@ function ShellToolExpandedBody({
   command: string | undefined;
 }) {
   const { t } = useTranslation();
+  const outputPreRef = useRef<HTMLPreElement>(null);
+  const followTail = tool.phase === "running";
   const shellOutput = useMemo(() => {
     const parsed = parseShellToolResult(tool.outputExcerpt);
     if (parsed) {
@@ -393,6 +395,17 @@ function ShellToolExpandedBody({
 
   const commandLine = command?.trim();
   const showShellPanel = Boolean(commandLine || shellOutput);
+
+  useEffect(() => {
+    if (!followTail) {
+      return;
+    }
+    const element = outputPreRef.current;
+    if (!element) {
+      return;
+    }
+    element.scrollTop = element.scrollHeight;
+  }, [followTail, shellOutput?.text]);
 
   return (
     <div className="space-y-2">
@@ -408,7 +421,15 @@ function ShellToolExpandedBody({
             {shellOutput ? (
               <div className={commandLine ? "mt-2" : undefined}>
                 {shellOutput.text.length > 0 ? (
-                  <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono">{shellOutput.text}</pre>
+                  <pre
+                    ref={outputPreRef}
+                    className={cn(
+                      "overflow-x-auto whitespace-pre-wrap break-words font-mono",
+                      followTail && "max-h-96 overflow-y-auto overscroll-contain",
+                    )}
+                  >
+                    {shellOutput.text}
+                  </pre>
                 ) : (
                   <p className="text-muted-foreground/70">{t("tool.shellOutputEmpty")}</p>
                 )}
