@@ -1,4 +1,3 @@
-import { exec as execCallback } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
@@ -12,7 +11,6 @@ import {
 } from 'node:fs/promises';
 import { release as osRelease } from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
 import { glob as globPaths } from 'glob';
 
@@ -25,13 +23,11 @@ import {
 
 import { applyDiff } from './apply-diff.js';
 import {
-  decodeShellHostOutput,
   defaultShellForPty,
-  prepareShellCommandForHostExecution,
   shellCommandParameterDescriptionForResolvedShell,
   shellDisplayNameForResolvedShell,
-  shellHostExecUsesBufferOutput,
 } from './default-terminal-shell.js';
+import { runShellCommand } from './shell-execution.js';
 import {
   readHostFileSnapshot,
   type HostFileChangeKind,
@@ -87,8 +83,6 @@ import {
   buildRunShellCommandToolResult,
   serializeRunShellCommandToolResult,
 } from '@spirit-agent/core';
-
-const exec = promisify(execCallback);
 
 const PERMISSIONS_FILE = 'tool-permissions.json';
 const MAX_READ_LINES_DEFAULT = 200;
@@ -1029,7 +1023,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'finish_task':
         return createHostToolTextOutput(request.summary?.trim() || 'Task marked complete.');
       case 'run_shell_command':
-        return this.executeShell(request.command);
+        return this.executeShell(request.command, this.requestMetadataFor(request)?.onOutputChunk);
       case 'web_fetch':
         return this.executeWebFetch(request.url);
       case 'list_directory_files':
@@ -1713,57 +1707,25 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     return out;
   }
 
-  private async executeShell(command: string): Promise<string> {
+  private async executeShell(
+    command: string,
+    onOutputChunk?: (chunk: string) => void,
+  ): Promise<string> {
     const shell = this.toolDefinitionEnvironment();
-    const { file: shellExecutable } = defaultShellForPty();
-    const preparedCommand = prepareShellCommandForHostExecution(shellExecutable, command);
-    const decodeBufferOutput = shellHostExecUsesBufferOutput(shellExecutable);
-    let stdout = '';
-    let stderr = '';
-    let code = 0;
-    try {
-      const result = await exec(preparedCommand, {
-        cwd: this.workspaceRoot,
-        maxBuffer: 8 * 1024 * 1024,
-        windowsHide: true,
-        shell: shellExecutable,
-        encoding: decodeBufferOutput ? 'buffer' : 'utf8',
-      });
-      if (decodeBufferOutput) {
-        const out = result.stdout as Buffer | undefined;
-        const err = result.stderr as Buffer | undefined;
-        stdout = decodeShellHostOutput(shellExecutable, out ?? Buffer.alloc(0));
-        stderr = decodeShellHostOutput(shellExecutable, err ?? Buffer.alloc(0));
-      } else {
-        stdout = (result.stdout as string | undefined) ?? '';
-        stderr = (result.stderr as string | undefined) ?? '';
-      }
-    } catch (error: unknown) {
-      const ex = error as { stdout?: string | Buffer; stderr?: string | Buffer; code?: number };
-      if (decodeBufferOutput) {
-        stdout = decodeShellHostOutput(
-          shellExecutable,
-          Buffer.isBuffer(ex.stdout) ? ex.stdout : Buffer.alloc(0),
-        );
-        stderr = decodeShellHostOutput(
-          shellExecutable,
-          Buffer.isBuffer(ex.stderr) ? ex.stderr : Buffer.alloc(0),
-        );
-      } else {
-        stdout = typeof ex.stdout === 'string' ? ex.stdout : '';
-        stderr = typeof ex.stderr === 'string' ? ex.stderr : '';
-      }
-      code = typeof ex.code === 'number' ? ex.code : -1;
-    }
+    const result = await runShellCommand({
+      workspaceRoot: this.workspaceRoot,
+      command,
+      ...(onOutputChunk ? { onOutputChunk } : {}),
+    });
 
     return serializeRunShellCommandToolResult(
       buildRunShellCommandToolResult({
         terminal: shell.shellDisplayName,
         workspace: this.workspaceRoot,
         command,
-        exitCode: code,
-        stdout,
-        stderr,
+        exitCode: result.exitCode,
+        stdout: result.stdout,
+        stderr: result.stderr,
       }),
     );
   }
