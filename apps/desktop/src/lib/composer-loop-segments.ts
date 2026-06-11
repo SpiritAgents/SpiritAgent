@@ -16,7 +16,40 @@ export function hasLoopSegment(segs: RichSegment[]): boolean {
 }
 
 export function removeLoopSegment(segs: RichSegment[]): RichSegment[] {
-  return mergeAdjacentTextSegments(segs.filter((s) => s.kind !== "loop"));
+  const merged = mergeAdjacentTextSegments(segs);
+  const loopIndex = loopChipIndex(merged);
+  if (loopIndex < 0) {
+    return merged;
+  }
+  return stripLoopChipTailSpacer(merged, loopIndex);
+}
+
+/** Remove chip-inserted tail spacer (lone " " / "") immediately after a loop chip. */
+function stripLoopChipTailSpacer(segs: RichSegment[], chipIndex: number): RichSegment[] {
+  const withoutChip = [...segs.slice(0, chipIndex), ...segs.slice(chipIndex + 1)];
+  const tailIdx = chipIndex;
+  const tail = withoutChip[tailIdx];
+  if (tail?.kind !== "text") {
+    const merged = mergeAdjacentTextSegments(withoutChip);
+    return merged.length > 0 ? merged : emptySegments();
+  }
+  if (tail.value === " " || tail.value === "") {
+    const merged = mergeAdjacentTextSegments([
+      ...withoutChip.slice(0, tailIdx),
+      ...withoutChip.slice(tailIdx + 1),
+    ]);
+    return merged.length > 0 ? merged : emptySegments();
+  }
+  if (tail.value.startsWith(" ")) {
+    const merged = mergeAdjacentTextSegments([
+      ...withoutChip.slice(0, tailIdx),
+      { kind: "text", value: tail.value.slice(1) },
+      ...withoutChip.slice(tailIdx + 1),
+    ]);
+    return merged.length > 0 ? merged : emptySegments();
+  }
+  const merged = mergeAdjacentTextSegments(withoutChip);
+  return merged.length > 0 ? merged : emptySegments();
 }
 
 /** Insert loop after existing structural chips (plan/ask/debug), before body text. */

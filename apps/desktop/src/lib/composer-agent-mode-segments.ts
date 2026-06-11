@@ -22,7 +22,40 @@ export function currentAgentModeSegment(segs: RichSegment[]): AgentModeChipKind 
 }
 
 export function removeAgentModeSegment(segs: RichSegment[]): RichSegment[] {
-  return mergeAdjacentTextSegments(segs.filter((s) => s.kind !== "plan" && s.kind !== "ask" && s.kind !== "debug"));
+  const merged = mergeAdjacentTextSegments(segs);
+  const modeIndex = agentModeChipIndex(merged);
+  if (modeIndex < 0) {
+    return merged;
+  }
+  return stripAgentModeChipTailSpacer(merged, modeIndex);
+}
+
+/** Remove chip-inserted tail spacer (lone " " / "") immediately after an agent-mode chip. */
+function stripAgentModeChipTailSpacer(segs: RichSegment[], chipIndex: number): RichSegment[] {
+  const withoutChip = [...segs.slice(0, chipIndex), ...segs.slice(chipIndex + 1)];
+  const tailIdx = chipIndex;
+  const tail = withoutChip[tailIdx];
+  if (tail?.kind !== "text") {
+    const merged = mergeAdjacentTextSegments(withoutChip);
+    return merged.length > 0 ? merged : emptySegments();
+  }
+  if (tail.value === " " || tail.value === "") {
+    const merged = mergeAdjacentTextSegments([
+      ...withoutChip.slice(0, tailIdx),
+      ...withoutChip.slice(tailIdx + 1),
+    ]);
+    return merged.length > 0 ? merged : emptySegments();
+  }
+  if (tail.value.startsWith(" ")) {
+    const merged = mergeAdjacentTextSegments([
+      ...withoutChip.slice(0, tailIdx),
+      { kind: "text", value: tail.value.slice(1) },
+      ...withoutChip.slice(tailIdx + 1),
+    ]);
+    return merged.length > 0 ? merged : emptySegments();
+  }
+  const merged = mergeAdjacentTextSegments(withoutChip);
+  return merged.length > 0 ? merged : emptySegments();
 }
 
 function tailAfterModeChip(rest: RichSegment[]): RichSegment[] {
