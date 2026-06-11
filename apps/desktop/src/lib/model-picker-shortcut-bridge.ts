@@ -62,7 +62,7 @@ function listVisiblePickers(): RegisteredPicker[] {
 function pickerContainsActiveElement(picker: RegisteredPicker): boolean {
   const root = picker.getRoot();
   const active = document.activeElement;
-  if (!root || !(active instanceof Node)) {
+  if (!root || active == null || typeof root.contains !== "function") {
     return false;
   }
   return root.contains(active);
