@@ -156,7 +156,7 @@ type SettingsViewProps = {
   onListDreamsOverview: () => Promise<DesktopDreamOverviewItem[]>;
   /** Skills 页「生成 Skill」：回到主对话区并插入 create-skill Chip，后续直接写自然语言。 */
   onGenerateSkillNavigate?: () => void;
-  /** Rules 页「生成规则」：回到主对话区并预填 `/create-rule `。 */
+  /** Rules 页「生成规则」：回到主对话区并插入 create-rule Chip。 */
   onGenerateRuleNavigate?: () => void;
   /** 开发者页：在对话区播放上下文压缩 UI 演示（不调用模型）。 */
   onStartCompactionUiDemo?: () => void;

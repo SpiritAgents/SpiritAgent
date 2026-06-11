@@ -3448,9 +3448,7 @@ export default function App() {
                 prefillComposerSkillChip("create-skill");
               }}
               onGenerateRuleNavigate={() => {
-                setLastNonSettingsSurface("conversation");
-                setActiveSurface("conversation");
-                applySlashSuggestion("/create-rule ");
+                prefillComposerSkillChip("create-rule");
               }}
             />
           </div>
