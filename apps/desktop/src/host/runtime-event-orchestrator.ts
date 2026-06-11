@@ -114,6 +114,7 @@ export class DesktopRuntimeEventOrchestrator {
    * 同一个 Collapsible 实例上收起；本段 completed 时再拆成独立思考行。
    */
   private deferredAfterStreamThinking: string | undefined;
+  private shellOutputSnapshotTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly options: DesktopRuntimeEventOrchestratorOptions) {}
 
@@ -168,6 +169,20 @@ export class DesktopRuntimeEventOrchestrator {
     this.activeGenerateImageTools.clear();
     this.activeGenerateVideoTools.clear();
     this.deferredAfterStreamThinking = undefined;
+    if (this.shellOutputSnapshotTimer !== undefined) {
+      clearTimeout(this.shellOutputSnapshotTimer);
+      this.shellOutputSnapshotTimer = undefined;
+    }
+  }
+
+  private scheduleLiveSnapshotUpdateForShellOutput(): void {
+    if (this.shellOutputSnapshotTimer !== undefined) {
+      return;
+    }
+    this.shellOutputSnapshotTimer = setTimeout(() => {
+      this.shellOutputSnapshotTimer = undefined;
+      this.options.requestLiveSnapshotUpdate?.();
+    }, 150);
   }
 
   /** 无工具回合里暂挂的 after-stream 思考：在 completed / 空正文收尾时拆成独立思考行。 */
@@ -478,6 +493,26 @@ export class DesktopRuntimeEventOrchestrator {
             request: event.request as JsonObject,
           },
         });
+        if (event.decisionKind === 'allow') {
+          this.options.requestLiveSnapshotUpdate?.();
+        }
+        continue;
+      }
+      if (event.kind === 'tool-execution-output-chunk') {
+        if (this.shouldSuppressMainTimelineChildToolSurface(event.toolName)) {
+          continue;
+        }
+        const existing = this.findExistingToolSnapshot(event.toolCallId);
+        if (!existing) {
+          continue;
+        }
+        const updated: ToolBlockSnapshot = {
+          ...existing,
+          outputExcerpt: `${existing.outputExcerpt ?? ''}${event.chunk}`,
+        };
+        this.options.assistantMessages.upsertToolMessage(event.toolCallId, updated, batchId);
+        this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, updated);
+        this.scheduleLiveSnapshotUpdateForShellOutput();
         continue;
       }
       if (event.kind === 'tool-execution-finished') {
