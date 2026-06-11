@@ -444,6 +444,7 @@ function ToolCallCollapsible({
   readManagedVideoPreviewUrl,
   saveLocalImageAs,
   onOpenSubagentViewer,
+  onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
@@ -451,6 +452,7 @@ function ToolCallCollapsible({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
   onOpenSubagentViewer?: (toolCallId: string) => void;
+  onAbortShell?: (toolCallId: string) => void;
 }) {
   if (tool.toolName === "finish_task") {
     return null;
@@ -477,7 +479,11 @@ function ToolCallCollapsible({
   }
 
   return (
-    <MinimalToolCallCard tool={tool} onOpenSubagentViewer={onOpenSubagentViewer} />
+    <MinimalToolCallCard
+      tool={tool}
+      onOpenSubagentViewer={onOpenSubagentViewer}
+      onAbortShell={onAbortShell}
+    />
   );
 }
 
@@ -1272,6 +1278,7 @@ function MessageCard({
   readLocalVideoPreviewUrl,
   saveLocalImageAs,
   onOpenSubagentViewer,
+  onAbortShell,
   queuedCanMoveUp = false,
   queueActionBusy = false,
   onQueueMoveUp,
@@ -1318,6 +1325,7 @@ function MessageCard({
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   saveLocalImageAs: SaveLocalImageAs;
   onOpenSubagentViewer?: (toolCallId: string) => void;
+  onAbortShell?: (toolCallId: string) => void;
   queuedCanMoveUp?: boolean;
   queueActionBusy?: boolean;
   onQueueMoveUp?(queueId: string): void;
@@ -1486,6 +1494,7 @@ function MessageCard({
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             saveLocalImageAs={saveLocalImageAs}
             onOpenSubagentViewer={onOpenSubagentViewer}
+            onAbortShell={onAbortShell}
           />
         ) : null}
         {!isUser && showContinueButton && continueTarget ? (
@@ -3599,6 +3608,9 @@ export default function App() {
                               onOpenSubagentViewer={
                                 subagentViewActive ? undefined : handleOpenSubagentViewer
                               }
+                              onAbortShell={(toolCallId) => {
+                                void runtime.abortShellCommand(toolCallId);
+                              }}
                               queuedCanMoveUp={queuedCanMoveUp}
                               queueActionBusy={runtime.busyAction === "send"}
                               onQueueMoveUp={(queueId) => {
