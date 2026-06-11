@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 
@@ -11,12 +11,19 @@ import {
   HoverDetailTooltip,
   useHoverDetailTooltipContext,
 } from "@/components/ui/hover-detail-tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DESKTOP_OVERLAY_LIST_GROUP_LABEL,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
+import { modSlashShortcutLabel } from "@/lib/desktop-shell";
+import {
+  notifyModelPickerFocused,
+  registerModelPicker,
+  unregisterModelPicker,
+} from "@/lib/model-picker-shortcut-bridge";
 import {
   buildModelCatalogDetailMap,
   buildModelCatalogDisplayTitleMap,
@@ -76,9 +83,12 @@ export type ModelPickerMenuProps = {
   activeModelName: string;
   activeReasoningEffort?: DesktopModelReasoningEffort;
   disabled?: boolean;
+  open?: boolean;
+  onOpenChange?(open: boolean): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect?(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
   triggerClassName?: string;
+  menuContentClassName?: string;
 };
 
 export function ModelPickerMenu({
@@ -87,13 +97,31 @@ export function ModelPickerMenu({
   activeModelName,
   activeReasoningEffort,
   disabled,
+  open: openProp,
+  onOpenChange,
   onModelSelect,
   onModelReasoningEffortSelect,
   triggerClassName,
+  menuContentClassName,
 }: ModelPickerMenuProps) {
   const { t } = useTranslation();
-  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [modelFilter, setModelFilter] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const registrationIdRef = useRef<string | null>(null);
+  const reactId = useId();
+
+  const isControlled = openProp !== undefined;
+  const modelMenuOpen = isControlled ? openProp : internalOpen;
+  const setModelMenuOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) {
+        setInternalOpen(next);
+      }
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
 
   const activeModelProfile = models.find((model) => model.name === activeModelName);
   const displayTitleByModelName = useMemo(
@@ -131,109 +159,145 @@ export function ModelPickerMenu({
       )
     : activeModelName;
 
+  const shortcutHint = t("app.modelPickerShortcut", {
+    shortcut: modSlashShortcutLabel(),
+  });
+
+  useEffect(() => {
+    const id = registerModelPicker({
+      open: () => setModelMenuOpen(true),
+      getRoot: () => rootRef.current,
+    });
+    registrationIdRef.current = id;
+    return () => {
+      unregisterModelPicker(id);
+      registrationIdRef.current = null;
+    };
+  }, [setModelMenuOpen]);
+
+  const handleTriggerFocus = useCallback(() => {
+    const id = registrationIdRef.current;
+    if (id) {
+      notifyModelPickerFocused(id);
+    }
+  }, []);
+
   if (models.length === 0) {
     return <span className="px-1 text-xs text-muted-foreground">{t("app.noModelsAvailable")}</span>;
   }
 
   return (
-    <FilteredOverlayMenu
-      variant="filtered-list"
-      open={modelMenuOpen}
-      onOpenChange={(open) => {
-        setModelMenuOpen(open);
-        if (!open) {
-          setModelFilter("");
+    <div ref={rootRef} data-model-picker-root data-model-picker-id={reactId} className="min-w-0">
+      <FilteredOverlayMenu
+        variant="filtered-list"
+        open={modelMenuOpen}
+        onOpenChange={(open) => {
+          setModelMenuOpen(open);
+          if (!open) {
+            setModelFilter("");
+          }
+        }}
+        filterValue={modelFilter}
+        onFilterChange={setModelFilter}
+        filterPlaceholder={t("app.filterModels")}
+        trigger={
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <FilteredOverlayMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("app.selectModel")}
+                  disabled={disabled}
+                  onFocus={handleTriggerFocus}
+                  className={cn(
+                    "inline-flex h-7 min-w-0 max-w-full items-center gap-0.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                    instantHoverMotionClass,
+                    triggerClassName,
+                  )}
+                >
+                  <span className="min-w-0 truncate" title={activeModelSummary}>
+                    {activeModelSummary}
+                  </span>
+                  <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
+                </button>
+              </FilteredOverlayMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              {shortcutHint}
+            </TooltipContent>
+          </Tooltip>
         }
-      }}
-      filterValue={modelFilter}
-      onFilterChange={setModelFilter}
-      filterPlaceholder={t("app.filterModels")}
-      trigger={
-        <FilteredOverlayMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label={t("app.selectModel")}
-            disabled={disabled}
-            className={cn(
-              "inline-flex h-7 min-w-0 max-w-full items-center gap-0.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
-              instantHoverMotionClass,
-              triggerClassName,
-            )}
-          >
-            <span className="min-w-0 truncate" title={activeModelSummary}>
-              {activeModelSummary}
-            </span>
-            <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
-          </button>
-        </FilteredOverlayMenuTrigger>
-      }
-    >
-      {filteredModelGroups.length === 0 ? (
-        <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("app.noMatches")}</p>
-      ) : (
-        <HoverDetailTooltip<ModelPickerItem> getItemId={(model) => model.name} openDelayMs={0}>
-          <HoverDetailTooltip.TriggerZone>
-            {filteredModelGroups.map((group) => (
-              <div key={group.provider} className="mb-2 last:mb-0">
-                <div className={DESKTOP_OVERLAY_LIST_GROUP_LABEL}>
-                  {t(group.labelKey, { defaultValue: group.fallbackLabel })}
+      >
+        {filteredModelGroups.length === 0 ? (
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("app.noMatches")}</p>
+        ) : (
+          <HoverDetailTooltip<ModelPickerItem> getItemId={(model) => model.name} openDelayMs={0}>
+            <HoverDetailTooltip.TriggerZone>
+              {filteredModelGroups.map((group) => (
+                <div key={group.provider} className="mb-2 last:mb-0">
+                  <div className={DESKTOP_OVERLAY_LIST_GROUP_LABEL}>
+                    {t(group.labelKey, { defaultValue: group.fallbackLabel })}
+                  </div>
+                  {group.items.map((model) => {
+                    const displayTitle = modelDisplayTitleFromMap(model.name, displayTitleByModelName);
+                    return (
+                      <ModelPickerRow
+                        key={`${group.provider}:${model.name}`}
+                        model={model}
+                        displayTitle={displayTitle}
+                        isActive={activeModelProfile?.name === model.name}
+                        onSelectModel={() => {
+                          onModelSelect(model.name);
+                          setModelFilter("");
+                          setModelMenuOpen(false);
+                        }}
+                      />
+                    );
+                  })}
                 </div>
-                {group.items.map((model) => {
-                  const displayTitle = modelDisplayTitleFromMap(model.name, displayTitleByModelName);
-                  return (
-                    <ModelPickerRow
-                      key={`${group.provider}:${model.name}`}
-                      model={model}
-                      displayTitle={displayTitle}
-                      isActive={activeModelProfile?.name === model.name}
-                      onSelectModel={() => {
-                        onModelSelect(model.name);
-                        setModelFilter("");
-                        setModelMenuOpen(false);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </HoverDetailTooltip.TriggerZone>
-          <HoverDetailTooltip.Content
-            side="right"
-            align="start"
-            sideOffset={8}
-            collisionPadding={16}
-            className="z-[200] w-80 max-w-[min(20rem,calc(100vw-2rem))] p-3"
-          >
-            {(activeItem) => {
-              const model = activeItem as ModelPickerItem | null;
-              if (!model) {
-                return null;
-              }
-              const group = filteredModelGroups.find((entry) =>
-                entry.items.some((item) => item.name === model.name),
-              );
-              const providerLabel = group
-                ? t(group.labelKey, { defaultValue: group.fallbackLabel })
-                : model.provider ?? model.name;
+              ))}
+            </HoverDetailTooltip.TriggerZone>
+            <HoverDetailTooltip.Content
+              side="right"
+              align="start"
+              sideOffset={8}
+              collisionPadding={16}
+              className={cn(
+                "z-[200] w-80 max-w-[min(20rem,calc(100vw-2rem))] p-3",
+                menuContentClassName,
+              )}
+            >
+              {(activeItem) => {
+                const model = activeItem as ModelPickerItem | null;
+                if (!model) {
+                  return null;
+                }
+                const group = filteredModelGroups.find((entry) =>
+                  entry.items.some((item) => item.name === model.name),
+                );
+                const providerLabel = group
+                  ? t(group.labelKey, { defaultValue: group.fallbackLabel })
+                  : model.provider ?? model.name;
 
-              return (
-                <ModelPickerInspectorPanel
-                  model={model}
-                  catalogEntry={catalogDetailByModelName.get(model.name)}
-                  providerLabel={providerLabel}
-                  onReasoningEffortChange={(modelName, effort) => {
-                    onModelReasoningEffortSelect?.(modelName, effort);
-                    onModelSelect(modelName);
-                    setModelFilter("");
-                    setModelMenuOpen(false);
-                  }}
-                />
-              );
-            }}
-          </HoverDetailTooltip.Content>
-        </HoverDetailTooltip>
-      )}
-    </FilteredOverlayMenu>
+                return (
+                  <ModelPickerInspectorPanel
+                    model={model}
+                    catalogEntry={catalogDetailByModelName.get(model.name)}
+                    providerLabel={providerLabel}
+                    onReasoningEffortChange={(modelName, effort) => {
+                      onModelReasoningEffortSelect?.(modelName, effort);
+                      onModelSelect(modelName);
+                      setModelFilter("");
+                      setModelMenuOpen(false);
+                    }}
+                  />
+                );
+              }}
+            </HoverDetailTooltip.Content>
+          </HoverDetailTooltip>
+        )}
+      </FilteredOverlayMenu>
+    </div>
   );
 }
 
