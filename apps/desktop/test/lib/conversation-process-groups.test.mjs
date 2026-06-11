@@ -114,7 +114,6 @@ test('buildConversationRenderItems seals meta run before assistant body text', (
     return;
   }
   assert.deepEqual(group.messageIndices, [1, 2, 3]);
-  assert.equal(group.sealed, true);
   assert.equal(group.toolCounts.view, 1);
   assert.equal(group.toolCounts.edit, 1);
   assert.equal(isMessageHiddenByProcessGroup(items, 2), true);

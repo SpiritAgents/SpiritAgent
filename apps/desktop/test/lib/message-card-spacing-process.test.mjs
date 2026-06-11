@@ -19,7 +19,6 @@ test('shouldTightenAfterPreviousRenderItem tightens body text after process grou
     kind: 'process-group',
     groupId: 'main:process:2',
     messageIndices: [1],
-    sealed: true,
     toolCounts: {
       view: 1,
       create: 0,
