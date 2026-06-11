@@ -13,6 +13,7 @@ import { ToolCallDiffView } from "@/components/tool-call-diff-view";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { Button } from "@/components/ui/button";
+import { AnimatedCollapse, AnimatedCollapseContent } from "@/components/ui/animated-collapse";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { resolveToolLineDeltaForDisplay } from "@/lib/edit-file-line-delta";
@@ -486,10 +487,12 @@ function ShellToolExpandedBody({
 
 export function MinimalToolCallCard({
   tool,
+  variant = "standalone",
   onOpenSubagentViewer,
   onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
+  variant?: "standalone" | "process-nested";
   onOpenSubagentViewer?: (toolCallId: string) => void;
   onAbortShell?: (toolCallId: string) => void;
 }) {
@@ -625,16 +628,29 @@ export function MinimalToolCallCard({
   );
 
   const collapsibleInner = (
-    <Collapsible open={open} onOpenChange={setOpen} className="min-w-0">
-      {lspDiagnostics ? (
-        <FileToolLspDiagnosticsHoverTrigger itemId={lspHoverItemId} diagnostics={lspDiagnostics}>
-          {collapsibleTriggerButton}
-        </FileToolLspDiagnosticsHoverTrigger>
-      ) : (
-        collapsibleTriggerButton
-      )}
-      <CollapsibleContent className="min-w-0">{expandedBody}</CollapsibleContent>
-    </Collapsible>
+    variant === "process-nested" ? (
+      <AnimatedCollapse open={open} onOpenChange={setOpen} className="min-w-0">
+        {lspDiagnostics ? (
+          <FileToolLspDiagnosticsHoverTrigger itemId={lspHoverItemId} diagnostics={lspDiagnostics}>
+            {collapsibleTriggerButton}
+          </FileToolLspDiagnosticsHoverTrigger>
+        ) : (
+          collapsibleTriggerButton
+        )}
+        <AnimatedCollapseContent className="min-w-0">{expandedBody}</AnimatedCollapseContent>
+      </AnimatedCollapse>
+    ) : (
+      <Collapsible open={open} onOpenChange={setOpen} className="min-w-0">
+        {lspDiagnostics ? (
+          <FileToolLspDiagnosticsHoverTrigger itemId={lspHoverItemId} diagnostics={lspDiagnostics}>
+            {collapsibleTriggerButton}
+          </FileToolLspDiagnosticsHoverTrigger>
+        ) : (
+          collapsibleTriggerButton
+        )}
+        <CollapsibleContent className="min-w-0">{expandedBody}</CollapsibleContent>
+      </Collapsible>
+    )
   );
 
   if (!lspDiagnostics) {
