@@ -70,11 +70,20 @@ function DropdownMenuSubContent({
   );
 }
 
+type DropdownMenuContentProps = React.ComponentProps<
+  typeof DropdownMenuPrimitive.Content
+> & {
+  /** Menu Content mount focus hook; omitted from upstream DropdownMenu types. */
+  onOpenAutoFocus?: (event: Event) => void;
+  /** Menu roving-focus entry hook; omitted from upstream DropdownMenu types. */
+  onEntryFocus?: (event: Event) => void;
+};
+
 function DropdownMenuContent({
   className,
   sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: DropdownMenuContentProps) {
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import {
   DropdownMenu,
@@ -82,12 +82,15 @@ export function FilteredOverlayMenu({
       ? DESKTOP_OVERLAY_LIST_WORKSPACE_SCROLL_AREA
       : DESKTOP_OVERLAY_LIST_SCROLL_AREA;
 
-  useEffect(() => {
-    if (!open || !showFilter) {
+  const focusFilterInput = (event: Event) => {
+    if (!showFilter) {
       return;
     }
-    filterInputRef.current?.focus();
-  }, [open, showFilter]);
+    event.preventDefault();
+    requestAnimationFrame(() => {
+      filterInputRef.current?.focus();
+    });
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
@@ -96,6 +99,8 @@ export function FilteredOverlayMenu({
         align={align}
         side={side}
         className={contentClasses}
+        onOpenAutoFocus={focusFilterInput}
+        onEntryFocus={focusFilterInput}
       >
         {showFilter ? (
           <div className={DESKTOP_OVERLAY_LIST_FILTER_HEADER}>
