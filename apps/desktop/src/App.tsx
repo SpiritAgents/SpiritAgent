@@ -60,6 +60,11 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AnimatedCollapse,
+  AnimatedCollapseContent,
+  AnimatedCollapseTrigger,
+} from "@/components/ui/animated-collapse";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Card,
@@ -138,7 +143,10 @@ import {
   shouldShowAssistantCompactionCollapsible,
 } from "@/lib/conversation-compaction-ui";
 import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
-import { buildConversationRenderItems } from "@/lib/conversation-process-groups";
+import {
+  buildConversationRenderItems,
+  isMessageHiddenByProcessGroup,
+} from "@/lib/conversation-process-groups";
 import {
   hasAssistantBodyTextLaterInTurn,
   isAssistantReasoningLive,
@@ -1114,7 +1122,7 @@ function AssistantThinkingCollapsible({
   const interactive = !autoExpanded;
 
   return (
-    <Collapsible
+    <AnimatedCollapse
       open={expanded}
       onOpenChange={(open) => {
         if (!interactive) {
@@ -1124,29 +1132,26 @@ function AssistantThinkingCollapsible({
       }}
       className="min-w-0 py-0.5"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-            interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
-          )}
-        >
-          <ThinkingLabelWithShimmer active={thinkingActive} />
-          {interactive ? (
-            <ChevronRight
-              className={cn(
-                "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
-                "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-                expanded && "rotate-90",
-              )}
-              aria-hidden
-            />
-          ) : null}
-        </button>
-      </CollapsibleTrigger>
+      <AnimatedCollapseTrigger
+        className={cn(
+          "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
+          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+        )}
+      >
+        <ThinkingLabelWithShimmer active={thinkingActive} />
+        {interactive ? (
+          <ChevronRight
+            className={cn(
+              "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
+              "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+              expanded && "rotate-90",
+            )}
+            aria-hidden
+          />
+        ) : null}
+      </AnimatedCollapseTrigger>
       {showThinkingBody ? (
-        <CollapsibleContent className="min-w-0">
+        <AnimatedCollapseContent className="min-w-0">
           <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
             <AgentMarkdownMessage
               content={thinking}
@@ -1156,9 +1161,9 @@ function AssistantThinkingCollapsible({
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             />
           </div>
-        </CollapsibleContent>
+        </AnimatedCollapseContent>
       ) : null}
-    </Collapsible>
+    </AnimatedCollapse>
   );
 }
 
@@ -1289,6 +1294,7 @@ function MessageCard({
   onQueueMoveUp,
   onQueueSendNow,
   onQueueDelete,
+  hiddenByProcessGroup = false,
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -1296,6 +1302,7 @@ function MessageCard({
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
   listIndex: number;
+  hiddenByProcessGroup?: boolean;
   compactAfterPrevious: boolean;
   tightenAfterPreviousMeta: boolean;
   showContinueButton: boolean;
@@ -1346,16 +1353,12 @@ function MessageCard({
     "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
   const subagentStatusSurface =
     !isUser && message.content.trim() ? isSubagentStatusSurfaceMessage(message) : false;
-  const showThinkingCollapsible = shouldShowAssistantThinkingCollapsible(
-    message,
-    pendingAuxState,
-    messages,
-    listIndex,
-  );
-  const showCompactionCollapsible = shouldShowAssistantCompactionCollapsible(
-    message,
-    pendingAuxState,
-  );
+  const showThinkingCollapsible =
+    !hiddenByProcessGroup &&
+    shouldShowAssistantThinkingCollapsible(message, pendingAuxState, messages, listIndex);
+  const showCompactionCollapsible =
+    !hiddenByProcessGroup &&
+    shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
   const collapseThinkingDuringToolPreview = shouldCollapseThinkingDuringToolPreview(
     messages,
     listIndex,
@@ -3631,15 +3634,20 @@ export default function App() {
                             .filter((item) => item.queued === true).length;
                           const queuedCanMoveUp =
                             message.queued === true && queuedBeforeCount > 0;
+                          const hiddenByProcessGroup = isMessageHiddenByProcessGroup(
+                            conversationRenderItems,
+                            index,
+                          );
                           return (
                             <MessageCard
-                              key={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
+                              key={`${conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}@${index}`}
                               composerSessionKey={composerSessionKey}
                               conversationListScopeKey={conversationListScopeKey}
                               messages={messages}
                               pendingAuxState={conversationPendingAuxState}
                               listIndex={index}
                               message={message}
+                              hiddenByProcessGroup={hiddenByProcessGroup}
                               compactAfterPrevious={compactAfterPrevious}
                               tightenAfterPreviousMeta={tightenAfterPreviousMeta}
                               showContinueButton={

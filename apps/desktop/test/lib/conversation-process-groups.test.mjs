@@ -176,5 +176,84 @@ test('buildConversationRenderItems uses scope key in group id', () => {
   if (mainGroup.kind !== 'process-group' || subagentGroup.kind !== 'process-group') {
     return;
   }
+  assert.equal(mainGroup.groupId, 'main:process:1');
   assert.notEqual(mainGroup.groupId, subagentGroup.groupId);
+});
+
+test('buildConversationRenderItems keeps sealed thinking-only rows as messages', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    { id: 2, role: 'assistant', content: '', pending: false, aux: { thinking: 'plan' } },
+    { id: 3, role: 'assistant', content: 'First answer.', pending: false },
+    {
+      id: 4,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'read_file', phase: 'succeeded', headline: 'Viewed', detailLines: [] },
+    },
+    { id: 5, role: 'assistant', content: 'Second answer.', pending: false },
+  ];
+  const items = buildConversationRenderItems(messages, scopeKey);
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ['message', 'message', 'message', 'process-group', 'message'],
+  );
+  assert.equal(isMessageHiddenByProcessGroup(items, 1), false);
+  const group = items[3];
+  assert.equal(group.kind, 'process-group');
+  if (group.kind !== 'process-group') {
+    return;
+  }
+  assert.deepEqual(group.messageIndices, [3]);
+});
+
+test('buildConversationRenderItems assigns unique group ids within one turn', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    { id: 2, role: 'assistant', content: '', pending: false, aux: { thinking: 'plan' } },
+    { id: 3, role: 'assistant', content: 'First.', pending: false },
+    { id: 4, role: 'assistant', content: '', pending: false, tool: { toolName: 'read_file', phase: 'succeeded', headline: 'Viewed', detailLines: [] } },
+    { id: 5, role: 'assistant', content: '', pending: false, aux: { thinking: 'more' } },
+    { id: 6, role: 'assistant', content: 'Second.', pending: false },
+  ];
+  const items = buildConversationRenderItems(messages, scopeKey);
+  const groups = items.filter((item) => item.kind === 'process-group');
+  assert.equal(groups.length, 1);
+  if (groups[0]?.kind !== 'process-group') {
+    return;
+  }
+  assert.equal(groups[0].groupId, 'main:process:3-4');
+  assert.deepEqual(groups[0].messageIndices, [3, 4]);
+});
+
+test('buildConversationRenderItems merges post-body thinking into the next tool process group', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    { id: 2, role: 'assistant', content: '', pending: false, aux: { thinking: 'open' } },
+    { id: 3, role: 'assistant', content: 'Body one.', pending: false },
+    { id: 4, role: 'assistant', content: '', pending: false, aux: { thinking: 'a' } },
+    { id: 5, role: 'assistant', content: '', pending: false, aux: { thinking: 'b' } },
+    {
+      id: 6,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'read_file', phase: 'succeeded', headline: 'Viewed', detailLines: [] },
+    },
+    { id: 7, role: 'assistant', content: 'Body two.', pending: false },
+  ];
+  const items = buildConversationRenderItems(messages, scopeKey);
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ['message', 'message', 'message', 'process-group', 'message'],
+  );
+  assert.equal(isMessageHiddenByProcessGroup(items, 3), true);
+  assert.equal(isMessageHiddenByProcessGroup(items, 4), true);
+  const group = items[3];
+  assert.equal(group.kind, 'process-group');
+  if (group.kind !== 'process-group') {
+    return;
+  }
+  assert.deepEqual(group.messageIndices, [3, 4, 5]);
 });

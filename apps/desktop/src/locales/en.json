@@ -934,7 +934,11 @@
     "generated_one": "1 Generated",
     "generated_other": "{{count}} Generated",
     "other_one": "1 Other",
-    "other_other": "{{count}} Other"
+    "other_other": "{{count}} Other",
+    "thought_one": "1 Thought",
+    "thought_other": "{{count}} Thoughts",
+    "compacted_one": "1 Compacted",
+    "compacted_other": "{{count}} Compacted"
   },
   "demo": {
     "compactionUserText": "Please continue implementing the Desktop connection wizard: automatically compress history when context approaches the limit, and retain the most recent round of tool results.",

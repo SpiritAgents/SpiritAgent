@@ -7,9 +7,11 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 
+import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { cn } from "@/lib/utils";
 
 type AnimatedCollapseContextValue = {
@@ -26,10 +28,6 @@ function useAnimatedCollapseContext(component: string): AnimatedCollapseContextV
     throw new Error(`${component} must be used within AnimatedCollapse`);
   }
   return context;
-}
-
-function syncAnimatedCollapseHeight(outer: HTMLElement, inner: HTMLElement): void {
-  outer.style.setProperty("--spirit-collapsible-content-height", `${inner.scrollHeight}px`);
 }
 
 function AnimatedCollapse({
@@ -106,25 +104,47 @@ function AnimatedCollapseContent({
   const { open, contentId } = useAnimatedCollapseContext("AnimatedCollapseContent");
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
+  const hasOpenedRef = useRef(open);
+  const mounted = useCollapsibleChildMount(open);
+
+  if (open) {
+    hasOpenedRef.current = true;
+  }
 
   useLayoutEffect(() => {
     const outer = outerRef.current;
     const inner = innerRef.current;
-    if (!outer || !inner) {
+    if (!outer || !inner || !mounted) {
       return;
     }
 
-    syncAnimatedCollapseHeight(outer, inner);
+    const syncHeight = () => {
+      outer.style.setProperty("--spirit-collapsible-content-height", `${inner.scrollHeight}px`);
+    };
+
+    syncHeight();
 
     const observer = new ResizeObserver(() => {
-      if (!outerRef.current || !innerRef.current) {
-        return;
-      }
-      syncAnimatedCollapseHeight(outerRef.current, innerRef.current);
+      syncHeight();
     });
     observer.observe(inner);
     return () => observer.disconnect();
-  }, [open, children]);
+  }, [mounted, open, children]);
+
+  if (!mounted) {
+    return (
+      <div
+        ref={outerRef}
+        id={contentId}
+        data-slot="animated-collapse-content"
+        data-state="closed"
+        className="h-0 overflow-hidden opacity-0"
+        style={{ "--spirit-collapsible-content-height": "0px" } as CSSProperties}
+      />
+    );
+  }
+
+  const shouldAnimate = hasOpenedRef.current;
 
   return (
     <div
@@ -134,10 +154,20 @@ function AnimatedCollapseContent({
       data-state={open ? "open" : "closed"}
       className={cn(
         "overflow-hidden",
-        "data-[state=open]:animate-spirit-collapsible-down data-[state=open]:[animation-fill-mode:forwards]",
-        "data-[state=closed]:animate-spirit-collapsible-up data-[state=closed]:[animation-fill-mode:forwards]",
+        shouldAnimate &&
+          open &&
+          "animate-spirit-collapsible-down data-[state=open]:[animation-fill-mode:forwards]",
+        shouldAnimate &&
+          !open &&
+          "animate-spirit-collapsible-up data-[state=closed]:[animation-fill-mode:forwards]",
+        !open && !shouldAnimate && "h-0 opacity-0",
         className,
       )}
+      style={
+        !open && !shouldAnimate
+          ? ({ "--spirit-collapsible-content-height": "0px" } as CSSProperties)
+          : undefined
+      }
     >
       <div ref={innerRef}>{children}</div>
     </div>
