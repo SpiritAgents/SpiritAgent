@@ -120,7 +120,9 @@ npm run dev:cli    # 构建 TS 包，然后 cargo run -p spirit-agent
 
 ### 快速开始（Zed）
 
-在 Zed 的 `settings.json` 中添加：
+1. 将 `SPIRIT_ACP_API_KEY` 设为**用户或系统环境变量**（Zed 启动 agent 子进程时会继承）。**不要**在 `settings.json` 里写 `${SPIRIT_ACP_API_KEY}` — Zed 不会展开该语法，会把字面量当作 API Key。
+2. 构建 server：`npm run build:acp-server`
+3. 在 Zed 的 `settings.json` 中添加：
 
 ```json
 "agent_servers": {
@@ -128,17 +130,18 @@ npm run dev:cli    # 构建 TS 包，然后 cargo run -p spirit-agent
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"],
     "env": {
-      "SPIRIT_ACP_API_KEY": "${SPIRIT_ACP_API_KEY}",
-      "SPIRIT_ACP_MODEL": "",
-      "SPIRIT_ACP_BASE_URL": ""
+      "SPIRIT_ACP_MODEL": "gpt-4.1-mini",
+      "SPIRIT_ACP_BASE_URL": "https://api.openai.com/v1"
     }
   }
 }
 ```
 
+`env` 中省略 `SPIRIT_ACP_API_KEY`，让进程继承用户/系统环境变量；或在 `env` 里直接写密钥字面量（不适合提交到共享配置）。
+
 | 环境变量 | 必填 | 说明 |
 | --- | --- | --- |
-| `SPIRIT_ACP_API_KEY` | 是 | LLM 提供商 API 密钥 |
+| `SPIRIT_ACP_API_KEY` | 是 | LLM 提供商 API 密钥 — 建议设为用户/系统环境变量，或在 `env` 中写明文 |
 | `SPIRIT_ACP_MODEL` | 否 | 模型名称（默认：`gpt-4.1-mini`） |
 | `SPIRIT_ACP_BASE_URL` | 否 | 自定义 LLM 端点 URL |
 | `SPIRIT_ACP_WORKSPACE` | 否 | 工作区根路径（默认：客户端传入的 `cwd`） |

@@ -16,11 +16,13 @@
  *   SPIRIT_ACP_WORKSPACE — Optional. Workspace root (default: cwd).
  *
  * Editor configuration example (Zed settings.json):
+ *   Set SPIRIT_ACP_API_KEY as a user/system environment variable first.
+ *   Do not use "${SPIRIT_ACP_API_KEY}" — Zed does not expand that syntax.
  *   "agent_servers": {
  *     "Spirit Agent": {
  *       "command": "node",
  *       "args": ["path/to/packages/acp-server/dist/stdio-entry.js"],
- *       "env": { "SPIRIT_ACP_API_KEY": "sk-..." }
+ *       "env": { "SPIRIT_ACP_MODEL": "gpt-4.1-mini" }
  *     }
  *   }
  */

@@ -611,6 +611,13 @@ export async function handlePendingStreamEvent<
   }
 
   runtime.pendingUserTurnStore = undefined;
+  runtime.storeCompletedTurnResult({
+    kind: 'failed',
+    error: event.error,
+    requestTrace: [...pending.turn.requestTrace],
+    toolExecutions: [...pending.turn.toolExecutions],
+    compactions: [...pending.turn.compactions],
+  });
   clearPendingStreamingState(runtime);
   runtime.emitEvent({ kind: 'assistant-response-completed' });
   return true;

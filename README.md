@@ -120,7 +120,9 @@ npm run dev:cli    # build TS packages, then cargo run -p spirit-agent
 
 ### Quick start (Zed)
 
-Add to your Zed `settings.json`:
+1. Set `SPIRIT_ACP_API_KEY` as a **user or system environment variable** (Zed inherits it when spawning the agent process). Do **not** use `${SPIRIT_ACP_API_KEY}` in `settings.json` — Zed does not expand that syntax and will pass the literal string as the key.
+2. Build the server: `npm run build:acp-server`
+3. Add to your Zed `settings.json`:
 
 ```json
 "agent_servers": {
@@ -128,17 +130,18 @@ Add to your Zed `settings.json`:
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"],
     "env": {
-      "SPIRIT_ACP_API_KEY": "${SPIRIT_ACP_API_KEY}",
-      "SPIRIT_ACP_MODEL": "",
-      "SPIRIT_ACP_BASE_URL": ""
+      "SPIRIT_ACP_MODEL": "gpt-4.1-mini",
+      "SPIRIT_ACP_BASE_URL": "https://api.openai.com/v1"
     }
   }
 }
 ```
 
+Omit `SPIRIT_ACP_API_KEY` from `env` so the process inherits your user/system variable. Alternatively, put the key directly in `env` as a literal string (less ideal for shared configs).
+
 | Environment variable | Required | Description |
 | --- | --- | --- |
-| `SPIRIT_ACP_API_KEY` | Yes | LLM provider API key |
+| `SPIRIT_ACP_API_KEY` | Yes | LLM provider API key — set as user/system env var, or literal in `env` |
 | `SPIRIT_ACP_MODEL` | No | Model name (default: `gpt-4.1-mini`) |
 | `SPIRIT_ACP_BASE_URL` | No | Custom LLM endpoint URL |
 | `SPIRIT_ACP_WORKSPACE` | No | Workspace root (default: `cwd` from client) |
