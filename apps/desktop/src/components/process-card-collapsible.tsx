@@ -29,7 +29,6 @@ export function ProcessCardCollapsible({
   groupId,
   messageIndices,
   messages,
-  sealed,
   toolCounts,
   pendingAuxState,
   manualOpen,
@@ -42,7 +41,6 @@ export function ProcessCardCollapsible({
   groupId: string;
   messageIndices: readonly number[];
   messages: readonly ConversationMessageSnapshot[];
-  sealed: boolean;
   toolCounts: ProcessToolCounts;
   pendingAuxState?: PendingAssistantAux;
   manualOpen?: boolean;
@@ -82,7 +80,7 @@ export function ProcessCardCollapsible({
   }, [groupId]);
 
   const expanded = manualOpenValue || autoExpanded;
-  const interactive = sealed;
+  const interactive = true;
 
   if (!summary) {
     return null;

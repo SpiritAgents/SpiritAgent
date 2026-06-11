@@ -3591,7 +3591,6 @@ export default function App() {
                                     groupId={renderItem.groupId}
                                     messageIndices={renderItem.messageIndices}
                                     messages={messages}
-                                    sealed={renderItem.sealed}
                                     toolCounts={renderItem.toolCounts}
                                     pendingAuxState={conversationPendingAuxState}
                                     playSealAnimation={shouldPlayProcessSealAnimation(renderItem.groupId)}
