@@ -52,6 +52,47 @@ export type ProcessSealAnimationPlanResult = {
   shouldPlayByGroupId: Map<string, boolean>;
 };
 
+export function resolveProcessSealNavigationSignals(input: {
+  conversationViewKey: string;
+  busyAction?: string | null;
+  isBusy?: boolean;
+  sessionMessages: readonly ConversationMessageSnapshot[];
+  stickyComposeTurnInFlight: boolean;
+}): {
+  sessionNavigationPending: boolean;
+  composeTurnInFlight: boolean;
+  nextStickyComposeTurnInFlight: boolean;
+} {
+  const sessionNavigationPending = input.busyAction === 'session';
+  const composeTurnInFlightThisRender =
+    !sessionNavigationPending &&
+    isLiveComposeViewKey(input.conversationViewKey) &&
+    (input.busyAction === 'send' ||
+      input.isBusy === true ||
+      input.sessionMessages.some((message) => message.pending));
+
+  const composeTurnInFlight =
+    composeTurnInFlightThisRender ||
+    (!sessionNavigationPending && input.stickyComposeTurnInFlight);
+
+  let nextStickyComposeTurnInFlight: boolean;
+  if (sessionNavigationPending) {
+    nextStickyComposeTurnInFlight = false;
+  } else if (composeTurnInFlightThisRender) {
+    nextStickyComposeTurnInFlight = true;
+  } else if (!isLiveComposeViewKey(input.conversationViewKey)) {
+    nextStickyComposeTurnInFlight = false;
+  } else {
+    nextStickyComposeTurnInFlight = input.stickyComposeTurnInFlight;
+  }
+
+  return {
+    sessionNavigationPending,
+    composeTurnInFlight,
+    nextStickyComposeTurnInFlight,
+  };
+}
+
 export function createInitialProcessSealPlanState(): ProcessSealPlanState {
   return { prevViewKey: null, prevGroupIds: new Set() };
 }
@@ -130,20 +171,15 @@ export function useProcessSealAnimationGate(input: {
   sessionMessages: readonly ConversationMessageSnapshot[];
   planResetKey?: number;
 }): (groupId: string) => boolean {
-  const composeTurnInFlightRef = useRef(false);
-  const sessionNavigationPendingRef = useRef(false);
+  const stickyComposeTurnInFlightRef = useRef(false);
 
-  if (input.busyAction === 'session') {
-    sessionNavigationPendingRef.current = true;
-    composeTurnInFlightRef.current = false;
-  } else if (
-    isLiveComposeViewKey(input.conversationViewKey) &&
-    (input.busyAction === 'send' ||
-      input.isBusy === true ||
-      input.sessionMessages.some((message) => message.pending))
-  ) {
-    composeTurnInFlightRef.current = true;
-  }
+  const navigationSignals = resolveProcessSealNavigationSignals({
+    conversationViewKey: input.conversationViewKey,
+    busyAction: input.busyAction,
+    isBusy: input.isBusy,
+    sessionMessages: input.sessionMessages,
+    stickyComposeTurnInFlight: stickyComposeTurnInFlightRef.current,
+  });
 
   const liveTurnActive = resolveProcessSealLiveTurnActive({
     subagentViewActive: input.subagentViewActive,
@@ -159,18 +195,15 @@ export function useProcessSealAnimationGate(input: {
     input.renderItems,
     {
       liveTurnActive,
-      composeTurnInFlight: composeTurnInFlightRef.current,
-      sessionNavigationPending: sessionNavigationPendingRef.current,
+      composeTurnInFlight: navigationSignals.composeTurnInFlight,
+      sessionNavigationPending: navigationSignals.sessionNavigationPending,
     },
     input.planResetKey,
   );
 
   useLayoutEffect(() => {
-    sessionNavigationPendingRef.current = false;
-    if (!isLiveComposeViewKey(input.conversationViewKey)) {
-      composeTurnInFlightRef.current = false;
-    }
-  }, [input.conversationViewKey, input.renderItems]);
+    stickyComposeTurnInFlightRef.current = navigationSignals.nextStickyComposeTurnInFlight;
+  }, [input.conversationViewKey, input.renderItems, navigationSignals.nextStickyComposeTurnInFlight]);
 
   return shouldPlaySealAnimation;
 }
