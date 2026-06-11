@@ -1,4 +1,4 @@
-import type { ToolBlockSnapshot } from '@/types';
+import type { ToolBlockSnapshot } from '../types.js';
 
 /**
  * Map tool phase to i18next context suffix for verb tense.
