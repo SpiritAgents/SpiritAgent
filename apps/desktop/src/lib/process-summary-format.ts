@@ -5,6 +5,7 @@ import {
   type ProcessToolCategory,
   type ProcessToolCounts,
 } from '@/lib/process-tool-category';
+import type { ConversationMessageSnapshot } from '@/types';
 
 export const PROCESS_SUMMARY_MAX_VISIBLE_CATEGORIES = 3;
 
@@ -48,4 +49,45 @@ export function formatProcessSummary(
   }
 
   return summary;
+}
+
+export function countProcessAuxMessages(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndices: readonly number[],
+): { thoughtCount: number; compactCount: number } {
+  let thoughtCount = 0;
+  let compactCount = 0;
+  for (const index of messageIndices) {
+    const message = messages[index];
+    if (message?.aux?.thinking?.trim()) {
+      thoughtCount += 1;
+    }
+    if (message?.aux?.compaction?.trim()) {
+      compactCount += 1;
+    }
+  }
+  return { thoughtCount, compactCount };
+}
+
+/** Tool counts first; otherwise summarize sealed thinking/compaction rows in the group. */
+export function formatProcessGroupSummary(
+  t: TFunction,
+  counts: ProcessToolCounts,
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndices: readonly number[],
+): string {
+  const toolSummary = formatProcessSummary(t, counts);
+  if (toolSummary) {
+    return toolSummary;
+  }
+
+  const { thoughtCount, compactCount } = countProcessAuxMessages(messages, messageIndices);
+  const parts: string[] = [];
+  if (thoughtCount > 0) {
+    parts.push(t('process.thought', { count: thoughtCount }));
+  }
+  if (compactCount > 0) {
+    parts.push(t('process.compacted', { count: compactCount }));
+  }
+  return parts.join(t('process.separator'));
 }

@@ -38,6 +38,19 @@ function lastUserMessageIndex(messages: readonly ConversationMessageSnapshot[]):
   return -1;
 }
 
+function hasAssistantBodyTextBeforeInTurn(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndex: number,
+): boolean {
+  const lastUser = lastUserMessageIndex(messages);
+  for (let index = Math.max(0, lastUser + 1); index < messageIndex; index += 1) {
+    if (isAssistantBodyTextMessage(messages[index])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function hasAssistantBodyTextLaterInTurn(
   messages: readonly ConversationMessageSnapshot[],
   messageIndex: number,
@@ -67,13 +80,32 @@ function collectToolCountsForIndices(
   return aggregateProcessToolCounts(tools);
 }
 
-function buildProcessGroupId(
-  scopeKey: string,
+function runHasToolActivity(
   messages: readonly ConversationMessageSnapshot[],
   messageIndices: readonly number[],
+): boolean {
+  const counts = collectToolCountsForIndices(messages, messageIndices);
+  return Object.values(counts).some((count) => count > 0);
+}
+
+function shouldExposeLoneThinkingAsMessage(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndices: readonly number[],
+  runStart: number,
+): boolean {
+  return (
+    messageIndices.length === 1 &&
+    !hasAssistantBodyTextBeforeInTurn(messages, runStart) &&
+    Boolean(messages[messageIndices[0] ?? -1]?.aux?.thinking?.trim())
+  );
+}
+
+function buildProcessGroupId(
+  scopeKey: string,
+  _messages: readonly ConversationMessageSnapshot[],
+  messageIndices: readonly number[],
 ): string {
-  const firstMessage = messages[messageIndices[0] ?? -1];
-  return `${scopeKey}:process:${firstMessage?.id ?? messageIndices.join('-')}`;
+  return `${scopeKey}:process:${messageIndices.join('-')}`;
 }
 
 export function buildConversationRenderItems(
@@ -81,7 +113,21 @@ export function buildConversationRenderItems(
   scopeKey: string,
 ): ConversationRenderItem[] {
   const items: ConversationRenderItem[] = [];
+  let pendingAuxIndices: number[] = [];
   let index = 0;
+
+  const pushProcessGroup = (messageIndices: readonly number[]) => {
+    if (messageIndices.length === 0) {
+      return;
+    }
+    items.push({
+      kind: 'process-group',
+      groupId: buildProcessGroupId(scopeKey, messages, messageIndices),
+      messageIndices: [...messageIndices],
+      sealed: true,
+      toolCounts: collectToolCountsForIndices(messages, messageIndices),
+    });
+  };
 
   while (index < messages.length) {
     const message = messages[index];
@@ -102,19 +148,33 @@ export function buildConversationRenderItems(
     const sealed = hasAssistantBodyTextLaterInTurn(messages, runStart);
 
     if (!sealed) {
+      pendingAuxIndices = [];
       for (const messageIndex of messageIndices) {
         items.push({ kind: 'message', messageIndex });
       }
       continue;
     }
 
-    items.push({
-      kind: 'process-group',
-      groupId: buildProcessGroupId(scopeKey, messages, messageIndices),
-      messageIndices,
-      sealed,
-      toolCounts: collectToolCountsForIndices(messages, messageIndices),
-    });
+    const auxOnly = !runHasToolActivity(messages, messageIndices);
+
+    if (auxOnly) {
+      if (shouldExposeLoneThinkingAsMessage(messages, messageIndices, runStart)) {
+        items.push({ kind: 'message', messageIndex: messageIndices[0]! });
+      } else {
+        pendingAuxIndices.push(...messageIndices);
+      }
+      continue;
+    }
+
+    const combinedIndices = [...pendingAuxIndices, ...messageIndices];
+    pendingAuxIndices = [];
+    pushProcessGroup(combinedIndices);
+  }
+
+  if (pendingAuxIndices.length === 1 && shouldExposeLoneThinkingAsMessage(messages, pendingAuxIndices, pendingAuxIndices[0]!)) {
+    items.push({ kind: 'message', messageIndex: pendingAuxIndices[0]! });
+  } else if (pendingAuxIndices.length > 0) {
+    pushProcessGroup(pendingAuxIndices);
   }
 
   return items;

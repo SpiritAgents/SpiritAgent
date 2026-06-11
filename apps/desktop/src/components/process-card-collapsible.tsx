@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -7,8 +7,12 @@ import {
   ProcessGroupCompactionBlock,
   ProcessGroupThinkingBlock,
 } from "@/components/process-group-blocks";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { formatProcessSummary } from "@/lib/process-summary-format";
+import {
+  AnimatedCollapse,
+  AnimatedCollapseContent,
+  AnimatedCollapseTrigger,
+} from "@/components/ui/animated-collapse";
+import { formatProcessGroupSummary } from "@/lib/process-summary-format";
 import type { ProcessToolCounts } from "@/lib/process-tool-category";
 import { assistantCompactionLive } from "@/lib/conversation-compaction-ui";
 import { isAssistantReasoningLive } from "@/lib/conversation-thinking-ui";
@@ -44,8 +48,7 @@ export function ProcessCardCollapsible({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
 }) {
   const { t } = useTranslation();
-  const summary = formatProcessSummary(t, toolCounts);
-  const [autoExpanded, setAutoExpanded] = useState(!sealed);
+  const summary = formatProcessGroupSummary(t, toolCounts, messages, messageIndices);
   const [localManualOpen, setLocalManualOpen] = useState(false);
   const manualOpenControlled = manualOpen !== undefined;
   const manualOpenValue = manualOpenControlled ? manualOpen : localManualOpen;
@@ -56,31 +59,15 @@ export function ProcessCardCollapsible({
     }
     setLocalManualOpen(open);
   };
-  const prevAutoExpandedRef = useRef(autoExpanded);
-  const expanded = autoExpanded || manualOpenValue;
-  const interactive = !autoExpanded;
+  const expanded = manualOpenValue;
+  const interactive = sealed;
 
-  useEffect(() => {
-    if (!sealed) {
-      setAutoExpanded(true);
-      return;
-    }
-    setAutoExpanded(true);
-    const frame = requestAnimationFrame(() => {
-      setAutoExpanded(false);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [groupId, sealed]);
-
-  useEffect(() => {
-    if (prevAutoExpandedRef.current && !autoExpanded) {
-      setManualOpenValue(false);
-    }
-    prevAutoExpandedRef.current = autoExpanded;
-  }, [autoExpanded]);
+  if (!summary) {
+    return null;
+  }
 
   return (
-    <Collapsible
+    <AnimatedCollapse
       open={expanded}
       onOpenChange={(open) => {
         if (!interactive) {
@@ -91,91 +78,90 @@ export function ProcessCardCollapsible({
       className="min-w-0 py-0.5"
       data-process-group-id={groupId}
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-            interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
-          )}
-        >
-          <span className="min-w-0 truncate text-xs font-medium tracking-wide text-muted-foreground">
-            {summary}
-          </span>
-          {interactive ? (
-            <ChevronRight
-              className={cn(
-                "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
-                "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-                expanded && "rotate-90",
-              )}
-              aria-hidden
-            />
-          ) : null}
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="min-w-0 space-y-1">
-        {messageIndices.map((messageIndex) => {
-          const message = messages[messageIndex];
-          if (!message) {
+      <AnimatedCollapseTrigger
+        className={cn(
+          "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
+          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+        )}
+      >
+        <span className="min-w-0 truncate text-xs font-medium tracking-wide text-muted-foreground">
+          {summary}
+        </span>
+        {interactive ? (
+          <ChevronRight
+            className={cn(
+              "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
+              "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+              expanded && "rotate-90",
+            )}
+            aria-hidden
+          />
+        ) : null}
+      </AnimatedCollapseTrigger>
+      <AnimatedCollapseContent className="min-w-0">
+        <div className="space-y-3">
+          {messageIndices.map((messageIndex) => {
+            const message = messages[messageIndex];
+            if (!message) {
+              return null;
+            }
+
+            const thinkingNode = message.aux?.thinking?.trim() ? (
+              <ProcessGroupThinkingBlock
+                message={message}
+                thinkingActive={isAssistantReasoningLive(
+                  message,
+                  pendingAuxState,
+                  messages,
+                  messageIndex,
+                )}
+                readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+              />
+            ) : null;
+
+            const compactionNode = message.aux?.compaction?.trim() ? (
+              <ProcessGroupCompactionBlock
+                message={message}
+                compactionActive={assistantCompactionLive(message, pendingAuxState)}
+                readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+              />
+            ) : null;
+
+            const standaloneThinkingOrCompaction =
+              !message.tool && !message.content.trim() && (thinkingNode || compactionNode);
+
+            if (standaloneThinkingOrCompaction) {
+              return (
+                <div key={`${groupId}-${messageIndex}-aux`} className="pb-3 last:pb-0">
+                  {thinkingNode}
+                  {compactionNode}
+                </div>
+              );
+            }
+
+            if (message.tool) {
+              return (
+                <div key={`${groupId}-${messageIndex}-tool`} className="pb-3 last:pb-0">
+                  {renderToolBlock(message, messageIndex)}
+                </div>
+              );
+            }
+
+            if (thinkingNode || compactionNode) {
+              return (
+                <div key={`${groupId}-${messageIndex}-inline-aux`} className="pb-3 last:pb-0">
+                  {thinkingNode}
+                  {compactionNode}
+                </div>
+              );
+            }
+
             return null;
-          }
-
-          const thinkingNode = message.aux?.thinking?.trim() ? (
-            <ProcessGroupThinkingBlock
-              message={message}
-              thinkingActive={isAssistantReasoningLive(
-                message,
-                pendingAuxState,
-                messages,
-                messageIndex,
-              )}
-              readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-              readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
-            />
-          ) : null;
-
-          const compactionNode = message.aux?.compaction?.trim() ? (
-            <ProcessGroupCompactionBlock
-              message={message}
-              compactionActive={assistantCompactionLive(message, pendingAuxState)}
-              readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-              readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
-            />
-          ) : null;
-
-          const standaloneThinkingOrCompaction =
-            !message.tool && !message.content.trim() && (thinkingNode || compactionNode);
-
-          if (standaloneThinkingOrCompaction) {
-            return (
-              <div key={`${groupId}-${message.id}-aux`}>
-                {thinkingNode}
-                {compactionNode}
-              </div>
-            );
-          }
-
-          if (message.tool) {
-            return (
-              <div key={`${groupId}-${message.id}-tool`}>
-                {renderToolBlock(message, messageIndex)}
-              </div>
-            );
-          }
-
-          if (thinkingNode || compactionNode) {
-            return (
-              <div key={`${groupId}-${message.id}-inline-aux`}>
-                {thinkingNode}
-                {compactionNode}
-              </div>
-            );
-          }
-
-          return null;
-        })}
-      </CollapsibleContent>
-    </Collapsible>
+          })}
+        </div>
+      </AnimatedCollapseContent>
+    </AnimatedCollapse>
   );
 }
