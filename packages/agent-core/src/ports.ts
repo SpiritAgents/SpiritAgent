@@ -565,6 +565,8 @@ export interface ToolRequestExecutionMetadata {
   subagentSessionId?: string;
   subagentTitle?: string;
   userInitiated?: boolean;
+  /** In-process only; not serialized across host bridge IPC. */
+  onOutputChunk?: (chunk: string) => void;
 }
 
 export interface ToolExecutor<
@@ -591,6 +593,7 @@ export interface ToolExecutor<
   continueAfterQuestions?(request: ToolRequest, result: AskQuestionsResult): Promise<ToolRequest | undefined>;
   shouldExecuteInBackground?(request: ToolRequest): boolean;
   backgroundStatusText?(request: ToolRequest): string | undefined;
+  abortRunningShellCommands?(): void;
   startMcpBackgroundRefresh(): void;
   mcpStatusSnapshot(): McpStatusSnapshot;
   addMcpServer(name: string, config: JsonValue): Promise<string>;
