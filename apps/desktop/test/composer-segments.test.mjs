@@ -393,6 +393,7 @@ test("ensureAgentModePinned removes chip when agent mode", () => {
     "agent",
   );
   assert.equal(hasAgentModeSegment(pinned), false);
+  assert.deepEqual(pinned, [{ kind: "text", value: "" }]);
 });
 
 test("segmentsToMessageText ignores plan and ask chips", () => {
@@ -425,6 +426,24 @@ test("removeAgentModeSegment drops plan only", () => {
   assert.equal(hasAgentModeSegment(next), false);
   assert.equal(hasLoopSegment(next), true);
   assert.equal(next[1]?.kind === "text" && next[1].value, "keep");
+});
+
+test("removeAgentModeSegment strips chip-inserted tail spacer", () => {
+  const next = removeAgentModeSegment([{ kind: "plan" }, { kind: "text", value: " " }]);
+  assert.deepEqual(next, [{ kind: "text", value: "" }]);
+});
+
+test("removeAgentModeSegment strips leading spacer from typed body", () => {
+  const next = removeAgentModeSegment([
+    { kind: "ask" },
+    { kind: "text", value: " hello" },
+  ]);
+  assert.deepEqual(next, [{ kind: "text", value: "hello" }]);
+});
+
+test("removeLoopSegment strips chip-inserted tail spacer", () => {
+  const next = removeLoopSegment([{ kind: "loop" }, { kind: "text", value: " " }]);
+  assert.deepEqual(next, [{ kind: "text", value: "" }]);
 });
 
 test("segmentsToPlainText includes workspace file token", () => {
