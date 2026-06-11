@@ -96,6 +96,12 @@ export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL =
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
   "h-7 min-h-7 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0";
 
+/** ghost：透明底与 popover 一致；覆盖 Input 基类 dark:bg-input/30 */
+export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST = cn(
+  DESKTOP_OVERLAY_LIST_FILTER_INPUT,
+  "rounded-md dark:!bg-transparent",
+);
+
 /** Root 与 viewport 同步 max-h：仅约束 viewport 时 Root 会随内容撑高，滚动条轨道 h-full 失真 */
 export const DESKTOP_OVERLAY_LIST_SCROLL_AREA =
   "max-h-[min(17rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:max-h-[min(17rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:overscroll-contain";
