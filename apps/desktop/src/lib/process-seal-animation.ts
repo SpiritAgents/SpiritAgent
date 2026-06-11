@@ -89,9 +89,16 @@ function useProcessSealAnimationPlan(
   conversationViewKey: string,
   renderItems: readonly ConversationRenderItem[],
   options: ProcessSealAnimationPlanOptions,
+  planResetKey?: number,
 ): (groupId: string) => boolean {
   const planStateRef = useRef(createInitialProcessSealPlanState());
   const planRef = useRef(new Map<string, boolean>());
+  const prevPlanResetKeyRef = useRef(planResetKey ?? 0);
+
+  if (planResetKey !== undefined && planResetKey !== prevPlanResetKeyRef.current) {
+    planStateRef.current = createInitialProcessSealPlanState();
+    prevPlanResetKeyRef.current = planResetKey;
+  }
 
   const groupIds = processGroupIds(renderItems);
   const groupIdsKey = groupIds.join('|');
@@ -121,6 +128,7 @@ export function useProcessSealAnimationGate(input: {
   busyAction?: string | null;
   pendingAuxState?: PendingAssistantAux;
   sessionMessages: readonly ConversationMessageSnapshot[];
+  planResetKey?: number;
 }): (groupId: string) => boolean {
   const composeTurnInFlightRef = useRef(false);
   const sessionNavigationPendingRef = useRef(false);
@@ -154,6 +162,7 @@ export function useProcessSealAnimationGate(input: {
       composeTurnInFlight: composeTurnInFlightRef.current,
       sessionNavigationPending: sessionNavigationPendingRef.current,
     },
+    input.planResetKey,
   );
 
   useLayoutEffect(() => {
