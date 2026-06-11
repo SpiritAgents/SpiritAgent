@@ -60,7 +60,11 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AnimatedCollapse,
+  AnimatedCollapseContent,
+  AnimatedCollapseTrigger,
+} from "@/components/ui/animated-collapse";
 import {
   Card,
   CardContent,
@@ -125,6 +129,7 @@ import { SettingsView } from "@/components/settings-view";
 import { ComposerTodoCard } from "@/components/composer-todo-card";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
 import { PendingApprovalCard } from "@/components/pending-approval-card";
+import { ProcessCardCollapsible } from "@/components/process-card-collapsible";
 import { SessionChromeBreadcrumb } from "@/components/session-chrome-breadcrumb";
 import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-context";
 import { isMinimalToolCallMessage, toolHasExpandableContent } from "@/lib/tool-call-display";
@@ -138,6 +143,10 @@ import {
 } from "@/lib/conversation-compaction-ui";
 import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import {
+  buildConversationRenderItems,
+  isMessageHiddenByProcessGroup,
+} from "@/lib/conversation-process-groups";
+import {
   hasAssistantBodyTextLaterInTurn,
   isAssistantReasoningLive,
   shouldCollapseThinkingDuringToolPreview,
@@ -148,14 +157,15 @@ import {
   isGrayMetaLeadingMessage,
   isGrayMetaTrailingMessage,
   isStandaloneAssistantAuxMessage,
-  shouldCompactAfterPreviousMessage,
-  shouldTightenAfterPreviousMetaMessage,
+  shouldCompactAfterPreviousRenderItem,
+  shouldTightenAfterPreviousRenderItem,
 } from "@/lib/message-card-spacing";
 import { WorkspaceFileReferenceMenu } from "@/components/workspace-file-reference-menu";
 import { ActionPickerDialog } from "@/components/action-picker-dialog";
 import { WorkspaceFilePickerDialog } from "@/components/workspace-file-picker-dialog";
 import { QueuedUserMessageHoverActions } from "@/components/queued-user-message-hover-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
+import { useProcessSealAnimationGate } from "@/lib/process-seal-animation";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useElementBoxHeight } from "@/hooks/use-element-box-height";
 import { useSubagentViewer } from "@/hooks/useSubagentViewer";
@@ -439,6 +449,7 @@ type SaveLocalImageAs = (filePath: string) => Promise<boolean>;
 
 function ToolCallCollapsible({
   tool,
+  variant = "standalone",
   readLocalImagePreviewDataUrl,
   readLocalVideoPreviewUrl,
   readManagedVideoPreviewUrl,
@@ -447,6 +458,7 @@ function ToolCallCollapsible({
   onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
+  variant?: "standalone" | "process-nested";
   readLocalImagePreviewDataUrl: ReadLocalImagePreview;
   readLocalVideoPreviewUrl: ReadLocalVideoPreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
@@ -481,6 +493,7 @@ function ToolCallCollapsible({
   return (
     <MinimalToolCallCard
       tool={tool}
+      variant={variant}
       onOpenSubagentViewer={onOpenSubagentViewer}
       onAbortShell={onAbortShell}
     />
@@ -1109,7 +1122,7 @@ function AssistantThinkingCollapsible({
   const interactive = !autoExpanded;
 
   return (
-    <Collapsible
+    <AnimatedCollapse
       open={expanded}
       onOpenChange={(open) => {
         if (!interactive) {
@@ -1119,29 +1132,26 @@ function AssistantThinkingCollapsible({
       }}
       className="min-w-0 py-0.5"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-            interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
-          )}
-        >
-          <ThinkingLabelWithShimmer active={thinkingActive} />
-          {interactive ? (
-            <ChevronRight
-              className={cn(
-                "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
-                "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-                expanded && "rotate-90",
-              )}
-              aria-hidden
-            />
-          ) : null}
-        </button>
-      </CollapsibleTrigger>
+      <AnimatedCollapseTrigger
+        className={cn(
+          "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
+          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+        )}
+      >
+        <ThinkingLabelWithShimmer active={thinkingActive} />
+        {interactive ? (
+          <ChevronRight
+            className={cn(
+              "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
+              "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+              expanded && "rotate-90",
+            )}
+            aria-hidden
+          />
+        ) : null}
+      </AnimatedCollapseTrigger>
       {showThinkingBody ? (
-        <CollapsibleContent className="min-w-0">
+        <AnimatedCollapseContent className="min-w-0">
           <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
             <AgentMarkdownMessage
               content={thinking}
@@ -1151,9 +1161,9 @@ function AssistantThinkingCollapsible({
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             />
           </div>
-        </CollapsibleContent>
+        </AnimatedCollapseContent>
       ) : null}
-    </Collapsible>
+    </AnimatedCollapse>
   );
 }
 
@@ -1189,7 +1199,7 @@ function AssistantCompactionCollapsible({
   const interactive = !autoExpanded;
 
   return (
-    <Collapsible
+    <AnimatedCollapse
       open={expanded}
       onOpenChange={(open) => {
         if (!interactive) {
@@ -1199,29 +1209,26 @@ function AssistantCompactionCollapsible({
       }}
       className="min-w-0 py-0.5"
     >
-      <CollapsibleTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-            interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
-          )}
-        >
-          <CompactionLabelWithShimmer active={compactionActive} />
-          {interactive ? (
-            <ChevronRight
-              className={cn(
-                "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
-                "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-                expanded && "rotate-90",
-              )}
-              aria-hidden
-            />
-          ) : null}
-        </button>
-      </CollapsibleTrigger>
+      <AnimatedCollapseTrigger
+        className={cn(
+          "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
+          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+        )}
+      >
+        <CompactionLabelWithShimmer active={compactionActive} />
+        {interactive ? (
+          <ChevronRight
+            className={cn(
+              "size-3 shrink-0 text-muted-foreground/55 transition-all duration-150",
+              "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+              expanded && "rotate-90",
+            )}
+            aria-hidden
+          />
+        ) : null}
+      </AnimatedCollapseTrigger>
       {showCompactionBody ? (
-        <CollapsibleContent className="min-w-0">
+        <AnimatedCollapseContent className="min-w-0">
           <div className="overflow-hidden pt-1.5 [&_p:last-child]:mb-0 [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_blockquote:last-child]:mb-0 [&_pre:last-child]:mb-0">
             <AgentMarkdownMessage
               content={compaction}
@@ -1231,9 +1238,9 @@ function AssistantCompactionCollapsible({
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             />
           </div>
-        </CollapsibleContent>
+        </AnimatedCollapseContent>
       ) : null}
-    </Collapsible>
+    </AnimatedCollapse>
   );
 }
 
@@ -1284,6 +1291,7 @@ function MessageCard({
   onQueueMoveUp,
   onQueueSendNow,
   onQueueDelete,
+  hiddenByProcessGroup = false,
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -1291,6 +1299,7 @@ function MessageCard({
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
   listIndex: number;
+  hiddenByProcessGroup?: boolean;
   compactAfterPrevious: boolean;
   tightenAfterPreviousMeta: boolean;
   showContinueButton: boolean;
@@ -1341,16 +1350,12 @@ function MessageCard({
     "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
   const subagentStatusSurface =
     !isUser && message.content.trim() ? isSubagentStatusSurfaceMessage(message) : false;
-  const showThinkingCollapsible = shouldShowAssistantThinkingCollapsible(
-    message,
-    pendingAuxState,
-    messages,
-    listIndex,
-  );
-  const showCompactionCollapsible = shouldShowAssistantCompactionCollapsible(
-    message,
-    pendingAuxState,
-  );
+  const showThinkingCollapsible =
+    !hiddenByProcessGroup &&
+    shouldShowAssistantThinkingCollapsible(message, pendingAuxState, messages, listIndex);
+  const showCompactionCollapsible =
+    !hiddenByProcessGroup &&
+    shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
   const collapseThinkingDuringToolPreview = shouldCollapseThinkingDuringToolPreview(
     messages,
     listIndex,
@@ -1997,13 +2002,12 @@ export default function App() {
     subagentToolCallId: subagentViewer.toolCallId,
     compactionDemoActive: compactionDemo.active,
   });
-  const turnContinue = useMemo(
-    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
-    [compactionDemo.active, messages, subagentViewActive],
+  const conversationRenderItems = useMemo(
+    () => buildConversationRenderItems(messages, conversationListScopeKey),
+    [conversationListScopeKey, messages],
   );
-  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
-  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
-  const showWorkspaceBindingControls = isEmptySession;
+  const conversationViewKey = `${composerSessionKey.trim() || "__no-session__"}:${conversationListScopeKey}`;
+  const processGroupManualOpenKey = (groupId: string) => `${conversationViewKey}:${groupId}`;
   const conversationPendingAuxState = subagentViewActive
     ? snapshot?.subagentViewer?.pendingAuxState
     : compactionDemo.active
@@ -2019,6 +2023,26 @@ export default function App() {
     }
     prevSessionMessageCountRef.current = count;
   }, [sessionMessages.length]);
+
+  const shouldPlayProcessSealAnimation = useProcessSealAnimationGate({
+    conversationViewKey,
+    renderItems: conversationRenderItems,
+    subagentViewActive,
+    compactionDemoActive: compactionDemo.active,
+    isBusy: snapshot?.conversation.isBusy,
+    busyAction: runtime.busyAction,
+    pendingAuxState: conversationPendingAuxState,
+    sessionMessages,
+    planResetKey: conversationListRemountEpoch,
+  });
+  const [processGroupManualOpen, setProcessGroupManualOpen] = useState<Record<string, boolean>>({});
+  const turnContinue = useMemo(
+    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
+    [compactionDemo.active, messages, subagentViewActive],
+  );
+  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
+  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
+  const showWorkspaceBindingControls = isEmptySession;
 
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
@@ -3528,24 +3552,113 @@ export default function App() {
                             {t("app.subagentViewerEmpty")}
                           </p>
                         ) : null}
-                        {messages.map((message, index) => {
-                          const previous = messages[index - 1];
-                          const compactAfterPrevious = shouldCompactAfterPreviousMessage(previous, message);
-                          const tightenAfterPreviousMeta = shouldTightenAfterPreviousMetaMessage(previous, message);
+                        {conversationRenderItems.map((renderItem, renderIndex) => {
+                          const previousRenderItem = conversationRenderItems[renderIndex - 1];
+
+                          if (renderItem.kind === "process-group") {
+                            const anchorMessage = messages[renderItem.messageIndices[0]];
+                            if (!anchorMessage) {
+                              return null;
+                            }
+                            const compactAfterPrevious = shouldCompactAfterPreviousRenderItem(
+                              previousRenderItem,
+                              anchorMessage,
+                              messages,
+                            );
+                            const tightenAfterPreviousMeta = shouldTightenAfterPreviousRenderItem(
+                              previousRenderItem,
+                              anchorMessage,
+                              messages,
+                            );
+                            return (
+                              <div
+                                key={renderItem.groupId}
+                                id={renderItem.groupId}
+                                data-spirit-surface="message-row"
+                                data-spirit-message-role="assistant"
+                                data-spirit-message-pending="false"
+                                className={cn(
+                                  "scroll-mt-4 flex w-full justify-start pb-3 last:pb-0",
+                                  compactAfterPrevious && "-mt-4",
+                                  tightenAfterPreviousMeta && "-mt-3",
+                                )}
+                              >
+                                <div
+                                  data-spirit-surface="message-assistant"
+                                  className="min-w-0 w-full space-y-2"
+                                >
+                                  <ProcessCardCollapsible
+                                    groupId={renderItem.groupId}
+                                    messageIndices={renderItem.messageIndices}
+                                    messages={messages}
+                                    toolCounts={renderItem.toolCounts}
+                                    pendingAuxState={conversationPendingAuxState}
+                                    playSealAnimation={shouldPlayProcessSealAnimation(renderItem.groupId)}
+                                    manualOpen={processGroupManualOpen[processGroupManualOpenKey(renderItem.groupId)]}
+                                    onManualOpenChange={(open) => {
+                                      setProcessGroupManualOpen((current) => ({
+                                        ...current,
+                                        [processGroupManualOpenKey(renderItem.groupId)]: open,
+                                      }));
+                                    }}
+                                    renderToolBlock={(message) => (
+                                      <ToolCallCollapsible
+                                        tool={message.tool!}
+                                        variant="process-nested"
+                                        readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
+                                        readLocalVideoPreviewUrl={runtime.readLocalVideoPreviewUrl}
+                                        readManagedVideoPreviewUrl={runtime.readManagedVideoPreviewUrl}
+                                        saveLocalImageAs={runtime.saveLocalImageAs}
+                                        onOpenSubagentViewer={
+                                          subagentViewActive ? undefined : handleOpenSubagentViewer
+                                        }
+                                        onAbortShell={(toolCallId) => {
+                                          void runtime.abortShellCommand(toolCallId);
+                                        }}
+                                      />
+                                    )}
+                                    readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
+                                    readManagedVideoPreviewUrl={runtime.readManagedVideoPreviewUrl}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          const index = renderItem.messageIndex;
+                          const message = messages[index];
+                          if (!message) {
+                            return null;
+                          }
+                          const compactAfterPrevious = shouldCompactAfterPreviousRenderItem(
+                            previousRenderItem,
+                            message,
+                            messages,
+                          );
+                          const tightenAfterPreviousMeta = shouldTightenAfterPreviousRenderItem(
+                            previousRenderItem,
+                            message,
+                            messages,
+                          );
                           const queuedBeforeCount = messages
                             .slice(0, index)
                             .filter((item) => item.queued === true).length;
                           const queuedCanMoveUp =
                             message.queued === true && queuedBeforeCount > 0;
+                          const hiddenByProcessGroup = isMessageHiddenByProcessGroup(
+                            conversationRenderItems,
+                            index,
+                          );
                           return (
                             <MessageCard
-                              key={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
+                              key={`${conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}@${index}`}
                               composerSessionKey={composerSessionKey}
                               conversationListScopeKey={conversationListScopeKey}
                               messages={messages}
                               pendingAuxState={conversationPendingAuxState}
                               listIndex={index}
                               message={message}
+                              hiddenByProcessGroup={hiddenByProcessGroup}
                               compactAfterPrevious={compactAfterPrevious}
                               tightenAfterPreviousMeta={tightenAfterPreviousMeta}
                               showContinueButton={
