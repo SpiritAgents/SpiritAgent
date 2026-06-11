@@ -220,6 +220,13 @@ import {
   syncDesktopWindowFrame,
   type ThemePreference,
 } from "@/lib/theme";
+import {
+  resolveEffectiveEmptySession,
+  shouldClearConversationSnapshotStale,
+  shouldHideStaleConversationMessages,
+  shouldMarkConversationSnapshotStale,
+  shouldSuppressStaleConversation,
+} from "@/lib/conversation-surface-stale";
 import { cn } from "@/lib/utils";
 import { DesktopTitleBar } from "@/components/desktop-title-bar";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
@@ -1992,6 +1999,8 @@ export default function App() {
     i18n.language,
   ]);
   const sessionMessages = snapshot?.conversation.messages ?? [];
+  const sessionNavigationBusy = runtime.busyAction === "session";
+  const newSessionBusy = runtime.busyAction === "reset";
   const messages = subagentViewActive
     ? (snapshot?.subagentViewer?.messages ?? [])
     : compactionDemo.active
@@ -2040,9 +2049,6 @@ export default function App() {
     () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
     [compactionDemo.active, messages, subagentViewActive],
   );
-  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
-  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
-  const showWorkspaceBindingControls = isEmptySession;
 
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
@@ -2161,6 +2167,7 @@ export default function App() {
   const [activeSurface, setActiveSurface] = useState<
     "conversation" | "settings" | "marketplace" | "automations" | "automation-detail"
   >("conversation");
+  const [conversationSnapshotStale, setConversationSnapshotStale] = useState(false);
   const [lastNonSettingsSurface, setLastNonSettingsSurface] = useState<
     "conversation" | "marketplace" | "automations"
   >("conversation");
@@ -2169,6 +2176,24 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState<SettingsSidebarTab>("models");
   const [extensionSettingsId, setExtensionSettingsId] = useState<string | null>(null);
   const sessionSidebarChromeApiRef = useRef<SessionSidebarChromeApi | null>(null);
+
+  useEffect(() => {
+    if (shouldMarkConversationSnapshotStale(activeSurface)) {
+      setConversationSnapshotStale(true);
+    }
+  }, [activeSurface]);
+
+  useEffect(() => {
+    if (
+      shouldClearConversationSnapshotStale({
+        activeSurface,
+        sessionNavigationBusy,
+        newSessionBusy,
+      })
+    ) {
+      setConversationSnapshotStale(false);
+    }
+  }, [activeSurface, newSessionBusy, sessionNavigationBusy]);
 
   const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
   const initialWorkspaceToolsRef = useRef<ReturnType<
@@ -2345,8 +2370,6 @@ export default function App() {
   const commitBusy = runtime.busyAction === "git";
   const gitChipBusy =
     runtime.busyAction === "send" || snapshot?.conversation.isBusy === true;
-  const sessionNavigationBusy = runtime.busyAction === "session";
-  const newSessionBusy = runtime.busyAction === "reset";
   const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
   const rewindRichInputRef = useRef<ComposerRichInputHandle | null>(null);
 
@@ -2431,6 +2454,24 @@ export default function App() {
   const marketplaceMode = activeSurface === "marketplace";
   const automationsMode = activeSurface === "automations" || activeSurface === "automation-detail";
   const automationDetailMode = activeSurface === "automation-detail";
+  const suppressStaleConversation = shouldSuppressStaleConversation({
+    conversationSnapshotStale,
+    activeSurface,
+    sessionNavigationBusy,
+    newSessionBusy,
+  });
+  const hideStaleConversationMessages = shouldHideStaleConversationMessages({
+    suppressStaleConversation,
+    sessionNavigationBusy,
+  });
+  const isEmptySession = resolveEffectiveEmptySession({
+    sessionMessageCount: sessionMessages.length,
+    subagentViewActive,
+    compactionDemoActive: compactionDemo.active,
+    newSessionBusy,
+  });
+  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
+  const showWorkspaceBindingControls = isEmptySession;
   useEffect(() => {
     const plan = snapshot?.plan;
     const sessionPath = snapshot?.activeSession?.filePath ?? null;
@@ -3463,7 +3504,11 @@ export default function App() {
                 showWorkspaceToggle
                 workspaceToolsOpen={workspaceToolsOpen}
                 onToggleWorkspaceTools={() => setWorkspaceToolsOpen((c) => !c)}
-                sessionTitle={isEmptySession ? null : snapshot?.activeSession?.displayName}
+                sessionTitle={
+                  isEmptySession || hideStaleConversationMessages
+                    ? null
+                    : snapshot?.activeSession?.displayName
+                }
                 subagentPromptText={
                   subagentViewActive ? snapshot?.subagentViewer?.promptText : null
                 }
@@ -3522,12 +3567,12 @@ export default function App() {
                   data-spirit-surface="conversation-scroll-body"
                   className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
                   style={
-                    !isEmptySession || subagentViewActive
+                    (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                       ? { paddingBottom: conversationScrollBedPaddingPx }
                       : undefined
                   }
                 >
-                  {!isEmptySession || subagentViewActive ? (
+                  {(!isEmptySession || subagentViewActive) && !hideStaleConversationMessages ? (
                     <div
                       data-spirit-surface="conversation-list-shell"
                       className={cn(
