@@ -1,15 +1,24 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ChevronDown, GitMerge, LoaderCircle, Upload } from "lucide-react";
 
-import { ActionPopover, type ActionPopoverItem } from "@/components/ui/action-popover";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   DESKTOP_GIT_ACTION_BTN,
   DESKTOP_GIT_ACTION_MENU_TRIGGER,
   DESKTOP_GIT_ACTION_SPLIT,
+  DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+  DESKTOP_OVERLAY_LIST_ITEM,
+  DESKTOP_OVERLAY_LIST_LIST_GAP,
+  DESKTOP_OVERLAY_LIST_LIST_PADDING,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { buildGitChangesMenuItemIds } from "@/lib/git-changes-menu-items";
@@ -22,6 +31,13 @@ export type GitChangesMenuLabels = {
   merged: string;
 };
 
+type GitChangesMenuItem = {
+  id: string;
+  icon: ReactNode;
+  label: string;
+  onSelect(): void;
+};
+
 export function buildGitChangesMenuItems(input: {
   needsPush: boolean;
   canMerge: boolean;
@@ -29,7 +45,7 @@ export function buildGitChangesMenuItems(input: {
   labels: GitChangesMenuLabels;
   onPush: () => void;
   onMerge: () => void;
-}): ActionPopoverItem[] {
+}): GitChangesMenuItem[] {
   return buildGitChangesMenuItemIds({
     needsPush: input.needsPush,
     canMerge: input.canMerge,
@@ -146,16 +162,52 @@ export function GitChangesActions({
       {menuItems.length > 0 ? (
         <>
           <ButtonGroupSeparator className={DESKTOP_GIT_ACTION_SPLIT} />
-          <ActionPopover
-            ariaLabel={t("workspace.git.moreActions")}
-            title={t("workspace.git.moreActions")}
-            disabled={gitBusy}
-            triggerVariant="default"
-            triggerSize="xs"
-            triggerIcon={<ChevronDown className="size-3" aria-hidden />}
-            items={menuItems}
-            triggerClassName={DESKTOP_GIT_ACTION_MENU_TRIGGER}
-          />
+          <DropdownMenu modal>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="default"
+                size="xs"
+                aria-label={t("workspace.git.moreActions")}
+                title={t("workspace.git.moreActions")}
+                disabled={gitBusy}
+                className={cn(DESKTOP_GIT_ACTION_MENU_TRIGGER, instantHoverMotionClass)}
+              >
+                <ChevronDown className="size-3" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              side="top"
+              sideOffset={10}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+              }}
+              className={cn(
+                "flex w-max min-w-[11rem] max-w-[min(15rem,calc(100vw-1.25rem))] flex-col",
+                DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+                DESKTOP_OVERLAY_LIST_LIST_PADDING,
+                DESKTOP_OVERLAY_LIST_LIST_GAP,
+              )}
+            >
+              {menuItems.map((item) => (
+                <DropdownMenuItem
+                  key={item.id}
+                  className={cn(
+                    "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
+                    DESKTOP_OVERLAY_LIST_ITEM,
+                    "text-popover-foreground",
+                  )}
+                  onSelect={() => {
+                    item.onSelect();
+                  }}
+                >
+                  {item.icon}
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </>
       ) : null}
     </ButtonGroup>
