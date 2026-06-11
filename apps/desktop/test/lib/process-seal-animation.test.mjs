@@ -147,6 +147,26 @@ test('buildProcessSealAnimationPlan animates when compose send is still in fligh
   );
 });
 
+test('buildProcessSealAnimationPlan skips animation after plan state reset', () => {
+  let state = createInitialProcessSealPlanState();
+  ({ nextState: state } = buildProcessSealAnimationPlan(state, VIEW_A, ['main:process:1'], {
+    liveTurnActive: false,
+    composeTurnInFlight: false,
+    sessionNavigationPending: false,
+  }));
+
+  state = createInitialProcessSealPlanState();
+
+  assert.equal(
+    planForNewGroup(state, VIEW_A, 'main:process:1', {
+      liveTurnActive: false,
+      composeTurnInFlight: false,
+      sessionNavigationPending: false,
+    }),
+    false,
+  );
+});
+
 test('buildProcessSealAnimationPlan skips animation when switching between saved sessions', () => {
   let state = createInitialProcessSealPlanState();
   ({ nextState: state } = buildProcessSealAnimationPlan(state, VIEW_A, ['main:process:1'], {

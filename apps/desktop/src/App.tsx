@@ -2017,24 +2017,6 @@ export default function App() {
     : compactionDemo.active
       ? compactionDemo.pendingAuxState
       : snapshot?.conversation.pendingAuxState;
-  const shouldPlayProcessSealAnimation = useProcessSealAnimationGate({
-    conversationViewKey,
-    renderItems: conversationRenderItems,
-    subagentViewActive,
-    compactionDemoActive: compactionDemo.active,
-    isBusy: snapshot?.conversation.isBusy,
-    busyAction: runtime.busyAction,
-    pendingAuxState: conversationPendingAuxState,
-    sessionMessages,
-  });
-  const [processGroupManualOpen, setProcessGroupManualOpen] = useState<Record<string, boolean>>({});
-  const turnContinue = useMemo(
-    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
-    [compactionDemo.active, messages, subagentViewActive],
-  );
-  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
-  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
-  const showWorkspaceBindingControls = isEmptySession;
   const [conversationListRemountEpoch, setConversationListRemountEpoch] = useState(0);
   const prevSessionMessageCountRef = useRef(sessionMessages.length);
 
@@ -2045,6 +2027,26 @@ export default function App() {
     }
     prevSessionMessageCountRef.current = count;
   }, [sessionMessages.length]);
+
+  const shouldPlayProcessSealAnimation = useProcessSealAnimationGate({
+    conversationViewKey,
+    renderItems: conversationRenderItems,
+    subagentViewActive,
+    compactionDemoActive: compactionDemo.active,
+    isBusy: snapshot?.conversation.isBusy,
+    busyAction: runtime.busyAction,
+    pendingAuxState: conversationPendingAuxState,
+    sessionMessages,
+    planResetKey: conversationListRemountEpoch,
+  });
+  const [processGroupManualOpen, setProcessGroupManualOpen] = useState<Record<string, boolean>>({});
+  const turnContinue = useMemo(
+    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
+    [compactionDemo.active, messages, subagentViewActive],
+  );
+  const isEmptySession = !compactionDemo.active && !subagentViewActive && sessionMessages.length === 0;
+  /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
+  const showWorkspaceBindingControls = isEmptySession;
 
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
