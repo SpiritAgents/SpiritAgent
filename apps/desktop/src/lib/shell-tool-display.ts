@@ -74,9 +74,12 @@ export function shellExpandableDetailLines(
 }
 
 export function shellHasExpandableContent(
-  tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines" | "outputExcerpt">,
+  tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines" | "outputExcerpt" | "phase">,
   command: string | undefined,
 ): boolean {
+  if (tool.phase === 'running' || tool.phase === 'preview') {
+    return true;
+  }
   if (tool.outputExcerpt?.trim()) {
     return true;
   }
