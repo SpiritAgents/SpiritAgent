@@ -48,6 +48,7 @@ use crate::{
 mod commands;
 mod conversation;
 mod forms;
+mod hooks_actions;
 mod host_actions;
 mod image_paths;
 mod input;
