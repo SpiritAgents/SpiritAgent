@@ -253,6 +253,7 @@ pub(in crate::ui) fn suggestion_summary(suggestion: &InputSuggestion) -> String 
         "/subagents" => t!("ui.suggestion.summary.subagents").into_owned(),
         "/image" => t!("ui.suggestion.summary.image").into_owned(),
         "/mcp" => t!("ui.suggestion.summary.mcp").into_owned(),
+        "/hooks" => t!("ui.suggestion.summary.hooks").into_owned(),
         "/rules" => t!("ui.suggestion.summary.rules").into_owned(),
         "/skills" => t!("ui.suggestion.summary.skills").into_owned(),
         "/extensions" => t!("ui.suggestion.summary.extensions").into_owned(),
@@ -337,6 +338,14 @@ pub(in crate::ui) fn suggestion_usage_lines(suggestion: &InputSuggestion) -> Vec
             "    /<server>_<prompt> [args_json | user_message]".to_string(),
             t!("ui.suggestion.usage.note").into_owned(),
             t!("ui.suggestion.usage.mcp_note").into_owned(),
+        ],
+        "/hooks" => vec![
+            t!("ui.suggestion.usage.heading").into_owned(),
+            "    /hooks".to_string(),
+            "    /hooks list".to_string(),
+            "    /hooks add".to_string(),
+            t!("ui.suggestion.usage.note").into_owned(),
+            t!("ui.suggestion.usage.hooks_note").into_owned(),
         ],
         "/rules" => vec![
             t!("ui.suggestion.usage.heading").into_owned(),
