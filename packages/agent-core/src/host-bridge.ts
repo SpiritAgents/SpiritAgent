@@ -160,6 +160,7 @@ interface CliHostInternalModule {
     archive: PreCompactionHistoryArchive,
     options?: { sessionId?: string },
   ) => Promise<string>;
+  removePreCompactionHistoryArchive?: (archivePath: string) => Promise<void>;
   loadHostInstructionMetadata: (
     context: { workspaceRoot: string; spiritDataDir: string },
     options?: { planMode?: boolean; agentMode?: SpiritAgentMode; activePlanPath?: string },
@@ -1693,6 +1694,19 @@ async function createRuntime(
         });
       } catch {
         return undefined;
+      }
+    },
+    removePreCompactionHistoryArchive: async (archivePath) => {
+      const hostInternal = await ensureCliHostInternal(workspaceRoot);
+      const remove = hostInternal?.module.removePreCompactionHistoryArchive;
+      if (!hostInternal || typeof remove !== 'function') {
+        return;
+      }
+
+      try {
+        await remove(archivePath);
+      } catch {
+        // Best-effort orphan cleanup.
       }
     },
   }, history);

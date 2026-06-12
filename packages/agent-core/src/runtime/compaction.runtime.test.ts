@@ -249,3 +249,59 @@ test('compactHistoryImmediate archives pre-truncation history and compacts post-
   assert.match(compactionToolText, /\[tool output truncated for context retry\]/);
   assert.ok(compactionToolText.length < longToolOutput.length);
 });
+
+test('compactHistoryImmediate removes orphan archive when compaction fails after persist', async () => {
+  const archivePath = '/tmp/spirit/compaction-archives/pre-compact-orphan.json';
+  const history: LlmMessage[] = [
+    { role: 'user', content: createLlmMessageContentFromText('hello') },
+  ];
+
+  const llmTransport: LlmTransport<undefined, TestState> = {
+    startToolAgentRound: async () => {
+      throw new Error('not used');
+    },
+    compactHistoryManual: async () => {
+      throw new Error('llm unavailable');
+    },
+    compactSummaryText: () => undefined,
+    isContextOverflowError: () => false,
+    llmHistoryAsApiMessages: () => [],
+    llmSystemPromptsForExport: () => ({}),
+  };
+
+  const removedPaths: string[] = [];
+  const options: AgentRuntimeOptions<undefined, TestState, never> = {
+    config: undefined,
+    llmTransport,
+    toolExecutor: {
+      execute: async () => {
+        throw new Error('not used');
+      },
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    createToolAgentState: () => ({ messages: [] }),
+    appendToolResultMessage: (state) => state,
+    extractAssistantText: () => undefined,
+    persistPreCompactionHistory: async () => archivePath,
+    removePreCompactionHistoryArchive: async (path) => {
+      removedPaths.push(path);
+    },
+  };
+
+  const runtime: CompactionRuntime<undefined, TestState, never> = {
+    options,
+    historyStore: history,
+    compactionTextStore: '',
+    pendingHistoryCompaction: undefined,
+    completedManualHistoryCompactionResultStore: undefined,
+    emitEvent: () => {},
+    completeTurn: () => {},
+    startToolAgentRoundAsync: () => {},
+    startStreamingRound: async () => {},
+    takeCompletedManualHistoryCompactionResult: () => undefined,
+    isBusy: () => false,
+    poll: async () => {},
+  };
+
+  await assert.rejects(() => compactHistoryImmediate(runtime), /llm unavailable/);
+  assert.deepEqual(removedPaths, [archivePath]);
+});

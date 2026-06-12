@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { PreCompactionHistoryArchive } from '@spirit-agent/core';
@@ -38,4 +38,8 @@ export async function persistPreCompactionHistoryArchive(
   const filePath = path.join(archivesDir, fileName);
   await writeFile(filePath, `${JSON.stringify(archive, null, 2)}\n`, 'utf8');
   return filePath;
+}
+
+export async function removePreCompactionHistoryArchive(archivePath: string): Promise<void> {
+  await unlink(archivePath);
 }

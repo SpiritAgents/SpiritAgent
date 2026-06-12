@@ -29,6 +29,7 @@ import {
 } from '@spirit-agent/core';
 import {
   persistPreCompactionHistoryArchive,
+  removePreCompactionHistoryArchive,
   resolveWorkspaceFileReferenceAttachmentsFromInput,
 } from '@spirit-agent/host-internal';
 
@@ -155,6 +156,8 @@ export function createDesktopRuntime(input: {
       persistPreCompactionHistoryArchive(spiritAgentDataDir(), archive, {
         ...(sessionId !== undefined ? { sessionId } : {}),
       }),
+    removePreCompactionHistoryArchive: async (archivePath) =>
+      removePreCompactionHistoryArchive(archivePath),
   }, input.history.map((message) => normalizeStoredLlmMessage(message)));
 }
 
