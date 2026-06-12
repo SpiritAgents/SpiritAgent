@@ -952,9 +952,9 @@
     "startImplementing": "Read the active Spirit plan and start implementing",
     "compact": "Proactively compress current session context history",
     "loop": "Enable autonomous loop until finish_task or remove the chip with Backspace",
-    "plan": "Switch to Plan mode or remove the chip with Backspace",
-    "ask": "Switch to Ask mode or remove the chip with Backspace",
-    "debug": "Switch to Debug mode or remove the chip with Backspace",
+    "plan": "Plan without editing code: draft implementation plans and guide you to start implementing when ready",
+    "ask": "Read-only help: explain, browse, and search the codebase",
+    "debug": "Systematic bug investigation: rank hypotheses, add log points, iterate root cause from logs",
     "activateSkillPrompt": "Please handle the current task according to skill \"{{skillName}}\"."
   }
 }
