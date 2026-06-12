@@ -69,7 +69,7 @@ export type ConversationListProps = {
   onRewindPickLocalFile: () => void;
   onRewindPaste: (event: import("react").ClipboardEvent<HTMLTextAreaElement>) => void;
   onComposerAgentModeChange: (mode: DesktopAgentMode) => void;
-  onForkMessage: (message: ConversationMessageSnapshot) => void;
+  onForkMessage: (message: ConversationMessageSnapshot, listIndex: number) => void;
 };
 
 export function ConversationList({

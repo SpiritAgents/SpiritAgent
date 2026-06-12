@@ -2,6 +2,14 @@ import type { ConversationMessageSnapshot } from '../types.js';
 
 const FORK_DISPLAY_NAME_PREFIX = /^\((\d+)\)\s+([\s\S]*)$/;
 
+/** Matches UI fork anchor: completed assistant row with body text or a tool card. */
+export function isForkableForkAnchor(message: ConversationMessageSnapshot): boolean {
+  if (message.role !== 'assistant' || message.pending) {
+    return false;
+  }
+  return Boolean(message.content.trim() || message.tool);
+}
+
 /** Stackable fork title: `My Chat` → `(1) My Chat` → `(2) My Chat`. */
 export function deriveForkedSessionDisplayName(sourceDisplayName: string): string {
   const match = sourceDisplayName.match(FORK_DISPLAY_NAME_PREFIX);
@@ -15,19 +23,28 @@ export function deriveForkedSessionDisplayName(sourceDisplayName: string): strin
 export function resolveForkAnchorIndex(
   messages: readonly ConversationMessageSnapshot[],
   messageId: number,
+  listIndex?: number,
 ): number | null {
   if (!Number.isFinite(messageId)) {
     return null;
   }
-  const index = messages.findIndex((message) => message.id === messageId);
-  if (index < 0) {
-    return null;
+  if (
+    listIndex !== undefined
+    && listIndex >= 0
+    && listIndex < messages.length
+  ) {
+    const atListIndex = messages[listIndex]!;
+    if (atListIndex.id === messageId && isForkableForkAnchor(atListIndex)) {
+      return listIndex;
+    }
   }
-  const message = messages[index]!;
-  if (message.role !== 'assistant' || message.pending) {
-    return null;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]!;
+    if (message.id === messageId && isForkableForkAnchor(message)) {
+      return index;
+    }
   }
-  return index;
+  return null;
 }
 
 export function truncateMessagesThroughIndex(
@@ -57,7 +74,7 @@ export function findLastForkableAssistantMessageId(
 ): number | null {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index]!;
-    if (message.role === 'assistant' && !message.pending) {
+    if (isForkableForkAnchor(message)) {
       return message.id;
     }
   }

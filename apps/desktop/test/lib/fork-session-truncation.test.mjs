@@ -27,6 +27,18 @@ test('resolveForkAnchorIndex rejects user, pending, and unknown ids', () => {
   assert.equal(resolveForkAnchorIndex(messages, 99), null);
 });
 
+test('resolveForkAnchorIndex prefers body row when messageId is duplicated', () => {
+  const duplicateIdMessages = [
+    { id: 1, role: 'user', content: 'hi' },
+    { id: 2, role: 'assistant', content: '', pending: false, aux: { thinking: 'reasoning' } },
+    { id: 2, role: 'assistant', content: 'hello', pending: false },
+    { id: 3, role: 'user', content: 'again' },
+    { id: 4, role: 'assistant', content: 'sure', pending: false },
+  ];
+  assert.equal(resolveForkAnchorIndex(duplicateIdMessages, 2), 2);
+  assert.equal(resolveForkAnchorIndex(duplicateIdMessages, 2, 2), 2);
+});
+
 test('truncateMessagesThroughIndex keeps anchor inclusive and strips transient flags', () => {
   const truncated = truncateMessagesThroughIndex(messages, 3);
   assert.equal(truncated.length, 4);
