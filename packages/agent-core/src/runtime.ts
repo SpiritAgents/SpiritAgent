@@ -2001,6 +2001,7 @@ export class AgentRuntime<
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+    postHookToolInput?: import('./ports.js').JsonObject,
   ): void {
     startBackgroundToolExecutionAsyncInternal(
       this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -2015,6 +2016,7 @@ export class AgentRuntime<
       resumeAsStreaming,
       streamingEmitBeginResponse,
       earlyToolExecutions,
+      postHookToolInput,
     );
   }
 
