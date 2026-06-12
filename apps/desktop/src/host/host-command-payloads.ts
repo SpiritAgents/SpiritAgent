@@ -68,6 +68,7 @@ export type CommandPayloads = {
   getGitHubAuthStatus: undefined;
   beginGitHubDeviceLogin: undefined;
   completeGitHubDeviceLogin: undefined;
+  cancelGitHubDeviceLogin: undefined;
   disconnectGitHub: undefined;
   getGitHubPullRequestForCurrentBranch: undefined;
   getGitHubPullRequestDetail: { request: GetGitHubPullRequestDetailRequest };

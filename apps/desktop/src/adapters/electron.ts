@@ -246,6 +246,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     completeGitHubDeviceLogin() {
       return bridge.completeGitHubDeviceLogin();
     },
+    cancelGitHubDeviceLogin() {
+      return bridge.cancelGitHubDeviceLogin();
+    },
     disconnectGitHub() {
       return bridge.disconnectGitHub();
     },

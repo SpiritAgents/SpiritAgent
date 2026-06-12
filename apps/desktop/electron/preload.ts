@@ -264,6 +264,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   completeGitHubDeviceLogin() {
     return ipcRenderer.invoke('desktop:invoke', 'completeGitHubDeviceLogin');
   },
+  cancelGitHubDeviceLogin() {
+    return ipcRenderer.invoke('desktop:invoke', 'cancelGitHubDeviceLogin');
+  },
   disconnectGitHub() {
     return ipcRenderer.invoke('desktop:invoke', 'disconnectGitHub');
   },

@@ -61,6 +61,7 @@ export type HostCommandName =
   | 'getGitHubAuthStatus'
   | 'beginGitHubDeviceLogin'
   | 'completeGitHubDeviceLogin'
+  | 'cancelGitHubDeviceLogin'
   | 'disconnectGitHub'
   | 'getGitHubPullRequestForCurrentBranch'
   | 'getGitHubPullRequestDetail'
