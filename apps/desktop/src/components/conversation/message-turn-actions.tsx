@@ -17,6 +17,7 @@ export function MessageTurnActions({
   onContinue,
   canFork,
   forkBusy,
+  forkEnabled,
   onFork,
 }: {
   showContinueButton: boolean;
@@ -25,6 +26,7 @@ export function MessageTurnActions({
   onContinue: (message: ConversationMessageSnapshot) => void;
   canFork: boolean;
   forkBusy: boolean;
+  forkEnabled: boolean;
   onFork: () => void;
 }) {
   const { t } = useTranslation();
@@ -54,21 +56,21 @@ export function MessageTurnActions({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-7 shrink-0"
+              className="size-7 shrink-0 text-muted-foreground"
               aria-label={t("app.messageActions")}
-              disabled={forkBusy}
+              disabled={forkBusy || !forkEnabled}
             >
-              <MoreHorizontal className="size-3.5" aria-hidden />
+              <MoreHorizontal className="size-3.5 text-muted-foreground" aria-hidden />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-40">
             <DropdownMenuItem
-              disabled={forkBusy}
+              disabled={forkBusy || !forkEnabled}
               onSelect={() => {
                 onFork();
               }}
             >
-              <GitFork className="size-3.5" aria-hidden />
+              <GitFork className="size-3.5 text-muted-foreground" aria-hidden />
               {t("app.forkChat")}
             </DropdownMenuItem>
           </DropdownMenuContent>

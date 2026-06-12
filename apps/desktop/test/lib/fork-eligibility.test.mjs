@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { canForkMessage, canForkSession } from '../../src/lib/fork-eligibility.ts';
+import { canForkMessage, canForkSession, canShowForkMessage } from '../../src/lib/fork-eligibility.ts';
 
 const assistant = { id: 2, role: 'assistant', content: 'hi', pending: false };
 const pendingAssistant = { id: 3, role: 'assistant', content: 'wait', pending: true };
@@ -33,6 +33,25 @@ test('canForkMessage blocks pending assistant and user messages', () => {
     canForkMessage({
       message: user,
       conversationBusy: false,
+      activeSessionReadOnly: false,
+      forkBusy: false,
+    }),
+    false,
+  );
+});
+
+test('canShowForkMessage stays visible while conversation is busy', () => {
+  assert.equal(
+    canShowForkMessage({
+      message: assistant,
+      activeSessionReadOnly: false,
+    }),
+    true,
+  );
+  assert.equal(
+    canForkMessage({
+      message: assistant,
+      conversationBusy: true,
       activeSessionReadOnly: false,
       forkBusy: false,
     }),

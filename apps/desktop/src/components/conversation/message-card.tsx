@@ -33,7 +33,7 @@ import {
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
 import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
 import { cn } from "@/lib/utils";
-import { canForkMessage } from "@/lib/fork-eligibility";
+import { canForkMessage, canShowForkMessage } from "@/lib/fork-eligibility";
 import type {
   ConversationMessageSnapshot,
   DesktopModelReasoningEffort,
@@ -144,7 +144,7 @@ export function MessageCard({
   conversationIsBusy?: boolean;
   activeSessionReadOnly?: boolean;
   forkBusy?: boolean;
-  onForkMessage?: (message: ConversationMessageSnapshot) => void;
+  onForkMessage?: (message: ConversationMessageSnapshot, listIndex: number) => void;
 }) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
@@ -177,8 +177,14 @@ export function MessageCard({
     && Boolean(message.content.trim())
     && !message.pending
     && !subagentStatusSurface;
-  const canFork =
+  const showForkMenu =
     showTurnActions
+    && canShowForkMessage({
+      message,
+      activeSessionReadOnly,
+    });
+  const canFork =
+    showForkMenu
     && canForkMessage({
       message,
       conversationBusy: conversationIsBusy,
@@ -310,9 +316,10 @@ export function MessageCard({
             continueTarget={continueTarget}
             continueBusy={continueBusy}
             onContinue={onContinue}
-            canFork={canFork && Boolean(onForkMessage)}
+            canFork={showForkMenu && Boolean(onForkMessage)}
+            forkEnabled={canFork}
             forkBusy={forkBusy}
-            onFork={() => onForkMessage?.(message)}
+            onFork={() => onForkMessage?.(message, listIndex)}
           />
         ) : null}
         {!isUser && message.aux?.finishTaskNotice ? (
