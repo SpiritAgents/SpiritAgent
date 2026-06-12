@@ -52,6 +52,13 @@ test('buildPreCompactionHistoryArchive keeps user and assistant messages with to
   assert.equal(archive.messages[2]?.toolCalls, undefined);
 });
 
+test('buildCompactHistorySystemPrompt omits archive section when no path is provided', () => {
+  const prompt = buildCompactHistorySystemPrompt();
+  assert.doesNotMatch(prompt, /\[Pre-compaction Archive\]/);
+  assert.doesNotMatch(prompt, /Do not output only the path/);
+  assert.match(prompt, /\[Open Items\]/);
+});
+
 test('buildCompactHistorySystemPrompt includes filled archive section example when provided', () => {
   const path = '/data/compaction-archives/pre-compact-s1.json';
   const prompt = buildCompactHistorySystemPrompt(path);
