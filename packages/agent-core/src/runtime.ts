@@ -83,7 +83,6 @@ import {
 } from './runtime/background-tools.js';
 import {
   compactHistoryImmediate as compactHistoryImmediateInternal,
-  launchHistoryCompaction as launchHistoryCompactionInternal,
   pollPendingHistoryCompaction as pollPendingHistoryCompactionInternal,
   startHistoryCompactionAsync as startHistoryCompactionAsyncInternal,
   startManualHistoryCompactionAsync as startManualHistoryCompactionAsyncInternal,
@@ -2076,17 +2075,6 @@ export class AgentRuntime<
   private startManualHistoryCompactionAsync(): void {
     startManualHistoryCompactionAsyncInternal(
       this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
-  }
-
-  private launchHistoryCompaction(
-    pending: PendingHistoryCompaction<State, ToolRequest>,
-    history: LlmMessage[],
-  ): void {
-    launchHistoryCompactionInternal(
-      this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
-      pending,
-      history,
     );
   }
 
