@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 
 import { HookConfigError } from './errors.js';
@@ -184,5 +185,18 @@ export function resolveHookCommandPath(definition: ResolvedHookDefinition): stri
     throw new HookConfigError(`Hook command escapes config directory: ${command}`);
   }
 
-  return resolved;
+  try {
+    const realConfigRoot = realpathSync.native(configRoot);
+    const realResolved = realpathSync.native(resolved);
+    const relativeReal = relative(realConfigRoot, realResolved);
+    if (relativeReal.startsWith('..') || isAbsolute(relativeReal)) {
+      throw new HookConfigError(`Hook command escapes config directory via symlink: ${command}`);
+    }
+    return realResolved;
+  } catch (error) {
+    if (error instanceof HookConfigError) {
+      throw error;
+    }
+    return resolved;
+  }
 }
