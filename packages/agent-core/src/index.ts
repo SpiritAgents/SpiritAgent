@@ -18,3 +18,4 @@ export * from './tool-streaming-preview-gate.js';
 export * from './mcp/index.js';
 export * from './lsp/index.js';
 export * from './eval/index.js';
+export * from './hooks/index.js';

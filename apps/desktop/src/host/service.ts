@@ -71,6 +71,7 @@ import type {
   DeleteExtensionRequest,
   DeleteRuleRequest,
   DeleteMcpServerRequest,
+  DeleteHookEntryRequest,
   DesktopAutomationDetail,
   DesktopAutomationListItem,
   DesktopCreateAutomationRequest,
@@ -94,6 +95,7 @@ import type {
   DesktopSnapshot,
   FileRewindWarning,
   RunExtensionRequest,
+  SaveHookEntryRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
   PendingAssistantAux,
@@ -137,6 +139,7 @@ import {
   deleteExtensionCommand,
   deleteRuleCommand,
   deleteMcpServerCommand,
+  deleteHookEntryCommand,
   deleteSkillCommand,
   getMarketplaceExtensionDetailCommand,
   getMarketplaceExtensionReadmeCommand,
@@ -146,6 +149,7 @@ import {
   listMarketplaceExtensionsCommand,
   prepareMarketplaceExtensionInstallCommand,
   runExtensionCommand,
+  saveHookEntryCommand,
   submitSkillSlashCommand,
   updateExtensionSecretCommand,
   updateExtensionSettingsCommand,
@@ -345,6 +349,14 @@ import {
   emptyMcpStatusSnapshot,
   listDesktopMcpServersFromDisk,
 } from './mcp-config.js';
+import { listDesktopHookListItems } from './hooks.js';
+import {
+  buildDesktopHookSessionContext,
+  createDesktopHookRunner,
+  runDesktopSessionEndHook,
+  runDesktopSessionStartHook,
+} from './hook-runtime.js';
+import type { HookRunner, SessionEndHookInput, SessionStartHookInput } from '@spirit-agent/core';
 import {
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
@@ -677,7 +689,34 @@ class DesktopHostService {
       insertUserApprovalReplyMessage: (content, pendingToolCallId) =>
         this.insertUserApprovalReplyMessage(content, pendingToolCallId),
       normalizeApprovalDecision,
+      runSessionEndForActive: (reason) => this.runSessionEndForBundle(this.activeBundle(), reason),
     };
+  }
+
+  private getHookRunner(workspaceRoot: string): HookRunner {
+    return createDesktopHookRunner(workspaceRoot);
+  }
+
+  private async runSessionEndForBundle(
+    bundle: SessionBundle,
+    reason: SessionEndHookInput['reason'],
+  ): Promise<void> {
+    const state = this.state;
+    const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
+    const hookRunner = this.getHookRunner(workspaceRoot);
+    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel);
+    await runDesktopSessionEndHook(hookRunner, context, reason);
+  }
+
+  private async runSessionStartForBundle(
+    bundle: SessionBundle,
+    source: SessionStartHookInput['source'],
+  ): Promise<void> {
+    const state = this.state;
+    const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
+    const hookRunner = this.getHookRunner(workspaceRoot);
+    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel);
+    await runDesktopSessionStartHook(bundle.runtime, hookRunner, context, source);
   }
 
   private sessionActivationContext(): SessionActivationContext {
@@ -711,6 +750,8 @@ class DesktopHostService {
         this.scheduleExtensionWarmup({ type: 'session', event }),
       buildSnapshot: () => this.buildSnapshot(),
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
+      runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
+      runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
     };
   }
 
@@ -1009,6 +1050,14 @@ class DesktopHostService {
 
   async deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot> {
     return deleteMcpServerCommand(this.extensionCommandContext(), request);
+  }
+
+  async saveHookEntry(request: SaveHookEntryRequest): Promise<DesktopSnapshot> {
+    return saveHookEntryCommand(this.extensionCommandContext(), request);
+  }
+
+  async deleteHookEntry(request: DeleteHookEntryRequest): Promise<DesktopSnapshot> {
+    return deleteHookEntryCommand(this.extensionCommandContext(), request);
   }
 
   async inspectMcpServer(name: string): Promise<DesktopMcpServerInspection> {
@@ -1664,8 +1713,13 @@ class DesktopHostService {
   }
 
   private async refreshRuntime(): Promise<void> {
-    await this.refreshRuntimeForBundle(this.activeBundle());
+    const bundle = this.activeBundle();
+    const hadRuntime = bundle.runtime !== undefined;
+    await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
+    if (hadRuntime && bundle.runtime) {
+      await this.runSessionStartForBundle(bundle, 'resume');
+    }
   }
 
   private resolveBundleActivePlanPath(bundle: SessionBundle): string | undefined {
@@ -1696,6 +1750,10 @@ class DesktopHostService {
 
   private async refreshRuntimeForBundle(bundle: SessionBundle): Promise<void> {
     const state = this.requireState();
+    const hadRuntime = bundle.runtime !== undefined;
+    if (hadRuntime) {
+      await this.runSessionEndForBundle(bundle, 'switch');
+    }
     await this.syncPlanStateForBundle(bundle);
     await this.ensureToolExecutor(bundle);
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 promote/refresh 后仍进入 createRuntime。
@@ -2290,6 +2348,8 @@ class DesktopHostService {
   ): DesktopRuntime {
     const workspaceRoot = transportConfig.workspaceRoot ?? this.requireState().workspaceRoot;
     toolExecutor.setActiveTransportConfig(transportConfig);
+    const hookRunner = this.getHookRunner(workspaceRoot);
+    const hookSessionContext = buildDesktopHookSessionContext(bundle, transportConfig.model);
     return createDesktopRuntime({
       transportConfig,
       history,
@@ -2305,6 +2365,8 @@ class DesktopHostService {
       workspaceRoot,
       basicInfo: buildDesktopRuntimeBasicInfo(workspaceRoot, toolExecutor),
       getLoopEnabled: () => bundle.loopEnabled,
+      hookRunner,
+      hookSessionContext,
     });
   }
 
@@ -2409,6 +2471,7 @@ class DesktopHostService {
         ?? this.toolExecutor?.mcpStatusSnapshot()
         ?? emptyMcpStatusSnapshot(),
       mcpServers: listDesktopMcpServersFromDisk(state.workspaceRoot, state.workspaceBinding),
+      hooksList: listDesktopHookListItems(state.workspaceRoot, state.workspaceBinding),
       lsp: this.lspSnapshot,
       conversation: {
         revision: activeBundle.conversationRevision,

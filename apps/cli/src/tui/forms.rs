@@ -1,5 +1,13 @@
 use super::*;
 use crate::view::BottomFormView;
+use std::path::Path;
+
+fn workspace_hooks_scope_available(workspace_root: &Path, workspace_binding: &str) -> bool {
+    if workspace_binding == "none" {
+        return false;
+    }
+    workspace_root.join(".spirit").is_dir() || workspace_root.join(".git").exists()
+}
 
 #[derive(Default)]
 pub(crate) struct BottomFormUiState {
@@ -73,6 +81,7 @@ impl TuiShell {
             }
             BottomFormKind::McpAdd
             | BottomFormKind::ModelAdd
+            | BottomFormKind::HookAdd
             | BottomFormKind::McpPrompt { .. }
             | BottomFormKind::Extensions => self.cancel_bottom_form(),
             BottomFormKind::Rules => self.save_rules_bottom_form(),
@@ -223,6 +232,20 @@ impl TuiShell {
                 }
             }
             BottomFormKind::McpAdd | BottomFormKind::ModelAdd => self.save_bottom_form(),
+            BottomFormKind::HookAdd => {
+                let should_toggle = self
+                    .forms
+                    .active
+                    .as_ref()
+                    .is_some_and(bottom_form::hook_add_form_enter_toggles_checkbox);
+                if should_toggle {
+                    if let Some(form) = self.forms.active.as_mut() {
+                        bottom_form::activate(form);
+                    }
+                } else {
+                    self.save_bottom_form();
+                }
+            }
             BottomFormKind::McpPrompt { .. } => self.apply_prompt_bottom_form(),
             BottomFormKind::Rules => {
                 if let Some(form) = self.forms.active.as_mut() {
@@ -246,6 +269,39 @@ impl TuiShell {
         let Some(form) = self.forms.active.as_ref() else {
             return;
         };
+
+        if matches!(form.kind, BottomFormKind::HookAdd) {
+            match bottom_form::to_hook_save_request(form) {
+                Ok(request) => match self
+                    .runtime
+                    .save_hook_entry(Some(self.workspace_binding.as_str()), &request)
+                {
+                    Ok(()) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: t!("tui.hooks.add_saved").into_owned(),
+                            tool_block: None,
+                        });
+                        self.forms.active = None;
+                    }
+                    Err(err) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: t!("tui.hooks.add_failed", err = err).into_owned(),
+                            tool_block: None,
+                        });
+                    }
+                },
+                Err(err) => {
+                    self.messages.push(ChatMessage {
+                        role: MessageRole::Agent,
+                        content: t!("tui.hooks.add_failed", err = err).into_owned(),
+                        tool_block: None,
+                    });
+                }
+            }
+            return;
+        }
 
         if matches!(form.kind, BottomFormKind::ModelAdd) {
             let parsed = match bottom_form::parse_model_add_connection(form) {
@@ -506,6 +562,28 @@ impl TuiShell {
         .into_owned())
     }
 
+    pub(super) fn open_hook_add_form(&mut self) {
+        let workspace_root = self.app_paths.workspace_root();
+        let workspace_scope_available = workspace_hooks_scope_available(
+            &workspace_root,
+            self.workspace_binding.as_str(),
+        );
+        self.forms.active = Some(bottom_form::new_hook_add_form(workspace_scope_available));
+        self.model_picker_active = false;
+        self.language_picker_active = false;
+        self.approval_picker_active = false;
+        self.network_picker_active = false;
+        self.chat_picker_active = false;
+        self.image_picker_active = false;
+        self.set_input(String::new());
+        self.refresh_suggestions();
+        self.messages.push(ChatMessage {
+            role: MessageRole::Agent,
+            content: t!("tui.hooks.add_opened").into_owned(),
+            tool_block: None,
+        });
+    }
+
     pub(super) fn open_mcp_add_form(&mut self) {
         self.forms.active = Some(bottom_form::new_mcp_add_form());
         self.model_picker_active = false;
@@ -679,5 +757,35 @@ impl TuiShell {
                 });
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod hook_scope_tests {
+    use super::workspace_hooks_scope_available;
+    use std::fs;
+
+    #[test]
+    fn workspace_hooks_scope_respects_none_binding() {
+        let root = std::env::temp_dir().join(format!(
+            "spirit-hook-scope-none-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join(".git")).expect("create .git");
+        assert!(!workspace_hooks_scope_available(&root, "none"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn workspace_hooks_scope_allows_project_with_markers() {
+        let root = std::env::temp_dir().join(format!(
+            "spirit-hook-scope-project-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join(".spirit")).expect("create .spirit");
+        assert!(workspace_hooks_scope_available(&root, "project"));
+        let _ = fs::remove_dir_all(&root);
     }
 }
