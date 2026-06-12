@@ -353,6 +353,7 @@ export class AiSdkOpenResponsesTransport
     config: OpenResponsesTransportConfig,
     history: LlmMessage[],
     onProgress?: (message: string) => void,
+    context?: import('../ports.js').CompactHistoryManualContext,
   ): Promise<{
     droppedMessages: number;
     beforeLength: number;
@@ -368,7 +369,11 @@ export class AiSdkOpenResponsesTransport
     }
 
     const promptMessages = openAiMessagesToResponsesAiSdkMessages(
-      buildCompactHistoryPromptMessages(history),
+      buildCompactHistoryPromptMessages(history, {
+        ...(context?.preCompactionArchivePath === undefined
+          ? {}
+          : { preCompactionArchivePath: context.preCompactionArchivePath }),
+      }),
     );
     const compactConfig: OpenResponsesTransportConfig = {
       ...config,

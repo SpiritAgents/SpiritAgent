@@ -608,6 +608,10 @@ export interface ToolExecutor<
   getMcpPrompt(name: string, prompt: string, argsJson?: string): Promise<JsonValue>;
 }
 
+export interface CompactHistoryManualContext {
+  preCompactionArchivePath?: string;
+}
+
 export interface LlmTransport<Config, State = JsonValue> {
   startToolAgentRound(
     config: Config,
@@ -623,6 +627,7 @@ export interface LlmTransport<Config, State = JsonValue> {
     config: Config,
     history: LlmMessage[],
     onProgress?: (message: string) => void,
+    context?: CompactHistoryManualContext,
   ): Promise<{
     droppedMessages: number;
     beforeLength: number;

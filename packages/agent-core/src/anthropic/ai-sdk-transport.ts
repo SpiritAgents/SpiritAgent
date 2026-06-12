@@ -294,6 +294,7 @@ export class AiSdkAnthropicTransport
     config: AnthropicTransportConfig,
     history: LlmMessage[],
     onProgress?: (message: string) => void,
+    context?: import('../ports.js').CompactHistoryManualContext,
   ): Promise<{
     droppedMessages: number;
     beforeLength: number;
@@ -308,7 +309,13 @@ export class AiSdkAnthropicTransport
       };
     }
 
-    const promptMessages = toolStateMessagesToAiSdkMessages(buildCompactHistoryPromptMessages(history));
+    const promptMessages = toolStateMessagesToAiSdkMessages(
+      buildCompactHistoryPromptMessages(history, {
+        ...(context?.preCompactionArchivePath === undefined
+          ? {}
+          : { preCompactionArchivePath: context.preCompactionArchivePath }),
+      }),
+    );
     const compactConfig: AnthropicTransportConfig = {
       ...config,
       model: config.compactModel ?? config.model,

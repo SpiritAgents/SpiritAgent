@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   PRE_COMPACTION_ARCHIVE_SECTION_HEADER,
   appendPreCompactionArchiveToCompactSummary,
+  applyPreCompactionArchivePathToCompactHistory,
   buildPreCompactionHistoryArchive,
 } from './compaction-archive.js';
 import { COMPACT_SUMMARY_PREFIX } from './tool-agent.js';
@@ -72,6 +73,22 @@ test('buildCompactHistorySystemPrompt includes archive path guidance when provid
   const prompt = buildCompactHistorySystemPrompt(path);
   assert.match(prompt, /pre-compaction history archive has been saved to: \/data\/compaction-archives\/pre-compact-s1\.json/);
   assert.match(prompt, /\[Pre-compaction Archive\]/);
+});
+
+test('applyPreCompactionArchivePathToCompactHistory updates compact summary message', () => {
+  const history = [
+    {
+      role: 'system' as const,
+      content: createLlmMessageContentFromText(`${COMPACT_SUMMARY_PREFIX}\ncompact summary`),
+    },
+  ];
+  applyPreCompactionArchivePathToCompactHistory(history, '/tmp/archive.json');
+  const text = history[0]?.content
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text)
+    .join('');
+  assert.ok(text?.includes('/tmp/archive.json'));
+  assert.ok(text?.includes(PRE_COMPACTION_ARCHIVE_SECTION_HEADER));
 });
 
 test('buildCompactHistoryPromptMessages forwards archive path into system prompt', () => {

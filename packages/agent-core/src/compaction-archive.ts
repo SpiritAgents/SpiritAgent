@@ -1,10 +1,12 @@
 import {
   cloneLlmMessageContent,
+  llmMessageTextContent,
   type LlmMessage,
   type LlmMessageContent,
   type LlmToolCall,
   type StoredLlmMessageArchiveEntry,
 } from './ports.js';
+import { COMPACT_SUMMARY_PREFIX } from './tool-agent.js';
 
 export const PRE_COMPACTION_HISTORY_EXPORT_VERSION = 1;
 
@@ -89,4 +91,33 @@ export function appendPreCompactionArchiveToCompactSummary(
   }
 
   return trimmedSummary.length > 0 ? `${trimmedSummary}\n\n${archiveSection}` : archiveSection;
+}
+
+export function applyPreCompactionArchivePathToCompactHistory(
+  history: LlmMessage[],
+  archivePath: string,
+): void {
+  const normalizedPath = archivePath.trim();
+  if (!normalizedPath) {
+    return;
+  }
+
+  const compactMessage = history.find(
+    (message) =>
+      message.role === 'system' &&
+      llmMessageTextContent(message.content).startsWith(COMPACT_SUMMARY_PREFIX),
+  );
+  if (!compactMessage) {
+    return;
+  }
+
+  const existingText = llmMessageTextContent(compactMessage.content);
+  const summaryBody = existingText.slice(COMPACT_SUMMARY_PREFIX.length).trimStart();
+  const nextSummaryBody = appendPreCompactionArchiveToCompactSummary(summaryBody, normalizedPath);
+  compactMessage.content = [
+    {
+      type: 'text',
+      text: `${COMPACT_SUMMARY_PREFIX}\n${nextSummaryBody}`,
+    },
+  ];
 }
