@@ -78,6 +78,12 @@ export function modLetterShortcutKbdKeys(key: string): readonly string[] {
   return isMacDesktopPlatform() ? ["⌘", letter] : ["Ctrl", letter];
 }
 
+/** Alt+Cmd / Ctrl+Alt + letter shortcut keys for tooltip Kbd chips. */
+export function modAltLetterShortcutKbdKeys(key: string): readonly string[] {
+  const letter = key.toUpperCase();
+  return isMacDesktopPlatform() ? ["⌥", "⌘", letter] : ["Ctrl", "Alt", letter];
+}
+
 /** Cmd/Ctrl + / shortcut keys for tooltip Kbd chips. */
 export function modSlashShortcutKbdKeys(): readonly string[] {
   return isMacDesktopPlatform() ? ["⌘", "/"] : ["Ctrl", "/"];
