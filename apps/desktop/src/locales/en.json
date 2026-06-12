@@ -78,6 +78,7 @@
     "hooksTimeout": "Timeout (seconds)",
     "hooksTimeoutInvalid": "Timeout must be a positive number.",
     "hooksDeleteFailed": "Failed to delete hook entry.",
+    "hooksSaveFailed": "Failed to save hook entry.",
     "hooksMatcher": "Matcher (optional)",
     "hooksFailClosed": "Fail closed on errors",
     "skills": "Skills",

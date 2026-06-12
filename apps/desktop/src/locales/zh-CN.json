@@ -78,6 +78,7 @@
     "hooksTimeout": "超时（秒）",
     "hooksTimeoutInvalid": "超时必须是正数。",
     "hooksDeleteFailed": "删除 Hook 条目失败。",
+    "hooksSaveFailed": "保存 Hook 条目失败。",
     "hooksMatcher": "Matcher（可选）",
     "hooksFailClosed": "失败时阻断（failClosed）",
     "skills": "Skills",

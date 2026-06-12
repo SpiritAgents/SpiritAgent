@@ -126,18 +126,24 @@ export function HooksSettingsPanel({
       return;
     }
     setCreateError(null);
-    await onSaveHookEntry({
-      scope: createScope,
-      event,
-      command: trimmedCommand,
-      ...(parsedTimeout !== undefined && Number.isFinite(parsedTimeout)
-        ? { timeout: parsedTimeout }
-        : {}),
-      ...(matcher.trim() ? { matcher: matcher.trim() } : {}),
-      ...(failClosed ? { failClosed: true } : {}),
-    });
-    setAddDialogOpen(false);
-    resetForm();
+    try {
+      await onSaveHookEntry({
+        scope: createScope,
+        event,
+        command: trimmedCommand,
+        ...(parsedTimeout !== undefined && Number.isFinite(parsedTimeout)
+          ? { timeout: parsedTimeout }
+          : {}),
+        ...(matcher.trim() ? { matcher: matcher.trim() } : {}),
+        ...(failClosed ? { failClosed: true } : {}),
+      });
+      setAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      setCreateError(
+        error instanceof Error ? error.message : t("settings.hooksSaveFailed"),
+      );
+    }
   }
 
   return (
