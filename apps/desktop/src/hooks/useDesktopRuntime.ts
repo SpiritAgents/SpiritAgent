@@ -77,6 +77,7 @@ import type {
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
+  GetGitHubPullRequestDetailRequest,
 } from "@/types";
 
 type BusyAction =
@@ -2543,6 +2544,44 @@ export function useDesktopRuntime() {
     [api],
   );
 
+  const getGitHubAuthStatus = useCallback(async () => {
+    if (!api) {
+      return { connected: false };
+    }
+    return api.getGitHubAuthStatus();
+  }, [api]);
+
+  const startGitHubOAuth = useCallback(async () => {
+    if (!api) {
+      throw new Error(i18n.t('error.hostNotReady'));
+    }
+    return api.startGitHubOAuth();
+  }, [api]);
+
+  const disconnectGitHub = useCallback(async () => {
+    if (!api) {
+      return { connected: false };
+    }
+    return api.disconnectGitHub();
+  }, [api]);
+
+  const getGitHubPullRequestForCurrentBranch = useCallback(async () => {
+    if (!api) {
+      return { repository: null, branch: null, pullRequest: null };
+    }
+    return api.getGitHubPullRequestForCurrentBranch();
+  }, [api]);
+
+  const getGitHubPullRequestDetail = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.getGitHubPullRequestDetail(request);
+    },
+    [api],
+  );
+
   const readWorkspaceTextFile = useCallback(
     async (relativePath: string): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
@@ -2781,6 +2820,11 @@ export function useDesktopRuntime() {
     listWorkspaceExplorerChildren,
     readGitWorkingTree,
     readGitHistory,
+    getGitHubAuthStatus,
+    startGitHubOAuth,
+    disconnectGitHub,
+    getGitHubPullRequestForCurrentBranch,
+    getGitHubPullRequestDetail,
     readWorkspaceTextFile,
     writeWorkspaceTextFile,
     readHostTextFile,

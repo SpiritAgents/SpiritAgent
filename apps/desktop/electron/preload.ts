@@ -255,6 +255,21 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   readGitHistory(request?: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'readGitHistory', { request });
   },
+  getGitHubAuthStatus() {
+    return ipcRenderer.invoke('desktop:invoke', 'getGitHubAuthStatus');
+  },
+  startGitHubOAuth() {
+    return ipcRenderer.invoke('desktop:invoke', 'startGitHubOAuth');
+  },
+  disconnectGitHub() {
+    return ipcRenderer.invoke('desktop:invoke', 'disconnectGitHub');
+  },
+  getGitHubPullRequestForCurrentBranch() {
+    return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestForCurrentBranch');
+  },
+  getGitHubPullRequestDetail(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestDetail', { request });
+  },
   readWorkspaceTextFile(relativePath: string) {
     return ipcRenderer.invoke('desktop:invoke', 'readWorkspaceTextFile', { relativePath });
   },
