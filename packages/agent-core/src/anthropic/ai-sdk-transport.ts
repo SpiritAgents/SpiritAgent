@@ -27,6 +27,8 @@ import {
   resolveStreamingToolPreviewEmit,
 } from '../tool-streaming-preview-gate.js';
 import {
+  COMPACT_SUMMARY_PREFIX,
+  buildCompactHistoryPromptMessages,
   buildToolAgentHostPrompt,
   cloneJsonValue,
   isJsonObject,
@@ -306,27 +308,7 @@ export class AiSdkAnthropicTransport
       };
     }
 
-    const promptMessages = toolStateMessagesToAiSdkMessages([
-      {
-        role: 'system',
-        content: [
-          '请将以下对话压缩为后续推理可复用的系统摘要。',
-          '保留：用户目标、关键约束、已验证结论、失败尝试、未完成事项。',
-          '不要保留寒暄。',
-          '输出纯文本摘要。',
-        ].join('\n'),
-      },
-      {
-        role: 'user',
-        content: history
-          .map((message) => {
-            const text = llmMessageTextContent(message.content);
-            const imageNote = message.content.some((part) => part.type === 'image') ? '\n[images attached]' : '';
-            return `${message.role.toUpperCase()}: ${text}${imageNote}`;
-          })
-          .join('\n\n'),
-      },
-    ]);
+    const promptMessages = toolStateMessagesToAiSdkMessages(buildCompactHistoryPromptMessages(history));
     const compactConfig: AnthropicTransportConfig = {
       ...config,
       model: config.compactModel ?? config.model,
@@ -383,7 +365,7 @@ export class AiSdkAnthropicTransport
 
     history.splice(0, history.length, {
       role: 'system',
-      content: [{ type: 'text', text: `[SPIRIT_COMPACT_SUMMARY]\n${normalizedSummary}` }],
+      content: [{ type: 'text', text: `${COMPACT_SUMMARY_PREFIX}\n${normalizedSummary}` }],
     });
 
     return {
@@ -397,13 +379,13 @@ export class AiSdkAnthropicTransport
     return history
       .find(
         (message) =>
-          message.role === 'system' && llmMessageTextContent(message.content).startsWith('[SPIRIT_COMPACT_SUMMARY]'),
+          message.role === 'system' && llmMessageTextContent(message.content).startsWith(COMPACT_SUMMARY_PREFIX),
       )
       ?.content
       .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
       .map((part) => part.text)
       .join('')
-      .slice('[SPIRIT_COMPACT_SUMMARY]'.length)
+      .slice(COMPACT_SUMMARY_PREFIX.length)
       .trim() || undefined;
   }
 

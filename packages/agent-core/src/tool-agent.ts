@@ -2,6 +2,8 @@ import {
   cloneLlmProviderState,
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
+  llmMessageHasImages,
+  llmMessageHasVideos,
   llmMessageTextContent,
   type JsonObject,
   type JsonValue,
@@ -26,6 +28,36 @@ const TODOS_SECTION_PREFIX = '[SPIRIT_TODOS]';
 const BASIC_INFO_SECTION_PREFIX = '[SPIRIT_BASIC_INFO]';
 
 export const COMPACT_SUMMARY_PREFIX = '[SPIRIT_COMPACT_SUMMARY]';
+
+export const COMPACT_HISTORY_SYSTEM_PROMPT = [
+  '请将以下对话压缩为后续推理可复用的系统摘要。',
+  '保留：用户目标、关键约束、已验证结论、失败尝试、未完成事项。',
+  '不要保留寒暄。',
+  '输出纯文本摘要。',
+].join('\n');
+
+export function buildCompactHistoryUserPrompt(history: LlmMessage[]): string {
+  return history
+    .map((message) => {
+      const text = llmMessageTextContent(message.content);
+      const mediaNote = llmMessageHasImages(message.content)
+        ? '\n[images attached]'
+        : llmMessageHasVideos(message.content)
+          ? '\n[videos attached]'
+          : '';
+      return `${message.role.toUpperCase()}: ${text}${mediaNote}`;
+    })
+    .join('\n\n');
+}
+
+export function buildCompactHistoryPromptMessages(
+  history: LlmMessage[],
+): Array<{ role: 'system' | 'user'; content: string }> {
+  return [
+    { role: 'system', content: COMPACT_HISTORY_SYSTEM_PROMPT },
+    { role: 'user', content: buildCompactHistoryUserPrompt(history) },
+  ];
+}
 
 export interface ToolAgentEnabledRule {
   id: string;
