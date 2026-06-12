@@ -1,5 +1,5 @@
+import { githubApiHeaders, readGitHubJson } from './github-api.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
-import { GitHubOAuthError } from './oauth.js';
 import type {
   GitHubPullRequestDetail,
   GitHubPullRequestSummary,
@@ -19,14 +19,6 @@ interface GitHubPullRequestApiItem {
   head?: { ref?: string | null } | null;
   base?: { ref?: string | null } | null;
   labels?: Array<{ name?: string | null }> | null;
-}
-
-function githubApiHeaders(accessToken: string): Record<string, string> {
-  return {
-    Accept: 'application/vnd.github+json',
-    Authorization: `Bearer ${accessToken}`,
-    'X-GitHub-Api-Version': '2022-11-28',
-  };
 }
 
 function mapPullRequestSummary(item: GitHubPullRequestApiItem): GitHubPullRequestSummary {
@@ -54,24 +46,6 @@ function mapPullRequestDetail(item: GitHubPullRequestApiItem): GitHubPullRequest
     mergeable: item.mergeable ?? null,
     merged: Boolean(item.merged_at),
   };
-}
-
-async function readGitHubJson<T>(response: Response): Promise<T> {
-  if (response.ok) {
-    return (await response.json()) as T;
-  }
-
-  let detail = `HTTP ${response.status}`;
-  try {
-    const payload = (await response.json()) as { message?: string };
-    if (payload.message?.trim()) {
-      detail = payload.message.trim();
-    }
-  } catch {
-    /* ignore malformed error body */
-  }
-
-  throw new GitHubOAuthError(`GitHub API request failed: ${detail}`, response.status);
 }
 
 export async function findOpenPullRequestForHead(

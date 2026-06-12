@@ -4,3 +4,5 @@ export * from './oauth.js';
 export * from './device-flow.js';
 export * from './remote.js';
 export * from './pull-request.js';
+export * from './conversation.js';
+export * from './github-api.js';

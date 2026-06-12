@@ -44,3 +44,74 @@ export interface GitHubPullRequestForBranchResult {
   branch: string | null;
   pullRequest: GitHubPullRequestSummary | null;
 }
+
+export type GitHubPullRequestReviewState =
+  | 'APPROVED'
+  | 'CHANGES_REQUESTED'
+  | 'COMMENTED'
+  | 'DISMISSED';
+
+export interface GitHubPullRequestReviewComment {
+  id: number;
+  authorLogin: string;
+  avatarUrl: string;
+  body: string;
+  createdAt: string;
+  url: string;
+}
+
+export interface GitHubPullRequestConversationCommit {
+  kind: 'commit';
+  id: string;
+  createdAt: string;
+  authorLogin: string;
+  avatarUrl: string;
+  subject: string;
+  sha: string;
+  url: string;
+}
+
+export interface GitHubPullRequestConversationIssueComment {
+  kind: 'issueComment';
+  id: string;
+  createdAt: string;
+  authorLogin: string;
+  avatarUrl: string;
+  body: string;
+  url: string;
+}
+
+export interface GitHubPullRequestConversationReview {
+  kind: 'review';
+  id: string;
+  createdAt: string;
+  authorLogin: string;
+  avatarUrl: string;
+  state: GitHubPullRequestReviewState;
+  body?: string;
+  url: string;
+}
+
+export interface GitHubPullRequestConversationReviewThread {
+  kind: 'reviewThread';
+  id: string;
+  createdAt: string;
+  authorLogin: string;
+  avatarUrl: string;
+  path: string;
+  diffHunk: string;
+  line: number | null;
+  url: string;
+  comments: GitHubPullRequestReviewComment[];
+}
+
+export type GitHubPullRequestConversationItem =
+  | GitHubPullRequestConversationCommit
+  | GitHubPullRequestConversationIssueComment
+  | GitHubPullRequestConversationReview
+  | GitHubPullRequestConversationReviewThread;
+
+export interface GitHubPullRequestConversationSnapshot {
+  items: GitHubPullRequestConversationItem[];
+  hasMore: boolean;
+}
