@@ -13,6 +13,7 @@ function mockResult(overrides: Partial<HookRunResult> = {}): HookRunResult {
   return {
     records: [],
     denied: false,
+    permission: undefined,
     userMessage: undefined,
     agentMessage: undefined,
     updatedInput: undefined,
