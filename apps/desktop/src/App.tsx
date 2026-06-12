@@ -2202,6 +2202,8 @@ export default function App() {
   const [activeSurface, setActiveSurface] = useState<
     "conversation" | "settings" | "marketplace" | "automations" | "automation-detail"
   >("conversation");
+  const activeSurfaceRef = useRef(activeSurface);
+  activeSurfaceRef.current = activeSurface;
   const [conversationSnapshotStale, setConversationSnapshotStale] = useState(false);
   const [lastNonSettingsSurface, setLastNonSettingsSurface] = useState<
     "conversation" | "marketplace" | "automations"
@@ -2391,11 +2393,38 @@ export default function App() {
       if (event.defaultPrevented) {
         return;
       }
+      if (event.altKey) {
+        return;
+      }
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "b") {
         return;
       }
       event.preventDefault();
       sessionSidebarChromeApiRef.current?.toggle();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (!event.altKey) {
+        return;
+      }
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+      if (event.key.toLowerCase() !== "b") {
+        return;
+      }
+      if (activeSurfaceRef.current !== "conversation") {
+        return;
+      }
+      event.preventDefault();
+      setWorkspaceToolsOpen((current) => !current);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
