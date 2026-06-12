@@ -2,7 +2,9 @@ import type { ToolCallRequest, ToolExecutionOutput } from '../ports.js';
 import { createToolExecutionTextOutput } from '../ports.js';
 
 import { renderError } from './helpers.js';
-import { commitToolExecutionOutput } from './turn-machine.js';
+import { toolInputFromArgumentsJson } from '../hooks/integration.js';
+import { runPostToolUseSideEffects } from '../hooks/tool-hooks.js';
+import { commitToolExecutionOutput, type TurnMachineRuntime } from './turn-machine.js';
 import type {
   AgentRuntimeOptions,
   PendingEarlyToolExecution,
@@ -73,6 +75,7 @@ export function startBackgroundToolExecutionAsync<
   request: ToolRequest,
   toolCallId: string,
   toolName: string,
+  argumentsJson: string,
   remainingCalls: ToolCallRequest[],
   turn: RuntimeTurnContext<ToolRequest>,
   resumeAsStreaming = false,
@@ -96,6 +99,8 @@ export function startBackgroundToolExecutionAsync<
     request,
     toolCallId,
     toolName,
+    argumentsJson,
+    startedAtUnixMs: Date.now(),
     remainingCalls: [...remainingCalls],
     turn,
     resumeAsStreaming,
@@ -245,6 +250,18 @@ export async function pollPendingBackgroundToolExecution<
     output: pending.output,
     failed: pending.failed,
   });
+  await runPostToolUseSideEffects(
+    runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    {
+      id: pending.toolCallId,
+      name: pending.toolName,
+      argumentsJson: pending.argumentsJson,
+    },
+    toolInputFromArgumentsJson(pending.argumentsJson),
+    pending.output,
+    Math.max(0, Date.now() - pending.startedAtUnixMs),
+    pending.failed,
+  );
 
   const resumedState = runtime.options.appendToolResultMessage(
     pending.state,

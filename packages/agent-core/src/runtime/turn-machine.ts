@@ -131,6 +131,7 @@ export interface TurnMachineRuntime<
     request: ToolRequest,
     toolCallId: string,
     toolName: string,
+    argumentsJson: string,
     remainingCalls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming?: boolean,
@@ -330,6 +331,7 @@ export async function resumePendingQuestions<
           : {}),
         toolCallId: pending.toolCallId,
         toolName: pending.toolName,
+        argumentsJson: pending.argumentsJson,
         remainingCalls: pending.remainingCalls,
         turn: pending.turn,
         resumeAsStreaming: false,
@@ -632,6 +634,7 @@ export async function processToolCalls<
           : {}),
         toolCallId: call.id,
         toolName: call.name,
+        argumentsJson: call.argumentsJson,
         remainingCalls: remaining,
         turn,
         resumeAsStreaming: false,
@@ -660,6 +663,7 @@ export async function processToolCalls<
         questions: authorization.questions,
         toolCallId: call.id,
         toolName: call.name,
+        argumentsJson: call.argumentsJson,
         remainingCalls: remaining,
         turn,
         resumeAsStreaming: false,
@@ -1044,6 +1048,14 @@ export async function processToolCallsAsync<
         false,
         earlyOutcome.enqueueDeferredGuidance,
       );
+      await runPostToolUseSideEffects(
+        runtime,
+        call,
+        toolInputFromArgumentsJson(call.argumentsJson),
+        earlyOutcome.output,
+        0,
+        earlyOutcome.execution.failed,
+      );
       persistCompletedEarlyToolResult(runtime, call.id, earlyOutcome.output);
       if (earlyOutcome.fatalError !== undefined) {
         runtime.completeTurn({
@@ -1184,6 +1196,7 @@ export async function processToolCallsAsync<
           : {}),
         toolCallId: call.id,
         toolName: call.name,
+        argumentsJson: call.argumentsJson,
         remainingCalls: remaining,
         turn,
         resumeAsStreaming,
@@ -1217,6 +1230,7 @@ export async function processToolCallsAsync<
         questions: authorization.questions,
         toolCallId: call.id,
         toolName: call.name,
+        argumentsJson: call.argumentsJson,
         remainingCalls: remaining,
         turn,
         resumeAsStreaming,
@@ -1248,6 +1262,7 @@ export async function processToolCallsAsync<
         request,
         call.id,
         call.name,
+        call.argumentsJson,
         remaining,
         turn,
         resumeAsStreaming,
