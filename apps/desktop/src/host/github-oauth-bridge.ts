@@ -1,14 +1,37 @@
-export type GitHubOAuthFlowRunner = () => Promise<{ login: string }>;
+import type { GitHubDeviceAuthChallenge } from '@spirit-agent/host-internal';
 
-let runner: GitHubOAuthFlowRunner | null = null;
+export type BeginGitHubDeviceLoginRunner = () => Promise<GitHubDeviceAuthChallenge>;
+export type CompleteGitHubDeviceLoginRunner = () => Promise<{ login: string }>;
+export type CancelGitHubDeviceLoginRunner = () => void;
 
-export function registerGitHubOAuthFlowRunner(next: GitHubOAuthFlowRunner): void {
-  runner = next;
+let beginRunner: BeginGitHubDeviceLoginRunner | null = null;
+let completeRunner: CompleteGitHubDeviceLoginRunner | null = null;
+let cancelRunner: CancelGitHubDeviceLoginRunner | null = null;
+
+export function registerGitHubDeviceLoginRunners(runners: {
+  begin: BeginGitHubDeviceLoginRunner;
+  complete: CompleteGitHubDeviceLoginRunner;
+  cancel: CancelGitHubDeviceLoginRunner;
+}): void {
+  beginRunner = runners.begin;
+  completeRunner = runners.complete;
+  cancelRunner = runners.cancel;
 }
 
-export async function runGitHubOAuthFlow(): Promise<{ login: string }> {
-  if (!runner) {
-    throw new Error('GitHub OAuth is only available in the Electron desktop app.');
+export async function beginGitHubDeviceLogin(): Promise<GitHubDeviceAuthChallenge> {
+  if (!beginRunner) {
+    throw new Error('GitHub device login is only available in the Electron desktop app.');
   }
-  return runner();
+  return beginRunner();
+}
+
+export async function completeGitHubDeviceLogin(): Promise<{ login: string }> {
+  if (!completeRunner) {
+    throw new Error('GitHub device login is only available in the Electron desktop app.');
+  }
+  return completeRunner();
+}
+
+export function cancelGitHubDeviceLogin(): void {
+  cancelRunner?.();
 }

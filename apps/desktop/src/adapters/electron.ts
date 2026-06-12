@@ -240,8 +240,11 @@ export async function createElectronHostApi(): Promise<HostApi> {
     getGitHubAuthStatus() {
       return bridge.getGitHubAuthStatus();
     },
-    startGitHubOAuth() {
-      return bridge.startGitHubOAuth();
+    beginGitHubDeviceLogin() {
+      return bridge.beginGitHubDeviceLogin();
+    },
+    completeGitHubDeviceLogin() {
+      return bridge.completeGitHubDeviceLogin();
     },
     disconnectGitHub() {
       return bridge.disconnectGitHub();

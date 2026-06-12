@@ -75,7 +75,8 @@ export interface HostCommandDelegate {
   readGitWorkingTree(): Promise<unknown>;
   readGitHistory(request: NonNullable<CommandPayloads['readGitHistory']['request']>): Promise<unknown>;
   getGitHubAuthStatus(): Promise<unknown>;
-  startGitHubOAuth(): Promise<unknown>;
+  beginGitHubDeviceLogin(): Promise<unknown>;
+  completeGitHubDeviceLogin(): Promise<unknown>;
   disconnectGitHub(): Promise<unknown>;
   getGitHubPullRequestForCurrentBranch(): Promise<unknown>;
   getGitHubPullRequestDetail(request: CommandPayloads['getGitHubPullRequestDetail']['request']): Promise<unknown>;
@@ -168,7 +169,8 @@ const hostCommandDispatch = {
   readGitWorkingTree: (host) => host.readGitWorkingTree(),
   readGitHistory: (host, payload) => host.readGitHistory(payload.request ?? {}),
   getGitHubAuthStatus: (host) => host.getGitHubAuthStatus(),
-  startGitHubOAuth: (host) => host.startGitHubOAuth(),
+  beginGitHubDeviceLogin: (host) => host.beginGitHubDeviceLogin(),
+  completeGitHubDeviceLogin: (host) => host.completeGitHubDeviceLogin(),
   disconnectGitHub: (host) => host.disconnectGitHub(),
   getGitHubPullRequestForCurrentBranch: (host) => host.getGitHubPullRequestForCurrentBranch(),
   getGitHubPullRequestDetail: (host, payload) => host.getGitHubPullRequestDetail(payload.request),

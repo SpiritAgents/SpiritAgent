@@ -2551,11 +2551,18 @@ export function useDesktopRuntime() {
     return api.getGitHubAuthStatus();
   }, [api]);
 
-  const startGitHubOAuth = useCallback(async () => {
+  const beginGitHubDeviceLogin = useCallback(async () => {
     if (!api) {
       throw new Error(i18n.t('error.hostNotReady'));
     }
-    return api.startGitHubOAuth();
+    return api.beginGitHubDeviceLogin();
+  }, [api]);
+
+  const completeGitHubDeviceLogin = useCallback(async () => {
+    if (!api) {
+      throw new Error(i18n.t('error.hostNotReady'));
+    }
+    return api.completeGitHubDeviceLogin();
   }, [api]);
 
   const disconnectGitHub = useCallback(async () => {
@@ -2821,7 +2828,8 @@ export function useDesktopRuntime() {
     readGitWorkingTree,
     readGitHistory,
     getGitHubAuthStatus,
-    startGitHubOAuth,
+    beginGitHubDeviceLogin,
+    completeGitHubDeviceLogin,
     disconnectGitHub,
     getGitHubPullRequestForCurrentBranch,
     getGitHubPullRequestDetail,
