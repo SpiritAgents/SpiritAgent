@@ -778,6 +778,7 @@ class DesktopHostService {
         );
       },
       isActiveSessionReadOnly: () => this.activeBundle().activeSession?.readOnly === true,
+      notifySessionListUpdated: () => this.notifySessionListUpdated(),
     };
   }
 
@@ -2808,9 +2809,14 @@ class DesktopHostService {
       return;
     }
 
+    const existingUserCount = bundle.messageTimeline
+      .toMessages()
+      .filter((message) => message.role === 'user').length;
     const nextPath = defaultNewSessionPath();
     activeSession.filePath = nextPath;
-    activeSession.displayName = deriveDisplayNameFromSeed(seedText);
+    if (existingUserCount === 0) {
+      activeSession.displayName = deriveDisplayNameFromSeed(seedText);
+    }
     this.sessionRegistry.rekeyBundle(bundle, nextPath);
   }
 

@@ -15,7 +15,7 @@ import {
 } from './sessions.js';
 import { createDesktopRewindMetadata } from './rewind.js';
 import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from './todos.js';
-import { provisionalNewSessionPath } from './storage.js';
+import { defaultNewSessionPath } from './storage.js';
 import {
   buildTruncatedChatArchiveForFork,
   deriveForkedSessionDisplayName,
@@ -28,6 +28,7 @@ export interface ForkSessionHostContext extends SessionActivationContext {
   requireRuntime(): DesktopRuntime;
   isConversationBusy(): boolean;
   isActiveSessionReadOnly(): boolean;
+  notifySessionListUpdated?(): void;
 }
 
 function applyForkStateToBundle(
@@ -106,7 +107,11 @@ export async function forkSessionCommand(
     }
 
     const sourceMessages = sourceBundle.messageTimeline.toMessages();
-    const anchorIndex = resolveForkAnchorIndex(sourceMessages, request.messageId);
+    const anchorIndex = resolveForkAnchorIndex(
+      sourceMessages,
+      request.messageId,
+      request.listIndex,
+    );
     if (anchorIndex === null) {
       throw new Error(i18n.t('error.forkInvalidAnchor'));
     }
@@ -136,14 +141,14 @@ export async function forkSessionCommand(
     const archive = buildTruncatedChatArchiveForFork(sourceArchive, sourceMessages, anchorIndex);
 
     const forkDisplayName = deriveForkedSessionDisplayName(sourceBundle.activeSession.displayName);
-    const provisionalPath = provisionalNewSessionPath(state.workspaceRoot);
-    const forkBundle = ctx.sessionRegistry().activateProvisional(state.workspaceRoot, provisionalPath);
+    const sessionPath = defaultNewSessionPath();
+    const forkBundle = ctx.sessionRegistry().activateProvisional(state.workspaceRoot, sessionPath);
 
     applyForkStateToBundle(
       forkBundle,
       {
         workspaceRoot: state.workspaceRoot,
-        filePath: provisionalPath,
+        filePath: sessionPath,
         displayName: forkDisplayName,
         truncatedMessages: sanitizeConversationMessagesForPersistence(truncatedMessages).map(
           (message) => ({ ...message }),
@@ -167,6 +172,7 @@ export async function forkSessionCommand(
       bumpListSortAt: true,
     });
 
+    ctx.notifySessionListUpdated?.();
     ctx.setLastRuntimeError('');
     ctx.scheduleSessionExtensionWarmup({
       type: 'onSessionOpened',
