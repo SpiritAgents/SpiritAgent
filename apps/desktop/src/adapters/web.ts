@@ -195,8 +195,11 @@ export function createWebHostApi(): HostApi {
     getGitHubAuthStatus() {
       return Promise.resolve({ connected: false });
     },
-    startGitHubOAuth() {
-      return Promise.reject(new Error('GitHub OAuth is only available in the Electron desktop app.'));
+    beginGitHubDeviceLogin() {
+      return Promise.reject(new Error('GitHub device login is only available in the Electron desktop app.'));
+    },
+    completeGitHubDeviceLogin() {
+      return Promise.reject(new Error('GitHub device login is only available in the Electron desktop app.'));
     },
     disconnectGitHub() {
       return Promise.resolve({ connected: false });

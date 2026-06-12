@@ -46,6 +46,7 @@ import type {
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
   GitHubAuthStatus,
+  GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
   SubmitUserTurnRequest,
@@ -115,7 +116,8 @@ export interface HostApi {
   readGitWorkingTree(): Promise<GitWorkingTreeSnapshot>;
   readGitHistory(request?: ReadGitHistoryRequest): Promise<GitHistorySnapshot>;
   getGitHubAuthStatus(): Promise<GitHubAuthStatus>;
-  startGitHubOAuth(): Promise<GitHubAuthStatus>;
+  beginGitHubDeviceLogin(): Promise<GitHubDeviceAuthChallenge>;
+  completeGitHubDeviceLogin(): Promise<GitHubAuthStatus>;
   disconnectGitHub(): Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch(): Promise<GitHubPullRequestForBranchResult>;
   getGitHubPullRequestDetail(

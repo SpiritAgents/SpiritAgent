@@ -66,7 +66,8 @@ export type CommandPayloads = {
   readGitWorkingTree: undefined;
   readGitHistory: { request?: ReadGitHistoryRequest };
   getGitHubAuthStatus: undefined;
-  startGitHubOAuth: undefined;
+  beginGitHubDeviceLogin: undefined;
+  completeGitHubDeviceLogin: undefined;
   disconnectGitHub: undefined;
   getGitHubPullRequestForCurrentBranch: undefined;
   getGitHubPullRequestDetail: { request: GetGitHubPullRequestDetailRequest };

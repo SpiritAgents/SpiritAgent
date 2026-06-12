@@ -8,6 +8,7 @@ import type {
   DesktopGitSnapshot,
   GetGitHubPullRequestDetailRequest,
   GitHubAuthStatus,
+  GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
 } from "@/types";
@@ -31,7 +32,8 @@ export type WorkspacePrTabProps = {
   isActive: boolean;
   prTabEnabled: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
-  startGitHubOAuth: () => Promise<GitHubAuthStatus>;
+  beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
+  completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
   disconnectGitHub: () => Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch: () => Promise<GitHubPullRequestForBranchResult>;
   getGitHubPullRequestDetail: (
@@ -45,7 +47,8 @@ export function WorkspacePrTab({
   isActive,
   prTabEnabled,
   getGitHubAuthStatus,
-  startGitHubOAuth,
+  beginGitHubDeviceLogin,
+  completeGitHubDeviceLogin,
   disconnectGitHub,
   getGitHubPullRequestForCurrentBranch,
   getGitHubPullRequestDetail,
@@ -58,6 +61,7 @@ export function WorkspacePrTab({
   const [loadingAuth, setLoadingAuth] = useState(false);
   const [loadingBranch, setLoadingBranch] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [deviceChallenge, setDeviceChallenge] = useState<GitHubDeviceAuthChallenge | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refreshAuthStatus = useCallback(async () => {
@@ -118,11 +122,16 @@ export function WorkspacePrTab({
   const handleConnect = async () => {
     setLoadingAuth(true);
     setError(null);
+    setDeviceChallenge(null);
     try {
-      const next = await startGitHubOAuth();
+      const challenge = await beginGitHubDeviceLogin();
+      setDeviceChallenge(challenge);
+      const next = await completeGitHubDeviceLogin();
       setAuthStatus(next);
+      setDeviceChallenge(null);
     } catch (connectError) {
       setError(describeError(connectError));
+      setDeviceChallenge(null);
     } finally {
       setLoadingAuth(false);
     }
@@ -206,12 +215,37 @@ export function WorkspacePrTab({
               void handleConnect();
             }}
           >
-            {loadingAuth ? t("workspace.prConnecting") : t("workspace.prConnect")}
+            {loadingAuth && deviceChallenge
+              ? t("workspace.prWaitingForDeviceAuth")
+              : loadingAuth
+                ? t("workspace.prConnecting")
+                : t("workspace.prConnect")}
           </Button>
         )}
       </div>
 
-      {!authStatus.connected ? (
+      {!authStatus.connected && deviceChallenge ? (
+        <section className="rounded-md border border-border/70 bg-background/40 p-3 text-sm">
+          <p className="text-foreground">{t("workspace.prDeviceIntro")}</p>
+          <p className="mt-2 font-mono text-lg font-semibold tracking-widest text-foreground">
+            {deviceChallenge.userCode}
+          </p>
+          <p className="mt-2 text-muted-foreground">{t("workspace.prDeviceWaiting")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => {
+              openExternalUrl(deviceChallenge.verificationUri);
+            }}
+          >
+            {t("workspace.prOpenDevicePage")}
+          </Button>
+        </section>
+      ) : null}
+
+      {!authStatus.connected && !deviceChallenge ? (
         <section className="rounded-md border border-dashed border-border/80 bg-muted/20 p-3">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("workspace.prSampleDataLabel")}

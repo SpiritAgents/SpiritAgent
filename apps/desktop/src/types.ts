@@ -922,6 +922,7 @@ export interface ReadGitHistoryRequest {
 
 export type {
   GitHubAuthStatus,
+  GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
   GitHubPullRequestSummary,

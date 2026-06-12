@@ -135,9 +135,13 @@ import {
   resolveDesktopWebHostFromEnv,
   type DesktopHttpHost,
 } from './http-host.js';
-import { runGitHubOAuthFlowInElectron } from './github-oauth-flow.js';
+import {
+  beginGitHubDeviceLoginInElectron,
+  clearPendingGitHubDeviceAuth,
+  completeGitHubDeviceLoginInElectron,
+} from './github-oauth-flow.js';
 import { resolveRendererDistPath } from './renderer-dist.js';
-import { registerGitHubOAuthFlowRunner } from '../src/host/github-oauth-bridge.js';
+import { registerGitHubDeviceLoginRunners } from '../src/host/github-oauth-bridge.js';
 import { listSystemFonts } from './system-fonts.js';
 import { syncWindowsImmersiveDarkMode } from './win-dwm.js';
 import i18nHost from '../src/lib/i18n-host.js';
@@ -655,7 +659,11 @@ if (gotSpiritSingleInstanceLock) {
     setMacOSApplicationMenu();
   }
 
-  registerGitHubOAuthFlowRunner(() => runGitHubOAuthFlowInElectron());
+  registerGitHubDeviceLoginRunners({
+    begin: () => beginGitHubDeviceLoginInElectron(),
+    complete: () => completeGitHubDeviceLoginInElectron(),
+    cancel: () => clearPendingGitHubDeviceAuth(),
+  });
 
   setDesktopMarketplaceFetchImplementation((input, init) =>
     net.fetch(input instanceof URL ? input.toString() : input, init),

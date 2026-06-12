@@ -57,6 +57,7 @@ import type {
   DesktopGitSnapshot,
   GetGitHubPullRequestDetailRequest,
   GitHubAuthStatus,
+  GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
   GitHistorySnapshot,
@@ -119,7 +120,8 @@ export type WorkspaceToolsDockProps = {
   /** Electron 桌面版可新建 PR 选项卡；Web 宿主菜单项可见但禁用。 */
   prTabEnabled?: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
-  startGitHubOAuth: () => Promise<GitHubAuthStatus>;
+  beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
+  completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
   disconnectGitHub: () => Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch: () => Promise<GitHubPullRequestForBranchResult>;
   getGitHubPullRequestDetail: (
@@ -170,7 +172,8 @@ function WorkspaceToolsDockInner({
   browserTabEnabled = false,
   prTabEnabled = false,
   getGitHubAuthStatus,
-  startGitHubOAuth,
+  beginGitHubDeviceLogin,
+  completeGitHubDeviceLogin,
   disconnectGitHub,
   getGitHubPullRequestForCurrentBranch,
   getGitHubPullRequestDetail,
@@ -618,7 +621,8 @@ function WorkspaceToolsDockInner({
                         isActive={selected}
                         prTabEnabled={prTabEnabled}
                         getGitHubAuthStatus={getGitHubAuthStatus}
-                        startGitHubOAuth={startGitHubOAuth}
+                        beginGitHubDeviceLogin={beginGitHubDeviceLogin}
+                        completeGitHubDeviceLogin={completeGitHubDeviceLogin}
                         disconnectGitHub={disconnectGitHub}
                         getGitHubPullRequestForCurrentBranch={getGitHubPullRequestForCurrentBranch}
                         getGitHubPullRequestDetail={getGitHubPullRequestDetail}

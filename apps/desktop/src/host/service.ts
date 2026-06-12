@@ -183,11 +183,12 @@ import {
   type HostWorkspaceGitCommandContext,
 } from './host-workspace-git-commands.js';
 import {
+  beginGitHubDeviceLoginCommand,
+  completeGitHubDeviceLoginCommand,
   disconnectGitHubCommand,
   getGitHubAuthStatusCommand,
   getGitHubPullRequestDetailCommand,
   getGitHubPullRequestForCurrentBranchCommand,
-  startGitHubOAuthCommand,
 } from './host-github-commands.js';
 import {
   abortConversationCommand,
@@ -1667,8 +1668,12 @@ class DesktopHostService {
     return getGitHubAuthStatusCommand();
   }
 
-  async startGitHubOAuth() {
-    return startGitHubOAuthCommand();
+  async beginGitHubDeviceLogin() {
+    return beginGitHubDeviceLoginCommand();
+  }
+
+  async completeGitHubDeviceLogin() {
+    return completeGitHubDeviceLoginCommand();
   }
 
   async disconnectGitHub() {

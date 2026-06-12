@@ -137,7 +137,8 @@ declare global {
     readGitWorkingTree(): Promise<import('./types').GitWorkingTreeSnapshot>;
     readGitHistory(request?: import('./types').ReadGitHistoryRequest): Promise<import('./types').GitHistorySnapshot>;
     getGitHubAuthStatus(): Promise<import('./types').GitHubAuthStatus>;
-    startGitHubOAuth(): Promise<import('./types').GitHubAuthStatus>;
+    beginGitHubDeviceLogin(): Promise<import('./types').GitHubDeviceAuthChallenge>;
+    completeGitHubDeviceLogin(): Promise<import('./types').GitHubAuthStatus>;
     disconnectGitHub(): Promise<import('./types').GitHubAuthStatus>;
     getGitHubPullRequestForCurrentBranch(): Promise<import('./types').GitHubPullRequestForBranchResult>;
     getGitHubPullRequestDetail(

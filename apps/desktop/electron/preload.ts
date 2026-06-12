@@ -258,8 +258,11 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   getGitHubAuthStatus() {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubAuthStatus');
   },
-  startGitHubOAuth() {
-    return ipcRenderer.invoke('desktop:invoke', 'startGitHubOAuth');
+  beginGitHubDeviceLogin() {
+    return ipcRenderer.invoke('desktop:invoke', 'beginGitHubDeviceLogin');
+  },
+  completeGitHubDeviceLogin() {
+    return ipcRenderer.invoke('desktop:invoke', 'completeGitHubDeviceLogin');
   },
   disconnectGitHub() {
     return ipcRenderer.invoke('desktop:invoke', 'disconnectGitHub');

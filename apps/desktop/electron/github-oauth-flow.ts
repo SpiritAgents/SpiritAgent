@@ -1,40 +1,64 @@
-import { randomBytes } from 'node:crypto';
-
 import { shell } from 'electron';
 import {
-  buildGitHubAuthorizeUrl,
-  exchangeGitHubCodeForToken,
   fetchGitHubUserLogin,
-  generatePkcePair,
+  pollGitHubDeviceToken,
+  requestGitHubDeviceCode,
+  type GitHubDeviceAuthChallenge,
 } from '@spirit-agent/host-internal';
 
 import { saveGitHubOAuthCredentials } from '../src/host/github-auth-storage.js';
-import { waitForGitHubOAuthCallback } from './github-oauth-loopback.js';
 
-function createOAuthState(): string {
-  return randomBytes(32).toString('base64url');
+interface PendingDeviceAuth {
+  deviceCode: string;
+  intervalSeconds: number;
+  expiresIn: number;
+  expiresAtMs: number;
 }
 
-export async function runGitHubOAuthFlowInElectron(): Promise<{ login: string }> {
-  const { codeVerifier, codeChallenge } = generatePkcePair();
-  const state = createOAuthState();
-  const authorizeUrl = buildGitHubAuthorizeUrl({
-    state,
-    codeChallenge,
-  });
+let pendingDeviceAuth: PendingDeviceAuth | null = null;
 
-  const callbackPromise = waitForGitHubOAuthCallback(state);
-  await shell.openExternal(authorizeUrl);
-  const callback = await callbackPromise;
+export function clearPendingGitHubDeviceAuth(): void {
+  pendingDeviceAuth = null;
+}
 
-  const token = await exchangeGitHubCodeForToken({
-    code: callback.code,
-    codeVerifier,
-  });
-  const login = await fetchGitHubUserLogin(token.access_token);
-  await saveGitHubOAuthCredentials({
-    accessToken: token.access_token,
-    login,
-  });
-  return { login };
+export async function beginGitHubDeviceLoginInElectron(): Promise<GitHubDeviceAuthChallenge> {
+  clearPendingGitHubDeviceAuth();
+  const challenge = await requestGitHubDeviceCode();
+  pendingDeviceAuth = {
+    deviceCode: challenge.deviceCode,
+    intervalSeconds: challenge.intervalSeconds,
+    expiresIn: challenge.expiresIn,
+    expiresAtMs: Date.now() + challenge.expiresIn * 1000,
+  };
+  await shell.openExternal(challenge.verificationUri);
+  return {
+    userCode: challenge.userCode,
+    verificationUri: challenge.verificationUri,
+    expiresIn: challenge.expiresIn,
+    intervalSeconds: challenge.intervalSeconds,
+  };
+}
+
+export async function completeGitHubDeviceLoginInElectron(): Promise<{ login: string }> {
+  const pending = pendingDeviceAuth;
+  if (!pending) {
+    throw new Error('GitHub device sign-in has not started. Call beginGitHubDeviceLogin first.');
+  }
+
+  const remainingSeconds = Math.max(1, Math.ceil((pending.expiresAtMs - Date.now()) / 1000));
+  try {
+    const token = await pollGitHubDeviceToken({
+      deviceCode: pending.deviceCode,
+      intervalSeconds: pending.intervalSeconds,
+      expiresIn: remainingSeconds,
+    });
+    const login = await fetchGitHubUserLogin(token.access_token);
+    await saveGitHubOAuthCredentials({
+      accessToken: token.access_token,
+      login,
+    });
+    return { login };
+  } finally {
+    clearPendingGitHubDeviceAuth();
+  }
 }
