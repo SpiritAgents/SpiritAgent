@@ -1,3 +1,4 @@
+import type { PreCompactionHistoryArchive } from '../compaction-archive.js';
 import type {
   AskQuestionsRequest,
   ImageGenerationRequest,
@@ -73,6 +74,7 @@ export interface RuntimeCompactionRecord {
   beforeLength: number;
   afterLength: number;
   summary?: string;
+  preCompactionArchivePath?: string;
 }
 
 export interface DeferredUserGuidance {
@@ -402,6 +404,10 @@ export interface AgentRuntimeOptions<
   onEvent?: (event: RuntimeEvent<ToolRequest>) => void;
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
+  persistPreCompactionHistory?: (input: {
+    archive: PreCompactionHistoryArchive;
+    sessionId?: string;
+  }) => Promise<string | undefined>;
   resolveWorkspaceFilesFromInput?: (
     userInput: string,
   ) => Promise<PendingWorkspaceFile[]> | PendingWorkspaceFile[];

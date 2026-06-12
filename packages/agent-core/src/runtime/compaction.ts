@@ -1,6 +1,11 @@
 import { setImmediate as waitForImmediate } from 'node:timers/promises';
 
-import type { LlmMessage } from '../ports.js';
+import {
+  applyPreCompactionArchivePathToCompactHistory,
+  buildPreCompactionHistoryArchive,
+} from '../compaction-archive.js';
+import type { CompactHistoryManualContext, LlmMessage } from '../ports.js';
+import { resolveHookSessionContext } from '../hooks/integration.js';
 
 import { cloneHistory, renderError } from './helpers.js';
 import type {
@@ -47,6 +52,67 @@ export interface CompactionRuntime<
   poll(): Promise<void>;
 }
 
+async function persistPreCompactionArchivePath<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+  archiveSourceHistory: LlmMessage[],
+): Promise<string | undefined> {
+  const persist = runtime.options.persistPreCompactionHistory;
+  if (!persist) {
+    return undefined;
+  }
+
+  try {
+    const archive = buildPreCompactionHistoryArchive(archiveSourceHistory);
+    const sessionId = resolveHookSessionContext(runtime.options).sessionId;
+    return await persist({
+      archive,
+      ...(sessionId !== undefined ? { sessionId } : {}),
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+function buildCompactionRecord(
+  result: {
+    droppedMessages: number;
+    beforeLength: number;
+    afterLength: number;
+  },
+  summary: string | undefined,
+  preCompactionArchivePath: string | undefined,
+): RuntimeCompactionRecord {
+  return {
+    droppedMessages: result.droppedMessages,
+    beforeLength: result.beforeLength,
+    afterLength: result.afterLength,
+    ...(summary !== undefined ? { summary } : {}),
+    ...(preCompactionArchivePath !== undefined ? { preCompactionArchivePath } : {}),
+  };
+}
+
+function prepareHistoryForCompaction<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+  archiveSourceHistory: LlmMessage[],
+): LlmMessage[] {
+  if (!runtime.options.truncateHistoryForCompaction) {
+    return cloneHistory(archiveSourceHistory);
+  }
+
+  const prepared = runtime.options.truncateHistoryForCompaction(archiveSourceHistory);
+  return cloneHistory(prepared.history);
+}
+
 export async function compactHistoryImmediate<
   Config,
   State,
@@ -55,22 +121,30 @@ export async function compactHistoryImmediate<
 >(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<RuntimeCompactionRecord> {
-  if (runtime.options.truncateHistoryForCompaction) {
-    const prepared = runtime.options.truncateHistoryForCompaction(runtime.historyStore);
-    runtime.historyStore = cloneHistory(prepared.history);
-  }
+  const archiveSourceHistory = cloneHistory(runtime.historyStore);
+  const preCompactionArchivePath = await persistPreCompactionArchivePath(
+    runtime,
+    archiveSourceHistory,
+  );
+  const historyForCompaction = prepareHistoryForCompaction(runtime, archiveSourceHistory);
+  runtime.historyStore = cloneHistory(historyForCompaction);
 
+  const compactionContext: CompactHistoryManualContext | undefined =
+    preCompactionArchivePath !== undefined
+      ? { preCompactionArchivePath }
+      : undefined;
   const result = await runtime.options.llmTransport.compactHistoryManual(
     runtime.options.config,
     runtime.historyStore,
+    undefined,
+    compactionContext,
   );
+  if (preCompactionArchivePath !== undefined) {
+    applyPreCompactionArchivePathToCompactHistory(runtime.historyStore, preCompactionArchivePath);
+  }
+
   const summary = runtime.options.llmTransport.compactSummaryText(runtime.historyStore);
-  return {
-    droppedMessages: result.droppedMessages,
-    beforeLength: result.beforeLength,
-    afterLength: result.afterLength,
-    ...(summary !== undefined ? { summary } : {}),
-  };
+  return buildCompactionRecord(result, summary, preCompactionArchivePath);
 }
 
 export function startHistoryCompactionAsync<
@@ -88,13 +162,11 @@ export function startHistoryCompactionAsync<
   resumeAsStreaming = false,
   streamingEmitBeginResponse = true,
 ): void {
-  if (runtime.options.truncateHistoryForCompaction) {
-    const prepared = runtime.options.truncateHistoryForCompaction(runtime.historyStore);
-    runtime.historyStore = cloneHistory(prepared.history);
-  }
+  const archiveSourceHistory = cloneHistory(runtime.historyStore);
+  const historyForCompaction = prepareHistoryForCompaction(runtime, archiveSourceHistory);
+  runtime.historyStore = cloneHistory(historyForCompaction);
 
   runtime.compactionTextStore = '';
-  const history = cloneHistory(runtime.historyStore);
   const pending: PendingAutoHistoryCompaction<State, ToolRequest> = {
     kind: 'auto-retry',
     pendingUserInput,
@@ -108,7 +180,7 @@ export function startHistoryCompactionAsync<
     result: undefined,
     failure: undefined,
   };
-  launchHistoryCompaction(runtime, pending, history);
+  launchHistoryCompaction(runtime, pending, historyForCompaction, archiveSourceHistory);
 }
 
 export function startManualHistoryCompactionAsync<
@@ -119,20 +191,18 @@ export function startManualHistoryCompactionAsync<
 >(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
-  if (runtime.options.truncateHistoryForCompaction) {
-    const prepared = runtime.options.truncateHistoryForCompaction(runtime.historyStore);
-    runtime.historyStore = cloneHistory(prepared.history);
-  }
+  const archiveSourceHistory = cloneHistory(runtime.historyStore);
+  const historyForCompaction = prepareHistoryForCompaction(runtime, archiveSourceHistory);
+  runtime.historyStore = cloneHistory(historyForCompaction);
 
   runtime.compactionTextStore = '';
-  const history = cloneHistory(runtime.historyStore);
   const pending: PendingManualHistoryCompaction = {
     kind: 'manual',
     compactedHistory: undefined,
     result: undefined,
     failure: undefined,
   };
-  launchHistoryCompaction(runtime, pending, history);
+  launchHistoryCompaction(runtime, pending, historyForCompaction, archiveSourceHistory);
 }
 
 export function launchHistoryCompaction<
@@ -144,40 +214,55 @@ export function launchHistoryCompaction<
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
   pending: PendingHistoryCompaction<State, ToolRequest>,
   history: LlmMessage[],
+  archiveSourceHistory: LlmMessage[],
 ): void {
   runtime.pendingHistoryCompaction = pending;
 
-  void runtime.options.llmTransport
-    .compactHistoryManual(runtime.options.config, history, (chunk) => {
-      if (runtime.pendingHistoryCompaction !== pending || !chunk) {
-        return;
-      }
+  void (async () => {
+    try {
+      const preCompactionArchivePath = await persistPreCompactionArchivePath(
+        runtime,
+        archiveSourceHistory,
+      );
+      const compactionContext: CompactHistoryManualContext | undefined =
+        preCompactionArchivePath !== undefined
+          ? { preCompactionArchivePath }
+          : undefined;
 
-      runtime.compactionTextStore += chunk;
-      runtime.emitEvent({
-        kind: 'update-pending-assistant-compaction',
-        text: runtime.compactionTextStore,
-      });
-    })
-    .then((result) => {
+      const result = await runtime.options.llmTransport.compactHistoryManual(
+        runtime.options.config,
+        history,
+        (chunk) => {
+          if (runtime.pendingHistoryCompaction !== pending || !chunk) {
+            return;
+          }
+
+          runtime.compactionTextStore += chunk;
+          runtime.emitEvent({
+            kind: 'update-pending-assistant-compaction',
+            text: runtime.compactionTextStore,
+          });
+        },
+        compactionContext,
+      );
+
       if (runtime.pendingHistoryCompaction !== pending) {
         return;
       }
 
+      if (preCompactionArchivePath !== undefined) {
+        applyPreCompactionArchivePathToCompactHistory(history, preCompactionArchivePath);
+      }
+
       const summary = runtime.options.llmTransport.compactSummaryText(history);
       pending.compactedHistory = cloneHistory(history);
-      pending.result = {
-        droppedMessages: result.droppedMessages,
-        beforeLength: result.beforeLength,
-        afterLength: result.afterLength,
-        ...(summary !== undefined ? { summary } : {}),
-      };
-    })
-    .catch((error: unknown) => {
+      pending.result = buildCompactionRecord(result, summary, preCompactionArchivePath);
+    } catch (error: unknown) {
       if (runtime.pendingHistoryCompaction === pending) {
         pending.failure = renderError(error);
       }
-    });
+    }
+  })();
 }
 
 export async function pollPendingHistoryCompaction<

@@ -461,6 +461,7 @@ export class AiSdkOpenAiCompatibleTransport
     config: OpenAiTransportConfig,
     history: LlmMessage[],
     onProgress?: (message: string) => void,
+    context?: import('../ports.js').CompactHistoryManualContext,
   ): Promise<{
     droppedMessages: number;
     beforeLength: number;
@@ -475,7 +476,13 @@ export class AiSdkOpenAiCompatibleTransport
       };
     }
 
-    const promptMessages = openAiMessagesToAiSdkMessages(buildCompactHistoryPromptMessages(history));
+    const promptMessages = openAiMessagesToAiSdkMessages(
+      buildCompactHistoryPromptMessages(history, {
+        ...(context?.preCompactionArchivePath === undefined
+          ? {}
+          : { preCompactionArchivePath: context.preCompactionArchivePath }),
+      }),
+    );
     const compactConfig: OpenAiTransportConfig = {
       ...config,
       model: config.compactModel ?? config.model,
