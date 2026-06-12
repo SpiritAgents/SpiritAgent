@@ -34,6 +34,34 @@ echo '{"permission":"allow"}'
   assert.equal(result.record.exitCode, 0);
 });
 
+test('runCommandHook parses ask stdout', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'spirit-hook-ask-'));
+  const scriptPath = join(dir, 'ask.sh');
+  await writeFile(
+    scriptPath,
+    `#!/bin/bash
+cat > /dev/null
+echo '{"permission":"ask","userMessage":"please confirm"}'
+`,
+    'utf8',
+  );
+  await chmod(scriptPath, 0o755);
+
+  const result = await runCommandHook({
+    definition: {
+      command: 'ask.sh',
+      configDir: dir,
+      scope: 'user',
+      timeout: 5,
+    },
+    inputJson: '{"hookEventName":"preToolUse"}',
+  });
+
+  assert.equal(result.denied, false);
+  assert.equal(result.effectiveOutput?.permission, 'ask');
+  assert.equal(result.effectiveOutput?.userMessage, 'please confirm');
+});
+
 test('runCommandHook treats exit code 2 as deny', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'spirit-hook-deny-'));
   const scriptPath = join(dir, 'deny.sh');

@@ -24,8 +24,10 @@ import {
 import { APPLY_PATCH_HOST_TOOL_NAME } from '../open-responses/apply-patch-eligibility.js';
 import {
   hookDeniedToolOutput,
+  resolveApprovalGateAfterAuthorize,
   runPostToolUseSideEffects,
   runPreToolUseGate,
+  type PreToolUseGateResult,
 } from '../hooks/tool-hooks.js';
 import { toolInputFromArgumentsJson } from '../hooks/integration.js';
 import { appendToolResultMessages, isJsonObject } from '../tool-agent.js';
@@ -563,6 +565,7 @@ export async function processToolCalls<
     }
 
     let request: ToolRequest;
+    let preGate: PreToolUseGateResult<ToolRequest>;
     try {
       request = await runtime.options.toolExecutor.requestFromFunctionCall(
         call.name,
@@ -573,7 +576,7 @@ export async function processToolCalls<
         toolName: call.name,
       }) ?? request;
 
-      const preGate = await runPreToolUseGate(runtime, call, request);
+      preGate = await runPreToolUseGate(runtime, call, request);
       if (preGate.kind === 'denied') {
         const output = `[hook denied] ${hookDeniedToolOutput(preGate.error)}`;
         commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
@@ -616,21 +619,22 @@ export async function processToolCalls<
       continue;
     }
 
-    if (authorization.kind === 'need-approval') {
+    const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    if (approvalGate) {
       const approval = createApproval(
-        authorization.prompt,
+        approvalGate.prompt,
         request,
         call.id,
         call.name,
-        authorization.trustTarget,
+        approvalGate.trustTarget,
       );
       runtime.pendingApproval = {
         pendingUserInput,
         state: currentState,
         request,
-        prompt: authorization.prompt,
-        ...(authorization.trustTarget !== undefined
-          ? { trustTarget: authorization.trustTarget }
+        prompt: approvalGate.prompt,
+        ...(approvalGate.trustTarget !== undefined
+          ? { trustTarget: approvalGate.trustTarget }
           : {}),
         toolCallId: call.id,
         toolName: call.name,
@@ -1089,6 +1093,7 @@ export async function processToolCallsAsync<
     }
 
     let request: ToolRequest;
+    let preGate: PreToolUseGateResult<ToolRequest>;
     try {
       request = await runtime.options.toolExecutor.requestFromFunctionCall(
         call.name,
@@ -1099,7 +1104,7 @@ export async function processToolCallsAsync<
         toolName: call.name,
       }) ?? request;
 
-      const preGate = await runPreToolUseGate(runtime, call, request);
+      preGate = await runPreToolUseGate(runtime, call, request);
       if (preGate.kind === 'denied') {
         const output = `[hook denied] ${hookDeniedToolOutput(preGate.error)}`;
         commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
@@ -1178,21 +1183,22 @@ export async function processToolCallsAsync<
       continue;
     }
 
-    if (authorization.kind === 'need-approval') {
+    const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    if (approvalGate) {
       const approval = createApproval(
-        authorization.prompt,
+        approvalGate.prompt,
         request,
         call.id,
         call.name,
-        authorization.trustTarget,
+        approvalGate.trustTarget,
       );
       runtime.pendingApproval = {
         pendingUserInput,
         state: currentState,
         request,
-        prompt: authorization.prompt,
-        ...(authorization.trustTarget !== undefined
-          ? { trustTarget: authorization.trustTarget }
+        prompt: approvalGate.prompt,
+        ...(approvalGate.trustTarget !== undefined
+          ? { trustTarget: approvalGate.trustTarget }
           : {}),
         toolCallId: call.id,
         toolName: call.name,
@@ -1647,7 +1653,8 @@ async function runEarlyToolExecution<
     return { kind: 'deferred', reason: 'authorization-error' };
   }
 
-  if (authorization.kind === 'need-approval') {
+  const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+  if (approvalGate) {
     // TODO: preview 已拿到稳定 toolCallId 和参数时，应直接暴露待审批状态，避免正式 tool-calls 阶段前审批表单仍未打开。
     return { kind: 'deferred', reason: 'approval-required' };
   }
