@@ -122,6 +122,7 @@ export type WorkspaceToolsDockProps = {
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
   beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
   completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
+  cancelGitHubDeviceLogin: () => Promise<void>;
   disconnectGitHub: () => Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch: () => Promise<GitHubPullRequestForBranchResult>;
   getGitHubPullRequestDetail: (
@@ -174,6 +175,7 @@ function WorkspaceToolsDockInner({
   getGitHubAuthStatus,
   beginGitHubDeviceLogin,
   completeGitHubDeviceLogin,
+  cancelGitHubDeviceLogin,
   disconnectGitHub,
   getGitHubPullRequestForCurrentBranch,
   getGitHubPullRequestDetail,
@@ -623,6 +625,7 @@ function WorkspaceToolsDockInner({
                         getGitHubAuthStatus={getGitHubAuthStatus}
                         beginGitHubDeviceLogin={beginGitHubDeviceLogin}
                         completeGitHubDeviceLogin={completeGitHubDeviceLogin}
+                        cancelGitHubDeviceLogin={cancelGitHubDeviceLogin}
                         disconnectGitHub={disconnectGitHub}
                         getGitHubPullRequestForCurrentBranch={getGitHubPullRequestForCurrentBranch}
                         getGitHubPullRequestDetail={getGitHubPullRequestDetail}
