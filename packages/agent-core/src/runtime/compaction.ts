@@ -49,6 +49,27 @@ export interface CompactionRuntime<
   poll(): Promise<void>;
 }
 
+async function removeOrphanPreCompactionArchive<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+  archivePath: string | undefined,
+): Promise<void> {
+  const remove = runtime.options.removePreCompactionHistoryArchive;
+  if (!archivePath || !remove) {
+    return;
+  }
+
+  try {
+    await remove(archivePath);
+  } catch {
+    // Best-effort cleanup when compaction fails after a successful persist.
+  }
+}
+
 async function persistPreCompactionArchivePath<
   Config,
   State,
@@ -134,14 +155,20 @@ export async function compactHistoryImmediate<
     preCompactionArchivePath !== undefined
       ? { preCompactionArchivePath }
       : undefined;
-  const result = await runtime.options.llmTransport.compactHistoryManual(
-    runtime.options.config,
-    runtime.historyStore,
-    undefined,
-    compactionContext,
-  );
-  const summary = runtime.options.llmTransport.compactSummaryText(runtime.historyStore);
-  return buildCompactionRecord(result, summary, preCompactionArchivePath);
+
+  try {
+    const result = await runtime.options.llmTransport.compactHistoryManual(
+      runtime.options.config,
+      runtime.historyStore,
+      undefined,
+      compactionContext,
+    );
+    const summary = runtime.options.llmTransport.compactSummaryText(runtime.historyStore);
+    return buildCompactionRecord(result, summary, preCompactionArchivePath);
+  } catch (error: unknown) {
+    await removeOrphanPreCompactionArchive(runtime, preCompactionArchivePath);
+    throw error;
+  }
 }
 
 export function startHistoryCompactionAsync<
@@ -216,8 +243,9 @@ export function launchHistoryCompaction<
   runtime.pendingHistoryCompaction = pending;
 
   void (async () => {
+    let preCompactionArchivePath: string | undefined;
     try {
-      const preCompactionArchivePath = await persistPreCompactionArchivePath(
+      preCompactionArchivePath = await persistPreCompactionArchivePath(
         runtime,
         archiveSourceHistory,
       );
@@ -252,6 +280,7 @@ export function launchHistoryCompaction<
       pending.result = buildCompactionRecord(result, summary, preCompactionArchivePath);
     } catch (error: unknown) {
       if (runtime.pendingHistoryCompaction === pending) {
+        await removeOrphanPreCompactionArchive(runtime, preCompactionArchivePath);
         pending.failure = renderError(error);
       }
     }
