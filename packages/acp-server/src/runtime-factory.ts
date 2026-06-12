@@ -39,6 +39,8 @@ import {
   createNoopMcpAdapter,
   ensureBuiltinAuthoringSkills,
   loadHostInstructionMetadata,
+  persistPreCompactionHistoryArchive,
+  removePreCompactionHistoryArchive,
 } from '@spirit-agent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
@@ -215,6 +217,12 @@ export async function createAcpRuntime(
         return saveGeneratedVideo.call(service, saveRequest);
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
+    persistPreCompactionHistory: async ({ archive, sessionId }) =>
+      persistPreCompactionHistoryArchive(spiritDataDir, archive, {
+        ...(sessionId !== undefined ? { sessionId } : {}),
+      }),
+    removePreCompactionHistoryArchive: async (archivePath) =>
+      removePreCompactionHistoryArchive(archivePath),
     onEvent,
   });
 

@@ -27,9 +27,14 @@ import {
   type LlmToolAgentState,
   type LlmTransportConfig,
 } from '@spirit-agent/core';
-import { resolveWorkspaceFileReferenceAttachmentsFromInput } from '@spirit-agent/host-internal';
+import {
+  persistPreCompactionHistoryArchive,
+  removePreCompactionHistoryArchive,
+  resolveWorkspaceFileReferenceAttachmentsFromInput,
+} from '@spirit-agent/host-internal';
 
 import type { DesktopToolRequest } from './contracts.js';
+import { spiritAgentDataDir } from './storage.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 
 export type DesktopRuntime = AgentRuntime<
@@ -147,6 +152,12 @@ export function createDesktopRuntime(input: {
       ),
     ...(input.hookRunner ? { hookRunner: input.hookRunner } : {}),
     ...(input.hookSessionContext ? { hookSessionContext: input.hookSessionContext } : {}),
+    persistPreCompactionHistory: async ({ archive, sessionId }) =>
+      persistPreCompactionHistoryArchive(spiritAgentDataDir(), archive, {
+        ...(sessionId !== undefined ? { sessionId } : {}),
+      }),
+    removePreCompactionHistoryArchive: async (archivePath) =>
+      removePreCompactionHistoryArchive(archivePath),
   }, input.history.map((message) => normalizeStoredLlmMessage(message)));
 }
 
