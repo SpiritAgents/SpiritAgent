@@ -223,7 +223,6 @@ export async function applyUpdatedToolRequest<
   toolExecutor: AgentRuntimeOptions<unknown, unknown, ToolRequest, TrustTarget>['toolExecutor'],
   call: ToolCallRequest,
   updatedInput: JsonObject,
-  existingRequest: ToolRequest,
 ): Promise<ToolRequest> {
   try {
     const next = await toolExecutor.requestFromFunctionCall(

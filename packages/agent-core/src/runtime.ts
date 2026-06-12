@@ -3112,7 +3112,7 @@ export class AgentRuntime<
       workspaceRoot: context.workspaceRoot,
       model: context.model,
       subagentSessionId,
-      subagentType: 'generalPurpose',
+      subagentType: request.subagentType ?? 'generalPurpose',
       task: request.task,
     });
 
@@ -3146,7 +3146,7 @@ export class AgentRuntime<
       workspaceRoot: context.workspaceRoot,
       model: context.model,
       subagentSessionId: pending.childRecord.summary.sessionId,
-      subagentType: 'generalPurpose',
+      subagentType: request.subagentType ?? 'generalPurpose',
       status: output.failed ? 'error' : 'completed',
       task: subagentRequest?.task ?? pending.childRecord.summary.title,
       summary: output.text,
@@ -3326,9 +3326,11 @@ function extractRunSubagentRequest<ToolRequest>(request: ToolRequest): RunSubage
   const contextSummary = readOptionalStringField(value, 'context_summary', 'contextSummary');
   const filesToInspect = readOptionalStringArrayField(value, 'files_to_inspect', 'filesToInspect');
   const expectedOutput = readOptionalStringField(value, 'expected_output', 'expectedOutput');
+  const subagentType = readOptionalStringField(value, 'subagent_type', 'subagentType');
 
   return {
     task,
+    ...(subagentType !== undefined ? { subagentType } : {}),
     ...(successCriteria !== undefined ? { successCriteria } : {}),
     ...(contextSummary !== undefined ? { contextSummary } : {}),
     ...(filesToInspect !== undefined ? { filesToInspect } : {}),
