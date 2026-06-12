@@ -11,8 +11,8 @@ import {
 } from './integration.js';
 
 export type PreToolUseGateResult<ToolRequest> =
-  | { kind: 'ready'; request: ToolRequest; hookBypassApproval?: boolean }
-  | { kind: 'needs-approval'; request: ToolRequest; prompt: string }
+  | { kind: 'ready'; request: ToolRequest; hookBypassApproval?: boolean; effectiveToolInput?: JsonObject }
+  | { kind: 'needs-approval'; request: ToolRequest; prompt: string; effectiveToolInput?: JsonObject }
   | { kind: 'denied'; error: HookDeniedError };
 
 export interface ToolApprovalGate<TrustTarget = string> {
@@ -86,7 +86,9 @@ export async function runPreToolUseGate<
     );
 
     let resolvedRequest = request;
+    let effectiveToolInput: JsonObject | undefined;
     if (preHook.updatedInput) {
+      effectiveToolInput = preHook.updatedInput;
       resolvedRequest = await applyUpdatedToolRequest(
         runtime.options.toolExecutor,
         call,
@@ -94,12 +96,19 @@ export async function runPreToolUseGate<
       );
     }
 
-    return preToolUseGateFromHookResult(
+    const gate = preToolUseGateFromHookResult(
       call,
       resolvedRequest,
       preHook.permission === 'allow' || preHook.permission === 'ask' ? preHook.permission : undefined,
       preHook.userMessage,
     );
+    if (gate.kind === 'denied') {
+      return gate;
+    }
+    return {
+      ...gate,
+      ...(effectiveToolInput ? { effectiveToolInput } : {}),
+    };
   } catch (error) {
     if (error instanceof HookDeniedError) {
       return { kind: 'denied', error };
@@ -139,4 +148,14 @@ export async function runPostToolUseSideEffects<
 
 export function hookDeniedToolOutput(error: HookDeniedError): string {
   return error.agentMessage ?? error.userMessage ?? error.message;
+}
+
+export function postHookToolInputFromPreGate<ToolRequest>(
+  preGate: PreToolUseGateResult<ToolRequest>,
+  argumentsJson: string,
+): JsonObject {
+  if (preGate.kind === 'denied') {
+    return toolInputFromArgumentsJson(argumentsJson);
+  }
+  return preGate.effectiveToolInput ?? toolInputFromArgumentsJson(argumentsJson);
 }

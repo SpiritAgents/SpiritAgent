@@ -24,6 +24,7 @@ import {
 import { APPLY_PATCH_HOST_TOOL_NAME } from '../open-responses/apply-patch-eligibility.js';
 import {
   hookDeniedToolOutput,
+  postHookToolInputFromPreGate,
   resolveApprovalGateAfterAuthorize,
   runPostToolUseSideEffects,
   runPreToolUseGate,
@@ -139,6 +140,7 @@ export interface TurnMachineRuntime<
     resumeAsStreaming?: boolean,
     streamingEmitBeginResponse?: boolean,
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+    postHookToolInput?: JsonObject,
   ): void;
   startHistoryCompactionAsync(
     retryState: State,
@@ -699,6 +701,7 @@ export async function processToolCalls<
       remaining,
       turn,
       call.argumentsJson,
+      postHookToolInputFromPreGate(preGate, call.argumentsJson),
     );
   }
 
@@ -1103,7 +1106,7 @@ export async function processToolCallsAsync<
       await runPostToolUseSideEffects(
         runtime,
         call,
-        toolInputFromArgumentsJson(call.argumentsJson),
+        earlyOutcome.postHookToolInput ?? toolInputFromArgumentsJson(call.argumentsJson),
         earlyOutcome.output,
         0,
         earlyOutcome.execution.failed,
@@ -1328,6 +1331,7 @@ export async function processToolCallsAsync<
         resumeAsStreaming,
         streamingEmitBeginResponse,
         earlyToolExecutions,
+        postHookToolInputFromPreGate(preGate, call.argumentsJson),
       );
       return;
     }
@@ -1359,7 +1363,7 @@ export async function processToolCallsAsync<
     await runPostToolUseSideEffects(
       runtime,
       call,
-      toolInputFromArgumentsJson(call.argumentsJson),
+      postHookToolInputFromPreGate(preGate, call.argumentsJson),
       execution.output,
       Date.now() - startedAt,
       execution.failed,
@@ -1766,6 +1770,7 @@ async function runEarlyToolExecution<
     execution,
     output,
     enqueueDeferredGuidance,
+    postHookToolInput: postHookToolInputFromPreGate(preGate, call.argumentsJson),
     ...(fatalError !== undefined ? { fatalError } : {}),
   };
 }

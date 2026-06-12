@@ -1,6 +1,7 @@
 import type {
   AskQuestionsRequest,
   ImageGenerationRequest,
+  JsonObject,
   JsonValue,
   LlmMessage,
   LlmMessageContent,
@@ -44,6 +45,7 @@ export type PendingEarlyToolExecutionOutcome<ToolRequest> =
       execution: RuntimeToolExecution<ToolRequest>;
       output: ToolExecutionOutput;
       enqueueDeferredGuidance: boolean;
+      postHookToolInput?: JsonObject;
       fatalError?: string;
     }
   | {
@@ -491,6 +493,7 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   toolName: string;
   argumentsJson: string;
   startedAtUnixMs: number;
+  postHookToolInput?: JsonObject;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;

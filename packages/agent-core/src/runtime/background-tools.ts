@@ -1,4 +1,5 @@
 import type { ToolCallRequest, ToolExecutionOutput } from '../ports.js';
+import type { JsonObject } from '../ports.js';
 import { createToolExecutionTextOutput } from '../ports.js';
 
 import { renderError } from './helpers.js';
@@ -81,6 +82,7 @@ export function startBackgroundToolExecutionAsync<
   resumeAsStreaming = false,
   streamingEmitBeginResponse = true,
   earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  postHookToolInput?: JsonObject,
 ): void {
   const statusText = runtime.options.toolExecutor.backgroundStatusText?.(request);
   runtime.pendingBackgroundToolStatusStore = statusText;
@@ -101,6 +103,7 @@ export function startBackgroundToolExecutionAsync<
     toolName,
     argumentsJson,
     startedAtUnixMs: Date.now(),
+    ...(postHookToolInput ? { postHookToolInput } : {}),
     remainingCalls: [...remainingCalls],
     turn,
     resumeAsStreaming,
@@ -257,7 +260,7 @@ export async function pollPendingBackgroundToolExecution<
       name: pending.toolName,
       argumentsJson: pending.argumentsJson,
     },
-    toolInputFromArgumentsJson(pending.argumentsJson),
+    pending.postHookToolInput ?? toolInputFromArgumentsJson(pending.argumentsJson),
     pending.output,
     Math.max(0, Date.now() - pending.startedAtUnixMs),
     pending.failed,
