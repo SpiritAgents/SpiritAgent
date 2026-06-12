@@ -77,6 +77,7 @@ export interface HostCommandDelegate {
   getGitHubAuthStatus(): Promise<unknown>;
   beginGitHubDeviceLogin(): Promise<unknown>;
   completeGitHubDeviceLogin(): Promise<unknown>;
+  cancelGitHubDeviceLogin(): Promise<unknown>;
   disconnectGitHub(): Promise<unknown>;
   getGitHubPullRequestForCurrentBranch(): Promise<unknown>;
   getGitHubPullRequestDetail(request: CommandPayloads['getGitHubPullRequestDetail']['request']): Promise<unknown>;
@@ -171,6 +172,7 @@ const hostCommandDispatch = {
   getGitHubAuthStatus: (host) => host.getGitHubAuthStatus(),
   beginGitHubDeviceLogin: (host) => host.beginGitHubDeviceLogin(),
   completeGitHubDeviceLogin: (host) => host.completeGitHubDeviceLogin(),
+  cancelGitHubDeviceLogin: (host) => host.cancelGitHubDeviceLogin(),
   disconnectGitHub: (host) => host.disconnectGitHub(),
   getGitHubPullRequestForCurrentBranch: (host) => host.getGitHubPullRequestForCurrentBranch(),
   getGitHubPullRequestDetail: (host, payload) => host.getGitHubPullRequestDetail(payload.request),

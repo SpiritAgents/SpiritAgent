@@ -184,6 +184,7 @@ import {
 } from './host-workspace-git-commands.js';
 import {
   beginGitHubDeviceLoginCommand,
+  cancelGitHubDeviceLoginCommand,
   completeGitHubDeviceLoginCommand,
   disconnectGitHubCommand,
   getGitHubAuthStatusCommand,
@@ -1674,6 +1675,10 @@ class DesktopHostService {
 
   async completeGitHubDeviceLogin() {
     return completeGitHubDeviceLoginCommand();
+  }
+
+  cancelGitHubDeviceLogin() {
+    cancelGitHubDeviceLoginCommand();
   }
 
   async disconnectGitHub() {

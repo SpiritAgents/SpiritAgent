@@ -34,6 +34,7 @@ export type WorkspacePrTabProps = {
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
   beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
   completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
+  cancelGitHubDeviceLogin: () => Promise<void>;
   disconnectGitHub: () => Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch: () => Promise<GitHubPullRequestForBranchResult>;
   getGitHubPullRequestDetail: (
@@ -49,6 +50,7 @@ export function WorkspacePrTab({
   getGitHubAuthStatus,
   beginGitHubDeviceLogin,
   completeGitHubDeviceLogin,
+  cancelGitHubDeviceLogin,
   disconnectGitHub,
   getGitHubPullRequestForCurrentBranch,
   getGitHubPullRequestDetail,
@@ -138,6 +140,18 @@ export function WorkspacePrTab({
     }
   };
 
+  const handleCancelConnect = async () => {
+    setError(null);
+    try {
+      await cancelGitHubDeviceLogin();
+    } catch (cancelError) {
+      setError(describeError(cancelError));
+    } finally {
+      setLoadingAuth(false);
+      setDeviceChallenge(null);
+    }
+  };
+
   const handleDisconnect = async () => {
     setLoadingAuth(true);
     setError(null);
@@ -209,20 +223,34 @@ export function WorkspacePrTab({
             </Button>
           </>
         ) : (
-          <Button
-            type="button"
-            size="sm"
-            disabled={loadingAuth}
-            onClick={() => {
-              void handleConnect();
-            }}
-          >
-            {loadingAuth && deviceChallenge
-              ? t("workspace.prWaitingForDeviceAuth")
-              : loadingAuth
-                ? t("workspace.prConnecting")
-                : t("workspace.prConnect")}
-          </Button>
+          <>
+            <Button
+              type="button"
+              size="sm"
+              disabled={loadingAuth}
+              onClick={() => {
+                void handleConnect();
+              }}
+            >
+              {loadingAuth && deviceChallenge
+                ? t("workspace.prWaitingForDeviceAuth")
+                : loadingAuth
+                  ? t("workspace.prConnecting")
+                  : t("workspace.prConnect")}
+            </Button>
+            {loadingAuth ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void handleCancelConnect();
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+            ) : null}
+          </>
         )}
       </div>
 

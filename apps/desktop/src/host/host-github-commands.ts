@@ -47,6 +47,10 @@ export async function completeGitHubDeviceLoginCommand(): Promise<GitHubAuthStat
   };
 }
 
+export function cancelGitHubDeviceLoginCommand(): void {
+  cancelGitHubDeviceLogin();
+}
+
 export async function disconnectGitHubCommand(): Promise<GitHubAuthStatus> {
   cancelGitHubDeviceLogin();
   await clearGitHubOAuthCredentials();

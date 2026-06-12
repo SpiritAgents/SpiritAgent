@@ -139,6 +139,7 @@ declare global {
     getGitHubAuthStatus(): Promise<import('./types').GitHubAuthStatus>;
     beginGitHubDeviceLogin(): Promise<import('./types').GitHubDeviceAuthChallenge>;
     completeGitHubDeviceLogin(): Promise<import('./types').GitHubAuthStatus>;
+    cancelGitHubDeviceLogin(): Promise<void>;
     disconnectGitHub(): Promise<import('./types').GitHubAuthStatus>;
     getGitHubPullRequestForCurrentBranch(): Promise<import('./types').GitHubPullRequestForBranchResult>;
     getGitHubPullRequestDetail(

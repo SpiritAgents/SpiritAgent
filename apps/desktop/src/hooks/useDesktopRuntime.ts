@@ -2565,6 +2565,13 @@ export function useDesktopRuntime() {
     return api.completeGitHubDeviceLogin();
   }, [api]);
 
+  const cancelGitHubDeviceLogin = useCallback(async () => {
+    if (!api) {
+      return;
+    }
+    await api.cancelGitHubDeviceLogin();
+  }, [api]);
+
   const disconnectGitHub = useCallback(async () => {
     if (!api) {
       return { connected: false };
@@ -2830,6 +2837,7 @@ export function useDesktopRuntime() {
     getGitHubAuthStatus,
     beginGitHubDeviceLogin,
     completeGitHubDeviceLogin,
+    cancelGitHubDeviceLogin,
     disconnectGitHub,
     getGitHubPullRequestForCurrentBranch,
     getGitHubPullRequestDetail,
