@@ -1677,7 +1677,7 @@ class DesktopHostService {
     return completeGitHubDeviceLoginCommand();
   }
 
-  cancelGitHubDeviceLogin() {
+  async cancelGitHubDeviceLogin() {
     cancelGitHubDeviceLoginCommand();
   }
 
