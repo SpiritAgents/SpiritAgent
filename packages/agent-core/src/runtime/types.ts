@@ -418,6 +418,7 @@ export interface PendingApprovalState<State, ToolRequest, TrustTarget> {
   trustTarget?: TrustTarget;
   toolCallId: string;
   toolName: string;
+  argumentsJson: string;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
@@ -432,6 +433,7 @@ export interface PendingQuestionsState<State, ToolRequest> {
   questions: AskQuestionsRequest;
   toolCallId: string;
   toolName: string;
+  argumentsJson: string;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
@@ -484,6 +486,8 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   request: ToolRequest;
   toolCallId: string;
   toolName: string;
+  argumentsJson: string;
+  startedAtUnixMs: number;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
