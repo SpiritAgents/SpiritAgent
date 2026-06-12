@@ -7,6 +7,7 @@ import {
   findLastAssistantTurnActionsListIndex,
   isMessageInActiveStreamingTurn,
   messageShowsAssistantTurnActions,
+  shouldClearAssistantTurnHoverForRelatedTurnStart,
 } from '../../src/lib/message-turn-actions-ui.ts';
 
 test('messageShowsAssistantTurnActions only allows the last assistant body in a turn', () => {
@@ -98,4 +99,11 @@ test('assistantTurnStartIndexForRenderItem resolves turn anchor for assistant ro
   assert.equal(assistantTurnStartIndexForRenderItem(thoughtItem, messages), 0);
   assert.equal(assistantTurnStartIndexForRenderItem(bodyItem, messages), 0);
   assert.equal(assistantTurnStartIndexForRenderItem(userItem, messages), null);
+});
+
+test('shouldClearAssistantTurnHoverForRelatedTurnStart clears only when leaving the turn', () => {
+  assert.equal(shouldClearAssistantTurnHoverForRelatedTurnStart('0', 0), false);
+  assert.equal(shouldClearAssistantTurnHoverForRelatedTurnStart('3', 0), true);
+  assert.equal(shouldClearAssistantTurnHoverForRelatedTurnStart(null, 0), true);
+  assert.equal(shouldClearAssistantTurnHoverForRelatedTurnStart(undefined, 2), true);
 });

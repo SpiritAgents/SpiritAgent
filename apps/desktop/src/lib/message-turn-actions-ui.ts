@@ -125,16 +125,26 @@ export function assistantTurnStartIndexForRenderItem(
   return lastUserMessageIndexBefore(messages, anchorIndex);
 }
 
+export function shouldClearAssistantTurnHoverForRelatedTurnStart(
+  relatedTurnStart: string | null | undefined,
+  turnStart: number,
+): boolean {
+  return relatedTurnStart !== String(turnStart);
+}
+
 export function shouldClearAssistantTurnHover(
   event: ReactPointerEvent,
   turnStart: number,
 ): boolean {
   const next = event.relatedTarget;
   if (!(next instanceof Element)) {
-    return true;
+    return shouldClearAssistantTurnHoverForRelatedTurnStart(null, turnStart);
   }
   const nextTurn = next.closest('[data-spirit-fork-turn-start]');
-  return nextTurn?.getAttribute('data-spirit-fork-turn-start') !== String(turnStart);
+  return shouldClearAssistantTurnHoverForRelatedTurnStart(
+    nextTurn?.getAttribute('data-spirit-fork-turn-start') ?? null,
+    turnStart,
+  );
 }
 
 /** Hidden by default; revealed via forkMenuHoverRevealed or forkMenuAlwaysVisible. */
