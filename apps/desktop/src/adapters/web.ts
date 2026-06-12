@@ -192,6 +192,21 @@ export function createWebHostApi(): HostApi {
     readGitHistory(request: ReadGitHistoryRequest = {}) {
       return post<GitHistorySnapshot>(baseUrl, '/api/git/history', request);
     },
+    getGitHubAuthStatus() {
+      return Promise.resolve({ connected: false });
+    },
+    startGitHubOAuth() {
+      return Promise.reject(new Error('GitHub OAuth is only available in the Electron desktop app.'));
+    },
+    disconnectGitHub() {
+      return Promise.resolve({ connected: false });
+    },
+    getGitHubPullRequestForCurrentBranch() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    getGitHubPullRequestDetail() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
     abortConversation() {
       return post<DesktopSnapshot>(baseUrl, '/api/abort');
     },
