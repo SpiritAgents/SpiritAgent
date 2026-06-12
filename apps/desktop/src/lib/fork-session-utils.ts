@@ -80,3 +80,28 @@ export function findLastForkableAssistantMessageId(
   }
   return null;
 }
+
+export function collectSubagentParentToolCallIdsInMessages(
+  messages: readonly ConversationMessageSnapshot[],
+): Set<string> {
+  const ids = new Set<string>();
+  for (const message of messages) {
+    const toolCallId = message.tool?.toolCallId?.trim();
+    if (toolCallId) {
+      ids.add(toolCallId);
+    }
+  }
+  return ids;
+}
+
+export function filterSubagentSessionsForTruncatedMessages<
+  T extends { summary: { parentToolCallId: string } },
+>(
+  sessions: readonly T[],
+  truncatedMessages: readonly ConversationMessageSnapshot[],
+): T[] {
+  const visibleParentIds = collectSubagentParentToolCallIdsInMessages(truncatedMessages);
+  return sessions.filter((entry) =>
+    visibleParentIds.has(entry.summary.parentToolCallId.trim()),
+  );
+}

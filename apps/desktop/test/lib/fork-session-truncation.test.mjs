@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import {
   findLastForkableAssistantMessageId,
+  filterSubagentSessionsForTruncatedMessages,
   resolveForkAnchorIndex,
   sanitizeTruncatedMessagesForFork,
   truncateMessagesThroughIndex,
@@ -57,4 +58,30 @@ test('sanitizeTruncatedMessagesForFork clears canContinue and pending', () => {
 
 test('findLastForkableAssistantMessageId skips pending assistant rows', () => {
   assert.equal(findLastForkableAssistantMessageId(messages), 4);
+});
+
+test('filterSubagentSessionsForTruncatedMessages keeps sessions tied to visible tool rows', () => {
+  const truncated = [
+    { id: 1, role: 'user', content: 'hi' },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: {
+        toolCallId: 'tool-1',
+        toolName: 'run_subagent',
+        phase: 'succeeded',
+        headline: 'Done',
+        detailLines: [],
+      },
+    },
+  ];
+  const sessions = [
+    { summary: { parentToolCallId: 'tool-1' } },
+    { summary: { parentToolCallId: 'tool-late' } },
+  ];
+  const filtered = filterSubagentSessionsForTruncatedMessages(sessions, truncated);
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0]?.summary.parentToolCallId, 'tool-1');
 });

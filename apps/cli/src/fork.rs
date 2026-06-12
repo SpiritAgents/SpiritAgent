@@ -67,7 +67,10 @@ pub fn build_truncated_chat_archive_for_fork(
         llm_history: truncate_llm_history_for_fork(&source.llm_history, &truncated_desktop),
         loop_enabled: source.loop_enabled,
         approval_level: source.approval_level.clone(),
-        subagent_sessions: source.subagent_sessions.clone(),
+        subagent_sessions: filter_subagent_sessions_for_truncated_messages(
+            &source.subagent_sessions,
+            &truncated_desktop,
+        ),
         desktop_messages: Some(truncated_desktop),
         rewind: Some(rewind::create_desktop_rewind_metadata().as_json()),
         session_display_name: None,
@@ -87,6 +90,39 @@ fn archive_messages_from_desktop(
             };
             (role.to_string(), message.content.clone())
         })
+        .collect()
+}
+
+fn collect_subagent_parent_tool_call_ids(
+    messages: &[ConversationMessageSnapshot],
+) -> std::collections::HashSet<String> {
+    use std::collections::HashSet;
+
+    messages
+        .iter()
+        .filter_map(|message| message.tool.as_ref())
+        .filter_map(|tool| {
+            let id = tool.tool_call_id.as_deref()?.trim();
+            if id.is_empty() {
+                None
+            } else {
+                Some(id.to_string())
+            }
+        })
+        .collect::<HashSet<_>>()
+}
+
+fn filter_subagent_sessions_for_truncated_messages(
+    sessions: &[crate::ports::SubagentSessionArchiveEntry],
+    truncated: &[ConversationMessageSnapshot],
+) -> Vec<crate::ports::SubagentSessionArchiveEntry> {
+    let visible_parent_ids = collect_subagent_parent_tool_call_ids(truncated);
+    sessions
+        .iter()
+        .filter(|entry| {
+            visible_parent_ids.contains(entry.summary.parent_tool_call_id.trim())
+        })
+        .cloned()
         .collect()
 }
 
@@ -137,11 +173,18 @@ fn truncate_llm_history_for_fork(
 mod tests {
     use super::{
         build_truncated_chat_archive_for_fork, derive_forked_session_display_name,
-        resolve_fork_anchor_index, truncate_messages_through_index,
+        filter_subagent_sessions_for_truncated_messages, resolve_fork_anchor_index,
+        truncate_messages_through_index,
     };
     use crate::{
-        ports::{AssistantAuxArchiveEntry, ArchivedLlmMessage, ChatArchive},
-        rewind::{ConversationMessageRole, ConversationMessageSnapshot},
+        ports::{
+            AssistantAuxArchiveEntry, ArchivedLlmMessage, ChatArchive, SubagentSessionArchiveEntry,
+            SubagentSessionStatus, SubagentSessionSummary,
+        },
+        rewind::{
+            ConversationMessageRole, ConversationMessageSnapshot, ToolBlockSnapshot,
+            ToolBlockSnapshotPhase,
+        },
     };
 
     fn snapshot(id: usize, role: ConversationMessageRole, content: &str, pending: bool) -> ConversationMessageSnapshot {
@@ -232,5 +275,64 @@ mod tests {
         assert!(truncated.assistant_aux.is_empty());
         assert_eq!(truncated.llm_history.len(), 2);
         assert!(truncated.rewind.is_some());
+    }
+
+    #[test]
+    fn filter_subagent_sessions_for_truncated_messages_keeps_visible_parent_tools_only() {
+        let truncated = vec![ConversationMessageSnapshot {
+            id: 2,
+            role: ConversationMessageRole::Assistant,
+            content: String::new(),
+            tool: Some(ToolBlockSnapshot {
+                tool_call_id: Some("tool-1".to_string()),
+                tool_name: "run_subagent".to_string(),
+                phase: ToolBlockSnapshotPhase::Succeeded,
+                headline: "Done".to_string(),
+                detail_lines: Vec::new(),
+                image_paths: Vec::new(),
+                video_paths: Vec::new(),
+                args_excerpt: None,
+                output_excerpt: None,
+            }),
+            aux: None,
+            pending: false,
+        }];
+        let sessions = vec![
+            SubagentSessionArchiveEntry {
+                summary: SubagentSessionSummary {
+                    session_id: "s1".to_string(),
+                    parent_tool_call_id: "tool-1".to_string(),
+                    title: "A".to_string(),
+                    status: SubagentSessionStatus::Completed,
+                    started_at_unix_ms: 1,
+                    updated_at_unix_ms: 1,
+                    completed_at_unix_ms: Some(1),
+                    latest_message: None,
+                    final_output: None,
+                    error: None,
+                },
+                llm_history: Vec::new(),
+            },
+            SubagentSessionArchiveEntry {
+                summary: SubagentSessionSummary {
+                    session_id: "s2".to_string(),
+                    parent_tool_call_id: "tool-late".to_string(),
+                    title: "B".to_string(),
+                    status: SubagentSessionStatus::Completed,
+                    started_at_unix_ms: 1,
+                    updated_at_unix_ms: 1,
+                    completed_at_unix_ms: Some(1),
+                    latest_message: None,
+                    final_output: None,
+                    error: None,
+                },
+                llm_history: Vec::new(),
+            },
+        ];
+
+        let filtered =
+            filter_subagent_sessions_for_truncated_messages(&sessions, &truncated);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].summary.parent_tool_call_id, "tool-1");
     }
 }
