@@ -51,9 +51,13 @@ const COMPACT_HISTORY_OUTPUT_TEMPLATE = `[Session Overview]
 - <Approaches tried but proven infeasible or incorrect, and why>
 
 [Open Items]
-- <Remaining work, questions awaiting user confirmation, blockers>`;
+- <Remaining work, questions awaiting user confirmation, blockers>
 
-export const COMPACT_HISTORY_SYSTEM_PROMPT = [
+[Pre-compaction Archive]
+<Absolute path to the saved pre-compaction history file>
+Important details may be recovered by reading this file with read_file.`;
+
+const COMPACT_HISTORY_SYSTEM_PROMPT_BASE = [
   'Compress the following conversation into a reusable system summary for later turns.',
   '',
   'Hard requirements:',
@@ -70,6 +74,23 @@ export const COMPACT_HISTORY_SYSTEM_PROMPT = [
   COMPACT_HISTORY_OUTPUT_TEMPLATE,
 ].join('\n');
 
+export function buildCompactHistorySystemPrompt(preCompactionArchivePath?: string): string {
+  const normalizedPath = preCompactionArchivePath?.trim();
+  if (!normalizedPath) {
+    return COMPACT_HISTORY_SYSTEM_PROMPT_BASE;
+  }
+
+  return [
+    COMPACT_HISTORY_SYSTEM_PROMPT_BASE,
+    '',
+    `A pre-compaction history archive has been saved to: ${normalizedPath}`,
+    'Important details omitted from this summary may be recovered by reading that file with read_file.',
+    'Include that absolute path in the [Pre-compaction Archive] section of your output.',
+  ].join('\n');
+}
+
+export const COMPACT_HISTORY_SYSTEM_PROMPT = buildCompactHistorySystemPrompt();
+
 export function buildCompactHistoryUserPrompt(history: LlmMessage[]): string {
   return history
     .map((message) => {
@@ -84,11 +105,19 @@ export function buildCompactHistoryUserPrompt(history: LlmMessage[]): string {
     .join('\n\n');
 }
 
+export interface BuildCompactHistoryPromptMessagesOptions {
+  preCompactionArchivePath?: string;
+}
+
 export function buildCompactHistoryPromptMessages(
   history: LlmMessage[],
+  options: BuildCompactHistoryPromptMessagesOptions = {},
 ): Array<{ role: 'system' | 'user'; content: string }> {
   return [
-    { role: 'system', content: COMPACT_HISTORY_SYSTEM_PROMPT },
+    {
+      role: 'system',
+      content: buildCompactHistorySystemPrompt(options.preCompactionArchivePath),
+    },
     { role: 'user', content: buildCompactHistoryUserPrompt(history) },
   ];
 }
