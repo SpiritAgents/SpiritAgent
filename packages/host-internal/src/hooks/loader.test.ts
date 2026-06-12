@@ -48,3 +48,38 @@ echo '{}'
   assert.equal(report.summary.sessionStart, 1);
   assert.equal(report.summary.preToolUse, 1);
 });
+
+test('validateHooksConfig uses per-scope hook indexes', async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-hooks-validate-index-'));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-hooks-validate-index-ws-'));
+  const userConfigPath = hooksUserConfigPath(spiritDataDir);
+  const workspaceConfigPath = join(workspaceRoot, '.spirit', 'hooks.json');
+  await mkdir(join(workspaceRoot, '.spirit'), { recursive: true });
+  await writeFile(
+    userConfigPath,
+    JSON.stringify({
+      version: 1,
+      hooks: {
+        preToolUse: [{ command: 'hooks/user.sh' }],
+      },
+    }),
+    'utf8',
+  );
+  await writeFile(
+    workspaceConfigPath,
+    JSON.stringify({
+      version: 1,
+      hooks: {
+        preToolUse: [{ command: 'hooks/workspace.sh' }],
+      },
+    }),
+    'utf8',
+  );
+
+  const report = validateHooksConfig({ spiritDataDir, workspaceRoot });
+  const userEntry = report.entries.find((entry) => entry.scope === 'user');
+  const workspaceEntry = report.entries.find((entry) => entry.scope === 'workspace');
+
+  assert.equal(userEntry?.index, 0);
+  assert.equal(workspaceEntry?.index, 0);
+});

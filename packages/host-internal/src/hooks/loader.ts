@@ -8,7 +8,6 @@ import {
   hooksWorkspaceConfigPath,
   parseHooksConfigFile,
   resolveHookCommandPath,
-  resolveMergedHookDefinitions,
   type HookEventName,
   type HookInput,
   type HooksConfigFile,
@@ -112,24 +111,33 @@ export function validateHooksConfig(options: LoadHooksConfigOptions): {
   const entries: HookValidationEntry[] = [];
 
   for (const event of HOOK_EVENT_NAMES) {
-    const definitions = resolveMergedHookDefinitions(
-      loaded.user,
-      loaded.workspace,
-      event,
-      loaded.userConfigDir,
-      loaded.workspaceConfigDir,
-    );
-    definitions.forEach((definition, index) => {
-      const resolvedPath = resolveHookCommandPath(definition);
-      entries.push({
-        scope: definition.scope,
-        event,
-        index,
-        command: definition.command,
-        resolvedPath,
-        exists: existsSync(resolvedPath),
-      });
-    });
+    const appendScopeEntries = (
+      scope: 'user' | 'workspace',
+      hookEntries: HooksConfigFile['hooks'][typeof event] | undefined,
+      configDir: string,
+    ) => {
+      for (const [index, entry] of (hookEntries ?? []).entries()) {
+        const resolvedPath = resolveHookCommandPath({
+          ...entry,
+          scope,
+          configDir,
+          timeout: entry.timeout,
+        });
+        entries.push({
+          scope,
+          event,
+          index,
+          command: entry.command,
+          resolvedPath,
+          exists: existsSync(resolvedPath),
+        });
+      }
+    };
+
+    appendScopeEntries('user', loaded.user.hooks[event], loaded.userConfigDir);
+    if (loaded.workspaceConfigDir) {
+      appendScopeEntries('workspace', loaded.workspace.hooks[event], loaded.workspaceConfigDir);
+    }
   }
 
   return {
