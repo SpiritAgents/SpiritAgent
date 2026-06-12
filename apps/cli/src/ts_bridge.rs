@@ -23,6 +23,7 @@ use crate::{
     },
     llm_types::LlmMessage,
     logging,
+    hooks_types::{HookListItem, HooksValidationReport},
     mcp::{McpServerConfig, McpScope, add_mcp_server, spirit_agent_data_dir},
     mcp_types::{
         ManagedMcpServer, McpDiscoveredPrompt, McpDiscoveredResource, McpDiscoveredTool,
@@ -1495,6 +1496,33 @@ impl TsBridgeRuntime {
     pub fn list_mcp_servers(&mut self) -> Result<Vec<ManagedMcpServer>> {
         let value = self.call_bridge("runtime.listMcpServers", None)?;
         Ok(serde_json::from_value(value)?)
+    }
+
+    pub fn validate_hooks(&mut self, workspace_root: Option<&str>) -> Result<HooksValidationReport> {
+        let params = workspace_root.map(|root| json!({ "workspaceRoot": root }));
+        let value = self.call_bridge("hostInternal.validateHooks", params)?;
+        Ok(serde_json::from_value(value)?)
+    }
+
+    pub fn list_hook_entries(&mut self, workspace_root: Option<&str>) -> Result<Vec<HookListItem>> {
+        let params = workspace_root.map(|root| json!({ "workspaceRoot": root }));
+        let value = self.call_bridge("hostInternal.listHookEntries", params)?;
+        Ok(serde_json::from_value(value)?)
+    }
+
+    pub fn save_hook_entry(
+        &mut self,
+        workspace_binding: Option<&str>,
+        request: &crate::hooks_types::SaveHookEntryRequest,
+    ) -> Result<()> {
+        let mut params = json!({ "request": request });
+        if let Some(obj) = params.as_object_mut() {
+            if let Some(binding) = workspace_binding {
+                obj.insert("workspaceBinding".to_string(), json!(binding));
+            }
+        }
+        self.call_bridge("hostInternal.saveHookEntry", Some(params))?;
+        Ok(())
     }
 
     pub fn inspect_mcp_server(&mut self, name: &str) -> Result<McpServerInspection> {

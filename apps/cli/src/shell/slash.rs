@@ -49,6 +49,7 @@ const DEFAULT_SLASH_COMMANDS: &[&str] = &[
     "/subagents",
     "/image",
     "/mcp",
+    "/hooks",
     "/rules",
     "/skills",
     "/extensions",
@@ -73,6 +74,7 @@ const RESERVED_SLASH_COMMANDS: &[&str] = &[
     "/subagents",
     "/image",
     "/mcp",
+    "/hooks",
     "/rules",
     "/skills",
     "/extensions",
@@ -137,7 +139,7 @@ fn command_suggestion(command: &str) -> InputSuggestion {
 
 fn command_replacement(command: &str) -> String {
     match command {
-        "/model" | "/sessions" | "/rewind" | "/subagents" | "/image" | "/mcp" | "/log"
+        "/model" | "/sessions" | "/rewind" | "/subagents" | "/image" | "/mcp" | "/hooks" | "/log"
         | "/language" | "/approval" | "/networks" | "/extensions" => {
             format!("{} ", command)
         }
@@ -196,6 +198,10 @@ fn contextual_suggestions(shell: &mut TuiShell, query: &str) -> Vec<InputSuggest
 
     if query == "/mcp" || query.starts_with("/mcp ") {
         return vec![primary_help_suggestion("/mcp", query)];
+    }
+
+    if query == "/hooks" || query.starts_with("/hooks ") {
+        return vec![primary_help_suggestion("/hooks", query)];
     }
 
     if query == "/rules" || query.starts_with("/rules ") {
@@ -380,6 +386,7 @@ pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> 
         "- /image pick".to_string(),
         "- /image clear".to_string(),
         "- /mcp [list|add|inspect|tools|resources|prompts]".to_string(),
+        "- /hooks [list|add]".to_string(),
         "- /<server>_<prompt> [args_json | user_message]".to_string(),
         "- /rules".to_string(),
         "- /skills".to_string(),
@@ -404,6 +411,7 @@ pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> 
         "- /image 不带 prompt 时会把图片加入待发送队列。".to_string(),
         "- 输入 @<文件名> 会打开工作区文件引用建议，回车后会把选中文件写回输入框，格式为 @路径 加一个空格。".to_string(),
         "- /mcp add 打开底部表单，用于填写 server 名称、保存位置（用户 / 工作区 `.spirit`）、类型、命令或 URL（Enter 保存，Esc 取消）。".to_string(),
+        "- /hooks add 打开底部表单，用于添加 Agent Hook（Enter 保存，Esc 取消）。".to_string(),
         "- /model add 打开底部表单：选提供商与添加方式、填写端点与 API Key；提交后将请求上游 /models（预设为批量导入全部 id，自定义可选单条）；也可一行 /model add <name> <api_base> <api_key>；成功后会切换当前模型。".to_string(),
         "- MCP prompt 会以一级 slash 命令暴露，例如 /github_issue_to_fix_workflow；若尾部是合法 JSON object，会直接作为 prompt 参数，其他文本会作为附加用户消息发给 LLM。".to_string(),
         "- 省略尾部且 prompt 定义了参数时，会自动打开参数表单；表单最后一栏可填写附加说明。".to_string(),
@@ -455,6 +463,7 @@ pub(crate) fn handle_command(shell: &mut TuiShell, message: &str) {
         "/subagents" => shell.handle_subagents_slash(message),
         "/image" => shell.handle_image_slash(message),
         "/mcp" => shell.handle_mcp_slash(message),
+        "/hooks" => shell.handle_hooks_slash(message),
         "/rules" => shell.handle_rules_slash(&parts[1..]),
         "/skills" => shell.handle_skills_slash(&parts[1..]),
         "/extensions" => shell.handle_extensions_slash(message),

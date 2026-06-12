@@ -150,6 +150,7 @@ test('startBackgroundToolExecutionAsync emits tool-execution-output-chunk for sh
     request,
     'call_shell_1',
     'run_shell_command',
+    '{"command":"echo hello"}',
     [],
     turn,
   );

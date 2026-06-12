@@ -306,6 +306,18 @@ impl RuntimeHandle {
         self.runtime.list_mcp_servers()
     }
 
+    pub fn list_hook_entries(&mut self) -> Result<Vec<crate::hooks_types::HookListItem>> {
+        self.runtime.list_hook_entries(None)
+    }
+
+    pub fn save_hook_entry(
+        &mut self,
+        workspace_binding: Option<&str>,
+        request: &crate::hooks_types::SaveHookEntryRequest,
+    ) -> Result<()> {
+        self.runtime.save_hook_entry(workspace_binding, request)
+    }
+
     pub fn inspect_mcp_server(&mut self, name: &str) -> Result<McpServerInspection> {
         self.runtime.inspect_mcp_server(name)
     }
