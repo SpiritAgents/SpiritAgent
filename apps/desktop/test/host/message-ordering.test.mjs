@@ -286,6 +286,46 @@ test('toolCallSummaryCopyForRequest: English verbs use past tense in succeeded p
   }
 });
 
+test('toolCallSummaryCopyForRequest: list_directory_files uses relative path within workspace', () => {
+  const workspaceRoot = '/Users/yu/proj';
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest(
+      'list_directory_files',
+      { path: '/Users/yu/proj/apps/cli' },
+      'succeeded',
+      { workspaceRoot },
+    ),
+    { headline: '列出', headlineDetail: 'apps/cli' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest(
+      'list_directory_files',
+      { path: '/Users/yu/proj' },
+      'running',
+      { workspaceRoot },
+    ),
+    { headline: '列出', headlineDetail: '.' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest(
+      'list_directory_files',
+      { path: '/tmp/foo' },
+      'succeeded',
+      { workspaceRoot },
+    ),
+    { headline: '列出', headlineDetail: '/tmp/foo' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest(
+      'list_directory_files',
+      { path: '/Users/yu/proj/apps/' },
+      'succeeded',
+      { workspaceRoot },
+    ),
+    { headline: '列出', headlineDetail: 'apps/' },
+  );
+});
+
 test('toolCallSummaryForPhase: get_diagnostics failed uses checking headline and basename', () => {
   assert.deepEqual(
     toolCallSummaryForPhase('failed', 'get_diagnostics', { path: 'src/App.tsx' }),
