@@ -7,6 +7,7 @@ import {
 } from './sessions.js';
 import { cloneArchiveHistory, cloneArchiveSubagentSessions } from './service-utils.js';
 import {
+  filterSubagentSessionsForTruncatedMessages,
   truncateMessagesThroughIndex,
 } from '../lib/fork-session-utils.js';
 
@@ -34,7 +35,12 @@ export function buildTruncatedChatArchiveForFork(
     messages,
     assistantAux,
     llmHistory,
-    subagentSessions: cloneArchiveSubagentSessions(sourceArchive.subagentSessions ?? []),
+    subagentSessions: cloneArchiveSubagentSessions(
+      filterSubagentSessionsForTruncatedMessages(
+        sourceArchive.subagentSessions ?? [],
+        truncatedDesktop,
+      ),
+    ),
     loopEnabled: sourceArchive.loopEnabled,
   };
 }
