@@ -1,6 +1,7 @@
 import type {
   AskQuestionsRequest,
   ImageGenerationRequest,
+  JsonObject,
   JsonValue,
   LlmMessage,
   LlmMessageContent,
@@ -14,6 +15,7 @@ import type {
   ToolExecutionOutput,
   ToolExecutor,
 } from '../ports.js';
+import type { HookRunner, HookSessionContext } from '../hooks/types.js';
 
 export interface RuntimeToolArtifact {
   kind: 'image' | 'video';
@@ -31,6 +33,8 @@ export interface RuntimeToolExecution<ToolRequest> {
   hostUi?: import('../ports.js').ToolExecutionHostUi;
 }
 
+import type { PreToolUseGateResult } from '../hooks/tool-hooks.js';
+
 /** Where the host should anchor a finalized thinking segment in the timeline. */
 export type AssistantThinkingSegmentPlacement = 'before-next-tool' | 'after-stream';
 
@@ -41,6 +45,7 @@ export type PendingEarlyToolExecutionOutcome<ToolRequest> =
       execution: RuntimeToolExecution<ToolRequest>;
       output: ToolExecutionOutput;
       enqueueDeferredGuidance: boolean;
+      postHookToolInput?: JsonObject;
       fatalError?: string;
     }
   | {
@@ -52,6 +57,7 @@ export type PendingEarlyToolExecutionOutcome<ToolRequest> =
         | 'approval-required'
         | 'questions-required'
         | 'internal-deferred';
+      preGate?: PreToolUseGateResult<ToolRequest>;
     };
 
 export interface PendingEarlyToolExecution<ToolRequest> {
@@ -394,6 +400,8 @@ export interface AgentRuntimeOptions<
   ) => State;
   maxAutoCompactRetries?: number;
   onEvent?: (event: RuntimeEvent<ToolRequest>) => void;
+  hookRunner?: HookRunner;
+  hookSessionContext?: HookSessionContext;
   resolveWorkspaceFilesFromInput?: (
     userInput: string,
   ) => Promise<PendingWorkspaceFile[]> | PendingWorkspaceFile[];
@@ -415,6 +423,7 @@ export interface PendingApprovalState<State, ToolRequest, TrustTarget> {
   trustTarget?: TrustTarget;
   toolCallId: string;
   toolName: string;
+  argumentsJson: string;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
@@ -429,6 +438,7 @@ export interface PendingQuestionsState<State, ToolRequest> {
   questions: AskQuestionsRequest;
   toolCallId: string;
   toolName: string;
+  argumentsJson: string;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;
@@ -481,6 +491,9 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   request: ToolRequest;
   toolCallId: string;
   toolName: string;
+  argumentsJson: string;
+  startedAtUnixMs: number;
+  postHookToolInput?: JsonObject;
   remainingCalls: ToolCallRequest[];
   turn: RuntimeTurnContext<ToolRequest>;
   resumeAsStreaming: boolean;

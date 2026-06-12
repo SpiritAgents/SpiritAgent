@@ -548,6 +548,7 @@ export type AskQuestionsResult =
 
 export interface RunSubagentRequest {
   task: string;
+  subagentType?: string;
   successCriteria?: string;
   contextSummary?: string;
   filesToInspect?: string[];

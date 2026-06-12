@@ -1213,6 +1213,22 @@ impl TuiShell {
         self.push_mcp_usage();
     }
 
+    pub(crate) fn handle_hooks_slash(&mut self, message: &str) {
+        let tail = message.strip_prefix("/hooks").map(str::trim).unwrap_or("");
+
+        if tail.is_empty() || tail == "list" {
+            self.push_hooks_overview();
+            return;
+        }
+
+        if tail == "add" {
+            self.open_hook_add_form();
+            return;
+        }
+
+        self.push_hooks_usage();
+    }
+
     pub(crate) fn handle_prompt_alias_slash(&mut self, message: &str) -> bool {
         let Some((command, rest)) = split_first_token(message) else {
             return false;

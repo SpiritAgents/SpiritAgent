@@ -50,6 +50,13 @@ import {
 import { formatUserMessageContentForLlm } from './runtime/user-turn-timestamp.js';
 import { prepareSubmittedUserTurn as prepareSubmittedUserTurnInternal } from './runtime/context.js';
 import {
+  appendHookAdditionalContexts,
+  HookDeniedError,
+  resolveHookRunner,
+  resolveHookSessionContext,
+  SubmitPromptHookDeniedError,
+} from './hooks/index.js';
+import {
   continuePendingManualToolApproval as continuePendingManualToolApprovalInternal,
   startManualToolCommand as startManualToolCommandInternal,
   startManualToolRequest as startManualToolRequestInternal,
@@ -878,8 +885,16 @@ export class AgentRuntime<
     }
 
     this.completedTurnResultStore = undefined;
-    const state = await this.prepareSubmittedUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
-    this.startToolAgentRoundAsync(state, userInput, createTurnContext<ToolRequest>());
+    try {
+      const state = await this.prepareSubmittedUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
+      this.startToolAgentRoundAsync(state, userInput, createTurnContext<ToolRequest>());
+    } catch (error) {
+      if (error instanceof SubmitPromptHookDeniedError) {
+        this.completeSubmitPromptDenied(error);
+        return;
+      }
+      throw error;
+    }
   }
 
   async startUserTurnStreaming(
@@ -892,13 +907,21 @@ export class AgentRuntime<
     }
 
     this.completedTurnResultStore = undefined;
-    const state = await this.prepareSubmittedUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
-    await this.startStreamingRound(
-      state,
-      userInput,
-      createTurnContext<ToolRequest>(),
-      true,
-    );
+    try {
+      const state = await this.prepareSubmittedUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
+      await this.startStreamingRound(
+        state,
+        userInput,
+        createTurnContext<ToolRequest>(),
+        true,
+      );
+    } catch (error) {
+      if (error instanceof SubmitPromptHookDeniedError) {
+        this.completeSubmitPromptDenied(error);
+        return;
+      }
+      throw error;
+    }
   }
 
   async continueAssistantCompletionStreaming(): Promise<void> {
@@ -1015,6 +1038,7 @@ export class AgentRuntime<
           pending.request,
           pending.toolCallId,
           pending.toolName,
+          pending.argumentsJson,
           pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
@@ -1294,6 +1318,7 @@ export class AgentRuntime<
             : {}),
           toolCallId: pending.toolCallId,
           toolName: pending.toolName,
+          argumentsJson: pending.argumentsJson,
           remainingCalls: pending.remainingCalls,
           turn: pending.turn,
           resumeAsStreaming: pending.resumeAsStreaming,
@@ -1322,6 +1347,7 @@ export class AgentRuntime<
           continuedRequest,
           pending.toolCallId,
           pending.toolName,
+          pending.argumentsJson,
           pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
@@ -1969,11 +1995,13 @@ export class AgentRuntime<
     request: ToolRequest,
     toolCallId: string,
     toolName: string,
+    argumentsJson: string,
     remainingCalls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+    postHookToolInput?: import('./ports.js').JsonObject,
   ): void {
     startBackgroundToolExecutionAsyncInternal(
       this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -1982,11 +2010,13 @@ export class AgentRuntime<
       request,
       toolCallId,
       toolName,
+      argumentsJson,
       remainingCalls,
       turn,
       resumeAsStreaming,
       streamingEmitBeginResponse,
       earlyToolExecutions,
+      postHookToolInput,
     );
   }
 
@@ -2102,6 +2132,25 @@ export class AgentRuntime<
       explicitImages,
       explicitWorkspaceFiles,
     );
+  }
+
+  private completeSubmitPromptDenied(error: SubmitPromptHookDeniedError): void {
+    if (error.followupMessage) {
+      this.recordContextMessage('system', error.followupMessage);
+    }
+    this.historyStore.push({
+      role: 'assistant',
+      content: createLlmMessageContentFromText(error.denialMessage),
+    });
+    const state = this.options.createToolAgentState(this.historyStore, '');
+    this.completedTurnResultStore = {
+      kind: 'completed',
+      assistantText: error.denialMessage,
+      state,
+      requestTrace: [],
+      toolExecutions: [],
+      compactions: [],
+    };
   }
 
   private async prepareMcpPromptTurn(
@@ -2744,6 +2793,16 @@ export class AgentRuntime<
     );
     this.childSessionsStore.push(record);
 
+    const subagentStartDenied = await this.runSubagentStartHook(sessionId, request);
+    if (subagentStartDenied) {
+      record.summary.status = 'failed';
+      record.summary.updatedAtUnixMs = Date.now();
+      record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
+      record.summary.latestMessage = truncateTextForSubagentSummary(subagentStartDenied, 180);
+      record.summary.error = subagentStartDenied;
+      return { kind: 'completed', text: subagentStartDenied, failed: true };
+    }
+
     const childUserTurn = buildRunSubagentUserTurn(request);
     record.llmHistory = [{
       role: 'user',
@@ -2987,6 +3046,8 @@ export class AgentRuntime<
       delete pending.childRecord.summary.error;
     }
 
+    await this.runSubagentEndHook(pending, output);
+
     const finishedExecution = {
       toolCallId: pending.parentToolCallId,
       toolName: 'run_subagent',
@@ -3071,6 +3132,73 @@ export class AgentRuntime<
   private nextChildSessionId(): string {
     this.childSessionCounterStore += 1;
     return `subagent-${Date.now()}-${this.childSessionCounterStore}`;
+  }
+
+  private async runSubagentStartHook(
+    subagentSessionId: string,
+    request: RunSubagentRequest,
+  ): Promise<string | undefined> {
+    const hookRunner = resolveHookRunner(this.options);
+    if (!hookRunner) {
+      return undefined;
+    }
+
+    const context = resolveHookSessionContext(this.options);
+    const result = await hookRunner.runSubagentStart({
+      sessionId: context.sessionId,
+      conversationPath: context.conversationPath,
+      workspaceRoot: context.workspaceRoot,
+      model: context.model,
+      subagentSessionId,
+      subagentType: request.subagentType ?? 'generalPurpose',
+      task: request.task,
+    });
+
+    appendHookAdditionalContexts(
+      (role, content) => this.recordContextMessage(role, content),
+      result.additionalContexts,
+    );
+
+    if (!result.denied) {
+      return undefined;
+    }
+    return result.userMessage ?? result.agentMessage ?? 'Subagent start denied by hook.';
+  }
+
+  private async runSubagentEndHook<
+    Pending extends PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>,
+  >(
+    pending: Pending,
+    output: { text: string; failed: boolean },
+  ): Promise<void> {
+    const hookRunner = resolveHookRunner(this.options);
+    if (!hookRunner) {
+      return;
+    }
+
+    const subagentRequest = extractRunSubagentRequest(pending.parentRequest);
+    const context = resolveHookSessionContext(this.options);
+    const result = await hookRunner.runSubagentEnd({
+      sessionId: context.sessionId,
+      conversationPath: context.conversationPath,
+      workspaceRoot: context.workspaceRoot,
+      model: context.model,
+      subagentSessionId: pending.childRecord.summary.sessionId,
+      subagentType: subagentRequest?.subagentType ?? 'generalPurpose',
+      status: output.failed ? 'error' : 'completed',
+      task: subagentRequest?.task ?? pending.childRecord.summary.title,
+      summary: output.text,
+      modifiedFiles: undefined,
+    });
+
+    appendHookAdditionalContexts(
+      (role, content) => this.recordContextMessage(role, content),
+      result.additionalContexts,
+    );
+
+    if (!output.failed && result.followupMessage?.trim()) {
+      enqueueDeferredUserGuidance(pending.parentTurn, result.followupMessage.trim());
+    }
   }
 }
 
@@ -3236,9 +3364,11 @@ function extractRunSubagentRequest<ToolRequest>(request: ToolRequest): RunSubage
   const contextSummary = readOptionalStringField(value, 'context_summary', 'contextSummary');
   const filesToInspect = readOptionalStringArrayField(value, 'files_to_inspect', 'filesToInspect');
   const expectedOutput = readOptionalStringField(value, 'expected_output', 'expectedOutput');
+  const subagentType = readOptionalStringField(value, 'subagent_type', 'subagentType');
 
   return {
     task,
+    ...(subagentType !== undefined ? { subagentType } : {}),
     ...(successCriteria !== undefined ? { successCriteria } : {}),
     ...(contextSummary !== undefined ? { contextSummary } : {}),
     ...(filesToInspect !== undefined ? { filesToInspect } : {}),
