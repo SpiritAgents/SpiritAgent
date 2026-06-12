@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 
 import { HookConfigError } from './errors.js';
 import {
@@ -173,5 +173,13 @@ export function resolveHookCommandPath(definition: ResolvedHookDefinition): stri
   if (command.startsWith('/') || /^[A-Za-z]:\\/.test(command)) {
     return command;
   }
-  return join(definition.configDir, command);
+
+  const configRoot = resolve(definition.configDir);
+  const resolved = resolve(configRoot, command);
+  const relativePath = relative(configRoot, resolved);
+  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+    throw new HookConfigError(`Hook command escapes config directory: ${command}`);
+  }
+
+  return resolved;
 }

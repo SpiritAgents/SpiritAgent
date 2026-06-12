@@ -117,12 +117,17 @@ export function validateHooksConfig(options: LoadHooksConfigOptions): {
       configDir: string,
     ) => {
       for (const [index, entry] of (hookEntries ?? []).entries()) {
-        const resolvedPath = resolveHookCommandPath({
-          ...entry,
-          scope,
-          configDir,
-          timeout: entry.timeout,
-        });
+        let resolvedPath: string;
+        try {
+          resolvedPath = resolveHookCommandPath({
+            ...entry,
+            scope,
+            configDir,
+            timeout: entry.timeout,
+          });
+        } catch {
+          resolvedPath = entry.command;
+        }
         entries.push({
           scope,
           event,
