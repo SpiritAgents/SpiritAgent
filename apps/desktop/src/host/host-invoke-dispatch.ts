@@ -77,6 +77,8 @@ export interface HostCommandDelegate {
   getGitHubAuthStatus(): Promise<unknown>;
   startGitHubOAuth(): Promise<unknown>;
   disconnectGitHub(): Promise<unknown>;
+  getGitHubPullRequestForCurrentBranch(): Promise<unknown>;
+  getGitHubPullRequestDetail(request: CommandPayloads['getGitHubPullRequestDetail']['request']): Promise<unknown>;
   readWorkspaceTextFile(relativePath: string): Promise<unknown>;
   writeWorkspaceTextFile(request: CommandPayloads['writeWorkspaceTextFile']['request']): Promise<unknown>;
   readHostTextFile(absolutePath: string): Promise<unknown>;
@@ -168,6 +170,8 @@ const hostCommandDispatch = {
   getGitHubAuthStatus: (host) => host.getGitHubAuthStatus(),
   startGitHubOAuth: (host) => host.startGitHubOAuth(),
   disconnectGitHub: (host) => host.disconnectGitHub(),
+  getGitHubPullRequestForCurrentBranch: (host) => host.getGitHubPullRequestForCurrentBranch(),
+  getGitHubPullRequestDetail: (host, payload) => host.getGitHubPullRequestDetail(payload.request),
   readWorkspaceTextFile: (host, payload) => host.readWorkspaceTextFile(payload.relativePath),
   writeWorkspaceTextFile: (host, payload) => host.writeWorkspaceTextFile(payload.request),
   readHostTextFile: (host, payload) => host.readHostTextFile(payload.absolutePath),

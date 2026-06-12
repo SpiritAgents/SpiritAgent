@@ -35,6 +35,7 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
+  GetGitHubPullRequestDetailRequest,
   RunExtensionRequest,
   SaveHookEntryRequest,
   SubmitGitChipRequest,
@@ -67,6 +68,8 @@ export type CommandPayloads = {
   getGitHubAuthStatus: undefined;
   startGitHubOAuth: undefined;
   disconnectGitHub: undefined;
+  getGitHubPullRequestForCurrentBranch: undefined;
+  getGitHubPullRequestDetail: { request: GetGitHubPullRequestDetailRequest };
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };

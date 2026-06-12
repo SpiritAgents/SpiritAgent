@@ -61,6 +61,8 @@ export type HostCommandName =
   | 'getGitHubAuthStatus'
   | 'startGitHubOAuth'
   | 'disconnectGitHub'
+  | 'getGitHubPullRequestForCurrentBranch'
+  | 'getGitHubPullRequestDetail'
   | 'abortConversation'
   | 'abortShellCommand'
   | 'continueAssistantCompletion'

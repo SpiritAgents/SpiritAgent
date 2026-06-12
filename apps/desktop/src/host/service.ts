@@ -85,6 +85,7 @@ import type {
   DesktopMarketplaceDetail,
   DesktopMarketplacePreparedInstall,
   DesktopGitSnapshot,
+  GetGitHubPullRequestDetailRequest,
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
   HostTextFileStatResult,
@@ -184,6 +185,8 @@ import {
 import {
   disconnectGitHubCommand,
   getGitHubAuthStatusCommand,
+  getGitHubPullRequestDetailCommand,
+  getGitHubPullRequestForCurrentBranchCommand,
   startGitHubOAuthCommand,
 } from './host-github-commands.js';
 import {
@@ -1670,6 +1673,19 @@ class DesktopHostService {
 
   async disconnectGitHub() {
     return disconnectGitHubCommand();
+  }
+
+  async getGitHubPullRequestForCurrentBranch() {
+    await this.ensureInitialized();
+    const state = this.requireState();
+    return getGitHubPullRequestForCurrentBranchCommand({
+      workspaceRoot: state.workspaceRoot,
+      git: state.git,
+    });
+  }
+
+  async getGitHubPullRequestDetail(request: GetGitHubPullRequestDetailRequest) {
+    return getGitHubPullRequestDetailCommand(request);
   }
 
   async listWorkspaceFileReferenceSuggestions(
