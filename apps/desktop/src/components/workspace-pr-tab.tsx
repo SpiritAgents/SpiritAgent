@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, GitPullRequest } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { WorkspacePrDetailView } from "@/components/workspace-pr-detail-view";
 import { cn } from "@/lib/utils";
 import type {
   DesktopGitSnapshot,
@@ -88,18 +88,52 @@ export function WorkspacePrTab({
     }
   }, [getGitHubAuthStatus, prTabEnabled]);
 
+  const loadPullRequestDetail = useCallback(
+    async (result: GitHubPullRequestForBranchResult) => {
+      const pullRequest = result.pullRequest;
+      const repository = result.repository;
+      if (!pullRequest || !repository) {
+        setDetail(null);
+        return;
+      }
+
+      setLoadingDetail(true);
+      setError(null);
+      try {
+        const next = await getGitHubPullRequestDetail({
+          owner: repository.owner,
+          repo: repository.repo,
+          number: pullRequest.number,
+        });
+        setDetail(next);
+      } catch (loadError) {
+        setDetail(null);
+        setError(describeError(loadError));
+        await refreshAuthStatus();
+      } finally {
+        setLoadingDetail(false);
+      }
+    },
+    [getGitHubPullRequestDetail, refreshAuthStatus],
+  );
+
   const refreshBranchPullRequest = useCallback(async () => {
     if (!prTabEnabled || !authStatus.connected) {
       setBranchResult(null);
       setDetail(null);
       return;
     }
+
     setLoadingBranch(true);
     setError(null);
     try {
       const result = await getGitHubPullRequestForCurrentBranch();
       setBranchResult(result);
-      setDetail(null);
+      if (result.pullRequest && result.repository) {
+        await loadPullRequestDetail(result);
+      } else {
+        setDetail(null);
+      }
     } catch (loadError) {
       setBranchResult(null);
       setDetail(null);
@@ -108,7 +142,13 @@ export function WorkspacePrTab({
     } finally {
       setLoadingBranch(false);
     }
-  }, [authStatus.connected, getGitHubPullRequestForCurrentBranch, prTabEnabled, refreshAuthStatus]);
+  }, [
+    authStatus.connected,
+    getGitHubPullRequestForCurrentBranch,
+    loadPullRequestDetail,
+    prTabEnabled,
+    refreshAuthStatus,
+  ]);
 
   const refreshGitHubPanel = useCallback(async () => {
     if (!prTabEnabled) {
@@ -138,7 +178,11 @@ export function WorkspacePrTab({
     try {
       const result = await getGitHubPullRequestForCurrentBranch();
       setBranchResult(result);
-      setDetail(null);
+      if (result.pullRequest && result.repository) {
+        await loadPullRequestDetail(result);
+      } else {
+        setDetail(null);
+      }
     } catch (loadError) {
       setBranchResult(null);
       setDetail(null);
@@ -151,7 +195,12 @@ export function WorkspacePrTab({
     } finally {
       setLoadingBranch(false);
     }
-  }, [getGitHubAuthStatus, getGitHubPullRequestForCurrentBranch, prTabEnabled]);
+  }, [
+    getGitHubAuthStatus,
+    getGitHubPullRequestForCurrentBranch,
+    loadPullRequestDetail,
+    prTabEnabled,
+  ]);
 
   refreshGitHubPanelRef.current = refreshGitHubPanel;
 
@@ -252,29 +301,6 @@ export function WorkspacePrTab({
     }
   };
 
-  const handleLoadDetail = async () => {
-    const pullRequest = branchResult?.pullRequest;
-    const repository = branchResult?.repository;
-    if (!pullRequest || !repository) {
-      return;
-    }
-    setLoadingDetail(true);
-    setError(null);
-    try {
-      const next = await getGitHubPullRequestDetail({
-        owner: repository.owner,
-        repo: repository.repo,
-        number: pullRequest.number,
-      });
-      setDetail(next);
-    } catch (loadError) {
-      setError(describeError(loadError));
-      await refreshAuthStatus();
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-
   const openExternalUrl = (url: string) => {
     void window.spiritDesktop?.openExternalUrl(url);
   };
@@ -340,7 +366,7 @@ export function WorkspacePrTab({
       </div>
 
       {!authStatus.connected && deviceChallenge ? (
-        <section className="rounded-md border border-border/70 bg-background/40 p-3 text-sm">
+        <section className="text-sm">
           <p className="text-foreground">{t("workspace.prDeviceIntro")}</p>
           <p className="mt-2 font-mono text-lg font-semibold tracking-widest text-foreground">
             {deviceChallenge.userCode}
@@ -361,20 +387,21 @@ export function WorkspacePrTab({
       ) : null}
 
       {!authStatus.connected && !deviceChallenge ? (
-        <section className="rounded-md border border-dashed border-border/80 bg-muted/20 p-3">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <section>
+          <p className="mb-2 text-[11px] font-medium text-muted-foreground">
             {t("workspace.prSampleDataLabel")}
           </p>
-          <div className="flex items-start gap-2 text-sm">
-            <GitPullRequest className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <div className="min-w-0">
-              <p className="font-medium text-foreground">
-                #{MOCK_PULL_REQUEST.number} {MOCK_PULL_REQUEST.title}
-              </p>
-              <p className="text-muted-foreground">
-                {MOCK_PULL_REQUEST.state.toUpperCase()} · @{MOCK_PULL_REQUEST.authorLogin}
-              </p>
-            </div>
+          <div className="min-w-0 text-sm">
+            <p className="text-sm font-medium text-foreground">
+              {MOCK_PULL_REQUEST.title}{" "}
+              <span className="text-[13px] font-normal text-muted-foreground">
+                #{MOCK_PULL_REQUEST.number}
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("workspace.prOpen")} @{MOCK_PULL_REQUEST.authorLogin}
+            </p>
+            <p className="mt-2 text-muted-foreground">{t("workspace.prConnectToLoadDetail")}</p>
           </div>
         </section>
       ) : null}
@@ -393,61 +420,12 @@ export function WorkspacePrTab({
                 branch: branchResult.branch ?? gitSnapshot?.branch ?? "",
               })}
             </p>
+          ) : loadingDetail && !detail ? (
+            <p className="text-muted-foreground">{t("workspace.prLoadingDetail")}</p>
+          ) : detail ? (
+            <WorkspacePrDetailView detail={detail} onOpenExternal={openExternalUrl} />
           ) : (
-            <section className="rounded-md border border-border/70 bg-background/40 p-3">
-              <div className="flex items-start gap-2">
-                <GitPullRequest className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground">
-                    #{branchResult.pullRequest.number} {branchResult.pullRequest.title}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {branchResult.pullRequest.state.toUpperCase()} · @{branchResult.pullRequest.authorLogin}
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    {branchResult.pullRequest.headRef} → {branchResult.pullRequest.baseRef}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={loadingDetail}
-                      onClick={() => {
-                        void handleLoadDetail();
-                      }}
-                    >
-                      {loadingDetail ? t("workspace.prLoadingDetail") : t("workspace.prShowDetail")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        openExternalUrl(branchResult.pullRequest!.url);
-                      }}
-                    >
-                      <ExternalLink className="size-3.5" aria-hidden />
-                      {t("workspace.prOpenOnGitHub")}
-                    </Button>
-                  </div>
-                  {detail ? (
-                    <div className="mt-3 space-y-2 border-t border-border/60 pt-3 text-sm">
-                      {detail.labels.length > 0 ? (
-                        <p className="text-muted-foreground">
-                          {t("workspace.prLabels", { labels: detail.labels.join(", ") })}
-                        </p>
-                      ) : null}
-                      {detail.body ? (
-                        <p className="whitespace-pre-wrap text-foreground/90">{detail.body}</p>
-                      ) : (
-                        <p className="text-muted-foreground">{t("workspace.prNoDescription")}</p>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </section>
+            <p className="text-muted-foreground">{t("workspace.prDetailUnavailable")}</p>
           )}
         </>
       ) : null}
