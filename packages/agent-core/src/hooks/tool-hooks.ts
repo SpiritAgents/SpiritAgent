@@ -91,7 +91,6 @@ export async function runPreToolUseGate<
         runtime.options.toolExecutor,
         call,
         preHook.updatedInput,
-        request,
       );
     }
 
