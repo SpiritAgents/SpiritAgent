@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process';
-import { access } from 'node:fs/promises';
-import path from 'node:path';
+import { access, constants } from 'node:fs/promises';
 
 import {
   DEFAULT_HOOK_TIMEOUT_SECONDS,
+  resolveHookCommandPath,
   type HookCommandOutput,
   type HookExecutionRecord,
   type ResolvedHookDefinition,
@@ -52,9 +52,29 @@ export async function runCommandHook(
   options: RunCommandHookOptions,
 ): Promise<RunCommandHookResult> {
   const { definition, inputJson, logger } = options;
-  const commandPath = path.isAbsolute(definition.command)
-    ? definition.command
-    : path.join(definition.configDir, definition.command);
+  let commandPath: string;
+  try {
+    commandPath = resolveHookCommandPath(definition);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Hook command path is invalid.';
+    logger?.(message);
+    const baseRecord: HookExecutionRecord = {
+      definition,
+      exitCode: null,
+      stdout: null,
+      stderr: message,
+      timedOut: false,
+      failed: true,
+    };
+    if (definition.failClosed) {
+      return {
+        record: baseRecord,
+        effectiveOutput: { permission: 'deny', userMessage: message },
+        denied: true,
+      };
+    }
+    return { record: baseRecord, effectiveOutput: null, denied: false };
+  }
   const timeoutSeconds = definition.timeout !== undefined && definition.timeout > 0
     ? definition.timeout
     : DEFAULT_HOOK_TIMEOUT_SECONDS;

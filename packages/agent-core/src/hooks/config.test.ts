@@ -6,6 +6,7 @@ import {
   emptyHooksConfigFile,
   mergeHooksConfigFiles,
   parseHooksConfigFile,
+  resolveHookCommandPath,
   resolveMergedHookDefinitions,
 } from '@spirit-agent/core';
 
@@ -76,4 +77,16 @@ test('resolveMergedHookDefinitions applies matcher to tool names', () => {
     'read_file',
   );
   assert.deepEqual(readOnly.map((entry: { command: string }) => entry.command), ['all.sh']);
+});
+
+test('resolveHookCommandPath rejects commands that escape config directory', () => {
+  assert.throws(
+    () =>
+      resolveHookCommandPath({
+        command: '../outside.sh',
+        scope: 'user',
+        configDir: '/data/spirit',
+      }),
+    HookConfigError,
+  );
 });
