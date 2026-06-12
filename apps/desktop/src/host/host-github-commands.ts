@@ -7,6 +7,7 @@ import {
   GitHubOAuthError,
   parseGitHubRemoteUrl,
   type GitHubAuthStatus,
+  type GitHubDeviceAuthChallenge,
   type GitHubPullRequestDetail,
   type GitHubPullRequestForBranchResult,
 } from '@spirit-agent/host-internal';
@@ -17,7 +18,11 @@ import {
   getGitHubAuthStatusFromStorage,
   loadGitHubAccessToken,
 } from './github-auth-storage.js';
-import { runGitHubOAuthFlow } from './github-oauth-bridge.js';
+import {
+  beginGitHubDeviceLogin,
+  cancelGitHubDeviceLogin,
+  completeGitHubDeviceLogin,
+} from './github-oauth-bridge.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -30,8 +35,12 @@ export async function getGitHubAuthStatusCommand(): Promise<GitHubAuthStatus> {
   return getGitHubAuthStatusFromStorage();
 }
 
-export async function startGitHubOAuthCommand(): Promise<GitHubAuthStatus> {
-  const result = await runGitHubOAuthFlow();
+export async function beginGitHubDeviceLoginCommand(): Promise<GitHubDeviceAuthChallenge> {
+  return beginGitHubDeviceLogin();
+}
+
+export async function completeGitHubDeviceLoginCommand(): Promise<GitHubAuthStatus> {
+  const result = await completeGitHubDeviceLogin();
   return {
     connected: true,
     login: result.login,
@@ -39,6 +48,7 @@ export async function startGitHubOAuthCommand(): Promise<GitHubAuthStatus> {
 }
 
 export async function disconnectGitHubCommand(): Promise<GitHubAuthStatus> {
+  cancelGitHubDeviceLogin();
   await clearGitHubOAuthCredentials();
   return { connected: false };
 }

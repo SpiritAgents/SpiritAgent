@@ -8,6 +8,13 @@ export interface GitHubAuthStatus {
   login?: string;
 }
 
+export interface GitHubDeviceAuthChallenge {
+  userCode: string;
+  verificationUri: string;
+  expiresIn: number;
+  intervalSeconds: number;
+}
+
 export interface GitHubOAuthTokenResponse {
   access_token: string;
   token_type: string;
