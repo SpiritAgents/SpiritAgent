@@ -29,7 +29,13 @@ const BASIC_INFO_SECTION_PREFIX = '[SPIRIT_BASIC_INFO]';
 
 export const COMPACT_SUMMARY_PREFIX = '[SPIRIT_COMPACT_SUMMARY]';
 
-const COMPACT_HISTORY_OUTPUT_TEMPLATE = `[Session Overview]
+export const PRE_COMPACTION_ARCHIVE_READ_FILE_GUIDANCE =
+  'Important details may be recovered by reading this file with read_file.';
+
+const PRE_COMPACTION_ARCHIVE_EXAMPLE_PATH =
+  '/path/to/compaction-archives/pre-compact-session-1234567890.json';
+
+const COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE = `[Session Overview]
 <Summarize the current task and overall progress in 1–2 sentences>
 
 [User Messages]
@@ -53,22 +59,62 @@ const COMPACT_HISTORY_OUTPUT_TEMPLATE = `[Session Overview]
 [Open Items]
 - <Remaining work, questions awaiting user confirmation, blockers>`;
 
-export const COMPACT_HISTORY_SYSTEM_PROMPT = [
-  'Compress the following conversation into a reusable system summary for later turns.',
-  '',
-  'Hard requirements:',
-  '1. Output must strictly follow the section titles, order, and hierarchy in the output template; do not add, remove, or rename sections.',
-  '2. The [User Messages] section must include every user message from the input conversation: one message per line, in order of appearance, preserving original wording; do not omit, merge, paraphrase, or rewrite. You may append [images attached] / [videos attached] annotations only when a message is extremely long.',
-  '3. For sections other than [User Messages], summarize in concise bullet points, preserving decision rationale and verifiable details; avoid vague repetition.',
-  '4. Omit small talk, thanks, repeated explanations, and low-information back-and-forth confirmations.',
-  '5. Output only the summary body; do not wrap it in markdown code fences; do not add explanations, preambles, or closings.',
-  '',
-  'When summarizing, preserve: user goals, key constraints, verified conclusions, failed attempts, and open items.',
-  '',
-  'Output template:',
-  '',
-  COMPACT_HISTORY_OUTPUT_TEMPLATE,
-].join('\n');
+const COMPACT_HISTORY_ARCHIVE_OUTPUT_SECTION = `[Pre-compaction Archive]
+<the archive absolute path on this line>
+Important details may be recovered by reading this file with read_file.`;
+
+const COMPACT_HISTORY_OUTPUT_TEMPLATE = `${COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE}
+
+${COMPACT_HISTORY_ARCHIVE_OUTPUT_SECTION}`;
+
+const PRE_COMPACTION_ARCHIVE_HARD_REQUIREMENT = `6. The [Pre-compaction Archive] section must contain exactly three lines: the section title, then the archive absolute path alone on the next line, then this exact guidance sentence on the following line: ${PRE_COMPACTION_ARCHIVE_READ_FILE_GUIDANCE} Do not output only the path.`;
+
+function buildCompactHistorySystemPromptCore(includeArchiveSection: boolean): string {
+  const hardRequirements = [
+    '1. Output must strictly follow the section titles, order, and hierarchy in the output template; do not add, remove, or rename sections.',
+    '2. The [User Messages] section must include every user message from the input conversation: one message per line, in order of appearance, preserving original wording; do not omit, merge, paraphrase, or rewrite. You may append [images attached] / [videos attached] annotations only when a message is extremely long.',
+    '3. For sections other than [User Messages], summarize in concise bullet points, preserving decision rationale and verifiable details; avoid vague repetition.',
+    '4. Omit small talk, thanks, repeated explanations, and low-information back-and-forth confirmations.',
+    '5. Output only the summary body; do not wrap it in markdown code fences; do not add explanations, preambles, or closings.',
+    ...(includeArchiveSection ? [PRE_COMPACTION_ARCHIVE_HARD_REQUIREMENT] : []),
+  ];
+
+  return [
+    'Compress the following conversation into a reusable system summary for later turns.',
+    '',
+    'Hard requirements:',
+    ...hardRequirements,
+    '',
+    'When summarizing, preserve: user goals, key constraints, verified conclusions, failed attempts, and open items.',
+    '',
+    'Output template:',
+    '',
+    includeArchiveSection
+      ? COMPACT_HISTORY_OUTPUT_TEMPLATE
+      : COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE,
+  ].join('\n');
+}
+
+export function buildCompactHistorySystemPrompt(preCompactionArchivePath?: string): string {
+  const normalizedPath = preCompactionArchivePath?.trim();
+  if (!normalizedPath) {
+    return buildCompactHistorySystemPromptCore(false);
+  }
+
+  return [
+    buildCompactHistorySystemPromptCore(true),
+    '',
+    'Example [Pre-compaction Archive] section shape (use the real archive path from below, not this placeholder path):',
+    '',
+    '[Pre-compaction Archive]',
+    PRE_COMPACTION_ARCHIVE_EXAMPLE_PATH,
+    PRE_COMPACTION_ARCHIVE_READ_FILE_GUIDANCE,
+    '',
+    `Archive path for this compression (use this exact path on the archive line): ${normalizedPath}`,
+  ].join('\n');
+}
+
+export const COMPACT_HISTORY_SYSTEM_PROMPT = buildCompactHistorySystemPrompt();
 
 export function buildCompactHistoryUserPrompt(history: LlmMessage[]): string {
   return history
@@ -84,11 +130,19 @@ export function buildCompactHistoryUserPrompt(history: LlmMessage[]): string {
     .join('\n\n');
 }
 
+export interface BuildCompactHistoryPromptMessagesOptions {
+  preCompactionArchivePath?: string;
+}
+
 export function buildCompactHistoryPromptMessages(
   history: LlmMessage[],
+  options: BuildCompactHistoryPromptMessagesOptions = {},
 ): Array<{ role: 'system' | 'user'; content: string }> {
   return [
-    { role: 'system', content: COMPACT_HISTORY_SYSTEM_PROMPT },
+    {
+      role: 'system',
+      content: buildCompactHistorySystemPrompt(options.preCompactionArchivePath),
+    },
     { role: 'user', content: buildCompactHistoryUserPrompt(history) },
   ];
 }

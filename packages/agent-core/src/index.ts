@@ -1,3 +1,4 @@
+export * from './compaction-archive.js';
 export * from './ports.js';
 export * from './runtime.js';
 export * from './llm-provider-shared.js';
