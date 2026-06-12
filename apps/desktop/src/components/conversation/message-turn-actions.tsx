@@ -1,4 +1,4 @@
-import { GitFork, MoreHorizontal } from "lucide-react";
+import { GitFork, LoaderCircle, MoreHorizontal, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -46,13 +46,18 @@ export function MessageTurnActions({
       {showContinueButton && continueTarget ? (
         <Button
           type="button"
-          variant="outline"
-          size="sm"
-          className="h-7 px-3 text-xs"
+          variant="ghost"
+          size="icon"
+          className="size-7 shrink-0 text-muted-foreground"
+          aria-label={t("app.continue")}
           onClick={() => onContinue(continueTarget)}
           disabled={continueBusy}
         >
-          {t("app.continue")}
+          {continueBusy ? (
+            <LoaderCircle className="size-3.5 animate-spin text-muted-foreground" aria-hidden />
+          ) : (
+            <Play className="size-3.5 text-muted-foreground" aria-hidden />
+          )}
         </Button>
       ) : null}
       {canFork ? (
