@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  modAltLetterShortcutKbdKeys,
   modLetterShortcutKbdKeys,
   modSlashShortcutKbdKeys,
   modSlashShortcutLabel,
@@ -38,6 +39,18 @@ test("modLetterShortcutKbdKeys returns letter shortcut chips per platform", () =
   });
   withDesktopPlatform("linux", () => {
     assert.deepEqual(modLetterShortcutKbdKeys("b"), ["Ctrl", "B"]);
+  });
+});
+
+test("modAltLetterShortcutKbdKeys returns alt-mod letter shortcut chips per platform", () => {
+  withDesktopPlatform("darwin", () => {
+    assert.deepEqual(modAltLetterShortcutKbdKeys("b"), ["⌥", "⌘", "B"]);
+  });
+  withDesktopPlatform("win32", () => {
+    assert.deepEqual(modAltLetterShortcutKbdKeys("b"), ["Ctrl", "Alt", "B"]);
+  });
+  withDesktopPlatform("linux", () => {
+    assert.deepEqual(modAltLetterShortcutKbdKeys("b"), ["Ctrl", "Alt", "B"]);
   });
 });
 
