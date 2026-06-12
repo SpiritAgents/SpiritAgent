@@ -99,6 +99,53 @@ function shouldExposeLoneThinkingAsMessage(
   );
 }
 
+function nextAssistantBodyIndexInTurn(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndex: number,
+): number | undefined {
+  for (let index = messageIndex + 1; index < messages.length; index += 1) {
+    const candidate = messages[index];
+    if (!candidate || candidate.role === 'user') {
+      break;
+    }
+    if (isAssistantBodyTextMessage(candidate)) {
+      return index;
+    }
+    if (candidate.tool) {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/** Continue 等场景：turn 内已有正文，thinking 紧跟下一段正文且无工具夹在中间。 */
+function shouldExposeSandwichedThinkingAsMessage(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndices: readonly number[],
+  runStart: number,
+): boolean {
+  if (messageIndices.length !== 1) {
+    return false;
+  }
+  const message = messages[messageIndices[0] ?? -1];
+  if (!message?.aux?.thinking?.trim()) {
+    return false;
+  }
+  if (!hasAssistantBodyTextBeforeInTurn(messages, runStart)) {
+    return false;
+  }
+  const nextBodyIndex = nextAssistantBodyIndexInTurn(messages, runStart);
+  if (nextBodyIndex === undefined) {
+    return false;
+  }
+  for (let index = runStart + 1; index < nextBodyIndex; index += 1) {
+    if (messages[index]?.tool) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function buildProcessGroupId(scopeKey: string, runStart: number): string {
   return `${scopeKey}:process:${runStart}`;
 }
@@ -152,7 +199,10 @@ export function buildConversationRenderItems(
     const auxOnly = !runHasToolActivity(messages, messageIndices);
 
     if (auxOnly) {
-      if (shouldExposeLoneThinkingAsMessage(messages, messageIndices, runStart)) {
+      if (
+        shouldExposeLoneThinkingAsMessage(messages, messageIndices, runStart)
+        || shouldExposeSandwichedThinkingAsMessage(messages, messageIndices, runStart)
+      ) {
         items.push({ kind: 'message', messageIndex: messageIndices[0]! });
       } else {
         pendingAuxIndices.push(...messageIndices);

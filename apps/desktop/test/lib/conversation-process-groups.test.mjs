@@ -226,6 +226,22 @@ test('buildConversationRenderItems assigns unique group ids within one turn', ()
   assert.deepEqual(groups[0].messageIndices, [3, 4]);
 });
 
+test('buildConversationRenderItems keeps continue thinking before its following body', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'a', pending: false },
+    { id: 2, role: 'assistant', content: '', pending: false, aux: { thinking: 'first plan' } },
+    { id: 3, role: 'assistant', content: 'First answer.', pending: false },
+    { id: 4, role: 'assistant', content: '', pending: false, aux: { thinking: 'continue plan' } },
+    { id: 5, role: 'assistant', content: 'Continued answer.', pending: false },
+  ];
+  const items = buildConversationRenderItems(messages, scopeKey);
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ['message', 'message', 'message', 'message', 'message'],
+  );
+  assert.equal(isMessageHiddenByProcessGroup(items, 3), false);
+});
+
 test('buildConversationRenderItems merges post-body thinking into the next tool process group', () => {
   const messages = [
     { id: 1, role: 'user', content: 'hi', pending: false },
