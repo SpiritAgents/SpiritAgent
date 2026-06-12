@@ -4,28 +4,16 @@ import {
   useMemo,
   useRef,
   useState,
-  type ClipboardEvent as ReactClipboardEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
 
 import { modelReasoningEffortLabel } from "@spirit-agent/core/reasoning-effort";
-import {
-  charCountToCodeUnitIndex,
-  codeUnitIndexToCharCount,
-  currentWorkspaceFileReferenceQuery,
-} from "@spirit-agent/host-internal/workspace-file-reference-query";
 
 import {
   SessionSidebarChromeProvider,
   type SessionSidebarChromeApi,
   useSessionSidebarChrome,
 } from "@/contexts/session-sidebar-chrome-context";
-import { cycleAgentMode, type DesktopAgentMode } from "@/lib/agent-mode";
-import {
-  resolveComposerDirectMediaTool,
-  type DirectMediaTool,
-} from "@/lib/composer-direct-media";
 import {
   pickEmptySessionGreetingVariant,
   resolveEmptySessionGreeting,
@@ -41,7 +29,6 @@ import {
   CornerDownLeft,
   Download,
   FolderPlus,
-  LoaderCircle,
   Maximize2,
   MessageSquareText,
   PanelLeftClose,
@@ -78,15 +65,6 @@ import {
   useHoverDetailTooltipContext,
 } from "@/components/ui/hover-detail-tooltip";
 import { ModelPickerMenu } from "@/components/model-picker-menu";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,19 +78,6 @@ import {
   ComposerLocalFileStrip,
   type ComposerLocalFileAttachmentView,
 } from "@/components/composer-local-file-strip";
-import {
-  ComposerRichInput,
-  segmentsToMessageText,
-  type ComposerRichInputHandle,
-  type RichSegment,
-} from "@/components/composer-rich-input";
-import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import {
-  messageContentToRichSegments,
-  segmentsToAttachments,
-  segmentsToPlainText,
-} from "@/lib/composer-segment-model";
-import { ComposerInsertMenu } from "@/components/composer-insert-menu";
 import { SettingsView } from "@/components/settings-view";
 import { MinimalToolCallCard } from "@/components/minimal-tool-call-card";
 import { SessionChromeBreadcrumb } from "@/components/session-chrome-breadcrumb";
@@ -151,20 +116,15 @@ import { useElementBoxHeight } from "@/hooks/use-element-box-height";
 import { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
-import { useWorkspaceFileIndex } from "@/hooks/use-workspace-file-index";
-import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
+import { useComposerController } from "@/hooks/useComposerController";
+import { useMessageRewind } from "@/hooks/useMessageRewind";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useFont } from "@/hooks/useFont";
 import { useTheme } from "@/hooks/useTheme";
 import { isManagedGeneratedVideoRef } from "@/lib/managed-generated-asset";
 import {
-  appendComposerLocalFileAttachment,
-  composerAttachmentViewFromPath,
   isPreviewableImagePath,
   isPreviewableVideoPath,
-  normalizeSlashPath as normalizeAttachmentPath,
-  removeComposerLocalFileAttachment,
-  snapshotsToComposerAttachmentViews,
 } from "@/lib/local-file-attachments";
 import {
   FilteredOverlayMenu,
@@ -183,17 +143,6 @@ import {
 } from "@/lib/desktop-chrome";
 import { readWorkspaceToolsWidthPx } from "@/lib/layout-prefs";
 import { resolveModelPickerToOpen } from "@/lib/model-picker-shortcut-bridge";
-import {
-  isNewSessionAction,
-  type ActionPaletteItem,
-} from "@/lib/action-palette";
-import {
-  buildSkillSlashSuggestions,
-  currentSkillSlashQueryAtCursor,
-  skillSlashAlias,
-  skillSlashQueryKey,
-  type SkillSlashSuggestion,
-} from "@/lib/skill-slash";
 import {
   desktopNativeThemeForPreference,
   resolveDark,
@@ -244,13 +193,11 @@ import {
 import { isMarkdownPath } from "@/lib/file-picker-path";
 import type {
   DesktopModelReasoningEffort,
-  ConversationMessageSnapshot,
   DesktopSnapshot,
-  MessageRewindDraftState,
   PendingAssistantAux,
   ToolBlockSnapshot,
-  WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
+import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 
 import { resolveConversationListScopeKey } from "@/lib/conversation-list-scope";
 
@@ -485,54 +432,14 @@ export default function App() {
       : CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX;
   const pendingQuestions = runtime.pendingQuestions;
   const showPendingQuestionsInComposer = Boolean(pendingQuestions);
-  useLocalFileAttachmentPreviews(
-    runtime.composerLocalFileAttachments,
-    runtime.setComposerLocalFileAttachments,
-    runtime.readLocalImagePreviewDataUrl,
-  );
-
-  const [composerBrowserElementAttachments, setComposerBrowserElementAttachments] = useState<BrowserElementAttachment[]>([]);
 
   const activeSessionReadOnly = snapshot?.activeSession?.readOnly === true;
-  const composerDirectMediaMode = useMemo(() => {
-    if (!snapshot?.config) {
-      return null;
-    }
-    return resolveComposerDirectMediaTool(snapshot.config.activeModel, snapshot.config);
-  }, [snapshot?.config]);
-  const composerPlaceholder = activeSessionReadOnly
-    ? t("app.readOnlySession")
-    : composerDirectMediaMode === "generate_image"
-      ? t("composer.placeholderGenerateImage")
-      : composerDirectMediaMode === "generate_video"
-        ? t("composer.placeholderGenerateVideo")
-        : t("app.typeMessage");
   const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
-  const messageRewindComposerEnabled =
-    !compactionDemo.active &&
-    !subagentViewActive &&
-    !activeSessionReadOnly &&
-    !pendingApproval &&
-    !pendingQuestions &&
-    runtime.busyAction !== "rewind" &&
-    runtime.busyAction !== "session";
   const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
-  const composerHasPayload =
-    Boolean(runtime.composer.trim()) || runtime.composerLocalFileAttachments.length > 0;
   const conversationAbortShortcutEligible =
     conversationInterruptible && !activeSessionReadOnly;
   const conversationAbortShortcutEligibleRef = useRef(false);
   conversationAbortShortcutEligibleRef.current = conversationAbortShortcutEligible;
-  const composerCanSend =
-    !compactionDemo.active &&
-    !subagentViewActive &&
-    composerHasPayload &&
-    !activeSessionReadOnly &&
-    runtime.busyAction !== "session" &&
-    !pendingApproval &&
-    !pendingQuestions &&
-    (runtime.summary.canSend || conversationInterruptible) &&
-    !(runtime.busyAction === "send" && !conversationInterruptible);
   const startImplementingDisabled =
     !snapshot?.runtimeReady ||
     activeSessionReadOnly ||
@@ -540,7 +447,6 @@ export default function App() {
     Boolean(pendingApproval) ||
     Boolean(pendingQuestions) ||
     (runtime.busyAction === "send" && !conversationInterruptible);
-  const [rewindDraft, setRewindDraft] = useState<MessageRewindDraftState | null>(null);
   const previousComposerSessionKeyRef = useRef(composerSessionKey);
 
   useEffect(() => {
@@ -564,26 +470,6 @@ export default function App() {
       void subagentViewer.close();
     }
   }, [snapshot?.conversation.messages, snapshot?.subagentViewer, subagentViewer]);
-
-  useEffect(() => {
-    if (rewindDraft && subagentViewer.active) {
-      void subagentViewer.close();
-    }
-  }, [rewindDraft, subagentViewer]);
-  useLocalFileAttachmentPreviews(
-    rewindDraft?.localFileAttachments ?? [],
-    (update) => {
-      setRewindDraft((current) => {
-        if (!current) {
-          return current;
-        }
-        const localFileAttachments =
-          typeof update === "function" ? update(current.localFileAttachments) : update;
-        return { ...current, localFileAttachments };
-      });
-    },
-    runtime.readLocalImagePreviewDataUrl,
-  );
 
   const [activeSurface, setActiveSurface] = useState<
     "conversation" | "settings" | "marketplace" | "automations" | "automation-detail"
@@ -741,25 +627,6 @@ export default function App() {
       if (event.defaultPrevented) {
         return;
       }
-      if (!isModShortcutPressed(event) || event.key.toLowerCase() !== 'p') {
-        return;
-      }
-      event.preventDefault();
-      if (event.shiftKey) {
-        setActionPickerOpen(true);
-        return;
-      }
-      setFilePickerOpen(true);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) {
-        return;
-      }
       if (!isModShortcutPressed(event) || event.key !== "/") {
         return;
       }
@@ -856,46 +723,8 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [runtime.abortConversation]);
 
-  const [composerCursorCodeUnits, setComposerCursorCodeUnits] = useState(0);
-  const [slashSelectedIndex, setSlashSelectedIndex] = useState(-1);
-  const [fileReferenceSuggestions, setFileReferenceSuggestions] =
-    useState<WorkspaceFileReferenceSuggestionsResponse>(null);
-  const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
-  const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
-  const [dismissedSlashQueryKey, setDismissedSlashQueryKey] = useState<string | null>(null);
-  const [filePickerOpen, setFilePickerOpen] = useState(false);
-  const [actionPickerOpen, setActionPickerOpen] = useState(false);
-  const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
-  const [branchCheckoutBlockedByChanges, setBranchCheckoutBlockedByChanges] = useState(false);
-  const pendingComposerSendRef = useRef<{
-    text: string;
-    localFilePaths?: string[];
-  } | null>(null);
   const activeFilePath = snapshot?.activeSession?.filePath ?? null;
-  const commitBusy = runtime.busyAction === "git";
-  const gitChipBusy =
-    runtime.busyAction === "send" || snapshot?.conversation.isBusy === true;
-  const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
-  const rewindRichInputRef = useRef<ComposerRichInputHandle | null>(null);
 
-  const handleComposerAgentModeChange = useCallback(
-    (agentMode: DesktopAgentMode) => {
-      void runtime.saveSettingsPatch({ agentMode });
-      if (agentMode === "plan" || agentMode === "ask" || agentMode === "debug") {
-        runtime.setAgentModeChipDismissed(false);
-      }
-      if (agentMode === "plan") {
-        composerRichInputRef.current?.insertPlanChip({ clearText: false });
-      } else if (agentMode === "ask") {
-        composerRichInputRef.current?.insertAskChip({ clearText: false });
-      } else if (agentMode === "debug") {
-        composerRichInputRef.current?.insertDebugChip({ clearText: false });
-      } else {
-        composerRichInputRef.current?.removeAgentModeChip();
-      }
-    },
-    [runtime],
-  );
   const handleNewSession = useCallback(() => {
     setLastNonSettingsSurface("conversation");
     setActiveSurface("conversation");
@@ -938,20 +767,6 @@ export default function App() {
     return bridge.subscribeNewSession(handleNewSession);
   }, [handleNewSession]);
 
-  const handleGenerateAutomation = useCallback(async () => {
-    setLastNonSettingsSurface("conversation");
-    setActiveSurface("conversation");
-    const seed = t("automations.generateComposerSeed");
-    const resetOk = await runtime.resetSession();
-    if (!resetOk) {
-      return;
-    }
-    runtime.setComposer(seed);
-    setSlashSelectedIndex(-1);
-    queueMicrotask(() => {
-      composerRichInputRef.current?.focus();
-    });
-  }, [runtime, t]);
   const previousPlanModifiedAtRef = useRef<number | undefined>(undefined);
   const previousPlanExistsRef = useRef<boolean | undefined>(undefined);
   const previousActiveSessionPathRef = useRef<string | null>(null);
@@ -977,6 +792,65 @@ export default function App() {
   });
   /** 仅空会话展示工作区/分支等待选控件；有消息后隐藏（含无工作区绑定会话）。 */
   const showWorkspaceBindingControls = isEmptySession;
+
+  const composer = useComposerController({
+    runtime,
+    snapshot,
+    t,
+    isEmptySession,
+    activeSessionReadOnly,
+    compactionDemoActive: compactionDemo.active,
+    subagentViewActive,
+    pendingApproval,
+    pendingQuestions,
+    conversationInterruptible,
+    handleNewSession,
+    setActiveSurface,
+    setLastNonSettingsSurface,
+  });
+
+  const messageRewind = useMessageRewind({
+    runtime,
+    messages,
+    subagentViewer,
+    messageRewindComposerEnabled: composer.messageRewindComposerEnabled,
+    activeSessionReadOnly,
+  });
+
+  const handleGenerateAutomation = useCallback(async () => {
+    setLastNonSettingsSurface("conversation");
+    setActiveSurface("conversation");
+    const seed = t("automations.generateComposerSeed");
+    const resetOk = await runtime.resetSession();
+    if (!resetOk) {
+      return;
+    }
+    runtime.setComposer(seed);
+    composer.setSlashSelectedIndex(-1);
+    queueMicrotask(() => {
+      composer.focusComposer();
+    });
+  }, [composer, runtime, t]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (!isModShortcutPressed(event) || event.key.toLowerCase() !== "p") {
+        return;
+      }
+      event.preventDefault();
+      if (event.shiftKey) {
+        composer.setActionPickerOpen(true);
+        return;
+      }
+      composer.setFilePickerOpen(true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [composer.setActionPickerOpen, composer.setFilePickerOpen]);
+
   useEffect(() => {
     const plan = snapshot?.plan;
     const sessionPath = snapshot?.activeSession?.filePath ?? null;
@@ -1039,41 +913,6 @@ export default function App() {
     snapshot?.plan,
     workspaceToolTabs,
   ]);
-  const composerCursorChars = useMemo(
-    () => codeUnitIndexToCharCount(runtime.composer, composerCursorCodeUnits),
-    [composerCursorCodeUnits, runtime.composer],
-  );
-  const slashQuery = useMemo(() => {
-    const query = currentSkillSlashQueryAtCursor(runtime.composer, composerCursorChars);
-    if (!query) {
-      return undefined;
-    }
-    if (dismissedSlashQueryKey === skillSlashQueryKey(query)) {
-      return undefined;
-    }
-    return query;
-  }, [composerCursorChars, dismissedSlashQueryKey, runtime.composer]);
-  const slashSuggestions = useMemo(
-    () => buildSkillSlashSuggestions(slashQuery?.raw, snapshot?.skillsList ?? []),
-    [slashQuery, snapshot?.skillsList],
-  );
-  const fileReferenceQuery = useMemo(
-    () => currentWorkspaceFileReferenceQuery(runtime.composer, composerCursorChars),
-    [composerCursorChars, runtime.composer],
-  );
-  const fileReferenceQueryKey = useMemo(
-    () =>
-      fileReferenceQuery
-        ? `${fileReferenceQuery.start}\u0000${fileReferenceQuery.end}\u0000${fileReferenceQuery.raw}`
-        : "",
-    [fileReferenceQuery],
-  );
-  const workspaceFileIndex = useWorkspaceFileIndex({
-    workspaceRoot: snapshot?.workspaceRoot ?? "",
-    workspaceBinding: snapshot?.workspaceBinding ?? "project",
-    primeWorkspaceFileReferenceIndex: runtime.primeWorkspaceFileReferenceIndex,
-    getWorkspaceFileReferenceIndex: runtime.getWorkspaceFileReferenceIndex,
-  });
   const extensionSettingsItems = useMemo(
     () =>
       (snapshot?.extensionsList ?? [])
@@ -1084,669 +923,6 @@ export default function App() {
         })),
     [snapshot?.extensionsList],
   );
-
-  useEffect(() => {
-    setSlashSelectedIndex(-1);
-  }, [slashQuery?.raw, slashQuery?.start, slashQuery?.end]);
-
-  useEffect(() => {
-    if (!fileReferenceQuery || dismissedFileReferenceKey === fileReferenceQueryKey) {
-      setFileReferenceSuggestions(null);
-      setFileReferenceSelectedIndex(-1);
-      return;
-    }
-
-    if (!workspaceFileIndex.ready) {
-      setFileReferenceSuggestions({
-        query: fileReferenceQuery,
-        suggestions: [],
-      });
-      return;
-    }
-
-    setFileReferenceSuggestions({
-      query: fileReferenceQuery,
-      suggestions: workspaceFileIndex.search(fileReferenceQuery.raw),
-    });
-  }, [
-    dismissedFileReferenceKey,
-    fileReferenceQuery,
-    fileReferenceQueryKey,
-    workspaceFileIndex.ready,
-    workspaceFileIndex.fileCount,
-    workspaceFileIndex.search,
-  ]);
-
-  useEffect(() => {
-    if (slashSuggestions.length === 0) {
-      if (slashSelectedIndex !== -1) {
-        setSlashSelectedIndex(-1);
-      }
-      return;
-    }
-    if (slashSelectedIndex >= slashSuggestions.length) {
-      setSlashSelectedIndex(-1);
-    }
-  }, [slashSelectedIndex, slashSuggestions.length]);
-
-  useEffect(() => {
-    const suggestionCount = fileReferenceSuggestions?.suggestions.length ?? 0;
-    if (suggestionCount === 0) {
-      if (fileReferenceSelectedIndex !== -1) {
-        setFileReferenceSelectedIndex(-1);
-      }
-      return;
-    }
-
-    if (fileReferenceSelectedIndex >= suggestionCount) {
-      setFileReferenceSelectedIndex(-1);
-    }
-  }, [fileReferenceSelectedIndex, fileReferenceSuggestions?.suggestions.length]);
-
-  useEffect(() => {
-    if (!rewindDraft) {
-      return;
-    }
-    const anchor = messages[rewindDraft.listIndex];
-    const stillAvailable =
-      anchor?.id === rewindDraft.messageId && anchor.canRewind === true;
-    if (!stillAvailable) {
-      setRewindDraft(null);
-    }
-  }, [messages, rewindDraft]);
-
-  const startMessageRewind = (message: ConversationMessageSnapshot, listIndex: number) => {
-    if (!messageRewindComposerEnabled || message.canRewind !== true) {
-      return;
-    }
-    const segments = messageContentToRichSegments(message.content, String(message.id));
-    setRewindDraft({
-      messageId: message.id,
-      listIndex,
-      text: segmentsToPlainText(segments),
-      browserElementAttachments: segmentsToAttachments(segments),
-      localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
-    });
-  };
-
-  const submitMessageRewind = () => {
-    if (!rewindDraft) {
-      return;
-    }
-    const segs = rewindRichInputRef.current?.getSegments() ?? [];
-    const wireText = segmentsToMessageText(segs) || rewindDraft.text;
-    void runtime
-      .rewindAndSubmitMessage({
-        messageId: rewindDraft.messageId,
-        text: wireText,
-        ...(rewindDraft.localFileAttachments.length > 0
-          ? { localFilePaths: rewindDraft.localFileAttachments.map((item) => item.path) }
-          : {}),
-      })
-      .then((ok) => {
-        if (ok) {
-          setRewindDraft(null);
-        }
-      });
-  };
-
-  const applySlashSuggestion = (replacement: string) => {
-    if (slashQuery) {
-      composerRichInputRef.current?.replaceSkillSlashQuery(slashQuery, replacement, true);
-    } else {
-      runtime.setComposer(replacement);
-    }
-    setSlashSelectedIndex(-1);
-    setDismissedSlashQueryKey(null);
-    queueMicrotask(() => {
-      composerRichInputRef.current?.focus();
-    });
-  };
-
-  const applyLoopSlash = useCallback(() => {
-    setSlashSelectedIndex(-1);
-    setDismissedSlashQueryKey(null);
-    void runtime.setLoopEnabled(true);
-    composerRichInputRef.current?.insertLoopChip({ clearText: false });
-    if (slashQuery) {
-      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
-    }
-  }, [runtime, slashQuery]);
-
-  const applyPlanSlash = useCallback(() => {
-    setSlashSelectedIndex(-1);
-    setDismissedSlashQueryKey(null);
-    void runtime.saveSettingsPatch({ agentMode: "plan" });
-    runtime.setAgentModeChipDismissed(false);
-    composerRichInputRef.current?.insertPlanChip({ clearText: false });
-    if (slashQuery) {
-      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
-    }
-  }, [runtime, slashQuery]);
-
-  const applyAskSlash = useCallback(() => {
-    setSlashSelectedIndex(-1);
-    setDismissedSlashQueryKey(null);
-    void runtime.saveSettingsPatch({ agentMode: "ask" });
-    runtime.setAgentModeChipDismissed(false);
-    composerRichInputRef.current?.insertAskChip({ clearText: false });
-    if (slashQuery) {
-      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
-    }
-  }, [runtime, slashQuery]);
-
-  const applyDebugSlash = useCallback(() => {
-    setSlashSelectedIndex(-1);
-    setDismissedSlashQueryKey(null);
-    void runtime.saveSettingsPatch({ agentMode: "debug" });
-    runtime.setAgentModeChipDismissed(false);
-    composerRichInputRef.current?.insertDebugChip({ clearText: false });
-    if (slashQuery) {
-      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
-    }
-  }, [runtime, slashQuery]);
-
-  const applySlashSuggestionItem = useCallback(
-    (suggestion: SkillSlashSuggestion) => {
-      if (suggestion.kind === "loop") {
-        applyLoopSlash();
-        return;
-      }
-      if (suggestion.kind === "plan") {
-        applyPlanSlash();
-        return;
-      }
-      if (suggestion.kind === "ask") {
-        applyAskSlash();
-        return;
-      }
-      if (suggestion.kind === "debug") {
-        applyDebugSlash();
-        return;
-      }
-      if (suggestion.kind === "skill") {
-        setSlashSelectedIndex(-1);
-        setDismissedSlashQueryKey(null);
-        if (slashQuery) {
-          composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
-        }
-        queueMicrotask(() => {
-          composerRichInputRef.current?.insertSkillChip(suggestion.alias);
-        });
-        return;
-      }
-      applySlashSuggestion(`${suggestion.alias} `);
-    },
-    [applyAskSlash, applyDebugSlash, applyLoopSlash, applyPlanSlash, slashQuery],
-  );
-
-  const ensureConversationSurface = useCallback(() => {
-    setLastNonSettingsSurface("conversation");
-    setActiveSurface("conversation");
-  }, []);
-
-  const prefillComposerSkillChip = useCallback(
-    (skillName: string) => {
-      const alias = skillSlashAlias(skillName);
-      setLastNonSettingsSurface("conversation");
-      setActiveSurface("conversation");
-      runtime.setComposer("");
-      setSlashSelectedIndex(-1);
-      setDismissedSlashQueryKey(null);
-      queueMicrotask(() => {
-        composerRichInputRef.current?.insertSkillChip(alias, {
-          clearText: true,
-          appendTrailingSpace: true,
-        });
-        composerRichInputRef.current?.focus();
-      });
-    },
-    [runtime],
-  );
-
-  const isActionPaletteItemDisabled = useCallback(
-    (item: ActionPaletteItem) => {
-      if (!runtime.busyAction) {
-        return false;
-      }
-      if (isNewSessionAction(item)) {
-        return true;
-      }
-      return item.kind === "log-session" || item.kind === "compact";
-    },
-    [runtime.busyAction],
-  );
-
-  const runActionPaletteItem = useCallback(
-    (item: ActionPaletteItem) => {
-      ensureConversationSurface();
-      if (isNewSessionAction(item)) {
-        handleNewSession();
-        return;
-      }
-      if (item.kind === "loop") {
-        applyLoopSlash();
-        return;
-      }
-      if (item.kind === "plan") {
-        applyPlanSlash();
-        return;
-      }
-      if (item.kind === "ask") {
-        applyAskSlash();
-        return;
-      }
-      if (item.kind === "debug") {
-        applyDebugSlash();
-        return;
-      }
-      if (item.kind === "log-session" || item.kind === "compact") {
-        void runtime.sendMessage({ text: item.alias });
-        return;
-      }
-      applySlashSuggestion(`${item.alias} `);
-    },
-    [
-      applyAskSlash,
-      applyDebugSlash,
-      applyLoopSlash,
-      applyPlanSlash,
-      ensureConversationSurface,
-      handleNewSession,
-      runtime,
-    ],
-  );
-
-  const applyFileReferenceSuggestion = (path: string) => {
-    const query = fileReferenceSuggestions?.query;
-    if (!query) {
-      return;
-    }
-
-    composerRichInputRef.current?.insertWorkspaceFileReference(path, query, true);
-    setFileReferenceSelectedIndex(-1);
-    setDismissedFileReferenceKey(null);
-  };
-
-  const insertComposerText = (text: string) => {
-    const segments = composerRichInputRef.current?.getSegments() ?? [];
-    const hasRichChips = segments.some((segment) => segment.kind !== "text");
-    if (hasRichChips) {
-      composerRichInputRef.current?.insertPlainTextAtCaret(text);
-    } else {
-      const selectionStart = composerCursorCodeUnits;
-      const selectionEnd = selectionStart;
-      const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
-      const nextCursorCodeUnits = selectionStart + text.length;
-      runtime.setComposer(nextValue);
-      setComposerCursorCodeUnits(nextCursorCodeUnits);
-    }
-    setSlashSelectedIndex(-1);
-    setFileReferenceSelectedIndex(-1);
-    setFileReferenceSuggestions(null);
-    setDismissedFileReferenceKey(null);
-    setDismissedSlashQueryKey(null);
-    queueMicrotask(() => {
-      composerRichInputRef.current?.focus();
-    });
-  };
-
-  const insertFileReferenceTrigger = () => {
-    insertComposerText("@");
-  };
-
-  const insertSkillTriggerFromPalette = () => {
-    insertComposerText("/");
-  };
-
-  const removeLocalFileAttachment = (path: string) => {
-    removeComposerLocalFileAttachment(runtime.setComposerLocalFileAttachments, path);
-  };
-
-  const removeRewindLocalFileAttachment = (path: string) => {
-    setRewindDraft((current) => {
-      if (!current) {
-        return current;
-      }
-      const localFileAttachments = current.localFileAttachments.filter(
-        (item) => normalizeAttachmentPath(item.path) !== normalizeAttachmentPath(path),
-      );
-      return { ...current, localFileAttachments };
-    });
-  };
-
-  const attachLocalFilePath = useCallback(
-    (filePath: string) => {
-      appendComposerLocalFileAttachment(runtime.setComposerLocalFileAttachments, filePath, {
-        onAfterAttach: () => {
-          queueMicrotask(() => {
-            composerRichInputRef.current?.focus();
-          });
-        },
-      });
-    },
-    [runtime.setComposerLocalFileAttachments],
-  );
-
-  const handleBrowserElementPicked = useCallback(
-    async (attachment: BrowserElementAttachment) => {
-      composerRichInputRef.current?.insertAttachment(attachment);
-      const base64 = attachment.screenshotDataUrl.replace(/^data:image\/png;base64,/, '');
-      const bridge = window.spiritDesktop;
-      if (bridge?.ingestBrowserElementScreenshot) {
-        const filePath = await bridge.ingestBrowserElementScreenshot(base64);
-        if (filePath) {
-          attachLocalFilePath(filePath);
-        }
-      }
-    },
-    [attachLocalFilePath],
-  );
-
-  const attachRewindLocalFilePath = useCallback((filePath: string) => {
-    setRewindDraft((current) => {
-      if (!current) {
-        return current;
-      }
-      const normalizedPath = normalizeAttachmentPath(filePath);
-      if (
-        current.localFileAttachments.some(
-          (item) => normalizeAttachmentPath(item.path) === normalizedPath,
-        )
-      ) {
-        return current;
-      }
-      return {
-        ...current,
-        localFileAttachments: [
-          ...current.localFileAttachments,
-          composerAttachmentViewFromPath(normalizedPath),
-        ],
-      };
-    });
-  }, []);
-
-  const pickLocalFileFromPalette = () => {
-    void runtime.pickLocalFile().then((filePath) => {
-      if (!filePath) {
-        return;
-      }
-      attachLocalFilePath(filePath);
-    });
-  };
-
-  const handleComposerPaste = useCallback(
-    (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
-      if (activeSessionReadOnly || runtime.hostKind !== "electron") {
-        return;
-      }
-
-      const hasClipboardImage = Array.from(event.clipboardData?.items ?? []).some(
-        (item) => item.kind === "file" && item.type.startsWith("image/"),
-      );
-      if (!hasClipboardImage) {
-        return;
-      }
-
-      event.preventDefault();
-      void runtime.ingestClipboardImage().then((filePath) => {
-        if (filePath) {
-          attachLocalFilePath(filePath);
-        }
-      });
-    },
-    [activeSessionReadOnly, attachLocalFilePath, runtime],
-  );
-
-  const handleRewindComposerPaste = useCallback(
-    (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
-      if (activeSessionReadOnly || runtime.hostKind !== "electron" || !rewindDraft) {
-        return;
-      }
-
-      const hasClipboardImage = Array.from(event.clipboardData?.items ?? []).some(
-        (item) => item.kind === "file" && item.type.startsWith("image/"),
-      );
-      if (!hasClipboardImage) {
-        return;
-      }
-
-      event.preventDefault();
-      void runtime.ingestClipboardImage().then((filePath) => {
-        if (filePath) {
-          attachRewindLocalFilePath(filePath);
-        }
-      });
-    },
-    [activeSessionReadOnly, attachRewindLocalFilePath, rewindDraft, runtime],
-  );
-
-  const pickRewindLocalFileFromPalette = () => {
-    void runtime.pickLocalFile().then((filePath) => {
-      if (!filePath) {
-        return;
-      }
-      attachRewindLocalFilePath(filePath);
-    });
-  };
-
-  const submitComposerMessage = () => {
-    const segs = composerRichInputRef.current?.getSegments() ?? [];
-    const fullText = segmentsToMessageText(segs) || runtime.composer;
-    const payload = {
-      text: fullText,
-      ...(runtime.composerLocalFileAttachments.length > 0
-        ? {
-            localFilePaths: runtime.composerLocalFileAttachments.map((item) => item.path),
-          }
-        : {}),
-    };
-
-    if (
-      isEmptySession &&
-      snapshot?.git.isRepository &&
-      snapshot.git.workLocation === "local"
-    ) {
-      const selectedBranch = snapshot.git.selectedBranch ?? snapshot.git.branch;
-      if (selectedBranch && snapshot.git.branch && selectedBranch !== snapshot.git.branch) {
-        pendingComposerSendRef.current = payload;
-        setBranchCheckoutDialogOpen(true);
-        return;
-      }
-    }
-
-    void runtime.sendMessage(payload).then((ok) => {
-      if (ok) {
-        setComposerBrowserElementAttachments([]);
-        composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-      }
-    });
-  };
-
-  const confirmBranchCheckoutAndSend = () => {
-    void (async () => {
-      const pending = pendingComposerSendRef.current;
-      const selectedBranch = snapshot?.git.selectedBranch ?? snapshot?.git.branch;
-      if (!pending || !selectedBranch) {
-        setBranchCheckoutDialogOpen(false);
-        return;
-      }
-
-      const result = await runtime.checkoutGitBranch(selectedBranch);
-      if (result.ok) {
-        pendingComposerSendRef.current = null;
-        setBranchCheckoutBlockedByChanges(false);
-        setBranchCheckoutDialogOpen(false);
-        void runtime.sendMessage(pending).then((ok) => {
-          if (ok) {
-            composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-          }
-        });
-        return;
-      }
-
-      if (result.reason === "local-changes") {
-        setBranchCheckoutBlockedByChanges(true);
-        return;
-      }
-    })();
-  };
-
-  const discardBranchChangesAndCheckoutSend = () => {
-    void (async () => {
-      const pending = pendingComposerSendRef.current;
-      const selectedBranch = snapshot?.git.selectedBranch ?? snapshot?.git.branch;
-      if (!pending || !selectedBranch) {
-        setBranchCheckoutDialogOpen(false);
-        return;
-      }
-
-      const result = await runtime.checkoutGitBranch(selectedBranch, { discardLocalChanges: true });
-      if (!result.ok) {
-        return;
-      }
-
-      pendingComposerSendRef.current = null;
-      setBranchCheckoutBlockedByChanges(false);
-      setBranchCheckoutDialogOpen(false);
-      void runtime.sendMessage(pending).then((ok) => {
-        if (ok) {
-          composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-        }
-      });
-    })();
-  };
-
-  const handleComposerSuggestionKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-    const fileReferenceItems = fileReferenceSuggestions?.suggestions ?? [];
-
-    if (slashQuery) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setDismissedSlashQueryKey(skillSlashQueryKey(slashQuery));
-        setSlashSelectedIndex(-1);
-        return;
-      }
-
-      if (slashSuggestions.length > 0) {
-        if (event.key === "ArrowDown") {
-          event.preventDefault();
-          setSlashSelectedIndex((current) => {
-            if (current < 0) {
-              return 0;
-            }
-            return (current + 1) % slashSuggestions.length;
-          });
-          return;
-        }
-
-        if (event.key === "ArrowUp") {
-          event.preventDefault();
-          setSlashSelectedIndex((current) =>
-            current <= 0 ? slashSuggestions.length - 1 : current - 1,
-          );
-          return;
-        }
-
-        if (event.key === "Tab") {
-          event.preventDefault();
-          const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
-          if (selected) {
-            applySlashSuggestionItem(selected);
-          }
-          return;
-        }
-
-        if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-          event.preventDefault();
-          const selected = slashSuggestions[slashSelectedIndex] ?? slashSuggestions[0];
-          if (selected) {
-            applySlashSuggestionItem(selected);
-          }
-          return;
-        }
-      }
-    }
-
-    if (fileReferenceItems.length > 0) {
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        setFileReferenceSelectedIndex((current) => {
-          if (current < 0) {
-            return 0;
-          }
-          return (current + 1) % fileReferenceItems.length;
-        });
-        return;
-      }
-
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setFileReferenceSelectedIndex((current) =>
-          current <= 0 ? fileReferenceItems.length - 1 : current - 1,
-        );
-        return;
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setDismissedFileReferenceKey(fileReferenceQueryKey);
-        setFileReferenceSelectedIndex(-1);
-        setFileReferenceSuggestions(null);
-        return;
-      }
-
-      if (event.key === "Tab") {
-        event.preventDefault();
-        const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
-        if (selected) {
-          applyFileReferenceSuggestion(selected);
-        }
-        return;
-      }
-
-      if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-        event.preventDefault();
-        const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
-        if (selected) {
-          applyFileReferenceSuggestion(selected);
-        }
-      }
-    }
-  };
-
-  const handleComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-    handleComposerSuggestionKeyDown(event);
-    if (event.defaultPrevented) {
-      return;
-    }
-    // Shift+Tab — 循环切换 Agent 模式（Agent → Plan → Ask → Debug → Agent）
-    if (
-      event.key === 'Tab' &&
-      event.shiftKey &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      !event.nativeEvent.isComposing
-    ) {
-      event.preventDefault();
-      const nextMode = cycleAgentMode(runtime.settings.agentMode);
-      handleComposerAgentModeChange(nextMode);
-      return;
-    }
-    if (
-      pendingApproval &&
-      event.key === "Enter" &&
-      !event.shiftKey &&
-      !event.ctrlKey &&
-      !event.metaKey &&
-      // React synthetic event 的 isComposing 不可靠，必须用 nativeEvent 检测 IME 组合态
-      !event.nativeEvent.isComposing &&
-      runtime.busyAction !== "approve"
-    ) {
-      event.preventDefault();
-      void runtime.submitApproval({ kind: "allow" });
-    }
-  };
 
   const launchSplashActive =
     snapshot === null &&
@@ -1914,10 +1090,10 @@ export default function App() {
               onDeleteRule={runtime.deleteRule}
               onListDreamsOverview={runtime.listDreamsOverview}
               onGenerateSkillNavigate={() => {
-                prefillComposerSkillChip("create-skill");
+                composer.prefillComposerSkillChip("create-skill");
               }}
               onGenerateRuleNavigate={() => {
-                prefillComposerSkillChip("create-rule");
+                composer.prefillComposerSkillChip("create-rule");
               }}
             />
           </div>
@@ -2024,8 +1200,8 @@ export default function App() {
             newSessionBusy={newSessionBusy}
             compactionDemoActive={compactionDemo.active}
             onCompactionDemoStop={compactionDemo.stop}
-            rewindDraft={rewindDraft}
-            onRewindDraftClear={() => setRewindDraft(null)}
+            rewindDraft={messageRewind.rewindDraft}
+            onRewindDraftClear={() => messageRewind.setRewindDraft(null)}
             conversationScrollBedPaddingPx={conversationScrollBedPaddingPx}
             composerDockRef={composerDockRef}
             messages={messages}
@@ -2047,47 +1223,47 @@ export default function App() {
             turnContinue={turnContinue}
             activeSessionReadOnly={activeSessionReadOnly}
             continueBusy={continueBusy}
-            onRewindDraftChange={setRewindDraft}
-            messageRewindComposerEnabled={messageRewindComposerEnabled}
-            rewindRichInputRef={rewindRichInputRef}
+            onRewindDraftChange={messageRewind.setRewindDraft}
+            messageRewindComposerEnabled={composer.messageRewindComposerEnabled}
+            rewindRichInputRef={messageRewind.rewindRichInputRef}
             models={models}
             onOpenSubagentViewer={subagentViewActive ? undefined : handleOpenSubagentViewer}
-            onStartMessageRewind={startMessageRewind}
-            onSubmitMessageRewind={submitMessageRewind}
-            onRewindRemoveLocalFileAttachment={removeRewindLocalFileAttachment}
-            onRewindPickLocalFile={pickRewindLocalFileFromPalette}
-            onRewindPaste={handleRewindComposerPaste}
-            onComposerAgentModeChange={handleComposerAgentModeChange}
+            onStartMessageRewind={messageRewind.startMessageRewind}
+            onSubmitMessageRewind={messageRewind.submitMessageRewind}
+            onRewindRemoveLocalFileAttachment={messageRewind.removeRewindLocalFileAttachment}
+            onRewindPickLocalFile={messageRewind.pickRewindLocalFileFromPalette}
+            onRewindPaste={messageRewind.handleRewindComposerPaste}
+            onComposerAgentModeChange={composer.handleComposerAgentModeChange}
             emptySessionGreeting={emptySessionGreeting}
             showWorkspaceBindingControls={showWorkspaceBindingControls}
-            commitBusy={commitBusy}
+            commitBusy={composer.commitBusy}
             rewindWarnings={rewindWarnings}
             showPendingApprovalInComposer={showPendingApprovalInComposer}
             pendingApproval={pendingApproval}
             showPendingQuestionsInComposer={showPendingQuestionsInComposer}
-            fileReferenceSuggestions={fileReferenceSuggestions}
-            fileReferenceSelectedIndex={fileReferenceSelectedIndex}
-            onFileReferenceSelectedIndexChange={setFileReferenceSelectedIndex}
-            onApplyFileReferenceSuggestion={applyFileReferenceSuggestion}
-            slashQuery={slashQuery}
-            slashSuggestions={slashSuggestions}
-            slashSelectedIndex={slashSelectedIndex}
-            onSlashSelectedIndexChange={setSlashSelectedIndex}
-            onApplySlashSuggestionItem={applySlashSuggestionItem}
-            composerPlaceholder={composerPlaceholder}
-            composerCanSend={composerCanSend}
+            fileReferenceSuggestions={composer.fileReferenceSuggestions}
+            fileReferenceSelectedIndex={composer.fileReferenceSelectedIndex}
+            onFileReferenceSelectedIndexChange={composer.setFileReferenceSelectedIndex}
+            onApplyFileReferenceSuggestion={composer.applyFileReferenceSuggestion}
+            slashQuery={composer.slashQuery}
+            slashSuggestions={composer.slashSuggestions}
+            slashSelectedIndex={composer.slashSelectedIndex}
+            onSlashSelectedIndexChange={composer.setSlashSelectedIndex}
+            onApplySlashSuggestionItem={composer.applySlashSuggestionItem}
+            composerPlaceholder={composer.composerPlaceholder}
+            composerCanSend={composer.composerCanSend}
             conversationInterruptible={conversationInterruptible}
-            composerBrowserElementAttachments={composerBrowserElementAttachments}
-            onComposerBrowserElementAttachmentsChange={setComposerBrowserElementAttachments}
-            onSubmitComposerMessage={submitComposerMessage}
-            composerRichInputRef={composerRichInputRef}
-            onComposerKeyDown={handleComposerKeyDown}
-            onComposerCursorCodeUnitsChange={setComposerCursorCodeUnits}
-            onInsertFileReferenceTrigger={insertFileReferenceTrigger}
-            onPickLocalFileFromPalette={pickLocalFileFromPalette}
-            onInsertSkillTriggerFromPalette={insertSkillTriggerFromPalette}
-            onRemoveLocalFileAttachment={removeLocalFileAttachment}
-            onComposerPaste={handleComposerPaste}
+            composerBrowserElementAttachments={composer.composerBrowserElementAttachments}
+            onComposerBrowserElementAttachmentsChange={composer.setComposerBrowserElementAttachments}
+            onSubmitComposerMessage={composer.submitComposerMessage}
+            composerRichInputRef={composer.composerRichInputRef}
+            onComposerKeyDown={composer.handleComposerKeyDown}
+            onComposerCursorCodeUnitsChange={composer.setComposerCursorCodeUnits}
+            onInsertFileReferenceTrigger={composer.insertFileReferenceTrigger}
+            onPickLocalFileFromPalette={composer.pickLocalFileFromPalette}
+            onInsertSkillTriggerFromPalette={composer.insertSkillTriggerFromPalette}
+            onRemoveLocalFileAttachment={composer.removeLocalFileAttachment}
+            onComposerPaste={composer.handleComposerPaste}
             startImplementingDisabled={startImplementingDisabled}
             workspaceFilesPlanRevealNonce={workspaceFilesPlanRevealNonce}
             workspaceFilesPlanRevealTargetId={workspaceFilesPlanRevealTargetId}
@@ -2102,27 +1278,27 @@ export default function App() {
             activeWorkspaceToolTabId={activeWorkspaceToolTabId}
             onWorkspaceToolTabsChange={setWorkspaceToolTabs}
             onActiveWorkspaceToolTabIdChange={setActiveWorkspaceToolTabId}
-            onBrowserElementPicked={handleBrowserElementPicked}
+            onBrowserElementPicked={composer.handleBrowserElementPicked}
             onBrowserOpenInNewTab={openBrowserUrlInNewTab}
             browserTabEnabled={browserTabEnabled}
             workspaceToolsWidthPx={workspaceToolsWidthPx}
             onWorkspaceToolsWidthPxChange={setWorkspaceToolsWidthPx}
-            gitChipBusy={gitChipBusy}
+            gitChipBusy={composer.gitChipBusy}
           />
         )}
         </div>
       </div>
 
       <ActionPickerDialog
-        open={actionPickerOpen}
-        onOpenChange={setActionPickerOpen}
-        onSelect={runActionPaletteItem}
-        isItemDisabled={isActionPaletteItemDisabled}
+        open={composer.actionPickerOpen}
+        onOpenChange={composer.setActionPickerOpen}
+        onSelect={composer.runActionPaletteItem}
+        isItemDisabled={composer.isActionPaletteItemDisabled}
       />
 
       <WorkspaceFilePickerDialog
-        open={filePickerOpen}
-        onOpenChange={setFilePickerOpen}
+        open={composer.filePickerOpen}
+        onOpenChange={composer.setFilePickerOpen}
         workspaceRoot={snapshot?.workspaceRoot ?? ''}
         workspaceBinding={snapshot?.workspaceBinding ?? 'project'}
         onOpenWorkspaceFile={(relativePath) => {
@@ -2138,83 +1314,21 @@ export default function App() {
           });
         }}
         statHostTextFile={runtime.statHostTextFile}
-        indexReady={workspaceFileIndex.ready}
-        searchWorkspaceFiles={workspaceFileIndex.search}
+        indexReady={composer.workspaceFileIndex.ready}
+        searchWorkspaceFiles={composer.workspaceFileIndex.search}
       />
 
-      <Dialog
-        open={branchCheckoutDialogOpen}
-        onOpenChange={(open) => {
-          setBranchCheckoutDialogOpen(open);
-          if (!open) {
-            pendingComposerSendRef.current = null;
-            setBranchCheckoutBlockedByChanges(false);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md" showCloseButton>
-          <DialogHeader>
-            <DialogTitle>
-              {branchCheckoutBlockedByChanges ? t('app.cannotSwitchBranch') : t('app.switchBranch')}
-            </DialogTitle>
-            <DialogDescription>
-              {branchCheckoutBlockedByChanges ? (
-                <>
-                  {t('app.uncommittedChangesCannotSwitch', { branch: snapshot?.git.selectedBranch ?? snapshot?.git.branch ?? '' })}
-                  {t('app.discardChangesWarning')}
-                </>
-              ) : (
-                <>
-                  {t('app.willSwitchBranch', { branch: snapshot?.git.selectedBranch ?? snapshot?.git.branch ?? '' })}
-                  {snapshot?.git.hasChanges
-                    ? ` ${t('app.uncommittedChangesMayFail')}`
-                    : null}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          {runtime.runtimeError ? (
-            <p className="text-sm leading-relaxed text-destructive">{runtime.runtimeError}</p>
-          ) : null}
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                pendingComposerSendRef.current = null;
-                setBranchCheckoutBlockedByChanges(false);
-                setBranchCheckoutDialogOpen(false);
-              }}
-              disabled={commitBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            {branchCheckoutBlockedByChanges ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="destructive"
-                onClick={discardBranchChangesAndCheckoutSend}
-                disabled={commitBusy}
-              >
-                {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                {t('app.discardAndSwitch')}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                onClick={confirmBranchCheckoutAndSend}
-                disabled={commitBusy}
-              >
-                {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                {t('app.switchAndSend')}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BranchCheckoutDialog
+        open={composer.branchCheckoutDialogOpen}
+        onOpenChange={composer.handleBranchCheckoutDialogOpenChange}
+        branchCheckoutBlockedByChanges={composer.branchCheckoutBlockedByChanges}
+        git={snapshot?.git}
+        runtimeError={runtime.runtimeError}
+        commitBusy={composer.commitBusy}
+        onCancel={composer.cancelBranchCheckoutDialog}
+        onConfirmCheckout={composer.confirmBranchCheckoutAndSend}
+        onDiscardAndCheckout={composer.discardBranchChangesAndCheckoutSend}
+      />
 
     </div>
     </SessionSidebarChromeProvider>
