@@ -414,8 +414,6 @@ export default function App() {
         ) : (
           <ConversationView
             useMicaBackdrop={useMicaBackdrop}
-            workspaceToolsOpen={workspaceTools.workspaceToolsOpen}
-            onToggleWorkspaceTools={() => workspaceTools.setWorkspaceToolsOpen((c) => !c)}
             isEmptySession={surfaceNav.isEmptySession}
             hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
             snapshot={snapshot}
@@ -434,87 +432,98 @@ export default function App() {
             rewindDraft={messageRewind.rewindDraft}
             onRewindDraftClear={() => messageRewind.setRewindDraft(null)}
             conversationScrollBedPaddingPx={conversation.conversationScrollBedPaddingPx}
-            composerDockRef={conversation.composerDockRef}
-            messages={conversation.messages}
-            conversationRenderItems={conversation.conversationRenderItems}
-            composerSessionKey={conversation.composerSessionKey}
-            conversationListScopeKey={conversation.conversationListScopeKey}
-            conversationListRemountEpoch={conversation.conversationListRemountEpoch}
-            conversationPendingAuxState={conversation.conversationPendingAuxState}
-            processGroupManualOpen={conversation.processGroupManualOpen}
-            processGroupManualOpenKey={conversation.processGroupManualOpenKey}
-            onProcessGroupManualOpenChange={(groupId, open) => {
-              conversation.setProcessGroupManualOpen((current) => ({
-                ...current,
-                [conversation.processGroupManualOpenKey(groupId)]: open,
-              }));
+            list={{
+              messages: conversation.messages,
+              conversationRenderItems: conversation.conversationRenderItems,
+              composerSessionKey: conversation.composerSessionKey,
+              conversationListScopeKey: conversation.conversationListScopeKey,
+              conversationListRemountEpoch: conversation.conversationListRemountEpoch,
+              conversationPendingAuxState: conversation.conversationPendingAuxState,
+              processGroupManualOpen: conversation.processGroupManualOpen,
+              processGroupManualOpenKey: conversation.processGroupManualOpenKey,
+              onProcessGroupManualOpenChange: (groupId, open) => {
+                conversation.setProcessGroupManualOpen((current) => ({
+                  ...current,
+                  [conversation.processGroupManualOpenKey(groupId)]: open,
+                }));
+              },
+              shouldPlayProcessSealAnimation: conversation.shouldPlayProcessSealAnimation,
+              runtime,
+              turnContinue: conversation.turnContinue,
+              activeSessionReadOnly: conversation.activeSessionReadOnly,
+              continueBusy: conversation.continueBusy,
+              rewindDraft: messageRewind.rewindDraft,
+              onRewindDraftChange: messageRewind.setRewindDraft,
+              messageRewindComposerEnabled: composer.messageRewindComposerEnabled,
+              rewindRichInputRef: messageRewind.rewindRichInputRef,
+              models: conversation.models,
+              onOpenSubagentViewer: subagentViewActive ? undefined : conversation.handleOpenSubagentViewer,
+              onStartMessageRewind: messageRewind.startMessageRewind,
+              onSubmitMessageRewind: messageRewind.submitMessageRewind,
+              onRewindRemoveLocalFileAttachment: messageRewind.removeRewindLocalFileAttachment,
+              onRewindPickLocalFile: messageRewind.pickRewindLocalFileFromPalette,
+              onRewindPaste: messageRewind.handleRewindComposerPaste,
+              onComposerAgentModeChange: composer.handleComposerAgentModeChange,
             }}
-            shouldPlayProcessSealAnimation={conversation.shouldPlayProcessSealAnimation}
-            runtime={runtime}
-            turnContinue={conversation.turnContinue}
-            activeSessionReadOnly={conversation.activeSessionReadOnly}
-            continueBusy={conversation.continueBusy}
-            onRewindDraftChange={messageRewind.setRewindDraft}
-            messageRewindComposerEnabled={composer.messageRewindComposerEnabled}
-            rewindRichInputRef={messageRewind.rewindRichInputRef}
-            models={conversation.models}
-            onOpenSubagentViewer={subagentViewActive ? undefined : conversation.handleOpenSubagentViewer}
-            onStartMessageRewind={messageRewind.startMessageRewind}
-            onSubmitMessageRewind={messageRewind.submitMessageRewind}
-            onRewindRemoveLocalFileAttachment={messageRewind.removeRewindLocalFileAttachment}
-            onRewindPickLocalFile={messageRewind.pickRewindLocalFileFromPalette}
-            onRewindPaste={messageRewind.handleRewindComposerPaste}
-            onComposerAgentModeChange={composer.handleComposerAgentModeChange}
-            emptySessionGreeting={conversation.emptySessionGreeting}
-            showWorkspaceBindingControls={surfaceNav.showWorkspaceBindingControls}
-            commitBusy={composer.commitBusy}
-            rewindWarnings={conversation.rewindWarnings}
-            showPendingApprovalInComposer={conversation.showPendingApprovalInComposer}
-            pendingApproval={conversation.pendingApproval}
-            showPendingQuestionsInComposer={conversation.showPendingQuestionsInComposer}
-            fileReferenceSuggestions={composer.fileReferenceSuggestions}
-            fileReferenceSelectedIndex={composer.fileReferenceSelectedIndex}
-            onFileReferenceSelectedIndexChange={composer.setFileReferenceSelectedIndex}
-            onApplyFileReferenceSuggestion={composer.applyFileReferenceSuggestion}
-            slashQuery={composer.slashQuery}
-            slashSuggestions={composer.slashSuggestions}
-            slashSelectedIndex={composer.slashSelectedIndex}
-            onSlashSelectedIndexChange={composer.setSlashSelectedIndex}
-            onApplySlashSuggestionItem={composer.applySlashSuggestionItem}
-            composerPlaceholder={composer.composerPlaceholder}
-            composerCanSend={composer.composerCanSend}
-            conversationInterruptible={conversation.conversationInterruptible}
-            composerBrowserElementAttachments={composer.composerBrowserElementAttachments}
-            onComposerBrowserElementAttachmentsChange={composer.setComposerBrowserElementAttachments}
-            onSubmitComposerMessage={composer.submitComposerMessage}
-            composerRichInputRef={composer.composerRichInputRef}
-            onComposerKeyDown={composer.handleComposerKeyDown}
-            onComposerCursorCodeUnitsChange={composer.setComposerCursorCodeUnits}
-            onInsertFileReferenceTrigger={composer.insertFileReferenceTrigger}
-            onPickLocalFileFromPalette={composer.pickLocalFileFromPalette}
-            onInsertSkillTriggerFromPalette={composer.insertSkillTriggerFromPalette}
-            onRemoveLocalFileAttachment={composer.removeLocalFileAttachment}
-            onComposerPaste={composer.handleComposerPaste}
-            startImplementingDisabled={conversation.startImplementingDisabled}
-            workspaceFilesPlanRevealNonce={workspaceTools.workspaceFilesPlanRevealNonce}
-            workspaceFilesPlanRevealTargetId={workspaceTools.workspaceFilesPlanRevealTargetId}
-            workspaceFileRevealNonce={workspaceTools.workspaceFileRevealNonce}
-            workspaceFileRevealTargetId={workspaceTools.workspaceFileRevealTargetId}
-            workspaceFileRevealPath={workspaceTools.workspaceFileRevealPath}
-            workspaceFileRevealAbsolutePath={workspaceTools.workspaceFileRevealAbsolutePath}
-            workspaceFileRevealScope={workspaceTools.workspaceFileRevealScope}
-            workspaceFileRevealViewMode={workspaceTools.workspaceFileRevealViewMode}
-            onOpenWorkspaceFile={workspaceTools.openWorkspaceFile}
-            workspaceToolTabs={workspaceTools.workspaceToolTabs}
-            activeWorkspaceToolTabId={workspaceTools.activeWorkspaceToolTabId}
-            onWorkspaceToolTabsChange={workspaceTools.setWorkspaceToolTabs}
-            onActiveWorkspaceToolTabIdChange={workspaceTools.setActiveWorkspaceToolTabId}
-            onBrowserElementPicked={composer.handleBrowserElementPicked}
-            onBrowserOpenInNewTab={workspaceTools.openBrowserUrlInNewTab}
-            browserTabEnabled={workspaceTools.browserTabEnabled}
-            workspaceToolsWidthPx={workspaceTools.workspaceToolsWidthPx}
-            onWorkspaceToolsWidthPxChange={workspaceTools.setWorkspaceToolsWidthPx}
-            gitChipBusy={composer.gitChipBusy}
+            composerDock={{
+              composerDockRef: conversation.composerDockRef,
+              emptySessionGreeting: conversation.emptySessionGreeting,
+              showWorkspaceBindingControls: surfaceNav.showWorkspaceBindingControls,
+              commitBusy: composer.commitBusy,
+              rewindWarnings: conversation.rewindWarnings,
+              showPendingApprovalInComposer: conversation.showPendingApprovalInComposer,
+              pendingApproval: conversation.pendingApproval,
+              showPendingQuestionsInComposer: conversation.showPendingQuestionsInComposer,
+              fileReferenceSuggestions: composer.fileReferenceSuggestions,
+              fileReferenceSelectedIndex: composer.fileReferenceSelectedIndex,
+              onFileReferenceSelectedIndexChange: composer.setFileReferenceSelectedIndex,
+              onApplyFileReferenceSuggestion: composer.applyFileReferenceSuggestion,
+              slashQuery: composer.slashQuery,
+              slashSuggestions: composer.slashSuggestions,
+              slashSelectedIndex: composer.slashSelectedIndex,
+              onSlashSelectedIndexChange: composer.setSlashSelectedIndex,
+              onApplySlashSuggestionItem: composer.applySlashSuggestionItem,
+              composerPlaceholder: composer.composerPlaceholder,
+              composerCanSend: composer.composerCanSend,
+              conversationInterruptible: conversation.conversationInterruptible,
+              composerBrowserElementAttachments: composer.composerBrowserElementAttachments,
+              onComposerBrowserElementAttachmentsChange: composer.setComposerBrowserElementAttachments,
+              onSubmitComposerMessage: composer.submitComposerMessage,
+              onComposerAgentModeChange: composer.handleComposerAgentModeChange,
+              composerRichInputRef: composer.composerRichInputRef,
+              onComposerKeyDown: composer.handleComposerKeyDown,
+              onComposerCursorCodeUnitsChange: composer.setComposerCursorCodeUnits,
+              onInsertFileReferenceTrigger: composer.insertFileReferenceTrigger,
+              onPickLocalFileFromPalette: composer.pickLocalFileFromPalette,
+              onInsertSkillTriggerFromPalette: composer.insertSkillTriggerFromPalette,
+              onRemoveLocalFileAttachment: composer.removeLocalFileAttachment,
+              onComposerPaste: composer.handleComposerPaste,
+              models: conversation.models,
+            }}
+            workspaceTools={{
+              open: workspaceTools.workspaceToolsOpen,
+              onToggle: () => workspaceTools.setWorkspaceToolsOpen((c) => !c),
+              startImplementingDisabled: conversation.startImplementingDisabled,
+              workspaceFilesPlanRevealNonce: workspaceTools.workspaceFilesPlanRevealNonce,
+              workspaceFilesPlanRevealTargetId: workspaceTools.workspaceFilesPlanRevealTargetId,
+              workspaceFileRevealNonce: workspaceTools.workspaceFileRevealNonce,
+              workspaceFileRevealTargetId: workspaceTools.workspaceFileRevealTargetId,
+              workspaceFileRevealPath: workspaceTools.workspaceFileRevealPath,
+              workspaceFileRevealAbsolutePath: workspaceTools.workspaceFileRevealAbsolutePath,
+              workspaceFileRevealScope: workspaceTools.workspaceFileRevealScope,
+              workspaceFileRevealViewMode: workspaceTools.workspaceFileRevealViewMode,
+              onOpenWorkspaceFile: workspaceTools.openWorkspaceFile,
+              workspaceToolTabs: workspaceTools.workspaceToolTabs,
+              activeWorkspaceToolTabId: workspaceTools.activeWorkspaceToolTabId,
+              onWorkspaceToolTabsChange: workspaceTools.setWorkspaceToolTabs,
+              onActiveWorkspaceToolTabIdChange: workspaceTools.setActiveWorkspaceToolTabId,
+              onBrowserElementPicked: composer.handleBrowserElementPicked,
+              onBrowserOpenInNewTab: workspaceTools.openBrowserUrlInNewTab,
+              browserTabEnabled: workspaceTools.browserTabEnabled,
+              workspaceToolsWidthPx: workspaceTools.workspaceToolsWidthPx,
+              onWorkspaceToolsWidthPxChange: workspaceTools.setWorkspaceToolsWidthPx,
+              gitChipBusy: composer.gitChipBusy,
+            }}
           />
         )}
         </div>
