@@ -1706,14 +1706,6 @@ async function runEarlyToolExecution<
     failed,
   });
   runtime.emitEvent({ kind: 'tool-execution-finished', execution });
-  await runPostToolUseSideEffects(
-    runtime,
-    call,
-    toolInputFromArgumentsJson(call.argumentsJson),
-    output,
-    0,
-    failed,
-  );
   return {
     kind: 'completed',
     request,
