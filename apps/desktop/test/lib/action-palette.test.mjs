@@ -10,8 +10,8 @@ const EN_LABELS = {
   'slash.logSession': 'Export llm_history and API trace',
   'slash.compact': 'Compact the current session context',
   'slash.loop': 'Run autonomously until finish_task',
-  'slash.plan': 'Switch to Plan mode',
-  'slash.ask': 'Switch to Ask mode',
+  'slash.plan': 'Plan without editing code',
+  'slash.ask': 'Read-only help',
 }
 
 const ZH_LABELS = {
