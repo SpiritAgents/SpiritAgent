@@ -237,6 +237,7 @@ import {
   isElectronChrome,
   isMacDesktopPlatform,
   isNativeBackdropBlurSupported,
+  modAltLetterShortcutKbdKeys,
   modLetterShortcutKbdKeys,
   resolveUseMicaBackdrop,
 } from "@/lib/desktop-shell";
@@ -1766,6 +1767,26 @@ function SessionSidebarShortcutKbd() {
   );
 }
 
+function WorkspaceToolsShortcutKbd() {
+  const keys = modAltLetterShortcutKbdKeys("B");
+
+  return (
+    <KbdGroup>
+      {isMacDesktopPlatform() ? (
+        keys.map((key) => <Kbd key={key}>{key}</Kbd>)
+      ) : (
+        <>
+          <Kbd>Ctrl</Kbd>
+          <span>+</span>
+          <Kbd>Alt</Kbd>
+          <span>+</span>
+          <Kbd>B</Kbd>
+        </>
+      )}
+    </KbdGroup>
+  );
+}
+
 function DesktopLayoutChromeBar({
   useMicaBackdrop,
   showWorkspaceToggle,
@@ -1860,22 +1881,30 @@ function DesktopLayoutChromeBar({
       {showTrailingActions ? (
         <div className="flex items-center gap-1">
           {showWorkspaceToggle ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
-              onClick={() => onToggleWorkspaceTools?.()}
-              aria-label={workspaceToolsOpen ? t('app.collapseTools') : t('app.expandTools')}
-              aria-expanded={workspaceToolsOpen}
-              {...(workspaceToolsOpen ? { "aria-controls": "workspace-tools-panel" } : {})}
-            >
-              {workspaceToolsOpen ? (
-                <PanelRightClose className="size-3.5" aria-hidden />
-              ) : (
-                <PanelRightOpen className="size-3.5" aria-hidden />
-              )}
-            </Button>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
+                  onClick={() => onToggleWorkspaceTools?.()}
+                  aria-label={workspaceToolsOpen ? t('app.collapseTools') : t('app.expandTools')}
+                  aria-expanded={workspaceToolsOpen}
+                  {...(workspaceToolsOpen ? { "aria-controls": "workspace-tools-panel" } : {})}
+                >
+                  {workspaceToolsOpen ? (
+                    <PanelRightClose className="size-3.5" aria-hidden />
+                  ) : (
+                    <PanelRightOpen className="size-3.5" aria-hidden />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={4}>
+                {workspaceToolsOpen ? t("app.collapseTools") : t("app.expandTools")}{" "}
+                <WorkspaceToolsShortcutKbd />
+              </TooltipContent>
+            </Tooltip>
           ) : null}
         </div>
       ) : null}
