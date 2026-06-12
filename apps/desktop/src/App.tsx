@@ -2446,7 +2446,7 @@ export default function App() {
       if (!(event.ctrlKey || event.metaKey)) {
         return;
       }
-      if (event.key.toLowerCase() !== "b") {
+      if (event.code !== "KeyB") {
         return;
       }
       if (activeSurfaceRef.current !== "conversation") {
