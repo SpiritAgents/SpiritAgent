@@ -42,23 +42,7 @@ import type { PendingAssistantAux } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
-export type ConversationViewProps = {
-  useMicaBackdrop: boolean;
-  workspaceToolsOpen: boolean;
-  onToggleWorkspaceTools: () => void;
-  isEmptySession: boolean;
-  hideStaleConversationMessages: boolean;
-  snapshot: DesktopSnapshot | null;
-  subagentViewActive: boolean;
-  onExitSubagentViewer: (() => void) | undefined;
-  onNewSession: (() => void) | undefined;
-  newSessionBusy: boolean;
-  compactionDemoActive: boolean;
-  onCompactionDemoStop: () => void;
-  rewindDraft: MessageRewindDraftState | null;
-  onRewindDraftClear: () => void;
-  conversationScrollBedPaddingPx: number;
-  composerDockRef: Ref<HTMLDivElement | null>;
+export type ConversationListSectionProps = {
   messages: readonly ConversationMessageSnapshot[];
   conversationRenderItems: readonly ConversationRenderItem[];
   composerSessionKey: string;
@@ -73,6 +57,7 @@ export type ConversationViewProps = {
   turnContinue: TurnContinuePresentation | undefined;
   activeSessionReadOnly: boolean;
   continueBusy: boolean;
+  rewindDraft: MessageRewindDraftState | null;
   onRewindDraftChange: (
     updater: (current: MessageRewindDraftState | null) => MessageRewindDraftState | null,
   ) => void;
@@ -86,6 +71,10 @@ export type ConversationViewProps = {
   onRewindPickLocalFile: () => void;
   onRewindPaste: (event: ReactClipboardEvent<HTMLTextAreaElement>) => void;
   onComposerAgentModeChange: (mode: DesktopAgentMode) => void;
+};
+
+export type ComposerDockSectionProps = {
+  composerDockRef: Ref<HTMLDivElement | null>;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
   commitBusy: boolean;
@@ -108,6 +97,7 @@ export type ConversationViewProps = {
   composerBrowserElementAttachments: BrowserElementAttachment[];
   onComposerBrowserElementAttachmentsChange: (attachments: BrowserElementAttachment[]) => void;
   onSubmitComposerMessage: () => void;
+  onComposerAgentModeChange: (mode: DesktopAgentMode) => void;
   composerRichInputRef: RefObject<ComposerRichInputHandle | null>;
   onComposerKeyDown: (event: ReactKeyboardEvent<HTMLTextAreaElement>) => void;
   onComposerCursorCodeUnitsChange: (selectionStart: number) => void;
@@ -116,6 +106,12 @@ export type ConversationViewProps = {
   onInsertSkillTriggerFromPalette: () => void;
   onRemoveLocalFileAttachment: (path: string) => void;
   onComposerPaste: (event: ReactClipboardEvent<HTMLTextAreaElement>) => void;
+  models: DesktopSnapshot["config"]["models"];
+};
+
+export type WorkspaceToolsSectionProps = {
+  open: boolean;
+  onToggle: () => void;
   startImplementingDisabled: boolean;
   workspaceFilesPlanRevealNonce: number;
   workspaceFilesPlanRevealTargetId: string | null;
@@ -143,10 +139,27 @@ export type ConversationViewProps = {
   gitChipBusy: boolean;
 };
 
+export type ConversationViewProps = {
+  useMicaBackdrop: boolean;
+  isEmptySession: boolean;
+  hideStaleConversationMessages: boolean;
+  snapshot: DesktopSnapshot | null;
+  subagentViewActive: boolean;
+  onExitSubagentViewer: (() => void) | undefined;
+  onNewSession: (() => void) | undefined;
+  newSessionBusy: boolean;
+  compactionDemoActive: boolean;
+  onCompactionDemoStop: () => void;
+  rewindDraft: MessageRewindDraftState | null;
+  onRewindDraftClear: () => void;
+  conversationScrollBedPaddingPx: number;
+  list: ConversationListSectionProps;
+  composerDock: ComposerDockSectionProps;
+  workspaceTools: WorkspaceToolsSectionProps;
+};
+
 export function ConversationView({
   useMicaBackdrop,
-  workspaceToolsOpen,
-  onToggleWorkspaceTools,
   isEmptySession,
   hideStaleConversationMessages,
   snapshot,
@@ -159,82 +172,9 @@ export function ConversationView({
   rewindDraft,
   onRewindDraftClear,
   conversationScrollBedPaddingPx,
-  composerDockRef,
-  messages,
-  conversationRenderItems,
-  composerSessionKey,
-  conversationListScopeKey,
-  conversationListRemountEpoch,
-  conversationPendingAuxState,
-  processGroupManualOpen,
-  processGroupManualOpenKey,
-  onProcessGroupManualOpenChange,
-  shouldPlayProcessSealAnimation,
-  runtime,
-  turnContinue,
-  activeSessionReadOnly,
-  continueBusy,
-  onRewindDraftChange,
-  messageRewindComposerEnabled,
-  rewindRichInputRef,
-  models,
-  onOpenSubagentViewer,
-  onStartMessageRewind,
-  onSubmitMessageRewind,
-  onRewindRemoveLocalFileAttachment,
-  onRewindPickLocalFile,
-  onRewindPaste,
-  onComposerAgentModeChange,
-  emptySessionGreeting,
-  showWorkspaceBindingControls,
-  commitBusy,
-  rewindWarnings,
-  showPendingApprovalInComposer,
-  pendingApproval,
-  showPendingQuestionsInComposer,
-  fileReferenceSuggestions,
-  fileReferenceSelectedIndex,
-  onFileReferenceSelectedIndexChange,
-  onApplyFileReferenceSuggestion,
-  slashQuery,
-  slashSuggestions,
-  slashSelectedIndex,
-  onSlashSelectedIndexChange,
-  onApplySlashSuggestionItem,
-  composerPlaceholder,
-  composerCanSend,
-  conversationInterruptible,
-  composerBrowserElementAttachments,
-  onComposerBrowserElementAttachmentsChange,
-  onSubmitComposerMessage,
-  composerRichInputRef,
-  onComposerKeyDown,
-  onComposerCursorCodeUnitsChange,
-  onInsertFileReferenceTrigger,
-  onPickLocalFileFromPalette,
-  onInsertSkillTriggerFromPalette,
-  onRemoveLocalFileAttachment,
-  onComposerPaste,
-  startImplementingDisabled,
-  workspaceFilesPlanRevealNonce,
-  workspaceFilesPlanRevealTargetId,
-  workspaceFileRevealNonce,
-  workspaceFileRevealTargetId,
-  workspaceFileRevealPath,
-  workspaceFileRevealAbsolutePath,
-  workspaceFileRevealScope,
-  workspaceFileRevealViewMode,
-  onOpenWorkspaceFile,
-  workspaceToolTabs,
-  activeWorkspaceToolTabId,
-  onWorkspaceToolTabsChange,
-  onActiveWorkspaceToolTabIdChange,
-  onBrowserElementPicked,
-  onBrowserOpenInNewTab,
-  browserTabEnabled,
-  workspaceToolsWidthPx,
-  onWorkspaceToolsWidthPxChange,
-  gitChipBusy,
+  list,
+  composerDock,
+  workspaceTools,
 }: ConversationViewProps) {
   const { t } = useTranslation();
 
@@ -244,8 +184,8 @@ export function ConversationView({
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
           showWorkspaceToggle
-          workspaceToolsOpen={workspaceToolsOpen}
-          onToggleWorkspaceTools={onToggleWorkspaceTools}
+          workspaceToolsOpen={workspaceTools.open}
+          onToggleWorkspaceTools={workspaceTools.onToggle}
           sessionTitle={
             isEmptySession || hideStaleConversationMessages
               ? null
@@ -310,82 +250,82 @@ export function ConversationView({
             >
               {(!isEmptySession || subagentViewActive) && !hideStaleConversationMessages ? (
                 <ConversationList
-                  messages={messages}
-                  conversationRenderItems={conversationRenderItems}
+                  messages={list.messages}
+                  conversationRenderItems={list.conversationRenderItems}
                   subagentViewActive={subagentViewActive}
-                  composerSessionKey={composerSessionKey}
-                  conversationListScopeKey={conversationListScopeKey}
-                  conversationListRemountEpoch={conversationListRemountEpoch}
-                  conversationPendingAuxState={conversationPendingAuxState}
-                  processGroupManualOpen={processGroupManualOpen}
-                  processGroupManualOpenKey={processGroupManualOpenKey}
-                  onProcessGroupManualOpenChange={onProcessGroupManualOpenChange}
-                  shouldPlayProcessSealAnimation={shouldPlayProcessSealAnimation}
+                  composerSessionKey={list.composerSessionKey}
+                  conversationListScopeKey={list.conversationListScopeKey}
+                  conversationListRemountEpoch={list.conversationListRemountEpoch}
+                  conversationPendingAuxState={list.conversationPendingAuxState}
+                  processGroupManualOpen={list.processGroupManualOpen}
+                  processGroupManualOpenKey={list.processGroupManualOpenKey}
+                  onProcessGroupManualOpenChange={list.onProcessGroupManualOpenChange}
+                  shouldPlayProcessSealAnimation={list.shouldPlayProcessSealAnimation}
                   workspaceRoot={snapshot?.workspaceRoot ?? ""}
-                  runtime={runtime}
-                  turnContinue={turnContinue}
-                  activeSessionReadOnly={activeSessionReadOnly}
+                  runtime={list.runtime}
+                  turnContinue={list.turnContinue}
+                  activeSessionReadOnly={list.activeSessionReadOnly}
                   conversationIsBusy={snapshot?.conversation.isBusy === true}
-                  continueBusy={continueBusy}
-                  rewindDraft={rewindDraft}
-                  onRewindDraftChange={onRewindDraftChange}
-                  messageRewindComposerEnabled={messageRewindComposerEnabled}
-                  rewindRichInputRef={rewindRichInputRef}
-                  models={models}
+                  continueBusy={list.continueBusy}
+                  rewindDraft={list.rewindDraft}
+                  onRewindDraftChange={list.onRewindDraftChange}
+                  messageRewindComposerEnabled={list.messageRewindComposerEnabled}
+                  rewindRichInputRef={list.rewindRichInputRef}
+                  models={list.models}
                   catalogHints={snapshot?.config.modelCatalogHints}
-                  activeModel={runtime.settings.activeModel}
-                  agentMode={runtime.settings.agentMode}
-                  onOpenSubagentViewer={onOpenSubagentViewer}
-                  onStartMessageRewind={onStartMessageRewind}
-                  onSubmitMessageRewind={onSubmitMessageRewind}
-                  onRewindRemoveLocalFileAttachment={onRewindRemoveLocalFileAttachment}
-                  onRewindPickLocalFile={onRewindPickLocalFile}
-                  onRewindPaste={onRewindPaste}
-                  onComposerAgentModeChange={onComposerAgentModeChange}
+                  activeModel={list.runtime.settings.activeModel}
+                  agentMode={list.runtime.settings.agentMode}
+                  onOpenSubagentViewer={list.onOpenSubagentViewer}
+                  onStartMessageRewind={list.onStartMessageRewind}
+                  onSubmitMessageRewind={list.onSubmitMessageRewind}
+                  onRewindRemoveLocalFileAttachment={list.onRewindRemoveLocalFileAttachment}
+                  onRewindPickLocalFile={list.onRewindPickLocalFile}
+                  onRewindPaste={list.onRewindPaste}
+                  onComposerAgentModeChange={list.onComposerAgentModeChange}
                 />
               ) : null}
             </div>
           </ScrollArea>
 
           <ComposerDock
-            ref={composerDockRef}
+            ref={composerDock.composerDockRef}
             isEmptySession={isEmptySession}
-            emptySessionGreeting={emptySessionGreeting}
-            showWorkspaceBindingControls={showWorkspaceBindingControls}
+            emptySessionGreeting={composerDock.emptySessionGreeting}
+            showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
             snapshot={snapshot}
-            runtime={runtime}
-            commitBusy={commitBusy}
-            activeSessionReadOnly={activeSessionReadOnly}
-            rewindWarnings={rewindWarnings}
-            showPendingApprovalInComposer={showPendingApprovalInComposer}
-            pendingApproval={pendingApproval}
-            showPendingQuestionsInComposer={showPendingQuestionsInComposer}
-            fileReferenceSuggestions={fileReferenceSuggestions}
-            fileReferenceSelectedIndex={fileReferenceSelectedIndex}
-            onFileReferenceSelectedIndexChange={onFileReferenceSelectedIndexChange}
-            onApplyFileReferenceSuggestion={onApplyFileReferenceSuggestion}
-            slashQuery={slashQuery}
-            slashSuggestions={slashSuggestions}
-            slashSelectedIndex={slashSelectedIndex}
-            onSlashSelectedIndexChange={onSlashSelectedIndexChange}
-            onApplySlashSuggestionItem={onApplySlashSuggestionItem}
-            composerPlaceholder={composerPlaceholder}
-            composerCanSend={composerCanSend}
-            conversationInterruptible={conversationInterruptible}
-            continueBusy={continueBusy}
-            composerBrowserElementAttachments={composerBrowserElementAttachments}
-            onComposerBrowserElementAttachmentsChange={onComposerBrowserElementAttachmentsChange}
-            onSubmitComposerMessage={onSubmitComposerMessage}
-            onComposerAgentModeChange={onComposerAgentModeChange}
-            composerRichInputRef={composerRichInputRef}
-            onComposerKeyDown={onComposerKeyDown}
-            onComposerCursorCodeUnitsChange={onComposerCursorCodeUnitsChange}
-            onInsertFileReferenceTrigger={onInsertFileReferenceTrigger}
-            onPickLocalFileFromPalette={onPickLocalFileFromPalette}
-            onInsertSkillTriggerFromPalette={onInsertSkillTriggerFromPalette}
-            onRemoveLocalFileAttachment={onRemoveLocalFileAttachment}
-            onComposerPaste={onComposerPaste}
-            models={models}
+            runtime={list.runtime}
+            commitBusy={composerDock.commitBusy}
+            activeSessionReadOnly={list.activeSessionReadOnly}
+            rewindWarnings={composerDock.rewindWarnings}
+            showPendingApprovalInComposer={composerDock.showPendingApprovalInComposer}
+            pendingApproval={composerDock.pendingApproval}
+            showPendingQuestionsInComposer={composerDock.showPendingQuestionsInComposer}
+            fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
+            fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
+            onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
+            onApplyFileReferenceSuggestion={composerDock.onApplyFileReferenceSuggestion}
+            slashQuery={composerDock.slashQuery}
+            slashSuggestions={composerDock.slashSuggestions}
+            slashSelectedIndex={composerDock.slashSelectedIndex}
+            onSlashSelectedIndexChange={composerDock.onSlashSelectedIndexChange}
+            onApplySlashSuggestionItem={composerDock.onApplySlashSuggestionItem}
+            composerPlaceholder={composerDock.composerPlaceholder}
+            composerCanSend={composerDock.composerCanSend}
+            conversationInterruptible={composerDock.conversationInterruptible}
+            continueBusy={list.continueBusy}
+            composerBrowserElementAttachments={composerDock.composerBrowserElementAttachments}
+            onComposerBrowserElementAttachmentsChange={composerDock.onComposerBrowserElementAttachmentsChange}
+            onSubmitComposerMessage={composerDock.onSubmitComposerMessage}
+            onComposerAgentModeChange={composerDock.onComposerAgentModeChange}
+            composerRichInputRef={composerDock.composerRichInputRef}
+            onComposerKeyDown={composerDock.onComposerKeyDown}
+            onComposerCursorCodeUnitsChange={composerDock.onComposerCursorCodeUnitsChange}
+            onInsertFileReferenceTrigger={composerDock.onInsertFileReferenceTrigger}
+            onPickLocalFileFromPalette={composerDock.onPickLocalFileFromPalette}
+            onInsertSkillTriggerFromPalette={composerDock.onInsertSkillTriggerFromPalette}
+            onRemoveLocalFileAttachment={composerDock.onRemoveLocalFileAttachment}
+            onComposerPaste={composerDock.onComposerPaste}
+            models={composerDock.models}
             useMicaBackdrop={useMicaBackdrop}
           />
         </div>
@@ -394,44 +334,44 @@ export function ConversationView({
         <WorkspaceToolsDock
           useMicaBackdrop={useMicaBackdrop}
           workspaceRoot={snapshot?.workspaceRoot ?? ""}
-          listExplorerChildren={runtime.listWorkspaceExplorerChildren}
-          readWorkspaceTextFile={runtime.readWorkspaceTextFile}
-          writeWorkspaceTextFile={runtime.writeWorkspaceTextFile}
-          readHostTextFile={runtime.readHostTextFile}
-          writeHostTextFile={runtime.writeHostTextFile}
-          readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
+          listExplorerChildren={list.runtime.listWorkspaceExplorerChildren}
+          readWorkspaceTextFile={list.runtime.readWorkspaceTextFile}
+          writeWorkspaceTextFile={list.runtime.writeWorkspaceTextFile}
+          readHostTextFile={list.runtime.readHostTextFile}
+          writeHostTextFile={list.runtime.writeHostTextFile}
+          readManagedImagePreviewDataUrl={list.runtime.readManagedImagePreviewDataUrl}
           plan={snapshot?.plan ?? { path: "", exists: false }}
           onStartImplementing={() => {
-            onComposerAgentModeChange("agent");
-            void runtime.submitStartImplementing();
+            composerDock.onComposerAgentModeChange("agent");
+            void list.runtime.submitStartImplementing();
           }}
           startImplementingDisabled={
-            startImplementingDisabled || !snapshot?.plan?.exists
+            workspaceTools.startImplementingDisabled || !snapshot?.plan?.exists
           }
-          autoRevealPlanNonce={workspaceFilesPlanRevealNonce}
-          planRevealTabId={workspaceFilesPlanRevealTargetId}
-          autoRevealFileNonce={workspaceFileRevealNonce}
-          fileRevealTabId={workspaceFileRevealTargetId}
-          fileRevealPath={workspaceFileRevealPath}
-          fileRevealAbsolutePath={workspaceFileRevealAbsolutePath}
-          fileRevealScope={workspaceFileRevealScope}
-          fileRevealViewMode={workspaceFileRevealViewMode}
-          onOpenWorkspaceFile={onOpenWorkspaceFile}
-          tabs={workspaceToolTabs}
-          activeTabId={activeWorkspaceToolTabId}
-          onTabsChange={onWorkspaceToolTabsChange}
-          onActiveTabIdChange={onActiveWorkspaceToolTabIdChange}
-          onBrowserElementPicked={onBrowserElementPicked}
-          onBrowserOpenInNewTab={onBrowserOpenInNewTab}
-          browserTabEnabled={browserTabEnabled}
-          open={workspaceToolsOpen}
-          widthPx={workspaceToolsWidthPx}
-          onWidthPxChange={onWorkspaceToolsWidthPxChange}
+          autoRevealPlanNonce={workspaceTools.workspaceFilesPlanRevealNonce}
+          planRevealTabId={workspaceTools.workspaceFilesPlanRevealTargetId}
+          autoRevealFileNonce={workspaceTools.workspaceFileRevealNonce}
+          fileRevealTabId={workspaceTools.workspaceFileRevealTargetId}
+          fileRevealPath={workspaceTools.workspaceFileRevealPath}
+          fileRevealAbsolutePath={workspaceTools.workspaceFileRevealAbsolutePath}
+          fileRevealScope={workspaceTools.workspaceFileRevealScope}
+          fileRevealViewMode={workspaceTools.workspaceFileRevealViewMode}
+          onOpenWorkspaceFile={workspaceTools.onOpenWorkspaceFile}
+          tabs={workspaceTools.workspaceToolTabs}
+          activeTabId={workspaceTools.activeWorkspaceToolTabId}
+          onTabsChange={workspaceTools.onWorkspaceToolTabsChange}
+          onActiveTabIdChange={workspaceTools.onActiveWorkspaceToolTabIdChange}
+          onBrowserElementPicked={workspaceTools.onBrowserElementPicked}
+          onBrowserOpenInNewTab={workspaceTools.onBrowserOpenInNewTab}
+          browserTabEnabled={workspaceTools.browserTabEnabled}
+          open={workspaceTools.open}
+          widthPx={workspaceTools.workspaceToolsWidthPx}
+          onWidthPxChange={workspaceTools.onWorkspaceToolsWidthPxChange}
           gitSnapshot={snapshot?.git}
-          gitChipBusy={gitChipBusy}
-          readGitWorkingTree={runtime.readGitWorkingTree}
-          readGitHistory={runtime.readGitHistory}
-          submitGitChip={runtime.submitGitChip}
+          gitChipBusy={workspaceTools.gitChipBusy}
+          readGitWorkingTree={list.runtime.readGitWorkingTree}
+          readGitHistory={list.runtime.readGitHistory}
+          submitGitChip={list.runtime.submitGitChip}
         />
       </div>
     </div>
