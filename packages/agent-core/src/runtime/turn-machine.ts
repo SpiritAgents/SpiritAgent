@@ -208,6 +208,7 @@ export async function resumePendingApproval<
       pending.toolName,
       pending.remainingCalls,
       pending.turn,
+      pending.argumentsJson,
     );
   }
 
