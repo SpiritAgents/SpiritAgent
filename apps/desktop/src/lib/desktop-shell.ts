@@ -115,3 +115,19 @@ export function isModAltShortcutPressed(event: KeyboardModifierState): boolean {
   }
   return isModShortcutPressed(event);
 }
+
+/** Windows Electron：使用 `titleBarOverlay` + 自绘顶栏；macOS 仍走系统菜单栏 */
+export function isWin32ElectronShell(): boolean {
+  if (!isElectronChrome() || typeof navigator === "undefined") {
+    return false;
+  }
+  return /Windows/i.test(navigator.userAgent);
+}
+
+/** macOS Electron：`titleBarStyle: hiddenInset`，需预留红绿灯安全区 */
+export function isDarwinElectronShell(): boolean {
+  if (!isElectronChrome()) {
+    return false;
+  }
+  return window.spiritDesktop?.platform === "darwin";
+}
