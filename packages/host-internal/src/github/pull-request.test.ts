@@ -37,7 +37,7 @@ test('mapPullRequestDetail includes labels and merge metadata', () => {
     draft: true,
     merged_at: null,
     mergeable: true,
-    user: { login: 'hubot' },
+    user: { login: 'octocat' },
     head: { ref: 'tests' },
     base: { ref: 'main' },
     labels: [{ name: 'enhancement' }, { name: 'ready' }],
