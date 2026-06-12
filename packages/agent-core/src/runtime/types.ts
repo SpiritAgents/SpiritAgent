@@ -135,6 +135,10 @@ export type RuntimeEvent<ToolRequest> =
       summaryPreview?: string;
     }
   | {
+      kind: 'pre-compaction-archive-persist-failed';
+      error: string;
+    }
+  | {
       kind: 'approval-requested';
       approval: RuntimePendingApproval<ToolRequest, unknown>;
     }

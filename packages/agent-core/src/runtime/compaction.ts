@@ -70,7 +70,11 @@ async function persistPreCompactionArchivePath<
       archive,
       ...(sessionId !== undefined ? { sessionId } : {}),
     });
-  } catch {
+  } catch (error: unknown) {
+    runtime.emitEvent({
+      kind: 'pre-compaction-archive-persist-failed',
+      error: renderError(error),
+    });
     return undefined;
   }
 }
