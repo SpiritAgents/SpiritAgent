@@ -1,0 +1,191 @@
+import { useCallback, useEffect, useRef, useState, type ClipboardEvent as ReactClipboardEvent } from "react";
+
+import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
+import { segmentsToMessageText } from "@/components/composer-rich-input";
+import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
+import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
+import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
+import {
+  messageContentToRichSegments,
+  segmentsToAttachments,
+  segmentsToPlainText,
+} from "@/lib/composer-segment-model";
+import {
+  composerAttachmentViewFromPath,
+  normalizeSlashPath as normalizeAttachmentPath,
+  snapshotsToComposerAttachmentViews,
+} from "@/lib/local-file-attachments";
+import { canStartMessageRewind } from "@/lib/message-rewind-eligibility";
+import type { ConversationMessageSnapshot, MessageRewindDraftState } from "@/types";
+
+type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
+type SubagentViewer = ReturnType<typeof useSubagentViewer>;
+
+export type UseMessageRewindOptions = {
+  runtime: DesktopRuntime;
+  messages: readonly ConversationMessageSnapshot[];
+  subagentViewer: SubagentViewer;
+  messageRewindComposerEnabled: boolean;
+  activeSessionReadOnly: boolean;
+};
+
+export function useMessageRewind({
+  runtime,
+  messages,
+  subagentViewer,
+  messageRewindComposerEnabled,
+  activeSessionReadOnly,
+}: UseMessageRewindOptions) {
+  const [rewindDraft, setRewindDraft] = useState<MessageRewindDraftState | null>(null);
+  const rewindRichInputRef = useRef<ComposerRichInputHandle | null>(null);
+
+  useEffect(() => {
+    if (rewindDraft && subagentViewer.active) {
+      void subagentViewer.close();
+    }
+  }, [rewindDraft, subagentViewer]);
+
+  useLocalFileAttachmentPreviews(
+    rewindDraft?.localFileAttachments ?? [],
+    (update) => {
+      setRewindDraft((current) => {
+        if (!current) {
+          return current;
+        }
+        const localFileAttachments =
+          typeof update === "function" ? update(current.localFileAttachments) : update;
+        return { ...current, localFileAttachments };
+      });
+    },
+    runtime.readLocalImagePreviewDataUrl,
+  );
+
+  useEffect(() => {
+    if (!rewindDraft) {
+      return;
+    }
+    const anchor = messages[rewindDraft.listIndex];
+    const stillAvailable =
+      anchor?.id === rewindDraft.messageId && anchor.canRewind === true;
+    if (!stillAvailable) {
+      setRewindDraft(null);
+    }
+  }, [messages, rewindDraft]);
+
+  const startMessageRewind = useCallback(
+    (message: ConversationMessageSnapshot, listIndex: number) => {
+      if (!canStartMessageRewind({ messageRewindComposerEnabled, message })) {
+        return;
+      }
+      const segments = messageContentToRichSegments(message.content, String(message.id));
+      setRewindDraft({
+        messageId: message.id,
+        listIndex,
+        text: segmentsToPlainText(segments),
+        browserElementAttachments: segmentsToAttachments(segments),
+        localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
+      });
+    },
+    [messageRewindComposerEnabled],
+  );
+
+  const submitMessageRewind = useCallback(() => {
+    if (!rewindDraft) {
+      return;
+    }
+    const segs = rewindRichInputRef.current?.getSegments() ?? [];
+    const wireText = segmentsToMessageText(segs) || rewindDraft.text;
+    void runtime
+      .rewindAndSubmitMessage({
+        messageId: rewindDraft.messageId,
+        text: wireText,
+        ...(rewindDraft.localFileAttachments.length > 0
+          ? { localFilePaths: rewindDraft.localFileAttachments.map((item) => item.path) }
+          : {}),
+      })
+      .then((ok) => {
+        if (ok) {
+          setRewindDraft(null);
+        }
+      });
+  }, [rewindDraft, runtime]);
+
+  const removeRewindLocalFileAttachment = useCallback((path: string) => {
+    setRewindDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const localFileAttachments = current.localFileAttachments.filter(
+        (item) => normalizeAttachmentPath(item.path) !== normalizeAttachmentPath(path),
+      );
+      return { ...current, localFileAttachments };
+    });
+  }, []);
+
+  const attachRewindLocalFilePath = useCallback((filePath: string) => {
+    setRewindDraft((current) => {
+      if (!current) {
+        return current;
+      }
+      const normalizedPath = normalizeAttachmentPath(filePath);
+      if (
+        current.localFileAttachments.some(
+          (item) => normalizeAttachmentPath(item.path) === normalizedPath,
+        )
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        localFileAttachments: [
+          ...current.localFileAttachments,
+          composerAttachmentViewFromPath(normalizedPath),
+        ],
+      };
+    });
+  }, []);
+
+  const pickRewindLocalFileFromPalette = useCallback(() => {
+    void runtime.pickLocalFile().then((filePath) => {
+      if (!filePath) {
+        return;
+      }
+      attachRewindLocalFilePath(filePath);
+    });
+  }, [attachRewindLocalFilePath, runtime]);
+
+  const handleRewindComposerPaste = useCallback(
+    (event: ReactClipboardEvent<HTMLTextAreaElement>) => {
+      if (activeSessionReadOnly || runtime.hostKind !== "electron" || !rewindDraft) {
+        return;
+      }
+
+      const hasClipboardImage = Array.from(event.clipboardData?.items ?? []).some(
+        (item) => item.kind === "file" && item.type.startsWith("image/"),
+      );
+      if (!hasClipboardImage) {
+        return;
+      }
+
+      event.preventDefault();
+      void runtime.ingestClipboardImage().then((filePath) => {
+        if (filePath) {
+          attachRewindLocalFilePath(filePath);
+        }
+      });
+    },
+    [activeSessionReadOnly, attachRewindLocalFilePath, rewindDraft, runtime],
+  );
+
+  return {
+    rewindDraft,
+    setRewindDraft,
+    rewindRichInputRef,
+    startMessageRewind,
+    submitMessageRewind,
+    removeRewindLocalFileAttachment,
+    attachRewindLocalFilePath,
+    pickRewindLocalFileFromPalette,
+    handleRewindComposerPaste,
+  };
+}
