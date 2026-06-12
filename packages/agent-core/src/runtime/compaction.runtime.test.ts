@@ -101,3 +101,67 @@ test('compactHistoryImmediate persists archive without post-processing compact s
     .join('');
   assert.equal(compactText, `${COMPACT_SUMMARY_PREFIX}\ncompact summary`);
 });
+
+test('compactHistoryImmediate emits event when pre-compaction archive persist fails', async () => {
+  const history: LlmMessage[] = [
+    { role: 'user', content: createLlmMessageContentFromText('hello') },
+  ];
+
+  const llmTransport: LlmTransport<undefined, TestState> = {
+    startToolAgentRound: async () => {
+      throw new Error('not used');
+    },
+    async compactHistoryManual(_config, targetHistory) {
+      targetHistory.splice(0, targetHistory.length, {
+        role: 'system',
+        content: createLlmMessageContentFromText(`${COMPACT_SUMMARY_PREFIX}\nsummary`),
+      });
+      return { droppedMessages: 0, beforeLength: 1, afterLength: 1 };
+    },
+    compactSummaryText: () => 'summary',
+    isContextOverflowError: () => false,
+    llmHistoryAsApiMessages: () => [],
+    llmSystemPromptsForExport: () => ({}),
+  };
+
+  const events: Array<{ kind: string; error?: string }> = [];
+  const options: AgentRuntimeOptions<undefined, TestState, never> = {
+    config: undefined,
+    llmTransport,
+    toolExecutor: {
+      execute: async () => {
+        throw new Error('not used');
+      },
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    createToolAgentState: () => ({ messages: [] }),
+    appendToolResultMessage: (state) => state,
+    extractAssistantText: () => undefined,
+    persistPreCompactionHistory: async () => {
+      throw new Error('disk full');
+    },
+  };
+
+  const runtime: CompactionRuntime<undefined, TestState, never> = {
+    options,
+    historyStore: history,
+    compactionTextStore: '',
+    pendingHistoryCompaction: undefined,
+    completedManualHistoryCompactionResultStore: undefined,
+    emitEvent: (event) => {
+      events.push(event);
+    },
+    completeTurn: () => {},
+    startToolAgentRoundAsync: () => {},
+    startStreamingRound: async () => {},
+    takeCompletedManualHistoryCompactionResult: () => undefined,
+    isBusy: () => false,
+    poll: async () => {},
+  };
+
+  const result = await compactHistoryImmediate(runtime);
+
+  assert.equal(result.preCompactionArchivePath, undefined);
+  assert.equal(events.length, 1);
+  assert.equal(events[0]?.kind, 'pre-compaction-archive-persist-failed');
+  assert.match(events[0]?.error ?? '', /disk full/);
+});
