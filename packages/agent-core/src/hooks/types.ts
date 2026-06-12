@@ -15,7 +15,7 @@ export const HOOK_EVENT_NAMES = [
 ] as const;
 
 export type HookEventName = (typeof HOOK_EVENT_NAMES)[number];
-export type HookPermission = 'allow' | 'deny';
+export type HookPermission = 'allow' | 'deny' | 'ask';
 export type HookConfigScope = 'user' | 'workspace';
 
 export interface HookDefinition {
@@ -124,6 +124,8 @@ export interface HookExecutionRecord {
 export interface HookRunResult {
   records: HookExecutionRecord[];
   denied: boolean;
+  /** Aggregated permission from pre-event hooks (`submitPrompt`, `preToolUse`, `subagentStart`). */
+  permission: HookPermission | undefined;
   userMessage: string | undefined;
   agentMessage: string | undefined;
   updatedInput: JsonObject | undefined;
@@ -157,12 +159,27 @@ export function emptyHookRunResult(): HookRunResult {
   return {
     records: [],
     denied: false,
+    permission: undefined,
     userMessage: undefined,
     agentMessage: undefined,
     updatedInput: undefined,
     additionalContexts: [],
     followupMessage: undefined,
   };
+}
+
+/** Most restrictive permission wins when chaining pre-event hooks. */
+export function mergePreEventHookPermission(
+  current: HookPermission | undefined,
+  next: HookPermission,
+): HookPermission {
+  if (current === 'deny' || next === 'deny') {
+    return 'deny';
+  }
+  if (current === 'ask' || next === 'ask') {
+    return 'ask';
+  }
+  return 'allow';
 }
 
 export function isPreHookEvent(event: HookEventName): boolean {

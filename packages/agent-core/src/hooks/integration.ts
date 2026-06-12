@@ -133,6 +133,7 @@ export async function runPreToolUseHook<
     return {
       records: [],
       denied: false,
+      permission: undefined,
       userMessage: undefined,
       agentMessage: undefined,
       updatedInput: undefined,
@@ -167,6 +168,7 @@ export async function runPostToolUseHook<
     return {
       records: [],
       denied: false,
+      permission: undefined,
       userMessage: undefined,
       agentMessage: undefined,
       updatedInput: undefined,
@@ -196,6 +198,7 @@ export async function runSubmitPromptHook<
     return {
       records: [],
       denied: false,
+      permission: undefined,
       userMessage: undefined,
       agentMessage: undefined,
       updatedInput: undefined,

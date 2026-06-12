@@ -1,9 +1,11 @@
 import {
   emptyHookRunResult,
+  mergePreEventHookPermission,
   serializeHookInput,
   type HookCommandOutput,
   type HookEventName,
   type HookInput,
+  type HookPermission,
   type HookRunResult,
   type HookRunner,
   type HookRunnerContext,
@@ -12,6 +14,33 @@ import {
 
 import { runCommandHook } from './command-runner.js';
 import { listHookDefinitionsForInput, loadHooksConfig, type LoadedHooksConfig } from './loader.js';
+
+function applyPreEventPermission(
+  aggregate: HookRunResult,
+  permission: HookPermission,
+  output: HookCommandOutput,
+): HookRunResult {
+  const merged = aggregate.permission
+    ? mergePreEventHookPermission(aggregate.permission, permission)
+    : permission;
+
+  if (merged === 'deny') {
+    return {
+      ...aggregate,
+      denied: true,
+      permission: 'deny',
+      userMessage: output.userMessage ?? aggregate.userMessage,
+      agentMessage: output.agentMessage ?? aggregate.agentMessage,
+    };
+  }
+
+  return {
+    ...aggregate,
+    permission: merged,
+    userMessage: output.userMessage ?? aggregate.userMessage,
+    agentMessage: output.agentMessage ?? aggregate.agentMessage,
+  };
+}
 
 function applyOutput(
   aggregate: HookRunResult,
@@ -22,13 +51,11 @@ function applyOutput(
     return aggregate;
   }
 
-  if (isPreHookEvent(event) && output.permission === 'deny') {
-    return {
-      ...aggregate,
-      denied: true,
-      userMessage: output.userMessage ?? aggregate.userMessage,
-      agentMessage: output.agentMessage ?? aggregate.agentMessage,
-    };
+  if (isPreHookEvent(event) && output.permission) {
+    aggregate = applyPreEventPermission(aggregate, output.permission, output);
+    if (aggregate.denied) {
+      return aggregate;
+    }
   }
 
   if (output.updatedInput) {
@@ -81,6 +108,7 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
 
       if (result.denied) {
         aggregate.denied = true;
+        aggregate.permission = 'deny';
         aggregate.userMessage = result.effectiveOutput?.userMessage ?? aggregate.userMessage;
         aggregate.agentMessage = result.effectiveOutput?.agentMessage ?? aggregate.agentMessage;
         break;
