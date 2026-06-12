@@ -38,8 +38,6 @@ import {
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   createLlmMessageContentFromTextAndImages,
-  llmMessageHasImages,
-  llmMessageHasVideos,
   llmMessageTextContent,
 } from '../ports.js';
 import type {
@@ -61,6 +59,7 @@ import type {
 } from '../ports.js';
 import {
   COMPACT_SUMMARY_PREFIX,
+  buildCompactHistoryPromptMessages,
   buildToolAgentHostPrompt,
   cloneJsonValue,
   isJsonObject,
@@ -476,31 +475,7 @@ export class AiSdkOpenAiCompatibleTransport
       };
     }
 
-    const promptMessages = openAiMessagesToAiSdkMessages([
-      {
-        role: 'system',
-        content: [
-          '请将以下对话压缩为后续推理可复用的系统摘要。',
-          '保留：用户目标、关键约束、已验证结论、失败尝试、未完成事项。',
-          '不要保留寒暄。',
-          '输出纯文本摘要。',
-        ].join('\n'),
-      },
-      {
-        role: 'user',
-        content: history
-          .map((message) => {
-            const text = llmMessageTextContent(message.content);
-            const mediaNote = llmMessageHasImages(message.content)
-              ? '\n[images attached]'
-              : llmMessageHasVideos(message.content)
-                ? '\n[videos attached]'
-                : '';
-            return `${message.role.toUpperCase()}: ${text}${mediaNote}`;
-          })
-          .join('\n\n'),
-      },
-    ]);
+    const promptMessages = openAiMessagesToAiSdkMessages(buildCompactHistoryPromptMessages(history));
     const compactConfig: OpenAiTransportConfig = {
       ...config,
       model: config.compactModel ?? config.model,

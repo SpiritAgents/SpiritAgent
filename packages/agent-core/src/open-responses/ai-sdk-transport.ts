@@ -19,9 +19,9 @@ import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
 } from '../openai/json-schema.js';
-import { llmMessageHasImages, llmMessageHasVideos, llmMessageTextContent } from '../ports.js';
 import {
   COMPACT_SUMMARY_PREFIX,
+  buildCompactHistoryPromptMessages,
   buildToolAgentHostPrompt,
   cloneJsonValue,
   isJsonObject,
@@ -367,31 +367,9 @@ export class AiSdkOpenResponsesTransport
       };
     }
 
-    const promptMessages = openAiMessagesToResponsesAiSdkMessages([
-      {
-        role: 'system',
-        content: [
-          'Summarize the following conversation into a reusable system summary for later turns.',
-          'Preserve: user goals, key constraints, verified conclusions, failed attempts, and open items.',
-          'Omit small talk.',
-          'Output plain text only.',
-        ].join('\n'),
-      },
-      {
-        role: 'user',
-        content: history
-          .map((message) => {
-            const text = llmMessageTextContent(message.content);
-            const mediaNote = llmMessageHasImages(message.content)
-              ? '\n[images attached]'
-              : llmMessageHasVideos(message.content)
-                ? '\n[videos attached]'
-                : '';
-            return `${message.role.toUpperCase()}: ${text}${mediaNote}`;
-          })
-          .join('\n\n'),
-      },
-    ]);
+    const promptMessages = openAiMessagesToResponsesAiSdkMessages(
+      buildCompactHistoryPromptMessages(history),
+    );
     const compactConfig: OpenResponsesTransportConfig = {
       ...config,
       model: config.compactModel ?? config.model,
