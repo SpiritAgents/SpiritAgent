@@ -66,9 +66,8 @@ export function WorkspacePrDetailSkeleton({
     >
       <ScrollArea className="shrink-0 overflow-hidden" type="auto" style={{ maxHeight: "38%" }}>
         <header className="space-y-2 px-3 pt-3 pb-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0">
             <PrSkeletonBlock className="h-4 w-[min(100%,18rem)] max-w-full" />
-            <PrSkeletonBlock className="h-5 w-14 rounded-full" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <PrSkeletonBlock className="h-5 w-16 rounded-full" />
