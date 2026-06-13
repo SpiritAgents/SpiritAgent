@@ -57,6 +57,21 @@ function pullRequestSummaryFromDetail(detail: GitHubPullRequestDetail): GitHubPu
   };
 }
 
+function isSamePullRequestRequest(
+  detail: GitHubPullRequestDetail | null,
+  repository: GitHubPullRequestForBranchResult["repository"],
+  request: GetGitHubPullRequestDetailRequest,
+): boolean {
+  if (!detail || !repository) {
+    return false;
+  }
+  return (
+    detail.number === request.number &&
+    repository.owner === request.owner &&
+    repository.repo === request.repo
+  );
+}
+
 export type WorkspacePrTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
   isActive: boolean;
@@ -137,7 +152,9 @@ export function WorkspacePrTab({
   const prevBranchRef = useRef<string | undefined>(undefined);
   const pinnedPullRequestRequestRef = useRef<GetGitHubPullRequestDetailRequest | null>(null);
   const detailRef = useRef<GitHubPullRequestDetail | null>(null);
+  const branchResultRef = useRef<GitHubPullRequestForBranchResult | null>(null);
   detailRef.current = detail;
+  branchResultRef.current = branchResult;
 
   const refreshAuthStatus = useCallback(async () => {
     if (!prTabEnabled) {
@@ -158,6 +175,11 @@ export function WorkspacePrTab({
     ) => {
       const background = options?.background ?? false;
       if (!background) {
+        setDetail(null);
+        setConversation(null);
+        setFilesSnapshot(null);
+        setCommitsSnapshot(null);
+        setChecksSnapshot(null);
         setLoadingDetail(true);
         setLoadingConversation(true);
         setLoadingChanges(true);
@@ -325,7 +347,11 @@ export function WorkspacePrTab({
     if (pinnedRequest) {
       setError(null);
       await loadPullRequestBundle(pinnedRequest, {
-        background: detailRef.current != null,
+        background: isSamePullRequestRequest(
+          detailRef.current,
+          branchResultRef.current?.repository,
+          pinnedRequest,
+        ),
       });
       return;
     }
@@ -394,18 +420,15 @@ export function WorkspacePrTab({
     }
 
     const request = pinnedPullRequestRequestRef.current;
-    const currentDetail = detailRef.current;
-    const background =
-      currentDetail != null &&
-      currentDetail.number === request.number &&
-      branchResult?.repository?.owner === request.owner &&
-      branchResult?.repository?.repo === request.repo;
+    const background = isSamePullRequestRequest(
+      detailRef.current,
+      branchResultRef.current?.repository,
+      request,
+    );
 
     void loadPullRequestBundle(request, { background });
   }, [
     authStatus.connected,
-    branchResult?.repository?.owner,
-    branchResult?.repository?.repo,
     loadPullRequestBundle,
     prRevealEnabled,
     prRevealNonce,
