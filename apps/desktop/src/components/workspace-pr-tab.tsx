@@ -5,6 +5,7 @@ import { GitPullRequest } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WorkspacePrDetailView } from "@/components/workspace-pr-detail-view";
 import { GITHUB_PR_CHECKS_DEMO, GITHUB_PR_COMMITS_DEMO, GITHUB_PR_CONVERSATION_DEMO, GITHUB_PR_DETAIL_DEMO, GITHUB_PR_FILES_DEMO } from "@/lib/github-pr-ui-demo";
+import type { GitHubPullRequestRevealRequest } from "@/lib/workspace-pr-navigation";
 import { cn } from "@/lib/utils";
 import type {
   DesktopGitSnapshot,
@@ -12,6 +13,7 @@ import type {
   GitHubAuthStatus,
   GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
+  GitHubPullRequestSummary,
   GitHubPullRequestConversationSnapshot,
   GitHubPullRequestFilesSnapshot,
   GitHubPullRequestCommitsSnapshot,
@@ -40,6 +42,20 @@ function resolveGitBranch(gitSnapshot?: DesktopGitSnapshot): string {
   return gitSnapshot?.selectedBranch?.trim() || gitSnapshot?.branch?.trim() || "";
 }
 
+function pullRequestSummaryFromDetail(detail: GitHubPullRequestDetail): GitHubPullRequestSummary {
+  return {
+    number: detail.number,
+    title: detail.title,
+    state: detail.state,
+    url: detail.url,
+    authorLogin: detail.authorLogin,
+    headRef: detail.headRef,
+    headSha: detail.headSha,
+    baseRef: detail.baseRef,
+    draft: detail.draft,
+  };
+}
+
 export type WorkspacePrTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
   isActive: boolean;
@@ -65,6 +81,9 @@ export type WorkspacePrTabProps = {
   getGitHubPullRequestChecks: (
     request: GetGitHubPullRequestDetailRequest,
   ) => Promise<GitHubPullRequestChecksSnapshot>;
+  prRevealEnabled?: boolean;
+  prRevealNonce?: number;
+  prRevealRequest?: GitHubPullRequestRevealRequest | null;
   className?: string;
 };
 
@@ -83,6 +102,9 @@ export function WorkspacePrTab({
   getGitHubPullRequestFiles,
   getGitHubPullRequestCommits,
   getGitHubPullRequestChecks,
+  prRevealEnabled = false,
+  prRevealNonce = 0,
+  prRevealRequest = null,
   className,
 }: WorkspacePrTabProps) {
   const { t } = useTranslation();
@@ -112,6 +134,7 @@ export function WorkspacePrTab({
 
   const refreshGitHubPanelRef = useRef<() => Promise<void>>(async () => {});
   const prevBranchRef = useRef<string | undefined>(undefined);
+  const pinnedPullRequestRequestRef = useRef<GetGitHubPullRequestDetailRequest | null>(null);
 
   const refreshAuthStatus = useCallback(async () => {
     if (!prTabEnabled) {
@@ -125,25 +148,8 @@ export function WorkspacePrTab({
     }
   }, [getGitHubAuthStatus, prTabEnabled]);
 
-  const loadPullRequestData = useCallback(
-    async (result: GitHubPullRequestForBranchResult) => {
-      const pullRequest = result.pullRequest;
-      const repository = result.repository;
-      if (!pullRequest || !repository) {
-        setDetail(null);
-        setConversation(null);
-        setFilesSnapshot(null);
-        setCommitsSnapshot(null);
-        setChecksSnapshot(null);
-        return;
-      }
-
-      const request = {
-        owner: repository.owner,
-        repo: repository.repo,
-        number: pullRequest.number,
-      };
-
+  const loadPullRequestBundle = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
       setLoadingDetail(true);
       setLoadingConversation(true);
       setLoadingChanges(true);
@@ -159,6 +165,11 @@ export function WorkspacePrTab({
           getGitHubPullRequestChecks(request),
         ]);
         setDetail(nextDetail);
+        setBranchResult({
+          repository: { owner: request.owner, repo: request.repo },
+          branch: nextDetail.headRef,
+          pullRequest: pullRequestSummaryFromDetail(nextDetail),
+        });
         setConversation(nextConversation);
         setFilesSnapshot(nextFiles);
         setCommitsSnapshot(nextCommits);
@@ -187,6 +198,28 @@ export function WorkspacePrTab({
       getGitHubPullRequestFiles,
       refreshAuthStatus,
     ],
+  );
+
+  const loadPullRequestData = useCallback(
+    async (result: GitHubPullRequestForBranchResult) => {
+      const pullRequest = result.pullRequest;
+      const repository = result.repository;
+      if (!pullRequest || !repository) {
+        setDetail(null);
+        setConversation(null);
+        setFilesSnapshot(null);
+        setCommitsSnapshot(null);
+        setChecksSnapshot(null);
+        return;
+      }
+
+      await loadPullRequestBundle({
+        owner: repository.owner,
+        repo: repository.repo,
+        number: pullRequest.number,
+      });
+    },
+    [loadPullRequestBundle],
   );
 
   const refreshBranchPullRequest = useCallback(async () => {
@@ -265,6 +298,13 @@ export function WorkspacePrTab({
       return;
     }
 
+    const pinnedRequest = pinnedPullRequestRequestRef.current;
+    if (pinnedRequest) {
+      setError(null);
+      await loadPullRequestBundle(pinnedRequest);
+      return;
+    }
+
     setLoadingBranch(true);
     setError(null);
     try {
@@ -298,11 +338,37 @@ export function WorkspacePrTab({
   }, [
     getGitHubAuthStatus,
     getGitHubPullRequestForCurrentBranch,
+    loadPullRequestBundle,
     loadPullRequestData,
     prTabEnabled,
   ]);
 
   refreshGitHubPanelRef.current = refreshGitHubPanel;
+
+  useEffect(() => {
+    if (!prRevealEnabled || !prRevealRequest || prRevealNonce <= 0) {
+      return;
+    }
+
+    pinnedPullRequestRequestRef.current = {
+      owner: prRevealRequest.owner,
+      repo: prRevealRequest.repo,
+      number: prRevealRequest.number,
+    };
+    setDetailDemoActive(false);
+
+    if (!authStatus.connected) {
+      return;
+    }
+
+    void loadPullRequestBundle(pinnedPullRequestRequestRef.current);
+  }, [
+    authStatus.connected,
+    loadPullRequestBundle,
+    prRevealEnabled,
+    prRevealNonce,
+    prRevealRequest,
+  ]);
 
   useEffect(() => {
     if (!isActive || !prTabEnabled) {
@@ -343,6 +409,7 @@ export function WorkspacePrTab({
     }
 
     prevBranchRef.current = branch;
+    pinnedPullRequestRequestRef.current = null;
     void refreshBranchPullRequest();
   }, [
     authStatus.connected,
@@ -399,6 +466,7 @@ export function WorkspacePrTab({
       setFilesSnapshot(null);
       setCommitsSnapshot(null);
       setChecksSnapshot(null);
+      pinnedPullRequestRequestRef.current = null;
     } catch (disconnectError) {
       setError(describeError(disconnectError));
     } finally {
