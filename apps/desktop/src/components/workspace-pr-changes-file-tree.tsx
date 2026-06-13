@@ -62,7 +62,7 @@ function PrChangesTreeNodeRow({
           <ChevronRight className="size-3.5 shrink-0 opacity-60" aria-hidden />
         )}
         <Folder className="size-3.5 shrink-0 opacity-70" aria-hidden />
-        <span className="min-w-0 truncate font-medium">{node.name}</span>
+        <span className="min-w-0 truncate">{node.name}</span>
       </button>
       {open ? (
         <ul role="group" className="list-none space-y-0.5 p-0">
