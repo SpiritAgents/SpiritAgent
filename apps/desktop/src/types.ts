@@ -943,8 +943,25 @@ export type {
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
   GitHubPullRequestSummary,
+  GitHubPullRequestListItem,
+  GitHubPullRequestListSnapshot,
+  GitHubPullRequestTabCounts,
+  GitHubPullRequestTaskListProgress,
   GitHubRepositoryRef,
 } from '@spirit-agent/host-internal';
+
+export interface ListGitHubPullRequestsRequest {
+  owner: string;
+  repo: string;
+  state: 'open' | 'closed';
+  page?: number;
+  query?: string;
+}
+
+export interface GetGitHubPullRequestTabCountsRequest {
+  owner: string;
+  repo: string;
+}
 
 export interface GetGitHubPullRequestDetailRequest {
   owner: string;

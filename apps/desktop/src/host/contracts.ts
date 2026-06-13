@@ -64,6 +64,8 @@ export type HostCommandName =
   | 'cancelGitHubDeviceLogin'
   | 'disconnectGitHub'
   | 'getGitHubPullRequestForCurrentBranch'
+  | 'listGitHubPullRequests'
+  | 'getGitHubPullRequestTabCounts'
   | 'getGitHubPullRequestDetail'
   | 'getGitHubPullRequestConversation'
   | 'getGitHubPullRequestFiles'

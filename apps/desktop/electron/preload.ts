@@ -273,6 +273,12 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   getGitHubPullRequestForCurrentBranch() {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestForCurrentBranch');
   },
+  listGitHubPullRequests(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'listGitHubPullRequests', { request });
+  },
+  getGitHubPullRequestTabCounts(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestTabCounts', { request });
+  },
   getGitHubPullRequestDetail(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestDetail', { request });
   },

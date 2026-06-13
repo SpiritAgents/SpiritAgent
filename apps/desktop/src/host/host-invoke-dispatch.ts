@@ -80,6 +80,10 @@ export interface HostCommandDelegate {
   cancelGitHubDeviceLogin(): Promise<unknown>;
   disconnectGitHub(): Promise<unknown>;
   getGitHubPullRequestForCurrentBranch(): Promise<unknown>;
+  listGitHubPullRequests(request: CommandPayloads['listGitHubPullRequests']['request']): Promise<unknown>;
+  getGitHubPullRequestTabCounts(
+    request: CommandPayloads['getGitHubPullRequestTabCounts']['request'],
+  ): Promise<unknown>;
   getGitHubPullRequestDetail(request: CommandPayloads['getGitHubPullRequestDetail']['request']): Promise<unknown>;
   getGitHubPullRequestConversation(request: CommandPayloads['getGitHubPullRequestConversation']['request']): Promise<unknown>;
   getGitHubPullRequestFiles(request: CommandPayloads['getGitHubPullRequestFiles']['request']): Promise<unknown>;
@@ -181,6 +185,8 @@ const hostCommandDispatch = {
   cancelGitHubDeviceLogin: (host) => host.cancelGitHubDeviceLogin(),
   disconnectGitHub: (host) => host.disconnectGitHub(),
   getGitHubPullRequestForCurrentBranch: (host) => host.getGitHubPullRequestForCurrentBranch(),
+  listGitHubPullRequests: (host, payload) => host.listGitHubPullRequests(payload.request),
+  getGitHubPullRequestTabCounts: (host, payload) => host.getGitHubPullRequestTabCounts(payload.request),
   getGitHubPullRequestDetail: (host, payload) => host.getGitHubPullRequestDetail(payload.request),
   getGitHubPullRequestConversation: (host, payload) =>
     host.getGitHubPullRequestConversation(payload.request),

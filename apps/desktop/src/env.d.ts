@@ -142,6 +142,12 @@ declare global {
     cancelGitHubDeviceLogin(): Promise<void>;
     disconnectGitHub(): Promise<import('./types').GitHubAuthStatus>;
     getGitHubPullRequestForCurrentBranch(): Promise<import('./types').GitHubPullRequestForBranchResult>;
+    listGitHubPullRequests(
+      request: import('./types').ListGitHubPullRequestsRequest,
+    ): Promise<import('./types').GitHubPullRequestListSnapshot>;
+    getGitHubPullRequestTabCounts(
+      request: import('./types').GetGitHubPullRequestTabCountsRequest,
+    ): Promise<import('./types').GitHubPullRequestTabCounts>;
     getGitHubPullRequestDetail(
       request: import('./types').GetGitHubPullRequestDetailRequest,
     ): Promise<import('./types').GitHubPullRequestDetail>;
