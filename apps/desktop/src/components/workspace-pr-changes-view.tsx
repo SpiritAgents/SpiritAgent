@@ -9,6 +9,12 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { buildPrChangedFilesTree } from "@/lib/pr-changed-files-tree";
+import {
+  PR_CHANGES_TREE_MIN_WIDTH_PX,
+  computePrChangesTreeMaxWidthPx,
+  readPrChangesTreeWidthPx,
+  writePrChangesTreeWidthPx,
+} from "@/lib/layout-prefs";
 import { cn } from "@/lib/utils";
 import type { GitHubPullRequestChangedFile } from "@/types";
 
@@ -119,11 +125,94 @@ export function WorkspacePrChangesView({
   className,
 }: WorkspacePrChangesViewProps) {
   const { t } = useTranslation();
+  const splitContainerRef = useRef<HTMLDivElement>(null);
   const cardsScrollRef = useRef<ComponentRef<typeof ScrollArea>>(null);
+  const treeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const latestTreeWidthPxRef = useRef(readPrChangesTreeWidthPx());
+  const [treeWidthPx, setTreeWidthPx] = useState(() => readPrChangesTreeWidthPx());
+  const [isResizingTree, setIsResizingTree] = useState(false);
+  const [containerWidthPx, setContainerWidthPx] = useState(0);
   const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
   const [expandedFilenames, setExpandedFilenames] = useState<Set<string>>(() => new Set());
 
   const treeNodes = useMemo(() => buildPrChangedFilesTree(files), [files]);
+
+  latestTreeWidthPxRef.current = treeWidthPx;
+
+  const maxTreeWidthPx = useMemo(
+    () =>
+      containerWidthPx > 0
+        ? computePrChangesTreeMaxWidthPx(containerWidthPx)
+        : computePrChangesTreeMaxWidthPx(1200),
+    [containerWidthPx],
+  );
+
+  const clampTreeWidth = useCallback(
+    (value: number) => Math.min(maxTreeWidthPx, Math.max(PR_CHANGES_TREE_MIN_WIDTH_PX, value)),
+    [maxTreeWidthPx],
+  );
+
+  useEffect(() => {
+    const container = splitContainerRef.current;
+    if (!container) {
+      return;
+    }
+    const syncContainerWidth = () => {
+      setContainerWidthPx(container.clientWidth);
+    };
+    syncContainerWidth();
+    const observer = new ResizeObserver(syncContainerWidth);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [files.length]);
+
+  useEffect(() => {
+    if (treeWidthPx <= maxTreeWidthPx) {
+      return;
+    }
+    setTreeWidthPx(clampTreeWidth(treeWidthPx));
+  }, [clampTreeWidth, maxTreeWidthPx, treeWidthPx]);
+
+  const onTreeResizePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsResizingTree(true);
+      treeDragRef.current = { startX: event.clientX, startWidth: treeWidthPx };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [treeWidthPx],
+  );
+
+  const onTreeResizePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const drag = treeDragRef.current;
+      if (!drag) {
+        return;
+      }
+      const delta = event.clientX - drag.startX;
+      const next = clampTreeWidth(drag.startWidth + delta);
+      latestTreeWidthPxRef.current = next;
+      setTreeWidthPx(next);
+    },
+    [clampTreeWidth],
+  );
+
+  const endTreeResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    setIsResizingTree(false);
+    if (treeDragRef.current) {
+      const containerWidth = splitContainerRef.current?.clientWidth ?? 0;
+      writePrChangesTreeWidthPx(
+        latestTreeWidthPxRef.current,
+        containerWidth > 0 ? containerWidth : undefined,
+      );
+    }
+    treeDragRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // already released
+    }
+  }, []);
 
   const navigateToFile = useCallback((filename: string) => {
     setSelectedFilename(filename);
@@ -193,12 +282,17 @@ export function WorkspacePrChangesView({
 
   return (
     <div
+      ref={splitContainerRef}
       className={cn(
         "flex h-full min-h-0 min-w-0 flex-1 flex-row items-stretch overflow-hidden",
+        isResizingTree && "select-none",
         className,
       )}
     >
-      <aside className="flex min-h-0 w-[min(40%,13rem)] shrink-0 flex-col">
+      <aside
+        className="flex min-h-0 shrink-0 flex-col"
+        style={{ width: treeWidthPx }}
+      >
         <ScrollArea className="h-full min-h-0 flex-1" type="auto">
           <WorkspacePrChangesFileTree
             nodes={treeNodes}
@@ -207,7 +301,24 @@ export function WorkspacePrChangesView({
           />
         </ScrollArea>
       </aside>
-      <div className="w-px shrink-0 self-stretch bg-border/40" aria-hidden />
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t("workspace.prChangesResizeTreeWidth")}
+        className={cn(
+          "group relative z-10 w-1 shrink-0 cursor-col-resize touch-none select-none self-stretch",
+          "before:absolute before:inset-y-0 before:-right-1 before:w-3 before:content-['']",
+        )}
+        onPointerDown={onTreeResizePointerDown}
+        onPointerMove={onTreeResizePointerMove}
+        onPointerUp={endTreeResize}
+        onPointerCancel={endTreeResize}
+      >
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+          aria-hidden
+        />
+      </div>
       <ScrollArea
         ref={cardsScrollRef}
         className="min-h-0 min-w-0 flex-1 pr-1"
