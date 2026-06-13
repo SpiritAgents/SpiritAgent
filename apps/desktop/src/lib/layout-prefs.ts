@@ -91,6 +91,44 @@ export function writeWorkspaceToolsWidthPx(widthPx: number): void {
   );
 }
 
+const PR_CHANGES_TREE_WIDTH_STORAGE_KEY = "spirit-desktop-pr-changes-tree-width-px";
+
+export const PR_CHANGES_TREE_MIN_WIDTH_PX = 144;
+export const PR_CHANGES_TREE_DEFAULT_WIDTH_PX = 208;
+const PR_CHANGES_TREE_MAX_WIDTH_RATIO = 0.45;
+
+export function computePrChangesTreeMaxWidthPx(containerWidthPx: number): number {
+  return Math.round(containerWidthPx * PR_CHANGES_TREE_MAX_WIDTH_RATIO);
+}
+
+function clampPrChangesTreeWidthPx(widthPx: number, containerWidthPx?: number): number {
+  const max =
+    containerWidthPx && containerWidthPx > 0
+      ? computePrChangesTreeMaxWidthPx(containerWidthPx)
+      : computePrChangesTreeMaxWidthPx(1200);
+  return clampInt(widthPx, PR_CHANGES_TREE_MIN_WIDTH_PX, max);
+}
+
+export function readPrChangesTreeWidthPx(containerWidthPx?: number): number {
+  const max =
+    containerWidthPx && containerWidthPx > 0
+      ? computePrChangesTreeMaxWidthPx(containerWidthPx)
+      : computePrChangesTreeMaxWidthPx(1200);
+  return readStoredPositiveInt(
+    PR_CHANGES_TREE_WIDTH_STORAGE_KEY,
+    PR_CHANGES_TREE_DEFAULT_WIDTH_PX,
+    PR_CHANGES_TREE_MIN_WIDTH_PX,
+    max,
+  );
+}
+
+export function writePrChangesTreeWidthPx(widthPx: number, containerWidthPx?: number): void {
+  writeStoredPositiveInt(
+    PR_CHANGES_TREE_WIDTH_STORAGE_KEY,
+    clampPrChangesTreeWidthPx(widthPx, containerWidthPx),
+  );
+}
+
 const GIT_CHANGES_PANE_RATIO_STORAGE_KEY = "spirit-desktop-git-changes-pane-ratio";
 
 export const GIT_CHANGES_DEFAULT_RATIO = 0.45;
