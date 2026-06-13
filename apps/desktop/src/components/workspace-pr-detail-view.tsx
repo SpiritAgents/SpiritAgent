@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { DetailPageTabs } from "@/components/detail-page-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PrConversationTimeline } from "@/components/workspace-pr-conversation-timeline";
+import { WorkspacePrChecksView } from "@/components/workspace-pr-checks-view";
 import { WorkspacePrChangesView } from "@/components/workspace-pr-changes-view";
 import { WorkspacePrCommitsView } from "@/components/workspace-pr-commits-view";
 import { GITHUB_PR_MERGED_BADGE_CLASS } from "@/lib/github-pr-merged-badge-styles";
 import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
 import { cn } from "@/lib/utils";
 import type {
+  GitHubPullRequestCheck,
   GitHubPullRequestChangedFile,
   GitHubPullRequestCommit,
   GitHubPullRequestConversationItem,
@@ -29,17 +31,26 @@ export type WorkspacePrDetailViewProps = {
   commits?: GitHubPullRequestCommit[];
   loadingCommits?: boolean;
   commitsHasMore?: boolean;
+  checks?: GitHubPullRequestCheck[];
+  loadingChecks?: boolean;
+  checksHasMore?: boolean;
   onOpenExternal: (url: string) => void;
   className?: string;
 };
 
-type WorkspacePrDetailTab = "conversations" | "commits" | "changes";
+type WorkspacePrDetailTab = "conversations" | "commits" | "checks" | "changes";
 
-const PR_DETAIL_TABS: readonly WorkspacePrDetailTab[] = ["conversations", "commits", "changes"];
+const PR_DETAIL_TABS: readonly WorkspacePrDetailTab[] = [
+  "conversations",
+  "commits",
+  "checks",
+  "changes",
+];
 
 const PR_DETAIL_TAB_LABEL_KEYS = {
   conversations: "workspace.prTabConversations",
   commits: "workspace.prTabCommits",
+  checks: "workspace.prTabChecks",
   changes: "workspace.prTabChanges",
 } as const satisfies Record<WorkspacePrDetailTab, string>;
 
@@ -67,6 +78,9 @@ export function WorkspacePrDetailView({
   commits = [],
   loadingCommits = false,
   commitsHasMore = false,
+  checks = [],
+  loadingChecks = false,
+  checksHasMore = false,
   onOpenExternal,
   className,
 }: WorkspacePrDetailViewProps) {
@@ -153,6 +167,15 @@ export function WorkspacePrDetailView({
             commits={commits}
             loading={loadingCommits}
             hasMore={commitsHasMore}
+            onOpenExternal={onOpenExternal}
+            className="h-full min-h-0"
+          />
+        ) : null}
+        {activeTab === "checks" ? (
+          <WorkspacePrChecksView
+            checks={checks}
+            loading={loadingChecks}
+            hasMore={checksHasMore}
             onOpenExternal={onOpenExternal}
             className="h-full min-h-0"
           />
