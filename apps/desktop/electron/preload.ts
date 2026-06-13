@@ -282,6 +282,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   getGitHubPullRequestFiles(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestFiles', { request });
   },
+  getGitHubPullRequestCommits(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestCommits', { request });
+  },
   readWorkspaceTextFile(relativePath: string) {
     return ipcRenderer.invoke('desktop:invoke', 'readWorkspaceTextFile', { relativePath });
   },

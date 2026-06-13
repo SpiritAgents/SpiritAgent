@@ -74,6 +74,7 @@ export type CommandPayloads = {
   getGitHubPullRequestDetail: { request: GetGitHubPullRequestDetailRequest };
   getGitHubPullRequestConversation: { request: GetGitHubPullRequestDetailRequest };
   getGitHubPullRequestFiles: { request: GetGitHubPullRequestDetailRequest };
+  getGitHubPullRequestCommits: { request: GetGitHubPullRequestDetailRequest };
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };
