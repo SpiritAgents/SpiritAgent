@@ -183,13 +183,6 @@ export async function listPullRequests(
     DEFAULT_PER_PAGE,
   );
 
-  if (page === 1) {
-    const counts = await getPullRequestTabCounts(accessToken, repository).catch(() => null);
-    if (counts) {
-      snapshot.totalCount = request.state === 'open' ? counts.open : counts.closed;
-    }
-  }
-
   return snapshot;
 }
 
