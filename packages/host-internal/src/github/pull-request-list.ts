@@ -53,7 +53,13 @@ export function buildPullRequestSearchQuery(
   query: string,
 ): string {
   const trimmedQuery = query.trim();
-  const parts = [`repo:${repository.owner}/${repository.repo}`, 'is:pr', `state:${state}`];
+  const parts = [`repo:${repository.owner}/${repository.repo}`, 'is:pr'];
+  if (state === 'open') {
+    parts.push('is:open');
+  } else {
+    // Non-open PRs: merged + closed-without-merge (GitHub search `state:closed` omits merged).
+    parts.push('-is:open');
+  }
   if (trimmedQuery) {
     parts.push(trimmedQuery);
   }
@@ -195,7 +201,7 @@ export async function getPullRequestTabCounts(
         openPullRequests: pullRequests(states: OPEN) {
           totalCount
         }
-        closedPullRequests: pullRequests(states: CLOSED) {
+        closedPullRequests: pullRequests(states: [CLOSED, MERGED]) {
           totalCount
         }
       }
