@@ -3,6 +3,7 @@ import type {
   GitHubPullRequestConversationItem,
   GitHubPullRequestDetail,
   GitHubPullRequestFilesSnapshot,
+  GitHubPullRequestCommitsSnapshot,
 } from "@/types";
 
 /** Static PR detail fixture for unauthenticated UI preview only. */
@@ -336,4 +337,51 @@ export const GITHUB_PR_FILES_DEMO: GitHubPullRequestFilesSnapshot = {
       blobUrl: "https://github.com/octocat/Hello-World/blob/fix-login/assets/logo.png",
     },
   ] satisfies GitHubPullRequestChangedFile[],
+};
+
+/** Static commits list for unauthenticated UI preview only. */
+export const GITHUB_PR_COMMITS_DEMO: GitHubPullRequestCommitsSnapshot = {
+  hasMore: false,
+  commits: [
+    {
+      sha: "abc123",
+      subject: "feat(auth): add session refresh on OAuth redirect",
+      authorLogin: "octocat",
+      avatarUrl: "https://github.com/octocat.png?size=40",
+      createdAt: "2024-01-02T21:00:00Z",
+      url: "https://github.com/octocat/Hello-World/commit/abc123",
+    },
+    {
+      sha: "def456",
+      subject: "fix(auth): clear stale tokens on 401",
+      authorLogin: "octocat",
+      avatarUrl: "https://github.com/octocat.png?size=40",
+      createdAt: "2024-01-02T18:30:00Z",
+      url: "https://github.com/octocat/Hello-World/commit/def456",
+    },
+    {
+      sha: "ghi789",
+      subject: "test(auth): add regression for expired session cookie",
+      authorLogin: "octocat",
+      avatarUrl: "https://github.com/octocat.png?size=40",
+      createdAt: "2024-01-02T16:10:00Z",
+      url: "https://github.com/octocat/Hello-World/commit/ghi789",
+    },
+    {
+      sha: "jkl012",
+      subject: "refactor(auth): retry device flow once after token refresh",
+      authorLogin: "octocat",
+      avatarUrl: "https://github.com/octocat.png?size=40",
+      createdAt: "2024-01-02T13:45:00Z",
+      url: "https://github.com/octocat/Hello-World/commit/jkl012",
+    },
+    {
+      sha: "mno345",
+      subject: "chore: update login bug repro steps",
+      authorLogin: "octocat",
+      avatarUrl: "https://github.com/octocat.png?size=40",
+      createdAt: "2024-01-02T10:00:00Z",
+      url: "https://github.com/octocat/Hello-World/commit/mno345",
+    },
+  ],
 };
