@@ -68,5 +68,35 @@ export function buildPrChangedFilesTree(
     }
   }
 
-  return sortTreeNodes(root.children);
+  return sortTreeNodes(root.children).map((node) =>
+    node.kind === "dir" ? collapseSingleChildDirChain(node) : node,
+  );
+}
+
+function isPassthroughDir(node: PrChangedFilesTreeDirNode): boolean {
+  return node.children.length > 0 && node.children.every((child) => child.kind === "dir");
+}
+
+function collapseSingleChildDirChain(node: PrChangedFilesTreeDirNode): PrChangedFilesTreeDirNode {
+  const children = node.children.map((child) =>
+    child.kind === "dir" ? collapseSingleChildDirChain(child) : child,
+  );
+
+  let current: PrChangedFilesTreeDirNode = { ...node, children };
+
+  while (
+    current.children.length === 1 &&
+    current.children[0]?.kind === "dir" &&
+    isPassthroughDir(current.children[0])
+  ) {
+    const child = current.children[0];
+    current = {
+      kind: "dir",
+      name: `${current.name}/${child.name}`,
+      path: child.path,
+      children: child.children,
+    };
+  }
+
+  return current;
 }
