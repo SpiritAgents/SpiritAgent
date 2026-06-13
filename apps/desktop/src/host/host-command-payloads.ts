@@ -36,6 +36,9 @@ import type {
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
+  MergeGitHubPullRequestRequest,
   RunExtensionRequest,
   SaveHookEntryRequest,
   SubmitGitChipRequest,
@@ -71,7 +74,15 @@ export type CommandPayloads = {
   cancelGitHubDeviceLogin: undefined;
   disconnectGitHub: undefined;
   getGitHubPullRequestForCurrentBranch: undefined;
+  listGitHubPullRequests: { request: ListGitHubPullRequestsRequest };
+  getGitHubPullRequestTabCounts: { request: GetGitHubPullRequestTabCountsRequest };
   getGitHubPullRequestDetail: { request: GetGitHubPullRequestDetailRequest };
+  getGitHubPullRequestConversation: { request: GetGitHubPullRequestDetailRequest };
+  getGitHubPullRequestFiles: { request: GetGitHubPullRequestDetailRequest };
+  getGitHubPullRequestCommits: { request: GetGitHubPullRequestDetailRequest };
+  getGitHubPullRequestChecks: { request: GetGitHubPullRequestDetailRequest };
+  mergeGitHubPullRequest: { request: MergeGitHubPullRequestRequest };
+  markGitHubPullRequestReady: { request: GetGitHubPullRequestDetailRequest };
   setWebHostAuthTokenHash: { authTokenHash: string };
   addModel: { request: AddModelRequest };
   addProviderModels: { request: AddProviderModelsRequest };

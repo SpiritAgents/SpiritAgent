@@ -78,6 +78,9 @@ import type {
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
+  MergeGitHubPullRequestRequest,
 } from "@/types";
 
 type BusyAction =
@@ -2596,6 +2599,86 @@ export function useDesktopRuntime() {
     [api],
   );
 
+  const getGitHubPullRequestConversation = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.getGitHubPullRequestConversation(request);
+    },
+    [api],
+  );
+
+  const getGitHubPullRequestFiles = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.getGitHubPullRequestFiles(request);
+    },
+    [api],
+  );
+
+  const getGitHubPullRequestCommits = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.getGitHubPullRequestCommits(request);
+    },
+    [api],
+  );
+
+  const getGitHubPullRequestChecks = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.getGitHubPullRequestChecks(request);
+    },
+    [api],
+  );
+
+  const mergeGitHubPullRequest = useCallback(
+    async (request: MergeGitHubPullRequestRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.mergeGitHubPullRequest(request);
+    },
+    [api],
+  );
+
+  const markGitHubPullRequestReady = useCallback(
+    async (request: GetGitHubPullRequestDetailRequest) => {
+      if (!api) {
+        throw new Error(i18n.t('error.hostNotReady'));
+      }
+      return api.markGitHubPullRequestReady(request);
+    },
+    [api],
+  );
+
+  const listGitHubPullRequests = useCallback(
+    async (request: ListGitHubPullRequestsRequest) => {
+      if (!api) {
+        return { items: [], totalCount: 0, hasMore: false };
+      }
+      return api.listGitHubPullRequests(request);
+    },
+    [api],
+  );
+
+  const getGitHubPullRequestTabCounts = useCallback(
+    async (request: GetGitHubPullRequestTabCountsRequest) => {
+      if (!api) {
+        return { open: 0, closed: 0 };
+      }
+      return api.getGitHubPullRequestTabCounts(request);
+    },
+    [api],
+  );
+
   const readWorkspaceTextFile = useCallback(
     async (relativePath: string): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
@@ -2840,7 +2923,15 @@ export function useDesktopRuntime() {
     cancelGitHubDeviceLogin,
     disconnectGitHub,
     getGitHubPullRequestForCurrentBranch,
+    listGitHubPullRequests,
+    getGitHubPullRequestTabCounts,
     getGitHubPullRequestDetail,
+    getGitHubPullRequestConversation,
+    getGitHubPullRequestFiles,
+    getGitHubPullRequestCommits,
+    getGitHubPullRequestChecks,
+    mergeGitHubPullRequest,
+    markGitHubPullRequestReady,
     readWorkspaceTextFile,
     writeWorkspaceTextFile,
     readHostTextFile,

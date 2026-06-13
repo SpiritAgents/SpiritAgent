@@ -923,17 +923,62 @@ export interface ReadGitHistoryRequest {
 export type {
   GitHubAuthStatus,
   GitHubDeviceAuthChallenge,
+  GitHubPullRequestConversationSnapshot,
+  GitHubPullRequestConversationItem,
+  GitHubPullRequestChangedFile,
+  GitHubPullRequestFileStatus,
+  GitHubPullRequestFilesSnapshot,
+  GitHubPullRequestCommit,
+  GitHubPullRequestCommitsSnapshot,
+  GitHubPullRequestCheck,
+  GitHubPullRequestCheckState,
+  GitHubPullRequestChecksSnapshot,
+  GitHubPullRequestConversationCommit,
+  GitHubPullRequestConversationMerged,
+  GitHubPullRequestConversationIssueComment,
+  GitHubPullRequestConversationReview,
+  GitHubPullRequestConversationReviewThread,
+  GitHubPullRequestReviewComment,
+  GitHubPullRequestReviewState,
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
   GitHubPullRequestSummary,
+  GitHubPullRequestListItem,
+  GitHubPullRequestListSnapshot,
+  GitHubPullRequestTabCounts,
+  GitHubPullRequestTaskListProgress,
   GitHubRepositoryRef,
 } from '@spirit-agent/host-internal';
+
+export interface ListGitHubPullRequestsRequest {
+  owner: string;
+  repo: string;
+  state: 'open' | 'closed';
+  page?: number;
+  query?: string;
+}
+
+export interface GetGitHubPullRequestTabCountsRequest {
+  owner: string;
+  repo: string;
+}
 
 export interface GetGitHubPullRequestDetailRequest {
   owner: string;
   repo: string;
   number: number;
+  checksAfter?: string;
+  nodeId?: string;
 }
+
+export interface MergeGitHubPullRequestRequest extends GetGitHubPullRequestDetailRequest {
+  mergeMethod: import('@spirit-agent/host-internal').GitHubPullRequestMergeMethod;
+}
+
+export type {
+  GitHubPullRequestMergeMethod,
+  GitHubPullRequestMergeResult,
+} from '@spirit-agent/host-internal';
 
 export interface ModelProfileSnapshot {
   name: string;

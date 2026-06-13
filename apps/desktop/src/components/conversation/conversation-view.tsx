@@ -122,6 +122,9 @@ export type WorkspaceToolsSectionProps = {
   workspaceFileRevealAbsolutePath: string;
   workspaceFileRevealScope: EditorFileTarget["scope"];
   workspaceFileRevealViewMode: WorkspaceEditorViewMode;
+  workspacePrRevealNonce: number;
+  workspacePrRevealTargetId: string | null;
+  workspacePrRevealRequest: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
   onOpenWorkspaceFile: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode },
@@ -132,6 +135,9 @@ export type WorkspaceToolsSectionProps = {
   onActiveWorkspaceToolTabIdChange: (id: string) => void;
   onBrowserElementPicked: NonNullable<
     ComponentProps<typeof WorkspaceToolsDock>["onBrowserElementPicked"]
+  >;
+  onPrDiffAddToSession?: NonNullable<
+    ComponentProps<typeof WorkspaceToolsDock>["onPrDiffAddToSession"]
   >;
   onBrowserOpenInNewTab: (rawUrl: string) => void;
   browserTabEnabled: boolean;
@@ -359,22 +365,30 @@ export function ConversationView({
           fileRevealAbsolutePath={workspaceTools.workspaceFileRevealAbsolutePath}
           fileRevealScope={workspaceTools.workspaceFileRevealScope}
           fileRevealViewMode={workspaceTools.workspaceFileRevealViewMode}
+          prRevealNonce={workspaceTools.workspacePrRevealNonce}
+          prRevealTabId={workspaceTools.workspacePrRevealTargetId}
+          prRevealRequest={workspaceTools.workspacePrRevealRequest}
           onOpenWorkspaceFile={workspaceTools.onOpenWorkspaceFile}
           tabs={workspaceTools.workspaceToolTabs}
           activeTabId={workspaceTools.activeWorkspaceToolTabId}
           onTabsChange={workspaceTools.onWorkspaceToolTabsChange}
           onActiveTabIdChange={workspaceTools.onActiveWorkspaceToolTabIdChange}
           onBrowserElementPicked={workspaceTools.onBrowserElementPicked}
+          onPrDiffAddToSession={workspaceTools.onPrDiffAddToSession}
           onBrowserOpenInNewTab={workspaceTools.onBrowserOpenInNewTab}
           browserTabEnabled={workspaceTools.browserTabEnabled}
           prTabEnabled={workspaceTools.prTabEnabled}
           getGitHubAuthStatus={list.runtime.getGitHubAuthStatus}
-          beginGitHubDeviceLogin={list.runtime.beginGitHubDeviceLogin}
-          completeGitHubDeviceLogin={list.runtime.completeGitHubDeviceLogin}
-          cancelGitHubDeviceLogin={list.runtime.cancelGitHubDeviceLogin}
-          disconnectGitHub={list.runtime.disconnectGitHub}
           getGitHubPullRequestForCurrentBranch={list.runtime.getGitHubPullRequestForCurrentBranch}
+          listGitHubPullRequests={list.runtime.listGitHubPullRequests}
+          getGitHubPullRequestTabCounts={list.runtime.getGitHubPullRequestTabCounts}
           getGitHubPullRequestDetail={list.runtime.getGitHubPullRequestDetail}
+          getGitHubPullRequestConversation={list.runtime.getGitHubPullRequestConversation}
+          getGitHubPullRequestFiles={list.runtime.getGitHubPullRequestFiles}
+          getGitHubPullRequestCommits={list.runtime.getGitHubPullRequestCommits}
+          getGitHubPullRequestChecks={list.runtime.getGitHubPullRequestChecks}
+          mergeGitHubPullRequest={list.runtime.mergeGitHubPullRequest}
+          markGitHubPullRequestReady={list.runtime.markGitHubPullRequestReady}
           open={workspaceTools.open}
           widthPx={workspaceTools.workspaceToolsWidthPx}
           onWidthPxChange={workspaceTools.onWorkspaceToolsWidthPxChange}

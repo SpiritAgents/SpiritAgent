@@ -86,6 +86,9 @@ import type {
   DesktopMarketplacePreparedInstall,
   DesktopGitSnapshot,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
+  MergeGitHubPullRequestRequest,
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
   HostTextFileStatResult,
@@ -189,7 +192,15 @@ import {
   disconnectGitHubCommand,
   getGitHubAuthStatusCommand,
   getGitHubPullRequestDetailCommand,
+  getGitHubPullRequestConversationCommand,
+  getGitHubPullRequestFilesCommand,
+  getGitHubPullRequestCommitsCommand,
+  getGitHubPullRequestChecksCommand,
   getGitHubPullRequestForCurrentBranchCommand,
+  listGitHubPullRequestsCommand,
+  getGitHubPullRequestTabCountsCommand,
+  markGitHubPullRequestReadyCommand,
+  mergeGitHubPullRequestCommand,
 } from './host-github-commands.js';
 import {
   abortConversationCommand,
@@ -1696,6 +1707,38 @@ class DesktopHostService {
 
   async getGitHubPullRequestDetail(request: GetGitHubPullRequestDetailRequest) {
     return getGitHubPullRequestDetailCommand(request);
+  }
+
+  async getGitHubPullRequestConversation(request: GetGitHubPullRequestDetailRequest) {
+    return getGitHubPullRequestConversationCommand(request);
+  }
+
+  async getGitHubPullRequestFiles(request: GetGitHubPullRequestDetailRequest) {
+    return getGitHubPullRequestFilesCommand(request);
+  }
+
+  async getGitHubPullRequestCommits(request: GetGitHubPullRequestDetailRequest) {
+    return getGitHubPullRequestCommitsCommand(request);
+  }
+
+  async getGitHubPullRequestChecks(request: GetGitHubPullRequestDetailRequest) {
+    return getGitHubPullRequestChecksCommand(request);
+  }
+
+  async mergeGitHubPullRequest(request: MergeGitHubPullRequestRequest) {
+    return mergeGitHubPullRequestCommand(request);
+  }
+
+  async markGitHubPullRequestReady(request: GetGitHubPullRequestDetailRequest) {
+    return markGitHubPullRequestReadyCommand(request);
+  }
+
+  async listGitHubPullRequests(request: ListGitHubPullRequestsRequest) {
+    return listGitHubPullRequestsCommand(request);
+  }
+
+  async getGitHubPullRequestTabCounts(request: GetGitHubPullRequestTabCountsRequest) {
+    return getGitHubPullRequestTabCountsCommand(request);
   }
 
   async listWorkspaceFileReferenceSuggestions(

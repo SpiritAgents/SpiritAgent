@@ -45,9 +45,19 @@ import type {
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
+  MergeGitHubPullRequestRequest,
   GitHubAuthStatus,
   GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
+  GitHubPullRequestListSnapshot,
+  GitHubPullRequestMergeResult,
+  GitHubPullRequestTabCounts,
+  GitHubPullRequestConversationSnapshot,
+  GitHubPullRequestFilesSnapshot,
+  GitHubPullRequestCommitsSnapshot,
+  GitHubPullRequestChecksSnapshot,
   GitHubPullRequestForBranchResult,
   SubmitUserTurnRequest,
   SessionListItem,
@@ -121,7 +131,31 @@ export interface HostApi {
   cancelGitHubDeviceLogin(): Promise<void>;
   disconnectGitHub(): Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch(): Promise<GitHubPullRequestForBranchResult>;
+  listGitHubPullRequests(
+    request: ListGitHubPullRequestsRequest,
+  ): Promise<GitHubPullRequestListSnapshot>;
+  getGitHubPullRequestTabCounts(
+    request: GetGitHubPullRequestTabCountsRequest,
+  ): Promise<GitHubPullRequestTabCounts>;
   getGitHubPullRequestDetail(
+    request: GetGitHubPullRequestDetailRequest,
+  ): Promise<GitHubPullRequestDetail>;
+  getGitHubPullRequestConversation(
+    request: GetGitHubPullRequestDetailRequest,
+  ): Promise<GitHubPullRequestConversationSnapshot>;
+  getGitHubPullRequestFiles(
+    request: GetGitHubPullRequestDetailRequest,
+  ): Promise<GitHubPullRequestFilesSnapshot>;
+  getGitHubPullRequestCommits(
+    request: GetGitHubPullRequestDetailRequest,
+  ): Promise<GitHubPullRequestCommitsSnapshot>;
+  getGitHubPullRequestChecks(
+    request: GetGitHubPullRequestDetailRequest,
+  ): Promise<GitHubPullRequestChecksSnapshot>;
+  mergeGitHubPullRequest(
+    request: MergeGitHubPullRequestRequest,
+  ): Promise<GitHubPullRequestMergeResult>;
+  markGitHubPullRequestReady(
     request: GetGitHubPullRequestDetailRequest,
   ): Promise<GitHubPullRequestDetail>;
   abortConversation(): Promise<DesktopSnapshot>;

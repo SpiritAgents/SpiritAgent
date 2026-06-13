@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SessionSidebarChromeProvider } from "@/contexts/session-sidebar-chrome-context";
@@ -17,6 +17,7 @@ import { SessionSidebarShell } from "@/components/session-sidebar-shell";
 import { SettingsView } from "@/components/settings-view";
 import { WebHostPairingGate } from "@/components/web-host-pairing-gate";
 import { WorkspaceFilePickerDialog } from "@/components/workspace-file-picker-dialog";
+import { WorkspaceMarkdownLinkProvider } from "@/components/workspace-markdown-link-context";
 import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
@@ -38,6 +39,7 @@ import {
   resolveUseMicaBackdrop,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
+import { tryHandleGitHubPullRequestMarkdownLink } from "@/lib/github-markdown-link";
 import { resolveDark } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -160,6 +162,11 @@ export default function App() {
     !runtime.hostConnectionError.trim() &&
     !runtime.runtimeError.trim();
 
+  const handleWorkspaceMarkdownLinkClick = useCallback(
+    (href: string) => tryHandleGitHubPullRequestMarkdownLink(href, workspaceTools.openPullRequestInPrTab),
+    [workspaceTools.openPullRequestInPrTab],
+  );
+
   if (runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot) {
     return (
       <WebHostPairingGate
@@ -171,6 +178,7 @@ export default function App() {
   }
 
   return (
+    <WorkspaceMarkdownLinkProvider onLinkClick={handleWorkspaceMarkdownLinkClick}>
     <SessionSidebarChromeProvider apiRef={surfaceNav.sessionSidebarChromeApiRef}>
     <div
       data-spirit-surface="app-shell"
@@ -326,6 +334,11 @@ export default function App() {
               onGenerateRuleNavigate={() => {
                 composer.prefillComposerSkillChip("create-rule");
               }}
+              getGitHubAuthStatus={runtime.getGitHubAuthStatus}
+              beginGitHubDeviceLogin={runtime.beginGitHubDeviceLogin}
+              completeGitHubDeviceLogin={runtime.completeGitHubDeviceLogin}
+              cancelGitHubDeviceLogin={runtime.cancelGitHubDeviceLogin}
+              disconnectGitHub={runtime.disconnectGitHub}
             />
           </div>
         ) : surfaceNav.automationsMode ? (
@@ -515,12 +528,16 @@ export default function App() {
               workspaceFileRevealAbsolutePath: workspaceTools.workspaceFileRevealAbsolutePath,
               workspaceFileRevealScope: workspaceTools.workspaceFileRevealScope,
               workspaceFileRevealViewMode: workspaceTools.workspaceFileRevealViewMode,
+              workspacePrRevealNonce: workspaceTools.workspacePrRevealNonce,
+              workspacePrRevealTargetId: workspaceTools.workspacePrRevealTargetId,
+              workspacePrRevealRequest: workspaceTools.workspacePrRevealRequest,
               onOpenWorkspaceFile: workspaceTools.openWorkspaceFile,
               workspaceToolTabs: workspaceTools.workspaceToolTabs,
               activeWorkspaceToolTabId: workspaceTools.activeWorkspaceToolTabId,
               onWorkspaceToolTabsChange: workspaceTools.setWorkspaceToolTabs,
               onActiveWorkspaceToolTabIdChange: workspaceTools.setActiveWorkspaceToolTabId,
               onBrowserElementPicked: composer.handleBrowserElementPicked,
+              onPrDiffAddToSession: composer.handlePrDiffAddToSession,
               onBrowserOpenInNewTab: workspaceTools.openBrowserUrlInNewTab,
               browserTabEnabled: workspaceTools.browserTabEnabled,
               prTabEnabled: workspaceTools.prTabEnabled,
@@ -576,5 +593,6 @@ export default function App() {
 
     </div>
     </SessionSidebarChromeProvider>
+    </WorkspaceMarkdownLinkProvider>
   );
 }

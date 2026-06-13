@@ -11,7 +11,7 @@ test('mapPullRequestSummary maps GitHub API payload', () => {
     html_url: 'https://github.com/octocat/Hello-World/pull/42',
     draft: false,
     user: { login: 'octocat' },
-    head: { ref: 'feature/login' },
+    head: { ref: 'feature/login', sha: 'abc123def456' },
     base: { ref: 'main' },
   });
 
@@ -22,30 +22,39 @@ test('mapPullRequestSummary maps GitHub API payload', () => {
     url: 'https://github.com/octocat/Hello-World/pull/42',
     authorLogin: 'octocat',
     headRef: 'feature/login',
+    headSha: 'abc123def456',
     baseRef: 'main',
     draft: false,
   });
 });
 
 test('mapPullRequestDetail includes labels and merge metadata', () => {
-  const detail = mapPullRequestDetail({
-    number: 7,
-    title: 'Add tests',
-    state: 'open',
-    html_url: 'https://github.com/octocat/Hello-World/pull/7',
-    body: 'Details here',
-    draft: true,
-    merged_at: null,
-    mergeable: true,
-    user: { login: 'hubot' },
-    head: { ref: 'tests' },
-    base: { ref: 'main' },
-    labels: [{ name: 'enhancement' }, { name: 'ready' }],
-  });
+  const detail = mapPullRequestDetail(
+    {
+      number: 7,
+      title: 'Add tests',
+      state: 'open',
+      html_url: 'https://github.com/octocat/Hello-World/pull/7',
+      node_id: 'PR_kwDOA',
+      body: 'Details here',
+      draft: true,
+      merged_at: null,
+      mergeable: true,
+      mergeable_state: 'clean',
+      user: { login: 'octocat' },
+      head: { ref: 'tests' },
+      base: { ref: 'main' },
+      labels: [{ name: 'enhancement' }, { name: 'ready' }],
+    },
+    { viewerCanMerge: true },
+  );
 
   assert.equal(detail.labels.join(','), 'enhancement,ready');
   assert.equal(detail.body, 'Details here');
   assert.equal(detail.mergeable, true);
   assert.equal(detail.merged, false);
   assert.equal(detail.draft, true);
+  assert.equal(detail.nodeId, 'PR_kwDOA');
+  assert.equal(detail.viewerCanMerge, true);
+  assert.equal(detail.mergeableState, 'clean');
 });

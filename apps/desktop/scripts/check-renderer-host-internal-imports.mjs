@@ -16,6 +16,8 @@ const RENDERER_SAFE_HOST_INTERNAL_SUBPATHS = new Set([
   'model-provider-presets',
   'openai-models',
   'skill-paths',
+  'github-pull-request-url',
+  'github-pull-request-checks-pages',
 ]);
 
 const RENDERER_SCAN_ROOTS = ['components', 'hooks', 'lib', 'App.tsx'];

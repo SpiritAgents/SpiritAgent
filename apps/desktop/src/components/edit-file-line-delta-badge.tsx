@@ -49,13 +49,19 @@ function AnimatedCount({
   );
 }
 
-export function EditFileLineDeltaBadge({ delta }: { delta: EditFileLineDelta }) {
+export function EditFileLineDeltaBadge({
+  delta,
+  className,
+}: {
+  delta: EditFileLineDelta;
+  className?: string;
+}) {
   if (delta.added === 0 && delta.removed === 0) {
     return null;
   }
 
   return (
-    <span className="shrink-0 font-sans text-xs font-medium leading-none">
+    <span className={cn("shrink-0 font-sans text-xs font-medium leading-none", className)}>
       {delta.added > 0 ? (
         <span className="inline-flex items-center text-emerald-600 dark:text-emerald-400">
           <span aria-hidden>+</span>
