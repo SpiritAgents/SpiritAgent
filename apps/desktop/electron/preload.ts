@@ -276,8 +276,11 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   getGitHubPullRequestDetail(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestDetail', { request });
   },
-  getGitHubPullRequestConversation(request: unknown) {
+    getGitHubPullRequestConversation(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestConversation', { request });
+  },
+  getGitHubPullRequestFiles(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'getGitHubPullRequestFiles', { request });
   },
   readWorkspaceTextFile(relativePath: string) {
     return ipcRenderer.invoke('desktop:invoke', 'readWorkspaceTextFile', { relativePath });
