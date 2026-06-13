@@ -71,12 +71,13 @@ function PrChangedFileCard({
               )}
               aria-hidden
             />
-            <span className="min-w-0 flex-1 truncate text-xs text-foreground">
-              {displayPath}
-            </span>
-            <EditFileLineDeltaBadge
-              delta={{ added: file.additions, removed: file.deletions }}
-            />
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+              <span className="min-w-0 truncate text-xs text-foreground">{displayPath}</span>
+              <EditFileLineDeltaBadge
+                delta={{ added: file.additions, removed: file.deletions }}
+                className="font-normal"
+              />
+            </div>
           </button>
         </div>
         <CollapsibleContent>
