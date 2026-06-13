@@ -66,8 +66,8 @@ export function WorkspacePrDetailView({
   const [activeTab, setActiveTab] = useState<WorkspacePrDetailTab>("conversations");
 
   return (
-    <article className={cn("flex min-h-0 flex-1 flex-col gap-3 overflow-hidden", className)}>
-      <header className="shrink-0 space-y-2">
+    <article className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
+      <header className="shrink-0 space-y-2 px-3 pt-3">
         <div className="min-w-0">
           <h2 className="m-0 flex flex-wrap items-center gap-2">
             <a
@@ -124,12 +124,13 @@ export function WorkspacePrDetailView({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         ariaLabel={t("workspace.prDetailTabsAria")}
-        className="flex min-h-0 flex-1 flex-col gap-3"
+        edgeToPanelDivider
+        className="min-h-0 flex-1"
         contentClassName="min-h-0 flex-1 overflow-hidden"
       >
         {activeTab === "conversations" ? (
           <ScrollArea className="min-h-0 flex-1" type="auto">
-            <div className="space-y-2 pr-2">
+            <div className="space-y-2 px-3 pt-3">
               <PrConversationTimeline items={conversationItems} loading={loadingConversation} />
               {conversationHasMore ? (
                 <p className="text-xs text-muted-foreground/75 dark:text-muted-foreground/65">

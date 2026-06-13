@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,14 @@ export type DetailPageTabsProps<T extends string> = {
   children: ReactNode;
   className?: string;
   contentClassName?: string;
+  /** Draw tab divider on workspace tools shell (spans resize column + panel). */
+  edgeToPanelDivider?: boolean;
 };
+
+const WORKSPACE_TOOLS_SPLIT_SELECTOR = "[data-workspace-tools-split]";
+const PR_SUBTAB_SHELL_DIVIDER_ATTR = "data-spirit-pr-subtab-shell-divider";
+const WORKSPACE_TOOLS_RESIZE_LINE_SELECTOR =
+  "#workspace-tools-panel-shell [role='separator'][aria-orientation='vertical'] div[aria-hidden='true']";
 
 const tabListClassBySize = {
   default: "gap-1 pt-0.5",
@@ -29,8 +36,8 @@ const tabButtonClassBySize = {
 } as const;
 
 const containerClassBySize = {
-  default: "space-y-4",
-  compact: "space-y-4",
+  default: "flex flex-col gap-4",
+  compact: "flex flex-col gap-0",
 } as const;
 
 export function DetailPageTabs<T extends string>({
@@ -42,40 +49,93 @@ export function DetailPageTabs<T extends string>({
   children,
   className,
   contentClassName,
+  edgeToPanelDivider = false,
 }: DetailPageTabsProps<T>) {
   const tabPanelId = `detail-page-tabpanel-${activeTab}`;
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!edgeToPanelDivider) {
+      return;
+    }
+    const tabBar = tabBarRef.current;
+    const shellSplit = document.querySelector<HTMLElement>(WORKSPACE_TOOLS_SPLIT_SELECTOR);
+    if (!tabBar || !shellSplit) {
+      return;
+    }
+
+    let shellDivider = shellSplit.querySelector<HTMLElement>(`[${PR_SUBTAB_SHELL_DIVIDER_ATTR}]`);
+    if (!shellDivider) {
+      shellDivider = document.createElement("div");
+      shellDivider.setAttribute(PR_SUBTAB_SHELL_DIVIDER_ATTR, "");
+      shellDivider.className = "pointer-events-none absolute right-0 z-20 h-px bg-border/40";
+      shellSplit.appendChild(shellDivider);
+    }
+
+    const syncShellDivider = () => {
+      const shellRect = shellSplit.getBoundingClientRect();
+      const tabBarRect = tabBar.getBoundingClientRect();
+      const resizeLine = document.querySelector<HTMLElement>(WORKSPACE_TOOLS_RESIZE_LINE_SELECTOR);
+      const resizeLineRect = resizeLine?.getBoundingClientRect();
+      const leftPx = resizeLineRect
+        ? Math.max(0, resizeLineRect.right - shellRect.left)
+        : 1;
+
+      shellDivider!.style.display = "block";
+      shellDivider!.style.left = `${leftPx}px`;
+      shellDivider!.style.right = "0px";
+      shellDivider!.style.top = `${tabBarRect.bottom - shellRect.top - 1}px`;
+    };
+
+    syncShellDivider();
+    const resizeObserver = new ResizeObserver(syncShellDivider);
+    resizeObserver.observe(tabBar);
+    resizeObserver.observe(shellSplit);
+    window.addEventListener("resize", syncShellDivider);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", syncShellDivider);
+      shellDivider!.style.display = "none";
+    };
+  }, [edgeToPanelDivider, activeTab]);
 
   return (
     <div className={cn(containerClassBySize[size], className)}>
       <div
-        className={cn("flex shrink-0 flex-wrap", tabListClassBySize[size])}
-        role="tablist"
-        aria-label={ariaLabel}
+        ref={tabBarRef}
+        className={cn("shrink-0 w-full", !edgeToPanelDivider && "border-b border-border/40")}
       >
-        {tabs.map(({ id, label }) => {
-          const selected = activeTab === id;
-          const tabId = `detail-page-tab-${id}`;
+        <div
+          className={cn("flex flex-wrap px-3 pb-3", tabListClassBySize[size])}
+          role="tablist"
+          aria-label={ariaLabel}
+        >
+          {tabs.map(({ id, label }) => {
+            const selected = activeTab === id;
+            const tabId = `detail-page-tab-${id}`;
 
-          return (
-            <button
-              key={id}
-              id={tabId}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={selected ? tabPanelId : undefined}
-              className={cn(
-                tabButtonClassBySize[size],
-                selected
-                  ? "font-medium text-foreground underline decoration-foreground/80"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-              )}
-              onClick={() => onTabChange(id)}
-            >
-              {label}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={id}
+                id={tabId}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                aria-controls={selected ? tabPanelId : undefined}
+                className={cn(
+                  tabButtonClassBySize[size],
+                  selected
+                    ? "font-medium text-foreground underline decoration-foreground/80"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+                onClick={() => onTabChange(id)}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div
         id={tabPanelId}

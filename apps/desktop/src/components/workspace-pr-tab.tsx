@@ -371,8 +371,8 @@ export function WorkspacePrTab({
   }
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3", className)}>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
+    <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 px-3 pt-3">
         {authStatus.connected ? (
           <>
             <span className="text-foreground">
@@ -423,7 +423,7 @@ export function WorkspacePrTab({
       </div>
 
       {!authStatus.connected && deviceChallenge ? (
-        <section className="text-sm">
+        <section className="px-3 pt-3 text-sm">
           <p className="text-foreground">{t("workspace.prDeviceIntro")}</p>
           <p className="mt-2 font-mono text-lg font-semibold tracking-widest text-foreground">
             {deviceChallenge.userCode}
@@ -444,8 +444,8 @@ export function WorkspacePrTab({
       ) : null}
 
       {!authStatus.connected && !deviceChallenge && detailDemoActive ? (
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col space-y-3 overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 pt-3">
             <p className="text-[11px] font-medium text-muted-foreground">
               {t("workspace.prDetailDemoLabel")}
             </p>
@@ -472,7 +472,7 @@ export function WorkspacePrTab({
       ) : null}
 
       {!authStatus.connected && !deviceChallenge && !detailDemoActive ? (
-        <section className="rounded-md border border-dashed border-border/80 bg-muted/20 p-3">
+        <section className="mx-3 mt-3 rounded-md border border-dashed border-border/80 bg-muted/20 p-3">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("workspace.prSampleDataLabel")}
           </p>
@@ -508,40 +508,38 @@ export function WorkspacePrTab({
       {authStatus.connected ? (
         <>
           {!gitSnapshot?.isRepository ? (
-            <p className="text-muted-foreground">{t("workspace.prNoRepo")}</p>
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prNoRepo")}</p>
           ) : loadingBranch ? (
-            <p className="text-muted-foreground">{t("workspace.prLoading")}</p>
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prLoading")}</p>
           ) : branchResult?.repository == null ? (
-            <p className="text-muted-foreground">{t("workspace.prNoGitHubOrigin")}</p>
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prNoGitHubOrigin")}</p>
           ) : branchResult.pullRequest == null ? (
-            <p className="text-muted-foreground">
+            <p className="px-3 pt-3 text-muted-foreground">
               {t("workspace.prNoOpenPullRequest", {
                 branch: branchResult.branch ?? gitSnapshot?.branch ?? "",
               })}
             </p>
           ) : loadingDetail && !detail ? (
-            <p className="text-muted-foreground">{t("workspace.prLoadingDetail")}</p>
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prLoadingDetail")}</p>
           ) : detail ? (
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <WorkspacePrDetailView
-                detail={detail}
-                conversationItems={conversation?.items ?? []}
-                loadingConversation={loadingConversation}
-                conversationHasMore={conversation?.hasMore ?? false}
-                changedFiles={filesSnapshot?.files ?? []}
-                loadingChanges={loadingChanges}
-                changesHasMore={filesSnapshot?.hasMore ?? false}
-                onOpenExternal={openExternalUrl}
-                className="min-h-0 flex-1"
-              />
-            </div>
+            <WorkspacePrDetailView
+              detail={detail}
+              conversationItems={conversation?.items ?? []}
+              loadingConversation={loadingConversation}
+              conversationHasMore={conversation?.hasMore ?? false}
+              changedFiles={filesSnapshot?.files ?? []}
+              loadingChanges={loadingChanges}
+              changesHasMore={filesSnapshot?.hasMore ?? false}
+              onOpenExternal={openExternalUrl}
+              className="min-h-0 flex-1"
+            />
           ) : (
-            <p className="text-muted-foreground">{t("workspace.prDetailUnavailable")}</p>
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prDetailUnavailable")}</p>
           )}
         </>
       ) : null}
 
-      {error ? <p className="text-destructive">{error}</p> : null}
+      {error ? <p className="px-3 pb-3 text-destructive">{error}</p> : null}
     </div>
   );
 }
