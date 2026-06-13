@@ -22,7 +22,7 @@ function PrCommitRow({
   onOpenExternal?: (url: string) => void;
 }) {
   const { i18n } = useTranslation();
-  const avatarUrl = resolveGitHubAvatarUrl(commit.avatarUrl, commit.authorLogin);
+  const avatarUrl = resolveGitHubAvatarUrl(commit.authorLogin, commit.avatarUrl);
 
   const openCommit = () => {
     if (commit.url && onOpenExternal) {
