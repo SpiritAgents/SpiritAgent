@@ -29,6 +29,8 @@ interface GitHubTimelineEvent {
   id?: number | string;
   event?: string | null;
   created_at?: string | null;
+  submitted_at?: string | null;
+  updated_at?: string | null;
   body?: string | null;
   state?: string | null;
   html_url?: string | null;
@@ -38,7 +40,7 @@ interface GitHubTimelineEvent {
     sha?: string | null;
     html_url?: string | null;
     message?: string | null;
-    author?: { name?: string | null } | null;
+    author?: { name?: string | null; date?: string | null } | null;
   } | null;
   commit_id?: string | null;
 }
@@ -84,6 +86,22 @@ function normalizeReviewState(state: string | null | undefined): GitHubPullReque
     default:
       return 'COMMENTED';
   }
+}
+
+function resolveTimelineEventCreatedAt(event: GitHubTimelineEvent): string | null {
+  const direct = event.created_at?.trim() || event.submitted_at?.trim() || event.updated_at?.trim();
+  if (direct) {
+    return direct;
+  }
+
+  if (event.event?.trim() === 'committed') {
+    const commitDate = event.commit?.author?.date?.trim();
+    if (commitDate) {
+      return commitDate;
+    }
+  }
+
+  return null;
 }
 
 function mapReviewComment(item: GitHubReviewCommentApiItem): GitHubPullRequestReviewComment {
@@ -169,7 +187,7 @@ export function mapTimelineEventToConversationItem(
     return null;
   }
 
-  const createdAt = event.created_at?.trim();
+  const createdAt = resolveTimelineEventCreatedAt(event);
   if (!createdAt) {
     return null;
   }

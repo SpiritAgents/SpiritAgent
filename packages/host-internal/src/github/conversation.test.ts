@@ -72,6 +72,45 @@ test('mapTimelineEventToConversationItem maps review event', () => {
   assert.deepEqual(item.threads, []);
 });
 
+test('mapTimelineEventToConversationItem maps review event with submitted_at only', () => {
+  const item = mapTimelineEventToConversationItem({
+    id: 4464571196,
+    event: 'reviewed',
+    state: 'commented',
+    submitted_at: '2026-06-10T04:44:53Z',
+    user: { login: 'cursor[bot]', avatar_url: 'https://avatars.githubusercontent.com/in/1210556?v=4' },
+    body: '✅ Bugbot reviewed your changes and found no new issues!',
+    html_url: 'https://github.com/N123999/SpiritAgent/pull/100#pullrequestreview-4464571196',
+  });
+
+  assert.equal(item?.kind, 'review');
+  if (item?.kind !== 'review') {
+    return;
+  }
+  assert.equal(item.createdAt, '2026-06-10T04:44:53Z');
+  assert.equal(item.authorLogin, 'cursor[bot]');
+  assert.equal(item.state, 'COMMENTED');
+  assert.match(item.body ?? '', /Bugbot reviewed your changes/);
+});
+
+test('mapTimelineEventToConversationItem maps committed event without created_at', () => {
+  const item = mapTimelineEventToConversationItem({
+    event: 'committed',
+    commit: {
+      sha: 'abc123',
+      html_url: 'https://github.com/octocat/Hello-World/commit/abc123',
+      message: 'Fix login bug',
+      author: { name: 'Octocat', date: '2024-01-02T10:00:00Z' },
+    },
+  });
+
+  assert.equal(item?.kind, 'commit');
+  if (item?.kind !== 'commit') {
+    return;
+  }
+  assert.equal(item.createdAt, '2024-01-02T10:00:00Z');
+});
+
 test('groupReviewCommentsIntoThreads groups replies under root comment', () => {
   const threads = groupReviewCommentsIntoThreads([
     {
