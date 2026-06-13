@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitPullRequest } from "lucide-react";
+import { GitPullRequest, ChevronLeft } from "lucide-react";
 import { appendPullRequestChecksPages } from "@spirit-agent/host-internal/github-pull-request-checks-pages";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import type {
   GitHubPullRequestListSnapshot,
   GetGitHubPullRequestTabCountsRequest,
   GitHubPullRequestTabCounts,
+  GitHubPullRequestListItem,
 } from "@/types";
 
 const MOCK_PULL_REQUEST = {
@@ -549,6 +550,35 @@ export function WorkspacePrTab({
     loadingMoreChecks,
   ]);
 
+  const handleSelectPullRequest = useCallback(
+    async (item: GitHubPullRequestListItem) => {
+      const repository = branchResultRef.current?.repository;
+      if (!repository) {
+        return;
+      }
+
+      const request: GetGitHubPullRequestDetailRequest = {
+        owner: repository.owner,
+        repo: repository.repo,
+        number: item.number,
+      };
+      pinnedPullRequestRequestRef.current = request;
+      setViewMode("detail");
+      await loadPullRequestBundle(request);
+    },
+    [loadPullRequestBundle],
+  );
+
+  const handleBackToList = useCallback(() => {
+    pinnedPullRequestRequestRef.current = null;
+    setViewMode("list");
+    setDetail(null);
+    setConversation(null);
+    setFilesSnapshot(null);
+    setCommitsSnapshot(null);
+    setChecksSnapshot(null);
+  }, []);
+
   const handleMarkPullRequestReady = useCallback(async () => {
     const request = resolveActivePullRequestRequest(
       branchResultRef.current,
@@ -760,32 +790,49 @@ export function WorkspacePrTab({
               repository={branchResult.repository}
               listGitHubPullRequests={listGitHubPullRequests}
               getGitHubPullRequestTabCounts={getGitHubPullRequestTabCounts}
+              onSelectPullRequest={(item) => {
+                void handleSelectPullRequest(item);
+              }}
               className="min-h-0 flex-1"
             />
           ) : detail ? (
-            <WorkspacePrDetailView
-              detail={detail}
-              conversationItems={conversation?.items ?? []}
-              loadingConversation={loadingConversation}
-              conversationHasMore={conversation?.hasMore ?? false}
-              changedFiles={filesSnapshot?.files ?? []}
-              loadingChanges={loadingChanges}
-              changesHasMore={filesSnapshot?.hasMore ?? false}
-              commits={commitsSnapshot?.commits ?? []}
-              loadingCommits={loadingCommits}
-              commitsHasMore={commitsSnapshot?.hasMore ?? false}
-              checks={checksSnapshot?.checks ?? []}
-              loadingChecks={loadingChecks}
-              loadingMoreChecks={loadingMoreChecks}
-              checksHasMore={checksSnapshot?.hasMore ?? false}
-              onLoadMoreChecks={loadMoreChecks}
-              actionBusy={prActionBusy}
-              onOpenExternal={openExternalUrl}
-              onMerge={handleMergePullRequest}
-              onMarkReady={handleMarkPullRequestReady}
-              onPrDiffAddToSession={onPrDiffAddToSession}
-              className="min-h-0 flex-1"
-            />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="flex shrink-0 items-center px-3 pt-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleBackToList}
+                >
+                  <ChevronLeft className="size-3.5" aria-hidden />
+                  {t("workspace.prListBack")}
+                </Button>
+              </div>
+              <WorkspacePrDetailView
+                detail={detail}
+                conversationItems={conversation?.items ?? []}
+                loadingConversation={loadingConversation}
+                conversationHasMore={conversation?.hasMore ?? false}
+                changedFiles={filesSnapshot?.files ?? []}
+                loadingChanges={loadingChanges}
+                changesHasMore={filesSnapshot?.hasMore ?? false}
+                commits={commitsSnapshot?.commits ?? []}
+                loadingCommits={loadingCommits}
+                commitsHasMore={commitsSnapshot?.hasMore ?? false}
+                checks={checksSnapshot?.checks ?? []}
+                loadingChecks={loadingChecks}
+                loadingMoreChecks={loadingMoreChecks}
+                checksHasMore={checksSnapshot?.hasMore ?? false}
+                onLoadMoreChecks={loadMoreChecks}
+                actionBusy={prActionBusy}
+                onOpenExternal={openExternalUrl}
+                onMerge={handleMergePullRequest}
+                onMarkReady={handleMarkPullRequestReady}
+                onPrDiffAddToSession={onPrDiffAddToSession}
+                className="min-h-0 flex-1"
+              />
+            </div>
           ) : (
             <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prDetailUnavailable")}</p>
           )}
