@@ -1,4 +1,5 @@
 import { commitSubject } from './commit-subject.js';
+import { resolveGitCommitAuthorIdentity } from './git-author-github.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import {
   githubApiHeaders,
@@ -38,12 +39,12 @@ interface GitHubTimelineEvent {
   message?: string | null;
   actor?: GitHubUserRef | null;
   user?: GitHubUserRef | null;
-  author?: { name?: string | null; date?: string | null } | null;
+  author?: { name?: string | null; date?: string | null; email?: string | null } | null;
   commit?: {
     sha?: string | null;
     html_url?: string | null;
     message?: string | null;
-    author?: { name?: string | null; date?: string | null } | null;
+    author?: { name?: string | null; date?: string | null; email?: string | null } | null;
   } | null;
   commit_id?: string | null;
 }
@@ -98,6 +99,7 @@ function resolveCommittedTimelineFields(
   message: string;
   url: string;
   authorName: string;
+  authorEmail: string | null;
   authorDate: string | null;
 } | null {
   const nested = event.commit;
@@ -112,6 +114,7 @@ function resolveCommittedTimelineFields(
     message: nested?.message ?? event.message ?? '',
     url: nested?.html_url?.trim() || event.html_url?.trim() || '',
     authorName: author?.name?.trim() || '',
+    authorEmail: author?.email?.trim() || null,
     authorDate: author?.date?.trim() || null,
   };
 }
@@ -230,12 +233,17 @@ export function mapTimelineEventToConversationItem(
     if (!committed) {
       return null;
     }
+    const identity = resolveGitCommitAuthorIdentity({
+      gitHubUser: actor,
+      authorName: committed.authorName,
+      authorEmail: committed.authorEmail,
+    });
     const item: GitHubPullRequestConversationCommit = {
       kind: 'commit',
       id: `commit-${committed.sha}`,
       createdAt,
-      authorLogin: committed.authorName || authorLogin,
-      avatarUrl,
+      authorLogin: identity.login,
+      avatarUrl: identity.avatarUrl,
       subject: commitSubject(committed.message),
       sha: committed.sha,
       url: committed.url,
