@@ -151,6 +151,9 @@ declare global {
     getGitHubPullRequestFiles(
       request: import('./types').GetGitHubPullRequestDetailRequest,
     ): Promise<import('./types').GitHubPullRequestFilesSnapshot>;
+    getGitHubPullRequestCommits(
+      request: import('./types').GetGitHubPullRequestDetailRequest,
+    ): Promise<import('./types').GitHubPullRequestCommitsSnapshot>;
     readWorkspaceTextFile(relativePath: string): Promise<WorkspaceReadTextFileResult>;
     writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void>;
     readHostTextFile(absolutePath: string): Promise<WorkspaceReadTextFileResult>;

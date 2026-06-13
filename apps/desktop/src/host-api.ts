@@ -50,6 +50,7 @@ import type {
   GitHubPullRequestDetail,
   GitHubPullRequestConversationSnapshot,
   GitHubPullRequestFilesSnapshot,
+  GitHubPullRequestCommitsSnapshot,
   GitHubPullRequestForBranchResult,
   SubmitUserTurnRequest,
   SessionListItem,
@@ -132,6 +133,9 @@ export interface HostApi {
   getGitHubPullRequestFiles(
     request: GetGitHubPullRequestDetailRequest,
   ): Promise<GitHubPullRequestFilesSnapshot>;
+  getGitHubPullRequestCommits(
+    request: GetGitHubPullRequestDetailRequest,
+  ): Promise<GitHubPullRequestCommitsSnapshot>;
   abortConversation(): Promise<DesktopSnapshot>;
   abortShellCommand(toolCallId: string): Promise<DesktopSnapshot>;
   continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;

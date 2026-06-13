@@ -67,6 +67,7 @@ export type HostCommandName =
   | 'getGitHubPullRequestDetail'
   | 'getGitHubPullRequestConversation'
   | 'getGitHubPullRequestFiles'
+  | 'getGitHubPullRequestCommits'
   | 'abortConversation'
   | 'abortShellCommand'
   | 'continueAssistantCompletion'
