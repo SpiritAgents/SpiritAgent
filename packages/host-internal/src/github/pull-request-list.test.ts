@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildPullRequestSearchQuery, mapPullRequestListItem } from './pull-request-list.js';
+import { buildPullRequestSearchQuery, mapPullRequestListItem, mapSearchIssueToListItem } from './pull-request-list.js';
 
 test('buildPullRequestSearchQuery includes repo, pr type, state, and query', () => {
   assert.equal(
@@ -22,6 +22,20 @@ test('buildPullRequestSearchQuery omits empty query token', () => {
     buildPullRequestSearchQuery({ owner: 'octocat', repo: 'Hello-World' }, 'closed', 'auth'),
     'repo:octocat/Hello-World is:pr -is:open auth',
   );
+});
+
+test('mapSearchIssueToListItem maps draft pull requests from search results', () => {
+  const item = mapSearchIssueToListItem({
+    number: 7,
+    title: 'Draft PR',
+    state: 'open',
+    html_url: 'https://github.com/octocat/Hello-World/pull/7',
+    draft: true,
+    pull_request: { merged_at: null, draft: true },
+  });
+
+  assert.ok(item);
+  assert.equal(item.draft, true);
 });
 
 test('mapPullRequestListItem maps metadata and task list progress', () => {

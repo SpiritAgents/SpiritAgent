@@ -35,11 +35,12 @@ interface GitHubSearchIssueApiItem {
   title: string;
   state: 'open' | 'closed';
   html_url: string;
+  draft?: boolean;
   body?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   user?: { login?: string | null; avatar_url?: string | null } | null;
-  pull_request?: { url?: string | null; merged_at?: string | null } | null;
+  pull_request?: { url?: string | null; merged_at?: string | null; draft?: boolean | null } | null;
 }
 
 interface GitHubSearchIssuesResponse {
@@ -81,7 +82,7 @@ export function mapPullRequestListItem(item: GitHubPullRequestListApiItem): GitH
   };
 }
 
-function mapSearchIssueToListItem(item: GitHubSearchIssueApiItem): GitHubPullRequestListItem | null {
+export function mapSearchIssueToListItem(item: GitHubSearchIssueApiItem): GitHubPullRequestListItem | null {
   if (!item.pull_request) {
     return null;
   }
@@ -96,6 +97,7 @@ function mapSearchIssueToListItem(item: GitHubSearchIssueApiItem): GitHubPullReq
     updated_at: item.updated_at ?? null,
     user: item.user ?? null,
     merged_at: item.pull_request?.merged_at ?? null,
+    draft: item.draft ?? item.pull_request?.draft ?? false,
     head: { ref: '', sha: '' },
     base: { ref: '' },
   });
