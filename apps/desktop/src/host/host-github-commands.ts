@@ -2,17 +2,40 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import {
+  assertGitHubPullRequestMergeMethod,
   findOpenPullRequestForHead,
+  getPullRequestConversation,
   getPullRequestDetail,
+  getPullRequestFiles,
+  getPullRequestCommits,
+  getPullRequestChecks,
+  mergePullRequest,
+  markPullRequestReadyForReview,
+  listPullRequests,
+  getPullRequestTabCounts,
   GitHubOAuthError,
   parseGitHubRemoteUrl,
   type GitHubAuthStatus,
   type GitHubDeviceAuthChallenge,
+  type GitHubPullRequestConversationSnapshot,
   type GitHubPullRequestDetail,
+  type GitHubPullRequestFilesSnapshot,
+  type GitHubPullRequestCommitsSnapshot,
+  type GitHubPullRequestChecksSnapshot,
   type GitHubPullRequestForBranchResult,
+  type GitHubPullRequestListSnapshot,
+  type GitHubPullRequestMergeResult,
+  type GitHubPullRequestTabCounts,
+  type GitHubRepositoryRef,
 } from '@spirit-agent/host-internal';
 
-import type { DesktopGitSnapshot, GetGitHubPullRequestDetailRequest } from '../types.js';
+import type {
+  DesktopGitSnapshot,
+  GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
+  MergeGitHubPullRequestRequest,
+} from '../types.js';
 import {
   clearGitHubOAuthCredentials,
   getGitHubAuthStatusFromStorage,
@@ -85,7 +108,6 @@ async function handleGitHubApiError(error: unknown): Promise<Error> {
     return new Error('GitHub authentication expired or is invalid. Connect GitHub again.');
   }
   if (error.status === 403) {
-    await clearGitHubOAuthCredentials();
     return new Error(
       'GitHub denied access. If this repository belongs to an organization with SSO, authorize the token for that organization on GitHub.',
     );
@@ -99,6 +121,18 @@ async function requireGitHubAccessToken(): Promise<string> {
     throw new Error('Connect GitHub before querying pull requests.');
   }
   return accessToken;
+}
+
+function parsePullRequestRepositoryRequest(
+  request: GetGitHubPullRequestDetailRequest,
+): GitHubRepositoryRef & { number: number } {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  const number = request.number;
+  if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
+    throw new Error('Pull request owner, repository, and number are required.');
+  }
+  return { owner, repo, number };
 }
 
 export async function getGitHubPullRequestForCurrentBranchCommand(
@@ -149,6 +183,158 @@ export async function getGitHubPullRequestDetailCommand(
   try {
     const accessToken = await requireGitHubAccessToken();
     return await getPullRequestDetail(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestConversationCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestConversationSnapshot> {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  const number = request.number;
+  if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
+    throw new Error('Pull request owner, repository, and number are required.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestConversation(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestFilesCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestFilesSnapshot> {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  const number = request.number;
+  if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
+    throw new Error('Pull request owner, repository, and number are required.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestFiles(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestCommitsCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestCommitsSnapshot> {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  const number = request.number;
+  if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
+    throw new Error('Pull request owner, repository, and number are required.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestCommits(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestChecksCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestChecksSnapshot> {
+  const { owner, repo, number } = parsePullRequestRepositoryRequest(request);
+  const checksAfter = request.checksAfter?.trim() || undefined;
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestChecks(
+      accessToken,
+      { owner, repo },
+      number,
+      checksAfter ? { after: checksAfter } : {},
+    );
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function mergeGitHubPullRequestCommand(
+  request: MergeGitHubPullRequestRequest,
+): Promise<GitHubPullRequestMergeResult> {
+  const { owner, repo, number } = parsePullRequestRepositoryRequest(request);
+  const mergeMethod = assertGitHubPullRequestMergeMethod(request.mergeMethod);
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await mergePullRequest(accessToken, { owner, repo }, number, { mergeMethod });
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function markGitHubPullRequestReadyCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestDetail> {
+  const { owner, repo, number } = parsePullRequestRepositoryRequest(request);
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    const nodeId =
+      request.nodeId?.trim() ||
+      (await getPullRequestDetail(accessToken, { owner, repo }, number)).nodeId;
+    if (!nodeId) {
+      throw new Error('Pull request node ID is unavailable.');
+    }
+    await markPullRequestReadyForReview(accessToken, nodeId);
+    return await getPullRequestDetail(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+function parseGitHubRepositoryRequest(
+  request: GetGitHubPullRequestTabCountsRequest | ListGitHubPullRequestsRequest,
+): GitHubRepositoryRef {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  if (!owner || !repo) {
+    throw new Error('Pull request owner and repository are required.');
+  }
+  return { owner, repo };
+}
+
+export async function listGitHubPullRequestsCommand(
+  request: ListGitHubPullRequestsRequest,
+): Promise<GitHubPullRequestListSnapshot> {
+  const repository = parseGitHubRepositoryRequest(request);
+  if (request.state !== 'open' && request.state !== 'closed') {
+    throw new Error('Pull request list state must be open or closed.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await listPullRequests(accessToken, {
+      ...repository,
+      state: request.state,
+      ...(request.page && request.page > 0 ? { page: request.page } : {}),
+      ...(request.query?.trim() ? { query: request.query.trim() } : {}),
+    });
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestTabCountsCommand(
+  request: GetGitHubPullRequestTabCountsRequest,
+): Promise<GitHubPullRequestTabCounts> {
+  const repository = parseGitHubRepositoryRequest(request);
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestTabCounts(accessToken, repository);
   } catch (error) {
     throw await handleGitHubApiError(error);
   }

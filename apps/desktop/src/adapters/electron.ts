@@ -255,8 +255,32 @@ export async function createElectronHostApi(): Promise<HostApi> {
     getGitHubPullRequestForCurrentBranch() {
       return bridge.getGitHubPullRequestForCurrentBranch();
     },
+    listGitHubPullRequests(request) {
+      return bridge.listGitHubPullRequests(request);
+    },
+    getGitHubPullRequestTabCounts(request) {
+      return bridge.getGitHubPullRequestTabCounts(request);
+    },
     getGitHubPullRequestDetail(request) {
       return bridge.getGitHubPullRequestDetail(request);
+    },
+    getGitHubPullRequestConversation(request) {
+      return bridge.getGitHubPullRequestConversation(request);
+    },
+    getGitHubPullRequestFiles(request) {
+      return bridge.getGitHubPullRequestFiles(request);
+    },
+    getGitHubPullRequestCommits(request) {
+      return bridge.getGitHubPullRequestCommits(request);
+    },
+    getGitHubPullRequestChecks(request) {
+      return bridge.getGitHubPullRequestChecks(request);
+    },
+    mergeGitHubPullRequest(request) {
+      return bridge.mergeGitHubPullRequest(request);
+    },
+    markGitHubPullRequestReady(request) {
+      return bridge.markGitHubPullRequestReady(request);
     },
     readWorkspaceTextFile(relativePath) {
       return bridge.readWorkspaceTextFile(relativePath);

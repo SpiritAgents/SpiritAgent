@@ -142,7 +142,31 @@ declare global {
     cancelGitHubDeviceLogin(): Promise<void>;
     disconnectGitHub(): Promise<import('./types').GitHubAuthStatus>;
     getGitHubPullRequestForCurrentBranch(): Promise<import('./types').GitHubPullRequestForBranchResult>;
+    listGitHubPullRequests(
+      request: import('./types').ListGitHubPullRequestsRequest,
+    ): Promise<import('./types').GitHubPullRequestListSnapshot>;
+    getGitHubPullRequestTabCounts(
+      request: import('./types').GetGitHubPullRequestTabCountsRequest,
+    ): Promise<import('./types').GitHubPullRequestTabCounts>;
     getGitHubPullRequestDetail(
+      request: import('./types').GetGitHubPullRequestDetailRequest,
+    ): Promise<import('./types').GitHubPullRequestDetail>;
+    getGitHubPullRequestConversation(
+      request: import('./types').GetGitHubPullRequestDetailRequest,
+    ): Promise<import('./types').GitHubPullRequestConversationSnapshot>;
+    getGitHubPullRequestFiles(
+      request: import('./types').GetGitHubPullRequestDetailRequest,
+    ): Promise<import('./types').GitHubPullRequestFilesSnapshot>;
+    getGitHubPullRequestCommits(
+      request: import('./types').GetGitHubPullRequestDetailRequest,
+    ): Promise<import('./types').GitHubPullRequestCommitsSnapshot>;
+    getGitHubPullRequestChecks(
+      request: import('./types').GetGitHubPullRequestDetailRequest,
+    ): Promise<import('./types').GitHubPullRequestChecksSnapshot>;
+    mergeGitHubPullRequest(
+      request: import('./types').MergeGitHubPullRequestRequest,
+    ): Promise<import('./types').GitHubPullRequestMergeResult>;
+    markGitHubPullRequestReady(
       request: import('./types').GetGitHubPullRequestDetailRequest,
     ): Promise<import('./types').GitHubPullRequestDetail>;
     readWorkspaceTextFile(relativePath: string): Promise<WorkspaceReadTextFileResult>;

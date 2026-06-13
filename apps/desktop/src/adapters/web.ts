@@ -210,7 +210,31 @@ export function createWebHostApi(): HostApi {
     getGitHubPullRequestForCurrentBranch() {
       return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
     },
+    listGitHubPullRequests() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    getGitHubPullRequestTabCounts() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
     getGitHubPullRequestDetail() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    getGitHubPullRequestConversation() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    getGitHubPullRequestFiles() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    getGitHubPullRequestCommits() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    getGitHubPullRequestChecks() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    mergeGitHubPullRequest() {
+      return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
+    },
+    markGitHubPullRequestReady() {
       return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
     },
     abortConversation() {
