@@ -6,6 +6,7 @@ import {
   getPullRequestConversation,
   getPullRequestDetail,
   getPullRequestFiles,
+  getPullRequestCommits,
   GitHubOAuthError,
   parseGitHubRemoteUrl,
   type GitHubAuthStatus,
@@ -13,6 +14,7 @@ import {
   type GitHubPullRequestConversationSnapshot,
   type GitHubPullRequestDetail,
   type GitHubPullRequestFilesSnapshot,
+  type GitHubPullRequestCommitsSnapshot,
   type GitHubPullRequestForBranchResult,
 } from '@spirit-agent/host-internal';
 
@@ -189,6 +191,24 @@ export async function getGitHubPullRequestFilesCommand(
   try {
     const accessToken = await requireGitHubAccessToken();
     return await getPullRequestFiles(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestCommitsCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestCommitsSnapshot> {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  const number = request.number;
+  if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
+    throw new Error('Pull request owner, repository, and number are required.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestCommits(accessToken, { owner, repo }, number);
   } catch (error) {
     throw await handleGitHubApiError(error);
   }

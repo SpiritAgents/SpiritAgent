@@ -264,6 +264,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     getGitHubPullRequestFiles(request) {
       return bridge.getGitHubPullRequestFiles(request);
     },
+    getGitHubPullRequestCommits(request) {
+      return bridge.getGitHubPullRequestCommits(request);
+    },
     readWorkspaceTextFile(relativePath) {
       return bridge.readWorkspaceTextFile(relativePath);
     },

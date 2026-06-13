@@ -928,6 +928,8 @@ export type {
   GitHubPullRequestChangedFile,
   GitHubPullRequestFileStatus,
   GitHubPullRequestFilesSnapshot,
+  GitHubPullRequestCommit,
+  GitHubPullRequestCommitsSnapshot,
   GitHubPullRequestConversationCommit,
   GitHubPullRequestConversationIssueComment,
   GitHubPullRequestConversationReview,
