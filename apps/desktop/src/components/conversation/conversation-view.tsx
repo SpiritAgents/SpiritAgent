@@ -122,6 +122,9 @@ export type WorkspaceToolsSectionProps = {
   workspaceFileRevealAbsolutePath: string;
   workspaceFileRevealScope: EditorFileTarget["scope"];
   workspaceFileRevealViewMode: WorkspaceEditorViewMode;
+  workspacePrRevealNonce: number;
+  workspacePrRevealTargetId: string | null;
+  workspacePrRevealRequest: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
   onOpenWorkspaceFile: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode },
@@ -359,6 +362,9 @@ export function ConversationView({
           fileRevealAbsolutePath={workspaceTools.workspaceFileRevealAbsolutePath}
           fileRevealScope={workspaceTools.workspaceFileRevealScope}
           fileRevealViewMode={workspaceTools.workspaceFileRevealViewMode}
+          prRevealNonce={workspaceTools.workspacePrRevealNonce}
+          prRevealTabId={workspaceTools.workspacePrRevealTargetId}
+          prRevealRequest={workspaceTools.workspacePrRevealRequest}
           onOpenWorkspaceFile={workspaceTools.onOpenWorkspaceFile}
           tabs={workspaceTools.workspaceToolTabs}
           activeTabId={workspaceTools.activeWorkspaceToolTabId}

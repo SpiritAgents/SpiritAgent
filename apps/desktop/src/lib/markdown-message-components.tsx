@@ -5,10 +5,12 @@ import type {
   HTMLAttributes,
   ImgHTMLAttributes,
   InputHTMLAttributes,
+  MouseEvent,
 } from "react";
 
 import { MarkdownImage, type ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
 import { MarkdownVideo, type ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
+import type { WorkspaceMarkdownLinkClickHandler } from "@/components/workspace-markdown-link-context";
 import { cn } from "@/lib/utils";
 
 export type MarkdownTone = "default" | "muted";
@@ -18,6 +20,7 @@ export function createMarkdownMessageComponents(
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl,
   tone: MarkdownTone = "default",
   readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl,
+  onLinkClick?: WorkspaceMarkdownLinkClickHandler,
 ): Record<string, ComponentType<Record<string, unknown>>> {
   const muted = tone === "muted";
   const bodyText = muted
@@ -92,7 +95,7 @@ export function createMarkdownMessageComponents(
     hr: ({ className, ...props }: HTMLAttributes<HTMLHRElement>) => (
       <hr className={cn("my-4 border-border/60", className)} {...props} />
     ),
-    a: ({ className, href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    a: ({ className, href, children, onClick, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => (
       <a
         className={cn(
           muted
@@ -103,6 +106,13 @@ export function createMarkdownMessageComponents(
         href={href}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+          onClick?.(event);
+          const hrefValue = href?.trim();
+          if (hrefValue && onLinkClick?.(hrefValue, event)) {
+            event.preventDefault();
+          }
+        }}
         {...props}
       >
         {children}

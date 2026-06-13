@@ -16,6 +16,10 @@ import {
   type EditorFileTarget,
   type WorkspaceEditorViewMode,
 } from "@/lib/workspace-editor-navigation";
+import {
+  buildOpenPullRequestNavigation,
+  type GitHubPullRequestRevealRequest,
+} from "@/lib/workspace-pr-navigation";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -66,6 +70,10 @@ export function useWorkspaceToolsController({
   const [workspaceFileRevealViewMode, setWorkspaceFileRevealViewMode] =
     useState<WorkspaceEditorViewMode>("edit");
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(readWorkspaceToolsWidthPx);
+  const [workspacePrRevealNonce, setWorkspacePrRevealNonce] = useState(0);
+  const [workspacePrRevealTargetId, setWorkspacePrRevealTargetId] = useState<string | null>(null);
+  const [workspacePrRevealRequest, setWorkspacePrRevealRequest] =
+    useState<GitHubPullRequestRevealRequest | null>(null);
 
   const openBrowserUrlInNewTab = useCallback((rawUrl: string) => {
     if (runtime.hostKind !== "electron") {
@@ -119,6 +127,23 @@ export function useWorkspaceToolsController({
     },
     [openEditorFile],
   );
+
+  const openPullRequestInPrTab = useCallback((request: GitHubPullRequestRevealRequest) => {
+    if (runtime.hostKind !== "electron") {
+      return;
+    }
+    const navigation = buildOpenPullRequestNavigation({
+      tabs: workspaceToolTabsRef.current,
+      activeTabId: activeWorkspaceToolTabIdRef.current,
+      request,
+    });
+    setWorkspaceToolsOpen(true);
+    setWorkspaceToolTabs(navigation.tabs);
+    setActiveWorkspaceToolTabId(navigation.activeTabId);
+    setWorkspacePrRevealTargetId(navigation.prTabId);
+    setWorkspacePrRevealRequest(navigation.request);
+    setWorkspacePrRevealNonce((value) => value + 1);
+  }, [runtime.hostKind]);
 
   useEffect(() => {
     if (!runtime.apiReady || runtime.hostKind == null) {
@@ -239,5 +264,9 @@ export function useWorkspaceToolsController({
     openBrowserUrlInNewTab,
     openEditorFile,
     openWorkspaceFile,
+    openPullRequestInPrTab,
+    workspacePrRevealNonce,
+    workspacePrRevealTargetId,
+    workspacePrRevealRequest,
   };
 }

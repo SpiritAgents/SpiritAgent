@@ -7,6 +7,7 @@ import {
   markdownMessageRootClassName,
   type MarkdownTone,
 } from "@/lib/markdown-message-components";
+import { useWorkspaceMarkdownLinkClick } from "@/components/workspace-markdown-link-context";
 import { reactMarkdownUrlTransform } from "@/lib/markdown-url-transform";
 
 import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
@@ -25,9 +26,10 @@ export function MarkdownMessage({
   tone?: MarkdownTone;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
 }) {
+  const onMarkdownLinkClick = useWorkspaceMarkdownLinkClick();
   const markdownComponents = useMemo(
-    () => createMarkdownMessageComponents(readManagedImagePreviewDataUrl, tone),
-    [readManagedImagePreviewDataUrl, tone],
+    () => createMarkdownMessageComponents(readManagedImagePreviewDataUrl, tone, undefined, onMarkdownLinkClick),
+    [onMarkdownLinkClick, readManagedImagePreviewDataUrl, tone],
   );
 
   return (

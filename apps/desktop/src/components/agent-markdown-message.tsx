@@ -22,6 +22,7 @@ import {
 } from "@/lib/markdown-message-components";
 import { streamdownRehypePlugins } from "@/lib/markdown-streamdown-plugins";
 import { streamdownUrlTransform } from "@/lib/markdown-url-transform";
+import { useWorkspaceMarkdownLinkClick } from "@/components/workspace-markdown-link-context";
 
 const streamdownPlugins = { code, math, mermaid };
 
@@ -118,9 +119,16 @@ export function AgentMarkdownMessage({
   readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const onMarkdownLinkClick = useWorkspaceMarkdownLinkClick();
   const components = useMemo(
-    () => createMarkdownMessageComponents(readManagedImagePreviewDataUrl, tone, readManagedVideoPreviewUrl),
-    [readManagedImagePreviewDataUrl, readManagedVideoPreviewUrl, tone],
+    () =>
+      createMarkdownMessageComponents(
+        readManagedImagePreviewDataUrl,
+        tone,
+        readManagedVideoPreviewUrl,
+        onMarkdownLinkClick,
+      ),
+    [onMarkdownLinkClick, readManagedImagePreviewDataUrl, readManagedVideoPreviewUrl, tone],
   );
 
   const motionActive = streaming && !prefersReducedMotion;

@@ -108,6 +108,9 @@ export type WorkspaceToolsDockProps = {
   fileRevealAbsolutePath?: string;
   fileRevealScope?: EditorFileTarget["scope"];
   fileRevealViewMode?: WorkspaceEditorViewMode;
+  prRevealNonce?: number;
+  prRevealTabId?: string | null;
+  prRevealRequest?: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
   onOpenWorkspaceFile?: (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => void;
   tabs: WorkspaceToolTab[];
   activeTabId: string;
@@ -175,6 +178,9 @@ function WorkspaceToolsDockInner({
   fileRevealAbsolutePath = "",
   fileRevealScope = "workspace",
   fileRevealViewMode = "edit",
+  prRevealNonce = 0,
+  prRevealTabId = null,
+  prRevealRequest = null,
   onOpenWorkspaceFile,
   tabs,
   activeTabId,
@@ -568,6 +574,8 @@ function WorkspaceToolsDockInner({
                 item.kind === "files" &&
                 fileRevealTabId != null &&
                 item.id === fileRevealTabId;
+              const prRevealEnabled =
+                item.kind === "pr" && prRevealTabId != null && item.id === prRevealTabId;
 
               return (
                 <div
@@ -650,6 +658,9 @@ function WorkspaceToolsDockInner({
                         getGitHubPullRequestFiles={getGitHubPullRequestFiles}
                         getGitHubPullRequestCommits={getGitHubPullRequestCommits}
                         getGitHubPullRequestChecks={getGitHubPullRequestChecks}
+                        prRevealEnabled={prRevealEnabled}
+                        prRevealNonce={prRevealEnabled ? prRevealNonce : 0}
+                        prRevealRequest={prRevealEnabled ? prRevealRequest : null}
                       />
                     </div>
                   ) : (
