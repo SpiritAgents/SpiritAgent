@@ -11,6 +11,8 @@ import {
   getPullRequestChecks,
   mergePullRequest,
   markPullRequestReadyForReview,
+  listPullRequests,
+  getPullRequestTabCounts,
   GitHubOAuthError,
   parseGitHubRemoteUrl,
   type GitHubAuthStatus,
@@ -21,13 +23,17 @@ import {
   type GitHubPullRequestCommitsSnapshot,
   type GitHubPullRequestChecksSnapshot,
   type GitHubPullRequestForBranchResult,
+  type GitHubPullRequestListSnapshot,
   type GitHubPullRequestMergeResult,
+  type GitHubPullRequestTabCounts,
   type GitHubRepositoryRef,
 } from '@spirit-agent/host-internal';
 
 import type {
   DesktopGitSnapshot,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
   MergeGitHubPullRequestRequest,
 } from '../types.js';
 import {
@@ -284,6 +290,51 @@ export async function markGitHubPullRequestReadyCommand(
     }
     await markPullRequestReadyForReview(accessToken, nodeId);
     return await getPullRequestDetail(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+function parseGitHubRepositoryRequest(
+  request: GetGitHubPullRequestTabCountsRequest | ListGitHubPullRequestsRequest,
+): GitHubRepositoryRef {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  if (!owner || !repo) {
+    throw new Error('Pull request owner and repository are required.');
+  }
+  return { owner, repo };
+}
+
+export async function listGitHubPullRequestsCommand(
+  request: ListGitHubPullRequestsRequest,
+): Promise<GitHubPullRequestListSnapshot> {
+  const repository = parseGitHubRepositoryRequest(request);
+  if (request.state !== 'open' && request.state !== 'closed') {
+    throw new Error('Pull request list state must be open or closed.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await listPullRequests(accessToken, {
+      ...repository,
+      state: request.state,
+      ...(request.page && request.page > 0 ? { page: request.page } : {}),
+      ...(request.query?.trim() ? { query: request.query.trim() } : {}),
+    });
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestTabCountsCommand(
+  request: GetGitHubPullRequestTabCountsRequest,
+): Promise<GitHubPullRequestTabCounts> {
+  const repository = parseGitHubRepositoryRequest(request);
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestTabCounts(accessToken, repository);
   } catch (error) {
     throw await handleGitHubApiError(error);
   }
