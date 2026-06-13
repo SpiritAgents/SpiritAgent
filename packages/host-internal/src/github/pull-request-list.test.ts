@@ -6,14 +6,21 @@ import { buildPullRequestSearchQuery, mapPullRequestListItem } from './pull-requ
 test('buildPullRequestSearchQuery includes repo, pr type, state, and query', () => {
   assert.equal(
     buildPullRequestSearchQuery({ owner: 'octocat', repo: 'Hello-World' }, 'open', 'login bug'),
-    'repo:octocat/Hello-World is:pr state:open login bug',
+    'repo:octocat/Hello-World is:pr is:open login bug',
+  );
+});
+
+test('buildPullRequestSearchQuery uses -is:open for closed tab to include merged PRs', () => {
+  assert.equal(
+    buildPullRequestSearchQuery({ owner: 'octocat', repo: 'Hello-World' }, 'closed', '   '),
+    'repo:octocat/Hello-World is:pr -is:open',
   );
 });
 
 test('buildPullRequestSearchQuery omits empty query token', () => {
   assert.equal(
-    buildPullRequestSearchQuery({ owner: 'octocat', repo: 'Hello-World' }, 'closed', '   '),
-    'repo:octocat/Hello-World is:pr state:closed',
+    buildPullRequestSearchQuery({ owner: 'octocat', repo: 'Hello-World' }, 'closed', 'auth'),
+    'repo:octocat/Hello-World is:pr -is:open auth',
   );
 });
 
