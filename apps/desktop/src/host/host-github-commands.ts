@@ -5,12 +5,14 @@ import {
   findOpenPullRequestForHead,
   getPullRequestConversation,
   getPullRequestDetail,
+  getPullRequestFiles,
   GitHubOAuthError,
   parseGitHubRemoteUrl,
   type GitHubAuthStatus,
   type GitHubDeviceAuthChallenge,
   type GitHubPullRequestConversationSnapshot,
   type GitHubPullRequestDetail,
+  type GitHubPullRequestFilesSnapshot,
   type GitHubPullRequestForBranchResult,
 } from '@spirit-agent/host-internal';
 
@@ -169,6 +171,24 @@ export async function getGitHubPullRequestConversationCommand(
   try {
     const accessToken = await requireGitHubAccessToken();
     return await getPullRequestConversation(accessToken, { owner, repo }, number);
+  } catch (error) {
+    throw await handleGitHubApiError(error);
+  }
+}
+
+export async function getGitHubPullRequestFilesCommand(
+  request: GetGitHubPullRequestDetailRequest,
+): Promise<GitHubPullRequestFilesSnapshot> {
+  const owner = request.owner.trim();
+  const repo = request.repo.trim();
+  const number = request.number;
+  if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
+    throw new Error('Pull request owner, repository, and number are required.');
+  }
+
+  try {
+    const accessToken = await requireGitHubAccessToken();
+    return await getPullRequestFiles(accessToken, { owner, repo }, number);
   } catch (error) {
     throw await handleGitHubApiError(error);
   }

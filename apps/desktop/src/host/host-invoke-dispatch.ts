@@ -82,6 +82,7 @@ export interface HostCommandDelegate {
   getGitHubPullRequestForCurrentBranch(): Promise<unknown>;
   getGitHubPullRequestDetail(request: CommandPayloads['getGitHubPullRequestDetail']['request']): Promise<unknown>;
   getGitHubPullRequestConversation(request: CommandPayloads['getGitHubPullRequestConversation']['request']): Promise<unknown>;
+  getGitHubPullRequestFiles(request: CommandPayloads['getGitHubPullRequestFiles']['request']): Promise<unknown>;
   readWorkspaceTextFile(relativePath: string): Promise<unknown>;
   writeWorkspaceTextFile(request: CommandPayloads['writeWorkspaceTextFile']['request']): Promise<unknown>;
   readHostTextFile(absolutePath: string): Promise<unknown>;
@@ -179,6 +180,7 @@ const hostCommandDispatch = {
   getGitHubPullRequestDetail: (host, payload) => host.getGitHubPullRequestDetail(payload.request),
   getGitHubPullRequestConversation: (host, payload) =>
     host.getGitHubPullRequestConversation(payload.request),
+  getGitHubPullRequestFiles: (host, payload) => host.getGitHubPullRequestFiles(payload.request),
   readWorkspaceTextFile: (host, payload) => host.readWorkspaceTextFile(payload.relativePath),
   writeWorkspaceTextFile: (host, payload) => host.writeWorkspaceTextFile(payload.request),
   readHostTextFile: (host, payload) => host.readHostTextFile(payload.absolutePath),
