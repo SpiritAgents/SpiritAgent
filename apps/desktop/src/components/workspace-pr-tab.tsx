@@ -1,16 +1,32 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, GitPullRequest } from "lucide-react";
+import { GitPullRequest, ChevronLeft } from "lucide-react";
+import { appendPullRequestChecksPages } from "@spirit-agent/host-internal/github-pull-request-checks-pages";
 
 import { Button } from "@/components/ui/button";
+import { WorkspacePrDetailSkeleton } from "@/components/workspace-pr-detail-skeleton";
+import { WorkspacePrDetailView } from "@/components/workspace-pr-detail-view";
+import { WorkspacePrListView, type WorkspacePrListViewHandle } from "@/components/workspace-pr-list-view";
+import { GITHUB_PR_CHECKS_DEMO, GITHUB_PR_COMMITS_DEMO, GITHUB_PR_CONVERSATION_DEMO, GITHUB_PR_DETAIL_DEMO, GITHUB_PR_FILES_DEMO } from "@/lib/github-pr-ui-demo";
+import type { GitHubPullRequestRevealRequest } from "@/lib/workspace-pr-navigation";
 import { cn } from "@/lib/utils";
 import type {
   DesktopGitSnapshot,
   GetGitHubPullRequestDetailRequest,
   GitHubAuthStatus,
-  GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
+  GitHubPullRequestMergeMethod,
+  GitHubPullRequestSummary,
+  GitHubPullRequestConversationSnapshot,
+  GitHubPullRequestFilesSnapshot,
+  GitHubPullRequestCommitsSnapshot,
+  GitHubPullRequestChecksSnapshot,
   GitHubPullRequestForBranchResult,
+  ListGitHubPullRequestsRequest,
+  GitHubPullRequestListSnapshot,
+  GetGitHubPullRequestTabCountsRequest,
+  GitHubPullRequestTabCounts,
+  GitHubPullRequestListItem,
 } from "@/types";
 
 const MOCK_PULL_REQUEST = {
@@ -34,19 +50,91 @@ function resolveGitBranch(gitSnapshot?: DesktopGitSnapshot): string {
   return gitSnapshot?.selectedBranch?.trim() || gitSnapshot?.branch?.trim() || "";
 }
 
+function pullRequestSummaryFromDetail(detail: GitHubPullRequestDetail): GitHubPullRequestSummary {
+  return {
+    number: detail.number,
+    title: detail.title,
+    state: detail.state,
+    url: detail.url,
+    authorLogin: detail.authorLogin,
+    headRef: detail.headRef,
+    headSha: detail.headSha,
+    baseRef: detail.baseRef,
+    draft: detail.draft,
+  };
+}
+
+function isSamePullRequestRequest(
+  detail: GitHubPullRequestDetail | null,
+  repository: GitHubPullRequestForBranchResult["repository"] | null | undefined,
+  request: GetGitHubPullRequestDetailRequest,
+): boolean {
+  if (!detail || !repository) {
+    return false;
+  }
+  return (
+    detail.number === request.number &&
+    repository.owner === request.owner &&
+    repository.repo === request.repo
+  );
+}
+
+function resolveActivePullRequestRequest(
+  branchResult: GitHubPullRequestForBranchResult | null,
+  pinnedRequest: GetGitHubPullRequestDetailRequest | null,
+  detail: GitHubPullRequestDetail | null,
+): GetGitHubPullRequestDetailRequest | null {
+  if (pinnedRequest) {
+    return pinnedRequest;
+  }
+  const repository = branchResult?.repository ?? null;
+  if (!repository || !detail) {
+    return null;
+  }
+  return {
+    owner: repository.owner,
+    repo: repository.repo,
+    number: detail.number,
+  };
+}
+
 export type WorkspacePrTabProps = {
   gitSnapshot?: DesktopGitSnapshot;
   isActive: boolean;
   prTabEnabled: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
-  beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
-  completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
-  cancelGitHubDeviceLogin: () => Promise<void>;
-  disconnectGitHub: () => Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch: () => Promise<GitHubPullRequestForBranchResult>;
+  listGitHubPullRequests: (
+    request: ListGitHubPullRequestsRequest,
+  ) => Promise<GitHubPullRequestListSnapshot>;
+  getGitHubPullRequestTabCounts: (
+    request: GetGitHubPullRequestTabCountsRequest,
+  ) => Promise<GitHubPullRequestTabCounts>;
   getGitHubPullRequestDetail: (
     request: GetGitHubPullRequestDetailRequest,
   ) => Promise<GitHubPullRequestDetail>;
+  getGitHubPullRequestConversation: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<GitHubPullRequestConversationSnapshot>;
+  getGitHubPullRequestFiles: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<GitHubPullRequestFilesSnapshot>;
+  getGitHubPullRequestCommits: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<GitHubPullRequestCommitsSnapshot>;
+  getGitHubPullRequestChecks: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<GitHubPullRequestChecksSnapshot>;
+  mergeGitHubPullRequest: (
+    request: import("@/types").MergeGitHubPullRequestRequest,
+  ) => Promise<import("@/types").GitHubPullRequestMergeResult>;
+  markGitHubPullRequestReady: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<GitHubPullRequestDetail>;
+  prRevealEnabled?: boolean;
+  prRevealNonce?: number;
+  prRevealRequest?: GitHubPullRequestRevealRequest | null;
+  onPrDiffAddToSession?: (attachment: import("@/lib/pr-diff-attachment").PrDiffAttachment) => void;
   className?: string;
 };
 
@@ -55,26 +143,60 @@ export function WorkspacePrTab({
   isActive,
   prTabEnabled,
   getGitHubAuthStatus,
-  beginGitHubDeviceLogin,
-  completeGitHubDeviceLogin,
-  cancelGitHubDeviceLogin,
-  disconnectGitHub,
   getGitHubPullRequestForCurrentBranch,
+  listGitHubPullRequests,
+  getGitHubPullRequestTabCounts,
   getGitHubPullRequestDetail,
+  getGitHubPullRequestConversation,
+  getGitHubPullRequestFiles,
+  getGitHubPullRequestCommits,
+  getGitHubPullRequestChecks,
+  mergeGitHubPullRequest,
+  markGitHubPullRequestReady,
+  prRevealEnabled = false,
+  prRevealNonce = 0,
+  prRevealRequest = null,
+  onPrDiffAddToSession,
   className,
 }: WorkspacePrTabProps) {
   const { t } = useTranslation();
   const [authStatus, setAuthStatus] = useState<GitHubAuthStatus>({ connected: false });
   const [branchResult, setBranchResult] = useState<GitHubPullRequestForBranchResult | null>(null);
   const [detail, setDetail] = useState<GitHubPullRequestDetail | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(false);
+  const [conversation, setConversation] = useState<GitHubPullRequestConversationSnapshot | null>(
+    null,
+  );
+  const [filesSnapshot, setFilesSnapshot] = useState<GitHubPullRequestFilesSnapshot | null>(null);
+  const [commitsSnapshot, setCommitsSnapshot] = useState<GitHubPullRequestCommitsSnapshot | null>(
+    null,
+  );
+  const [checksSnapshot, setChecksSnapshot] = useState<GitHubPullRequestChecksSnapshot | null>(
+    null,
+  );
   const [loadingBranch, setLoadingBranch] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [deviceChallenge, setDeviceChallenge] = useState<GitHubDeviceAuthChallenge | null>(null);
+  const [loadingConversation, setLoadingConversation] = useState(false);
+  const [loadingChanges, setLoadingChanges] = useState(false);
+  const [loadingCommits, setLoadingCommits] = useState(false);
+  const [loadingChecks, setLoadingChecks] = useState(false);
+  const [loadingMoreChecks, setLoadingMoreChecks] = useState(false);
+  const [detailDemoActive, setDetailDemoActive] = useState(false);
+  const [prActionBusy, setPrActionBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [repositoryLoadError, setRepositoryLoadError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "detail">("list");
+  const [authCheckPending, setAuthCheckPending] = useState(true);
+  const [listInitialLoadPending, setListInitialLoadPending] = useState(false);
 
+  const checksLoadMoreInFlightRef = useRef(false);
   const refreshGitHubPanelRef = useRef<() => Promise<void>>(async () => {});
   const prevBranchRef = useRef<string | undefined>(undefined);
+  const pinnedPullRequestRequestRef = useRef<GetGitHubPullRequestDetailRequest | null>(null);
+  const prListViewRef = useRef<WorkspacePrListViewHandle | null>(null);
+  const detailRef = useRef<GitHubPullRequestDetail | null>(null);
+  const branchResultRef = useRef<GitHubPullRequestForBranchResult | null>(null);
+  detailRef.current = detail;
+  branchResultRef.current = branchResult;
 
   const refreshAuthStatus = useCallback(async () => {
     if (!prTabEnabled) {
@@ -83,38 +205,157 @@ export function WorkspacePrTab({
     }
     try {
       setAuthStatus(await getGitHubAuthStatus());
+      setAuthCheckPending(false);
     } catch (loadError) {
+      setAuthCheckPending(false);
       setError(describeError(loadError));
     }
   }, [getGitHubAuthStatus, prTabEnabled]);
 
-  const refreshBranchPullRequest = useCallback(async () => {
-    if (!prTabEnabled || !authStatus.connected) {
-      setBranchResult(null);
-      setDetail(null);
-      return;
+  const loadPullRequestBundle = useCallback(
+    async (
+      request: GetGitHubPullRequestDetailRequest,
+      options?: { background?: boolean },
+    ) => {
+      const background = options?.background ?? false;
+      if (!background) {
+        setDetail(null);
+        setConversation(null);
+        setFilesSnapshot(null);
+        setCommitsSnapshot(null);
+        setChecksSnapshot(null);
+        setLoadingDetail(true);
+        setLoadingConversation(true);
+        setLoadingChanges(true);
+        setLoadingCommits(true);
+        setLoadingChecks(true);
+      }
+      setError(null);
+      try {
+        const [nextDetail, nextConversation, nextFiles, nextCommits, nextChecks] = await Promise.all([
+          getGitHubPullRequestDetail(request),
+          getGitHubPullRequestConversation(request),
+          getGitHubPullRequestFiles(request),
+          getGitHubPullRequestCommits(request),
+          getGitHubPullRequestChecks(request),
+        ]);
+        setDetail(nextDetail);
+        setBranchResult({
+          repository: { owner: request.owner, repo: request.repo },
+          branch: nextDetail.headRef,
+          pullRequest: pullRequestSummaryFromDetail(nextDetail),
+        });
+        setConversation(nextConversation);
+        setFilesSnapshot(nextFiles);
+        setCommitsSnapshot(nextCommits);
+        setChecksSnapshot(nextChecks);
+      } catch (loadError) {
+        if (!background) {
+          setDetail(null);
+          setConversation(null);
+          setFilesSnapshot(null);
+          setCommitsSnapshot(null);
+          setChecksSnapshot(null);
+        }
+        setError(describeError(loadError));
+        await refreshAuthStatus();
+      } finally {
+        if (!background) {
+          setLoadingDetail(false);
+          setLoadingConversation(false);
+          setLoadingChanges(false);
+          setLoadingCommits(false);
+          setLoadingChecks(false);
+        }
+      }
+    },
+    [
+      getGitHubPullRequestChecks,
+      getGitHubPullRequestCommits,
+      getGitHubPullRequestConversation,
+      getGitHubPullRequestDetail,
+      getGitHubPullRequestFiles,
+      refreshAuthStatus,
+    ],
+  );
+
+  const loadPullRequestData = useCallback(
+    async (result: GitHubPullRequestForBranchResult, options?: { background?: boolean }) => {
+      const pullRequest = result.pullRequest;
+      const repository = result.repository;
+      if (!pullRequest || !repository) {
+        setDetail(null);
+        setConversation(null);
+        setFilesSnapshot(null);
+        setCommitsSnapshot(null);
+        setChecksSnapshot(null);
+        return;
+      }
+
+      await loadPullRequestBundle(
+        {
+          owner: repository.owner,
+          repo: repository.repo,
+          number: pullRequest.number,
+        },
+        options,
+      );
+    },
+    [loadPullRequestBundle],
+  );
+
+  const fetchRepositoryInfo = useCallback(async () => {
+    const background = branchResultRef.current != null;
+    if (!background) {
+      setLoadingBranch(true);
+      setListInitialLoadPending(true);
     }
-    setLoadingBranch(true);
     setError(null);
+    setRepositoryLoadError(null);
     try {
       const result = await getGitHubPullRequestForCurrentBranch();
       setBranchResult(result);
-      setDetail(null);
+      if (!result.repository) {
+        setListInitialLoadPending(false);
+      }
     } catch (loadError) {
       setBranchResult(null);
-      setDetail(null);
-      setError(describeError(loadError));
+      setListInitialLoadPending(false);
+      const message = describeError(loadError);
+      setRepositoryLoadError(message);
+      setError(message);
       await refreshAuthStatus();
     } finally {
-      setLoadingBranch(false);
+      if (!background) {
+        setLoadingBranch(false);
+      }
     }
-  }, [authStatus.connected, getGitHubPullRequestForCurrentBranch, prTabEnabled, refreshAuthStatus]);
+  }, [getGitHubPullRequestForCurrentBranch, refreshAuthStatus]);
+
+  const refreshRepositoryInfo = useCallback(async () => {
+    if (!prTabEnabled || !authStatus.connected) {
+      setBranchResult(null);
+      setListInitialLoadPending(false);
+      return;
+    }
+
+    await fetchRepositoryInfo();
+  }, [authStatus.connected, fetchRepositoryInfo, prTabEnabled]);
+
+  const handleListInitialLoadSettled = useCallback(() => {
+    setListInitialLoadPending(false);
+  }, []);
 
   const refreshGitHubPanel = useCallback(async () => {
     if (!prTabEnabled) {
       setAuthStatus({ connected: false });
+      setAuthCheckPending(false);
       setBranchResult(null);
       setDetail(null);
+      setConversation(null);
+      setFilesSnapshot(null);
+      setCommitsSnapshot(null);
+      setChecksSnapshot(null);
       return;
     }
 
@@ -122,7 +363,9 @@ export function WorkspacePrTab({
     try {
       status = await getGitHubAuthStatus();
       setAuthStatus(status);
+      setAuthCheckPending(false);
     } catch (loadError) {
+      setAuthCheckPending(false);
       setError(describeError(loadError));
       return;
     }
@@ -130,18 +373,64 @@ export function WorkspacePrTab({
     if (!status.connected) {
       setBranchResult(null);
       setDetail(null);
+      setConversation(null);
+      setFilesSnapshot(null);
+      setCommitsSnapshot(null);
+      setChecksSnapshot(null);
       return;
     }
 
-    setLoadingBranch(true);
+    const pinnedRequest = pinnedPullRequestRequestRef.current;
+    if (pinnedRequest) {
+      setError(null);
+      await loadPullRequestBundle(pinnedRequest, {
+        background: isSamePullRequestRequest(
+          detailRef.current,
+          branchResultRef.current?.repository,
+          pinnedRequest,
+        ),
+      });
+      return;
+    }
+
+    if (viewMode === "list") {
+      setError(null);
+      await fetchRepositoryInfo();
+      prListViewRef.current?.refreshInBackground();
+      setDetail(null);
+      setConversation(null);
+      setFilesSnapshot(null);
+      setCommitsSnapshot(null);
+      setChecksSnapshot(null);
+      return;
+    }
+
+    const background = detailRef.current != null;
+    if (!background) {
+      setLoadingBranch(true);
+    }
     setError(null);
     try {
       const result = await getGitHubPullRequestForCurrentBranch();
       setBranchResult(result);
-      setDetail(null);
+      if (result.pullRequest && result.repository) {
+        await loadPullRequestData(result, { background });
+      } else {
+        setDetail(null);
+        setConversation(null);
+        setFilesSnapshot(null);
+        setCommitsSnapshot(null);
+        setChecksSnapshot(null);
+      }
     } catch (loadError) {
-      setBranchResult(null);
-      setDetail(null);
+      if (!background) {
+        setBranchResult(null);
+        setDetail(null);
+        setConversation(null);
+        setFilesSnapshot(null);
+        setCommitsSnapshot(null);
+        setChecksSnapshot(null);
+      }
       setError(describeError(loadError));
       try {
         setAuthStatus(await getGitHubAuthStatus());
@@ -149,11 +438,178 @@ export function WorkspacePrTab({
         setError(describeError(authError));
       }
     } finally {
-      setLoadingBranch(false);
+      if (!background) {
+        setLoadingBranch(false);
+      }
     }
-  }, [getGitHubAuthStatus, getGitHubPullRequestForCurrentBranch, prTabEnabled]);
+  }, [
+    getGitHubAuthStatus,
+    getGitHubPullRequestForCurrentBranch,
+    loadPullRequestBundle,
+    loadPullRequestData,
+    prTabEnabled,
+    fetchRepositoryInfo,
+    viewMode,
+  ]);
 
   refreshGitHubPanelRef.current = refreshGitHubPanel;
+
+  const handleMergePullRequest = useCallback(
+    async (mergeMethod: GitHubPullRequestMergeMethod) => {
+      const request = resolveActivePullRequestRequest(
+        branchResultRef.current,
+        pinnedPullRequestRequestRef.current,
+        detailRef.current,
+      );
+      if (!request) {
+        return;
+      }
+
+      setPrActionBusy(true);
+      setError(null);
+      try {
+        await mergeGitHubPullRequest({ ...request, mergeMethod });
+        await loadPullRequestBundle(request, { background: true });
+        prListViewRef.current?.invalidateCacheAndRefreshInBackground();
+      } catch (mergeError) {
+        setError(describeError(mergeError));
+        await refreshAuthStatus();
+      } finally {
+        setPrActionBusy(false);
+      }
+    },
+    [loadPullRequestBundle, mergeGitHubPullRequest, refreshAuthStatus],
+  );
+
+  const loadMoreChecks = useCallback(async () => {
+    if (checksLoadMoreInFlightRef.current || loadingMoreChecks || loadingChecks) {
+      return;
+    }
+
+    const request = resolveActivePullRequestRequest(
+      branchResultRef.current,
+      pinnedPullRequestRequestRef.current,
+      detailRef.current,
+    );
+    const cursor = checksSnapshot?.nextCursor;
+    if (!request || !checksSnapshot?.hasMore || !cursor) {
+      return;
+    }
+
+    checksLoadMoreInFlightRef.current = true;
+    setLoadingMoreChecks(true);
+    setError(null);
+    try {
+      const nextPage = await getGitHubPullRequestChecks({
+        ...request,
+        checksAfter: cursor,
+      });
+      setChecksSnapshot({
+        ...nextPage,
+        checks: appendPullRequestChecksPages(checksSnapshot.checks, nextPage.checks),
+      });
+    } catch (loadError) {
+      setError(describeError(loadError));
+    } finally {
+      checksLoadMoreInFlightRef.current = false;
+      setLoadingMoreChecks(false);
+    }
+  }, [
+    checksSnapshot,
+    getGitHubPullRequestChecks,
+    loadingChecks,
+    loadingMoreChecks,
+  ]);
+
+  const handleSelectPullRequest = useCallback(
+    async (item: GitHubPullRequestListItem) => {
+      const repository = branchResultRef.current?.repository;
+      if (!repository) {
+        return;
+      }
+
+      const request: GetGitHubPullRequestDetailRequest = {
+        owner: repository.owner,
+        repo: repository.repo,
+        number: item.number,
+      };
+      pinnedPullRequestRequestRef.current = request;
+      setViewMode("detail");
+      await loadPullRequestBundle(request);
+    },
+    [loadPullRequestBundle],
+  );
+
+  const handleBackToList = useCallback(() => {
+    pinnedPullRequestRequestRef.current = null;
+    setViewMode("list");
+    setDetail(null);
+    setConversation(null);
+    setFilesSnapshot(null);
+    setCommitsSnapshot(null);
+    setChecksSnapshot(null);
+    prListViewRef.current?.invalidateCacheAndRefreshInBackground();
+  }, []);
+
+  const handleMarkPullRequestReady = useCallback(async () => {
+    const request = resolveActivePullRequestRequest(
+      branchResultRef.current,
+      pinnedPullRequestRequestRef.current,
+      detailRef.current,
+    );
+    if (!request) {
+      return;
+    }
+
+    setPrActionBusy(true);
+    setError(null);
+    try {
+      await markGitHubPullRequestReady({
+        ...request,
+        nodeId: detailRef.current?.nodeId,
+      });
+      await loadPullRequestBundle(request, { background: true });
+      prListViewRef.current?.invalidateCacheAndRefreshInBackground();
+    } catch (readyError) {
+      setError(describeError(readyError));
+      await refreshAuthStatus();
+    } finally {
+      setPrActionBusy(false);
+    }
+  }, [loadPullRequestBundle, markGitHubPullRequestReady, refreshAuthStatus]);
+
+  useLayoutEffect(() => {
+    if (!prRevealEnabled || !prRevealRequest || prRevealNonce <= 0) {
+      return;
+    }
+
+    pinnedPullRequestRequestRef.current = {
+      owner: prRevealRequest.owner,
+      repo: prRevealRequest.repo,
+      number: prRevealRequest.number,
+    };
+    setDetailDemoActive(false);
+    setViewMode("detail");
+
+    if (!authStatus.connected) {
+      return;
+    }
+
+    const request = pinnedPullRequestRequestRef.current;
+    const background = isSamePullRequestRequest(
+      detailRef.current,
+      branchResultRef.current?.repository,
+      request,
+    );
+
+    void loadPullRequestBundle(request, { background });
+  }, [
+    authStatus.connected,
+    loadPullRequestBundle,
+    prRevealEnabled,
+    prRevealNonce,
+    prRevealRequest,
+  ]);
 
   useEffect(() => {
     if (!isActive || !prTabEnabled) {
@@ -194,90 +650,29 @@ export function WorkspacePrTab({
     }
 
     prevBranchRef.current = branch;
-    void refreshBranchPullRequest();
+    pinnedPullRequestRequestRef.current = null;
+    setViewMode("list");
+    void refreshRepositoryInfo();
   }, [
     authStatus.connected,
     gitSnapshot?.branch,
     gitSnapshot?.selectedBranch,
     isActive,
     prTabEnabled,
-    refreshBranchPullRequest,
+    refreshRepositoryInfo,
   ]);
-
-  const handleConnect = async () => {
-    setLoadingAuth(true);
-    setError(null);
-    setDeviceChallenge(null);
-    try {
-      const challenge = await beginGitHubDeviceLogin();
-      setDeviceChallenge(challenge);
-      const next = await completeGitHubDeviceLogin();
-      setAuthStatus(next);
-      setDeviceChallenge(null);
-      if (isActive) {
-        await refreshGitHubPanel();
-      }
-    } catch (connectError) {
-      setError(describeError(connectError));
-      setDeviceChallenge(null);
-    } finally {
-      setLoadingAuth(false);
-    }
-  };
-
-  const handleCancelConnect = async () => {
-    setError(null);
-    try {
-      await cancelGitHubDeviceLogin();
-    } catch (cancelError) {
-      setError(describeError(cancelError));
-    } finally {
-      setLoadingAuth(false);
-      setDeviceChallenge(null);
-    }
-  };
-
-  const handleDisconnect = async () => {
-    setLoadingAuth(true);
-    setError(null);
-    try {
-      const next = await disconnectGitHub();
-      setAuthStatus(next);
-      setBranchResult(null);
-      setDetail(null);
-    } catch (disconnectError) {
-      setError(describeError(disconnectError));
-    } finally {
-      setLoadingAuth(false);
-    }
-  };
-
-  const handleLoadDetail = async () => {
-    const pullRequest = branchResult?.pullRequest;
-    const repository = branchResult?.repository;
-    if (!pullRequest || !repository) {
-      return;
-    }
-    setLoadingDetail(true);
-    setError(null);
-    try {
-      const next = await getGitHubPullRequestDetail({
-        owner: repository.owner,
-        repo: repository.repo,
-        number: pullRequest.number,
-      });
-      setDetail(next);
-    } catch (loadError) {
-      setError(describeError(loadError));
-      await refreshAuthStatus();
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
 
   const openExternalUrl = (url: string) => {
     void window.spiritDesktop?.openExternalUrl(url);
   };
+
+  const isInitialPrLoad =
+    viewMode === "detail" && (loadingBranch || loadingDetail) && !detail;
+  const isInitialListLoad =
+    viewMode === "list" &&
+    ((loadingBranch && branchResult == null) ||
+      (listInitialLoadPending && branchResult?.repository != null));
+  const showListSkeleton = isInitialPrLoad || isInitialListLoad;
 
   if (!prTabEnabled) {
     return (
@@ -288,92 +683,76 @@ export function WorkspacePrTab({
   }
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3", className)}>
-      <div className="flex flex-wrap items-center gap-2">
-        {authStatus.connected ? (
-          <>
-            <span className="text-foreground">
-              {t("workspace.prConnectedAs", { login: authStatus.login ?? "GitHub" })}
-            </span>
+    <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
+      {!authStatus.connected && detailDemoActive ? (
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 pt-3">
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t("workspace.prDetailDemoLabel")}
+            </p>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
-              disabled={loadingAuth}
               onClick={() => {
-                void handleDisconnect();
+                setDetailDemoActive(false);
               }}
             >
-              {t("workspace.prDisconnect")}
+              {t("workspace.prClearDetailDemo")}
             </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              type="button"
-              size="sm"
-              disabled={loadingAuth}
-              onClick={() => {
-                void handleConnect();
-              }}
-            >
-              {loadingAuth && deviceChallenge
-                ? t("workspace.prWaitingForDeviceAuth")
-                : loadingAuth
-                  ? t("workspace.prConnecting")
-                  : t("workspace.prConnect")}
-            </Button>
-            {loadingAuth ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  void handleCancelConnect();
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
-            ) : null}
-          </>
-        )}
-      </div>
-
-      {!authStatus.connected && deviceChallenge ? (
-        <section className="rounded-md border border-border/70 bg-background/40 p-3 text-sm">
-          <p className="text-foreground">{t("workspace.prDeviceIntro")}</p>
-          <p className="mt-2 font-mono text-lg font-semibold tracking-widest text-foreground">
-            {deviceChallenge.userCode}
-          </p>
-          <p className="mt-2 text-muted-foreground">{t("workspace.prDeviceWaiting")}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            onClick={() => {
-              openExternalUrl(deviceChallenge.verificationUri);
-            }}
-          >
-            {t("workspace.prOpenDevicePage")}
-          </Button>
+          </div>
+          <WorkspacePrDetailView
+            detail={GITHUB_PR_DETAIL_DEMO}
+            conversationItems={GITHUB_PR_CONVERSATION_DEMO}
+            changedFiles={GITHUB_PR_FILES_DEMO.files}
+            changesHasMore={GITHUB_PR_FILES_DEMO.hasMore}
+            commits={GITHUB_PR_COMMITS_DEMO.commits}
+            commitsHasMore={GITHUB_PR_COMMITS_DEMO.hasMore}
+            checks={GITHUB_PR_CHECKS_DEMO.checks}
+            checksHasMore={GITHUB_PR_CHECKS_DEMO.hasMore}
+            onOpenExternal={openExternalUrl}
+            onPrDiffAddToSession={onPrDiffAddToSession}
+            className="min-h-0 flex-1"
+          />
         </section>
       ) : null}
 
-      {!authStatus.connected && !deviceChallenge ? (
-        <section className="rounded-md border border-dashed border-border/80 bg-muted/20 p-3">
+      {!authStatus.connected && !detailDemoActive && authCheckPending ? (
+        <WorkspacePrDetailSkeleton
+          className="min-h-0 flex-1"
+          loadingLabel={t("workspace.prLoading")}
+        />
+      ) : null}
+
+      {!authStatus.connected && !detailDemoActive && !authCheckPending ? (
+        <section className="mx-3 mt-3 rounded-md border border-dashed border-border/80 bg-muted/20 p-3">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("workspace.prSampleDataLabel")}
           </p>
           <div className="flex items-start gap-2 text-sm">
             <GitPullRequest className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <div className="min-w-0">
-              <p className="font-medium text-foreground">
-                #{MOCK_PULL_REQUEST.number} {MOCK_PULL_REQUEST.title}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">
+                {MOCK_PULL_REQUEST.title}{" "}
+                <span className="text-[13px] font-normal text-muted-foreground">
+                  #{MOCK_PULL_REQUEST.number}
+                </span>
               </p>
-              <p className="text-muted-foreground">
-                {MOCK_PULL_REQUEST.state.toUpperCase()} · @{MOCK_PULL_REQUEST.authorLogin}
+              <p className="text-xs text-muted-foreground">
+                {t("workspace.prOpen")} @{MOCK_PULL_REQUEST.authorLogin}
               </p>
+              <p className="mt-2 text-muted-foreground">{t("workspace.prConnectToLoadDetail")}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => {
+                  setDetailDemoActive(true);
+                }}
+              >
+                {t("workspace.prShowDetailDemo")}
+              </Button>
             </div>
           </div>
         </section>
@@ -381,78 +760,83 @@ export function WorkspacePrTab({
 
       {authStatus.connected ? (
         <>
-          {!gitSnapshot?.isRepository ? (
-            <p className="text-muted-foreground">{t("workspace.prNoRepo")}</p>
-          ) : loadingBranch ? (
-            <p className="text-muted-foreground">{t("workspace.prLoading")}</p>
+          {showListSkeleton ? (
+            <WorkspacePrDetailSkeleton
+              className="min-h-0 flex-1"
+              loadingLabel={t("workspace.prLoading")}
+            />
+          ) : !gitSnapshot?.isRepository ? (
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prNoRepo")}</p>
+          ) : repositoryLoadError && branchResult == null ? (
+            <p className="px-3 pt-3 text-destructive">{repositoryLoadError}</p>
           ) : branchResult?.repository == null ? (
-            <p className="text-muted-foreground">{t("workspace.prNoGitHubOrigin")}</p>
-          ) : branchResult.pullRequest == null ? (
-            <p className="text-muted-foreground">
-              {t("workspace.prNoOpenPullRequest", {
-                branch: branchResult.branch ?? gitSnapshot?.branch ?? "",
-              })}
-            </p>
-          ) : (
-            <section className="rounded-md border border-border/70 bg-background/40 p-3">
-              <div className="flex items-start gap-2">
-                <GitPullRequest className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground">
-                    #{branchResult.pullRequest.number} {branchResult.pullRequest.title}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {branchResult.pullRequest.state.toUpperCase()} · @{branchResult.pullRequest.authorLogin}
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    {branchResult.pullRequest.headRef} → {branchResult.pullRequest.baseRef}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={loadingDetail}
-                      onClick={() => {
-                        void handleLoadDetail();
-                      }}
-                    >
-                      {loadingDetail ? t("workspace.prLoadingDetail") : t("workspace.prShowDetail")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        openExternalUrl(branchResult.pullRequest!.url);
-                      }}
-                    >
-                      <ExternalLink className="size-3.5" aria-hidden />
-                      {t("workspace.prOpenOnGitHub")}
-                    </Button>
-                  </div>
-                  {detail ? (
-                    <div className="mt-3 space-y-2 border-t border-border/60 pt-3 text-sm">
-                      {detail.labels.length > 0 ? (
-                        <p className="text-muted-foreground">
-                          {t("workspace.prLabels", { labels: detail.labels.join(", ") })}
-                        </p>
-                      ) : null}
-                      {detail.body ? (
-                        <p className="whitespace-pre-wrap text-foreground/90">{detail.body}</p>
-                      ) : (
-                        <p className="text-muted-foreground">{t("workspace.prNoDescription")}</p>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prNoGitHubOrigin")}</p>
+          ) : viewMode === "detail" && detail ? (
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="flex shrink-0 items-center px-3 pt-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={handleBackToList}
+                >
+                  <ChevronLeft className="size-3.5" aria-hidden />
+                  {t("workspace.prListBack")}
+                </Button>
               </div>
-            </section>
-          )}
+              <WorkspacePrDetailView
+                detail={detail}
+                conversationItems={conversation?.items ?? []}
+                loadingConversation={loadingConversation}
+                conversationHasMore={conversation?.hasMore ?? false}
+                changedFiles={filesSnapshot?.files ?? []}
+                loadingChanges={loadingChanges}
+                changesHasMore={filesSnapshot?.hasMore ?? false}
+                commits={commitsSnapshot?.commits ?? []}
+                loadingCommits={loadingCommits}
+                commitsHasMore={commitsSnapshot?.hasMore ?? false}
+                checks={checksSnapshot?.checks ?? []}
+                loadingChecks={loadingChecks}
+                loadingMoreChecks={loadingMoreChecks}
+                checksHasMore={checksSnapshot?.hasMore ?? false}
+                onLoadMoreChecks={loadMoreChecks}
+                actionBusy={prActionBusy}
+                onOpenExternal={openExternalUrl}
+                onMerge={handleMergePullRequest}
+                onMarkReady={handleMarkPullRequestReady}
+                onPrDiffAddToSession={onPrDiffAddToSession}
+                className="min-h-0 flex-1"
+              />
+            </div>
+          ) : viewMode === "detail" ? (
+            <p className="px-3 pt-3 text-muted-foreground">{t("workspace.prDetailUnavailable")}</p>
+          ) : null}
+
+          {branchResult?.repository && gitSnapshot?.isRepository && viewMode === "list" ? (
+            <div
+              className={cn(
+                "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+                showListSkeleton && "hidden",
+              )}
+            >
+              <WorkspacePrListView
+                ref={prListViewRef}
+                repository={branchResult.repository}
+                listGitHubPullRequests={listGitHubPullRequests}
+                getGitHubPullRequestTabCounts={getGitHubPullRequestTabCounts}
+                onInitialLoadSettled={handleListInitialLoadSettled}
+                onSelectPullRequest={(item) => {
+                  void handleSelectPullRequest(item);
+                }}
+                className="min-h-0 flex-1"
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
 
-      {error ? <p className="text-destructive">{error}</p> : null}
+      {error ? <p className="px-3 pb-3 text-destructive">{error}</p> : null}
     </div>
   );
 }
