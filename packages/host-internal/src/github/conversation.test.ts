@@ -32,14 +32,14 @@ test('mapTimelineEventToConversationItem maps committed event', () => {
   }
   assert.equal(item.subject, 'Fix login bug');
   assert.equal(item.sha, 'abc123');
-  assert.equal(item.authorLogin, 'Octocat');
+  assert.equal(item.authorLogin, 'octocat');
 });
 
 test('mapTimelineEventToConversationItem maps committed event from issue timeline shape', () => {
   const item = mapTimelineEventToConversationItem({
     sha: '3fc54ae2102e42ec0adc877fac601e6a517b117f',
     html_url: 'https://github.com/N123999/SpiritAgent/commit/3fc54ae2102e42ec0adc877fac601e6a517b117f',
-    author: { name: 'XianYu', date: '2026-06-10T03:40:34Z' },
+    author: { name: 'XianYu', email: '121384036+N123999@users.noreply.github.com', date: '2026-06-10T03:40:34Z' },
     message: 'feat(desktop): 支持光标处斜杠 token 唤起菜单\n\n基于 composer 光标检测',
     event: 'committed',
   });
@@ -51,7 +51,8 @@ test('mapTimelineEventToConversationItem maps committed event from issue timelin
   assert.equal(item.createdAt, '2026-06-10T03:40:34Z');
   assert.equal(item.subject, 'feat(desktop): 支持光标处斜杠 token 唤起菜单');
   assert.equal(item.sha, '3fc54ae2102e42ec0adc877fac601e6a517b117f');
-  assert.equal(item.authorLogin, 'XianYu');
+  assert.equal(item.authorLogin, 'N123999');
+  assert.equal(item.avatarUrl, 'https://github.com/N123999.png?size=40');
 });
 
 test('mapTimelineEventToConversationItem maps issue comment', () => {
