@@ -232,13 +232,17 @@ export function WorkspacePrChangesView({
 
   if (loading && files.length === 0) {
     return (
-      <p className={cn("text-xs text-muted-foreground", className)}>{t("workspace.prChangesLoading")}</p>
+      <p className={cn("px-3 pt-3 text-xs text-muted-foreground", className)}>
+        {t("workspace.prChangesLoading")}
+      </p>
     );
   }
 
   if (files.length === 0) {
     return (
-      <p className={cn("text-xs text-muted-foreground", className)}>{t("workspace.prChangesEmpty")}</p>
+      <p className={cn("px-3 pt-3 text-xs text-muted-foreground", className)}>
+        {t("workspace.prChangesEmpty")}
+      </p>
     );
   }
 
@@ -252,7 +256,7 @@ export function WorkspacePrChangesView({
       )}
     >
       <aside
-        className="flex min-h-0 shrink-0 flex-col"
+        className="flex min-h-0 shrink-0 flex-col border-r border-border/40"
         style={{ width: treeWidthPx }}
       >
         <ScrollArea className="h-full min-h-0 flex-1" type="auto">
@@ -267,7 +271,7 @@ export function WorkspacePrChangesView({
         aria-orientation="vertical"
         aria-label={t("workspace.prChangesResizeTreeWidth")}
         className={cn(
-          "group relative z-10 w-1 shrink-0 cursor-col-resize touch-none select-none self-stretch",
+          "group relative z-10 -ml-px w-1 shrink-0 cursor-col-resize touch-none select-none self-stretch",
           "before:absolute before:inset-y-0 before:-right-1 before:w-3 before:content-['']",
         )}
         onPointerDown={onTreeResizePointerDown}
@@ -276,7 +280,7 @@ export function WorkspacePrChangesView({
         onPointerCancel={endTreeResize}
       >
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+          className="pointer-events-none absolute inset-y-0 left-0 w-px bg-transparent transition-colors group-hover:bg-border/55"
           aria-hidden
         />
       </div>
