@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, GitPullRequest } from "lucide-react";
+import { ArrowRight, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { DetailPageTabs } from "@/components/detail-page-tabs";
@@ -10,7 +10,11 @@ import { WorkspacePrChecksView } from "@/components/workspace-pr-checks-view";
 import { WorkspacePrChangesView } from "@/components/workspace-pr-changes-view";
 import { WorkspacePrMarkdown } from "@/components/workspace-pr-markdown";
 import { WorkspacePrCommitsView } from "@/components/workspace-pr-commits-view";
-import { GITHUB_PR_MERGED_BADGE_CLASS } from "@/lib/github-pr-merged-badge-styles";
+import {
+  GITHUB_PR_DRAFT_BADGE_CLASS,
+  GITHUB_PR_MERGED_BADGE_CLASS,
+  GITHUB_PR_OPEN_BADGE_CLASS,
+} from "@/lib/github-pr-merged-badge-styles";
 import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
 import {
   PR_OVERVIEW_MIN_PX,
@@ -64,17 +68,37 @@ const PR_DETAIL_TAB_LABEL_KEYS = {
   changes: "workspace.prTabChanges",
 } as const satisfies Record<WorkspacePrDetailTab, string>;
 
-function pullRequestStatusLabel(
-  detail: GitHubPullRequestDetail,
-  translate: (key: string) => string,
-): string {
+function PullRequestStatusBadge({ detail }: { detail: GitHubPullRequestDetail }) {
+  const { t } = useTranslation();
+
+  if (detail.merged) {
+    return null;
+  }
+
   if (detail.draft) {
-    return translate("workspace.prDraft");
+    return (
+      <Badge className={GITHUB_PR_DRAFT_BADGE_CLASS}>
+        <GitPullRequestDraft className="size-3 shrink-0" aria-hidden />
+        {t("workspace.prDraft")}
+      </Badge>
+    );
   }
+
   if (detail.state === "open") {
-    return translate("workspace.prOpen");
+    return (
+      <Badge className={GITHUB_PR_OPEN_BADGE_CLASS}>
+        <GitPullRequest className="size-3 shrink-0" aria-hidden />
+        {t("workspace.prOpen")}
+      </Badge>
+    );
   }
-  return translate("workspace.prClosed");
+
+  return (
+    <Badge variant="secondary" className="gap-1">
+      <GitPullRequestClosed className="size-3 shrink-0" aria-hidden />
+      {t("workspace.prClosed")}
+    </Badge>
+  );
 }
 
 export function WorkspacePrDetailView({
@@ -231,7 +255,7 @@ export function WorkspacePrDetailView({
       >
         <header className="space-y-2 px-3 pt-3 pb-3">
           <div className="min-w-0">
-            <h2 className="m-0 flex flex-wrap items-center gap-2">
+            <h2 className="m-0">
               <a
                 href={detail.url}
                 className="min-w-0 text-sm font-medium text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
@@ -244,11 +268,6 @@ export function WorkspacePrDetailView({
                 {detail.title}{" "}
                 <span className="text-[13px] font-normal text-muted-foreground">#{detail.number}</span>
               </a>
-              {!detail.merged ? (
-                <Badge variant={detail.state === "open" ? "default" : "secondary"}>
-                  {pullRequestStatusLabel(detail, t)}
-                </Badge>
-              ) : null}
             </h2>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {detail.merged ? (
@@ -256,7 +275,9 @@ export function WorkspacePrDetailView({
                   <GitPullRequest className="size-3 shrink-0" aria-hidden />
                   {t("workspace.prMerged")}
                 </Badge>
-              ) : null}
+              ) : (
+                <PullRequestStatusBadge detail={detail} />
+              )}
               <span className="inline-flex flex-wrap items-center gap-x-1">
                 <span>@{detail.authorLogin}</span>
                 <span>{detail.headRef}</span>
