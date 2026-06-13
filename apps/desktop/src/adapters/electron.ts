@@ -255,6 +255,12 @@ export async function createElectronHostApi(): Promise<HostApi> {
     getGitHubPullRequestForCurrentBranch() {
       return bridge.getGitHubPullRequestForCurrentBranch();
     },
+    listGitHubPullRequests(request) {
+      return bridge.listGitHubPullRequests(request);
+    },
+    getGitHubPullRequestTabCounts(request) {
+      return bridge.getGitHubPullRequestTabCounts(request);
+    },
     getGitHubPullRequestDetail(request) {
       return bridge.getGitHubPullRequestDetail(request);
     },

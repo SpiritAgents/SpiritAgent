@@ -78,6 +78,8 @@ import type {
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
   MergeGitHubPullRequestRequest,
 } from "@/types";
 
@@ -2657,6 +2659,26 @@ export function useDesktopRuntime() {
     [api],
   );
 
+  const listGitHubPullRequests = useCallback(
+    async (request: ListGitHubPullRequestsRequest) => {
+      if (!api) {
+        return { items: [], totalCount: 0, hasMore: false };
+      }
+      return api.listGitHubPullRequests(request);
+    },
+    [api],
+  );
+
+  const getGitHubPullRequestTabCounts = useCallback(
+    async (request: GetGitHubPullRequestTabCountsRequest) => {
+      if (!api) {
+        return { open: 0, closed: 0 };
+      }
+      return api.getGitHubPullRequestTabCounts(request);
+    },
+    [api],
+  );
+
   const readWorkspaceTextFile = useCallback(
     async (relativePath: string): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
@@ -2901,6 +2923,8 @@ export function useDesktopRuntime() {
     cancelGitHubDeviceLogin,
     disconnectGitHub,
     getGitHubPullRequestForCurrentBranch,
+    listGitHubPullRequests,
+    getGitHubPullRequestTabCounts,
     getGitHubPullRequestDetail,
     getGitHubPullRequestConversation,
     getGitHubPullRequestFiles,
