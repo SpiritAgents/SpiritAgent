@@ -57,7 +57,6 @@ import type {
   DesktopGitSnapshot,
   GetGitHubPullRequestDetailRequest,
   GitHubAuthStatus,
-  GitHubDeviceAuthChallenge,
   GitHubPullRequestDetail,
   GitHubPullRequestForBranchResult,
   GitHistorySnapshot,
@@ -108,24 +107,48 @@ export type WorkspaceToolsDockProps = {
   fileRevealAbsolutePath?: string;
   fileRevealScope?: EditorFileTarget["scope"];
   fileRevealViewMode?: WorkspaceEditorViewMode;
+  prRevealNonce?: number;
+  prRevealTabId?: string | null;
+  prRevealRequest?: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
   onOpenWorkspaceFile?: (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => void;
   tabs: WorkspaceToolTab[];
   activeTabId: string;
   onTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
   onActiveTabIdChange(id: string): void;
   onBrowserElementPicked?: WorkspaceBrowserTabProps['onElementPicked'];
+  onPrDiffAddToSession?: (attachment: import("@/lib/pr-diff-attachment").PrDiffAttachment) => void;
   onBrowserOpenInNewTab?: WorkspaceBrowserTabProps['onOpenUrlInNewTab'];
   /** Electron 桌面版可新建/使用浏览器选项卡；Web 宿主菜单项可见但禁用。 */
   browserTabEnabled?: boolean;
   /** Electron 桌面版可新建 PR 选项卡；Web 宿主菜单项可见但禁用。 */
   prTabEnabled?: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
-  beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
-  completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
-  cancelGitHubDeviceLogin: () => Promise<void>;
-  disconnectGitHub: () => Promise<GitHubAuthStatus>;
   getGitHubPullRequestForCurrentBranch: () => Promise<GitHubPullRequestForBranchResult>;
+  listGitHubPullRequests: (
+    request: import("@/types").ListGitHubPullRequestsRequest,
+  ) => Promise<import("@/types").GitHubPullRequestListSnapshot>;
+  getGitHubPullRequestTabCounts: (
+    request: import("@/types").GetGitHubPullRequestTabCountsRequest,
+  ) => Promise<import("@/types").GitHubPullRequestTabCounts>;
   getGitHubPullRequestDetail: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<GitHubPullRequestDetail>;
+  getGitHubPullRequestConversation: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<import("@/types").GitHubPullRequestConversationSnapshot>;
+  getGitHubPullRequestFiles: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<import("@/types").GitHubPullRequestFilesSnapshot>;
+  getGitHubPullRequestCommits: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<import("@/types").GitHubPullRequestCommitsSnapshot>;
+  getGitHubPullRequestChecks: (
+    request: GetGitHubPullRequestDetailRequest,
+  ) => Promise<import("@/types").GitHubPullRequestChecksSnapshot>;
+  mergeGitHubPullRequest: (
+    request: import("@/types").MergeGitHubPullRequestRequest,
+  ) => Promise<import("@/types").GitHubPullRequestMergeResult>;
+  markGitHubPullRequestReady: (
     request: GetGitHubPullRequestDetailRequest,
   ) => Promise<GitHubPullRequestDetail>;
   /** 右侧面板宽度（像素） */
@@ -163,22 +186,30 @@ function WorkspaceToolsDockInner({
   fileRevealAbsolutePath = "",
   fileRevealScope = "workspace",
   fileRevealViewMode = "edit",
+  prRevealNonce = 0,
+  prRevealTabId = null,
+  prRevealRequest = null,
   onOpenWorkspaceFile,
   tabs,
   activeTabId,
   onTabsChange,
   onActiveTabIdChange,
   onBrowserElementPicked,
+  onPrDiffAddToSession,
   onBrowserOpenInNewTab,
   browserTabEnabled = false,
   prTabEnabled = false,
   getGitHubAuthStatus,
-  beginGitHubDeviceLogin,
-  completeGitHubDeviceLogin,
-  cancelGitHubDeviceLogin,
-  disconnectGitHub,
   getGitHubPullRequestForCurrentBranch,
+  listGitHubPullRequests,
+  getGitHubPullRequestTabCounts,
   getGitHubPullRequestDetail,
+  getGitHubPullRequestConversation,
+  getGitHubPullRequestFiles,
+  getGitHubPullRequestCommits,
+  getGitHubPullRequestChecks,
+  mergeGitHubPullRequest,
+  markGitHubPullRequestReady,
   widthPx,
   minWidthPx = WORKSPACE_TOOLS_MIN_WIDTH_PX,
   maxWidthPx: maxWidthPxProp,
@@ -363,8 +394,9 @@ function WorkspaceToolsDockInner({
       style={{ width: shellWidth }}
     >
       <div
+        data-workspace-tools-split
         className={cn(
-          "flex h-full min-h-0 shrink-0 flex-row self-stretch",
+          "relative flex h-full min-h-0 shrink-0 flex-row self-stretch",
           !open && "pointer-events-none select-none",
         )}
         style={{ width: `calc(0.25rem + ${widthPx}px)` }}
@@ -551,6 +583,8 @@ function WorkspaceToolsDockInner({
                 item.kind === "files" &&
                 fileRevealTabId != null &&
                 item.id === fileRevealTabId;
+              const prRevealEnabled =
+                item.kind === "pr" && prRevealTabId != null && item.id === prRevealTabId;
 
               return (
                 <div
@@ -623,12 +657,20 @@ function WorkspaceToolsDockInner({
                         isActive={selected}
                         prTabEnabled={prTabEnabled}
                         getGitHubAuthStatus={getGitHubAuthStatus}
-                        beginGitHubDeviceLogin={beginGitHubDeviceLogin}
-                        completeGitHubDeviceLogin={completeGitHubDeviceLogin}
-                        cancelGitHubDeviceLogin={cancelGitHubDeviceLogin}
-                        disconnectGitHub={disconnectGitHub}
                         getGitHubPullRequestForCurrentBranch={getGitHubPullRequestForCurrentBranch}
+                        listGitHubPullRequests={listGitHubPullRequests}
+                        getGitHubPullRequestTabCounts={getGitHubPullRequestTabCounts}
                         getGitHubPullRequestDetail={getGitHubPullRequestDetail}
+                        getGitHubPullRequestConversation={getGitHubPullRequestConversation}
+                        getGitHubPullRequestFiles={getGitHubPullRequestFiles}
+                        getGitHubPullRequestCommits={getGitHubPullRequestCommits}
+                        getGitHubPullRequestChecks={getGitHubPullRequestChecks}
+                        mergeGitHubPullRequest={mergeGitHubPullRequest}
+                        markGitHubPullRequestReady={markGitHubPullRequestReady}
+                        prRevealEnabled={prRevealEnabled}
+                        prRevealNonce={prRevealEnabled ? prRevealNonce : 0}
+                        prRevealRequest={prRevealEnabled ? prRevealRequest : null}
+                        onPrDiffAddToSession={onPrDiffAddToSession}
                       />
                     </div>
                   ) : (
