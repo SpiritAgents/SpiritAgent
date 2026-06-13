@@ -76,6 +76,7 @@ export function WorkspacePrCommitsView({
 
   useWorkspaceToolsShellRowDividers(listRef, [commits.length, hasMore], {
     enabled: showList,
+    trailingDivider: !hasMore,
   });
 
   if (loading && commits.length === 0) {
