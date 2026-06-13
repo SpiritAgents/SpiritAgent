@@ -8,14 +8,19 @@ import {
 
 type UseWorkspaceToolsShellRowDividersOptions = {
   enabled?: boolean;
+  /** Draw a divider below the last row when there is no trailing sibling. */
+  trailingDivider?: boolean;
   dividerClassName?: string;
 };
 
 export function useWorkspaceToolsShellRowDividers(
   listRef: RefObject<HTMLElement | null>,
   deps: readonly unknown[],
-  { enabled = true, dividerClassName = "pointer-events-none absolute h-px bg-border/35" }:
-    UseWorkspaceToolsShellRowDividersOptions = {},
+  {
+    enabled = true,
+    trailingDivider = false,
+    dividerClassName = "pointer-events-none absolute h-px bg-border/35",
+  }: UseWorkspaceToolsShellRowDividersOptions = {},
 ) {
   const hostIdRef = useRef(`shell-list-dividers-${Math.random().toString(36).slice(2)}`);
 
@@ -58,7 +63,10 @@ export function useWorkspaceToolsShellRowDividers(
       const rows = Array.from(root.children).filter(
         (child): child is HTMLElement => child instanceof HTMLElement,
       );
-      const dividerCount = Math.max(0, rows.length - 1);
+      const dividerCount = Math.max(
+        0,
+        rows.length - 1 + (trailingDivider && rows.length > 0 ? 1 : 0),
+      );
 
       while (dividers.length < dividerCount) {
         const divider = document.createElement("div");
@@ -100,5 +108,5 @@ export function useWorkspaceToolsShellRowDividers(
       clipHost!.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- caller controls invalidation via deps
-  }, [dividerClassName, enabled, listRef, ...deps]);
+  }, [dividerClassName, enabled, listRef, trailingDivider, ...deps]);
 }
