@@ -133,7 +133,6 @@ export function WorkspacePrChangesView({
   const [treeWidthPx, setTreeWidthPx] = useState(() => readPrChangesTreeWidthPx());
   const [isResizingTree, setIsResizingTree] = useState(false);
   const [containerWidthPx, setContainerWidthPx] = useState(0);
-  const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
   const [expandedFilenames, setExpandedFilenames] = useState<Set<string>>(() => new Set());
 
   const treeNodes = useMemo(() => buildPrChangedFilesTree(files), [files]);
@@ -216,7 +215,6 @@ export function WorkspacePrChangesView({
   }, []);
 
   const navigateToFile = useCallback((filename: string) => {
-    setSelectedFilename(filename);
     setExpandedFilenames((previous) => {
       const next = new Set(previous);
       next.add(filename);
@@ -231,43 +229,6 @@ export function WorkspacePrChangesView({
       section?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }, []);
-
-  useEffect(() => {
-    const viewport = scrollAreaViewport(cardsScrollRef.current);
-    if (!viewport || files.length === 0) {
-      return;
-    }
-
-    const sections = Array.from(
-      viewport.querySelectorAll<HTMLElement>("[data-pr-changed-file]"),
-    );
-    if (sections.length === 0) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-        const filename = visible?.target.getAttribute("data-pr-changed-file");
-        if (filename) {
-          setSelectedFilename(filename);
-        }
-      },
-      {
-        root: viewport,
-        rootMargin: "-20% 0px -55% 0px",
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-      },
-    );
-
-    for (const section of sections) {
-      observer.observe(section);
-    }
-
-    return () => observer.disconnect();
-  }, [files]);
 
   if (loading && files.length === 0) {
     return (
@@ -297,7 +258,6 @@ export function WorkspacePrChangesView({
         <ScrollArea className="h-full min-h-0 flex-1" type="auto">
           <WorkspacePrChangesFileTree
             nodes={treeNodes}
-            selectedFilename={selectedFilename}
             onSelectFile={navigateToFile}
           />
         </ScrollArea>
@@ -337,7 +297,6 @@ export function WorkspacePrChangesView({
                   const next = new Set(previous);
                   if (nextOpen) {
                     next.add(file.filename);
-                    setSelectedFilename(file.filename);
                   } else {
                     next.delete(file.filename);
                   }

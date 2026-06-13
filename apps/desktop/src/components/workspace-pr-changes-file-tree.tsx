@@ -7,7 +7,6 @@ import type { PrChangedFilesTreeNode } from "@/lib/pr-changed-files-tree";
 
 export type WorkspacePrChangesFileTreeProps = {
   nodes: PrChangedFilesTreeNode[];
-  selectedFilename: string | null;
   onSelectFile: (filename: string) => void;
   className?: string;
 };
@@ -15,27 +14,20 @@ export type WorkspacePrChangesFileTreeProps = {
 function PrChangesTreeNodeRow({
   node,
   depth,
-  selectedFilename,
   onSelectFile,
 }: {
   node: PrChangedFilesTreeNode;
   depth: number;
-  selectedFilename: string | null;
   onSelectFile: (filename: string) => void;
 }) {
   const [open, setOpen] = useState(depth < 2);
 
   if (node.kind === "file") {
-    const selected = selectedFilename === node.path;
     return (
-      <li role="treeitem" aria-selected={selected}>
+      <li role="treeitem">
         <button
           type="button"
-          className={cn(
-            "flex w-full min-w-0 items-center gap-1 rounded-sm py-1 pr-2 text-left text-xs outline-none cursor-pointer hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring/50",
-            selected && "bg-muted text-foreground",
-            !selected && "text-muted-foreground",
-          )}
+          className="flex w-full min-w-0 items-center gap-1 rounded-sm py-1 pr-2 text-left text-xs text-muted-foreground outline-none cursor-pointer hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring/50"
           style={{ paddingLeft: depth * 12 + 8 }}
           onClick={() => onSelectFile(node.path)}
         >
@@ -69,7 +61,6 @@ function PrChangesTreeNodeRow({
               key={child.kind === "dir" ? `dir:${child.path}` : `file:${child.path}`}
               node={child}
               depth={depth + 1}
-              selectedFilename={selectedFilename}
               onSelectFile={onSelectFile}
             />
           ))}
@@ -81,7 +72,6 @@ function PrChangesTreeNodeRow({
 
 export function WorkspacePrChangesFileTree({
   nodes,
-  selectedFilename,
   onSelectFile,
   className,
 }: WorkspacePrChangesFileTreeProps) {
@@ -98,7 +88,6 @@ export function WorkspacePrChangesFileTree({
           key={node.kind === "dir" ? `dir:${node.path}` : `file:${node.path}`}
           node={node}
           depth={0}
-          selectedFilename={selectedFilename}
           onSelectFile={onSelectFile}
         />
       ))}
