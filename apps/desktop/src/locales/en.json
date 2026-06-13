@@ -609,6 +609,7 @@
     "prListTestsProgressAria": "{{completed}} of {{total}} tests completed",
     "prListTasksDoneAria": "All {{count}} tasks completed",
     "prListOpenDetailAria": "Open pull request #{{number}}: {{title}}",
+    "prListBack": "Back to list",
     "prLoading": "Loading pull request…",
     "prLoadingDetail": "Loading details…",
     "prShowDetail": "Show details",
