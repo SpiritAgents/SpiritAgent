@@ -371,8 +371,9 @@ function WorkspaceToolsDockInner({
       style={{ width: shellWidth }}
     >
       <div
+        data-workspace-tools-split
         className={cn(
-          "flex h-full min-h-0 shrink-0 flex-row self-stretch",
+          "relative flex h-full min-h-0 shrink-0 flex-row self-stretch",
           !open && "pointer-events-none select-none",
         )}
         style={{ width: `calc(0.25rem + ${widthPx}px)` }}
