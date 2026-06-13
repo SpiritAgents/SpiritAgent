@@ -23,6 +23,7 @@ export function createMarkdownMessageComponents(
   readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl,
   onLinkClick?: WorkspaceMarkdownLinkClickHandler,
   size: MarkdownSize = "default",
+  allowGitHubHtml = false,
 ): Record<string, ComponentType<Record<string, unknown>>> {
   const compact = size === "compact";
   const muted = tone === "muted";
@@ -231,6 +232,25 @@ export function createMarkdownMessageComponents(
       }
       return <input type={type} className={className} {...props} />;
     },
+    ...(allowGitHubHtml
+      ? {
+          picture: ({ className, children, ...props }: HTMLAttributes<HTMLPictureElement>) => (
+            <picture className={cn("inline-block max-w-full", className)} {...props}>
+              {children}
+            </picture>
+          ),
+          source: (props: ComponentPropsWithoutRef<"source">) => <source {...props} />,
+          sup: ({ className, ...props }: HTMLAttributes<HTMLElement>) => (
+            <sup
+              className={cn("text-[10px] leading-snug text-muted-foreground/80", className)}
+              {...props}
+            />
+          ),
+          sub: ({ className, ...props }: HTMLAttributes<HTMLElement>) => (
+            <sub className={cn("text-[10px] leading-snug", className)} {...props} />
+          ),
+        }
+      : {}),
   };
 }
 

@@ -10,6 +10,7 @@ import {
 } from "@/lib/markdown-message-components";
 import { useWorkspaceMarkdownLinkClick } from "@/components/workspace-markdown-link-context";
 import { reactMarkdownUrlTransform } from "@/lib/markdown-url-transform";
+import { githubHtmlRehypePlugins } from "@/lib/markdown-github-html";
 
 import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
 
@@ -21,12 +22,14 @@ export function MarkdownMessage({
   className,
   tone = "default",
   size = "default",
+  allowGitHubHtml = false,
   readManagedImagePreviewDataUrl,
 }: {
   content: string;
   className?: string;
   tone?: MarkdownTone;
   size?: MarkdownSize;
+  allowGitHubHtml?: boolean;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
 }) {
   const onMarkdownLinkClick = useWorkspaceMarkdownLinkClick();
@@ -38,14 +41,16 @@ export function MarkdownMessage({
         undefined,
         onMarkdownLinkClick,
         size,
+        allowGitHubHtml,
       ),
-    [onMarkdownLinkClick, readManagedImagePreviewDataUrl, size, tone],
+    [allowGitHubHtml, onMarkdownLinkClick, readManagedImagePreviewDataUrl, size, tone],
   );
 
   return (
     <div className={markdownMessageRootClassName(tone, className, size)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={allowGitHubHtml ? githubHtmlRehypePlugins : undefined}
         components={markdownComponents}
         urlTransform={reactMarkdownUrlTransform}
       >
