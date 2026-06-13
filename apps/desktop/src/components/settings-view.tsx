@@ -93,6 +93,8 @@ import type {
   PreviewModelsRequest,
   PreviewModelsResponse,
   SaveHookEntryRequest,
+  GitHubAuthStatus,
+  GitHubDeviceAuthChallenge,
 } from "@/types";
 import {
   PROVIDER_PICKER_ROWS,
@@ -174,6 +176,11 @@ type SettingsViewProps = {
   onStartCompactionUiDemo?: () => void;
   /** Windows 云母 / macOS Vibrancy：内层透明以避免与 settings-shell 双层 tint 叠深。 */
   useMicaBackdrop?: boolean;
+  getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
+  beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
+  completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;
+  cancelGitHubDeviceLogin: () => Promise<void>;
+  disconnectGitHub: () => Promise<GitHubAuthStatus>;
 };
 
 const themeSelectOptions: Array<{ value: ThemePreference; labelKey: string }> = [
@@ -4069,6 +4076,11 @@ export function SettingsView({
   onGenerateRuleNavigate,
   onStartCompactionUiDemo,
   useMicaBackdrop = false,
+  getGitHubAuthStatus,
+  beginGitHubDeviceLogin,
+  completeGitHubDeviceLogin,
+  cancelGitHubDeviceLogin,
+  disconnectGitHub,
 }: SettingsViewProps) {
   const { t } = useTranslation();
   const extensionSettingsItem = extensionSettingsId
@@ -4190,7 +4202,16 @@ export function SettingsView({
                 onResetWebHostPairing={onResetWebHostPairing}
               />
             ) : tab === "integrations" ? (
-              <IntegrationsSettingsPanel />
+              <IntegrationsSettingsPanel
+                isElectronShell={isElectronShell}
+                runtime={{
+                  getGitHubAuthStatus,
+                  beginGitHubDeviceLogin,
+                  completeGitHubDeviceLogin,
+                  cancelGitHubDeviceLogin,
+                  disconnectGitHub,
+                }}
+              />
             ) : null}
           </div>
         </div>
