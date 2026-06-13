@@ -36,6 +36,8 @@ import type {
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
+  GetGitHubPullRequestTabCountsRequest,
+  ListGitHubPullRequestsRequest,
   MergeGitHubPullRequestRequest,
   RunExtensionRequest,
   SaveHookEntryRequest,
@@ -72,6 +74,8 @@ export type CommandPayloads = {
   cancelGitHubDeviceLogin: undefined;
   disconnectGitHub: undefined;
   getGitHubPullRequestForCurrentBranch: undefined;
+  listGitHubPullRequests: { request: ListGitHubPullRequestsRequest };
+  getGitHubPullRequestTabCounts: { request: GetGitHubPullRequestTabCountsRequest };
   getGitHubPullRequestDetail: { request: GetGitHubPullRequestDetailRequest };
   getGitHubPullRequestConversation: { request: GetGitHubPullRequestDetailRequest };
   getGitHubPullRequestFiles: { request: GetGitHubPullRequestDetailRequest };
