@@ -18,9 +18,12 @@ import {
   DESKTOP_OVERLAY_LIST_CONTENT,
   DESKTOP_OVERLAY_LIST_FILTER_HEADER,
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST,
+  DESKTOP_OVERLAY_LIST_LIST_PADDING,
+  DESKTOP_OVERLAY_LIST_SCROLL_AREA,
   DESKTOP_OVERLAY_LIST_SHELL,
   DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
   DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
+  stopOverlayScrollPropagation,
 } from "@/lib/desktop-chrome";
 import {
   defaultDesktopTimeTrigger,
@@ -206,8 +209,13 @@ function AutomationGitHubRepositoryList({
           autoComplete="off"
         />
       </div>
-      <ScrollArea className="max-h-60">
-        <div className="p-1">
+      <ScrollArea
+        type="always"
+        className={DESKTOP_OVERLAY_LIST_SCROLL_AREA}
+        onWheel={stopOverlayScrollPropagation}
+        onTouchMove={stopOverlayScrollPropagation}
+      >
+        <div className={DESKTOP_OVERLAY_LIST_LIST_PADDING}>
           {loading ? (
             <p className="px-2 py-3 text-xs text-muted-foreground">{t("common.loading")}</p>
           ) : items.length === 0 ? (
