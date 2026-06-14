@@ -61,6 +61,7 @@ export function useGitHubDeviceLogin(runtime: GitHubDeviceLoginRuntime) {
 
   return {
     authStatus: state.authStatus,
+    authStatusPending: state.authStatusPending,
     setAuthStatus: useCallback(
       (next: GitHubAuthStatus) => {
         model.authStatus = next;

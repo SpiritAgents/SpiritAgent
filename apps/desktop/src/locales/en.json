@@ -90,6 +90,7 @@
     "integrationsGitHub": "GitHub",
     "integrationsGitHubConnect": "Connect GitHub",
     "integrationsGitHubDisconnect": "Disconnect",
+    "integrationsGitHubChecking": "Checking GitHub connection…",
     "integrationsGitHubConnectedAs": "Connected as @{{login}}",
     "integrationsDeviceWaiting": "Waiting for authorization",
     "integrationsOpenDevicePage": "Open GitHub verification page",
