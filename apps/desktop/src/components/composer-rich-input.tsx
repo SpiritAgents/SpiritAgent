@@ -12,6 +12,7 @@ import {
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
+import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import { hasInlineAttachmentChipSegments } from "@/lib/composer-inline-chip-dom";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-selection";
@@ -122,6 +123,7 @@ export type ComposerRichInputHandle = {
   focus(): void;
   insertAttachment(a: BrowserElementAttachment): void;
   insertPrDiffAttachment(attachment: PrDiffAttachment): void;
+  insertTerminalSnippet(attachment: TerminalSnippetAttachment): void;
   insertWorkspaceFileReference(
     path: string,
     query: ActiveWorkspaceFileReferenceQuery,
@@ -402,6 +404,26 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments],
     );
 
+    const insertTerminalSnippet = useCallback(
+      (attachment: TerminalSnippetAttachment) => {
+        const div = divRef.current;
+        if (!div) return;
+        div.focus();
+        const current = segmentsRef.current;
+        const caret =
+          selectionToCaret(div, current) ?? {
+            segmentIndex: current.length - 1,
+            offset: segmentsToPlainText(current).length,
+          };
+        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+          kind: "terminalSnippet",
+          attachment,
+        });
+        commitSegments(next, nextCaret);
+      },
+      [commitSegments],
+    );
+
     const insertWorkspaceFileReference = useCallback(
       (path: string, query: ActiveWorkspaceFileReferenceQuery, finalize = true) => {
         const div = divRef.current;
@@ -629,6 +651,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         focus: () => divRef.current?.focus(),
         insertAttachment,
         insertPrDiffAttachment,
+        insertTerminalSnippet,
         insertWorkspaceFileReference,
         insertLoopChip,
         removeLoopChip,
@@ -647,6 +670,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [
         insertAttachment,
         insertPrDiffAttachment,
+        insertTerminalSnippet,
         insertWorkspaceFileReference,
         replaceSkillSlashQuery,
         removeSkillSlashQuery,

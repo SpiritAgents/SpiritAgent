@@ -1,8 +1,8 @@
 import type { RichSegment } from "./composer-segment-model";
 
-/** DOM markers for inline attachment chips (element / file / PR diff). */
+/** DOM markers for inline attachment chips (element / file / PR diff / terminal). */
 export const COMPOSER_INLINE_ATTACHMENT_CHIP_SELECTOR =
-  "[data-element-chip='true'],[data-file-chip='true'],[data-pr-diff-chip='true']";
+  "[data-element-chip='true'],[data-file-chip='true'],[data-pr-diff-chip='true'],[data-terminal-chip='true']";
 
 /** DOM markers for all non-text composer chips (incl. mode / loop / skill). */
 export const COMPOSER_INLINE_CHIP_SELECTOR = [
@@ -22,6 +22,8 @@ export function isComposerInlineChipElement(el: HTMLElement): boolean {
     || el.getAttribute("data-file-chip") === "true"
     || el.dataset.prDiffChip === "true"
     || el.getAttribute("data-pr-diff-chip") === "true"
+    || el.dataset.terminalChip === "true"
+    || el.getAttribute("data-terminal-chip") === "true"
     || el.dataset.loopChip === "true"
     || el.getAttribute("data-loop-chip") === "true"
     || el.dataset.planChip === "true"
@@ -40,6 +42,7 @@ export function hasInlineAttachmentChipSegments(segs: RichSegment[]): boolean {
     (segment) =>
       segment.kind === "element"
       || segment.kind === "prDiff"
+      || segment.kind === "terminalSnippet"
       || segment.kind === "workspaceFile",
   );
 }
