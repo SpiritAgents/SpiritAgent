@@ -36,6 +36,7 @@ export function useGitHubAutomationRepositories({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [nextPage, setNextPage] = useState<number | undefined>(undefined);
+  const [error, setError] = useState(false);
   const fetchGenerationRef = useRef(0);
   const loadMoreInFlightRef = useRef(false);
 
@@ -76,6 +77,7 @@ export function useGitHubAutomationRepositories({
             snapshot.items.length >= SEARCH_PAGE_SIZE && nextLength < snapshot.totalCount;
           setHasMore(hasMoreSearch);
           setNextPage(hasMoreSearch ? page + 1 : undefined);
+          setError(false);
           return;
         }
 
@@ -93,6 +95,7 @@ export function useGitHubAutomationRepositories({
         setItems((current) => (append ? [...current, ...snapshot.items] : snapshot.items));
         setHasMore(snapshot.hasNextPage);
         setNextPage(snapshot.hasNextPage ? page + 1 : undefined);
+        setError(false);
       } catch {
         if (generation !== fetchGenerationRef.current) {
           return;
@@ -101,6 +104,7 @@ export function useGitHubAutomationRepositories({
           setItems([]);
           setHasMore(false);
           setNextPage(undefined);
+          setError(true);
         }
       } finally {
         if (generation === fetchGenerationRef.current) {
@@ -131,6 +135,7 @@ export function useGitHubAutomationRepositories({
       setNextPage(listCached.hasNextPage ? 2 : undefined);
       setLoading(false);
       setLoadingMore(false);
+      setError(false);
       return;
     }
 
@@ -144,12 +149,14 @@ export function useGitHubAutomationRepositories({
       setNextPage(hasMoreSearch ? 2 : undefined);
       setLoading(false);
       setLoadingMore(false);
+      setError(false);
       return;
     }
 
     setItems([]);
     setHasMore(false);
     setNextPage(undefined);
+    setError(false);
     void fetchPage(searchQuery, 1, false);
   }, [debouncedQuery, fetchPage, open]);
 
@@ -169,5 +176,6 @@ export function useGitHubAutomationRepositories({
     loadingMore,
     hasMore,
     loadMore,
+    error,
   };
 }
