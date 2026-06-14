@@ -23,6 +23,7 @@ import type {
   WorkspaceEditorViewMode,
 } from "@/lib/workspace-editor-navigation";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
+import { installContainedSelectAll } from "@/lib/contained-text-selection";
 import type {
   PlanSnapshot,
   WorkspaceExplorerListResult,
@@ -355,7 +356,12 @@ export function WorkspaceFilesTab({
       previewRootRef.current = null;
       return;
     }
-    previewRootRef.current = scrollAreaViewport(previewScrollRef.current);
+    const viewport = scrollAreaViewport(previewScrollRef.current);
+    previewRootRef.current = viewport;
+    if (!viewport) {
+      return;
+    }
+    return installContainedSelectAll(viewport);
   }, [isPreviewVisible, draftText, selectedPath]);
 
   useEffect(() => {
