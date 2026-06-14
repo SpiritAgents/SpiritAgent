@@ -189,7 +189,7 @@ jobs:
       - name: Build Desktop
         run: npm --prefix apps/desktop run build
 
-      - name: Generate packager icons
+      - name: Verify packager icons
         working-directory: apps/desktop
         run: npm run gen:icons
 
