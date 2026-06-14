@@ -194,8 +194,11 @@ export function MessageCard({
   );
   const showTurnActions =
     !hiddenByProcessGroup
-    && turnActionsEligible
-    && !inActiveStreamingTurn;
+    && !inActiveStreamingTurn
+    && (
+      turnActionsEligible
+      || (showContinueButton && Boolean(continueTarget))
+    );
   const showForkMenu =
     showTurnActions
     && canShowForkMessage({
