@@ -41,6 +41,8 @@ export interface HostAutomationDefinition {
   createdAtUnixMs: number;
   updatedAtUnixMs: number;
   lastFiredAtUnixMs?: number;
+  /** Set when GitHub issue/PR polling fails for this automation's repository. */
+  githubPollError?: string;
 }
 
 export type HostAutomationRunStatus = 'running' | 'blocked' | 'completed' | 'failed';
@@ -61,6 +63,7 @@ export interface HostAutomationListItem {
   scheduleLabel: string;
   trigger: HostAutomationTrigger;
   enabled: boolean;
+  githubPollError?: string;
   lastRunAtUnixMs?: number;
   updatedAtUnixMs: number;
 }
@@ -305,6 +308,9 @@ export class HostAutomationStore {
         scheduleLabel: formatTriggerLabel(file.definition.trigger),
         trigger: file.definition.trigger,
         enabled: file.definition.enabled,
+        ...(file.definition.githubPollError
+          ? { githubPollError: file.definition.githubPollError }
+          : {}),
         ...(lastRun ? { lastRunAtUnixMs: lastRun.startedAtUnixMs } : {}),
         updatedAtUnixMs: file.definition.updatedAtUnixMs,
       });
@@ -435,6 +441,25 @@ export class HostAutomationStore {
       ...file.definition.trigger,
       poll: { lastSeenNumber },
     };
+    delete file.definition.githubPollError;
+    file.definition.updatedAtUnixMs = Date.now();
+    await this.saveFile(automationId, file);
+    return { ...file.definition };
+  }
+
+  async setGitHubPollError(
+    automationId: string,
+    error: string | undefined,
+  ): Promise<HostAutomationDefinition> {
+    const file = await this.requireFile(automationId);
+    if (file.definition.trigger.kind !== 'github') {
+      throw new Error('Automation trigger is not GitHub.');
+    }
+    if (error?.trim()) {
+      file.definition.githubPollError = error.trim();
+    } else {
+      delete file.definition.githubPollError;
+    }
     file.definition.updatedAtUnixMs = Date.now();
     await this.saveFile(automationId, file);
     return { ...file.definition };
@@ -592,6 +617,9 @@ function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition
     updatedAtUnixMs,
     ...(typeof record.lastFiredAtUnixMs === 'number'
       ? { lastFiredAtUnixMs: record.lastFiredAtUnixMs }
+      : {}),
+    ...(typeof record.githubPollError === 'string' && record.githubPollError.trim()
+      ? { githubPollError: record.githubPollError.trim() }
       : {}),
   };
 }
