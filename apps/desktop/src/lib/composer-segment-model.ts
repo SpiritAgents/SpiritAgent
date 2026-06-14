@@ -2,14 +2,22 @@ import type { BrowserElementAttachment } from "./browser-element-attachment";
 import { browserElementContextText } from "./browser-element-wire-text.js";
 import type { PrDiffAttachment } from "./pr-diff-attachment.js";
 import { parsePrDiffWireMeta, prDiffContextText, scanPrDiffWireBlocks } from "./pr-diff-wire-text.js";
+import type { TerminalSnippetAttachment } from "./terminal-snippet-attachment.js";
+import {
+  parseTerminalSnippetWireMeta,
+  scanTerminalSnippetWireBlocks,
+  terminalSnippetContextText,
+} from "./terminal-snippet-wire-text.js";
 
 export { browserElementContextText };
 export { prDiffContextText };
+export { terminalSnippetContextText };
 
 export type RichSegment =
   | { kind: "text"; value: string }
   | { kind: "element"; attachment: BrowserElementAttachment }
   | { kind: "prDiff"; attachment: PrDiffAttachment }
+  | { kind: "terminalSnippet"; attachment: TerminalSnippetAttachment }
   | { kind: "workspaceFile"; path: string }
   | { kind: "loop" }
   | { kind: "plan" }
@@ -128,6 +136,14 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
+  if (prev.kind === "text" && next.kind === "terminalSnippet") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
   if (prev.kind === "element" && next.kind === "text") {
     const v = next.value;
     if (!v) return "";
@@ -137,6 +153,14 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
   }
 
   if (prev.kind === "prDiff" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "terminalSnippet" && next.kind === "text") {
     const v = next.value;
     if (!v) return "";
     if (v.startsWith("\n\n")) return "\n";
@@ -167,7 +191,9 @@ export function segmentsToMessageText(segs: RichSegment[]): string {
             ? seg.alias
             : seg.kind === "prDiff"
               ? prDiffContextText(seg.attachment)
-              : browserElementContextText(seg.attachment);
+              : seg.kind === "terminalSnippet"
+                ? terminalSnippetContextText(seg.attachment)
+                : browserElementContextText(seg.attachment);
     if (seg.kind === "text" && !piece) continue;
 
     if (!out) {
@@ -209,6 +235,9 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
     if (seg.kind === "prDiff" && other.kind === "prDiff") {
       return seg.attachment.id === other.attachment.id;
     }
+    if (seg.kind === "terminalSnippet" && other.kind === "terminalSnippet") {
+      return seg.attachment.id === other.attachment.id;
+    }
     if (seg.kind === "workspaceFile" && other.kind === "workspaceFile") {
       return seg.path === other.path;
     }
@@ -245,8 +274,15 @@ function pinAgentModeChipFromSegments(
 export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string): RichSegment[] {
   const loopPinned = segs.some((s) => s.kind === "loop");
   const inlineChips = segs.filter(
-    (s): s is Extract<RichSegment, { kind: "element" | "prDiff" | "workspaceFile" | "skill" }> =>
-      s.kind === "element" || s.kind === "prDiff" || s.kind === "workspaceFile" || s.kind === "skill",
+    (s): s is Extract<
+      RichSegment,
+      { kind: "element" | "prDiff" | "terminalSnippet" | "workspaceFile" | "skill" }
+    > =>
+      s.kind === "element"
+      || s.kind === "prDiff"
+      || s.kind === "terminalSnippet"
+      || s.kind === "workspaceFile"
+      || s.kind === "skill",
   );
 
   let body: RichSegment[];
@@ -258,7 +294,13 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
     const out: RichSegment[] = [];
     let textApplied = false;
     for (const seg of segs) {
-      if (seg.kind === "element" || seg.kind === "prDiff" || seg.kind === "workspaceFile" || seg.kind === "skill") {
+      if (
+        seg.kind === "element"
+        || seg.kind === "prDiff"
+        || seg.kind === "terminalSnippet"
+        || seg.kind === "workspaceFile"
+        || seg.kind === "skill"
+      ) {
         out.push(seg);
       } else if (seg.kind === "text" && !textApplied) {
         out.push({ kind: "text", value });
@@ -289,10 +331,14 @@ function textFollowingChipInsert(after: string): string {
 
 function isInlineChipSegment(
   seg: RichSegment | undefined,
-): seg is Extract<RichSegment, { kind: "element" | "prDiff" | "workspaceFile" | "loop" | "skill" }> {
+): seg is Extract<
+  RichSegment,
+  { kind: "element" | "prDiff" | "terminalSnippet" | "workspaceFile" | "loop" | "skill" }
+> {
   return (
     seg?.kind === "element"
     || seg?.kind === "prDiff"
+    || seg?.kind === "terminalSnippet"
     || seg?.kind === "workspaceFile"
     || seg?.kind === "loop"
     || seg?.kind === "skill"
@@ -365,6 +411,18 @@ export function insertSegmentAtCaret(
     );
     if (diffIndex >= 0) {
       afterIndex = diffIndex + 1;
+      const trailing = normalized[afterIndex];
+      if (trailing?.kind === "text" && trailing.value === " ") {
+        caretOffset = 1;
+      }
+    }
+  } else if (newSegment.kind === "terminalSnippet") {
+    const terminalIndex = normalized.findIndex(
+      (s) =>
+        s.kind === "terminalSnippet" && s.attachment.id === newSegment.attachment.id,
+    );
+    if (terminalIndex >= 0) {
+      afterIndex = terminalIndex + 1;
       const trailing = normalized[afterIndex];
       if (trailing?.kind === "text" && trailing.value === " ") {
         caretOffset = 1;
@@ -572,6 +630,13 @@ export type MessageContentPart =
       status: PrDiffAttachment["status"];
       diffText: string;
     }
+  | {
+      kind: "terminalSnippet";
+      terminalName: string;
+      lineStart: number;
+      lineEnd: number;
+      selectedText: string;
+    }
   | { kind: "workspaceFile"; path: string };
 
 const ELEMENT_BLOCK_RE = /Selected element from ([^\n]*):\n```html\n[\s\S]*?\n```/g;
@@ -615,6 +680,24 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
         lineEnd: parsed.lineEnd,
         status: parsed.status,
         diffText: block.diffText,
+      },
+    });
+  }
+
+  for (const block of scanTerminalSnippetWireBlocks(content)) {
+    const parsed = parseTerminalSnippetWireMeta(block.meta);
+    if (!parsed) {
+      continue;
+    }
+    blocks.push({
+      index: block.index,
+      length: block.length,
+      part: {
+        kind: "terminalSnippet",
+        terminalName: parsed.terminalName || block.terminalName,
+        lineStart: parsed.lineStart,
+        lineEnd: parsed.lineEnd,
+        selectedText: block.selectedText,
       },
     });
   }
@@ -696,6 +779,7 @@ export function messageContentToRichSegments(
   const segments: RichSegment[] = [];
   let elementIndex = 0;
   let prDiffIndex = 0;
+  let terminalSnippetIndex = 0;
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]!;
@@ -728,6 +812,18 @@ export function messageContentToRichSegments(
       continue;
     }
 
+    if (part.kind === "terminalSnippet") {
+      const attachment: TerminalSnippetAttachment = {
+        id: `${idPrefix}-term-${terminalSnippetIndex++}`,
+        terminalName: part.terminalName,
+        lineStart: part.lineStart,
+        lineEnd: part.lineEnd,
+        selectedText: part.selectedText,
+      };
+      segments.push({ kind: "terminalSnippet", attachment });
+      continue;
+    }
+
     if (part.kind === "workspaceFile") {
       segments.push({ kind: "workspaceFile", path: part.path });
       continue;
@@ -735,9 +831,15 @@ export function messageContentToRichSegments(
 
     const display = trimMessageTextAroundElements(part.value, {
       afterElement:
-        prev?.kind === "element" || prev?.kind === "prDiff" || prev?.kind === "workspaceFile",
+        prev?.kind === "element"
+        || prev?.kind === "prDiff"
+        || prev?.kind === "terminalSnippet"
+        || prev?.kind === "workspaceFile",
       beforeElement:
-        next?.kind === "element" || next?.kind === "prDiff" || next?.kind === "workspaceFile",
+        next?.kind === "element"
+        || next?.kind === "prDiff"
+        || next?.kind === "terminalSnippet"
+        || next?.kind === "workspaceFile",
     });
     if (display || segments.length === 0) {
       segments.push({ kind: "text", value: display });
