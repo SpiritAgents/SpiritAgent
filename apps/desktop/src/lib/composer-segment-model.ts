@@ -168,6 +168,14 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
+  if (
+    (prev.kind === "terminalSnippet" && (next.kind === "element" || next.kind === "prDiff"))
+    || (next.kind === "terminalSnippet" && (prev.kind === "element" || prev.kind === "prDiff"))
+    || (prev.kind === "terminalSnippet" && next.kind === "terminalSnippet")
+  ) {
+    return "\n";
+  }
+
   if (prev.kind === "workspaceFile" || next.kind === "workspaceFile" || prev.kind === "skill" || next.kind === "skill") {
     return "";
   }

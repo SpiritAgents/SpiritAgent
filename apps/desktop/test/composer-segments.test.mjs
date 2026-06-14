@@ -112,6 +112,39 @@ test("messageSegmentSeparator uses single newline between element and inline tex
   );
 });
 
+const sampleTerminalAttachment = {
+  id: "term-1",
+  terminalName: "Terminal",
+  lineStart: 10,
+  lineEnd: 12,
+  selectedText: "error output",
+};
+
+test("messageSegmentSeparator uses single newline between terminal chip and element", () => {
+  assert.equal(
+    messageSegmentSeparator(
+      { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
+      { kind: "element", attachment: sampleAttachment },
+    ),
+    "\n",
+  );
+  assert.equal(
+    messageSegmentSeparator(
+      { kind: "element", attachment: sampleAttachment },
+      { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
+    ),
+    "\n",
+  );
+});
+
+test("segmentsToMessageText does not double-newline terminal chip after element", () => {
+  const message = segmentsToMessageText([
+    { kind: "element", attachment: sampleAttachment },
+    { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
+  ]);
+  assert.ok(!message.includes("```\n\nSelected terminal"));
+});
+
 test("trimMessageTextAroundElements removes one structural newline after element", () => {
   assert.equal(trimMessageTextAroundElements("\n你好啊", { afterElement: true }), "你好啊");
   assert.equal(trimMessageTextAroundElements("你好啊\n", { beforeElement: true }), "你好啊");
