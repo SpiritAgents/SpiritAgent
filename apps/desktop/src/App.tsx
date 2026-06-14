@@ -389,6 +389,7 @@ export default function App() {
                 snapshot={snapshot}
                 apiReady={runtime.apiReady}
                 busyAction={runtime.busyAction}
+                githubConnected={gitHubAuthConnected === true}
                 onGenerateAutomation={() => void surfaceNav.handleGenerateAutomation()}
                 onCreateAutomation={() => surfaceNav.setCreateAutomationDialogOpen(true)}
                 onOpenAutomation={(automationId) => {

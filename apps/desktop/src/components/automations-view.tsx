@@ -25,6 +25,7 @@ type AutomationsViewProps = {
   snapshot: DesktopSnapshot | null;
   apiReady: boolean;
   busyAction: string;
+  githubConnected: boolean;
   onCreateAutomation: () => void;
   onGenerateAutomation: () => void;
   onOpenAutomation: (automationId: string) => void;
@@ -35,6 +36,7 @@ export function AutomationsView({
   snapshot,
   apiReady,
   busyAction,
+  githubConnected,
   onCreateAutomation,
   onGenerateAutomation,
   onOpenAutomation,
@@ -145,6 +147,7 @@ export function AutomationsView({
                   <AutomationListRow
                     key={item.id}
                     item={item}
+                    githubConnected={githubConnected}
                     onOpen={() => onOpenAutomation(item.id)}
                   />
                 ))
@@ -264,9 +267,11 @@ function AutomationListNav({
 
 function AutomationListRow({
   item,
+  githubConnected,
   onOpen,
 }: {
   item: DesktopAutomationListItem;
+  githubConnected: boolean;
   onOpen: () => void;
 }) {
   const { t } = useTranslation();
@@ -289,6 +294,11 @@ function AutomationListRow({
         {!item.enabled ? (
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {t("automations.disabled")}
+          </span>
+        ) : null}
+        {!githubConnected && item.trigger?.kind === "github" ? (
+          <span className="rounded-md bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
+            {t("automations.githubDisconnectedPause")}
           </span>
         ) : null}
       </div>
