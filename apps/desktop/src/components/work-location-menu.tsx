@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DESKTOP_OVERLAY_SHORT_LIST_PADDING } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 
 const WORK_LOCATION_OPTIONS: WorkLocationKind[] = ["local", "worktree"];
@@ -50,20 +51,22 @@ export function WorkLocationMenu({
       <DropdownMenuContent
         align="start"
         side="top"
-        className="min-w-[9.5rem]"
+        className="min-w-[9.5rem] p-0"
       >
-        {WORK_LOCATION_OPTIONS.map((option) => (
-          <DropdownMenuItem
-            key={option}
-            onSelect={() => onWorkLocationChange(option)}
-            className={cn(
-              "flex flex-col items-start gap-0.5",
-              workLocation === option && "bg-accent/40",
-            )}
-          >
-            <span>{workLocationLabel(option)}</span>
-          </DropdownMenuItem>
-        ))}
+        <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+          {WORK_LOCATION_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option}
+              onSelect={() => onWorkLocationChange(option)}
+              className={cn(
+                "flex flex-col items-start gap-0.5",
+                workLocation === option && "bg-accent/40",
+              )}
+            >
+              <span>{workLocationLabel(option)}</span>
+            </DropdownMenuItem>
+          ))}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
