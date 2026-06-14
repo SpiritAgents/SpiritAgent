@@ -2,25 +2,37 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 
 import { attachKeyboardSelectionMenuSync } from "@/lib/contained-text-selection";
 import type { SelectionAnchorRect } from "@/hooks/use-text-selection-action-menu";
-import type { Terminal } from "@xterm/xterm";
+import type * as Monaco from "monaco-editor";
 
-type UseTerminalSelectionActionMenuOptions = {
+type MonacoEditor = Monaco.editor.IStandaloneCodeEditor;
+
+type UseMonacoSelectionActionMenuOptions = {
   enabled?: boolean;
   containerRef: RefObject<HTMLElement | null>;
-  /** xterm instance; use state (not ref) so listeners re-bind when terminal becomes ready. */
-  terminal: Terminal | null;
+  /** Monaco instance; use state (not ref) so listeners re-bind when editor becomes ready. */
+  editor: MonacoEditor | null;
 };
 
-export function readTerminalSelectionLineRange(
-  term: Terminal,
+export function readMonacoSelectionLineRange(
+  editor: MonacoEditor,
 ): { lineStart: number; lineEnd: number } | null {
-  const position = term.getSelectionPosition();
-  if (!position) {
+  const selection = editor.getSelection();
+  if (!selection || selection.isEmpty()) {
     return null;
   }
-  const lineStart = Math.min(position.start.y, position.end.y) + 1;
-  const lineEnd = Math.max(position.start.y, position.end.y) + 1;
-  return { lineStart, lineEnd };
+  return {
+    lineStart: Math.min(selection.startLineNumber, selection.endLineNumber),
+    lineEnd: Math.max(selection.startLineNumber, selection.endLineNumber),
+  };
+}
+
+export function readMonacoSelectionText(editor: MonacoEditor): string {
+  const selection = editor.getSelection();
+  const model = editor.getModel();
+  if (!selection || selection.isEmpty() || !model) {
+    return "";
+  }
+  return model.getValueInRange(selection);
 }
 
 function pointAnchor(x: number, y: number): SelectionAnchorRect {
@@ -37,11 +49,11 @@ function containerAnchor(container: HTMLElement): SelectionAnchorRect {
   };
 }
 
-export function useTerminalSelectionActionMenu({
+export function useMonacoSelectionActionMenu({
   enabled = true,
   containerRef,
-  terminal,
-}: UseTerminalSelectionActionMenuOptions) {
+  editor,
+}: UseMonacoSelectionActionMenuOptions) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<SelectionAnchorRect | null>(null);
   const [selectionText, setSelectionText] = useState("");
@@ -55,21 +67,21 @@ export function useTerminalSelectionActionMenu({
     setLineRange(null);
   }, []);
 
-  const syncFromTerminal = useCallback(() => {
+  const syncFromEditor = useCallback(() => {
     const container = containerRef.current;
-    const term = terminal;
-    if (!enabled || !container || !term) {
+    const activeEditor = editor;
+    if (!enabled || !container || !activeEditor) {
       dismiss();
       return;
     }
 
-    const text = term.getSelection();
-    if (!text.trim()) {
+    const text = readMonacoSelectionText(activeEditor).trim();
+    if (!text) {
       dismiss();
       return;
     }
 
-    const range = readTerminalSelectionLineRange(term);
+    const range = readMonacoSelectionLineRange(activeEditor);
     const pointer = lastPointerRef.current;
     const nextAnchor = pointer
       ? pointAnchor(pointer.x, pointer.y)
@@ -79,7 +91,7 @@ export function useTerminalSelectionActionMenu({
     setLineRange(range);
     setAnchor(nextAnchor);
     setOpen(true);
-  }, [containerRef, dismiss, enabled, terminal]);
+  }, [containerRef, dismiss, editor, enabled]);
 
   useEffect(() => {
     if (!enabled) {
@@ -88,15 +100,15 @@ export function useTerminalSelectionActionMenu({
     }
 
     const container = containerRef.current;
-    const term = terminal;
-    if (!container || !term) {
+    const activeEditor = editor;
+    if (!container || !activeEditor) {
       return;
     }
 
     let raf = 0;
     const scheduleSync = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(syncFromTerminal);
+      raf = requestAnimationFrame(syncFromEditor);
     };
 
     const onPointerUp = (event: MouseEvent) => {
@@ -105,9 +117,12 @@ export function useTerminalSelectionActionMenu({
     };
 
     const onSelectionChange = () => {
-      if (!term.getSelection().trim()) {
+      const text = readMonacoSelectionText(activeEditor).trim();
+      if (!text) {
         dismiss();
+        return;
       }
+      // Selection updated while dragging — wait for pointer up before opening.
     };
 
     const onTouchEnd = (event: TouchEvent) => {
@@ -119,19 +134,21 @@ export function useTerminalSelectionActionMenu({
       scheduleSync();
     };
 
-    const detachKeyboardSync = attachKeyboardSelectionMenuSync(scheduleSync, container);
+    const detachContainerKeyboardSync = attachKeyboardSelectionMenuSync(scheduleSync, container);
 
     container.addEventListener("mouseup", onPointerUp);
     container.addEventListener("touchend", onTouchEnd);
-    const selectionDisposable = term.onSelectionChange(onSelectionChange);
+    const selectionDisposable = activeEditor.onDidChangeCursorSelection(onSelectionChange);
+    const detachEditorKeyboardSync = attachKeyboardSelectionMenuSync(scheduleSync, activeEditor.getDomNode() ?? container);
     return () => {
       cancelAnimationFrame(raf);
       container.removeEventListener("mouseup", onPointerUp);
       container.removeEventListener("touchend", onTouchEnd);
       selectionDisposable.dispose();
-      detachKeyboardSync();
+      detachContainerKeyboardSync();
+      detachEditorKeyboardSync();
     };
-  }, [containerRef, dismiss, enabled, syncFromTerminal, terminal]);
+  }, [containerRef, dismiss, editor, enabled, syncFromEditor]);
 
   return {
     open,
