@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OVERLAY_LIST_FILTER_HEADER,
+  DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST,
+  DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
+} from "@/lib/desktop-chrome";
 import {
   defaultDesktopTimeTrigger,
   formatDesktopAutomationTriggerLabel,
@@ -233,12 +237,14 @@ function AutomationGitHubRepositorySub({
     <DropdownMenuSub open={open} onOpenChange={setOpen}>
       <DropdownMenuSubTrigger disabled={disabled}>{selectedLabel}</DropdownMenuSubTrigger>
       <DropdownMenuSubContent className="z-[140] w-72 p-0">
-        <div className="border-b border-border/40 p-2">
+        <div className={DESKTOP_OVERLAY_LIST_FILTER_HEADER}>
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("automations.trigger.repositorySearchPlaceholder")}
-            className="h-8 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0"
+            className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST}
+            onKeyDown={(event) => event.stopPropagation()}
+            autoComplete="off"
           />
         </div>
         <ScrollArea className="max-h-60">
