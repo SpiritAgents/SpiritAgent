@@ -177,6 +177,36 @@ export function normalizeAutomationTrigger(value: unknown): HostAutomationTrigge
   return undefined;
 }
 
+export function reconcileGitHubTriggerPollState(
+  previous: HostAutomationTrigger,
+  next: HostAutomationTrigger,
+): HostAutomationTrigger {
+  if (next.kind !== 'github') {
+    return next;
+  }
+  if (previous.kind !== 'github') {
+    return {
+      kind: 'github',
+      owner: next.owner,
+      repo: next.repo,
+      event: next.event,
+    };
+  }
+  if (
+    previous.owner !== next.owner
+    || previous.repo !== next.repo
+    || previous.event !== next.event
+  ) {
+    return {
+      kind: 'github',
+      owner: next.owner,
+      repo: next.repo,
+      event: next.event,
+    };
+  }
+  return next;
+}
+
 export function automationTimeScheduleFromTrigger(
   trigger: HostAutomationTrigger,
 ): HostAutomationTimeSchedule | undefined {
@@ -384,7 +414,7 @@ export class HostAutomationStore {
       if (!trigger) {
         throw new Error('Invalid automation trigger.');
       }
-      file.definition.trigger = trigger;
+      file.definition.trigger = reconcileGitHubTriggerPollState(file.definition.trigger, trigger);
     }
     if (patch.workspaceRoot !== undefined) {
       file.definition.workspaceRoot = path.resolve(normalizeNonEmpty(patch.workspaceRoot, 'workspaceRoot'));
