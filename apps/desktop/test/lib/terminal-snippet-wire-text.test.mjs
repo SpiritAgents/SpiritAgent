@@ -55,6 +55,26 @@ test("wire round-trips terminal names containing parentheses", () => {
   assert.equal(parts[0].lineEnd, 8);
 });
 
+test("wire round-trips terminal names containing tab characters", () => {
+  const attachment = {
+    id: "term-tab",
+    terminalName: "shell\t1",
+    lineStart: 2,
+    lineEnd: 4,
+    selectedText: "tab name line",
+  };
+  const message = segmentsToMessageText([{ kind: "terminalSnippet", attachment }]);
+  const parts = parseMessageContentParts(message);
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0]?.kind, "terminalSnippet");
+  if (parts[0]?.kind !== "terminalSnippet") {
+    return;
+  }
+  assert.equal(parts[0].terminalName, "shell\t1");
+  assert.equal(parts[0].lineStart, 2);
+  assert.equal(parts[0].lineEnd, 4);
+});
+
 test("parseTerminalSnippetWireMeta still parses legacy tab-separated meta", () => {
   const parsed = parseTerminalSnippetWireMeta("npm run dev\tL3-7");
   assert.deepEqual(parsed, {
