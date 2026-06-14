@@ -21,6 +21,7 @@ function isGitHubDeviceAuthCancelledError(error: unknown): boolean {
 
 export type GitHubDeviceLoginModelState = {
   authStatus: GitHubAuthStatus;
+  authStatusPending: boolean;
   loadingAuth: boolean;
   deviceChallenge: GitHubDeviceAuthChallenge | null;
   error: string | null;
@@ -28,6 +29,7 @@ export type GitHubDeviceLoginModelState = {
 
 export class GitHubDeviceLoginModel {
   authStatus: GitHubAuthStatus = { connected: false };
+  authStatusPending = true;
   loadingAuth = false;
   deviceChallenge: GitHubDeviceAuthChallenge | null = null;
   error: string | null = null;
@@ -42,6 +44,7 @@ export class GitHubDeviceLoginModel {
   snapshot(): GitHubDeviceLoginModelState {
     return {
       authStatus: this.authStatus,
+      authStatusPending: this.authStatusPending,
       loadingAuth: this.loadingAuth,
       deviceChallenge: this.deviceChallenge,
       error: this.error,
@@ -54,6 +57,8 @@ export class GitHubDeviceLoginModel {
     } catch (statusError) {
       this.error = describeError(statusError);
       this.authStatus = { connected: false };
+    } finally {
+      this.authStatusPending = false;
     }
   }
 

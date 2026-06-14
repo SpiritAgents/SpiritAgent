@@ -24,6 +24,7 @@ export function IntegrationsSettingsPanel({
   const [dialogOpen, setDialogOpen] = useState(false);
   const {
     authStatus,
+    authStatusPending,
     loadingAuth,
     deviceChallenge,
     error,
@@ -88,7 +89,7 @@ export function IntegrationsSettingsPanel({
                 {t("settings.integrationsGitHub")}
               </span>
             </div>
-            {authStatus.connected ? (
+            {authStatus.connected && !authStatusPending ? (
               <p className="text-xs text-muted-foreground">
                 {t("settings.integrationsGitHubConnectedAs", {
                   login: authStatus.login ?? "GitHub",
@@ -97,7 +98,19 @@ export function IntegrationsSettingsPanel({
             ) : null}
           </div>
           {isElectronShell ? (
-            authStatus.connected ? (
+            authStatusPending ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 self-start sm:self-center"
+                disabled
+                aria-busy="true"
+                aria-label={t("settings.integrationsGitHubChecking")}
+              >
+                <LoaderCircle className="size-4 animate-spin" aria-hidden />
+              </Button>
+            ) : authStatus.connected ? (
               <Button
                 type="button"
                 variant="destructive"
