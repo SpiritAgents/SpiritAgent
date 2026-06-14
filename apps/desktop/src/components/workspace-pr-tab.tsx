@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { appendPullRequestChecksPages } from "@spirit-agent/host-internal/github-pull-request-checks-pages";
+import { appendPullRequestConversationPages } from "@spirit-agent/host-internal/github-pull-request-conversation-pages";
 
 import { Button } from "@/components/ui/button";
 import { GitHubSignInPrompt } from "@/components/github-sign-in-prompt";
@@ -175,6 +176,7 @@ export function WorkspacePrTab({
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [loadingChecks, setLoadingChecks] = useState(false);
   const [loadingMoreChecks, setLoadingMoreChecks] = useState(false);
+  const [loadingMoreConversation, setLoadingMoreConversation] = useState(false);
   const [prActionBusy, setPrActionBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [repositoryLoadError, setRepositoryLoadError] = useState<string | null>(null);
@@ -183,6 +185,7 @@ export function WorkspacePrTab({
   const [listInitialLoadPending, setListInitialLoadPending] = useState(false);
 
   const checksLoadMoreInFlightRef = useRef(false);
+  const conversationLoadMoreInFlightRef = useRef(false);
   const refreshGitHubPanelRef = useRef<() => Promise<void>>(async () => {});
   const prevBranchRef = useRef<string | undefined>(undefined);
   const pinnedPullRequestRequestRef = useRef<GetGitHubPullRequestDetailRequest | null>(null);
@@ -515,6 +518,64 @@ export function WorkspacePrTab({
     loadingMoreChecks,
   ]);
 
+  const loadMoreConversation = useCallback(async () => {
+    if (
+      conversationLoadMoreInFlightRef.current
+      || loadingMoreConversation
+      || loadingConversation
+    ) {
+      return;
+    }
+
+    const request = resolveActivePullRequestRequest(
+      branchResultRef.current,
+      pinnedPullRequestRequestRef.current,
+      detailRef.current,
+    );
+    const snapshot = conversation;
+    if (
+      !request
+      || !snapshot?.hasMore
+      || (
+        snapshot.nextTimelinePage == null
+        && snapshot.nextReviewCommentsPage == null
+        && snapshot.nextCommitsPage == null
+      )
+    ) {
+      return;
+    }
+
+    conversationLoadMoreInFlightRef.current = true;
+    setLoadingMoreConversation(true);
+    setError(null);
+    try {
+      const nextPage = await getGitHubPullRequestConversation({
+        ...request,
+        conversationTimelinePage: snapshot.nextTimelinePage,
+        conversationReviewCommentsPage: snapshot.nextReviewCommentsPage,
+        conversationCommitsPage: snapshot.nextCommitsPage,
+        conversationKnownCommits: snapshot.commits,
+        conversationPreviousNextTimelinePage: snapshot.nextTimelinePage,
+        conversationPreviousNextReviewCommentsPage: snapshot.nextReviewCommentsPage,
+        conversationPreviousNextCommitsPage: snapshot.nextCommitsPage,
+      });
+      setConversation({
+        ...nextPage,
+        items: appendPullRequestConversationPages(snapshot.items, nextPage.items),
+      });
+    } catch (loadError) {
+      setError(describeError(loadError));
+    } finally {
+      conversationLoadMoreInFlightRef.current = false;
+      setLoadingMoreConversation(false);
+    }
+  }, [
+    conversation,
+    getGitHubPullRequestConversation,
+    loadingConversation,
+    loadingMoreConversation,
+  ]);
+
   const handleSelectPullRequest = useCallback(
     async (item: GitHubPullRequestListItem) => {
       const repository = branchResultRef.current?.repository;
@@ -721,7 +782,9 @@ export function WorkspacePrTab({
                 detail={detail}
                 conversationItems={conversation?.items ?? []}
                 loadingConversation={loadingConversation}
+                loadingMoreConversation={loadingMoreConversation}
                 conversationHasMore={conversation?.hasMore ?? false}
+                onLoadMoreConversation={loadMoreConversation}
                 changedFiles={filesSnapshot?.files ?? []}
                 loadingChanges={loadingChanges}
                 changesHasMore={filesSnapshot?.hasMore ?? false}
