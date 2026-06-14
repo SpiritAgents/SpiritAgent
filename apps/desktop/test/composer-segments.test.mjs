@@ -112,6 +112,39 @@ test("messageSegmentSeparator uses single newline between element and inline tex
   );
 });
 
+const sampleTerminalAttachment = {
+  id: "term-1",
+  terminalName: "Terminal",
+  lineStart: 10,
+  lineEnd: 12,
+  selectedText: "error output",
+};
+
+test("messageSegmentSeparator uses single newline between terminal chip and element", () => {
+  assert.equal(
+    messageSegmentSeparator(
+      { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
+      { kind: "element", attachment: sampleAttachment },
+    ),
+    "\n",
+  );
+  assert.equal(
+    messageSegmentSeparator(
+      { kind: "element", attachment: sampleAttachment },
+      { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
+    ),
+    "\n",
+  );
+});
+
+test("segmentsToMessageText does not double-newline terminal chip after element", () => {
+  const message = segmentsToMessageText([
+    { kind: "element", attachment: sampleAttachment },
+    { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
+  ]);
+  assert.ok(!message.includes("```\n\nSelected terminal"));
+});
+
 test("trimMessageTextAroundElements removes one structural newline after element", () => {
   assert.equal(trimMessageTextAroundElements("\n你好啊", { afterElement: true }), "你好啊");
   assert.equal(trimMessageTextAroundElements("你好啊\n", { beforeElement: true }), "你好啊");
@@ -831,4 +864,108 @@ test("normalizeCaretForInlineAttachmentChips snaps caret on skill chip", () => {
   });
   assert.equal(snapped.segmentIndex, 1);
   assert.equal(snapped.offset, 1);
+});
+
+test("composerShowsPlaceholder false when terminalSnippet chip present", () => {
+  assert.equal(
+    composerShowsPlaceholder(
+      [
+        {
+          kind: "terminalSnippet",
+          attachment: {
+            id: "term-1",
+            terminalName: "Terminal",
+            lineStart: 10,
+            lineEnd: 12,
+            selectedText: "error output",
+          },
+        },
+        { kind: "text", value: " " },
+      ],
+      { composing: false, attachmentCount: 0 },
+    ),
+    false,
+  );
+});
+
+test("normalizeCaretForInlineAttachmentChips snaps caret on terminalSnippet chip", () => {
+  const segs = [
+    {
+      kind: "terminalSnippet",
+      attachment: {
+        id: "term-1",
+        terminalName: "Terminal",
+        lineStart: 3,
+        lineEnd: 5,
+        selectedText: "log line",
+      },
+    },
+    { kind: "text", value: " tail" },
+  ];
+  const snapped = normalizeCaretForInlineAttachmentChips(segs, {
+    segmentIndex: 0,
+    offset: 0,
+  });
+  assert.equal(snapped.segmentIndex, 1);
+  assert.equal(snapped.offset, 1);
+});
+
+test("isCaretAtInlineChipRemovalPoint detects caret after terminalSnippet chip", () => {
+  const segs = [
+    {
+      kind: "terminalSnippet",
+      attachment: {
+        id: "term-1",
+        terminalName: "npm run dev",
+        lineStart: 1,
+        lineEnd: 1,
+        selectedText: "done",
+      },
+    },
+    { kind: "text", value: " " },
+  ];
+  assert.equal(
+    isCaretAtInlineChipRemovalPoint(segs, { segmentIndex: 1, offset: 0 }),
+    true,
+  );
+});
+
+test("removeInlineChipAtRemovalPoint removes terminalSnippet chip on backspace", () => {
+  const segs = [
+    {
+      kind: "terminalSnippet",
+      attachment: {
+        id: "term-1",
+        terminalName: "Terminal",
+        lineStart: 2,
+        lineEnd: 4,
+        selectedText: "stderr",
+      },
+    },
+    { kind: "text", value: "  " },
+  ];
+  const result = removeInlineChipAtRemovalPoint(segs, { segmentIndex: 1, offset: 0 });
+  assert.ok(result);
+  assert.equal(result.segments.some((s) => s.kind === "terminalSnippet"), false);
+});
+
+test("syncSegmentsFromExternalValue preserves terminalSnippet chip", () => {
+  const synced = syncSegmentsFromExternalValue(
+    [
+      {
+        kind: "terminalSnippet",
+        attachment: {
+          id: "term-1",
+          terminalName: "Terminal",
+          lineStart: 1,
+          lineEnd: 2,
+          selectedText: "x",
+        },
+      },
+      { kind: "text", value: " " },
+    ],
+    "follow up",
+  );
+  assert.equal(synced.some((s) => s.kind === "terminalSnippet"), true);
+  assert.equal(synced.some((s) => s.kind === "text" && s.value === "follow up"), true);
 });

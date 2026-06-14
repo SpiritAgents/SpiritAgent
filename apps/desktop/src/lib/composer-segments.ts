@@ -1,5 +1,6 @@
 import { makeChipNode } from "@/lib/browser-element-chip-styles";
 import { makePrDiffChipNode } from "@/lib/github-pr-diff-chip-styles";
+import { makeTerminalChipNode } from "@/lib/terminal-chip-styles";
 import { makeFileChipNode } from "@/lib/workspace-file-chip-styles";
 import type { RichSegment } from "@/lib/composer-segment-model";
 import {
@@ -50,6 +51,7 @@ export { normalizeCaretForComposer } from "@/lib/composer-caret-normalize";
 
 export { makeChipNode } from "@/lib/browser-element-chip-styles";
 export { makePrDiffChipNode } from "@/lib/github-pr-diff-chip-styles";
+export { makeTerminalChipNode } from "@/lib/terminal-chip-styles";
 export { makeFileChipNode } from "@/lib/workspace-file-chip-styles";
 export {
   caretAfterAgentModeChip,
@@ -172,6 +174,26 @@ function appendSegmentFromNode(node: Node, segs: RichSegment[]): void {
     }
     return;
   }
+  if (el.dataset.terminalChip === "true" || el.getAttribute("data-terminal-chip") === "true") {
+    const id = el.dataset.terminalId;
+    const terminalName = el.dataset.terminalName ?? "";
+    const lineStart = Number(el.dataset.terminalLineStart ?? "0");
+    const lineEnd = Number(el.dataset.terminalLineEnd ?? "0");
+    const selectedText = el.dataset.terminalText ?? "";
+    if (id && terminalName) {
+      segs.push({
+        kind: "terminalSnippet",
+        attachment: {
+          id,
+          terminalName,
+          lineStart,
+          lineEnd,
+          selectedText,
+        },
+      });
+    }
+    return;
+  }
   if (el.dataset.skillChip === "true" || el.getAttribute("data-skill-chip") === "true") {
     const alias = el.dataset.skillAlias ?? el.getAttribute("data-skill-alias");
     if (alias) {
@@ -215,6 +237,8 @@ export function segmentsToDom(
       frag.appendChild(makeFileChipNode(seg.path, doc));
     } else if (seg.kind === "prDiff") {
       frag.appendChild(makePrDiffChipNode(seg.attachment, doc));
+    } else if (seg.kind === "terminalSnippet") {
+      frag.appendChild(makeTerminalChipNode(seg.attachment, doc));
     } else if (seg.kind === "skill") {
       frag.appendChild(makeSkillChipNode(seg.alias, doc));
     } else {

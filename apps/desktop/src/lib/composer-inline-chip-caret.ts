@@ -3,10 +3,14 @@ import { emptySegments, mergeAdjacentTextSegments } from "./composer-segment-mod
 
 function isInlineAttachmentChip(
   seg: RichSegment | undefined,
-): seg is Extract<RichSegment, { kind: "element" | "prDiff" | "workspaceFile" | "skill" }> {
+): seg is Extract<
+  RichSegment,
+  { kind: "element" | "prDiff" | "terminalSnippet" | "workspaceFile" | "skill" }
+> {
   return (
     seg?.kind === "element"
     || seg?.kind === "prDiff"
+    || seg?.kind === "terminalSnippet"
     || seg?.kind === "workspaceFile"
     || seg?.kind === "skill"
   );
