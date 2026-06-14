@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   filterNewGitHubAutomationEvents,
   matchesGitHubAutomationEvent,
+  shouldFetchNextIssuePage,
 } from './automation-events.js';
 
 const prItem = {
@@ -43,4 +44,14 @@ test('filterNewGitHubAutomationEvents returns ascending items above watermark', 
 test('filterNewGitHubAutomationEvents ignores numbers at or below watermark', () => {
   const events = filterNewGitHubAutomationEvents([prItem, issueItem], 'pull_request_created', 10);
   assert.equal(events.length, 0);
+});
+
+test('shouldFetchNextIssuePage stops when watermark is covered or page is short', () => {
+  const fullPage = Array.from({ length: 100 }, (_, index) => ({
+    ...issueItem,
+    number: 200 - index,
+  }));
+  assert.equal(shouldFetchNextIssuePage(fullPage, 100, 100), true);
+  assert.equal(shouldFetchNextIssuePage(fullPage, 150, 100), false);
+  assert.equal(shouldFetchNextIssuePage([fullPage[0]!], 100, 100), false);
 });
