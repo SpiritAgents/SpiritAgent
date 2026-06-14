@@ -153,8 +153,26 @@ test("refreshAuthStatus loads connected status", async () => {
   });
   const model = new GitHubDeviceLoginModel(runtime);
 
+  assert.equal(model.authStatusPending, true);
   await model.refreshAuthStatus();
 
   assert.deepEqual(model.authStatus, CONNECTED_STATUS);
+  assert.equal(model.authStatusPending, false);
   assert.equal(model.error, null);
+});
+
+test("refreshAuthStatus clears pending even when status fetch fails", async () => {
+  const model = new GitHubDeviceLoginModel(
+    createRuntime({
+      getGitHubAuthStatus: async () => {
+        throw new Error("status failed");
+      },
+    }),
+  );
+
+  await model.refreshAuthStatus();
+
+  assert.deepEqual(model.authStatus, { connected: false });
+  assert.equal(model.authStatusPending, false);
+  assert.equal(model.error, "status failed");
 });
