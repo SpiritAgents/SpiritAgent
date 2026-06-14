@@ -50,6 +50,36 @@ test('isProcessEligibleMetaMessage accepts tools and standalone thinking', () =>
     }),
     false,
   );
+  assert.equal(
+    isProcessEligibleMetaMessage({
+      id: 5,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'todo_create', phase: 'succeeded', headline: 'Create TODO', detailLines: [] },
+    }),
+    false,
+  );
+  assert.equal(
+    isProcessEligibleMetaMessage({
+      id: 6,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'todo_complete', phase: 'succeeded', headline: 'Complete TODO', detailLines: [] },
+    }),
+    false,
+  );
+  assert.equal(
+    isProcessEligibleMetaMessage({
+      id: 7,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'todo_update', phase: 'succeeded', headline: 'Update TODO', detailLines: [] },
+    }),
+    true,
+  );
 });
 
 test('buildConversationRenderItems keeps unsealed meta rows exposed at turn end', () => {
@@ -293,4 +323,64 @@ test('buildConversationRenderItems keeps multi-thinking process group before bod
   assert.deepEqual(group.messageIndices, [1, 2]);
   assert.equal(isMessageHiddenByProcessGroup(items, 1), true);
   assert.equal(isMessageHiddenByProcessGroup(items, 4), false);
+});
+
+test('buildConversationRenderItems keeps todo_create and todo_complete outside process groups', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      aux: { thinking: 'plan' },
+    },
+    {
+      id: 3,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'read_file', phase: 'succeeded', headline: 'Viewed', detailLines: [] },
+    },
+    {
+      id: 4,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'todo_create', phase: 'succeeded', headline: 'Create TODO', detailLines: [] },
+    },
+    {
+      id: 5,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'edit_file', phase: 'succeeded', headline: 'Edited', detailLines: [] },
+    },
+    {
+      id: 6,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: { toolName: 'todo_complete', phase: 'succeeded', headline: 'Complete TODO', detailLines: [] },
+    },
+    { id: 7, role: 'assistant', content: 'Done.', pending: false },
+  ];
+  const items = buildConversationRenderItems(messages, scopeKey);
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ['message', 'process-group', 'message', 'process-group', 'message', 'message'],
+  );
+  assert.equal(isMessageHiddenByProcessGroup(items, 3), false);
+  assert.equal(isMessageHiddenByProcessGroup(items, 5), false);
+  const firstGroup = items[1];
+  const secondGroup = items[3];
+  assert.equal(firstGroup.kind, 'process-group');
+  assert.equal(secondGroup.kind, 'process-group');
+  if (firstGroup.kind !== 'process-group' || secondGroup.kind !== 'process-group') {
+    return;
+  }
+  assert.deepEqual(firstGroup.messageIndices, [1, 2]);
+  assert.equal(firstGroup.toolCounts.explore, 1);
+  assert.deepEqual(secondGroup.messageIndices, [4]);
+  assert.equal(secondGroup.toolCounts.edit, 1);
 });
