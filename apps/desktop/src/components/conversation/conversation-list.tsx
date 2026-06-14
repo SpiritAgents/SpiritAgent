@@ -5,9 +5,13 @@ import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-conte
 import { ToolCallCollapsible } from "@/components/tool-call/tool-call-collapsible";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { MessageCard } from "@/components/conversation/message-card";
+import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
-import type { TurnContinuePresentation } from "@/lib/conversation-continue-ui";
+import {
+  shouldShowContinueToolbarOnProcessGroup,
+  type TurnContinuePresentation,
+} from "@/lib/conversation-continue-ui";
 import {
   isMessageHiddenByProcessGroup,
   type ConversationRenderItem,
@@ -18,7 +22,7 @@ import {
 } from "@/lib/message-card-spacing";
 import {
   assistantTurnStartIndexForRenderItem,
-  findLastAssistantTurnActionsListIndex,
+  resolveTurnActionsToolbarHostIndex,
   shouldClearAssistantTurnHover,
 } from "@/lib/message-turn-actions-ui";
 import { cn } from "@/lib/utils";
@@ -116,8 +120,8 @@ export function ConversationList({
   const [hoveredAssistantTurnStart, setHoveredAssistantTurnStart] = useState<number | null>(
     null,
   );
-  const lastAssistantTurnActionsIndex = useMemo(
-    () => findLastAssistantTurnActionsListIndex(messages),
+  const turnActionsToolbarHostIndex = useMemo(
+    () => resolveTurnActionsToolbarHostIndex(messages),
     [messages],
   );
 
@@ -184,6 +188,13 @@ export function ConversationList({
                 anchorMessage,
                 messages,
               );
+              const showProcessGroupContinue = shouldShowContinueToolbarOnProcessGroup(
+                renderItem.messageIndices,
+                messages,
+                turnContinue,
+                conversationIsBusy === true,
+                activeSessionReadOnly,
+              );
               return (
                 <div
                   key={renderItem.groupId}
@@ -239,6 +250,21 @@ export function ConversationList({
                       readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
                       readManagedVideoPreviewUrl={runtime.readManagedVideoPreviewUrl}
                     />
+                    {showProcessGroupContinue && turnContinue ? (
+                      <MessageTurnActions
+                        showContinueButton
+                        continueTarget={turnContinue.continuableMessage}
+                        continueBusy={continueBusy}
+                        onContinue={(targetMessage) => {
+                          void runtime.continueAssistantCompletion(targetMessage.id);
+                        }}
+                        canFork={false}
+                        forkBusy={false}
+                        forkEnabled={false}
+                        forkMenuAlwaysVisible={false}
+                        onFork={() => {}}
+                      />
+                    ) : null}
                   </div>
                 </div>
               );
@@ -361,7 +387,7 @@ export function ConversationList({
                 conversationIsBusy={conversationIsBusy}
                 activeSessionReadOnly={activeSessionReadOnly}
                 forkBusy={runtime.busyAction === "fork"}
-                forkMenuAlwaysVisible={lastAssistantTurnActionsIndex === index}
+                forkMenuAlwaysVisible={turnActionsToolbarHostIndex === index}
                 forkMenuHoverRevealed={forkMenuHoverRevealed}
                 assistantTurnStartIndex={assistantTurnStart}
                 onAssistantTurnPointerEnter={handleAssistantTurnPointerEnter}

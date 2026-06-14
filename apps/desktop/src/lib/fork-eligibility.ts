@@ -3,7 +3,12 @@ import type { ConversationMessageSnapshot } from '@/types';
 function isForkableAssistantMessage(message: ConversationMessageSnapshot): boolean {
   return message.role === 'assistant'
     && !message.pending
-    && Boolean(message.content.trim() || message.tool);
+    && Boolean(
+      message.content.trim()
+      || message.tool
+      || message.aux?.thinking?.trim()
+      || message.aux?.compaction?.trim(),
+    );
 }
 
 export type ForkMessageEligibilityInput = {

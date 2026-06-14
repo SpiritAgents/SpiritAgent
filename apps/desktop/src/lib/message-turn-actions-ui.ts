@@ -2,6 +2,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import { isAssistantBodyTextMessage } from '@/lib/conversation-process-groups';
 import type { ConversationRenderItem } from '@/lib/conversation-process-groups';
+import { resolveTurnContinuePresentation } from '@/lib/conversation-continue-ui';
 import { isSubagentStatusSurfaceMessage } from '@/lib/subagent-display';
 import type { ConversationMessageSnapshot } from '@/types';
 
@@ -101,6 +102,17 @@ export function findLastAssistantTurnActionsListIndex(
     }
   }
   return null;
+}
+
+/** Toolbar host for Continue / Fork: continuable thinking row after abort, else last body row in turn. */
+export function resolveTurnActionsToolbarHostIndex(
+  messages: readonly ConversationMessageSnapshot[],
+): number | null {
+  const turnContinue = resolveTurnContinuePresentation(messages);
+  if (turnContinue) {
+    return turnContinue.showContinueAtIndex;
+  }
+  return findLastAssistantTurnActionsListIndex(messages);
 }
 
 export function assistantTurnStartIndexForRenderItem(
