@@ -4,6 +4,13 @@ import { test } from 'node:test';
 import { canForkMessage, canForkSession, canShowForkMessage } from '../../src/lib/fork-eligibility.ts';
 
 const assistant = { id: 2, role: 'assistant', content: 'hi', pending: false };
+const thinkingAssistant = {
+  id: 4,
+  role: 'assistant',
+  content: '',
+  pending: false,
+  aux: { thinking: 'plan' },
+};
 const pendingAssistant = { id: 3, role: 'assistant', content: 'wait', pending: true };
 const user = { id: 1, role: 'user', content: 'hello', pending: false };
 
@@ -11,6 +18,25 @@ test('canForkMessage allows completed assistant messages when session is idle', 
   assert.equal(
     canForkMessage({
       message: assistant,
+      conversationBusy: false,
+      activeSessionReadOnly: false,
+      forkBusy: false,
+    }),
+    true,
+  );
+});
+
+test('canShowForkMessage allows finalized thinking-only assistant rows', () => {
+  assert.equal(
+    canShowForkMessage({
+      message: thinkingAssistant,
+      activeSessionReadOnly: false,
+    }),
+    true,
+  );
+  assert.equal(
+    canForkMessage({
+      message: thinkingAssistant,
       conversationBusy: false,
       activeSessionReadOnly: false,
       forkBusy: false,

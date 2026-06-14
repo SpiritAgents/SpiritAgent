@@ -7,6 +7,7 @@ import {
   findLastAssistantTurnActionsListIndex,
   isMessageInActiveStreamingTurn,
   messageShowsAssistantTurnActions,
+  resolveTurnActionsToolbarHostIndex,
   shouldClearAssistantTurnHoverForRelatedTurnStart,
 } from '../../src/lib/message-turn-actions-ui.ts';
 
@@ -82,6 +83,40 @@ test('messageShowsAssistantTurnActions ignores thinking-only rows', () => {
 
   assert.equal(messageShowsAssistantTurnActions(messages[1], messages, 1), false);
   assert.equal(messageShowsAssistantTurnActions(messages[2], messages, 2), true);
+});
+
+test('thinking-only continuable row can host Continue via explicit flag', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      canContinue: true,
+      aux: { thinking: 'plan' },
+    },
+  ];
+
+  assert.equal(messageShowsAssistantTurnActions(messages[1], messages, 1), false);
+  assert.equal(findLastAssistantTurnActionsListIndex(messages), null);
+});
+
+test('resolveTurnActionsToolbarHostIndex uses continuable thinking row after abort', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      canContinue: true,
+      aux: { thinking: 'plan' },
+    },
+  ];
+
+  assert.equal(resolveTurnActionsToolbarHostIndex(messages), 1);
+  assert.equal(findLastAssistantTurnActionsListIndex(messages), null);
 });
 
 test('assistantTurnStartIndexForRenderItem resolves turn anchor for assistant rows', () => {
