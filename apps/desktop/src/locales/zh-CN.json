@@ -381,6 +381,7 @@
     "create": "创建自动化",
     "empty": "未配置自动化",
     "disabled": "已禁用",
+    "githubDisconnectedPause": "GitHub 未连接，仓库触发已暂停",
     "detailBack": "自动化",
     "detailTabsAria": "自动化详情",
     "tabKanban": "看板",

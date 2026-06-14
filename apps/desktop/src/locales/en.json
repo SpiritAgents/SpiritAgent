@@ -383,6 +383,7 @@
     "create": "Create automation",
     "empty": "No automations configured",
     "disabled": "Disabled",
+    "githubDisconnectedPause": "GitHub disconnected; repository triggers paused",
     "detailBack": "Automations",
     "detailTabsAria": "Automation detail",
     "tabKanban": "Kanban",
