@@ -5,7 +5,7 @@ import type { LspWriteDiagnosticsUi } from '@spirit-agent/core';
 import type { DesktopAgentMode } from './lib/agent-mode.js';
 
 export type { DesktopAgentMode };
-import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel } from '@spirit-agent/host-internal';
+import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel, GitHubPullRequestCommit } from '@spirit-agent/host-internal';
 
 export type { ApprovalLevel };
 
@@ -969,6 +969,13 @@ export interface GetGitHubPullRequestDetailRequest {
   number: number;
   checksAfter?: string;
   nodeId?: string;
+  conversationTimelinePage?: number;
+  conversationReviewCommentsPage?: number;
+  conversationCommitsPage?: number;
+  conversationKnownCommits?: GitHubPullRequestCommit[];
+  conversationPreviousNextTimelinePage?: number;
+  conversationPreviousNextReviewCommentsPage?: number;
+  conversationPreviousNextCommitsPage?: number;
 }
 
 export interface MergeGitHubPullRequestRequest extends GetGitHubPullRequestDetailRequest {

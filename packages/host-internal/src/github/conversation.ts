@@ -413,8 +413,12 @@ async function fetchIssueTimeline(
   accessToken: string,
   repository: GitHubRepositoryRef,
   issueNumber: number,
+  page = 1,
 ): Promise<{ events: GitHubTimelineEvent[]; hasMore: boolean }> {
-  const params = new URLSearchParams({ per_page: String(TIMELINE_PAGE_SIZE) });
+  const params = new URLSearchParams({
+    per_page: String(TIMELINE_PAGE_SIZE),
+    page: String(page),
+  });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/issues/${issueNumber}/timeline?${params.toString()}`;
   const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
   const events = await readGitHubJson<GitHubTimelineEvent[]>(response);
@@ -428,8 +432,12 @@ async function fetchPullRequestReviewComments(
   accessToken: string,
   repository: GitHubRepositoryRef,
   pullNumber: number,
+  page = 1,
 ): Promise<{ comments: GitHubReviewCommentApiItem[]; hasMore: boolean }> {
-  const params = new URLSearchParams({ per_page: String(REVIEW_COMMENTS_PAGE_SIZE) });
+  const params = new URLSearchParams({
+    per_page: String(REVIEW_COMMENTS_PAGE_SIZE),
+    page: String(page),
+  });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls/${pullNumber}/comments?${params.toString()}`;
   const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
   const comments = await readGitHubJson<GitHubReviewCommentApiItem[]>(response);
@@ -439,25 +447,96 @@ async function fetchPullRequestReviewComments(
   };
 }
 
+function dedupePullRequestCommitsBySha(
+  commits: GitHubPullRequestCommit[],
+): GitHubPullRequestCommit[] {
+  const seen = new Set<string>();
+  const output: GitHubPullRequestCommit[] = [];
+
+  for (const commit of commits) {
+    if (seen.has(commit.sha)) {
+      continue;
+    }
+    seen.add(commit.sha);
+    output.push(commit);
+  }
+
+  return output;
+}
+
+export interface GetPullRequestConversationOptions {
+  timelinePage?: number;
+  reviewCommentsPage?: number;
+  commitsPage?: number;
+  knownCommits?: GitHubPullRequestCommit[];
+  previousNextTimelinePage?: number;
+  previousNextReviewCommentsPage?: number;
+  previousNextCommitsPage?: number;
+}
+
 export async function getPullRequestConversation(
   accessToken: string,
   repository: GitHubRepositoryRef,
   pullNumber: number,
+  options: GetPullRequestConversationOptions = {},
 ): Promise<GitHubPullRequestConversationSnapshot> {
+  const isInitialLoad =
+    options.timelinePage === undefined
+    && options.reviewCommentsPage === undefined
+    && options.commitsPage === undefined;
+
+  const timelinePage = isInitialLoad ? 1 : options.timelinePage;
+  const reviewCommentsPage = isInitialLoad ? 1 : options.reviewCommentsPage;
+  const commitsPage = isInitialLoad ? 1 : options.commitsPage;
+
   const [timeline, reviewComments, commitsSnapshot] = await Promise.all([
-    fetchIssueTimeline(accessToken, repository, pullNumber),
-    fetchPullRequestReviewComments(accessToken, repository, pullNumber),
-    getPullRequestCommits(accessToken, repository, pullNumber),
+    timelinePage != null
+      ? fetchIssueTimeline(accessToken, repository, pullNumber, timelinePage)
+      : Promise.resolve({ events: [] as GitHubTimelineEvent[], hasMore: false }),
+    reviewCommentsPage != null
+      ? fetchPullRequestReviewComments(accessToken, repository, pullNumber, reviewCommentsPage)
+      : Promise.resolve({ comments: [] as GitHubReviewCommentApiItem[], hasMore: false }),
+    commitsPage != null
+      ? getPullRequestCommits(accessToken, repository, pullNumber, { page: commitsPage })
+      : Promise.resolve({ commits: [] as GitHubPullRequestCommit[], hasMore: false }),
+  ]);
+
+  const commits = dedupePullRequestCommitsBySha([
+    ...(options.knownCommits ?? []),
+    ...commitsSnapshot.commits,
   ]);
 
   const items = enrichConversationCommitAuthors(
     mergePullRequestConversationItems(timeline.events, reviewComments.comments),
-    commitsSnapshot.commits,
+    commits,
   );
+
+  const nextTimelinePage =
+    timelinePage != null
+      ? timeline.hasMore
+        ? timelinePage + 1
+        : undefined
+      : options.previousNextTimelinePage;
+  const nextReviewCommentsPage =
+    reviewCommentsPage != null
+      ? reviewComments.hasMore
+        ? reviewCommentsPage + 1
+        : undefined
+      : options.previousNextReviewCommentsPage;
+  const nextCommitsPage =
+    commitsPage != null
+      ? commitsSnapshot.hasMore
+        ? commitsPage + 1
+        : undefined
+      : options.previousNextCommitsPage;
 
   return {
     items,
-    hasMore: timeline.hasMore || reviewComments.hasMore || commitsSnapshot.hasMore,
+    commits,
+    hasMore: nextTimelinePage != null || nextReviewCommentsPage != null || nextCommitsPage != null,
+    ...(nextTimelinePage != null ? { nextTimelinePage } : {}),
+    ...(nextReviewCommentsPage != null ? { nextReviewCommentsPage } : {}),
+    ...(nextCommitsPage != null ? { nextCommitsPage } : {}),
   };
 }
 

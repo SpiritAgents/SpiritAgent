@@ -200,7 +200,20 @@ export async function getGitHubPullRequestConversationCommand(
 
   try {
     const accessToken = await requireGitHubAccessToken();
-    return await getPullRequestConversation(accessToken, { owner, repo }, number);
+    return await getPullRequestConversation(
+      accessToken,
+      { owner, repo },
+      number,
+      {
+        timelinePage: request.conversationTimelinePage,
+        reviewCommentsPage: request.conversationReviewCommentsPage,
+        commitsPage: request.conversationCommitsPage,
+        knownCommits: request.conversationKnownCommits,
+        previousNextTimelinePage: request.conversationPreviousNextTimelinePage,
+        previousNextReviewCommentsPage: request.conversationPreviousNextReviewCommentsPage,
+        previousNextCommitsPage: request.conversationPreviousNextCommitsPage,
+      },
+    );
   } catch (error) {
     throw await handleGitHubApiError(error);
   }

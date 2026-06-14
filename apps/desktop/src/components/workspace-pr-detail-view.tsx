@@ -5,7 +5,7 @@ import { ArrowRight, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft }
 import { Badge } from "@/components/ui/badge";
 import { DetailPageTabs } from "@/components/detail-page-tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PrConversationTimeline } from "@/components/workspace-pr-conversation-timeline";
+import { WorkspacePrConversationView } from "@/components/workspace-pr-conversation-view";
 import { WorkspacePrChecksView } from "@/components/workspace-pr-checks-view";
 import { WorkspacePrChangesView } from "@/components/workspace-pr-changes-view";
 import { WorkspacePrMarkdown } from "@/components/workspace-pr-markdown";
@@ -42,7 +42,9 @@ export type WorkspacePrDetailViewProps = {
   detail: GitHubPullRequestDetail;
   conversationItems?: GitHubPullRequestConversationItem[];
   loadingConversation?: boolean;
+  loadingMoreConversation?: boolean;
   conversationHasMore?: boolean;
+  onLoadMoreConversation?: () => void;
   changedFiles?: GitHubPullRequestChangedFile[];
   loadingChanges?: boolean;
   changesHasMore?: boolean;
@@ -115,7 +117,9 @@ export function WorkspacePrDetailView({
   detail,
   conversationItems = [],
   loadingConversation = false,
+  loadingMoreConversation = false,
   conversationHasMore = false,
+  onLoadMoreConversation,
   changedFiles = [],
   loadingChanges = false,
   changesHasMore = false,
@@ -369,16 +373,14 @@ export function WorkspacePrDetailView({
         contentClassName="min-h-0 flex-1 overflow-hidden"
       >
         {activeTab === "conversations" ? (
-          <ScrollArea className="h-full min-h-0" type="auto">
-            <div className="space-y-2 px-3 pt-3">
-              <PrConversationTimeline items={conversationItems} loading={loadingConversation} />
-              {conversationHasMore ? (
-                <p className="text-xs text-muted-foreground/75 dark:text-muted-foreground/65">
-                  {t("workspace.prConversationHasMore")}
-                </p>
-              ) : null}
-            </div>
-          </ScrollArea>
+          <WorkspacePrConversationView
+            items={conversationItems}
+            loading={loadingConversation}
+            loadingMore={loadingMoreConversation}
+            hasMore={conversationHasMore}
+            onLoadMore={onLoadMoreConversation}
+            className="h-full min-h-0"
+          />
         ) : null}
         {activeTab === "commits" ? (
           <WorkspacePrCommitsView

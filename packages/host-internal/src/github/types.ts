@@ -146,6 +146,10 @@ export type GitHubPullRequestConversationItem =
 export interface GitHubPullRequestConversationSnapshot {
   items: GitHubPullRequestConversationItem[];
   hasMore: boolean;
+  commits: GitHubPullRequestCommit[];
+  nextTimelinePage?: number;
+  nextReviewCommentsPage?: number;
+  nextCommitsPage?: number;
 }
 
 export type GitHubPullRequestFileStatus =
