@@ -184,7 +184,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     if (!workspaceRoot) {
                       return;
                     }
-                    await runtime.rememberWorkspaceRoot(workspaceRoot);
+                    await runtime.switchWorkspaceRoot(workspaceRoot);
                   })();
                 }}
               />
