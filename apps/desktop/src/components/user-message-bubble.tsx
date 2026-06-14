@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { GitMerge, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft, PenTool } from "lucide-react";
+import { GitMerge, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft, PenTool, Terminal } from "lucide-react";
 
 import { BROWSER_ELEMENT_CHIP_CLASS } from "@/components/browser-element-card";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
@@ -21,6 +21,11 @@ import {
   formatPrDiffChipTitle,
   prDiffChipClassForStatus,
 } from "@/lib/github-pr-diff-chip-styles";
+import {
+  formatTerminalChipLabel,
+  formatTerminalChipTitle,
+  TERMINAL_CHIP_CLASS,
+} from "@/lib/terminal-chip-styles";
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import { resolveWorkspaceFileChipPresentation } from "@/lib/workspace-file-chip-styles";
@@ -91,10 +96,37 @@ function PrDiffCard({
   );
 }
 
+function TerminalCard({
+  part,
+}: {
+  part: Extract<MessageContentPart, { kind: "terminalSnippet" }>;
+}) {
+  return (
+    <span
+      title={formatTerminalChipTitle({
+        id: "",
+        terminalName: part.terminalName,
+        lineStart: part.lineStart,
+        lineEnd: part.lineEnd,
+        selectedText: part.selectedText,
+      })}
+      className={TERMINAL_CHIP_CLASS}
+    >
+      <Terminal className="size-[10px] shrink-0" aria-hidden />
+      {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
+    </span>
+  );
+}
+
 function isInlineChipPart(
   part: MessageContentPart | null | undefined,
-): part is Extract<MessageContentPart, { kind: "element" | "workspaceFile" | "prDiff" }> {
-  return part?.kind === "element" || part?.kind === "workspaceFile" || part?.kind === "prDiff";
+): part is Extract<MessageContentPart, { kind: "element" | "workspaceFile" | "prDiff" | "terminalSnippet" }> {
+  return (
+    part?.kind === "element"
+    || part?.kind === "workspaceFile"
+    || part?.kind === "prDiff"
+    || part?.kind === "terminalSnippet"
+  );
 }
 
 type ReadLocalImagePreview = (filePath: string) => Promise<string | null>;
@@ -138,7 +170,11 @@ export function UserMessageBubble({
   const showText =
     (visibleText.trim().length > 0 ||
       contentParts.some(
-        (p) => p.kind === "element" || p.kind === "workspaceFile" || p.kind === "prDiff",
+        (p) =>
+          p.kind === "element"
+          || p.kind === "workspaceFile"
+          || p.kind === "prDiff"
+          || p.kind === "terminalSnippet",
       )) &&
     !isAttachmentOnlyDisplayText(message.content, message.localFileAttachments);
   const hasAttachments = attachmentViews.length > 0;
@@ -182,6 +218,9 @@ export function UserMessageBubble({
               }
               if (part.kind === "prDiff") {
                 return <PrDiffCard key={i} part={part} />;
+              }
+              if (part.kind === "terminalSnippet") {
+                return <TerminalCard key={i} part={part} />;
               }
               const prev = i > 0 ? contentParts[i - 1] : null;
               const next = i < contentParts.length - 1 ? contentParts[i + 1] : null;
