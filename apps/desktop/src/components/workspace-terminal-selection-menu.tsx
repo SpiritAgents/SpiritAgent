@@ -61,7 +61,7 @@ function TerminalSelectionMenu({
   return (
     <TextSelectionActionMenu open={open && Boolean(selectionText.trim())} anchor={anchor} onOpenChange={setOpen}>
       <TextSelectionActionMenuItem
-        label={t("workspace.prAddDiffToSession")}
+        label={t("workspace.addSelectionToSession")}
         onSelect={handleAddToSession}
       />
     </TextSelectionActionMenu>
