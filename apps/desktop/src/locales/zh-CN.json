@@ -624,7 +624,6 @@
     "prListTasksProgressAria": "已完成 {{completed}}/{{total}} 项任务",
     "prListTasksDoneAria": "全部 {{count}} 项任务已完成",
     "prListOpenDetailAria": "打开 Pull Request #{{number}}：{{title}}",
-    "prListBack": "返回列表",
     "prLoading": "正在加载 Pull Request…",
     "prLoadingDetail": "正在加载详情…",
     "prShowDetail": "查看详情",
