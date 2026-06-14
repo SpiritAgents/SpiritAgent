@@ -1,4 +1,7 @@
-import { aggregateProcessToolCounts } from '@/lib/process-tool-category';
+import {
+  aggregateProcessToolCounts,
+  isProcessGroupExcludedToolName,
+} from '@/lib/process-tool-category';
 import type { ProcessToolCounts } from '@/lib/process-tool-category';
 import type { ConversationMessageSnapshot } from '@/types';
 
@@ -23,7 +26,7 @@ function isProcessEligibleMetaMessage(message: ConversationMessageSnapshot | und
     return false;
   }
   if (message.tool) {
-    return message.tool.toolName !== 'finish_task';
+    return !isProcessGroupExcludedToolName(message.tool.toolName);
   }
   return Boolean(message.aux?.thinking?.trim() || message.aux?.compaction?.trim());
 }
