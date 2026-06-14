@@ -166,7 +166,7 @@ function AutomationGitHubRepositoryList({
   const { t } = useTranslation();
   const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
-  const { query, setQuery, items, loading, loadingMore, hasMore, loadMore } = useGitHubAutomationRepositories({
+  const { query, setQuery, items, loading, loadingMore, hasMore, loadMore, error } = useGitHubAutomationRepositories({
     open,
     listGitHubRepositories,
     searchGitHubRepositories,
@@ -216,6 +216,8 @@ function AutomationGitHubRepositoryList({
         <div className={DESKTOP_OVERLAY_LIST_LIST_PADDING}>
           {loading ? (
             <p className="px-2 py-3 text-xs text-muted-foreground">{t("common.loading")}</p>
+          ) : error ? (
+            <p className="px-2 py-3 text-xs text-destructive">{t("automations.trigger.repositoryLoadFailed")}</p>
           ) : items.length === 0 ? (
             <p className="px-2 py-3 text-xs text-muted-foreground">{t("automations.trigger.repositoryEmpty")}</p>
           ) : (
