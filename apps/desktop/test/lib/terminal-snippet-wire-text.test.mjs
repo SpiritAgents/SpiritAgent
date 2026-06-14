@@ -7,6 +7,7 @@ import {
   segmentsToMessageText,
 } from "../../src/lib/composer-segment-model.ts";
 import {
+  parseTerminalSnippetLinePart,
   parseTerminalSnippetWireMeta,
   scanTerminalSnippetWireBlocks,
   terminalSnippetContextText,
@@ -21,12 +22,40 @@ test("terminalSnippetContextText serializes terminal name, line range, and selec
   });
 
   assert.match(wire, /Selected terminal output from Terminal/);
-  assert.match(wire, /Terminal\tL10-15/);
+  assert.match(wire, /\(L10-15\):/);
   assert.match(wire, /```text\n/);
   assert.match(wire, /error: build failed/);
 });
 
-test("parseTerminalSnippetWireMeta round-trips tab-separated meta", () => {
+test("parseTerminalSnippetLinePart parses line range suffix", () => {
+  const parsed = parseTerminalSnippetLinePart("L3-7");
+  assert.deepEqual(parsed, {
+    lineStart: 3,
+    lineEnd: 7,
+  });
+});
+
+test("wire round-trips terminal names containing parentheses", () => {
+  const attachment = {
+    id: "term-paren",
+    terminalName: "bash (main)",
+    lineStart: 5,
+    lineEnd: 8,
+    selectedText: "output line",
+  };
+  const message = segmentsToMessageText([{ kind: "terminalSnippet", attachment }]);
+  const parts = parseMessageContentParts(message);
+  assert.equal(parts.length, 1);
+  assert.equal(parts[0]?.kind, "terminalSnippet");
+  if (parts[0]?.kind !== "terminalSnippet") {
+    return;
+  }
+  assert.equal(parts[0].terminalName, "bash (main)");
+  assert.equal(parts[0].lineStart, 5);
+  assert.equal(parts[0].lineEnd, 8);
+});
+
+test("parseTerminalSnippetWireMeta still parses legacy tab-separated meta", () => {
   const parsed = parseTerminalSnippetWireMeta("npm run dev\tL3-7");
   assert.deepEqual(parsed, {
     terminalName: "npm run dev",
