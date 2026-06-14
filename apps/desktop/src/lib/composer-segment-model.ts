@@ -4,7 +4,7 @@ import type { PrDiffAttachment } from "./pr-diff-attachment.js";
 import { parsePrDiffWireMeta, prDiffContextText, scanPrDiffWireBlocks } from "./pr-diff-wire-text.js";
 import type { TerminalSnippetAttachment } from "./terminal-snippet-attachment.js";
 import {
-  parseTerminalSnippetWireMeta,
+  parseTerminalSnippetLinePart,
   scanTerminalSnippetWireBlocks,
   terminalSnippetContextText,
 } from "./terminal-snippet-wire-text.js";
@@ -685,8 +685,8 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
   }
 
   for (const block of scanTerminalSnippetWireBlocks(content)) {
-    const parsed = parseTerminalSnippetWireMeta(block.meta);
-    if (!parsed) {
+    const lines = parseTerminalSnippetLinePart(block.meta);
+    if (!lines) {
       continue;
     }
     blocks.push({
@@ -694,9 +694,9 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
       length: block.length,
       part: {
         kind: "terminalSnippet",
-        terminalName: parsed.terminalName || block.terminalName,
-        lineStart: parsed.lineStart,
-        lineEnd: parsed.lineEnd,
+        terminalName: block.terminalName,
+        lineStart: lines.lineStart,
+        lineEnd: lines.lineEnd,
         selectedText: block.selectedText,
       },
     });

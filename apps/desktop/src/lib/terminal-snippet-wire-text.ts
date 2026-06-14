@@ -1,16 +1,34 @@
 import type { TerminalSnippetAttachment } from "./terminal-snippet-attachment.js";
 
-function formatTerminalSnippetWireMeta(
-  attachment: Pick<TerminalSnippetAttachment, "terminalName" | "lineStart" | "lineEnd">,
+function formatTerminalSnippetLinePart(
+  attachment: Pick<TerminalSnippetAttachment, "lineStart" | "lineEnd">,
 ): string {
-  const name = attachment.terminalName.trim() || "Terminal";
   const hasLines = attachment.lineStart > 0 && attachment.lineEnd > 0;
-  const linePart = hasLines ? `L${attachment.lineStart}-${attachment.lineEnd}` : "-";
-  return `${name}\t${linePart}`;
+  return hasLines ? `L${attachment.lineStart}-${attachment.lineEnd}` : "-";
 }
 
 const TERMINAL_SNIPPET_HEADER_PREFIX = "Selected terminal output from ";
-const TERMINAL_SNIPPET_HEADER_RE = /^Selected terminal output from ([^\n]+?) \(([^)]*)\):$/u;
+/** Match line-range suffix from the end so terminal names may contain ')'. */
+const TERMINAL_SNIPPET_HEADER_SUFFIX_RE = / \((L\d+-\d+|-)\):$/u;
+
+function parseTerminalSnippetHeaderLine(
+  headerLine: string,
+): { terminalName: string; linePart: string } | null {
+  if (!headerLine.startsWith(TERMINAL_SNIPPET_HEADER_PREFIX)) {
+    return null;
+  }
+  const suffixMatch = TERMINAL_SNIPPET_HEADER_SUFFIX_RE.exec(headerLine);
+  if (!suffixMatch || suffixMatch.index === undefined) {
+    return null;
+  }
+  const terminalName = headerLine
+    .slice(TERMINAL_SNIPPET_HEADER_PREFIX.length, suffixMatch.index)
+    .trim();
+  if (!terminalName) {
+    return null;
+  }
+  return { terminalName, linePart: suffixMatch[1] ?? "-" };
+}
 
 function chooseTextFence(text: string): { open: string; close: string } {
   if (!/^\s*```/m.test(text)) {
@@ -23,9 +41,10 @@ function chooseTextFence(text: string): { open: string; close: string } {
 export function terminalSnippetContextText(
   attachment: Pick<TerminalSnippetAttachment, "terminalName" | "lineStart" | "lineEnd" | "selectedText">,
 ): string {
-  const meta = formatTerminalSnippetWireMeta(attachment);
+  const name = attachment.terminalName.trim() || "Terminal";
+  const linePart = formatTerminalSnippetLinePart(attachment);
   const fence = chooseTextFence(attachment.selectedText);
-  return `Selected terminal output from ${attachment.terminalName.trim() || "Terminal"} (${meta}):\n${fence.open}${attachment.selectedText}${fence.close}`;
+  return `Selected terminal output from ${name} (${linePart}):\n${fence.open}${attachment.selectedText}${fence.close}`;
 }
 
 export type ParsedTerminalSnippetWireBlock = {
@@ -55,8 +74,8 @@ export function scanTerminalSnippetWireBlocks(content: string): ParsedTerminalSn
     }
 
     const headerLine = content.slice(headerIndex, headerLineEnd);
-    const headerMatch = TERMINAL_SNIPPET_HEADER_RE.exec(headerLine);
-    if (!headerMatch) {
+    const parsedHeader = parseTerminalSnippetHeaderLine(headerLine);
+    if (!parsedHeader) {
       searchFrom = headerIndex + 1;
       continue;
     }
@@ -83,8 +102,8 @@ export function scanTerminalSnippetWireBlocks(content: string): ParsedTerminalSn
         blocks.push({
           index: headerIndex,
           length: blockEnd - headerIndex,
-          terminalName: headerMatch[1]?.trim() ?? "",
-          meta: headerMatch[2]?.trim() ?? "",
+          terminalName: parsedHeader.terminalName,
+          meta: parsedHeader.linePart,
           selectedText: bodyLines.join("\n"),
         });
         searchFrom = blockEnd;
@@ -106,6 +125,25 @@ export function scanTerminalSnippetWireBlocks(content: string): ParsedTerminalSn
   return blocks;
 }
 
+export function parseTerminalSnippetLinePart(linePart: string): {
+  lineStart: number;
+  lineEnd: number;
+} | null {
+  const trimmed = linePart.trim();
+  if (trimmed === "-") {
+    return { lineStart: 0, lineEnd: 0 };
+  }
+  const lineMatch = /^L(\d+)-(\d+)$/u.exec(trimmed);
+  if (!lineMatch) {
+    return null;
+  }
+  return {
+    lineStart: Number(lineMatch[1]),
+    lineEnd: Number(lineMatch[2]),
+  };
+}
+
+/** @deprecated Prefer parseTerminalSnippetLinePart; kept for legacy tab-separated meta in tests. */
 export function parseTerminalSnippetWireMeta(meta: string): {
   terminalName: string;
   lineStart: number;
@@ -117,16 +155,9 @@ export function parseTerminalSnippetWireMeta(meta: string): {
     const terminalName = tabParts[0]?.trim() ?? "";
     const linePart = tabParts[1]?.trim() ?? "";
     if (terminalName) {
-      if (linePart === "-") {
-        return { terminalName, lineStart: 0, lineEnd: 0 };
-      }
-      const lineMatch = /^L(\d+)-(\d+)$/u.exec(linePart);
-      if (lineMatch) {
-        return {
-          terminalName,
-          lineStart: Number(lineMatch[1]),
-          lineEnd: Number(lineMatch[2]),
-        };
+      const lines = parseTerminalSnippetLinePart(linePart);
+      if (lines) {
+        return { terminalName, ...lines };
       }
     }
   }
