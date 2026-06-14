@@ -35,8 +35,8 @@ function TerminalSelectionMenu({
       return;
     }
 
-    const selectedText = term.getSelection();
-    if (!selectedText.trim()) {
+    const selectedText = (selectionText.trim() || term.getSelection()).trim();
+    if (!selectedText) {
       dismiss();
       return;
     }
@@ -52,7 +52,7 @@ function TerminalSelectionMenu({
     onTerminalAddToSession(attachment);
     dismiss();
     term.clearSelection();
-  }, [dismiss, lineRange, onTerminalAddToSession, terminal, terminalDisplayName]);
+  }, [dismiss, lineRange, onTerminalAddToSession, selectionText, terminal, terminalDisplayName]);
 
   if (!enabled) {
     return null;
