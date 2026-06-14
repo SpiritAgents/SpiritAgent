@@ -6,10 +6,13 @@ import {
   fetchGitHubAutomationRepoItems,
   githubTriggerNeedsBaseline,
   groupGitHubAutomationsByRepo,
+  mergeGitHubPollWatermarkUpdates,
   resolveGitHubPollWatermark,
   shouldFireNow,
   type AutomationRunTriggerContext,
+  type GitHubAutomationPollMatch,
   type HostAutomationDefinition,
+  type HostAutomationRun,
 } from '@spirit-agent/host-internal';
 
 import { cloneDesktopConfig } from './service-utils.js';
@@ -158,36 +161,66 @@ async function tickGitHubAutomationTriggers(
     }
 
     const matches = computeGitHubPollMatchesForRepoGroup(group, items);
-    for (const match of matches) {
-      if (ctx.runningAutomationIds().has(match.automationId)) {
+    const matchesByAutomation = groupGitHubPollMatchesByAutomation(matches);
+    for (const [automationId, automationMatches] of matchesByAutomation) {
+      if (ctx.runningAutomationIds().has(automationId)) {
         continue;
       }
-      const activeRun = await store.getActiveRun(match.automationId);
+      const activeRun = await store.getActiveRun(automationId);
       if (activeRun) {
         continue;
       }
-      const latestDefinition = refreshed.find((definition) => definition.id === match.automationId);
-      if (!latestDefinition || latestDefinition.trigger.kind !== 'github') {
-        continue;
+
+      const completedMatches: GitHubAutomationPollMatch[] = [];
+      for (const match of automationMatches) {
+        if (ctx.runningAutomationIds().has(automationId)) {
+          break;
+        }
+        const latestDefinition = refreshed.find((definition) => definition.id === match.automationId);
+        if (!latestDefinition || latestDefinition.trigger.kind !== 'github') {
+          break;
+        }
+
+        const run = await launchAutomationRun(ctx, store, {
+          definition: latestDefinition,
+          config,
+          context: {
+            kind: 'github',
+            event: latestDefinition.trigger.event,
+            eventUrl: match.item.htmlUrl,
+          },
+        });
+        if (run?.status !== 'completed') {
+          break;
+        }
+        completedMatches.push(match);
       }
 
-      await store.updateGitHubPollState(match.automationId, match.item.number);
-
-      launchAutomationRun(ctx, store, {
-        definition: latestDefinition,
-        config,
-        context: {
-          kind: 'github',
-          event: latestDefinition.trigger.event,
-          eventUrl: match.item.htmlUrl,
-        },
-        advanceGitHubPollOnSuccess: match.item.number,
-      });
+      const watermarkUpdates = mergeGitHubPollWatermarkUpdates(completedMatches);
+      const nextWatermark = watermarkUpdates.get(automationId);
+      if (nextWatermark !== undefined) {
+        await store.updateGitHubPollState(automationId, nextWatermark);
+      }
     }
   }
 }
 
-function launchAutomationRun(
+function groupGitHubPollMatchesByAutomation(
+  matches: GitHubAutomationPollMatch[],
+): Map<string, GitHubAutomationPollMatch[]> {
+  const grouped = new Map<string, GitHubAutomationPollMatch[]>();
+  for (const match of matches) {
+    const existing = grouped.get(match.automationId);
+    if (existing) {
+      existing.push(match);
+      continue;
+    }
+    grouped.set(match.automationId, [match]);
+  }
+  return grouped;
+}
+
+async function launchAutomationRun(
   ctx: AutomationSchedulerServiceContext,
   store: ReturnType<typeof createHostAutomationStore>,
   input: {
@@ -195,37 +228,32 @@ function launchAutomationRun(
     config: DesktopConfigFile;
     context: AutomationRunTriggerContext;
     markFiredAtUnixMs?: number;
-    advanceGitHubPollOnSuccess?: number;
   },
-): void {
+): Promise<HostAutomationRun | undefined> {
   ctx.markAutomationRunning(input.definition.id, true);
-  void runDesktopAutomationOnce(
-    {
-      definition: input.definition,
-      config: cloneDesktopConfig(input.config),
-      triggerContext: input.context,
-    },
-    {
-      onRunUpdated: (automationId) => ctx.onAutomationUpdated(automationId),
-      notifySessionListUpdated: () => ctx.notifySessionListUpdated(),
-      syncSessionFromDisk: (sessionPath) => ctx.syncSessionFromDisk?.(sessionPath),
-    },
-  )
-    .then(async (run) => {
-      if (run?.status === 'completed' && input.advanceGitHubPollOnSuccess !== undefined) {
-        await store.updateGitHubPollState(input.definition.id, input.advanceGitHubPollOnSuccess);
-      }
-      if (run && input.markFiredAtUnixMs !== undefined) {
-        await store.markFired(input.definition.id, input.markFiredAtUnixMs);
-      }
-    })
-    .catch(() => {
-      /* run status persisted in store */
-    })
-    .finally(() => {
-      ctx.markAutomationRunning(input.definition.id, false);
-      ctx.onAutomationUpdated(input.definition.id);
-    });
+  try {
+    const run = await runDesktopAutomationOnce(
+      {
+        definition: input.definition,
+        config: cloneDesktopConfig(input.config),
+        triggerContext: input.context,
+      },
+      {
+        onRunUpdated: (automationId) => ctx.onAutomationUpdated(automationId),
+        notifySessionListUpdated: () => ctx.notifySessionListUpdated(),
+        syncSessionFromDisk: (sessionPath) => ctx.syncSessionFromDisk?.(sessionPath),
+      },
+    );
+    if (run && input.markFiredAtUnixMs !== undefined) {
+      await store.markFired(input.definition.id, input.markFiredAtUnixMs);
+    }
+    return run;
+  } catch {
+    return undefined;
+  } finally {
+    ctx.markAutomationRunning(input.definition.id, false);
+    ctx.onAutomationUpdated(input.definition.id);
+  }
 }
 
 export function automationDefinitionNeedsApiKey(
