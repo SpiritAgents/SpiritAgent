@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 
@@ -15,8 +15,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  DESKTOP_OVERLAY_LIST_CONTENT,
   DESKTOP_OVERLAY_LIST_FILTER_HEADER,
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST,
+  DESKTOP_OVERLAY_LIST_SHELL,
+  DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
   DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
 } from "@/lib/desktop-chrome";
 import {
@@ -45,13 +48,6 @@ type AutomationTriggerMenuProps = {
   ): Promise<SearchGitHubAutomationRepositoriesSnapshot>;
 };
 
-function githubRepoSelected(trigger: DesktopAutomationTrigger): trigger is Extract<
-  DesktopAutomationTrigger,
-  { kind: "github" }
-> {
-  return trigger.kind === "github" && Boolean(trigger.owner.trim() && trigger.repo.trim());
-}
-
 export function AutomationTriggerMenu({
   trigger,
   disabled,
@@ -61,6 +57,7 @@ export function AutomationTriggerMenu({
   searchGitHubRepositories,
 }: AutomationTriggerMenuProps) {
   const { t } = useTranslation();
+  const [githubSubOpen, setGithubSubOpen] = useState(false);
   const label = formatDesktopAutomationTriggerLabel(trigger, {
     hourly: t("automations.schedule.hourly"),
     dailyPrefix: t("automations.schedule.daily"),
@@ -87,22 +84,16 @@ export function AutomationTriggerMenu({
     onTriggerChange({ kind: "time", schedule });
   };
 
-  const setGitHubRepo = (repo: DesktopGitHubAutomationRepositoryItem) => {
-    const currentEvent =
-      trigger.kind === "github" ? trigger.event : ("pull_request_created" satisfies DesktopAutomationGitHubEvent);
+  const setGitHubTrigger = (
+    repo: DesktopGitHubAutomationRepositoryItem,
+    event: DesktopAutomationGitHubEvent,
+  ) => {
     onTriggerChange({
       kind: "github",
       owner: repo.owner,
       repo: repo.repo,
-      event: currentEvent,
+      event,
     });
-  };
-
-  const setGitHubEvent = (event: DesktopAutomationGitHubEvent) => {
-    if (trigger.kind !== "github") {
-      return;
-    }
-    onTriggerChange({ ...trigger, event });
   };
 
   return (
@@ -120,48 +111,23 @@ export function AutomationTriggerMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[120]")}>
-        <DropdownMenuSub>
+        <DropdownMenuSub open={githubSubOpen} onOpenChange={setGithubSubOpen}>
           <DropdownMenuSubTrigger disabled={disabled}>{t("automations.trigger.github")}</DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="z-[130] p-0">
+          <DropdownMenuSubContent
+            className={cn(DESKTOP_OVERLAY_LIST_CONTENT, DESKTOP_OVERLAY_LIST_SHELL, "z-[130] w-72")}
+          >
             {!githubConnected ? (
               <div className="max-w-56 px-3 py-2 text-xs text-muted-foreground">
                 {t("automations.trigger.connectGitHubHint")}
               </div>
             ) : (
-              <>
-                <AutomationGitHubRepositorySub
-                  disabled={disabled}
-                  selected={
-                    trigger.kind === "github"
-                      ? { owner: trigger.owner, repo: trigger.repo }
-                      : undefined
-                  }
-                  listGitHubRepositories={listGitHubRepositories}
-                  searchGitHubRepositories={searchGitHubRepositories}
-                  onSelect={setGitHubRepo}
-                />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger
-                    disabled={disabled || !githubRepoSelected(trigger)}
-                  >
-                    {t("automations.trigger.event")}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="z-[140]">
-                    <DropdownMenuItem
-                      disabled={disabled || !githubRepoSelected(trigger)}
-                      onSelect={() => setGitHubEvent("pull_request_created")}
-                    >
-                      {t("automations.trigger.pullRequestCreated")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={disabled || !githubRepoSelected(trigger)}
-                      onSelect={() => setGitHubEvent("issue_created")}
-                    >
-                      {t("automations.trigger.issueCreated")}
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </>
+              <AutomationGitHubRepositoryList
+                open={githubSubOpen}
+                disabled={disabled}
+                listGitHubRepositories={listGitHubRepositories}
+                searchGitHubRepositories={searchGitHubRepositories}
+                onSelect={setGitHubTrigger}
+              />
             )}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
@@ -180,34 +146,29 @@ export function AutomationTriggerMenu({
   );
 }
 
-function AutomationGitHubRepositorySub({
+function AutomationGitHubRepositoryList({
+  open,
   disabled,
-  selected,
   listGitHubRepositories,
   searchGitHubRepositories,
   onSelect,
 }: {
+  open: boolean;
   disabled?: boolean;
-  selected?: { owner: string; repo: string };
   listGitHubRepositories(page?: number): Promise<GitHubAutomationRepositoriesSnapshot>;
   searchGitHubRepositories(
     query: string,
     page?: number,
   ): Promise<SearchGitHubAutomationRepositoriesSnapshot>;
-  onSelect(repo: DesktopGitHubAutomationRepositoryItem): void;
+  onSelect(
+    repo: DesktopGitHubAutomationRepositoryItem,
+    event: DesktopAutomationGitHubEvent,
+  ): void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<DesktopGitHubAutomationRepositoryItem[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const selectedLabel = useMemo(() => {
-    if (!selected?.owner || !selected.repo) {
-      return t("automations.trigger.repository");
-    }
-    return `${selected.owner}/${selected.repo}`;
-  }, [selected, t]);
 
   const loadRepositories = useCallback(async (searchQuery: string) => {
     setLoading(true);
@@ -234,40 +195,54 @@ function AutomationGitHubRepositorySub({
   }, [loadRepositories, open, query]);
 
   return (
-    <DropdownMenuSub open={open} onOpenChange={setOpen}>
-      <DropdownMenuSubTrigger disabled={disabled}>{selectedLabel}</DropdownMenuSubTrigger>
-      <DropdownMenuSubContent className="z-[140] w-72 p-0">
-        <div className={DESKTOP_OVERLAY_LIST_FILTER_HEADER}>
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("automations.trigger.repositorySearchPlaceholder")}
-            className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST}
-            onKeyDown={(event) => event.stopPropagation()}
-            autoComplete="off"
-          />
-        </div>
-        <ScrollArea className="max-h-60">
-          <div className="p-1">
-            {loading ? (
-              <p className="px-2 py-3 text-xs text-muted-foreground">{t("common.loading")}</p>
-            ) : items.length === 0 ? (
-              <p className="px-2 py-3 text-xs text-muted-foreground">{t("automations.trigger.repositoryEmpty")}</p>
-            ) : (
-              items.map((item) => (
-                <DropdownMenuItem
-                  key={item.fullName}
-                  className="text-xs"
-                  onSelect={() => onSelect(item)}
+    <>
+      <div className={DESKTOP_OVERLAY_LIST_FILTER_HEADER}>
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("automations.trigger.repositorySearchPlaceholder")}
+          className={DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST}
+          onKeyDown={(event) => event.stopPropagation()}
+          autoComplete="off"
+        />
+      </div>
+      <ScrollArea className="max-h-60">
+        <div className="p-1">
+          {loading ? (
+            <p className="px-2 py-3 text-xs text-muted-foreground">{t("common.loading")}</p>
+          ) : items.length === 0 ? (
+            <p className="px-2 py-3 text-xs text-muted-foreground">{t("automations.trigger.repositoryEmpty")}</p>
+          ) : (
+            items.map((item) => (
+              <DropdownMenuSub key={item.fullName}>
+                <DropdownMenuSubTrigger
+                  disabled={disabled}
+                  className={DESKTOP_OVERLAY_LIST_SUB_TRIGGER}
                 >
-                  <span className="truncate">{item.fullName}</span>
-                </DropdownMenuItem>
-              ))
-            )}
-          </div>
-        </ScrollArea>
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
+                  <span className="min-w-0 truncate">{item.fullName}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="z-[140]">
+                  <DropdownMenuItem
+                    disabled={disabled}
+                    className="text-xs"
+                    onSelect={() => onSelect(item, "pull_request_created")}
+                  >
+                    {t("automations.trigger.pullRequestCreated")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={disabled}
+                    className="text-xs"
+                    onSelect={() => onSelect(item, "issue_created")}
+                  >
+                    {t("automations.trigger.issueCreated")}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+    </>
   );
 }
 
