@@ -100,5 +100,8 @@
     "typescript": "^5.6.3",
     "vite": "^8.0.9",
     "wait-on": "^9.0.1"
+  },
+  "overrides": {
+    "node-gyp": "^12.2.0"
   }
 }
