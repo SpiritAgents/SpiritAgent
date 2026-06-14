@@ -526,10 +526,7 @@ export function WorkspaceFilesTab({
               isPreviewVisible ? (
                 <>
                   <ScrollArea ref={previewScrollRef} className="h-full min-h-0 w-full bg-background/30">
-                    <div
-                      className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-4 sm:px-6"
-                      data-workspace-file-path={selectedPath}
-                    >
+                    <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-4 sm:px-6">
                       {draftText.trim() ? (
                         <MarkdownMessage
                           content={draftText}
