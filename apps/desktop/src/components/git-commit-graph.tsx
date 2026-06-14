@@ -394,43 +394,44 @@ function CommitGraphGutter({
     <svg
       width={graphWidth}
       height={height}
-      className="pointer-events-none absolute left-0 top-0 shrink-0 text-muted-foreground/70"
+      className="pointer-events-none absolute left-0 top-0 shrink-0"
       aria-hidden
     >
-      {verticals.map((d, index) => (
-        d ? (
-          <path
-            key={`v-${index}`}
-            d={d}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="butt"
-            strokeLinejoin="round"
-          />
-        ) : null
-      ))}
-      {curves.map((d, index) => (
-        d ? (
-          <path
-            key={`c-${index}`}
-            d={d}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="butt"
-            strokeLinejoin="round"
-          />
-        ) : null
-      ))}
+      <g className="text-muted-foreground/35">
+        {verticals.map((d, index) => (
+          d ? (
+            <path
+              key={`v-${index}`}
+              d={d}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1}
+              strokeLinecap="butt"
+              strokeLinejoin="round"
+            />
+          ) : null
+        ))}
+        {curves.map((d, index) => (
+          d ? (
+            <path
+              key={`c-${index}`}
+              d={d}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1}
+              strokeLinecap="butt"
+              strokeLinejoin="round"
+            />
+          ) : null
+        ))}
+      </g>
       {rows.map((row, rowIndex) => (
         <circle
           key={row.commit.oid}
           cx={laneCenterX(row.lane)}
           cy={rowCenter(rowIndex)}
           r={NODE_RADIUS_PX}
-          className="fill-foreground stroke-background"
-          strokeWidth={1.5}
+          className="fill-muted-foreground"
         />
       ))}
     </svg>
@@ -519,7 +520,7 @@ function CommitGraphRowWithHover({
 
   return (
     <div
-      className="relative min-w-0 border-b border-border/20 last:border-b-0"
+      className="relative min-w-0"
       style={{ minHeight: ROW_HEIGHT_PX, paddingLeft: textInset }}
     >
       <HoverDetailTooltip.Anchor itemId={row.commit.oid}>
