@@ -293,6 +293,9 @@ function AutomationListRow({
         ) : null}
       </div>
       <p className="text-xs text-muted-foreground">{triggerLabel}</p>
+      {item.githubPollError ? (
+        <p className="text-xs text-destructive">{item.githubPollError}</p>
+      ) : null}
     </button>
   );
 }

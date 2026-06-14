@@ -784,6 +784,7 @@ export interface DesktopAutomationListItem {
   scheduleLabel: string;
   trigger: DesktopAutomationTrigger;
   enabled: boolean;
+  githubPollError?: string;
   lastRunAtUnixMs?: number;
   updatedAtUnixMs: number;
 }
