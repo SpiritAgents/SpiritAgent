@@ -91,8 +91,9 @@ export async function fetchGitHubAutomationRepoItems(
   accessToken: string,
   owner: string,
   repo: string,
+  options?: { sinceNumber?: number },
 ): Promise<GitHubAutomationIssueItem[]> {
-  return listRepositoryIssuesForAutomation(accessToken, owner, repo);
+  return listRepositoryIssuesForAutomation(accessToken, owner, repo, options);
 }
 
 export async function baselineGitHubAutomationWatermark(
