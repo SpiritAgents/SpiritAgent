@@ -26,6 +26,16 @@ function pointAnchor(x: number, y: number): SelectionAnchorRect {
   return { x, y, width: 1, height: 1 };
 }
 
+function containerAnchor(container: HTMLElement): SelectionAnchorRect {
+  const rect = container.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+    width: 1,
+    height: 1,
+  };
+}
+
 export function useTerminalSelectionActionMenu({
   enabled = true,
   containerRef,
@@ -65,14 +75,13 @@ export function useTerminalSelectionActionMenu({
 
     const range = readTerminalSelectionLineRange(term);
     const pointer = lastPointerRef.current;
-    if (!pointer) {
-      dismiss();
-      return;
-    }
+    const nextAnchor = pointer
+      ? pointAnchor(pointer.x, pointer.y)
+      : containerAnchor(container);
 
     setSelectionText(text);
     setLineRange(range);
-    setAnchor(pointAnchor(pointer.x, pointer.y));
+    setAnchor(nextAnchor);
     setOpen(true);
   }, [containerRef, dismiss, enabled, terminal]);
 
@@ -102,14 +111,33 @@ export function useTerminalSelectionActionMenu({
     const onSelectionChange = () => {
       if (!term.getSelection().trim() && !openRef.current) {
         dismiss();
+        return;
+      }
+      if (term.getSelection().trim()) {
+        scheduleSync();
+      }
+    };
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (
+        event.key === "Shift"
+        || event.key.startsWith("Arrow")
+        || event.key === "Home"
+        || event.key === "End"
+        || event.key === "PageUp"
+        || event.key === "PageDown"
+      ) {
+        scheduleSync();
       }
     };
 
     container.addEventListener("mouseup", onPointerUp);
+    container.addEventListener("keyup", onKeyUp);
     const selectionDisposable = term.onSelectionChange(onSelectionChange);
     return () => {
       cancelAnimationFrame(raf);
       container.removeEventListener("mouseup", onPointerUp);
+      container.removeEventListener("keyup", onKeyUp);
       selectionDisposable.dispose();
     };
   }, [containerRef, dismiss, enabled, syncFromTerminal, terminal]);
