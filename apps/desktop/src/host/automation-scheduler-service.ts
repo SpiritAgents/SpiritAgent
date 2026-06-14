@@ -6,6 +6,7 @@ import {
   fetchGitHubAutomationRepoItems,
   githubTriggerNeedsBaseline,
   groupGitHubAutomationsByRepo,
+  resolveGitHubPollWatermark,
   shouldFireNow,
   type AutomationRunTriggerContext,
   type HostAutomationDefinition,
@@ -140,9 +141,18 @@ async function tickGitHubAutomationTriggers(
   );
 
   for (const group of groups) {
+    const minWatermark = Math.min(
+      ...group.automations.map((definition) =>
+        definition.trigger.kind === 'github'
+          ? resolveGitHubPollWatermark(definition.trigger)
+          : Number.MAX_SAFE_INTEGER,
+      ),
+    );
     let items;
     try {
-      items = await fetchGitHubAutomationRepoItems(accessToken, group.owner, group.repo);
+      items = await fetchGitHubAutomationRepoItems(accessToken, group.owner, group.repo, {
+        sinceNumber: Number.isFinite(minWatermark) ? minWatermark : 0,
+      });
     } catch {
       continue;
     }

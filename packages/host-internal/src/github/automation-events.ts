@@ -36,18 +36,48 @@ export async function listRepositoryIssuesForAutomation(
   accessToken: string,
   owner: string,
   repo: string,
+  options?: { sinceNumber?: number; perPage?: number; maxPages?: number },
 ): Promise<GitHubAutomationIssueItem[]> {
-  const url = new URL(`${GITHUB_API_BASE_URL}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues`);
-  url.searchParams.set('state', 'all');
-  url.searchParams.set('sort', 'created');
-  url.searchParams.set('direction', 'desc');
-  url.searchParams.set('per_page', '100');
+  const sinceNumber = options?.sinceNumber ?? 0;
+  const perPage = options?.perPage ?? 100;
+  const maxPages = options?.maxPages ?? 10;
+  const allItems: GitHubAutomationIssueItem[] = [];
 
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
-  const payload = await readGitHubJson<GitHubIssueApiItem[]>(response);
-  return payload
-    .map((item) => mapIssueItem(item))
-    .filter((item): item is GitHubAutomationIssueItem => item !== undefined);
+  for (let page = 1; page <= maxPages; page += 1) {
+    const url = new URL(`${GITHUB_API_BASE_URL}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues`);
+    url.searchParams.set('state', 'all');
+    url.searchParams.set('sort', 'created');
+    url.searchParams.set('direction', 'desc');
+    url.searchParams.set('per_page', String(perPage));
+    url.searchParams.set('page', String(page));
+
+    const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+    const payload = await readGitHubJson<GitHubIssueApiItem[]>(response);
+    const pageItems = payload
+      .map((item) => mapIssueItem(item))
+      .filter((item): item is GitHubAutomationIssueItem => item !== undefined);
+    if (pageItems.length === 0) {
+      break;
+    }
+    allItems.push(...pageItems);
+    if (!shouldFetchNextIssuePage(pageItems, sinceNumber, perPage)) {
+      break;
+    }
+  }
+
+  return allItems;
+}
+
+export function shouldFetchNextIssuePage(
+  pageItems: GitHubAutomationIssueItem[],
+  sinceNumber: number,
+  perPage: number,
+): boolean {
+  if (pageItems.length === 0) {
+    return false;
+  }
+  const minNumber = Math.min(...pageItems.map((item) => item.number));
+  return minNumber > sinceNumber && pageItems.length >= perPage;
 }
 
 export async function fetchRepositoryMaxIssueNumber(
