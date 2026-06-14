@@ -34,6 +34,10 @@ test("parseFileSnippetLinePart parses line range suffix", () => {
   });
 });
 
+test("parseFileSnippetLinePart parses preview placeholder dash suffix", () => {
+  assert.deepEqual(parseFileSnippetLinePart("-"), { lineStart: 0, lineEnd: 0 });
+});
+
 test("wire round-trips file paths containing parentheses", () => {
   const attachment = {
     id: "file-paren",
