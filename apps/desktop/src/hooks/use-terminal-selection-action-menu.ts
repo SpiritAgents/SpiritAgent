@@ -36,6 +36,11 @@ export function useTerminalSelectionActionMenu({
   const [selectionText, setSelectionText] = useState("");
   const [lineRange, setLineRange] = useState<{ lineStart: number; lineEnd: number } | null>(null);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const openRef = useRef(false);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   const dismiss = useCallback(() => {
     setOpen(false);
@@ -95,7 +100,7 @@ export function useTerminalSelectionActionMenu({
     };
 
     const onSelectionChange = () => {
-      if (!term.getSelection().trim()) {
+      if (!term.getSelection().trim() && !openRef.current) {
         dismiss();
       }
     };
