@@ -10,6 +10,7 @@ import {
   formatScheduleLabel,
   formatTriggerLabel,
   normalizeAutomationTrigger,
+  reconcileGitHubTriggerPollState,
   shouldFireNow,
 } from './automations.js';
 
@@ -147,6 +148,29 @@ test('normalizeAutomationTrigger accepts legacy bare schedule', () => {
   assert.deepEqual(normalizeAutomationTrigger({ kind: 'daily', hour: 9, minute: 0 }), {
     kind: 'time',
     schedule: { kind: 'daily', hour: 9, minute: 0 },
+  });
+});
+
+test('reconcileGitHubTriggerPollState clears poll when repo identity changes', () => {
+  const previous = {
+    kind: 'github' as const,
+    owner: 'a',
+    repo: 'b',
+    event: 'issue_created' as const,
+    poll: { lastSeenNumber: 42 },
+  };
+  const next = {
+    kind: 'github' as const,
+    owner: 'c',
+    repo: 'd',
+    event: 'issue_created' as const,
+    poll: { lastSeenNumber: 99 },
+  };
+  assert.deepEqual(reconcileGitHubTriggerPollState(previous, next), {
+    kind: 'github',
+    owner: 'c',
+    repo: 'd',
+    event: 'issue_created',
   });
 });
 
