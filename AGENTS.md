@@ -1,39 +1,72 @@
-# Spirit Agent — AI 助手指引
+# Spirit Agent — 项目指引
 
-与本仓库协作时，请优先阅读下列 **GitHub Copilot** 仓库级配置：
+## 分层与专项说明
 
-| 文件 | 作用 |
-| --- | --- |
-| [`.github/copilot-instructions.md`](.github/copilot-instructions.md) | 全局：提交约定、BUG 修复、**模型可见文案**、通用约定 |
-| [`.github/instructions/llm-visible-copy.instructions.md`](.github/instructions/llm-visible-copy.instructions.md) | **agent-core**：system / tool description 勿重复 `tools` 已声明能力 |
-| [`.github/instructions/agent-core-host-boundary.instructions.md`](.github/instructions/agent-core-host-boundary.instructions.md) | **agent-core / 宿主内部库 / apps** 职责、工具定义 vs 实现、强约束 |
-| [`.github/instructions/cli-rust.instructions.md`](.github/instructions/cli-rust.instructions.md) | `apps/cli/**/*.rs` 代码风格与构建习惯 |
+- 能力与宿主边界：`.github/instructions/agent-core-host-boundary.instructions.md`
+- Rust CLI：`.github/instructions/cli-rust.instructions.md`
 
-## 提交信息约定
+## 提交信息
 
-- 格式：`type(可选 scope): Subject`，换行后可选 Body。
-- `type` / `scope`：英文（如 `feat`、`fix`、`desktop`）。
-- **Subject / Body：简体中文**（专有名词、路径、标识符除外）。创建 commit 时不得用英文写 Subject 或 Body。
-- 细则见 [`.github/copilot-instructions.md`](.github/copilot-instructions.md)。
-
-## 提交范围约定
-
+- 约定式提交：`type`、可选 `scope` 使用英文；**Subject 与 Body 必须使用简体中文**（代码标识符、路径、API 名等除外）。
+- `subject`：一行概括变更，简体中文，句末不加句号。
+- `body`：可选；说明动机与影响，简体中文，完整句子。
 - `scope`：英文，可选；表示模块、包或子系统，例如 `cli`、`agent-core`、`desktop`、`tui`。无合适范围时可省略括号段。
-- 多范围：仅在无法拆分时使用；多个范围用逗号分隔，且逗号后必须有一个空格，例如 `(desktop, agent-core)`。
-- 禁止用多范围来概括“改了很多文件”或逃避拆分提交；只有确实同时修改了多个独立模块时才允许使用。
-- 如范围过多，要么改成一个最主要的范围，要么去除所有范围。
+- 多范围：仅在无法拆分为多个提交时使用。多个范围用逗号分隔，且逗号后必须有一个空格，例如 `(desktop, agent-core)`。
+- 禁止用多范围概括“改了很多文件”或代替拆分提交；只有确实同时修改了多个独立模块且无法拆开时，才允许使用多范围。
+- 如范围过多，要么改成一个最主要的范围，要么去除所有范围，不要堆叠很长的 scope 列表。
 
-## Desktop 内置 Git Skill
+## 通用约定
 
-首次启动 Desktop Host 时，会将 `apps/desktop/built-in-skills/` 下的 `git-commit`、`git-push`、`git-merge` 种子到 `%APPDATA%/SpiritAgent/skills/`（已存在则不覆盖，可自行编辑）。Git 选项卡按钮与输入框斜杠菜单一致（如 `/git-commit`），在当前会话激活对应 Skill；不再使用后台 ephemeral 会话生成提交信息。
+- 优先保持跨平台兼容（含 Windows 分支与条件编译）。
+- 需要引用既有实现时，优先链到源码路径，不在此重复长说明。
+- 除非测试目标明确要求，否则不要在单测、快照、fixture、示例输入等场景中加入第三方产品、服务、模型或品牌字符串；优先使用项目内语义或中性描述。
+- 本项目处于极早期开发阶段；若变更涉及用户配置结构、持久化格式或迁移策略且需要较大调整，尽量避免叠加过多兼容兜底，优先保持实现直接可演进，并需明确告知开发者这样做的原因、代价与后续演进空间。
 
-## Shell 流式执行
+## BUG 修复：Log、根因、禁止多重保险
 
-- `run_shell_command` 的 spawn 执行与增量输出契约在 `packages/host-internal`（`shell-execution.ts`）；`agent-core` 通过 `tool-execution-output-chunk` 事件转发增量文本。
-- Desktop 将会话 tool 卡实时投影输出；CLI 经 host-bridge 接收事件但 TUI 暂不渲染 chunk（最终仍一次性展示 `tool-execution-finished` 结果）。
+### 流程
+
+1. **先埋 Log**：复现路径上优先加可观测日志（级别、关键状态、时序），再改逻辑；勿无 Log 盲改。
+2. **追根因再修**：即使已定位症状触发点，仍须结合当前场景追问「为何会进入该状态」，修复**根因**而非仅打补丁。
+3. **修完验证**：用 Log 或测试确认根因已消除；临时 Log 若仅用于排查，合并前删除或降为 debug。
+
+### 禁止「多重保险」
+
+不得为「以防万一」叠多层兜底，例如：
+
+- 同一语义在多处重复校验 / 重试 / 回写
+- 症状处 `try/catch` 吞错 + 上游再包一层 fallback
+- 「删了 A 再在 B/C 补洞」而不解释为何 A 会丢
+
+**允许**：单一、可证明的必要边界（如对外 API 的参数校验）；须在 PR / 说明中写清为何此处是唯一防线。
+
+```typescript
+// ❌ 多重保险：DOM 删 chip 后 sync 重插，Backspace 再删，effect 又插
+if (agentMode === 'plan' && !hasChip) reinsertChip();
+if (backspace) removeChip();
+useEffect(() => { if (agentMode === 'plan') insertChip(); }, [agentMode]);
+
+// ✅ 单一来源：config.agentMode 驱动 pin；Backspace 只改 config，由 effect 同步 UI
+```
+
+### 上游 / 无法解释的逻辑
+
+若修复依赖第三方、历史债务或无法完全理解的行为：
+
+- 在 workaround **旁**加**简体中文**注释：现象、已知限制、为何不继续深挖
+- 禁止用注释替代根因分析；能修根因仍须修根因
+
+```typescript
+// Vercel Gateway /models 仅 type=image 表示生图；tags 推断 vision 易误判，故不采用。
+if (record.type === 'image') {
+  modelEntry.supportsImageGeneration = true;
+}
+```
 
 ## Agent / LLM 约定
 
 - 发给 LLM 的模型可见文本默认统一使用英文，包括但不限于系统消息、工具定义概述、工具描述、评估文案等；除非某个机制明确要求其他语言，否则不要混入中文或中英混写，以尽量减少输出质量波动。
+- **模型可见文案细则**（何时写 system、何时只写 tool definition / API `tools`、坏/好示例）：见 [`.github/instructions/llm-visible-copy.instructions.md`](.github/instructions/llm-visible-copy.instructions.md)。
 - 修改 `packages/agent-core` 中与模型可见行为直接相关的内容时，如系统消息大段增删改、新增一个工具、工具概述或描述发生较大调整，应在实现完成后跑一次 eval，观察实际效果，再决定是否继续微调。
 - 仅在变更较大时补跑 eval；小范围措辞修正、拼写修复、非模型可见重构，或纯宿主实现调整，通常不需要额外跑 eval。
+- 不要过度设计 System Prompt、Tool Description 等文本，避免冗长。**尤其禁止在 system 里重复列举请求 `tools` 字段已声明的能力**（分散注意力、浪费上下文）。短小精悍、有助于 LLM 理解的内容输出效果通常更好。
