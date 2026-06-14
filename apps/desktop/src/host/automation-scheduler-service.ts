@@ -156,8 +156,24 @@ async function tickGitHubAutomationTriggers(
       items = await fetchGitHubAutomationRepoItems(accessToken, group.owner, group.repo, {
         sinceNumber: Number.isFinite(minWatermark) ? minWatermark : 0,
       });
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      for (const definition of group.automations) {
+        try {
+          await store.setGitHubPollError(definition.id, message);
+        } catch {
+          /* ignore per-automation persistence errors */
+        }
+      }
       continue;
+    }
+
+    for (const definition of group.automations) {
+      try {
+        await store.setGitHubPollError(definition.id, undefined);
+      } catch {
+        /* ignore per-automation persistence errors */
+      }
     }
 
     const matches = computeGitHubPollMatchesForRepoGroup(group, items);
