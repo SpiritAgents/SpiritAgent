@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
 import { useTextSelectionActionMenu } from "@/hooks/use-text-selection-action-menu";
 import { buildPrChangedFilesTree } from "@/lib/pr-changed-files-tree";
+import { installContainedSelectAll } from "@/lib/contained-text-selection";
 import type { PrDiffAttachment, PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { buildPrDiffSnippetFromPatch, buildPrDiffSnippetText } from "@/lib/pr-diff-text";
 import { inferLineRangeFromPatch } from "@/lib/pr-diff-patch-slice";
@@ -68,6 +69,25 @@ function isDiffCodeSelection(selection: Selection, root: HTMLElement): boolean {
     && resolveChangedFileFromSelection(selection, root) != null;
 }
 
+function isDiffBlockSelection(selection: Selection, root: HTMLElement): boolean {
+  const anchor = selection.anchorNode;
+  const focus = selection.focusNode;
+  if (!anchor || !focus) {
+    return false;
+  }
+  const anchorDiff =
+    findDiffRootFromSelection(anchor, root) ?? findDiffRootFromSelection(focus, root);
+  const focusDiff = findDiffRootFromSelection(focus, root);
+  if (!anchorDiff || anchorDiff !== focusDiff) {
+    return false;
+  }
+  return resolveChangedFileFromSelection(selection, root) != null;
+}
+
+function isPrDiffSelectionAllowed(selection: Selection, root: HTMLElement): boolean {
+  return isDiffCodeSelection(selection, root) || isDiffBlockSelection(selection, root);
+}
+
 function PrChangesSelectionMenu({
   rootRef,
   files,
@@ -86,7 +106,8 @@ function PrChangesSelectionMenu({
   const { open, setOpen, anchor, dismiss } = useTextSelectionActionMenu({
     enabled,
     rootRef,
-    isSelectionAllowed: isDiffCodeSelection,
+    isSelectionAllowed: isPrDiffSelectionAllowed,
+    readSelectionText: readDiffSelectionText,
   });
 
   const handleAddToSession = useCallback(() => {
@@ -257,12 +278,28 @@ function PrChangedFileCard({
   const { t } = useTranslation();
   const mounted = useCollapsibleChildMount(open);
   const stickySentinelRef = useRef<HTMLDivElement>(null);
+  const diffHostRef = useRef<HTMLDivElement>(null);
   const showExpandedChrome = open || mounted;
   const pinned = useStickyHeaderPinned(stickySentinelRef, getScrollViewport, showExpandedChrome);
   const displayPath =
     file.status === "renamed" && file.previousFilename
       ? `${file.previousFilename} → ${file.filename}`
       : file.filename;
+
+  useEffect(() => {
+    if (!mounted || !file.patch) {
+      return;
+    }
+    const host = diffHostRef.current;
+    if (!host) {
+      return;
+    }
+    const diffRoot = host.querySelector(".tool-call-diff");
+    if (!(diffRoot instanceof HTMLElement)) {
+      return;
+    }
+    return installContainedSelectAll(diffRoot);
+  }, [file.filename, file.patch, mounted]);
 
   return (
     <section
@@ -298,11 +335,13 @@ function PrChangedFileCard({
         <AnimatedCollapseContent>
           {mounted ? (
             file.patch ? (
-              <ReviewCommentHunkView
-                path={file.filename}
-                diffHunk={file.patch}
-                layout="embedded"
-              />
+              <div ref={diffHostRef} className="min-w-0">
+                <ReviewCommentHunkView
+                  path={file.filename}
+                  diffHunk={file.patch}
+                  layout="embedded"
+                />
+              </div>
             ) : (
               <div className="space-y-2 px-3 pb-3 text-xs text-muted-foreground">
                 <p>{t("workspace.prChangesNoPatch")}</p>
