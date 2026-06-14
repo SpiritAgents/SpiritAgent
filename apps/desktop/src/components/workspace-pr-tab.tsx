@@ -775,7 +775,7 @@ export function WorkspacePrTab({
                   onClick={handleBackToList}
                 >
                   <ChevronLeft className="size-3.5" aria-hidden />
-                  {t("workspace.prListBack")}
+                  {t("common.back")}
                 </Button>
               </div>
               <WorkspacePrDetailView
