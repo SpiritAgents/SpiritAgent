@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
+import { attachKeyboardSelectionMenuSync } from "@/lib/contained-text-selection";
 import { readPlainSelectionText } from "@/lib/pr-diff-selection";
 
 export type SelectionAnchorRect = {
@@ -121,36 +122,24 @@ export function useTextSelectionActionMenu({
         !text
         || !root.contains(selection.anchorNode)
         || !root.contains(selection.focusNode)
-        || (isSelectionAllowed && !isSelectionAllowed(selection, root))
       ) {
         dismiss();
       }
     };
-    const onKeyUp = (event: KeyboardEvent) => {
-      if (
-        event.key === "Shift"
-        || event.key.startsWith("Arrow")
-        || event.key === "Home"
-        || event.key === "End"
-        || event.key === "PageUp"
-        || event.key === "PageDown"
-      ) {
-        scheduleSync();
-      }
-    };
+
+    const detachKeyboardSync = attachKeyboardSelectionMenuSync(scheduleSync);
 
     document.addEventListener("mouseup", onMouseUp);
     document.addEventListener("touchend", onTouchEnd);
     document.addEventListener("selectionchange", onSelectionChange);
-    document.addEventListener("keyup", onKeyUp);
     return () => {
       cancelAnimationFrame(raf);
+      detachKeyboardSync();
       document.removeEventListener("mouseup", onMouseUp);
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("selectionchange", onSelectionChange);
-      document.removeEventListener("keyup", onKeyUp);
     };
-  }, [dismiss, enabled, isSelectionAllowed, readSelectionText, rootRef, syncFromSelection]);
+  }, [dismiss, enabled, readSelectionText, rootRef, syncFromSelection]);
 
   return {
     open,
