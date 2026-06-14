@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
+import { DESKTOP_OVERLAY_SHORT_LIST_PADDING, DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 
 type ApprovalLevelMenuProps = {
@@ -61,17 +61,19 @@ export function ApprovalLevelMenu({
       <DropdownMenuContent
         align="start"
         side="top"
-        className={DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH}
+        className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "p-0")}
       >
-        {options.map((option) => (
-          <DropdownMenuItem
-            key={option.value}
-            onSelect={() => onApprovalLevelChange(option.value)}
-            className={cn(approvalLevel === option.value && "bg-accent/40")}
-          >
-            {option.label}
-          </DropdownMenuItem>
-        ))}
+        <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+          {options.map((option) => (
+            <DropdownMenuItem
+              key={option.value}
+              onSelect={() => onApprovalLevelChange(option.value)}
+              className={cn(approvalLevel === option.value && "bg-accent/40")}
+            >
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
