@@ -46,13 +46,23 @@ const VIEW_TOOLS = new Set([
 const CREATE_TOOLS = new Set([
   'create_file',
   'create_plan',
-  'todo_create',
   'create_automation',
 ]);
 
 const EDIT_TOOLS = new Set(['edit_file', 'todo_update', 'dream_update', 'dream_record']);
 
-const DELETE_TOOLS = new Set(['delete_file', 'dream_delete', 'todo_complete']);
+const DELETE_TOOLS = new Set(['delete_file', 'dream_delete']);
+
+/** 不参与过程卡片分组与摘要统计的工具（在过程卡片外单独展示）。 */
+export const PROCESS_GROUP_EXCLUDED_TOOL_NAMES = new Set([
+  'finish_task',
+  'todo_create',
+  'todo_complete',
+]);
+
+export function isProcessGroupExcludedToolName(toolName: string): boolean {
+  return PROCESS_GROUP_EXCLUDED_TOOL_NAMES.has(toolName);
+}
 
 const APPLY_PATCH_CREATE = new Set(['创建', 'Create', 'Creating', 'Created']);
 const APPLY_PATCH_EDIT = new Set(['编辑', 'Edit', 'Editing', 'Edited']);
@@ -91,7 +101,7 @@ export function classifyProcessToolCategory(
   toolName: string,
   headline?: string,
 ): ProcessToolCategory {
-  if (toolName === 'finish_task') {
+  if (isProcessGroupExcludedToolName(toolName)) {
     return 'other';
   }
   if (toolName === 'generate_image' || toolName === 'generate_video') {
