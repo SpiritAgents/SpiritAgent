@@ -463,14 +463,22 @@ export function WorkspaceFilesPanel({
       if (!payload.relativePath) {
         return;
       }
+      const sourceRel = payload.relativePath.replace(/\\/g, "/");
+      const targetDir = targetDirectoryRel.replace(/\\/g, "/");
+      const sourceParent = sourceRel.includes("/")
+        ? sourceRel.slice(0, sourceRel.lastIndexOf("/"))
+        : "";
+      if (sourceRel === targetDir || sourceParent === targetDir) {
+        return;
+      }
       try {
-        const result = await api.moveWorkspaceEntry(payload.relativePath, targetDirectoryRel);
-        const sourceParent = payload.relativePath.includes("/")
-          ? payload.relativePath.slice(0, payload.relativePath.lastIndexOf("/"))
-          : "";
+        const result = await api.moveWorkspaceEntry(sourceRel, targetDir);
+        if (result.relativePath === sourceRel) {
+          return;
+        }
         invalidateDir(sourceParent);
-        invalidateDir(targetDirectoryRel);
-        onWorkspaceEntryMoved?.(payload.relativePath, result.relativePath);
+        invalidateDir(targetDir);
+        onWorkspaceEntryMoved?.(sourceRel, result.relativePath);
       } catch (error) {
         console.debug("[WorkspaceFilesPanel] move failed", {
           relativePath: payload.relativePath,
