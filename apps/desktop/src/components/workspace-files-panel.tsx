@@ -39,6 +39,17 @@ function fileBasename(abs: string): string {
   return i >= 0 ? n.slice(i + 1) || abs : abs;
 }
 
+/** 重命名聚焦时预选文件名主体，不含最后一个扩展名（如 App.tsx → App）。 */
+function focusRenameInput(input: HTMLInputElement, filename: string): void {
+  input.focus({ preventScroll: true });
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot <= 0) {
+    input.select();
+    return;
+  }
+  input.setSelectionRange(0, lastDot);
+}
+
 export { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 
 export function joinExplorerRel(parent: string, name: string): string {
@@ -135,8 +146,7 @@ function ExplorerRow({
       if (!input) {
         return;
       }
-      input.focus({ preventScroll: true });
-      input.select();
+      focusRenameInput(input, target.name);
     });
     return () => cancelAnimationFrame(frame);
   }, [renaming, target.relativePath]);
