@@ -7,6 +7,7 @@ import { shouldUseAlibabaBuiltInTools } from './alibaba-built-in-tools.js';
 import { shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import {
   resolveOpenResponsesSdkProvider,
+  isBedrockMantleOpenResponsesConfig,
   type OpenResponsesTransportConfig,
 } from './responses-compat.js';
 
@@ -39,6 +40,10 @@ export function resolveProviderWebSearchMode(
 function resolveOpenResponsesWebSearchMode(
   config: OpenResponsesTransportConfig,
 ): ProviderWebSearchMode | undefined {
+  if (isBedrockMantleOpenResponsesConfig(config)) {
+    return undefined;
+  }
+
   const provider = resolveOpenResponsesSdkProvider(config);
   if (config.llmVendor === 'openai' && provider === 'openai') {
     return 'openai-sdk-web-search';

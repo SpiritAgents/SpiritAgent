@@ -173,9 +173,11 @@ export function buildPrimaryTransportConfig(input: {
         model: input.model,
       },
     );
+    const mantleBaseUrl = bedrockMantleApiBaseFromRegion(region);
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
       llmVendor: 'openai',
       model: input.model,
+      baseUrl: mantleBaseUrl,
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     });
 
@@ -183,7 +185,7 @@ export function buildPrimaryTransportConfig(input: {
       transportKind: 'open-responses',
       apiKey,
       model: input.model,
-      baseUrl: bedrockMantleApiBaseFromRegion(region),
+      baseUrl: mantleBaseUrl,
       workspaceRoot: input.workspaceRoot,
       spiritAgentMode,
       responsesProvider: 'openai',
