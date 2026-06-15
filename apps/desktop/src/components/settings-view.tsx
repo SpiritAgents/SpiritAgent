@@ -100,7 +100,7 @@ import {
   resolveProviderConnectApiBase,
 } from "@/host/provider-presets";
 import { bedrockApiBaseFromRegion } from "@spirit-agent/host-internal/bedrock-region";
-import { hasBedrockRuntimeCredentials } from "@/host/provider-api-key";
+import { hasBedrockIamCredentials } from "@/host/provider-api-key";
 import { AgentsSettingsPanel } from "@/components/agents-settings-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -2442,6 +2442,7 @@ function ModelsSettingsPanel({
   const [customConnectMode, setCustomConnectMode] = useState<"single" | "bulk">(
     "single",
   );
+  const [bedrockConnectMode, setBedrockConnectMode] = useState<"bearer" | "iam">("bearer");
   const [modelDefaultsDialogTarget, setModelDefaultsDialogTarget] = useState<string | null>(null);
   const [modelDefaultAssignments, setModelDefaultAssignments] = useState<ModelDefaultAssignments>({
     activeModel: false,
@@ -2534,6 +2535,7 @@ function ModelsSettingsPanel({
     setConnectContextLength("");
     setConnectTransportKind("openai-compatible");
     setCustomConnectMode("single");
+    setBedrockConnectMode("bearer");
     setSelectedProvider(null);
   };
 
@@ -2558,6 +2560,7 @@ function ModelsSettingsPanel({
     setConnectCapabilities(defaultCustomModelCapabilities);
     resetConnectTransportKindForProvider(id);
     setCustomConnectMode("single");
+    setBedrockConnectMode("bearer");
     setConnectDialogOpen(true);
   };
 
@@ -2731,8 +2734,7 @@ function ModelsSettingsPanel({
             )
           : resolveConnectApiBase(selectedProvider, "");
 
-  const hasBedrockConnectCredentials = hasBedrockRuntimeCredentials({
-    apiKey: connectApiKey,
+  const hasBedrockCatalogCredentials = hasBedrockIamCredentials({
     accessKeyId: connectAccessKeyId,
     secretAccessKey: connectSecretAccessKey,
   });
@@ -2745,8 +2747,8 @@ function ModelsSettingsPanel({
       if (!connectAwsRegion.trim()) {
         throw new Error(t('settings.bedrockRegionRequired'));
       }
-      if (!hasBedrockConnectCredentials) {
-        throw new Error(t('settings.bedrockCredentialsRequired'));
+      if (!hasBedrockCatalogCredentials) {
+        throw new Error(t('settings.bedrockCatalogIamRequired'));
       }
     } else if (!connectApiKey.trim()) {
       throw new Error(t('settings.apiKeyRequired'));
@@ -2820,6 +2822,43 @@ function ModelsSettingsPanel({
       provider: "custom",
       transportKind: connectTransportKind,
       capabilities: normalizeModelCapabilitySelection(connectCapabilities),
+      ...(contextLength !== undefined ? { contextLength } : {}),
+    });
+    setConnectDialogOpen(false);
+    resetConnectWizard();
+  };
+
+  const saveBedrockBearerSingle = async () => {
+    if (selectedProvider !== "amazon-bedrock") {
+      return;
+    }
+    const awsRegion = connectAwsRegion.trim();
+    const name = connectName.trim();
+    if (!awsRegion) {
+      throw new Error(t('settings.bedrockRegionRequired'));
+    }
+    if (!name) {
+      throw new Error(t('settings.modelNameRequired'));
+    }
+    if (!connectApiKey.trim()) {
+      throw new Error(t('settings.apiKeyRequired'));
+    }
+    const contextLengthRaw = connectContextLength.trim();
+    let contextLength: number | undefined;
+    if (contextLengthRaw) {
+      const parsed = parseModelContextLength(Number(contextLengthRaw));
+      if (parsed === undefined) {
+        throw new Error(t('settings.contextLengthInvalid'));
+      }
+      contextLength = parsed;
+    }
+    await onAddModel({
+      name,
+      apiBase: bedrockApiBaseFromRegion(awsRegion),
+      apiKey: connectApiKey,
+      provider: "amazon-bedrock",
+      transportKind: "bedrock",
+      awsRegion,
       ...(contextLength !== undefined ? { contextLength } : {}),
     });
     setConnectDialogOpen(false);
@@ -3589,6 +3628,65 @@ function ModelsSettingsPanel({
                 />
               </div>
             ) : null}
+            {selectedProvider === "amazon-bedrock" ? (
+              <div className="grid gap-2">
+                <Label>{t('settings.bedrockAuthMode')}</Label>
+                <div
+                  role="tablist"
+                  aria-label={t('settings.bedrockAuthMode')}
+                  className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
+                >
+                  {(["bearer", "iam"] as const).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="tab"
+                      aria-selected={bedrockConnectMode === value}
+                      className={cn(
+                        "rounded-md px-2.5 text-xs font-medium transition-colors",
+                        bedrockConnectMode === value
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                      disabled={modelsBusy || modelsPreviewBusy}
+                      onClick={() => setBedrockConnectMode(value)}
+                    >
+                      {value === "bearer"
+                        ? t('settings.bedrockAuthBearer')
+                        : t('settings.bedrockAuthIam')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {selectedProvider === "amazon-bedrock" && bedrockConnectMode === "bearer" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-bedrock-model-name">{t('settings.modelName')}</Label>
+                <DesktopFormInput
+                  id="connect-bedrock-model-name"
+                  value={connectName}
+                  onChange={(e) => setConnectName(e.target.value)}
+                  placeholder={t('settings.bedrockModelNamePlaceholder')}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
+            {selectedProvider === "amazon-bedrock" && bedrockConnectMode === "bearer" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-context-length-bedrock">{t('settings.contextLength')}</Label>
+                <DesktopFormInput
+                  id="connect-context-length-bedrock"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={connectContextLength}
+                  onChange={(e) => setConnectContextLength(e.target.value)}
+                  placeholder={t('settings.optional')}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
+            {selectedProvider !== "amazon-bedrock" || bedrockConnectMode === "bearer" ? (
             <div className="grid gap-2">
               <Label htmlFor="connect-api-key">
                 {selectedProvider === "amazon-bedrock"
@@ -3605,11 +3703,12 @@ function ModelsSettingsPanel({
               />
               {selectedProvider === "amazon-bedrock" ? (
                 <p className="text-xs leading-5 text-muted-foreground">
-                  {t('settings.bedrockApiKeyPriorityHint')}
+                  {t('settings.bedrockBearerHint')}
                 </p>
               ) : null}
             </div>
-            {selectedProvider === "amazon-bedrock" ? (
+            ) : null}
+            {selectedProvider === "amazon-bedrock" && bedrockConnectMode === "iam" ? (
               <>
                 <div className="grid gap-2">
                   <Label htmlFor="connect-access-key-id">{t('settings.bedrockAccessKeyId')}</Label>
@@ -3617,7 +3716,7 @@ function ModelsSettingsPanel({
                     id="connect-access-key-id"
                     value={connectAccessKeyId}
                     onChange={(e) => setConnectAccessKeyId(e.target.value)}
-                    placeholder={t('settings.optional')}
+                    placeholder={t('settings.enterApiKey')}
                     autoComplete="off"
                   />
                 </div>
@@ -3628,10 +3727,13 @@ function ModelsSettingsPanel({
                     type="password"
                     value={connectSecretAccessKey}
                     onChange={(e) => setConnectSecretAccessKey(e.target.value)}
-                    placeholder={t('settings.optional')}
+                    placeholder={t('settings.enterApiKey')}
                     autoComplete="off"
                   />
                 </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {t('settings.bedrockIamHint')}
+                </p>
               </>
             ) : null}
             <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row sm:justify-between">
@@ -3692,17 +3794,62 @@ function ModelsSettingsPanel({
                     {t('settings.addProvider')}
                   </Button>
                 ) : null}
-                {selectedProvider !== null && selectedProvider !== "custom" ? (
+                {selectedProvider === "amazon-bedrock" && bedrockConnectMode === "bearer" ? (
                   <Button
                     type="button"
                     size="sm"
                     disabled={
                       modelsBusy
                       || modelsPreviewBusy
-                      || (selectedProvider === "amazon-bedrock"
-                        ? !connectAwsRegion.trim() || !hasBedrockConnectCredentials
-                        : !connectApiKey.trim())
+                      || !connectAwsRegion.trim()
+                      || !connectName.trim()
+                      || !connectApiKey.trim()
                     }
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await saveBedrockBearerSingle();
+                        } catch {
+                          /* runtimeError */
+                        }
+                      })();
+                    }}
+                  >
+                    {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                    {t('settings.addThisModel')}
+                  </Button>
+                ) : null}
+                {selectedProvider === "amazon-bedrock" && bedrockConnectMode === "iam" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={
+                      modelsBusy
+                      || modelsPreviewBusy
+                      || !connectAwsRegion.trim()
+                      || !hasBedrockCatalogCredentials
+                    }
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await syncCatalogFromUpstream(false);
+                        } catch {
+                          /* runtimeError */
+                        }
+                      })();
+                    }}
+                  >
+                    {modelsBusy || modelsPreviewBusy ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : null}
+                    {t('settings.addProvider')}
+                  </Button>
+                ) : null}
+                {selectedProvider !== null && selectedProvider !== "custom" && selectedProvider !== "amazon-bedrock" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={modelsBusy || modelsPreviewBusy || !connectApiKey.trim()}
                     onClick={() => {
                       void (async () => {
                         try {

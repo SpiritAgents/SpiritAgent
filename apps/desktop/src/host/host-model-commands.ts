@@ -61,7 +61,7 @@ import {
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
 } from './storage.js';
-import { hasBedrockRuntimeCredentials } from './provider-api-key.js';
+import { hasBedrockIamCredentials, hasBedrockRuntimeCredentials } from './provider-api-key.js';
 import { currentApiBase } from './service-utils.js';
 
 interface HostModelState {
@@ -322,6 +322,17 @@ function assertBedrockConnectCredentials(input: {
   throw new Error(i18n.t('error.bedrockCredentialsRequired'));
 }
 
+function assertBedrockCatalogCredentials(input: {
+  apiKey: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+}): void {
+  if (hasBedrockIamCredentials(input)) {
+    return;
+  }
+  throw new Error(i18n.t('error.bedrockCatalogIamRequired'));
+}
+
 export async function previewModelsCommand(request: PreviewModelsRequest): Promise<PreviewModelsResponse> {
   const provider = parseModelProviderId(request.provider);
   const transportKind = resolveDesktopTransportKind({
@@ -337,7 +348,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const accessKeyId = request.accessKeyId?.trim();
   const secretAccessKey = request.secretAccessKey?.trim();
   if (provider === 'amazon-bedrock') {
-    assertBedrockConnectCredentials({ apiKey, accessKeyId, secretAccessKey });
+    assertBedrockCatalogCredentials({ apiKey, accessKeyId, secretAccessKey });
   } else if (!apiKey) {
     throw new Error(i18n.t('error.apiKeyRequired'));
   }
@@ -511,7 +522,11 @@ export async function addModelCommand(
       provider,
       transportKind: request.transportKind,
     });
-    const apiBase = resolveManagedConnectApiBase(provider, transportKind, request.apiBase);
+    const awsRegion = request.awsRegion?.trim();
+    if (provider === 'amazon-bedrock' && !awsRegion) {
+      throw new Error(i18n.t('error.bedrockRegionRequired'));
+    }
+    const apiBase = resolveManagedConnectApiBase(provider, transportKind, request.apiBase, awsRegion);
     const apiKey = request.apiKey.trim();
 
     if (!name) {
@@ -542,6 +557,7 @@ export async function addModelCommand(
       transportKind?: DesktopTransportKind;
       capabilities?: DesktopModelCapability[];
       contextLength?: number;
+      awsRegion?: string;
     } = {
       name,
       apiBase,
@@ -560,8 +576,11 @@ export async function addModelCommand(
     }
     if (provider !== undefined) {
       profile.provider = provider;
-      if (transportKind === 'anthropic' || transportKind === 'open-responses') {
+      if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
         profile.transportKind = transportKind;
+      }
+      if (provider === 'amazon-bedrock' && awsRegion) {
+        profile.awsRegion = awsRegion;
       }
     }
     const capabilities = resolveAddedModelCapabilities({
@@ -589,7 +608,9 @@ export async function addModelCommand(
       state.config.videoGenerationModel = name;
     }
     await saveConfig(state.config);
-    if (provider !== undefined) {
+    if (provider === 'amazon-bedrock') {
+      await saveBedrockProviderCredentialsForProvider(modelProviderKeyScope(provider), { apiKey });
+    } else if (provider !== undefined) {
       await saveApiKeyForProvider(modelProviderKeyScope(provider), apiKey);
     } else {
       await saveApiKeyForModel(name, apiKey);

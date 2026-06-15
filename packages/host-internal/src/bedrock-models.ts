@@ -100,7 +100,13 @@ function resolveBedrockClientConfig(options: ListBedrockModelsOptions): { region
     };
   }
 
-  // Bearer API Key 仅用于 inference（@ai-sdk/amazon-bedrock）；列模型走 IAM 或 SDK 默认凭证链。
+  // Bearer API Key 仅用于 inference（@ai-sdk/amazon-bedrock）；ListFoundationModels 不支持 Bearer。
+  if (options.apiKey?.trim()) {
+    throw new Error(
+      'Bearer API Key cannot list Bedrock models. Provide IAM Access Key ID and Secret Access Key.',
+    );
+  }
+
   return { region };
 }
 
