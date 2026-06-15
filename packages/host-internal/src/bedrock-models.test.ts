@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import {
   bedrockApiBaseFromRegion,
   normalizeAwsRegion,
-  parseBedrockFoundationModelSummaries,
-} from './bedrock-models.js';
-import { extractAwsRegionFromBedrockApiBase } from './openai-models.js';
+  extractAwsRegionFromBedrockApiBase,
+} from './bedrock-region.js';
+import { parseBedrockFoundationModelSummaries } from './bedrock-models.js';
 
 test('bedrock region helpers normalize and derive api base', () => {
   assert.equal(normalizeAwsRegion(' US-East-1 '), 'us-east-1');

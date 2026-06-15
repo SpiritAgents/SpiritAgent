@@ -99,7 +99,7 @@ import {
   resolveConnectApiBase,
   resolveProviderConnectApiBase,
 } from "@/host/provider-presets";
-import { bedrockApiBaseFromRegion } from "@spirit-agent/host-internal";
+import { bedrockApiBaseFromRegion } from "@spirit-agent/host-internal/bedrock-region";
 import { hasBedrockRuntimeCredentials } from "@/host/provider-api-key";
 import { AgentsSettingsPanel } from "@/components/agents-settings-panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
