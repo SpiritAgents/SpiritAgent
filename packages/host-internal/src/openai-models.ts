@@ -7,7 +7,8 @@ import {
   assertGoogleGeminiApiBase,
   googleNativeModelsListUrl,
 } from './google-gemini-endpoints.js';
-import { bedrockApiBaseFromRegion, listBedrockModels } from './bedrock-models.js';
+import { listBedrockModels } from './bedrock-models.js';
+import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
 
 export type { ProviderModelTransportKind };
 
@@ -729,12 +730,7 @@ export async function listBedrockProviderModels(
   }
 }
 
-export function extractAwsRegionFromBedrockApiBase(baseUrl: string): string | undefined {
-  const match = normalizeOpenAiApiBase(baseUrl).match(/^https:\/\/bedrock\.([a-z0-9-]+)\.amazonaws\.com$/i);
-  return match?.[1];
-}
-
-export { bedrockApiBaseFromRegion };
+export { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
 
 export async function listMoonshotModels(
   options: ListOpenAiCompatibleModelIdsOptions,

@@ -15,6 +15,7 @@ const RENDERER_SAFE_HOST_INTERNAL_SUBPATHS = new Set([
   'workspace-file-reference-query',
   'model-provider-presets',
   'openai-models',
+  'bedrock-region',
   'skill-paths',
   'github-pull-request-url',
   'github-pull-request-checks-pages',

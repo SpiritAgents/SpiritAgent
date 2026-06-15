@@ -10,6 +10,9 @@ import {
 } from '@aws-sdk/client-bedrock';
 
 import type { ProviderListedModelEntry } from './openai-models.js';
+import { normalizeAwsRegion } from './bedrock-region.js';
+
+export { bedrockApiBaseFromRegion, normalizeAwsRegion } from './bedrock-region.js';
 
 export interface ListBedrockModelsOptions {
   region: string;
@@ -18,18 +21,6 @@ export interface ListBedrockModelsOptions {
   secretAccessKey?: string;
   sessionToken?: string;
   signal?: AbortSignal;
-}
-
-export function normalizeAwsRegion(region: string): string {
-  return region.trim().toLowerCase();
-}
-
-export function bedrockApiBaseFromRegion(region: string): string {
-  const normalized = normalizeAwsRegion(region);
-  if (!normalized) {
-    return 'https://bedrock.us-east-1.amazonaws.com';
-  }
-  return `https://bedrock.${normalized}.amazonaws.com`;
 }
 
 function bedrockSupportsReasoning(modelId: string): boolean {
