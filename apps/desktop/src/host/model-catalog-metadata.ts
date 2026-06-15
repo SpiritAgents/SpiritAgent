@@ -32,6 +32,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'openrouter'
     || input.provider === 'volcengine'
     || input.provider === 'google'
+    || input.provider === 'amazon-bedrock'
   ) {
     return true;
   }

@@ -7,6 +7,8 @@ import {
   assertGoogleGeminiApiBase,
   googleNativeModelsListUrl,
 } from './google-gemini-endpoints.js';
+import { listBedrockModels } from './bedrock-models.js';
+import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
 
 export type { ProviderModelTransportKind };
 
@@ -497,6 +499,10 @@ export interface ListProviderModelIdsOptions {
   transportKind?: ProviderModelTransportKind;
   baseUrl: string;
   apiKey: string;
+  awsRegion?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  sessionToken?: string;
   signal?: AbortSignal;
 }
 
@@ -694,8 +700,37 @@ export async function listProviderModels(
     return listGoogleModels(options);
   }
 
+  if (options.provider === 'amazon-bedrock') {
+    return listBedrockProviderModels(options);
+  }
+
   return listOpenAiCompatibleModels(options);
 }
+
+export async function listBedrockProviderModels(
+  options: ListProviderModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const region = options.awsRegion?.trim() || extractAwsRegionFromBedrockApiBase(options.baseUrl);
+  if (!region) {
+    throw new Error('Amazon Bedrock 列模型需要填写 AWS 区域。');
+  }
+
+  try {
+    return await listBedrockModels({
+      region,
+      ...(options.apiKey.trim() ? { apiKey: options.apiKey.trim() } : {}),
+      ...(options.accessKeyId?.trim() ? { accessKeyId: options.accessKeyId.trim() } : {}),
+      ...(options.secretAccessKey?.trim() ? { secretAccessKey: options.secretAccessKey.trim() } : {}),
+      ...(options.sessionToken?.trim() ? { sessionToken: options.sessionToken.trim() } : {}),
+      ...(options.signal ? { signal: options.signal } : {}),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`列模型失败（Amazon Bedrock）：${message}`);
+  }
+}
+
+export { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
 
 export async function listMoonshotModels(
   options: ListOpenAiCompatibleModelIdsOptions,

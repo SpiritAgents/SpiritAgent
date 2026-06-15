@@ -58,6 +58,11 @@ pub(crate) fn model_add_default_custom_api_base(
             .get("anthropic")
             .cloned()
             .unwrap_or_else(|| p.default_custom_api_base.clone()),
+        ModelTransportKind::Bedrock => p
+            .preset_api_base_by_provider
+            .get("amazon-bedrock")
+            .cloned()
+            .unwrap_or_else(|| p.default_custom_api_base.clone()),
     }
 }
 
@@ -111,7 +116,11 @@ mod tests {
             model_add_preset_api_base_by_choice_index(10).as_deref(),
             Some("https://ark.cn-beijing.volces.com/api/v3")
         );
-        assert!(model_add_preset_api_base_by_choice_index(11).is_none());
+        assert_eq!(
+            model_add_preset_api_base_by_choice_index(11).as_deref(),
+            Some("https://bedrock.us-east-1.amazonaws.com")
+        );
+        assert!(model_add_preset_api_base_by_choice_index(12).is_none());
     }
 
     #[test]

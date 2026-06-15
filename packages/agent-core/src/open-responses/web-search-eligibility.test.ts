@@ -88,6 +88,31 @@ test('resolveProviderWebSearchMode alibaba open-responses', () => {
   );
 });
 
+test('resolveProviderWebSearchMode excludes Bedrock Mantle openai.gpt models', () => {
+  assert.equal(
+    resolveProviderWebSearchMode({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'openai.gpt-5.5',
+      baseUrl: 'https://bedrock-mantle.us-east-2.api.aws/openai/v1',
+      llmVendor: 'openai',
+      responsesProvider: 'openai',
+    }),
+    undefined,
+  );
+  assert.equal(
+    shouldUseProviderWebSearch({
+      transportKind: 'open-responses',
+      apiKey: 'k',
+      model: 'openai.gpt-5.5',
+      baseUrl: 'https://bedrock-mantle.us-east-2.api.aws/openai/v1',
+      llmVendor: 'openai',
+      responsesProvider: 'openai',
+    }),
+    false,
+  );
+});
+
 test('resolveProviderWebSearchMode excludes openrouter', () => {
   assert.equal(
     resolveProviderWebSearchMode({
