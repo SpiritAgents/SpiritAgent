@@ -40,6 +40,7 @@ import type { FontPreference } from "@/lib/font";
 import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
 import { ModelCatalogDetailPanel } from "@/components/model-catalog-detail-panel";
+import { ProviderIcon } from "@/components/provider-icon";
 import {
   buildModelCatalogDetailMap,
   buildModelCatalogDisplayTitleMap,
@@ -3468,10 +3469,11 @@ function ModelsSettingsPanel({
                     <button
                       key={row.id}
                       type="button"
-                      className="flex w-full rounded-md px-3 py-2.5 text-left text-sm hover:bg-muted/60"
+                      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm hover:bg-muted/60"
                       onClick={() => startConnect(row.id)}
                     >
-                      {row.label}
+                      <ProviderIcon providerId={row.id} />
+                      <span className="min-w-0 flex-1 truncate">{row.label}</span>
                     </button>
                   ))
                 )}
