@@ -261,7 +261,7 @@ export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedMod
     const record = entry as Record<string, unknown>;
 
     const methods = record.supportedGenerationMethods;
-    if (Array.isArray(methods) && !methods.includes('generateContent')) {
+    if (!Array.isArray(methods) || !methods.includes('generateContent')) {
       continue;
     }
 

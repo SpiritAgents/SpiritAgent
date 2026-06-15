@@ -457,6 +457,39 @@ test('parseGoogleModelEntriesPayload prefers baseModelId and skips non-generateC
   ]);
 });
 
+test('parseGoogleModelEntriesPayload skips models without generateContent support', () => {
+  const entries = parseGoogleModelEntriesPayload({
+    models: [
+      {
+        name: 'models/gemini-2.0-flash',
+        displayName: 'Gemini 2.0 Flash',
+        inputTokenLimit: 1000,
+        outputTokenLimit: 500,
+        supportedGenerationMethods: ['generateContent'],
+      },
+      {
+        name: 'models/unknown-capability',
+        displayName: 'Unknown',
+        inputTokenLimit: 100,
+        outputTokenLimit: 50,
+      },
+      {
+        name: 'models/empty-methods',
+        displayName: 'Empty Methods',
+        supportedGenerationMethods: [],
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'gemini-2.0-flash',
+      displayName: 'Gemini 2.0 Flash',
+      contextLength: 1500,
+    },
+  ]);
+});
+
 test('parseOpenAiCompatibleModelEntriesPayload routes google provider to native parser', () => {
   const entries = parseOpenAiCompatibleModelEntriesPayload(
     {
