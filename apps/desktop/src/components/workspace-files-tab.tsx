@@ -18,6 +18,10 @@ import {
   type WorkspaceMonacoEditorHandle,
 } from "@/components/workspace-monaco-editor";
 import { cn } from "@/lib/utils";
+import {
+  isUnderWorkspaceEntryPath,
+  remapWorkspaceEntryPath,
+} from "@/lib/workspace-entry-path-sync";
 import type {
   EditorFileTarget,
   WorkspaceEditorViewMode,
@@ -90,6 +94,7 @@ export type WorkspaceFilesTabProps = {
   /** 当前打开文件名变化时通知父层，用于选项卡标题显示；无选中时传 undefined */
   onTitleChange?: (title: string | undefined) => void;
   onFileSnippetAddToSession?: (attachment: FileSnippetAttachment) => void;
+  onWorkspaceFileAddToSession?: (relativePath: string) => void;
 };
 
 export function WorkspaceFilesTab({
@@ -114,6 +119,7 @@ export function WorkspaceFilesTab({
   fileRevealDirectoryOnly = false,
   onTitleChange,
   onFileSnippetAddToSession,
+  onWorkspaceFileAddToSession,
 }: WorkspaceFilesTabProps) {
   const { t } = useTranslation();
   type MonacoEditor = Monaco.editor.IStandaloneCodeEditor;
@@ -430,6 +436,41 @@ export function WorkspaceFilesTab({
             setMarkdownViewMode("edit");
             setSelectedEntry({ kind: "plan" });
           }}
+          onWorkspaceEntryRenamed={(oldRelativePath, newRelativePath) => {
+            setSelectedEntry((current) => {
+              if (current?.kind !== "workspace") {
+                return current;
+              }
+              const nextPath = remapWorkspaceEntryPath(
+                oldRelativePath,
+                newRelativePath,
+                current.relativePath,
+              );
+              return nextPath ? { kind: "workspace", relativePath: nextPath } : current;
+            });
+          }}
+          onWorkspaceEntryMoved={(oldRelativePath, newRelativePath) => {
+            setSelectedEntry((current) => {
+              if (current?.kind !== "workspace") {
+                return current;
+              }
+              const nextPath = remapWorkspaceEntryPath(
+                oldRelativePath,
+                newRelativePath,
+                current.relativePath,
+              );
+              return nextPath ? { kind: "workspace", relativePath: nextPath } : current;
+            });
+          }}
+          onWorkspaceEntryDeleted={(relativePath) => {
+            setSelectedEntry((current) =>
+              current?.kind === "workspace" &&
+              isUnderWorkspaceEntryPath(relativePath, current.relativePath)
+                ? null
+                : current,
+            );
+          }}
+          onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
         />
       </div>
       {selectedEntry ? (
