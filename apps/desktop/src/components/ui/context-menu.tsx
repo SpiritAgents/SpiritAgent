@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Fragment } from "react"
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui"
 
 import { radixAnchoredOverlayMotion } from "@/lib/overlay-motion"
@@ -251,6 +252,28 @@ function ContextMenuShortcut({
   )
 }
 
+export type ContextMenuSectionItem = {
+  /** 相同 section 的条目为一组；组与组之间自动插入分割线。 */
+  section: string;
+  item: React.ReactNode;
+};
+
+function ContextMenuSectionItems({ items }: { items: ContextMenuSectionItem[] }) {
+  let previousSection: string | undefined;
+
+  return items.map((entry, index) => {
+    const showSeparator = previousSection !== undefined && entry.section !== previousSection;
+    previousSection = entry.section;
+
+    return (
+      <Fragment key={`${entry.section}-${index}`}>
+        {showSeparator ? <ContextMenuSeparator /> : null}
+        {entry.item}
+      </Fragment>
+    );
+  });
+}
+
 export {
   ContextMenu,
   ContextMenuTrigger,
@@ -260,6 +283,7 @@ export {
   ContextMenuRadioItem,
   ContextMenuLabel,
   ContextMenuSeparator,
+  ContextMenuSectionItems,
   ContextMenuShortcut,
   ContextMenuGroup,
   ContextMenuPortal,
