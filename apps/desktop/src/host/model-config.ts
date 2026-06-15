@@ -12,6 +12,9 @@ import {
 import {
   listProviderModels,
   resolveProviderConnectApiBase,
+  bedrockApiBaseFromRegion,
+  bedrockMantleApiBaseFromRegion,
+  isBedrockMantleOpenAiModel,
   type ProviderListedModelEntry,
 } from '@spirit-agent/host-internal';
 
@@ -24,6 +27,7 @@ import type {
   ModelProfileSnapshot,
   PreviewModelCatalogEntry,
 } from '../types.js';
+import type { BedrockProviderCredentials } from './provider-api-key.js';
 import {
   isModelCatalogCacheFresh,
   readModelCatalogCache,
@@ -47,8 +51,18 @@ import {
 export { resolveComposerDirectMediaTool, type DirectMediaTool };
 
 export function resolveProfileApiBase(
-  profile: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase'>,
+  profile: Pick<ModelProfileSnapshot, 'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion'>,
 ): string {
+  if (profile.provider === 'amazon-bedrock') {
+    const region = profile.awsRegion?.trim();
+    if (region) {
+      if (isBedrockMantleOpenAiModel(profile.name)) {
+        return bedrockMantleApiBaseFromRegion(region);
+      }
+      return bedrockApiBaseFromRegion(region);
+    }
+  }
+
   if (profile.provider && profile.provider !== 'custom') {
     return defaultApiBaseForTransport(profile.provider, resolveDesktopTransportKind(profile));
   }
@@ -71,7 +85,11 @@ export function resolveDesktopTransportKind(
     return requested;
   }
 
-  return profile?.provider === 'anthropic' ? 'anthropic' : 'openai-compatible';
+  return profile?.provider === 'anthropic'
+    ? 'anthropic'
+    : profile?.provider === 'amazon-bedrock'
+      ? 'bedrock'
+      : 'openai-compatible';
 }
 
 export function defaultApiBaseForTransport(
@@ -105,8 +123,10 @@ export function reasoningProviderForTransport(
 
 export function openAiCompatibleVendorFromProvider(
   provider?: DesktopModelProvider,
-): Exclude<DesktopModelProvider, 'anthropic'> | undefined {
-  return provider && provider !== 'anthropic' ? provider : undefined;
+): Exclude<DesktopModelProvider, 'anthropic' | 'amazon-bedrock'> | undefined {
+  return provider && provider !== 'anthropic' && provider !== 'amazon-bedrock'
+    ? provider
+    : undefined;
 }
 
 export function buildPrimaryTransportConfig(input: {
@@ -115,13 +135,83 @@ export function buildPrimaryTransportConfig(input: {
   baseUrl: string;
   workspaceRoot: string;
   agentMode?: DesktopAgentMode;
+  bedrockCredentials?: BedrockProviderCredentials;
   profile?: Pick<
     ModelProfileSnapshot,
-    'provider' | 'transportKind' | 'capabilities' | 'reasoningEffort' | 'supportedReasoningEfforts'
+    | 'provider'
+    | 'transportKind'
+    | 'capabilities'
+    | 'reasoningEffort'
+    | 'supportedReasoningEfforts'
+    | 'awsRegion'
   >;
 }): LlmTransportConfig {
   const spiritAgentMode = input.agentMode ?? 'agent';
   const transportKind = resolveDesktopTransportKind(input.profile);
+
+  if (
+    input.profile?.provider === 'amazon-bedrock'
+    && isBedrockMantleOpenAiModel(input.model)
+  ) {
+    const region = input.profile.awsRegion?.trim();
+    if (!region) {
+      throw new Error('Amazon Bedrock 模型缺少 AWS 区域配置。');
+    }
+    const bedrockCredentials = input.bedrockCredentials;
+    const apiKey = input.apiKey.trim() || bedrockCredentials?.apiKey?.trim();
+    const accessKeyId = bedrockCredentials?.accessKeyId?.trim();
+    const secretAccessKey = bedrockCredentials?.secretAccessKey?.trim();
+    const sessionToken = bedrockCredentials?.sessionToken?.trim();
+    if (!apiKey && !(accessKeyId && secretAccessKey)) {
+      throw new Error('Amazon Bedrock Mantle 模型需要 Bearer API Key 或 IAM 凭证。');
+    }
+    const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
+      input.profile?.reasoningEffort,
+      {
+        provider: 'openai',
+        transportKind: 'open-responses',
+        ...(input.profile?.supportedReasoningEfforts !== undefined
+          ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+          : {}),
+        model: input.model,
+      },
+    );
+    const mantleBaseUrl = bedrockMantleApiBaseFromRegion(region);
+    const reasoningSummary = resolveOpenResponsesReasoningSummary({
+      llmVendor: 'openai',
+      model: input.model,
+      baseUrl: mantleBaseUrl,
+      ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
+    });
+
+    return {
+      transportKind: 'open-responses',
+      apiKey: apiKey ?? '',
+      model: input.model,
+      baseUrl: mantleBaseUrl,
+      workspaceRoot: input.workspaceRoot,
+      spiritAgentMode,
+      responsesProvider: 'openai',
+      llmVendor: 'openai',
+      store: false,
+      ...(input.profile?.capabilities
+        ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
+        : {}),
+      ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
+      ...(reasoningSummary ? { reasoningSummary } : {}),
+      ...(!apiKey && accessKeyId && secretAccessKey
+        ? {
+            bedrockMantleIam: {
+              region,
+              accessKeyId,
+              secretAccessKey,
+              ...(sessionToken ? { sessionToken } : {}),
+            },
+          }
+        : {}),
+    };
+  }
+
   if (transportKind === 'open-responses') {
     const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
     const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
@@ -196,6 +286,41 @@ export function buildPrimaryTransportConfig(input: {
         ? { supportedEfforts: supportedAnthropicEfforts }
         : {}),
       ...(anthropicEffort ? { effort: anthropicEffort } : {}),
+    };
+  }
+
+  if (transportKind === 'bedrock') {
+    const region = input.profile?.awsRegion?.trim();
+    if (!region) {
+      throw new Error('Amazon Bedrock 模型缺少 AWS 区域配置。');
+    }
+    const bedrockCredentials = input.bedrockCredentials;
+    const apiKey = input.apiKey.trim() || bedrockCredentials?.apiKey?.trim();
+    const accessKeyId = bedrockCredentials?.accessKeyId?.trim();
+    const secretAccessKey = bedrockCredentials?.secretAccessKey?.trim();
+    const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
+      input.profile?.reasoningEffort,
+      {
+        ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
+        transportKind: 'bedrock',
+        ...(input.profile?.supportedReasoningEfforts !== undefined
+          ? { supportedEfforts: input.profile.supportedReasoningEfforts }
+          : {}),
+        model: input.model,
+      },
+    );
+    return {
+      transportKind: 'bedrock',
+      model: input.model,
+      region,
+      ...(apiKey ? { apiKey } : {}),
+      ...(accessKeyId && secretAccessKey ? { accessKeyId, secretAccessKey } : {}),
+      baseUrl: input.baseUrl,
+      workspaceRoot: input.workspaceRoot,
+      ...(input.profile?.capabilities
+        ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
+        : {}),
+      ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     };
   }
 
@@ -375,6 +500,9 @@ export async function loadPreviewModelsForTransport(input: {
   transportKind: DesktopTransportKind;
   apiBase: string;
   apiKey: string;
+  awsRegion?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
   forceRefresh: boolean;
 }): Promise<LoadedPreviewModelsResult> {
   const cached = await readModelCatalogCache(
@@ -397,6 +525,9 @@ export async function loadPreviewModelsForTransport(input: {
     transportKind: input.transportKind,
     baseUrl: input.apiBase,
     apiKey: input.apiKey,
+    ...(input.awsRegion ? { awsRegion: input.awsRegion } : {}),
+    ...(input.accessKeyId ? { accessKeyId: input.accessKeyId } : {}),
+    ...(input.secretAccessKey ? { secretAccessKey: input.secretAccessKey } : {}),
   });
   const modelCatalog = previewModelCatalogForProvider(input.provider, input.transportKind, listedModels);
   const modelIds = listedModels.map((entry) => entry.id);

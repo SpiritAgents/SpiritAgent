@@ -7,6 +7,7 @@ import {
 import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
 import {
   isAggregatedOpenAiRoutedVendor,
+  isBedrockMantleOpenResponsesConfig,
   normalizeGatewayOpenAiModelId,
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
@@ -33,6 +34,11 @@ export interface ApplyPatchOperation {
  */
 export function parseOpenAiGptModelVersion(modelId: string): { major: number; minor: number } | undefined {
   const trimmed = modelId.trim().toLowerCase();
+  const bedrockMantle = /^openai\.(gpt-\d+(?:\.\d+)?)/.exec(trimmed);
+  if (bedrockMantle?.[1]) {
+    return parseOpenAiGptModelVersion(bedrockMantle[1]);
+  }
+
   const versioned = /^gpt-(\d+)\.(\d+)/.exec(trimmed);
   if (versioned) {
     return {
@@ -110,8 +116,12 @@ function isEligibleOpenRouterBuiltInApplyPatchModel(
 
 /** OpenAI / OpenRouter 官方形态：apply_patch_call/output；Vercel AI Gateway 用 function_call 对。 */
 export function shouldUseBuiltInApplyPatchRequestItems(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
+  config: Pick<OpenResponsesTransportConfig, 'baseUrl' | 'llmVendor' | 'responsesProvider' | 'model'>,
 ): boolean {
+  if (isBedrockMantleOpenResponsesConfig(config)) {
+    return false;
+  }
+
   if (config.llmVendor === 'openai') {
     return true;
   }
@@ -130,13 +140,13 @@ export function shouldUseBuiltInApplyPatchRequestItems(
 export function shouldUseApplyPatchFunctionTool(
   config: Pick<
     OpenResponsesTransportConfig,
-    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+    'baseUrl' | 'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
   >,
 ): boolean {
   return (
     shouldUseApplyPatchFileTools(config)
     && !shouldUseOpenAiSdkApplyPatchTool(config)
-    && config.llmVendor === 'vercel-ai-gateway'
+    && (config.llmVendor === 'vercel-ai-gateway' || isBedrockMantleOpenResponsesConfig(config))
   );
 }
 
@@ -144,10 +154,14 @@ export function shouldUseApplyPatchFunctionTool(
 export function shouldUseOpenAiSdkApplyPatchTool(
   config: Pick<
     OpenResponsesTransportConfig,
-    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+    'baseUrl' | 'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
   >,
 ): boolean {
-  return shouldUseApplyPatchFileTools(config) && config.llmVendor === 'openai';
+  return (
+    shouldUseApplyPatchFileTools(config)
+    && config.llmVendor === 'openai'
+    && !isBedrockMantleOpenResponsesConfig(config)
+  );
 }
 
 export function shouldUseApplyPatchFileTools(
