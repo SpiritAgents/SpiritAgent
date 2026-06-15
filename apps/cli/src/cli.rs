@@ -442,6 +442,9 @@ fn parse_model_transport_kind(
         (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
             Err(anyhow!("provider=openai 时 transport-kind 不能是 anthropic"))
         }
+        (Some(ModelProvider::Google), ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic) => {
+            Err(anyhow!("provider=google 仅支持 openai-compatible transport-kind"))
+        }
         (None, ModelTransportKind::Anthropic) => {
             Err(anyhow!("transport-kind=anthropic 需要同时指定 --provider custom 或 --provider anthropic"))
         }

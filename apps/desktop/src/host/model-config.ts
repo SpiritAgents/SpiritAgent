@@ -60,8 +60,15 @@ export function resolveProfileApiBase(
 export function resolveDesktopTransportKind(
   profile?: Pick<ModelProfileSnapshot, 'provider' | 'transportKind'>,
 ): DesktopTransportKind {
-  if (profile?.transportKind) {
-    return profile.transportKind;
+  const requested = profile?.transportKind;
+  if (requested) {
+    if (
+      profile?.provider === 'google'
+      && (requested === 'open-responses' || requested === 'anthropic')
+    ) {
+      return 'openai-compatible';
+    }
+    return requested;
   }
 
   return profile?.provider === 'anthropic' ? 'anthropic' : 'openai-compatible';
