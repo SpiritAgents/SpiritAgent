@@ -61,6 +61,13 @@ type DirCacheEntry =
   | { status: "ready"; entries: WorkspaceExplorerEntry[] }
   | { status: "error"; message: string };
 
+type PendingMoveTarget = {
+  sourceRelativePath: string;
+  sourceName: string;
+  targetDirectoryRel: string;
+  targetDirectoryLabel: string;
+};
+
 export type WorkspaceFilesPanelProps = {
   workspaceRoot: string;
   plan: PlanSnapshot;
@@ -278,6 +285,10 @@ export function WorkspaceFilesPanel({
   const [forceDeleteReason, setForceDeleteReason] = useState("");
   const [forceDeleteBusy, setForceDeleteBusy] = useState(false);
   const [dragOverDirectory, setDragOverDirectory] = useState<string | null>(null);
+  const [moveTarget, setMoveTarget] = useState<PendingMoveTarget | null>(null);
+  const [moveBusy, setMoveBusy] = useState(false);
+
+  const workspaceRootLabel = fileBasename(workspaceRoot.trim()) || workspaceRoot.trim();
 
   const invalidateDir = useCallback(
     (relativePath: string) => {
@@ -479,6 +490,35 @@ export function WorkspaceFilesPanel({
     [onWorkspaceFileAddToSession],
   );
 
+  const handleConfirmMove = useCallback(async () => {
+    const pending = moveTarget;
+    if (!pending || !api) {
+      return;
+    }
+    setMoveBusy(true);
+    try {
+      const result = await api.moveWorkspaceEntry(
+        pending.sourceRelativePath,
+        pending.targetDirectoryRel,
+      );
+      if (result.relativePath === pending.sourceRelativePath) {
+        setMoveTarget(null);
+        return;
+      }
+      const sourceParent = pending.sourceRelativePath.includes("/")
+        ? pending.sourceRelativePath.slice(0, pending.sourceRelativePath.lastIndexOf("/"))
+        : "";
+      invalidateDir(sourceParent);
+      invalidateDir(pending.targetDirectoryRel);
+      onWorkspaceEntryMoved?.(pending.sourceRelativePath, result.relativePath);
+      setMoveTarget(null);
+    } catch {
+      return;
+    } finally {
+      setMoveBusy(false);
+    }
+  }, [api, invalidateDir, moveTarget, onWorkspaceEntryMoved]);
+
   const handleDragStart = useCallback(
     (event: DragEvent<HTMLButtonElement>, target: WorkspaceExplorerContextTarget) => {
       event.dataTransfer.setData(
@@ -500,12 +540,9 @@ export function WorkspaceFilesPanel({
   );
 
   const handleDirectoryDrop = useCallback(
-    async (event: DragEvent<HTMLElement>, targetDirectoryRel: string) => {
+    (event: DragEvent<HTMLElement>, targetDirectoryRel: string) => {
       event.preventDefault();
       setDragOverDirectory(null);
-      if (!api) {
-        return;
-      }
       const raw = event.dataTransfer.getData("application/spirit-workspace-entry");
       if (!raw) {
         return;
@@ -527,26 +564,21 @@ export function WorkspaceFilesPanel({
       if (sourceRel === targetDir || sourceParent === targetDir) {
         return;
       }
-      try {
-        const result = await api.moveWorkspaceEntry(sourceRel, targetDir);
-        if (result.relativePath === sourceRel) {
-          return;
-        }
-        invalidateDir(sourceParent);
-        invalidateDir(targetDir);
-        onWorkspaceEntryMoved?.(sourceRel, result.relativePath);
-      } catch {
-        return;
-      }
+      setMoveTarget({
+        sourceRelativePath: sourceRel,
+        sourceName: fileBasename(sourceRel),
+        targetDirectoryRel: targetDir,
+        targetDirectoryLabel: targetDir === "" ? workspaceRootLabel : targetDir,
+      });
     },
-    [api, invalidateDir, onWorkspaceEntryMoved],
+    [workspaceRootLabel],
   );
 
   if (!workspaceRoot.trim()) {
     return <p className="text-muted-foreground">{t("workspace.connectToShowFiles")}</p>;
   }
 
-  const rootLabel = fileBasename(workspaceRoot.trim()) || workspaceRoot.trim();
+  const rootLabel = workspaceRootLabel;
 
   const renderPlanItem = () => (
     <ul className="list-none space-y-0.5 p-0">
@@ -742,6 +774,46 @@ export function WorkspaceFilesPanel({
               onClick={() => void handleConfirmMoveToTrash()}
             >
               {moveToTrashLabel}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={moveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !moveBusy) {
+            setMoveTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>{t("workspace.move")}</DialogTitle>
+            <DialogDescription>
+              {t("workspace.moveEntryConfirm", {
+                name: moveTarget?.sourceName ?? "",
+                folder: moveTarget?.targetDirectoryLabel ?? "",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={moveBusy}
+              onClick={() => setMoveTarget(null)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={moveBusy}
+              onClick={() => void handleConfirmMove()}
+            >
+              {t("workspace.move")}
             </Button>
           </div>
         </DialogContent>
