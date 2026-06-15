@@ -7,7 +7,7 @@ import { DesktopRuntimeEventOrchestrator } from '../../dist-electron/src/host/ru
 import {
   executeDirectMediaTurn,
   isSessionBundleBusy,
-  scheduleDirectMediaTurn,
+  startComposerDirectMediaTurn,
   shouldUseComposerDirectMediaTurn,
 } from '../../dist-electron/src/host/direct-media-turn.js';
 
@@ -129,7 +129,6 @@ function createDirectMediaHarness() {
       runtimeEvents: orchestrator,
       assistantMessages,
     }),
-    emitLiveSnapshotUpdate: () => {},
     recordRewindCheckpoint: async () => {},
     persistSessionBundle: async () => {},
     flushDeferredRuntimeRefreshIfIdle: async () => {},
@@ -168,7 +167,7 @@ test('isSessionBundleBusy includes direct media in-flight flag', () => {
   assert.equal(isSessionBundleBusy({ directMediaTurnInFlight: true, runtime: { isBusy: () => false } }), true);
 });
 
-test('scheduleDirectMediaTurn returns before generation completes', async () => {
+test('startComposerDirectMediaTurn shows tool card before generation completes', async () => {
   const harness = createDirectMediaHarness();
   let releaseGenerate;
   const generateGate = new Promise((resolve) => {
@@ -194,16 +193,7 @@ test('scheduleDirectMediaTurn returns before generation completes', async () => 
     };
   };
 
-  const pendingJobs = [];
-  const ctx = {
-    ...harness.ctx,
-    runSerialized: (work) => {
-      pendingJobs.push(work);
-      return Promise.resolve();
-    },
-  };
-
-  scheduleDirectMediaTurn(ctx, {
+  await startComposerDirectMediaTurn(harness.ctx, {
     bundle: harness.bundle,
     toolName: 'generate_image',
     prompt: 'draw a square poster',
@@ -212,10 +202,21 @@ test('scheduleDirectMediaTurn returns before generation completes', async () => 
   });
 
   assert.equal(harness.bundle.directMediaTurnInFlight, true);
-  assert.equal(pendingJobs.length, 1);
+  const runningTool = harness.messages().find((message) => message.tool?.toolName === 'generate_image');
+  assert.ok(runningTool);
+  assert.equal(runningTool.tool.phase, 'running');
 
   releaseGenerate();
-  await pendingJobs[0]();
+  await new Promise((resolve) => {
+    const wait = () => {
+      if (harness.bundle.directMediaTurnInFlight !== true) {
+        resolve(undefined);
+        return;
+      }
+      setTimeout(wait, 0);
+    };
+    wait();
+  });
 
   assert.equal(harness.bundle.directMediaTurnInFlight, false);
   const finishedTool = harness.messages().find((message) => message.tool?.toolName === 'generate_image');
