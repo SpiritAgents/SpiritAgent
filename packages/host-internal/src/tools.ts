@@ -1174,7 +1174,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
   }
 
   shouldExecuteInBackground(request: HostToolRequest<QuestionSpec>): boolean {
-    if (request.name === 'run_shell_command') {
+    if (request.name === 'run_shell_command' || request.name === 'web_fetch') {
       return true;
     }
     return request.name === 'extension_tool' && request.execution_mode === 'background';
@@ -1202,8 +1202,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
   }
 
   backgroundStatusText(request: HostToolRequest<QuestionSpec>): string | undefined {
-    if (request.name === 'run_shell_command') {
-      // Shell status is shown on the tool card; do not mirror into thinking aux.
+    if (request.name === 'run_shell_command' || request.name === 'web_fetch') {
+      // Status is shown on the tool card; do not mirror into thinking aux.
       return undefined;
     }
     if (request.name !== 'extension_tool' || request.execution_mode !== 'background') {

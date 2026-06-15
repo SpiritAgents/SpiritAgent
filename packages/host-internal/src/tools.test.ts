@@ -157,6 +157,18 @@ test('read_file still returns image part when model explicitly supports image in
   }
 });
 
+test('web_fetch executes in background like run_shell_command', () => {
+  const service = new NodeHostToolService(
+    { workspaceRoot: '/tmp', spiritDataDir: '/tmp/.spirit-data' },
+    { getApprovalLevel: () => 'full-approval' },
+  );
+  assert.equal(
+    service.shouldExecuteInBackground?.({ name: 'web_fetch', url: 'https://example.com/' }),
+    true,
+  );
+  assert.equal(service.backgroundStatusText?.({ name: 'web_fetch', url: 'https://example.com/' }), undefined);
+});
+
 test('web_fetch returns image part for supported remote image responses', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-web-fetch-image-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
