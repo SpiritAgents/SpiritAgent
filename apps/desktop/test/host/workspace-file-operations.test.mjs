@@ -53,6 +53,18 @@ test('moveWorkspaceEntry moves a file into a directory', async () => {
   }
 });
 
+test('moveWorkspaceEntry is a no-op when dropped into the same directory', async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'spirit-ws-move-same-'));
+  await writeFile(path.join(workspaceRoot, 'App.tsx'), 'export {}', 'utf8');
+
+  try {
+    const result = await moveWorkspaceEntry(workspaceRoot, 'App.tsx', '');
+    assert.equal(result.relativePath, 'App.tsx');
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test('moveWorkspaceEntry rejects moving a directory into itself', async () => {
   const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'spirit-ws-move-self-'));
   await mkdir(path.join(workspaceRoot, 'src', 'components'), { recursive: true });
