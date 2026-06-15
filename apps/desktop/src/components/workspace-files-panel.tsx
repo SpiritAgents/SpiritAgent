@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useHostApi } from "@/hooks/useHostApi";
 import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 import { evictRecordKeysUnderPrefix } from "@/lib/workspace-entry-path-sync";
@@ -766,18 +767,19 @@ export function WorkspaceFilesPanel({
         </button>
       </WorkspaceFileContextMenu>
       {rootOpen ? (
-        <div
-          className="spirit-scroll min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5"
-          role="tree"
-          aria-label={t("workspace.fileList")}
-          aria-busy={cache[""]?.status === "loading" ? true : undefined}
-          onDragOver={(event) => handleDirectoryDragOver(event, "")}
-          onDragLeave={() => setDragOverDirectory((current) => (current === "" ? null : current))}
-          onDrop={(event) => void handleDirectoryDrop(event, "")}
-        >
-          {renderDirBody("", 0)}
-          <div className="mt-1">{renderPlanItem()}</div>
-        </div>
+        <ScrollArea className="min-h-0 min-w-0 flex-1" type="auto">
+          <div
+            role="tree"
+            aria-label={t("workspace.fileList")}
+            aria-busy={cache[""]?.status === "loading" ? true : undefined}
+            onDragOver={(event) => handleDirectoryDragOver(event, "")}
+            onDragLeave={() => setDragOverDirectory((current) => (current === "" ? null : current))}
+            onDrop={(event) => void handleDirectoryDrop(event, "")}
+          >
+            {renderDirBody("", 0)}
+            <div className="mt-1">{renderPlanItem()}</div>
+          </div>
+        </ScrollArea>
       ) : (
         <div className="mb-1">{renderPlanItem()}</div>
       )}
