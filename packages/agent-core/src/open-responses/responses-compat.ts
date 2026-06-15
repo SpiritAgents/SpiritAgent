@@ -112,6 +112,18 @@ export function resolveOpenResponsesLanguageModelId(
   return config.model;
 }
 
+/** Bedrock Mantle Open Responses（如 openai.gpt-5.5 @ bedrock-mantle.*.api.aws/openai/v1）。 */
+export function isBedrockMantleOpenResponsesConfig(
+  config: Pick<OpenResponsesTransportConfig, 'baseUrl' | 'model'>,
+): boolean {
+  const baseUrl = config.baseUrl?.trim().toLowerCase() ?? '';
+  if (baseUrl.includes('bedrock-mantle.') && baseUrl.includes('/openai/')) {
+    return true;
+  }
+
+  return /^openai\.gpt-/i.test(config.model.trim());
+}
+
 export function resolveOpenResponsesSdkProvider(
   config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
 ): OpenResponsesSdkProvider {
@@ -154,9 +166,13 @@ export function openResponsesReasoningEffort(
 export function resolveOpenResponsesReasoningSummary(
   config: Pick<
     OpenResponsesTransportConfig,
-    'llmVendor' | 'model' | 'reasoningEffort' | 'reasoningSummary'
+    'baseUrl' | 'llmVendor' | 'model' | 'reasoningEffort' | 'reasoningSummary'
   >,
 ): OpenResponsesReasoningSummary | undefined {
+  if (isBedrockMantleOpenResponsesConfig(config)) {
+    return undefined;
+  }
+
   if (config.reasoningSummary === 'off' || config.reasoningEffort === 'none') {
     return undefined;
   }
