@@ -9,6 +9,8 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import {
+  DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_HOVER,
+  DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_SELECTED,
   DESKTOP_COMPOSER_SUGGESTION_MENU_SCROLL_VIEWPORT,
   DESKTOP_COMPOSER_SUGGESTION_MENU_SURFACE,
   instantHoverMotionClass,
@@ -59,11 +61,14 @@ export function WorkspaceFileReferenceMenu({
               value={path}
               data-workspace-file-reference-index={index}
               className={cn(
-                'min-w-0 cursor-pointer rounded-xl px-3 py-2 [&>svg:last-child]:hidden',
+                'min-w-0 cursor-pointer rounded-xl bg-transparent px-3 py-2 [&>svg:last-child]:hidden',
                 instantHoverMotionClass,
+                DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_HOVER,
+                // 覆盖 CommandItem 默认 data-selected:bg-muted（实色）；改实色时与 desktop-chrome 常量一并还原
+                '!data-[selected=true]:bg-transparent',
                 index === selectedIndex
-                  ? 'bg-foreground/[0.06] text-foreground'
-                  : 'text-foreground hover:bg-foreground/[0.05]',
+                  ? DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_SELECTED
+                  : 'text-foreground',
               )}
               onMouseDown={(event) => event.preventDefault()}
               onMouseEnter={() => onSelectIndex(index)}
