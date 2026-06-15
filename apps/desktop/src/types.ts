@@ -188,6 +188,8 @@ export interface AddModelRequest {
   capabilities?: DesktopModelCapability[];
   /** 可选；正整数；用于上下文 usage 圆环分母等。 */
   contextLength?: number;
+  /** Amazon Bedrock AWS 区域；`amazon-bedrock` 必填。 */
+  awsRegion?: string;
 }
 
 export interface RemoveModelRequest {

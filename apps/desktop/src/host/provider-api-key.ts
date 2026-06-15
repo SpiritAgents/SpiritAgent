@@ -23,6 +23,12 @@ export function hasBedrockRuntimeCredentials(credentials: BedrockProviderCredent
   if (credentials.apiKey?.trim()) {
     return true;
   }
+  return hasBedrockIamCredentials(credentials);
+}
+
+export function hasBedrockIamCredentials(
+  credentials: Pick<BedrockProviderCredentials, 'accessKeyId' | 'secretAccessKey'>,
+): boolean {
   return Boolean(credentials.accessKeyId?.trim() && credentials.secretAccessKey?.trim());
 }
 
