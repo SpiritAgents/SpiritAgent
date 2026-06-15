@@ -10,6 +10,10 @@ import { getLlmFetch } from '../llm-fetch.js';
 import type { JsonObject } from '../ports.js';
 import { createAlibabaResponsesAwareFetch } from './alibaba-responses-fetch.js';
 import { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
+import {
+  resolveBedrockMantleOpenResponsesApiKey,
+  wrapFetchForBedrockMantleIamAuth,
+} from './bedrock-mantle-auth-fetch.js';
 import { shouldUseAlibabaResponsesBuiltInTools } from './alibaba-built-in-tools.js';
 import {
   buildResponsesAiSdkTools,
@@ -61,7 +65,7 @@ function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof f
   if (shouldUseApplyPatchFileTools(config)) {
     fetchFn = createApplyPatchAwareFetch(config, fetchFn);
   }
-  return fetchFn;
+  return wrapFetchForBedrockMantleIamAuth(config, fetchFn);
 }
 
 export function createOpenAIResponsesProvider(
@@ -72,7 +76,7 @@ export function createOpenAIResponsesProvider(
   }
 
   return createOpenAI({
-    apiKey: config.apiKey,
+    apiKey: resolveBedrockMantleOpenResponsesApiKey(config),
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     ...(config.organization ? { organization: config.organization } : {}),
     ...(config.project ? { project: config.project } : {}),

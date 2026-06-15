@@ -46,6 +46,16 @@ export interface OpenResponsesTransportConfig {
   imageGeneration?: OpenAiImageGenerationConfig;
   /** Optional dedicated model role used by the `generate_video` tool. */
   videoGeneration?: OpenAiVideoGenerationConfig;
+  /**
+   * Bedrock Mantle Open Responses：无静态 Bearer 时用 IAM 生成短期 token。
+   * 静态 `apiKey` 优先；二者皆无则请求会在 SDK 层失败。
+   */
+  bedrockMantleIam?: {
+    region: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken?: string;
+  };
 }
 
 export type OpenResponsesRequestTraceKind =
