@@ -5,6 +5,8 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSectionItems,
+  type ContextMenuSectionItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { desktopShellPlatform } from "@/lib/desktop-shell";
@@ -59,6 +61,74 @@ export function WorkspaceFileContextMenu({
   const shellActionsEnabled = isElectron && Boolean(onReveal);
   const deleteEnabled = isElectron && Boolean(onDelete);
 
+  const menuItems: ContextMenuSectionItem[] = [];
+
+  if (onReveal) {
+    menuItems.push({
+      section: "explorer",
+      item: (
+        <ContextMenuItem
+          disabled={!shellActionsEnabled}
+          title={!isElectron ? t("workspace.shellElectronOnly") : undefined}
+          onSelect={() => {
+            onReveal(target);
+          }}
+        >
+          {revealLabel}
+        </ContextMenuItem>
+      ),
+    });
+  }
+
+  if (onAddToSession) {
+    menuItems.push({
+      section: "session",
+      item: (
+        <ContextMenuItem
+          disabled={target.kind !== "file"}
+          onSelect={() => {
+            onAddToSession(target);
+          }}
+        >
+          {t("workspace.addFileToSession")}
+        </ContextMenuItem>
+      ),
+    });
+  }
+
+  if (onRename) {
+    menuItems.push({
+      section: "file-actions",
+      item: (
+        <ContextMenuItem
+          onSelect={() => {
+            onRename(target);
+          }}
+        >
+          {t("workspace.rename")}
+        </ContextMenuItem>
+      ),
+    });
+  }
+
+  if (onDelete) {
+    menuItems.push({
+      section: "file-actions",
+      item: (
+        <ContextMenuItem
+          variant="destructive"
+          disabled={!deleteEnabled}
+          title={!isElectron ? t("workspace.shellElectronOnly") : undefined}
+          onSelect={() => {
+            onDelete(target);
+          }}
+        >
+          {t("workspace.delete")}
+        </ContextMenuItem>
+      ),
+    });
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
@@ -66,46 +136,7 @@ export function WorkspaceFileContextMenu({
         aria-label={t("workspace.fileActions")}
         onCloseAutoFocus={onCloseAutoFocus}
       >
-        <ContextMenuItem
-          disabled={!shellActionsEnabled}
-          title={!isElectron ? t("workspace.shellElectronOnly") : undefined}
-          onSelect={() => {
-            onReveal?.(target);
-          }}
-        >
-          {revealLabel}
-        </ContextMenuItem>
-        {onAddToSession ? (
-          <ContextMenuItem
-            disabled={target.kind !== "file"}
-            onSelect={() => {
-              onAddToSession(target);
-            }}
-          >
-            {t("workspace.addFileToSession")}
-          </ContextMenuItem>
-        ) : null}
-        {onRename ? (
-          <ContextMenuItem
-            onSelect={() => {
-              onRename(target);
-            }}
-          >
-            {t("workspace.rename")}
-          </ContextMenuItem>
-        ) : null}
-        {onDelete ? (
-          <ContextMenuItem
-            variant="destructive"
-            disabled={!deleteEnabled}
-            title={!isElectron ? t("workspace.shellElectronOnly") : undefined}
-            onSelect={() => {
-              onDelete(target);
-            }}
-          >
-            {t("workspace.delete")}
-          </ContextMenuItem>
-        ) : null}
+        <ContextMenuSectionItems items={menuItems} />
       </ContextMenuContent>
     </ContextMenu>
   );
