@@ -697,6 +697,8 @@
     "rename": "重命名",
     "delete": "删除",
     "deleteEntryConfirm": "确定删除「{{name}}」吗？",
+    "move": "移动",
+    "moveEntryConfirm": "将「{{name}}」移动到「{{folder}}」？",
     "moveToTrash": {
       "win32": "移到回收站",
       "darwin": "移到废纸篓",

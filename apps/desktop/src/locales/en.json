@@ -699,6 +699,8 @@
     "rename": "Rename",
     "delete": "Delete",
     "deleteEntryConfirm": "Delete \"{{name}}\"?",
+    "move": "Move",
+    "moveEntryConfirm": "Move \"{{name}}\" to \"{{folder}}\"?",
     "moveToTrash": {
       "win32": "Move to Recycle Bin",
       "darwin": "Move to Trash",
