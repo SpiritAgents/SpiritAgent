@@ -29,6 +29,17 @@ test('resolveOpenResponsesReasoningSummary respects none effort', () => {
   );
 });
 
+test('resolveOpenResponsesReasoningSummary disables summary for Bedrock Mantle', () => {
+  assert.equal(
+    resolveOpenResponsesReasoningSummary({
+      model: 'openai.gpt-5.5',
+      baseUrl: 'https://bedrock-mantle.us-east-2.api.aws/openai/v1',
+      reasoningEffort: 'medium',
+    }),
+    undefined,
+  );
+});
+
 test('extractOpenResponsesReasoningTextFromRawChunk reads summary delta', () => {
   assert.equal(
     extractOpenResponsesReasoningTextFromRawChunk({

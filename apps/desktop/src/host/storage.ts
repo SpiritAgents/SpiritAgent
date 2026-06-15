@@ -12,8 +12,12 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Entry } from '@napi-rs/keyring';
 import i18n from '../lib/i18n-host.js';
+import {
+  deleteKeyringPassword,
+  getKeyringPassword,
+  setKeyringPassword,
+} from './keyring-secret.js';
 import { normalizeLightweightChatModel } from './lightweight-chat-model.js';
 import {
   configureLlmClientVersion,
@@ -54,8 +58,12 @@ import type {
 import type { StoredDesktopSession } from './contracts.js';
 import {
   buildModelSecretKeyPresence,
+  hasBedrockRuntimeCredentials,
   modelProviderKeyScope,
+  providerAccessKeyIdAccount,
   providerKeyAccount,
+  providerSecretAccessKeyAccount,
+  type BedrockProviderCredentials,
   type ModelKeyPresenceProfile,
 } from './provider-api-key.js';
 import { normalizeDesktopRewindMetadata } from './rewind.js';
@@ -63,6 +71,7 @@ import { normalizeDesktopRewindMetadata } from './rewind.js';
 export type { ModelKeyPresenceProfile } from './provider-api-key.js';
 export {
   buildModelSecretKeyPresence,
+  hasBedrockRuntimeCredentials,
   modelProviderKeyScope,
   providerKeyAccount,
 } from './provider-api-key.js';
@@ -220,33 +229,75 @@ export function configFilePath(): string {
 }
 
 function readModelKeyFromKeyring(modelName: string): string | undefined {
-  try {
-    const value = new Entry(KEYRING_SERVICE, modelKeyAccount(modelName)).getPassword();
-    const trimmed = value?.trim();
-    return trimmed || undefined;
-  } catch {
-    return undefined;
-  }
+  const value = getKeyringPassword(KEYRING_SERVICE, modelKeyAccount(modelName));
+  const trimmed = value?.trim();
+  return trimmed || undefined;
 }
 
 function readGlobalKeyFromKeyring(): string | undefined {
-  try {
-    const value = new Entry(KEYRING_SERVICE, KEYRING_GLOBAL_ACCOUNT).getPassword();
-    const trimmed = value?.trim();
-    return trimmed || undefined;
-  } catch {
-    return undefined;
+  const value = getKeyringPassword(KEYRING_SERVICE, KEYRING_GLOBAL_ACCOUNT);
+  const trimmed = value?.trim();
+  return trimmed || undefined;
+}
+
+export function readProviderAccessKeyIdFromKeyring(providerId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+  const trimmed = value?.trim();
+  return trimmed || undefined;
+}
+
+export function readProviderSecretAccessKeyFromKeyring(providerId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+  const trimmed = value?.trim();
+  return trimmed || undefined;
+}
+
+export function readBedrockProviderCredentialsFromKeyring(
+  providerId: DesktopModelProvider,
+): BedrockProviderCredentials {
+  return {
+    apiKey: readProviderKeyFromKeyring(providerId),
+    accessKeyId: readProviderAccessKeyIdFromKeyring(providerId),
+    secretAccessKey: readProviderSecretAccessKeyFromKeyring(providerId),
+  };
+}
+
+export async function saveBedrockProviderCredentialsForProvider(
+  providerId: DesktopModelProvider,
+  credentials: BedrockProviderCredentials,
+): Promise<void> {
+  const apiKey = credentials.apiKey?.trim();
+  if (apiKey) {
+    await saveApiKeyForProvider(providerId, apiKey);
+  } else {
+    await removeProviderApiKey(providerId);
+  }
+
+  const accessKeyId = credentials.accessKeyId?.trim();
+  if (accessKeyId) {
+    setKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId), accessKeyId);
+  } else {
+    deleteKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+  }
+
+  const secretAccessKey = credentials.secretAccessKey?.trim();
+  if (secretAccessKey) {
+    setKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId), secretAccessKey);
+  } else {
+    deleteKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
   }
 }
 
+export async function removeBedrockProviderCredentials(providerId: DesktopModelProvider): Promise<void> {
+  await removeProviderApiKey(providerId);
+  deleteKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+  deleteKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+}
+
 export function readProviderKeyFromKeyring(providerId: string): string | undefined {
-  try {
-    const value = new Entry(KEYRING_SERVICE, providerKeyAccount(providerId)).getPassword();
-    const trimmed = value?.trim();
-    return trimmed || undefined;
-  } catch {
-    return undefined;
-  }
+  const value = getKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
+  const trimmed = value?.trim();
+  return trimmed || undefined;
 }
 
 export function defaultNewSessionPath(): string {
@@ -370,6 +421,16 @@ function normalizePresenceProfiles(
   return profilesOrNames as ModelKeyPresenceProfile[];
 }
 
+function hasProviderSecretInKeyring(providerId: string): boolean {
+  if (readProviderKeyFromKeyring(providerId)) {
+    return true;
+  }
+  if (providerId === 'amazon-bedrock') {
+    return hasBedrockRuntimeCredentials(readBedrockProviderCredentialsFromKeyring('amazon-bedrock'));
+  }
+  return false;
+}
+
 /** 各模型是否在钥匙串中有提供商级或遗留模型级条目（不含环境变量与全局回退）。 */
 export async function modelSecretKeyPresence(
   profilesOrNames: string[] | ModelKeyPresenceProfile[],
@@ -377,40 +438,30 @@ export async function modelSecretKeyPresence(
   const profiles = normalizePresenceProfiles(profilesOrNames);
   return buildModelSecretKeyPresence(
     profiles,
-    (providerId) => Boolean(readProviderKeyFromKeyring(providerId)),
+    hasProviderSecretInKeyring,
     (modelName) => Boolean(readModelKeyFromKeyring(modelName)),
   );
 }
 
 export async function saveApiKeyForModel(modelName: string, apiKey: string): Promise<void> {
-  const trimmed = apiKey.trim();
-  new Entry(KEYRING_SERVICE, modelKeyAccount(modelName)).setPassword(trimmed);
+  setKeyringPassword(KEYRING_SERVICE, modelKeyAccount(modelName), apiKey.trim());
 }
 
 export async function saveApiKeyForProvider(
   providerId: DesktopModelProvider,
   apiKey: string,
 ): Promise<void> {
-  const trimmed = apiKey.trim();
-  new Entry(KEYRING_SERVICE, providerKeyAccount(providerId)).setPassword(trimmed);
+  setKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId), apiKey.trim());
 }
 
 /** 删除提供商在钥匙串中的共享 API Key 条目。 */
 export async function removeProviderApiKey(providerId: DesktopModelProvider): Promise<void> {
-  try {
-    new Entry(KEYRING_SERVICE, providerKeyAccount(providerId)).deletePassword();
-  } catch {
-    /* 无条目时忽略 */
-  }
+  deleteKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
 }
 
 /** 与 CLI `remove_model_api_key` 一致：删除该模型在钥匙串中的专属条目。 */
 export async function removeModelApiKey(modelName: string): Promise<void> {
-  try {
-    new Entry(KEYRING_SERVICE, modelKeyAccount(modelName)).deletePassword();
-  } catch {
-    /* 无条目时与 CLI 行为一致 */
-  }
+  deleteKeyringPassword(KEYRING_SERVICE, modelKeyAccount(modelName));
 }
 
 export function createDesktopExtensionStateStore(
@@ -426,31 +477,19 @@ export function createDesktopExtensionStateStore(
       return fileStore.saveSettings(extensionId, values);
     },
     async loadSecret(extensionId, key) {
-      try {
-        const value = new Entry(KEYRING_SERVICE, extensionSecretAccount(extensionId, key)).getPassword();
-        const trimmed = value?.trim();
-        return trimmed || undefined;
-      } catch {
-        return undefined;
-      }
+      const value = getKeyringPassword(KEYRING_SERVICE, extensionSecretAccount(extensionId, key));
+      const trimmed = value?.trim();
+      return trimmed || undefined;
     },
     async saveSecret(extensionId, key, value) {
-      new Entry(KEYRING_SERVICE, extensionSecretAccount(extensionId, key)).setPassword(value.trim());
+      setKeyringPassword(KEYRING_SERVICE, extensionSecretAccount(extensionId, key), value.trim());
     },
     async deleteSecret(extensionId, key) {
-      try {
-        new Entry(KEYRING_SERVICE, extensionSecretAccount(extensionId, key)).deletePassword();
-      } catch {
-        /* 与模型 keyring 删除行为一致 */
-      }
+      deleteKeyringPassword(KEYRING_SERVICE, extensionSecretAccount(extensionId, key));
     },
     async hasSecret(extensionId, key) {
-      try {
-        const value = new Entry(KEYRING_SERVICE, extensionSecretAccount(extensionId, key)).getPassword();
-        return Boolean(value?.trim());
-      } catch {
-        return false;
-      }
+      const value = getKeyringPassword(KEYRING_SERVICE, extensionSecretAccount(extensionId, key));
+      return Boolean(value?.trim());
     },
   };
 }
@@ -703,6 +742,10 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
           const capabilities = normalizeModelCapabilities(model.capabilities);
           const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(model.supportedReasoningEfforts);
           const contextLength = parseModelContextLength(model.contextLength);
+          const awsRegion =
+            typeof model.awsRegion === 'string' && model.awsRegion.trim().length > 0
+              ? model.awsRegion.trim()
+              : undefined;
           return {
             name: model.name.trim(),
             apiBase: model.apiBase?.trim() || DEFAULT_API_BASE,
@@ -716,6 +759,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             ...(capabilities ? { capabilities } : {}),
             ...(provider ? { provider } : {}),
             ...(transportKind ? { transportKind } : {}),
+            ...(awsRegion ? { awsRegion } : {}),
             ...(contextLength !== undefined ? { contextLength } : {}),
           };
         })
@@ -797,11 +841,23 @@ function normalizeDesktopTransportKind(
   value: unknown,
   provider?: DesktopModelProvider,
 ): DesktopTransportKind | undefined {
-  if (value === 'openai-compatible' || value === 'open-responses' || value === 'anthropic') {
+  if (
+    value === 'openai-compatible'
+    || value === 'open-responses'
+    || value === 'anthropic'
+    || value === 'bedrock'
+  ) {
     return value;
   }
 
-  return provider === 'anthropic' ? 'anthropic' : undefined;
+  if (provider === 'anthropic') {
+    return 'anthropic';
+  }
+  if (provider === 'amazon-bedrock') {
+    return 'bedrock';
+  }
+
+  return undefined;
 }
 
 export function normalizeModelCapabilities(

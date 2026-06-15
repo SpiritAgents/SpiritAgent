@@ -27,6 +27,14 @@
       "types": "./dist/openai-models.d.ts",
       "default": "./dist/openai-models.js"
     },
+    "./bedrock-region": {
+      "types": "./dist/bedrock-region.d.ts",
+      "default": "./dist/bedrock-region.js"
+    },
+    "./bedrock-mantle": {
+      "types": "./dist/bedrock-mantle.d.ts",
+      "default": "./dist/bedrock-mantle.js"
+    },
     "./reasoning-effort": {
       "types": "./dist/reasoning-effort.d.ts",
       "default": "./dist/reasoning-effort.js"
@@ -94,7 +102,7 @@
     "test:lsp": "npm run build && node --test dist/lsp/providers.test.js dist/lsp/resolve-server.test.js dist/lsp/resolve-server-jdtls.test.js dist/lsp/install.test.js dist/lsp/orchestrator.test.js dist/lsp/ready-providers.test.js dist/lsp/service-probe.test.js dist/lsp/write-append.test.js",
     "smoke:lsp": "npm run build && node dist/smoke/lsp-typescript-smoke.js",
     "typecheck": "npm --prefix ../agent-core run build && tsc -p tsconfig.json --noEmit",
-    "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js",
+    "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js && node --test dist/bedrock-models.test.js",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production"
   },
@@ -104,6 +112,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.1068.0",
     "@spirit-agent/core": "file:../agent-core",
     "fast-glob": "^3.3.3",
     "fflate": "^0.8.2",
