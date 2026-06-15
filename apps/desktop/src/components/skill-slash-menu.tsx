@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
+  DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_HOVER,
+  DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_SELECTED,
   DESKTOP_COMPOSER_SUGGESTION_MENU_SCROLL_VIEWPORT,
   DESKTOP_COMPOSER_SUGGESTION_MENU_SURFACE,
   instantHoverMotionClass,
@@ -60,9 +62,10 @@ export function SkillSlashMenu({
                   className={cn(
                     'w-full min-w-0 max-w-full overflow-hidden rounded-xl bg-transparent px-3 py-2 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
                     instantHoverMotionClass,
+                    DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_HOVER,
                     index === selectedIndex
-                      ? 'bg-foreground/[0.06] text-foreground'
-                      : 'text-foreground hover:bg-foreground/[0.05]',
+                      ? DESKTOP_COMPOSER_SUGGESTION_MENU_ITEM_SELECTED
+                      : 'text-foreground',
                   )}
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => onSelectIndex(index)}
