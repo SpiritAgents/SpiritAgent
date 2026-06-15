@@ -1948,6 +1948,27 @@ impl TsBridgeRuntime {
                         if let Some(obj) = transport.as_object_mut() {
                             obj.insert("apiKey".to_string(), json!(api_key));
                         }
+                    } else if let Ok(access_key_id) =
+                        load_provider_access_key_id_from_keyring(ModelProvider::AmazonBedrock.as_str())
+                    {
+                        if let Ok(secret_access_key) = load_provider_secret_access_key_from_keyring(
+                            ModelProvider::AmazonBedrock.as_str(),
+                        ) {
+                            let access_key_id = access_key_id.trim();
+                            let secret_access_key = secret_access_key.trim();
+                            if !access_key_id.is_empty() && !secret_access_key.is_empty() {
+                                if let Some(obj) = transport.as_object_mut() {
+                                    obj.insert(
+                                        "bedrockMantleIam".to_string(),
+                                        json!({
+                                            "region": region,
+                                            "accessKeyId": access_key_id,
+                                            "secretAccessKey": secret_access_key,
+                                        }),
+                                    );
+                                }
+                            }
+                        }
                     }
                     transport
                 } else {
