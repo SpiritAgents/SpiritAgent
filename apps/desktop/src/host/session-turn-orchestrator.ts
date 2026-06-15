@@ -37,8 +37,8 @@ import {
 } from './message-queue.js';
 import {
   isSessionBundleBusy,
-  scheduleDirectMediaTurn,
   shouldUseComposerDirectMediaTurn,
+  startComposerDirectMediaTurn,
 } from './direct-media-turn.js';
 import { syncSubagentConversationProjections } from './subagent-conversation-projection.js';
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
@@ -189,13 +189,25 @@ export async function submitUserTurnAfterInitializedCommand(
   );
 
   if (directMediaTool && trimmed) {
-    scheduleDirectMediaTurn(ctx, {
-      bundle,
-      toolName: directMediaTool,
-      prompt: trimmed,
-      userMessageId: userMessage.id,
-      beforeUserCheckpoint,
-    });
+    try {
+      await startComposerDirectMediaTurn(ctx, {
+        bundle,
+        toolName: directMediaTool,
+        prompt: trimmed,
+        userMessageId: userMessage.id,
+        beforeUserCheckpoint,
+      });
+    } catch (error) {
+      ctx.activeBundle().currentTurnSkills = [];
+      ctx.orchestrationFor(ctx.activeBundle()).assistantMessages.handleMessageRemoved(
+        ctx.activeBundle().messages.length - 1,
+        userMessage.id,
+        'send-user-rollback',
+      );
+      ctx.activeBundle().messages.pop();
+      ctx.rebuildMessageTimelineFromMessages();
+      throw error;
+    }
     return ctx.buildSnapshot();
   }
 
