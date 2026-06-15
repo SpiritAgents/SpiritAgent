@@ -143,6 +143,7 @@ function ExplorerRow({
 }: ExplorerRowProps) {
   const renameInputRef = useRef<HTMLInputElement>(null);
   const pendingRenameFocusRef = useRef(false);
+  const skipBlurCommitRef = useRef(false);
 
   useLayoutEffect(() => {
     if (!renaming) {
@@ -161,6 +162,7 @@ function ExplorerRow({
   const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
+      skipBlurCommitRef.current = true;
       onRenameCommit();
       return;
     }
@@ -187,7 +189,13 @@ function ExplorerRow({
       aria-invalid={renameError ? true : undefined}
       onClick={(event) => event.stopPropagation()}
       onChange={(event) => onRenameValueChange(event.target.value)}
-      onBlur={() => onRenameCommit()}
+      onBlur={() => {
+        if (skipBlurCommitRef.current) {
+          skipBlurCommitRef.current = false;
+          return;
+        }
+        onRenameCommit();
+      }}
       onKeyDown={handleRenameKeyDown}
     />
   );
@@ -287,6 +295,7 @@ export function WorkspaceFilesPanel({
   const [dragOverDirectory, setDragOverDirectory] = useState<string | null>(null);
   const [moveTarget, setMoveTarget] = useState<PendingMoveTarget | null>(null);
   const [moveBusy, setMoveBusy] = useState(false);
+  const renameCommitInFlightRef = useRef(false);
 
   const workspaceRootLabel = fileBasename(workspaceRoot.trim()) || workspaceRoot.trim();
 
@@ -401,6 +410,9 @@ export function WorkspaceFilesPanel({
   }, []);
 
   const handleRenameCommit = useCallback(async () => {
+    if (renameCommitInFlightRef.current) {
+      return;
+    }
     if (!renamingPath || !api) {
       handleRenameCancel();
       return;
@@ -411,6 +423,7 @@ export function WorkspaceFilesPanel({
       handleRenameCancel();
       return;
     }
+    renameCommitInFlightRef.current = true;
     try {
       const result = await api.renameWorkspaceEntry(renamingPath, trimmed);
       const parentRel = renamingPath.includes("/")
@@ -421,6 +434,8 @@ export function WorkspaceFilesPanel({
       handleRenameCancel();
     } catch (error) {
       setRenameError(describeError(error));
+    } finally {
+      renameCommitInFlightRef.current = false;
     }
   }, [
     api,
