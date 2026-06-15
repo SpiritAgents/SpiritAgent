@@ -135,7 +135,7 @@ export function WorkspaceShellTab({
       <div
         ref={containerRef}
         className={cn(
-          "workspace-shell-xterm min-h-0 min-w-0 flex-1 overflow-hidden rounded-md border border-border/40",
+          "workspace-shell-xterm min-h-0 min-w-0 flex-1 overflow-hidden",
           desktopMicaTerminalTintClass(useMicaBackdrop),
           embedError ? "hidden" : "block",
         )}
