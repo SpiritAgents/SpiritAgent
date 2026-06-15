@@ -139,20 +139,6 @@ export function beginDirectMediaTurn(
   return request;
 }
 
-function rollbackDirectMediaUserTurn(
-  ctx: SessionTurnOrchestratorContext,
-  input: DirectMediaTurnInput,
-): void {
-  input.bundle.currentTurnSkills = [];
-  ctx.orchestrationFor(input.bundle).assistantMessages.handleMessageRemoved(
-    input.bundle.messages.length - 1,
-    input.userMessageId,
-    'send-user-rollback',
-  );
-  input.bundle.messages.pop();
-  ctx.rebuildMessageTimelineFromMessages();
-}
-
 async function validateDirectMediaTurnSetup(
   ctx: SessionTurnOrchestratorContext,
   input: DirectMediaTurnInput,
@@ -258,6 +244,25 @@ async function runDirectMediaGeneration(
   await ctx.persistSessionBundle(input.bundle, { bumpListSortAt: false });
 }
 
+async function finishDirectMediaTurn(
+  ctx: SessionTurnOrchestratorContext,
+  input: DirectMediaTurnInput,
+  toolCallId: string,
+  request: DesktopToolRequest,
+): Promise<void> {
+  try {
+    await runDirectMediaGeneration(ctx, input, toolCallId, request);
+    const orchestration = ctx.orchestrationFor(input.bundle);
+    orchestration.runtimeEvents.syncPendingToolStates();
+    orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
+    await ctx.flushDeferredRuntimeRefreshIfIdle(input.bundle);
+    await ctx.refreshTodoSnapshotForBundle(input.bundle);
+  } finally {
+    input.bundle.directMediaTurnInFlight = false;
+    input.bundle.currentTurnSkills = [];
+  }
+}
+
 /** 同步执行整轮直连媒体（测试与旧调用路径）。 */
 export async function executeDirectMediaTurn(
   ctx: SessionTurnOrchestratorContext,
@@ -265,44 +270,22 @@ export async function executeDirectMediaTurn(
 ): Promise<void> {
   const toolCallId = randomUUID();
   const request = beginDirectMediaTurn(ctx, { ...input, toolCallId });
-  try {
-    await runDirectMediaGeneration(ctx, input, toolCallId, request);
-  } finally {
-    input.bundle.directMediaTurnInFlight = false;
-  }
+  await finishDirectMediaTurn(ctx, input, toolCallId, request);
 }
 
-/** 与 LLM 流式回合一致：先展示工具卡并立即返回 snapshot，生成在后台 runSerialized 中完成。 */
-export function scheduleDirectMediaTurn(
+/**
+ * 与 LLM 流式回合一致：校验并展示工具卡后立刻返回 snapshot；
+ * 长耗时的 generateImage/generateVideo 在后台完成，不占用 runSerialized。
+ */
+export async function startComposerDirectMediaTurn(
   ctx: SessionTurnOrchestratorContext,
   input: DirectMediaTurnInput,
-): void {
-  input.bundle.directMediaTurnInFlight = true;
-
-  void ctx.runSerialized(async () => {
-    const toolCallId = randomUUID();
-    let beganTurn = false;
-    try {
-      await validateDirectMediaTurnSetup(ctx, input);
-      const request = beginDirectMediaTurn(ctx, { ...input, toolCallId });
-      beganTurn = true;
-      ctx.emitLiveSnapshotUpdate();
-      await runDirectMediaGeneration(ctx, input, toolCallId, request);
-      const orchestration = ctx.orchestrationFor(input.bundle);
-      orchestration.runtimeEvents.syncPendingToolStates();
-      orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-      await ctx.flushDeferredRuntimeRefreshIfIdle(input.bundle);
-      await ctx.refreshTodoSnapshotForBundle(input.bundle);
-    } catch (error) {
-      if (!beganTurn) {
-        rollbackDirectMediaUserTurn(ctx, input);
-      }
-      throw error;
-    } finally {
-      input.bundle.directMediaTurnInFlight = false;
-      input.bundle.currentTurnSkills = [];
-      ctx.emitLiveSnapshotUpdate();
-    }
+): Promise<void> {
+  await validateDirectMediaTurnSetup(ctx, input);
+  const toolCallId = randomUUID();
+  const request = beginDirectMediaTurn(ctx, { ...input, toolCallId });
+  void finishDirectMediaTurn(ctx, input, toolCallId, request).catch((error) => {
+    console.error('[desktop][composer-direct-media] background turn failed', error);
   });
 }
 

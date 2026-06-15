@@ -342,7 +342,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 }}
                 canSend={composerCanSend}
                 canAbort={conversationInterruptible}
-                busy={runtime.busyAction === "send" && !conversationInterruptible}
+                busy={runtime.busyAction === "send"}
                 conversationBusy={continueBusy}
                 agentModeChipDismissed={runtime.agentModeChipDismissed}
                 onAgentModeChipDismissChange={runtime.setAgentModeChipDismissed}
