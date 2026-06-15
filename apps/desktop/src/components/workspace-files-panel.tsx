@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -8,6 +8,11 @@ import {
   ListTodo,
 } from "lucide-react";
 
+import {
+  WorkspaceFileContextMenu,
+  type WorkspaceExplorerContextTarget,
+} from "@/components/workspace-file-context-menu";
+import { useHostApi } from "@/hooks/useHostApi";
 import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 import { cn } from "@/lib/utils";
 import type { PlanSnapshot, WorkspaceExplorerEntry, WorkspaceExplorerListResult } from "@/types";
@@ -47,7 +52,139 @@ export type WorkspaceFilesPanelProps = {
   expandDirectoryNonce?: number;
   onOpenFile?: (relativePath: string) => void;
   onOpenPlan?: () => void;
+  /** 工作区条目重命名成功后通知父层更新编辑器路径。 */
+  onWorkspaceEntryRenamed?: (oldRelativePath: string, newRelativePath: string) => void;
+  /** 工作区条目移动成功后通知父层更新编辑器路径。 */
+  onWorkspaceEntryMoved?: (oldRelativePath: string, newRelativePath: string) => void;
+  /** 工作区条目删除成功后通知父层关闭编辑器。 */
+  onWorkspaceEntryDeleted?: (relativePath: string) => void;
+  onWorkspaceFileAddToSession?: (relativePath: string) => void;
 };
+
+type ExplorerRowProps = {
+  target: WorkspaceExplorerContextTarget;
+  depth: number;
+  selected: boolean;
+  isElectron: boolean;
+  renaming: boolean;
+  renameValue: string;
+  renameError: string;
+  onReveal: (target: WorkspaceExplorerContextTarget) => void;
+  onRenameStart?: (target: WorkspaceExplorerContextTarget) => void;
+  onDelete?: (target: WorkspaceExplorerContextTarget) => void;
+  onAddToSession?: (target: WorkspaceExplorerContextTarget) => void;
+  onRenameValueChange: (value: string) => void;
+  onRenameCommit: () => void;
+  onRenameCancel: () => void;
+  onClick: () => void;
+  leading: ReactNode;
+  icon: React.ComponentType<{ className?: string }>;
+  dropHighlight?: boolean;
+  draggable?: boolean;
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragOver?: (event: DragEvent<HTMLElement>) => void;
+  onDragLeave?: (event: DragEvent<HTMLElement>) => void;
+  onDrop?: (event: DragEvent<HTMLElement>) => void;
+  children?: ReactNode;
+};
+
+function ExplorerRow({
+  target,
+  depth,
+  selected,
+  isElectron,
+  renaming,
+  renameValue,
+  renameError,
+  onReveal,
+  onRenameStart,
+  onDelete,
+  onAddToSession,
+  onRenameValueChange,
+  onRenameCommit,
+  onRenameCancel,
+  onClick,
+  leading,
+  icon: Icon,
+  dropHighlight = false,
+  draggable = false,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  children,
+}: ExplorerRowProps) {
+  const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onRenameCommit();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onRenameCancel();
+    }
+  };
+
+  const rowButton = (
+    <button
+      type="button"
+      draggable={draggable}
+      className={cn(
+        "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left",
+        "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+        selected && "bg-foreground/[0.08] dark:bg-foreground/12",
+        dropHighlight && "bg-primary/15 ring-1 ring-primary/40",
+      )}
+      style={{ paddingLeft: `${depth * 12 + 4}px` }}
+      aria-current={selected ? "true" : undefined}
+      onClick={onClick}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {leading}
+      <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+      {renaming ? (
+        <input
+          type="text"
+          className="min-w-0 flex-1 rounded border border-border/60 bg-background px-1 py-0 text-xs outline-none focus:border-ring"
+          value={renameValue}
+          autoFocus
+          aria-invalid={renameError ? true : undefined}
+          onClick={(event) => event.stopPropagation()}
+          onChange={(event) => onRenameValueChange(event.target.value)}
+          onBlur={() => onRenameCommit()}
+          onKeyDown={handleRenameKeyDown}
+        />
+      ) : (
+        <span className="min-w-0 truncate">{target.name}</span>
+      )}
+    </button>
+  );
+
+  return (
+    <li className="min-w-0">
+      <WorkspaceFileContextMenu
+        target={target}
+        isElectron={isElectron}
+        onReveal={onReveal}
+        onRename={onRenameStart}
+        onDelete={onDelete}
+        onAddToSession={onAddToSession}
+      >
+        {rowButton}
+      </WorkspaceFileContextMenu>
+      {renaming && renameError ? (
+        <p className="py-0.5 pl-1 text-destructive/90" style={{ paddingLeft: `${depth * 12 + 4}px` }}>
+          {renameError}
+        </p>
+      ) : null}
+      {children}
+    </li>
+  );
+}
 
 export function WorkspaceFilesPanel({
   workspaceRoot,
@@ -58,11 +195,45 @@ export function WorkspaceFilesPanel({
   expandDirectoryNonce = 0,
   onOpenFile,
   onOpenPlan,
+  onWorkspaceEntryRenamed,
+  onWorkspaceEntryMoved,
+  onWorkspaceEntryDeleted,
+  onWorkspaceFileAddToSession,
 }: WorkspaceFilesPanelProps) {
   const { t } = useTranslation();
+  const { api, kind } = useHostApi();
+  const isElectron = kind === "electron";
   const [rootOpen, setRootOpen] = useState(true);
   const [cache, setCache] = useState<Record<string, DirCacheEntry>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState("");
+  const [forceDeleteTarget, setForceDeleteTarget] = useState<WorkspaceExplorerContextTarget | null>(
+    null,
+  );
+  const [forceDeleteReason, setForceDeleteReason] = useState("");
+  const [forceDeleteBusy, setForceDeleteBusy] = useState(false);
+  const [dragOverDirectory, setDragOverDirectory] = useState<string | null>(null);
+
+  const invalidateDir = useCallback(
+    (relativePath: string) => {
+      setCache((current) => {
+        const next = { ...current };
+        delete next[relativePath];
+        return next;
+      });
+      void listExplorerChildren(relativePath).then(({ entries }) => {
+        setCache((current) => ({ ...current, [relativePath]: { status: "ready", entries } }));
+      }).catch((error) => {
+        setCache((current) => ({
+          ...current,
+          [relativePath]: { status: "error", message: describeError(error) },
+        }));
+      });
+    },
+    [listExplorerChildren],
+  );
 
   const loadDir = useCallback(
     async (rel: string) => {
@@ -133,8 +304,179 @@ export function WorkspaceFilesPanel({
     [cache, expanded, loadDir],
   );
 
+  const handleReveal = useCallback(
+    async (target: WorkspaceExplorerContextTarget) => {
+      if (!api) {
+        return;
+      }
+      try {
+        await api.revealWorkspaceEntry(target.relativePath);
+      } catch (error) {
+        console.debug("[WorkspaceFilesPanel] reveal failed", {
+          relativePath: target.relativePath,
+          error: describeError(error),
+        });
+      }
+    },
+    [api],
+  );
+
+  const handleRenameStart = useCallback((target: WorkspaceExplorerContextTarget) => {
+    setRenamingPath(target.relativePath);
+    setRenameValue(target.name);
+    setRenameError("");
+  }, []);
+
+  const handleRenameCancel = useCallback(() => {
+    setRenamingPath(null);
+    setRenameValue("");
+    setRenameError("");
+  }, []);
+
+  const handleRenameCommit = useCallback(async () => {
+    if (!renamingPath || !api) {
+      handleRenameCancel();
+      return;
+    }
+    const trimmed = renameValue.trim();
+    const currentName = fileBasename(renamingPath);
+    if (!trimmed || trimmed === currentName) {
+      handleRenameCancel();
+      return;
+    }
+    try {
+      const result = await api.renameWorkspaceEntry(renamingPath, trimmed);
+      const parentRel = renamingPath.includes("/")
+        ? renamingPath.slice(0, renamingPath.lastIndexOf("/"))
+        : "";
+      invalidateDir(parentRel);
+      onWorkspaceEntryRenamed?.(renamingPath, result.relativePath);
+      handleRenameCancel();
+    } catch (error) {
+      setRenameError(describeError(error));
+    }
+  }, [
+    api,
+    handleRenameCancel,
+    invalidateDir,
+    onWorkspaceEntryRenamed,
+    renameValue,
+    renamingPath,
+  ]);
+
+  const handleDelete = useCallback(
+    async (target: WorkspaceExplorerContextTarget) => {
+      if (!api) {
+        return;
+      }
+      try {
+        await api.trashWorkspaceEntry(target.relativePath);
+        const parentRel = target.relativePath.includes("/")
+          ? target.relativePath.slice(0, target.relativePath.lastIndexOf("/"))
+          : "";
+        invalidateDir(parentRel);
+        onWorkspaceEntryDeleted?.(target.relativePath);
+      } catch (error) {
+        setForceDeleteTarget(target);
+        setForceDeleteReason(describeError(error));
+      }
+    },
+    [api, invalidateDir, onWorkspaceEntryDeleted],
+  );
+
+  const handleForceDelete = useCallback(async () => {
+    const target = forceDeleteTarget;
+    if (!target || !api) {
+      return;
+    }
+    setForceDeleteBusy(true);
+    try {
+      await api.forceDeleteWorkspaceEntry(target.relativePath);
+      const parentRel = target.relativePath.includes("/")
+        ? target.relativePath.slice(0, target.relativePath.lastIndexOf("/"))
+        : "";
+      invalidateDir(parentRel);
+      onWorkspaceEntryDeleted?.(target.relativePath);
+      setForceDeleteTarget(null);
+      setForceDeleteReason("");
+    } catch (error) {
+      setForceDeleteReason(describeError(error));
+    } finally {
+      setForceDeleteBusy(false);
+    }
+  }, [api, forceDeleteTarget, invalidateDir, onWorkspaceEntryDeleted]);
+
+  const handleAddToSession = useCallback(
+    (target: WorkspaceExplorerContextTarget) => {
+      if (target.kind !== "file") {
+        return;
+      }
+      onWorkspaceFileAddToSession?.(target.relativePath);
+    },
+    [onWorkspaceFileAddToSession],
+  );
+
+  const handleDragStart = useCallback(
+    (event: DragEvent<HTMLButtonElement>, target: WorkspaceExplorerContextTarget) => {
+      event.dataTransfer.setData(
+        "application/spirit-workspace-entry",
+        JSON.stringify({ relativePath: target.relativePath, kind: target.kind }),
+      );
+      event.dataTransfer.effectAllowed = "move";
+    },
+    [],
+  );
+
+  const handleDirectoryDragOver = useCallback(
+    (event: DragEvent<HTMLElement>, directoryRel: string) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setDragOverDirectory(directoryRel);
+    },
+    [],
+  );
+
+  const handleDirectoryDrop = useCallback(
+    async (event: DragEvent<HTMLElement>, targetDirectoryRel: string) => {
+      event.preventDefault();
+      setDragOverDirectory(null);
+      if (!api) {
+        return;
+      }
+      const raw = event.dataTransfer.getData("application/spirit-workspace-entry");
+      if (!raw) {
+        return;
+      }
+      let payload: { relativePath?: string; kind?: string };
+      try {
+        payload = JSON.parse(raw) as { relativePath?: string; kind?: string };
+      } catch {
+        return;
+      }
+      if (!payload.relativePath) {
+        return;
+      }
+      try {
+        const result = await api.moveWorkspaceEntry(payload.relativePath, targetDirectoryRel);
+        const sourceParent = payload.relativePath.includes("/")
+          ? payload.relativePath.slice(0, payload.relativePath.lastIndexOf("/"))
+          : "";
+        invalidateDir(sourceParent);
+        invalidateDir(targetDirectoryRel);
+        onWorkspaceEntryMoved?.(payload.relativePath, result.relativePath);
+      } catch (error) {
+        console.debug("[WorkspaceFilesPanel] move failed", {
+          relativePath: payload.relativePath,
+          targetDirectoryRel,
+          error: describeError(error),
+        });
+      }
+    },
+    [api, invalidateDir, onWorkspaceEntryMoved],
+  );
+
   if (!workspaceRoot.trim()) {
-    return <p className="text-muted-foreground">{t('workspace.connectToShowFiles')}</p>;
+    return <p className="text-muted-foreground">{t("workspace.connectToShowFiles")}</p>;
   }
 
   const rootLabel = fileBasename(workspaceRoot.trim()) || workspaceRoot.trim();
@@ -165,7 +507,6 @@ export function WorkspaceFilesPanel({
 
   const renderDirBody = (rel: string, depth: number) => {
     const state = cache[rel];
-    // 加载中不插入文案块，避免高度变化造成「卡一下」
     if (!state || state.status === "loading") {
       return null;
     }
@@ -179,91 +520,166 @@ export function WorkspaceFilesPanel({
           const isDir = entry.kind === "dir";
           const Icon = workspaceExplorerIcon(entry.name, entry.kind);
           const open = isDir && expanded[childRel] === true;
+          const target: WorkspaceExplorerContextTarget = {
+            relativePath: childRel,
+            kind: entry.kind,
+            name: entry.name,
+          };
 
           if (!isDir) {
             const selected = selectedEntryKey === `workspace:${childRel}`;
             return (
-              <li key={childRel} className="min-w-0">
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full min-w-0 items-center gap-1.5 rounded px-1 py-0.5 text-left",
-                    "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
-                    onOpenFile && "cursor-pointer",
-                    selected && "bg-foreground/[0.08] dark:bg-foreground/12",
-                  )}
-                  style={{ paddingLeft: `${depth * 12 + 4}px` }}
-                  aria-current={selected ? "true" : undefined}
-                  onClick={() => onOpenFile?.(childRel)}
-                >
-                  <span className="inline-block w-4 shrink-0" aria-hidden />
-                  <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
-                  <span className="min-w-0 truncate">{entry.name}</span>
-                </button>
-              </li>
+              <ExplorerRow
+                key={childRel}
+                target={target}
+                depth={depth}
+                selected={selected}
+                isElectron={isElectron}
+                renaming={renamingPath === childRel}
+                renameValue={renameValue}
+                renameError={renamingPath === childRel ? renameError : ""}
+                onReveal={handleReveal}
+                onRenameStart={handleRenameStart}
+                onDelete={handleDelete}
+                onAddToSession={onWorkspaceFileAddToSession ? handleAddToSession : undefined}
+                onRenameValueChange={setRenameValue}
+                onRenameCommit={() => void handleRenameCommit()}
+                onRenameCancel={handleRenameCancel}
+                onClick={() => onOpenFile?.(childRel)}
+                leading={<span className="inline-block w-4 shrink-0" aria-hidden />}
+                icon={Icon}
+                draggable
+                onDragStart={(event) => handleDragStart(event, target)}
+              />
             );
           }
 
           return (
-            <li key={childRel} className="min-w-0">
-              <button
-                type="button"
-                className={cn(
-                  "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left",
-                  "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
-                )}
-                style={{ paddingLeft: `${depth * 12 + 4}px` }}
-                aria-expanded={open}
-                onClick={() => onToggleDir(childRel)}
-              >
-                {open ? (
+            <ExplorerRow
+              key={childRel}
+              target={target}
+              depth={depth}
+              selected={false}
+              isElectron={isElectron}
+              renaming={renamingPath === childRel}
+              renameValue={renameValue}
+              renameError={renamingPath === childRel ? renameError : ""}
+              onReveal={handleReveal}
+              onRenameStart={handleRenameStart}
+              onDelete={handleDelete}
+              onRenameValueChange={setRenameValue}
+              onRenameCommit={() => void handleRenameCommit()}
+              onRenameCancel={handleRenameCancel}
+              onClick={() => onToggleDir(childRel)}
+              leading={
+                open ? (
                   <ChevronDown className="size-3.5 shrink-0 opacity-60" aria-hidden />
                 ) : (
                   <ChevronRight className="size-3.5 shrink-0 opacity-60" aria-hidden />
-                )}
-                <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
-                <span className="min-w-0 truncate">{entry.name}</span>
-              </button>
+                )
+              }
+              icon={Icon}
+              dropHighlight={dragOverDirectory === childRel}
+              draggable
+              onDragStart={(event) => handleDragStart(event, target)}
+              onDragOver={(event) => handleDirectoryDragOver(event, childRel)}
+              onDragLeave={() => setDragOverDirectory((current) => (current === childRel ? null : current))}
+              onDrop={(event) => void handleDirectoryDrop(event, childRel)}
+            >
               {open ? <div className="min-w-0">{renderDirBody(childRel, depth + 1)}</div> : null}
-            </li>
+            </ExplorerRow>
           );
         })}
       </ul>
     );
   };
 
+  const rootTarget: WorkspaceExplorerContextTarget = {
+    relativePath: "",
+    kind: "dir",
+    name: rootLabel,
+  };
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden text-xs">
-      <button
-        type="button"
-        className={cn(
-          "mb-1 flex w-full min-w-0 shrink-0 items-center gap-1 rounded px-1 py-1 text-left",
-          "text-foreground hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
-        )}
-        aria-expanded={rootOpen}
-        onClick={() => setRootOpen((o) => !o)}
+      <WorkspaceFileContextMenu
+        target={rootTarget}
+        isElectron={isElectron}
+        onReveal={handleReveal}
       >
-        {rootOpen ? (
-          <ChevronDown className="size-3.5 shrink-0 opacity-60" aria-hidden />
-        ) : (
-          <ChevronRight className="size-3.5 shrink-0 opacity-60" aria-hidden />
-        )}
-        <Folder className="size-3.5 shrink-0 opacity-70" aria-hidden />
-        <span className="min-w-0 truncate">{rootLabel}</span>
-      </button>
+        <button
+          type="button"
+          className={cn(
+            "mb-1 flex w-full min-w-0 shrink-0 items-center gap-1 rounded px-1 py-1 text-left",
+            "text-foreground hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+          )}
+          aria-expanded={rootOpen}
+          onClick={() => setRootOpen((o) => !o)}
+        >
+          {rootOpen ? (
+            <ChevronDown className="size-3.5 shrink-0 opacity-60" aria-hidden />
+          ) : (
+            <ChevronRight className="size-3.5 shrink-0 opacity-60" aria-hidden />
+          )}
+          <Folder className="size-3.5 shrink-0 opacity-70" aria-hidden />
+          <span className="min-w-0 truncate">{rootLabel}</span>
+        </button>
+      </WorkspaceFileContextMenu>
       {rootOpen ? (
         <div
           className="spirit-scroll min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pr-0.5"
           role="tree"
-          aria-label={t('workspace.fileList')}
+          aria-label={t("workspace.fileList")}
           aria-busy={cache[""]?.status === "loading" ? true : undefined}
+          onDragOver={(event) => handleDirectoryDragOver(event, "")}
+          onDragLeave={() => setDragOverDirectory((current) => (current === "" ? null : current))}
+          onDrop={(event) => void handleDirectoryDrop(event, "")}
         >
           {renderDirBody("", 0)}
-            <div className="mt-1">{renderPlanItem()}</div>
+          <div className="mt-1">{renderPlanItem()}</div>
         </div>
-        ) : (
-          <div className="mb-1">{renderPlanItem()}</div>
-        )}
+      ) : (
+        <div className="mb-1">{renderPlanItem()}</div>
+      )}
+
+      {forceDeleteTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="workspace-force-delete-title"
+        >
+          <div className="w-full max-w-md rounded-lg border bg-popover p-4 shadow-lg">
+            <h2 id="workspace-force-delete-title" className="text-sm font-medium">
+              {t("workspace.forceDelete")}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("workspace.forceDeleteConfirm", { reason: forceDeleteReason })}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                disabled={forceDeleteBusy}
+                onClick={() => {
+                  setForceDeleteTarget(null);
+                  setForceDeleteReason("");
+                }}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-destructive px-3 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90"
+                disabled={forceDeleteBusy}
+                onClick={() => void handleForceDelete()}
+              >
+                {t("workspace.forceDelete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
