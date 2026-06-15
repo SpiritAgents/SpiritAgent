@@ -1,4 +1,5 @@
 import {
+  assertGoogleGeminiApiBase,
   parseModelProviderId,
   parsePresetModelProviderId,
   partitionModelsByProvider,
@@ -278,6 +279,12 @@ export async function updateConfigCommand(
   });
 }
 
+function assertProviderConnectApiBase(provider: DesktopModelProvider, apiBase: string): void {
+  if (provider === 'google') {
+    assertGoogleGeminiApiBase(apiBase);
+  }
+}
+
 export async function previewModelsCommand(request: PreviewModelsRequest): Promise<PreviewModelsResponse> {
   const provider = parseModelProviderId(request.provider);
   const transportKind = resolveDesktopTransportKind({
@@ -286,6 +293,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   });
   const apiBaseRaw = request.apiBase.trim();
   const apiBase = apiBaseRaw || defaultApiBaseForTransport(provider, transportKind);
+  assertProviderConnectApiBase(provider, apiBase);
   const apiKey = request.apiKey.trim();
   if (!apiKey) {
     throw new Error(i18n.t('error.apiKeyRequired'));
@@ -323,6 +331,7 @@ export async function addProviderModelsCommand(
     });
     const apiBaseRaw = request.apiBase.trim();
     const apiBase = apiBaseRaw || defaultApiBaseForTransport(provider, transportKind);
+    assertProviderConnectApiBase(provider, apiBase);
     const apiKey = request.apiKey.trim();
     if (!apiKey) {
       throw new Error(i18n.t('error.apiKeyRequired'));
@@ -436,6 +445,7 @@ export async function addModelCommand(
     });
     const apiBaseRaw = request.apiBase.trim();
     const apiBase = apiBaseRaw || defaultApiBaseForTransport(provider, transportKind);
+    assertProviderConnectApiBase(provider, apiBase);
     const apiKey = request.apiKey.trim();
 
     if (!name) {

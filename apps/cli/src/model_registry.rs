@@ -28,6 +28,7 @@ pub enum ModelProvider {
     VercelAiGateway,
     Openrouter,
     Openai,
+    Google,
     Volcengine,
     Custom,
 }
@@ -44,6 +45,7 @@ impl ModelProvider {
             Self::VercelAiGateway => "vercel-ai-gateway",
             Self::Openrouter => "openrouter",
             Self::Openai => "openai",
+            Self::Google => "google",
             Self::Volcengine => "volcengine",
             Self::Custom => "custom",
         }
@@ -64,6 +66,7 @@ impl FromStr for ModelProvider {
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
             "openrouter" => Ok(Self::Openrouter),
             "openai" => Ok(Self::Openai),
+            "google" => Ok(Self::Google),
             "volcengine" => Ok(Self::Volcengine),
             "custom" => Ok(Self::Custom),
             other => Err(format!("不支持的 provider: {other}")),
@@ -155,6 +158,7 @@ impl ModelProfile {
             | Some(ModelProvider::VercelAiGateway)
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::Openai)
+            | Some(ModelProvider::Google)
             | Some(ModelProvider::Volcengine)
             | Some(ModelProvider::Custom)
             | None => true,
@@ -447,6 +451,12 @@ pub(crate) fn normalize_reasoning_effort_value(
                 _ => "default".to_string(),
             },
             Some(ModelProvider::Xai) => match normalized.as_str() {
+                "default" | "none" | "low" | "medium" | "high" => normalized,
+                "minimal" => "low".to_string(),
+                "xhigh" | "max" => "high".to_string(),
+                _ => "default".to_string(),
+            },
+            Some(ModelProvider::Google) => match normalized.as_str() {
                 "default" | "none" | "low" | "medium" | "high" => normalized,
                 "minimal" => "low".to_string(),
                 "xhigh" | "max" => "high".to_string(),
