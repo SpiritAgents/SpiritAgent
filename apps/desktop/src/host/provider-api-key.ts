@@ -17,6 +17,7 @@ export interface BedrockProviderCredentials {
   apiKey?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
+  sessionToken?: string;
 }
 
 export function hasBedrockRuntimeCredentials(credentials: BedrockProviderCredentials): boolean {
