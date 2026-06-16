@@ -77,6 +77,8 @@ export function modelProviderKeyScope(provider?: DesktopModelProvider): DesktopM
 export interface ModelKeyPresenceProfile {
   name: string;
   provider?: DesktopModelProvider;
+  vertexProject?: string;
+  vertexLocation?: string;
 }
 
 export type ExistingModelForProviderAdd = ModelKeyPresenceProfile;
@@ -120,19 +122,22 @@ export function filterNewProviderModelIds(
  */
 export function buildModelSecretKeyPresence(
   profiles: ModelKeyPresenceProfile[],
-  hasProviderKey: (providerId: string) => boolean,
+  hasProviderKey: (providerId: string, profile: ModelKeyPresenceProfile) => boolean,
   hasModelKey: (modelName: string) => boolean,
 ): Record<string, boolean> {
   const providerCache = new Map<string, boolean>();
   const out: Record<string, boolean> = {};
-  for (const { name, provider } of profiles) {
-    const scope = modelProviderKeyScope(provider);
-    let providerPresent = providerCache.get(scope);
+  for (const profile of profiles) {
+    const scope = modelProviderKeyScope(profile.provider);
+    const cacheKey = profile.provider === 'google-vertex-ai'
+      ? `${scope}::${profile.vertexProject?.trim() ?? ''}::${profile.vertexLocation?.trim() ?? ''}`
+      : scope;
+    let providerPresent = providerCache.get(cacheKey);
     if (providerPresent === undefined) {
-      providerPresent = hasProviderKey(scope);
-      providerCache.set(scope, providerPresent);
+      providerPresent = hasProviderKey(scope, profile);
+      providerCache.set(cacheKey, providerPresent);
     }
-    out[name] = providerPresent ? true : hasModelKey(name);
+    out[profile.name] = providerPresent ? true : hasModelKey(profile.name);
   }
   return out;
 }
