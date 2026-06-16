@@ -846,6 +846,10 @@ function normalizeDesktopTransportKind(
   value: unknown,
   provider?: DesktopModelProvider,
 ): DesktopTransportKind | undefined {
+  if (provider === 'azure') {
+    return 'open-responses';
+  }
+
   if (
     value === 'openai-compatible'
     || value === 'open-responses'

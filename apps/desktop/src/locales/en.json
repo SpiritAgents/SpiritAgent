@@ -838,6 +838,7 @@
     "apiKeyRequired": "API Key cannot be empty.",
     "bedrockRegionRequired": "AWS Region is required for Amazon Bedrock.",
     "azureResourceNameRequired": "Azure OpenAI resource name is required.",
+    "azureOpenResponsesOnly": "Azure OpenAI only supports the Responses API transport.",
     "bedrockCredentialsRequired": "Provide a Bearer API Key or both IAM Access Key ID and Secret Access Key.",
     "bedrockCatalogIamRequired": "IAM Access Key ID and Secret Access Key are required to fetch the Bedrock model list.",
     "modelNameRequired": "Model name cannot be empty.",
