@@ -2,17 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Compone
 import { useTranslation } from "react-i18next";
 import type * as Monaco from "monaco-editor";
 
-import { Eye, Loader2, PanelLeftClose, PanelLeftOpen, Play, Save, SquarePen, X } from "lucide-react";
+import { Eye, PanelLeftClose, PanelLeftOpen, Play, SquarePen } from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
@@ -83,11 +76,33 @@ function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLE
 type WorkspaceFilesExplorerToolbarProps = {
   fileTreeOpen: boolean;
   onToggleFileTree: () => void;
+  fileOpen: boolean;
+  headerTitle: string;
+  headerSubtitle: string;
+  isMarkdownDocument: boolean;
+  markdownViewMode: MarkdownViewMode;
+  onToggleMarkdownViewMode: (value: string) => void;
+  docReady: boolean;
+  docReadOnly: boolean;
+  showStartImplementing: boolean;
+  startImplementingDisabled: boolean;
+  onStartImplementing?: () => void;
 };
 
 function WorkspaceFilesExplorerToolbar({
   fileTreeOpen,
   onToggleFileTree,
+  fileOpen,
+  headerTitle,
+  headerSubtitle,
+  isMarkdownDocument,
+  markdownViewMode,
+  onToggleMarkdownViewMode,
+  docReady,
+  docReadOnly,
+  showStartImplementing,
+  startImplementingDisabled,
+  onStartImplementing,
 }: WorkspaceFilesExplorerToolbarProps) {
   const { t } = useTranslation();
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -99,32 +114,91 @@ function WorkspaceFilesExplorerToolbar({
       edge: "bottom",
       dividerAttr: FILES_EXPLORER_TOOLBAR_SHELL_DIVIDER_ATTR,
     },
-    [fileTreeOpen],
+    [fileTreeOpen, fileOpen, headerTitle, isMarkdownDocument, markdownViewMode],
   );
 
   return (
     <div
       ref={toolbarRef}
-      className="flex h-7 shrink-0 items-center gap-1 pl-1 pr-2"
+      className={cn(
+        "flex h-7 shrink-0 items-center gap-1 pl-1 pr-2",
+        fileOpen && "justify-between",
+      )}
       role="toolbar"
       aria-label={t("workspace.fileExplorerToolbar")}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
-        onClick={onToggleFileTree}
-        aria-label={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
-        aria-expanded={fileTreeOpen}
-        title={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
-      >
-        {fileTreeOpen ? (
-          <PanelLeftClose className="size-3.5" aria-hidden />
-        ) : (
-          <PanelLeftOpen className="size-3.5" aria-hidden />
-        )}
-      </Button>
+      <div className="flex min-w-0 items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
+          onClick={onToggleFileTree}
+          aria-label={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
+          aria-expanded={fileTreeOpen}
+          title={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
+        >
+          {fileTreeOpen ? (
+            <PanelLeftClose className="size-3.5" aria-hidden />
+          ) : (
+            <PanelLeftOpen className="size-3.5" aria-hidden />
+          )}
+        </Button>
+        {fileOpen ? (
+          <span
+            className="min-w-0 truncate text-xs font-medium text-foreground/95"
+            title={headerSubtitle || undefined}
+          >
+            {headerTitle}
+          </span>
+        ) : null}
+      </div>
+      {fileOpen ? (
+        <div className="flex shrink-0 items-center gap-0.5">
+          {isMarkdownDocument ? (
+            <ToggleGroup
+              type="single"
+              size="sm"
+              value={markdownViewMode}
+              onValueChange={onToggleMarkdownViewMode}
+              className="rounded-md border border-border/50 bg-background/80 p-px"
+            >
+              <ToggleGroupItem
+                value="preview"
+                className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
+                aria-label={t("workspace.markdownPreview")}
+                title={t("workspace.markdownPreview")}
+                disabled={!docReady}
+              >
+                <Eye className="size-3" aria-hidden />
+                {t("workspace.preview")}
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="edit"
+                className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
+                aria-label={t("workspace.markdownEdit")}
+                title={docReadOnly ? t("workspace.currentDocReadOnly") : t("workspace.markdownEdit")}
+                disabled={!docReady || docReadOnly}
+              >
+                <SquarePen className="size-3" aria-hidden />
+                {t("workspace.edit")}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          ) : null}
+          {showStartImplementing ? (
+            <button
+              type="button"
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground disabled:opacity-50 dark:enabled:hover:bg-foreground/10"
+              disabled={startImplementingDisabled}
+              aria-label={t("workspace.startImplementing")}
+              title={t("workspace.startImplementing")}
+              onClick={onStartImplementing}
+            >
+              <Play className="size-3.5" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -187,13 +261,10 @@ export function WorkspaceFilesTab({
   type MonacoEditor = Monaco.editor.IStandaloneCodeEditor;
   const [selectedEntry, setSelectedEntry] = useState<SelectedEntry>(null);
   const [doc, setDoc] = useState<LoadedDoc | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [draftText, setDraftText] = useState("");
   const [savedText, setSavedText] = useState("");
   const [markdownViewMode, setMarkdownViewMode] = useState<MarkdownViewMode>("edit");
-  const [unsavedCloseDialogOpen, setUnsavedCloseDialogOpen] = useState(false);
   const [fileTreeOpen, setFileTreeOpen] = useState(true);
   const [monacoEditor, setMonacoEditor] = useState<MonacoEditor | null>(null);
   const editorRef = useRef<WorkspaceMonacoEditorHandle>(null);
@@ -241,8 +312,6 @@ export function WorkspaceFilesTab({
           : "");
   const headerSubtitle = doc?.subtitle ?? selectedPath;
   const isMarkdownDocument = Boolean(selectedPath && isMarkdownPath(selectedPath));
-  const isEditableFileSelected =
-    selectedEntry?.kind === "workspace" || selectedEntry?.kind === "external";
 
   useEffect(() => {
     if (!planRevealEnabled) {
@@ -285,7 +354,6 @@ export function WorkspaceFilesTab({
   useEffect(() => {
     if (!selectedEntry) {
       setDoc(null);
-      setDirty(false);
       setSaveError("");
       setDraftText("");
       setSavedText("");
@@ -293,7 +361,6 @@ export function WorkspaceFilesTab({
     }
 
     if (selectedEntry.kind === "plan") {
-      setDirty(false);
       setSaveError("");
       if (!plan.exists) {
         setDraftText("");
@@ -333,7 +400,6 @@ export function WorkspaceFilesTab({
       title: pathBasename(filePath),
       subtitle: filePath,
     });
-    setDirty(false);
     setSaveError("");
     setDraftText("");
     setSavedText("");
@@ -382,7 +448,6 @@ export function WorkspaceFilesTab({
       if (!selectedEntry || (selectedEntry.kind !== "workspace" && selectedEntry.kind !== "external")) {
         return;
       }
-      setSaving(true);
       setSaveError("");
       try {
         if (selectedEntry.kind === "external") {
@@ -400,12 +465,9 @@ export function WorkspaceFilesTab({
         );
         setDraftText(text);
         setSavedText(text);
-        setDirty(false);
       } catch (e) {
         setSaveError(describeError(e));
         throw e;
-      } finally {
-        setSaving(false);
       }
     },
     [selectedEntry, writeHostTextFile, writeWorkspaceTextFile],
@@ -442,43 +504,11 @@ export function WorkspaceFilesTab({
 
   const selectionEnabled = doc?.status === "ready" && Boolean(onFileSnippetAddToSession && selectedPath);
 
-  const onClickSave = useCallback(() => {
-    if (isPreviewVisible) {
-      void persistEditorText(draftText);
-      return;
-    }
-    void editorRef.current?.save();
-  }, [draftText, isPreviewVisible, persistEditorText]);
-
   const onToggleMarkdownViewMode = useCallback((value: string) => {
     if (value === "preview" || value === "edit") {
       setMarkdownViewMode(value);
     }
   }, []);
-
-  const performCloseEditor = useCallback(() => {
-    setSelectedEntry(null);
-    setDoc(null);
-    setDirty(false);
-    setSaveError("");
-  }, []);
-
-  const closeEditor = useCallback(() => {
-    if (dirty) {
-      setUnsavedCloseDialogOpen(true);
-      return;
-    }
-    performCloseEditor();
-  }, [dirty, performCloseEditor]);
-
-  const dismissUnsavedCloseDialog = useCallback(() => {
-    setUnsavedCloseDialogOpen(false);
-  }, []);
-
-  const confirmCloseEditor = useCallback(() => {
-    setUnsavedCloseDialogOpen(false);
-    performCloseEditor();
-  }, [performCloseEditor]);
 
   const selectedEntryKey = selectedEntry
     ? selectedEntry.kind === "plan"
@@ -493,7 +523,21 @@ export function WorkspaceFilesTab({
       <WorkspaceFilesExplorerToolbar
         fileTreeOpen={fileTreeOpen}
         onToggleFileTree={() => setFileTreeOpen((open) => !open)}
+        fileOpen={Boolean(selectedEntry)}
+        headerTitle={headerTitle}
+        headerSubtitle={headerSubtitle}
+        isMarkdownDocument={isMarkdownDocument}
+        markdownViewMode={markdownViewMode}
+        onToggleMarkdownViewMode={onToggleMarkdownViewMode}
+        docReady={doc?.status === "ready"}
+        docReadOnly={doc?.readOnly ?? false}
+        showStartImplementing={selectedEntry?.kind === "plan"}
+        startImplementingDisabled={startImplementingDisabled}
+        onStartImplementing={onStartImplementing}
       />
+      {saveError ? (
+        <p className="shrink-0 px-2 pt-1 text-xs text-destructive/90">{saveError}</p>
+      ) : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
         <div
           className={cn(
@@ -575,85 +619,6 @@ export function WorkspaceFilesTab({
               fileTreeOpen && "pl-2",
             )}
           >
-          <div className="mb-1 flex shrink-0 flex-wrap items-center justify-between gap-2">
-            <span
-              className="min-w-0 truncate text-xs font-medium text-foreground/95"
-              title={headerSubtitle || undefined}
-            >
-              {headerTitle}
-            </span>
-            <div className="flex shrink-0 items-center gap-0.5">
-              {isMarkdownDocument ? (
-                <ToggleGroup
-                  type="single"
-                  size="sm"
-                  value={markdownViewMode}
-                  onValueChange={onToggleMarkdownViewMode}
-                  className="rounded-md border border-border/50 bg-background/80 p-px"
-                >
-                  <ToggleGroupItem
-                    value="preview"
-                    className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
-                    aria-label={t('workspace.markdownPreview')}
-                    title={t('workspace.markdownPreview')}
-                    disabled={doc?.status !== "ready"}
-                  >
-                    <Eye className="size-3" aria-hidden />
-                    {t('workspace.preview')}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    value="edit"
-                    className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
-                    aria-label={t('workspace.markdownEdit')}
-                    title={doc?.readOnly ? t('workspace.currentDocReadOnly') : t('workspace.markdownEdit')}
-                    disabled={doc?.status !== "ready" || doc.readOnly}
-                  >
-                    <SquarePen className="size-3" aria-hidden />
-                    {t('workspace.edit')}
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              ) : null}
-              {selectedEntry?.kind === "plan" ? (
-                <button
-                  type="button"
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground disabled:opacity-50 dark:enabled:hover:bg-foreground/10"
-                  disabled={startImplementingDisabled}
-                  aria-label={t('workspace.startImplementing')}
-                  title={t('workspace.startImplementing')}
-                  onClick={onStartImplementing}
-                >
-                  <Play className="size-3.5" aria-hidden />
-                </button>
-              ) : null}
-              {isEditableFileSelected ? (
-                <button
-                  type="button"
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground disabled:opacity-50 dark:enabled:hover:bg-foreground/10"
-                  aria-label={t('common.save')}
-                  title="Ctrl+S / ⌘S"
-                  disabled={saving || !dirty || doc?.status !== "ready"}
-                  onClick={onClickSave}
-                >
-                  {saving ? (
-                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                  ) : (
-                    <Save className="size-3.5" aria-hidden />
-                  )}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10"
-                aria-label={t('common.close')}
-                onClick={closeEditor}
-              >
-                <X className="size-3.5" aria-hidden />
-              </button>
-            </div>
-          </div>
-          {saveError ? (
-            <p className="mb-1 shrink-0 text-xs text-destructive/90">{saveError}</p>
-          ) : null}
           <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
             {doc?.status === "loading" ? (
               <div className="h-full min-h-0 w-full" />
@@ -702,7 +667,6 @@ export function WorkspaceFilesTab({
                     initialText={draftText}
                     baselineText={savedText}
                     onSave={onEditorSave}
-                    onDirtyChange={setDirty}
                     onTextChange={isMarkdownDocument ? setDraftText : undefined}
                     readOnly={doc.readOnly}
                     onEditorReady={setMonacoEditor}
@@ -722,37 +686,6 @@ export function WorkspaceFilesTab({
         </div>
       ) : null}
       </div>
-
-      <Dialog
-        open={unsavedCloseDialogOpen}
-        onOpenChange={(open) => {
-          if (open) {
-            setUnsavedCloseDialogOpen(true);
-          } else {
-            dismissUnsavedCloseDialog();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md" showCloseButton>
-          <DialogHeader>
-            <DialogTitle>{t("common.close")}</DialogTitle>
-            <DialogDescription>{t("workspace.unsavedChangesCloseConfirm")}</DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={dismissUnsavedCloseDialog}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button type="button" size="sm" onClick={confirmCloseEditor}>
-              {t("common.close")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
