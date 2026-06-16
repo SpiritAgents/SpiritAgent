@@ -4,6 +4,7 @@
     "deepseek": "https://api.deepseek.com/v1",
     "xai": "https://api.x.ai/v1",
     "moonshot-ai": "https://api.moonshot.cn/v1",
+    "z-ai": "https://api.z.ai/api/paas/v4",
     "minimax": "https://api.minimaxi.com/v1",
     "alibaba": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "anthropic": "https://api.anthropic.com/v1",
@@ -37,7 +38,7 @@
       "open-responses": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1"
     }
   },
-  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "deepseek", "openrouter", "moonshot-ai", "alibaba", "minimax", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
+  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "deepseek", "openrouter", "moonshot-ai", "z-ai", "alibaba", "minimax", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
   "pickerLabels": {
     "deepseek": {
       "labelKey": "providers.deepseek",
@@ -50,6 +51,10 @@
     "moonshot-ai": {
       "labelKey": "providers.moonshotAi",
       "fallbackLabel": "Moonshot AI"
+    },
+    "z-ai": {
+      "labelKey": "providers.zAi",
+      "fallbackLabel": "Z.ai"
     },
     "minimax": {
       "labelKey": "providers.minimax",
