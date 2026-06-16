@@ -161,6 +161,12 @@ export function createWorkspaceTerminalSession(
         term.write(payload.data);
       }
     },
+    onProcessTitle: (payload) => {
+      if (payload.id !== activePtyId) {
+        return;
+      }
+      onTitleChange?.(payload.title);
+    },
     onExit: (payload) => {
       if (payload.id === activePtyId) {
         term.write(`\r\n\x1b[90m[${shellExitedMessage(payload.exitCode)}]\x1b[0m\r\n`);
@@ -224,6 +230,7 @@ export function createWorkspaceTerminalSession(
 
     ptyId = created.id;
     activePtyId = created.id;
+    onTitleChange?.(created.shellDisplayName);
     term.onData((data) => {
       bridge.ptyWrite(created.id, data);
     });
