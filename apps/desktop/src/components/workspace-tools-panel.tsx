@@ -682,7 +682,7 @@ function WorkspaceToolsDockInner({
                   )}
                 >
                   {item.kind === "files" ? (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pr-2 pb-2 pt-0">
                       <WorkspaceFilesTab
                         workspaceRoot={workspaceRoot}
                         plan={plan}

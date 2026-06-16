@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Compone
 import { useTranslation } from "react-i18next";
 import type * as Monaco from "monaco-editor";
 
-import { Eye, Loader2, Play, Save, SquarePen, X } from "lucide-react";
+import { Eye, Loader2, PanelLeftClose, PanelLeftOpen, Play, Save, SquarePen, X } from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,9 @@ import {
   type WorkspaceMonacoEditorHandle,
 } from "@/components/workspace-monaco-editor";
 import { cn } from "@/lib/utils";
+import { DESKTOP_CHROME_TOGGLE_ICON_BTN, DESKTOP_SHELL_LAYOUT_TRANSITION } from "@/lib/desktop-chrome";
+import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
+import { FILES_EXPLORER_TOOLBAR_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
 import {
   isUnderWorkspaceEntryPath,
   remapWorkspaceEntryPath,
@@ -75,6 +78,55 @@ function isMarkdownPath(rel: string): boolean {
 
 function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLElement | null {
   return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
+}
+
+type WorkspaceFilesExplorerToolbarProps = {
+  fileTreeOpen: boolean;
+  onToggleFileTree: () => void;
+};
+
+function WorkspaceFilesExplorerToolbar({
+  fileTreeOpen,
+  onToggleFileTree,
+}: WorkspaceFilesExplorerToolbarProps) {
+  const { t } = useTranslation();
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useWorkspaceToolsShellHorizontalDivider(
+    toolbarRef,
+    {
+      enabled: true,
+      edge: "bottom",
+      dividerAttr: FILES_EXPLORER_TOOLBAR_SHELL_DIVIDER_ATTR,
+    },
+    [fileTreeOpen],
+  );
+
+  return (
+    <div
+      ref={toolbarRef}
+      className="flex h-7 shrink-0 items-center gap-1 pl-1 pr-2"
+      role="toolbar"
+      aria-label={t("workspace.fileExplorerToolbar")}
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
+        onClick={onToggleFileTree}
+        aria-label={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
+        aria-expanded={fileTreeOpen}
+        title={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
+      >
+        {fileTreeOpen ? (
+          <PanelLeftClose className="size-3.5" aria-hidden />
+        ) : (
+          <PanelLeftOpen className="size-3.5" aria-hidden />
+        )}
+      </Button>
+    </div>
+  );
 }
 
 export type WorkspaceFilesTabProps = {
@@ -142,6 +194,7 @@ export function WorkspaceFilesTab({
   const [savedText, setSavedText] = useState("");
   const [markdownViewMode, setMarkdownViewMode] = useState<MarkdownViewMode>("edit");
   const [unsavedCloseDialogOpen, setUnsavedCloseDialogOpen] = useState(false);
+  const [fileTreeOpen, setFileTreeOpen] = useState(true);
   const [monacoEditor, setMonacoEditor] = useState<MonacoEditor | null>(null);
   const editorRef = useRef<WorkspaceMonacoEditorHandle>(null);
   const previewScrollRef = useRef<ComponentRef<typeof ScrollArea>>(null);
@@ -436,14 +489,32 @@ export function WorkspaceFilesTab({
     : null;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
-      <div
-        className={cn(
-          "flex min-h-0 min-w-0 flex-col overflow-hidden",
-          selectedEntry ? "w-[min(40%,13rem)] shrink-0 border-r border-border/40 pr-2" : "min-w-0 flex-1",
-        )}
-      >
-        <WorkspaceFilesPanel
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <WorkspaceFilesExplorerToolbar
+        fileTreeOpen={fileTreeOpen}
+        onToggleFileTree={() => setFileTreeOpen((open) => !open)}
+      />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+        <div
+          className={cn(
+            "flex min-h-0 shrink-0 flex-col overflow-hidden",
+            DESKTOP_SHELL_LAYOUT_TRANSITION,
+            fileTreeOpen
+              ? selectedEntry
+                ? "w-[min(40%,13rem)] border-r border-border/40"
+                : "min-w-0 flex-1"
+              : "w-0",
+          )}
+        >
+          <div
+            className={cn(
+              "flex h-full min-h-0 w-full flex-col overflow-hidden pr-2",
+              !fileTreeOpen && "pointer-events-none select-none",
+            )}
+            aria-hidden={!fileTreeOpen}
+            inert={!fileTreeOpen ? true : undefined}
+          >
+            <WorkspaceFilesPanel
           workspaceRoot={workspaceRoot}
           plan={plan}
           listExplorerChildren={listExplorerChildren}
@@ -494,10 +565,16 @@ export function WorkspaceFilesTab({
             );
           }}
           onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
-        />
-      </div>
-      {selectedEntry ? (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pl-2">
+            />
+          </div>
+        </div>
+        {selectedEntry ? (
+          <div
+            className={cn(
+              "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+              fileTreeOpen && "pl-2",
+            )}
+          >
           <div className="mb-1 flex shrink-0 flex-wrap items-center justify-between gap-2">
             <span
               className="min-w-0 truncate text-xs font-medium text-foreground/95"
@@ -644,6 +721,7 @@ export function WorkspaceFilesTab({
           </div>
         </div>
       ) : null}
+      </div>
 
       <Dialog
         open={unsavedCloseDialogOpen}
