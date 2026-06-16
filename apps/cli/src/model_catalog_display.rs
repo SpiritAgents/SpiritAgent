@@ -39,6 +39,7 @@ fn provider_uses_catalog_display(provider: ModelProvider) -> bool {
     matches!(
         provider,
         ModelProvider::VercelAiGateway | ModelProvider::Openrouter | ModelProvider::Google
+            | ModelProvider::GoogleVertexAi
     )
 }
 

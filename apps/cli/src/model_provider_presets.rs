@@ -213,7 +213,11 @@ mod tests {
             model_add_preset_api_base_by_choice_index(12).as_deref(),
             Some("https://bedrock.us-east-1.amazonaws.com")
         );
-        assert!(model_add_preset_api_base_by_choice_index(13).is_none());
+        assert_eq!(
+            model_add_preset_api_base_by_choice_index(13).as_deref(),
+            Some("https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1")
+        );
+        assert!(model_add_preset_api_base_by_choice_index(14).is_none());
     }
 
     #[test]
