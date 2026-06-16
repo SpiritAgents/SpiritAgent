@@ -829,10 +829,7 @@ export function patchBasicInfoWorkspaceRootInMessages(
     if (!message.content.includes(BASIC_INFO_SECTION_PREFIX)) {
       return message;
     }
-    const nextContent = message.content.replace(
-      /Current workspace:\n- [^\n]+/,
-      `Current workspace:\n- ${normalized}`,
-    );
+    const nextContent = patchBasicInfoWorkspaceRootInSystemText(message.content, normalized);
     if (nextContent === message.content) {
       return message;
     }
@@ -840,6 +837,23 @@ export function patchBasicInfoWorkspaceRootInMessages(
     return { ...message, content: nextContent };
   });
   return changed ? next : messages;
+}
+
+/** Matches the Current workspace block emitted by buildBasicInfoSystemMessage. */
+export function patchBasicInfoWorkspaceRootInSystemText(
+  content: string,
+  workspaceRoot: string,
+): string {
+  const normalized = workspaceRoot.trim();
+  if (!normalized || !content.includes(BASIC_INFO_SECTION_PREFIX)) {
+    return content;
+  }
+
+  const workspaceBlock = /Current workspace:\r?\n- [^\r\n]*/;
+  if (!workspaceBlock.test(content)) {
+    return content;
+  }
+  return content.replace(workspaceBlock, `Current workspace:\n- ${normalized}`);
 }
 
 export function patchBasicInfoWorkspaceRootInToolAgentState(
