@@ -29,6 +29,8 @@ pub enum ModelProvider {
     Openrouter,
     Openai,
     Google,
+    #[serde(rename = "google-vertex-ai")]
+    GoogleVertexAi,
     Volcengine,
     #[serde(rename = "amazon-bedrock")]
     AmazonBedrock,
@@ -49,6 +51,7 @@ impl ModelProvider {
             Self::Openrouter => "openrouter",
             Self::Openai => "openai",
             Self::Google => "google",
+            Self::GoogleVertexAi => "google-vertex-ai",
             Self::Volcengine => "volcengine",
             Self::AmazonBedrock => "amazon-bedrock",
             Self::Azure => "azure",
@@ -72,6 +75,7 @@ impl FromStr for ModelProvider {
             "openrouter" => Ok(Self::Openrouter),
             "openai" => Ok(Self::Openai),
             "google" => Ok(Self::Google),
+            "google-vertex-ai" => Ok(Self::GoogleVertexAi),
             "volcengine" => Ok(Self::Volcengine),
             "amazon-bedrock" => Ok(Self::AmazonBedrock),
             "azure" => Ok(Self::Azure),
@@ -171,6 +175,7 @@ impl ModelProfile {
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::Openai)
             | Some(ModelProvider::Google)
+            | Some(ModelProvider::GoogleVertexAi)
             | Some(ModelProvider::Volcengine)
             | Some(ModelProvider::AmazonBedrock)
             | Some(ModelProvider::Azure)
@@ -215,6 +220,26 @@ impl ModelProfile {
         self.extra
             .get("awsRegion")
             .or_else(|| self.extra.get("aws_region"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
+    pub fn vertex_project(&self) -> Option<String> {
+        self.extra
+            .get("vertexProject")
+            .or_else(|| self.extra.get("vertex_project"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
+    pub fn vertex_location(&self) -> Option<String> {
+        self.extra
+            .get("vertexLocation")
+            .or_else(|| self.extra.get("vertex_location"))
             .and_then(Value::as_str)
             .map(str::trim)
             .filter(|value| !value.is_empty())
@@ -443,11 +468,17 @@ fn normalize_config(cfg: &mut AppConfig) {
 
 fn normalize_transport_kind(model: &mut ModelProfile) {
     let mut transport_kind = model.transport_kind();
-    if matches!(model.provider, Some(ModelProvider::Google))
-        && matches!(
-            transport_kind,
-            ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic
-        )
+    if matches!(
+        model.provider,
+        Some(ModelProvider::Google) | Some(ModelProvider::GoogleVertexAi)
+    ) && matches!(
+        transport_kind,
+        ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic
+    ) {
+        transport_kind = ModelTransportKind::OpenAiCompatible;
+    }
+    if matches!(model.provider, Some(ModelProvider::GoogleVertexAi))
+        && transport_kind == ModelTransportKind::Bedrock
     {
         transport_kind = ModelTransportKind::OpenAiCompatible;
     }
@@ -503,12 +534,14 @@ pub(crate) fn normalize_reasoning_effort_value(
                 "xhigh" | "max" => "high".to_string(),
                 _ => "default".to_string(),
             },
-            Some(ModelProvider::Google) => match normalized.as_str() {
-                "default" | "none" | "low" | "medium" | "high" => normalized,
-                "minimal" => "low".to_string(),
-                "xhigh" | "max" => "high".to_string(),
-                _ => "default".to_string(),
-            },
+            Some(ModelProvider::Google) | Some(ModelProvider::GoogleVertexAi) => {
+                match normalized.as_str() {
+                    "default" | "none" | "low" | "medium" | "high" => normalized,
+                    "minimal" => "low".to_string(),
+                    "xhigh" | "max" => "high".to_string(),
+                    _ => "default".to_string(),
+                }
+            }
             _ => match normalized.as_str() {
                 "default" | "none" | "low" | "medium" | "high" | "xhigh" => normalized,
                 "minimal" => "default".to_string(),
@@ -1068,6 +1101,85 @@ pub fn has_bedrock_runtime_credentials_in_keyring() -> Result<bool> {
             .map(|value| !value.trim().is_empty())
             .unwrap_or(false);
     Ok(access_key_id && secret_access_key)
+}
+
+fn provider_vertex_client_email_account(provider_id: &str) -> String {
+    format!("provider::{provider_id}::client-email")
+}
+
+fn provider_vertex_private_key_account(provider_id: &str) -> String {
+    format!("provider::{provider_id}::private-key")
+}
+
+pub fn load_provider_vertex_client_email_from_keyring(provider_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&provider_vertex_client_email_account(provider_id))?;
+    entry.get_password().with_context(|| {
+        format!("读取 provider {provider_id} 的 Vertex client email 失败")
+    })
+}
+
+pub fn load_provider_vertex_private_key_from_keyring(provider_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&provider_vertex_private_key_account(provider_id))?;
+    entry.get_password().with_context(|| {
+        format!("读取 provider {provider_id} 的 Vertex private key 失败")
+    })
+}
+
+pub fn has_google_vertex_service_account_in_keyring() -> Result<bool> {
+    let client_email = load_provider_vertex_client_email_from_keyring(
+        ModelProvider::GoogleVertexAi.as_str(),
+    )
+    .map(|value| !value.trim().is_empty())
+    .unwrap_or(false);
+    let private_key = load_provider_vertex_private_key_from_keyring(
+        ModelProvider::GoogleVertexAi.as_str(),
+    )
+    .map(|value| !value.trim().is_empty())
+    .unwrap_or(false);
+    Ok(client_email && private_key)
+}
+
+pub fn has_google_vertex_runtime_credentials(
+    api_key: &str,
+    vertex_project: Option<&str>,
+    vertex_location: Option<&str>,
+) -> bool {
+    if !api_key.trim().is_empty() {
+        return true;
+    }
+    let has_project_location = vertex_project.is_some_and(|value| !value.trim().is_empty())
+        && vertex_location.is_some_and(|value| !value.trim().is_empty());
+    if !has_project_location {
+        return false;
+    }
+    if has_google_vertex_service_account_in_keyring().unwrap_or(false) {
+        return true;
+    }
+    true
+}
+
+pub fn save_provider_api_key(provider_id: &str, api_key: &str) -> Result<()> {
+    let entry = keyring_entry_for_account(&provider_key_account(provider_id))?;
+    entry
+        .set_password(api_key.trim())
+        .with_context(|| format!("保存 provider {provider_id} 的 API Key 失败"))
+}
+
+pub fn save_provider_vertex_credentials(
+    provider_id: &str,
+    client_email: &str,
+    private_key: &str,
+) -> Result<()> {
+    let client_email = client_email.trim();
+    let private_key = private_key.trim();
+    let email_entry = keyring_entry_for_account(&provider_vertex_client_email_account(provider_id))?;
+    email_entry
+        .set_password(client_email)
+        .with_context(|| format!("保存 provider {provider_id} 的 Vertex client email 失败"))?;
+    let key_entry = keyring_entry_for_account(&provider_vertex_private_key_account(provider_id))?;
+    key_entry
+        .set_password(private_key)
+        .with_context(|| format!("保存 provider {provider_id} 的 Vertex private key 失败"))
 }
 
 pub fn save_model_api_key(model_name: &str, api_key: &str) -> Result<()> {
