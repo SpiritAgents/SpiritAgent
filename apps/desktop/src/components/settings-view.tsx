@@ -2144,7 +2144,6 @@ function McpsSettingsPanel({
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
             <DialogTitle>{t('settings.addMcp')}</DialogTitle>
-            <DialogDescription>{t('settings.addMcpDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
@@ -2237,7 +2236,6 @@ function McpsSettingsPanel({
                 placeholder={mcpMetadataPlaceholder(transportType)}
                 className="min-h-24"
               />
-              <p className="text-xs text-muted-foreground">{t('settings.mcpMetadataHint')}</p>
             </div>
 
             <div className="grid gap-2">
