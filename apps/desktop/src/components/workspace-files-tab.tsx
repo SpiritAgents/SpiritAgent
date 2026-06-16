@@ -5,6 +5,14 @@ import type * as Monaco from "monaco-editor";
 import { Eye, Loader2, Play, Save, SquarePen, X } from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
@@ -133,6 +141,7 @@ export function WorkspaceFilesTab({
   const [draftText, setDraftText] = useState("");
   const [savedText, setSavedText] = useState("");
   const [markdownViewMode, setMarkdownViewMode] = useState<MarkdownViewMode>("edit");
+  const [unsavedCloseDialogOpen, setUnsavedCloseDialogOpen] = useState(false);
   const [monacoEditor, setMonacoEditor] = useState<MonacoEditor | null>(null);
   const editorRef = useRef<WorkspaceMonacoEditorHandle>(null);
   const previewScrollRef = useRef<ComponentRef<typeof ScrollArea>>(null);
@@ -394,18 +403,29 @@ export function WorkspaceFilesTab({
     }
   }, []);
 
-  const closeEditor = useCallback(() => {
-    if (dirty) {
-      const ok = window.confirm(t('workspace.unsavedChangesCloseConfirm'));
-      if (!ok) {
-        return;
-      }
-    }
+  const performCloseEditor = useCallback(() => {
     setSelectedEntry(null);
     setDoc(null);
     setDirty(false);
     setSaveError("");
-  }, [dirty]);
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    if (dirty) {
+      setUnsavedCloseDialogOpen(true);
+      return;
+    }
+    performCloseEditor();
+  }, [dirty, performCloseEditor]);
+
+  const dismissUnsavedCloseDialog = useCallback(() => {
+    setUnsavedCloseDialogOpen(false);
+  }, []);
+
+  const confirmCloseEditor = useCallback(() => {
+    setUnsavedCloseDialogOpen(false);
+    performCloseEditor();
+  }, [performCloseEditor]);
 
   const selectedEntryKey = selectedEntry
     ? selectedEntry.kind === "plan"
@@ -624,6 +644,37 @@ export function WorkspaceFilesTab({
           </div>
         </div>
       ) : null}
+
+      <Dialog
+        open={unsavedCloseDialogOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setUnsavedCloseDialogOpen(true);
+          } else {
+            dismissUnsavedCloseDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>{t("common.close")}</DialogTitle>
+            <DialogDescription>{t("workspace.unsavedChangesCloseConfirm")}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={dismissUnsavedCloseDialog}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button type="button" size="sm" onClick={confirmCloseEditor}>
+              {t("common.close")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
