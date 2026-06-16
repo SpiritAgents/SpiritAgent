@@ -190,6 +190,11 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     provider,
                     transport_kind,
                 )?;
+                if provider == Some(ModelProvider::Custom)
+                    && api_base.as_deref().map(str::trim).is_none_or(str::is_empty)
+                {
+                    return Err(anyhow!("端点不能为空"));
+                }
                 let api_base = api_base.unwrap_or_else(|| {
                     if provider == Some(ModelProvider::Azure) {
                         return azure_api_base_from_resource_name(
