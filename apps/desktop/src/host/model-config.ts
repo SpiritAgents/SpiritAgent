@@ -90,6 +90,9 @@ export function resolveDesktopTransportKind(
     ) {
       return 'openai-compatible';
     }
+    if (profile?.provider === 'azure') {
+      return 'open-responses';
+    }
     return requested;
   }
 

@@ -530,6 +530,13 @@ export async function addModelCommand(
 
     const name = request.name.trim();
     const provider = parseModelProviderId(request.provider);
+    if (
+      provider === 'azure'
+      && request.transportKind !== undefined
+      && request.transportKind !== 'open-responses'
+    ) {
+      throw new Error(i18n.t('error.azureOpenResponsesOnly'));
+    }
     const transportKind = resolveDesktopTransportKind({
       provider,
       transportKind: request.transportKind,
