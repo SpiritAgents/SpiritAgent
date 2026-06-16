@@ -414,11 +414,8 @@ function connectTransportOptionSummary(
   return option.summaryKey ? i18n.t(option.summaryKey) : undefined;
 }
 
-function resolveCustomConnectApiBase(
-  transportKind: DesktopTransportKind,
-  customApiBase: string,
-): string {
-  return resolveProviderConnectApiBase("custom", transportKind, customApiBase);
+function resolveCustomConnectApiBase(customApiBase: string): string {
+  return customApiBase.trim();
 }
 
 function normalizeModelCapabilitySelection(
@@ -2769,7 +2766,7 @@ function ModelsSettingsPanel({
         : selectedProvider === "google-vertex-ai" && vertexConnectMode !== "express"
           ? vertexApiBaseFromProjectAndLocation(connectVertexProject, connectVertexLocation)
         : selectedProvider === "custom"
-        ? resolveCustomConnectApiBase(connectTransportKind, connectApiBase)
+        ? resolveCustomConnectApiBase(connectApiBase)
         : connectTransportKindForRequest !== undefined
           ? resolveProviderConnectApiBase(
               selectedProvider,
@@ -2812,6 +2809,10 @@ function ModelsSettingsPanel({
       }
       if (vertexConnectMode === "express") {
         throw new Error(t('settings.vertexExpressCatalogUnsupported'));
+      }
+    } else if (selectedProvider === "custom") {
+      if (!connectApiBase.trim()) {
+        throw new Error(t('settings.endpointRequired'));
       }
     } else if (!connectApiKey.trim()) {
       throw new Error(t('settings.apiKeyRequired'));
@@ -2867,6 +2868,9 @@ function ModelsSettingsPanel({
     const apiBase = effectiveApiBase;
     if (!name) {
       throw new Error(t('settings.modelNameRequired'));
+    }
+    if (!connectApiBase.trim()) {
+      throw new Error(t('settings.endpointRequired'));
     }
     if (!connectApiKey.trim()) {
       throw new Error(t('settings.apiKeyRequired'));
@@ -3748,12 +3752,10 @@ function ModelsSettingsPanel({
                   id="connect-api-base"
                   value={connectApiBase}
                   onChange={(e) => setConnectApiBase(e.target.value)}
-                  placeholder={t('settings.optional')}
+                  placeholder={t('settings.endpointPlaceholder')}
                   autoComplete="off"
+                  required
                 />
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {t('settings.defaultEndpointHint', { endpoint: effectiveApiBase })}
-                </p>
               </div>
             ) : null}
             {selectedProvider === "amazon-bedrock" ? (
@@ -4068,6 +4070,7 @@ function ModelsSettingsPanel({
                       modelsBusy ||
                       modelsPreviewBusy ||
                       !connectName.trim() ||
+                      !connectApiBase.trim() ||
                       !connectApiKey.trim()
                     }
                     onClick={() => {
@@ -4088,7 +4091,12 @@ function ModelsSettingsPanel({
                   <Button
                     type="button"
                     size="sm"
-                    disabled={modelsBusy || modelsPreviewBusy || !connectApiKey.trim()}
+                    disabled={
+                      modelsBusy
+                      || modelsPreviewBusy
+                      || !connectApiBase.trim()
+                      || !connectApiKey.trim()
+                    }
                     onClick={() => {
                       void (async () => {
                         try {

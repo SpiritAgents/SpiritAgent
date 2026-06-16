@@ -333,7 +333,14 @@ function resolveManagedConnectApiBase(
       return azureApiBaseFromResourceName(resourceName);
     }
   }
-  if (!provider || provider === 'custom') {
+  if (provider === 'custom') {
+    const trimmed = requestApiBase.trim();
+    if (!trimmed) {
+      throw new Error(i18n.t('error.endpointRequired'));
+    }
+    return trimmed;
+  }
+  if (!provider) {
     const trimmed = requestApiBase.trim();
     return trimmed || defaultApiBaseForTransport('custom', transportKind);
   }

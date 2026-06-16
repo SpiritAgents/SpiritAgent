@@ -350,8 +350,7 @@ export function resolveConnectApiBase(
     case 'amazon-bedrock':
       return PROVIDER_PRESET_API_BASE['amazon-bedrock'];
     case 'custom': {
-      const trimmed = customApiBaseTrimmed.trim();
-      return trimmed.length > 0 ? trimmed : DEFAULT_CUSTOM_API_BASE;
+      return customApiBaseTrimmed.trim();
     }
   }
 }
@@ -365,11 +364,7 @@ export function resolveProviderConnectApiBase(
   customApiBaseTrimmed = '',
 ): string {
   if (provider === 'custom') {
-    const trimmedOverride = customApiBaseTrimmed.trim();
-    if (trimmedOverride.length > 0) {
-      return trimmedOverride;
-    }
-    return DEFAULT_CUSTOM_API_BASE;
+    return customApiBaseTrimmed.trim();
   }
 
   if (provider === 'openai') {
