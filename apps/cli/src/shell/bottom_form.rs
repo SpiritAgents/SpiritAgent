@@ -19,6 +19,7 @@ use crate::{
     rules::{RuleEntry, RuleScope},
     skills::{SkillEntry, SkillScope},
     ts_bridge::CliExtensionEntry,
+    vertex_models_list::vertex_api_base_from_project_and_location,
     view::{
         BottomFormFieldEditorView, BottomFormFieldView, BottomFormKind, BottomFormView,
         McpPromptArgumentBinding,
@@ -59,6 +60,13 @@ fn model_add_volcengine_provider_index() -> usize {
         .iter()
         .position(|id| id == "volcengine")
         .unwrap_or(10)
+}
+
+fn model_add_vertex_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "google-vertex-ai")
+        .unwrap_or(13)
 }
 
 const MCP_DEFAULT_TIMEOUT_MS: u64 = 20_000;
@@ -237,6 +245,7 @@ fn model_add_provider_label(id: &str) -> String {
         "volcengine" => t!("form.model.provider.volcengine"),
         "azure" => t!("form.model.provider.azure"),
         "amazon-bedrock" => t!("form.model.provider.amazon_bedrock"),
+        "google-vertex-ai" => t!("form.model.provider.google_vertex_ai"),
         "custom" => t!("form.model.provider.custom"),
         other => std::borrow::Cow::Borrowed(other),
     }
@@ -471,6 +480,70 @@ fn model_add_azure_resource_name_field(value: &str) -> BottomFormFieldView {
     }
 }
 
+fn model_add_vertex_project_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.vertex_project.label").into_owned(),
+        help: String::new(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.vertex_project.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
+fn model_add_vertex_location_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.vertex_location.label").into_owned(),
+        help: String::new(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.vertex_location.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
+fn model_add_vertex_client_email_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.vertex_client_email.label").into_owned(),
+        help: t!("form.model.field.vertex_client_email.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.vertex_client_email.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
+fn model_add_vertex_private_key_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.vertex_private_key.label").into_owned(),
+        help: t!("form.model.field.vertex_private_key.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.vertex_private_key.placeholder").into_owned(),
+            cursor,
+            mask: true,
+            disabled: false,
+        },
+    }
+}
+
 fn model_add_provider_to_enum(idx: usize) -> Option<ModelProvider> {
     model_add_provider_at_choice_index(idx)
 }
@@ -528,6 +601,28 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
     } else {
         ""
     };
+    let vertex_project_raw = if old_len == 7 && provider_idx == model_add_vertex_provider_index() {
+        bottom_form_text_value(form, 2)
+    } else {
+        ""
+    };
+    let vertex_location_raw = if old_len == 7 && provider_idx == model_add_vertex_provider_index() {
+        bottom_form_text_value(form, 3)
+    } else {
+        ""
+    };
+    let vertex_client_email_raw =
+        if old_len == 7 && provider_idx == model_add_vertex_provider_index() {
+            bottom_form_text_value(form, 4)
+        } else {
+            ""
+        };
+    let vertex_private_key_raw =
+        if old_len == 7 && provider_idx == model_add_vertex_provider_index() {
+            bottom_form_text_value(form, 5)
+        } else {
+            ""
+        };
 
     let bulk_custom = !model_add_is_preset_provider(provider_idx) && mode_custom == 1;
 
@@ -545,6 +640,16 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_azure_resource_name_field(azure_resource_raw),
             model_add_deployment_name_field(name_raw),
             model_add_context_length_field(context_length_raw),
+            model_add_api_key_field(api_key_raw),
+        ]
+    } else if provider_idx == model_add_vertex_provider_index() {
+        vec![
+            model_add_provider_field(provider_idx),
+            model_add_mode_field_preset(),
+            model_add_vertex_project_field(vertex_project_raw),
+            model_add_vertex_location_field(vertex_location_raw),
+            model_add_vertex_client_email_field(vertex_client_email_raw),
+            model_add_vertex_private_key_field(vertex_private_key_raw),
             model_add_api_key_field(api_key_raw),
         ]
     } else if model_add_is_preset_provider(provider_idx) {
@@ -602,6 +707,10 @@ pub(crate) struct ParsedModelAddForm {
     pub api_key: String,
     pub context_length: Option<u64>,
     pub azure_resource_name: Option<String>,
+    pub vertex_project: Option<String>,
+    pub vertex_location: Option<String>,
+    pub vertex_client_email: Option<String>,
+    pub vertex_private_key: Option<String>,
 }
 
 pub(crate) fn new_rules_form(entries: &[RuleEntry]) -> BottomFormView {
@@ -1213,11 +1322,11 @@ pub(crate) fn parse_model_add_connection(
 
     let key_idx = model_add_api_key_field_index(form);
     let api_key = bottom_form_text_value(form, key_idx).trim().to_string();
-    if api_key.is_empty() {
-        return Err(t!("form.model.validation.api_key_empty").into_owned());
-    }
 
     if provider == ModelProvider::Azure {
+        if api_key.is_empty() {
+            return Err(t!("form.model.validation.api_key_empty").into_owned());
+        }
         if form.fields.len() != 5 {
             return Err(t!("form.model.validation.invalid_form_kind").into_owned());
         }
@@ -1245,11 +1354,51 @@ pub(crate) fn parse_model_add_connection(
             api_key,
             context_length,
             azure_resource_name: Some(azure_resource_name),
+            vertex_project: None,
+            vertex_location: None,
+            vertex_client_email: None,
+            vertex_private_key: None,
         });
     }
 
+    let mut vertex_project = None;
+    let mut vertex_location = None;
+    let mut vertex_client_email = None;
+    let mut vertex_private_key = None;
+
+    if provider == ModelProvider::GoogleVertexAi {
+        if form.fields.len() != 7 {
+            return Err(t!("form.model.validation.invalid_form_kind").into_owned());
+        }
+        let project = bottom_form_text_value(form, 2).trim().to_string();
+        let location = bottom_form_text_value(form, 3).trim().to_string();
+        if project.is_empty() || location.is_empty() {
+            return Err(t!("form.model.validation.vertex_project_location_required").into_owned());
+        }
+        vertex_project = Some(project);
+        vertex_location = Some(location);
+        let client_email = bottom_form_text_value(form, 4).trim().to_string();
+        let private_key = bottom_form_text_value(form, 5).trim().to_string();
+        let has_client_email = !client_email.is_empty();
+        let has_private_key = !private_key.is_empty();
+        if has_client_email ^ has_private_key {
+            return Err(t!("form.model.validation.vertex_service_account_incomplete").into_owned());
+        }
+        if has_client_email {
+            vertex_client_email = Some(client_email);
+            vertex_private_key = Some(private_key);
+        }
+    } else if api_key.is_empty() {
+        return Err(t!("form.model.validation.api_key_empty").into_owned());
+    }
+
     let bulk = model_add_mode_bulk(form, provider_idx);
-    let api_base = if let Some(preset) = model_add_preset_api_base_by_choice_index(provider_idx) {
+    let api_base = if provider == ModelProvider::GoogleVertexAi {
+        vertex_api_base_from_project_and_location(
+            vertex_project.as_deref().unwrap_or(""),
+            vertex_location.as_deref().unwrap_or(""),
+        )
+    } else if let Some(preset) = model_add_preset_api_base_by_choice_index(provider_idx) {
         preset
     } else {
         let base_idx = match form.fields.len() {
@@ -1298,6 +1447,10 @@ pub(crate) fn parse_model_add_connection(
         api_key,
         context_length,
         azure_resource_name: None,
+        vertex_project,
+        vertex_location,
+        vertex_client_email,
+        vertex_private_key,
     })
 }
 

@@ -7,8 +7,11 @@ import {
   assertGoogleGeminiApiBase,
   googleNativeModelsListUrl,
 } from './google-gemini-endpoints.js';
-import { listBedrockModels } from './bedrock-models.js';
 import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
+import { extractVertexProjectAndLocationFromApiBase } from './google-vertex-endpoints.js';
+import { normalizeOpenAiApiBase } from './openai-api-base.js';
+
+export { normalizeOpenAiApiBase } from './openai-api-base.js';
 
 export type { ProviderModelTransportKind };
 
@@ -36,11 +39,6 @@ export interface ProviderListedModelEntry {
 export const OPENAI_MODELS_PATH = '/models';
 export const ANTHROPIC_MODELS_PATH = '/models';
 const ANTHROPIC_VERSION = '2023-06-01';
-
-/** Trim and remove trailing slashes from API root (e.g. `https://host/v1`). */
-export function normalizeOpenAiApiBase(baseUrl: string): string {
-  return baseUrl.trim().replace(/\/+$/, '');
-}
 
 /** Full URL for the models list request. */
 export function openAiCompatibleModelsListUrl(baseUrl: string): string {
@@ -503,6 +501,10 @@ export interface ListProviderModelIdsOptions {
   accessKeyId?: string;
   secretAccessKey?: string;
   sessionToken?: string;
+  vertexProject?: string;
+  vertexLocation?: string;
+  vertexClientEmail?: string;
+  vertexPrivateKey?: string;
   signal?: AbortSignal;
 }
 
@@ -700,6 +702,10 @@ export async function listProviderModels(
     return listGoogleModels(options);
   }
 
+  if (options.provider === 'google-vertex-ai') {
+    return listGoogleVertexProviderModels(options);
+  }
+
   if (options.provider === 'amazon-bedrock') {
     return listBedrockProviderModels(options);
   }
@@ -711,6 +717,36 @@ export async function listProviderModels(
   return listOpenAiCompatibleModels(options);
 }
 
+export async function listGoogleVertexProviderModels(
+  options: ListProviderModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const extracted = extractVertexProjectAndLocationFromApiBase(options.baseUrl);
+  const project = options.vertexProject?.trim() || extracted.project;
+  const location = options.vertexLocation?.trim() || extracted.location;
+  if (!project || !location) {
+    throw new Error('Google Vertex 列模型需要填写 GCP 项目 ID 与区域（location）。');
+  }
+
+  try {
+    const { listVertexModels } = await import('./google-vertex-models.js');
+    return await listVertexModels({
+      project,
+      location,
+      ...(options.apiKey.trim() ? { apiKey: options.apiKey.trim() } : {}),
+      ...(options.vertexClientEmail?.trim()
+        ? { vertexClientEmail: options.vertexClientEmail.trim() }
+        : {}),
+      ...(options.vertexPrivateKey?.trim()
+        ? { vertexPrivateKey: options.vertexPrivateKey.trim() }
+        : {}),
+      ...(options.signal ? { signal: options.signal } : {}),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`列模型失败（Google Vertex AI）：${message}`);
+  }
+}
+
 export async function listBedrockProviderModels(
   options: ListProviderModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
@@ -720,6 +756,7 @@ export async function listBedrockProviderModels(
   }
 
   try {
+    const { listBedrockModels } = await import('./bedrock-models.js');
     return await listBedrockModels({
       region,
       ...(options.apiKey.trim() ? { apiKey: options.apiKey.trim() } : {}),
@@ -735,6 +772,10 @@ export async function listBedrockProviderModels(
 }
 
 export { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
+export {
+  vertexApiBaseFromProjectAndLocation,
+  extractVertexProjectAndLocationFromApiBase,
+} from './google-vertex-endpoints.js';
 
 export async function listMoonshotModels(
   options: ListOpenAiCompatibleModelIdsOptions,
