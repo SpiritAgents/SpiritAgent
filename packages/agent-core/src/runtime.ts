@@ -49,6 +49,7 @@ import {
 } from './runtime/helpers.js';
 import { formatUserMessageContentForLlm } from './runtime/user-turn-timestamp.js';
 import { prependSubagentWorktreeMeta } from './runtime/subagent-worktree-meta.js';
+import { scopeAgentRuntimeOptionsForSubagentWorkspace } from './runtime/subagent-workspace-scope.js';
 import { prepareSubmittedUserTurn as prepareSubmittedUserTurnInternal } from './runtime/context.js';
 import {
   appendHookAdditionalContexts,
@@ -2782,6 +2783,7 @@ export class AgentRuntime<
 
     let childToolExecutor: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>['toolExecutor']
       | undefined;
+    let childWorkspaceRoot: string | undefined;
     if (request.worktree === true) {
       const bootstrap = this.options.bootstrapSubagentWorkspace;
       const parentWorkspaceRoot = resolveHookSessionContext(this.options).workspaceRoot?.trim() ?? '';
@@ -2808,12 +2810,14 @@ export class AgentRuntime<
         record.summary.worktreeBranch = boot.branchName;
       }
       childToolExecutor = boot.toolExecutor ?? this.options.toolExecutor;
+      childWorkspaceRoot = boot.workspaceRoot;
     }
 
     const childRuntime = this.createChildRuntime(
       record.summary.sessionId,
       record.summary.title,
       childToolExecutor,
+      childWorkspaceRoot,
     );
     this.childSessionsStore.push(record);
 
@@ -3143,11 +3147,15 @@ export class AgentRuntime<
     subagentSessionId: string,
     subagentTitle: string,
     childToolExecutor?: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>['toolExecutor'],
+    childWorkspaceRoot?: string,
   ): AgentRuntime<Config, State, ToolRequest, TrustTarget> {
     const baseExecutor = childToolExecutor ?? this.options.toolExecutor;
+    const scopedOptions = childWorkspaceRoot?.trim()
+      ? scopeAgentRuntimeOptionsForSubagentWorkspace(this.options, childWorkspaceRoot)
+      : this.options;
     return new AgentRuntime<Config, State, ToolRequest, TrustTarget>(
       {
-        ...this.options,
+        ...scopedOptions,
         toolExecutor: createSubagentToolExecutor(
           baseExecutor,
           subagentSessionId,
