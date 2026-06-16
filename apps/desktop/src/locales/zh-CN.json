@@ -69,7 +69,6 @@
     "hooksScopeUser": "用户",
     "hooksScopeWorkspace": "工作区",
     "hooksAdd": "添加 Hook",
-    "addHookDescription": "写入 hooks.json；command 路径相对配置目录解析。",
     "hooksUserDirHint": "Spirit 用户目录下的 hooks.json，跨工作区共享",
     "hooksWorkspaceDirHint": "工作区 .spirit/hooks.json",
     "deleteHook": "删除 Hook",

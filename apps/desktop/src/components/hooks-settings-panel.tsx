@@ -289,7 +289,6 @@ export function HooksSettingsPanel({
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
             <DialogTitle>{t("settings.hooksAdd")}</DialogTitle>
-            <DialogDescription>{t("settings.addHookDescription")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
