@@ -53,6 +53,30 @@ function focusRenameInput(input: HTMLInputElement, filename: string): void {
   input.setSelectionRange(0, lastDot);
 }
 
+function isDragLeaveForCurrentTarget(event: DragEvent<HTMLElement>): boolean {
+  const related = event.relatedTarget;
+  if (!(related instanceof Node)) {
+    return true;
+  }
+  return !event.currentTarget.contains(related);
+}
+
+function isExplorerFolderDropTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  return target.closest("[data-explorer-folder-drop]") !== null;
+}
+
+/** UL/LI 间隙不应切换为父目录高亮，仅保持 drop 可用。 */
+function isExplorerListChromeDragTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const tag = target.tagName;
+  return tag === "UL" || tag === "LI";
+}
+
 export { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 
 export function joinExplorerRel(parent: string, name: string): string {
@@ -183,7 +207,7 @@ function ExplorerRow({
     "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left",
     "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
     selected && "bg-foreground/[0.08] dark:bg-foreground/12",
-    dropHighlight && "bg-primary/15 ring-1 ring-primary/40",
+    dropHighlight && "bg-primary/15",
   );
   const labelClassName = cn(
     "min-w-0 truncate",
@@ -225,6 +249,7 @@ function ExplorerRow({
       className={rowClassName}
       style={rowStyle}
       aria-current={selected ? "true" : undefined}
+      {...(onDragOver ? { "data-explorer-folder-drop": target.relativePath } : {})}
       onClick={onClick}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -738,7 +763,36 @@ export function WorkspaceFilesPanel({
       return <p className="py-1 pl-1 text-destructive/90">{state.message}</p>;
     }
     return (
-      <ul className="list-none space-y-0.5 p-0">
+      <div
+        onDragOver={(event) => {
+          event.stopPropagation();
+          if (
+            isExplorerFolderDropTarget(event.target)
+            || isExplorerListChromeDragTarget(event.target)
+          ) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            return;
+          }
+          handleDirectoryDragOver(event, rel);
+        }}
+        onDragLeave={(event) => {
+          if (!isDragLeaveForCurrentTarget(event)) {
+            return;
+          }
+          const related = event.relatedTarget;
+          if (isExplorerFolderDropTarget(related)) {
+            return;
+          }
+          event.stopPropagation();
+          setDragOverDirectory((current) => (current === rel ? null : current));
+        }}
+        onDrop={(event) => {
+          event.stopPropagation();
+          void handleDirectoryDrop(event, rel);
+        }}
+      >
+        <ul className="list-none space-y-0.5 p-0">
         {state.entries.map((entry) => {
           const childRel = joinExplorerRel(rel, entry.name);
           const isDir = entry.kind === "dir";
@@ -810,15 +864,26 @@ export function WorkspaceFilesPanel({
               dropHighlight={dragOverDirectory === childRel}
               draggable
               onDragStart={(event) => handleDragStart(event, target)}
-              onDragOver={(event) => handleDirectoryDragOver(event, childRel)}
-              onDragLeave={() => setDragOverDirectory((current) => (current === childRel ? null : current))}
-              onDrop={(event) => void handleDirectoryDrop(event, childRel)}
+              onDragOver={(event) => {
+                event.stopPropagation();
+                handleDirectoryDragOver(event, childRel);
+              }}
+              onDragLeave={(event) => {
+                if (isDragLeaveForCurrentTarget(event)) {
+                  event.stopPropagation();
+                }
+              }}
+              onDrop={(event) => {
+                event.stopPropagation();
+                void handleDirectoryDrop(event, childRel);
+              }}
             >
               {open ? <div className="min-w-0">{renderDirBody(childRel, depth + 1)}</div> : null}
             </ExplorerRow>
           );
         })}
-      </ul>
+        </ul>
+      </div>
     );
   };
 
@@ -864,9 +929,6 @@ export function WorkspaceFilesPanel({
             role="tree"
             aria-label={t("workspace.fileList")}
             aria-busy={cache[""]?.status === "loading" ? true : undefined}
-            onDragOver={(event) => handleDirectoryDragOver(event, "")}
-            onDragLeave={() => setDragOverDirectory((current) => (current === "" ? null : current))}
-            onDrop={(event) => void handleDirectoryDrop(event, "")}
           >
             {renderDirBody("", 0)}
             <div className="mt-1">{renderPlanItem()}</div>
