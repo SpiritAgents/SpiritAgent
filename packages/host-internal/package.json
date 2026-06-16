@@ -39,6 +39,10 @@
       "types": "./dist/bedrock-mantle.d.ts",
       "default": "./dist/bedrock-mantle.js"
     },
+    "./google-vertex-endpoints": {
+      "types": "./dist/google-vertex-endpoints.d.ts",
+      "default": "./dist/google-vertex-endpoints.js"
+    },
     "./reasoning-effort": {
       "types": "./dist/reasoning-effort.d.ts",
       "default": "./dist/reasoning-effort.js"
