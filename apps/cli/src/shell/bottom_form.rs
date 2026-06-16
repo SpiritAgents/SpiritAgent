@@ -9,7 +9,7 @@ use crate::{
     mcp::{McpCapabilityToggles, McpScope, McpServerConfig, McpTransportConfig},
     mcp_types::McpDiscoveredPrompt,
     model_provider_presets::{
-        model_add_default_custom_api_base, model_add_preset_api_base_by_choice_index,
+        model_add_preset_api_base_by_choice_index,
         model_add_picker_order_ids, model_add_provider_at_choice_index,
         model_add_provider_id_at_choice_index,         model_add_requires_manual_single_provider,
         azure_api_base_from_resource_name,
@@ -1410,10 +1410,9 @@ pub(crate) fn parse_model_add_connection(
         };
         let v = bottom_form_text_value(form, base_idx).trim().to_string();
         if v.is_empty() {
-            model_add_default_custom_api_base(transport_kind)
-        } else {
-            v
+            return Err(t!("form.model.validation.api_base_empty").into_owned());
         }
+        v
     };
 
     let model_name = if bulk {
