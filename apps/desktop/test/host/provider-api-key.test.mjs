@@ -32,7 +32,7 @@ test('buildModelSecretKeyPresence reads each provider once', () => {
       { name: 'c', provider: 'anthropic' },
       { name: 'legacy-only' },
     ],
-    (providerId) => {
+    (providerId, _profile) => {
       providerReads.push(providerId);
       return providerId === 'openai';
     },

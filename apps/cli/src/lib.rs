@@ -18,6 +18,7 @@ pub mod model_provider_presets;
 pub mod model_catalog_display;
 pub mod model_registry;
 pub mod openai_models_list;
+pub mod vertex_models_list;
 pub mod plan;
 pub mod ports;
 pub mod fork;

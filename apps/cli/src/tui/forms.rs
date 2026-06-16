@@ -318,11 +318,24 @@ impl TuiShell {
             self.forms.active = None;
 
             if parsed.bulk {
-                match openai_models_list::list_model_ids(
-                    parsed.api_base.as_str(),
-                    parsed.api_key.as_str(),
-                    parsed.transport_kind,
-                ) {
+                let list_result = if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
+                    crate::vertex_models_list::list_vertex_model_ids(
+                        crate::vertex_models_list::VertexListOptions {
+                            project: parsed.vertex_project.clone().unwrap_or_default(),
+                            location: parsed.vertex_location.clone().unwrap_or_default(),
+                            api_key: parsed.api_key.clone(),
+                            client_email: parsed.vertex_client_email.clone(),
+                            private_key: parsed.vertex_private_key.clone(),
+                        },
+                    )
+                } else {
+                    openai_models_list::list_model_ids(
+                        parsed.api_base.as_str(),
+                        parsed.api_key.as_str(),
+                        parsed.transport_kind,
+                    )
+                };
+                match list_result {
                     Ok(ids) => match self.apply_model_add_bulk(&ids, &parsed) {
                         Ok(msg) => {
                             self.messages.push(ChatMessage {
@@ -518,6 +531,14 @@ impl TuiShell {
                     serde_json::json!(parsed.transport_kind.as_str()),
                 );
             }
+            if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
+                if let Some(project) = parsed.vertex_project.as_deref() {
+                    extra.insert("vertexProject".to_string(), serde_json::json!(project));
+                }
+                if let Some(location) = parsed.vertex_location.as_deref() {
+                    extra.insert("vertexLocation".to_string(), serde_json::json!(location));
+                }
+            }
             config.add_model(ModelProfile {
                 name: id.clone(),
                 api_base: parsed.api_base.clone(),
@@ -526,7 +547,24 @@ impl TuiShell {
                 context_length: None,
                 extra,
             });
-            if let Err(err) = self
+            if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
+                if !parsed.api_key.trim().is_empty() {
+                    if let Err(err) = crate::model_registry::save_provider_api_key(
+                        crate::model_registry::ModelProvider::GoogleVertexAi.as_str(),
+                        parsed.api_key.as_str(),
+                    ) {
+                        return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
+                    }
+                } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some() {
+                    if let Err(err) = crate::model_registry::save_provider_vertex_credentials(
+                        crate::model_registry::ModelProvider::GoogleVertexAi.as_str(),
+                        parsed.vertex_client_email.as_deref().unwrap_or(""),
+                        parsed.vertex_private_key.as_deref().unwrap_or(""),
+                    ) {
+                        return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
+                    }
+                }
+            } else if let Err(err) = self
                 .secret_store
                 .save_model_api_key(id, parsed.api_key.as_str())
             {
