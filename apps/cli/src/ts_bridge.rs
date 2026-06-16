@@ -3863,6 +3863,71 @@ mod tests {
     }
 
     #[test]
+    fn resolve_transport_config_json_uses_azure_official_responses_provider() {
+        let Some(runtime) = make_test_runtime() else {
+            return;
+        };
+
+        let previous_api_key = env::var(super::ENV_API_KEY).ok();
+        // SAFETY: 单测串行写入进程级环境变量，结束后恢复。
+        unsafe {
+            env::set_var(super::ENV_API_KEY, "test-azure-key");
+        }
+
+        let mut next = runtime.config().clone();
+        next.models.push(ModelProfile {
+            name: "my-gpt4o-deploy".to_string(),
+            api_base: "https://my-openai-resource.openai.azure.com/openai/v1".to_string(),
+            provider: Some(ModelProvider::Azure),
+            reasoning_effort: None,
+            context_length: None,
+            extra: serde_json::Map::from_iter([
+                ("transportKind".to_string(), json!("open-responses")),
+                ("azureResourceName".to_string(), json!("my-openai-resource")),
+            ]),
+        });
+        next.active_model = "my-gpt4o-deploy".to_string();
+
+        let transport = runtime
+            .resolve_transport_config_json_for(&next)
+            .expect("resolve transport config");
+
+        assert_eq!(
+            transport.get("transportKind").and_then(Value::as_str),
+            Some("open-responses")
+        );
+        assert_eq!(
+            transport.get("baseUrl").and_then(Value::as_str),
+            Some("https://my-openai-resource.openai.azure.com/openai/v1")
+        );
+        assert_eq!(
+            transport.get("responsesProvider").and_then(Value::as_str),
+            Some("azure")
+        );
+        assert_eq!(
+            transport.get("llmVendor").and_then(Value::as_str),
+            Some("azure")
+        );
+        assert_eq!(
+            transport
+                .get("azureResourceName")
+                .and_then(Value::as_str),
+            Some("my-openai-resource")
+        );
+        assert_eq!(
+            transport.get("model").and_then(Value::as_str),
+            Some("my-gpt4o-deploy")
+        );
+
+        unsafe {
+            match previous_api_key {
+                Some(value) => env::set_var(super::ENV_API_KEY, value),
+                None => env::remove_var(super::ENV_API_KEY),
+            }
+        }
+    }
+
+    #[test]
     fn resolve_transport_config_json_routes_bedrock_mantle_openai_to_open_responses() {
         let Some(runtime) = make_test_runtime() else {
             return;
