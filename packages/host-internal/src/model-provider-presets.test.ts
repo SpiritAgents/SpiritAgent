@@ -17,6 +17,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('xai'), 'xai');
   assert.equal(parseModelProviderId('custom'), 'custom');
   assert.equal(parseModelProviderId('moonshot-ai'), 'moonshot-ai');
+  assert.equal(parseModelProviderId('z-ai'), 'z-ai');
   assert.equal(parseModelProviderId('azure'), 'azure');
   assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
@@ -98,6 +99,13 @@ test('resolveProviderConnectApiBase returns OpenRouter preset base', () => {
   assert.equal(
     resolveProviderConnectApiBase('openrouter', 'anthropic'),
     'https://openrouter.ai/api/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Z.ai preset base', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('z-ai', 'openai-compatible'),
+    'https://api.z.ai/api/paas/v4',
   );
 });
 

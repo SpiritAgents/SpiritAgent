@@ -8,6 +8,7 @@ export type OpenAiLlmVendor =
   | 'deepseek'
   | 'xai'
   | 'moonshot-ai'
+  | 'z-ai'
   | 'minimax'
   | 'alibaba'
   | 'vercel-ai-gateway'

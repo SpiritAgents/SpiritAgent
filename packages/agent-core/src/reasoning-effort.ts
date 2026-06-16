@@ -6,6 +6,7 @@ export type ModelReasoningProvider =
   | 'deepseek'
   | 'xai'
   | 'moonshot-ai'
+  | 'z-ai'
   | 'minimax'
   | 'alibaba'
   | 'anthropic'
