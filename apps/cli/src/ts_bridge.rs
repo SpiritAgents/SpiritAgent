@@ -2119,6 +2119,7 @@ impl TsBridgeRuntime {
                 }
             }
         }
+        attach_google_vertex_transport_fields(&mut transport, active)?;
         self.attach_video_generation_config(&mut transport, config)?;
         Ok(transport)
     }
@@ -2271,6 +2272,24 @@ impl TsBridgeRuntime {
             if crate::model_registry::has_bedrock_runtime_credentials_in_keyring()? {
                 return Ok(String::new());
             }
+        } else if provider == Some(ModelProvider::GoogleVertexAi) {
+            if let Ok(value) = crate::model_registry::load_provider_api_key_from_keyring(
+                ModelProvider::GoogleVertexAi.as_str(),
+            ) {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() {
+                    return Ok(trimmed.to_string());
+                }
+            }
+            if let Some(profile) = self.config.active_model_profile() {
+                if crate::model_registry::has_google_vertex_runtime_credentials(
+                    "",
+                    profile.vertex_project().as_deref(),
+                    profile.vertex_location().as_deref(),
+                ) {
+                    return Ok(String::new());
+                }
+            }
         } else if let Some(provider) = provider {
             if let Ok(value) =
                 crate::model_registry::load_provider_api_key_from_keyring(provider.as_str())
@@ -2291,6 +2310,13 @@ impl TsBridgeRuntime {
         if provider == Some(ModelProvider::AmazonBedrock) {
             return Err(anyhow!(
                 "未检测到 Amazon Bedrock 凭证。请在 Desktop 连接向导配置 Bearer API Key 或 IAM 凭证，或设置环境变量 {}",
+                ENV_API_KEY
+            ));
+        }
+
+        if provider == Some(ModelProvider::GoogleVertexAi) {
+            return Err(anyhow!(
+                "未检测到 Google Vertex AI 凭证。请在 Desktop 连接向导配置 Express API Key、服务账号或 ADC（project/location），或设置环境变量 {}",
                 ENV_API_KEY
             ));
         }
@@ -3423,6 +3449,45 @@ fn open_responses_sdk_provider(provider: Option<ModelProvider>) -> Option<&'stat
     }
 }
 
+fn attach_google_vertex_transport_fields(
+    transport: &mut Value,
+    profile: &crate::model_registry::ModelProfile,
+) -> Result<()> {
+    if profile.provider != Some(ModelProvider::GoogleVertexAi) {
+        return Ok(());
+    }
+
+    let obj = transport
+        .as_object_mut()
+        .ok_or_else(|| anyhow!("transport config 不是 JSON 对象"))?;
+
+    if let Some(project) = profile.vertex_project() {
+        obj.insert("vertexProject".to_string(), json!(project));
+    }
+    if let Some(location) = profile.vertex_location() {
+        obj.insert("vertexLocation".to_string(), json!(location));
+    }
+
+    if let Ok(client_email) = crate::model_registry::load_provider_vertex_client_email_from_keyring(
+        ModelProvider::GoogleVertexAi.as_str(),
+    ) {
+        let trimmed = client_email.trim();
+        if !trimmed.is_empty() {
+            obj.insert("vertexClientEmail".to_string(), json!(trimmed));
+        }
+    }
+    if let Ok(private_key) = crate::model_registry::load_provider_vertex_private_key_from_keyring(
+        ModelProvider::GoogleVertexAi.as_str(),
+    ) {
+        let trimmed = private_key.trim();
+        if !trimmed.is_empty() {
+            obj.insert("vertexPrivateKey".to_string(), json!(trimmed));
+        }
+    }
+
+    Ok(())
+}
+
 fn model_provider_vendor(provider: ModelProvider) -> &'static str {
     match provider {
         ModelProvider::Deepseek => "deepseek",
@@ -3437,6 +3502,7 @@ fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Openrouter => "openrouter",
         ModelProvider::Openai => "openai",
         ModelProvider::Google => "google",
+        ModelProvider::GoogleVertexAi => "google-vertex-ai",
         ModelProvider::Volcengine => "volcengine",
         ModelProvider::Azure => "azure",
         ModelProvider::AmazonBedrock => {
