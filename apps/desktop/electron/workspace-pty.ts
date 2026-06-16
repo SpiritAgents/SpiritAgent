@@ -5,9 +5,9 @@ import path from 'node:path';
 
 import type { WebContents } from 'electron';
 
-import { defaultShellForPty } from '@spirit-agent/host-internal/default-terminal-shell';
+import { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spirit-agent/host-internal/default-terminal-shell';
 
-export { defaultShellForPty } from '@spirit-agent/host-internal/default-terminal-shell';
+export { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spirit-agent/host-internal/default-terminal-shell';
 
 const require = createRequire(import.meta.url);
 
@@ -17,6 +17,17 @@ type PtySession = {
   resize: (cols: number, rows: number) => void;
   write: (data: string) => void;
 };
+
+function formatPtyProcessTitle(raw: string): string {
+  const base = path.basename(raw.trim());
+  if (!base) {
+    return raw.trim();
+  }
+  if (process.platform === 'win32' && base.toLowerCase().endsWith('.exe')) {
+    return base.slice(0, -4);
+  }
+  return base;
+}
 
 function resolveValidatedCwd(raw: string): string {
   const resolved = path.resolve(raw.trim());
@@ -36,14 +47,16 @@ export class WorkspacePtyManager {
   createSession(
     webContents: WebContents,
     request: { cwd: string; cols: number; rows: number },
-  ): { ok: true; id: string } | { ok: false; error: string } {
+  ): { ok: true; id: string; shellDisplayName: string } | { ok: false; error: string } {
     const cwd = resolveValidatedCwd(request.cwd);
     const cols = Math.max(2, Math.min(512, Math.floor(request.cols)));
     const rows = Math.max(1, Math.min(256, Math.floor(request.rows)));
     let pty: import('node-pty').IPty;
+    let shellFile = '';
     try {
       const mod = loadPtyModule();
       const { file, args } = defaultShellForPty();
+      shellFile = file;
       const spawnOptions = {
         name: 'xterm-256color',
         cols,
@@ -83,7 +96,30 @@ export class WorkspacePtyManager {
     };
 
     pty.onData(forward);
+
+    let lastProcessTitle = formatPtyProcessTitle(pty.process);
+    const emitProcessTitle = (): void => {
+      let raw = '';
+      try {
+        raw = pty.process;
+      } catch {
+        return;
+      }
+      const title = formatPtyProcessTitle(raw);
+      if (!title || title === lastProcessTitle) {
+        return;
+      }
+      lastProcessTitle = title;
+      if (!webContents.isDestroyed()) {
+        webContents.send('desktop:pty-process-title', { id, title });
+      }
+    };
+
+    emitProcessTitle();
+    const processPollTimer = setInterval(emitProcessTitle, 500);
+
     pty.onExit(({ exitCode, signal }) => {
+      clearInterval(processPollTimer);
       this.sessions.delete(id);
       if (!webContents.isDestroyed()) {
         webContents.send('desktop:pty-exit', { id, exitCode, signal });
@@ -93,6 +129,7 @@ export class WorkspacePtyManager {
     this.sessions.set(id, {
       webContentsId: wcId,
       kill: () => {
+        clearInterval(processPollTimer);
         try {
           pty.kill();
         } catch {
@@ -118,7 +155,7 @@ export class WorkspacePtyManager {
       },
     });
 
-    return { ok: true, id };
+    return { ok: true, id, shellDisplayName: shellDisplayNameForResolvedShell(shellFile) };
   }
 
   assertOwner(webContents: WebContents, id: string): PtySession | null {

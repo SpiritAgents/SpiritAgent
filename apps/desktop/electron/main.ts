@@ -961,7 +961,7 @@ if (gotSpiritSingleInstanceLock) {
     (
       event,
       request: { cwd: string; cols: number; rows: number },
-    ): { ok: true; id: string } | { ok: false; error: string } => {
+    ): { ok: true; id: string; shellDisplayName: string } | { ok: false; error: string } => {
       return workspacePtyManager.createSession(event.sender, request);
     },
   );

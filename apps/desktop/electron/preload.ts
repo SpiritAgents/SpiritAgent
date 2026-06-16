@@ -539,6 +539,7 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   ptySubscribe(callbacks: {
     onData: (payload: { id: string; data: string }) => void;
     onExit: (payload: { id: string; exitCode: number; signal?: number }) => void;
+    onProcessTitle?: (payload: { id: string; title: string }) => void;
   }) {
     const onData = (_event: Electron.IpcRendererEvent, payload: { id: string; data: string }) => {
       callbacks.onData(payload);
@@ -549,11 +550,19 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
     ) => {
       callbacks.onExit(payload);
     };
+    const onProcessTitle = (
+      _event: Electron.IpcRendererEvent,
+      payload: { id: string; title: string },
+    ) => {
+      callbacks.onProcessTitle?.(payload);
+    };
     ipcRenderer.on('desktop:pty-data', onData);
     ipcRenderer.on('desktop:pty-exit', onExit);
+    ipcRenderer.on('desktop:pty-process-title', onProcessTitle);
     return () => {
       ipcRenderer.removeListener('desktop:pty-data', onData);
       ipcRenderer.removeListener('desktop:pty-exit', onExit);
+      ipcRenderer.removeListener('desktop:pty-process-title', onProcessTitle);
     };
   },
   showNotification(request: {
