@@ -1,14 +1,19 @@
 import type * as acp from '@agentclientprotocol/sdk';
 import type * as schema from '@agentclientprotocol/sdk';
+import { RequestError } from '@agentclientprotocol/sdk';
 import type { JsonValue, RuntimeEvent } from '@spirit-agent/core';
-import { AVAILABLE_MODES } from './types.js';
-import type { AcpServerConfig } from './types.js';
-import { SessionManager } from './session-manager.js';
+import type { AuthState } from './auth/auth-state.js';
+import { buildAuthMethods } from './auth/build-auth-methods.js';
+import { TERMINAL_AUTH_METHOD_ID } from './auth/constants.js';
+import { canCreateSession } from './auth/session-auth.js';
+import { hasResolvableCredentials } from './credentials/index.js';
 import { mapRuntimeEventToUpdate, createEventMapperState, type EventMapperState } from './event-mapper.js';
 import { handleApprovalRequest, handleQuestionsRequest } from './permission-bridge.js';
 import { buildAvailableCommands, parseSlashCommand, buildActiveSkillPayload, upsertActiveSkill } from './skill-bridge.js';
 import { extractPromptImages } from './prompt-images.js';
-import type { AuthState } from './auth/auth-state.js';
+import { SessionManager } from './session-manager.js';
+import { AVAILABLE_MODES } from './types.js';
+import type { AcpServerConfig } from './types.js';
 
 /**
  * Spirit Agent implementation of the ACP Agent interface.
@@ -39,6 +44,9 @@ export class SpiritAcpAgent implements acp.Agent {
       protocolVersion: 1, // PROTOCOL_VERSION
       agentCapabilities: {
         loadSession: false,
+        auth: {
+          logout: {},
+        },
         promptCapabilities: {
           image: true,
         },
@@ -51,13 +59,20 @@ export class SpiritAcpAgent implements acp.Agent {
         title: 'Spirit Agent',
         version: '0.2.0',
       },
-      authMethods: [],
+      authMethods: buildAuthMethods(),
     };
   }
 
   async newSession(
     params: schema.NewSessionRequest,
   ): Promise<schema.NewSessionResponse> {
+    if (!canCreateSession(this.config, this.authState)) {
+      throw RequestError.authRequired(
+        undefined,
+        'Authentication required before creating a session',
+      );
+    }
+
     const workspaceRoot = params.cwd;
 
     const result = await this.sessionManager.createSession(
@@ -103,9 +118,30 @@ export class SpiritAcpAgent implements acp.Agent {
   }
 
   async authenticate(
-    _params: schema.AuthenticateRequest,
+    params: schema.AuthenticateRequest,
   ): Promise<schema.AuthenticateResponse | void> {
-    // Authentication is handled via environment variables (SPIRIT_ACP_API_KEY)
+    if (params.methodId !== TERMINAL_AUTH_METHOD_ID) {
+      throw RequestError.invalidParams(
+        { methodId: params.methodId, expected: TERMINAL_AUTH_METHOD_ID },
+        `Unsupported authentication method: ${params.methodId}`,
+      );
+    }
+
+    if (!hasResolvableCredentials(this.config.spiritDataDir)) {
+      throw RequestError.authRequired(
+        { reason: 'missing_credentials' },
+        'Provider credentials are not configured. Run setup in the terminal first.',
+      );
+    }
+
+    this.authState.markAuthenticated();
+    return {};
+  }
+
+  async unstable_logout(
+    _params: schema.LogoutRequest,
+  ): Promise<schema.LogoutResponse | void> {
+    this.authState.logout();
     return {};
   }
 
