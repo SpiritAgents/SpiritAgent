@@ -241,6 +241,7 @@ fn model_add_provider_label(id: &str) -> String {
         "openrouter" => t!("form.model.provider.openrouter"),
         "moonshot-ai" => t!("form.model.provider.moonshot-ai"),
         "z-ai" => t!("form.model.provider.z-ai"),
+        "zhipu-ai" => t!("form.model.provider.zhipu-ai"),
         "alibaba" => t!("form.model.provider.alibaba"),
         "minimax" => t!("form.model.provider.minimax"),
         "volcengine" => t!("form.model.provider.volcengine"),
