@@ -1085,6 +1085,25 @@ mod tests {
         assert_eq!(model.transport_kind(), super::ModelTransportKind::OpenAiCompatible);
         assert!(model.extra.get("transportKind").is_none());
     }
+
+    #[test]
+    fn deserializes_siliconflow_provider_site_from_desktop_config() {
+        let raw = r#"{
+          "models": [{
+            "name": "deepseek-ai/DeepSeek-V3",
+            "apiBase": "https://api.siliconflow.cn/v1",
+            "provider": "siliconflow",
+            "providerSite": "cn",
+            "transportKind": "anthropic"
+          }],
+          "activeModel": "deepseek-ai/DeepSeek-V3"
+        }"#;
+        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
+        let model = cfg.models.first().expect("model");
+        assert_eq!(model.provider, Some(super::ModelProvider::Siliconflow));
+        assert_eq!(model.provider_site().as_deref(), Some("cn"));
+        assert_eq!(model.transport_kind(), super::ModelTransportKind::Anthropic);
+    }
 }
 
 pub fn keyring_entry() -> Result<keyring::Entry> {
