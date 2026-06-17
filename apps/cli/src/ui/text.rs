@@ -1,4 +1,4 @@
-use ratatui::layout::Rect;
+use ratatui::{layout::Rect, style::Style, text::Span};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 pub(in crate::ui) fn input_visual_line_count(text: &str, max_width: usize) -> usize {
@@ -142,6 +142,57 @@ pub(in crate::ui) fn truncate_from_left_to_width(text: &str, max_width: usize) -
     collected.reverse();
 
     format!("…{}", collected.into_iter().collect::<String>())
+}
+
+pub(in crate::ui) fn slice_styled_runs_from_display_column(
+    runs: &[(String, Style)],
+    start_col: usize,
+    max_width: usize,
+) -> Vec<Span<'static>> {
+    if max_width == 0 {
+        return Vec::new();
+    }
+
+    let mut out = Vec::new();
+    let mut remaining = max_width;
+    let mut skipping = start_col;
+
+    for (text, style) in runs {
+        let mut chunk = String::new();
+        for ch in text.chars() {
+            let ch_width = UnicodeWidthChar::width(ch).unwrap_or(0);
+            if ch_width == 0 {
+                chunk.push(ch);
+                continue;
+            }
+
+            if skipping >= ch_width {
+                skipping -= ch_width;
+                continue;
+            }
+            if skipping > 0 {
+                skipping = 0;
+            }
+            if ch_width > remaining {
+                if !chunk.is_empty() {
+                    out.push(Span::styled(chunk.clone(), *style));
+                    chunk.clear();
+                }
+                return out;
+            }
+            chunk.push(ch);
+            remaining -= ch_width;
+        }
+
+        if !chunk.is_empty() {
+            out.push(Span::styled(chunk, *style));
+        }
+        if remaining == 0 {
+            break;
+        }
+    }
+
+    out
 }
 
 pub(in crate::ui) fn inset_rect(area: Rect, horizontal: u16, vertical: u16) -> Rect {
