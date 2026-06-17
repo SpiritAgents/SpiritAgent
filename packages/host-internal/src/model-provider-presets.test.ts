@@ -63,7 +63,7 @@ test('resolveProviderConnectApiBase uses transport-specific preset bases', () =>
   );
   assert.equal(
     resolveProviderConnectApiBase('minimax', 'anthropic'),
-    'https://api.minimaxi.com/anthropic/v1',
+    'https://api.minimax.io/anthropic/v1',
   );
   assert.equal(
     resolveProviderConnectApiBase('deepseek', 'anthropic'),
@@ -231,5 +231,26 @@ test('resolveProviderConnectApiBase prefers site apiBase for moonshot-ai', () =>
   assert.equal(
     resolveProviderConnectApiBase('moonshot-ai', 'openai-compatible'),
     'https://api.moonshot.ai/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase prefers site apiBase for minimax', () => {
+  assert.equal(providerSupportsSiteSelection('minimax'), true);
+  assert.equal(defaultProviderConnectSite('minimax'), 'intl');
+  assert.equal(
+    resolveProviderConnectApiBase('minimax', 'openai-compatible', { site: 'cn' }),
+    'https://api.minimaxi.com/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('minimax', 'anthropic', { site: 'cn' }),
+    'https://api.minimaxi.com/anthropic/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('minimax', 'anthropic', { site: 'intl' }),
+    'https://api.minimax.io/anthropic/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('minimax', 'openai-compatible'),
+    'https://api.minimax.io/v1',
   );
 });

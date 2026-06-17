@@ -499,6 +499,37 @@ export function isProviderConnectSiteId(
   return selection !== undefined && site in selection.sites;
 }
 
+function resolveTransportApiBaseForProviderSite(
+  provider: PresetModelProviderId,
+  transportKind: ProviderModelTransportKind,
+  siteBase: string,
+): string | undefined {
+  const transportBases = raw.presetApiBaseByTransport[provider];
+  if (!transportBases) {
+    return undefined;
+  }
+
+  const transportBase = transportBases[transportKind];
+  if (!transportBase) {
+    return undefined;
+  }
+
+  if (transportKind === 'openai-compatible') {
+    return siteBase;
+  }
+
+  try {
+    const siteUrl = new URL(siteBase);
+    const transportUrl = new URL(transportBase);
+    if (siteUrl.origin === transportUrl.origin) {
+      return transportBase;
+    }
+    return `${siteUrl.origin}${transportUrl.pathname}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export function resolveConnectApiBase(
   provider: ModelProviderId,
   customApiBaseTrimmed: string,
@@ -562,7 +593,12 @@ export function resolveProviderConnectApiBase(
 
   const siteBase = site ? resolveProviderConnectSiteApiBase(provider, site) : undefined;
   if (siteBase) {
-    return siteBase;
+    const transportAdjusted = resolveTransportApiBaseForProviderSite(
+      provider as PresetModelProviderId,
+      transportKind,
+      siteBase,
+    );
+    return transportAdjusted ?? siteBase;
   }
 
   if (provider === 'openai') {
