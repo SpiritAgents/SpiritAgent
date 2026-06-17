@@ -6,8 +6,8 @@ import { isViteDev } from "@/lib/vite-dev";
 import { ChevronsUpDown, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 
 import { DreamGraphCard } from "@/components/dream-graph-card";
-import { HooksSettingsPanel } from "@/components/hooks-settings-panel";
-import { IntegrationsSettingsPanel } from "@/components/integrations-settings-panel";
+import { HooksSettingsPanel } from "@/components/settings/panels/hooks-settings-panel";
+import { IntegrationsSettingsPanel } from "@/components/settings/panels/integrations-settings-panel";
 import { FontSelect } from "@/components/font-select";
 import type { SettingsSidebarTab } from "@/components/session-sidebar";
 import { Badge } from "@/components/ui/badge";
@@ -117,7 +117,7 @@ import {
   hasBedrockIamCredentials,
   hasGoogleVertexServiceAccountCredentials,
 } from "@/host/provider-api-key";
-import { AgentsSettingsPanel } from "@/components/agents-settings-panel";
+import { AgentsSettingsPanel } from "@/components/settings/panels/agents-settings-panel";
 import { settingsPageTitleKey, themeSelectOptions } from "@/components/settings/constants";
 import { formatExtensionInstalledAt, fileToBase64, formatSettingsTime } from "@/components/settings/formatters";
 import { SettingsRow } from "@/components/settings/settings-row";

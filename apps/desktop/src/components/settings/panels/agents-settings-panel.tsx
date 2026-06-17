@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsFormState } from "@/components/settings/types";
 import {
   Dialog,
@@ -17,30 +18,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { DesktopLspProviderSnapshot, DesktopSnapshot } from "@/types";
 import { isDesktopInstallableProvider } from "@/lib/lsp-provider-install";
-
-function SettingsRow({
-  label,
-  description,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  description?: string;
-  htmlFor?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6">
-      <div className="min-w-0 space-y-1">
-        <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
-          {label}
-        </label>
-        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-      </div>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
-}
 
 function providerStatusBadge(
   provider: DesktopLspProviderSnapshot,
