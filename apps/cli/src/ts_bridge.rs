@@ -1876,9 +1876,12 @@ impl TsBridgeRuntime {
     }
 
     fn resolve_transport_config_json_for(&self, config: &AppConfig) -> Result<Value> {
-        let active = config
+        let Some(active) = config
             .active_model_profile()
-            .ok_or_else(|| anyhow!("当前模型不存在，请先配置模型"))?;
+            .filter(|profile| !profile.name.trim().is_empty())
+        else {
+            return Ok(build_mcp_only_transport_config(&self.workspace_root));
+        };
 
         let api_key = if let Ok(value) = env::var(ENV_API_KEY) {
             let trimmed = value.trim();
