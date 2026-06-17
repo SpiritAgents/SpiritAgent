@@ -549,6 +549,23 @@ export function latestUnsyncedAssistantTextInCurrentTurn(
   return undefined;
 }
 
+/** Whether the current turn already shows this pre-tool prefix as plain assistant text. */
+export function assistantTurnHasPlainPrefixMessage(
+  messages: ReadonlyArray<ConversationMessageSnapshot>,
+  prefix: string,
+): boolean {
+  const normalizedPrefix = prefix.trim();
+  if (!normalizedPrefix) {
+    return false;
+  }
+  return messages.some(
+    (message) =>
+      message.role === 'assistant' &&
+      !message.tool &&
+      message.content.trim() === normalizedPrefix,
+  );
+}
+
 function assistantPlainTextsInCurrentTurnHistory(
   hist: ReadonlyArray<{ role: string; content: string | LlmMessageContent }>,
 ): string[] {

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import { isSubagentStatusSurfaceText } from '../../dist-electron/src/lib/subagent-display.js';
 import {
+  assistantTurnHasPlainPrefixMessage,
   finishTaskNoticePreviewFromArguments,
   finishTaskSummaryFromStreamingArguments,
   shouldHideEmptyPendingAssistantSnapshot,
@@ -404,4 +405,36 @@ test('toolCallSummaryForPhase: English read_file uses Read in succeeded phase', 
   } finally {
     await i18n.changeLanguage('zh-CN');
   }
+});
+
+test('assistantTurnHasPlainPrefixMessage treats trailing whitespace as the same prefix', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'read README', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '好的。\n\n',
+      pending: false,
+    },
+    {
+      id: 3,
+      role: 'assistant',
+      content: '',
+      tool: { toolCallId: 'call-1', toolName: 'read_file', phase: 'succeeded', headline: 'Read' },
+      pending: false,
+    },
+    {
+      id: 4,
+      role: 'assistant',
+      content: 'Spirit Agent 是一个开源 AI 编码代理单体仓库。',
+      pending: false,
+    },
+  ];
+
+  assert.equal(assistantTurnHasPlainPrefixMessage(messages, '好的。'), true);
+  assert.equal(
+    assistantTurnHasPlainPrefixMessage(messages, 'Spirit Agent 是一个开源 AI 编码代理单体仓库。'),
+    true,
+  );
+  assert.equal(assistantTurnHasPlainPrefixMessage(messages, '可以，同样的 prompt，我来生成视频：'), false);
 });
