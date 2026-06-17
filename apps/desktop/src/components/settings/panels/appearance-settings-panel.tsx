@@ -63,7 +63,12 @@ export function AppearanceSettingsPanel({
         description={t("settings.fontDescription")}
         htmlFor="settings-font-select"
       >
-        <FontSelect id="settings-font-select" value={font} onValueChange={onFontChange} />
+        <FontSelect
+          id="settings-font-select"
+          value={font}
+          onValueChange={onFontChange}
+          triggerClassName="w-full sm:min-w-[12rem]"
+        />
       </SettingsRow>
 
       <SettingsRow

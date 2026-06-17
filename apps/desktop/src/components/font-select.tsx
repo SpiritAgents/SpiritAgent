@@ -1,23 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Check, ChevronDown, LoaderCircle } from "lucide-react";
+import { ChevronDown, LoaderCircle } from "lucide-react";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { DesktopFormInput } from "@/components/ui/desktop-form-field";
-import { ScrollArea } from "@/components/ui/scroll-area";
+  FilteredOverlayMenu,
+  FilteredOverlayMenuTrigger,
+} from "@/components/ui/filtered-overlay-menu";
+import {
+  DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
+  DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
+} from "@/lib/desktop-chrome";
 import {
   DEFAULT_FONT_ID,
   DEFAULT_FONT_LABEL,
   toFontFamilyStack,
   type FontPreference,
 } from "@/lib/font";
-import { DESKTOP_OVERLAY_SHORT_LIST_PADDING } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 
 /** 与 [`SelectTrigger`](./ui/select.tsx) 保持一致，便于设置页视觉对齐。 */
@@ -39,6 +38,7 @@ type FontSelectProps = {
   fonts?: string[];
   loading?: boolean;
   disabled?: boolean;
+  triggerClassName?: string;
 };
 
 type FontOption = {
@@ -54,6 +54,7 @@ export function FontSelect({
   fonts,
   loading,
   disabled,
+  triggerClassName,
 }: FontSelectProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -142,7 +143,7 @@ export function FontSelect({
 
   return (
     <div className="w-full space-y-1.5">
-      <DropdownMenu
+      <FilteredOverlayMenu
         open={open}
         onOpenChange={(nextOpen) => {
           setOpen(nextOpen);
@@ -150,82 +151,71 @@ export function FontSelect({
             setFilter("");
           }
         }}
-      >
-        <DropdownMenuTrigger asChild>
-          <button
-            id={id}
-            type="button"
-            role="combobox"
-            aria-expanded={open}
-            disabled={disabled || effectiveLoading}
-            className={fontSelectTriggerClassName}
-          >
-            <span
-              className="min-w-0 truncate text-left"
-              style={value === DEFAULT_FONT_ID ? undefined : { fontFamily: toFontFamilyStack(value) }}
+        align="end"
+        filterValue={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder={t("settings.searchFont")}
+        trigger={
+          <FilteredOverlayMenuTrigger asChild>
+            <button
+              id={id}
+              type="button"
+              role="combobox"
+              aria-expanded={open}
+              disabled={disabled || effectiveLoading}
+              className={cn(fontSelectTriggerClassName, triggerClassName)}
             >
-              {currentLabel}
-            </span>
-            {effectiveLoading ? (
-              <LoaderCircle className="size-4 shrink-0 animate-spin opacity-60" aria-hidden />
-            ) : (
-              <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
-            )}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="w-max min-w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(22rem,calc(100vw-1.25rem))] p-0"
-        >
-          <div className="border-b border-border/40 p-1.5">
-            <DesktopFormInput
-              value={filter}
-              onChange={(event) => setFilter(event.target.value)}
-              placeholder={t('settings.searchFont')}
-              onKeyDown={(event) => event.stopPropagation()}
-              autoComplete="off"
-            />
-          </div>
-          <ScrollArea
-            type="always"
-            className="[&>[data-radix-scroll-area-viewport]]:max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
-            onWheel={(event) => {
-              event.stopPropagation();
-            }}
-            onTouchMove={(event) => {
-              event.stopPropagation();
-            }}
-          >
-            <div className={cn(DESKTOP_OVERLAY_SHORT_LIST_PADDING, "pr-2")}>
+              <span
+                className="min-w-0 truncate text-left"
+                style={value === DEFAULT_FONT_ID ? undefined : { fontFamily: toFontFamilyStack(value) }}
+              >
+                {currentLabel}
+              </span>
               {effectiveLoading ? (
-                <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('settings.loadingFonts')}</p>
-              ) : filteredOptions.length === 0 ? (
-                <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t('settings.noMatchingFonts')}</p>
+                <LoaderCircle className="size-4 shrink-0 animate-spin opacity-60" aria-hidden />
               ) : (
-                filteredOptions.map((option) => {
-                  const selected = option.id === value;
-                  return (
-                    <DropdownMenuItem
-                      key={option.id}
-                      className={cn("gap-2", selected && "bg-accent/40")}
-                      style={option.fontFamily ? { fontFamily: option.fontFamily } : undefined}
-                      onSelect={() => selectValue(option.id)}
-                    >
-                      <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                      <Check
-                        className={cn("size-4 shrink-0", selected ? "opacity-100" : "opacity-0")}
-                        aria-hidden
-                      />
-                    </DropdownMenuItem>
-                  );
-                })
+                <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
               )}
-            </div>
-          </ScrollArea>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            </button>
+          </FilteredOverlayMenuTrigger>
+        }
+      >
+        {effectiveLoading ? (
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("settings.loadingFonts")}</p>
+        ) : filteredOptions.length === 0 ? (
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("settings.noMatchingFonts")}</p>
+        ) : (
+          filteredOptions.map((option) => {
+            const selected = option.id === value;
+            return (
+              <div
+                key={option.id}
+                role="menuitem"
+                tabIndex={-1}
+                className={cn(
+                  DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
+                  "cursor-pointer outline-none focus:bg-accent focus:text-accent-foreground",
+                  selected && "bg-accent/40",
+                )}
+                style={option.fontFamily ? { fontFamily: option.fontFamily } : undefined}
+                onClick={() => selectValue(option.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    selectValue(option.id);
+                  }
+                }}
+              >
+                <span className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "min-w-0 truncate")}>
+                  {option.label}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </FilteredOverlayMenu>
       {loadFailed ? (
-        <p className="text-xs text-muted-foreground">{t('settings.fontEnumerationFailed')}</p>
+        <p className="text-xs text-muted-foreground">{t("settings.fontEnumerationFailed")}</p>
       ) : null}
     </div>
   );
