@@ -9,6 +9,7 @@ export type ModelProviderId =
   | 'zhipu-ai'
   | 'minimax'
   | 'xiaomi'
+  | 'siliconflow'
   | 'alibaba'
   | 'anthropic'
   | 'vercel-ai-gateway'
@@ -50,6 +51,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'alibaba',
   'minimax',
   'xiaomi',
+  'siliconflow',
   'volcengine',
   'azure',
   'amazon-bedrock',
@@ -72,7 +74,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","deepseek","openrouter","moonshot-ai","z-ai","zhipu-ai","alibaba","minimax","xiaomi","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","deepseek","openrouter","moonshot-ai","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -129,6 +131,7 @@ interface ParsedModelProviderPresets {
     | 'zhipu-ai'
     | 'minimax'
     | 'xiaomi'
+    | 'siliconflow'
     | 'alibaba'
     | 'anthropic'
     | 'vercel-ai-gateway'
@@ -294,6 +297,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     'zhipu-ai': requireStringField(presetRaw, 'zhipu-ai'),
     minimax: requireStringField(presetRaw, 'minimax'),
     xiaomi: requireStringField(presetRaw, 'xiaomi'),
+    siliconflow: requireStringField(presetRaw, 'siliconflow'),
     alibaba: requireStringField(presetRaw, 'alibaba'),
     anthropic: requireStringField(presetRaw, 'anthropic'),
     'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
@@ -347,6 +351,7 @@ const zAiBase = raw.presetApiBaseByProvider['z-ai'];
 const zhipuAiBase = raw.presetApiBaseByProvider['zhipu-ai'];
 const minimaxBase = raw.presetApiBaseByProvider.minimax;
 const xiaomiBase = raw.presetApiBaseByProvider.xiaomi;
+const siliconflowBase = raw.presetApiBaseByProvider.siliconflow;
 const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
 const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
@@ -366,6 +371,7 @@ export const PROVIDER_PRESET_API_BASE = {
   'zhipu-ai': zhipuAiBase,
   minimax: minimaxBase,
   xiaomi: xiaomiBase,
+  siliconflow: siliconflowBase,
   alibaba: alibabaBase,
   anthropic: anthropicBase,
   'vercel-ai-gateway': vercelAiGatewayBase,
@@ -512,6 +518,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.minimax;
     case 'xiaomi':
       return PROVIDER_PRESET_API_BASE.xiaomi;
+    case 'siliconflow':
+      return PROVIDER_PRESET_API_BASE.siliconflow;
     case 'alibaba':
       return PROVIDER_PRESET_API_BASE.alibaba;
     case 'anthropic':

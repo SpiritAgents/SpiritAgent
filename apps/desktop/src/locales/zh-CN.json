@@ -57,6 +57,11 @@
     "alibaba": "Alibaba",
     "minimax": "MiniMax",
     "xiaomi": "Xiaomi",
+    "siliconflow": "SiliconFlow",
+    "siliconflowSite": {
+      "cn": "中国站",
+      "intl": "国际站"
+    },
     "volcengine": "火山引擎",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
