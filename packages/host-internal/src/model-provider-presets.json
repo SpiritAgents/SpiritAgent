@@ -44,6 +44,7 @@
       "open-responses": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1"
     }
   },
+  "providerSiteSelection": {},
   "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "deepseek", "openrouter", "moonshot-ai", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
   "pickerLabels": {
     "deepseek": {

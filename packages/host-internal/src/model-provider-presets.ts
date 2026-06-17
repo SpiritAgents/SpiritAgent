@@ -81,6 +81,35 @@ type PresetApiBaseByTransport = Partial<
   Record<PresetModelProviderId, Partial<Record<ProviderModelTransportKind, string>>>
 >;
 
+/** 连接向导站点 id（如 SiliconFlow 的 cn / intl）。 */
+export type ProviderConnectSiteId = string;
+
+export interface ProviderConnectSiteDefinition {
+  labelKey: string;
+  fallbackLabel: string;
+  apiBase: string;
+}
+
+export interface ProviderConnectSiteOption {
+  id: ProviderConnectSiteId;
+  labelKey: string;
+  fallbackLabel: string;
+}
+
+export interface ProviderSiteSelectionConfig {
+  defaultSite: ProviderConnectSiteId;
+  sites: Record<ProviderConnectSiteId, ProviderConnectSiteDefinition>;
+}
+
+type ProviderSiteSelectionByProvider = Partial<
+  Record<PresetModelProviderId, ProviderSiteSelectionConfig>
+>;
+
+export interface ResolveProviderConnectApiBaseOptions {
+  site?: ProviderConnectSiteId;
+  customApiBaseTrimmed?: string;
+}
+
 export interface ProviderPickerLabel {
   labelKey: string;
   fallbackLabel: string;
@@ -113,6 +142,7 @@ interface ParsedModelProviderPresets {
     string
   >;
   presetApiBaseByTransport: PresetApiBaseByTransport;
+  providerSiteSelection: ProviderSiteSelectionByProvider;
   pickerOrder: readonly ModelProviderId[];
   pickerLabels: Record<ModelProviderId, ProviderPickerLabel>;
 }
@@ -167,6 +197,62 @@ function parsePresetApiBaseByTransport(data: unknown): PresetApiBaseByTransport 
     }
 
     result[providerKey] = transportMap;
+  }
+
+  return result;
+}
+
+export function parseProviderSiteSelection(data: unknown): ProviderSiteSelectionByProvider {
+  if (data === undefined) {
+    return {};
+  }
+  if (!isJsonRecord(data)) {
+    throw new Error('model-provider-presets.json: providerSiteSelection must be an object');
+  }
+
+  const result: ProviderSiteSelectionByProvider = {};
+
+  for (const [providerKey, selectionRaw] of Object.entries(data)) {
+    if (!isPresetModelProviderId(providerKey)) {
+      throw new Error(
+        `model-provider-presets.json: providerSiteSelection.${providerKey} is not a preset provider id`,
+      );
+    }
+    if (!isJsonRecord(selectionRaw)) {
+      throw new Error(
+        `model-provider-presets.json: providerSiteSelection.${providerKey} must be an object`,
+      );
+    }
+
+    const defaultSite = requireStringField(selectionRaw, 'defaultSite');
+    const sitesRaw = selectionRaw.sites;
+    if (!isJsonRecord(sitesRaw) || Object.keys(sitesRaw).length === 0) {
+      throw new Error(
+        `model-provider-presets.json: providerSiteSelection.${providerKey}.sites must be a non-empty object`,
+      );
+    }
+
+    const sites: Record<ProviderConnectSiteId, ProviderConnectSiteDefinition> = {};
+    for (const [siteId, siteRaw] of Object.entries(sitesRaw)) {
+      if (!isJsonRecord(siteRaw)) {
+        throw new Error(
+          `model-provider-presets.json: providerSiteSelection.${providerKey}.sites.${siteId} must be an object`,
+        );
+      }
+      sites[siteId] = {
+        labelKey: requireStringField(siteRaw, 'labelKey'),
+        fallbackLabel: requireStringField(siteRaw, 'fallbackLabel'),
+        apiBase: requireStringField(siteRaw, 'apiBase'),
+      };
+    }
+
+    if (!(defaultSite in sites)) {
+      throw new Error(
+        `model-provider-presets.json: providerSiteSelection.${providerKey}.defaultSite must exist in sites`,
+      );
+    }
+
+    result[providerKey] = { defaultSite, sites };
   }
 
   return result;
@@ -238,10 +324,13 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
       ? {}
       : parsePresetApiBaseByTransport(presetApiBaseByTransportRaw);
 
+  const providerSiteSelection = parseProviderSiteSelection(data.providerSiteSelection);
+
   return {
     defaultCustomApiBase,
     presetApiBaseByProvider,
     presetApiBaseByTransport,
+    providerSiteSelection,
     pickerOrder,
     pickerLabels: pickerLabels as Record<ModelProviderId, ProviderPickerLabel>,
   };
@@ -334,6 +423,76 @@ export function partitionModelsByProvider<Model extends { provider?: ModelProvid
   return { matched, unmatched };
 }
 
+function normalizeResolveProviderConnectApiBaseOptions(
+  options?: ResolveProviderConnectApiBaseOptions | string,
+): ResolveProviderConnectApiBaseOptions {
+  if (typeof options === 'string') {
+    return { customApiBaseTrimmed: options };
+  }
+  return options ?? {};
+}
+
+export function providerSupportsSiteSelection(provider: ModelProviderId): boolean {
+  if (provider === 'custom') {
+    return false;
+  }
+  return raw.providerSiteSelection[provider] !== undefined;
+}
+
+export function defaultProviderConnectSite(
+  provider: ModelProviderId,
+): ProviderConnectSiteId | undefined {
+  if (provider === 'custom') {
+    return undefined;
+  }
+  return raw.providerSiteSelection[provider]?.defaultSite;
+}
+
+export function listProviderConnectSiteOptions(
+  provider: ModelProviderId,
+): ProviderConnectSiteOption[] {
+  if (provider === 'custom') {
+    return [];
+  }
+  const selection = raw.providerSiteSelection[provider];
+  if (!selection) {
+    return [];
+  }
+  return Object.entries(selection.sites).map(([id, site]) => ({
+    id,
+    labelKey: site.labelKey,
+    fallbackLabel: site.fallbackLabel,
+  }));
+}
+
+export function resolveProviderConnectSiteApiBase(
+  provider: ModelProviderId,
+  site: ProviderConnectSiteId,
+): string | undefined {
+  if (provider === 'custom') {
+    return undefined;
+  }
+  const selection = raw.providerSiteSelection[provider];
+  if (!selection) {
+    return undefined;
+  }
+  return selection.sites[site]?.apiBase;
+}
+
+export function isProviderConnectSiteId(
+  provider: ModelProviderId,
+  site: unknown,
+): site is ProviderConnectSiteId {
+  if (typeof site !== 'string' || site.trim() === '') {
+    return false;
+  }
+  if (provider === 'custom') {
+    return false;
+  }
+  const selection = raw.providerSiteSelection[provider];
+  return selection !== undefined && site in selection.sites;
+}
+
 export function resolveConnectApiBase(
   provider: ModelProviderId,
   customApiBaseTrimmed: string,
@@ -385,10 +544,17 @@ export function resolveConnectApiBase(
 export function resolveProviderConnectApiBase(
   provider: ModelProviderId,
   transportKind: ProviderModelTransportKind,
-  customApiBaseTrimmed = '',
+  options?: ResolveProviderConnectApiBaseOptions | string,
 ): string {
+  const { site, customApiBaseTrimmed = '' } = normalizeResolveProviderConnectApiBaseOptions(options);
+
   if (provider === 'custom') {
     return customApiBaseTrimmed.trim();
+  }
+
+  const siteBase = site ? resolveProviderConnectSiteApiBase(provider, site) : undefined;
+  if (siteBase) {
+    return siteBase;
   }
 
   if (provider === 'openai') {
@@ -401,5 +567,5 @@ export function resolveProviderConnectApiBase(
     return transportBase;
   }
 
-  return resolveConnectApiBase(provider, '');
+  return resolveConnectApiBase(provider, customApiBaseTrimmed);
 }
