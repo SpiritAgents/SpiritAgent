@@ -25,6 +25,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('z-ai'), 'z-ai');
   assert.equal(parseModelProviderId('zhipu-ai'), 'zhipu-ai');
   assert.equal(parseModelProviderId('xiaomi'), 'xiaomi');
+  assert.equal(parseModelProviderId('siliconflow'), 'siliconflow');
   assert.equal(parseModelProviderId('azure'), 'azure');
   assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
@@ -197,4 +198,21 @@ test('provider site helpers are inactive until providerSiteSelection is configur
   assert.equal(defaultProviderConnectSite('xiaomi'), undefined);
   assert.deepEqual(listProviderConnectSiteOptions('xiaomi'), []);
   assert.equal(resolveProviderConnectSiteApiBase('xiaomi', 'cn'), undefined);
+});
+
+test('resolveProviderConnectApiBase prefers site apiBase for siliconflow', () => {
+  assert.equal(providerSupportsSiteSelection('siliconflow'), true);
+  assert.equal(defaultProviderConnectSite('siliconflow'), 'intl');
+  assert.equal(
+    resolveProviderConnectApiBase('siliconflow', 'openai-compatible', { site: 'cn' }),
+    'https://api.siliconflow.cn/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('siliconflow', 'anthropic', { site: 'intl' }),
+    'https://api.siliconflow.com/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('siliconflow', 'openai-compatible'),
+    'https://api.siliconflow.com/v1',
+  );
 });

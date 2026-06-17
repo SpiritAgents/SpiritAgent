@@ -12,6 +12,7 @@ export type OpenAiLlmVendor =
   | 'zhipu-ai'
   | 'minimax'
   | 'xiaomi'
+  | 'siliconflow'
   | 'alibaba'
   | 'vercel-ai-gateway'
   | 'openrouter'

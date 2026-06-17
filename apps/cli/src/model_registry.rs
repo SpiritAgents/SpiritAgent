@@ -27,6 +27,7 @@ pub enum ModelProvider {
     ZhipuAi,
     Minimax,
     Xiaomi,
+    Siliconflow,
     Alibaba,
     Anthropic,
     #[serde(rename = "vercel-ai-gateway", alias = "vercelaigateway")]
@@ -53,6 +54,7 @@ impl ModelProvider {
             Self::ZhipuAi => "zhipu-ai",
             Self::Minimax => "minimax",
             Self::Xiaomi => "xiaomi",
+            Self::Siliconflow => "siliconflow",
             Self::Alibaba => "alibaba",
             Self::Anthropic => "anthropic",
             Self::VercelAiGateway => "vercel-ai-gateway",
@@ -80,6 +82,7 @@ impl FromStr for ModelProvider {
             "zhipu-ai" => Ok(Self::ZhipuAi),
             "minimax" => Ok(Self::Minimax),
             "xiaomi" => Ok(Self::Xiaomi),
+            "siliconflow" => Ok(Self::Siliconflow),
             "alibaba" => Ok(Self::Alibaba),
             "anthropic" => Ok(Self::Anthropic),
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
@@ -179,6 +182,7 @@ impl ModelProfile {
             Some(ModelProvider::Deepseek) => false,
             Some(ModelProvider::Moonshot) => false,
             Some(ModelProvider::Xiaomi) => false,
+            Some(ModelProvider::Siliconflow) => false,
             Some(ModelProvider::Xai)
             | Some(ModelProvider::ZAi)
             | Some(ModelProvider::ZhipuAi)
