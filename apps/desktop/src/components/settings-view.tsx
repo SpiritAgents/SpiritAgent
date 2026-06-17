@@ -3657,6 +3657,8 @@ function ModelsSettingsPanel({
                   ? t('settings.volcengineConnectionDescription')
                   : selectedProvider === "siliconflow"
                     ? t('settings.siliconflowConnectionDescription')
+                    : selectedProvider === "moonshot-ai"
+                      ? t('settings.moonshotConnectionDescription')
                   : providerShowsConnectTransportPicker(selectedProvider)
                       ? t('settings.providerConnectionDescription')
                       : t('settings.providerSimpleDescription')}

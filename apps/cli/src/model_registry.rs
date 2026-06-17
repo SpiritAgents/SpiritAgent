@@ -1104,6 +1104,23 @@ mod tests {
         assert_eq!(model.provider_site().as_deref(), Some("cn"));
         assert_eq!(model.transport_kind(), super::ModelTransportKind::Anthropic);
     }
+
+    #[test]
+    fn deserializes_moonshot_provider_site_from_desktop_config() {
+        let raw = r#"{
+          "models": [{
+            "name": "kimi-k2",
+            "apiBase": "https://api.moonshot.ai/v1",
+            "provider": "moonshot-ai",
+            "providerSite": "intl"
+          }],
+          "activeModel": "kimi-k2"
+        }"#;
+        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
+        let model = cfg.models.first().expect("model");
+        assert_eq!(model.provider, Some(super::ModelProvider::Moonshot));
+        assert_eq!(model.provider_site().as_deref(), Some("intl"));
+    }
 }
 
 pub fn keyring_entry() -> Result<keyring::Entry> {
