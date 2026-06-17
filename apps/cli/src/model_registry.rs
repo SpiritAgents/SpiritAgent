@@ -234,6 +234,16 @@ impl ModelProfile {
         }
     }
 
+    pub fn provider_site(&self) -> Option<String> {
+        self.extra
+            .get("providerSite")
+            .or_else(|| self.extra.get("provider_site"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
     pub fn aws_region(&self) -> Option<String> {
         self.extra
             .get("awsRegion")
