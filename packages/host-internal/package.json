@@ -110,7 +110,8 @@
   },
   "files": [
     "dist",
-    "built-in-skills"
+    "built-in-skills",
+    "README.md"
   ],
   "engines": {
     "node": ">=22"
