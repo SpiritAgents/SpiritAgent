@@ -355,15 +355,8 @@ struct LegacyAppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            models: vec![ModelProfile {
-                name: "gpt-4o-mini".to_string(),
-                api_base: DEFAULT_API_BASE.to_string(),
-                provider: None,
-                reasoning_effort: None,
-                context_length: None,
-                extra: Map::new(),
-            }],
-            active_model: "gpt-4o-mini".to_string(),
+            models: vec![],
+            active_model: String::new(),
             image_generation_model: None,
             video_generation_model: None,
             ui_locale: None,

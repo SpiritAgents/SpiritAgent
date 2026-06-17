@@ -26,7 +26,6 @@ import {
   type LlmHttpVersion,
 } from '@spirit-agent/core';
 import {
-  defaultModelReasoningEffort,
   normalizeModelReasoningEffort,
   resolveModelReasoningEffortForContext,
 } from '@spirit-agent/core/reasoning-effort';
@@ -82,7 +81,6 @@ export {
 } from './provider-api-key.js';
 
 export const DEFAULT_API_BASE = 'https://api.openai.com/v1';
-export const DEFAULT_MODEL = 'gpt-4o-mini';
 export const DEFAULT_DESKTOP_WEB_HOST = '127.0.0.1';
 export const DEFAULT_DESKTOP_WEB_PORT = 7788;
 const APP_DATA_DIR_NAME = 'SpiritAgent';
@@ -710,14 +708,8 @@ export async function deleteStoredSession(filePath: string): Promise<void> {
 
 function defaultConfig(): DesktopConfigFile {
   return {
-    models: [
-      {
-        name: DEFAULT_MODEL,
-        apiBase: DEFAULT_API_BASE,
-        reasoningEffort: defaultModelReasoningEffort({ model: DEFAULT_MODEL }),
-      },
-    ],
-    activeModel: DEFAULT_MODEL,
+    models: [],
+    activeModel: '',
     recentWorkspaces: [],
     windowsMica: true,
     agentMode: 'agent',

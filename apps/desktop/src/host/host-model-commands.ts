@@ -130,36 +130,43 @@ export async function updateConfigCommand(
     const activeModel = request.activeModel.trim();
     const apiBase = request.apiBase.trim();
     const reasoningEffort = request.reasoningEffort;
-    const existing = state.config.models.find((model) => model.name === activeModel);
-    if (existing) {
-      if (existing.provider && existing.provider !== 'custom') {
-        existing.apiBase = defaultApiBaseForTransport(
-          existing.provider,
-          resolveDesktopTransportKind(existing),
-        );
+    let existing = activeModel
+      ? state.config.models.find((model) => model.name === activeModel)
+      : undefined;
+    if (activeModel) {
+      if (existing) {
+        if (existing.provider && existing.provider !== 'custom') {
+          existing.apiBase = defaultApiBaseForTransport(
+            existing.provider,
+            resolveDesktopTransportKind(existing),
+          );
+        } else {
+          existing.apiBase = apiBase;
+        }
+        if (reasoningEffort !== undefined) {
+          existing.reasoningEffort = resolveModelReasoningEffortForContext(reasoningEffort, {
+            ...(existing.provider ? { provider: existing.provider } : {}),
+            model: existing.name,
+            ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
+            ...(existing.supportedReasoningEfforts !== undefined
+              ? { supportedEfforts: existing.supportedReasoningEfforts }
+              : {}),
+          });
+        }
       } else {
-        existing.apiBase = apiBase;
-      }
-      if (reasoningEffort !== undefined) {
-        existing.reasoningEffort = resolveModelReasoningEffortForContext(reasoningEffort, {
-          ...(existing.provider ? { provider: existing.provider } : {}),
-          model: existing.name,
-          ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
-          ...(existing.supportedReasoningEfforts !== undefined
-            ? { supportedEfforts: existing.supportedReasoningEfforts }
-            : {}),
+        state.config.models.push({
+          name: activeModel,
+          apiBase,
+          reasoningEffort: resolveModelReasoningEffortForContext(reasoningEffort, {
+            model: activeModel,
+          }),
         });
       }
+      state.config.activeModel = activeModel;
     } else {
-      state.config.models.push({
-        name: activeModel,
-        apiBase,
-        reasoningEffort: resolveModelReasoningEffortForContext(reasoningEffort, {
-          model: activeModel,
-        }),
-      });
+      state.config.activeModel = '';
+      existing = undefined;
     }
-    state.config.activeModel = activeModel;
     state.config.uiLocale = request.uiLocale?.trim() || undefined;
     if (request.imageGenerationModel !== undefined) {
       const imageGenerationModel = request.imageGenerationModel.trim();
