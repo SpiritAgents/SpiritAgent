@@ -700,23 +700,35 @@ function createAiSdkOpenAiCompatibleProvider(
   const vendorExtras = options.includeChatVendorExtras === false
     ? {}
     : openAiVendorChatCompletionBodyExtras(transportConfig);
-  const fetchWrapper =
-    Object.keys(vendorExtras).length === 0
-      ? undefined
-      : async (input: RequestInfo | URL, init?: RequestInit) => {
-          const body = tryParseRequestBody(init?.body);
-          if (!isJsonObject(body)) {
-            return getLlmFetch()(input, init);
-          }
+  const needsVideoStash = usesOpenAiCompatibleVideoMessageStash(transportConfig.llmVendor);
+  const needsFetchWrapper = needsVideoStash || Object.keys(vendorExtras).length > 0;
+  const fetchWrapper = !needsFetchWrapper
+    ? undefined
+    : async (input: RequestInfo | URL, init?: RequestInit) => {
+        const body = tryParseRequestBody(init?.body);
+        if (!isJsonObject(body)) {
+          return getLlmFetch()(input, init);
+        }
 
-          return getLlmFetch()(input, {
-            ...init,
-            body: JSON.stringify({
-              ...body,
-              ...vendorExtras,
-            }),
-          });
-        };
+        const requestUrl =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : 'request';
+        const stashedMessages = needsVideoStash && requestUrl.includes('/chat/completions')
+          ? takeMoonshotChatCompletionMessages()
+          : undefined;
+
+        return getLlmFetch()(input, {
+          ...init,
+          body: JSON.stringify({
+            ...body,
+            ...vendorExtras,
+            ...(stashedMessages ? { messages: stashedMessages } : {}),
+          }),
+        });
+      };
 
   const headers = {
     ...(config.organization ? { 'OpenAI-Organization': config.organization } : {}),
@@ -1604,15 +1616,24 @@ function prepareMoonshotChatCompletionRequest(
   config: OpenAiTransportConfig,
   requestMessages: JsonValue[],
 ): void {
-  if (config.llmVendor === 'moonshot-ai' && openAiMessagesContainVideoUrl(requestMessages)) {
+  if (
+    usesOpenAiCompatibleVideoMessageStash(config.llmVendor)
+    && openAiMessagesContainVideoUrl(requestMessages)
+  ) {
     stashMoonshotChatCompletionMessages(requestMessages);
   }
 }
 
 function clearMoonshotChatCompletionRequest(config: OpenAiTransportConfig): void {
-  if (config.llmVendor === 'moonshot-ai') {
+  if (usesOpenAiCompatibleVideoMessageStash(config.llmVendor)) {
     clearMoonshotChatCompletionMessages();
   }
+}
+
+function usesOpenAiCompatibleVideoMessageStash(
+  vendor: OpenAiTransportConfig['llmVendor'],
+): boolean {
+  return vendor === 'moonshot-ai' || vendor === 'xiaomi';
 }
 
 function normalizeMessagesForRequest(
