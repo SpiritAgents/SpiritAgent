@@ -643,8 +643,6 @@ impl TsBridgeRuntime {
             "[ts-bridge-host] runtime init workspace_root={}",
             runtime.workspace_root.display()
         ));
-        let session_key = runtime.rewind.session_id.clone();
-        runtime.set_todo_session_key(&session_key)?;
         runtime.initialize_bridge()?;
         runtime.apply_llm_http_version_from_config()?;
         runtime.apply_llm_client_version_from_build()?;

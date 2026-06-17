@@ -1674,7 +1674,6 @@ async function createRuntime(
   toolExecutor.setImageGenerationAvailable('imageGeneration' in config && config.imageGeneration !== undefined);
   toolExecutor.setVideoGenerationAvailable('videoGeneration' in config && config.videoGeneration !== undefined);
   toolExecutor.setTransportConfigForToolDefinitions(config);
-  await toolExecutor.setLspWorkspaceRoot(workspaceRoot);
   await toolExecutor.refreshCaches();
   logBridge('createRuntime', {
     workspaceRoot,
