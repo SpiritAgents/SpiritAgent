@@ -145,6 +145,19 @@ pub(crate) fn model_add_siliconflow_site_id_from_choice(selected: usize) -> &'st
     if selected == 0 { "cn" } else { "intl" }
 }
 
+/// 与 `model-provider-presets.json` 中 `providerSiteSelection.moonshot-ai` 对齐。
+pub(crate) fn model_add_moonshot_site_api_base(site: &str) -> Option<String> {
+    match site.trim().to_ascii_lowercase().as_str() {
+        "cn" => Some("https://api.moonshot.cn/v1".to_string()),
+        "intl" => Some("https://api.moonshot.ai/v1".to_string()),
+        _ => None,
+    }
+}
+
+pub(crate) fn model_add_moonshot_site_id_from_choice(selected: usize) -> &'static str {
+    if selected == 0 { "cn" } else { "intl" }
+}
+
 pub(crate) fn model_add_provider_id_at_choice_index(selected: usize) -> Option<&'static str> {
     presets().picker_order.get(selected).map(String::as_str)
 }
@@ -204,7 +217,7 @@ mod tests {
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(7).as_deref(),
-            Some("https://api.moonshot.cn/v1")
+            Some("https://api.moonshot.ai/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(8).as_deref(),
@@ -258,6 +271,18 @@ mod tests {
         assert_eq!(
             super::model_add_siliconflow_site_api_base("intl").as_deref(),
             Some("https://api.siliconflow.com/v1")
+        );
+    }
+
+    #[test]
+    fn moonshot_site_api_base_resolves_cn_and_intl() {
+        assert_eq!(
+            super::model_add_moonshot_site_api_base("cn").as_deref(),
+            Some("https://api.moonshot.cn/v1")
+        );
+        assert_eq!(
+            super::model_add_moonshot_site_api_base("intl").as_deref(),
+            Some("https://api.moonshot.ai/v1")
         );
     }
 

@@ -13,6 +13,7 @@ use crate::{
         model_add_picker_order_ids, model_add_provider_at_choice_index,
         model_add_provider_id_at_choice_index,         model_add_requires_manual_single_provider,
         model_add_siliconflow_site_api_base, model_add_siliconflow_site_id_from_choice,
+        model_add_moonshot_site_api_base, model_add_moonshot_site_id_from_choice,
         azure_api_base_from_resource_name,
         is_valid_azure_resource_name,
     },
@@ -68,6 +69,13 @@ fn model_add_siliconflow_provider_index() -> usize {
         .iter()
         .position(|id| id == "siliconflow")
         .unwrap_or(13)
+}
+
+fn model_add_moonshot_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "moonshot-ai")
+        .unwrap_or(7)
 }
 
 fn model_add_vertex_provider_index() -> usize {
@@ -335,6 +343,20 @@ fn model_add_siliconflow_site_field(selected: usize) -> BottomFormFieldView {
             options: vec![
                 t!("form.model.provider.siliconflow.site.cn").into_owned(),
                 t!("form.model.provider.siliconflow.site.intl").into_owned(),
+            ],
+            selected: selected.min(1),
+        },
+    }
+}
+
+fn model_add_moonshot_site_field(selected: usize) -> BottomFormFieldView {
+    BottomFormFieldView {
+        label: t!("form.model.field.site.label").into_owned(),
+        help: String::new(),
+        editor: BottomFormFieldEditorView::Choice {
+            options: vec![
+                t!("form.model.provider.moonshot-ai.site.cn").into_owned(),
+                t!("form.model.provider.moonshot-ai.site.intl").into_owned(),
             ],
             selected: selected.min(1),
         },
@@ -632,6 +654,12 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
         _ => 1,
     };
+    let moonshot_site_selected = match form.fields.get(2).map(|f| &f.editor) {
+        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+            (*selected).min(1)
+        }
+        _ => 1,
+    };
     let siliconflow_transport_selected = match form.fields.get(3).map(|f| &f.editor) {
         Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
             (*selected).min(1)
@@ -695,6 +723,13 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_mode_field_preset(),
             model_add_siliconflow_site_field(siliconflow_site_selected),
             model_add_siliconflow_transport_field(siliconflow_transport_selected),
+            model_add_api_key_field(api_key_raw),
+        ]
+    } else if provider_idx == model_add_moonshot_provider_index() {
+        vec![
+            model_add_provider_field(provider_idx),
+            model_add_mode_field_preset(),
+            model_add_moonshot_site_field(moonshot_site_selected),
             model_add_api_key_field(api_key_raw),
         ]
     } else if provider_idx == model_add_volcengine_provider_index() {
@@ -1476,6 +1511,17 @@ pub(crate) fn parse_model_add_connection(
         let site = model_add_siliconflow_site_id_from_choice(site_selected);
         provider_site = Some(site.to_string());
         model_add_siliconflow_site_api_base(site)
+            .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
+    } else if provider == ModelProvider::Moonshot {
+        let site_selected = match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                (*selected).min(1)
+            }
+            _ => 1,
+        };
+        let site = model_add_moonshot_site_id_from_choice(site_selected);
+        provider_site = Some(site.to_string());
+        model_add_moonshot_site_api_base(site)
             .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
     } else if provider == ModelProvider::GoogleVertexAi {
         vertex_api_base_from_project_and_location(
@@ -2455,6 +2501,35 @@ mod tests {
         assert_eq!(parsed.api_base, "https://api.siliconflow.com/v1");
         assert_eq!(parsed.provider_site.as_deref(), Some("intl"));
         assert_eq!(parsed.api_key, "sk-sf");
+    }
+
+    #[test]
+    fn model_add_form_parses_moonshot_preset_connection() {
+        let mut form = new_model_add_form();
+        if let Some(f) = form.fields.get_mut(0) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 7;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 0;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 3;
+        insert_text(&mut form, "sk-moon");
+
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::Moonshot);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
+        assert!(parsed.bulk);
+        assert!(parsed.model_name.is_none());
+        assert_eq!(parsed.api_base, "https://api.moonshot.cn/v1");
+        assert_eq!(parsed.provider_site.as_deref(), Some("cn"));
+        assert_eq!(parsed.api_key, "sk-moon");
     }
 
     #[test]
