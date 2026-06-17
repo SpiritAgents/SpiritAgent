@@ -22,6 +22,7 @@
     "@spirit-agent/core": "file:../agent-core",
     "@spirit-agent/host-internal": "file:../host-internal",
     "@agentclientprotocol/sdk": "^0.25.1",
+    "@inquirer/prompts": "^7.5.0",
     "@napi-rs/keyring": "^1.2.0"
   },
   "devDependencies": {
