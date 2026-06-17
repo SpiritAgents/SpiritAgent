@@ -228,6 +228,15 @@ export async function saveProviderSetup(
   spiritDataDir: string,
   setup: ProviderSetupResult,
 ): Promise<void> {
+  const scope = setup.providerScope;
+  if (scope === 'amazon-bedrock' && setup.bedrock) {
+    saveBedrockCredentials(scope, setup.bedrock);
+  } else if (scope === 'google-vertex-ai' && setup.vertex) {
+    saveGoogleVertexCredentials(scope, setup.vertex);
+  } else if (setup.apiKey?.trim()) {
+    saveProviderApiKey(scope, setup.apiKey);
+  }
+
   const existing = loadSpiritConfig(spiritDataDir);
   const models = existing?.models.filter((model) => model.name !== setup.profile.name) ?? [];
   models.push(setup.profile);
@@ -238,17 +247,4 @@ export async function saveProviderSetup(
     activeModel: setup.profile.name,
   };
   await saveSpiritConfig(spiritDataDir, config);
-
-  const scope = setup.providerScope;
-  if (scope === 'amazon-bedrock' && setup.bedrock) {
-    saveBedrockCredentials(scope, setup.bedrock);
-    return;
-  }
-  if (scope === 'google-vertex-ai' && setup.vertex) {
-    saveGoogleVertexCredentials(scope, setup.vertex);
-    return;
-  }
-  if (setup.apiKey?.trim()) {
-    saveProviderApiKey(scope, setup.apiKey);
-  }
 }
