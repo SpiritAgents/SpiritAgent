@@ -18,7 +18,8 @@
     "spirit-agent-acp": "./dist/src/stdio-entry.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
