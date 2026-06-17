@@ -78,7 +78,9 @@ export class LspOrchestrator {
           if (provider.id === 'jdtls') {
             return buildJdtlsServerCommand(this.workspaceRootStore);
           }
-          const discovery = await discoverLspProvider(provider.id);
+          const discovery = await discoverLspProvider(provider.id, process.env, process.platform, {
+            lightweight: true,
+          });
           if (discovery.status !== 'ready' || !discovery.command) {
             return undefined;
           }
