@@ -158,6 +158,26 @@ pub(crate) fn model_add_moonshot_site_id_from_choice(selected: usize) -> &'stati
     if selected == 0 { "cn" } else { "intl" }
 }
 
+/// 与 `model-provider-presets.json` 中 `providerSiteSelection.minimax` 对齐。
+pub(crate) fn model_add_minimax_site_api_base(
+    site: &str,
+    transport_kind: ModelTransportKind,
+) -> Option<String> {
+    let origin = match site.trim().to_ascii_lowercase().as_str() {
+        "cn" => "https://api.minimaxi.com",
+        "intl" => "https://api.minimax.io",
+        _ => return None,
+    };
+    match transport_kind {
+        ModelTransportKind::Anthropic => Some(format!("{origin}/anthropic/v1")),
+        _ => Some(format!("{origin}/v1")),
+    }
+}
+
+pub(crate) fn model_add_minimax_site_id_from_choice(selected: usize) -> &'static str {
+    if selected == 0 { "cn" } else { "intl" }
+}
+
 pub(crate) fn model_add_provider_id_at_choice_index(selected: usize) -> Option<&'static str> {
     presets().picker_order.get(selected).map(String::as_str)
 }
@@ -233,7 +253,7 @@ mod tests {
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(11).as_deref(),
-            Some("https://api.minimaxi.com/v1")
+            Some("https://api.minimax.io/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(12).as_deref(),
@@ -283,6 +303,26 @@ mod tests {
         assert_eq!(
             super::model_add_moonshot_site_api_base("intl").as_deref(),
             Some("https://api.moonshot.ai/v1")
+        );
+    }
+
+    #[test]
+    fn minimax_site_api_base_resolves_cn_and_intl_with_transport() {
+        assert_eq!(
+            super::model_add_minimax_site_api_base("cn", ModelTransportKind::OpenAiCompatible).as_deref(),
+            Some("https://api.minimaxi.com/v1")
+        );
+        assert_eq!(
+            super::model_add_minimax_site_api_base("cn", ModelTransportKind::Anthropic).as_deref(),
+            Some("https://api.minimaxi.com/anthropic/v1")
+        );
+        assert_eq!(
+            super::model_add_minimax_site_api_base("intl", ModelTransportKind::OpenAiCompatible).as_deref(),
+            Some("https://api.minimax.io/v1")
+        );
+        assert_eq!(
+            super::model_add_minimax_site_api_base("intl", ModelTransportKind::Anthropic).as_deref(),
+            Some("https://api.minimax.io/anthropic/v1")
         );
     }
 

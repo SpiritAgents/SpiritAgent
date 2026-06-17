@@ -3659,6 +3659,8 @@ function ModelsSettingsPanel({
                     ? t('settings.siliconflowConnectionDescription')
                     : selectedProvider === "moonshot-ai"
                       ? t('settings.moonshotConnectionDescription')
+                      : selectedProvider === "minimax"
+                        ? t('settings.minimaxConnectionDescription')
                   : providerShowsConnectTransportPicker(selectedProvider)
                       ? t('settings.providerConnectionDescription')
                       : t('settings.providerSimpleDescription')}

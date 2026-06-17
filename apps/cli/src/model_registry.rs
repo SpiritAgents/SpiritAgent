@@ -1121,6 +1121,25 @@ mod tests {
         assert_eq!(model.provider, Some(super::ModelProvider::Moonshot));
         assert_eq!(model.provider_site().as_deref(), Some("intl"));
     }
+
+    #[test]
+    fn deserializes_minimax_provider_site_from_desktop_config() {
+        let raw = r#"{
+          "models": [{
+            "name": "MiniMax-M2.5",
+            "apiBase": "https://api.minimax.io/anthropic/v1",
+            "provider": "minimax",
+            "providerSite": "intl",
+            "transportKind": "anthropic"
+          }],
+          "activeModel": "MiniMax-M2.5"
+        }"#;
+        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
+        let model = cfg.models.first().expect("model");
+        assert_eq!(model.provider, Some(super::ModelProvider::Minimax));
+        assert_eq!(model.provider_site().as_deref(), Some("intl"));
+        assert_eq!(model.transport_kind(), super::ModelTransportKind::Anthropic);
+    }
 }
 
 pub fn keyring_entry() -> Result<keyring::Entry> {

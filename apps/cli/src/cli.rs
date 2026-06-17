@@ -8,7 +8,7 @@ use crate::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
         user_mcp_config_path, workspace_mcp_config_path,
     },
-    model_provider_presets::{azure_api_base_from_resource_name, model_add_default_custom_api_base, model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base, validate_azure_resource_name},
+    model_provider_presets::{azure_api_base_from_resource_name, model_add_default_custom_api_base, model_add_minimax_site_api_base, model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base, validate_azure_resource_name},
     model_registry::{
         AppConfig, DEFAULT_API_BASE, ModelProfile, ModelProvider, ModelTransportKind,
     },
@@ -221,6 +221,17 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                             .filter(|value| !value.is_empty())
                         {
                             if let Some(base) = model_add_moonshot_site_api_base(site) {
+                                return base;
+                            }
+                        }
+                    }
+                    if provider == Some(ModelProvider::Minimax) {
+                        if let Some(site) = provider_site
+                            .as_deref()
+                            .map(str::trim)
+                            .filter(|value| !value.is_empty())
+                        {
+                            if let Some(base) = model_add_minimax_site_api_base(site, transport_kind) {
                                 return base;
                             }
                         }
