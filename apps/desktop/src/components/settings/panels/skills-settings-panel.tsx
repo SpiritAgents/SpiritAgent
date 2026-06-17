@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle, Sparkles } from "lucide-react";
 
+import { skillRootKindLabel } from "@/components/settings/skill-rule-labels";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,18 +16,7 @@ import {
 import { DesktopFormInput, DesktopFormTextarea } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import i18n from "@/lib/i18n";
 import type { CreateSkillRequest, DeleteSkillRequest, DesktopSkillListItem, DesktopSkillRootKind } from "@/types";
-
-export function skillRootKindLabel(rootKind: DesktopSkillRootKind): string {
-  if (rootKind === "user") {
-    return i18n.t("settings.skillUserDir");
-  }
-  if (rootKind === "workspaceSpirit") {
-    return i18n.t("settings.skillWorkspaceSpirit");
-  }
-  return i18n.t("settings.skillWorkspaceAgents");
-}
 
 function skillLocationLabel(item: DesktopSkillListItem): string {
   return skillRootKindLabel(item.rootKind);
