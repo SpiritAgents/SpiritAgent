@@ -1432,17 +1432,30 @@ pub(in crate::ui) fn draw_bottom_form_choice_field(
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let mut spans = vec![Span::styled(
-        format!("{}  ", label),
-        subtle_aux_text_style(),
-    )];
+    if options.is_empty() {
+        let label_prefix = format!("{}  ", label);
+        frame.render_widget(
+            Paragraph::new(Line::from(Span::styled(label_prefix, subtle_aux_text_style()))),
+            inner,
+        );
+        return None;
+    }
+
+    let label_prefix = format!("{}  ", label);
+    let label_width = UnicodeWidthStr::width(label_prefix.as_str());
+    let options_viewport_width = (inner.width as usize).saturating_sub(label_width);
     let safe_selected = selected.min(options.len().saturating_sub(1));
-    let mut cursor_offset = UnicodeWidthStr::width(label).saturating_add(2) as u16;
+
+    const OPTION_GAP: &str = "   ";
+    let gap_width = UnicodeWidthStr::width(OPTION_GAP);
+    let mut option_runs = Vec::with_capacity(options.len() * 2);
+    let mut option_segments: Vec<(usize, usize)> = Vec::with_capacity(options.len());
+    let mut cursor = 0usize;
 
     for (index, option) in options.iter().enumerate() {
         if index > 0 {
-            spans.push(Span::styled("   ", subtle_aux_text_style()));
-            cursor_offset = cursor_offset.saturating_add(3);
+            option_runs.push((OPTION_GAP.to_string(), subtle_aux_text_style()));
+            cursor = cursor.saturating_add(gap_width);
         }
 
         let option_style = if is_selected && index == safe_selected {
@@ -1450,20 +1463,31 @@ pub(in crate::ui) fn draw_bottom_form_choice_field(
         } else {
             subtle_aux_text_style()
         };
-
-        if index < safe_selected {
-            cursor_offset =
-                cursor_offset.saturating_add(UnicodeWidthStr::width(option.as_str()) as u16);
-        }
-
-        spans.push(Span::styled(option.clone(), option_style));
+        let width = UnicodeWidthStr::width(option.as_str());
+        option_segments.push((cursor, width));
+        option_runs.push((option.clone(), option_style));
+        cursor = cursor.saturating_add(width);
     }
 
+    let total_options_width = cursor;
+    let (selected_start, selected_width) = option_segments[safe_selected];
+    let scroll_start = horizontal_viewport_scroll_start(
+        total_options_width,
+        selected_start,
+        selected_width,
+        options_viewport_width,
+    );
+    let visible_option_spans =
+        slice_styled_runs_from_display_column(&option_runs, scroll_start, options_viewport_width);
+
+    let mut spans = vec![Span::styled(label_prefix, subtle_aux_text_style())];
+    spans.extend(visible_option_spans);
     frame.render_widget(Paragraph::new(Line::from(spans)), inner);
 
     if is_selected {
+        let cursor_col = label_width.saturating_add(selected_start.saturating_sub(scroll_start));
         Some((
-            inner.x + cursor_offset.min(inner.width.saturating_sub(1)),
+            inner.x + cursor_col.min(inner.width.saturating_sub(1) as usize) as u16,
             inner.y,
         ))
     } else {

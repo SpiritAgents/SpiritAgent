@@ -325,6 +325,36 @@ fn inline_picker_window_keeps_selection_near_middle() {
 }
 
 #[test]
+fn horizontal_viewport_scroll_keeps_selection_near_middle() {
+    // 等宽「项」映射：total=8、viewport=5 与 inline_picker_bounds 窗口一致
+    assert_eq!(horizontal_viewport_scroll_start(8, 0, 1, 5), 0);
+    assert_eq!(horizontal_viewport_scroll_start(8, 2, 1, 5), 0);
+    assert_eq!(horizontal_viewport_scroll_start(8, 3, 1, 5), 1);
+    assert_eq!(horizontal_viewport_scroll_start(8, 7, 1, 5), 3);
+}
+
+#[test]
+fn horizontal_viewport_scroll_does_not_scroll_when_content_fits() {
+    assert_eq!(horizontal_viewport_scroll_start(10, 4, 2, 20), 0);
+}
+
+#[test]
+fn slice_styled_runs_from_display_column_skips_and_limits_width() {
+    use ratatui::style::Style;
+    let runs = vec![
+        ("abc".to_string(), Style::default()),
+        ("   ".to_string(), Style::default()),
+        ("def".to_string(), Style::default()),
+    ];
+    let spans = slice_styled_runs_from_display_column(&runs, 2, 4);
+    let text: String = spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect();
+    assert_eq!(text, "c   ");
+}
+
+#[test]
 fn sessions_picker_reuses_inline_picker_styles_and_scroll_window() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::User, "/sessions"));
     app.chat_picker_files = (0..7).map(|idx| format!("session-{idx}.json")).collect();

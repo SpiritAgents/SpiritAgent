@@ -15,6 +15,22 @@ pub(in crate::ui) fn inline_picker_bounds(
     (start, end)
 }
 
+/// 横向视口滚动起点：尽量让选中项居中，除非已滑到首尾（与 [`inline_picker_bounds`] 同语义）。
+pub(in crate::ui) fn horizontal_viewport_scroll_start(
+    total_extent: usize,
+    selected_start: usize,
+    selected_extent: usize,
+    viewport: usize,
+) -> usize {
+    if total_extent <= viewport || viewport == 0 {
+        return 0;
+    }
+    let selected_center = selected_start.saturating_add(selected_extent / 2);
+    let pivot = viewport / 2;
+    let max_start = total_extent.saturating_sub(viewport);
+    selected_center.saturating_sub(pivot).min(max_start)
+}
+
 pub(in crate::ui) fn inline_picker_text_style(is_selected: bool) -> Style {
     if is_selected {
         Style::default().fg(Color::White)
