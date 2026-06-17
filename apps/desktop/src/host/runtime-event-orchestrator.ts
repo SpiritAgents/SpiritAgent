@@ -48,6 +48,7 @@ import type {
 import { hasAssistantToolInCurrentTurn } from '../lib/conversation-thinking-ui.js';
 import {
   assistantPrefixBeforeFirstToolInCurrentTurn,
+  assistantTurnHasPlainPrefixMessage,
   finishTaskNoticeFromExecution,
   finishTaskNoticePreviewFromArguments,
   finishTaskSummaryFromExecution,
@@ -675,9 +676,7 @@ export class DesktopRuntimeEventOrchestrator {
       return;
     }
 
-    const hasPlainPrefix = messages.some(
-      (message) => message.role === 'assistant' && message.content === prefix && !message.tool,
-    );
+    const hasPlainPrefix = assistantTurnHasPlainPrefixMessage(messages, prefix);
     if (hasPlainPrefix) {
       return;
     }
@@ -742,18 +741,12 @@ export class DesktopRuntimeEventOrchestrator {
     }
 
     if (lastMessage!.role === 'assistant' && lastMessage!.tool) {
-      if (messages.some((message) => message.role === 'assistant' && !message.tool && message.content === prefix)) {
-        return;
-      }
       this.insertAssistantPrefix(messages.length, prefix, 'append-prefix-after-tool');
       return;
     }
 
-    if (lastMessage!.role === 'assistant' && !lastMessage!.tool && lastMessage!.content.trim() && lastMessage!.content !== prefix) {
-      if (messages.some((message) => message.role === 'assistant' && !message.tool && message.content === prefix)) {
-        return;
-      }
-      if (!lastMessage!.content.startsWith(prefix)) {
+    if (lastMessage!.role === 'assistant' && !lastMessage!.tool && lastMessage!.content.trim() && lastMessage!.content.trim() !== prefix) {
+      if (!lastMessage!.content.trim().startsWith(prefix)) {
         this.insertAssistantPrefix(messages.length, prefix, 'append-prefix-before-tail');
       }
       return;
