@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-
 import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-context";
 import { useTheme } from "@/hooks/useTheme";
 import { spiritAgentTitleBarIconSrc } from "@/lib/brand-icon";
@@ -194,8 +193,10 @@ export function DesktopTitleBar({ useMicaBackdrop }: DesktopTitleBarProps) {
   const { open: sessionSidebarOpen, widthPx: sessionSidebarWidthPx } = useSessionSidebarChrome();
   /** Mica 开启且侧边栏展开：横向分割线只渲染在侧边栏竖线右侧 */
   const partialBorder = useMicaBackdrop && sessionSidebarOpen;
+
   return (
     <header
+      data-spirit-surface="desktop-title-bar"
       className={cn(
         "electron-drag flex h-8 w-full shrink-0 overflow-hidden border-b",
         partialBorder && "border-transparent",
@@ -203,25 +204,19 @@ export function DesktopTitleBar({ useMicaBackdrop }: DesktopTitleBarProps) {
       )}
     >
       <div
-        className={cn(
-          "flex h-full min-h-0 shrink-0 items-center gap-1 pl-2",
-          !sessionSidebarOpen && "min-w-0 flex-1",
-        )}
+        className="flex h-full min-h-0 w-fit shrink-0 items-center gap-1 pl-2"
         style={
           sessionSidebarOpen
-            ? { width: sessionSidebarShellWidth(true, sessionSidebarWidthPx) }
+            ? { minWidth: sessionSidebarShellWidth(true, sessionSidebarWidthPx) }
             : undefined
         }
       >
         <TitleBarMenuCluster useMicaBackdrop={useMicaBackdrop} />
       </div>
       <div
-        className={cn(
-          "electron-drag relative h-full min-w-0 flex-1",
-        )}
+        className="electron-drag relative h-full min-w-0 flex-1"
         aria-hidden
-      >
-        {partialBorder ? (
+      >        {partialBorder ? (
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-black/5 dark:bg-white/10"
             aria-hidden
