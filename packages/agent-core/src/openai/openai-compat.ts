@@ -10,6 +10,7 @@ export type OpenAiLlmVendor =
   | 'moonshot-ai'
   | 'z-ai'
   | 'minimax'
+  | 'xiaomi'
   | 'alibaba'
   | 'vercel-ai-gateway'
   | 'openrouter'
