@@ -24,6 +24,7 @@ pub enum ModelProvider {
     #[serde(rename = "z-ai")]
     ZAi,
     Minimax,
+    Xiaomi,
     Alibaba,
     Anthropic,
     #[serde(rename = "vercel-ai-gateway", alias = "vercelaigateway")]
@@ -48,6 +49,7 @@ impl ModelProvider {
             Self::Moonshot => "moonshot-ai",
             Self::ZAi => "z-ai",
             Self::Minimax => "minimax",
+            Self::Xiaomi => "xiaomi",
             Self::Alibaba => "alibaba",
             Self::Anthropic => "anthropic",
             Self::VercelAiGateway => "vercel-ai-gateway",
@@ -73,6 +75,7 @@ impl FromStr for ModelProvider {
             "moonshot-ai" => Ok(Self::Moonshot),
             "z-ai" => Ok(Self::ZAi),
             "minimax" => Ok(Self::Minimax),
+            "xiaomi" => Ok(Self::Xiaomi),
             "alibaba" => Ok(Self::Alibaba),
             "anthropic" => Ok(Self::Anthropic),
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
@@ -174,6 +177,7 @@ impl ModelProfile {
             Some(ModelProvider::Xai)
             | Some(ModelProvider::ZAi)
             | Some(ModelProvider::Minimax)
+            | Some(ModelProvider::Xiaomi)
             | Some(ModelProvider::Alibaba)
             | Some(ModelProvider::Anthropic)
             | Some(ModelProvider::VercelAiGateway)
