@@ -39,10 +39,10 @@ for (const [exportName, relativePath] of PANEL_FILES) {
   });
 }
 
-test("settings barrel re-exports SettingsView and SettingsFormState", async () => {
+test("settings barrel re-exports SettingsView and settings types", async () => {
   const barrel = await readFile(join(__dirname, "../../src/components/settings-view.tsx"), "utf8");
   assert.match(barrel, /export \{ SettingsView \} from "@\/components\/settings\/settings-view"/);
-  assert.match(barrel, /export type \{ SettingsFormState \} from "@\/components\/settings\/types"/);
+  assert.match(barrel, /export type \{ SettingsFormState, SettingsViewProps \} from "@\/components\/settings\/types"/);
 });
 
 test("AgentsSettingsRow uses grid layout without shared SettingsRow border", () => {
