@@ -85,3 +85,44 @@ test('resolveMoonshotVideoUrlsInOpenAiMessages uploads local video_url reference
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
+
+test('resolveMoonshotVideoUrlsInOpenAiMessages uploads xiaomi local video_url references', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-agent-core-xiaomi-resolve-'));
+  const videoPath = join(workspaceRoot, 'clip.mp4');
+  try {
+    await writeFile(videoPath, MINIMAL_MP4_HEADER);
+    clearMoonshotVideoUploadCache();
+
+    setLlmFetchTransportOverrideForTests(async () =>
+      new Response(JSON.stringify({ id: 'file-xiaomi' }), { status: 200 }));
+
+    const messages = [
+      llmMessageToOpenAiMessage(
+        {
+          role: 'user',
+          content: [createLlmVideoContentPart(videoPath)],
+        },
+        workspaceRoot,
+      ),
+    ];
+
+    await resolveMoonshotVideoUrlsInOpenAiMessages(
+      {
+        apiKey: 'test-key',
+        baseUrl: 'https://api.xiaomimimo.com/v1',
+        model: 'mimo-v2.5',
+        llmVendor: 'xiaomi',
+        modelCapabilities: { videoInput: true },
+      },
+      messages,
+      workspaceRoot,
+    );
+
+    const content = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content;
+    assert.equal(content[0]?.video_url.url, 'ms://file-xiaomi');
+  } finally {
+    setLlmFetchTransportOverrideForTests(undefined);
+    clearMoonshotVideoUploadCache();
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
