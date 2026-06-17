@@ -52,6 +52,10 @@
     "vercelAiGateway": "Vercel AI Gateway",
     "openrouter": "OpenRouter",
     "moonshotAi": "Moonshot AI",
+    "moonshotAiSite": {
+      "cn": "中国站",
+      "intl": "国际站"
+    },
     "zAi": "Z.ai",
     "zhipuAi": "智谱 AI",
     "alibaba": "Alibaba",
@@ -295,6 +299,7 @@
     "apiType": "API 类型",
     "site": "站点",
     "siliconflowConnectionDescription": "请选择站点与 API 类型，并填写对应站点的 API Key。",
+    "moonshotConnectionDescription": "请选择站点并填写对应站点的 API Key。",
     "modelAddMode": "模型添加方式",
     "addSingle": "仅添加单个",
     "addAll": "添加所有",

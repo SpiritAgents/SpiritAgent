@@ -216,3 +216,20 @@ test('resolveProviderConnectApiBase prefers site apiBase for siliconflow', () =>
     'https://api.siliconflow.com/v1',
   );
 });
+
+test('resolveProviderConnectApiBase prefers site apiBase for moonshot-ai', () => {
+  assert.equal(providerSupportsSiteSelection('moonshot-ai'), true);
+  assert.equal(defaultProviderConnectSite('moonshot-ai'), 'intl');
+  assert.equal(
+    resolveProviderConnectApiBase('moonshot-ai', 'openai-compatible', { site: 'cn' }),
+    'https://api.moonshot.cn/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('moonshot-ai', 'openai-compatible', { site: 'intl' }),
+    'https://api.moonshot.ai/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('moonshot-ai', 'openai-compatible'),
+    'https://api.moonshot.ai/v1',
+  );
+});
