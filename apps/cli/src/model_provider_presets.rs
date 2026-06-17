@@ -132,6 +132,19 @@ pub(crate) fn model_add_picker_order_ids() -> &'static [String] {
     &presets().picker_order
 }
 
+/// 与 `model-provider-presets.json` 中 `providerSiteSelection.siliconflow` 对齐。
+pub(crate) fn model_add_siliconflow_site_api_base(site: &str) -> Option<String> {
+    match site.trim().to_ascii_lowercase().as_str() {
+        "cn" => Some("https://api.siliconflow.cn/v1".to_string()),
+        "intl" => Some("https://api.siliconflow.com/v1".to_string()),
+        _ => None,
+    }
+}
+
+pub(crate) fn model_add_siliconflow_site_id_from_choice(selected: usize) -> &'static str {
+    if selected == 0 { "cn" } else { "intl" }
+}
+
 pub(crate) fn model_add_provider_id_at_choice_index(selected: usize) -> Option<&'static str> {
     presets().picker_order.get(selected).map(String::as_str)
 }
@@ -234,6 +247,18 @@ mod tests {
             Some("https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1")
         );
         assert!(model_add_preset_api_base_by_choice_index(18).is_none());
+    }
+
+    #[test]
+    fn siliconflow_site_api_base_resolves_cn_and_intl() {
+        assert_eq!(
+            super::model_add_siliconflow_site_api_base("cn").as_deref(),
+            Some("https://api.siliconflow.cn/v1")
+        );
+        assert_eq!(
+            super::model_add_siliconflow_site_api_base("intl").as_deref(),
+            Some("https://api.siliconflow.com/v1")
+        );
     }
 
     #[test]

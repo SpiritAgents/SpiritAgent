@@ -115,6 +115,8 @@ enum ModelAction {
         key: Option<String>,
         #[arg(long)]
         azure_resource_name: Option<String>,
+        #[arg(long, value_parser = ["cn", "intl"])]
+        provider_site: Option<String>,
     },
     Remove {
         name: String,
@@ -296,6 +298,7 @@ fn into_model_command(action: ModelAction) -> ModelCommand {
             context_length,
             key,
             azure_resource_name,
+            provider_site,
         } => ModelCommand::Add {
             name,
             api_base,
@@ -306,6 +309,7 @@ fn into_model_command(action: ModelAction) -> ModelCommand {
             context_length,
             key,
             azure_resource_name,
+            provider_site,
         },
         ModelAction::Remove { name } => ModelCommand::Remove { name },
         ModelAction::Use { name } => ModelCommand::Use { name },
