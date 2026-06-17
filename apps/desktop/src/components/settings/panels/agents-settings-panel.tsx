@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import type { SettingsFormState } from "@/components/settings-view";
+import type { SettingsFormState } from "@/components/settings/types";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils";
 import type { DesktopLspProviderSnapshot, DesktopSnapshot } from "@/types";
 import { isDesktopInstallableProvider } from "@/lib/lsp-provider-install";
 
-function SettingsRow({
+/** Agents 面板专用行布局（grid）；与 appearance 等面板的 flex SettingsRow 不同。 */
+export function AgentsSettingsRow({
   label,
   description,
   htmlFor,
@@ -78,7 +79,7 @@ export function AgentsSettingsPanel({
       <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("settings.agents")}</h1>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-        <SettingsRow
+        <AgentsSettingsRow
           label={t("settings.lspEnabled")}
           description={t("settings.lspEnabledDescription")}
           htmlFor="settings-lsp-enabled"
@@ -91,7 +92,7 @@ export function AgentsSettingsPanel({
               className="size-5"
             />
           </div>
-        </SettingsRow>
+        </AgentsSettingsRow>
 
         {(lsp?.providers ?? []).map((provider) => (
           <div
