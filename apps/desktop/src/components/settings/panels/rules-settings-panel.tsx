@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle, Sparkles } from "lucide-react";
 
-import { skillRootKindLabel } from "@/components/settings/panels/skills-settings-panel";
+import { skillRootKindLabel } from "@/components/settings/skill-rule-labels";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
