@@ -9,7 +9,7 @@ import {
   type JsonValue,
   type LlmMessage,
 } from '../ports.js';
-import { uploadMoonshotVideoFile } from './moonshot-files.js';
+import { uploadOpenAiCompatibleVideoFile } from './moonshot-files.js';
 import {
   resolveOpenAiModelCompatibilityProfile,
   type OpenAiTransportConfig,
@@ -86,13 +86,13 @@ export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string
   };
 }
 
-/** Moonshot AI：将本地视频路径上传为 Files API（purpose=video），并改写为 ms:// 引用。 */
+/** Moonshot / Xiaomi：将本地视频路径上传为 Files API（purpose=video），并改写为 ms:// 引用。 */
 export async function resolveMoonshotVideoUrlsInOpenAiMessages(
   config: OpenAiTransportConfig,
   messages: JsonValue[],
   assetRoot = process.cwd(),
 ): Promise<void> {
-  if (config.llmVendor !== 'moonshot-ai') {
+  if (config.llmVendor !== 'moonshot-ai' && config.llmVendor !== 'xiaomi') {
     return;
   }
 
@@ -127,7 +127,7 @@ export async function resolveMoonshotVideoUrlsInOpenAiMessages(
       }
 
       const absolutePath = resolveLocalMediaPath(url, assetRoot);
-      rawVideoUrl['url'] = await uploadMoonshotVideoFile(config, absolutePath);
+      rawVideoUrl['url'] = await uploadOpenAiCompatibleVideoFile(config, absolutePath);
     }
   }
 }
