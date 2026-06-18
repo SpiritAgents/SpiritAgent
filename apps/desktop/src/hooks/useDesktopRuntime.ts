@@ -76,8 +76,10 @@ import type {
   WriteWorkspaceTextFileRequest,
   DesktopModelProvider,
   GitHistorySnapshot,
+  GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
+  ReadGitCommitMessageRequest,
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
   ListGitHubPullRequestsRequest,
@@ -2549,6 +2551,23 @@ export function useDesktopRuntime() {
     [api],
   );
 
+  const readGitCommitMessage = useCallback(
+    async (request: ReadGitCommitMessageRequest): Promise<GitCommitMessageSnapshot> => {
+      if (!api) {
+        return {
+          isRepository: false,
+          oid: '',
+          subject: '',
+          author: '',
+          authoredAt: '',
+          fullMessage: '',
+        };
+      }
+      return api.readGitCommitMessage(request);
+    },
+    [api],
+  );
+
   const getGitHubAuthStatus = useCallback(async () => {
     if (!api) {
       return { connected: false };
@@ -2941,6 +2960,7 @@ export function useDesktopRuntime() {
     listWorkspaceExplorerChildren,
     readGitWorkingTree,
     readGitHistory,
+    readGitCommitMessage,
     getGitHubAuthStatus,
     beginGitHubDeviceLogin,
     completeGitHubDeviceLogin,

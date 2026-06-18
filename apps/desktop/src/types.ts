@@ -991,6 +991,19 @@ export interface ReadGitHistoryRequest {
   existingLogCommits?: GitCommitRecord[];
 }
 
+export interface ReadGitCommitMessageRequest {
+  oid: string;
+}
+
+export interface GitCommitMessageSnapshot {
+  isRepository: boolean;
+  oid: string;
+  subject: string;
+  author: string;
+  authoredAt: string;
+  fullMessage: string;
+}
+
 export type {
   GitHubAuthStatus,
   GitHubDeviceAuthChallenge,
