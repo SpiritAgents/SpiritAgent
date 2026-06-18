@@ -44,6 +44,7 @@ import { syncSubagentConversationProjections } from './subagent-conversation-pro
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
 import {
   advancePendingWorktreeBootstrapCommand,
+  abortPendingWorktreeBootstrap,
   shouldAdvanceWorktreeBootstrap,
   type WorktreeBootstrapHostContext,
 } from './worktree-bootstrap-orchestrator.js';
@@ -376,6 +377,11 @@ export async function tickSessionCommand(
 export async function abortConversationInContext(
   ctx: SessionTurnOrchestratorContext,
 ): Promise<boolean> {
+  const bundle = ctx.activeBundle();
+  if (ctx.worktreeBootstrapHost && abortPendingWorktreeBootstrap(ctx, ctx.worktreeBootstrapHost, bundle)) {
+    return true;
+  }
+
   const runtime = ctx.requireRuntime();
   const interruptedAssistantText = runtime.pendingAssistantText().trim();
   const interruptedThinkingText = runtime.thinkingText().trim();

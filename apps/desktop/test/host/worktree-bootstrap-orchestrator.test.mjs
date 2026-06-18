@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { DesktopMessageTimeline } from '../../dist-electron/src/host/message-timeline.js';
 import {
+  cancelPendingWorktreeBootstrapOnBundle,
   shouldAdvanceWorktreeBootstrap,
   startWorktreeBootstrapTurnCommand,
 } from '../../dist-electron/src/host/worktree-bootstrap-orchestrator.js';
@@ -20,6 +21,24 @@ function createTimelineHarness() {
   });
   return { timeline, nextMessageId: () => nextMessageId };
 }
+
+test('cancelPendingWorktreeBootstrapOnBundle marks card failed and clears pending', async () => {
+  const { timeline } = createTimelineHarness();
+  const bundle = {
+    id: 'draft-cancel',
+    messages: [],
+    messageTimeline: timeline,
+    currentTurnSkills: [{ name: 'test' }],
+    pendingWorktreeBootstrap: {
+      toolCallId: 'worktree-bootstrap:draft-cancel',
+      phase: 'running',
+    },
+  };
+  timeline.beginUserTurn('hello', { messageId: 1 });
+  cancelPendingWorktreeBootstrapOnBundle(bundle);
+  assert.equal(bundle.pendingWorktreeBootstrap, undefined);
+  assert.equal(bundle.currentTurnSkills.length, 0);
+});
 
 test('startWorktreeBootstrapTurnCommand inserts user message and running worktree card', async () => {
   const { timeline } = createTimelineHarness();
