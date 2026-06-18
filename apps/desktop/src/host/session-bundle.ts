@@ -196,6 +196,7 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.sessionTitleSource = undefined;
   bundle.contextUsage = undefined;
   bundle.directMediaTurnInFlight = false;
+  bundle.pendingWorktreeBootstrap = undefined;
   bundle.queuedUserTurns = [];
   bundle.subagentDesktopMessagesBySessionId = new Map();
   bundle.subagentConversationProjections = new Map();
