@@ -20,10 +20,33 @@ function providerUsesUpstreamModelDisplayName(provider: DesktopModelProvider | u
   return provider === 'vercel-ai-gateway' || provider === 'openrouter';
 }
 
+/** 是否可调用上游 `GET /models`（或等价）列模型；Azure 无目录端点，custom 视 transport 而定。 */
+export function providerSupportsModelCatalogListing(input: {
+  provider?: DesktopModelProvider;
+  transportKind?: DesktopTransportKind;
+}): boolean {
+  if (!input.provider) {
+    return false;
+  }
+  if (input.provider === 'azure') {
+    return false;
+  }
+  if (input.provider === 'custom') {
+    const transportKind = input.transportKind ?? 'openai-compatible';
+    return transportKind === 'openai-compatible'
+      || transportKind === 'anthropic'
+      || transportKind === 'open-responses';
+  }
+  return true;
+}
+
 export function usesProviderListedModelCatalogMetadata(input: {
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
 }): boolean {
+  if (!providerSupportsModelCatalogListing(input)) {
+    return false;
+  }
   if (input.provider === 'moonshot-ai') {
     return true;
   }
@@ -34,7 +57,14 @@ export function usesProviderListedModelCatalogMetadata(input: {
     return true;
   }
   if (
-    input.provider === 'vercel-ai-gateway'
+    input.provider === 'openai'
+    || input.provider === 'deepseek'
+    || input.provider === 'xai'
+    || input.provider === 'z-ai'
+    || input.provider === 'zhipu-ai'
+    || input.provider === 'alibaba'
+    || input.provider === 'minimax'
+    || input.provider === 'vercel-ai-gateway'
     || input.provider === 'openrouter'
     || input.provider === 'volcengine'
     || input.provider === 'google'

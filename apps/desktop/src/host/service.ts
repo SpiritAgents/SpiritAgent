@@ -324,9 +324,9 @@ import {
   attachImageGenerationToTransportConfig,
   attachVideoGenerationToTransportConfig,
   buildPrimaryTransportConfig,
-  loadPreviewModelsForTransport,
   resolveDesktopTransportKind,
 } from './model-config.js';
+import { refreshConfiguredModelCatalogsOnStartup, forceRefreshModelCatalogForProfile } from './model-catalog-startup-refresh.js';
 import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
@@ -539,6 +539,7 @@ class DesktopHostService {
   private subagentViewerTargetToolCallId: string | null = null;
   private gitRefreshInFlight: Promise<void> | null = null;
   private contextUsageCatalogRefreshInFlight: Promise<void> | null = null;
+  private modelCatalogStartupRefreshInFlight: Promise<void> | null = null;
   private pendingContextUsageCatalogRefresh:
     | {
         bundle: SessionBundle;
@@ -1027,7 +1028,45 @@ class DesktopHostService {
       return this.buildSnapshot();
     });
     this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: snapshot.workspaceRoot });
+    this.scheduleModelCatalogStartupRefresh();
     return snapshot;
+  }
+
+  private scheduleModelCatalogStartupRefresh(): void {
+    void this.runModelCatalogStartupRefresh();
+  }
+
+  private async runModelCatalogStartupRefresh(): Promise<void> {
+    if (this.modelCatalogStartupRefreshInFlight) {
+      return this.modelCatalogStartupRefreshInFlight;
+    }
+
+    this.modelCatalogStartupRefreshInFlight = (async () => {
+      try {
+        await this.runSerialized(async () => {
+          const state = this.state;
+          if (!state) {
+            return;
+          }
+          const summary = await refreshConfiguredModelCatalogsOnStartup(state.config);
+          if (summary.merged > 0) {
+            await saveConfig(state.config);
+            if (this.runtime?.isBusy() !== true) {
+              await this.refreshRuntime();
+            }
+          }
+          if (summary.refreshed > 0 || summary.merged > 0) {
+            this.emitLiveSnapshotUpdate();
+          }
+        });
+      } catch {
+        // best-effort：启动时目录刷新失败不阻断 Desktop
+      } finally {
+        this.modelCatalogStartupRefreshInFlight = null;
+      }
+    })();
+
+    return this.modelCatalogStartupRefreshInFlight;
   }
 
   subscribeDreamUpdates(listener: (snapshot: DesktopSnapshot) => void): () => void {
@@ -2540,68 +2579,13 @@ class DesktopHostService {
     if (!state || !activeModel.provider) {
       return;
     }
-    const apiKey = await resolveApiKeyForConfigModel(state.config, activeModel.name);
-    const transportKind = resolveDesktopTransportKind(activeModel);
     const profile = state.config.models.find((model) => model.name === activeModel.name);
-    if (transportKind === 'bedrock') {
-      const bedrockCredentials = readBedrockProviderCredentialsFromKeyring(
-        modelProviderKeyScope(activeModel.provider),
-      );
-      if (
-        !profile?.awsRegion?.trim()
-        || !hasBedrockRuntimeCredentials({
-          apiKey,
-          accessKeyId: bedrockCredentials.accessKeyId,
-          secretAccessKey: bedrockCredentials.secretAccessKey,
-        })
-      ) {
-        return;
-      }
-      await loadPreviewModelsForTransport({
-        provider: activeModel.provider,
-        transportKind,
-        apiBase: activeModel.apiBase.trim() || DEFAULT_API_BASE,
-        apiKey: apiKey?.trim() ?? bedrockCredentials.apiKey?.trim() ?? '',
-        awsRegion: profile.awsRegion,
-        accessKeyId: bedrockCredentials.accessKeyId,
-        secretAccessKey: bedrockCredentials.secretAccessKey,
-        forceRefresh: true,
-      });
-    } else if (activeModel.provider === 'google-vertex-ai') {
-      const vertexCredentials = readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai');
-      if (
-        !hasGoogleVertexRuntimeCredentials({
-          apiKey,
-          clientEmail: vertexCredentials.clientEmail,
-          privateKey: vertexCredentials.privateKey,
-          vertexProject: profile?.vertexProject,
-          vertexLocation: profile?.vertexLocation,
-        })
-      ) {
-        return;
-      }
-      await loadPreviewModelsForTransport({
-        provider: activeModel.provider,
-        transportKind,
-        apiBase: activeModel.apiBase.trim() || DEFAULT_API_BASE,
-        apiKey: apiKey?.trim() ?? vertexCredentials.apiKey?.trim() ?? '',
-        ...(profile?.vertexProject ? { vertexProject: profile.vertexProject } : {}),
-        ...(profile?.vertexLocation ? { vertexLocation: profile.vertexLocation } : {}),
-        ...(vertexCredentials.clientEmail ? { vertexClientEmail: vertexCredentials.clientEmail } : {}),
-        ...(vertexCredentials.privateKey ? { vertexPrivateKey: vertexCredentials.privateKey } : {}),
-        forceRefresh: true,
-      });
-    } else {
-      if (!apiKey?.trim()) {
-        return;
-      }
-      await loadPreviewModelsForTransport({
-        provider: activeModel.provider,
-        transportKind,
-        apiBase: activeModel.apiBase.trim() || DEFAULT_API_BASE,
-        apiKey: apiKey.trim(),
-        forceRefresh: true,
-      });
+    if (!profile) {
+      return;
+    }
+    const refreshed = await forceRefreshModelCatalogForProfile(state.config, profile);
+    if (!refreshed) {
+      return;
     }
     const contextLength = resolveModelContextLength(
       activeModel,

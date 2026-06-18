@@ -550,6 +550,8 @@ interface LoadedPreviewModelsResult {
   fromCache: boolean;
 }
 
+export type { LoadedPreviewModelsResult };
+
 export async function loadPreviewModelsForTransport(input: {
   provider?: DesktopModelProvider;
   transportKind: DesktopTransportKind;
