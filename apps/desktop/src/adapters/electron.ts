@@ -237,6 +237,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     readGitHistory(request) {
       return bridge.readGitHistory(request);
     },
+    readGitCommitMessage(request) {
+      return bridge.readGitCommitMessage(request);
+    },
     getGitHubAuthStatus() {
       return bridge.getGitHubAuthStatus();
     },

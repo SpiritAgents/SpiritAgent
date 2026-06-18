@@ -17,10 +17,12 @@ import type {
   DesktopGitSnapshot,
   DesktopSnapshot,
   GitHistorySnapshot,
+  GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
   HostTextFileStatResult,
   QueryWorkspaceFileReferenceSuggestionsRequest,
   ReadGitHistoryRequest,
+  ReadGitCommitMessageRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
   SessionListItem,
@@ -37,6 +39,7 @@ import {
   mergeWorktreeBranchToMain,
   pushWorkspaceGitBranch,
   readWorkspaceGitHistory,
+  readWorkspaceGitCommitMessage,
   readWorkspaceGitWorkingTree,
 } from './git.js';
 import { ephemeralSessionsToListItems, sessionListActivityFromBundle } from './sessions.js';
@@ -341,6 +344,17 @@ export async function readGitHistoryCommand(
     await ctx.ensureInitialized();
     const state = ctx.requireState();
     return readWorkspaceGitHistory(state.workspaceRoot, request);
+  });
+}
+
+export async function readGitCommitMessageCommand(
+  ctx: HostWorkspaceGitCommandContext,
+  request: ReadGitCommitMessageRequest,
+): Promise<GitCommitMessageSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized();
+    const state = ctx.requireState();
+    return readWorkspaceGitCommitMessage(state.workspaceRoot, request);
   });
 }
 

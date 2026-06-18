@@ -7,8 +7,10 @@ import type {
   BootstrapRequest,
   CommitChangesRequest,
   GitHistorySnapshot,
+  GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
   ReadGitHistoryRequest,
+  ReadGitCommitMessageRequest,
   CreateRuleRequest,
   CreateSkillRequest,
   DeleteExtensionRequest,
@@ -191,6 +193,9 @@ export function createWebHostApi(): HostApi {
     },
     readGitHistory(request: ReadGitHistoryRequest = {}) {
       return post<GitHistorySnapshot>(baseUrl, '/api/git/history', request);
+    },
+    readGitCommitMessage(request: ReadGitCommitMessageRequest) {
+      return post<GitCommitMessageSnapshot>(baseUrl, '/api/git/commit-message', request);
     },
     getGitHubAuthStatus() {
       return Promise.resolve({ connected: false });

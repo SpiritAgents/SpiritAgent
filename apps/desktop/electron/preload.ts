@@ -255,6 +255,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   readGitHistory(request?: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'readGitHistory', { request });
   },
+  readGitCommitMessage(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'readGitCommitMessage', { request });
+  },
   getGitHubAuthStatus() {
     return ipcRenderer.invoke('desktop:invoke', 'getGitHubAuthStatus');
   },
