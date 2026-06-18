@@ -313,8 +313,6 @@ import {
   restoreStoredSessionState,
   type EphemeralSessionRecord,
   nextMessageIdFromMessages,
-  rememberEphemeralSessionRecord,
-  rememberEphemeralWorktreeSessionRecord,
   removeEphemeralSessionRecord,
 } from './sessions.js';
 import { generateSessionTitleFromModelTask } from './session-title-generation.js';
@@ -2836,16 +2834,6 @@ class DesktopHostService {
     return this.state?.ephemeralSessions.find((session) => session.path === filePath);
   }
 
-  private rememberEphemeralSession(record: EphemeralSessionRecord): void {
-    const state = this.requireState();
-    state.ephemeralSessions = rememberEphemeralSessionRecord(state.ephemeralSessions, record);
-  }
-
-  private rememberEphemeralWorktreeSession(record: EphemeralSessionRecord): void {
-    const state = this.requireState();
-    state.ephemeralSessions = rememberEphemeralWorktreeSessionRecord(state.ephemeralSessions, record);
-  }
-
   private async executeWorktreeBootstrapForActiveBundle(userPrompt: string): Promise<void> {
     const state = this.requireState();
     const bundle = this.activeBundle();
@@ -2930,7 +2918,6 @@ class DesktopHostService {
       extensionSystemPrompts,
       toolExecutor,
       runtimeBasicInfo: buildDesktopRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
-      rememberEphemeralSession: (record) => this.rememberEphemeralWorktreeSession(record),
       userPrompt,
       baseBranch,
       repoRoot,
