@@ -42,6 +42,11 @@ import {
 } from './direct-media-turn.js';
 import { syncSubagentConversationProjections } from './subagent-conversation-projection.js';
 import { toRuntimeAskQuestionsResult } from './service-utils.js';
+import {
+  advancePendingWorktreeBootstrapCommand,
+  shouldAdvanceWorktreeBootstrap,
+  type WorktreeBootstrapHostContext,
+} from './worktree-bootstrap-orchestrator.js';
 
 type RuntimeEventsFacade = {
   applyRuntimeHostEvents(events: RuntimeEvent<DesktopToolRequest>[]): void;
@@ -115,6 +120,7 @@ export interface SessionTurnOrchestratorContext {
   insertUserApprovalReplyMessage(content: string, pendingToolCallId?: string): void;
   normalizeApprovalDecision(decision: DesktopApprovalDecision | undefined): RuntimeApprovalDecision;
   runSessionEndForActive?(reason: import('@spirit-agent/core').SessionEndHookInput['reason']): Promise<void>;
+  worktreeBootstrapHost?: WorktreeBootstrapHostContext;
 }
 
 export async function submitUserTurnAfterInitializedCommand(
@@ -310,7 +316,7 @@ export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     for (const bundle of ctx.allBundles()) {
-      if (bundle.runtime?.isBusy()) {
+      if (bundle.runtime?.isBusy() || shouldAdvanceWorktreeBootstrap(bundle)) {
         await tickSessionCommand(ctx, bundle);
       }
     }
@@ -329,6 +335,10 @@ export async function tickSessionCommand(
   bundle: SessionBundle,
   options: { light?: boolean } = {},
 ): Promise<void> {
+  if (ctx.worktreeBootstrapHost && shouldAdvanceWorktreeBootstrap(bundle)) {
+    await advancePendingWorktreeBootstrapCommand(ctx, ctx.worktreeBootstrapHost, bundle);
+  }
+
   const orchestration = ctx.orchestrationFor(bundle);
   if (bundle.runtime) {
     bundle.runtime.tickThinkingSpinner();
