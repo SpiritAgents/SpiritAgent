@@ -58,6 +58,7 @@ export type HostCommandName =
   | 'refreshGitSnapshot'
   | 'readGitWorkingTree'
   | 'readGitHistory'
+  | 'readGitCommitMessage'
   | 'getGitHubAuthStatus'
   | 'beginGitHubDeviceLogin'
   | 'completeGitHubDeviceLogin'
