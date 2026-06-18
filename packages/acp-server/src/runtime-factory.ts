@@ -41,6 +41,7 @@ import {
   loadHostInstructionMetadata,
   persistPreCompactionHistoryArchive,
   persistToolOutputArchive,
+  readGitBranchLabelForBasicInfo,
   removePreCompactionHistoryArchive,
 } from '@spirit-agent/host-internal';
 
@@ -113,6 +114,7 @@ export async function createAcpRuntime(
   const basicInfo: LlmToolAgentBasicInfo = {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
+    gitBranch: await readGitBranchLabelForBasicInfo(workspaceRoot),
     system: service.operatingSystemInfo?.() ?? {
       name: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform,
       version: osRelease(),

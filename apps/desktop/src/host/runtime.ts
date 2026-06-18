@@ -179,10 +179,13 @@ export function createDesktopRuntime(input: {
 export function buildDesktopRuntimeBasicInfo(
   workspaceRoot: string,
   toolExecutor: DesktopToolExecutor,
+  gitBranch?: string,
 ): LlmToolAgentBasicInfo {
   const shell = toolExecutor.toolDefinitionEnvironment();
+  const normalizedGitBranch = gitBranch?.trim();
   return {
     workspaceRoot,
+    ...(normalizedGitBranch ? { gitBranch: normalizedGitBranch } : {}),
     terminal: shell.shellDisplayName,
     system: toolExecutor.operatingSystemInfo(),
   };

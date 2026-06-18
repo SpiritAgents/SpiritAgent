@@ -749,13 +749,28 @@ function currentOperatingSystemInfo(): { name: string; version: string } {
 function buildRuntimeBasicInfo(
   workspaceRoot: string,
   service: LocalHostToolService | undefined,
+  gitBranch?: string,
 ): LlmToolAgentBasicInfo {
   const shell = service?.toolDefinitionEnvironment();
+  const normalizedGitBranch = gitBranch?.trim();
   return {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
+    ...(normalizedGitBranch ? { gitBranch: normalizedGitBranch } : {}),
     system: service?.operatingSystemInfo?.() ?? currentOperatingSystemInfo(),
   };
+}
+
+async function readCliGitBranchLabelForBasicInfo(workspaceRoot: string): Promise<string> {
+  const modulePath = process.env[ENV_HOST_INTERNAL_MODULE_PATH]?.trim();
+  if (!modulePath) {
+    return 'Current workspace is not a Git repository';
+  }
+  const gitModulePath = path.join(path.dirname(modulePath), 'git-workspace.js');
+  const git = await import(pathToFileURL(gitModulePath).href) as {
+    readGitBranchLabelForBasicInfo: (root: string) => Promise<string>;
+  };
+  return git.readGitBranchLabelForBasicInfo(workspaceRoot);
 }
 
 async function buildTodosContextTextForSession(
@@ -983,7 +998,11 @@ async function bootstrapCliSubagentWorkspace(
       enabledSkillCatalog,
       extensionSystemPrompts,
       planMetadata,
-      runtimeBasicInfo: buildRuntimeBasicInfo(parentRoot, host.service),
+      runtimeBasicInfo: buildRuntimeBasicInfo(
+        parentRoot,
+        host.service,
+        await readCliGitBranchLabelForBasicInfo(parentRoot),
+      ),
     });
 
     const worktreeName = names.worktreeName;
@@ -1709,7 +1728,11 @@ async function createRuntime(
   currentHostToolModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config as any);
   const workspaceRoot = config.workspaceRoot ?? process.cwd();
   const hostInternal = await ensureCliHostInternal(workspaceRoot);
-  const basicInfo = buildRuntimeBasicInfo(workspaceRoot, hostInternal?.service);
+  const basicInfo = buildRuntimeBasicInfo(
+    workspaceRoot,
+    hostInternal?.service,
+    await readCliGitBranchLabelForBasicInfo(workspaceRoot),
+  );
   await refreshCurrentTodosContextText();
   toolExecutor.setImageGenerationAvailable('imageGeneration' in config && config.imageGeneration !== undefined);
   toolExecutor.setVideoGenerationAvailable('videoGeneration' in config && config.videoGeneration !== undefined);
@@ -2668,7 +2691,11 @@ peer.on('runtime.exportState', async () => {
   const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);
   const workspaceRoot = config.workspaceRoot ?? currentWorkspaceRoot();
   const basicInfoSystemPrompt = buildBasicInfoSystemMessage(
-    buildRuntimeBasicInfo(workspaceRoot, cliHostInternal?.service),
+    buildRuntimeBasicInfo(
+      workspaceRoot,
+      cliHostInternal?.service,
+      await readCliGitBranchLabelForBasicInfo(workspaceRoot),
+    ),
   );
 
   return {

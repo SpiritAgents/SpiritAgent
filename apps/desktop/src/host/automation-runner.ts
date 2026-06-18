@@ -10,6 +10,7 @@ import {
   buildAutomationTriggerMessage,
   createHostAutomationStore,
   defaultAutomationRunTriggerContext,
+  gitBranchLabelForBasicInfo,
   readGitWorkspaceSnapshot,
   type AutomationRunTriggerContext,
   type HostAutomationDefinition,
@@ -118,7 +119,11 @@ export async function runDesktopAutomationOnce(
       llmTransport: createLlmTransport(transportConfig),
       activeSkills: [],
       workspaceRoot: input.definition.workspaceRoot,
-      basicInfo: buildDesktopRuntimeBasicInfo(input.definition.workspaceRoot, toolExecutor),
+      basicInfo: buildDesktopRuntimeBasicInfo(
+        input.definition.workspaceRoot,
+        toolExecutor,
+        gitBranchLabelForBasicInfo(gitSnapshot),
+      ),
     });
     const triggerContext = input.triggerContext ?? defaultAutomationRunTriggerContext(input.definition);
     const llmUserMessage = buildAutomationTriggerMessage({

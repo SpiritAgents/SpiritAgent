@@ -2,9 +2,26 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildBasicInfoSystemMessage,
   patchBasicInfoWorkspaceRootInMessages,
   patchBasicInfoWorkspaceRootInSystemText,
 } from './tool-agent.js';
+
+test('buildBasicInfoSystemMessage includes current Git branch', () => {
+  const message = buildBasicInfoSystemMessage({
+    workspaceRoot: '/tmp/project',
+    gitBranch: 'main',
+  });
+  assert.match(message ?? '', /Current Git branch:\n- main/);
+});
+
+test('buildBasicInfoSystemMessage includes non-git workspace label', () => {
+  const message = buildBasicInfoSystemMessage({
+    workspaceRoot: '/tmp/project',
+    gitBranch: 'Current workspace is not a Git repository',
+  });
+  assert.match(message ?? '', /Current Git branch:\n- Current workspace is not a Git repository/);
+});
 
 test('patchBasicInfoWorkspaceRootInMessages rewrites Current workspace line', () => {
   const messages = [

@@ -49,6 +49,7 @@ import {
   type ApprovalLevel,
   normalizeApprovalLevel,
   normalizeWorkLocationKind,
+  gitBranchLabelForBasicInfo,
   type WorkLocationKind,
 } from '@spirit-agent/host-internal';
 
@@ -1347,7 +1348,11 @@ class DesktopHostService {
         }),
       );
       const basicInfoSystemPrompt = buildBasicInfoSystemMessage(
-        buildDesktopRuntimeBasicInfo(state.workspaceRoot, this.requireToolExecutor()),
+        buildDesktopRuntimeBasicInfo(
+          state.workspaceRoot,
+          this.requireToolExecutor(),
+          gitBranchLabelForBasicInfo(state.git),
+        ),
       );
       const exportedAtUnixSecs = Math.floor(Date.now() / 1000);
       const filePath = path.join(
@@ -2670,7 +2675,11 @@ class DesktopHostService {
       llmTransport,
       activeSkills: bundle.currentTurnSkills,
       workspaceRoot,
-      basicInfo: buildDesktopRuntimeBasicInfo(workspaceRoot, toolExecutor),
+      basicInfo: buildDesktopRuntimeBasicInfo(
+        workspaceRoot,
+        toolExecutor,
+        gitBranchLabelForBasicInfo(this.requireState().git),
+      ),
       getLoopEnabled: () => bundle.loopEnabled,
       hookRunner,
       hookSessionContext,
@@ -2917,7 +2926,11 @@ class DesktopHostService {
       metadata: state.metadata,
       extensionSystemPrompts,
       toolExecutor,
-      runtimeBasicInfo: buildDesktopRuntimeBasicInfo(state.workspaceRoot, toolExecutor),
+      runtimeBasicInfo: buildDesktopRuntimeBasicInfo(
+        state.workspaceRoot,
+        toolExecutor,
+        gitBranchLabelForBasicInfo(state.git),
+      ),
       userPrompt,
       baseBranch,
       repoRoot,

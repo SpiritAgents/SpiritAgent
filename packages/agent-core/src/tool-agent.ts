@@ -208,6 +208,7 @@ export interface ToolAgentBasicInfo {
   workspaceRoot?: string;
   terminal?: string;
   system?: ToolAgentSystemInfo;
+  gitBranch?: string;
 }
 
 export interface ToolAgentState {
@@ -785,17 +786,21 @@ export function buildBasicInfoSystemMessage(
 ): string | undefined {
   const workspaceRoot = basicInfo?.workspaceRoot?.trim();
   const terminal = basicInfo?.terminal?.trim();
+  const gitBranch = basicInfo?.gitBranch?.trim();
   const systemName = basicInfo?.system?.name.trim();
   const systemVersion = basicInfo?.system?.version.trim();
   const hasSystem = Boolean(systemName || systemVersion);
 
-  if (!workspaceRoot && !terminal && !hasSystem) {
+  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem) {
     return undefined;
   }
 
   const lines = [BASIC_INFO_SECTION_PREFIX, 'Basic information', ''];
   if (workspaceRoot) {
     lines.push('Current workspace:', `- ${workspaceRoot}`, '');
+  }
+  if (gitBranch) {
+    lines.push('Current Git branch:', `- ${gitBranch}`, '');
   }
   if (terminal) {
     lines.push('Current terminal:', `- ${terminal}`, '');
