@@ -91,9 +91,11 @@ import type {
   SearchGitHubAutomationRepositoriesRequest,
   MergeGitHubPullRequestRequest,
   GitHistorySnapshot,
+  GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
   HostTextFileStatResult,
   ReadGitHistoryRequest,
+  ReadGitCommitMessageRequest,
   DesktopDreamCollectorSnapshot,
   PlanSnapshot,
   DeleteSkillRequest,
@@ -174,6 +176,7 @@ import {
   mergeWorktreeToMainCommand,
   pushGitBranchCommand,
   readGitHistoryCommand,
+  readGitCommitMessageCommand,
   readGitWorkingTreeCommand,
   readHostTextFileCommand,
   readWorkspaceTextFileCommand,
@@ -1688,6 +1691,10 @@ class DesktopHostService {
 
   async readGitHistory(request: ReadGitHistoryRequest = {}): Promise<GitHistorySnapshot> {
     return readGitHistoryCommand(this.workspaceGitCommandContext(), request);
+  }
+
+  async readGitCommitMessage(request: ReadGitCommitMessageRequest): Promise<GitCommitMessageSnapshot> {
+    return readGitCommitMessageCommand(this.workspaceGitCommandContext(), request);
   }
 
   async getGitHubAuthStatus() {

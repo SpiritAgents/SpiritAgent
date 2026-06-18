@@ -136,6 +136,7 @@ declare global {
     listWorkspaceExplorerChildren(relativePath: string): Promise<WorkspaceExplorerListResult>;
     readGitWorkingTree(): Promise<import('./types').GitWorkingTreeSnapshot>;
     readGitHistory(request?: import('./types').ReadGitHistoryRequest): Promise<import('./types').GitHistorySnapshot>;
+    readGitCommitMessage(request: import('./types').ReadGitCommitMessageRequest): Promise<import('./types').GitCommitMessageSnapshot>;
     getGitHubAuthStatus(): Promise<import('./types').GitHubAuthStatus>;
     beginGitHubDeviceLogin(): Promise<import('./types').GitHubDeviceAuthChallenge>;
     completeGitHubDeviceLogin(): Promise<import('./types').GitHubAuthStatus>;

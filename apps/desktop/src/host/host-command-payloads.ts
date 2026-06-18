@@ -28,6 +28,7 @@ import type {
   PreviewModelsRequest,
   QueryWorkspaceFileReferenceSuggestionsRequest,
   ReadGitHistoryRequest,
+  ReadGitCommitMessageRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
   RemoveModelRequest,
@@ -70,6 +71,7 @@ export type CommandPayloads = {
   refreshGitSnapshot: undefined;
   readGitWorkingTree: undefined;
   readGitHistory: { request?: ReadGitHistoryRequest };
+  readGitCommitMessage: { request: ReadGitCommitMessageRequest };
   getGitHubAuthStatus: undefined;
   beginGitHubDeviceLogin: undefined;
   completeGitHubDeviceLogin: undefined;

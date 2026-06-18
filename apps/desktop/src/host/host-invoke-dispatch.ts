@@ -74,6 +74,7 @@ export interface HostCommandDelegate {
   listWorkspaceExplorerChildren(relativePath: string): Promise<unknown>;
   readGitWorkingTree(): Promise<unknown>;
   readGitHistory(request: NonNullable<CommandPayloads['readGitHistory']['request']>): Promise<unknown>;
+  readGitCommitMessage(request: CommandPayloads['readGitCommitMessage']['request']): Promise<unknown>;
   getGitHubAuthStatus(): Promise<unknown>;
   beginGitHubDeviceLogin(): Promise<unknown>;
   completeGitHubDeviceLogin(): Promise<unknown>;
@@ -196,6 +197,7 @@ const hostCommandDispatch = {
   listWorkspaceExplorerChildren: (host, payload) => host.listWorkspaceExplorerChildren(payload.relativePath),
   readGitWorkingTree: (host) => host.readGitWorkingTree(),
   readGitHistory: (host, payload) => host.readGitHistory(payload.request ?? {}),
+  readGitCommitMessage: (host, payload) => host.readGitCommitMessage(payload.request),
   getGitHubAuthStatus: (host) => host.getGitHubAuthStatus(),
   beginGitHubDeviceLogin: (host) => host.beginGitHubDeviceLogin(),
   completeGitHubDeviceLogin: (host) => host.completeGitHubDeviceLogin(),
