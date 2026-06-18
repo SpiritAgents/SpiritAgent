@@ -816,6 +816,20 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/git/commit-message') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('readGitCommitMessage', {
+        request: {
+          oid: typeof jsonBody?.oid === 'string' ? jsonBody.oid : '',
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/rewind-submit') {
     writeJson(
       request,
