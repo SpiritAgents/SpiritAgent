@@ -24,9 +24,9 @@ test('buildWindowsToastXml includes foreground action buttons', () => {
     ],
   });
   assert.match(xml, /<action content="Allow"/);
-  assert.match(xml, /spirit-agent:\/\/notification-approval\?decision=allow/);
+  assert.match(xml, /spirit:\/\/notification-approval\?decision=allow/);
   assert.match(xml, /<action content="Deny"/);
-  assert.match(xml, /spirit-agent:\/\/notification-approval\?decision=deny/);
+  assert.match(xml, /spirit:\/\/notification-approval\?decision=deny/);
   assert.match(xml, /activationType="protocol"/);
 });
 

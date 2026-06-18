@@ -1,4 +1,4 @@
-export const SPIRIT_NOTIFICATION_PROTOCOL = 'spirit-agent';
+export const SPIRIT_NOTIFICATION_PROTOCOL = 'spirit';
 
 export function buildNotificationApprovalProtocolUrl(
   decision: 'allow' | 'deny',
