@@ -185,6 +185,33 @@ async function readBranchName(workspaceRoot: string): Promise<string | undefined
   return branch || undefined;
 }
 
+export const NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL =
+  'Current workspace is not a Git repository';
+
+export const DETACHED_GIT_HEAD_BASIC_INFO_LABEL = 'detached HEAD';
+
+export function gitBranchLabelForBasicInfo(
+  snapshot: Pick<GitWorkspaceSnapshot, 'isRepository' | 'branch'>,
+): string {
+  if (!snapshot.isRepository) {
+    return NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL;
+  }
+  return snapshot.branch?.trim() || DETACHED_GIT_HEAD_BASIC_INFO_LABEL;
+}
+
+export async function readGitBranchLabelForBasicInfo(workspaceRoot: string): Promise<string> {
+  try {
+    const { stdout: repoFlag } = await runGit(workspaceRoot, ['rev-parse', '--is-inside-work-tree']);
+    if (repoFlag.trim() !== 'true') {
+      return NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL;
+    }
+    const branch = (await readBranchName(workspaceRoot))?.trim();
+    return branch || DETACHED_GIT_HEAD_BASIC_INFO_LABEL;
+  } catch {
+    return NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL;
+  }
+}
+
 function sortBranches(branches: string[], currentBranch?: string): string[] {
   const unique = [...new Set(branches.map((branch) => branch.trim()).filter(Boolean))];
   unique.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));

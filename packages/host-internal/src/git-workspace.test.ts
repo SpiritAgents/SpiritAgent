@@ -11,14 +11,17 @@ import {
   buildWorktreeRootPath,
   checkoutGitBranch,
   computeGitNeedsPush,
+  gitBranchLabelForBasicInfo,
   isGitCheckoutBlockedError,
   isSpiritBranchName,
   isSpiritWorktreeName,
   listGitBranches,
   listGitWorktrees,
   mergeSpiritBranchToMain,
+  NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL,
   parseGitShortBranchLine,
   pushGitBranch,
+  readGitBranchLabelForBasicInfo,
   readGitWorkspaceSnapshot,
   readWorktreeContext,
   resolveDefaultBranch,
@@ -191,6 +194,19 @@ test('readGitWorkspaceSnapshot returns empty snapshot outside git repo', async (
     assert.deepEqual(snapshot.branches, []);
     assert.equal(snapshot.needsPush, false);
     assert.equal(snapshot.aheadCount, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('readGitBranchLabelForBasicInfo reports non-git workspace label', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'spirit-host-internal-non-git-label-'));
+  try {
+    assert.equal(await readGitBranchLabelForBasicInfo(dir), NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL);
+    assert.equal(
+      gitBranchLabelForBasicInfo({ isRepository: false }),
+      NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL,
+    );
   } finally {
     await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
