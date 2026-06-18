@@ -14,6 +14,7 @@ import {
   readGitCommitHistory,
   readGitWorkingTreeChanges,
   readGitWorkspaceSnapshot,
+  readGitCommitMessage as readGitCommitMessageInternal,
   readWorktreeContext,
   removeGitWorktree as removeGitWorktreeInternal,
   resolveDefaultBranch,
@@ -23,8 +24,10 @@ import {
 
 import type {
   DesktopGitSnapshot,
+  GitCommitMessageSnapshot,
   GitHistorySnapshot,
   GitWorkingTreeSnapshot,
+  ReadGitCommitMessageRequest,
   ReadGitHistoryRequest,
 } from '../types.js';
 import type { GeneratedWorktreeNames } from './worktree-naming.js';
@@ -135,6 +138,13 @@ export async function readWorkspaceGitHistory(
     return buildGitCommitHistorySnapshot(logCommits, true, page.hasMore);
   }
   return page;
+}
+
+export async function readWorkspaceGitCommitMessage(
+  workspaceRoot: string,
+  request: ReadGitCommitMessageRequest,
+): Promise<GitCommitMessageSnapshot> {
+  return readGitCommitMessageInternal(workspaceRoot, request.oid);
 }
 
 export async function createWorkspaceGitWorktree(

@@ -7,9 +7,11 @@ import type {
   CheckoutGitBranchRequest,
   CommitChangesRequest,
   GitHistorySnapshot,
+  GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
   HostTextFileStatResult,
   ReadGitHistoryRequest,
+  ReadGitCommitMessageRequest,
   CreateRuleRequest,
   CreateSkillRequest,
   DeleteExtensionRequest,
@@ -129,6 +131,7 @@ export interface HostApi {
   refreshGitSnapshot(): Promise<DesktopSnapshot>;
   readGitWorkingTree(): Promise<GitWorkingTreeSnapshot>;
   readGitHistory(request?: ReadGitHistoryRequest): Promise<GitHistorySnapshot>;
+  readGitCommitMessage(request: ReadGitCommitMessageRequest): Promise<GitCommitMessageSnapshot>;
   getGitHubAuthStatus(): Promise<GitHubAuthStatus>;
   beginGitHubDeviceLogin(): Promise<GitHubDeviceAuthChallenge>;
   completeGitHubDeviceLogin(): Promise<GitHubAuthStatus>;
