@@ -2292,8 +2292,9 @@ class DesktopHostService {
         const bundle = this.activeBundle();
         return bundle.pendingGitBranch ?? state.git.branch;
       },
-      generateWorktreeNames: (task, baseBranch, repoRoot) =>
-        this.generateWorktreeNamesFromModel(task, baseBranch, repoRoot),
+      generateWorktreeNames: async () => {
+        throw new Error('subagent worktree naming is deterministic');
+      },
       buildScopedToolExecutor: (workspaceRoot) =>
         this.buildScopedSubagentToolExecutor(workspaceRoot, transportConfig, parentExecutor),
     });

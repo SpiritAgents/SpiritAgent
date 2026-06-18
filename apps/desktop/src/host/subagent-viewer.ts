@@ -268,7 +268,9 @@ export function buildSubagentViewerSnapshot(
 
   const projected = bundle.subagentDesktopMessagesBySessionId.get(session.summary.sessionId);
   const isLiveSession =
-    session.summary.status === 'running' || session.summary.status === 'blocked';
+    session.summary.status === 'bootstrapping'
+    || session.summary.status === 'running'
+    || session.summary.status === 'blocked';
 
   const resolved = resolveSubagentViewerMessages({
     projected,
