@@ -37,9 +37,7 @@ export type DreamHostToolName =
 
 export type TodoHostToolName =
   | 'todo_list'
-  | 'todo_create'
-  | 'todo_update'
-  | 'todo_complete';
+  | 'todo_write';
 
 export const FINISH_TASK_TOOL_NAME = 'finish_task';
 
@@ -639,10 +637,27 @@ export function buildDreamReadHostToolDefinitions(): JsonValue[] {
 }
 
 export function buildTodoHostToolDefinitions(): JsonValue[] {
+  const todoItemSchema: JsonObject = {
+    type: 'object',
+    properties: {
+      title: {
+        type: 'string',
+        description: 'Human-readable todo title.',
+      },
+      status: {
+        type: 'string',
+        enum: ['pending', 'completed'],
+        description: 'Todo status.',
+      },
+    },
+    required: ['title', 'status'],
+    additionalProperties: false,
+  };
+
   return [
     functionTool(
       'todo_list',
-      'List all todos for the current chat session. Use this to obtain todo ids before update or complete, or to refresh the catalog after other todo tools run.',
+      'List todos for the current chat session. Returns the same shape as todo_write accepts.',
       {
         type: 'object',
         properties: {
@@ -655,63 +670,18 @@ export function buildTodoHostToolDefinitions(): JsonValue[] {
       },
     ),
     functionTool(
-      'todo_create',
-      'Create one or more todos for the current chat session. Prefer a short actionable title per item. Existing todos are kept; new items are appended.',
+      'todo_write',
+      'Replace the full session todo list. Pass the entire list each time (same shape as todo_list returns). Use an empty list to clear todos.',
       {
         type: 'object',
         properties: {
-          items: {
+          todos: {
             type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: {
-                  type: 'string',
-                  description: 'Human-readable todo title.',
-                },
-              },
-              required: ['title'],
-              additionalProperties: false,
-            },
-            minItems: 1,
-            description: 'Todos to append for this session.',
+            items: todoItemSchema,
+            description: 'Full session todo list to store.',
           },
         },
-        required: ['items'],
-        additionalProperties: false,
-      },
-    ),
-    functionTool(
-      'todo_update',
-      'Update the title of an existing todo in the current chat session. Use when the plan changes or the original title is inaccurate.',
-      {
-        type: 'object',
-        properties: {
-          id: {
-            type: 'string',
-            description: 'Todo id returned by todo_list or shown in the session todo catalog.',
-          },
-          title: {
-            type: 'string',
-            description: 'Replacement todo title.',
-          },
-        },
-        required: ['id', 'title'],
-        additionalProperties: false,
-      },
-    ),
-    functionTool(
-      'todo_complete',
-      'Mark a todo as completed in the current chat session. Call this when the work item is done. When every todo is completed, the host clears the list after a short UI delay.',
-      {
-        type: 'object',
-        properties: {
-          id: {
-            type: 'string',
-            description: 'Todo id returned by todo_list or shown in the session todo catalog.',
-          },
-        },
-        required: ['id'],
+        required: ['todos'],
         additionalProperties: false,
       },
     ),

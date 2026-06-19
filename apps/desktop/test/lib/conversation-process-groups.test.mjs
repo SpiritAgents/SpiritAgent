@@ -66,7 +66,7 @@ test('isProcessEligibleMetaMessage accepts tools and standalone thinking', () =>
       role: 'assistant',
       content: '',
       pending: false,
-      tool: { toolName: 'todo_create', phase: 'succeeded', headline: 'Create TODO', detailLines: [] },
+      tool: { toolName: 'todo_write', phase: 'succeeded', headline: 'Write TODO', detailLines: [] },
     }),
     false,
   );
@@ -76,19 +76,9 @@ test('isProcessEligibleMetaMessage accepts tools and standalone thinking', () =>
       role: 'assistant',
       content: '',
       pending: false,
-      tool: { toolName: 'todo_complete', phase: 'succeeded', headline: 'Complete TODO', detailLines: [] },
+      tool: { toolName: 'todo_list', phase: 'succeeded', headline: 'List TODO', detailLines: [] },
     }),
     false,
-  );
-  assert.equal(
-    isProcessEligibleMetaMessage({
-      id: 7,
-      role: 'assistant',
-      content: '',
-      pending: false,
-      tool: { toolName: 'todo_update', phase: 'succeeded', headline: 'Update TODO', detailLines: [] },
-    }),
-    true,
   );
 });
 
@@ -357,7 +347,7 @@ test('buildConversationRenderItems keeps multi-thinking process group before bod
   assert.equal(isMessageHiddenByProcessGroup(items, 4), false);
 });
 
-test('buildConversationRenderItems keeps todo_create and todo_complete outside process groups', () => {
+test('buildConversationRenderItems keeps todo_write and todo_list outside process groups', () => {
   const messages = [
     { id: 1, role: 'user', content: 'hi', pending: false },
     {
@@ -379,7 +369,7 @@ test('buildConversationRenderItems keeps todo_create and todo_complete outside p
       role: 'assistant',
       content: '',
       pending: false,
-      tool: { toolName: 'todo_create', phase: 'succeeded', headline: 'Create TODO', detailLines: [] },
+      tool: { toolName: 'todo_write', phase: 'succeeded', headline: 'Write TODO', detailLines: [] },
     },
     {
       id: 5,
@@ -393,7 +383,7 @@ test('buildConversationRenderItems keeps todo_create and todo_complete outside p
       role: 'assistant',
       content: '',
       pending: false,
-      tool: { toolName: 'todo_complete', phase: 'succeeded', headline: 'Complete TODO', detailLines: [] },
+      tool: { toolName: 'todo_list', phase: 'succeeded', headline: 'List TODO', detailLines: [] },
     },
     { id: 7, role: 'assistant', content: 'Done.', pending: false },
   ];

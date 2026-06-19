@@ -172,54 +172,50 @@ test('toolCallSummaryCopyForRequest: ask_questions and subagent', () => {
   });
 });
 
-test('toolCallSummaryCopyForRequest: todo_create uses item count detail', () => {
+test('toolCallSummaryCopyForRequest: todo_write shows incremental delta detail', () => {
   assert.deepEqual(
-    toolCallSummaryCopyForRequest('todo_create', {
-      items: [{ title: 'Create index.html' }, { title: 'Verify page renders' }],
-    }),
-    { headline: '创建 TODO', headlineDetail: '2 项' },
-  );
-  assert.deepEqual(
-    toolCallSummaryCopyForRequest('todo_create', {
-      items: [{ title: 'Only one item' }],
-    }),
-    { headline: '创建 TODO', headlineDetail: 'Only one item' },
-  );
-});
-
-test('toolCallSummaryCopyForRequest: todo_complete prefers title from execution output', () => {
-  assert.deepEqual(
-    toolCallSummaryCopyForRequest('todo_complete', { id: 'bc33e76c' }),
-    { headline: '完成 TODO', headlineDetail: 'bc33e76c' },
+    toolCallSummaryCopyForRequest(
+      'todo_write',
+      {
+        todos: [
+          { title: 'Create index.html', status: 'pending' },
+          { title: 'Verify page renders', status: 'pending' },
+        ],
+      },
+      'succeeded',
+      {
+        todosBeforeWrite: [{ title: 'Old task', status: 'pending' }],
+      },
+    ),
+    { headline: '写入 TODO', headlineDetail: '增加 2 个，移除 1 个' },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
-      'todo_complete',
-      { id: 'bc33e76c' },
+      'todo_write',
+      { todos: [] },
       'succeeded',
       {
-        executionOutput: JSON.stringify({
-          todo: { id: 'bc33e76c', title: 'Inject haiku into main.rs' },
-        }),
+        todosBeforeWrite: [{ title: 'Only one item', status: 'pending' }],
       },
     ),
-    { headline: '完成 TODO', headlineDetail: 'Inject haiku into main.rs' },
+    { headline: '写入 TODO', headlineDetail: '移除 1 个' },
   );
 });
 
-test('toolCallSummaryForPhase: todo_complete succeeded uses title from execution output', () => {
+test('toolCallSummaryForPhase: todo_write succeeded uses before snapshot and output', () => {
   assert.deepEqual(
     toolCallSummaryForPhase(
       'succeeded',
-      'todo_complete',
-      { id: 'bc33e76c' },
+      'todo_write',
+      { todos: [{ title: 'Draft', status: 'completed' }] },
       {
-        executionOutput: {
-          todo: { id: 'bc33e76c', title: 'Inject haiku into main.rs' },
-        },
+        executionOutput: JSON.stringify({
+          todos: [{ title: 'Draft', status: 'completed' }],
+        }),
+        todosBeforeWrite: [{ title: 'Draft', status: 'pending' }],
       },
     ),
-    { headline: '完成 TODO', headlineDetail: 'Inject haiku into main.rs' },
+    { headline: '写入 TODO', headlineDetail: '完成 1 个' },
   );
 });
 

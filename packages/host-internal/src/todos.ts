@@ -11,6 +11,13 @@ export interface HostTodoScope {
 
 export type HostTodoStatus = 'pending' | 'completed';
 
+/** Model-visible todo item (tool list/write payloads). */
+export interface HostTodoItem {
+  title: string;
+  status: HostTodoStatus;
+}
+
+/** Persisted todo record (host storage, rewind, UI). */
 export interface HostTodoRecord {
   id: string;
   title: string;
@@ -20,18 +27,8 @@ export interface HostTodoRecord {
   completedAtUnixMs?: number;
 }
 
-export interface HostTodoCreateItem {
-  title: string;
-}
-
 export interface HostTodoListOptions {
   includeCompleted?: boolean;
-}
-
-export interface HostTodoCompleteResult {
-  todo: HostTodoRecord;
-  todos: HostTodoRecord[];
-  allCompleted: boolean;
 }
 
 interface HostTodoFile {
@@ -49,6 +46,10 @@ export function createHostTodoStore(input: {
   scope: HostTodoScope;
 }): HostTodoStore {
   return new HostTodoStore(input.spiritDataDir, normalizeTodoScope(input.scope));
+}
+
+export function hostTodoItemsFromRecords(records: HostTodoRecord[]): HostTodoItem[] {
+  return records.map(({ title, status }) => ({ title, status }));
 }
 
 export class HostTodoStore {
@@ -69,75 +70,32 @@ export class HostTodoStore {
       .sort((left, right) => left.createdAtUnixMs - right.createdAtUnixMs);
   }
 
-  async create(items: HostTodoCreateItem[]): Promise<HostTodoRecord[]> {
-    if (items.length === 0) {
-      throw new Error('todo_create requires at least one item.');
-    }
+  async listItems(options: HostTodoListOptions = {}): Promise<HostTodoItem[]> {
+    return hostTodoItemsFromRecords(await this.list(options));
+  }
 
-    const file = await this.loadFile();
-    const pendingCount = file.records.filter((record) => record.status === 'pending').length;
-    if (pendingCount + items.length > HOST_TODO_MAX_ITEMS) {
+  async write(items: HostTodoItem[]): Promise<HostTodoItem[]> {
+    if (items.length > HOST_TODO_MAX_ITEMS) {
       throw new Error(`会话 TODO 数量不能超过 ${HOST_TODO_MAX_ITEMS} 条。`);
     }
 
     const now = Date.now();
-    for (const item of items) {
-      file.records.push({
+    const records: HostTodoRecord[] = items.map((item) => {
+      const status = item.status === 'completed' ? 'completed' : 'pending';
+      const record: HostTodoRecord = {
         id: randomUUID().slice(0, 8),
         title: normalizeNonEmpty(item.title, 'title'),
-        status: 'pending',
+        status,
         createdAtUnixMs: now,
         updatedAtUnixMs: now,
-      });
-    }
-    await this.saveFile(file);
-    return this.list();
-  }
-
-  async update(id: string, title: string): Promise<HostTodoRecord> {
-    const file = await this.loadFile();
-    const index = file.records.findIndex((record) => record.id === id);
-    if (index < 0) {
-      throw new Error(`TODO 不存在: ${id}`);
-    }
-
-    const now = Date.now();
-    file.records[index] = {
-      ...file.records[index]!,
-      title: normalizeNonEmpty(title, 'title'),
-      updatedAtUnixMs: now,
-    };
-    await this.saveFile(file);
-    return file.records[index]!;
-  }
-
-  async complete(id: string): Promise<HostTodoCompleteResult> {
-    const file = await this.loadFile();
-    const index = file.records.findIndex((record) => record.id === id);
-    if (index < 0) {
-      throw new Error(`TODO 不存在: ${id}`);
-    }
-
-    const now = Date.now();
-    const current = file.records[index]!;
-    if (current.status !== 'completed') {
-      file.records[index] = {
-        ...current,
-        status: 'completed',
-        updatedAtUnixMs: now,
-        completedAtUnixMs: now,
       };
-      await this.saveFile(file);
-    }
-
-    const todos = await this.list();
-    const allCompleted =
-      todos.length > 0 && todos.every((record) => record.status === 'completed');
-    return {
-      todo: file.records[index]!,
-      todos,
-      allCompleted,
-    };
+      if (status === 'completed') {
+        record.completedAtUnixMs = now;
+      }
+      return record;
+    });
+    await this.replaceAll(records);
+    return hostTodoItemsFromRecords(records);
   }
 
   async replaceAll(records: HostTodoRecord[]): Promise<HostTodoRecord[]> {

@@ -249,19 +249,63 @@ test('getToolCallSummaryParts: get_diagnostics failed uses checking headline not
   );
 });
 
-test('getToolCallSummaryParts: todo_complete prefers title from outputExcerpt', () => {
+test('getToolCallSummaryParts: todo_write recomputes incremental detail from snapshot', () => {
   assert.deepEqual(
     getToolCallSummaryParts({
-      toolName: 'todo_complete',
+      toolName: 'todo_write',
       phase: 'succeeded',
-      headline: '完成 TODO',
-      headlineDetail: 'bc33e76c',
+      headline: '写入 TODO',
+      headlineDetail: '完成 1 个',
       outputExcerpt: JSON.stringify({
-        todo: { id: 'bc33e76c', title: 'Inject haiku into main.rs' },
+        todos: [{ title: 'Inject haiku into main.rs', status: 'completed' }],
+      }),
+      todoWriteBeforeTodos: [{ title: 'Inject haiku into main.rs', status: 'pending' }],
+      detailLines: [],
+    }),
+    { headline: '写入 TODO', detail: '完成 1 个' },
+  );
+});
+
+test('getToolCallSummaryParts: todo_write keeps snapshot detail when before snapshot missing', () => {
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'todo_write',
+      phase: 'succeeded',
+      headline: '写入 TODO',
+      headlineDetail: '完成 5 个',
+      outputExcerpt: JSON.stringify({
+        todos: [
+          { title: '任务 01', status: 'completed' },
+          { title: '任务 02', status: 'completed' },
+          { title: '任务 03', status: 'completed' },
+          { title: '任务 04', status: 'completed' },
+          { title: '任务 05', status: 'completed' },
+        ],
       }),
       detailLines: [],
     }),
-    { headline: '完成 TODO', detail: 'Inject haiku into main.rs' },
+    { headline: '写入 TODO', detail: '完成 5 个' },
+  );
+});
+
+test('getToolCallSummaryParts: todo_write preview prefers snapshot over unreliable args recompute', () => {
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'todo_write',
+      phase: 'preview',
+      headline: '写入 TODO',
+      headlineDetail: '完成 5 个',
+      argsExcerpt: '{"todos":[{"title":"任务 01","status":"completed"',
+      todoWriteBeforeTodos: [
+        { title: '任务 01', status: 'pending' },
+        { title: '任务 02', status: 'pending' },
+        { title: '任务 03', status: 'pending' },
+        { title: '任务 04', status: 'pending' },
+        { title: '任务 05', status: 'pending' },
+      ],
+      detailLines: [],
+    }),
+    { headline: '写入 TODO', detail: '完成 5 个' },
   );
 });
 
