@@ -7,6 +7,7 @@ import {
   sessionSidebarShellWidth,
 } from "@/lib/desktop-chrome";
 import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-context";
+import { DESKTOP_MICA_SIDEBAR_TINT_CLASS } from "@/lib/desktop-mica-surface";
 import { writeSessionSidebarWidthPx } from "@/lib/layout-prefs";
 import { cn } from "@/lib/utils";
 
@@ -108,7 +109,7 @@ export function SessionSidebarShell({
       data-spirit-surface="session-sidebar-shell"
       className={cn(
         "relative flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
-        !useMicaBackdrop && "bg-sidebar",
+        useMicaBackdrop ? DESKTOP_MICA_SIDEBAR_TINT_CLASS : "bg-sidebar",
         isResizing
           ? "transition-none"
           : "transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",

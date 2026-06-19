@@ -1,6 +1,9 @@
 /** Mica 开启时主内容区背景不透明度（仅 tint，不叠加 CSS backdrop-blur）。 */
 export const DESKTOP_MICA_CONTENT_TINT_CLASS = "bg-background/70";
 
+/** 侧边栏：Mica 下轻 tint，比内容区更浅，保留系统 blur 可读性。 */
+export const DESKTOP_MICA_SIDEBAR_TINT_CLASS = "bg-background/45";
+
 /** 工作区浏览器页槽：略高于主区，减轻 WebView 透底闪烁。 */
 export const DESKTOP_MICA_BROWSER_TINT_CLASS = "bg-background/80";
 
