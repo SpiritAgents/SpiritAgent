@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { NodeHostToolService } from './tools.js';
 import { createHostTodoStore } from './todos.js';
 
-test('todo tools create list update complete and purge when all done', async () => {
+test('todo_list and todo_write replace the full session list', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-todos-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
   const sessionKey = join(workspaceRoot, 'session-a.json');
@@ -18,45 +18,48 @@ test('todo tools create list update complete and purge when all done', async () 
       { todoScope: { sessionKey } },
     );
 
-    const created = JSON.parse(
+    const written = JSON.parse(
       await service.execute({
-        name: 'todo_create',
-        items: [{ title: 'First' }, { title: 'Second' }],
+        name: 'todo_write',
+        todos: [
+          { title: 'First', status: 'pending' },
+          { title: 'Second', status: 'pending' },
+        ],
       }) as string,
-    ) as { todos: Array<{ id: string; title: string; status: string }> };
-    assert.equal(created.todos.length, 2);
-    const firstId = created.todos[0]!.id;
+    ) as { todos: Array<{ title: string; status: string }> };
+    assert.deepEqual(written.todos, [
+      { title: 'First', status: 'pending' },
+      { title: 'Second', status: 'pending' },
+    ]);
+    assert.equal(Object.keys(written.todos[0]!).sort().join(','), 'status,title');
 
     const listed = JSON.parse(
       await service.execute({ name: 'todo_list', include_completed: true }) as string,
-    ) as { todos: unknown[] };
-    assert.equal(listed.todos.length, 2);
+    ) as { todos: Array<{ title: string; status: string }> };
+    assert.deepEqual(listed.todos, written.todos);
 
-    const updated = JSON.parse(
+    const replaced = JSON.parse(
       await service.execute({
-        name: 'todo_update',
-        id: firstId,
-        title: 'First renamed',
+        name: 'todo_write',
+        todos: [
+          { title: 'First renamed', status: 'completed' },
+          { title: 'Second', status: 'pending' },
+        ],
       }) as string,
-    ) as { todo: { title: string } };
-    assert.equal(updated.todo.title, 'First renamed');
+    ) as { todos: Array<{ title: string; status: string }> };
+    assert.equal(replaced.todos.length, 2);
+    assert.equal(replaced.todos[0]?.title, 'First renamed');
+    assert.equal(replaced.todos[0]?.status, 'completed');
 
-    const completeFirst = JSON.parse(
-      await service.execute({ name: 'todo_complete', id: firstId }) as string,
-    ) as { allCompleted: boolean };
-    assert.equal(completeFirst.allCompleted, false);
+    const cleared = JSON.parse(
+      await service.execute({ name: 'todo_write', todos: [] }) as string,
+    ) as { todos: unknown[] };
+    assert.deepEqual(cleared.todos, []);
 
-    const secondId = created.todos[1]!.id;
-    const completeSecond = JSON.parse(
-      await service.execute({ name: 'todo_complete', id: secondId }) as string,
-    ) as { allCompleted: boolean; todos: unknown[] };
-    assert.equal(completeSecond.allCompleted, true);
-    assert.equal(completeSecond.todos.length, 2);
-
-    const store = createHostTodoStore({ spiritDataDir, scope: { sessionKey } });
-    await store.purge();
-    const afterPurge = await store.list();
-    assert.equal(afterPurge.length, 0);
+    const afterClear = JSON.parse(
+      await service.execute({ name: 'todo_list', include_completed: true }) as string,
+    ) as { todos: unknown[] };
+    assert.deepEqual(afterClear.todos, []);
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
@@ -69,9 +72,12 @@ test('todo store replaceAll restores rewind snapshot', async () => {
 
   try {
     const store = createHostTodoStore({ spiritDataDir, scope: { sessionKey } });
-    await store.create([{ title: 'Alpha' }]);
+    await store.write([{ title: 'Alpha', status: 'pending' }]);
     const snapshot = await store.list();
-    await store.create([{ title: 'Beta' }]);
+    await store.write([
+      { title: 'Alpha', status: 'pending' },
+      { title: 'Beta', status: 'pending' },
+    ]);
     assert.equal((await store.list()).length, 2);
 
     await store.replaceAll(snapshot);
@@ -96,14 +102,14 @@ test('setTodoScope swaps todo store without rebuilding service', async () => {
     );
 
     await service.execute({
-      name: 'todo_create',
-      items: [{ title: 'Only A' }],
+      name: 'todo_write',
+      todos: [{ title: 'Only A', status: 'pending' }],
     });
 
     service.setTodoScope({ sessionKey: sessionKeyB });
     await service.execute({
-      name: 'todo_create',
-      items: [{ title: 'Only B' }],
+      name: 'todo_write',
+      todos: [{ title: 'Only B', status: 'pending' }],
     });
 
     service.setTodoScope({ sessionKey: sessionKeyA });
@@ -139,8 +145,8 @@ test('todo scopes are isolated per sessionKey', async () => {
     );
 
     await serviceA.execute({
-      name: 'todo_create',
-      items: [{ title: 'Only A' }],
+      name: 'todo_write',
+      todos: [{ title: 'Only A', status: 'pending' }],
     });
 
     const listB = JSON.parse(
@@ -159,8 +165,8 @@ test('todo-scope draft keys are not rewritten by path.resolve', async () => {
 
   try {
     const store = createHostTodoStore({ spiritDataDir, scope: { sessionKey: scopeKey } });
-    await store.create([{ title: 'Draft task' }]);
-    const listed = await store.list({ includeCompleted: true });
+    await store.write([{ title: 'Draft task', status: 'pending' }]);
+    const listed = await store.listItems({ includeCompleted: true });
     assert.equal(listed.length, 1);
     assert.equal(listed[0]?.title, 'Draft task');
   } finally {

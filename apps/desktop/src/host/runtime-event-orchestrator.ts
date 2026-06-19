@@ -23,6 +23,7 @@ import {
   serializeFileToolDiffArgumentsJson,
 } from '../lib/file-tool-diff-source.js';
 import i18n from '../lib/i18n-host.js';
+import { resolveTodoWriteBeforeSnapshot } from '../lib/todo-tool-display.js';
 import {
   buildContextUsagePercent,
   type ContextUsageModelProfile,
@@ -87,6 +88,8 @@ export interface DesktopRuntimeEventOrchestratorOptions {
     messageId: number,
   ) => void;
   onTodoStoreMutated?: () => void;
+  /** todo_write 工具卡增量文案：返回执行前的会话 TODO。 */
+  todoItemsBeforeWrite?: () => ReadonlyArray<{ title: string; status: 'pending' | 'completed' }>;
   requestLiveSnapshotUpdate?: () => void;
   /** delete_file：删除前按路径读取磁盘并统计行数 */
   lineDeltaForDeleteFile?: (inputPath: string) => EditFileLineDelta | undefined;
@@ -122,7 +125,18 @@ export class DesktopRuntimeEventOrchestrator {
 
   private toolSummaryOptions() {
     const workspaceRoot = this.options.currentWorkspaceRoot?.().trim();
-    return workspaceRoot ? { workspaceRoot } : undefined;
+    const todosBeforeWrite = this.options.todoItemsBeforeWrite?.();
+    return {
+      ...(workspaceRoot ? { workspaceRoot } : {}),
+      ...(todosBeforeWrite !== undefined ? { todosBeforeWrite } : {}),
+    };
+  }
+
+  private todoWriteBeforeSnapshot(toolCallId: string | undefined) {
+    return resolveTodoWriteBeforeSnapshot(
+      this.findExistingToolSnapshot(toolCallId)?.todoWriteBeforeTodos,
+      this.options.todoItemsBeforeWrite?.() ?? [],
+    );
   }
 
   private shouldSuppressMainTimelineChildToolSurface(toolName: string): boolean {
@@ -466,6 +480,9 @@ export class DesktopRuntimeEventOrchestrator {
               headline: runningSummary.headline,
               detailLines: [],
               argsExcerpt: truncateJson(event.request),
+              ...(event.toolName === 'todo_write'
+                ? { todoWriteBeforeTodos: [...this.todoWriteBeforeSnapshot(event.toolCallId)] }
+                : {}),
             },
             runningSummary,
           ),
@@ -612,6 +629,9 @@ export class DesktopRuntimeEventOrchestrator {
             ...(providerUi?.outputExcerpt ? { outputExcerpt: providerUi.outputExcerpt } : {}),
             ...(FILE_DIFF_TOOL_NAMES.has(event.toolName)
               ? { streamingArgumentsJson: event.argumentsJson }
+              : {}),
+            ...(event.toolName === 'todo_write'
+              ? { todoWriteBeforeTodos: [...this.todoWriteBeforeSnapshot(event.toolCallId)] }
               : {}),
           },
           summaryCopy,
@@ -857,8 +877,19 @@ export class DesktopRuntimeEventOrchestrator {
       if (execution.toolName === 'generate_video' && execution.toolCallId) {
         this.activeGenerateVideoTools.delete(execution.toolCallId);
       }
+      const callId = execution.toolCallId || `tool:${execution.toolName}`;
+      if (source === 'turn-result') {
+        const integrated = this.findExistingToolSnapshot(callId);
+        if (integrated?.phase === 'succeeded' || integrated?.phase === 'failed') {
+          continue;
+        }
+      }
       const imagePaths = imagePathsFromExecution(execution);
       const videoPaths = videoPathsFromExecution(execution);
+      const todosBeforeWrite =
+        execution.toolName === 'todo_write'
+          ? this.todoWriteBeforeSnapshot(callId)
+          : undefined;
       const executionSummary =
         execution.toolName === 'generate_image'
           ? {
@@ -872,8 +903,12 @@ export class DesktopRuntimeEventOrchestrator {
               execution.failed ? 'failed' : 'succeeded',
               execution.toolName,
               execution.request,
-              execution.toolName === 'todo_complete'
-                ? { ...this.toolSummaryOptions(), executionOutput: execution.output }
+              execution.toolName === 'todo_write'
+                ? {
+                    ...this.toolSummaryOptions(),
+                    executionOutput: execution.output,
+                    todosBeforeWrite,
+                  }
                 : this.toolSummaryOptions(),
             );
       const argsExcerpt = truncateJson(execution.request);
@@ -895,6 +930,9 @@ export class DesktopRuntimeEventOrchestrator {
             ...(videoPaths.length > 0 ? { videoPaths } : {}),
             ...(execution.hostUi?.lspWriteDiagnostics
               ? { lspWriteDiagnostics: execution.hostUi.lspWriteDiagnostics }
+              : {}),
+            ...(todosBeforeWrite !== undefined
+              ? { todoWriteBeforeTodos: [...todosBeforeWrite] }
               : {}),
           },
           executionSummary,
