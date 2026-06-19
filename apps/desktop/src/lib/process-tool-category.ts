@@ -46,15 +46,15 @@ const CREATE_TOOLS = new Set([
   'create_automation',
 ]);
 
-const EDIT_TOOLS = new Set(['edit_file', 'todo_update', 'dream_update', 'dream_record']);
+const EDIT_TOOLS = new Set(['edit_file', 'todo_write', 'dream_update', 'dream_record']);
 
 const DELETE_TOOLS = new Set(['delete_file', 'dream_delete']);
 
 /** 不参与过程卡片分组与摘要统计的工具（在过程卡片外单独展示）。 */
 export const PROCESS_GROUP_EXCLUDED_TOOL_NAMES = new Set([
   'finish_task',
-  'todo_create',
-  'todo_complete',
+  'todo_write',
+  'todo_list',
 ]);
 
 export function isProcessGroupExcludedToolName(toolName: string): boolean {

@@ -1218,6 +1218,8 @@ export interface ToolBlockSnapshot {
   streamingArgumentsJson?: string;
   /** 已完成文件类工具：完整请求 JSON（供 Diff；与 UI 用 argsExcerpt 截断分离）。 */
   fileToolDiffArgumentsJson?: string;
+  /** todo_write：执行前会话 TODO，供增量 detail 重算与语言切换。 */
+  todoWriteBeforeTodos?: Array<{ title: string; status: DesktopTodoStatus }>;
   detailLines: string[];
   argsExcerpt?: string;
   outputExcerpt?: string;

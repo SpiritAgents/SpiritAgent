@@ -1007,6 +1007,8 @@ class DesktopHostService {
           }
         });
       },
+      todoItemsBeforeWrite: () =>
+        bundle.cachedTodoSnapshot?.items.map(({ title, status }) => ({ title, status })) ?? [],
       requestLiveSnapshotUpdate: () => {
         if (bundle.id === this.sessionRegistry.activeSessionId()) {
           this.emitLiveSnapshotUpdate();

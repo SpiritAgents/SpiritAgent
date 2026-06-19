@@ -17,7 +17,7 @@ import {
   readFileVerbKey,
 } from '@/lib/read-file-tool-display';
 import { phaseToVerbContext } from '@/lib/tool-verb-context';
-import { todoTitleFromCompleteOutput } from '@/lib/todo-tool-display.js';
+import { resolveTodoWriteBeforeSnapshot, todoWriteSummaryDetail } from '@/lib/todo-tool-display.js';
 import type { ToolBlockSnapshot } from '@/types';
 
 export type ShellToolSummaryParts = {
@@ -61,9 +61,7 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
   dream_update: 'tool.dreamUpdate',
   dream_delete: 'tool.dreamDelete',
   dream_record: 'tool.dreamRecord',
-  todo_create: 'tool.todoCreate',
-  todo_update: 'tool.todoUpdate',
-  todo_complete: 'tool.todoComplete',
+  todo_write: 'tool.todoWrite',
   todo_list: 'tool.todoList',
   create_plan: 'tool.create',
   create_automation: 'automations.create',
@@ -252,11 +250,35 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   const verbKey = TOOL_VERB_KEY_MAP[tool.toolName];
   if (verbKey) {
     const ctx = phaseToVerbContext(tool.phase);
-    const todoCompleteTitle =
-      tool.toolName === 'todo_complete'
-        ? todoTitleFromCompleteOutput(tool.outputExcerpt)
+    const beforeItems =
+      tool.toolName === 'todo_write'
+        ? resolveTodoWriteBeforeSnapshot(tool.todoWriteBeforeTodos, [])
+        : [];
+    const todoWriteDetail =
+      tool.toolName === 'todo_write'
+        ? todoWriteSummaryDetail({
+            before: beforeItems,
+            afterPayload: tool.outputExcerpt ?? tool.argsExcerpt,
+            t: (key, countOpts) => i18n.t(key, ctx ? { context: ctx, ...countOpts } : countOpts),
+            separator: i18n.t('tool.todoWriteDeltaSeparator'),
+          })
         : undefined;
-    const detail = todoCompleteTitle || snapshotDetail;
+    const inFlightTodoWrite =
+      tool.toolName === 'todo_write'
+      && (tool.phase === 'preview' || tool.phase === 'running' || tool.phase === 'pending-approval');
+    let detail: string | undefined;
+    if (tool.toolName === 'todo_write') {
+      if (inFlightTodoWrite) {
+        // preview/running 时 headlineDetail 由 orchestrator 用完整 previewRequest 写入；argsExcerpt 流式重算不可靠
+        detail = snapshotDetail ?? todoWriteDetail;
+      } else if (beforeItems.length === 0 && snapshotDetail) {
+        detail = snapshotDetail;
+      } else {
+        detail = todoWriteDetail ?? snapshotDetail;
+      }
+    } else {
+      detail = todoWriteDetail || snapshotDetail;
+    }
     return {
       headline: i18n.t(verbKey, ctx ? { context: ctx } : {}),
       ...(detail ? { detail } : {}),

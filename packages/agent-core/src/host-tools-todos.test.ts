@@ -23,25 +23,27 @@ function toolNames(definitions: ReturnType<typeof buildTodoHostToolDefinitions>)
   return definitions.map((definition) => readToolName(definition));
 }
 
-test('buildTodoHostToolDefinitions exposes four session todo tools', () => {
+test('buildTodoHostToolDefinitions exposes todo_list and todo_write', () => {
   const names = toolNames(buildTodoHostToolDefinitions());
-  const expected: TodoHostToolName[] = [
-    'todo_list',
-    'todo_create',
-    'todo_update',
-    'todo_complete',
-  ];
+  const expected: TodoHostToolName[] = ['todo_list', 'todo_write'];
   assert.deepEqual(names, expected);
 });
 
-test('todo_create schema requires items with title', () => {
-  const create = buildTodoHostToolDefinitions().find(
-    (definition) => readToolName(definition) === 'todo_create',
+test('todo_write schema requires todos with title and status', () => {
+  const write = buildTodoHostToolDefinitions().find(
+    (definition) => readToolName(definition) === 'todo_write',
   );
-  assert.ok(create && isJsonObject(create));
-  const fn = create.function;
+  assert.ok(write && isJsonObject(write));
+  const fn = write.function;
   assert.ok(isJsonObject(fn));
   const parameters = fn.parameters;
   assert.ok(isJsonObject(parameters));
-  assert.deepEqual(parameters.required, ['items']);
+  assert.deepEqual(parameters.required, ['todos']);
+  const properties = parameters.properties;
+  assert.ok(isJsonObject(properties));
+  const todos = properties.todos;
+  assert.ok(isJsonObject(todos));
+  const items = todos.items;
+  assert.ok(isJsonObject(items));
+  assert.deepEqual(items.required, ['title', 'status']);
 });

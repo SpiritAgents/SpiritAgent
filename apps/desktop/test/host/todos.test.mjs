@@ -76,10 +76,9 @@ test('desktop todo tools are exposed on the main agent executor', () => {
     todoScope: { sessionKey: path.join(process.cwd(), 'session-a.json') },
   });
   const names = functionToolNames(executor.toolDefinitionsJson());
-  assert.ok(names.includes('todo_create'));
+  assert.ok(names.includes('todo_write'));
   assert.ok(names.includes('todo_list'));
-  assert.ok(names.includes('todo_update'));
-  assert.ok(names.includes('todo_complete'));
+  assert.equal(names.filter((name) => name.startsWith('todo_')).length, 2);
 });
 
 test('replaceAll restores rewind todo snapshot per session', async () => {
@@ -93,9 +92,12 @@ test('replaceAll restores rewind todo snapshot per session', async () => {
       spiritDataDir: spiritAgentDataDir(),
       scope: { sessionKey },
     });
-    await store.create([{ title: 'Before rewind' }]);
+    await store.write([{ title: 'Before rewind', status: 'pending' }]);
     const snapshot = await listSessionTodos(sessionKey);
-    await store.create([{ title: 'After more work' }]);
+    await store.write([
+      { title: 'Before rewind', status: 'pending' },
+      { title: 'After more work', status: 'pending' },
+    ]);
     assert.equal((await listSessionTodos(sessionKey)).length, 2);
 
     await replaceSessionTodos(sessionKey, snapshot);

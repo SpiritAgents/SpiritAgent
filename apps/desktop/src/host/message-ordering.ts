@@ -24,7 +24,10 @@ import {
   readFileVerbKey,
 } from '../lib/read-file-tool-display.js';
 import { phaseToVerbContext } from '../lib/tool-verb-context.js';
-import { todoTitleFromCompleteOutput } from '../lib/todo-tool-display.js';
+import {
+  todoWriteSummaryDetail,
+  type TodoDisplayItem,
+} from '../lib/todo-tool-display.js';
 import {
   hasActiveRunSubagentToolInMessages,
   hasInFlightSubagentDelegationInMessages,
@@ -189,11 +192,13 @@ export interface ToolCallSummaryCopy {
 
 export type ToolCallSummaryOptions = {
   workspaceRoot?: string;
-  /** Host tool JSON output; used when request alone lacks display fields (e.g. todo_complete title). */
+  /** Host tool JSON output; used when request alone lacks display fields. */
   executionOutput?: unknown;
+  /** Session todos before todo_write ran; used for incremental UI detail. */
+  todosBeforeWrite?: ReadonlyArray<TodoDisplayItem>;
 };
 
-export { todoTitleFromCompleteOutput } from '../lib/todo-tool-display.js';
+export { todoWriteSummaryDetail, type TodoDisplayItem } from '../lib/todo-tool-display.js';
 
 const SUMMARY_DETAIL_MAX = 80;
 const SUBAGENT_TASK_PREVIEW_MAX = 48;
@@ -387,38 +392,16 @@ export function toolCallSummaryCopyForRequest(
         ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
       };
     }
-    case 'todo_create': {
-      const items = Array.isArray(record.items) ? record.items : [];
-      const firstTitle =
-        items.length > 0 && typeof items[0] === 'object' && items[0] !== null
-          ? String((items[0] as Record<string, unknown>).title ?? '').trim()
-          : '';
+    case 'todo_write': {
+      const headlineDetail = todoWriteSummaryDetail({
+        before: options?.todosBeforeWrite ?? [],
+        afterPayload: options?.executionOutput ?? record,
+        t: (key, countOpts) => i18n.t(key, { ...tOpts, ...countOpts }),
+        separator: i18n.t('tool.todoWriteDeltaSeparator'),
+      });
       return {
-        headline: i18n.t('tool.todoCreate', tOpts),
-        headlineDetail: truncateSummaryDetail(
-          items.length > 1
-            ? i18n.t('tool.nItems', { count: items.length, firstTitle: firstTitle || '' })
-            : firstTitle || i18n.t('tool.oneItem'),
-        ),
-      };
-    }
-    case 'todo_update': {
-      const title = typeof record.title === 'string' ? record.title.trim() : '';
-      const id = typeof record.id === 'string' ? record.id.trim() : '';
-      return {
-        headline: i18n.t('tool.todoUpdate', tOpts),
-        headlineDetail: truncateSummaryDetail(title || id || ''),
-      };
-    }
-    case 'todo_complete': {
-      const title = options?.executionOutput
-        ? todoTitleFromCompleteOutput(options.executionOutput)
-        : undefined;
-      const id = typeof record.id === 'string' ? record.id.trim() : '';
-      const detail = title || id;
-      return {
-        headline: i18n.t('tool.todoComplete', tOpts),
-        ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
+        headline: i18n.t('tool.todoWrite', tOpts),
+        ...(headlineDetail ? { headlineDetail: truncateSummaryDetail(headlineDetail) } : {}),
       };
     }
     case 'todo_list':
@@ -789,6 +772,7 @@ export function normalizeToolBlockSnapshot(
   const imagePaths = tool.imagePaths?.map((entry) => entry.trim()).filter(Boolean);
   const videoPaths = tool.videoPaths?.map((entry) => entry.trim()).filter(Boolean);
   const lspWriteDiagnostics = normalizeLspWriteDiagnosticsSnapshot(tool.lspWriteDiagnostics);
+  const todoWriteBeforeTodos = normalizeTodoWriteBeforeTodosSnapshot(tool.todoWriteBeforeTodos);
 
   return {
     ...tool,
@@ -801,7 +785,32 @@ export function normalizeToolBlockSnapshot(
     ...(imagePaths && imagePaths.length > 0 ? { imagePaths } : {}),
     ...(videoPaths && videoPaths.length > 0 ? { videoPaths } : {}),
     ...(lspWriteDiagnostics ? { lspWriteDiagnostics } : {}),
+    ...(todoWriteBeforeTodos ? { todoWriteBeforeTodos } : {}),
   };
+}
+
+function normalizeTodoWriteBeforeTodosSnapshot(
+  value: ToolBlockSnapshot['todoWriteBeforeTodos'],
+): ToolBlockSnapshot['todoWriteBeforeTodos'] | undefined {
+  if (!Array.isArray(value) || value.length === 0) {
+    return undefined;
+  }
+  const items = value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return undefined;
+      }
+      const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+      if (!title) {
+        return undefined;
+      }
+      return {
+        title,
+        status: entry.status === 'completed' ? 'completed' as const : 'pending' as const,
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
+  return items.length > 0 ? items : undefined;
 }
 
 function normalizeLspWriteDiagnosticsSnapshot(

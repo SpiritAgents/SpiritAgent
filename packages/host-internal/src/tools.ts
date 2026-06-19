@@ -67,7 +67,7 @@ import {
 } from './dreams.js';
 import {
   createHostTodoStore,
-  type HostTodoCreateItem,
+  type HostTodoItem,
   type HostTodoScope,
   type HostTodoStore,
 } from './todos.js';
@@ -297,9 +297,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { name: 'dream_update'; id: string; title?: string; summary?: string; details?: string; tags?: string[] }
   | { name: 'dream_delete'; id: string; reason: string }
   | { name: 'todo_list'; include_completed: boolean }
-  | { name: 'todo_create'; items: HostTodoCreateItem[] }
-  | { name: 'todo_update'; id: string; title: string }
-  | { name: 'todo_complete'; id: string }
+  | { name: 'todo_write'; todos: HostTodoItem[] }
   | {
       name: typeof CREATE_AUTOMATION_TOOL_NAME;
       title: string;
@@ -836,21 +834,10 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           name,
           include_completed: optionalBoolean(parsed, 'include_completed') ?? true,
         };
-      case 'todo_create':
+      case 'todo_write':
         return {
           name,
-          items: parseTodoCreateItems(parsed),
-        };
-      case 'todo_update':
-        return {
-          name,
-          id: requiredString(parsed, 'id'),
-          title: requiredString(parsed, 'title'),
-        };
-      case 'todo_complete':
-        return {
-          name,
-          id: requiredString(parsed, 'id'),
+          todos: parseTodoWriteItems(parsed),
         };
       default:
         {
@@ -990,9 +977,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'dream_update':
       case 'dream_delete':
       case 'todo_list':
-      case 'todo_create':
-      case 'todo_update':
-      case 'todo_complete':
+      case 'todo_write':
         return { kind: 'allowed' };
     }
   }
@@ -1125,20 +1110,14 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         });
       case 'todo_list':
         return JSON.stringify({
-          todos: await this.requireTodoStore().list({
+          todos: await this.requireTodoStore().listItems({
             includeCompleted: request.include_completed,
           }),
         });
-      case 'todo_create':
+      case 'todo_write':
         return JSON.stringify({
-          todos: await this.requireTodoStore().create(request.items),
+          todos: await this.requireTodoStore().write(request.todos),
         });
-      case 'todo_update':
-        return JSON.stringify({
-          todo: await this.requireTodoStore().update(request.id, request.title),
-        });
-      case 'todo_complete':
-        return JSON.stringify(await this.requireTodoStore().complete(request.id));
     }
   }
 
@@ -2214,16 +2193,23 @@ function parseJsonObject(argumentsJson: string): HostJsonObject {
   return parsed;
 }
 
-function parseTodoCreateItems(parsed: HostJsonObject): HostTodoCreateItem[] {
-  const rawItems = parsed.items;
-  if (!Array.isArray(rawItems) || rawItems.length === 0) {
-    throw new Error('items 必须是非空数组。');
+function parseTodoWriteItems(parsed: HostJsonObject): HostTodoItem[] {
+  const rawItems = parsed.todos;
+  if (!Array.isArray(rawItems)) {
+    throw new Error('todos 必须是数组。');
   }
   return rawItems.map((entry, index) => {
     if (!isJsonObject(entry)) {
-      throw new Error(`items[${index}] 必须是对象。`);
+      throw new Error(`todos[${index}] 必须是对象。`);
     }
-    return { title: requiredString(entry, 'title') };
+    const statusRaw = requiredString(entry, 'status');
+    if (statusRaw !== 'pending' && statusRaw !== 'completed') {
+      throw new Error(`todos[${index}].status 无效: ${statusRaw}`);
+    }
+    return {
+      title: requiredString(entry, 'title'),
+      status: statusRaw,
+    };
   });
 }
 
