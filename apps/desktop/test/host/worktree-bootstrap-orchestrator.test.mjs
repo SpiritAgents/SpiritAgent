@@ -168,11 +168,14 @@ test('advancePendingWorktreeBootstrapCommand emits snapshot after bootstrap befo
 
   assert.equal(bundle.pendingWorktreeBootstrap, undefined);
   assert.ok(callOrder.includes('executeWorktreeBootstrap'));
-  assert.ok(callOrder.includes('emitLiveSnapshotUpdate'));
+  assert.equal(callOrder.filter((entry) => entry === 'emitLiveSnapshotUpdate').length, 2);
   assert.ok(
     callOrder.indexOf('emitLiveSnapshotUpdate') > callOrder.indexOf('executeWorktreeBootstrap'),
   );
   assert.ok(
     callOrder.indexOf('startUserTurnStreaming') > callOrder.indexOf('emitLiveSnapshotUpdate'),
+  );
+  assert.ok(
+    callOrder.lastIndexOf('emitLiveSnapshotUpdate') > callOrder.indexOf('persistCurrentSessionIfNeeded'),
   );
 });
