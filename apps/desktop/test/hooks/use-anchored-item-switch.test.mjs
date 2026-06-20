@@ -5,6 +5,7 @@ import {
   AnchoredItemSwitchStateModel,
   DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS,
   deriveAnchoredItemSwitchAnchorId,
+  deriveAnchoredItemSwitchContentItem,
   deriveAnchoredItemSwitchOpen,
   isWithinAnchoredItemSwitchRelatedTarget,
 } from '../../src/hooks/use-anchored-item-switch.ts';
@@ -43,6 +44,14 @@ test('switching items while open does not close between items', () => {
   assert.equal(model.anchorItemId, 'b');
 });
 
+test('deriveAnchoredItemSwitchContentItem prefers activeItem over linger', () => {
+  const itemA = { id: 'a' };
+  const itemB = { id: 'b' };
+  assert.equal(deriveAnchoredItemSwitchContentItem(itemA, itemB), itemA);
+  assert.equal(deriveAnchoredItemSwitchContentItem(null, itemB), itemB);
+  assert.equal(deriveAnchoredItemSwitchContentItem(null, null), null);
+});
+
 test('beginClose keeps linger anchor id until cleared', () => {
   const model = new AnchoredItemSwitchStateModel(getItemId);
   const itemA = { id: 'a' };
@@ -57,9 +66,14 @@ test('beginClose keeps linger anchor id until cleared', () => {
     deriveAnchoredItemSwitchAnchorId(model.activeItemId, model.lingerAnchorId),
     'a',
   );
+  assert.equal(model.contentActiveItem, itemA);
 
   model.clearLingerAnchor();
   assert.equal(model.anchorItemId, null);
+  assert.equal(model.contentActiveItem, itemA);
+
+  model.clearLingerContent();
+  assert.equal(model.contentActiveItem, null);
 });
 
 test('open delay default matches hover-detail-tooltip precedent', () => {
