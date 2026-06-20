@@ -241,6 +241,9 @@ export default function App() {
             sessions={runtime.sessions}
             activeFilePath={activeFilePath}
             onNewSession={surfaceNav.handleNewSession}
+            onNewSessionInWorkspace={(workspaceRoot) => {
+              void surfaceNav.handleNewSessionInWorkspace(workspaceRoot);
+            }}
             onSelectSession={(path) => {
               surfaceNav.setLastNonSettingsSurface("conversation");
               surfaceNav.setActiveSurface("conversation");

@@ -18,6 +18,7 @@ import {
   shouldMarkConversationSnapshotStale,
   shouldSuppressStaleConversation,
 } from "@/lib/conversation-surface-stale";
+import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -119,6 +120,34 @@ export function useAppSurfaceNavigation({
     void runtime.resetSession();
   }, [runtime]);
 
+  const handleNewSessionInWorkspace = useCallback(
+    async (workspaceRoot: string) => {
+      const trimmed = workspaceRoot.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      setLastNonSettingsSurface("conversation");
+      setActiveSurface("conversation");
+
+      const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
+      const needsSwitch =
+        snapshot?.workspaceBinding !== "project"
+        || !currentRoot
+        || !sameWorkspacePath(currentRoot, trimmed);
+
+      if (needsSwitch) {
+        const switched = await runtime.switchWorkspaceRoot(trimmed);
+        if (!switched) {
+          return;
+        }
+      }
+
+      await runtime.resetSession();
+    },
+    [runtime, snapshot?.workspaceBinding, snapshot?.workspaceRoot],
+  );
+
   const handleGenerateAutomation = useCallback(async () => {
     setLastNonSettingsSurface("conversation");
     setActiveSurface("conversation");
@@ -171,6 +200,7 @@ export function useAppSurfaceNavigation({
     isEmptySession,
     showWorkspaceBindingControls,
     handleNewSession,
+    handleNewSessionInWorkspace,
     handleGenerateAutomation,
     extensionSettingsItems,
   };
