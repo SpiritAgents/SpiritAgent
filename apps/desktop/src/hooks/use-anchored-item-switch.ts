@@ -8,6 +8,9 @@ import {
   type RefObject,
 } from "react";
 
+/** Matches `RADIX_OVERLAY_CLOSE_MS` in overlay-motion (Radix popover exit animation). */
+const ANCHORED_ITEM_SWITCH_CONTENT_LINGER_MS = 100;
+
 export const DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS = 400;
 export const DEFAULT_ANCHORED_ITEM_SWITCH_CLOSE_DELAY_MS = 120;
 /** Keep the anchor row mounted long enough for Radix's close animation to finish. */
@@ -38,6 +41,8 @@ export type UseAnchoredItemSwitchOptions<TItem> = {
 export type UseAnchoredItemSwitchResult<TItem> = {
   open: boolean;
   activeItem: TItem | null;
+  /** Keeps the last active item mounted through Radix close animation. */
+  contentActiveItem: TItem | null;
   anchorItemId: string | null;
   getTriggerProps: (item: TItem) => AnchoredItemSwitchTriggerProps;
   triggerZoneRef: RefObject<HTMLDivElement | null>;
@@ -57,6 +62,13 @@ export function deriveAnchoredItemSwitchAnchorId(
   lingerAnchorId: string | null,
 ): string | null {
   return activeItemId ?? lingerAnchorId;
+}
+
+export function deriveAnchoredItemSwitchContentItem<TItem>(
+  activeItem: TItem | null,
+  lingerActiveItem: TItem | null,
+): TItem | null {
+  return activeItem ?? lingerActiveItem;
 }
 
 const ANCHORED_ITEM_SWITCH_RELATED_OVERLAY_SELECTOR = '[data-slot="select-content"]';
@@ -102,6 +114,7 @@ export class AnchoredItemSwitchStateModel<TItem> {
   activeItem: TItem | null = null;
   pointerItemId: string | null = null;
   lingerAnchorId: string | null = null;
+  lingerActiveItem: TItem | null = null;
 
   private readonly getItemId: (item: TItem) => string;
 
@@ -121,12 +134,17 @@ export class AnchoredItemSwitchStateModel<TItem> {
     return deriveAnchoredItemSwitchAnchorId(this.activeItemId, this.lingerAnchorId);
   }
 
+  get contentActiveItem(): TItem | null {
+    return deriveAnchoredItemSwitchContentItem(this.activeItem, this.lingerActiveItem);
+  }
+
   clearPointerHighlight(): void {
     this.pointerItemId = null;
   }
 
   onItemPointerEnter(item: TItem): "instant-switch" | "schedule-open" {
     this.lingerAnchorId = null;
+    this.lingerActiveItem = null;
     this.pointerItemId = this.getItemId(item);
 
     if (this.activeItem !== null) {
@@ -153,12 +171,17 @@ export class AnchoredItemSwitchStateModel<TItem> {
     }
     this.clearPointerHighlight();
     this.lingerAnchorId = closingId;
+    this.lingerActiveItem = this.activeItem;
     this.activeItem = null;
     return closingId;
   }
 
   clearLingerAnchor(): void {
     this.lingerAnchorId = null;
+  }
+
+  clearLingerContent(): void {
+    this.lingerActiveItem = null;
   }
 }
 
@@ -171,9 +194,11 @@ export function useAnchoredItemSwitch<TItem>({
   const [activeItem, setActiveItem] = useState<TItem | null>(null);
   const [pointerItemId, setPointerItemId] = useState<string | null>(null);
   const [lingerAnchorId, setLingerAnchorId] = useState<string | null>(null);
+  const [lingerActiveItem, setLingerActiveItem] = useState<TItem | null>(null);
   const hoverOpenTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lingerClearTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lingerContentClearTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const activeItemRef = useRef<TItem | null>(null);
   const pointerItemRef = useRef<TItem | null>(null);
   const triggerZoneRef = useRef<HTMLDivElement>(null);
@@ -197,10 +222,12 @@ export function useAnchoredItemSwitch<TItem>({
 
   const commitClose = useCallback(
     (closingId: string) => {
+      const closingItem = activeItemRef.current;
       clearHoverOpenTimer();
       pointerItemRef.current = null;
       setPointerItemId(null);
       setLingerAnchorId(closingId);
+      setLingerActiveItem(closingItem);
       setActiveItem(null);
       if (lingerClearTimerRef.current !== undefined) {
         clearTimeout(lingerClearTimerRef.current);
@@ -209,6 +236,13 @@ export function useAnchoredItemSwitch<TItem>({
         lingerClearTimerRef.current = undefined;
         setLingerAnchorId(null);
       }, anchorLingerMs);
+      if (lingerContentClearTimerRef.current !== undefined) {
+        clearTimeout(lingerContentClearTimerRef.current);
+      }
+      lingerContentClearTimerRef.current = setTimeout(() => {
+        lingerContentClearTimerRef.current = undefined;
+        setLingerActiveItem(null);
+      }, ANCHORED_ITEM_SWITCH_CONTENT_LINGER_MS);
     },
     [anchorLingerMs, clearHoverOpenTimer],
   );
@@ -247,7 +281,12 @@ export function useAnchoredItemSwitch<TItem>({
         clearTimeout(lingerClearTimerRef.current);
         lingerClearTimerRef.current = undefined;
       }
+      if (lingerContentClearTimerRef.current !== undefined) {
+        clearTimeout(lingerContentClearTimerRef.current);
+        lingerContentClearTimerRef.current = undefined;
+      }
       setLingerAnchorId(null);
+      setLingerActiveItem(null);
       pointerItemRef.current = item;
       setPointerItemId(getItemId(item));
 
@@ -302,12 +341,16 @@ export function useAnchoredItemSwitch<TItem>({
       if (lingerClearTimerRef.current !== undefined) {
         clearTimeout(lingerClearTimerRef.current);
       }
+      if (lingerContentClearTimerRef.current !== undefined) {
+        clearTimeout(lingerContentClearTimerRef.current);
+      }
     };
   }, []);
 
   const open = deriveAnchoredItemSwitchOpen(activeItem);
   const activeItemId = activeItem ? getItemId(activeItem) : null;
   const anchorItemId = deriveAnchoredItemSwitchAnchorId(activeItemId, lingerAnchorId);
+  const contentActiveItem = deriveAnchoredItemSwitchContentItem(activeItem, lingerActiveItem);
 
   useEffect(() => {
     if (!open) {
@@ -382,6 +425,7 @@ export function useAnchoredItemSwitch<TItem>({
   return {
     open,
     activeItem,
+    contentActiveItem,
     anchorItemId,
     getTriggerProps,
     triggerZoneRef,
