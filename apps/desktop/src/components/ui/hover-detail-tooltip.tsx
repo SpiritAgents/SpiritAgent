@@ -52,7 +52,7 @@ export function useHoverDetailTooltipState<TItem>(options: UseHoverDetailTooltip
   const state = useAnchoredItemSwitch(options);
   return {
     popoverOpen: state.open,
-    activeItem: state.activeItem,
+    activeItem: state.contentActiveItem,
     anchorItemId: state.anchorItemId,
     getTriggerProps: state.getTriggerProps,
     triggerZoneRef: state.triggerZoneRef,
@@ -75,7 +75,7 @@ function HoverDetailTooltipRoot<TItem>({
 }: HoverDetailTooltipProps<TItem>) {
   const {
     open,
-    activeItem,
+    contentActiveItem,
     anchorItemId,
     getTriggerProps,
     triggerZoneRef,
@@ -107,10 +107,10 @@ function HoverDetailTooltipRoot<TItem>({
       onTriggerZonePointerLeave,
       contentRef,
       contentInteractionProps,
-      activeItem,
+      activeItem: contentActiveItem,
     }),
     [
-      activeItem,
+      contentActiveItem,
       anchorItemId,
       contentInteractionProps,
       contentRef,
