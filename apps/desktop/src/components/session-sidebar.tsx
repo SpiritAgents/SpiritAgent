@@ -27,6 +27,7 @@ import {
   Package,
   Palette,
   Plug,
+  Plus,
   SquarePen,
   Settings,
   Sparkles,
@@ -56,6 +57,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   readSidebarNoWorkspaceSectionExpanded,
   readSidebarWorkspaceSectionExpanded,
@@ -90,6 +92,7 @@ type SessionSidebarProps = {
   activeFilePath: string | null;
   onSelectSession: (path: string) => void;
   onNewSession: () => void;
+  onNewSessionInWorkspace?: (workspaceRoot: string) => void;
   onOpenMarketplace?: () => void;
   onOpenAutomations?: () => void;
   onOpenSettings: () => void;
@@ -252,6 +255,8 @@ type WorkspaceSessionGroupCollapsibleProps = {
   onOpenChange(open: boolean): void;
   onSelectSession(path: string): void;
   onLoadMore(): void;
+  onNewSessionInWorkspace?: (workspaceRoot: string) => void;
+  newSessionBusy?: boolean;
 };
 
 const sidebarSectionHeaderTriggerClass =
@@ -317,51 +322,86 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
   onOpenChange,
   onSelectSession,
   onLoadMore,
+  onNewSessionInWorkspace,
+  newSessionBusy = false,
 }: WorkspaceSessionGroupCollapsibleProps) {
+  const { t } = useTranslation();
+  const workspaceRoot = group.rootPath?.trim() ?? "";
+
   return (
     <AnimatedCollapse
       open={expanded}
       onOpenChange={onOpenChange}
       className="min-w-0"
     >
-      <AnimatedCollapseTrigger
-        disabled={disabled}
+      <div
         className={cn(
-          "group flex h-8 w-full min-w-0 items-center gap-2 overflow-hidden rounded-md px-2.5 text-left text-sm",
-          "outline-none",
-          sidebarInteractionMotionClass,
-          "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+          "group/workspace-row flex h-8 w-full min-w-0 items-center overflow-hidden rounded-md",
           sidebarItemDefaultTextClass,
           sessionRowHoverClass(micaStyle),
         )}
-        title={group.rootPath ?? group.label}
-        data-workspace-path={group.rootPath ?? group.id}
       >
-        <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center">
-          {expanded ? (
-            <FolderOpen
-              className="size-3.5 group-hover:hidden group-focus-visible:hidden"
-              aria-hidden
-            />
-          ) : (
-            <FolderClosed
-              className="size-3.5 group-hover:hidden group-focus-visible:hidden"
-              aria-hidden
-            />
+        <AnimatedCollapseTrigger
+          disabled={disabled}
+          className={cn(
+            "flex h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden px-2.5 text-left text-sm",
+            "bg-transparent outline-none hover:bg-transparent focus-visible:bg-transparent",
+            sidebarInteractionMotionClass,
+            "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
           )}
-          <ChevronRight
-            className={cn(
-              "absolute size-3.5 hidden transition-transform duration-150",
-              "group-hover:inline-flex group-focus-visible:inline-flex",
-              expanded && "rotate-90",
+          title={group.rootPath ?? group.label}
+          data-workspace-path={group.rootPath ?? group.id}
+        >
+          <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center">
+            {expanded ? (
+              <FolderOpen
+                className="size-3.5 group-hover/workspace-row:hidden group-focus-within/workspace-row:hidden"
+                aria-hidden
+              />
+            ) : (
+              <FolderClosed
+                className="size-3.5 group-hover/workspace-row:hidden group-focus-within/workspace-row:hidden"
+                aria-hidden
+              />
             )}
-            aria-hidden
-          />
-        </span>
-        <span className="flex min-w-0 flex-1 items-center overflow-hidden">
+            <ChevronRight
+              className={cn(
+                "absolute size-3.5 hidden transition-transform duration-150",
+                "group-hover/workspace-row:inline-flex group-focus-within/workspace-row:inline-flex",
+                expanded && "rotate-90",
+              )}
+              aria-hidden
+            />
+          </span>
           <span className="truncate text-xs font-medium">{group.label}</span>
-        </span>
-      </AnimatedCollapseTrigger>
+        </AnimatedCollapseTrigger>
+        {onNewSessionInWorkspace && workspaceRoot ? (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "mr-0.5 hidden size-6 shrink-0",
+                  "group-hover/workspace-row:inline-flex group-focus-within/workspace-row:inline-flex",
+                  sidebarItemDefaultTextClass,
+                  sidebarInteractionMotionClass,
+                  sidebarItemHoverClass(micaStyle),
+                )}
+                disabled={disabled || newSessionBusy}
+                aria-label={t("sidebar.newSessionInWorkspace", { workspace: group.label })}
+                onClick={() => onNewSessionInWorkspace(workspaceRoot)}
+              >
+                <Plus className="size-3.5" aria-hidden />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              {t("sidebar.newSessionInWorkspace", { workspace: group.label })}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
 
       <AnimatedCollapseContent className="min-w-0">
         <div className="mt-0.5 flex min-w-0 flex-col gap-0.5">
@@ -743,21 +783,15 @@ const sidebarItemDefaultTextClass = "text-sidebar-action-foreground";
 
 const sidebarItemActiveTextClass = "!text-sidebar-foreground";
 
+/** 侧栏菜单/会话行 hover：统一半透明铺底，嵌套按钮不再叠实心 accent */
 const sidebarMenuHoverClass = cn(
-  "hover:!bg-accent focus-visible:!bg-accent",
+  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
+  "dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
-
-const sidebarSessionListHoverClass = sidebarMenuHoverClass;
 
 const sidebarSelectedHoverClass = cn(
   "hover:!bg-secondary hover:!text-sidebar-foreground",
-);
-
-/** Mica 透明壳：选中/悬停使用半透明铺底，避免实心 secondary 挡住云母 */
-const sidebarMicaMenuHoverClass = cn(
-  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06] dark:hover:!bg-white/[0.06]",
-  "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
 
 const SIDEBAR_SCROLL_EDGE_THRESHOLD_PX = 1;
@@ -794,8 +828,8 @@ const sidebarMicaSelectedClass = cn(
   sidebarItemActiveTextClass,
 );
 
-function sidebarItemHoverClass(micaStyle?: boolean) {
-  return micaStyle ? sidebarMicaMenuHoverClass : sidebarMenuHoverClass;
+function sidebarItemHoverClass(_micaStyle?: boolean) {
+  return sidebarMenuHoverClass;
 }
 
 function sidebarItemSelectedClass(micaStyle?: boolean) {
@@ -820,8 +854,8 @@ function sessionRowSelectedClass(micaStyle?: boolean) {
       );
 }
 
-function sessionRowHoverClass(micaStyle?: boolean) {
-  return micaStyle ? sidebarMicaMenuHoverClass : sidebarSessionListHoverClass;
+function sessionRowHoverClass(_micaStyle?: boolean) {
+  return sidebarMenuHoverClass;
 }
 
 function SessionSidebarInner({
@@ -833,6 +867,7 @@ function SessionSidebarInner({
   activeFilePath,
   onSelectSession,
   onNewSession,
+  onNewSessionInWorkspace,
   onOpenMarketplace,
   onOpenAutomations,
   onOpenSettings,
@@ -1350,6 +1385,8 @@ function SessionSidebarInner({
                           }}
                           onSelectSession={onSelectSession}
                           onLoadMore={() => loadMoreWorkspaceGroupSessions(group.id, group.sessions.length)}
+                          onNewSessionInWorkspace={onNewSessionInWorkspace}
+                          newSessionBusy={newSessionBusy}
                         />
                       );
                     })}
