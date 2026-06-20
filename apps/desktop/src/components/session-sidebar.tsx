@@ -68,6 +68,7 @@ import {
   writeWorkspaceSidebarExpandedById,
 } from "@/lib/layout-prefs";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
+import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { isViteDev } from "@/lib/vite-dev";
 import { cn } from "@/lib/utils";
 import { shortcutLabel } from "@/lib/desktop-shell";
@@ -1013,10 +1014,13 @@ function SessionSidebarInner({
   >({});
   const [unboundVisibleCount, setUnboundVisibleCount] = useState(SIDEBAR_SESSION_PAGE_SIZE);
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
+  const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false);
   const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<SessionWorkspaceGroup | null>(null);
+  const [deleteWorkspaceDialogOpen, setDeleteWorkspaceDialogOpen] = useState(false);
   const [deleteSectionTarget, setDeleteSectionTarget] = useState<
     "workspace-section" | "no-workspace-section" | null
   >(null);
+  const [deleteSectionDialogOpen, setDeleteSectionDialogOpen] = useState(false);
   const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
   const [contextMenuWorkspaceGroup, setContextMenuWorkspaceGroup] = useState<SessionWorkspaceGroup | null>(null);
@@ -1048,6 +1052,27 @@ function SessionSidebarInner({
     [unboundSessions],
   );
   const sectionDeleteBusy = deleteSessionBusy || deleteWorkspaceBusy;
+
+  const dismissDeleteSessionDialog = useCallback(() => {
+    setDeleteSessionDialogOpen(false);
+    runAfterRadixOverlayClose(() => {
+      setDeleteTarget(null);
+    });
+  }, []);
+
+  const dismissDeleteWorkspaceDialog = useCallback(() => {
+    setDeleteWorkspaceDialogOpen(false);
+    runAfterRadixOverlayClose(() => {
+      setDeleteWorkspaceTarget(null);
+    });
+  }, []);
+
+  const dismissDeleteSectionDialog = useCallback(() => {
+    setDeleteSectionDialogOpen(false);
+    runAfterRadixOverlayClose(() => {
+      setDeleteSectionTarget(null);
+    });
+  }, []);
 
   const workspaceGroupById = useMemo(() => {
     const map = new Map<string, SessionWorkspaceGroup>();
@@ -1093,6 +1118,7 @@ function SessionSidebarInner({
     contextMenuWorkspaceGroupRef.current = null;
     setContextMenuWorkspaceGroup(null);
     setDeleteWorkspaceTarget(group);
+    setDeleteWorkspaceDialogOpen(true);
   }, []);
 
   const handleSessionContextMenuCapture = useCallback(
@@ -1123,6 +1149,7 @@ function SessionSidebarInner({
     contextMenuSessionRef.current = null;
     setContextMenuSession(null);
     setDeleteTarget(session);
+    setDeleteSessionDialogOpen(true);
   }, []);
 
   const isSessionSelected = (sessionPath: string) =>
@@ -1477,6 +1504,7 @@ function SessionSidebarInner({
                             : undefined,
                           onRequestDelete: () => {
                             setDeleteSectionTarget("workspace-section");
+                            setDeleteSectionDialogOpen(true);
                           },
                         }
                       : undefined
@@ -1558,6 +1586,7 @@ function SessionSidebarInner({
                               : undefined,
                             onRequestDelete: () => {
                               setDeleteSectionTarget("no-workspace-section");
+                              setDeleteSectionDialogOpen(true);
                             },
                           }
                         : undefined
@@ -1619,13 +1648,12 @@ function SessionSidebarInner({
       ) : null}
 
       <Dialog
-        open={deleteTarget !== null}
+        open={deleteSessionDialogOpen}
         onOpenChange={(open) => {
-          if (!open && deleteSessionBusy) {
-            return;
-          }
-          if (!open) {
-            setDeleteTarget(null);
+          if (open) {
+            setDeleteSessionDialogOpen(true);
+          } else if (!deleteSessionBusy) {
+            dismissDeleteSessionDialog();
           }
         }}
       >
@@ -1641,7 +1669,11 @@ function SessionSidebarInner({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setDeleteTarget(null)}
+              onClick={() => {
+                if (!deleteSessionBusy) {
+                  dismissDeleteSessionDialog();
+                }
+              }}
               disabled={deleteSessionBusy}
             >
               {t("common.cancel")}
@@ -1658,7 +1690,7 @@ function SessionSidebarInner({
                 }
                 void (async () => {
                   await onDeleteSession(target.path);
-                  setDeleteTarget(null);
+                  dismissDeleteSessionDialog();
                 })();
               }}
             >
@@ -1670,13 +1702,12 @@ function SessionSidebarInner({
       </Dialog>
 
       <Dialog
-        open={deleteSectionTarget !== null}
+        open={deleteSectionDialogOpen}
         onOpenChange={(open) => {
-          if (!open && sectionDeleteBusy) {
-            return;
-          }
-          if (!open) {
-            setDeleteSectionTarget(null);
+          if (open) {
+            setDeleteSectionDialogOpen(true);
+          } else if (!sectionDeleteBusy) {
+            dismissDeleteSectionDialog();
           }
         }}
       >
@@ -1703,7 +1734,11 @@ function SessionSidebarInner({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setDeleteSectionTarget(null)}
+              onClick={() => {
+                if (!sectionDeleteBusy) {
+                  dismissDeleteSectionDialog();
+                }
+              }}
               disabled={sectionDeleteBusy}
             >
               {t("common.cancel")}
@@ -1737,7 +1772,7 @@ function SessionSidebarInner({
                       await onDeleteSession(session.path);
                     }
                   }
-                  setDeleteSectionTarget(null);
+                  dismissDeleteSectionDialog();
                 })();
               }}
             >
@@ -1749,13 +1784,12 @@ function SessionSidebarInner({
       </Dialog>
 
       <Dialog
-        open={deleteWorkspaceTarget !== null}
+        open={deleteWorkspaceDialogOpen}
         onOpenChange={(open) => {
-          if (!open && deleteWorkspaceBusy) {
-            return;
-          }
-          if (!open) {
-            setDeleteWorkspaceTarget(null);
+          if (open) {
+            setDeleteWorkspaceDialogOpen(true);
+          } else if (!deleteWorkspaceBusy) {
+            dismissDeleteWorkspaceDialog();
           }
         }}
       >
@@ -1774,7 +1808,11 @@ function SessionSidebarInner({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setDeleteWorkspaceTarget(null)}
+              onClick={() => {
+                if (!deleteWorkspaceBusy) {
+                  dismissDeleteWorkspaceDialog();
+                }
+              }}
               disabled={deleteWorkspaceBusy}
             >
               {t("common.cancel")}
@@ -1791,7 +1829,7 @@ function SessionSidebarInner({
                 }
                 void (async () => {
                   await onDeleteWorkspace(target.rootPath ?? target.id);
-                  setDeleteWorkspaceTarget(null);
+                  dismissDeleteWorkspaceDialog();
                 })();
               }}
             >
