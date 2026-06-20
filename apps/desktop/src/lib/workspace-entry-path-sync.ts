@@ -2,6 +2,27 @@ export function normalizeWorkspaceEntryRel(relativePath: string): string {
   return relativePath.replace(/\\/g, "/");
 }
 
+/** 复制到剪贴板用的工作区相对路径；根目录为 `.`。 */
+export function formatWorkspaceRelativePathForCopy(relativePath: string): string {
+  const normalized = normalizeWorkspaceEntryRel(relativePath).replace(/^\/+|\/+$/g, "");
+  return normalized.length === 0 ? "." : normalized;
+}
+
+function workspacePathSeparator(workspaceRoot: string): "\\" | "/" {
+  return /\\/.test(workspaceRoot) ? "\\" : "/";
+}
+
+/** 将工作区根与相对路径拼成绝对路径（browser-safe，不依赖 Node path）。 */
+export function joinWorkspaceAbsolutePath(workspaceRoot: string, relativePath: string): string {
+  const root = workspaceRoot.replace(/[/\\]+$/, "");
+  const rel = formatWorkspaceRelativePathForCopy(relativePath);
+  if (rel === ".") {
+    return root;
+  }
+  const sep = workspacePathSeparator(workspaceRoot);
+  return `${root}${sep}${rel.replace(/\//g, sep)}`;
+}
+
 /** 候选路径是否等于 prefix，或位于 prefix 目录之下。 */
 export function isUnderWorkspaceEntryPath(prefixRel: string, candidateRel: string): boolean {
   const prefix = normalizeWorkspaceEntryRel(prefixRel);
