@@ -355,19 +355,19 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
           <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center">
             {expanded ? (
               <FolderOpen
-                className="size-3.5 group-hover/workspace-row:hidden group-focus-within/workspace-row:hidden"
+                className="size-3.5 group-hover/workspace-row:hidden group-has-[button:focus-visible]/workspace-row:hidden"
                 aria-hidden
               />
             ) : (
               <FolderClosed
-                className="size-3.5 group-hover/workspace-row:hidden group-focus-within/workspace-row:hidden"
+                className="size-3.5 group-hover/workspace-row:hidden group-has-[button:focus-visible]/workspace-row:hidden"
                 aria-hidden
               />
             )}
             <ChevronRight
               className={cn(
                 "absolute size-3.5 hidden transition-transform duration-150",
-                "group-hover/workspace-row:inline-flex group-focus-within/workspace-row:inline-flex",
+                "group-hover/workspace-row:inline-flex group-has-[button:focus-visible]/workspace-row:inline-flex",
                 expanded && "rotate-90",
               )}
               aria-hidden
@@ -384,7 +384,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
                 size="icon"
                 className={cn(
                   "mr-0.5 hidden size-6 shrink-0",
-                  "group-hover/workspace-row:inline-flex group-focus-within/workspace-row:inline-flex",
+                  "group-hover/workspace-row:inline-flex group-has-[button:focus-visible]/workspace-row:inline-flex",
                   sidebarItemDefaultTextClass,
                   sidebarInteractionMotionClass,
                   sidebarItemHoverClass(micaStyle),
