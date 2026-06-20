@@ -747,6 +747,8 @@
     "addFileToSession": "添加到会话",
     "addCommitToSession": "添加到会话",
     "fileActions": "文件操作",
+    "copyPath": "复制路径",
+    "copyRelativePath": "复制相对路径",
     "revealInExplorer": {
       "win32": "在文件资源管理器中显示",
       "darwin": "在访达中显示",

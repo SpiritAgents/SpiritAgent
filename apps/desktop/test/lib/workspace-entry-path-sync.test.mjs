@@ -3,9 +3,25 @@ import test from "node:test";
 
 import {
   evictRecordKeysUnderPrefix,
+  formatWorkspaceRelativePathForCopy,
   isUnderWorkspaceEntryPath,
+  joinWorkspaceAbsolutePath,
   remapWorkspaceEntryPath,
 } from "../../src/lib/workspace-entry-path-sync.ts";
+
+test("formatWorkspaceRelativePathForCopy normalizes and uses dot for root", () => {
+  assert.equal(formatWorkspaceRelativePathForCopy(""), ".");
+  assert.equal(formatWorkspaceRelativePathForCopy("src/App.tsx"), "src/App.tsx");
+  assert.equal(formatWorkspaceRelativePathForCopy("src\\lib\\util.ts"), "src/lib/util.ts");
+  assert.equal(formatWorkspaceRelativePathForCopy("/src/"), "src");
+});
+
+test("joinWorkspaceAbsolutePath joins root and relative path", () => {
+  assert.equal(joinWorkspaceAbsolutePath("D:\\Projects\\app", ""), "D:\\Projects\\app");
+  assert.equal(joinWorkspaceAbsolutePath("D:\\Projects\\app", "src/App.tsx"), "D:\\Projects\\app\\src\\App.tsx");
+  assert.equal(joinWorkspaceAbsolutePath("/home/user/app", "src/lib"), "/home/user/app/src/lib");
+  assert.equal(joinWorkspaceAbsolutePath("/home/user/app/", "src/lib"), "/home/user/app/src/lib");
+});
 
 test("isUnderWorkspaceEntryPath matches self and nested paths", () => {
   assert.equal(isUnderWorkspaceEntryPath("src", "src"), true);

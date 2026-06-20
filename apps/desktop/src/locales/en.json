@@ -749,6 +749,8 @@
     "addFileToSession": "Add to Session",
     "addCommitToSession": "Add to Session",
     "fileActions": "File actions",
+    "copyPath": "Copy Path",
+    "copyRelativePath": "Copy Relative Path",
     "revealInExplorer": {
       "win32": "Reveal in File Explorer",
       "darwin": "Reveal in Finder",
