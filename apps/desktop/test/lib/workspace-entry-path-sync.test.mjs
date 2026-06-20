@@ -23,6 +23,13 @@ test("joinWorkspaceAbsolutePath joins root and relative path", () => {
   assert.equal(joinWorkspaceAbsolutePath("/home/user/app/", "src/lib"), "/home/user/app/src/lib");
 });
 
+test("joinWorkspaceAbsolutePath accepts backslash relative paths on Windows root", () => {
+  assert.equal(
+    joinWorkspaceAbsolutePath("C:\\repo", "src\\components\\Button.tsx"),
+    "C:\\repo\\src\\components\\Button.tsx",
+  );
+});
+
 test("isUnderWorkspaceEntryPath matches self and nested paths", () => {
   assert.equal(isUnderWorkspaceEntryPath("src", "src"), true);
   assert.equal(isUnderWorkspaceEntryPath("src", "src/App.tsx"), true);
