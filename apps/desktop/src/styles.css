@@ -74,7 +74,7 @@
   --terminal-ansi-black: #000000;
   --terminal-ansi-red: #cd3131;
   --terminal-ansi-green: #107c10;
-  --terminal-ansi-yellow: #949800;
+  --terminal-ansi-yellow: #9a7500;
   --terminal-ansi-blue: #0451a5;
   --terminal-ansi-magenta: #bc05bc;
   --terminal-ansi-cyan: #0598bc;
@@ -82,7 +82,7 @@
   --terminal-ansi-bright-black: #666666;
   --terminal-ansi-bright-red: #cd3131;
   --terminal-ansi-bright-green: #14ce14;
-  --terminal-ansi-bright-yellow: #b5ba00;
+  --terminal-ansi-bright-yellow: #af8d00;
   --terminal-ansi-bright-blue: #0451a5;
   --terminal-ansi-bright-magenta: #bc05bc;
   --terminal-ansi-bright-cyan: #0598bc;
@@ -140,7 +140,7 @@ html.dark,
   --terminal-ansi-black: #000000;
   --terminal-ansi-red: #cd3131;
   --terminal-ansi-green: #0dbc79;
-  --terminal-ansi-yellow: #e5e510;
+  --terminal-ansi-yellow: #d7ba7d;
   --terminal-ansi-blue: #2472c8;
   --terminal-ansi-magenta: #bc3fbc;
   --terminal-ansi-cyan: #11a8cd;
@@ -148,7 +148,7 @@ html.dark,
   --terminal-ansi-bright-black: #666666;
   --terminal-ansi-bright-red: #f14c4c;
   --terminal-ansi-bright-green: #23d18b;
-  --terminal-ansi-bright-yellow: #f5f543;
+  --terminal-ansi-bright-yellow: #e5c07b;
   --terminal-ansi-bright-blue: #3b8eea;
   --terminal-ansi-bright-magenta: #d670d6;
   --terminal-ansi-bright-cyan: #29b8db;
