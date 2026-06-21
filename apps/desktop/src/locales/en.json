@@ -405,7 +405,7 @@
     "extensions": "Extensions",
     "automations": "Automations",
     "workspace": "Workspace",
-    "noWorkspaceSessions": "No workspace",
+    "noWorkspaceSessions": "No Workspace",
     "settingsTabsAria": "Settings Tabs",
     "extensionSettings": "Extension Settings",
     "workspaceSessionsAria": "Workspace Sessions",
@@ -427,8 +427,8 @@
     "deleteAllWorkspaces": "Delete all workspaces",
     "deleteAllWorkspacesConfirm": "Delete all {{workspaceCount}} workspaces and {{sessionCount}} sessions under \"Workspace\"? This cannot be undone.",
     "deleteAllNoWorkspaceSessions": "Delete all sessions without workspace",
-    "deleteAllNoWorkspaceSessionsConfirm_one": "Delete the 1 session under \"No workspace\"? This cannot be undone.",
-    "deleteAllNoWorkspaceSessionsConfirm_other": "Delete all {{count}} sessions under \"No workspace\"? This cannot be undone.",
+    "deleteAllNoWorkspaceSessionsConfirm_one": "Delete the 1 session under \"No Workspace\"? This cannot be undone.",
+    "deleteAllNoWorkspaceSessionsConfirm_other": "Delete all {{count}} sessions under \"No Workspace\"? This cannot be undone.",
     "cannotDeleteBusyInSection": "Cannot delete while a session in this section is running."
   },
   "titleBar": {
@@ -581,7 +581,7 @@
     "searchWorkspace": "Search workspaces",
     "noMatches": "No matches",
     "addWorkspace": "Add Workspace",
-    "noWorkspace": "No workspace",
+    "noWorkspace": "No Workspace",
     "noWorkspaceBindingHint": "Workspace binding is off; only user-level MCP and Skills apply.",
     "previewUnavailable": "Preview unavailable",
     "downloadImage": "Download Image",
