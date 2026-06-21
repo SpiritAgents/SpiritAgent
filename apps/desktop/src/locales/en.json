@@ -401,7 +401,7 @@
     "settingsNavAria": "Settings Navigation Sidebar",
     "sessionNavAria": "Sessions and Settings Sidebar",
     "newSession": "New Session",
-    "newSessionInWorkspace": "New session in {{workspace}}",
+    "newSessionInWorkspace": "New Session in {{workspace}}",
     "extensions": "Extensions",
     "automations": "Automations",
     "workspace": "Workspace",
