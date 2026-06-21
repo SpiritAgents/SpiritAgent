@@ -20,9 +20,13 @@ import type {
   DesktopModelReasoningEffort,
   DesktopSnapshot,
   DesktopUpdateAutomationRequest,
+  DesktopWorkspaceBinding,
   GitHubAutomationRepositoriesSnapshot,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
+import {
+  resolveWorkspaceBindingForStoredRoot,
+} from "@/lib/workspace-display-label";
 
 type AutomationSettingsPanelProps = {
   automationId: string;
@@ -68,6 +72,7 @@ export function AutomationSettingsPanel({
   const [overview, setOverview] = useState("");
   const [trigger, setTrigger] = useState<DesktopAutomationTrigger>(defaultDesktopTimeTrigger());
   const [workspaceRoot, setWorkspaceRoot] = useState("");
+  const [workspaceBinding, setWorkspaceBinding] = useState<DesktopWorkspaceBinding>("project");
   const [modelName, setModelName] = useState("");
   const [reasoningEffort, setReasoningEffort] = useState<DesktopModelReasoningEffort | undefined>();
   const [approvalLevel, setApprovalLevel] = useState<ApprovalLevel>("default");
@@ -77,7 +82,7 @@ export function AutomationSettingsPanel({
   }, [automationId]);
 
   useEffect(() => {
-    if (!definition || initializedForAutomationIdRef.current === automationId) {
+    if (!definition || !snapshot?.userHomeDirectory || initializedForAutomationIdRef.current === automationId) {
       return;
     }
 
@@ -85,11 +90,18 @@ export function AutomationSettingsPanel({
     setTitle(definition.title);
     setOverview(definition.overview);
     setTrigger(definition.trigger);
+    const homeDirectory = snapshot?.userHomeDirectory ?? "";
+    setWorkspaceBinding(
+      resolveWorkspaceBindingForStoredRoot(definition.workspaceRoot, homeDirectory),
+    );
     setWorkspaceRoot(definition.workspaceRoot);
     setModelName(definition.modelName);
     setReasoningEffort(definition.reasoningEffort);
     setApprovalLevel(definition.approvalLevel);
-  }, [automationId, definition]);
+  }, [automationId, definition, snapshot?.userHomeDirectory]);
+
+  const resolvedWorkspaceRoot =
+    workspaceBinding === "none" ? (snapshot?.userHomeDirectory ?? workspaceRoot) : workspaceRoot;
 
   const patch = useMemo((): DesktopUpdateAutomationRequest | null => {
     if (!definition) {
@@ -109,8 +121,8 @@ export function AutomationSettingsPanel({
     if (!triggersEqual(trigger, definition.trigger)) {
       next.trigger = trigger;
     }
-    if (workspaceRoot !== definition.workspaceRoot) {
-      next.workspaceRoot = workspaceRoot;
+    if (resolvedWorkspaceRoot !== definition.workspaceRoot) {
+      next.workspaceRoot = resolvedWorkspaceRoot;
     }
     if (modelName !== definition.modelName) {
       next.modelName = modelName;
@@ -123,12 +135,13 @@ export function AutomationSettingsPanel({
     }
 
     return Object.keys(next).length > 0 ? next : null;
-  }, [approvalLevel, definition, modelName, overview, reasoningEffort, trigger, title, workspaceRoot]);
+  }, [approvalLevel, definition, modelName, overview, reasoningEffort, resolvedWorkspaceRoot, trigger, title]);
 
   const canSave =
     title.trim().length > 0
     && overview.trim().length > 0
-    && workspaceRoot.trim().length > 0
+    && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
+    && resolvedWorkspaceRoot.trim().length > 0
     && modelName.trim().length > 0
     && isValidDesktopAutomationTrigger(trigger)
     && (trigger.kind !== "github" || githubConnected)
@@ -177,12 +190,21 @@ export function AutomationSettingsPanel({
             {snapshot ? (
               <>
                 <WorkspaceSelectorMenu
-                  currentWorkspaceRoot={workspaceRoot}
-                  workspaceBinding="project"
+                  currentWorkspaceRoot={resolvedWorkspaceRoot}
+                  workspaceBinding={workspaceBinding}
                   availableWorkspaces={snapshot.availableWorkspaces}
                   disabled={disabled}
-                  showNoWorkspaceOption={false}
-                  onSelectWorkspace={setWorkspaceRoot}
+                  onSelectWorkspace={(path) => {
+                    setWorkspaceBinding("project");
+                    setWorkspaceRoot(path);
+                  }}
+                  onSelectNoWorkspace={() => {
+                    if (!snapshot.userHomeDirectory) {
+                      return;
+                    }
+                    setWorkspaceBinding("none");
+                    setWorkspaceRoot(snapshot.userHomeDirectory);
+                  }}
                   onAddWorkspace={onAddWorkspace}
                 />
                 <ModelPickerMenu
