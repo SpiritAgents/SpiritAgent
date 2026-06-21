@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useWorkspaceToolsChromeActions } from "@/contexts/workspace-tools-chrome-context";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { normalizeBrowserUrl } from "@/lib/browser-url";
 import { readWorkspaceToolsWidthPx } from "@/lib/layout-prefs";
@@ -36,7 +37,7 @@ export function useWorkspaceToolsController({
   snapshot,
   activeFilePath,
 }: UseWorkspaceToolsControllerOptions) {
-  const [workspaceToolsOpen, setWorkspaceToolsOpen] = useState(false);
+  const { setOpen: setWorkspaceToolsOpen } = useWorkspaceToolsChromeActions();
   const initialWorkspaceToolsRef = useRef<ReturnType<
     typeof createInitialWorkspaceToolsState
   > | null>(null);
@@ -256,7 +257,6 @@ export function useWorkspaceToolsController({
   ]);
 
   return {
-    workspaceToolsOpen,
     setWorkspaceToolsOpen,
     workspaceToolTabs,
     setWorkspaceToolTabs,

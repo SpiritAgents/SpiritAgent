@@ -111,8 +111,6 @@ export type ComposerDockSectionProps = {
 };
 
 export type WorkspaceToolsSectionProps = {
-  open: boolean;
-  onToggle: () => void;
   startImplementingDisabled: boolean;
   workspaceFilesPlanRevealNonce: number;
   workspaceFilesPlanRevealTargetId: string | null;
@@ -206,8 +204,6 @@ export function ConversationView({
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
           showWorkspaceToggle
-          workspaceToolsOpen={workspaceTools.open}
-          onToggleWorkspaceTools={workspaceTools.onToggle}
           sessionTitle={
             isEmptySession || hideStaleConversationMessages
               ? null
@@ -409,7 +405,6 @@ export function ConversationView({
           getGitHubPullRequestChecks={list.runtime.getGitHubPullRequestChecks}
           mergeGitHubPullRequest={list.runtime.mergeGitHubPullRequest}
           markGitHubPullRequestReady={list.runtime.markGitHubPullRequestReady}
-          open={workspaceTools.open}
           widthPx={workspaceTools.workspaceToolsWidthPx}
           onWidthPxChange={workspaceTools.onWorkspaceToolsWidthPxChange}
           gitSnapshot={snapshot?.git}
