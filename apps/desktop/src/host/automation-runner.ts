@@ -36,7 +36,7 @@ import {
 } from './storage.js';
 import { DesktopToolExecutor } from './tool-executor.js';
 import { buildDesktopRuntimeBasicInfo, createDesktopRuntime, type DesktopRuntime } from './runtime.js';
-import { currentApiBase } from './service-utils.js';
+import { currentApiBase, isNoWorkspaceSessionRoot } from './service-utils.js';
 
 export const AUTOMATION_SESSION_FILE_PREFIX = 'chat-automation-';
 export const AUTOMATION_RUN_MAX_GUARD_ROUNDS = 200;
@@ -86,9 +86,12 @@ export async function runDesktopAutomationOnce(
     }
 
     const profile = input.config.models.find((model) => model.name === input.definition.modelName);
+    const workspaceBinding = isNoWorkspaceSessionRoot(input.definition.workspaceRoot)
+      ? 'none'
+      : 'project';
     const gitSnapshot = await readGitWorkspaceSnapshot(input.definition.workspaceRoot);
     const metadata = await loadHostMetadata(input.definition.workspaceRoot, 'agent', {
-      workspaceBinding: 'project',
+      workspaceBinding,
     });
     const planMetadata: LlmPlanMetadata = {
       ...metadata.planMetadata,
