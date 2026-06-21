@@ -25,6 +25,7 @@ import type {
   DesktopCreateAutomationRequest,
   DesktopModelReasoningEffort,
   DesktopSnapshot,
+  DesktopWorkspaceBinding,
   GitHubAutomationRepositoriesSnapshot,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
@@ -65,6 +66,7 @@ export function CreateAutomationDialog({
   const [overview, setOverview] = useState("");
   const [trigger, setTrigger] = useState<DesktopAutomationTrigger>(defaultDesktopTimeTrigger());
   const [workspaceRoot, setWorkspaceRoot] = useState("");
+  const [workspaceBinding, setWorkspaceBinding] = useState<DesktopWorkspaceBinding>("project");
   const [modelName, setModelName] = useState("");
   const [reasoningEffort, setReasoningEffort] = useState<DesktopModelReasoningEffort | undefined>();
   const [approvalLevel, setApprovalLevel] = useState<ApprovalLevel>("default");
@@ -84,17 +86,26 @@ export function CreateAutomationDialog({
     setTitle("");
     setOverview("");
     setTrigger(defaultDesktopTimeTrigger());
-    setWorkspaceRoot(snapshot.workspaceRoot);
+    setWorkspaceBinding(snapshot.workspaceBinding);
+    setWorkspaceRoot(
+      snapshot.workspaceBinding === "none"
+        ? snapshot.userHomeDirectory
+        : snapshot.workspaceRoot,
+    );
     setModelName(snapshot.config.activeModel);
     const activeModel = snapshot.config.models.find((model) => model.name === snapshot.config.activeModel);
     setReasoningEffort(activeModel?.reasoningEffort);
     setApprovalLevel(snapshot.conversation.approvalLevel);
   }, [open, snapshot]);
 
+  const resolvedWorkspaceRoot =
+    workspaceBinding === "none" ? (snapshot?.userHomeDirectory ?? "") : workspaceRoot;
+
   const canSubmit =
     title.trim().length > 0
     && overview.trim().length > 0
-    && workspaceRoot.trim().length > 0
+    && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
+    && resolvedWorkspaceRoot.trim().length > 0
     && modelName.trim().length > 0
     && isValidDesktopAutomationTrigger(trigger)
     && (trigger.kind !== "github" || githubConnected);
@@ -139,12 +150,18 @@ export function CreateAutomationDialog({
             {snapshot ? (
               <>
                 <WorkspaceSelectorMenu
-                  currentWorkspaceRoot={workspaceRoot}
-                  workspaceBinding="project"
+                  currentWorkspaceRoot={resolvedWorkspaceRoot}
+                  workspaceBinding={workspaceBinding}
                   availableWorkspaces={snapshot.availableWorkspaces}
                   disabled={disabled}
-                  showNoWorkspaceOption={false}
-                  onSelectWorkspace={setWorkspaceRoot}
+                  onSelectWorkspace={(path) => {
+                    setWorkspaceBinding("project");
+                    setWorkspaceRoot(path);
+                  }}
+                  onSelectNoWorkspace={() => {
+                    setWorkspaceBinding("none");
+                    setWorkspaceRoot(snapshot.userHomeDirectory);
+                  }}
                   onAddWorkspace={onAddWorkspace}
                 />
                 <ModelPickerMenu
@@ -183,7 +200,7 @@ export function CreateAutomationDialog({
                   title: title.trim(),
                   overview: overview.trim(),
                   trigger,
-                  workspaceRoot,
+                  workspaceRoot: resolvedWorkspaceRoot,
                   modelName,
                   ...(reasoningEffort ? { reasoningEffort } : {}),
                   approvalLevel,

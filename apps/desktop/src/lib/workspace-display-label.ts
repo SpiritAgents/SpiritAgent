@@ -10,6 +10,18 @@ export function sameWorkspacePath(left: string, right: string): boolean {
   return normalizeWorkspacePath(left) === normalizeWorkspacePath(right);
 }
 
+/** Automation / session roots stored as the user home directory represent no workspace binding. */
+export function isNoWorkspaceRoot(workspaceRoot: string, userHomeDirectory: string): boolean {
+  return Boolean(userHomeDirectory.trim()) && sameWorkspacePath(workspaceRoot, userHomeDirectory);
+}
+
+export function resolveWorkspaceBindingForStoredRoot(
+  workspaceRoot: string,
+  userHomeDirectory: string,
+): DesktopSnapshot["workspaceBinding"] {
+  return isNoWorkspaceRoot(workspaceRoot, userHomeDirectory) ? "none" : "project";
+}
+
 function deriveWorkspaceLabel(workspaceRoot: string): string {
   const normalized = workspaceRoot.replace(/\\/g, "/").replace(/\/+$/g, "");
   const lastSlash = normalized.lastIndexOf("/");
