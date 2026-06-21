@@ -82,26 +82,43 @@ test("addWorkspaceToolTab appends and focuses new tab", () => {
   assert.equal(activeId, next.at(-1)?.id);
 });
 
-test("closeWorkspaceToolTab restores defaults when last tab closes", () => {
-  let tabs = [createWorkspaceToolTab("shell")];
-  let activeId = tabs[0].id;
-  const closed = closeWorkspaceToolTab(tabs, activeId, activeId);
-  tabs = closed.tabs;
-  activeId = closed.activeId;
-  assert.equal(tabs.length, 3);
-  assert.deepEqual(
-    tabs.map((t) => t.kind),
-    ["files", "shell", "git"],
-  );
-  assert.equal(activeId, focusFirstTabOfKind(tabs, "files"));
+test("closeWorkspaceToolTab recreates shell when last shell tab closes", () => {
+  const tabs = [createWorkspaceToolTab("shell")];
+  const originalShellId = tabs[0].id;
+  const closed = closeWorkspaceToolTab(tabs, originalShellId, originalShellId);
+  assert.equal(closed.tabs.length, 1);
+  assert.equal(closed.tabs[0]?.kind, "shell");
+  assert.notEqual(closed.tabs[0]?.id, originalShellId);
+  assert.equal(closed.activeId, closed.tabs[0]?.id);
 });
 
-test("closeWorkspaceToolTab prefers left neighbor for active tab", () => {
-  const tabs = createDefaultWorkspaceToolTabs();
+test("closeWorkspaceToolTab does not recreate optional pr tab", () => {
+  const pr = createWorkspaceToolTab("pr");
+  const closed = closeWorkspaceToolTab([pr], pr.id, pr.id);
+  assert.equal(closed.tabs.length, 0);
+  assert.equal(closed.activeId, "");
+});
+
+test("closeWorkspaceToolTab recreates kind without resetting other tabs", () => {
+  const tabs = createDefaultWorkspaceToolTabs({ includeBrowser: true });
   const shellId = tabs[1].id;
-  const closed = closeWorkspaceToolTab(tabs, shellId, shellId);
-  assert.equal(closed.activeId, tabs[0].id);
-  assert.equal(closed.tabs.length, 2);
+  const closed = closeWorkspaceToolTab(tabs, shellId, shellId, { includeBrowser: true });
+  assert.equal(closed.tabs.length, 4);
+  assert.equal(closed.tabs.filter((tab) => tab.kind === "shell").length, 1);
+  assert.equal(closed.tabs.filter((tab) => tab.kind === "files").length, 1);
+  assert.equal(closed.tabs.filter((tab) => tab.kind === "browser").length, 1);
+  assert.equal(closed.activeId, closed.tabs.find((tab) => tab.kind === "shell")?.id);
+});
+
+test("closeWorkspaceToolTab prefers left neighbor when kind still has tabs", () => {
+  const files = createWorkspaceToolTab("files");
+  const shell1 = createWorkspaceToolTab("shell");
+  const shell2 = createWorkspaceToolTab("shell");
+  const git = createWorkspaceToolTab("git");
+  const tabs = [files, shell1, shell2, git];
+  const closed = closeWorkspaceToolTab(tabs, shell2.id, shell2.id);
+  assert.equal(closed.activeId, shell1.id);
+  assert.equal(closed.tabs.filter((tab) => tab.kind === "shell").length, 1);
 });
 
 test("defaultActiveWorkspaceToolTabId prefers files", () => {

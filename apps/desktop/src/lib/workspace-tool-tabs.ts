@@ -184,6 +184,19 @@ export function normalizeWorkspaceToolTabsForHost(
   };
 }
 
+function shouldEnsureTabKindAfterClose(
+  kind: WorkspaceToolTabKind,
+  options: WorkspaceToolTabsDefaultsOptions,
+): boolean {
+  if (kind === "browser") {
+    return options.includeBrowser === true;
+  }
+  if (kind === "pr") {
+    return false;
+  }
+  return kind === "files" || kind === "shell" || kind === "git";
+}
+
 export function closeWorkspaceToolTab(
   tabs: readonly WorkspaceToolTab[],
   activeId: string,
@@ -195,14 +208,26 @@ export function closeWorkspaceToolTab(
     return { tabs: [...tabs], activeId };
   }
 
-  const nextTabs = tabs.filter((t) => t.id !== closeId);
+  const closingTab = tabs[closeIndex]!;
+  let nextTabs = tabs.filter((t) => t.id !== closeId);
+
+  const kindExhausted = !nextTabs.some((t) => t.kind === closingTab.kind);
+  let recreatedTab: WorkspaceToolTab | undefined;
+  if (kindExhausted && shouldEnsureTabKindAfterClose(closingTab.kind, options)) {
+    recreatedTab = createWorkspaceToolTab(closingTab.kind);
+    nextTabs = [...nextTabs, recreatedTab];
+  }
+
   if (nextTabs.length === 0) {
-    const defaults = createDefaultWorkspaceToolTabs(options);
-    return { tabs: defaults, activeId: defaultActiveWorkspaceToolTabId(defaults) };
+    return { tabs: nextTabs, activeId: "" };
   }
 
   if (activeId !== closeId) {
     return { tabs: nextTabs, activeId };
+  }
+
+  if (recreatedTab) {
+    return { tabs: nextTabs, activeId: recreatedTab.id };
   }
 
   const nextActiveId =
