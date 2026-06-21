@@ -1,6 +1,7 @@
 import { useEffect, type MutableRefObject } from "react";
 
 import type { SessionSidebarChromeApi } from "@/contexts/session-sidebar-chrome-context";
+import { useWorkspaceToolsChromeActions } from "@/contexts/workspace-tools-chrome-context";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { resolveModelPickerToOpen } from "@/lib/model-picker-shortcut-bridge";
 import {
@@ -21,7 +22,6 @@ export type UseDesktopKeyboardShortcutsOptions = {
   activeSurfaceRef: MutableRefObject<AppSurface>;
   conversationAbortShortcutEligibleRef: MutableRefObject<boolean>;
   sessionSidebarChromeApiRef: MutableRefObject<SessionSidebarChromeApi | null>;
-  setWorkspaceToolsOpen: (updater: boolean | ((current: boolean) => boolean)) => void;
   handleNewSession: () => void;
   setActionPickerOpen: (open: boolean) => void;
   setFilePickerOpen: (open: boolean) => void;
@@ -32,11 +32,11 @@ export function useDesktopKeyboardShortcuts({
   activeSurfaceRef,
   conversationAbortShortcutEligibleRef,
   sessionSidebarChromeApiRef,
-  setWorkspaceToolsOpen,
   handleNewSession,
   setActionPickerOpen,
   setFilePickerOpen,
 }: UseDesktopKeyboardShortcutsOptions) {
+  const { setOpen: setWorkspaceToolsOpen } = useWorkspaceToolsChromeActions();
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) {
