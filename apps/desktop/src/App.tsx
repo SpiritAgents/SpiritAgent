@@ -158,7 +158,6 @@ export default function App() {
     activeSurfaceRef: surfaceNav.activeSurfaceRef,
     conversationAbortShortcutEligibleRef: conversation.conversationAbortShortcutEligibleRef,
     sessionSidebarChromeApiRef: surfaceNav.sessionSidebarChromeApiRef,
-    setWorkspaceToolsOpen: workspaceTools.setWorkspaceToolsOpen,
     handleNewSession: surfaceNav.handleNewSession,
     setActionPickerOpen: composer.setActionPickerOpen,
     setFilePickerOpen: composer.setFilePickerOpen,
@@ -547,8 +546,6 @@ export default function App() {
               models: conversation.models,
             }}
             workspaceTools={{
-              open: workspaceTools.workspaceToolsOpen,
-              onToggle: () => workspaceTools.setWorkspaceToolsOpen((c) => !c),
               startImplementingDisabled: conversation.startImplementingDisabled,
               workspaceFilesPlanRevealNonce: workspaceTools.workspaceFilesPlanRevealNonce,
               workspaceFilesPlanRevealTargetId: workspaceTools.workspaceFilesPlanRevealTargetId,

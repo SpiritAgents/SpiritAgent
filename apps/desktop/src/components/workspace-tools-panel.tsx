@@ -44,6 +44,7 @@ import {
   writeWorkspaceToolsWidthPx,
 } from "@/lib/layout-prefs";
 import { cn } from "@/lib/utils";
+import { useWorkspaceToolsChromeOpen } from "@/contexts/workspace-tools-chrome-context";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import type {
   EditorFileTarget,
@@ -172,7 +173,6 @@ export type WorkspaceToolsDockProps = {
   minWidthPx?: number;
   maxWidthPx?: number;
   onWidthPxChange(next: number): void;
-  open: boolean;
   gitSnapshot?: DesktopGitSnapshot;
   gitChipBusy?: boolean;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
@@ -184,7 +184,222 @@ export type WorkspaceToolsDockProps = {
   useMicaBackdrop?: boolean;
 };
 
-function WorkspaceToolsDockInner({
+type WorkspaceToolsDockContentProps = Omit<
+  WorkspaceToolsDockProps,
+  "widthPx" | "minWidthPx" | "maxWidthPx" | "onWidthPxChange" | "className"
+> & {
+  isResizing: boolean;
+};
+
+type WorkspaceToolsDockShellProps = Pick<
+  WorkspaceToolsDockProps,
+  "widthPx" | "minWidthPx" | "maxWidthPx" | "onWidthPxChange" | "className" | "useMicaBackdrop"
+> & {
+  contentProps: WorkspaceToolsDockContentProps;
+};
+
+function WorkspaceToolsDockInner(props: WorkspaceToolsDockProps) {
+  const {
+    widthPx,
+    minWidthPx,
+    maxWidthPx,
+    onWidthPxChange,
+    className,
+    useMicaBackdrop,
+    ...contentProps
+  } = props;
+  const [isResizing, setIsResizing] = useState(false);
+
+  return (
+    <WorkspaceToolsDockShell
+      widthPx={widthPx}
+      minWidthPx={minWidthPx}
+      maxWidthPx={maxWidthPx}
+      onWidthPxChange={onWidthPxChange}
+      className={className}
+      useMicaBackdrop={useMicaBackdrop}
+      isResizing={isResizing}
+      onResizingChange={setIsResizing}
+      contentProps={{ ...contentProps, isResizing }}
+    />
+  );
+}
+
+function WorkspaceToolsDockShell({
+  widthPx,
+  minWidthPx = WORKSPACE_TOOLS_MIN_WIDTH_PX,
+  maxWidthPx: maxWidthPxProp,
+  onWidthPxChange,
+  className,
+  useMicaBackdrop = false,
+  isResizing,
+  onResizingChange,
+  contentProps,
+}: WorkspaceToolsDockShellProps & {
+  isResizing: boolean;
+  onResizingChange: (resizing: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const open = useWorkspaceToolsChromeOpen();
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const splitRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
+  const latestWidthPxRef = useRef(widthPx);
+  latestWidthPxRef.current = widthPx;
+  const [viewportMaxWidthPx, setViewportMaxWidthPx] = useState(computeWorkspaceToolsMaxWidthPx);
+  const maxWidthPx = maxWidthPxProp ?? viewportMaxWidthPx;
+
+  useEffect(() => {
+    if (maxWidthPxProp !== undefined) {
+      return;
+    }
+    const onWindowResize = () => {
+      setViewportMaxWidthPx(computeWorkspaceToolsMaxWidthPx());
+    };
+    window.addEventListener("resize", onWindowResize);
+    return () => window.removeEventListener("resize", onWindowResize);
+  }, [maxWidthPxProp]);
+
+  useEffect(() => {
+    if (!open) {
+      onResizingChange(false);
+    }
+  }, [open, onResizingChange]);
+
+  const clampWidth = useCallback(
+    (value: number) => Math.min(maxWidthPx, Math.max(minWidthPx, value)),
+    [minWidthPx, maxWidthPx],
+  );
+
+  const applyDragWidthPx = useCallback((next: number) => {
+    const splitWidth = `calc(0.25rem + ${next}px)`;
+    if (shellRef.current) {
+      shellRef.current.style.width = splitWidth;
+    }
+    if (splitRef.current) {
+      splitRef.current.style.width = splitWidth;
+    }
+    if (asideRef.current) {
+      asideRef.current.style.width = `${next}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (widthPx <= maxWidthPx) {
+      return;
+    }
+    onWidthPxChange(clampWidth(widthPx));
+  }, [clampWidth, maxWidthPx, onWidthPxChange, widthPx]);
+
+  const onResizePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      onResizingChange(true);
+      dragRef.current = { startX: event.clientX, startWidth: widthPx };
+      latestWidthPxRef.current = widthPx;
+      applyDragWidthPx(widthPx);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [applyDragWidthPx, onResizingChange, widthPx],
+  );
+
+  const onResizePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      if (!drag) {
+        return;
+      }
+      const delta = drag.startX - event.clientX;
+      const next = clampWidth(drag.startWidth + delta);
+      latestWidthPxRef.current = next;
+      applyDragWidthPx(next);
+    },
+    [applyDragWidthPx, clampWidth],
+  );
+
+  const endResize = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      onResizingChange(false);
+      if (dragRef.current) {
+        onWidthPxChange(latestWidthPxRef.current);
+        writeWorkspaceToolsWidthPx(latestWidthPxRef.current);
+      }
+      dragRef.current = null;
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // 已释放或无 capture
+      }
+    },
+    [onResizingChange, onWidthPxChange],
+  );
+
+  const shellWidth = open ? `calc(0.25rem + ${widthPx}px)` : "0px";
+
+  return (
+    <div
+      id="workspace-tools-panel-shell"
+      ref={shellRef}
+      className={cn(
+        "flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
+        isResizing
+          ? "transition-none"
+          : "transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",
+        className,
+      )}
+      style={{ width: shellWidth }}
+    >
+      <div
+        ref={splitRef}
+        data-workspace-tools-split
+        className={cn(
+          "relative flex h-full min-h-0 shrink-0 flex-row self-stretch",
+          !open && "pointer-events-none select-none",
+        )}
+        style={{ width: `calc(0.25rem + ${widthPx}px)` }}
+        aria-hidden={!open}
+        inert={!open}
+      >
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t('workspace.resizeToolsWidth')}
+          className={cn(
+            "group relative z-10 w-1 shrink-0 cursor-col-resize touch-none select-none",
+            "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
+            desktopMicaTintClass(useMicaBackdrop),
+          )}
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={endResize}
+          onPointerCancel={endResize}
+        >
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+            aria-hidden
+          />
+        </div>
+
+        <aside
+          id="workspace-tools-panel"
+          ref={asideRef}
+          data-spirit-surface="workspace-panel"
+          className={cn(
+            "flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden text-foreground",
+            desktopMicaTintClass(useMicaBackdrop),
+          )}
+          style={{ width: widthPx }}
+          aria-label={t('workspace.workspaceTools')}
+        >
+          <WorkspaceToolsDockContent {...contentProps} />
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   workspaceRoot,
   listExplorerChildren,
   readWorkspaceTextFile,
@@ -233,54 +448,23 @@ function WorkspaceToolsDockInner({
   getGitHubPullRequestChecks,
   mergeGitHubPullRequest,
   markGitHubPullRequestReady,
-  widthPx,
-  minWidthPx = WORKSPACE_TOOLS_MIN_WIDTH_PX,
-  maxWidthPx: maxWidthPxProp,
-  onWidthPxChange,
-  open,
   gitSnapshot,
   gitChipBusy = false,
   readGitWorkingTree,
   readGitHistory,
   readGitCommitMessage,
   submitGitChip,
-  className,
   useMicaBackdrop = false,
-}: WorkspaceToolsDockProps) {
+  isResizing,
+}: WorkspaceToolsDockContentProps) {
   const { t } = useTranslation();
   const gitHubAuthConnected = useGitHubAuthConnected(getGitHubAuthStatus, prTabEnabled);
   const prMenuBlocked =
     prTabEnabled && (gitHubAuthConnected === null || gitHubAuthConnected === false);
-  const [isResizing, setIsResizing] = useState(false);
   /** 仅用户首次切到 Shell 选项卡后才挂载终端（避免默认标签即触发 node-pty）；切走后保持挂载。 */
   const [mountedShellTabIds, setMountedShellTabIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
-  const shellRef = useRef<HTMLDivElement>(null);
-  const splitRef = useRef<HTMLDivElement>(null);
-  const asideRef = useRef<HTMLElement>(null);
-  const latestWidthPxRef = useRef(widthPx);
-  latestWidthPxRef.current = widthPx;
-  const [viewportMaxWidthPx, setViewportMaxWidthPx] = useState(computeWorkspaceToolsMaxWidthPx);
-  const maxWidthPx = maxWidthPxProp ?? viewportMaxWidthPx;
-
-  useEffect(() => {
-    if (maxWidthPxProp !== undefined) {
-      return;
-    }
-    const onWindowResize = () => {
-      setViewportMaxWidthPx(computeWorkspaceToolsMaxWidthPx());
-    };
-    window.addEventListener("resize", onWindowResize);
-    return () => window.removeEventListener("resize", onWindowResize);
-  }, [maxWidthPxProp]);
-
-  useEffect(() => {
-    if (!open) {
-      setIsResizing(false);
-    }
-  }, [open]);
 
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId),
@@ -300,72 +484,6 @@ function WorkspaceToolsDockInner({
       return next;
     });
   }, [activeTab?.kind, activeTabId]);
-
-  const clampWidth = useCallback(
-    (value: number) => Math.min(maxWidthPx, Math.max(minWidthPx, value)),
-    [minWidthPx, maxWidthPx],
-  );
-
-  const applyDragWidthPx = useCallback((next: number) => {
-    const splitWidth = `calc(0.25rem + ${next}px)`;
-    if (shellRef.current) {
-      shellRef.current.style.width = splitWidth;
-    }
-    if (splitRef.current) {
-      splitRef.current.style.width = splitWidth;
-    }
-    if (asideRef.current) {
-      asideRef.current.style.width = `${next}px`;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (widthPx <= maxWidthPx) {
-      return;
-    }
-    onWidthPxChange(clampWidth(widthPx));
-  }, [clampWidth, maxWidthPx, onWidthPxChange, widthPx]);
-
-  const onResizePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      setIsResizing(true);
-      dragRef.current = { startX: event.clientX, startWidth: widthPx };
-      latestWidthPxRef.current = widthPx;
-      applyDragWidthPx(widthPx);
-      event.currentTarget.setPointerCapture(event.pointerId);
-    },
-    [applyDragWidthPx, widthPx],
-  );
-
-  const onResizePointerMove = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      const drag = dragRef.current;
-      if (!drag) {
-        return;
-      }
-      const delta = drag.startX - event.clientX;
-      const next = clampWidth(drag.startWidth + delta);
-      latestWidthPxRef.current = next;
-      // 拖拽期间只改 DOM 宽度，松手再提交 React state，避免 md 预览每帧 ReactMarkdown 重解析
-      applyDragWidthPx(next);
-    },
-    [applyDragWidthPx, clampWidth],
-  );
-
-  const endResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    setIsResizing(false);
-    if (dragRef.current) {
-      onWidthPxChange(latestWidthPxRef.current);
-      writeWorkspaceToolsWidthPx(latestWidthPxRef.current);
-    }
-    dragRef.current = null;
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // 已释放或无 capture
-    }
-  }, [onWidthPxChange]);
 
   const handleAddTab = useCallback(
     (kind: WorkspaceToolTabKind) => {
@@ -426,63 +544,8 @@ function WorkspaceToolsDockInner({
     [onTabsChange],
   );
 
-  const shellWidth = open ? `calc(0.25rem + ${widthPx}px)` : "0px";
-
   return (
-    <div
-      id="workspace-tools-panel-shell"
-      ref={shellRef}
-      className={cn(
-        "flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
-        isResizing
-          ? "transition-none"
-          : "transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",
-        className,
-      )}
-      style={{ width: shellWidth }}
-    >
-      <div
-        ref={splitRef}
-        data-workspace-tools-split
-        className={cn(
-          "relative flex h-full min-h-0 shrink-0 flex-row self-stretch",
-          !open && "pointer-events-none select-none",
-        )}
-        style={{ width: `calc(0.25rem + ${widthPx}px)` }}
-        aria-hidden={!open}
-        inert={!open}
-      >
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={t('workspace.resizeToolsWidth')}
-          className={cn(
-            "group relative z-10 w-1 shrink-0 cursor-col-resize touch-none select-none",
-            "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
-            desktopMicaTintClass(useMicaBackdrop),
-          )}
-          onPointerDown={onResizePointerDown}
-          onPointerMove={onResizePointerMove}
-          onPointerUp={endResize}
-          onPointerCancel={endResize}
-        >
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
-            aria-hidden
-          />
-        </div>
-
-        <aside
-          id="workspace-tools-panel"
-          ref={asideRef}
-          data-spirit-surface="workspace-panel"
-          className={cn(
-            "flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden text-foreground",
-            desktopMicaTintClass(useMicaBackdrop),
-          )}
-          style={{ width: widthPx }}
-          aria-label={t('workspace.workspaceTools')}
-        >
+    <>
           <div className="flex shrink-0 items-end gap-0 border-b border-border/40 pt-1.5 pb-0 pl-1 pr-1">
             <ScrollArea
               scrollbars="horizontal"
@@ -775,10 +838,8 @@ function WorkspaceToolsDockInner({
               <p className="p-3 text-muted-foreground">{t('workspace.noOpenTabs')}</p>
             ) : null}
           </div>
-        </aside>
-      </div>
-    </div>
+    </>
   );
-}
+});
 
 export const WorkspaceToolsDock = memo(WorkspaceToolsDockInner);

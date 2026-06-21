@@ -11,6 +11,7 @@ import { SessionChromeBreadcrumb } from "@/components/session-chrome-breadcrumb"
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-context";
+import { useWorkspaceToolsChrome } from "@/contexts/workspace-tools-chrome-context";
 import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
@@ -23,8 +24,6 @@ import { cn } from "@/lib/utils";
 export function DesktopLayoutChromeBar({
   useMicaBackdrop,
   showWorkspaceToggle,
-  workspaceToolsOpen = false,
-  onToggleWorkspaceTools,
   sessionTitle,
   subagentPromptText,
   onExitSubagentViewer,
@@ -33,8 +32,6 @@ export function DesktopLayoutChromeBar({
 }: {
   useMicaBackdrop: boolean;
   showWorkspaceToggle: boolean;
-  workspaceToolsOpen?: boolean;
-  onToggleWorkspaceTools?: () => void;
   sessionTitle?: string | null;
   subagentPromptText?: string | null;
   onExitSubagentViewer?: () => void;
@@ -43,6 +40,7 @@ export function DesktopLayoutChromeBar({
 }) {
   const { t } = useTranslation();
   const { open: sessionSidebarOpen } = useSessionSidebarChrome();
+  const { open: workspaceToolsOpen, toggle: onToggleWorkspaceTools } = useWorkspaceToolsChrome();
   const darwinElectron = isDarwinElectronShell();
   const darwinFullScreen = useDarwinWindowFullscreen(darwinElectron);
   const pinSidebarToggleOnDarwin = darwinElectron && !darwinFullScreen;
@@ -129,7 +127,7 @@ export function DesktopLayoutChromeBar({
                   variant="ghost"
                   size="icon"
                   className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
-                  onClick={() => onToggleWorkspaceTools?.()}
+                  onClick={() => onToggleWorkspaceTools()}
                   aria-label={workspaceToolsOpen ? t('app.collapseTools') : t('app.expandTools')}
                   aria-expanded={workspaceToolsOpen}
                   {...(workspaceToolsOpen ? { "aria-controls": "workspace-tools-panel" } : {})}
