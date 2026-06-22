@@ -46,6 +46,8 @@ export interface SessionBundle {
   pendingUnboundFileChangeIds: string[];
   nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind;
   deferredRuntimeRefreshWhileBusy: boolean;
+  /** Last MCP catalog revision baked into the active runtime system message. */
+  lastSeenMcpCatalogRevision?: number;
   deferredRuntimeHostEvents: RuntimeEvent<DesktopToolRequest>[];
   /** Provider builtin preview callIds applied in a prior drain (for deferring terminal previews). */
   responsesBuiltInPreviewSeenCallIds: Set<string>;
