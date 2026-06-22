@@ -10,6 +10,7 @@ import {
   finishTaskNoticeFromSummary,
   isGenericProviderWebSearchQuery,
   llmMessageTextContent,
+  previewRequestFromStreamingArguments,
 } from '@spirit-agent/core';
 
 import { isStandaloneThinkingMessage } from '../lib/conversation-thinking-ui.js';
@@ -322,6 +323,20 @@ export function toolCallSummaryCopyForRequest(
         ...(url ? { headlineDetail: truncateSummaryDetail(url) } : {}),
       };
     }
+    case 'tool_describe':
+    case 'tool_call': {
+      const provider = typeof record.provider === 'string' ? record.provider.trim() : '';
+      const server = typeof record.server === 'string' ? record.server.trim() : '';
+      const tool = typeof record.tool === 'string' ? record.tool.trim() : '';
+      const detail = [provider, server, tool].filter((part) => part.length > 0).join(' / ');
+      return {
+        headline:
+          toolName === 'tool_call'
+            ? i18n.t('tool.lazyToolCall', tOpts)
+            : i18n.t('tool.lazyToolDescribe', tOpts),
+        ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
+      };
+    }
     case 'web_search': {
       const query = webSearchQueryFromArguments(record);
       return {
@@ -434,6 +449,18 @@ function dreamIdSummaryCopy(
   };
 }
 
+function resolveToolSummaryRequest(toolName: string, request: unknown): unknown {
+  if (!request || typeof request !== 'object') {
+    return request;
+  }
+  const record = request as Record<string, unknown>;
+  if (record.kind !== 'lazyToolGateway' || typeof record.argumentsJson !== 'string') {
+    return request;
+  }
+  const gatewayName = typeof record.name === 'string' ? record.name : toolName;
+  return previewRequestFromStreamingArguments(gatewayName, record.argumentsJson);
+}
+
 export function toolCallSummaryForPhase(
   phase: ToolBlockSnapshot['phase'],
   toolName: string,
@@ -444,7 +471,8 @@ export function toolCallSummaryForPhase(
     return readFileSummaryCopy(request, phase);
   }
 
-  const custom = toolCallSummaryCopyForRequest(toolName, request, phase, options);
+  const summaryRequest = resolveToolSummaryRequest(toolName, request);
+  const custom = toolCallSummaryCopyForRequest(toolName, summaryRequest, phase, options);
   if (custom) {
     return custom;
   }

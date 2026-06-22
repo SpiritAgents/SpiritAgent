@@ -63,6 +63,8 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
   dream_record: 'tool.dreamRecord',
   todo_write: 'tool.todoWrite',
   todo_list: 'tool.todoList',
+  tool_call: 'tool.lazyToolCall',
+  tool_describe: 'tool.lazyToolDescribe',
   create_plan: 'tool.create',
   create_automation: 'automations.create',
 };

@@ -103,6 +103,35 @@ test('toolCallSummaryCopyForRequest: search tools use Chinese headline + detail'
   });
 });
 
+test('toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP detail', () => {
+  const lazyRequest = {
+    kind: 'lazyToolGateway',
+    name: 'tool_call',
+    argumentsJson: JSON.stringify({
+      provider: 'mcp',
+      server: 'microsoft-learn',
+      tool: 'microsoft_docs_search',
+      arguments: { query: 'WinUI 3' },
+    }),
+  };
+  assert.deepEqual(toolCallSummaryForPhase('running', 'tool_call', lazyRequest), {
+    headline: '调用工具',
+    headlineDetail: 'mcp / microsoft-learn / microsoft_docs_search',
+  });
+  assert.deepEqual(toolCallSummaryForPhase('succeeded', 'tool_describe', {
+    kind: 'lazyToolGateway',
+    name: 'tool_describe',
+    argumentsJson: JSON.stringify({
+      provider: 'mcp',
+      server: 'microsoft-learn',
+      tool: 'microsoft_docs_fetch',
+    }),
+  }), {
+    headline: '读取工具 schema',
+    headlineDetail: 'mcp / microsoft-learn / microsoft_docs_fetch',
+  });
+});
+
 test('isSubagentStatusSurfaceText detects runtime status lines', () => {
   assert.equal(
     isSubagentStatusSurfaceText('输出 "Spirit 牛逼" 这句话，不要做任何其他事情。: 运行中'),
