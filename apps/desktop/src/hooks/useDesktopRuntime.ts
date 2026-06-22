@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from '@/lib/i18n';
+import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
+import i18n from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -2395,36 +2396,17 @@ export function useDesktopRuntime() {
       if (payload.kind !== 'ask-questions') {
         return;
       }
-      const current = snapshotRef.current?.conversation.pendingQuestions;
-      if (!current || payload.context?.questionToolCallId !== current.toolCallId) {
-        return;
-      }
-      const question = current.request.questions[0];
-      const text = payload.text.trim();
-      if (
-        current.request.questions.length !== 1 ||
-        !question ||
-        question.kind !== 'text' ||
-        payload.context?.questionId !== question.id ||
-        !text
-      ) {
+      const result = buildSingleTextQuestionNotificationReplyResult(
+        snapshotRef.current?.conversation.pendingQuestions,
+        payload,
+      );
+      if (!result) {
         return;
       }
       void (async () => {
         setBusyAction('questions');
         try {
-          const next = await api.replyPendingQuestions({
-            status: 'answered',
-            answers: [
-              {
-                questionId: question.id,
-                title: question.title,
-                kind: question.kind,
-                answered: true,
-                text,
-              },
-            ],
-          });
+          const next = await api.replyPendingQuestions(result);
           applySnapshot(next);
           setQuestionError('');
           setRuntimeError('');
