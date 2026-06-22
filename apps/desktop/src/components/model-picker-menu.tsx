@@ -8,6 +8,7 @@ import {
   FilteredOverlayMenu,
   FilteredOverlayMenuTrigger,
 } from "@/components/ui/filtered-overlay-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
   Tooltip,
@@ -15,14 +16,12 @@ import {
   TooltipItem,
   TooltipTrigger,
   useOptionalTooltipGlobalContext,
-  useTooltipContext,
 } from "@/components/ui/tooltip";
 import {
   DESKTOP_OVERLAY_LIST_DETAIL_SURFACE,
   DESKTOP_OVERLAY_LIST_DETAIL_WIDTH,
   DESKTOP_OVERLAY_LIST_GROUP_LABEL,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
-  DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { isMacDesktopPlatform, modSlashShortcutKbdKeys } from "@/lib/desktop-shell";
@@ -74,32 +73,18 @@ function ModelPickerRow({
   isActive: boolean;
   onSelectModel: () => void;
 }) {
-  const { getTriggerProps } = useTooltipContext<ModelPickerItem>();
-  const { onPointerEnter, isHighlighted } = getTriggerProps(model);
-
   return (
     <TooltipItem item={model}>
-      <div
-        role="menuitem"
-        tabIndex={-1}
-        className={cn(
-          DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
-          "cursor-pointer outline-none focus:bg-accent focus:text-accent-foreground",
-          (isActive || isHighlighted) && "bg-accent/40",
-        )}
-        onPointerEnter={onPointerEnter}
-        onClick={onSelectModel}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onSelectModel();
-          }
+      <DropdownMenuItem
+        className={cn(isActive && "bg-accent/40")}
+        onSelect={() => {
+          onSelectModel();
         }}
       >
         <span className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "min-w-0 truncate")}>
           {displayTitle}
         </span>
-      </div>
+      </DropdownMenuItem>
     </TooltipItem>
   );
 }
