@@ -8,6 +8,7 @@ export {
   buildPlanSystemMessage,
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
+  buildMcpCatalogSystemMessage,
   buildToolAgentHostPrompt,
   appendOpenAiToolResultMessage as appendLlmToolResultMessage,
   appendOpenAiToolResultMessages as appendLlmToolResultMessages,

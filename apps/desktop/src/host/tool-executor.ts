@@ -31,7 +31,9 @@ import {
   JsonValue,
   McpService,
   McpStatusSnapshot,
+  TOOL_CALL_TOOL_NAME,
   type McpToolRequest,
+  type ToolAgentMcpToolCatalogSnapshot,
   type ToolExecutionOutput,
   ToolRequestExecutionMetadata,
   ToolExecutor,
@@ -307,6 +309,9 @@ export class DesktopToolExecutor
   async authorize(
     request: DesktopToolRequest,
   ): Promise<AuthorizationDecision<string>> {
+    if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
+      return { kind: 'allowed' };
+    }
     if (this.mcp.isToolRequest(request as JsonValue)) {
       await this.mcp.authorizeToolRequest(request as unknown as McpToolRequest);
       return { kind: 'allowed' };
@@ -323,6 +328,17 @@ export class DesktopToolExecutor
   }
 
   async execute(request: DesktopToolRequest): Promise<ToolExecutionOutput> {
+    if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
+      return createToolExecutionTextOutput(
+        await this.mcp.executeLazyToolGatewayToolRequest(
+          request as unknown as {
+            kind: 'lazyToolGateway';
+            name: string;
+            argumentsJson: string;
+          },
+        ),
+      );
+    }
     if (this.mcp.isToolRequest(request as JsonValue)) {
       return createToolExecutionTextOutput(
         await this.mcp.executeToolRequest(request as unknown as McpToolRequest),
@@ -389,7 +405,11 @@ export class DesktopToolExecutor
   }
 
   shouldExecuteInBackground(request: DesktopToolRequest): boolean {
-    if (this.mcp.isToolRequest(request as JsonValue)) {
+    const jsonRequest = request as JsonValue;
+    if (this.mcp.isLazyToolGatewayToolRequest(jsonRequest)) {
+      return jsonRequest.name === TOOL_CALL_TOOL_NAME;
+    }
+    if (this.mcp.isToolRequest(jsonRequest)) {
       return true;
     }
 
@@ -397,7 +417,11 @@ export class DesktopToolExecutor
   }
 
   backgroundStatusText(request: DesktopToolRequest): string | undefined {
-    if (this.mcp.isToolRequest(request as JsonValue)) {
+    const jsonRequest = request as JsonValue;
+    if (this.mcp.isLazyToolGatewayToolRequest(jsonRequest)) {
+      return this.mcp.lazyToolGatewayBackgroundStatusText(jsonRequest);
+    }
+    if (this.mcp.isToolRequest(jsonRequest)) {
       return this.mcp.backgroundStatusText(request as unknown as McpToolRequest);
     }
 
@@ -426,6 +450,14 @@ export class DesktopToolExecutor
 
   mcpStatusSnapshot(): McpStatusSnapshot {
     return this.mcp.statusSnapshot();
+  }
+
+  mcpToolCatalogSnapshot(): ToolAgentMcpToolCatalogSnapshot {
+    return this.mcp.catalogSnapshot();
+  }
+
+  mcpCatalogRevision(): number {
+    return this.mcp.catalogRevision();
   }
 
   async addMcpServer(name: string, config: JsonValue): Promise<string> {
