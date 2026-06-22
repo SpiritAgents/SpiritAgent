@@ -427,6 +427,78 @@ test('read_file reports canonical path for non-managed files', async () => {
   }
 });
 
+test('grep limits search to files matched by glob', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-glob-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(join(workspaceRoot, 'src'), { recursive: true });
+    await mkdir(join(workspaceRoot, 'docs'), { recursive: true });
+    await mkdir(spiritDataDir, { recursive: true });
+    await writeFile(join(workspaceRoot, 'src', 'app.ts'), 'needle here\n');
+    await writeFile(join(workspaceRoot, 'docs', 'readme.md'), 'needle here\n');
+
+    const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
+    const output = await service.execute({
+      name: 'grep',
+      query: 'needle',
+      glob: 'src/**/*.ts',
+    });
+
+    assertTextToolOutput(output);
+    assert.match(output, /glob: src\/\*\*\/\*\.ts/u);
+    assert.match(output, /src\/app\.ts:1 \| needle here/u);
+    assert.doesNotMatch(output, /readme\.md/u);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('grep rejects glob patterns that escape the workspace', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-glob-escape-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+
+    const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
+    await assert.rejects(
+      () =>
+        service.execute({
+          name: 'grep',
+          query: 'needle',
+          glob: '../**/*.ts',
+        }),
+      /glob pattern 不能跳出 workspace/u,
+    );
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('requestFromFunctionCall parses grep glob', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-glob-parse-'));
+  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+
+  try {
+    await mkdir(spiritDataDir, { recursive: true });
+
+    const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
+    const request = await service.requestFromFunctionCall(
+      'grep',
+      '{"query":"needle","glob":"src/**/*.ts"}',
+    );
+
+    assert.deepEqual(request, {
+      name: 'grep',
+      query: 'needle',
+      glob: 'src/**/*.ts',
+    });
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
 test('grep supports case-insensitive regular expression queries', async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-regexp-'));
   const spiritDataDir = join(workspaceRoot, '.spirit-data');
