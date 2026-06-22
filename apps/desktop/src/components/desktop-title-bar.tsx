@@ -3,6 +3,7 @@ import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-conte
 import { useTheme } from "@/hooks/useTheme";
 import { spiritAgentTitleBarIconSrc } from "@/lib/brand-icon";
 import { sessionSidebarShellWidth } from "@/lib/desktop-chrome";
+import { desktopMicaTitleBarTintClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import { isViteDev } from "@/lib/vite-dev";
 import {
@@ -23,7 +24,7 @@ type DesktopTitleBarProps = {
 function titleBarSurfaceClass(useMicaBackdrop: boolean, withBorder: boolean) {
   return cn(
     withBorder && (useMicaBackdrop ? "border-black/5 dark:border-white/10" : "border-border/40"),
-    useMicaBackdrop ? "bg-transparent" : "bg-sidebar",
+    desktopMicaTitleBarTintClass(useMicaBackdrop),
   );
 }
 

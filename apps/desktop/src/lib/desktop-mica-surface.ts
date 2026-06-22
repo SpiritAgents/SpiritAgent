@@ -4,6 +4,9 @@ export const DESKTOP_MICA_CONTENT_TINT_CLASS = "bg-background/70";
 /** 侧边栏：Mica 下轻 tint，比内容区更浅，保留系统 blur 可读性。 */
 export const DESKTOP_MICA_SIDEBAR_TINT_CLASS = "bg-background/45";
 
+/** Windows 自绘顶栏：Mica 下整栏 tint，与侧栏同不透明度；独立于侧栏宽度布局。 */
+export const DESKTOP_MICA_TITLE_BAR_TINT_CLASS = DESKTOP_MICA_SIDEBAR_TINT_CLASS;
+
 /** 工作区浏览器页槽：略高于主区，减轻 WebView 透底闪烁。 */
 export const DESKTOP_MICA_BROWSER_TINT_CLASS = "bg-background/80";
 
@@ -47,4 +50,9 @@ export function desktopMicaWorkspaceTabSelectedClass(useMicaBackdrop: boolean): 
 /** 文件详情预览/编辑槽：Mica 下透明以避免与面板 tint 叠深，否则轻 tint。 */
 export function desktopMicaFileDetailSurfaceClass(useMicaBackdrop: boolean): string {
   return useMicaBackdrop ? TRANSPARENT_BACKGROUND_CLASS : DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS;
+}
+
+/** Windows 自绘顶栏：Mica 下整栏半透明底，否则实心侧栏色。 */
+export function desktopMicaTitleBarTintClass(useMicaBackdrop: boolean): string {
+  return useMicaBackdrop ? DESKTOP_MICA_TITLE_BAR_TINT_CLASS : "bg-sidebar";
 }
