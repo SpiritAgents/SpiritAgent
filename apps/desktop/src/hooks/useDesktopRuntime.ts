@@ -2379,8 +2379,9 @@ export function useDesktopRuntime() {
       if (payload.kind !== 'approval') {
         return;
       }
+      const current = snapshotRef.current?.conversation.pendingToolApproval;
       const userMessage = payload.text.trim();
-      if (!userMessage) {
+      if (!current || !userMessage) {
         return;
       }
       void submitApproval({ kind: 'guidance', userMessage });
