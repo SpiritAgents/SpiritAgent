@@ -4,6 +4,7 @@ import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import {
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+  DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM,
 } from "@/lib/desktop-chrome";
 import { isEventTargetWithinTooltipCompanionOverlays } from "@/hooks/tooltip-switch-registry";
 import { radixAnchoredOverlayMotion } from "@/lib/overlay-motion";
@@ -133,10 +134,7 @@ function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
-      className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
-        className,
-      )}
+      className={cn(DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM, className)}
       {...props}
     />
   );
