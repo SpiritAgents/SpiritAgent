@@ -224,7 +224,7 @@ export function buildBuiltinHostToolDefinitions(
     ),
     functionTool(
       'grep',
-      'Search text within workspace file contents only. By default query is matched as case-insensitive literal text; set is_regexp to true to interpret query as a regular expression. Use glob to search file paths and list_directory_files when you need a single directory inventory instead of shell ls or dir.',
+      'Search text within workspace file contents. By default query is matched as case-insensitive literal text; set is_regexp to true for a regular expression. Optionally pass glob to limit which files are searched. Use the glob tool to list paths only and list_directory_files for a single directory inventory.',
       {
         type: 'object',
         properties: {
@@ -237,6 +237,11 @@ export function buildBuiltinHostToolDefinitions(
             type: 'boolean',
             description:
               'When true, treat query as a regular expression. Regex searches are case-insensitive by default.',
+          },
+          glob: {
+            type: 'string',
+            description:
+              'Optional workspace-relative glob that limits searched file paths, e.g. packages/**/*.ts or src/**/*.{ts,tsx}.',
           },
         },
         required: ['query'],

@@ -299,9 +299,13 @@ export function toolCallSummaryCopyForRequest(
     case 'grep': {
       const query = typeof record.query === 'string' ? record.query.trim() : '';
       const prefix = record.is_regexp === true ? i18n.t('tool.regexPrefix') : '';
+      const glob = typeof record.glob === 'string' ? record.glob.trim() : '';
+      const detailParts = [`${prefix}${query}`, glob].filter((part) => part.length > 0);
       return {
         headline: i18n.t('tool.search', tOpts),
-        ...(query ? { headlineDetail: truncateSummaryDetail(`${prefix}${query}`) } : {}),
+        ...(detailParts.length > 0
+          ? { headlineDetail: truncateSummaryDetail(detailParts.join(' · ')) }
+          : {}),
       };
     }
     case 'glob': {
