@@ -250,7 +250,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       start_line?: number;
       end_line?: number;
     }
-  | { name: 'grep'; query: string; is_regexp?: boolean }
+  | { name: 'grep'; query: string; is_regexp?: boolean; glob?: string }
   | {
       name: 'run_subagent';
       task: string;
@@ -700,10 +700,12 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'grep':
         {
           const isRegexp = optionalBoolean(parsed, 'is_regexp');
+          const glob = optionalStringStrict(parsed, 'glob');
           return {
             name,
             query: requiredString(parsed, 'query'),
             ...(isRegexp !== undefined ? { is_regexp: isRegexp } : {}),
+            ...(glob ? { glob } : {}),
           };
         }
       case 'run_subagent':
@@ -1029,7 +1031,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'read_file':
         return this.executeReadFile(request.path, request.start_line, request.end_line);
       case 'grep':
-        return this.executeSearchFiles(request.query, request.is_regexp ?? false);
+        return this.executeSearchFiles(request.query, request.is_regexp ?? false, request.glob);
       case 'run_subagent':
         throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'generate_image':
@@ -1600,11 +1602,20 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     return out;
   }
 
-  private async executeSearchFiles(query: string, isRegexp = false): Promise<string> {
+  private async executeSearchFiles(
+    query: string,
+    isRegexp = false,
+    inputGlob?: string,
+  ): Promise<string> {
     const needle = query.trim();
     if (!needle) {
       throw new Error('search query 不能为空');
     }
+
+    const globPattern =
+      inputGlob !== undefined && inputGlob.trim() !== ''
+        ? normalizeWorkspaceGlobPattern(inputGlob)
+        : null;
 
     const searchMode = isRegexp ? '正则' : '文本';
     const matchesLine = createSearchLineMatcher(needle, isRegexp);
@@ -1648,34 +1659,63 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         hits.push(`${relDisplay}:${index + 1} | ${normalizeSearchLine(line)}`);
       }
     };
-    const walk = async (dir: string): Promise<void> => {
-      let entries;
-      try {
-        entries = await readdir(dir, { withFileTypes: true });
-      } catch {
-        return;
-      }
 
-      for (const entry of entries) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          if (SEARCH_IGNORE_DIR_NAMES.has(entry.name)) {
-            continue;
-          }
-          await walk(full);
-        } else if (entry.isFile()) {
-          await visitFile(full);
+    if (globPattern !== null) {
+      const relativePaths = (
+        await globPaths(globPattern, {
+          cwd: this.workspaceRoot,
+          absolute: false,
+          nodir: true,
+          dot: true,
+          windowsPathsNoEscape: true,
+          ignore: [...SEARCH_IGNORE_DIR_NAMES].map((name) => `**/${name}/**`),
+        })
+      )
+        .map((value) => value.replace(/\\/gu, '/'))
+        .sort((left, right) => left.localeCompare(right));
+
+      for (const relPath of relativePaths) {
+        await visitFile(path.join(this.workspaceRoot, relPath));
+      }
+    } else {
+      const walk = async (dir: string): Promise<void> => {
+        let entries;
+        try {
+          entries = await readdir(dir, { withFileTypes: true });
+        } catch {
+          return;
         }
-      }
-    };
 
-    await walk(this.workspaceRoot);
+        for (const entry of entries) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            if (SEARCH_IGNORE_DIR_NAMES.has(entry.name)) {
+              continue;
+            }
+            await walk(full);
+          } else if (entry.isFile()) {
+            await visitFile(full);
+          }
+        }
+      };
 
-    if (files.size === 0) {
-      return `[tool] 搜索(${searchMode}): ${query}\n未搜索到文件`;
+      await walk(this.workspaceRoot);
     }
 
-    let out = `[tool] 搜索(${searchMode}): ${query}\n命中片段\n`;
+    if (files.size === 0) {
+      let out = `[tool] 搜索(${searchMode}): ${query}`;
+      if (globPattern !== null) {
+        out += `\nglob: ${globPattern}`;
+      }
+      out += '\n未搜索到文件';
+      return out;
+    }
+
+    let out = `[tool] 搜索(${searchMode}): ${query}`;
+    if (globPattern !== null) {
+      out += `\nglob: ${globPattern}`;
+    }
+    out += '\n命中片段\n';
     for (const hit of hits) {
       out += `${hit}\n`;
     }
