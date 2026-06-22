@@ -17,6 +17,7 @@ import {
   buildPlanSystemMessage,
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
+  buildMcpCatalogSystemMessage,
   buildToolAgentHostPrompt,
   createLlmTransport,
   type AssistantAuxArchiveEntry,
@@ -1342,6 +1343,9 @@ class DesktopHostService {
       const skillsCatalogSystemPrompt = buildSkillsCatalogSystemMessage(
         state.metadata.skills.enabledSkillCatalog,
       );
+      const mcpCatalogSystemPrompt = buildMcpCatalogSystemMessage(
+        this.requireToolExecutor().mcpToolCatalogSnapshot(),
+      );
       const planSystemPrompt = buildPlanSystemMessage(state.metadata.planMetadata);
       const agentModeSystemPrompt = buildAgentModeSystemMessage(state.metadata.planMetadata);
       const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(this.activeBundle().currentTurnSkills);
@@ -1377,6 +1381,7 @@ class DesktopHostService {
           ...(skillsCatalogSystemPrompt === undefined
             ? {}
             : { skillsCatalog: skillsCatalogSystemPrompt }),
+          ...(mcpCatalogSystemPrompt === undefined ? {} : { mcpCatalog: mcpCatalogSystemPrompt }),
           ...(planSystemPrompt === undefined ? {} : { plan: planSystemPrompt }),
           agentMode: agentModeSystemPrompt,
           ...(activeSkillsSystemPrompt === undefined
@@ -2020,7 +2025,7 @@ class DesktopHostService {
       await this.runSessionEndForBundle(bundle, 'switch');
     }
     await this.syncPlanStateForBundle(bundle);
-    await this.ensureToolExecutor(bundle);
+    await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 promote/refresh 后仍进入 createRuntime。
     const activeProfile = state.config.models.find((m) => m.name === state.config.activeModel);
     const activeTransportKind = resolveDesktopTransportKind(activeProfile);
@@ -2117,7 +2122,7 @@ class DesktopHostService {
         workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
         gitBranch: state.git.branch,
       }),
-      await this.ensureToolExecutor(bundle),
+      await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true }),
       bundle.runtimeTransport,
       bundle,
     );
@@ -2134,9 +2139,10 @@ class DesktopHostService {
       }
     }
     runtime.setLoopEnabled(bundle.loopEnabled);
-    const toolExecutor = await this.ensureToolExecutor(bundle);
+    const toolExecutor = await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
     toolExecutor.setApprovalLevel(bundle.approvalLevel);
     bundle.runtime = runtime;
+    bundle.lastSeenMcpCatalogRevision = toolExecutor.mcpCatalogRevision();
     if (bundle.id === this.sessionRegistry.activeSessionId()) {
       this.runtime = runtime;
     }
@@ -2146,7 +2152,10 @@ class DesktopHostService {
     bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
   }
 
-  private async ensureToolExecutor(bundle: SessionBundle = this.activeBundle()): Promise<DesktopToolExecutor> {
+  private async ensureToolExecutor(
+    bundle: SessionBundle = this.activeBundle(),
+    options?: { skipMcpCatalogRefresh?: boolean },
+  ): Promise<DesktopToolExecutor> {
     const state = this.requireState();
     const isActive = bundle.id === this.sessionRegistry.activeSessionId();
     const workspaceRoot = bundle.workspaceRoot || state.workspaceRoot;
@@ -2188,7 +2197,35 @@ class DesktopHostService {
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
     bundle.toolExecutor.setAgentModeToolExposure(resolveDesktopAgentMode(this.requireState().config));
     await bundle.toolExecutor.ensureMcpToolingReady();
+    if (!options?.skipMcpCatalogRefresh) {
+      await this.maybeRefreshRuntimeForMcpCatalogChange(bundle);
+    }
     return bundle.toolExecutor;
+  }
+
+  private async maybeRefreshRuntimeForMcpCatalogChange(bundle: SessionBundle): Promise<void> {
+    if (!bundle.toolExecutor) {
+      return;
+    }
+    const revision = bundle.toolExecutor.mcpCatalogRevision();
+    const previous = bundle.lastSeenMcpCatalogRevision;
+    if (previous === undefined) {
+      bundle.lastSeenMcpCatalogRevision = revision;
+      return;
+    }
+    if (revision === previous || !bundle.runtime) {
+      return;
+    }
+    if (bundle.runtime.isBusy()) {
+      bundle.deferredRuntimeRefreshWhileBusy = true;
+      return;
+    }
+    bundle.lastSeenMcpCatalogRevision = revision;
+    await this.refreshRuntimeForBundle(bundle);
+    if (bundle.id === this.sessionRegistry.activeSessionId()) {
+      this.syncActiveRuntimePointer();
+    }
+    this.lastRuntimeError = '';
   }
 
   private sharedMcpServiceForWorkspace(
@@ -2674,6 +2711,7 @@ class DesktopHostService {
       history,
       enabledRules,
       enabledSkillCatalog,
+      mcpToolCatalog: toolExecutor.mcpToolCatalogSnapshot(),
       planMetadata,
       extensionSystemPrompts,
       ...(dreamsContextText === undefined ? {} : { dreamsContextText }),

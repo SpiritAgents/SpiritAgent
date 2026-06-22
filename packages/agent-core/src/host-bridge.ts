@@ -20,6 +20,7 @@ import {
   buildPlanSystemMessage,
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
+  buildMcpCatalogSystemMessage,
   buildToolAgentHostPrompt,
   continueLlmToolAgentState,
   extractLastLlmAssistantText,
@@ -1740,6 +1741,7 @@ async function createRuntime(
       applyPatchPromptSection,
       providerWebSearchPromptSection,
       bridgeLoopEnabled,
+      toolExecutor.mcpToolCatalogSnapshot(),
     );
   const llmTransport = createLlmTransport(config);
   const hookRunner = resolveCliHookRunner();
@@ -1764,6 +1766,7 @@ async function createRuntime(
         applyPatchPromptSection,
         providerWebSearchPromptSection,
         bridgeLoopEnabled,
+        toolExecutor.mcpToolCatalogSnapshot(),
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -1789,6 +1792,7 @@ async function createRuntime(
         applyPatchPromptSection,
         providerWebSearchPromptSection,
         bridgeLoopEnabled,
+        toolExecutor.mcpToolCatalogSnapshot(),
       ),
     generateImage: (request) =>
       llmTransport.generateImage(config, request, async (saveRequest: GeneratedImageSaveRequest) => {
@@ -2657,6 +2661,7 @@ peer.on('runtime.exportState', async () => {
   const baseSystemPrompts = exportTransport.llmSystemPromptsForExport() as Record<string, JsonValue>;
   const rulesSystemPrompt = buildRulesSystemMessage(enabledRules);
   const skillsCatalogSystemPrompt = buildSkillsCatalogSystemMessage(enabledSkillCatalog);
+  const mcpCatalogSystemPrompt = buildMcpCatalogSystemMessage(toolExecutor.mcpToolCatalogSnapshot());
   const planSystemPrompt = buildPlanSystemMessage(planMetadata);
   const agentModeSystemPrompt = buildAgentModeSystemMessage(planMetadata);
   const loopModeSystemPrompt = buildLoopModeSystemMessage(requireRuntime().loopEnabled());
@@ -2681,6 +2686,7 @@ peer.on('runtime.exportState', async () => {
       ...(skillsCatalogSystemPrompt === undefined
         ? {}
         : { skillsCatalog: skillsCatalogSystemPrompt }),
+      ...(mcpCatalogSystemPrompt === undefined ? {} : { mcpCatalog: mcpCatalogSystemPrompt }),
       ...(planSystemPrompt === undefined ? {} : { plan: planSystemPrompt }),
       agentMode: agentModeSystemPrompt,
       ...(loopModeSystemPrompt === undefined ? {} : { loopMode: loopModeSystemPrompt }),
