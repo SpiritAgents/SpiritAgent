@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
 
@@ -159,8 +159,14 @@ export function McpsSettingsPanel({
   const [newMetadata, setNewMetadata] = useState("");
   const [capabilities, setCapabilities] = useState<DesktopMcpCapabilityToggles>(defaultMcpCapabilities);
   const [runtimeInfo, setRuntimeInfo] = useState<Record<string, McpServerRuntimeInfo>>({});
+  const runtimeInfoRef = useRef(runtimeInfo);
+  runtimeInfoRef.current = runtimeInfo;
 
   const items = snapshot?.mcpServers ?? [];
+  const itemsSig = useMemo(
+    () => items.map((item) => `${item.scope}:${item.name}:${item.enabled}`).join("|"),
+    [items],
+  );
   const availableMcpCreateScopeOptions = workspaceBindingDisabled
     ? mcpCreateScopeOptions.filter((option) => option.scope === "user")
     : mcpCreateScopeOptions;
@@ -172,20 +178,33 @@ export function McpsSettingsPanel({
 
   useEffect(() => {
     let cancelled = false;
-    const keys = new Set(items.map((item) => `${item.scope}:${item.name}`));
+
+    const keysToInspect: string[] = [];
+    for (const item of items) {
+      if (!item.enabled) {
+        continue;
+      }
+      const key = `${item.scope}:${item.name}`;
+      const existing = runtimeInfoRef.current[key];
+      if (existing?.state !== "ready" && existing?.state !== "error") {
+        keysToInspect.push(key);
+      }
+    }
 
     setRuntimeInfo((current) => {
       const next: Record<string, McpServerRuntimeInfo> = {};
       for (const item of items) {
         const key = `${item.scope}:${item.name}`;
-        next[key] = item.enabled
-          ? { state: "loading" }
-          : { state: "disabled" };
-      }
-      for (const [key, info] of Object.entries(current)) {
-        if (keys.has(key) && next[key]?.state === "disabled") {
-          next[key] = info;
+        if (!item.enabled) {
+          next[key] = { state: "disabled" };
+          continue;
         }
+        const existing = current[key];
+        if (existing?.state === "ready" || existing?.state === "error") {
+          next[key] = existing;
+          continue;
+        }
+        next[key] = { state: "loading" };
       }
       return next;
     });
@@ -196,6 +215,9 @@ export function McpsSettingsPanel({
           return;
         }
         const key = `${item.scope}:${item.name}`;
+        if (!keysToInspect.includes(key)) {
+          return;
+        }
 
         try {
           const inspection = await onInspectMcpServer(item.name);
@@ -230,7 +252,7 @@ export function McpsSettingsPanel({
     return () => {
       cancelled = true;
     };
-  }, [items, onInspectMcpServer]);
+  }, [itemsSig, onInspectMcpServer]);
 
   const resetForm = () => {
     setCreateScope(workspaceBindingDisabled ? "user" : "workspace");

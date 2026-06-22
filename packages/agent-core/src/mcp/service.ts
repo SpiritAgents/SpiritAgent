@@ -390,7 +390,37 @@ export class McpService {
     );
   }
 
+  /** 启动期 refreshToolingCaches 已写入 registry / promptCatalog 时，设置页无需重连 MCP。 */
+  private inspectFromCache(name: string): JsonValue | null {
+    const server = this.loadedConfigStore.resolved[name];
+    if (!server?.enabled) {
+      return null;
+    }
+
+    const status = this.registry.get(name);
+    if (status?.state !== 'ready' || !this.toolingCacheInitialized) {
+      return null;
+    }
+
+    return {
+      name: server.name,
+      displayName: server.displayName,
+      supportsTools: server.capabilities.tools,
+      supportsResources: server.capabilities.resources,
+      supportsPrompts: server.capabilities.prompts,
+      toolsCount: status.cachedTools,
+      resourcesCount: 0,
+      promptsCount: (this.promptCatalogStore.get(name) ?? []).length,
+    };
+  }
+
   async inspectServer(name: string): Promise<JsonValue> {
+    await this.ensureToolingCache();
+    const cached = this.inspectFromCache(name);
+    if (cached) {
+      return cached;
+    }
+
     const server = await this.requireConnectableServer(name);
 
     return this.withConnection(server, async (connection) => {
