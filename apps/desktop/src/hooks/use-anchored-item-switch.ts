@@ -17,7 +17,7 @@ export const DEFAULT_ANCHORED_ITEM_SWITCH_CLOSE_DELAY_MS = 120;
 export const DEFAULT_ANCHORED_ITEM_SWITCH_ANCHOR_LINGER_MS = 220;
 
 export type AnchoredItemSwitchTriggerProps = {
-  onPointerEnter: () => void;
+  onPointerEnter: (event?: ReactPointerEvent) => void;
   isHighlighted: boolean;
   isAnchor: boolean;
 };

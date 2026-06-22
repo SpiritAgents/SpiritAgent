@@ -19,7 +19,6 @@ import {
   ChevronRight,
   FolderClosed,
   FolderOpen,
-  GitBranch,
   Layers,
   Code2,
   Link2,
@@ -60,7 +59,6 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   readSidebarNoWorkspaceSectionExpanded,
   readSidebarWorkspaceSectionExpanded,
@@ -73,7 +71,7 @@ import {
 } from "@/lib/layout-prefs";
 import { applyWorkspaceGroupOrder, workspaceGroupIdsInOrder } from "@/lib/workspace-sidebar-order";
 import { useWorkspaceGroupReorder } from "@/hooks/use-workspace-group-reorder";
-import { resolveSessionWorkLocation, resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
+import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { isViteDev } from "@/lib/vite-dev";
 import { cn } from "@/lib/utils";
@@ -81,7 +79,11 @@ import { shortcutLabel } from "@/lib/desktop-shell";
 import i18n from "@/lib/i18n";
 import { useHostApi } from "@/hooks/useHostApi";
 import type { SessionListItem } from "@/types";
-import { WORK_LOCATION_ICONS } from "@/components/work-location-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  SessionListGitTooltip,
+  useOptionalSessionListGitTooltipContext,
+} from "@/components/session-list-git-tooltip";
 
 /** 平台快捷键提示，模块加载时计算（平台不会运行时变化）。 */
 const newSessionShortcutLabel = shortcutLabel("N");
@@ -529,31 +531,33 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
       </div>
 
       <AnimatedCollapseContent className="min-w-0">
-        <div className="mt-0.5 flex min-w-0 flex-col gap-0.5">
-          {visibleSessions.map((session) => (
-            <SessionListRow
-              key={session.path}
-              sessionPath={session.path}
-              displayName={session.displayName}
-              workspaceRoot={session.workspaceRoot}
-              gitBranch={session.gitBranch}
-              isBusy={session.isBusy}
-              isBlocked={session.isBlocked}
-              showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
+        <SessionListGitTooltip>
+          <SessionListGitTooltip.Zone className="mt-0.5 flex min-w-0 flex-col gap-0.5">
+            {visibleSessions.map((session) => (
+              <SessionListGitTooltip.Row key={session.path} session={session}>
+                <SessionListRow
+                  sessionPath={session.path}
+                  displayName={session.displayName}
+                  gitBranch={session.gitBranch}
+                  isBusy={session.isBusy}
+                  isBlocked={session.isBlocked}
+                  showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
+                  nested
+                  selected={isSessionSelected(session.path)}
+                  disabled={disabled}
+                  micaStyle={micaStyle}
+                  onSelectPath={onSelectSession}
+                />
+              </SessionListGitTooltip.Row>
+            ))}
+            <SessionListLoadMore
+              hiddenCount={hiddenSessionCount}
               nested
-              selected={isSessionSelected(session.path)}
               disabled={disabled}
-              micaStyle={micaStyle}
-              onSelectPath={onSelectSession}
+              onLoadMore={onLoadMore}
             />
-          ))}
-          <SessionListLoadMore
-            hiddenCount={hiddenSessionCount}
-            nested
-            disabled={disabled}
-            onLoadMore={onLoadMore}
-          />
-        </div>
+          </SessionListGitTooltip.Zone>
+        </SessionListGitTooltip>
       </AnimatedCollapseContent>
     </AnimatedCollapse>
     </div>
@@ -604,7 +608,6 @@ function SessionRowStatusDot({ tone, label }: { tone: SessionRowStatusTone; labe
 type SessionListRowProps = {
   sessionPath: string;
   displayName: string;
-  workspaceRoot: string;
   gitBranch?: string;
   isBusy?: boolean;
   isBlocked?: boolean;
@@ -616,41 +619,9 @@ type SessionListRowProps = {
   onSelectPath(path: string): void;
 };
 
-type SessionListRowGitTooltipContentProps = {
-  gitBranch: string;
-  workspaceRoot: string;
-};
-
-const SessionListRowGitTooltipContent = memo(function SessionListRowGitTooltipContent({
-  gitBranch,
-  workspaceRoot,
-}: SessionListRowGitTooltipContentProps) {
-  const { t } = useTranslation();
-  const workLocation = resolveSessionWorkLocation(workspaceRoot);
-  const LocationIcon = WORK_LOCATION_ICONS[workLocation];
-  const locationLabel =
-    workLocation === "worktree"
-      ? t("composer.workLocationWorktree")
-      : t("composer.workLocationLocal");
-
-  return (
-    <>
-      <div className="flex min-w-0 max-w-full items-center gap-1.5">
-        <GitBranch className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
-        <span className="min-w-0 truncate">{gitBranch}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <LocationIcon className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
-        <span>{locationLabel}</span>
-      </div>
-    </>
-  );
-});
-
 const SessionListRow = memo(function SessionListRow({
   sessionPath,
   displayName,
-  workspaceRoot,
   gitBranch,
   isBusy,
   isBlocked,
@@ -662,13 +633,13 @@ const SessionListRow = memo(function SessionListRow({
   onSelectPath,
 }: SessionListRowProps) {
   const { t } = useTranslation();
+  const gitTooltipContext = useOptionalSessionListGitTooltipContext();
   const hasIndicator =
     (isBusy && !isBlocked) ||
     (!selected && (isBlocked || showCompletedUnseen));
-  const trimmedGitBranch = gitBranch?.trim();
-  const showGitTooltip = Boolean(trimmedGitBranch);
+  const showGitTooltip = Boolean(gitBranch?.trim()) && gitTooltipContext !== null;
 
-  const rowButton = (
+  return (
     <button
       type="button"
       data-session-path={sessionPath}
@@ -710,28 +681,6 @@ const SessionListRow = memo(function SessionListRow({
         {displayName}
       </span>
     </button>
-  );
-
-  if (!showGitTooltip || !trimmedGitBranch) {
-    return rowButton;
-  }
-
-  return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>
-        <span className="flex w-full min-w-0">{rowButton}</span>
-      </TooltipTrigger>
-      <TooltipContent
-        side="right"
-        sideOffset={8}
-        className="flex flex-col items-start gap-1 py-2"
-      >
-        <SessionListRowGitTooltipContent
-          gitBranch={trimmedGitBranch}
-          workspaceRoot={workspaceRoot}
-        />
-      </TooltipContent>
-    </Tooltip>
   );
 });
 
@@ -1741,30 +1690,32 @@ function SessionSidebarInner({
                         : undefined
                     }
                   >
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      {unboundSessions.slice(0, unboundVisibleCount).map((session) => (
-                        <SessionListRow
-                          key={session.path}
-                          sessionPath={session.path}
-                          displayName={session.displayName}
-                          workspaceRoot={session.workspaceRoot}
-                          gitBranch={session.gitBranch}
-                          isBusy={session.isBusy}
-                          isBlocked={session.isBlocked}
-                          showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
-                          nested={false}
-                          selected={isSessionSelected(session.path)}
+                    <SessionListGitTooltip>
+                      <SessionListGitTooltip.Zone className="flex min-w-0 flex-col gap-0.5">
+                        {unboundSessions.slice(0, unboundVisibleCount).map((session) => (
+                          <SessionListGitTooltip.Row key={session.path} session={session}>
+                            <SessionListRow
+                              sessionPath={session.path}
+                              displayName={session.displayName}
+                              gitBranch={session.gitBranch}
+                              isBusy={session.isBusy}
+                              isBlocked={session.isBlocked}
+                              showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
+                              nested={false}
+                              selected={isSessionSelected(session.path)}
+                              disabled={disabled}
+                              micaStyle={micaStyle}
+                              onSelectPath={onSelectSession}
+                            />
+                          </SessionListGitTooltip.Row>
+                        ))}
+                        <SessionListLoadMore
+                          hiddenCount={unboundSessions.length - unboundVisibleCount}
                           disabled={disabled}
-                          micaStyle={micaStyle}
-                          onSelectPath={onSelectSession}
+                          onLoadMore={loadMoreUnboundSessions}
                         />
-                      ))}
-                      <SessionListLoadMore
-                        hiddenCount={unboundSessions.length - unboundVisibleCount}
-                        disabled={disabled}
-                        onLoadMore={loadMoreUnboundSessions}
-                      />
-                    </div>
+                      </SessionListGitTooltip.Zone>
+                    </SessionListGitTooltip>
                   </SidebarSectionCollapsible>
                 ) : null}
               </SessionListNav>
