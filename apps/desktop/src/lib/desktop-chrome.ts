@@ -170,7 +170,7 @@ export const DESKTOP_OVERLAY_LIST_DETAIL_SURFACE = cn(
 );
 
 export const DESKTOP_OVERLAY_LIST_DETAIL_WIDTH =
-  "w-max min-w-[11rem] max-w-[min(19rem,calc(100vw-1.25rem))]";
+  "w-max min-w-72 max-w-[min(19rem,calc(100vw-1.25rem))]";
 
 /** 工作区选择器全高面板 */
 export const DESKTOP_OVERLAY_LIST_WORKSPACE_PANEL =
