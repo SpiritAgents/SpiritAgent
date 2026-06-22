@@ -37,6 +37,7 @@ import {
   type ToolAgentState,
   type ToolAgentToolResult,
 } from '../tool-agent.js';
+import type { ToolAgentMcpToolCatalogSnapshot } from '../mcp/types.js';
 import { userMessageContentMatchesInput } from '../runtime/user-turn-timestamp.js';
 
 export {
@@ -49,6 +50,7 @@ export {
   buildPlanSystemMessage,
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
+  buildMcpCatalogSystemMessage,
   buildToolAgentHostPrompt,
 } from '../tool-agent.js';
 
@@ -77,6 +79,7 @@ export function startOpenAiToolAgentState(
   applyPatchFileToolsPromptSection?: string,
   providerWebSearchPromptSection?: string,
   loopEnabled?: boolean,
+  mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
 ): OpenAiToolAgentState {
   return startToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -93,6 +96,7 @@ export function startOpenAiToolAgentState(
       applyPatchFileToolsPromptSection,
       providerWebSearchPromptSection,
       loopEnabled,
+      mcpToolCatalog,
     ),
     userInput,
   );
@@ -112,6 +116,7 @@ export function continueOpenAiToolAgentState(
   applyPatchFileToolsPromptSection?: string,
   providerWebSearchPromptSection?: string,
   loopEnabled?: boolean,
+  mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
 ): OpenAiToolAgentState {
   return continueToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -128,6 +133,7 @@ export function continueOpenAiToolAgentState(
       applyPatchFileToolsPromptSection,
       providerWebSearchPromptSection,
       loopEnabled,
+      mcpToolCatalog,
     ),
   );
 }
@@ -146,11 +152,13 @@ function buildOpenAiToolAgentMessages(
   applyPatchFileToolsPromptSection: string | undefined,
   providerWebSearchPromptSection: string | undefined,
   loopEnabled: boolean | undefined,
+  mcpToolCatalog: ToolAgentMcpToolCatalogSnapshot | undefined,
 ): JsonValue[] {
   return buildToolAgentMessages({
     historyMessages: llmHistoryToOpenAiMessages(history, assetRoot),
     enabledRules,
     enabledSkillCatalog,
+    ...(mcpToolCatalog === undefined ? {} : { mcpToolCatalog }),
     activeSkills,
     model,
     ...(planMetadata === undefined ? {} : { planMetadata }),
@@ -241,6 +249,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
   applyPatchFileToolsPromptSection?: string,
   providerWebSearchPromptSection?: string,
   loopEnabled?: boolean,
+  mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
 ): OpenAiToolAgentState {
   const preservedSpiritSystemMessage = findSpiritSystemMessageContent(retryState.messages);
   const rebuilt = startOpenAiToolAgentState(
@@ -258,6 +267,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     applyPatchFileToolsPromptSection,
     providerWebSearchPromptSection,
     loopEnabled,
+    preservedSpiritSystemMessage === undefined ? mcpToolCatalog : undefined,
   );
   if (preservedSpiritSystemMessage !== undefined) {
     const preservedDreams = hasDreamsSystemMessage(preservedSpiritSystemMessage);

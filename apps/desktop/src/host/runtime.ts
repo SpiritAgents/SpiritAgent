@@ -22,6 +22,7 @@ import {
   type LlmEnabledSkillCatalogEntry,
   type LlmExtensionSystemPrompt,
   type LlmPlanMetadata,
+  type ToolAgentMcpToolCatalogSnapshot,
   type LlmToolAgentBasicInfo,
   type LlmToolAgentState,
   type LlmTransportConfig,
@@ -51,6 +52,7 @@ export function createDesktopRuntime(input: {
   history: ChatArchive['llmHistory'];
   enabledRules: LlmEnabledRule[];
   enabledSkillCatalog: LlmEnabledSkillCatalogEntry[];
+  mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot;
   planMetadata: LlmPlanMetadata;
   extensionSystemPrompts: LlmExtensionSystemPrompt[];
   dreamsContextText?: string;
@@ -98,6 +100,7 @@ export function createDesktopRuntime(input: {
         applyPatchFileToolsPromptSection,
         providerWebSearchPromptSection,
         resolveLoopEnabled(),
+        input.mcpToolCatalog,
       ),
     createContinuationState: (messages) =>
       continueLlmToolAgentState(
@@ -114,6 +117,7 @@ export function createDesktopRuntime(input: {
         applyPatchFileToolsPromptSection,
         providerWebSearchPromptSection,
         resolveLoopEnabled(),
+        input.mcpToolCatalog,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -139,6 +143,7 @@ export function createDesktopRuntime(input: {
         applyPatchFileToolsPromptSection,
         providerWebSearchPromptSection,
         resolveLoopEnabled(),
+        input.mcpToolCatalog,
       ),
     resolveWorkspaceFilesFromInput: (userInput) =>
       resolveWorkspaceFileReferenceAttachmentsFromInput(input.workspaceRoot, userInput),

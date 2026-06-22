@@ -36,6 +36,7 @@ import {
 import type { LspDiagnosticsToolRequest } from '../lsp/types.js';
 import type { LspHostBindings, LspHostServiceInstance } from './lsp-host-bindings.js';
 import { McpService, type McpToolRequest } from '../mcp/service.js';
+import { TOOL_CALL_TOOL_NAME } from '../tool-gateway/definitions.js';
 import { JsonRpcPeer } from './framing.js';
 
 interface HostToolRequestMetadata {
@@ -221,6 +222,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>> {
+    if (this.mcp.isLazyToolGatewayToolRequest(request)) {
+      return { kind: 'allowed' };
+    }
     if (this.mcp.isToolRequest(request)) {
       await this.mcp.authorizeToolRequest(request);
       return { kind: 'allowed' };
@@ -249,6 +253,11 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async execute(request: JsonValue): Promise<ToolExecutionOutput> {
+    if (this.mcp.isLazyToolGatewayToolRequest(request)) {
+      return createToolExecutionTextOutput(
+        await this.mcp.executeLazyToolGatewayToolRequest(request),
+      );
+    }
     if (this.mcp.isToolRequest(request)) {
       return this.executeLocalMcpTool(request);
     }
@@ -327,6 +336,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   shouldExecuteInBackground(request: JsonValue): boolean {
+    if (this.mcp.isLazyToolGatewayToolRequest(request)) {
+      return request.name === TOOL_CALL_TOOL_NAME;
+    }
     if (this.mcp.isToolRequest(request)) {
       return true;
     }
@@ -339,6 +351,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   backgroundStatusText(request: JsonValue): string | undefined {
+    if (this.mcp.isLazyToolGatewayToolRequest(request)) {
+      return this.mcp.lazyToolGatewayBackgroundStatusText(request);
+    }
     if (this.mcp.isToolRequest(request)) {
       return this.mcp.backgroundStatusText(request);
     }
@@ -361,6 +376,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
   mcpStatusSnapshot(): McpStatusSnapshot {
     return this.mcp.statusSnapshot();
+  }
+
+  mcpToolCatalogSnapshot() {
+    return this.mcp.catalogSnapshot();
   }
 
   async addMcpServer(name: string, config: JsonValue): Promise<string> {
