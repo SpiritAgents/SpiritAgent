@@ -250,6 +250,7 @@ export function McpsSettingsPanel({
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
         </div>
+        <p className="text-xs text-muted-foreground">{t('settings.mcpLazyExposureHint')}</p>
         <Button
           type="button"
           size="sm"

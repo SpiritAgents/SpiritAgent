@@ -185,6 +185,7 @@
     "mcpUrlExample": "例如 https://example.com/mcp",
     "mcpCommandExample": "例如 npx -y @modelcontextprotocol/server-filesystem D:/SpiritAgent",
     "mcpCountsSummary": "已发现 {{tools}} tools · {{resources}} resources · {{prompts}} prompts",
+    "mcpLazyExposureHint": "MCP 工具通过 tool_describe / tool_call 按需调用，不会全量注入模型上下文。",
     "active": "活跃",
     "failed": "失败",
     "skillUserDir": "用户目录",
@@ -1140,7 +1141,9 @@
     "diagnosticsChecking": "检查中",
     "diagnosticsNoIssues": "没有问题",
     "diagnosticsIssueCount_one": "{{count}} 个问题",
-    "diagnosticsIssueCount_other": "{{count}} 个问题"
+    "diagnosticsIssueCount_other": "{{count}} 个问题",
+    "lazyToolDescribe": "读取工具 schema",
+    "lazyToolCall": "调用工具"
   },
   "process": {
     "separator": "，",

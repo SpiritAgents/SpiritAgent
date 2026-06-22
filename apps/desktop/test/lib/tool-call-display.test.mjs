@@ -309,6 +309,46 @@ test('getToolCallSummaryParts: todo_write preview prefers snapshot over unreliab
   );
 });
 
+test('getToolCallSummaryParts: lazy gateway tools re-translate on language switch', async () => {
+  const describeTool = {
+    toolName: 'tool_describe',
+    phase: 'succeeded',
+    headline: '读取工具 schema',
+    headlineDetail: 'mcp / microsoft-learn / microsoft_docs_search',
+    detailLines: [],
+  };
+  const callTool = {
+    toolName: 'tool_call',
+    phase: 'running',
+    headline: '调用工具',
+    headlineDetail: 'mcp / microsoft-learn / microsoft_docs_search',
+    detailLines: [],
+  };
+
+  assert.deepEqual(getToolCallSummaryParts(describeTool), {
+    headline: '读取工具 schema',
+    detail: 'mcp / microsoft-learn / microsoft_docs_search',
+  });
+  assert.deepEqual(getToolCallSummaryParts(callTool), {
+    headline: '调用工具',
+    detail: 'mcp / microsoft-learn / microsoft_docs_search',
+  });
+
+  await i18n.changeLanguage('en');
+  try {
+    assert.deepEqual(getToolCallSummaryParts(describeTool), {
+      headline: 'Described tool schema',
+      detail: 'mcp / microsoft-learn / microsoft_docs_search',
+    });
+    assert.deepEqual(getToolCallSummaryParts(callTool), {
+      headline: 'Calling tool',
+      detail: 'mcp / microsoft-learn / microsoft_docs_search',
+    });
+  } finally {
+    await i18n.changeLanguage('zh-CN');
+  }
+});
+
 test('getToolCallSummaryParts: shell verb uses tense in English', async () => {
   await i18n.changeLanguage('en');
   try {
