@@ -204,8 +204,8 @@ export function DesktopTitleBar({ useMicaBackdrop }: DesktopTitleBarProps) {
       ref={headerRef}
       data-spirit-surface="desktop-title-bar"
       className={cn(
-        "relative electron-drag flex h-8 w-full shrink-0 overflow-hidden border-b",
-        partialBorder && "border-transparent",
+        "relative electron-drag flex h-8 w-full shrink-0 overflow-hidden",
+        partialBorder ? "border-b-0" : "border-b",
         titleBarSurfaceClass(useMicaBackdrop, !partialBorder),
       )}
     >

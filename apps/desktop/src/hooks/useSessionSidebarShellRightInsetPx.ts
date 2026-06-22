@@ -1,8 +1,9 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
 
 const SESSION_SIDEBAR_SHELL_SELECTOR = '[data-spirit-surface="session-sidebar-shell"]';
+const SESSION_SIDEBAR_DIVIDER_SELECTOR = '[data-spirit-edge="session-sidebar-divider"]';
 
-/** 标题栏分割线左缘：与侧栏 shell 右缘对齐（含收起/展开 CSS 过渡帧）。 */
+/** 标题栏分割线左缘：与侧栏竖线 DOM 左缘对齐（含收起/展开 CSS 过渡帧）。 */
 export function useSessionSidebarShellRightInsetPx(
   anchorRef: RefObject<HTMLElement | null>,
   enabled: boolean,
@@ -24,7 +25,12 @@ export function useSessionSidebarShellRightInsetPx(
       }
       const anchorRect = anchor.getBoundingClientRect();
       const shellRect = shell.getBoundingClientRect();
-      setInsetPx(Math.max(0, Math.round(shellRect.right - anchorRect.left)));
+      const sidebarDivider = shell.querySelector(SESSION_SIDEBAR_DIVIDER_SELECTOR);
+      const sidebarDividerRect = sidebarDivider?.getBoundingClientRect();
+      const dividerLeftPx = sidebarDividerRect
+        ? sidebarDividerRect.left - anchorRect.left
+        : shellRect.right - anchorRect.left;
+      setInsetPx(Math.max(0, Math.round(dividerLeftPx)));
     };
 
     sync();
