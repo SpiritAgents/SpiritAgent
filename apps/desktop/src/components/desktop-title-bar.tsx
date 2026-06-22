@@ -36,6 +36,10 @@ const TITLE_BAR_ICON_PX = 14;
 /** 云母顶栏黑底标（`build/icon.png` 内图案更小，恢复迁移透明标前的 20px） */
 const TITLE_BAR_ICON_MICA_PX = 20;
 
+/** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */
+const TITLE_BAR_MENUBAR_TRIGGER_CLASS =
+  "px-2 py-1 text-[13px] text-sidebar-action-foreground";
+
 function execWindowAction(action: string): void {
   void window.spiritDesktop?.executeWindowAction(action);
 }
@@ -76,7 +80,7 @@ function TitleBarMenuCluster({ useMicaBackdrop }: { useMicaBackdrop: boolean }) 
         aria-label={t('titleBar.appMenu')}
       >
         <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-[13px] text-foreground/90">
+          <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
             {t('titleBar.file')}
           </MenubarTrigger>
           <MenubarContent>
@@ -93,7 +97,7 @@ function TitleBarMenuCluster({ useMicaBackdrop }: { useMicaBackdrop: boolean }) 
         </MenubarMenu>
 
         <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-[13px] text-foreground/90">
+          <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
             {t('titleBar.edit')}
           </MenubarTrigger>
           <MenubarContent>
@@ -126,7 +130,7 @@ function TitleBarMenuCluster({ useMicaBackdrop }: { useMicaBackdrop: boolean }) 
         </MenubarMenu>
 
         <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-[13px] text-foreground/90">
+          <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
             {t('titleBar.view')}
           </MenubarTrigger>
           <MenubarContent>
@@ -155,7 +159,7 @@ function TitleBarMenuCluster({ useMicaBackdrop }: { useMicaBackdrop: boolean }) 
         </MenubarMenu>
 
         <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-[13px] text-foreground/90">
+          <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
             {t('titleBar.window')}
           </MenubarTrigger>
           <MenubarContent>
@@ -175,7 +179,7 @@ function TitleBarMenuCluster({ useMicaBackdrop }: { useMicaBackdrop: boolean }) 
         </MenubarMenu>
 
         <MenubarMenu>
-          <MenubarTrigger className="px-2 py-1 text-[13px] text-foreground/90">
+          <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
             {t('titleBar.help')}
           </MenubarTrigger>
           <MenubarContent>
