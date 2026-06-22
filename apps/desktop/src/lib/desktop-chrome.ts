@@ -150,6 +150,10 @@ export const DESKTOP_OVERLAY_LIST_DETAIL_LABEL =
 
 export const DESKTOP_OVERLAY_LIST_ITEM = "px-2 py-1.5";
 
+/** 长列表 DropdownMenuItem 基元；模型 / 工作区 / 审批等浮层列表项共用 */
+export const DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM =
+  "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50";
+
 /** 长列表底部单行操作（添加工作区等），密度对齐 LIST 而非 Dropdown 默认 SHORT */
 export const DESKTOP_OVERLAY_LIST_ACTION_ITEM =
   "px-2 py-1.5 text-xs text-popover-foreground";
