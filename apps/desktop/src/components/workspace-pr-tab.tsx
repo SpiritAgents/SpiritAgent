@@ -10,6 +10,10 @@ import { WorkspacePrDetailSkeleton } from "@/components/workspace-pr-detail-skel
 import { WorkspacePrDetailView } from "@/components/workspace-pr-detail-view";
 import { WorkspacePrListView, type WorkspacePrListViewHandle } from "@/components/workspace-pr-list-view";
 import type { GitHubPullRequestRevealRequest } from "@/lib/workspace-pr-navigation";
+import {
+  resolvePullRequestChipStatus,
+  type PullRequestChipStatus,
+} from "@/lib/pr-diff-attachment";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type {
@@ -131,6 +135,10 @@ export type WorkspacePrTabProps = {
   prRevealNonce?: number;
   prRevealRequest?: GitHubPullRequestRevealRequest | null;
   onPrDiffAddToSession?: (attachment: import("@/lib/pr-diff-attachment").PrDiffAttachment) => void;
+  /** 当前 PR 详情标题变化时回调（进入详情传 "PR #XXX"，返回列表/加载失败传 undefined） */
+  onTitleChange?: (title: string | undefined) => void;
+  /** 当前 PR 详情状态变化时回调（返回列表/加载失败传 undefined） */
+  onPrStatusChange?: (status: PullRequestChipStatus | undefined) => void;
   className?: string;
 };
 
@@ -154,6 +162,8 @@ export function WorkspacePrTab({
   prRevealNonce = 0,
   prRevealRequest = null,
   onPrDiffAddToSession,
+  onTitleChange,
+  onPrStatusChange,
   className,
 }: WorkspacePrTabProps) {
   const { t } = useTranslation();
@@ -193,8 +203,12 @@ export function WorkspacePrTab({
   const prListViewRef = useRef<WorkspacePrListViewHandle | null>(null);
   const detailRef = useRef<GitHubPullRequestDetail | null>(null);
   const branchResultRef = useRef<GitHubPullRequestForBranchResult | null>(null);
+  const onTitleChangeRef = useRef(onTitleChange);
+  const onPrStatusChangeRef = useRef(onPrStatusChange);
   detailRef.current = detail;
   branchResultRef.current = branchResult;
+  onTitleChangeRef.current = onTitleChange;
+  onPrStatusChangeRef.current = onPrStatusChange;
 
   const refreshAuthStatus = useCallback(async () => {
     if (!prTabEnabled) {
@@ -716,6 +730,20 @@ export function WorkspacePrTab({
     prTabEnabled,
     refreshRepositoryInfo,
   ]);
+
+  useEffect(() => {
+    if (viewMode === "detail" && detail) {
+      onTitleChangeRef.current?.(`PR #${detail.number}`);
+      onPrStatusChangeRef.current?.(resolvePullRequestChipStatus(detail));
+    } else if (viewMode === "detail") {
+      // 详情加载中保留占位标题，避免选项卡只剩图标
+      onTitleChangeRef.current?.(t("workspace.prTab"));
+      onPrStatusChangeRef.current?.(undefined);
+    } else {
+      onTitleChangeRef.current?.(undefined);
+      onPrStatusChangeRef.current?.(undefined);
+    }
+  }, [viewMode, detail, t]);
 
   const openExternalUrl = (url: string) => {
     void window.spiritDesktop?.openExternalUrl(url);
