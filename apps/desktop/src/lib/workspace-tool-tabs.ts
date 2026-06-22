@@ -1,3 +1,5 @@
+import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
+
 export type WorkspaceToolTabKind = "files" | "shell" | "git" | "browser" | "pr";
 
 export const BROWSER_NEW_TAB_SENTINEL = "__spirit_browser_new_tab__";
@@ -9,6 +11,8 @@ export type WorkspaceToolTab = {
   browserUrl?: string;
   /** 由各子 Tab 组件上报的当前标题（文件名 / 网页标题 / 终端标题）；空时仅显示图标 */
   tabTitle?: string;
+  /** 仅 kind === "pr" 时使用；表示当前 PR 详情页的状态，用于切换选项卡图标 */
+  prStatus?: PullRequestChipStatus;
 };
 
 const KIND_BASE_LABEL_KEY: Record<WorkspaceToolTabKind, string> = {

@@ -544,6 +544,15 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
     [onTabsChange],
   );
 
+  const handleTabPrStatusChange = useCallback(
+    (tabId: string, status: import("@/lib/pr-diff-attachment").PullRequestChipStatus | undefined) => {
+      onTabsChange((prev) =>
+        prev.map((item) => (item.id === tabId ? { ...item, prStatus: status } : item)),
+      );
+    },
+    [onTabsChange],
+  );
+
   return (
     <>
           <div className="flex shrink-0 items-end gap-0 border-b border-border/40 pt-1.5 pb-0 pl-1 pr-1">
@@ -814,6 +823,8 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                         prRevealNonce={prRevealEnabled ? prRevealNonce : 0}
                         prRevealRequest={prRevealEnabled ? prRevealRequest : null}
                         onPrDiffAddToSession={onPrDiffAddToSession}
+                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                        onPrStatusChange={(status) => handleTabPrStatusChange(item.id, status)}
                       />
                     </div>
                   ) : (
