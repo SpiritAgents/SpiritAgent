@@ -23,6 +23,7 @@ import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
+import { useUiLayoutScale } from "@/hooks/useUiLayoutScale";
 import { useDesktopKeyboardShortcuts } from "@/hooks/useDesktopKeyboardShortcuts";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useDesktopShellEffects } from "@/hooks/useDesktopShellEffects";
@@ -54,6 +55,7 @@ export default function App() {
   const { theme, setTheme } = useTheme();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
+  const uiLayoutScale = useUiLayoutScale();
   const runtime = useDesktopRuntime();
   const snapshot = runtime.snapshot;
   /** 与 Host API 的 `kind` 解耦：壳可能是 Electron，但仍通过 Vite 代理走 Web Host（侧栏会显示 Localhost Web Host）。Mica 与 `spirit-desktop-native` 仍应对 Electron 窗口生效。 */
@@ -182,6 +184,7 @@ export default function App() {
     handleNewSession: surfaceNav.handleNewSession,
     setActionPickerOpen: composer.setActionPickerOpen,
     setFilePickerOpen: composer.setFilePickerOpen,
+    uiLayoutScaleApi: uiLayoutScale,
   });
 
   const launchSplashActive =
