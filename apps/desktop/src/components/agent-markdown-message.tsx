@@ -16,7 +16,7 @@ import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image
 import type { ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import {
-  createMarkdownMessageComponents,
+  createStreamdownMessageComponents,
   markdownMessageRootClassName,
   type MarkdownTone,
 } from "@/lib/markdown-message-components";
@@ -123,7 +123,7 @@ export function AgentMarkdownMessage({
   const onMarkdownLinkClick = useWorkspaceMarkdownLinkClick();
   const components = useMemo(
     () =>
-      createMarkdownMessageComponents(
+      createStreamdownMessageComponents(
         readManagedImagePreviewDataUrl,
         tone,
         readManagedVideoPreviewUrl,
