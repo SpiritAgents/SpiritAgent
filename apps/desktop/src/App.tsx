@@ -490,7 +490,6 @@ export default function App() {
               snapshot={snapshot}
               apiReady={runtime.apiReady}
               busyAction={runtime.busyAction}
-              runtimeError={runtime.runtimeError}
               onListMarketplaceExtensions={runtime.listMarketplaceExtensions}
               onGetMarketplaceExtensionDetail={runtime.getMarketplaceExtensionDetail}
               onGetMarketplaceExtensionReadme={runtime.getMarketplaceExtensionReadme}
