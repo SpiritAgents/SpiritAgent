@@ -660,6 +660,15 @@ async function createMainWindow(): Promise<BrowserWindow> {
     return { action: 'deny' };
   });
 
+  // Windows 无系统菜单且顶栏 MenubarShortcut 不绑定快捷键；主进程监听 F12 以便渲染崩溃时仍可开 DevTools。
+  const isDevChrome = Boolean(DEV_SERVER_URL) || !app.isPackaged;
+  window.webContents.on('before-input-event', (event, input) => {
+    if (isDevChrome && input.type === 'keyDown' && input.key === 'F12') {
+      event.preventDefault();
+      window.webContents.toggleDevTools();
+    }
+  });
+
   return window;
 }
 
