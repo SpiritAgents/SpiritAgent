@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process';
-import { once } from 'node:events';
 import path from 'node:path';
 import { rgPath } from '@vscode/ripgrep';
 
@@ -83,6 +82,17 @@ function mapRipgrepRegexError(stderr: string): Error {
   return new Error(`无效正则: ${message}`);
 }
 
+function waitForChildClose(child: ReturnType<typeof spawn>): Promise<number | null> {
+  return new Promise((resolve, reject) => {
+    child.once('error', (error: Error) => {
+      reject(error);
+    });
+    child.once('close', (code) => {
+      resolve(code);
+    });
+  });
+}
+
 export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<RipgrepMatch[]> {
   const args = buildRipgrepArgs(options);
   const child = spawn(rgPath, args, {
@@ -101,7 +111,7 @@ export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<R
     stderr += chunk.toString();
   });
 
-  const [exitCode] = await once(child, 'close');
+  const exitCode = await waitForChildClose(child);
 
   if (exitCode === 2) {
     if (options.isRegexp) {
