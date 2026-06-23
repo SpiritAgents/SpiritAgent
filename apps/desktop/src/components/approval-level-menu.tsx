@@ -39,11 +39,16 @@ export function ApprovalLevelMenu({
           disabled={disabled}
           className={cn(
             "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
-            isFullApproval ? "text-yellow-500 hover:text-yellow-500" : "text-muted-foreground",
+            isFullApproval
+              ? "text-yellow-600 hover:text-yellow-600 dark:text-yellow-500 dark:hover:text-yellow-500"
+              : "text-muted-foreground",
           )}
         >
           <ShieldCheck
-            className={cn("size-3.5 shrink-0", isFullApproval ? "text-yellow-500" : "text-muted-foreground/80")}
+            className={cn(
+              "size-3.5 shrink-0",
+              isFullApproval ? "text-yellow-600 dark:text-yellow-500" : "text-muted-foreground/80",
+            )}
             aria-hidden
           />
           <span className="min-w-0 truncate" title={label}>
@@ -52,7 +57,7 @@ export function ApprovalLevelMenu({
           <ChevronDown
             className={cn(
               "size-3 shrink-0",
-              isFullApproval ? "text-yellow-500/80" : "text-muted-foreground/80",
+              isFullApproval ? "text-yellow-600/85 dark:text-yellow-500/80" : "text-muted-foreground/80",
             )}
             aria-hidden
           />
