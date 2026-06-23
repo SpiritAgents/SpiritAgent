@@ -180,6 +180,8 @@ function GlobalTooltipContentHost() {
     ? global.getContentRegistration(registrationId)
     : undefined
   const hasContent = global.contentActiveItem !== null && contentRegistration !== undefined
+  const isNonHoverableContent =
+    registrationId !== null && !global.isRegistrationHoverableContent(registrationId)
   const dataState = tooltipContentStateAttribute(
     global.openKind,
     hasContent,
@@ -197,6 +199,7 @@ function GlobalTooltipContentHost() {
   const contentClassName = cn(
     appearance === "detail" ? TOOLTIP_CONTENT_DETAIL_CLASS : TOOLTIP_CONTENT_COMPACT_CLASS,
     contentRegistration.className,
+    isNonHoverableContent && "pointer-events-none",
   )
 
   if (lingerExitPosition !== null) {
@@ -384,6 +387,7 @@ type TooltipProps<TItem> = Omit<
   delayDuration?: number
   closeDelayMs?: number
   anchorLingerMs?: number
+  disableHoverableContent?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -393,6 +397,7 @@ function TooltipRoot<TItem = TooltipSwitchItem>({
   delayDuration = 300,
   closeDelayMs = 120,
   anchorLingerMs = 220,
+  disableHoverableContent = false,
   open: openProp,
   onOpenChange,
   children,
@@ -409,14 +414,18 @@ function TooltipRoot<TItem = TooltipSwitchItem>({
   )
 
   React.useEffect(() => {
-    global.setRegistrationTiming(registrationId, { closeDelayMs, anchorLingerMs })
+    global.setRegistrationTiming(registrationId, {
+      closeDelayMs,
+      anchorLingerMs,
+      disableHoverableContent,
+    })
     global.registerOpenChange(registrationId, onOpenChange)
     return () => {
       global.unregisterTriggerZone(registrationId)
       global.unregisterContent(registrationId)
       global.registerOpenChange(registrationId, undefined)
     }
-  }, [anchorLingerMs, closeDelayMs, global, onOpenChange, registrationId])
+  }, [anchorLingerMs, closeDelayMs, disableHoverableContent, global, onOpenChange, registrationId])
 
   const registrationValue = React.useMemo(
     (): TooltipRegistrationContextValue<TItem> => ({

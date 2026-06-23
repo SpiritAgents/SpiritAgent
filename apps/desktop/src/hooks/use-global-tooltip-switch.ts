@@ -65,7 +65,7 @@ export type UseGlobalTooltipSwitchResult = {
   registerActiveAnchorElement: (element: HTMLElement | null) => void;
   setRegistrationTiming: (
     registrationId: string,
-    timing: { closeDelayMs?: number; anchorLingerMs?: number },
+    timing: { closeDelayMs?: number; anchorLingerMs?: number; disableHoverableContent?: boolean },
   ) => void;
   getTriggerProps: <TItem>(
     registrationId: string,
@@ -80,6 +80,7 @@ export type UseGlobalTooltipSwitchResult = {
   dismissActiveItem: () => void;
   dismissIfOpen: () => void;
   onTriggerPointerDown: (registrationId: string, itemId: string) => void;
+  isRegistrationHoverableContent: (registrationId: string | null) => boolean;
   isAnchorSlot: (registrationId: string, itemId: string) => boolean;
   onContentPointerEnter: () => void;
   lingerAnchorScreenRect: TooltipLingerAnchorScreenRect | null;
@@ -115,7 +116,9 @@ export function useGlobalTooltipSwitch({
   const openDelayByRegistrationRef = useRef<Map<string, number>>(new Map());
   const closeDelayByRegistrationRef = useRef<Map<string, number>>(new Map());
   const anchorLingerByRegistrationRef = useRef<Map<string, number>>(new Map());
+  const disableHoverableContentByRegistrationRef = useRef<Map<string, boolean>>(new Map());
   const pointerDismissedRegistrationsRef = useRef<Set<string>>(new Set());
+  const lingerActiveItemRef = useRef<unknown | null>(null);
   const [lingerAnchorScreenRect, setLingerAnchorScreenRect] =
     useState<TooltipLingerAnchorScreenRect | null>(null);
   const [lingerContentScreenRect, setLingerContentScreenRect] =
@@ -124,11 +127,12 @@ export function useGlobalTooltipSwitch({
   activeItemRef.current = activeItem;
   activeSlotRef.current = activeSlot;
   pointerSlotRef.current = pointerSlot;
+  lingerActiveItemRef.current = lingerActiveItem;
 
   const setRegistrationTiming = useCallback(
     (
       registrationId: string,
-      timing: { closeDelayMs?: number; anchorLingerMs?: number },
+      timing: { closeDelayMs?: number; anchorLingerMs?: number; disableHoverableContent?: boolean },
     ) => {
       if (timing.closeDelayMs !== undefined) {
         closeDelayByRegistrationRef.current.set(registrationId, timing.closeDelayMs);
@@ -136,9 +140,22 @@ export function useGlobalTooltipSwitch({
       if (timing.anchorLingerMs !== undefined) {
         anchorLingerByRegistrationRef.current.set(registrationId, timing.anchorLingerMs);
       }
+      if (timing.disableHoverableContent !== undefined) {
+        disableHoverableContentByRegistrationRef.current.set(
+          registrationId,
+          timing.disableHoverableContent,
+        );
+      }
     },
     [],
   );
+
+  const isRegistrationHoverableContent = useCallback((registrationId: string | null) => {
+    if (!registrationId) {
+      return true;
+    }
+    return !(disableHoverableContentByRegistrationRef.current.get(registrationId) ?? false);
+  }, []);
 
   const model = useMemo(() => {
     const next = new GlobalTooltipSwitchStateModel();
@@ -246,8 +263,6 @@ export function useGlobalTooltipSwitch({
     [clearHoverOpenTimer, getAnchorLingerMs],
   );
 
-  const onContentPointerEnter = clearHoverCloseTimer;
-
   const scheduleHoverClose = useCallback(() => {
     clearHoverOpenTimer();
     clearHoverCloseTimer();
@@ -263,6 +278,15 @@ export function useGlobalTooltipSwitch({
       commitClose(closingRegistrationId);
     }, closeDelayMs);
   }, [activeSlot, clearHoverCloseTimer, clearHoverOpenTimer, commitClose, getCloseDelayMs]);
+
+  const onContentPointerEnter = useCallback(() => {
+    const registrationId = activeSlotRef.current?.registrationId ?? null;
+    if (!isRegistrationHoverableContent(registrationId)) {
+      scheduleHoverClose();
+      return;
+    }
+    clearHoverCloseTimer();
+  }, [clearHoverCloseTimer, isRegistrationHoverableContent, scheduleHoverClose]);
 
   const dismissActiveItem = useCallback(() => {
     const closingRegistrationId = activeSlot?.registrationId ?? null;
@@ -314,12 +338,13 @@ export function useGlobalTooltipSwitch({
     if (isDomNode(target) && activeAnchorElementRef.current?.contains(target)) {
       return true;
     }
+    const registrationId = activeSlotRef.current?.registrationId ?? null;
     return isWithinGlobalTooltipRelatedTarget(target, {
       triggerZones: triggerZonesRef.current.values(),
       triggerElements: triggerElementsRef.current.values(),
-      content: contentRef.current,
+      content: isRegistrationHoverableContent(registrationId) ? contentRef.current : null,
     });
-  }, []);
+  }, [isRegistrationHoverableContent]);
 
   const registerActiveAnchorElement = useCallback((element: HTMLElement | null) => {
     activeAnchorElementRef.current = element;
@@ -392,6 +417,8 @@ export function useGlobalTooltipSwitch({
         return;
       }
       openDelayByRegistrationRef.current.set(registrationId, openDelayMs);
+      const hadDisplayedContent =
+        activeItemRef.current !== null || lingerActiveItemRef.current !== null;
       clearHoverCloseTimer();
       if (lingerClearTimerRef.current !== undefined) {
         clearTimeout(lingerClearTimerRef.current);
@@ -421,6 +448,15 @@ export function useGlobalTooltipSwitch({
       }
 
       if (activeItemRef.current !== null) {
+        clearHoverOpenTimer();
+        setActiveSlot(slot);
+        setActiveItem(item);
+        setOpenKind("instant");
+        reapplyCachedTriggerElement(registrationId);
+        return;
+      }
+
+      if (hadDisplayedContent) {
         clearHoverOpenTimer();
         setActiveSlot(slot);
         setActiveItem(item);
@@ -523,6 +559,7 @@ export function useGlobalTooltipSwitch({
     openDelayByRegistrationRef.current.delete(registrationId);
     closeDelayByRegistrationRef.current.delete(registrationId);
     anchorLingerByRegistrationRef.current.delete(registrationId);
+    disableHoverableContentByRegistrationRef.current.delete(registrationId);
   }, []);
 
   const isAnchorSlot = useCallback(
@@ -537,15 +574,18 @@ export function useGlobalTooltipSwitch({
     }
     const handleDocumentPointerMove = (event: PointerEvent) => {
       reaffirmActiveRegistrationTrigger(event);
+      const registrationId = activeSlotRef.current?.registrationId ?? null;
+      const hoverableContent = isRegistrationHoverableContent(registrationId);
       const isRelated =
         (isDomNode(event.target) &&
           activeAnchorElementRef.current?.contains(event.target)) ||
         isWithinGlobalTooltipRelatedTarget(event.target, {
           triggerZones: triggerZonesRef.current.values(),
           triggerElements: triggerElementsRef.current.values(),
-          content: contentRef.current,
+          content: hoverableContent ? contentRef.current : null,
         }) ||
-        isPointerOverTooltipCompanionOverlays(event.clientX, event.clientY);
+        (hoverableContent &&
+          isPointerOverTooltipCompanionOverlays(event.clientX, event.clientY));
       if (isRelated) {
         clearHoverCloseTimer();
         return;
@@ -557,7 +597,7 @@ export function useGlobalTooltipSwitch({
     document.addEventListener("pointermove", handleDocumentPointerMove, true);
     return () =>
       document.removeEventListener("pointermove", handleDocumentPointerMove, true);
-  }, [clearHoverCloseTimer, open, reaffirmActiveRegistrationTrigger, scheduleHoverClose]);
+  }, [clearHoverCloseTimer, isRegistrationHoverableContent, open, reaffirmActiveRegistrationTrigger, scheduleHoverClose]);
 
   useEffect(() => {
     return () => {
@@ -593,6 +633,7 @@ export function useGlobalTooltipSwitch({
     dismissActiveItem,
     dismissIfOpen,
     onTriggerPointerDown,
+    isRegistrationHoverableContent,
     isAnchorSlot,
     onContentPointerEnter,
     lingerAnchorScreenRect,
