@@ -1,4 +1,4 @@
-import { githubApiHeaders, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, readGitHubJson } from './github-api.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import type {
   GitHubPullRequestMergeMethod,
@@ -25,7 +25,7 @@ export async function mergePullRequest(
   options: { mergeMethod: GitHubPullRequestMergeMethod },
 ): Promise<GitHubPullRequestMergeResult> {
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls/${number}/merge`;
-  const response = await fetch(url, {
+  const response = await githubFetch(url, {
     method: 'PUT',
     headers: githubApiHeaders(accessToken),
     body: JSON.stringify({ merge_method: options.mergeMethod }),

@@ -1,4 +1,4 @@
-import { githubApiHeaders, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, readGitHubJson } from './github-api.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import type { HostAutomationGitHubEvent } from '../automations.js';
 
@@ -51,7 +51,7 @@ export async function listRepositoryIssuesForAutomation(
     url.searchParams.set('per_page', String(perPage));
     url.searchParams.set('page', String(page));
 
-    const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+    const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
     const payload = await readGitHubJson<GitHubIssueApiItem[]>(response);
     const pageItems = payload
       .map((item) => mapIssueItem(item))
@@ -91,7 +91,7 @@ export async function fetchRepositoryMaxIssueNumber(
   url.searchParams.set('direction', 'desc');
   url.searchParams.set('per_page', '1');
 
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubIssueApiItem[]>(response);
   const first = payload[0];
   if (!first || typeof first.number !== 'number') {

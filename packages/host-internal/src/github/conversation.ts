@@ -4,6 +4,7 @@ import { getPullRequestCommits } from './pull-request-commits.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import {
   githubApiHeaders,
+  githubFetch,
   githubHasNextPage,
   readGitHubJson,
 } from './github-api.js';
@@ -420,7 +421,7 @@ async function fetchIssueTimeline(
     page: String(page),
   });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/issues/${issueNumber}/timeline?${params.toString()}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const events = await readGitHubJson<GitHubTimelineEvent[]>(response);
   return {
     events,
@@ -439,7 +440,7 @@ async function fetchPullRequestReviewComments(
     page: String(page),
   });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls/${pullNumber}/comments?${params.toString()}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const comments = await readGitHubJson<GitHubReviewCommentApiItem[]>(response);
   return {
     comments,

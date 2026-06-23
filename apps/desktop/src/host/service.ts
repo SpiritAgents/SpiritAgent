@@ -51,6 +51,7 @@ import {
   normalizeApprovalLevel,
   normalizeWorkLocationKind,
   gitBranchLabelForBasicInfo,
+  setGitHubFetchImplementation,
   type WorkLocationKind,
 } from '@spirit-agent/host-internal';
 
@@ -3449,6 +3450,12 @@ export function setDesktopMarketplaceFetchImplementation(
   fetchImpl: typeof fetch | undefined,
 ): void {
   desktopHostService.setMarketplaceFetchImpl(fetchImpl);
+}
+
+export function setDesktopGitHubFetchImplementation(
+  fetchImpl: typeof fetch | undefined,
+): void {
+  setGitHubFetchImplementation(fetchImpl);
 }
 
 export async function invokeDesktopHostCommand(

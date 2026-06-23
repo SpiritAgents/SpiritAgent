@@ -1,4 +1,4 @@
-import { githubApiHeaders, githubHasNextPage, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
 import { commitSubject } from './commit-subject.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import type {
@@ -94,7 +94,7 @@ export async function getPullRequestCommits(
     page: String(page),
   });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls/${number}/commits?${params.toString()}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const items = await readGitHubJson<GitHubPullRequestCommitApiItem[]>(response);
 
   return {
