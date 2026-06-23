@@ -87,7 +87,7 @@ export function DesktopLayoutChromeBar({
             )}
             aria-hidden={sessionSidebarOpen}
           >
-            <Tooltip delayDuration={300}>
+            <Tooltip delayDuration={300} disableHoverableContent>
               <TooltipTrigger asChild>
                 <Button
                   type="button"
@@ -120,7 +120,7 @@ export function DesktopLayoutChromeBar({
       {showTrailingActions ? (
         <div className="flex items-center gap-1">
           {showWorkspaceToggle ? (
-            <Tooltip delayDuration={300}>
+            <Tooltip delayDuration={300} disableHoverableContent>
               <TooltipTrigger asChild>
                 <Button
                   type="button"
