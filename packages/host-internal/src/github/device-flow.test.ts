@@ -153,6 +153,40 @@ test('pollGitHubDeviceToken honors abort signal', async () => {
   }
 });
 
+test('pollGitHubDeviceToken retries fetch failures until token is returned', async () => {
+  const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+
+  let pollCount = 0;
+  mockFetch(async () => {
+    pollCount += 1;
+    if (pollCount === 1) {
+      throw new TypeError('fetch failed');
+    }
+    return Response.json({
+      access_token: 'gho_test_token',
+      token_type: 'bearer',
+    });
+  });
+
+  try {
+    const token = await pollGitHubDeviceToken({
+      deviceCode: 'device-code-1',
+      intervalSeconds: 0,
+      expiresIn: 5,
+    });
+    assert.equal(token.access_token, 'gho_test_token');
+    assert.equal(pollCount, 2);
+  } finally {
+    restoreFetch();
+    if (previousClientId === undefined) {
+      delete process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
+    } else {
+      process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = previousClientId;
+    }
+  }
+});
+
 test('pollGitHubDeviceToken maps access_denied to GitHubOAuthError', async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
   process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
