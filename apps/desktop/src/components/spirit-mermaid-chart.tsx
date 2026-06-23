@@ -273,6 +273,7 @@ export function SpiritMermaidChart({
         }
       } catch (renderError) {
         if (!cancelled) {
+          setSvg("");
           setError(
             renderError instanceof Error
               ? renderError.message
