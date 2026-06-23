@@ -10,6 +10,9 @@ import {
   isRetriableGitHubHttpStatus,
   retryGitHubOAuthUntil,
   type GitHubOAuthRetryAttempt,
+  isGitHubFetchAbortError,
+  sleepUntilGitHubOAuthRetryDeadline,
+  throwIfGitHubFetchAborted,
 } from './oauth-fetch-retry.js';
 import { GitHubOAuthError, requireGitHubOAuthClientId } from './oauth.js';
 import type { GitHubDeviceAuthChallenge, GitHubOAuthTokenResponse } from './types.js';
@@ -27,12 +30,6 @@ interface DeviceCodeApiResponse {
 interface DeviceTokenApiResponse extends GitHubOAuthTokenResponse {
   error?: string;
   error_description?: string;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }
 
 export async function requestGitHubDeviceCode(input?: {
@@ -107,58 +104,87 @@ export async function pollGitHubDeviceToken(input: {
   let intervalMs = Math.max(1, input.intervalSeconds) * 1000;
 
   while (Date.now() < expiresAtMs) {
-    if (input.signal?.aborted) {
-      throw new GitHubOAuthError('GitHub device authorization was cancelled.');
+    throwIfGitHubFetchAborted(input.signal);
+
+    try {
+      const body = new URLSearchParams({
+        client_id: input.clientId ?? requireGitHubOAuthClientId(),
+        device_code: input.deviceCode,
+        grant_type: DEVICE_GRANT_TYPE,
+      });
+
+      const response = await githubFetch(GITHUB_OAUTH_ACCESS_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+        ...(input.signal ? { signal: input.signal } : {}),
+      });
+
+      const payload = (await response.json()) as DeviceTokenApiResponse;
+
+      if (payload.access_token) {
+        return {
+          access_token: payload.access_token,
+          token_type: payload.token_type,
+          ...(payload.scope ? { scope: payload.scope } : {}),
+        };
+      }
+
+      const error = payload.error?.trim();
+      if (error === 'authorization_pending') {
+        await sleepUntilGitHubOAuthRetryDeadline({
+          intervalMs,
+          expiresAtMs,
+          ...(input.signal ? { signal: input.signal } : {}),
+        });
+        continue;
+      }
+
+      if (error === 'slow_down') {
+        intervalMs += 5000;
+        await sleepUntilGitHubOAuthRetryDeadline({
+          intervalMs,
+          expiresAtMs,
+          ...(input.signal ? { signal: input.signal } : {}),
+        });
+        continue;
+      }
+
+      if (error === 'access_denied') {
+        throw new GitHubOAuthError('GitHub device authorization was denied.');
+      }
+
+      if (error === 'expired_token') {
+        throw new GitHubOAuthError('GitHub device code expired. Start sign-in again.');
+      }
+
+      if (isRetriableGitHubHttpStatus(response.status)) {
+        await sleepUntilGitHubOAuthRetryDeadline({
+          intervalMs,
+          expiresAtMs,
+          ...(input.signal ? { signal: input.signal } : {}),
+        });
+        continue;
+      }
+
+      const detail = payload.error_description ?? error ?? `HTTP ${response.status}`;
+      throw new GitHubOAuthError(`GitHub device token exchange failed: ${detail}`, response.status);
+    } catch (pollError) {
+      if (pollError instanceof GitHubOAuthError) {
+        throw pollError;
+      }
+      if (isGitHubFetchAbortError(pollError, input.signal)) {
+        throw new GitHubOAuthError('GitHub device authorization was cancelled.');
+      }
+      await sleepUntilGitHubOAuthRetryDeadline({
+        intervalMs,
+        expiresAtMs,
+        ...(input.signal ? { signal: input.signal } : {}),
+      });
     }
-
-    const body = new URLSearchParams({
-      client_id: input.clientId ?? requireGitHubOAuthClientId(),
-      device_code: input.deviceCode,
-      grant_type: DEVICE_GRANT_TYPE,
-    });
-
-    const response = await githubFetch(GITHUB_OAUTH_ACCESS_TOKEN_URL, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body,
-      ...(input.signal ? { signal: input.signal } : {}),
-    });
-
-    const payload = (await response.json()) as DeviceTokenApiResponse;
-
-    if (payload.access_token) {
-      return {
-        access_token: payload.access_token,
-        token_type: payload.token_type,
-        ...(payload.scope ? { scope: payload.scope } : {}),
-      };
-    }
-
-    const error = payload.error?.trim();
-    if (error === 'authorization_pending') {
-      await sleep(intervalMs);
-      continue;
-    }
-
-    if (error === 'slow_down') {
-      intervalMs += 5000;
-      await sleep(intervalMs);
-      continue;
-    }
-
-    if (error === 'access_denied') {
-      throw new GitHubOAuthError('GitHub device authorization was denied.');
-    }
-
-    if (error === 'expired_token') {
-      throw new GitHubOAuthError('GitHub device code expired. Start sign-in again.');
-    }
-
-    const detail = payload.error_description ?? error ?? `HTTP ${response.status}`;
-    throw new GitHubOAuthError(`GitHub device token exchange failed: ${detail}`, response.status);
   }
 
   throw new GitHubOAuthError('GitHub device authorization timed out.');
