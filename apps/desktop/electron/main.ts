@@ -41,6 +41,7 @@ import {
   installSpiritNotificationProtocolRouting,
   registerSpiritNotificationProtocolClient,
 } from './notification-protocol.js';
+import { syncWindowsJumpList } from './sync-windows-jump-list.js';
 import {
   bindSpiritProtocolActionHandlers,
   flushPendingSpiritProtocolActions,
@@ -450,6 +451,10 @@ function resolveWindowIconPath(): string | undefined {
   return undefined;
 }
 
+function refreshWindowsJumpList(): void {
+  void syncWindowsJumpList(resolveWindowIconPath());
+}
+
 /** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
 const WIN32_APP_BACKGROUND_DARK = '#000000';
 const WIN32_APP_BACKGROUND_LIGHT = '#fafafa';
@@ -757,6 +762,7 @@ if (gotSpiritSingleInstanceLock) {
         window.webContents.send('desktop:session-list-updated');
       }
     }
+    refreshWindowsJumpList();
   });
 
   ipcMain.handle('desktop:invoke', (_event, command: Parameters<typeof invokeDesktopHostCommand>[0], payload?: unknown) =>
@@ -1015,6 +1021,7 @@ if (gotSpiritSingleInstanceLock) {
     if (process.platform === 'darwin') {
       setMacOSApplicationMenu();
     }
+    refreshWindowsJumpList();
   });
 
   ipcMain.handle(
@@ -1250,6 +1257,7 @@ if (gotSpiritSingleInstanceLock) {
 
   await syncInitialDesktopWebHost();
   await createMainWindow();
+  refreshWindowsJumpList();
 
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
