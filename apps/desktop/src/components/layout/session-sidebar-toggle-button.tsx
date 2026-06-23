@@ -14,7 +14,7 @@ export function SessionSidebarToggleButton({ className }: { className?: string }
   const { open: sessionSidebarOpen, toggle: onToggleSessionSidebar } = useSessionSidebarChrome();
 
   return (
-    <Tooltip delayDuration={300}>
+    <Tooltip delayDuration={300} disableHoverableContent>
       <TooltipTrigger asChild>
         <Button
           type="button"
