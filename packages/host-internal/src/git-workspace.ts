@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -15,6 +15,7 @@ export interface GitCheckoutOptions {
 export interface GitWorkspaceSnapshot {
   isRepository: boolean;
   hasChanges: boolean;
+  workingTreeLineDelta?: GitWorkingTreeLineDelta;
   branch?: string;
   branches: string[];
   upstreamRemote?: string;
@@ -24,6 +25,11 @@ export interface GitWorkspaceSnapshot {
   /** Remote used for `git push -u` (upstream remote, else origin, else first remote). */
   pushRemote?: string;
   needsPush: boolean;
+}
+
+export interface GitWorkingTreeLineDelta {
+  added: number;
+  removed: number;
 }
 
 /** Parsed from the first line of `git status -sb` (`## …`). */
@@ -388,6 +394,97 @@ async function gitHasCommit(workspaceRoot: string): Promise<boolean> {
   }
 }
 
+export function parseGitDiffNumstat(stdout: string): GitWorkingTreeLineDelta {
+  let added = 0;
+  let removed = 0;
+  for (const rawLine of stdout.split(/\r?\n/u)) {
+    const line = rawLine.trimEnd();
+    if (!line) {
+      continue;
+    }
+    const tabIndex = line.indexOf('\t');
+    if (tabIndex < 0) {
+      continue;
+    }
+    const addedRaw = line.slice(0, tabIndex).trim();
+    const rest = line.slice(tabIndex + 1);
+    const secondTab = rest.indexOf('\t');
+    if (secondTab < 0) {
+      continue;
+    }
+    const removedRaw = rest.slice(0, secondTab).trim();
+    if (addedRaw === '-' || removedRaw === '-') {
+      continue;
+    }
+    const parsedAdded = Number.parseInt(addedRaw, 10);
+    const parsedRemoved = Number.parseInt(removedRaw, 10);
+    if (Number.isFinite(parsedAdded)) {
+      added += parsedAdded;
+    }
+    if (Number.isFinite(parsedRemoved)) {
+      removed += parsedRemoved;
+    }
+  }
+  return { added, removed };
+}
+
+function sumGitWorkingTreeLineDelta(
+  left: GitWorkingTreeLineDelta,
+  right: GitWorkingTreeLineDelta,
+): GitWorkingTreeLineDelta {
+  return {
+    added: left.added + right.added,
+    removed: left.removed + right.removed,
+  };
+}
+
+async function countTextFileLines(absolutePath: string): Promise<number> {
+  try {
+    const content = await readFile(absolutePath, 'utf8');
+    if (content.length === 0) {
+      return 0;
+    }
+    const lines = content.split(/\r?\n/u);
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+    return lines.length;
+  } catch {
+    return 0;
+  }
+}
+
+export async function readGitWorkingTreeLineDelta(
+  repoRoot: string,
+  options: { statusOutput: string; hasCommit: boolean },
+): Promise<GitWorkingTreeLineDelta> {
+  let delta: GitWorkingTreeLineDelta = { added: 0, removed: 0 };
+
+  if (options.hasCommit) {
+    const { stdout } = await runGit(repoRoot, ['diff', '--numstat', 'HEAD']);
+    delta = parseGitDiffNumstat(stdout);
+  } else {
+    const [{ stdout: unstaged }, { stdout: staged }] = await Promise.all([
+      runGit(repoRoot, ['diff', '--numstat']),
+      runGit(repoRoot, ['diff', '--cached', '--numstat']),
+    ]);
+    delta = sumGitWorkingTreeLineDelta(
+      parseGitDiffNumstat(unstaged),
+      parseGitDiffNumstat(staged),
+    );
+  }
+
+  const untrackedChanges = parseGitStatusPorcelain(options.statusOutput).filter(
+    (change) => change.code === '??',
+  );
+  for (const change of untrackedChanges) {
+    const lines = await countTextFileLines(path.join(repoRoot, change.path));
+    delta.added += lines;
+  }
+
+  return delta;
+}
+
 export async function readGitWorkspaceSnapshot(repoRoot: string): Promise<GitWorkspaceSnapshot> {
   const emptySnapshot = (): GitWorkspaceSnapshot => ({
     isRepository: false,
@@ -437,10 +534,15 @@ export async function readGitWorkspaceSnapshot(repoRoot: string): Promise<GitWor
       hasCommit,
       ...(pushRemote ? { pushRemote } : {}),
     });
+    const hasChanges = statusOutput.trim().length > 0;
+    const workingTreeLineDelta = hasChanges
+      ? await readGitWorkingTreeLineDelta(repoRoot, { statusOutput, hasCommit })
+      : undefined;
 
     return {
       isRepository: true,
-      hasChanges: statusOutput.trim().length > 0,
+      hasChanges,
+      ...(workingTreeLineDelta ? { workingTreeLineDelta } : {}),
       branches,
       aheadCount,
       behindCount,

@@ -925,6 +925,7 @@ export interface DesktopGitSnapshot {
   revision: number;
   isRepository: boolean;
   hasChanges: boolean;
+  workingTreeLineDelta?: { added: number; removed: number };
   branch?: string;
   branches: string[];
   upstreamRemote?: string;
