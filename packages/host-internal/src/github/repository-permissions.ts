@@ -1,4 +1,4 @@
-import { githubApiHeaders, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, readGitHubJson } from './github-api.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import type { GitHubRepositoryRef } from './types.js';
 
@@ -25,7 +25,7 @@ export async function getRepositoryPermissions(
   repository: GitHubRepositoryRef,
 ): Promise<GitHubRepositoryPermissionsApi['permissions']> {
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubRepositoryPermissionsApi>(response);
   return payload.permissions ?? null;
 }

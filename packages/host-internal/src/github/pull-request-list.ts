@@ -1,4 +1,4 @@
-import { githubApiHeaders, githubHasNextPage, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
 import { executeGitHubGraphQL } from './github-graphql.js';
 import { parsePullRequestBodyTaskListProgress } from './pull-request-body-task-list.js';
 import { mapPullRequestSummary } from './pull-request.js';
@@ -118,7 +118,7 @@ async function listPullRequestsFromRest(
     direction: 'desc',
   });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls?${params.toString()}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const items = await readGitHubJson<GitHubPullRequestListApiItem[]>(response);
 
   const hasMore = githubHasNextPage(response);
@@ -146,7 +146,7 @@ async function searchPullRequests(
     order: 'desc',
   });
   const url = `${GITHUB_API_BASE_URL}/search/issues?${params.toString()}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubSearchIssuesResponse>(response);
 
   const hasMore = githubHasNextPage(response);
