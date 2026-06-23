@@ -50,6 +50,7 @@ function SessionListGitTooltipRoot({
       delayDuration={delayDuration}
       closeDelayMs={closeDelayMs}
       anchorLingerMs={anchorLingerMs}
+      disableHoverableContent
     >
       {children}
       <TooltipContent
