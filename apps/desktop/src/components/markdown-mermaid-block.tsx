@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Maximize2, X } from "lucide-react";
 import type { MermaidConfig } from "mermaid";
@@ -94,7 +94,10 @@ export function MarkdownMermaidBlock({
 }: CustomRendererProps & { resolvedDark: boolean }) {
   const { t } = useTranslation();
   const [viewerOpen, setViewerOpen] = useState(false);
-  const mermaidConfig = getSpiritMermaidConfig(resolvedDark);
+  const mermaidConfig = useMemo(
+    () => getSpiritMermaidConfig(resolvedDark),
+    [resolvedDark],
+  );
   const expandLabel = t("app.viewLargeDiagram");
 
   if (isIncomplete) {
