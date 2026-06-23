@@ -1,4 +1,4 @@
-import { githubApiHeaders, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, readGitHubJson } from './github-api.js';
 import {
   fetchViewerMergeHeadlineText,
   resolveViewerCanMerge,
@@ -96,7 +96,7 @@ export async function findOpenPullRequestForHead(
     per_page: '1',
   });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls?${params.toString()}`;
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const items = await readGitHubJson<GitHubPullRequestApiItem[]>(response);
   const first = items[0];
   return first ? mapPullRequestSummary(first) : null;
@@ -109,7 +109,7 @@ export async function getPullRequestDetail(
 ): Promise<GitHubPullRequestDetail> {
   const pullUrl = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls/${number}`;
   const [pullResponse, permissions, viewerMergeHeadlineText] = await Promise.all([
-    fetch(pullUrl, { headers: githubApiHeaders(accessToken) }),
+    githubFetch(pullUrl, { headers: githubApiHeaders(accessToken) }),
     getRepositoryPermissions(accessToken, repository).catch(() => null),
     fetchViewerMergeHeadlineText(accessToken, repository, number),
   ]);

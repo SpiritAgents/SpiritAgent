@@ -114,6 +114,7 @@ function focusSpiritDesktopWindows(): void {
 import {
   invokeDesktopHostCommand,
   setDesktopMarketplaceFetchImplementation,
+  setDesktopGitHubFetchImplementation,
   setDesktopExtensionHostAdapter,
   subscribeDesktopAutomationsUpdates,
   subscribeDesktopDreamUpdates,
@@ -697,9 +698,11 @@ if (gotSpiritSingleInstanceLock) {
     cancel: () => clearPendingGitHubDeviceAuth(),
   });
 
-  setDesktopMarketplaceFetchImplementation((input, init) =>
-    net.fetch(input instanceof URL ? input.toString() : input, init),
-  );
+  const electronNetFetch: typeof fetch = (input, init) =>
+    net.fetch(input instanceof URL ? input.toString() : input, init);
+
+  setDesktopMarketplaceFetchImplementation(electronNetFetch);
+  setDesktopGitHubFetchImplementation(electronNetFetch);
 
   unsubscribeDesktopDreamUpdates = subscribeDesktopDreamUpdates((snapshot) => {
     for (const window of BrowserWindow.getAllWindows()) {

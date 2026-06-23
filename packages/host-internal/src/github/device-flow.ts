@@ -3,6 +3,7 @@ import {
   GITHUB_OAUTH_DEVICE_CODE_URL,
   GITHUB_OAUTH_SCOPES,
 } from './oauth-config.js';
+import { githubFetch } from './github-fetch.js';
 import { GitHubOAuthError, requireGitHubOAuthClientId } from './oauth.js';
 import type { GitHubDeviceAuthChallenge, GitHubOAuthTokenResponse } from './types.js';
 
@@ -36,7 +37,7 @@ export async function requestGitHubDeviceCode(input?: {
     scope: (input?.scopes ?? GITHUB_OAUTH_SCOPES).join(' '),
   });
 
-  const response = await fetch(GITHUB_OAUTH_DEVICE_CODE_URL, {
+  const response = await githubFetch(GITHUB_OAUTH_DEVICE_CODE_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -86,7 +87,7 @@ export async function pollGitHubDeviceToken(input: {
       grant_type: DEVICE_GRANT_TYPE,
     });
 
-    const response = await fetch(GITHUB_OAUTH_ACCESS_TOKEN_URL, {
+    const response = await githubFetch(GITHUB_OAUTH_ACCESS_TOKEN_URL, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

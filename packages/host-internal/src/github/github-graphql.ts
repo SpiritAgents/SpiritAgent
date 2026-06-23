@@ -1,4 +1,4 @@
-import { githubApiHeaders } from './github-api.js';
+import { githubApiHeaders, githubFetch } from './github-api.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 import { GitHubOAuthError } from './oauth.js';
 
@@ -16,7 +16,7 @@ export async function executeGitHubGraphQL<T>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
-  const response = await fetch(`${GITHUB_API_BASE_URL}/graphql`, {
+  const response = await githubFetch(`${GITHUB_API_BASE_URL}/graphql`, {
     method: 'POST',
     headers: githubApiHeaders(accessToken),
     body: JSON.stringify({ query, variables }),

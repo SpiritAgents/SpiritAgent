@@ -1,4 +1,5 @@
 import { GITHUB_API_BASE_URL, resolveGitHubOAuthClientId } from './oauth-config.js';
+import { githubFetch } from './github-fetch.js';
 
 export class GitHubOAuthError extends Error {
   constructor(
@@ -21,7 +22,7 @@ export function requireGitHubOAuthClientId(): string {
 }
 
 export async function fetchGitHubUserLogin(accessToken: string): Promise<string> {
-  const response = await fetch(`${GITHUB_API_BASE_URL}/user`, {
+  const response = await githubFetch(`${GITHUB_API_BASE_URL}/user`, {
     headers: {
       Accept: 'application/vnd.github+json',
       Authorization: `Bearer ${accessToken}`,

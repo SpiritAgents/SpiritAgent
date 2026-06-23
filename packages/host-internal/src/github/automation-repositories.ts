@@ -1,4 +1,4 @@
-import { githubApiHeaders, githubHasNextPage, readGitHubJson } from './github-api.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
 import { GITHUB_API_BASE_URL } from './oauth-config.js';
 
 export interface GitHubAutomationRepositoryItem {
@@ -66,7 +66,7 @@ export async function listUserGitHubRepositories(
   url.searchParams.set('per_page', String(perPage));
   url.searchParams.set('page', String(page));
 
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubUserRepoApiItem[]>(response);
   const items = payload
     .map((item) => mapRepositoryItem(item))
@@ -95,7 +95,7 @@ export async function searchGitHubRepositories(
   url.searchParams.set('per_page', String(perPage));
   url.searchParams.set('page', String(page));
 
-  const response = await fetch(url, { headers: githubApiHeaders(accessToken) });
+  const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubSearchRepositoriesResponse>(response);
   const items = payload.items
     .map((item) => mapRepositoryItem(item))
