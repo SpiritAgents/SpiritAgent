@@ -480,6 +480,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
         {onNewSessionInWorkspace && workspaceRoot ? (
           <Tooltip
             delayDuration={300}
+            disableHoverableContent
             onOpenChange={(open) => {
               if (open) {
                 setPlusTooltipAnchorLocked(true);
