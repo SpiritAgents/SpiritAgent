@@ -512,8 +512,8 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
               </Button>
             </TooltipTrigger>
             <TooltipContent
-              side="right"
-              sideOffset={8}
+              side="bottom"
+              sideOffset={4}
               onAnimationEnd={(event) => {
                 if (event.target !== event.currentTarget) {
                   return;
