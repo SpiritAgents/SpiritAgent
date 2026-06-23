@@ -95,6 +95,7 @@ export async function readWorkspaceGitSnapshot(
   return {
     isRepository: snapshot.isRepository,
     hasChanges: snapshot.hasChanges,
+    ...(snapshot.workingTreeLineDelta ? { workingTreeLineDelta: snapshot.workingTreeLineDelta } : {}),
     branches: snapshot.branches,
     aheadCount: snapshot.aheadCount,
     behindCount: snapshot.behindCount,

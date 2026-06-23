@@ -20,8 +20,10 @@ import {
   mergeSpiritBranchToMain,
   NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL,
   parseGitShortBranchLine,
+  parseGitDiffNumstat,
   pushGitBranch,
   readGitBranchLabelForBasicInfo,
+  readGitWorkingTreeLineDelta,
   readGitWorkspaceSnapshot,
   readWorktreeContext,
   resolveDefaultBranch,
@@ -282,6 +284,42 @@ test('addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a
     assert.equal((await readGitWorkspaceSnapshot(repoRoot)).branch, defaultBranch);
   } finally {
     await rm(`${repoRoot}.worktrees`, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    await rm(repoRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  }
+});
+
+test('parseGitDiffNumstat sums insertions and deletions', () => {
+  const delta = parseGitDiffNumstat('2\t1\tREADME.md\n-\t-\tbinary.dat\n');
+  assert.deepEqual(delta, { added: 2, removed: 1 });
+});
+
+test('readGitWorkingTreeLineDelta counts tracked edits and untracked files', async () => {
+  const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-git-line-delta-'));
+
+  try {
+    await runGit(repoRoot, ['init']);
+    await runGit(repoRoot, ['config', 'user.email', 'test@example.com']);
+    await runGit(repoRoot, ['config', 'user.name', 'Spirit Test']);
+    await writeFile(join(repoRoot, 'README.md'), 'one\n');
+    await runGit(repoRoot, ['add', 'README.md']);
+    await runGit(repoRoot, ['commit', '-m', 'init']);
+
+    const cleanSnapshot = await readGitWorkspaceSnapshot(repoRoot);
+    assert.equal(cleanSnapshot.hasChanges, false);
+    assert.equal(cleanSnapshot.workingTreeLineDelta, undefined);
+
+    await writeFile(join(repoRoot, 'README.md'), 'one\ntwo\n');
+    const trackedSnapshot = await readGitWorkspaceSnapshot(repoRoot);
+    assert.equal(trackedSnapshot.hasChanges, true);
+    assert.ok((trackedSnapshot.workingTreeLineDelta?.added ?? 0) > 0);
+    assert.equal(trackedSnapshot.workingTreeLineDelta?.removed ?? -1, 0);
+
+    await runGit(repoRoot, ['checkout', '--', 'README.md']);
+    await writeFile(join(repoRoot, 'new.txt'), 'alpha\nbeta\n');
+    const untrackedSnapshot = await readGitWorkspaceSnapshot(repoRoot);
+    assert.equal(untrackedSnapshot.hasChanges, true);
+    assert.deepEqual(untrackedSnapshot.workingTreeLineDelta, { added: 2, removed: 0 });
+  } finally {
     await rm(repoRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
