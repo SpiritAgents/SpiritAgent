@@ -7,7 +7,6 @@ import {
   ChevronRight,
   FileText,
   Regex,
-  Search,
   WholeWord,
 } from "lucide-react";
 
@@ -227,15 +226,11 @@ export function WorkspaceFilesSearchPanel({
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="shrink-0 px-2 pb-2 pt-1">
         <div className={cn("relative", DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL)}>
-          <Search
-            className="pointer-events-none absolute left-2 top-1/2 z-10 size-3.5 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("workspace.fileSearchPlaceholder")}
-            className="h-8 rounded-none border-0 bg-transparent pl-8 pr-[5.5rem] text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent"
+            className="h-8 rounded-none border-0 bg-transparent pl-2 pr-[5.5rem] text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent"
             aria-label={t("workspace.fileSearch")}
           />
           <div className="absolute inset-y-0 right-1 flex items-center gap-0.5">
