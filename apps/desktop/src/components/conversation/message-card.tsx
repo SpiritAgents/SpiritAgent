@@ -1,6 +1,5 @@
 import { useMemo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 
 import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
 import { ComposerSurface } from "@/components/composer/composer-surface";
@@ -391,14 +390,7 @@ export function MessageCard({
               if (!text.trim()) {
                 return;
               }
-              void navigator.clipboard.writeText(text).then(
-                () => {
-                  toast.success(t("app.copiedToClipboard"));
-                },
-                () => {
-                  // Clipboard unavailable — match git SHA copy behavior.
-                },
-              );
+              void navigator.clipboard.writeText(text);
             }}
             canFork={showForkMenu && Boolean(onForkMessage)}
             forkEnabled={canFork}
