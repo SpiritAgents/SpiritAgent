@@ -259,20 +259,20 @@ export function WorkspaceFilesSearchPanel({
                     <span className="shrink-0 text-muted-foreground">{group.matches.length}</span>
                   </button>
                   {expanded ? (
-                    <ul className="mb-1 ml-5 border-l border-border/40 pl-2">
+                    <ul className="mb-1">
                       {group.matches.map((match) => {
                         const segments = truncateSearchLinePreview(match.lineText, match.submatches);
                         return (
-                          <li key={`${match.lineNumber}:${match.submatches[0]?.start ?? 0}`}>
+                          <li key={`${match.lineNumber}:${match.submatches[0]?.start ?? 0}`} className="min-w-0">
                             <button
                               type="button"
-                              className="flex w-full min-w-0 items-baseline gap-2 rounded-md px-2 py-1 text-left text-xs hover:bg-accent"
+                              className={cn(
+                                "flex w-full min-w-0 items-center rounded py-1 pl-7 pr-2 text-left text-xs",
+                                "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+                              )}
                               onClick={() => openMatch(match)}
                             >
-                              <span className="w-8 shrink-0 text-muted-foreground tabular-nums">
-                                {match.lineNumber}
-                              </span>
-                              <span className="min-w-0 flex-1 truncate font-mono text-[11px] leading-relaxed">
+                              <span className="min-w-0 flex-1 truncate">
                                 {segments.map((segment, index) =>
                                   segment.highlighted ? (
                                     <mark
