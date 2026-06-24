@@ -33,6 +33,7 @@ import {
 } from "@/lib/tool-call-display";
 import { parseShellCommand, parseShellToolResult } from "@/lib/shell-tool-display";
 import {
+  clickableToolCardTriggerClass,
   shouldShowLspDiagnosticsOnToolCard,
   toolCardFailedStatusClass,
   toolCardFileNameDetailClass,
@@ -553,6 +554,7 @@ export function MinimalToolCallCard({
         className={cn(
           "w-full min-w-0 overflow-hidden text-left outline-none",
           "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+          clickableToolCardTriggerClass,
         )}
       >
         <p className={plainSummaryClass}>{summaryRow}</p>
@@ -594,6 +596,7 @@ export function MinimalToolCallCard({
         className={cn(
           "min-w-0 overflow-hidden text-left outline-none",
           "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+          clickableToolCardTriggerClass,
         )}
       >
         {summaryRow}
