@@ -20,6 +20,7 @@ import { resolveWorkspaceFilesTabIcon } from "@/lib/workspace-explorer-icon";
 import { normalizeWorkspaceEntryRel } from "@/lib/workspace-entry-path-sync";
 import {
   groupWorkspaceSearchMatches,
+  ripgrepSubmatchToCodeUnitRange,
   truncateSearchLinePreview,
 } from "@/lib/workspace-files-search";
 import type { EditorFileRevealLocation } from "@/lib/workspace-editor-navigation";
@@ -214,7 +215,10 @@ export function WorkspaceFilesSearchPanel({
 
   const openMatch = useCallback(
     (match: WorkspaceContentSearchMatch) => {
-      const column = (match.submatches[0]?.start ?? 0) + 1;
+      const submatch = match.submatches[0];
+      const column = submatch
+        ? ripgrepSubmatchToCodeUnitRange(match.lineText, submatch).start + 1
+        : 1;
       onOpenSearchMatch(match.relativePath, {
         line: match.lineNumber,
         column,
