@@ -9,6 +9,7 @@ import test from 'node:test';
 import {
   buildRipgrepArgs,
   formatGrepToolOutput,
+  normalizeSearchLine,
   runRipgrepSearch,
 } from './ripgrep-search.js';
 
@@ -247,6 +248,33 @@ test('formatGrepToolOutput preserves grep tool summary shape', () => {
   assert.match(output, /glob: src\/\*\*\/\*\.ts/u);
   assert.match(output, /命中片段\nsrc\/app\.ts:1 \| needle here\n/u);
   assert.match(output, /涉及文件\nsrc\/app\.ts\n/u);
+});
+
+test('normalizeSearchLine strips trailing newline but keeps leading indent', () => {
+  assert.equal(normalizeSearchLine('  needle here\n'), '  needle here');
+});
+
+test('runRipgrepSearch keeps submatch byte offsets aligned for indented CJK lines', async () => {
+  await withTempWorkspace(async (root) => {
+    await writeFile(
+      join(root, 'sample.rs'),
+      "    timeline.beginUserTurn('你好啊');\n",
+      'utf8',
+    );
+
+    const matches = await runRipgrepSearch({
+      workspaceRoot: root,
+      query: '你好',
+    });
+
+    assert.equal(matches.length, 1);
+    const match = matches[0]!;
+    assert.ok(match.lineText.startsWith('    '));
+    const submatch = match.submatches[0];
+    assert.ok(submatch);
+    const bytes = Buffer.from(match.lineText, 'utf8');
+    assert.equal(bytes.subarray(submatch.start, submatch.end).toString('utf8'), '你好');
+  });
 });
 
 test('formatGrepToolOutput reports empty results', () => {

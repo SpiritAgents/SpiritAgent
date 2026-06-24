@@ -36,6 +36,7 @@ import {
   remapWorkspaceEntryPath,
   normalizeWorkspaceEntryRel,
 } from "@/lib/workspace-entry-path-sync";
+import { ripgrepSubmatchToCodeUnitRange } from "@/lib/workspace-files-search";
 import type {
   EditorFileTarget,
   EditorFileRevealLocation,
@@ -783,10 +784,11 @@ export function WorkspaceFilesTab({
     const ranges: WorkspaceMonacoSearchMatchRange[] = [];
     for (const match of fileMatches) {
       for (const submatch of match.submatches) {
+        const codeUnitRange = ripgrepSubmatchToCodeUnitRange(match.lineText, submatch);
         ranges.push({
           line: match.lineNumber,
-          startColumn: submatch.start + 1,
-          endColumn: submatch.end + 1,
+          startColumn: codeUnitRange.start + 1,
+          endColumn: codeUnitRange.end + 1,
         });
       }
     }
