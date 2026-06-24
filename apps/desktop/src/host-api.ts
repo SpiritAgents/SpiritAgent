@@ -220,6 +220,7 @@ export interface HostApi {
   readHostTextFile(absolutePath: string): Promise<WorkspaceReadTextFileResult>;
   writeHostTextFile(request: WriteHostTextFileRequest): Promise<void>;
   statHostTextFile(absolutePath: string): Promise<HostTextFileStatResult>;
+  classifyLocalFileComposerRoute(absolutePath: string): Promise<import('@spirit-agent/host-internal').LocalFileComposerRoute>;
   pickWorkspaceDirectory?(): Promise<string | null>;
   pickLocalFile?(): Promise<string | null>;
   ingestClipboardImage?(): Promise<string | null>;

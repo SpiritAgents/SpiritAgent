@@ -819,6 +819,21 @@ export function useDesktopRuntime() {
     }
   }, [api]);
 
+  const classifyLocalFileComposerRoute = useCallback(
+    async (absolutePath: string): Promise<import('@spirit-agent/host-internal').LocalFileComposerRoute> => {
+      if (!api) {
+        return 'reference';
+      }
+      try {
+        return await api.classifyLocalFileComposerRoute(absolutePath);
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return 'reference';
+      }
+    },
+    [api],
+  );
+
   const ingestClipboardImage = useCallback(async (): Promise<string | null> => {
     if (!api?.ingestClipboardImage) {
       return null;
@@ -2974,6 +2989,7 @@ export function useDesktopRuntime() {
     rememberWorkspaceRoot,
     pickWorkspaceDirectory,
     pickLocalFile,
+    classifyLocalFileComposerRoute,
     ingestClipboardImage,
     readLocalImagePreviewDataUrl,
     readManagedImagePreviewDataUrl,

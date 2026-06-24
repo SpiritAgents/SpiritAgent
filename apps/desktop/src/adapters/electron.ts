@@ -321,6 +321,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     statHostTextFile(absolutePath) {
       return bridge.statHostTextFile(absolutePath);
     },
+    classifyLocalFileComposerRoute(absolutePath) {
+      return bridge.classifyLocalFileComposerRoute(absolutePath);
+    },
     pickWorkspaceDirectory() {
       return bridge.pickWorkspaceDirectory();
     },

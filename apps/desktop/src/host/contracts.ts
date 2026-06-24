@@ -107,6 +107,7 @@ export type HostCommandName =
   | 'readHostTextFile'
   | 'writeHostTextFile'
   | 'statHostTextFile'
+  | 'classifyLocalFileComposerRoute'
   | 'rewindAndSubmitMessage'
   | 'forkSession'
   | 'reorderQueuedUserTurn'

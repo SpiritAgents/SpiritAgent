@@ -40,6 +40,8 @@ import {
   createHostExtensionMarketplace,
   createHostExtensionManager,
   localFileAttachmentFromPath,
+  classifyLocalFileComposerRoute as resolveLocalFileComposerRoute,
+  type LocalFileComposerRoute,
   restoreHostFileChanges,
   type HostDreamScope,
   type HostTodoRecord,
@@ -1930,6 +1932,10 @@ class DesktopHostService {
 
   async statHostTextFile(absolutePath: string): Promise<HostTextFileStatResult> {
     return statHostTextFileCommand(this.workspaceGitCommandContext(), absolutePath);
+  }
+
+  async classifyLocalFileComposerRoute(absolutePath: string): Promise<LocalFileComposerRoute> {
+    return resolveLocalFileComposerRoute(absolutePath);
   }
 
   async openSession(filePath: string): Promise<DesktopSnapshot> {
