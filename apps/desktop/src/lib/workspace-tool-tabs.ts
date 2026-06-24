@@ -13,6 +13,8 @@ export type WorkspaceToolTab = {
   tabTitle?: string;
   /** 仅 kind === "files" 时使用；表示当前打开文件有未保存编辑 */
   tabDirty?: boolean;
+  /** 仅 kind === "files" 时使用；当前打开的工作区相对路径（用于跨选项卡复用） */
+  filesWorkspacePath?: string;
   /** 仅 kind === "pr" 时使用；表示当前 PR 详情页的状态，用于切换选项卡图标 */
   prStatus?: PullRequestChipStatus;
 };

@@ -4,6 +4,7 @@ import {
   focusFirstTabOfKind,
   type WorkspaceToolTab,
 } from "@/lib/workspace-tool-tabs";
+import { normalizeWorkspaceEntryRel } from "@/lib/workspace-entry-path-sync";
 
 export type WorkspaceEditorViewMode = "edit" | "preview";
 
@@ -76,6 +77,17 @@ export function buildOpenEditorFileInNewTabNavigation(
     filesTabId: added.activeId,
     reveal: input.target,
   };
+}
+
+/** 查找已打开指定工作区文件路径的 files 选项卡 id。 */
+export function findFilesTabWithWorkspacePath(
+  tabs: readonly WorkspaceToolTab[],
+  relativePath: string,
+): string | undefined {
+  const normalized = normalizeWorkspaceEntryRel(relativePath);
+  return tabs.find(
+    (tab) => tab.kind === "files" && tab.filesWorkspacePath === normalized,
+  )?.id;
 }
 
 export type OpenWorkspaceFileNavigationInput = {
