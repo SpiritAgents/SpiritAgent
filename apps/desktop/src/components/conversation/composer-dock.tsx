@@ -1,6 +1,7 @@
 import {
   forwardRef,
   type ClipboardEvent as ReactClipboardEvent,
+  type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
 } from "react";
@@ -76,6 +77,8 @@ export type ComposerDockProps = {
   onInsertSkillTriggerFromPalette: () => void;
   onRemoveLocalFileAttachment: (path: string) => void;
   onComposerPaste: (event: ReactClipboardEvent<HTMLTextAreaElement>) => void;
+  onComposerDragOver: (event: ReactDragEvent<HTMLElement>) => void;
+  onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
@@ -119,6 +122,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     onInsertSkillTriggerFromPalette,
     onRemoveLocalFileAttachment,
     onComposerPaste,
+    onComposerDragOver,
+    onComposerDrop,
     models,
     useMicaBackdrop,
     onOpenGitTab,
@@ -365,6 +370,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 onInsertSkillTrigger={onInsertSkillTriggerFromPalette}
                 onRemoveLocalFileAttachment={onRemoveLocalFileAttachment}
                 onPaste={onComposerPaste}
+                onDragOver={onComposerDragOver}
+                onDrop={onComposerDrop}
                 saveLocalImageAs={runtime.saveLocalImageAs}
               />
             </div>

@@ -17,6 +17,11 @@ export function resolveComposerDropAbsolutePaths(
   event: Pick<DragEvent, "dataTransfer">,
   options: ResolveComposerDropPathsOptions,
 ): string[] {
+  const dataTransfer = event.dataTransfer;
+  if (!dataTransfer) {
+    return [];
+  }
+
   const { workspaceRoot, getPathForFile } = options;
   const paths: string[] = [];
   const seen = new Set<string>();
@@ -30,7 +35,7 @@ export function resolveComposerDropAbsolutePaths(
     paths.push(value);
   };
 
-  const spiritRaw = event.dataTransfer.getData(SPIRIT_WORKSPACE_ENTRY_MIME);
+  const spiritRaw = dataTransfer.getData(SPIRIT_WORKSPACE_ENTRY_MIME);
   if (spiritRaw) {
     try {
       const payload = JSON.parse(spiritRaw) as { relativePath?: string; kind?: string };
@@ -43,7 +48,7 @@ export function resolveComposerDropAbsolutePaths(
     return paths;
   }
 
-  for (const file of Array.from(event.dataTransfer.files)) {
+  for (const file of Array.from(dataTransfer.files)) {
     const absolutePath = getPathForFile(file);
     if (absolutePath) {
       pushUniquePath(absolutePath);
