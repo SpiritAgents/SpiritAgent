@@ -52,6 +52,7 @@ import { shouldPromptGitBranchCheckoutBeforeSend } from "@/lib/composer-branch-c
 import {
   isComposerFileDropAccepted,
   resolveComposerDropAbsolutePaths,
+  resolveComposerDropEffect,
 } from "@/lib/composer-file-drop";
 import type {
   DesktopSnapshot,
@@ -641,7 +642,7 @@ export function useComposerController({
         return;
       }
       event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
+      event.dataTransfer.dropEffect = resolveComposerDropEffect(event.dataTransfer);
     },
     [activeSessionReadOnly, runtime.hostKind],
   );

@@ -19,6 +19,7 @@ import { canStartMessageRewind } from "@/lib/message-rewind-eligibility";
 import {
   isComposerFileDropAccepted,
   resolveComposerDropAbsolutePaths,
+  resolveComposerDropEffect,
 } from "@/lib/composer-file-drop";
 import type { ConversationMessageSnapshot, MessageRewindDraftState } from "@/types";
 
@@ -203,7 +204,7 @@ export function useMessageRewind({
         return;
       }
       event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
+      event.dataTransfer.dropEffect = resolveComposerDropEffect(event.dataTransfer);
     },
     [activeSessionReadOnly, rewindDraft, runtime.hostKind],
   );
