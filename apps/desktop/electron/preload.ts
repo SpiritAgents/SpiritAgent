@@ -368,6 +368,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   statHostTextFile(absolutePath: string) {
     return ipcRenderer.invoke('desktop:invoke', 'statHostTextFile', { absolutePath });
   },
+  classifyLocalFileComposerRoute(absolutePath: string) {
+    return ipcRenderer.invoke('desktop:invoke', 'classifyLocalFileComposerRoute', { absolutePath });
+  },
   pickWorkspaceDirectory() {
     return ipcRenderer.invoke('desktop:pick-workspace-directory');
   },

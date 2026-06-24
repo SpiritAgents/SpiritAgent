@@ -1103,6 +1103,18 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/host/file/classify-composer-route') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('classifyLocalFileComposerRoute', {
+        absolutePath: typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+      }),
+    );
+    return;
+  }
+
   writeJson(request, response, 404, { error: `Unknown route: ${request.method} ${pathname}` });
 }
 

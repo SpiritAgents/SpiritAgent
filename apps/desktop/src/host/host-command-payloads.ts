@@ -151,6 +151,7 @@ export type CommandPayloads = {
   readHostTextFile: { absolutePath: string };
   writeHostTextFile: { request: WriteHostTextFileRequest };
   statHostTextFile: { absolutePath: string };
+  classifyLocalFileComposerRoute: { absolutePath: string };
   rewindAndSubmitMessage: { request: RewindAndSubmitMessageRequest };
   forkSession: { request: ForkSessionRequest };
   reorderQueuedUserTurn: { request: QueuedUserTurnRequest };
