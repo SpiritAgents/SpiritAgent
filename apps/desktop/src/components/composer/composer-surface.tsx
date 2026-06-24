@@ -1,6 +1,8 @@
 import {
   useMemo,
+  useState,
   type ClipboardEvent as ReactClipboardEvent,
+  type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type RefObject,
@@ -77,6 +79,8 @@ export type ComposerSurfaceProps = {
   onInsertSkillTrigger?(): void;
   onRemoveLocalFileAttachment?(path: string): void;
   onPaste?(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
+  onDragOver?(event: ReactDragEvent<HTMLElement>): void;
+  onDrop?(event: ReactDragEvent<HTMLElement>): void;
   browserElementAttachments?: readonly BrowserElementAttachment[];
   onElementAttachmentsChange?(attachments: BrowserElementAttachment[]): void;
   initialSegments?: readonly RichSegment[] | null;
@@ -116,6 +120,8 @@ export function ComposerSurface({
   onInsertSkillTrigger,
   onRemoveLocalFileAttachment,
   onPaste,
+  onDragOver,
+  onDrop,
   browserElementAttachments,
   onElementAttachmentsChange,
   initialSegments,
@@ -125,6 +131,7 @@ export function ComposerSurface({
   saveLocalImageAs,
 }: ComposerSurfaceProps) {
   const { t } = useTranslation();
+  const [fileDragOver, setFileDragOver] = useState(false);
   const activeModelProfile = useMemo(
     () => models.find((model) => model.name === activeModel),
     [activeModel, models],
@@ -144,13 +151,37 @@ export function ComposerSurface({
     focusRichInput();
   };
 
+  const handleSurfaceDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
+    onDragOver?.(event);
+    if (event.defaultPrevented) {
+      setFileDragOver(true);
+    }
+  };
+
+  const handleSurfaceDragLeave = (event: ReactDragEvent<HTMLDivElement>) => {
+    const related = event.relatedTarget;
+    if (related instanceof Node && event.currentTarget.contains(related)) {
+      return;
+    }
+    setFileDragOver(false);
+  };
+
+  const handleSurfaceDrop = (event: ReactDragEvent<HTMLDivElement>) => {
+    setFileDragOver(false);
+    onDrop?.(event);
+  };
+
   return (
     <div
       data-spirit-surface="composer-surface"
       className={cn(
         "relative overflow-hidden rounded-2xl border border-border/50 shadow-sm focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
+        fileDragOver && "border-ring/60 ring-2 ring-ring/40 dark:border-white/12",
         DESKTOP_COMPOSER_SURFACE_BACKDROP,
       )}
+      onDragOver={handleSurfaceDragOver}
+      onDragLeave={handleSurfaceDragLeave}
+      onDrop={handleSurfaceDrop}
     >
       <ComposerLocalFileStrip
         attachments={localFileAttachments}

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
+  DragEvent as ReactDragEvent,
   ComponentProps,
   ComponentRef,
   Dispatch,
@@ -110,6 +111,8 @@ export type ComposerDockSectionProps = {
   onInsertSkillTriggerFromPalette: () => void;
   onRemoveLocalFileAttachment: (path: string) => void;
   onComposerPaste: (event: ReactClipboardEvent<HTMLTextAreaElement>) => void;
+  onComposerDragOver: (event: ReactDragEvent<HTMLElement>) => void;
+  onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
   models: DesktopSnapshot["config"]["models"];
   onOpenGitTab: () => void;
 };
@@ -358,6 +361,8 @@ export function ConversationView({
             onInsertSkillTriggerFromPalette={composerDock.onInsertSkillTriggerFromPalette}
             onRemoveLocalFileAttachment={composerDock.onRemoveLocalFileAttachment}
             onComposerPaste={composerDock.onComposerPaste}
+            onComposerDragOver={composerDock.onComposerDragOver}
+            onComposerDrop={composerDock.onComposerDrop}
             models={composerDock.models}
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}

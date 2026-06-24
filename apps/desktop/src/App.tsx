@@ -578,6 +578,8 @@ export default function App() {
               onInsertSkillTriggerFromPalette: composer.insertSkillTriggerFromPalette,
               onRemoveLocalFileAttachment: composer.removeLocalFileAttachment,
               onComposerPaste: composer.handleComposerPaste,
+              onComposerDragOver: composer.handleComposerDragOver,
+              onComposerDrop: composer.handleComposerDrop,
               models: conversation.models,
               onOpenGitTab: workspaceTools.openGitTab,
             }}
