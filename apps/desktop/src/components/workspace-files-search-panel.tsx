@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type ComponentRef } from "react";
 import { useTranslation } from "react-i18next";
-
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   CaseSensitive,
   ChevronDown,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL, instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import { resolveWorkspaceFilesTabIcon } from "@/lib/workspace-explorer-icon";
 import { normalizeWorkspaceEntryRel } from "@/lib/workspace-entry-path-sync";
 import {
@@ -57,6 +58,49 @@ export type WorkspaceFilesSearchPanelProps = {
 };
 
 const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_VIRTUAL_ROW_ESTIMATE_PX = 26;
+
+type WorkspaceSearchVirtualRow =
+  | {
+      kind: "header";
+      normalizedPath: string;
+      relativePath: string;
+      matchCount: number;
+    }
+  | {
+      kind: "match";
+      normalizedPath: string;
+      match: WorkspaceContentSearchMatch;
+      matchKey: string;
+    };
+
+function buildWorkspaceSearchVirtualRows(
+  groups: ReturnType<typeof groupWorkspaceSearchMatches>,
+  expandedPaths: ReadonlySet<string>,
+): WorkspaceSearchVirtualRow[] {
+  const rows: WorkspaceSearchVirtualRow[] = [];
+  for (const group of groups) {
+    const normalizedPath = normalizeWorkspaceEntryRel(group.relativePath);
+    rows.push({
+      kind: "header",
+      normalizedPath,
+      relativePath: group.relativePath,
+      matchCount: group.matches.length,
+    });
+    if (!expandedPaths.has(normalizedPath)) {
+      continue;
+    }
+    for (const match of group.matches) {
+      rows.push({
+        kind: "match",
+        normalizedPath,
+        match,
+        matchKey: `${normalizedPath}:${match.lineNumber}:${match.submatches[0]?.start ?? 0}`,
+      });
+    }
+  }
+  return rows;
+}
 
 export function WorkspaceFilesSearchPanel({
   searchWorkspaceContent,
@@ -74,7 +118,7 @@ export function WorkspaceFilesSearchPanel({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [expandedPaths, setExpandedPaths] = useState<ReadonlySet<string>>(() => new Set());
-
+  const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   useEffect(() => {
     const handle = window.setTimeout(() => {
       setDebouncedQuery(query.trim());
@@ -143,6 +187,18 @@ export function WorkspaceFilesSearchPanel({
   ]);
 
   const groups = useMemo(() => groupWorkspaceSearchMatches(matches), [matches]);
+
+  const virtualRows = useMemo(
+    () => buildWorkspaceSearchVirtualRows(groups, expandedPaths),
+    [groups, expandedPaths],
+  );
+
+  const virtualizer = useVirtualizer({
+    count: virtualRows.length,
+    getScrollElement: () => scrollAreaViewport(scrollAreaRef.current),
+    estimateSize: () => SEARCH_VIRTUAL_ROW_ESTIMATE_PX,
+    overscan: 12,
+  });
 
   const toggleExpanded = useCallback((relativePath: string) => {
     setExpandedPaths((prev) => {
@@ -243,70 +299,100 @@ export function WorkspaceFilesSearchPanel({
           <p className="px-3 py-2 text-xs text-muted-foreground">{t("workspace.fileSearchNoResults")}</p>
         ) : null}
 
-        <ScrollArea className="h-full min-h-0 w-full">
-          <ul className="space-y-1 px-1 pb-2">
-            {groups.map((group) => {
-              const normalizedPath = normalizeWorkspaceEntryRel(group.relativePath);
-              const expanded = expandedPaths.has(normalizedPath);
-              const Icon = resolveWorkspaceFilesTabIcon(pathBasename(group.relativePath)) ?? FileText;
-              return (
-                <li key={normalizedPath}>
-                  <button
-                    type="button"
-                    className="flex w-full min-w-0 items-center gap-1 rounded-md px-2 py-1 text-left text-xs hover:bg-accent"
-                    onClick={() => toggleExpanded(normalizedPath)}
+        <ScrollArea ref={scrollAreaRef} className="h-full min-h-0 w-full">
+          <div
+            className="relative w-full px-1 pb-2"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const row = virtualRows[virtualItem.index];
+              if (!row) {
+                return null;
+              }
+
+              if (row.kind === "header") {
+                const Icon = resolveWorkspaceFilesTabIcon(pathBasename(row.relativePath)) ?? FileText;
+                return (
+                  <div
+                    key={`header:${row.normalizedPath}`}
+                    ref={virtualizer.measureElement}
+                    data-index={virtualItem.index}
+                    className="absolute left-0 top-0 w-full px-1"
+                    style={{ transform: `translateY(${virtualItem.start}px)` }}
                   >
-                    {expanded ? (
-                      <ChevronDown className="size-3 shrink-0 opacity-70" aria-hidden />
-                    ) : (
-                      <ChevronRight className="size-3 shrink-0 opacity-70" aria-hidden />
-                    )}
-                    <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate font-medium">
-                      {pathBasename(group.relativePath)}
-                    </span>
-                    <span className="shrink-0 text-muted-foreground">{group.matches.length}</span>
-                  </button>
-                  {expanded ? (
-                    <ul className="mb-1">
-                      {group.matches.map((match) => {
-                        const segments = truncateSearchLinePreview(match.lineText, match.submatches);
-                        return (
-                          <li key={`${match.lineNumber}:${match.submatches[0]?.start ?? 0}`} className="min-w-0">
-                            <button
-                              type="button"
-                              className={cn(
-                                "flex w-full min-w-0 items-center rounded py-1 pl-7 pr-2 text-left text-xs",
-                                "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
-                              )}
-                              onClick={() => openMatch(match)}
-                            >
-                              <span className="min-w-0 flex-1 truncate">
-                                {segments.map((segment, index) =>
-                                  segment.highlighted ? (
-                                    <mark
-                                      key={index}
-                                      className="rounded-sm bg-primary/20 text-foreground"
-                                    >
-                                      {segment.text}
-                                    </mark>
-                                  ) : (
-                                    <span key={index}>{segment.text}</span>
-                                  ),
-                                )}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                </li>
+                    <button
+                      type="button"
+                      className="flex w-full min-w-0 items-center gap-1 rounded-md px-2 py-1 text-left text-xs hover:bg-accent"
+                      onClick={() => toggleExpanded(row.normalizedPath)}
+                    >
+                      {expandedPaths.has(row.normalizedPath) ? (
+                        <ChevronDown className="size-3 shrink-0 opacity-70" aria-hidden />
+                      ) : (
+                        <ChevronRight className="size-3 shrink-0 opacity-70" aria-hidden />
+                      )}
+                      <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate font-medium">
+                        {pathBasename(row.relativePath)}
+                      </span>
+                      <span className="shrink-0 text-muted-foreground">{row.matchCount}</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={row.matchKey}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualItem.index}
+                  className="absolute left-0 top-0 w-full px-1"
+                  style={{ transform: `translateY(${virtualItem.start}px)` }}
+                >
+                  <WorkspaceSearchMatchRow match={row.match} onOpen={openMatch} />
+                </div>
               );
             })}
-          </ul>
+          </div>
         </ScrollArea>
       </div>
     </div>
   );
 }
+
+const WorkspaceSearchMatchRow = memo(function WorkspaceSearchMatchRow({
+  match,
+  onOpen,
+}: {
+  match: WorkspaceContentSearchMatch;
+  onOpen: (match: WorkspaceContentSearchMatch) => void;
+}) {
+  const segments = useMemo(
+    () => truncateSearchLinePreview(match.lineText, match.submatches),
+    [match.lineText, match.submatches],
+  );
+
+  return (
+    <div className="min-w-0">
+      <button
+        type="button"
+        className={cn(
+          "flex w-full min-w-0 items-center rounded py-1 pl-7 pr-2 text-left text-xs",
+          "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
+        )}
+        onClick={() => onOpen(match)}
+      >
+        <span className="min-w-0 flex-1 truncate">
+          {segments.map((segment, index) =>
+            segment.highlighted ? (
+              <mark key={index} className="rounded-sm bg-primary/20 text-foreground">
+                {segment.text}
+              </mark>
+            ) : (
+              <span key={index}>{segment.text}</span>
+            ),
+          )}
+        </span>
+      </button>
+    </div>
+  );
+});
