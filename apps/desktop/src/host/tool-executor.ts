@@ -40,6 +40,7 @@ import {
   buildLspHostToolDefinitions,
   isLspDiagnosticsToolRequest,
   requestFromGetDiagnosticsFunctionCall,
+  executeGetDiagnostics,
 } from '@spirit-agent/core';
 import {
   LspService,
@@ -352,8 +353,8 @@ export class DesktopToolExecutor
           'get_diagnostics is not available because no language server is installed for this workspace',
         );
       }
-      const result = await this.lsp.getDiagnosticsForPath(jsonRequest.path);
-      return createToolExecutionTextOutput(result.formatted);
+      const result = await executeGetDiagnostics(this.lsp, jsonRequest.paths);
+      return createToolExecutionTextOutput(result);
     }
 
     this.assertAllowedDreamToolRequest(request);

@@ -49,6 +49,13 @@ export function formatDiagnosticsForLlm(
   return [header, ...lines].join('\n');
 }
 
+export function formatDiagnosticsBatchForLlm(sections: readonly string[]): string {
+  return sections
+    .map((section) => section.trim())
+    .filter((section) => section.length > 0)
+    .join('\n\n');
+}
+
 export function formatDiagnosticsSummaryBlock(
   relativePath: string,
   diagnostics: LspDiagnostic[],

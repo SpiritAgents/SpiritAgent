@@ -31,16 +31,19 @@ test('buildLspHostToolDefinitions lists only ready providers', () => {
   ]);
   assert.equal(tools.length, 1);
   const tool = tools[0] as {
-    function?: { description?: string; parameters?: { properties?: { path?: { description?: string } } } };
+    function?: {
+      description?: string;
+      parameters?: { properties?: { paths?: { description?: string } } };
+    };
   };
   const description = tool.function?.description ?? '';
-  const pathDescription = tool.function?.parameters?.properties?.path?.description ?? '';
+  const pathsDescription = tool.function?.parameters?.properties?.paths?.description ?? '';
   assert.match(description, /TypeScript Language Server/);
   assert.match(description, /rust-analyzer/);
   assert.doesNotMatch(description, /pyright|gopls|clangd|OmniSharp|JDT/i);
-  assert.match(pathDescription, /TypeScript\/JavaScript/);
-  assert.match(pathDescription, /Rust/);
-  assert.doesNotMatch(pathDescription, /Python|\.go|Java \(|C#/i);
+  assert.match(pathsDescription, /TypeScript\/JavaScript/);
+  assert.match(pathsDescription, /Rust/);
+  assert.doesNotMatch(pathsDescription, /Python|\.go|Java \(|C#/i);
 });
 
 test('buildLspHostToolDefinitions without ready providers avoids catalog listing', () => {

@@ -29,6 +29,7 @@ import {
 } from '../host-tools.js';
 import { enrichUnknownToolError, toolNamesFromDefinitions } from '../unknown-tool-error.js';
 import { buildLspHostToolDefinitions } from '../lsp/tool-definitions.js';
+import { executeGetDiagnostics } from '../lsp/execute-diagnostics.js';
 import {
   isLspDiagnosticsToolRequest,
   requestFromGetDiagnosticsFunctionCall,
@@ -566,8 +567,8 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     if (!this.lsp?.enabled) {
       throw new Error('get_diagnostics is not available because no language server is installed for this workspace');
     }
-    const result = await this.lsp.getDiagnosticsForPath(request.path);
-    return createToolExecutionTextOutput(result.formatted);
+    const result = await executeGetDiagnostics(this.lsp, request.paths);
+    return createToolExecutionTextOutput(result);
   }
 }
 

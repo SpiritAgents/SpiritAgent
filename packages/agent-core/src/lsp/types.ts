@@ -37,7 +37,7 @@ export interface LspFileChangeNotification {
 
 export interface LspDiagnosticsToolRequest extends JsonObject {
   name: 'get_diagnostics';
-  path: string;
+  paths: string[];
 }
 
 export interface LspDiagnosticUiItem {
