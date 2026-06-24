@@ -6,6 +6,8 @@ import type { Pluggable } from "unified";
 /** hast-util-sanitize compares protocol names without the trailing colon. */
 export const MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL = "spirit";
 
+const streamdownExtraTagNames = ["video", "picture", "source", "sup", "sub"] as const;
+
 /**
  * Streamdown's default sanitize schema only allows http/https src values.
  * Spirit-managed generated assets use spirit:// and must survive sanitization
@@ -13,7 +15,7 @@ export const MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL = "spirit";
  */
 export const streamdownSanitizeSchema = {
   ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), "video"],
+  tagNames: [...new Set([...(defaultSchema.tagNames ?? []), ...streamdownExtraTagNames])],
   protocols: {
     ...defaultSchema.protocols,
     href: [...(defaultSchema.protocols?.href ?? []), "tel"],
@@ -21,11 +23,14 @@ export const streamdownSanitizeSchema = {
       ...(defaultSchema.protocols?.src ?? ["http", "https"]),
       MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL,
     ],
+    srcset: [...(defaultSchema.protocols?.srcset ?? ["http", "https"])],
   },
   attributes: {
     ...defaultSchema.attributes,
     code: [...(defaultSchema.attributes?.code ?? []), "metastring"],
     video: [...(defaultSchema.attributes?.video ?? []), "src", "controls"],
+    source: [...(defaultSchema.attributes?.source ?? []), "media", "srcset"],
+    img: [...(defaultSchema.attributes?.img ?? []), "alt", "width", "height", "src"],
   },
 };
 
