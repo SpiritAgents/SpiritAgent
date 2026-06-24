@@ -32,22 +32,48 @@ export type HighlightSegment = {
   highlighted: boolean;
 };
 
-/** rg submatch start/end 为 UTF-8 字节偏移；展示用 lineText 按 code unit 切片。 */
-export function buildHighlightedLineSegments(
+/** ripgrep JSON submatch start/end 为行内 UTF-8 字节偏移（非 JS code unit）。 */
+export function ripgrepUtf8ByteOffsetToCodeUnitIndex(
+  text: string,
+  byteOffset: number,
+): number {
+  let bytes = 0;
+  let index = 0;
+  for (const char of text) {
+    if (bytes >= byteOffset) {
+      break;
+    }
+    bytes += new TextEncoder().encode(char).length;
+    index += 1;
+  }
+  return index;
+}
+
+export function ripgrepSubmatchToCodeUnitRange(
   lineText: string,
-  submatches: readonly { start: number; end: number }[],
+  submatch: { start: number; end: number },
+): { start: number; end: number } {
+  return {
+    start: ripgrepUtf8ByteOffsetToCodeUnitIndex(lineText, submatch.start),
+    end: ripgrepUtf8ByteOffsetToCodeUnitIndex(lineText, submatch.end),
+  };
+}
+
+function buildHighlightedLineSegmentsFromCodeUnits(
+  lineText: string,
+  ranges: readonly { start: number; end: number }[],
 ): HighlightSegment[] {
-  if (submatches.length === 0) {
+  if (ranges.length === 0) {
     return [{ text: lineText, highlighted: false }];
   }
 
-  const sorted = [...submatches].sort((a, b) => a.start - b.start);
+  const sorted = [...ranges].sort((a, b) => a.start - b.start);
   const segments: HighlightSegment[] = [];
   let cursor = 0;
 
-  for (const submatch of sorted) {
-    const start = Math.max(cursor, Math.min(lineText.length, submatch.start));
-    const end = Math.max(start, Math.min(lineText.length, submatch.end));
+  for (const range of sorted) {
+    const start = Math.max(cursor, Math.min(lineText.length, range.start));
+    const end = Math.max(start, Math.min(lineText.length, range.end));
     if (start > cursor) {
       segments.push({ text: lineText.slice(cursor, start), highlighted: false });
     }
@@ -62,6 +88,17 @@ export function buildHighlightedLineSegments(
   }
 
   return segments.length > 0 ? segments : [{ text: lineText, highlighted: false }];
+}
+
+/** rg submatch start/end 为 UTF-8 字节偏移；展示用 lineText 按 code unit 切片。 */
+export function buildHighlightedLineSegments(
+  lineText: string,
+  submatches: readonly { start: number; end: number }[],
+): HighlightSegment[] {
+  return buildHighlightedLineSegmentsFromCodeUnits(
+    lineText,
+    submatches.map((submatch) => ripgrepSubmatchToCodeUnitRange(lineText, submatch)),
+  );
 }
 
 export function truncateSearchLinePreview(
@@ -86,11 +123,13 @@ export function truncateSearchLinePreview(
 
   const localSubmatches =
     submatches.length > 0
-      ? submatches.map((item) => ({
-          start: Math.max(0, item.start - windowStart) + prefix.length,
-          end: Math.max(0, item.end - windowStart) + prefix.length,
-        }))
+      ? submatches
+          .map((item) => ripgrepSubmatchToCodeUnitRange(lineText, item))
+          .map((item) => ({
+            start: Math.max(0, item.start - windowStart) + prefix.length,
+            end: Math.max(0, item.end - windowStart) + prefix.length,
+          }))
       : [];
 
-  return buildHighlightedLineSegments(`${prefix}${sliced}${suffix}`, localSubmatches);
+  return buildHighlightedLineSegmentsFromCodeUnits(`${prefix}${sliced}${suffix}`, localSubmatches);
 }
