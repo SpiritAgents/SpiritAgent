@@ -198,12 +198,15 @@ export function registerSpiritDesktopLightMonacoTheme(): void {
   registerSpiritShikiPlusMonacoThemes();
 }
 
+export function applySpiritMonacoEditorTheme(): void {
+  const isDark = document.documentElement.classList.contains("dark");
+  registerSpiritShikiPlusMonacoThemes();
+  monaco.editor.setTheme(isDark ? SPIRIT_MONACO_SHIKI_DARK : SPIRIT_MONACO_SHIKI_LIGHT);
+}
+
 export function syncMonacoThemeFromDocument(): void {
   if (!isMonacoShikiReady()) {
     return;
   }
-
-  const isDark = document.documentElement.classList.contains("dark");
-  registerSpiritShikiPlusMonacoThemes();
-  monaco.editor.setTheme(isDark ? SPIRIT_MONACO_SHIKI_DARK : SPIRIT_MONACO_SHIKI_LIGHT);
+  applySpiritMonacoEditorTheme();
 }
