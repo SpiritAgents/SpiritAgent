@@ -390,6 +390,13 @@ export function createWebHostApi(): HostApi {
     statHostTextFile(absolutePath: string) {
       return post<HostTextFileStatResult>(baseUrl, '/api/host/file/stat', { absolutePath });
     },
+    classifyLocalFileComposerRoute(absolutePath: string) {
+      return post<import('@spirit-agent/host-internal').LocalFileComposerRoute>(
+        baseUrl,
+        '/api/host/file/classify-composer-route',
+        { absolutePath },
+      );
+    },
     async readLocalImagePreviewDataUrl() {
       return null;
     },

@@ -117,6 +117,7 @@ export interface HostCommandDelegate {
   readHostTextFile(absolutePath: string): Promise<unknown>;
   writeHostTextFile(request: CommandPayloads['writeHostTextFile']['request']): Promise<unknown>;
   statHostTextFile(absolutePath: string): Promise<unknown>;
+  classifyLocalFileComposerRoute(absolutePath: string): Promise<unknown>;
   rewindAndSubmitMessage(request: CommandPayloads['rewindAndSubmitMessage']['request']): Promise<unknown>;
   forkSession(request: CommandPayloads['forkSession']['request']): Promise<unknown>;
   reorderQueuedUserTurn(request: CommandPayloads['reorderQueuedUserTurn']['request']): Promise<unknown>;
@@ -239,6 +240,8 @@ const hostCommandDispatch = {
   readHostTextFile: (host, payload) => host.readHostTextFile(payload.absolutePath),
   writeHostTextFile: (host, payload) => host.writeHostTextFile(payload.request),
   statHostTextFile: (host, payload) => host.statHostTextFile(payload.absolutePath),
+  classifyLocalFileComposerRoute: (host, payload) =>
+    host.classifyLocalFileComposerRoute(payload.absolutePath),
   rewindAndSubmitMessage: (host, payload) => host.rewindAndSubmitMessage(payload.request),
   forkSession: (host, payload) => host.forkSession(payload.request),
   reorderQueuedUserTurn: (host, payload) => host.reorderQueuedUserTurn(payload.request),
