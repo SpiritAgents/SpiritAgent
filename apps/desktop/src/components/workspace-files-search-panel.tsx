@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DESKTOP_CHROME_TOGGLE_ICON_BTN, DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL } from "@/lib/desktop-chrome";
+import { DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL, instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { resolveWorkspaceFilesTabIcon } from "@/lib/workspace-explorer-icon";
 import { normalizeWorkspaceEntryRel } from "@/lib/workspace-entry-path-sync";
 import {
@@ -35,6 +35,13 @@ function pathBasename(rel: string): string {
   const i = n.lastIndexOf("/");
   return i >= 0 ? n.slice(i + 1) || rel : rel;
 }
+
+const SEARCH_OPTION_TOGGLE_BTN = cn(
+  "electron-no-drag size-7 shrink-0 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground",
+  "aria-pressed:bg-muted/35 aria-pressed:text-foreground aria-pressed:hover:bg-muted/50",
+  "[&_svg]:size-3.5",
+  instantHoverMotionClass,
+);
 
 export type WorkspaceFilesSearchPanelProps = {
   searchWorkspaceContent: (
@@ -177,7 +184,7 @@ export function WorkspaceFilesSearchPanel({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, caseSensitive && "bg-muted/60")}
+              className={SEARCH_OPTION_TOGGLE_BTN}
               aria-pressed={caseSensitive}
               title={t("workspace.matchCase")}
               aria-label={t("workspace.matchCase")}
@@ -189,7 +196,7 @@ export function WorkspaceFilesSearchPanel({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, wholeWord && "bg-muted/60")}
+              className={SEARCH_OPTION_TOGGLE_BTN}
               aria-pressed={wholeWord}
               title={t("workspace.matchWholeWord")}
               aria-label={t("workspace.matchWholeWord")}
@@ -201,7 +208,7 @@ export function WorkspaceFilesSearchPanel({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, isRegexp && "bg-muted/60")}
+              className={SEARCH_OPTION_TOGGLE_BTN}
               aria-pressed={isRegexp}
               title={t("workspace.useRegex")}
               aria-label={t("workspace.useRegex")}
