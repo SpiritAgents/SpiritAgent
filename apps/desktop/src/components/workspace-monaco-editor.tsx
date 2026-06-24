@@ -11,9 +11,12 @@ import "monaco-editor/min/vs/editor/editor.main.css";
 import "@/styles/monaco-editor-overrides.css";
 
 import { ensureMonacoWorkers } from "@/lib/monaco-environment";
-import { ensureMonacoShikiReady } from "@/lib/monaco-shiki";
+import { ensureMonacoShikiReady, isMonacoShikiReady } from "@/lib/monaco-shiki";
 import { monacoLanguageId } from "@/lib/monaco-language";
-import { syncMonacoThemeFromDocument } from "@/lib/monaco-theme";
+import {
+  applySpiritMonacoEditorTheme,
+  syncMonacoThemeFromDocument,
+} from "@/lib/monaco-theme";
 
 export type WorkspaceMonacoEditorHandle = {
   /** 将当前缓冲区写入磁盘；成功后会清除脏标记。 */
@@ -103,11 +106,20 @@ export const WorkspaceMonacoEditor = forwardRef<
     let dirtyDisposable: monaco.IDisposable | null = null;
     let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 
-    void ensureMonacoShikiReady().then(() => {
+    void (async () => {
+      try {
+        await ensureMonacoShikiReady();
+      } catch {
+        /* initMonacoShiki 已记录错误；回退为 Monaco 内置 tokenizer + Shiki 主题色 */
+      }
       if (disposed || !containerRef.current) {
         return;
       }
-      syncMonacoThemeFromDocument();
+      if (isMonacoShikiReady()) {
+        syncMonacoThemeFromDocument();
+      } else {
+        applySpiritMonacoEditorTheme();
+      }
       baselineRef.current = initialText;
       editor = monaco.editor.create(containerRef.current, {
         value: initialText,
@@ -140,10 +152,14 @@ export const WorkspaceMonacoEditor = forwardRef<
       }
 
       obs = new MutationObserver(() => {
-        syncMonacoThemeFromDocument();
+        if (isMonacoShikiReady()) {
+          syncMonacoThemeFromDocument();
+        } else {
+          applySpiritMonacoEditorTheme();
+        }
       });
       obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    });
+    })();
 
     return () => {
       disposed = true;
