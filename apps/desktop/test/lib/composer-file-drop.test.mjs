@@ -5,12 +5,14 @@ import {
   SPIRIT_WORKSPACE_ENTRY_MIME,
   isComposerFileDropAccepted,
   resolveComposerDropAbsolutePaths,
+  resolveComposerDropEffect,
 } from "../../src/lib/composer-file-drop.ts";
 
-function mockDataTransfer({ types = [], files = [], data = {} } = {}) {
+function mockDataTransfer({ types = [], files = [], data = {}, effectAllowed = "uninitialized" } = {}) {
   return {
     types,
     files,
+    effectAllowed,
     getData(type) {
       return data[type] ?? "";
     },
@@ -24,6 +26,12 @@ test("isComposerFileDropAccepted accepts Files and spirit workspace entry", () =
     true,
   );
   assert.equal(isComposerFileDropAccepted(mockDataTransfer({ types: ["text/plain"] })), false);
+});
+
+test("resolveComposerDropEffect matches sidebar move drags", () => {
+  assert.equal(resolveComposerDropEffect(mockDataTransfer({ effectAllowed: "move" })), "move");
+  assert.equal(resolveComposerDropEffect(mockDataTransfer({ effectAllowed: "copy" })), "copy");
+  assert.equal(resolveComposerDropEffect(mockDataTransfer({ effectAllowed: "all" })), "copy");
 });
 
 test("resolveComposerDropAbsolutePaths maps spirit workspace file to absolute path", () => {

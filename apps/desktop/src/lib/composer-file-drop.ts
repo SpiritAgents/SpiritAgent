@@ -8,6 +8,24 @@ export function isComposerFileDropAccepted(dataTransfer: DataTransfer): boolean 
   return types.includes("Files") || types.includes(SPIRIT_WORKSPACE_ENTRY_MIME);
 }
 
+/** Match dropEffect to drag source effectAllowed so the browser allows drop. */
+export function resolveComposerDropEffect(dataTransfer: DataTransfer): "copy" | "move" | "link" {
+  const allowed = dataTransfer.effectAllowed;
+  if (allowed === "all" || allowed === "uninitialized") {
+    return "copy";
+  }
+  if (allowed === "move" || allowed === "linkMove") {
+    return "move";
+  }
+  if (allowed === "copy" || allowed === "copyMove" || allowed === "copyLink") {
+    return "copy";
+  }
+  if (allowed === "link") {
+    return "link";
+  }
+  return "copy";
+}
+
 export type ResolveComposerDropPathsOptions = {
   workspaceRoot: string;
   getPathForFile: (file: File) => string | null;
