@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useTranslation } from "react-i18next";
 import type * as Monaco from "monaco-editor";
 
-import { Eye, PanelLeftClose, PanelLeftOpen, Play, SquarePen } from "lucide-react";
+import { Eye, ListTree, Play, SquarePen } from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
 import { Button } from "@/components/ui/button";
@@ -145,11 +145,7 @@ function WorkspaceFilesExplorerToolbar({
           aria-expanded={fileTreeOpen}
           title={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
         >
-          {fileTreeOpen ? (
-            <PanelLeftClose className="size-3.5" aria-hidden />
-          ) : (
-            <PanelLeftOpen className="size-3.5" aria-hidden />
-          )}
+          <ListTree className="size-3.5" aria-hidden />
         </Button>
         {fileOpen ? (
           <span
