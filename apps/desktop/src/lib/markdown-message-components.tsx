@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export type MarkdownTone = "default" | "muted";
 export type MarkdownSize = "default" | "compact";
 
-/** Shared element overrides for react-markdown and Streamdown. */
+/** Shared element overrides for Streamdown message rendering. */
 export function createMarkdownMessageComponents(
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl,
   tone: MarkdownTone = "default",

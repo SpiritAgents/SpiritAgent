@@ -5,11 +5,15 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import { visit } from "unist-util-visit";
 
-import { spiritRemarkPluginsForReactMarkdown } from "../../src/lib/markdown-remark-plugins.ts";
+import { spiritRemarkPluginsForStreamdown } from "../../src/lib/markdown-remark-plugins.ts";
 
 function countHardBreaks(markdown, remarkPlugins) {
   let processor = unified().use(remarkParse);
   for (const plugin of remarkPlugins) {
+    if (Array.isArray(plugin)) {
+      processor = processor.use(plugin[0], plugin[1]);
+      continue;
+    }
     processor = processor.use(plugin);
   }
   const tree = processor.runSync(processor.parse(markdown));
@@ -20,11 +24,11 @@ function countHardBreaks(markdown, remarkPlugins) {
   return breaks;
 }
 
-test("spirit remark plugins turn single newline inside paragraph into hard break", () => {
+test("spirit streamdown remark plugins turn single newline inside paragraph into hard break", () => {
   const markdown = "主题\n我正在处理";
   const withSpiritPlugins = countHardBreaks(
     markdown,
-    spiritRemarkPluginsForReactMarkdown,
+    spiritRemarkPluginsForStreamdown,
   );
   const gfmOnly = countHardBreaks(markdown, [remarkGfm]);
 
@@ -32,8 +36,8 @@ test("spirit remark plugins turn single newline inside paragraph into hard break
   assert.equal(gfmOnly, 0);
 });
 
-test("spirit remark plugins preserve two-line plain text breaks", () => {
+test("spirit streamdown remark plugins preserve two-line plain text breaks", () => {
   const markdown = "第一行文本\n第二行文本";
-  const breaks = countHardBreaks(markdown, spiritRemarkPluginsForReactMarkdown);
+  const breaks = countHardBreaks(markdown, spiritRemarkPluginsForStreamdown);
   assert.equal(breaks, 1);
 });
