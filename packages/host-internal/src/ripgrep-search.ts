@@ -42,8 +42,9 @@ type RipgrepJsonLine =
       data?: unknown;
     };
 
+/** 去掉 rg JSON 行尾换行；保留行首缩进，submatch 字节偏移与 lineText 对齐。 */
 export function normalizeSearchLine(line: string): string {
-  return line.replace(/\r?\n$/u, '').trim();
+  return line.replace(/\r?\n$/u, '');
 }
 
 function appendQueryArgs(args: string[], options: RipgrepSearchOptions): void {
