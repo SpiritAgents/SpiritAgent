@@ -691,6 +691,8 @@
     "hideFileTree": "隐藏文件树",
     "showFileTree": "显示文件树",
     "fileSearch": "搜索文件内容",
+    "hideContentSearch": "收起内容搜索",
+    "showContentSearch": "展开内容搜索",
     "exitFileSearch": "退出内容搜索",
     "fileSearchPlaceholder": "搜索工作区…",
     "matchCase": "区分大小写",
