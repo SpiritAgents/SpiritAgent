@@ -891,6 +891,8 @@
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",
+    "placeholderEmptySession": "从一句话开始，@ 文件，/ 技能",
+    "placeholderContinueSession": "继续跟进",
     "placeholderGenerateImage": "描述要生成的图片…",
     "placeholderGenerateVideo": "描述要生成的视频…",
     "contextUsageAria": "上下文已用 {{percent}}%，{{inputTokens}} / {{contextLength}} tokens",
