@@ -17,6 +17,10 @@ export const toolCardFileNameDetailClass =
 export const toolCardFailedStatusClass =
   'text-muted-foreground/30 dark:text-muted-foreground/32';
 
+/** 可点击短工具卡触发器：整卡摘要同比增亮，保留灰阶层次。 */
+export const clickableToolCardTriggerClass =
+  'transition-[filter] duration-150 hover:brightness-[1.12] focus-visible:brightness-[1.12] motion-reduce:transition-none';
+
 /** @deprecated 与 {@link toolCardFileNameDetailClass} 相同。 */
 export const toolCardMutedDetailClass = toolCardFileNameDetailClass;
 
