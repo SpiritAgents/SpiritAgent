@@ -894,6 +894,8 @@
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",
+    "placeholderEmptySession": "Start with a line, @ files, / skills",
+    "placeholderContinueSession": "Follow up",
     "placeholderGenerateImage": "Describe the image to generate…",
     "placeholderGenerateVideo": "Describe the video to generate…",
     "contextUsageAria": "Context used {{percent}}%, {{inputTokens}} / {{contextLength}} tokens",

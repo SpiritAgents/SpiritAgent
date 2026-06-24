@@ -126,7 +126,9 @@ export function useComposerController({
       ? t("composer.placeholderGenerateImage")
       : composerDirectMediaMode === "generate_video"
         ? t("composer.placeholderGenerateVideo")
-        : t("app.typeMessage");
+        : isEmptySession
+          ? t("composer.placeholderEmptySession")
+          : t("composer.placeholderContinueSession");
 
   const messageRewindComposerEnabled =
     !compactionDemoActive &&
