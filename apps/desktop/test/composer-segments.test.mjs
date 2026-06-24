@@ -619,6 +619,27 @@ test("syncSegmentsFromExternalValue keeps workspace file chips", () => {
   ]);
 });
 
+test("plainComposerTextToRichSegments rebuilds workspace file chips from @ tokens", async () => {
+  const { plainComposerTextToRichSegments } = await import("../src/lib/composer-segment-model.ts");
+  assert.deepEqual(plainComposerTextToRichSegments("see @src/foo.ts next"), [
+    { kind: "text", value: "see " },
+    { kind: "workspaceFile", path: "src/foo.ts" },
+    { kind: "text", value: " next" },
+  ]);
+  assert.deepEqual(
+    plainComposerTextToRichSegments("@D:/tmp/notes.txt"),
+    [{ kind: "workspaceFile", path: "D:/tmp/notes.txt" }],
+  );
+});
+
+test("syncSegmentsFromExternalValue hydrates @ tokens into chips when no inline chips", () => {
+  const synced = syncSegmentsFromExternalValue(emptySegments(), "see @README.md");
+  assert.deepEqual(synced, [
+    { kind: "text", value: "see " },
+    { kind: "workspaceFile", path: "README.md" },
+  ]);
+});
+
 test("isComposerPlainEmpty treats lone newline as empty", () => {
   assert.equal(isComposerPlainEmpty(""), true);
   assert.equal(isComposerPlainEmpty("\n"), true);
