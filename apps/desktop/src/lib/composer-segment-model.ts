@@ -343,6 +343,40 @@ function pinAgentModeChipFromSegments(
   return mergeAdjacentTextSegments([...loopPart, { kind: modeChip.kind }, ...rest]);
 }
 
+function composerPlainTextHasWorkspaceFileRefs(value: string): boolean {
+  return /@([^\s@]+)/u.test(value);
+}
+
+/** Rebuild inline workspace file chips from stored composer plain text (@path tokens). */
+export function plainComposerTextToRichSegments(value: string): RichSegment[] {
+  if (!value) {
+    return emptySegments();
+  }
+
+  const segments: RichSegment[] = [];
+  let last = 0;
+  const re = /@([^\s@]+)/gu;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(value)) !== null) {
+    if (match.index > last) {
+      segments.push({ kind: "text", value: value.slice(last, match.index) });
+    }
+    segments.push({
+      kind: "workspaceFile",
+      path: normalizeWorkspaceFilePath(match[1] ?? ""),
+    });
+    last = match.index + match[0].length;
+  }
+
+  if (last < value.length) {
+    segments.push({ kind: "text", value: value.slice(last) });
+  }
+
+  return mergeAdjacentTextSegments(
+    segments.length > 0 ? segments : [{ kind: "text", value }],
+  );
+}
+
 export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string): RichSegment[] {
   const loopPinned = segs.some((s) => s.kind === "loop");
   const inlineChips = segs.filter(
@@ -361,7 +395,11 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
 
   let body: RichSegment[];
   if (inlineChips.length === 0) {
-    body = value ? [{ kind: "text", value }] : emptySegments();
+    body = value
+      ? (composerPlainTextHasWorkspaceFileRefs(value)
+        ? plainComposerTextToRichSegments(value)
+        : [{ kind: "text", value }])
+      : emptySegments();
   } else if (!value) {
     body = emptySegments();
   } else {
