@@ -119,20 +119,31 @@ function countDiagnosticsIssues(outputExcerpt: string | undefined): number {
   }
   // 优先从 header 解析真实总数，避免 maxItems 截断导致低估：
   // "Diagnostics for src/x.ts (8 shown, 7 more omitted):" → 15
-  // "Diagnostics for src/x.ts (3 shown):" → 3
-  const headerMatch = /^Diagnostics for .+?\((\d+) shown(?:,\s*(\d+) more omitted)?\):/.exec(
-    outputExcerpt,
-  );
-  if (headerMatch) {
-    const shown = Number(headerMatch[1]) || 0;
-    const omitted = Number(headerMatch[2]) || 0;
-    return shown + omitted;
+  const headerPattern = /^Diagnostics for .+?\((\d+) shown(?:,\s*(\d+) more omitted)?\):/gm;
+  let total = 0;
+  let headerCount = 0;
+  let match: RegExpExecArray | null;
+  while ((match = headerPattern.exec(outputExcerpt)) !== null) {
+    headerCount += 1;
+    total += (Number(match[1]) || 0) + (Number(match[2]) || 0);
+  }
+  if (headerCount > 0) {
+    return total;
   }
   // 兜底：按行统计（无 header 时）
   return outputExcerpt
     .split('\n')
     .filter((line) => /^(error|warning)\s/.test(line.trim()))
     .length;
+}
+
+function diagnosticsOutputIsAllClean(output: string): boolean {
+  const trimmed = output.trim();
+  if (!trimmed) {
+    return true;
+  }
+  const sections = trimmed.split(/\n\n+/).map((section) => section.trim()).filter(Boolean);
+  return sections.every((section) => section.startsWith('No errors or warnings'));
 }
 
 function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts {
@@ -222,7 +233,7 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
     }
     if (tool.phase === 'succeeded') {
       const output = tool.outputExcerpt?.trim() ?? '';
-      if (output.startsWith('No errors or warnings')) {
+      if (diagnosticsOutputIsAllClean(output)) {
         return {
           headline: i18n.t('tool.diagnosticsNoIssues'),
           ...(snapshotDetail ? { detail: snapshotDetail } : {}),

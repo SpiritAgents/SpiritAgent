@@ -431,7 +431,7 @@ test('toolCallSummaryForStreamingPreview: list_directory_files uses relative pat
 
 test('toolCallSummaryForPhase: get_diagnostics failed uses checking headline and basename', () => {
   assert.deepEqual(
-    toolCallSummaryForPhase('failed', 'get_diagnostics', { path: 'src/App.tsx' }),
+    toolCallSummaryForPhase('failed', 'get_diagnostics', { paths: ['src/App.tsx'] }),
     { headline: '检查中', headlineDetail: 'App.tsx' },
   );
 });

@@ -24,37 +24,39 @@ function formatReadyProviderPathHint(providers: readonly LspReadyProviderSummary
 
 function buildDescription(providers: readonly LspReadyProviderSummary[]): string {
   if (providers.length === 0) {
-    return 'Return language-server diagnostics (errors and warnings) for one workspace source file when a matching server is installed. No language servers are ready on this host.';
+    return 'Return language-server diagnostics (errors and warnings) for one or more workspace source files when a matching server is installed. No language servers are ready on this host.';
   }
 
   const serverNames = providers.map((provider) => provider.displayName).join(', ');
   const pathHint = formatReadyProviderPathHint(providers);
-  return `Return language-server diagnostics (errors and warnings) for one workspace source file. Routes automatically by file extension to an installed server (${serverNames}). ${pathHint} Use after edits or when fixing type or lint issues. Calling get_diagnostics for an extension without a ready server will fail.`;
+  return `Return language-server diagnostics (errors and warnings) for one or more workspace source files. Routes automatically by file extension to an installed server (${serverNames}). ${pathHint} Use after edits or when fixing type or lint issues. Paths without a ready server return a per-file error in the result.`;
 }
 
-function buildPathParameterDescription(providers: readonly LspReadyProviderSummary[]): string {
+function buildPathsParameterDescription(providers: readonly LspReadyProviderSummary[]): string {
   if (providers.length === 0) {
-    return 'Workspace-relative or absolute path to a source file. Requires a ready language server for that file extension.';
+    return 'Workspace-relative or absolute paths to source files. Requires a ready language server for each file extension.';
   }
-  return `Workspace-relative or absolute path to a supported source file. ${formatReadyProviderPathHint(providers)}`;
+  return `Workspace-relative or absolute paths to supported source files. ${formatReadyProviderPathHint(providers)}`;
 }
 
 export function buildLspHostToolDefinitions(
   readyProviders: readonly LspReadyProviderSummary[] = [],
 ): JsonValue[] {
   const description = buildDescription(readyProviders);
-  const pathDescription = buildPathParameterDescription(readyProviders);
+  const pathsDescription = buildPathsParameterDescription(readyProviders);
 
   return [
     functionTool(GET_DIAGNOSTICS_TOOL_NAME, description, {
       type: 'object',
       properties: {
-        path: {
-          type: 'string',
-          description: pathDescription,
+        paths: {
+          type: 'array',
+          items: { type: 'string' },
+          minItems: 1,
+          description: pathsDescription,
         },
       },
-      required: ['path'],
+      required: ['paths'],
       additionalProperties: false,
     }),
   ];

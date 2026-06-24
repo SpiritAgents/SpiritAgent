@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatDiagnosticsForLlm, formatDiagnosticsSummaryBlock, buildLspWriteDiagnosticsUi } from './format-diagnostics.js';
+import {
+  formatDiagnosticsBatchForLlm,
+  formatDiagnosticsForLlm,
+  formatDiagnosticsSummaryBlock,
+  buildLspWriteDiagnosticsUi,
+} from './format-diagnostics.js';
 import type { LspDiagnostic } from './types.js';
 
 const sample: LspDiagnostic[] = [
@@ -42,6 +47,15 @@ test('formatDiagnosticsSummaryBlock returns undefined when only clean', () => {
 test('formatDiagnosticsSummaryBlock wraps non-empty output', () => {
   const block = formatDiagnosticsSummaryBlock('src/a.ts', sample);
   assert.ok(block?.startsWith('\n\n[lsp]\n'));
+});
+
+test('formatDiagnosticsBatchForLlm joins non-empty sections', () => {
+  const output = formatDiagnosticsBatchForLlm([
+    'No errors or warnings reported for src/a.ts.',
+    '',
+    'Diagnostics for src/b.ts (1 shown):',
+  ]);
+  assert.equal(output.split('\n\n').length, 2);
 });
 
 test('buildLspWriteDiagnosticsUi maps severity and 1-based positions', () => {

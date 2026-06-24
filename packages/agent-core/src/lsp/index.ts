@@ -1,4 +1,5 @@
 export * from './constants.js';
+export * from './execute-diagnostics.js';
 export * from './format-diagnostics.js';
 export * from './tool-definitions.js';
 export * from './tool-request.js';

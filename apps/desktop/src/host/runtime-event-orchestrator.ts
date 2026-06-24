@@ -24,6 +24,10 @@ import {
   serializeFileToolDiffArgumentsJson,
 } from '../lib/file-tool-diff-source.js';
 import i18n from '../lib/i18n-host.js';
+import {
+  diagnosticsPathsHeadlineDetail,
+  parseDiagnosticsPathsFromRequest,
+} from '../lib/diagnostics-path-display.js';
 import { resolveTodoWriteBeforeSnapshot } from '../lib/todo-tool-display.js';
 import {
   buildContextUsagePercent,
@@ -1154,12 +1158,10 @@ function truncateText(value: string, maxChars: number): string {
 }
 
 function diagnosticsCheckingSummary(request: unknown): ToolCallSummaryCopy {
-  const record = request && typeof request === 'object' ? (request as Record<string, unknown>) : undefined;
-  const rawPath = typeof record?.path === 'string' ? record.path.trim() : '';
-  const basename = rawPath.split(/[\\/]/).filter(Boolean).pop() ?? '';
+  const detail = diagnosticsPathsHeadlineDetail(parseDiagnosticsPathsFromRequest(request));
   return {
     headline: i18n.t('tool.diagnosticsChecking'),
-    ...(basename ? { headlineDetail: basename.length > 80 ? `${basename.slice(0, 77)}…` : basename } : {}),
+    ...(detail ? { headlineDetail: detail } : {}),
   };
 }
 

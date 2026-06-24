@@ -189,7 +189,7 @@ test('after-stream thinking is finalized before later tools when the turn alread
       kind: 'streaming-tool-preview',
       toolCallId: 'diag-1',
       toolName: 'get_diagnostics',
-      argumentsJson: '{"path":"packages/agent-core/src/runtime/helpers.ts"}',
+      argumentsJson: '{"paths":["packages/agent-core/src/runtime/helpers.ts"]}',
     },
   ]);
 
