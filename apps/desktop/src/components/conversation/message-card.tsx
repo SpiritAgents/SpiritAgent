@@ -35,6 +35,10 @@ import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
 import { cn } from "@/lib/utils";
 import { canForkMessage, canShowForkMessage } from "@/lib/fork-eligibility";
 import {
+  canCopyAssistantTurn,
+  formatAssistantTurnCopyText,
+} from "@/lib/message-turn-copy";
+import {
   isMessageInActiveStreamingTurn,
   messageShowsAssistantTurnActions,
 } from "@/lib/message-turn-actions-ui";
@@ -217,6 +221,8 @@ export function MessageCard({
       activeSessionReadOnly,
       forkBusy,
     });
+  const canCopy = showTurnActions && canCopyAssistantTurn(messages, listIndex);
+  const showActionsMenu = canCopy || showForkMenu;
   return (
     <div
       id={conversationMessageStableId(message, composerSessionKey, conversationListScopeKey)}
@@ -376,6 +382,16 @@ export function MessageCard({
             continueTarget={continueTarget}
             continueBusy={continueBusy}
             onContinue={onContinue}
+            canShowActionsMenu={showActionsMenu}
+            canCopy={canCopy}
+            copyEnabled={canCopy}
+            onCopy={() => {
+              const text = formatAssistantTurnCopyText(messages, listIndex);
+              if (!text.trim()) {
+                return;
+              }
+              void navigator.clipboard.writeText(text);
+            }}
             canFork={showForkMenu && Boolean(onForkMessage)}
             forkEnabled={canFork}
             forkMenuAlwaysVisible={forkMenuAlwaysVisible}
