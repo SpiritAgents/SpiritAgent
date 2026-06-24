@@ -308,7 +308,28 @@ html.spirit-desktop-native.spirit-desktop-mica #app {
 }
 
 /*
- * 启动层透明 + 原生模糊：须隐藏其下的应用布局，否则会合成进系统材质（macOS 尤甚）。
+ * 510f5a00 后 Windows 自绘顶栏在 desktop-chrome-root，须单独在启动层期间隐藏。
+ * 退场时与启动层 opacity 同步交叉淡入。
+ */
+html.spirit-launch-splash-active [data-spirit-surface="desktop-title-bar"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 500ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
+    transition-duration: 200ms;
+  }
+}
+
+/*
+ * 启动层 + 原生模糊：须隐藏其下的应用布局，否则会合成进系统材质（macOS 尤甚）。
  * 退场时与启动层 opacity 同步交叉淡入，全程保持模糊材质不关。
  */
 html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-active
