@@ -27,6 +27,10 @@ import {
 } from '../lib/read-file-tool-display.js';
 import { phaseToVerbContext } from '../lib/tool-verb-context.js';
 import {
+  diagnosticsPathsHeadlineDetail,
+  parseDiagnosticsPathsFromRequest,
+} from '../lib/diagnostics-path-display.js';
+import {
   todoWriteSummaryDetail,
   type TodoDisplayItem,
 } from '../lib/todo-tool-display.js';
@@ -369,11 +373,11 @@ export function toolCallSummaryCopyForRequest(
       };
     }
     case 'get_diagnostics': {
-      const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
-      const basename = rawPath ? displayBasename(rawPath) : '';
+      const paths = parseDiagnosticsPathsFromRequest(record);
+      const detail = diagnosticsPathsHeadlineDetail(paths);
       return {
         headline: i18n.t('tool.diagnosticsChecking'),
-        ...(basename ? { headlineDetail: truncateSummaryDetail(basename) } : {}),
+        ...(detail ? { headlineDetail: detail } : {}),
       };
     }
     case 'ask_questions': {
@@ -1096,12 +1100,10 @@ export function toolCallSummaryForStreamingPreview(
   }
 
   if (toolName === 'get_diagnostics' && request && typeof request === 'object') {
-    const rawPath = typeof (request as Record<string, unknown>).path === 'string'
-      ? (request as Record<string, unknown>).path as string
-      : '';
+    const detail = diagnosticsPathsHeadlineDetail(parseDiagnosticsPathsFromRequest(request));
     return {
       headline: i18n.t('tool.diagnosticsChecking'),
-      ...(rawPath.trim() ? { headlineDetail: truncateSummaryDetail(displayBasename(rawPath.trim())) } : {}),
+      ...(detail ? { headlineDetail: detail } : {}),
     };
   }
 

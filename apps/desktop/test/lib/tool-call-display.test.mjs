@@ -269,6 +269,49 @@ test('getToolCallSummaryParts: get_diagnostics failed uses checking headline not
   );
 });
 
+test('getToolCallSummaryParts: get_diagnostics sums issues across multiple files', () => {
+  const output = [
+    'No errors or warnings reported for src/a.ts.',
+    '',
+    'Diagnostics for src/b.ts (2 shown):',
+    'error src/b.ts:1:1: Type mismatch',
+    'warning src/b.ts:2:3: Unused variable',
+    '',
+    'Diagnostics for src/c.ts (3 shown, 1 more omitted):',
+    'error src/c.ts:4:1: Missing return',
+  ].join('\n');
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'get_diagnostics',
+      phase: 'succeeded',
+      headline: '检查完成',
+      headlineDetail: 'a.ts +2',
+      outputExcerpt: output,
+      detailLines: [],
+    }),
+    { headline: '6 个问题', detail: 'a.ts +2' },
+  );
+});
+
+test('getToolCallSummaryParts: get_diagnostics all-clean multi-file shows no issues', () => {
+  const output = [
+    'No errors or warnings reported for src/a.ts.',
+    '',
+    'No errors or warnings reported for src/b.ts.',
+  ].join('\n');
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'get_diagnostics',
+      phase: 'succeeded',
+      headline: '检查完成',
+      headlineDetail: 'a.ts, b.ts',
+      outputExcerpt: output,
+      detailLines: [],
+    }),
+    { headline: '没有问题', detail: 'a.ts, b.ts' },
+  );
+});
+
 test('getToolCallSummaryParts: todo_write recomputes incremental detail from snapshot', () => {
   assert.deepEqual(
     getToolCallSummaryParts({
