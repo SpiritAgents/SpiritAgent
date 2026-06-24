@@ -99,8 +99,6 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/facebook/react
 - **react-i18next** 17.0.8 — MIT
   - https://github.com/i18next/react-i18next
-- **react-markdown** 10.1.0 — MIT
-  - https://github.com/remarkjs/react-markdown
 - **refractor** 3.6.0 — MIT
   - https://github.com/wooorm/refractor
 - **rehype-raw** 7.0.0 — MIT
@@ -115,6 +113,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/shadcn-ui/ui
 - **sharp** 0.34.5 — Apache-2.0
   - https://github.com/lovell/sharp
+- **sonner** 2.0.7 — MIT
+  - https://github.com/emilkowalski/sonner
 - **streamdown** 2.5.0 — Apache-2.0
   - https://github.com/vercel/streamdown
 - **tailwind-merge** 3.5.0 — MIT
@@ -1613,35 +1613,6 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- react-markdown 10.1.0
-
-```
-The MIT License (MIT)
-
-Copyright (c) Espen Hovlandsdal
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-**Used by:**
 - refractor 3.6.0
 - remark-breaks 4.0.0
 
@@ -1710,6 +1681,35 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 MIT License
 
 Copyright (c) 2023 shadcn
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### MIT
+
+**Used by:**
+- sonner 2.0.7
+
+```
+MIT License
+
+Copyright (c) 2023 Emil Kowalski
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
