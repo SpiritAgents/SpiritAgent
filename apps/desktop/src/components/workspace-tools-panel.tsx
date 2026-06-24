@@ -599,7 +599,12 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       onTabsChange((prev) =>
         prev.map((item) =>
           item.id === tabId
-            ? { ...item, tabTitle: title || undefined, tabDirty: title ? item.tabDirty : undefined }
+            ? {
+                ...item,
+                tabTitle: title || undefined,
+                tabDirty: title ? item.tabDirty : undefined,
+                filesWorkspacePath: title ? item.filesWorkspacePath : undefined,
+              }
             : item,
         ),
       );
@@ -612,6 +617,19 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       onTabsChange((prev) =>
         prev.map((item) =>
           item.id === tabId ? { ...item, tabDirty: dirty || undefined } : item,
+        ),
+      );
+    },
+    [onTabsChange],
+  );
+
+  const handleTabFilesWorkspacePathChange = useCallback(
+    (tabId: string, relativePath: string | undefined) => {
+      onTabsChange((prev) =>
+        prev.map((item) =>
+          item.id === tabId
+            ? { ...item, filesWorkspacePath: relativePath || undefined }
+            : item,
         ),
       );
     },
@@ -866,7 +884,11 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                         fileRevealDirectoryOnly={fileRevealDirectoryOnly}
                         onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                         onDirtyChange={(dirty) => handleTabDirtyChange(item.id, dirty)}
+                        onOpenWorkspaceFile={onOpenWorkspaceFile}
                         onOpenWorkspaceFileInNewTab={onOpenWorkspaceFileInNewTab}
+                        onFilesWorkspacePathChange={(path) =>
+                          handleTabFilesWorkspacePathChange(item.id, path)
+                        }
                         onFileSnippetAddToSession={onFileSnippetAddToSession}
                         onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
                         useMicaBackdrop={useMicaBackdrop}

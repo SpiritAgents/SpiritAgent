@@ -32,6 +32,7 @@ import { FILES_EXPLORER_TOOLBAR_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools
 import {
   isUnderWorkspaceEntryPath,
   remapWorkspaceEntryPath,
+  normalizeWorkspaceEntryRel,
 } from "@/lib/workspace-entry-path-sync";
 import type {
   EditorFileTarget,
@@ -232,11 +233,18 @@ export type WorkspaceFilesTabProps = {
   onTitleChange?: (title: string | undefined) => void;
   /** 当前打开文件脏状态变化时通知父层，用于选项卡未保存指示 */
   onDirtyChange?: (dirty: boolean) => void;
+  /** 从文件树等工作区路径打开文件（正常态下可复用既有 files 选项卡） */
+  onOpenWorkspaceFile?: (
+    relativePath: string,
+    options?: { viewMode?: WorkspaceEditorViewMode },
+  ) => void;
   /** 当前选项卡已有未保存打开文件时，从文件树打开另一文件应新建 files 选项卡 */
   onOpenWorkspaceFileInNewTab?: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode },
   ) => void;
+  /** 当前打开的工作区相对路径；无工作区文件选中时传 undefined */
+  onFilesWorkspacePathChange?: (relativePath: string | undefined) => void;
   onFileSnippetAddToSession?: (attachment: FileSnippetAttachment) => void;
   onWorkspaceFileAddToSession?: (relativePath: string) => void;
   gitRevision?: number;
@@ -265,7 +273,9 @@ export function WorkspaceFilesTab({
   fileRevealDirectoryOnly = false,
   onTitleChange,
   onDirtyChange,
+  onOpenWorkspaceFile,
   onOpenWorkspaceFileInNewTab,
+  onFilesWorkspacePathChange,
   onFileSnippetAddToSession,
   onWorkspaceFileAddToSession,
   gitRevision,
@@ -294,9 +304,11 @@ export function WorkspaceFilesTab({
   const monacoContainerRef = useRef<HTMLDivElement>(null);
   const onTitleChangeRef = useRef(onTitleChange);
   const onDirtyChangeRef = useRef(onDirtyChange);
+  const onFilesWorkspacePathChangeRef = useRef(onFilesWorkspacePathChange);
   useLayoutEffect(() => {
     onTitleChangeRef.current = onTitleChange;
     onDirtyChangeRef.current = onDirtyChange;
+    onFilesWorkspacePathChangeRef.current = onFilesWorkspacePathChange;
   });
   const prevSelectedEntryRef = useRef(selectedEntry);
 
@@ -388,13 +400,19 @@ export function WorkspaceFilesTab({
     if (!selectedEntry) {
       if (prev !== null) {
         onTitleChangeRef.current?.(undefined);
+        onFilesWorkspacePathChangeRef.current?.(undefined);
       }
     } else if (selectedEntry.kind === "plan") {
       onTitleChangeRef.current?.("Plan");
+      onFilesWorkspacePathChangeRef.current?.(undefined);
     } else if (selectedEntry.kind === "external") {
       onTitleChangeRef.current?.(pathBasename(selectedEntry.absolutePath));
+      onFilesWorkspacePathChangeRef.current?.(undefined);
     } else {
       onTitleChangeRef.current?.(pathBasename(selectedEntry.relativePath));
+      onFilesWorkspacePathChangeRef.current?.(
+        normalizeWorkspaceEntryRel(selectedEntry.relativePath),
+      );
     }
   }, [selectedEntry]);
 
@@ -706,6 +724,10 @@ export function WorkspaceFilesTab({
             }
             if (selectedEntry !== null && editorDirty && onOpenWorkspaceFileInNewTab) {
               onOpenWorkspaceFileInNewTab(relativePath, { viewMode });
+              return;
+            }
+            if (onOpenWorkspaceFile) {
+              onOpenWorkspaceFile(relativePath, { viewMode });
               return;
             }
             setMarkdownViewMode(viewMode);

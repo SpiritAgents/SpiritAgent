@@ -15,6 +15,7 @@ import {
 import {
   buildOpenEditorFileInNewTabNavigation,
   buildOpenEditorFileNavigation,
+  findFilesTabWithWorkspacePath,
   resolveWorkspaceFilesTab,
   type EditorFileTarget,
   type WorkspaceEditorViewMode,
@@ -128,13 +129,20 @@ export function useWorkspaceToolsController({
 
   const openWorkspaceFile = useCallback(
     (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => {
+      const tabs = workspaceToolTabsRef.current;
+      const existingTabId = findFilesTabWithWorkspacePath(tabs, relativePath);
+      if (existingTabId) {
+        setWorkspaceToolsOpen(true);
+        setActiveWorkspaceToolTabId(existingTabId);
+        return;
+      }
       openEditorFile({
         scope: "workspace",
         relativePath,
         viewMode: options?.viewMode ?? "edit",
       });
     },
-    [openEditorFile],
+    [openEditorFile, setWorkspaceToolsOpen],
   );
 
   const openWorkspaceFileInNewTab = useCallback(
