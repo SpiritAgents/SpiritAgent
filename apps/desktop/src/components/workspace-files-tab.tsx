@@ -124,6 +124,11 @@ function WorkspaceFilesExplorerToolbar({
 }: WorkspaceFilesExplorerToolbarProps) {
   const { t } = useTranslation();
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const fileSearchLabel = fileSearchOpen
+    ? fileTreeOpen
+      ? t("workspace.hideContentSearch")
+      : t("workspace.showContentSearch")
+    : t("workspace.fileSearch");
 
   useWorkspaceToolsShellHorizontalDivider(
     toolbarRef,
@@ -150,11 +155,27 @@ function WorkspaceFilesExplorerToolbar({
           type="button"
           variant="ghost"
           size="icon"
-          className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
+          className={cn(
+            DESKTOP_CHROME_TOGGLE_ICON_BTN,
+            fileTreeOpen && !fileSearchOpen && "bg-muted/60",
+          )}
           onClick={onToggleFileTree}
-          aria-label={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
+          aria-label={
+            fileSearchOpen
+              ? t("workspace.showFileTree")
+              : fileTreeOpen
+                ? t("workspace.hideFileTree")
+                : t("workspace.showFileTree")
+          }
           aria-expanded={fileTreeOpen}
-          title={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
+          aria-pressed={fileTreeOpen && !fileSearchOpen}
+          title={
+            fileSearchOpen
+              ? t("workspace.showFileTree")
+              : fileTreeOpen
+                ? t("workspace.hideFileTree")
+                : t("workspace.showFileTree")
+          }
         >
           <ListTree className="size-3.5" aria-hidden />
         </Button>
@@ -162,11 +183,14 @@ function WorkspaceFilesExplorerToolbar({
           type="button"
           variant="ghost"
           size="icon"
-          className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, fileSearchOpen && "bg-muted/60")}
+          className={cn(
+            DESKTOP_CHROME_TOGGLE_ICON_BTN,
+            fileSearchOpen && fileTreeOpen && "bg-muted/60",
+          )}
           onClick={onToggleFileSearch}
-          aria-label={fileSearchOpen ? t("workspace.exitFileSearch") : t("workspace.fileSearch")}
-          aria-pressed={fileSearchOpen}
-          title={fileSearchOpen ? t("workspace.exitFileSearch") : t("workspace.fileSearch")}
+          aria-label={fileSearchLabel}
+          aria-pressed={fileSearchOpen && fileTreeOpen}
+          title={fileSearchLabel}
         >
           <Search className="size-3.5" aria-hidden />
         </Button>
@@ -694,17 +718,28 @@ export function WorkspaceFilesTab({
     }
   }, []);
 
-  const onToggleFileSearch = useCallback(() => {
-    setFileSearchOpen((open) => {
-      const next = !open;
-      if (next) {
-        setFileTreeOpen(true);
-      } else {
-        setSearchHighlightSession(null);
+  const onToggleFileTree = useCallback(() => {
+    if (fileSearchOpen) {
+      setFileSearchOpen(false);
+      setSearchHighlightSession(null);
+      return;
+    }
+    setFileTreeOpen((open) => {
+      if (!open) {
+        setFileSearchOpen(false);
       }
-      return next;
+      return !open;
     });
-  }, []);
+  }, [fileSearchOpen]);
+
+  const onToggleFileSearch = useCallback(() => {
+    if (fileSearchOpen) {
+      setFileTreeOpen((open) => !open);
+      return;
+    }
+    setFileSearchOpen(true);
+    setFileTreeOpen(true);
+  }, [fileSearchOpen]);
 
   const onSearchSessionChange = useCallback(
     (session: { query: string; matchesByPath: Map<string, WorkspaceContentSearchMatch[]> } | null) => {
@@ -770,7 +805,7 @@ export function WorkspaceFilesTab({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <WorkspaceFilesExplorerToolbar
         fileTreeOpen={fileTreeOpen}
-        onToggleFileTree={() => setFileTreeOpen((open) => !open)}
+        onToggleFileTree={onToggleFileTree}
         fileSearchOpen={fileSearchOpen}
         onToggleFileSearch={onToggleFileSearch}
         fileOpen={Boolean(selectedEntry)}

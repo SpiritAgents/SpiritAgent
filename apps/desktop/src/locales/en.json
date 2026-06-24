@@ -694,6 +694,8 @@
     "hideFileTree": "Hide file tree",
     "showFileTree": "Show file tree",
     "fileSearch": "Search file contents",
+    "hideContentSearch": "Hide content search",
+    "showContentSearch": "Show content search",
     "exitFileSearch": "Exit content search",
     "fileSearchPlaceholder": "Search workspace…",
     "matchCase": "Match case",
