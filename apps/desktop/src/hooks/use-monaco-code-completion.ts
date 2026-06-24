@@ -10,6 +10,7 @@ import type { CodeCompletionOperationSnapshot } from "@/types";
 
 const COMPLETION_DEBOUNCE_MS = 600;
 const JOURNAL_DEBOUNCE_MS = 500;
+const CURSOR_AFTER_CONTENT_GRACE_MS = 50;
 
 type PendingFetch = {
   position: monaco.Position;
@@ -83,6 +84,7 @@ export function useMonacoCodeCompletion(options: {
   const fetchInFlightRef = useRef(false);
   const pendingFetchRef = useRef<PendingFetch | null>(null);
   const scheduledTargetRef = useRef<{ line: number; column: number } | null>(null);
+  const lastContentChangeAtRef = useRef(0);
 
   relativePathRef.current = relativePath;
   baselineRef.current = baselineText;
@@ -217,13 +219,28 @@ export function useMonacoCodeCompletion(options: {
       if (!position || !model) {
         return;
       }
+      lastContentChangeAtRef.current = Date.now();
       cacheRef.current = null;
       scheduledTargetRef.current = null;
       scheduleFetch(position, model);
     });
 
+    const cursorDisposable = editor.onDidChangeCursorPosition((event) => {
+      if (Date.now() - lastContentChangeAtRef.current < CURSOR_AFTER_CONTENT_GRACE_MS) {
+        return;
+      }
+      const model = editor.getModel();
+      if (!model) {
+        return;
+      }
+      cacheRef.current = null;
+      scheduledTargetRef.current = null;
+      scheduleFetch(event.position, model);
+    });
+
     return () => {
       contentDisposable.dispose();
+      cursorDisposable.dispose();
       if (debounceTimerRef.current !== undefined) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = undefined;
