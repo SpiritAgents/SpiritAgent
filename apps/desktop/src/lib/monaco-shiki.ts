@@ -28,12 +28,18 @@ export function ensureMonacoShikiReady(): Promise<void> {
 }
 
 async function initMonacoShiki(): Promise<void> {
-  const highlighter = await createHighlighter({
-    themes: [...SPIRIT_SHIKI_PLUS_THEMES],
-    langs: [...SPIRIT_SHIKI_WORKSPACE_LANGS],
-  });
-  shikiToMonaco(highlighter, monaco);
-  setMonacoShikiReady(true);
-  registerSpiritShikiPlusMonacoThemes();
-  syncMonacoThemeFromDocument();
+  try {
+    const highlighter = await createHighlighter({
+      themes: [...SPIRIT_SHIKI_PLUS_THEMES],
+      langs: [...SPIRIT_SHIKI_WORKSPACE_LANGS],
+    });
+    shikiToMonaco(highlighter, monaco);
+    setMonacoShikiReady(true);
+    registerSpiritShikiPlusMonacoThemes();
+    syncMonacoThemeFromDocument();
+  } catch (error) {
+    setMonacoShikiReady(false);
+    console.error("[spirit] Monaco Shiki init failed", error);
+    throw error;
+  }
 }
