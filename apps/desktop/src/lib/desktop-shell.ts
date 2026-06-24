@@ -56,8 +56,8 @@ export function applyDesktopNativeChromeToDocument(): void {
   const mica = native && readStoredNativeBackdropBlur();
   root.classList.toggle("spirit-desktop-native", native);
   root.classList.toggle("spirit-desktop-mica", mica);
-  // 与 LaunchSplash 同步：首帧即隐藏 Mica 下的主布局，避免 useEffect 前闪白。
-  root.classList.toggle("spirit-launch-splash-active", mica);
+  // 与 LaunchSplash 同步：首帧即标记启动层（含自绘顶栏隐藏），避免 useEffect 前露出 Menubar。
+  root.classList.toggle("spirit-launch-splash-active", native);
 }
 
 /** LaunchSplash 挂载/卸载时同步 html 上的启动层 class（须与 styles.css 规则一致）。 */

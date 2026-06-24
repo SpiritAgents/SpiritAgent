@@ -67,7 +67,10 @@ export default function App() {
   const winElectronChrome = isWin32ElectronShell();
   const darwinElectronChrome = isDarwinElectronShell();
   const desktopTitleBarChrome = winElectronChrome || darwinElectronChrome;
-  const useMicaBackdrop = resolveUseMicaBackdrop(runtime.settings.windowsMica);
+  // snapshot 未就绪时读磁盘，避免 settings 默认 windowsMica:true 在启动层误开透明/材质
+  const useMicaBackdrop = resolveUseMicaBackdrop(
+    snapshot != null ? runtime.settings.windowsMica : undefined,
+  );
 
   useDesktopShellEffects({
     isElectronShell,
@@ -250,7 +253,7 @@ export default function App() {
         useMicaBackdrop ? "bg-transparent" : "bg-background",
       )}
     >
-      <LaunchSplash active={launchSplashActive} useMicaBackdrop={useMicaBackdrop} />
+      <LaunchSplash active={launchSplashActive} />
       <div data-spirit-surface="app-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {!desktopTitleBarChrome ? (
           <div
