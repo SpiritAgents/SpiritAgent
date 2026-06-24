@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL, instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import { resolveWorkspaceFilesTabIcon } from "@/lib/workspace-explorer-icon";
@@ -234,42 +235,60 @@ export function WorkspaceFilesSearchPanel({
             aria-label={t("workspace.fileSearch")}
           />
           <div className="absolute inset-y-0 right-1 flex items-center gap-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={SEARCH_OPTION_TOGGLE_BTN}
-              aria-pressed={caseSensitive}
-              title={t("workspace.matchCase")}
-              aria-label={t("workspace.matchCase")}
-              onClick={() => setCaseSensitive((value) => !value)}
-            >
-              <CaseSensitive className="size-3.5" aria-hidden />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={SEARCH_OPTION_TOGGLE_BTN}
-              aria-pressed={wholeWord}
-              title={t("workspace.matchWholeWord")}
-              aria-label={t("workspace.matchWholeWord")}
-              onClick={() => setWholeWord((value) => !value)}
-            >
-              <WholeWord className="size-3.5" aria-hidden />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={SEARCH_OPTION_TOGGLE_BTN}
-              aria-pressed={isRegexp}
-              title={t("workspace.useRegex")}
-              aria-label={t("workspace.useRegex")}
-              onClick={() => setIsRegexp((value) => !value)}
-            >
-              <Regex className="size-3.5" aria-hidden />
-            </Button>
+            <Tooltip delayDuration={300} disableHoverableContent>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={SEARCH_OPTION_TOGGLE_BTN}
+                  aria-pressed={caseSensitive}
+                  aria-label={t("workspace.matchCase")}
+                  onClick={() => setCaseSensitive((value) => !value)}
+                >
+                  <CaseSensitive className="size-3.5" aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={4}>
+                {t("workspace.matchCase")}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip delayDuration={300} disableHoverableContent>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={SEARCH_OPTION_TOGGLE_BTN}
+                  aria-pressed={wholeWord}
+                  aria-label={t("workspace.matchWholeWord")}
+                  onClick={() => setWholeWord((value) => !value)}
+                >
+                  <WholeWord className="size-3.5" aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={4}>
+                {t("workspace.matchWholeWord")}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip delayDuration={300} disableHoverableContent>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={SEARCH_OPTION_TOGGLE_BTN}
+                  aria-pressed={isRegexp}
+                  aria-label={t("workspace.useRegex")}
+                  onClick={() => setIsRegexp((value) => !value)}
+                >
+                  <Regex className="size-3.5" aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={4}>
+                {t("workspace.useRegex")}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
