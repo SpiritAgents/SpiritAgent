@@ -5,6 +5,13 @@ import type {
   InlineCompletionMapContext,
 } from './types.js';
 
+export type {
+  CodeCompletionOperation,
+  CodeCompletionPosition,
+  InlineCompletionItemSpec,
+  InlineCompletionMapContext,
+} from './types.js';
+
 const MAX_INLINE_INSERT_CHARS = 500;
 
 /** Strip newlines and cap length for inline ghost text. */

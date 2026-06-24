@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 
-import { codeCompletionOperationToInlineItemAtCursor } from "@spirit-agent/core";
-import type { CodeCompletionOperation } from "@spirit-agent/core";
+import {
+  codeCompletionOperationToInlineItemAtCursor,
+  type CodeCompletionOperation,
+} from "@spirit-agent/core/code-completion-to-monaco";
 import * as monaco from "monaco-editor";
 
 import { useHostApi } from "@/hooks/useHostApi";
