@@ -2,7 +2,7 @@
  * OpenAI-compatible `GET /v1/models` listing (host-side; no secrets stored here).
  */
 
-import { gatewayAnthropicClaudeSupportedEfforts } from '@spirit-agent/core';
+import { gatewayAnthropicClaudeSupportedEfforts, routedAnthropicClaudeSupportedEfforts } from '@spirit-agent/core';
 
 import type { ModelProviderId, ProviderModelTransportKind } from './model-provider-presets.js';
 import { resolveProviderConnectApiBase } from './model-provider-presets.js';
@@ -493,6 +493,48 @@ function attachGatewayAnthropicReasoningEfforts(
   };
 }
 
+function readOpenRouterSupportedReasoningEfforts(
+  record: Record<string, unknown>,
+): string[] | undefined {
+  const reasoning = record.reasoning;
+  if (typeof reasoning !== 'object' || reasoning === null) {
+    return undefined;
+  }
+
+  const supportedEfforts = (reasoning as Record<string, unknown>).supported_efforts;
+  if (!Array.isArray(supportedEfforts)) {
+    return undefined;
+  }
+
+  const efforts: string[] = [];
+  for (const item of supportedEfforts) {
+    if (typeof item === 'string' && item.trim().length > 0) {
+      efforts.push(item.trim().toLowerCase());
+    }
+  }
+
+  // OpenRouter 显式返回 [] 表示不支持 effort 选择，须与字段缺失（undefined → 可兜底）区分。
+  return efforts;
+}
+
+function attachOpenRouterAnthropicReasoningEfforts(
+  modelEntry: ProviderListedModelEntry,
+): ProviderListedModelEntry {
+  if (modelEntry.supportedReasoningEfforts !== undefined) {
+    return modelEntry;
+  }
+
+  const supportedReasoningEfforts = routedAnthropicClaudeSupportedEfforts(modelEntry.id);
+  if (supportedReasoningEfforts === undefined) {
+    return modelEntry;
+  }
+
+  return {
+    ...modelEntry,
+    supportedReasoningEfforts,
+  };
+}
+
 export function parseVercelAiGatewayModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
@@ -623,18 +665,28 @@ export function parseOpenRouterModelEntriesPayload(body: unknown): ProviderListe
       }
       if (hasImage && !hasText) {
         entries.push(
-          attachListedModelMetadata(
-            { id: id.trim(), supportsImageGeneration: true },
-            record,
-            readOpenRouterPricing(record),
+          attachOpenRouterAnthropicReasoningEfforts(
+            attachListedModelMetadata(
+              { id: id.trim(), supportsImageGeneration: true },
+              record,
+              readOpenRouterPricing(record),
+            ),
           ),
         );
         continue;
       }
     }
 
+    const modelEntry: ProviderListedModelEntry = { id: id.trim() };
+    const supportedReasoningEfforts = readOpenRouterSupportedReasoningEfforts(record);
+    if (supportedReasoningEfforts !== undefined) {
+      modelEntry.supportedReasoningEfforts = supportedReasoningEfforts;
+    }
+
     entries.push(
-      attachListedModelMetadata({ id: id.trim() }, record, readOpenRouterPricing(record)),
+      attachOpenRouterAnthropicReasoningEfforts(
+        attachListedModelMetadata(modelEntry, record, readOpenRouterPricing(record)),
+      ),
     );
   }
   return entries;

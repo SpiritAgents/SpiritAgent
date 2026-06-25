@@ -4,6 +4,8 @@ import {
   isGatewayAnthropicClaudeModel,
   resolveGatewayAnthropicClaudeCapabilities,
 } from './openai/gateway-anthropic-thinking.js';
+import { isOpenRouterAnthropicClaudeModel } from './openai/openrouter-anthropic-reasoning.js';
+import { resolveRoutedAnthropicClaudeCapabilities } from './openai/routed-anthropic-claude-capabilities.js';
 import type { OpenAiTransportConfig } from './openai/openai-compat.js';
 
 export type ModelReasoningProvider =
@@ -206,6 +208,10 @@ export function defaultModelReasoningEffort(
     return 'default';
   }
 
+  if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
+    return 'default';
+  }
+
   return DEFAULT_MODEL_REASONING_EFFORT;
 }
 
@@ -241,6 +247,12 @@ export function modelReasoningEffortOptions(
   if (isGatewayAnthropicClaudeReasoningModel(context)) {
     const supportedEfforts = context?.supportedEfforts
       ?? resolveGatewayAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts;
+    return anthropicReasoningEffortOptionsForSupportedEfforts(supportedEfforts);
+  }
+
+  if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
+    const supportedEfforts = context?.supportedEfforts
+      ?? resolveRoutedAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts;
     return anthropicReasoningEffortOptionsForSupportedEfforts(supportedEfforts);
   }
 
@@ -344,6 +356,15 @@ export function isGatewayAnthropicClaudeReasoningModel(
   );
 }
 
+export function isOpenRouterAnthropicClaudeReasoningModel(
+  context?: ModelReasoningEffortContext,
+): boolean {
+  return isOpenRouterAnthropicClaudeModel(
+    context?.provider === 'openrouter' ? 'openrouter' : undefined,
+    context?.model ?? '',
+  );
+}
+
 function normalizeModelId(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
@@ -427,6 +448,20 @@ function resolveCompatibleModelReasoningEffort(
     const supportedEfforts = normalizeSupportedReasoningEfforts(
       context?.supportedEfforts
         ?? resolveGatewayAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+    );
+    switch (normalized) {
+      case 'none':
+      case 'minimal':
+        return 'default';
+      default:
+        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+    }
+  }
+
+  if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
+    const supportedEfforts = normalizeSupportedReasoningEfforts(
+      context?.supportedEfforts
+        ?? resolveRoutedAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
     );
     switch (normalized) {
       case 'none':
