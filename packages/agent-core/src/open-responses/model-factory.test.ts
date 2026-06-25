@@ -143,6 +143,46 @@ test('buildResponsesProviderOptions maps gateway anthropic claude to adaptive th
   );
 });
 
+test('buildResponsesProviderOptions maps gateway google gemini 3 to google thinkingConfig', () => {
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: 'open-responses',
+      apiKey: 'test-key',
+      model: 'google/gemini-3.1-pro-preview',
+      llmVendor: 'vercel-ai-gateway',
+      reasoningEffort: 'high',
+    }),
+    {
+      google: {
+        thinkingConfig: {
+          thinkingLevel: 'high',
+          includeThoughts: true,
+        },
+      },
+    },
+  );
+});
+
+test('buildResponsesProviderOptions maps gateway google gemini 2.5 to google thinkingConfig', () => {
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: 'open-responses',
+      apiKey: 'test-key',
+      model: 'google/gemini-2.5-flash',
+      llmVendor: 'vercel-ai-gateway',
+      reasoningEffort: 'low',
+    }),
+    {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 1024,
+          includeThoughts: true,
+        },
+      },
+    },
+  );
+});
+
 test('buildResponsesProviderOptions maps gateway anthropic opus 4.8 to summarized adaptive thinking', () => {
   assert.deepEqual(
     buildResponsesProviderOptions({
