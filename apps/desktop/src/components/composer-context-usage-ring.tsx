@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
 
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { formatCompactTokenCount } from '@/lib/format-compact-token-count';
 import type { ConversationContextUsageSnapshot } from '@/types';
 
@@ -50,8 +50,8 @@ export function ComposerContextUsageRing({
   });
 
   return (
-    <HoverCard openDelay={150} closeDelay={100}>
-      <HoverCardTrigger asChild>
+    <Tooltip delayDuration={150} closeDelayMs={100} disableHoverableContent>
+      <TooltipTrigger asChild>
         <button
           type="button"
           className="inline-flex shrink-0 cursor-default items-center gap-1.5 rounded-md border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
@@ -87,15 +87,16 @@ export function ComposerContextUsageRing({
           </svg>
           <span className="font-sans text-xs text-muted-foreground">{usage.percent}%</span>
         </button>
-      </HoverCardTrigger>
-      <HoverCardContent
+      </TooltipTrigger>
+      <TooltipContent
         side="top"
         align="end"
         sideOffset={6}
-        className="w-auto max-w-none px-3 py-2"
+        appearance="detail"
+        className="px-3 py-2"
       >
         <ContextUsageDetailPanel usage={usage} />
-      </HoverCardContent>
-    </HoverCard>
+      </TooltipContent>
+    </Tooltip>
   );
 }
