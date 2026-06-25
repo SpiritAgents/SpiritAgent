@@ -11,6 +11,7 @@ import { getLlmFetch } from '../llm-fetch.js';
 import type { JsonObject } from '../ports.js';
 import { createAlibabaResponsesAwareFetch } from './alibaba-responses-fetch.js';
 import { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
+import { createOpenRouterReasoningAwareFetch } from './openrouter-reasoning-responses-fetch.js';
 import {
   resolveBedrockMantleOpenResponsesApiKey,
   wrapFetchForBedrockMantleIamAuth,
@@ -30,6 +31,7 @@ import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
 } from '../openai/gateway-anthropic-thinking.js';
+import { isOpenRouterAnthropicClaudeModel } from '../openai/openrouter-anthropic-reasoning.js';
 import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
 import {
@@ -68,6 +70,7 @@ function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof f
   if (shouldUseAlibabaResponsesBuiltInTools(config)) {
     fetchFn = createAlibabaResponsesAwareFetch(config, fetchFn);
   }
+  fetchFn = createOpenRouterReasoningAwareFetch(config, fetchFn);
   if (shouldUseApplyPatchFileTools(config)) {
     fetchFn = createApplyPatchAwareFetch(config, fetchFn);
   }
@@ -249,6 +252,10 @@ export function buildResponsesProviderOptions(
   }
 
   if (provider !== 'openai') {
+    if (isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model)) {
+      return {};
+    }
+
     const providerOptions: JsonObject = {
       ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
       ...(reasoningSummary !== undefined ? { reasoningSummary } : {}),

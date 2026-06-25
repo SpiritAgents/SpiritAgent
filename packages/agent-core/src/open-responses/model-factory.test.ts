@@ -162,6 +162,19 @@ test('buildResponsesProviderOptions maps gateway anthropic opus 4.8 to summarize
   );
 });
 
+test('buildResponsesProviderOptions omits openrouter providerOptions for anthropic claude', () => {
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: 'open-responses',
+      apiKey: 'test-key',
+      model: 'anthropic/claude-sonnet-4.6',
+      llmVendor: 'openrouter',
+      reasoningEffort: 'medium',
+    }),
+    {},
+  );
+});
+
 test('buildResponsesProviderOptions maps azure provider options', () => {
   const options = buildResponsesProviderOptions({
     transportKind: 'open-responses',
