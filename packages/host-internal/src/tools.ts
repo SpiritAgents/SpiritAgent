@@ -234,8 +234,8 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | {
       name: 'read_file';
       path: string;
-      start_line?: number;
-      end_line?: number;
+      offset?: number;
+      limit?: number;
     }
   | { name: 'grep'; query: string; is_regexp?: boolean; glob?: string }
   | {
@@ -606,15 +606,15 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       }
       case 'read': {
         if (tokens.length < 2) {
-          throw new Error('用法: /tool read <path> [start] [end]');
+          throw new Error('用法: /tool read <path> [offset] [limit]');
         }
-        const startLine = parseOptionalManualLine(tokens[2], 'start line');
-        const endLine = parseOptionalManualLine(tokens[3], 'end line');
+        const offset = parseOptionalManualLine(tokens[2], 'offset');
+        const limit = parseOptionalManualLine(tokens[3], 'limit');
         return {
           name: 'read_file',
           path: tokens[1]!,
-          ...(startLine !== undefined ? { start_line: startLine } : {}),
-          ...(endLine !== undefined ? { end_line: endLine } : {}),
+          ...(offset !== undefined ? { offset } : {}),
+          ...(limit !== undefined ? { limit } : {}),
         };
       }
       case 'search': {
@@ -675,13 +675,13 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         };
       case 'read_file':
         {
-          const startLine = optionalPositiveInt(parsed, 'start_line');
-          const endLine = optionalPositiveInt(parsed, 'end_line');
+          const offset = optionalPositiveInt(parsed, 'offset');
+          const limit = optionalPositiveInt(parsed, 'limit');
         return {
           name,
           path: requiredString(parsed, 'path'),
-          ...(startLine !== undefined ? { start_line: startLine } : {}),
-          ...(endLine !== undefined ? { end_line: endLine } : {}),
+          ...(offset !== undefined ? { offset } : {}),
+          ...(limit !== undefined ? { limit } : {}),
         };
         }
       case 'grep':
@@ -1016,7 +1016,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'glob':
         return this.executeGlob(request.pattern);
       case 'read_file':
-        return this.executeReadFile(request.path, request.start_line, request.end_line);
+        return this.executeReadFile(request.path, request.offset, request.limit);
       case 'grep':
         return this.executeSearchFiles(request.query, request.is_regexp ?? false, request.glob);
       case 'run_subagent':
@@ -1485,8 +1485,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
 
   private async executeReadFile(
     inputPath: string,
-    startLine?: number,
-    endLine?: number,
+    offset?: number,
+    limit?: number,
   ): Promise<HostToolExecutionOutput> {
     const target = await this.resolveReadFileTarget(inputPath);
     const canonical = target.canonicalPath;
@@ -1541,15 +1541,17 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     }
 
     const content = bytes.toString('utf8');
-    const start = startLine ?? 1;
+    const start = offset ?? 1;
     if (start === 0) {
-      throw new Error('line 从 1 开始');
+      throw new Error('offset 从 1 开始');
     }
 
-    const end = endLine ?? start + MAX_READ_LINES_DEFAULT - 1;
-    if (end < start) {
-      throw new Error('end line 不能小于 start line');
+    const lineLimit = limit ?? MAX_READ_LINES_DEFAULT;
+    if (lineLimit < 1) {
+      throw new Error('limit 必须 >= 1');
     }
+
+    const end = start + lineLimit - 1;
 
     const lines = content.split(/\r?\n/u);
     const maxLine = Math.max(lines.length, 1);

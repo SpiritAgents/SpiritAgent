@@ -348,7 +348,7 @@ test('read_file streaming preview shows filename from partial arguments JSON', (
       kind: 'streaming-tool-preview',
       toolCallId: 'call-partial',
       toolName: 'read_file',
-      argumentsJson: '{"path":"Cargo.toml","start_line":1,"end_line":80',
+      argumentsJson: '{"path":"Cargo.toml","offset":1,"limit":80',
     },
   ]);
 
@@ -366,7 +366,7 @@ test('tool previews keep live and finalized thinking above the tool card without
       kind: 'streaming-tool-preview',
       toolCallId: 'call-1',
       toolName: 'read_file',
-      argumentsJson: '{"path":"README.md","start_line":10,"end_line":50}',
+      argumentsJson: '{"path":"README.md","offset":10,"limit":41}',
     },
     { kind: 'update-pending-assistant-thinking', text: 'Need to inspect README.md first.' },
   ]);
@@ -387,7 +387,7 @@ test('tool previews keep live and finalized thinking above the tool card without
       kind: 'tool-call-started',
       toolCallId: 'call-1',
       toolName: 'read_file',
-      request: { path: 'README.md', start_line: 10, end_line: 50 },
+      request: { path: 'README.md', offset: 10, limit: 41 },
     },
     { kind: 'assistant-thinking-segment-finalized', text: 'Need to inspect README.md first.' },
   ]);

@@ -1133,7 +1133,7 @@ function readFileSummaryCopy(
 
   const record = request as Record<string, unknown>;
   const rawPath = parseReadFilePathFromRequest(request);
-  const lineRange = lineRangeForReadFile(record.start_line, record.end_line);
+  const lineRange = lineRangeForReadFile(record.offset, record.limit);
   const isSkillPath = isSkillMarkdownPath(rawPath);
   const skillMarkdownContent =
     isSkillPath && typeof options?.executionOutput === 'string'

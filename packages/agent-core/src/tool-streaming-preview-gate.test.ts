@@ -74,7 +74,7 @@ test('resolveStreamingToolPreviewEmit repeats for growing create_plan args', () 
 });
 
 test('buildEarlyExecutableArgumentsJson builds read_file path from partial JSON', () => {
-  const partial = '{"path":"Cargo.toml","start_line":';
+  const partial = '{"path":"Cargo.toml","offset":';
   assert.equal(buildEarlyExecutableArgumentsJson('read_file', partial), undefined);
   assert.equal(readFilePartialAllowsEarlyExecution(partial), false);
 
@@ -82,15 +82,15 @@ test('buildEarlyExecutableArgumentsJson builds read_file path from partial JSON'
   assert.equal(buildEarlyExecutableArgumentsJson('read_file', pathOnly), '{"path":"package.json"}');
   assert.deepEqual(previewRequestFromStreamingArguments('read_file', pathOnly), { path: 'package.json' });
 
-  const withLines = '{"path":"README.md","start_line":10,"end_line":50';
+  const withLines = '{"path":"README.md","offset":10,"limit":41';
   assert.deepEqual(tryExtractPartialReadFileFields(withLines), {
     path: 'README.md',
-    start_line: 10,
-    end_line: 50,
+    offset: 10,
+    limit: 41,
   });
   assert.equal(
     buildEarlyExecutableArgumentsJson('read_file', withLines),
-    '{"path":"README.md","start_line":10,"end_line":50}',
+    '{"path":"README.md","offset":10,"limit":41}',
   );
 });
 
@@ -102,15 +102,15 @@ test('resolveStreamingToolPreviewEmit repeats read_file preview when line range 
   assert.equal(first.emit, true);
   assert.equal(readFileStreamingPreviewSignature(pathOnly), 'README.md\0\0');
 
-  const withStart = '{"path":"README.md","start_line":10';
-  const second = resolveStreamingToolPreviewEmit('read_file', withStart, first.nextState);
+  const withOffset = '{"path":"README.md","offset":10';
+  const second = resolveStreamingToolPreviewEmit('read_file', withOffset, first.nextState);
   assert.equal(second.emit, true);
 
-  const withEnd = '{"path":"README.md","start_line":10,"end_line":50';
-  const third = resolveStreamingToolPreviewEmit('read_file', withEnd, second.nextState);
+  const withLimit = '{"path":"README.md","offset":10,"limit":41';
+  const third = resolveStreamingToolPreviewEmit('read_file', withLimit, second.nextState);
   assert.equal(third.emit, true);
 
-  const unchanged = resolveStreamingToolPreviewEmit('read_file', withEnd, third.nextState);
+  const unchanged = resolveStreamingToolPreviewEmit('read_file', withLimit, third.nextState);
   assert.equal(unchanged.emit, false);
 });
 

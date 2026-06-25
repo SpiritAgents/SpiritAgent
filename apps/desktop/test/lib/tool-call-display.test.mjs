@@ -247,8 +247,8 @@ test('getToolCallSummaryParts: read_file tool-output-archives uses tool output d
         headlineDetail: 'call_1.txt',
         argsExcerpt: JSON.stringify({
           path: 'C:/Users/pc/AppData/Roaming/SpiritAgent/tool-output-archives/sess/call_1.txt',
-          start_line: 1,
-          end_line: 5,
+          offset: 1,
+          limit: 5,
         }),
         detailLines: [],
       }),
