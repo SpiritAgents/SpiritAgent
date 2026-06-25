@@ -1,18 +1,12 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Result, anyhow};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use std::{
     collections::{HashMap, VecDeque},
     env,
-    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
-    process::{Child, ChildStderr, ChildStdin, ChildStdout, Command, Stdio},
-    sync::{
-        Arc, Mutex,
-        mpsc::{self, Receiver},
-    },
-    thread,
+    sync::Arc,
 };
 
 use crate::{
@@ -47,12 +41,14 @@ use crate::{
     view::{ChatMessage, MessageRole, PendingAssistantAux, PendingSubagentApprovalView},
 };
 
-const ENV_RUNTIME_BACKEND_NODE_PATH: &str = "SPIRIT_NODE_PATH";
-const ENV_RUNTIME_BRIDGE_PATH: &str = "SPIRIT_AGENT_CORE_BRIDGE_PATH";
-const ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH: &str = "SPIRIT_HOST_INTERNAL_MODULE_PATH";
-const ENV_RUNTIME_HOST_INTERNAL_SPIRIT_DATA_DIR: &str = "SPIRIT_HOST_INTERNAL_SPIRIT_DATA_DIR";
-const ENV_API_BASE: &str = "SPIRIT_API_BASE";
-const ENV_API_KEY: &str = "SPIRIT_API_KEY";
+mod constants;
+mod json_rpc;
+
+use constants::{ENV_API_BASE, ENV_API_KEY};
+#[cfg(test)]
+pub(crate) use constants::ENV_RUNTIME_BACKEND_NODE_PATH;
+pub(crate) use json_rpc::resolve_bridge_script;
+use json_rpc::{is_json_rpc_response, JsonRpcProcess};
 
 pub struct TsBridgeRuntime {
     process: JsonRpcProcess,
@@ -83,14 +79,6 @@ pub struct TsBridgeRuntime {
 enum PendingApprovalKind {
     Tool,
     Manual,
-}
-
-#[derive(Debug)]
-struct JsonRpcProcess {
-    child: Child,
-    stdin: Arc<Mutex<ChildStdin>>,
-    rx: Receiver<Result<Value>>,
-    next_id: u64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -3091,304 +3079,6 @@ impl TsBridgeRuntime {
     }
 }
 
-impl JsonRpcProcess {
-    fn spawn(script_path: PathBuf) -> Result<Self> {
-        let node_path = resolve_node_path();
-        let mut command = Command::new(&node_path);
-        command
-            .arg(script_path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        let host_internal_path = resolve_host_internal_module_path()?;
-        command.env(ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH, host_internal_path);
-        command.env(
-            ENV_RUNTIME_HOST_INTERNAL_SPIRIT_DATA_DIR,
-            spirit_agent_data_dir(),
-        );
-
-        let mut child = command
-            .spawn()
-            .with_context(|| format!("启动 TS bridge 失败: {}", node_path.display()))?;
-
-        let stdin = child
-            .stdin
-            .take()
-            .ok_or_else(|| anyhow!("获取 TS bridge stdin 失败"))?;
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or_else(|| anyhow!("获取 TS bridge stdout 失败"))?;
-        let stderr = child
-            .stderr
-            .take()
-            .ok_or_else(|| anyhow!("获取 TS bridge stderr 失败"))?;
-        let (tx, rx) = mpsc::channel::<Result<Value>>();
-        spawn_stdout_reader(stdout, tx);
-        spawn_stderr_drain(stderr);
-
-        Ok(Self {
-            child,
-            stdin: Arc::new(Mutex::new(stdin)),
-            rx,
-            next_id: 1,
-        })
-    }
-
-    fn next_request_id(&mut self) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
-        id
-    }
-
-    fn write_request(&self, id: u64, method: &str, params: Option<Value>) -> Result<()> {
-        let mut payload = json!({
-            "jsonrpc": "2.0",
-            "id": id,
-            "method": method,
-        });
-        if let Some(params) = params {
-            payload["params"] = params;
-        }
-        self.write_message(&payload)
-    }
-
-    fn write_message(&self, payload: &Value) -> Result<()> {
-        write_message_to_stdin(&self.stdin, payload)
-    }
-
-    fn recv_message(&self) -> Result<Value> {
-        match self.rx.recv() {
-            Ok(result) => result,
-            Err(_) => Err(anyhow!("TS bridge stdout 读取通道已关闭。")),
-        }
-    }
-}
-
-impl Drop for JsonRpcProcess {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
-
-fn release_bundle_roots() -> Vec<PathBuf> {
-    let mut roots = Vec::new();
-    if let Ok(exe_path) = env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-            roots.push(exe_dir.to_path_buf());
-            if let Some(parent) = exe_dir.parent() {
-                roots.push(parent.to_path_buf());
-            }
-        }
-    }
-    roots
-}
-
-fn resolve_node_path() -> PathBuf {
-    if let Ok(path) = env::var(ENV_RUNTIME_BACKEND_NODE_PATH) {
-        return PathBuf::from(path);
-    }
-
-    for root in release_bundle_roots() {
-        let candidate = if cfg!(windows) {
-            root.join("node").join("node.exe")
-        } else {
-            root.join("node").join("bin").join("node")
-        };
-        if candidate.exists() {
-            return candidate;
-        }
-    }
-
-    PathBuf::from("node")
-}
-
-fn resolve_bridge_script(workspace_root: &Path) -> Result<PathBuf> {
-    if let Ok(path) = env::var(ENV_RUNTIME_BRIDGE_PATH) {
-        let candidate = PathBuf::from(path);
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-    }
-
-    for root in release_bundle_roots() {
-        let candidate = root
-            .join("packages")
-            .join("agent-core")
-            .join("dist")
-            .join("host-bridge.js");
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-    }
-
-    // 与「用户项目目录」无关：bridge 位于 monorepo 的 packages/agent-core/dist。
-    // 开发时 cwd 常为 apps/cli，不能仅用 workspace_root（current_dir）推导路径。
-    let from_crate = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("packages")
-        .join("agent-core")
-        .join("dist")
-        .join("host-bridge.js");
-    if from_crate.exists() {
-        return Ok(from_crate);
-    }
-
-    let direct = workspace_root
-        .join("packages")
-        .join("agent-core")
-        .join("dist")
-        .join("host-bridge.js");
-    if direct.exists() {
-        return Ok(direct);
-    }
-
-    if let Some(parent) = workspace_root.parent() {
-        let sibling = parent
-            .join("packages")
-            .join("agent-core")
-            .join("dist")
-            .join("host-bridge.js");
-        if sibling.exists() {
-            return Ok(sibling);
-        }
-    }
-
-    let mut cursor = workspace_root.to_path_buf();
-    loop {
-        let candidate = cursor
-            .join("packages")
-            .join("agent-core")
-            .join("dist")
-            .join("host-bridge.js");
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-        if !cursor.pop() {
-            break;
-        }
-    }
-
-    Err(anyhow!(
-        "未找到 TS bridge 入口 host-bridge.js。请先在 packages/agent-core 执行 npm run build。"
-    ))
-}
-
-fn resolve_host_internal_module_path() -> Result<PathBuf> {
-    if let Ok(path) = env::var(ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH) {
-        let candidate = PathBuf::from(path);
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-        return Err(anyhow!(
-            "环境变量 {} 指向的 host-internal 模块不存在: {}",
-            ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH,
-            candidate.display()
-        ));
-    }
-
-    let from_crate = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("packages")
-        .join("host-internal")
-        .join("dist")
-        .join("index.js");
-    if from_crate.exists() {
-        return Ok(from_crate);
-    }
-
-    for root in release_bundle_roots() {
-        let candidate = root
-            .join("packages")
-            .join("host-internal")
-            .join("dist")
-            .join("index.js");
-        if candidate.exists() {
-            return Ok(candidate);
-        }
-    }
-
-    Err(anyhow!(
-        "未找到 host-internal bridge 模块。请先构建 packages/host-internal，或设置 {} 指向其 dist/index.js。默认查找路径: {}",
-        ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH,
-        from_crate.display()
-    ))
-}
-
-fn spawn_stdout_reader(stdout: ChildStdout, tx: mpsc::Sender<Result<Value>>) {
-    thread::spawn(move || {
-        let mut reader = BufReader::new(stdout);
-        loop {
-            let next = read_framed_message(&mut reader)
-                .context("读取 TS bridge stdout 消息失败")
-                .and_then(|body| {
-                    serde_json::from_slice::<Value>(&body).context("解析 TS bridge JSON 失败")
-                });
-
-            match next {
-                Ok(value) => {
-                    if tx.send(Ok(value)).is_err() {
-                        break;
-                    }
-                }
-                Err(err) => {
-                    let _ = tx.send(Err(err));
-                    break;
-                }
-            }
-        }
-    });
-}
-
-fn spawn_stderr_drain(stderr: ChildStderr) {
-    thread::spawn(move || {
-        let mut reader = BufReader::new(stderr);
-        let mut line = String::new();
-        loop {
-            line.clear();
-            match reader.read_line(&mut line) {
-                Ok(0) => break,
-                Ok(_) => logging::log_event(&format!("[ts-bridge] {}", line.trim_end())),
-                Err(err) => {
-                    logging::log_event(&format!("[ts-bridge] stderr drain failed: {}", err));
-                    break;
-                }
-            }
-        }
-    });
-}
-
-fn read_framed_message(reader: &mut dyn BufRead) -> Result<Vec<u8>> {
-    let mut content_length = None;
-    let mut line = String::new();
-    loop {
-        line.clear();
-        let read = reader.read_line(&mut line)?;
-        if read == 0 {
-            return Err(anyhow!("TS bridge stdout 已提前关闭。"));
-        }
-
-        if line == "\r\n" || line == "\n" {
-            break;
-        }
-
-        let mut parts = line.splitn(2, ':');
-        let name = parts.next().unwrap_or_default().trim().to_ascii_lowercase();
-        let value = parts.next().unwrap_or_default().trim();
-        if name == "content-length" {
-            content_length = Some(value.parse::<usize>().context("解析 Content-Length 失败")?);
-        }
-    }
-
-    let len = content_length.ok_or_else(|| anyhow!("TS bridge 消息缺少 Content-Length"))?;
-    let mut body = vec![0u8; len];
-    reader.read_exact(&mut body)?;
-    Ok(body)
-}
-
 fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
     history
         .iter()
@@ -3447,23 +3137,6 @@ fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
     }
 
     value
-}
-
-fn write_message_to_stdin(stdin: &Arc<Mutex<ChildStdin>>, payload: &Value) -> Result<()> {
-    let body = serde_json::to_vec(payload)?;
-    let header = format!("Content-Length: {}\r\n\r\n", body.len());
-    let mut guard = stdin
-        .lock()
-        .map_err(|_| anyhow!("获取 TS bridge stdin 锁失败"))?;
-    guard.write_all(header.as_bytes())?;
-    guard.write_all(&body)?;
-    guard.flush()?;
-    Ok(())
-}
-
-fn is_json_rpc_response(message: &Value) -> bool {
-    message.get("id").is_some()
-        && (message.get("result").is_some() || message.get("error").is_some())
 }
 
 fn approval_decision_from_input(message: &str) -> Value {
