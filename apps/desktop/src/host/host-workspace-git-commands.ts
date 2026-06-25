@@ -5,6 +5,8 @@ import {
   getWorkspaceFileReferenceIndexSnapshot,
   listWorkspaceFileReferenceSuggestions as listWorkspaceFileReferenceSuggestionsFromHostInternal,
   primeWorkspaceFileReferenceIndexCache,
+  runRipgrepSearch,
+  WORKSPACE_CONTENT_SEARCH_MAX_MATCHES,
   type WorkLocationKind,
   type WorkspaceFileReferenceIndexSnapshot,
 } from '@spirit-agent/host-internal';
@@ -31,6 +33,8 @@ import type {
   WorkspaceReadTextFileResult,
   WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
+  WorkspaceContentSearchRequest,
+  WorkspaceContentSearchResult,
 } from '../types.js';
 import {
   applyGitRevision,
@@ -504,4 +508,27 @@ export async function refreshGitSnapshotCommand(
     throw new Error(i18n.t('error.hostNotReady'));
   }
   return ctx.buildSnapshot();
+}
+
+export async function searchWorkspaceContentCommand(
+  ctx: HostWorkspaceGitCommandContext,
+  request: WorkspaceContentSearchRequest,
+): Promise<WorkspaceContentSearchResult> {
+  await ctx.ensureInitialized(undefined, { fastPath: true });
+  const state = ctx.requireState();
+  const query = request.query.trim();
+  if (!query) {
+    return { matches: [] };
+  }
+
+  const { matches, truncated } = await runRipgrepSearch({
+    workspaceRoot: state.workspaceRoot,
+    query,
+    isRegexp: request.isRegexp === true,
+    caseSensitive: request.caseSensitive === true,
+    wholeWord: request.wholeWord === true,
+    maxMatches: WORKSPACE_CONTENT_SEARCH_MAX_MATCHES,
+  });
+
+  return { matches, truncated };
 }

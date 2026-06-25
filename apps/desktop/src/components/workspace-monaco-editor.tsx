@@ -10,6 +10,7 @@ import * as monaco from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
 import "@/styles/monaco-editor-overrides.css";
 
+import type { EditorFileRevealLocation } from "@/lib/workspace-editor-navigation";
 import { ensureMonacoWorkers } from "@/lib/monaco-environment";
 import { ensureMonacoShikiReady, isMonacoShikiReady } from "@/lib/monaco-shiki";
 import { monacoLanguageId } from "@/lib/monaco-language";
@@ -24,6 +25,12 @@ export type WorkspaceMonacoEditorHandle = {
   getEditor: () => monaco.editor.IStandaloneCodeEditor | null;
 };
 
+export type WorkspaceMonacoSearchMatchRange = {
+  line: number;
+  startColumn: number;
+  endColumn: number;
+};
+
 export type WorkspaceMonacoEditorProps = {
   relativePath: string;
   initialText: string;
@@ -33,6 +40,9 @@ export type WorkspaceMonacoEditorProps = {
   onTextChange?: (text: string) => void;
   readOnly?: boolean;
   onEditorReady?: (editor: monaco.editor.IStandaloneCodeEditor | null) => void;
+  revealLocation?: EditorFileRevealLocation | null;
+  onRevealConsumed?: () => void;
+  searchMatchRanges?: readonly WorkspaceMonacoSearchMatchRange[];
 };
 
 export const WorkspaceMonacoEditor = forwardRef<
@@ -48,6 +58,9 @@ export const WorkspaceMonacoEditor = forwardRef<
     onTextChange,
     readOnly = false,
     onEditorReady,
+    revealLocation = null,
+    onRevealConsumed,
+    searchMatchRanges = [],
   },
   ref,
 ) {
@@ -58,16 +71,53 @@ export const WorkspaceMonacoEditor = forwardRef<
   const onDirtyChangeRef = useRef(onDirtyChange);
   const onTextChangeRef = useRef(onTextChange);
   const onEditorReadyRef = useRef(onEditorReady);
+  const onRevealConsumedRef = useRef(onRevealConsumed);
+  const revealLocationRef = useRef(revealLocation);
+  const searchMatchRangesRef = useRef(searchMatchRanges);
+  const searchDecorationsRef = useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
   onSaveRef.current = onSave;
   onDirtyChangeRef.current = onDirtyChange;
   onTextChangeRef.current = onTextChange;
   onEditorReadyRef.current = onEditorReady;
+  onRevealConsumedRef.current = onRevealConsumed;
+  revealLocationRef.current = revealLocation;
+  searchMatchRangesRef.current = searchMatchRanges;
 
   useEffect(() => {
     if (baselineText !== undefined) {
       baselineRef.current = baselineText;
     }
   }, [baselineText]);
+
+  const applyRevealLocation = useCallback((editor: monaco.editor.IStandaloneCodeEditor) => {
+    const reveal = revealLocationRef.current;
+    if (!reveal || reveal.line < 1) {
+      return;
+    }
+    const column = Math.max(1, reveal.column ?? 1);
+    const position = { lineNumber: reveal.line, column };
+    editor.setPosition(position);
+    editor.revealLineInCenter(reveal.line);
+    editor.focus();
+    onRevealConsumedRef.current?.();
+  }, []);
+
+  const applySearchDecorations = useCallback((editor: monaco.editor.IStandaloneCodeEditor) => {
+    const ranges = searchMatchRangesRef.current;
+    searchDecorationsRef.current?.clear();
+    if (ranges.length === 0) {
+      searchDecorationsRef.current = null;
+      return;
+    }
+    searchDecorationsRef.current = editor.createDecorationsCollection(
+      ranges.map((range) => ({
+        range: new monaco.Range(range.line, range.startColumn, range.line, range.endColumn),
+        options: {
+          className: "spirit-monaco-search-match",
+        },
+      })),
+    );
+  }, []);
 
   const runSave = useCallback(async () => {
     const editor = editorRef.current;
@@ -95,11 +145,29 @@ export const WorkspaceMonacoEditor = forwardRef<
   );
 
   useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      return;
+    }
+    applySearchDecorations(editor);
+  }, [applySearchDecorations, searchMatchRanges]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || !revealLocation) {
+      return;
+    }
+    applyRevealLocation(editor);
+  }, [applyRevealLocation, revealLocation]);
+
+  useEffect(() => {
     ensureMonacoWorkers();
     const root = containerRef.current;
     if (!root) {
       return;
     }
+
+    const mountInitialText = initialText;
 
     let disposed = false;
     let obs: MutationObserver | null = null;
@@ -120,9 +188,9 @@ export const WorkspaceMonacoEditor = forwardRef<
       } else {
         applySpiritMonacoEditorTheme();
       }
-      baselineRef.current = initialText;
+      baselineRef.current = mountInitialText;
       editor = monaco.editor.create(containerRef.current, {
-        value: initialText,
+        value: mountInitialText,
         language: monacoLanguageId(relativePath),
         readOnly,
         minimap: { enabled: false },
@@ -138,6 +206,10 @@ export const WorkspaceMonacoEditor = forwardRef<
       });
       editorRef.current = editor;
       onEditorReadyRef.current?.(editor);
+      if (revealLocationRef.current) {
+        applyRevealLocation(editor);
+      }
+      applySearchDecorations(editor);
 
       dirtyDisposable = editor.onDidChangeModelContent(() => {
         const value = editor!.getValue();
@@ -165,11 +237,13 @@ export const WorkspaceMonacoEditor = forwardRef<
       disposed = true;
       obs?.disconnect();
       dirtyDisposable?.dispose();
+      searchDecorationsRef.current?.clear();
+      searchDecorationsRef.current = null;
       onEditorReadyRef.current?.(null);
       editor?.dispose();
       editorRef.current = null;
     };
-  }, [relativePath, readOnly, runSave]);
+  }, [applyRevealLocation, applySearchDecorations, relativePath, readOnly, runSave]);
 
   return <div ref={containerRef} className="h-full min-h-0 w-full min-w-0" />;
 });
