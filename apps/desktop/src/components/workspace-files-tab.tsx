@@ -2,14 +2,16 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useTranslation } from "react-i18next";
 import type * as Monaco from "monaco-editor";
 
-import { Eye, ListTree, Play, SquarePen } from "lucide-react";
+import { Eye, ListTree, Play, Search, SquarePen } from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { WorkspaceFilesPanel } from "@/components/workspace-files-panel";
+import { WorkspaceFilesSearchPanel } from "@/components/workspace-files-search-panel";
 import {
   FileDomSelectionMenu,
   FileMonacoSelectionMenu,
@@ -17,6 +19,7 @@ import {
 import {
   WorkspaceMonacoEditor,
   type WorkspaceMonacoEditorHandle,
+  type WorkspaceMonacoSearchMatchRange,
 } from "@/components/workspace-monaco-editor";
 import { cn } from "@/lib/utils";
 import { DESKTOP_CHROME_TOGGLE_ICON_BTN, DESKTOP_SHELL_LAYOUT_TRANSITION } from "@/lib/desktop-chrome";
@@ -34,14 +37,19 @@ import {
   remapWorkspaceEntryPath,
   normalizeWorkspaceEntryRel,
 } from "@/lib/workspace-entry-path-sync";
+import { ripgrepSubmatchToCodeUnitRange } from "@/lib/workspace-files-search";
 import type {
   EditorFileTarget,
+  EditorFileRevealLocation,
   WorkspaceEditorViewMode,
 } from "@/lib/workspace-editor-navigation";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import { installContainedSelectAll } from "@/lib/contained-text-selection";
 import type {
   PlanSnapshot,
+  WorkspaceContentSearchMatch,
+  WorkspaceContentSearchRequest,
+  WorkspaceContentSearchResult,
   WorkspaceExplorerListResult,
   WorkspaceReadTextFileResult,
   WriteHostTextFileRequest,
@@ -84,6 +92,8 @@ function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLE
 type WorkspaceFilesExplorerToolbarProps = {
   fileTreeOpen: boolean;
   onToggleFileTree: () => void;
+  fileSearchOpen: boolean;
+  onToggleFileSearch: () => void;
   fileOpen: boolean;
   headerTitle: string;
   headerSubtitle: string;
@@ -100,6 +110,8 @@ type WorkspaceFilesExplorerToolbarProps = {
 function WorkspaceFilesExplorerToolbar({
   fileTreeOpen,
   onToggleFileTree,
+  fileSearchOpen,
+  onToggleFileSearch,
   fileOpen,
   headerTitle,
   headerSubtitle,
@@ -114,6 +126,16 @@ function WorkspaceFilesExplorerToolbar({
 }: WorkspaceFilesExplorerToolbarProps) {
   const { t } = useTranslation();
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const fileTreeTooltip = fileSearchOpen
+    ? t("workspace.showFileTree")
+    : fileTreeOpen
+      ? t("workspace.hideFileTree")
+      : t("workspace.showFileTree");
+  const fileSearchTooltip = fileSearchOpen
+    ? fileTreeOpen
+      ? t("workspace.hideContentSearch")
+      : t("workspace.showContentSearch")
+    : t("workspace.fileSearch");
 
   useWorkspaceToolsShellHorizontalDivider(
     toolbarRef,
@@ -122,7 +144,7 @@ function WorkspaceFilesExplorerToolbar({
       edge: "bottom",
       dividerAttr: FILES_EXPLORER_TOOLBAR_SHELL_DIVIDER_ATTR,
     },
-    [fileTreeOpen, fileOpen, headerTitle, isMarkdownDocument, markdownViewMode],
+    [fileTreeOpen, fileSearchOpen, fileOpen, headerTitle, isMarkdownDocument, markdownViewMode],
   );
 
   return (
@@ -136,18 +158,49 @@ function WorkspaceFilesExplorerToolbar({
       aria-label={t("workspace.fileExplorerToolbar")}
     >
       <div className="flex min-w-0 items-center gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
-          onClick={onToggleFileTree}
-          aria-label={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
-          aria-expanded={fileTreeOpen}
-          title={fileTreeOpen ? t("workspace.hideFileTree") : t("workspace.showFileTree")}
-        >
-          <ListTree className="size-3.5" aria-hidden />
-        </Button>
+        <Tooltip delayDuration={300} disableHoverableContent>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                DESKTOP_CHROME_TOGGLE_ICON_BTN,
+                fileTreeOpen && !fileSearchOpen && "bg-muted/60",
+              )}
+              onClick={onToggleFileTree}
+              aria-label={fileTreeTooltip}
+              aria-expanded={fileTreeOpen}
+              aria-pressed={fileTreeOpen && !fileSearchOpen}
+            >
+              <ListTree className="size-3.5" aria-hidden />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={4}>
+            {fileTreeTooltip}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={300} disableHoverableContent>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                DESKTOP_CHROME_TOGGLE_ICON_BTN,
+                fileSearchOpen && fileTreeOpen && "bg-muted/60",
+              )}
+              onClick={onToggleFileSearch}
+              aria-label={fileSearchTooltip}
+              aria-pressed={fileSearchOpen && fileTreeOpen}
+            >
+              <Search className="size-3.5" aria-hidden />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={4}>
+            {fileSearchTooltip}
+          </TooltipContent>
+        </Tooltip>
         {fileOpen ? (
           <span
             className="min-w-0 truncate text-xs font-medium text-foreground/95"
@@ -229,6 +282,11 @@ export type WorkspaceFilesTabProps = {
   fileRevealScope?: EditorFileTarget["scope"];
   fileRevealViewMode?: WorkspaceEditorViewMode;
   fileRevealDirectoryOnly?: boolean;
+  fileRevealLine?: number | null;
+  fileRevealColumn?: number | null;
+  searchWorkspaceContent?: (
+    request: WorkspaceContentSearchRequest,
+  ) => Promise<WorkspaceContentSearchResult>;
   /** 当前打开文件名变化时通知父层，用于选项卡标题显示；无选中时传 undefined */
   onTitleChange?: (title: string | undefined) => void;
   /** 当前打开文件脏状态变化时通知父层，用于选项卡未保存指示 */
@@ -236,12 +294,12 @@ export type WorkspaceFilesTabProps = {
   /** 从文件树等工作区路径打开文件（正常态下可复用既有 files 选项卡） */
   onOpenWorkspaceFile?: (
     relativePath: string,
-    options?: { viewMode?: WorkspaceEditorViewMode },
+    options?: { viewMode?: WorkspaceEditorViewMode; reveal?: EditorFileRevealLocation },
   ) => void;
   /** 当前选项卡已有未保存打开文件时，从文件树打开另一文件应新建 files 选项卡 */
   onOpenWorkspaceFileInNewTab?: (
     relativePath: string,
-    options?: { viewMode?: WorkspaceEditorViewMode },
+    options?: { viewMode?: WorkspaceEditorViewMode; reveal?: EditorFileRevealLocation },
   ) => void;
   /** 当前打开的工作区相对路径；无工作区文件选中时传 undefined */
   onFilesWorkspacePathChange?: (relativePath: string | undefined) => void;
@@ -271,6 +329,9 @@ export function WorkspaceFilesTab({
   fileRevealScope = "workspace",
   fileRevealViewMode = "edit",
   fileRevealDirectoryOnly = false,
+  fileRevealLine = null,
+  fileRevealColumn = null,
+  searchWorkspaceContent,
   onTitleChange,
   onDirtyChange,
   onOpenWorkspaceFile,
@@ -290,6 +351,14 @@ export function WorkspaceFilesTab({
   const [savedText, setSavedText] = useState("");
   const [markdownViewMode, setMarkdownViewMode] = useState<MarkdownViewMode>("edit");
   const [fileTreeOpen, setFileTreeOpen] = useState(true);
+  const [fileSearchOpen, setFileSearchOpen] = useState(false);
+  const [editorRevealLocation, setEditorRevealLocation] = useState<EditorFileRevealLocation | null>(
+    null,
+  );
+  const [searchHighlightSession, setSearchHighlightSession] = useState<{
+    query: string;
+    matchesByPath: Map<string, WorkspaceContentSearchMatch[]>;
+  } | null>(null);
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const fileTreeDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const latestFileTreeWidthPxRef = useRef(readWorkspaceFilesTreeWidthPx());
@@ -465,11 +534,21 @@ export function WorkspaceFilesTab({
       return;
     }
     setSelectedEntry({ kind: "workspace", relativePath: fileRevealPath });
+    if (fileRevealLine != null && fileRevealLine > 0) {
+      setEditorRevealLocation({
+        line: fileRevealLine,
+        column: fileRevealColumn ?? undefined,
+      });
+    } else {
+      setEditorRevealLocation(null);
+    }
   }, [
     autoRevealFileNonce,
     fileRevealAbsolutePath,
+    fileRevealColumn,
     fileRevealDirectoryOnly,
     fileRevealEnabled,
+    fileRevealLine,
     fileRevealPath,
     fileRevealScope,
     fileRevealViewMode,
@@ -481,6 +560,7 @@ export function WorkspaceFilesTab({
       setSaveError("");
       setDraftText("");
       setSavedText("");
+      setEditorRevealLocation(null);
       return;
     }
 
@@ -648,6 +728,87 @@ export function WorkspaceFilesTab({
     }
   }, []);
 
+  const onToggleFileTree = useCallback(() => {
+    if (fileSearchOpen) {
+      setFileSearchOpen(false);
+      setSearchHighlightSession(null);
+      setEditorRevealLocation(null);
+      return;
+    }
+    setFileTreeOpen((open) => {
+      if (!open) {
+        setFileSearchOpen(false);
+      }
+      return !open;
+    });
+  }, [fileSearchOpen]);
+
+  const onToggleFileSearch = useCallback(() => {
+    if (fileSearchOpen) {
+      setFileTreeOpen((open) => !open);
+      return;
+    }
+    setFileSearchOpen(true);
+    setFileTreeOpen(true);
+  }, [fileSearchOpen]);
+
+  const onEditorRevealConsumed = useCallback(() => {
+    setEditorRevealLocation(null);
+  }, []);
+
+  const onSearchSessionChange = useCallback(
+    (session: { query: string; matchesByPath: Map<string, WorkspaceContentSearchMatch[]> } | null) => {
+      setSearchHighlightSession(session);
+    },
+    [],
+  );
+
+  const openSearchMatch = useCallback(
+    (relativePath: string, reveal: EditorFileRevealLocation) => {
+      setMarkdownViewMode("edit");
+      setEditorRevealLocation(reveal);
+      if (
+        selectedEntry?.kind === "workspace" &&
+        selectedEntry.relativePath === relativePath
+      ) {
+        return;
+      }
+      if (selectedEntry !== null && editorDirty && onOpenWorkspaceFileInNewTab) {
+        onOpenWorkspaceFileInNewTab(relativePath, { viewMode: "edit", reveal });
+        return;
+      }
+      if (onOpenWorkspaceFile) {
+        onOpenWorkspaceFile(relativePath, { viewMode: "edit", reveal });
+        return;
+      }
+      setSelectedEntry({ kind: "workspace", relativePath });
+    },
+    [editorDirty, onOpenWorkspaceFile, onOpenWorkspaceFileInNewTab, selectedEntry],
+  );
+
+  const monacoSearchMatchRanges = useMemo((): WorkspaceMonacoSearchMatchRange[] => {
+    if (!fileSearchOpen || !searchHighlightSession || selectedEntry?.kind !== "workspace") {
+      return [];
+    }
+    const path = normalizeWorkspaceEntryRel(selectedEntry.relativePath);
+    const fileMatches = searchHighlightSession.matchesByPath.get(path);
+    if (!fileMatches) {
+      return [];
+    }
+    const ranges: WorkspaceMonacoSearchMatchRange[] = [];
+    for (const match of fileMatches) {
+      for (const submatch of match.submatches) {
+        const codeUnitRange = ripgrepSubmatchToCodeUnitRange(match.lineText, submatch);
+        ranges.push({
+          line: match.lineNumber,
+          startColumn: codeUnitRange.start + 1,
+          endColumn: codeUnitRange.end + 1,
+        });
+      }
+    }
+    return ranges;
+  }, [fileSearchOpen, searchHighlightSession, selectedEntry]);
+
   const selectedEntryKey = selectedEntry
     ? selectedEntry.kind === "plan"
       ? "plan"
@@ -660,7 +821,9 @@ export function WorkspaceFilesTab({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <WorkspaceFilesExplorerToolbar
         fileTreeOpen={fileTreeOpen}
-        onToggleFileTree={() => setFileTreeOpen((open) => !open)}
+        onToggleFileTree={onToggleFileTree}
+        fileSearchOpen={fileSearchOpen}
+        onToggleFileSearch={onToggleFileSearch}
         fileOpen={Boolean(selectedEntry)}
         headerTitle={headerTitle}
         headerSubtitle={headerSubtitle}
@@ -705,7 +868,14 @@ export function WorkspaceFilesTab({
             aria-hidden={!fileTreeOpen}
             inert={!fileTreeOpen ? true : undefined}
           >
-            <WorkspaceFilesPanel
+            {fileSearchOpen && searchWorkspaceContent ? (
+              <WorkspaceFilesSearchPanel
+                searchWorkspaceContent={searchWorkspaceContent}
+                onOpenSearchMatch={openSearchMatch}
+                onSearchSessionChange={onSearchSessionChange}
+              />
+            ) : (
+              <WorkspaceFilesPanel
           workspaceRoot={workspaceRoot}
           plan={plan}
           listExplorerChildren={listExplorerChildren}
@@ -714,6 +884,7 @@ export function WorkspaceFilesTab({
           expandDirectoryPath={fileRevealDirectoryOnly ? fileRevealPath : ""}
           expandDirectoryNonce={fileRevealDirectoryOnly ? autoRevealFileNonce : 0}
           onOpenFile={(relativePath) => {
+            setEditorRevealLocation(null);
             const viewMode = isMarkdownPath(relativePath) ? "preview" : "edit";
             if (
               selectedEntry?.kind === "workspace" &&
@@ -734,6 +905,7 @@ export function WorkspaceFilesTab({
             setSelectedEntry({ kind: "workspace", relativePath });
           }}
           onOpenPlan={() => {
+            setEditorRevealLocation(null);
             setMarkdownViewMode("preview");
             setSelectedEntry({ kind: "plan" });
           }}
@@ -773,6 +945,7 @@ export function WorkspaceFilesTab({
           }}
           onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
             />
+            )}
           </div>
         </div>
         {fileTreeOpen && selectedEntry ? (
@@ -861,6 +1034,9 @@ export function WorkspaceFilesTab({
                     onDirtyChange={doc.readOnly ? undefined : onMonacoDirtyChange}
                     readOnly={doc.readOnly}
                     onEditorReady={setMonacoEditor}
+                    revealLocation={editorRevealLocation}
+                    onRevealConsumed={onEditorRevealConsumed}
+                    searchMatchRanges={monacoSearchMatchRanges}
                   />
                   {selectionEnabled ? (
                     <FileMonacoSelectionMenu
