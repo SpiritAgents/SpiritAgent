@@ -107,6 +107,23 @@ test('buildResponsesGenerateTools adds web_search for xai when enabled', () => {
   assert.ok('web_search' in tools);
 });
 
+test('buildResponsesProviderOptions maps gateway openai reasoning options', () => {
+  const options = buildResponsesProviderOptions({
+    transportKind: 'open-responses',
+    apiKey: 'test-key',
+    model: 'openai/gpt-5.4',
+    llmVendor: 'vercel-ai-gateway',
+    reasoningEffort: 'medium',
+  });
+
+  assert.deepEqual(options, {
+    openai: {
+      reasoningEffort: 'medium',
+      reasoningSummary: 'auto',
+    },
+  });
+});
+
 test('buildResponsesProviderOptions maps azure provider options', () => {
   const options = buildResponsesProviderOptions({
     transportKind: 'open-responses',
