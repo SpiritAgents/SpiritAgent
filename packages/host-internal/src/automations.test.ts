@@ -144,8 +144,8 @@ test('formatTriggerLabel renders GitHub trigger', () => {
   );
 });
 
-test('normalizeAutomationTrigger accepts legacy bare schedule', () => {
-  assert.deepEqual(normalizeAutomationTrigger({ kind: 'daily', hour: 9, minute: 0 }), {
+test('normalizeAutomationTrigger accepts time and github triggers', () => {
+  assert.deepEqual(normalizeAutomationTrigger({ kind: 'time', schedule: { kind: 'daily', hour: 9, minute: 0 } }), {
     kind: 'time',
     schedule: { kind: 'daily', hour: 9, minute: 0 },
   });
@@ -172,43 +172,4 @@ test('reconcileGitHubTriggerPollState clears poll when repo identity changes', (
     repo: 'd',
     event: 'issue_created',
   });
-});
-
-test('automation store migrates legacy schedule field on load', async () => {
-  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-legacy-'));
-  const { mkdir, writeFile } = await import('node:fs/promises');
-  const { automationsDirPath } = await import('./automations.js');
-
-  try {
-    const automationId = '00000000-0000-4000-8000-000000000001';
-    const dir = automationsDirPath(spiritDataDir);
-    await mkdir(dir, { recursive: true });
-    await writeFile(
-      join(dir, `${automationId}.json`),
-      `${JSON.stringify({
-        version: 1,
-        definition: {
-          id: automationId,
-          title: 'Legacy',
-          overview: 'Legacy overview',
-          schedule: { kind: 'hourly' },
-          workspaceRoot: spiritDataDir,
-          modelName: 'gpt-test',
-          approvalLevel: 'default',
-          enabled: true,
-          createdAtUnixMs: 1,
-          updatedAtUnixMs: 1,
-        },
-        runs: [],
-      }, null, 2)}\n`,
-      'utf8',
-    );
-
-    const store = createHostAutomationStore(spiritDataDir);
-    const loaded = await store.get(automationId);
-    assert.ok(loaded);
-    assert.deepEqual(loaded!.definition.trigger, { kind: 'time', schedule: { kind: 'hourly' } });
-  } finally {
-    await rm(spiritDataDir, { recursive: true, force: true });
-  }
 });

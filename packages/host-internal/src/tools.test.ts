@@ -890,7 +890,10 @@ test('create_automation writes automation file when defaults are provided', asyn
       'create_automation',
       JSON.stringify({
         overview: 'Check CI status and summarize failures.',
-        schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 },
+        trigger: {
+          kind: 'time',
+          schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 },
+        },
       }),
     );
 
