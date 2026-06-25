@@ -39,8 +39,11 @@ use crate::{
     view::{ChatMessage, MessageRole, PendingAssistantAux, PendingSubagentApprovalView},
 };
 
+mod archive;
 mod constants;
+mod host_dispatch;
 mod json_rpc;
+mod tool_ui;
 mod transport;
 mod types;
 
@@ -50,6 +53,11 @@ pub(crate) use constants::ENV_RUNTIME_BACKEND_NODE_PATH;
 pub(crate) use json_rpc::resolve_bridge_script;
 use json_rpc::{is_json_rpc_response, JsonRpcProcess};
 pub use types::*;
+pub(crate) use archive::{chat_archive_to_bridge_json, llm_history_to_json};
+pub(crate) use tool_ui::{
+    approval_decision_from_input, is_retired_builtin_host_method, tool_request_from_host_value,
+    tool_request_from_local_mcp, tool_request_from_streaming_preview,
+};
 pub(crate) use types::bridge::{
     BridgeChatArchive, BridgeDrainEventsResult, BridgeExportState,
     BridgeManualToolCommandStartResult, BridgePendingApproval, BridgeRuntimeEvent,
@@ -1451,95 +1459,6 @@ impl TsBridgeRuntime {
         }
     }
 
-    fn handle_host_request(&mut self, message: Value) -> Result<()> {
-        let method = message
-            .get("method")
-            .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("JSON-RPC 请求缺少 method"))?
-            .to_string();
-        let params = message.get("params").cloned();
-        let request_id = message.get("id").and_then(Value::as_u64);
-
-        let response = match self.dispatch_host_method(&method, params) {
-            Ok(result) => request_id.map(
-                |id| json!({ "jsonrpc": "2.0", "id": id, "result": result.unwrap_or(Value::Null) }),
-            ),
-            Err(err) => request_id.map(|id| {
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32000,
-                        "message": err.to_string(),
-                    }
-                })
-            }),
-        };
-
-        if let Some(response) = response {
-            self.process.write_message(&response)?;
-        }
-        Ok(())
-    }
-
-    fn dispatch_host_method(
-        &mut self,
-        method: &str,
-        params: Option<Value>,
-    ) -> Result<Option<Value>> {
-        match method {
-            method if is_retired_builtin_host_method(method) => Err(anyhow!(
-                "CLI TS bridge 已切换到 host-internal，本回调不应再被调用: {}",
-                method
-            )),
-            "host.addMcpServer" => {
-                let params = params.ok_or_else(|| anyhow!("host.addMcpServer 缺少 params"))?;
-                let name = params
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| anyhow!("host.addMcpServer 缺少 name"))?;
-                let config: McpServerConfig = serde_json::from_value(
-                    params
-                        .get("config")
-                        .cloned()
-                        .ok_or_else(|| anyhow!("host.addMcpServer 缺少 config"))?,
-                )?;
-                let scope = params
-                    .get("scope")
-                    .and_then(Value::as_str)
-                    .map(|value| {
-                        if value.eq_ignore_ascii_case("workspace") {
-                            McpScope::Workspace
-                        } else {
-                            McpScope::User
-                        }
-                    })
-                    .unwrap_or(McpScope::User);
-                let path = add_mcp_server(&self.workspace_root, scope, name, config)?;
-                Ok(Some(Value::String(path.display().to_string())))
-            }
-            "host.localToolExecuted" => {
-                let params = params.ok_or_else(|| anyhow!("host.localToolExecuted 缺少 params"))?;
-                let event: LocalMcpToolResultEvent = serde_json::from_value(params)?;
-                self.push_local_mcp_tool_result(event);
-                Ok(None)
-            }
-            "host.localToolFailed" => {
-                let params = params.ok_or_else(|| anyhow!("host.localToolFailed 缺少 params"))?;
-                let event: LocalMcpToolFailedEvent = serde_json::from_value(params)?;
-                self.push_local_mcp_tool_failure(event);
-                Ok(None)
-            }
-            "host.recordFileChange" => {
-                let params = params.ok_or_else(|| anyhow!("host.recordFileChange 缺少 params"))?;
-                let change: rewind::HostRecordedFileChange = serde_json::from_value(params)?;
-                self.record_host_file_change(change)?;
-                Ok(None)
-            }
-            _ => Err(anyhow!("未知 host callback: {}", method)),
-        }
-    }
-
     fn sync_after_command(&mut self) -> Result<()> {
         let value = self.call_bridge("runtime.drainEvents", None)?;
         let drained: BridgeDrainEventsResult = serde_json::from_value(value)?;
@@ -2105,79 +2024,6 @@ impl TsBridgeRuntime {
     #[cfg(test)]
     pub(crate) fn deferred_transport_replace_for_test(&self) -> bool {
         self.deferred_transport_replace
-    }
-}
-
-fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
-    history
-        .iter()
-        .map(|message| {
-            archived_llm_message_to_json(
-                &ArchivedLlmMessage::from_text_and_images(
-                    message.role.to_string(),
-                    message.content.clone(),
-                    message.image_paths.clone(),
-                )
-                .with_tool_call_id(message.tool_call_id.clone())
-                .with_tool_calls(message.tool_calls.as_ref().map(|tool_calls| {
-                    tool_calls
-                        .iter()
-                        .map(|tool_call| ArchivedLlmToolCall {
-                            id: tool_call.id.clone(),
-                            name: tool_call.name.clone(),
-                            arguments_json: tool_call.arguments_json.clone(),
-                        })
-                        .collect()
-                }))
-                .with_provider_state(message.provider_state.clone()),
-            )
-        })
-        .collect()
-}
-
-fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
-    let mut value = json!({
-        "role": message.role,
-        "content": message.content,
-    });
-
-    if let Some(tool_call_id) = &message.tool_call_id {
-        if let Some(object) = value.as_object_mut() {
-            object.insert(
-                "toolCallId".to_string(),
-                Value::String(tool_call_id.clone()),
-            );
-        }
-    }
-
-    if let Some(tool_calls) = &message.tool_calls {
-        if let Some(object) = value.as_object_mut() {
-            object.insert(
-                "toolCalls".to_string(),
-                serde_json::to_value(tool_calls).unwrap_or(Value::Null),
-            );
-        }
-    }
-
-    if let Some(provider_state) = &message.provider_state {
-        if let Some(object) = value.as_object_mut() {
-            object.insert("providerState".to_string(), provider_state.clone());
-        }
-    }
-
-    value
-}
-
-fn approval_decision_from_input(message: &str) -> Value {
-    let decision = message.trim().to_lowercase();
-    match decision.as_str() {
-        "y" => json!({ "kind": "allow" }),
-        "t" => json!({ "kind": "allow", "persistTrust": true }),
-        "n" => json!({ "kind": "deny" }),
-        _ => json!({
-            "kind": "guidance",
-            "userMessage": message,
-        }),
     }
 }
 
@@ -3099,125 +2945,4 @@ mod tests {
             "host.localToolExecuted"
         ));
     }
-}
-
-fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
-    let mut value = json!({
-        "messages": archive.messages.iter().map(|(role, content)| {
-            json!({
-                "role": role,
-                "content": content,
-            })
-        }).collect::<Vec<_>>(),
-        "assistantAux": archive.assistant_aux.iter().map(|entry| {
-            json!({
-                "messageIndex": entry.message_index,
-                "thinking": entry.thinking,
-                "compaction": entry.compaction,
-                "finishTaskNotice": entry.finish_task_notice,
-            })
-        }).collect::<Vec<_>>(),
-        "llmHistory": archive.llm_history.iter().map(archived_llm_message_to_json).collect::<Vec<_>>(),
-        "loopEnabled": archive.loop_enabled,
-        "approvalLevel": archive.approval_level,
-        "subagentSessions": archive.subagent_sessions.iter().map(|entry| {
-            json!({
-                "summary": {
-                    "sessionId": entry.summary.session_id,
-                    "parentToolCallId": entry.summary.parent_tool_call_id,
-                    "title": entry.summary.title,
-                    "status": entry.summary.status,
-                    "startedAtUnixMs": entry.summary.started_at_unix_ms,
-                    "updatedAtUnixMs": entry.summary.updated_at_unix_ms,
-                    "completedAtUnixMs": entry.summary.completed_at_unix_ms,
-                    "latestMessage": entry.summary.latest_message,
-                    "finalOutput": entry.summary.final_output,
-                    "error": entry.summary.error,
-                },
-                "llmHistory": entry.llm_history.iter().map(archived_llm_message_to_json).collect::<Vec<_>>(),
-            })
-        }).collect::<Vec<_>>(),
-    });
-
-    if let Some(rewind) = &archive.rewind {
-        if let Some(object) = value.as_object_mut() {
-            object.insert("rewind".to_string(), rewind.clone());
-        }
-    }
-
-    value
-}
-
-fn tool_request_from_local_mcp(request: &LocalMcpToolRequest) -> ToolUiRequest {
-    ToolUiRequest::new(
-        "mcp_tool",
-        json!({
-            "server": request.server,
-            "display_name": request.display_name,
-            "tool_name": request.tool_name,
-            "arguments": request.arguments,
-        }),
-    )
-}
-
-fn is_retired_builtin_host_method(method: &str) -> bool {
-    matches!(
-        method,
-        "host.builtinToolDefinitionEnvironment"
-            | "host.parseCommand"
-            | "host.requestFromFunctionCall"
-            | "host.authorize"
-            | "host.trust"
-            | "host.execute"
-    )
-}
-
-fn extract_path_from_partial_tool_json(arguments_json: &str) -> Option<String> {
-    let marker = "\"path\"";
-    let start = arguments_json.find(marker)? + marker.len();
-    let after = arguments_json.get(start..)?.trim_start();
-    let after = after.strip_prefix(':')?.trim_start();
-    let after = after.strip_prefix('"')?;
-    let mut escaped = String::new();
-    let mut chars = after.chars();
-    while let Some(ch) = chars.next() {
-        if ch == '\\' {
-            escaped.push(chars.next()?);
-        } else if ch == '"' {
-            break;
-        } else {
-            escaped.push(ch);
-        }
-    }
-    if escaped.is_empty() {
-        None
-    } else {
-        Some(escaped)
-    }
-}
-
-fn tool_request_from_streaming_preview(tool_name: &str, arguments_json: &str) -> ToolUiRequest {
-    match serde_json::from_str::<Value>(arguments_json) {
-        Ok(arguments) => ToolUiRequest::new(tool_name, arguments),
-        Err(_) => {
-            let mut object = serde_json::Map::new();
-            if let Some(path) = extract_path_from_partial_tool_json(arguments_json) {
-                object.insert("path".to_string(), Value::String(path));
-            }
-            ToolUiRequest::new(tool_name, Value::Object(object))
-        }
-    }
-}
-
-fn tool_request_from_host_value(value: Value) -> anyhow::Result<ToolUiRequest> {
-    let Value::Object(mut object) = value else {
-        return Err(anyhow!("工具请求必须是 JSON object"));
-    };
-
-    let name = object
-        .remove("name")
-        .and_then(|value| value.as_str().map(ToOwned::to_owned))
-        .ok_or_else(|| anyhow!("工具请求缺少 name"))?;
-
-    Ok(ToolUiRequest::new(name, Value::Object(object)))
 }
