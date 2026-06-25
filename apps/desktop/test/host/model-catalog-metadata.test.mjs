@@ -140,6 +140,7 @@ test('openrouter provider passes through display metadata and pricing', () => {
         outputPerTokenUsd: '0.000015',
       },
       capabilities: ['chat'],
+      supportedReasoningEfforts: ['low', 'medium', 'high'],
     },
   ]);
 
@@ -241,6 +242,54 @@ test('vercel-ai-gateway infers supportedReasoningEfforts for anthropic claude ca
     {
       id: 'openai/gpt-5',
       capabilities: ['chat'],
+    },
+  ]);
+});
+
+test('openrouter infers supportedReasoningEfforts for anthropic claude catalog entries', () => {
+  const preview = previewModelCatalogForTransport({
+    provider: 'openrouter',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'anthropic/claude-sonnet-4.6',
+      },
+      {
+        id: 'openai/gpt-5',
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'anthropic/claude-sonnet-4.6',
+      capabilities: ['chat'],
+      supportedReasoningEfforts: ['low', 'medium', 'high'],
+    },
+    {
+      id: 'openai/gpt-5',
+      capabilities: ['chat'],
+    },
+  ]);
+});
+
+test('openrouter keeps explicit empty supportedReasoningEfforts without claude inference', () => {
+  const preview = previewModelCatalogForTransport({
+    provider: 'openrouter',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'anthropic/claude-sonnet-4.6',
+        supportedReasoningEfforts: [],
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'anthropic/claude-sonnet-4.6',
+      capabilities: ['chat'],
+      supportedReasoningEfforts: [],
     },
   ]);
 });
@@ -422,6 +471,7 @@ test('openrouter provider passes contextLength through catalog metadata', () => 
       id: 'anthropic/claude-sonnet-4',
       capabilities: ['chat'],
       contextLength: 200000,
+      supportedReasoningEfforts: ['low', 'medium', 'high'],
     },
   ]);
 });
