@@ -3,7 +3,6 @@ use serde_json::{Value, json};
 use std::{env, path::Path};
 
 use crate::{
-    bedrock_mantle,
     model_provider_presets::{
         azure_api_base_from_resource_name, resolve_azure_resource_name, resolve_profile_api_base,
     },
@@ -16,7 +15,7 @@ use crate::{
 
 use super::{
     TransportHost,
-    keys::{resolve_key_from_store, resolve_optional_key_from_store},
+    keys::{resolve_optional_key_from_store},
     provider::{
         anthropic_effort_value, attach_google_vertex_transport_fields, model_capabilities_json,
         model_provider_vendor, open_responses_sdk_provider,
