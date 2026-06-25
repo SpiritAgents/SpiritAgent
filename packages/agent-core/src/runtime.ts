@@ -104,10 +104,9 @@ import {
 } from './runtime/streaming.js';
 import {
   performToolExecution as performToolExecutionInternal,
-  persistToolExecutionResult as persistToolExecutionResultInternal,
 } from './runtime/tool-execution.js';
 import { buildRuntimeToolExecution } from './runtime/turn-machine.js';
-import { prepareRuntimeToolResultContentForAppend } from './runtime/tool-output-append.js';
+import { prepareAndSyncRuntimeToolResultToHistory } from './runtime/tool-output-append.js';
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
@@ -316,8 +315,8 @@ export class AgentRuntime<
     toolCallId: string,
     content: string,
   ): Promise<State> {
-    const preparedContent = await prepareRuntimeToolResultContentForAppend(
-      this.options,
+    const preparedContent = await prepareAndSyncRuntimeToolResultToHistory(
+      { options: this.options, historyStore: this.historyStore },
       toolCallId,
       content,
     );
@@ -2554,14 +2553,6 @@ export class AgentRuntime<
     return undefined;
   }
 
-  private persistToolExecutionResult(output: ToolExecutionOutput, toolCallId?: string): void {
-    persistToolExecutionResultInternal(
-      this as unknown as ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
-      output,
-      toolCallId,
-    );
-  }
-
   private takePendingImages(): string[] {
     const images = [...this.pendingImagePathsStore];
     this.pendingImagePathsStore = [];
@@ -2634,7 +2625,6 @@ export class AgentRuntime<
         turn,
         toolArtifactsFromOutput(output),
       );
-      this.persistToolExecutionResult(output, toolCallId);
 
       return {
         kind: 'completed',
@@ -2710,7 +2700,6 @@ export class AgentRuntime<
         turn,
         toolArtifactsFromOutput(output),
       );
-      this.persistToolExecutionResult(output, toolCallId);
 
       return {
         kind: 'completed',
