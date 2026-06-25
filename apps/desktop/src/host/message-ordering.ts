@@ -269,11 +269,7 @@ export function toolCallSummaryCopyForRequest(
     }
     case 'create_automation': {
       const title = typeof record.title === 'string' ? record.title.trim() : '';
-      const trigger =
-        normalizeAutomationTrigger(record.trigger)
-        ?? (record.schedule !== undefined
-          ? normalizeAutomationTrigger({ kind: 'time', schedule: record.schedule })
-          : undefined);
+      const trigger = normalizeAutomationTrigger(record.trigger);
       const triggerLabel = trigger ? formatTriggerLabel(trigger) : '';
       const detail = [title, triggerLabel].filter((part) => part.length > 0).join(' · ');
       return {
