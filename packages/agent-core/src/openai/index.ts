@@ -11,6 +11,16 @@ export {
   isGatewayAnthropicClaudeModel,
   resolveGatewayAnthropicClaudeCapabilities,
 } from './gateway-anthropic-thinking.js';
+export {
+  buildOpenRouterClaudeReasoningBody,
+  isOpenRouterAnthropicClaudeModel,
+  shouldInjectOpenRouterClaudeReasoning,
+} from './openrouter-anthropic-reasoning.js';
+export {
+  isRoutedAnthropicClaudeModel,
+  routedAnthropicClaudeSupportedEfforts,
+  resolveRoutedAnthropicClaudeCapabilities,
+} from './routed-anthropic-claude-capabilities.js';
 export type {
   OpenAiLlmVendor,
   OpenAiModelCapabilities,
