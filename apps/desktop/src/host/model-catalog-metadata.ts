@@ -159,7 +159,7 @@ function previewCapabilitiesFromListedEntry(
   }
 
   if (entry.supportsVideoGeneration === true) {
-    return ['chat', 'videoGeneration'];
+    return ['videoGeneration'];
   }
 
   const capabilities: DesktopModelCapability[] = ['chat'];
