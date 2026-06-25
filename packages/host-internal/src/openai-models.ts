@@ -513,7 +513,8 @@ function readOpenRouterSupportedReasoningEfforts(
     }
   }
 
-  return efforts.length > 0 ? efforts : undefined;
+  // OpenRouter 显式返回 [] 表示不支持 effort 选择，须与字段缺失（undefined → 可兜底）区分。
+  return efforts;
 }
 
 function attachOpenRouterAnthropicReasoningEfforts(
