@@ -43,7 +43,7 @@ import {
   renderError,
   toolArtifactsFromOutput,
 } from './helpers.js';
-import { prepareRuntimeToolResultContentForAppend } from './tool-output-append.js';
+import { prepareAndSyncRuntimeToolResultToHistory } from './tool-output-append.js';
 import type { ToolExecutionResult } from './tool-execution.js';
 import type {
   AgentRuntimeOptions,
@@ -800,8 +800,8 @@ export async function executeAuthorizedToolCall<
     Date.now() - startedAt,
     execution.failed,
   );
-  const preparedContent = await prepareRuntimeToolResultContentForAppend(
-    runtime.options,
+  const preparedContent = await prepareAndSyncRuntimeToolResultToHistory(
+    runtime,
     toolCallId,
     execution.output.summaryText,
   );
@@ -1114,7 +1114,6 @@ export async function processToolCallsAsync<
         0,
         earlyOutcome.execution.failed,
       );
-      persistCompletedEarlyToolResult(runtime, call.id, earlyOutcome.output);
       if (earlyOutcome.fatalError !== undefined) {
         runtime.completeTurn({
           kind: 'failed',
@@ -1126,8 +1125,8 @@ export async function processToolCallsAsync<
         });
         return;
       }
-      const preparedOutput = await prepareRuntimeToolResultContentForAppend(
-        runtime.options,
+      const preparedOutput = await prepareAndSyncRuntimeToolResultToHistory(
+        runtime,
         call.id,
         earlyOutcome.output.summaryText,
       );
@@ -1432,8 +1431,8 @@ export async function processToolCallsAsync<
       Date.now() - startedAt,
       execution.failed,
     );
-    const preparedOutput = await prepareRuntimeToolResultContentForAppend(
-      runtime.options,
+    const preparedOutput = await prepareAndSyncRuntimeToolResultToHistory(
+      runtime,
       call.id,
       execution.output.summaryText,
     );
@@ -1874,26 +1873,6 @@ async function performEarlyExternalToolExecution<
       backgroundExecution: false,
     };
   }
-}
-
-function persistCompletedEarlyToolResult<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, 'historyStore'>,
-  toolCallId: string,
-  output: ToolExecutionOutput,
-): void {
-  if (output.content.length === 0) {
-    return;
-  }
-  runtime.historyStore.push({
-    role: 'tool',
-    toolCallId,
-    content: cloneLlmMessageContent(output.content),
-  });
 }
 
 async function resolveEarlyPreGateForFormalCall<ToolRequest>(
