@@ -2,6 +2,10 @@ import type { JsonObject, JsonValue } from '../ports.js';
 import type { LlmModelCapabilities } from '../llm-provider-shared.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import { cloneJsonValue } from '../tool-agent.js';
+import {
+  buildOpenRouterClaudeReasoningBody,
+  isOpenRouterAnthropicClaudeModel,
+} from './openrouter-anthropic-reasoning.js';
 
 /** 与宿主 `ModelProfile.provider` 对齐；用于在 OpenAI 形态 API 上附加厂商扩展字段。 */
 export type OpenAiLlmVendor =
@@ -196,12 +200,17 @@ export function openAiReasoningEffort(
  * Moonshot 已改用 `@ai-sdk/moonshotai` 的 `providerOptions.moonshotai.thinking`。
  */
 export function openAiVendorChatCompletionBodyExtras(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'vendorExtendedThinking'>,
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'>,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
   if (config.llmVendor === 'deepseek') {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
+  }
+
+  const openRouterReasoning = buildOpenRouterClaudeReasoningBody(config);
+  if (openRouterReasoning !== undefined) {
+    extras.reasoning = openRouterReasoning;
   }
 
   return extras;
@@ -214,7 +223,8 @@ export function buildOpenAiRequestTrace(
   tools: readonly unknown[],
   stream = false,
 ): JsonValue[] {
-  const reasoningEffort = openAiReasoningEffort(config);
+  const openRouterClaude = isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model);
+  const reasoningEffort = openRouterClaude ? undefined : openAiReasoningEffort(config);
   const vendorExtras = openAiVendorChatCompletionBodyExtras(config);
   const trace: OpenAiRequestTrace = {
     kind: 'openai_sdk_chat_completions',
@@ -222,6 +232,9 @@ export function buildOpenAiRequestTrace(
     model: config.model,
     stream,
     ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
+    ...(openRouterClaude && vendorExtras.reasoning !== undefined
+      ? { reasoning: vendorExtras.reasoning as JsonValue }
+      : {}),
     messages: messages.map((message) => cloneJsonValue(message)),
     ...(tools.length > 0
       ? {

@@ -168,3 +168,24 @@ test('gateway claude models use anthropic effort options filtered by model capab
     'max',
   );
 });
+
+test('openrouter claude models use anthropic effort options filtered by model capabilities', () => {
+  const sonnetOptions = modelReasoningEffortOptions({
+    provider: 'openrouter',
+    model: 'anthropic/claude-sonnet-4.6',
+    transportKind: 'open-responses',
+  });
+  assert.deepEqual(
+    sonnetOptions.map((option) => option.value),
+    ['default', 'low', 'medium', 'high'],
+  );
+
+  assert.equal(
+    resolveModelReasoningEffortForContext('medium', {
+      provider: 'openrouter',
+      model: 'anthropic/claude-opus-4.8',
+      transportKind: 'open-responses',
+    }),
+    'medium',
+  );
+});
