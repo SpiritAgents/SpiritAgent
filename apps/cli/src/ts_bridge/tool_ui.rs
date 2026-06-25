@@ -1,5 +1,5 @@
-use anyhow::{Result, anyhow};
-use serde_json::{Map, Value, json};
+use anyhow::anyhow;
+use serde_json::{Value, json};
 
 use crate::host_runtime::ToolUiRequest;
 use crate::ts_bridge::types::bridge::LocalMcpToolRequest;

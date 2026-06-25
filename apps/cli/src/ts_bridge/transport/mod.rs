@@ -3,8 +3,8 @@ pub(crate) mod keys;
 mod provider;
 
 pub(crate) use config::{
-    attach_video_generation_config, build_mcp_only_transport_config,
-    resolve_transport_config_json_for, transport_config_will_change,
+    build_mcp_only_transport_config, resolve_transport_config_json_for,
+    transport_config_will_change,
 };
 
 use std::path::Path;
