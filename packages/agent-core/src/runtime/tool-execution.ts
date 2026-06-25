@@ -78,7 +78,6 @@ export async function performToolExecution<
     }
   }
 
-  persistToolExecutionResult(runtime, output, toolCallId);
   return {
     output,
     failed,
@@ -86,23 +85,32 @@ export async function performToolExecution<
   };
 }
 
-export function persistToolExecutionResult<
+export function syncPreparedToolResultContentToHistory<
   Config,
   State,
   ToolRequest,
   TrustTarget = string,
 >(
-  runtime: ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
-  output: ToolExecutionOutput,
-  toolCallId?: string,
+  runtime: Pick<ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>, 'historyStore'>,
+  toolCallId: string,
+  preparedContent: string,
 ): void {
-  if (!toolCallId || output.content.length === 0) {
-    return;
+  const content = createLlmMessageContentFromText(preparedContent);
+  for (let index = runtime.historyStore.length - 1; index >= 0; index -= 1) {
+    const message = runtime.historyStore[index];
+    if (message?.role === 'tool' && message.toolCallId === toolCallId) {
+      runtime.historyStore[index] = {
+        role: 'tool',
+        toolCallId,
+        content: cloneLlmMessageContent(content),
+      };
+      return;
+    }
   }
 
   runtime.historyStore.push({
     role: 'tool',
     toolCallId,
-    content: cloneLlmMessageContent(output.content),
+    content: cloneLlmMessageContent(content),
   });
 }

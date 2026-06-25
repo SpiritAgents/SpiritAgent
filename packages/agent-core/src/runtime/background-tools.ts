@@ -1,9 +1,9 @@
-import type { ToolCallRequest, ToolExecutionOutput } from '../ports.js';
+import type { LlmMessage, ToolCallRequest, ToolExecutionOutput } from '../ports.js';
 import type { JsonObject } from '../ports.js';
 import { createToolExecutionTextOutput } from '../ports.js';
 
 import { renderError } from './helpers.js';
-import { prepareRuntimeToolResultContentForAppend } from './tool-output-append.js';
+import { prepareAndSyncRuntimeToolResultToHistory } from './tool-output-append.js';
 import { toolInputFromArgumentsJson } from '../hooks/integration.js';
 import { runPostToolUseSideEffects } from '../hooks/tool-hooks.js';
 import { commitToolExecutionOutput, type TurnMachineRuntime } from './turn-machine.js';
@@ -25,6 +25,7 @@ export interface BackgroundToolsRuntime<
   TrustTarget = string,
 > {
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+  historyStore: LlmMessage[];
   pendingBackgroundToolStatusStore: string | undefined;
   pendingBackgroundToolExecution:
     | PendingBackgroundToolExecution<State, ToolRequest>
@@ -33,7 +34,6 @@ export interface BackgroundToolsRuntime<
     | RuntimeCompletedManualToolCommandResult<ToolRequest>
     | undefined;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
-  persistToolExecutionResult(output: ToolExecutionOutput, toolCallId?: string): void;
   startToolAgentRoundAsync(
     state: State,
     pendingUserInput: string,
@@ -231,10 +231,6 @@ export async function pollPendingBackgroundToolExecution<
     failed: pending.failed,
   });
 
-  runtime.persistToolExecutionResult(
-    pending.output,
-    pending.kind === 'tool-call' ? pending.toolCallId : undefined,
-  );
   if (pending.kind === 'manual') {
     runtime.completedManualToolCommandResultStore = {
       kind: 'completed',
@@ -267,8 +263,8 @@ export async function pollPendingBackgroundToolExecution<
     pending.failed,
   );
 
-  const preparedOutput = await prepareRuntimeToolResultContentForAppend(
-    runtime.options,
+  const preparedOutput = await prepareAndSyncRuntimeToolResultToHistory(
+    runtime,
     pending.toolCallId,
     pending.output.summaryText,
   );
