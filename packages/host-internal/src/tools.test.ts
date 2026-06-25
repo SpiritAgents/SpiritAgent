@@ -419,8 +419,8 @@ test('read_file reports canonical path for non-managed files', async () => {
     const output = await service.execute({
       name: 'read_file',
       path: './nested/../nested/note.txt',
-      start_line: 1,
-      end_line: 1,
+      offset: 1,
+      limit: 1,
     });
 
     assertHostToolExecutionOutput(output);

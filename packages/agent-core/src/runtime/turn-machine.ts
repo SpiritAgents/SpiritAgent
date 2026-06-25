@@ -1963,10 +1963,10 @@ function earlyToolArgumentsMatchFormal(
   }
 
   if (toolName === 'read_file') {
-    if (early.start_line === formal.start_line && early.end_line === formal.end_line) {
+    if (early.offset === formal.offset && early.limit === formal.limit) {
       return true;
     }
-    return formal.start_line === undefined && formal.end_line === undefined;
+    return formal.offset === undefined && formal.limit === undefined;
   }
 
   return true;

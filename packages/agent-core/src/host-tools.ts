@@ -189,17 +189,17 @@ export function buildBuiltinHostToolDefinitions(
             type: 'string',
             description: 'Path to the file to read, or a Spirit-managed generated asset ref such as spirit://generated/image/<name> or spirit://generated/video/<name>.',
           },
-          start_line: {
+          offset: {
             type: 'integer',
             minimum: 1,
             description:
-              '1-based inclusive start line. When reading without an exact target, prefer broad windows such as 1, 201, 401 instead of tiny 50-line slices.',
+              '1-based line number to start reading from. When paging through a file, prefer broad windows such as 1, 201, 401 instead of tiny slices.',
           },
-          end_line: {
+          limit: {
             type: 'integer',
             minimum: 1,
             description:
-              '1-based inclusive end line. If omitted, the tool returns up to about 200 lines from start_line by default; when choosing ranges yourself, prefer about 200 lines unless a narrower range is clearly needed. For image files, line ranges may be ignored.',
+              'Number of lines to read. Defaults to about 200 when omitted. For image files, line ranges may be ignored.',
           },
         },
         required: ['path'],

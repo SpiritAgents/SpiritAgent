@@ -84,6 +84,14 @@ fn u64_arg(request: &ToolUiRequest, key: &str) -> Option<u64> {
     args_object(request)?.get(key).and_then(Value::as_u64)
 }
 
+fn read_file_range_display(request: &ToolUiRequest) -> (u64, String) {
+    let offset = u64_arg(request, "offset").unwrap_or(1);
+    let end = u64_arg(request, "limit")
+        .map(|limit| (offset + limit - 1).to_string())
+        .unwrap_or_else(|| "default".to_string());
+    (offset, end)
+}
+
 fn question_count(request: &ToolUiRequest) -> usize {
     if let Some(count) = u64_arg(request, "questionCount") {
         return count as usize;
@@ -377,10 +385,7 @@ pub(crate) fn build_tool_result_block(
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
         },
         "read_file" => {
-            let start = u64_arg(request, "start_line").unwrap_or(1);
-            let end = u64_arg(request, "end_line")
-                .map(|value| value.to_string())
-                .unwrap_or_else(|| "default".to_string());
+            let (offset, end) = read_file_range_display(request);
             ToolUiBlock {
                 tool_call_id: tool_call_id.map(String::from),
                 tool_name: tool_name.to_string(),
@@ -391,7 +396,7 @@ pub(crate) fn build_tool_result_block(
                         "路径: {}",
                         string_arg(request, "path").unwrap_or("<unknown>")
                     ),
-                    format!("行范围: {} - {}", start, end),
+                    format!("行范围: {} - {}", offset, end),
                 ],
                 image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -585,14 +590,11 @@ pub(crate) fn format_tool_ui_message(
         ),
         "glob" => output.to_string(),
         "read_file" => {
-            let start = u64_arg(request, "start_line").unwrap_or(1);
-            let end = u64_arg(request, "end_line")
-                .map(|value| value.to_string())
-                .unwrap_or_else(|| "default".to_string());
+            let (offset, end) = read_file_range_display(request);
             format!(
                 "[tool] 读取文件 {} {} - {}",
                 string_arg(request, "path").unwrap_or("<unknown>"),
-                start,
+                offset,
                 end
             )
         }
@@ -792,8 +794,8 @@ mod tests {
                 "read_file",
                 json!({
                     "path": "src/main.rs",
-                    "start_line": 1,
-                    "end_line": 20
+                    "offset": 1,
+                    "limit": 20
                 }),
             ),
         );
@@ -812,8 +814,8 @@ mod tests {
                 "read_file",
                 json!({
                     "path": "src/main.rs",
-                    "start_line": 3,
-                    "end_line": 9
+                    "offset": 3,
+                    "limit": 7
                 }),
             ),
             "read_file",
@@ -830,8 +832,8 @@ mod tests {
                 "read_file",
                 json!({
                     "path": "src/main.rs",
-                    "start_line": 3,
-                    "end_line": 9
+                    "offset": 3,
+                    "limit": 7
                 }),
             ),
             "read_file",
