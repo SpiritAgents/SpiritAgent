@@ -272,6 +272,8 @@
     "modelDetailPricingOutput": "输出：{{value}} / 百万 token",
     "modelDetailPricingImage": "图片：{{value}}",
     "modelDetailPricingRequest": "请求：{{value}}",
+    "modelDetailPricingVideoPerSecond": "{{value}} / 秒",
+    "modelDetailPricingVideoResolutionWithAudio": "{{resolution}} (音频)",
     "modelDetailLabelContext": "上下文",
     "modelDetailLabelInput": "输入",
     "modelDetailLabelOutput": "输出",

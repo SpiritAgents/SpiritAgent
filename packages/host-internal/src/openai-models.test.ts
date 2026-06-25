@@ -314,6 +314,72 @@ test('parseVercelAiGatewayModelEntriesPayload extracts display metadata and pric
   ]);
 });
 
+test('parseVercelAiGatewayModelEntriesPayload extracts video duration pricing', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'alibaba/wan-v2.6-t2v',
+        name: 'Wan v2.6 Text-to-Video',
+        type: 'video',
+        pricing: {
+          video_duration_pricing: [
+            { resolution: '720p', cost_per_second: '0.1' },
+            { resolution: '1080p', cost_per_second: '0.15' },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'alibaba/wan-v2.6-t2v',
+      displayName: 'Wan v2.6 Text-to-Video',
+      pricing: {
+        videoDurationPricing: [
+          { resolution: '720p', costPerSecondUsd: '0.1' },
+          { resolution: '1080p', costPerSecondUsd: '0.15' },
+        ],
+      },
+      supportsVideoGeneration: true,
+    },
+  ]);
+});
+
+test('parseVercelAiGatewayModelEntriesPayload extracts video duration pricing with audio tiers', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'google/veo-3.1-generate-001',
+        name: 'Veo 3.1',
+        type: 'video',
+        pricing: {
+          video_duration_pricing: [
+            { resolution: '720p', audio: false, cost_per_second: '0.2' },
+            { resolution: '720p', audio: true, cost_per_second: '0.4' },
+            { resolution: '4k', audio: true, cost_per_second: '0.6' },
+          ],
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'google/veo-3.1-generate-001',
+      displayName: 'Veo 3.1',
+      pricing: {
+        videoDurationPricing: [
+          { resolution: '720p', costPerSecondUsd: '0.2' },
+          { resolution: '720p', costPerSecondUsd: '0.4', audio: true },
+          { resolution: '4k', costPerSecondUsd: '0.6', audio: true },
+        ],
+      },
+      supportsVideoGeneration: true,
+    },
+  ]);
+});
+
 test('parseOpenRouterModelEntriesPayload extracts display metadata and pricing', () => {
   const entries = parseOpenRouterModelEntriesPayload({
     data: [

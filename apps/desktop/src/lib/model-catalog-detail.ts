@@ -9,6 +9,7 @@ import type {
   ModelProfileSnapshot,
   PreviewModelCatalogEntry,
   PreviewModelCatalogPricing,
+  PreviewModelCatalogVideoDurationPricing,
 } from '@/types';
 
 const METADATA_PROVIDERS = new Set<DesktopModelProvider>(['vercel-ai-gateway', 'openrouter']);
@@ -83,6 +84,9 @@ export function modelHasCatalogDetail(entry: PreviewModelCatalogEntry | undefine
   const pricing = entry.pricing;
   if (!pricing) {
     return false;
+  }
+  if (pricing.videoDurationPricing && pricing.videoDurationPricing.length > 0) {
+    return true;
   }
   return Boolean(
     pricing.inputPerTokenUsd?.trim()
@@ -160,7 +164,9 @@ type PricingLabelKey =
   | 'settings.modelDetailPricingInput'
   | 'settings.modelDetailPricingOutput'
   | 'settings.modelDetailPricingImage'
-  | 'settings.modelDetailPricingRequest';
+  | 'settings.modelDetailPricingRequest'
+  | 'settings.modelDetailPricingVideoPerSecond'
+  | 'settings.modelDetailPricingVideoResolutionWithAudio';
 
 type ModelCatalogDetailFieldLabelKey =
   | 'settings.modelDetailLabelContext'
@@ -168,6 +174,10 @@ type ModelCatalogDetailFieldLabelKey =
   | 'settings.modelDetailLabelOutput'
   | 'settings.modelDetailLabelImage'
   | 'settings.modelDetailLabelRequest';
+
+type ModelCatalogDetailFieldValueKey =
+  | 'settings.modelDetailPricingVideoPerSecond'
+  | 'settings.modelDetailPricingVideoResolutionWithAudio';
 
 export type ModelCatalogDetailField = {
   id: string;
@@ -178,7 +188,7 @@ export type ModelCatalogDetailField = {
 export function buildModelCatalogDetailFields(input: {
   contextLength?: number;
   pricing?: PreviewModelCatalogPricing;
-  t: (key: ModelCatalogDetailFieldLabelKey) => string;
+  t: (key: ModelCatalogDetailFieldLabelKey | ModelCatalogDetailFieldValueKey, options?: { value?: string; resolution?: string }) => string;
 }): ModelCatalogDetailField[] {
   const fields: ModelCatalogDetailField[] = [];
   if (input.contextLength !== undefined) {
@@ -222,6 +232,17 @@ export function buildModelCatalogDetailFields(input: {
         value: requestPrice,
       });
     }
+    for (const [index, tier] of (pricing.videoDurationPricing ?? []).entries()) {
+      const costPerSecond = formatUsdFlatRate(tier.costPerSecondUsd);
+      if (!costPerSecond) {
+        continue;
+      }
+      fields.push({
+        id: videoDurationPricingFieldId(index, tier),
+        label: videoDurationPricingRowLabel(tier, input.t),
+        value: input.t('settings.modelDetailPricingVideoPerSecond', { value: costPerSecond }),
+      });
+    }
   }
   return fields;
 }
@@ -251,7 +272,29 @@ export function formatModelCatalogPricingLines(
   if (request) {
     lines.push(t('settings.modelDetailPricingRequest', { value: request }));
   }
+  for (const tier of pricing.videoDurationPricing ?? []) {
+    const costPerSecond = formatUsdFlatRate(tier.costPerSecondUsd);
+    if (!costPerSecond) {
+      continue;
+    }
+    const label = videoDurationPricingRowLabel(tier, t);
+    lines.push(`${label}: ${t('settings.modelDetailPricingVideoPerSecond', { value: costPerSecond })}`);
+  }
   return lines;
+}
+
+function videoDurationPricingRowLabel(
+  tier: PreviewModelCatalogVideoDurationPricing,
+  t: (key: PricingLabelKey | ModelCatalogDetailFieldValueKey, options?: { value?: string; resolution?: string }) => string,
+): string {
+  if (tier.audio === true) {
+    return t('settings.modelDetailPricingVideoResolutionWithAudio', { resolution: tier.resolution });
+  }
+  return tier.resolution;
+}
+
+function videoDurationPricingFieldId(index: number, tier: PreviewModelCatalogVideoDurationPricing): string {
+  return `video-duration-${index}-${tier.resolution}${tier.audio === true ? '-audio' : ''}`;
 }
 
 function formatUsdPerMillionTokens(value: string | undefined): string | undefined {

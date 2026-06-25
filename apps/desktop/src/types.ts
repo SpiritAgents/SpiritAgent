@@ -121,11 +121,18 @@ export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
 export type DesktopModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration' | 'videoGeneration';
 
+export interface PreviewModelCatalogVideoDurationPricing {
+  resolution: string;
+  costPerSecondUsd: string;
+  audio?: boolean;
+}
+
 export interface PreviewModelCatalogPricing {
   inputPerTokenUsd?: string;
   outputPerTokenUsd?: string;
   imagePerUnitUsd?: string;
   requestPerCallUsd?: string;
+  videoDurationPricing?: PreviewModelCatalogVideoDurationPricing[];
 }
 
 export interface PreviewModelCatalogEntry {

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import {
   buildModelCatalogDisplayTitleMap,
+  buildModelCatalogDetailFields,
   findModelCatalogEntry,
   modelCatalogDisplayTitle,
   modelDisplayTitleFromMap,
@@ -39,6 +40,67 @@ test('buildModelCatalogDisplayTitleMap uses catalog displayName for gateway mode
 
 test('modelHasCatalogDetail is true when only displayName is present', () => {
   assert.equal(modelHasCatalogDetail({ id: 'x', displayName: 'Friendly' }), true);
+});
+
+test('modelHasCatalogDetail is true when only video duration pricing is present', () => {
+  assert.equal(
+    modelHasCatalogDetail({
+      id: 'alibaba/wan-v2.6-t2v',
+      pricing: {
+        videoDurationPricing: [{ resolution: '720p', costPerSecondUsd: '0.1' }],
+      },
+    }),
+    true,
+  );
+});
+
+test('buildModelCatalogDetailFields renders video duration pricing rows', () => {
+  const fields = buildModelCatalogDetailFields({
+    pricing: {
+      videoDurationPricing: [
+        { resolution: '720p', costPerSecondUsd: '0.1' },
+        { resolution: '1080p', costPerSecondUsd: '0.15' },
+      ],
+    },
+    t: (key, options) => {
+      if (key === 'settings.modelDetailPricingVideoPerSecond') {
+        return `${options.value} / sec`;
+      }
+      return key;
+    },
+  });
+
+  assert.deepEqual(fields, [
+    { id: 'video-duration-0-720p', label: '720p', value: '$0.10 / sec' },
+    { id: 'video-duration-1-1080p', label: '1080p', value: '$0.15 / sec' },
+  ]);
+});
+
+test('buildModelCatalogDetailFields appends audio suffix to video duration pricing labels', () => {
+  const fields = buildModelCatalogDetailFields({
+    pricing: {
+      videoDurationPricing: [
+        { resolution: '720p', costPerSecondUsd: '0.2' },
+        { resolution: '720p', costPerSecondUsd: '0.4', audio: true },
+        { resolution: '4k', costPerSecondUsd: '0.6', audio: true },
+      ],
+    },
+    t: (key, options) => {
+      if (key === 'settings.modelDetailPricingVideoPerSecond') {
+        return `${options.value} / sec`;
+      }
+      if (key === 'settings.modelDetailPricingVideoResolutionWithAudio') {
+        return `${options.resolution} (audio)`;
+      }
+      return key;
+    },
+  });
+
+  assert.deepEqual(fields, [
+    { id: 'video-duration-0-720p', label: '720p', value: '$0.20 / sec' },
+    { id: 'video-duration-1-720p-audio', label: '720p (audio)', value: '$0.40 / sec' },
+    { id: 'video-duration-2-4k-audio', label: '4k (audio)', value: '$0.60 / sec' },
+  ]);
 });
 
 test('buildModelCatalogDisplayTitleMap formats non-gateway model ids', () => {

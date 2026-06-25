@@ -259,7 +259,14 @@ function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | un
   const outputPerTokenUsd = readCachedPricingField(record, 'outputPerTokenUsd');
   const imagePerUnitUsd = readCachedPricingField(record, 'imagePerUnitUsd');
   const requestPerCallUsd = readCachedPricingField(record, 'requestPerCallUsd');
-  if (!inputPerTokenUsd && !outputPerTokenUsd && !imagePerUnitUsd && requestPerCallUsd === undefined) {
+  const videoDurationPricing = normalizeCachedVideoDurationPricing(record.videoDurationPricing);
+  if (
+    !inputPerTokenUsd
+    && !outputPerTokenUsd
+    && !imagePerUnitUsd
+    && requestPerCallUsd === undefined
+    && videoDurationPricing === undefined
+  ) {
     return undefined;
   }
   return {
@@ -267,7 +274,41 @@ function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | un
     ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
     ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
     ...(requestPerCallUsd !== undefined ? { requestPerCallUsd } : {}),
+    ...(videoDurationPricing ? { videoDurationPricing } : {}),
   };
+}
+
+function normalizeCachedVideoDurationPricing(
+  value: unknown,
+): PreviewModelCatalogPricing['videoDurationPricing'] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return undefined;
+  }
+  const normalized: NonNullable<PreviewModelCatalogPricing['videoDurationPricing']> = [];
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) {
+      continue;
+    }
+    const record = item as Record<string, unknown>;
+    const resolution =
+      typeof record.resolution === 'string' && record.resolution.trim().length > 0
+        ? record.resolution.trim()
+        : undefined;
+    const costPerSecondUsd =
+      typeof record.costPerSecondUsd === 'string' && record.costPerSecondUsd.trim().length > 0
+        ? record.costPerSecondUsd.trim()
+        : undefined;
+    if (!resolution || !costPerSecondUsd) {
+      continue;
+    }
+    const audio = record.audio === true ? true : undefined;
+    normalized.push({
+      resolution,
+      costPerSecondUsd,
+      ...(audio ? { audio } : {}),
+    });
+  }
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function readCachedPricingField(
