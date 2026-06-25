@@ -34,6 +34,14 @@ const gatewayAnthropicConfig = {
   responsesProvider: 'open-responses-compatible' as const,
 };
 
+const openrouterConfig = {
+  transportKind: 'open-responses' as const,
+  apiKey: 'test',
+  model: 'openai/gpt-5.4',
+  llmVendor: 'openrouter' as const,
+  responsesProvider: 'open-responses-compatible' as const,
+};
+
 test('normalizeApplyPatchToolCallArgumentsJson injects callId for AI SDK', () => {
   const callId = 'call_apply_1';
   const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
@@ -124,7 +132,7 @@ test('openAiMessagesToResponsesAiSdkMessages keeps apply_patch tool parts for Op
   );
 });
 
-test('openAiMessagesToResponsesAiSdkMessages omits apply_patch on Gateway fetch stash path', () => {
+test('openAiMessagesToResponsesAiSdkMessages keeps apply_patch in SDK messages on Gateway language-model path', () => {
   const callId = 'call_apply_1';
   const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
   const messages = [
@@ -154,21 +162,19 @@ test('openAiMessagesToResponsesAiSdkMessages omits apply_patch on Gateway fetch 
       return Array.isArray(content)
         && content.some((part) => (part as { type?: string }).type === 'tool-call');
     }),
-    false,
+    true,
   );
-  assert.equal(sdkMessages.some((message) => message.role === 'tool'), false);
+  assert.equal(sdkMessages.some((message) => message.role === 'tool'), true);
 
   runWithApplyPatchBridgeContext(() => {
-    prepareApplyPatchRequestBodyStash(messages);
     const body = { input: [] } as JsonObject;
     patchResponsesRequestBodyForApplyPatch(body, gatewayOpenAiConfig);
     const input = body.input as JsonObject[];
-    assert.equal(input[0]?.type, 'function_call');
-    assert.equal(input[1]?.type, 'function_call_output');
+    assert.equal(input.length, 0);
   });
 });
 
-test('openAiMessagesToResponsesAiSdkMessages omits apply_patch when fetch stash path is active', () => {
+test('openAiMessagesToResponsesAiSdkMessages omits apply_patch when Open Responses fetch stash path is active', () => {
   const callId = 'call_apply_1';
   const operation = { type: 'update_file', path: 'README.md', diff: '+x\n' };
   const messages = [
@@ -191,7 +197,7 @@ test('openAiMessagesToResponsesAiSdkMessages omits apply_patch when fetch stash 
     },
   ];
 
-  const sdkMessages = openAiMessagesToResponsesAiSdkMessages(messages, gatewayAnthropicConfig);
+  const sdkMessages = openAiMessagesToResponsesAiSdkMessages(messages, openrouterConfig);
   assert.equal(
     sdkMessages.some((message) => {
       const content = message.content;
@@ -205,11 +211,11 @@ test('openAiMessagesToResponsesAiSdkMessages omits apply_patch when fetch stash 
   runWithApplyPatchBridgeContext(() => {
     prepareApplyPatchRequestBodyStash(messages);
     const body = { input: [] } as JsonObject;
-    patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
+    patchResponsesRequestBodyForApplyPatch(body, openrouterConfig);
     const input = body.input as JsonObject[];
     assert.equal(input.length, 2);
-    assert.equal(input[0]?.type, 'function_call');
-    assert.equal(input[1]?.type, 'function_call_output');
+    assert.equal(input[0]?.type, 'apply_patch_call');
+    assert.equal(input[1]?.type, 'apply_patch_call_output');
   });
 });
 
@@ -284,10 +290,11 @@ test('prepareApplyPatchRequestBodyStash pairs assistant call with tool result on
     ]);
 
     const body = { input: [] } as JsonObject;
-    patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
+    patchResponsesRequestBodyForApplyPatch(body, openrouterConfig);
     const input = body.input as JsonObject[];
-    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[0]?.type, 'apply_patch_call');
     assert.equal(input[0]?.call_id, callId);
-    assert.equal(input[1]?.type, 'function_call_output');
+    assert.equal(input[1]?.type, 'apply_patch_call_output');
+    assert.equal(input[1]?.output, 'created');
   });
 });

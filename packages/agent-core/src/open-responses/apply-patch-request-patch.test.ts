@@ -5,6 +5,7 @@ import type { JsonObject } from '../ports.js';
 import {
   buildApplyPatchToolCallArgumentsJson,
   patchResponsesRequestBodyForApplyPatch,
+  prepareApplyPatchRequestBodyStash,
   registerPendingApplyPatchCallIds,
   runWithApplyPatchBridgeContext,
 } from './apply-patch-bridge.js';
@@ -178,6 +179,35 @@ test('patchResponsesRequestBodyForApplyPatch gateway openai route keeps function
       input.some((item) => item.type === 'apply_patch_call'),
       false,
     );
+  });
+});
+
+test('patchResponsesRequestBodyForApplyPatch injects stashed rounds when input is missing', () => {
+  runWithApplyPatchBridgeContext(() => {
+    const callId = 'call_missing_input';
+    const operation = { type: 'create_file', path: 'demo.txt', diff: '+hi\n' };
+    prepareApplyPatchRequestBodyStash([
+      {
+        role: 'assistant',
+        tool_calls: [{
+          id: callId,
+          type: 'function',
+          function: {
+            name: APPLY_PATCH_HOST_TOOL_NAME,
+            arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
+          },
+        }],
+      },
+      { role: 'tool', tool_call_id: callId, content: 'created ok' },
+    ]);
+
+    const body = {} as JsonObject;
+    patchResponsesRequestBodyForApplyPatch(body, gatewayAnthropicConfig);
+    const input = body.input as JsonObject[];
+    assert.equal(input.length, 2);
+    assert.equal(input[0]?.type, 'function_call');
+    assert.equal(input[1]?.type, 'function_call_output');
+    assert.equal(input[1]?.output, 'created ok');
   });
 });
 
