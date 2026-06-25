@@ -31,6 +31,10 @@ import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
 } from '../openai/gateway-anthropic-thinking.js';
+import {
+  buildGatewayGoogleProviderOptions,
+  isGatewayGoogleGeminiModel,
+} from '../openai/gateway-google-thinking.js';
 import { isOpenRouterAnthropicClaudeModel } from '../openai/openrouter-anthropic-reasoning.js';
 import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
@@ -208,6 +212,10 @@ export function buildResponsesProviderOptions(
   if (shouldUseGatewayWebSearch(config)) {
     if (isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
       return buildGatewayAnthropicProviderOptions(config);
+    }
+
+    if (isGatewayGoogleGeminiModel(config.llmVendor, config.model)) {
+      return buildGatewayGoogleProviderOptions(config, reasoningEffort);
     }
 
     // Gateway v3 language-model 原样转发 providerOptions；OpenAI 路由模型须用 openai 命名空间（见 Vercel AI Gateway reasoning 文档）。
