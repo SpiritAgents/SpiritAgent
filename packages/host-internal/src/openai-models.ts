@@ -22,11 +22,18 @@ export { normalizeOpenAiApiBase } from './openai-api-base.js';
 
 export type { ProviderModelTransportKind };
 
+export interface ProviderListedModelVideoDurationPricing {
+  resolution: string;
+  costPerSecondUsd: string;
+  audio?: boolean;
+}
+
 export interface ProviderListedModelPricing {
   inputPerTokenUsd?: string;
   outputPerTokenUsd?: string;
   imagePerUnitUsd?: string;
   requestPerCallUsd?: string;
+  videoDurationPricing?: ProviderListedModelVideoDurationPricing[];
 }
 
 export interface ProviderListedModelEntry {
@@ -1246,12 +1253,14 @@ function readPricingField(pricing: Record<string, unknown>, key: string): string
 }
 
 function buildProviderListedModelPricing(fields: ProviderListedModelPricing): ProviderListedModelPricing | undefined {
-  if (
-    !fields.inputPerTokenUsd
-    && !fields.outputPerTokenUsd
-    && !fields.imagePerUnitUsd
-    && !fields.requestPerCallUsd
-  ) {
+  const hasTokenPricing =
+    fields.inputPerTokenUsd
+    || fields.outputPerTokenUsd
+    || fields.imagePerUnitUsd
+    || fields.requestPerCallUsd;
+  const hasVideoDurationPricing =
+    fields.videoDurationPricing !== undefined && fields.videoDurationPricing.length > 0;
+  if (!hasTokenPricing && !hasVideoDurationPricing) {
     return undefined;
   }
   return {
@@ -1259,7 +1268,36 @@ function buildProviderListedModelPricing(fields: ProviderListedModelPricing): Pr
     ...(fields.outputPerTokenUsd ? { outputPerTokenUsd: fields.outputPerTokenUsd } : {}),
     ...(fields.imagePerUnitUsd ? { imagePerUnitUsd: fields.imagePerUnitUsd } : {}),
     ...(fields.requestPerCallUsd ? { requestPerCallUsd: fields.requestPerCallUsd } : {}),
+    ...(hasVideoDurationPricing ? { videoDurationPricing: fields.videoDurationPricing } : {}),
   };
+}
+
+function readVercelGatewayVideoDurationPricing(
+  pricing: Record<string, unknown>,
+): ProviderListedModelVideoDurationPricing[] | undefined {
+  const raw = pricing.video_duration_pricing;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return undefined;
+  }
+  const entries: ProviderListedModelVideoDurationPricing[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) {
+      continue;
+    }
+    const record = item as Record<string, unknown>;
+    const resolution = readOptionalTrimmedString(record.resolution);
+    const costPerSecondUsd = readOptionalTrimmedString(record.cost_per_second);
+    const audio = readBooleanModelTrait(record, 'audio');
+    if (!resolution || !costPerSecondUsd) {
+      continue;
+    }
+    entries.push({
+      resolution,
+      costPerSecondUsd,
+      ...(audio === true ? { audio: true } : {}),
+    });
+  }
+  return entries.length > 0 ? entries : undefined;
 }
 
 function readVercelGatewayPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
@@ -1271,11 +1309,13 @@ function readVercelGatewayPricing(record: Record<string, unknown>): ProviderList
   const outputPerTokenUsd = readPricingField(pricing, 'output');
   const imagePerUnitUsd = readPricingField(pricing, 'image');
   const requestPerCallUsd = readPricingField(pricing, 'request');
+  const videoDurationPricing = readVercelGatewayVideoDurationPricing(pricing);
   return buildProviderListedModelPricing({
     ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
     ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
     ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
     ...(requestPerCallUsd !== undefined ? { requestPerCallUsd } : {}),
+    ...(videoDurationPricing ? { videoDurationPricing } : {}),
   });
 }
 
