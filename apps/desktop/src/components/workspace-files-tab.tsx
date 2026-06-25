@@ -732,6 +732,9 @@ export function WorkspaceFilesTab({
     if (fileSearchOpen) {
       setFileSearchOpen(false);
       setEditorRevealLocation(null);
+      if (!fileTreeOpen) {
+        setFileTreeOpen(true);
+      }
       return;
     }
     setFileTreeOpen((open) => {
@@ -740,7 +743,7 @@ export function WorkspaceFilesTab({
       }
       return !open;
     });
-  }, [fileSearchOpen]);
+  }, [fileSearchOpen, fileTreeOpen]);
 
   const onToggleFileSearch = useCallback(() => {
     if (fileSearchOpen) {
