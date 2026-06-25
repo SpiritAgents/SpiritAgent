@@ -273,6 +273,27 @@ test('openrouter infers supportedReasoningEfforts for anthropic claude catalog e
   ]);
 });
 
+test('openrouter keeps explicit empty supportedReasoningEfforts without claude inference', () => {
+  const preview = previewModelCatalogForTransport({
+    provider: 'openrouter',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'anthropic/claude-sonnet-4.6',
+        supportedReasoningEfforts: [],
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'anthropic/claude-sonnet-4.6',
+      capabilities: ['chat'],
+      supportedReasoningEfforts: [],
+    },
+  ]);
+});
+
 test('moonshot-ai video input maps to video capability not videoGeneration', () => {
   const preview = previewModelCatalogForTransport({
     provider: 'moonshot-ai',
