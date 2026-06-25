@@ -4,7 +4,9 @@ import { getLlmFetch } from '../llm-fetch.js';
 import type { JsonObject } from '../ports.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 
-export function shouldUseGatewayWebSearch(config: OpenResponsesTransportConfig): boolean {
+export function shouldUseGatewayWebSearch(
+  config: Pick<OpenResponsesTransportConfig, 'llmVendor'>,
+): boolean {
   return config.llmVendor === 'vercel-ai-gateway';
 }
 

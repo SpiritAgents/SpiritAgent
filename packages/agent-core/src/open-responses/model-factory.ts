@@ -105,12 +105,12 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
     return createAzureResponsesProvider(config)(languageModelId);
   }
 
-  // Gateway Perplexity 须走 @ai-sdk/gateway v3 language-model；@ai-sdk/open-responses 会丢弃 provider tools。
+  // Gateway Perplexity 须走 @ai-sdk/gateway v3 language-model；fetch 仍须走 responsesFetchForConfig 以剥离 apply_patch 响应
   if (shouldUseGatewayWebSearch(config)) {
     const gatewayBaseUrl = resolveGatewaySdkBaseUrl(config);
     return createGateway({
       apiKey: config.apiKey,
-      fetch: getLlmFetch(),
+      fetch: responsesFetchForConfig(config),
       ...(gatewayBaseUrl !== undefined ? { baseURL: gatewayBaseUrl } : {}),
     }).languageModel(config.model);
   }

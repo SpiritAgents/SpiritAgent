@@ -127,14 +127,13 @@ export function prepareApplyPatchRequestBodyStash(messages: readonly JsonValue[]
       providerOutput?.status === 'failed'
       || content.includes('[tool')
       || content.toLowerCase().includes('error');
+    const outputText = providerOutput?.output ?? content;
 
     store.applyPatchRequestRounds.push({
       callId,
       operation,
       outputStatus: failed ? 'failed' : 'completed',
-      ...(failed && (providerOutput?.output ?? content)
-        ? { outputText: providerOutput?.output ?? content }
-        : {}),
+      ...(outputText ? { outputText } : {}),
     });
   }
 }
@@ -335,9 +334,13 @@ export function patchResponsesRequestBodyForApplyPatch(
     body.tools = [cloneJsonValue(APPLY_PATCH_BUILT_IN_TOOL as JsonValue)];
   }
 
-  const input = body.input;
-  if (!Array.isArray(input)) {
+  if (store.applyPatchRequestRounds.length === 0 && !Array.isArray(body.input)) {
     return;
+  }
+
+  const input = Array.isArray(body.input) ? (body.input as JsonValue[]) : [];
+  if (!Array.isArray(body.input)) {
+    body.input = input;
   }
 
   const applyPatchCallIds = new Set<string>();
