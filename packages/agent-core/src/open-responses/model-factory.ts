@@ -199,10 +199,13 @@ export function buildResponsesProviderOptions(
   const reasoningSummary = resolveOpenResponsesReasoningSummary(config);
 
   if (shouldUseGatewayWebSearch(config)) {
-    const gatewayOptions: JsonObject = {
+    // Gateway v3 language-model 原样转发 providerOptions；OpenAI 路由模型须用 openai 命名空间（见 Vercel AI Gateway reasoning 文档）。
+    const openaiOptions: JsonObject = {
       ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+      ...(reasoningSummary !== undefined ? { reasoningSummary } : {}),
     };
-    return Object.keys(gatewayOptions).length > 0 ? { gateway: gatewayOptions } : {};
+    const result = Object.keys(openaiOptions).length > 0 ? { openai: openaiOptions } : {};
+    return result;
   }
 
   const provider = resolveOpenResponsesSdkProvider(config);
