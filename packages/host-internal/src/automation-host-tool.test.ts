@@ -7,7 +7,6 @@ import {
   buildAutomationHostToolDefinitions,
   deriveAutomationTitle,
   parseCreateAutomationApprovalLevel,
-  parseCreateAutomationSchedule,
   parseCreateAutomationTrigger,
   parseCreateAutomationTriggerInput,
 } from './automation-host-tool.js';
@@ -39,21 +38,22 @@ test('deriveAutomationTitle truncates long first lines', () => {
   assert.equal(deriveAutomationTitle(longLine).length, 80);
 });
 
-test('parseCreateAutomationSchedule accepts hourly daily weekly', () => {
-  assert.deepEqual(parseCreateAutomationSchedule({ kind: 'hourly' }), { kind: 'hourly' });
-  assert.deepEqual(parseCreateAutomationSchedule({ kind: 'daily', hour: 9, minute: 30 }), {
-    kind: 'daily',
-    hour: 9,
-    minute: 30,
-  });
+test('parseCreateAutomationTrigger accepts time schedule', () => {
   assert.deepEqual(
-    parseCreateAutomationSchedule({ kind: 'weekly', weekday: 1, hour: 20, minute: 0 }),
-    { kind: 'weekly', weekday: 1, hour: 20, minute: 0 },
+    parseCreateAutomationTrigger({ kind: 'time', schedule: { kind: 'hourly' } }),
+    { kind: 'time', schedule: { kind: 'hourly' } },
+  );
+  assert.deepEqual(
+    parseCreateAutomationTrigger({ kind: 'time', schedule: { kind: 'daily', hour: 9, minute: 30 } }),
+    { kind: 'time', schedule: { kind: 'daily', hour: 9, minute: 30 } },
   );
 });
 
-test('parseCreateAutomationSchedule rejects invalid input', () => {
-  assert.throws(() => parseCreateAutomationSchedule({ kind: 'monthly' }), /Invalid automation schedule/);
+test('parseCreateAutomationTrigger rejects invalid time schedule', () => {
+  assert.throws(
+    () => parseCreateAutomationTrigger({ kind: 'time', schedule: { kind: 'monthly' } }),
+    /Invalid automation trigger/,
+  );
 });
 
 test('parseCreateAutomationTrigger accepts github trigger', () => {
@@ -73,7 +73,7 @@ test('parseCreateAutomationTrigger accepts github trigger', () => {
   );
 });
 
-test('parseCreateAutomationTriggerInput prefers trigger and falls back to legacy schedule', () => {
+test('parseCreateAutomationTriggerInput requires trigger', () => {
   assert.deepEqual(
     parseCreateAutomationTriggerInput({
       trigger: {
@@ -90,14 +90,9 @@ test('parseCreateAutomationTriggerInput prefers trigger and falls back to legacy
       event: 'pull_request_created',
     },
   );
-  assert.deepEqual(
-    parseCreateAutomationTriggerInput({
-      schedule: { kind: 'daily', hour: 8, minute: 15 },
-    }),
-    {
-      kind: 'time',
-      schedule: { kind: 'daily', hour: 8, minute: 15 },
-    },
+  assert.throws(
+    () => parseCreateAutomationTriggerInput({ schedule: { kind: 'daily', hour: 8, minute: 15 } }),
+    /缺少 trigger/,
   );
 });
 

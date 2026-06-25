@@ -5,8 +5,8 @@ import {
   type JsonValue,
 } from '@spirit-agent/core';
 
-import type { HostAutomationSchedule, HostAutomationTrigger } from './automations.js';
-import { normalizeAutomationSchedule, normalizeAutomationTrigger } from './automations.js';
+import type { HostAutomationTrigger } from './automations.js';
+import { normalizeAutomationTrigger } from './automations.js';
 
 export type CreateAutomationApprovalLevel = 'default' | 'full-approval';
 
@@ -46,14 +46,6 @@ export function formatCreateAutomationApprovalLabel(level: CreateAutomationAppro
   return level === 'full-approval' ? '跳过审批' : '默认审批';
 }
 
-export function parseCreateAutomationSchedule(value: unknown): HostAutomationSchedule {
-  const schedule = normalizeAutomationSchedule(value);
-  if (!schedule) {
-    throw new Error('Invalid automation schedule.');
-  }
-  return schedule;
-}
-
 export function parseCreateAutomationTrigger(value: unknown): HostAutomationTrigger {
   const trigger = normalizeAutomationTrigger(value);
   if (!trigger) {
@@ -63,14 +55,10 @@ export function parseCreateAutomationTrigger(value: unknown): HostAutomationTrig
 }
 
 export function parseCreateAutomationTriggerInput(parsed: Record<string, unknown>): HostAutomationTrigger {
-  if (parsed.trigger !== undefined) {
-    return parseCreateAutomationTrigger(parsed.trigger);
+  if (parsed.trigger === undefined) {
+    throw new Error('create_automation 缺少 trigger。');
   }
-  const scheduleValue = parsed.schedule;
-  if (scheduleValue === undefined) {
-    throw new Error('create_automation 缺少 trigger 或 schedule。');
-  }
-  return parseCreateAutomationTrigger({ kind: 'time', schedule: parseCreateAutomationSchedule(scheduleValue) });
+  return parseCreateAutomationTrigger(parsed.trigger);
 }
 
 export const CREATE_AUTOMATION_CONTRIBUTED_TOOL: ContributedHostToolDefinition = {
@@ -127,38 +115,6 @@ export const CREATE_AUTOMATION_CONTRIBUTED_TOOL: ContributedHostToolDefinition =
             type: 'string',
             enum: ['pull_request_created', 'issue_created'],
             description: 'GitHub event to watch when kind=github.',
-          },
-        },
-        required: ['kind'],
-        additionalProperties: false,
-      },
-      schedule: {
-        type: 'object',
-        description:
-          'Legacy time-only trigger. Prefer trigger instead. When provided alone, treated as { kind: "time", schedule }.',
-        properties: {
-          kind: {
-            type: 'string',
-            enum: ['hourly', 'daily', 'weekly'],
-            description: 'hourly: every hour on the hour; daily: once per day; weekly: once per week on a weekday.',
-          },
-          hour: {
-            type: 'integer',
-            minimum: 0,
-            maximum: 23,
-            description: 'Hour of day (0-23). Required for daily and weekly.',
-          },
-          minute: {
-            type: 'integer',
-            minimum: 0,
-            maximum: 59,
-            description: 'Minute of hour (0-59). Required for daily and weekly.',
-          },
-          weekday: {
-            type: 'integer',
-            minimum: 0,
-            maximum: 6,
-            description: 'Day of week for weekly schedules: 0=Sunday through 6=Saturday.',
           },
         },
         required: ['kind'],

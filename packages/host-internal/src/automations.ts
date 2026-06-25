@@ -169,11 +169,6 @@ export function normalizeAutomationTrigger(value: unknown): HostAutomationTrigge
       ...(poll ? { poll } : {}),
     };
   }
-  // Legacy bare time schedule object.
-  const legacySchedule = normalizeAutomationSchedule(value);
-  if (legacySchedule) {
-    return { kind: 'time', schedule: legacySchedule };
-  }
   return undefined;
 }
 
@@ -584,8 +579,7 @@ export class HostAutomationStore {
     if (!definition) {
       return undefined;
     }
-    const needsTriggerMigration = automationDefinitionNeedsTriggerMigration(parsed.definition);
-    const file: HostAutomationFile = {
+    return {
       version: 1,
       definition,
       runs: Array.isArray(parsed.runs)
@@ -594,10 +588,6 @@ export class HostAutomationStore {
             .filter((run): run is HostAutomationRun => run !== undefined)
         : [],
     };
-    if (needsTriggerMigration) {
-      await this.saveFile(definition.id, file);
-    }
-    return file;
   }
 
   private async saveFile(automationId: string, file: HostAutomationFile): Promise<void> {
@@ -607,26 +597,15 @@ export class HostAutomationStore {
   }
 }
 
-function automationDefinitionNeedsTriggerMigration(value: unknown): boolean {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  return record.schedule !== undefined && record.trigger === undefined;
-}
-
 function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined;
   }
-  const record = value as Partial<HostAutomationDefinition> & { schedule?: unknown };
+  const record = value as Partial<HostAutomationDefinition>;
   if (typeof record.id !== 'string' || !record.id.trim()) {
     return undefined;
   }
-  const trigger =
-    normalizeAutomationTrigger(record.trigger)
-    ?? (record.schedule !== undefined ? normalizeAutomationTrigger({ kind: 'time', schedule: record.schedule }) : undefined)
-    ?? normalizeAutomationTrigger(record.schedule);
+  const trigger = normalizeAutomationTrigger(record.trigger);
   if (!trigger) {
     return undefined;
   }
