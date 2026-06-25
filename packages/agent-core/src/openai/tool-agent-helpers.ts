@@ -51,6 +51,7 @@ export {
   buildRulesSystemMessage,
   buildSkillsCatalogSystemMessage,
   buildMcpCatalogSystemMessage,
+  buildSpiritAgentCoreHostPrompt,
   buildToolAgentHostPrompt,
 } from '../tool-agent.js';
 
