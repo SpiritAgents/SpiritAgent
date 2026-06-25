@@ -8,6 +8,7 @@ import {
   shouldUseApplyPatchFileTools,
   shouldUseApplyPatchFunctionTool,
   shouldUseBuiltInApplyPatchRequestItems,
+  shouldOmitApplyPatchFromAiSdkMessages,
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
 
@@ -164,6 +165,26 @@ test('shouldUseApplyPatchFunctionTool only on gateway-compatible routes', () => 
       model: 'gpt-5.4',
     }),
     false,
+  );
+});
+
+test('shouldOmitApplyPatchFromAiSdkMessages false on Gateway, true on OpenRouter', () => {
+  assert.equal(
+    shouldOmitApplyPatchFromAiSdkMessages({
+      transportKind: 'open-responses',
+      llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.4',
+    }),
+    false,
+  );
+  assert.equal(
+    shouldOmitApplyPatchFromAiSdkMessages({
+      transportKind: 'open-responses',
+      llmVendor: 'openrouter',
+      model: 'openai/gpt-5.4',
+      responsesProvider: 'open-responses-compatible',
+    }),
+    true,
   );
 });
 

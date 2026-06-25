@@ -2,7 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { JsonValue } from '../ports.js';
-import { buildResponsesTraceTools } from './apply-patch-bridge.js';
+import {
+  buildApplyPatchToolCallArgumentsJson,
+  buildResponsesTraceTools,
+  prepareApplyPatchRequestBodyStash,
+  runWithApplyPatchBridgeContext,
+} from './apply-patch-bridge.js';
+import { APPLY_PATCH_HOST_TOOL_NAME } from './apply-patch-eligibility.js';
+import { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
 import {
   buildGatewayWebSearchTool,
   buildGatewayWebSearchTraceToolEntry,
@@ -34,12 +41,7 @@ const hostTool = {
 test('shouldUseGatewayWebSearch matches vercel-ai-gateway open-responses', () => {
   assert.equal(shouldUseGatewayWebSearch(gatewayConfig), true);
   assert.equal(
-    shouldUseGatewayWebSearch({
-      transportKind: 'open-responses',
-      apiKey: 'k',
-      model: 'openai/gpt-5.4',
-      llmVendor: 'openrouter',
-    }),
+    shouldUseGatewayWebSearch({ llmVendor: 'openrouter' }),
     false,
   );
 });
@@ -89,4 +91,50 @@ test('gateway responses trace lists web_search alongside host tools when eligibl
         && (tool as { name?: string }).name === 'web_search',
     ),
   );
+});
+
+test('createApplyPatchAwareFetch injects stashed apply_patch output for OpenRouter fetch path', async () => {
+  await runWithApplyPatchBridgeContext(async () => {
+    const callId = 'call_gateway_fetch';
+    const operation = { type: 'create_file', path: 'demo.txt', diff: '+hi\n' };
+    prepareApplyPatchRequestBodyStash([
+      {
+        role: 'assistant',
+        tool_calls: [{
+          id: callId,
+          type: 'function',
+          function: {
+            name: APPLY_PATCH_HOST_TOOL_NAME,
+            arguments: buildApplyPatchToolCallArgumentsJson(callId, operation),
+          },
+        }],
+      },
+      { role: 'tool', tool_call_id: callId, content: 'created ok' },
+    ]);
+
+    let patchedBody: Record<string, unknown> | undefined;
+    const openrouterConfig: OpenResponsesTransportConfig = {
+      transportKind: 'open-responses',
+      apiKey: 'test-key',
+      model: 'openai/gpt-5.4',
+      llmVendor: 'openrouter',
+      responsesProvider: 'open-responses-compatible',
+    };
+    const fetchFn = createApplyPatchAwareFetch(openrouterConfig, async (_input, init) => {
+      patchedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({ output: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    await fetchFn('https://example.test/v1/responses', {
+      method: 'POST',
+      body: JSON.stringify({ model: 'openai/gpt-5.4', input: [] }),
+    });
+
+    const input = patchedBody?.input as Array<Record<string, unknown>>;
+    assert.equal(input?.length, 2);
+    assert.equal(input?.[1]?.output, 'created ok');
+  });
 });

@@ -12,6 +12,7 @@ import {
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
 } from './responses-compat.js';
+import { shouldUseGatewayWebSearch } from './gateway-web-search.js';
 
 export { normalizeGatewayOpenAiModelId } from './responses-compat.js';
 
@@ -162,6 +163,27 @@ export function shouldUseOpenAiSdkApplyPatchTool(
     && config.llmVendor === 'openai'
     && !isBedrockMantleOpenResponsesConfig(config)
   );
+}
+
+/**
+ * Gateway v3 language-model 走 `prompt`；Open Responses fetch 才 omit 并经 body.input stash/reinject。
+ */
+export function shouldOmitApplyPatchFromAiSdkMessages(
+  config: Pick<
+    OpenResponsesTransportConfig,
+    'baseUrl' | 'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+  >,
+): boolean {
+  if (!shouldUseApplyPatchFileTools(config)) {
+    return false;
+  }
+  if (shouldUseOpenAiSdkApplyPatchTool(config)) {
+    return false;
+  }
+  if (shouldUseGatewayWebSearch(config)) {
+    return false;
+  }
+  return true;
 }
 
 export function shouldUseApplyPatchFileTools(
