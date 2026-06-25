@@ -331,6 +331,25 @@ test('parseOpenRouterModelEntriesPayload reads reasoning supported_efforts from 
   ]);
 });
 
+test('parseOpenRouterModelEntriesPayload keeps explicit empty supported_efforts without claude fallback', () => {
+  const entries = parseOpenRouterModelEntriesPayload({
+    data: [
+      {
+        id: 'anthropic/claude-sonnet-4.6',
+        architecture: { output_modalities: ['text'] },
+        reasoning: { supported_efforts: [] },
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'anthropic/claude-sonnet-4.6',
+      supportedReasoningEfforts: [],
+    },
+  ]);
+});
+
 test('parseOpenRouterModelEntriesPayload infers claude efforts when api omits reasoning', () => {
   const entries = parseOpenRouterModelEntriesPayload({
     data: [
