@@ -11,8 +11,8 @@ const PARTIAL_POSITIVE_INT_FIELD_PATTERN = (key: string): RegExp =>
 
 export interface PartialReadFileToolFields {
   path?: string;
-  start_line?: number;
-  end_line?: number;
+  offset?: number;
+  limit?: number;
 }
 
 function tryExtractPartialPositiveInt(argumentsJson: string, key: string): number | undefined {
@@ -27,12 +27,12 @@ function tryExtractPartialPositiveInt(argumentsJson: string, key: string): numbe
 /** Extract read_file fields tolerating incomplete JSON while arguments stream in. */
 export function tryExtractPartialReadFileFields(argumentsJson: string): PartialReadFileToolFields {
   const path = tryExtractPartialToolPath(argumentsJson);
-  const start_line = tryExtractPartialPositiveInt(argumentsJson, 'start_line');
-  const end_line = tryExtractPartialPositiveInt(argumentsJson, 'end_line');
+  const offset = tryExtractPartialPositiveInt(argumentsJson, 'offset');
+  const limit = tryExtractPartialPositiveInt(argumentsJson, 'limit');
   return {
     ...(path ? { path } : {}),
-    ...(start_line !== undefined ? { start_line } : {}),
-    ...(end_line !== undefined ? { end_line } : {}),
+    ...(offset !== undefined ? { offset } : {}),
+    ...(limit !== undefined ? { limit } : {}),
   };
 }
 
@@ -41,7 +41,7 @@ export function readFileStreamingPreviewSignature(argumentsJson: string): string
   if (!fields.path) {
     return undefined;
   }
-  return `${fields.path}\0${fields.start_line ?? ''}\0${fields.end_line ?? ''}`;
+  return `${fields.path}\0${fields.offset ?? ''}\0${fields.limit ?? ''}`;
 }
 
 function decodePartialJsonString(match: string): string | undefined {
@@ -328,15 +328,15 @@ export function readFilePartialAllowsEarlyExecution(argumentsJson: string): bool
   if (!fields.path) {
     return false;
   }
-  const hasStartKey = /"start_line"\s*:/.test(argumentsJson);
-  const hasEndKey = /"end_line"\s*:/.test(argumentsJson);
-  if (!hasStartKey && !hasEndKey) {
+  const hasOffsetKey = /"offset"\s*:/.test(argumentsJson);
+  const hasLimitKey = /"limit"\s*:/.test(argumentsJson);
+  if (!hasOffsetKey && !hasLimitKey) {
     return true;
   }
-  if (hasStartKey && fields.start_line === undefined) {
+  if (hasOffsetKey && fields.offset === undefined) {
     return false;
   }
-  if (hasEndKey && fields.end_line === undefined) {
+  if (hasLimitKey && fields.limit === undefined) {
     return false;
   }
   return true;
@@ -374,8 +374,8 @@ export function buildEarlyExecutableArgumentsJson(
     }
     return JSON.stringify({
       path: fields.path,
-      ...(fields.start_line !== undefined ? { start_line: fields.start_line } : {}),
-      ...(fields.end_line !== undefined ? { end_line: fields.end_line } : {}),
+      ...(fields.offset !== undefined ? { offset: fields.offset } : {}),
+      ...(fields.limit !== undefined ? { limit: fields.limit } : {}),
     });
   }
 

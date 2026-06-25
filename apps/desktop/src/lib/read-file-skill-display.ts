@@ -81,17 +81,17 @@ function positiveLineNumber(value: unknown): number | undefined {
     : undefined;
 }
 
-export function lineRangeForReadFile(startLine: unknown, endLine: unknown): string {
-  const start = positiveLineNumber(startLine);
-  const end = positiveLineNumber(endLine);
-  if (start !== undefined && end !== undefined) {
-    return ` ${start} - ${end}`;
+export function lineRangeForReadFile(offset: unknown, limit: unknown): string {
+  const off = positiveLineNumber(offset);
+  const lim = positiveLineNumber(limit);
+  if (off !== undefined && lim !== undefined) {
+    return ` ${off} - ${off + lim - 1}`;
   }
-  if (start !== undefined) {
-    return ` ${start} -`;
+  if (off !== undefined) {
+    return ` ${off} -`;
   }
-  if (end !== undefined) {
-    return ` 1 - ${end}`;
+  if (lim !== undefined) {
+    return ` 1 - ${lim}`;
   }
   return '';
 }

@@ -252,8 +252,8 @@ test('toolCallSummaryForPhase: read_file splits headline and path detail', () =>
   assert.deepEqual(
     toolCallSummaryForPhase('succeeded', 'read_file', {
       path: 'D:/proj/src/App.tsx',
-      start_line: 1,
-      end_line: 50,
+      offset: 1,
+      limit: 50,
     }),
     { headline: '读取', headlineDetail: 'App.tsx 1 - 50' },
   );
@@ -263,8 +263,8 @@ test('toolCallSummaryForPhase: read_file tool-output-archives uses tool output d
   assert.deepEqual(
     toolCallSummaryForPhase('succeeded', 'read_file', {
       path: 'C:/Users/pc/AppData/Roaming/SpiritAgent/tool-output-archives/sess/call_1.txt',
-      start_line: 1,
-      end_line: 5,
+      offset: 1,
+      limit: 5,
     }),
     { headline: '读取', headlineDetail: '工具输出 1 - 5' },
   );

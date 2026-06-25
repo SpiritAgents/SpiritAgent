@@ -155,7 +155,7 @@ function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts
   if (rawPath) {
     const argsRecord = parseReadFileRequestRecordFromArgsExcerpt(tool.argsExcerpt);
     const lineRange = argsRecord
-      ? lineRangeForReadFile(argsRecord.start_line, argsRecord.end_line)
+      ? lineRangeForReadFile(argsRecord.offset, argsRecord.limit)
       : '';
     const isSkillPath = isSkillMarkdownPath(rawPath);
     const skillMarkdownContent = isSkillPath ? tool.outputExcerpt : undefined;
