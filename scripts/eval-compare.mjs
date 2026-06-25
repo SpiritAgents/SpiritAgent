@@ -68,7 +68,7 @@ async function main() {
         modelConfig,
         artifactsDir,
         comparison,
-        autoApprove: options.autoApprove,
+        bypassApprove: options.bypassApprove,
       }),
       runCandidate({
         candidateId: 'candidate',
@@ -81,7 +81,7 @@ async function main() {
         modelConfig,
         artifactsDir,
         comparison,
-        autoApprove: options.autoApprove,
+        bypassApprove: options.bypassApprove,
       }),
     ]);
 
@@ -151,7 +151,7 @@ function parseArgs(argv) {
     commit: undefined,
     baselineRef: undefined,
     candidateRef: undefined,
-    autoApprove: false,
+    bypassApprove: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -206,11 +206,11 @@ function parseArgs(argv) {
       case '--candidate-ref':
         options.candidateRef = requiredArgValue(argv, ++index, '--candidate-ref');
         break;
-      case '--auto-approve':
-        options.autoApprove = true;
+      case '--bypass-approve':
+        options.bypassApprove = true;
         break;
       case '--require-approvals':
-        options.autoApprove = false;
+        options.bypassApprove = false;
         break;
       default:
         throw new Error(`未知参数: ${arg}`);
@@ -476,7 +476,7 @@ async function runCandidate(params) {
     getModelCompatibilityProfile: () => resolveOpenAiModelCompatibilityProfile(params.modelConfig),
   });
   const toolExecutor = new EvalHostToolExecutor(hostToolService, tracker, {
-    autoApprove: params.autoApprove,
+    bypassApprove: params.bypassApprove,
     buildBuiltinHostToolDefinitions,
     createToolExecutionTextOutput,
     unknownToolHelpers: {
@@ -655,7 +655,7 @@ class EvalHostToolExecutor {
   constructor(service, tracker, options) {
     this.service = service;
     this.tracker = tracker;
-    this.autoApprove = options.autoApprove;
+    this.bypassApprove = options.bypassApprove;
     this.createToolExecutionTextOutput = options.createToolExecutionTextOutput;
     this.unknownToolHelpers = options.unknownToolHelpers;
     this.hostToolDefinitionsCache = options.buildBuiltinHostToolDefinitions(service.toolDefinitionEnvironment());
@@ -688,11 +688,11 @@ class EvalHostToolExecutor {
 
   async authorize(request) {
     const decision = await this.service.authorize(request);
-    if (decision.kind !== 'need-approval' || !this.autoApprove) {
+    if (decision.kind !== 'need-approval' || !this.bypassApprove) {
       return decision;
     }
 
-    // TODO: 当前 compare runner 只支持“阻塞”或“自动放行”两种审批模式；后续可补交互式 y/n 审批或更细粒度 allowlist。
+    // TODO: 当前 compare runner 只支持“阻塞”或“绕过审批”两种模式；后续可补交互式 y/n 审批或更细粒度 allowlist。
     this.tracker.recordApprovalBypass(request.name, decision.prompt);
     return { kind: 'allowed' };
   }
@@ -815,7 +815,7 @@ class CandidateTracker {
     this.backgroundToolCount = 0;
     this.compactionCount = 0;
     this.streamingEventCount = 0;
-    this.autoApprovalBypassCount = 0;
+    this.bypassApproveCount = 0;
     this.warnings = [];
   }
 
@@ -863,16 +863,16 @@ class CandidateTracker {
   }
 
   recordApprovalBypass(toolName, prompt) {
-    this.autoApprovalBypassCount += 1;
-    this.warnings.push(`auto-approved risky tool ${toolName}`);
-    this.info(`自动批准: ${toolName} | ${truncate(prompt, 120)}`);
+    this.bypassApproveCount += 1;
+    this.warnings.push(`bypass-approved risky tool ${toolName}`);
+    this.info(`绕过审批: ${toolName} | ${truncate(prompt, 120)}`);
   }
 
   buildTraceSummary() {
     const warnings = [...new Set([
       ...this.warnings,
-      ...(this.autoApprovalBypassCount > 0
-        ? [`auto-approved ${this.autoApprovalBypassCount} risky tool call(s)`]
+      ...(this.bypassApproveCount > 0
+        ? [`bypass-approved ${this.bypassApproveCount} risky tool call(s)`]
         : []),
     ])];
     return {
@@ -1194,7 +1194,7 @@ function printHelp() {
   console.log('  --reasoning-effort <v>   例如 low / medium / high');
   console.log('  --output-dir <dir>       必填；本次 compare 的输出根目录，可为一个不存在的新路径或已存在的空目录');
   console.log('  --workspace-source <dir> 复制指定工作区目录到输出目录；默认使用空工作区');
-  console.log('  --auto-approve           显式自动放行高风险工具审批；默认阻塞并将结果记入 artifact');
+  console.log('  --bypass-approve         绕过高风险工具审批；默认阻塞并将结果记入 artifact');
 }
 
 function renderComparisonMode(mode) {
