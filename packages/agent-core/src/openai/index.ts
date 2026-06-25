@@ -12,6 +12,12 @@ export {
   resolveGatewayAnthropicClaudeCapabilities,
 } from './gateway-anthropic-thinking.js';
 export {
+  buildGatewayGoogleProviderOptions,
+  buildGoogleThinkingConfigForEffort,
+  gatewayGoogleGeminiSupportedEfforts,
+  isGatewayGoogleGeminiModel,
+} from './gateway-google-thinking.js';
+export {
   buildOpenRouterClaudeReasoningBody,
   isOpenRouterAnthropicClaudeModel,
   shouldInjectOpenRouterClaudeReasoning,
