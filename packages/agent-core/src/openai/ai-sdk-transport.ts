@@ -85,6 +85,11 @@ import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
 } from './gateway-anthropic-thinking.js';
+import {
+  buildGatewayGoogleProviderOptions,
+  buildGoogleThinkingConfigForEffort,
+  isGatewayGoogleGeminiModel,
+} from './gateway-google-thinking.js';
 import { isOpenRouterAnthropicClaudeModel } from './openrouter-anthropic-reasoning.js';
 import { generateSiliconFlowImage } from '../image-generation/siliconflow-backend.js';
 import { generateVideoWithRouter } from '../video-generation/router.js';
@@ -904,6 +909,10 @@ function buildAiSdkProviderOptions(
     return buildGatewayAnthropicProviderOptions(config);
   }
 
+  if (isVercelAiGatewayProvider(config) && isGatewayGoogleGeminiModel(config.llmVendor, config.model)) {
+    return buildGatewayGoogleProviderOptions(config, openAiReasoningEffort(config));
+  }
+
   if (isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model)) {
     return {};
   }
@@ -964,7 +973,10 @@ function buildAiSdkProviderOptions(
   }
 
   if (isGoogleOfficialAiSdkProvider(config)) {
-    const thinkingConfig = buildGoogleThinkingConfig(config);
+    const thinkingConfig = buildGoogleThinkingConfigForEffort(
+      config.model,
+      openAiReasoningEffort(config),
+    );
     if (thinkingConfig === undefined) {
       return {};
     }
@@ -979,7 +991,10 @@ function buildAiSdkProviderOptions(
   }
 
   if (isGoogleVertexOfficialAiSdkProvider(config)) {
-    const thinkingConfig = buildGoogleThinkingConfig(config);
+    const thinkingConfig = buildGoogleThinkingConfigForEffort(
+      config.model,
+      openAiReasoningEffort(config),
+    );
     if (thinkingConfig === undefined) {
       return {};
     }
@@ -1746,64 +1761,6 @@ function isGoogleOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
 
 function isGoogleVertexOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'google-vertex-ai';
-}
-
-function isGoogleGemini3Model(model: string): boolean {
-  const normalized = model.trim().toLowerCase();
-  return normalized.includes('gemini-3');
-}
-
-function buildGoogleThinkingConfig(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort'>,
-): GoogleGenerativeAIProviderOptions['thinkingConfig'] | undefined {
-  const effort = openAiReasoningEffort(config);
-  if (effort === undefined) {
-    return undefined;
-  }
-
-  if (effort === 'none') {
-    if (isGoogleGemini3Model(config.model)) {
-      return { thinkingLevel: 'minimal' };
-    }
-
-    return { thinkingBudget: 0 };
-  }
-
-  if (isGoogleGemini3Model(config.model)) {
-    if (effort === 'low' || effort === 'medium' || effort === 'high') {
-      return {
-        thinkingLevel: effort,
-        includeThoughts: true,
-      };
-    }
-
-    return undefined;
-  }
-
-  const thinkingBudget = googleGemini25ThinkingBudgetForEffort(effort);
-  if (thinkingBudget === undefined) {
-    return undefined;
-  }
-
-  return {
-    thinkingBudget,
-    includeThoughts: thinkingBudget > 0,
-  };
-}
-
-function googleGemini25ThinkingBudgetForEffort(
-  effort: string,
-): number | undefined {
-  switch (effort) {
-    case 'low':
-      return 1024;
-    case 'medium':
-      return 4096;
-    case 'high':
-      return 8192;
-    default:
-      return undefined;
-  }
 }
 
 function xaiChatReasoningEffort(
