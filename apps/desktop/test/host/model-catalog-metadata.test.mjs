@@ -34,7 +34,7 @@ test('siliconflow provider uses listed model catalog metadata', () => {
     {
       id: 'Wan-AI/Wan2.2-T2V-A14B',
       displayName: 'Wan AI Wan2.2 T2V A14B',
-      capabilities: ['chat', 'videoGeneration'],
+      capabilities: ['videoGeneration'],
     },
   ]);
 });
@@ -214,7 +214,7 @@ test('vercel-ai-gateway provider maps language and image model types to catalog 
     },
     {
       id: 'alibaba/wan-v2.6-text-to-video',
-      capabilities: ['chat', 'videoGeneration'],
+      capabilities: ['videoGeneration'],
     },
   ]);
 });
@@ -392,7 +392,7 @@ test('volcengine provider maps domain-derived traits to catalog capabilities', (
     {
       id: 'doubao-seedance-2-0-260128',
       displayName: 'Doubao Seedance 2 0 260128',
-      capabilities: ['chat', 'videoGeneration'],
+      capabilities: ['videoGeneration'],
     },
     {
       id: 'doubao-seedream-4-0-250828',
