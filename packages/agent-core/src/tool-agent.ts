@@ -229,7 +229,7 @@ export interface ToolAgentToolResult {
   providerState?: JsonObject;
 }
 
-export function buildToolAgentHostPrompt(model: string): string {
+export function buildSpiritAgentCoreHostPrompt(model: string): string {
   const trimmed = model.trim();
   const modelLabel = trimmed.length > 0 ? trimmed : '(not configured)';
   return [
@@ -240,6 +240,12 @@ export function buildToolAgentHostPrompt(model: string): string {
     'When composing replies, follow conventional typography and editorial norms for each language you use (spacing, punctuation, and mixed-script text such as Latin alongside CJK or other scripts).',
     'For CJK text mixed with Latin letters or Arabic numerals, a common readable habit is to insert a single ASCII space at each script boundary where it helps legibility—for example write 「使用 API 调用」 rather than 「使用API调用」; apply the same idea to English names or technical terms embedded in Chinese sentences.',
     '',
+  ].join('\n');
+}
+
+export function buildToolAgentHostPrompt(model: string): string {
+  return [
+    buildSpiritAgentCoreHostPrompt(model),
     'Available tools are defined only by the tools field in this request.',
     'Only call declared functions.',
     'Do not invent tools or capabilities that are not present in the request.',
