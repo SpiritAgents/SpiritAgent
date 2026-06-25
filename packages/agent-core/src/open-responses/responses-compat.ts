@@ -6,6 +6,10 @@ import type {
   OpenAiVideoGenerationConfig,
 } from '../openai/openai-compat.js';
 import { isGatewayAnthropicClaudeModel } from '../openai/gateway-anthropic-thinking.js';
+import {
+  buildOpenRouterClaudeReasoningBody,
+  isOpenRouterAnthropicClaudeModel,
+} from '../openai/openrouter-anthropic-reasoning.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import { extractAzureResourceNameFromApiBase } from '../azure-resource.js';
 import { cloneJsonValue } from '../tool-agent.js';
@@ -211,6 +215,11 @@ export function openResponsesReasoningTrace(
 ): JsonObject | undefined {
   if (isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
     return undefined;
+  }
+
+  if (isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model)) {
+    const reasoning = buildOpenRouterClaudeReasoningBody(config);
+    return reasoning;
   }
 
   const effort = openResponsesReasoningEffort(config);
