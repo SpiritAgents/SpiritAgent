@@ -1,22 +1,16 @@
 import { workspaceFileBasename } from "@/lib/file-picker-path";
-import { GITHUB_PR_CLOSED_CHIP_CLASS } from "@/lib/github-pr-merged-badge-styles";
+import {
+  COMPOSER_INLINE_CHIP_CLASS,
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+} from "@/lib/composer-inline-chip-styles";
 import type { PrDiffAttachment, PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 
-const PR_DIFF_CHIP_BASE =
-  "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium leading-none select-none align-middle mx-0.5";
+export const PR_DIFF_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
 
-export function prDiffChipClassForStatus(status: PullRequestChipStatus): string {
-  switch (status) {
-    case "merged":
-      return `${PR_DIFF_CHIP_BASE} border-transparent bg-[#7954dc]/15 text-[#575786] dark:bg-[#855ae8]/22 dark:text-[#7574a6]`;
-    case "closed":
-      return `${PR_DIFF_CHIP_BASE} ${GITHUB_PR_CLOSED_CHIP_CLASS}`;
-    case "draft":
-      return `${PR_DIFF_CHIP_BASE} border-border/50 bg-background text-foreground/75 dark:border-white/10 dark:bg-input/30 dark:text-foreground/70`;
-    case "open":
-    default:
-      return `${PR_DIFF_CHIP_BASE} border-transparent bg-[#1a7f37]/15 text-[#296837] dark:bg-[#238636]/22 dark:text-[#57a773]`;
-  }
+export const PR_DIFF_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;
+
+export function prDiffChipClassForStatus(_status: PullRequestChipStatus): string {
+  return PR_DIFF_CHIP_CLASS;
 }
 
 export function formatPrDiffChipLabel(
@@ -89,6 +83,7 @@ export function makePrDiffChipNode(attachment: PrDiffAttachment, doc: Document):
   icon.setAttribute("stroke-width", "2");
   icon.setAttribute("stroke-linecap", "round");
   icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("class", PR_DIFF_CHIP_ICON_CLASS);
   icon.setAttribute("aria-hidden", "true");
   icon.innerHTML = prDiffIconPaths(attachment.status);
   span.appendChild(icon);

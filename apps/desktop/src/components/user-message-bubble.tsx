@@ -27,6 +27,7 @@ import {
   formatPrDiffChipLabel,
   formatPrDiffChipTitle,
   prDiffChipClassForStatus,
+  PR_DIFF_CHIP_ICON_CLASS,
 } from "@/lib/github-pr-diff-chip-styles";
 import {
   formatFileSnippetChipLabel,
@@ -113,7 +114,7 @@ function PrDiffCard({
       })}
       className={prDiffChipClassForStatus(part.status)}
     >
-      <Icon className="size-[10px] shrink-0" aria-hidden />
+      <Icon className={cn("size-[10px] shrink-0", PR_DIFF_CHIP_ICON_CLASS)} aria-hidden />
       {formatPrDiffChipLabel(part.filename, part.lineStart, part.lineEnd)}
     </span>
   );
