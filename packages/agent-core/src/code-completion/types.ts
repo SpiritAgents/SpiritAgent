@@ -33,3 +33,14 @@ export interface InlineCompletionMapContext {
   cursorLine: number;
   cursorColumn: number;
 }
+
+/** Delete-span diff preview for Monaco (red highlight + side preview). */
+export interface InlineDeleteDiffPreviewSpec {
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+  deletedText: string;
+  previewText: string;
+  anchorLineNumber: number;
+}
