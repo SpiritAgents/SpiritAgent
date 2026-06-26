@@ -1,9 +1,13 @@
+import {
+  COMPOSER_INLINE_CHIP_CLASS,
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+} from "@/lib/composer-inline-chip-styles";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 
-/** File snippet chip: structure aligned with terminal chip, emerald tint to distinguish from @file refs. */
-export const FILE_SNIPPET_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md border border-emerald-200/70 bg-emerald-50/80 px-1.5 py-0.5 text-xs font-medium leading-none text-emerald-900 select-none align-middle mx-0.5 dark:border-emerald-700/50 dark:bg-emerald-950/80 dark:text-emerald-300";
+export const FILE_SNIPPET_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
+
+export const FILE_SNIPPET_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;
 
 export function formatFileSnippetChipLabel(
   filePath: string,
@@ -55,6 +59,7 @@ export function makeFileSnippetChipNode(attachment: FileSnippetAttachment, doc: 
   icon.setAttribute("stroke-width", "2");
   icon.setAttribute("stroke-linecap", "round");
   icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("class", FILE_SNIPPET_CHIP_ICON_CLASS);
   icon.setAttribute("aria-hidden", "true");
   icon.innerHTML = FILE_SNIPPET_ICON_PATH;
   span.appendChild(icon);

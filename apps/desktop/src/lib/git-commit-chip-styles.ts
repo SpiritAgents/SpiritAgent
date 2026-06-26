@@ -1,5 +1,12 @@
-import { PLAN_CHIP_CLASS, PLAN_CHIP_ICON_CLASS } from "@/lib/plan-chip-styles";
+import {
+  COMPOSER_INLINE_CHIP_CLASS,
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+} from "@/lib/composer-inline-chip-styles";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
+
+export const GIT_COMMIT_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
+
+export const GIT_COMMIT_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;
 
 const GIT_COMMIT_ICON_PATH =
   '<circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/>';
@@ -29,7 +36,7 @@ export function makeGitCommitChipNode(attachment: GitCommitAttachment, doc: Docu
   span.dataset.gitCommitAuthoredAt = attachment.authoredAt;
   span.dataset.gitCommitFullMessage = attachment.fullMessage;
   span.title = formatGitCommitChipTitle(attachment);
-  span.className = PLAN_CHIP_CLASS;
+  span.className = GIT_COMMIT_CHIP_CLASS;
   span.setAttribute(
     "aria-label",
     formatGitCommitChipLabel(attachment.subject),
@@ -44,7 +51,7 @@ export function makeGitCommitChipNode(attachment: GitCommitAttachment, doc: Docu
   icon.setAttribute("stroke-width", "2");
   icon.setAttribute("stroke-linecap", "round");
   icon.setAttribute("stroke-linejoin", "round");
-  icon.setAttribute("class", PLAN_CHIP_ICON_CLASS);
+  icon.setAttribute("class", GIT_COMMIT_CHIP_ICON_CLASS);
   icon.setAttribute("aria-hidden", "true");
   icon.innerHTML = GIT_COMMIT_ICON_PATH;
 

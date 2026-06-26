@@ -3,15 +3,18 @@ import {
   normalizeWorkspaceReferenceDirectoryPath,
 } from '@spirit-agent/host-internal/workspace-file-reference-query';
 import { workspaceFileBasename } from '@/lib/file-picker-path';
+import {
+  COMPOSER_INLINE_CHIP_CLASS,
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+} from '@/lib/composer-inline-chip-styles';
 import { PLAN_CHIP_CLASS, PLAN_CHIP_ICON_CLASS } from '@/lib/plan-chip-styles';
 import { appendWorkspaceExplorerIconSvg } from '@/lib/workspace-explorer-icon-dom';
 import type { WorkspaceExplorerEntryKind } from '@/types';
 
-/** 工作区 @file 引用 chip，尺寸与元素 chip 对齐 */
-export const WORKSPACE_FILE_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md border border-emerald-200/90 bg-emerald-50 px-1.5 py-0.5 text-xs font-medium leading-none text-emerald-900 select-none align-middle mx-0.5 dark:border-emerald-700/60 dark:bg-emerald-950 dark:text-emerald-300";
+/** 工作区 @file 引用 chip（文件路径；目录 chip 仍走 Plan 样式） */
+export const WORKSPACE_FILE_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
 
-export const WORKSPACE_FILE_CHIP_ICON_CLASS = "text-emerald-600 dark:text-emerald-400";
+export const WORKSPACE_FILE_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;
 
 export function isWorkspaceDirectoryChipPath(path: string): boolean {
   return isWorkspaceReferenceDirectoryPath(path.replace(/\\/gu, '/'));

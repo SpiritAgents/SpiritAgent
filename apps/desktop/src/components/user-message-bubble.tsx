@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { GitCommit, GitMerge, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft, PenTool, Terminal, FileText } from "lucide-react";
 
 import { BROWSER_ELEMENT_CHIP_CLASS } from "@/components/browser-element-card";
+import { BROWSER_ELEMENT_CHIP_ICON_CLASS } from "@/lib/browser-element-chip-styles";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import {
@@ -19,8 +20,9 @@ import {
 import {
   formatGitCommitChipLabel,
   formatGitCommitChipTitle,
+  GIT_COMMIT_CHIP_CLASS,
+  GIT_COMMIT_CHIP_ICON_CLASS,
 } from "@/lib/git-commit-chip-styles";
-import { PLAN_CHIP_CLASS, PLAN_CHIP_ICON_CLASS } from "@/lib/plan-chip-styles";
 import {
   formatPrDiffChipLabel,
   formatPrDiffChipTitle,
@@ -30,11 +32,13 @@ import {
   formatFileSnippetChipLabel,
   formatFileSnippetChipTitle,
   FILE_SNIPPET_CHIP_CLASS,
+  FILE_SNIPPET_CHIP_ICON_CLASS,
 } from "@/lib/file-snippet-chip-styles";
 import {
   formatTerminalChipLabel,
   formatTerminalChipTitle,
   TERMINAL_CHIP_CLASS,
+  TERMINAL_CHIP_ICON_CLASS,
 } from "@/lib/terminal-chip-styles";
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
@@ -50,7 +54,7 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
       title={url}
       className={BROWSER_ELEMENT_CHIP_CLASS}
     >
-      <PenTool className="size-[10px] shrink-0" aria-hidden />
+      <PenTool className={cn("size-[10px] shrink-0", BROWSER_ELEMENT_CHIP_ICON_CLASS)} aria-hidden />
       {`<${tagName}>`}
     </span>
   );
@@ -131,7 +135,7 @@ function TerminalCard({
       })}
       className={TERMINAL_CHIP_CLASS}
     >
-      <Terminal className="size-[10px] shrink-0" aria-hidden />
+      <Terminal className={cn("size-[10px] shrink-0", TERMINAL_CHIP_ICON_CLASS)} aria-hidden />
       {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
     </span>
   );
@@ -153,7 +157,7 @@ function FileSnippetCard({
       })}
       className={FILE_SNIPPET_CHIP_CLASS}
     >
-      <FileText className="size-[10px] shrink-0" aria-hidden />
+      <FileText className={cn("size-[10px] shrink-0", FILE_SNIPPET_CHIP_ICON_CLASS)} aria-hidden />
       {formatFileSnippetChipLabel(part.filePath, part.lineStart, part.lineEnd)}
     </span>
   );
@@ -174,9 +178,9 @@ function GitCommitCard({
         authoredAt: part.authoredAt,
         fullMessage: part.fullMessage,
       })}
-      className={PLAN_CHIP_CLASS}
+      className={GIT_COMMIT_CHIP_CLASS}
     >
-      <GitCommit className={cn("size-[10px] shrink-0", PLAN_CHIP_ICON_CLASS)} aria-hidden />
+      <GitCommit className={cn("size-[10px] shrink-0", GIT_COMMIT_CHIP_ICON_CLASS)} aria-hidden />
       {formatGitCommitChipLabel(part.subject)}
     </span>
   );
