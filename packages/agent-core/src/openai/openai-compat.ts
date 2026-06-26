@@ -1,5 +1,5 @@
 import type { JsonObject, JsonValue } from '../ports.js';
-import type { LlmModelCapabilities } from '../llm-provider-shared.js';
+import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import { cloneJsonValue } from '../tool-agent.js';
 import {
@@ -110,6 +110,8 @@ export interface OpenAiTransportConfig {
   vertexClientEmail?: string;
   /** 服务账号 `private_key`（与 `vertexClientEmail` 成对）。 */
   vertexPrivateKey?: string;
+  /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
+  transportRequestProfile?: TransportRequestProfile;
   /**
    * 透传 `createVertex` 的 `googleAuthOptions`（如 ADC 自定义或测试用 `authClient`）。
    * 若已设置 `vertexClientEmail` / `vertexPrivateKey`，宿主构建的 credentials 优先于此字段。
