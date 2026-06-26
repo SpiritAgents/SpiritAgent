@@ -16,6 +16,7 @@ const OPENAI_COMPAT_THINKING_TYPE_VENDORS = new Set<OpenAiLlmVendor>([
   'deepseek',
   'moonshot-ai',
   'z-ai',
+  'zhipu-ai',
 ]);
 
 export function isCodeCompletionTransportProfile(
