@@ -102,6 +102,7 @@ import { getLlmFetch } from '../llm-fetch.js';
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
+  shouldPatchAlibabaChatCompletionsExtraBody,
   shouldUseAlibabaChatCompletionsBuiltInTools,
 } from '../open-responses/alibaba-built-in-tools.js';
 import {
@@ -878,7 +879,7 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
 }
 
 function createAiSdkAlibabaProvider(config: OpenAiTransportConfig) {
-  const fetchWrapper = shouldUseAlibabaChatCompletionsBuiltInTools(config)
+  const fetchWrapper = shouldPatchAlibabaChatCompletionsExtraBody(config)
     ? createAlibabaChatCompletionsAwareFetch(config, getLlmFetch())
     : getLlmFetch();
 
@@ -927,6 +928,14 @@ function buildAiSdkProviderOptions(
   }
 
   if (isAlibabaOfficialAiSdkProvider(config)) {
+    if (isCodeCompletionTransportProfile(config)) {
+      return {
+        alibaba: {
+          enable_thinking: false,
+        } as JsonObject,
+      };
+    }
+
     const extraBody = shouldUseAlibabaChatCompletionsBuiltInTools(config)
       ? buildAlibabaChatCompletionsExtraBody({ streaming: true })
       : undefined;
