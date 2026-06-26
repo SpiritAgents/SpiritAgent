@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { parseOpenAiModelsPayload, parseXiaomiModelEntriesPayload } from '../openai-models.js';
+import { parseMinimaxModelEntriesPayload, parseOpenAiModelsPayload, parseXiaomiModelEntriesPayload } from '../openai-models.js';
 
 function run(): void {
   assert.deepEqual(parseOpenAiModelsPayload(undefined), []);
@@ -30,6 +30,17 @@ function run(): void {
     [
       { id: 'mimo-v2.5', supportsImageInput: true, supportsVideoInput: true },
       { id: 'mimo-v2-flash', supportsImageInput: false, supportsVideoInput: false },
+    ],
+  );
+
+  assert.deepEqual(
+    parseMinimaxModelEntriesPayload({
+      object: 'list',
+      data: [{ id: 'MiniMax-M3' }, { id: 'MiniMax-M2.5' }],
+    }),
+    [
+      { id: 'MiniMax-M3', supportsImageInput: true, supportsVideoInput: true },
+      { id: 'MiniMax-M2.5', supportsImageInput: false, supportsVideoInput: false },
     ],
   );
 
