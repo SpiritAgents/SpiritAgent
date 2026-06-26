@@ -1010,6 +1010,7 @@ export function WorkspaceFilesTab({
                           content={draftText}
                           className="text-sm"
                           allowHtml
+                          singleLineBreaks={false}
                           readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
                         />
                       ) : (
