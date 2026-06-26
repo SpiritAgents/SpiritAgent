@@ -50,3 +50,18 @@ test('Zhipu AI code-completion profile disables thinking via request body extras
     },
   );
 });
+
+test('MiniMax code-completion profile disables thinking via request body extras', () => {
+  const config = applyCodeCompletionTransportProfile({
+    apiKey: 'k',
+    model: 'MiniMax-M3',
+    llmVendor: 'minimax',
+  });
+
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras(config as import('./openai-compat.js').OpenAiTransportConfig),
+    {
+      thinking: { type: 'disabled' },
+    },
+  );
+});
