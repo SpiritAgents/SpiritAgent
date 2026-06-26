@@ -56,6 +56,9 @@ test('buildCodeCompletionTaskPrompt constrains inline replace near cursor', () =
   assert.match(task, /include the cursor/);
   assert.match(task, /Insert may be multi-line ghost text/);
   assert.match(task, /Never duplicate the current line/);
+  assert.match(task, /red delete highlight and a green side preview/);
+  assert.match(task, /Multi-line delete is supported/);
+  assert.match(task, /use delete only for pure removal/);
 });
 
 test('buildCodeCompletionTaskPrompt biases toward offering completions', () => {
