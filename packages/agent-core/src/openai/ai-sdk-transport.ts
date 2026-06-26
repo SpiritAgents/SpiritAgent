@@ -99,6 +99,10 @@ import {
   isMoonshotThinkingSwitchModel,
 } from './moonshot-thinking-switch.js';
 import {
+  buildGatewayXiaomiProviderOptions,
+  isGatewayXiaomiModel,
+} from './gateway-xiaomi-thinking.js';
+import {
   buildGatewayGoogleProviderOptions,
   buildGoogleThinkingConfigForEffort,
   isGatewayGoogleGeminiModel,
@@ -940,6 +944,13 @@ function buildAiSdkProviderOptions(
     const moonshotOptions = buildGatewayMoonshotProviderOptions(config);
     if (Object.keys(moonshotOptions).length > 0) {
       return moonshotOptions;
+    }
+  }
+
+  if (isVercelAiGatewayProvider(config) && isGatewayXiaomiModel(config.llmVendor, config.model)) {
+    const xiaomiOptions = buildGatewayXiaomiProviderOptions(config);
+    if (Object.keys(xiaomiOptions).length > 0) {
+      return xiaomiOptions;
     }
   }
 

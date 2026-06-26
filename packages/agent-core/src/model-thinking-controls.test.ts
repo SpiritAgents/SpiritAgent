@@ -120,13 +120,23 @@ test('Gateway Moonshot kimi-k2.5 supports thinking switch', () => {
   assert.equal(modelShowsReasoningEffortControl(context, false), false);
 });
 
-test('Gateway Moonshot kimi-k2.7-code uses reasoning effort primary control', () => {
+test('Gateway Xiaomi mimo-v2.5 supports thinking switch', () => {
   const context = {
     provider: 'vercel-ai-gateway' as const,
-    model: 'moonshotai/kimi-k2.7-code',
-    transportKind: 'open-responses' as const,
+    model: 'xiaomi/mimo-v2.5',
+    transportKind: 'openai-compatible' as const,
   };
-  assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
+  assert.equal(modelSupportsThinkingSwitch(context), true);
+  assert.equal(modelShowsReasoningEffortControl(context, false), false);
+  assert.equal(shouldPinReasoningEffortToDefault(false, context), true);
+});
+
+test('Gateway Xiaomi mimo-v2-flash has no thinking switch', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'xiaomi/mimo-v2-flash',
+    transportKind: 'openai-compatible' as const,
+  };
   assert.equal(modelSupportsThinkingSwitch(context), false);
 });
 
