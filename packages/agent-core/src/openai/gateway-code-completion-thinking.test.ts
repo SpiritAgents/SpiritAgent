@@ -126,7 +126,7 @@ test('buildGatewayCodeCompletionProviderOptions routes zai alibaba minimax xiaom
     }),
     {
       alibaba: {
-        enable_thinking: false,
+        enableThinking: false,
       },
     },
   );

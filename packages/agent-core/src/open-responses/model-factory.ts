@@ -29,6 +29,10 @@ import {
   shouldUseOpenAiSdkApplyPatchTool,
 } from './apply-patch-eligibility.js';
 import {
+  buildGatewayAlibabaProviderOptions,
+  isGatewayAlibabaModel,
+} from '../openai/gateway-alibaba-thinking.js';
+import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
 } from '../openai/gateway-anthropic-thinking.js';
@@ -271,6 +275,13 @@ export function buildResponsesProviderOptions(
       if (Object.keys(zaiOptions).length > 0) {
         // Gateway Z.ai 在 open-responses transport 下上游不返回可展示思考流；见 #169。
         return zaiOptions;
+      }
+    }
+
+    if (isGatewayAlibabaModel(config.llmVendor, config.model)) {
+      const alibabaOptions = buildGatewayAlibabaProviderOptions(config);
+      if (Object.keys(alibabaOptions).length > 0) {
+        return alibabaOptions;
       }
     }
 
