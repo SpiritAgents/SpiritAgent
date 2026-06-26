@@ -48,6 +48,7 @@ test('resolveMinimaxVideoInAnthropicMessages uploads local video_url to mm_file 
     );
 
     const part = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content[0];
+    assert.ok(part);
     assert.equal(part.video_url.url, 'mm_file://file-video-1');
   } finally {
     setLlmFetchTransportOverrideForTests(undefined);
@@ -78,6 +79,7 @@ test('resolveMinimaxVideoInAnthropicMessages skips when videoInput is disabled',
   );
 
   const part = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content[0];
+  assert.ok(part);
   assert.equal(part.video_url.url, 'clip.mp4');
 });
 
@@ -113,6 +115,7 @@ test('resolveMinimaxVideoUrlsInOpenAiMessages uploads for minimax vendor with vi
     );
 
     const part = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content[0];
+    assert.ok(part);
     assert.equal(part.video_url.url, 'mm_file://file-openai-1');
   } finally {
     setLlmFetchTransportOverrideForTests(undefined);
