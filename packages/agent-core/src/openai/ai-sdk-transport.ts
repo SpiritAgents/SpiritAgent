@@ -936,18 +936,25 @@ function buildAiSdkProviderOptions(
       };
     }
 
+    const alibabaOptions: JsonObject = {};
+    if (config.vendorExtendedThinking === false) {
+      alibabaOptions.enable_thinking = false;
+    }
+
     const extraBody = shouldUseAlibabaChatCompletionsBuiltInTools(config)
       ? buildAlibabaChatCompletionsExtraBody({ streaming: true })
       : undefined;
 
-    if (extraBody === undefined) {
+    if (extraBody !== undefined) {
+      alibabaOptions.extraBody = extraBody;
+    }
+
+    if (Object.keys(alibabaOptions).length === 0) {
       return {};
     }
 
     return {
-      alibaba: {
-        extraBody,
-      } as JsonObject,
+      alibaba: alibabaOptions,
     };
   }
 
