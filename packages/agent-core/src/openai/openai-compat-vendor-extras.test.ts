@@ -66,6 +66,30 @@ test('MiniMax code-completion profile disables thinking via request body extras'
   );
 });
 
+test('MiniMax M3 agent profile sends adaptive thinking when vendorExtendedThinking enabled', () => {
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'minimax',
+      model: 'MiniMax-M3',
+      vendorExtendedThinking: true,
+    }),
+    {
+      thinking: { type: 'adaptive' },
+    },
+  );
+});
+
+test('MiniMax M2.5 agent profile omits thinking.type', () => {
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'minimax',
+      model: 'MiniMax-M2.5',
+      vendorExtendedThinking: true,
+    }),
+    {},
+  );
+});
+
 test('Xiaomi code-completion profile disables thinking via request body extras', () => {
   const config = applyCodeCompletionTransportProfile({
     apiKey: 'k',

@@ -2,6 +2,7 @@ import type { JsonObject, JsonValue } from '../ports.js';
 import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import { cloneJsonValue } from '../tool-agent.js';
+import { isMinimaxM3ThinkingSwitchModel } from './gateway-minimax-thinking.js';
 import {
   buildOpenRouterClaudeReasoningBody,
   isOpenRouterAnthropicClaudeModel,
@@ -205,11 +206,13 @@ export function openAiVendorChatCompletionBodyExtras(
   config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking' | 'transportRequestProfile'>,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (
+  if (config.llmVendor === 'minimax' && isMinimaxM3ThinkingSwitchModel(config.model)) {
+    const enabled = config.vendorExtendedThinking !== false;
+    extras.thinking = { type: enabled ? 'adaptive' : 'disabled' };
+  } else if (
     config.llmVendor === 'deepseek'
     || config.llmVendor === 'z-ai'
     || config.llmVendor === 'zhipu-ai'
-    || config.llmVendor === 'minimax'
     || config.llmVendor === 'xiaomi'
     || config.llmVendor === 'volcengine'
   ) {
