@@ -15,7 +15,7 @@ import {
   type MarkdownTone,
 } from "@/lib/markdown-message-components";
 import { createSpiritMermaidPlugin } from "@/lib/markdown-mermaid-theme";
-import { spiritRemarkPluginsForStreamdown } from "@/lib/markdown-remark-plugins";
+import { createSpiritRemarkPluginsForStreamdown } from "@/lib/markdown-remark-plugins";
 import { streamdownRehypePlugins } from "@/lib/markdown-streamdown-plugins";
 import { streamdownUrlTransform } from "@/lib/markdown-url-transform";
 
@@ -40,6 +40,7 @@ export type SpiritStreamdownMarkdownProps = {
   tone?: MarkdownTone;
   size?: MarkdownSize;
   allowHtml?: boolean;
+  singleLineBreaks?: boolean;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
   readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl;
   BlockComponent?: ComponentType<BlockProps>;
@@ -54,6 +55,7 @@ export function SpiritStreamdownMarkdown({
   tone = "default",
   size = "default",
   allowHtml = false,
+  singleLineBreaks = true,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
   BlockComponent,
@@ -70,6 +72,11 @@ export function SpiritStreamdownMarkdown({
       renderers: [createMarkdownMermaidRenderer(resolvedDark)],
     }),
     [resolvedDark],
+  );
+
+  const remarkPlugins = useMemo(
+    () => createSpiritRemarkPluginsForStreamdown({ singleLineBreaks }),
+    [singleLineBreaks],
   );
 
   const components = useMemo(
@@ -97,7 +104,7 @@ export function SpiritStreamdownMarkdown({
       className={markdownMessageRootClassName(tone, className, size)}
       mode={streaming ? "streaming" : "static"}
       plugins={streamdownPlugins}
-      remarkPlugins={spiritRemarkPluginsForStreamdown}
+      remarkPlugins={remarkPlugins}
       components={components}
       urlTransform={streamdownUrlTransform}
       rehypePlugins={streamdownRehypePlugins}
