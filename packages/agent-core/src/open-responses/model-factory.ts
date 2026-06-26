@@ -17,6 +17,7 @@ import {
   wrapFetchForBedrockMantleIamAuth,
 } from './bedrock-mantle-auth-fetch.js';
 import { shouldUseAlibabaResponsesBuiltInTools } from './alibaba-built-in-tools.js';
+import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import {
   buildResponsesAiSdkTools,
   type OpenAiFunctionToolDefinition,
@@ -270,7 +271,7 @@ export function buildResponsesProviderOptions(
     };
 
     if (config.llmVendor === 'alibaba') {
-      providerOptions.enable_thinking = true;
+      providerOptions.enable_thinking = !isCodeCompletionTransportProfile(config);
     }
 
     if (Object.keys(providerOptions).length === 0) {
