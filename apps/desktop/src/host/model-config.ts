@@ -1,10 +1,10 @@
 import {
+  applyCodeCompletionTransportProfile,
   resolveOpenResponsesReasoningSummary,
   type AnthropicTransportConfig,
   type LlmModelCapabilities,
   type LlmTransportConfig,
   type OpenResponsesSdkProvider,
-  isOpenAiCompatibleTransportConfig,
 } from '@spirit-agent/core';
 import {
   resolveAnthropicTransportReasoningEffortForContext,
@@ -405,33 +405,11 @@ export function buildPrimaryTransportConfig(input: {
   };
 }
 
-/** DeepSeek / Moonshot 等 Anthropic 风格 thinking 默认开启；代码补全需显式 disabled 以降低延迟。 */
-const CODE_COMPLETION_DISABLE_VENDOR_EXTENDED_THINKING_PROVIDERS: readonly DesktopModelProvider[] = [
-  'deepseek',
-  'moonshot-ai',
-];
-
-export function codeCompletionShouldDisableVendorExtendedThinking(
-  provider: DesktopModelProvider | undefined,
-): boolean {
-  return provider !== undefined && CODE_COMPLETION_DISABLE_VENDOR_EXTENDED_THINKING_PROVIDERS.includes(provider);
-}
-
-/** 代码补全走轻量模型；DeepSeek / Moonshot AI 默认关闭 thinking 以降低延迟。 */
+/** 代码补全走轻量模型；关闭思考策略由 agent-core transport-profile 统一处理。 */
 export function buildCodeCompletionTransportConfig(
   input: Parameters<typeof buildPrimaryTransportConfig>[0],
 ): LlmTransportConfig {
-  const transportConfig = buildPrimaryTransportConfig(input);
-  if (
-    !codeCompletionShouldDisableVendorExtendedThinking(input.profile?.provider) ||
-    !isOpenAiCompatibleTransportConfig(transportConfig)
-  ) {
-    return transportConfig;
-  }
-  return {
-    ...transportConfig,
-    vendorExtendedThinking: false,
-  };
+  return applyCodeCompletionTransportProfile(buildPrimaryTransportConfig(input));
 }
 
 export function modelCapabilitiesFromConfig(

@@ -1,0 +1,75 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import {
+  applyCodeCompletionTransportProfile,
+  isCodeCompletionTransportProfile,
+} from './transport-profile.js';
+import type { AnthropicTransportConfig } from '../anthropic/anthropic-compat.js';
+import type { BedrockTransportConfig } from '../bedrock/bedrock-compat.js';
+import type { OpenAiTransportConfig } from '../openai/openai-compat.js';
+import type { OpenResponsesTransportConfig } from '../open-responses/responses-compat.js';
+
+test('isCodeCompletionTransportProfile matches code-completion only', () => {
+  assert.equal(isCodeCompletionTransportProfile({ transportRequestProfile: 'code-completion' }), true);
+  assert.equal(isCodeCompletionTransportProfile({ transportRequestProfile: 'agent' }), false);
+  assert.equal(isCodeCompletionTransportProfile({}), false);
+});
+
+test('applyCodeCompletionTransportProfile tags openai-compatible and disables DeepSeek thinking', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'deepseek-v4-flash',
+    llmVendor: 'deepseek',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
+});
+
+test('applyCodeCompletionTransportProfile disables Moonshot thinking', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'kimi-k2.5',
+    llmVendor: 'moonshot-ai',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
+});
+
+test('applyCodeCompletionTransportProfile leaves unrelated openai-compatible vendors unchanged except profile tag', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'gpt-4o-mini',
+    llmVendor: 'openai',
+    reasoningEffort: 'medium',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, undefined);
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'medium');
+});
+
+test('applyCodeCompletionTransportProfile tags anthropic, open-responses, and bedrock transports', () => {
+  const anthropic: AnthropicTransportConfig = {
+    transportKind: 'anthropic',
+    apiKey: 'k',
+    model: 'claude-sonnet-4-6',
+  };
+  const openResponses: OpenResponsesTransportConfig = {
+    transportKind: 'open-responses',
+    apiKey: 'k',
+    model: 'gpt-5',
+    llmVendor: 'openai',
+  };
+  const bedrock: BedrockTransportConfig = {
+    transportKind: 'bedrock',
+    model: 'anthropic.claude-sonnet-4-6',
+    region: 'us-east-1',
+  };
+
+  assert.equal(applyCodeCompletionTransportProfile(anthropic).transportRequestProfile, 'code-completion');
+  assert.equal(applyCodeCompletionTransportProfile(openResponses).transportRequestProfile, 'code-completion');
+  assert.equal(applyCodeCompletionTransportProfile(bedrock).transportRequestProfile, 'code-completion');
+});

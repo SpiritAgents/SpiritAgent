@@ -99,6 +99,7 @@ test('buildCodeCompletionTransportConfig disables DeepSeek thinking', () => {
   });
   assert.equal(config.llmVendor, 'deepseek');
   assert.equal(config.vendorExtendedThinking, false);
+  assert.equal(config.transportRequestProfile, 'code-completion');
 });
 
 test('buildCodeCompletionTransportConfig disables Moonshot AI thinking', () => {
@@ -115,6 +116,7 @@ test('buildCodeCompletionTransportConfig disables Moonshot AI thinking', () => {
   });
   assert.equal(config.llmVendor, 'moonshot-ai');
   assert.equal(config.vendorExtendedThinking, false);
+  assert.equal(config.transportRequestProfile, 'code-completion');
 });
 
 test('buildCodeCompletionTransportConfig leaves other providers unchanged', () => {
@@ -130,4 +132,5 @@ test('buildCodeCompletionTransportConfig leaves other providers unchanged', () =
     },
   });
   assert.equal(config.vendorExtendedThinking, undefined);
+  assert.equal(config.transportRequestProfile, 'code-completion');
 });
