@@ -227,7 +227,9 @@ function reviewActionKey(state: GitHubPullRequestReviewState): string {
 function ReviewTimelineRow({ item }: { item: GitHubPullRequestConversationReview }) {
   const { t } = useTranslation();
   const Icon = reviewStateIcon(item.state);
-  const cardText = item.body?.trim() || t(reviewActionKey(item.state));
+  const body = item.body?.trim() ?? "";
+  const showSummaryCard = body.length > 0 || item.threads.length === 0;
+  const cardText = body || t(reviewActionKey(item.state));
 
   return (
     <PrConversationTimelineShell node={<PrConversationTimelineNode icon={Icon} />}>
@@ -236,13 +238,15 @@ function ReviewTimelineRow({ item }: { item: GitHubPullRequestConversationReview
         avatarUrl={item.avatarUrl}
         createdAt={item.createdAt}
       />
-      <PrConversationCommentCard>
-        {item.body?.trim() ? (
-          <WorkspacePrMarkdown content={item.body} />
-        ) : (
-          <p className="text-xs leading-relaxed text-foreground/80">{cardText}</p>
-        )}
-      </PrConversationCommentCard>
+      {showSummaryCard ? (
+        <PrConversationCommentCard>
+          {body ? (
+            <WorkspacePrMarkdown content={item.body} />
+          ) : (
+            <p className="text-xs leading-relaxed text-foreground/80">{cardText}</p>
+          )}
+        </PrConversationCommentCard>
+      ) : null}
       {item.threads.length > 0 ? (
         <div className="mt-2 space-y-2">
           {item.threads.map((thread) => (
