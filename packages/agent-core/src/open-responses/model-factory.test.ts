@@ -142,6 +142,23 @@ test('buildResponsesProviderOptions maps gateway xai reasoning via xai namespace
   );
 });
 
+test('buildResponsesProviderOptions maps gateway alibaba qwen to enable_thinking false', () => {
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: 'open-responses',
+      apiKey: 'test-key',
+      model: 'alibaba/qwen3-max',
+      llmVendor: 'vercel-ai-gateway',
+      vendorExtendedThinking: false,
+    }),
+    {
+      alibaba: {
+        enableThinking: false,
+      },
+    },
+  );
+});
+
 test('buildResponsesProviderOptions maps gateway anthropic claude to adaptive thinking', () => {
   assert.deepEqual(
     buildResponsesProviderOptions({

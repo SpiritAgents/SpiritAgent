@@ -5,6 +5,7 @@ import {
   buildGatewayGoogleProviderOptions,
   isGatewayGoogleGeminiModel,
 } from './gateway-google-thinking.js';
+import { buildGatewayAlibabaProviderOptions } from './gateway-alibaba-thinking.js';
 import { isGatewayAnthropicClaudeModel } from './gateway-anthropic-thinking.js';
 
 /** 解析 Gateway 模型 ID 的上游 slug，如 `deepseek/deepseek-v3` → `deepseek`。 */
@@ -81,11 +82,10 @@ export function buildGatewayCodeCompletionProviderOptions(
     case 'zai':
       return thinkingTypeDisabledOptions('zai');
     case 'alibaba':
-      return {
-        alibaba: {
-          enable_thinking: false,
-        },
-      };
+      return buildGatewayAlibabaProviderOptions({
+        ...config,
+        vendorExtendedThinking: false,
+      });
     case 'minimax':
       return thinkingTypeDisabledOptions('minimax');
     case 'xiaomi':

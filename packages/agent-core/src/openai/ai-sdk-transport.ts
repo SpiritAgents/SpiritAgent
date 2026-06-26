@@ -81,6 +81,10 @@ import {
   type OpenAiVideoGenerationConfig,
 } from './openai-compat.js';
 import {
+  buildGatewayAlibabaProviderOptions,
+  isGatewayAlibabaModel,
+} from './gateway-alibaba-thinking.js';
+import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
 } from './gateway-anthropic-thinking.js';
@@ -969,6 +973,13 @@ function buildAiSdkProviderOptions(
     }
   }
 
+  if (isVercelAiGatewayProvider(config) && isGatewayAlibabaModel(config.llmVendor, config.model)) {
+    const alibabaOptions = buildGatewayAlibabaProviderOptions(config);
+    if (Object.keys(alibabaOptions).length > 0) {
+      return alibabaOptions;
+    }
+  }
+
   if (isVercelAiGatewayProvider(config) && isGatewayXaiModel(config.llmVendor, config.model)) {
     const xaiOptions = buildGatewayXaiProviderOptions(
       config.llmVendor,
@@ -988,14 +999,14 @@ function buildAiSdkProviderOptions(
     if (isCodeCompletionTransportProfile(config)) {
       return {
         alibaba: {
-          enable_thinking: false,
+          enableThinking: false,
         } as JsonObject,
       };
     }
 
     const alibabaOptions: JsonObject = {};
     if (config.vendorExtendedThinking === false) {
-      alibabaOptions.enable_thinking = false;
+      alibabaOptions.enableThinking = false;
     }
 
     const extraBody = shouldUseAlibabaChatCompletionsBuiltInTools(config)
