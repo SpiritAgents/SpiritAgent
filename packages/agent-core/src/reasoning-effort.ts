@@ -7,7 +7,10 @@ import {
 import { parseGatewayUpstreamSlug } from './openai/gateway-code-completion-thinking.js';
 import { isGatewayGoogleGeminiModel } from './openai/gateway-google-thinking.js';
 import { isOpenRouterAnthropicClaudeModel } from './openai/openrouter-anthropic-reasoning.js';
-import { resolveRoutedAnthropicClaudeCapabilities } from './openai/routed-anthropic-claude-capabilities.js';
+import {
+  isRoutedAnthropicClaudeModel,
+  resolveRoutedAnthropicClaudeCapabilities,
+} from './openai/routed-anthropic-claude-capabilities.js';
 import type { OpenAiTransportConfig } from './openai/openai-compat.js';
 
 export type ModelReasoningProvider =
@@ -245,22 +248,23 @@ export function modelReasoningEffortOptions(
   }
 
   if (isAnthropicReasoningEffortModel(context)) {
-    if (context?.supportedEfforts !== undefined) {
-      return anthropicReasoningEffortOptionsForSupportedEfforts(context.supportedEfforts);
-    }
-    return ANTHROPIC_REASONING_EFFORT_OPTIONS;
+    return anthropicClaudeReasoningEffortOptions(context);
   }
 
   if (isGatewayAnthropicClaudeReasoningModel(context)) {
-    const supportedEfforts = context?.supportedEfforts
-      ?? resolveGatewayAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts;
-    return anthropicReasoningEffortOptionsForSupportedEfforts(supportedEfforts);
+    return anthropicClaudeReasoningEffortOptions(
+      context,
+      context?.supportedEfforts
+        ?? resolveGatewayAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+    );
   }
 
   if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
-    const supportedEfforts = context?.supportedEfforts
-      ?? resolveRoutedAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts;
-    return anthropicReasoningEffortOptionsForSupportedEfforts(supportedEfforts);
+    return anthropicClaudeReasoningEffortOptions(
+      context,
+      context?.supportedEfforts
+        ?? resolveRoutedAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+    );
   }
 
   return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
@@ -302,6 +306,10 @@ export function resolveAnthropicTransportReasoningEffortForContext(
   value: unknown,
   context?: ModelReasoningEffortContext,
 ): AnthropicTransportConfig['effort'] | undefined {
+  if (resolveRoutedAnthropicClaudeCapabilitiesForContext(context)?.thinkingMode === 'budget') {
+    return undefined;
+  }
+
   const normalized = resolveModelReasoningEffortForContext(value, {
     ...context,
     transportKind: 'anthropic',
@@ -528,6 +536,43 @@ function dedupeReasoningEffortOptions(
   }
 
   return deduped;
+}
+
+function resolveRoutedAnthropicClaudeCapabilitiesForContext(
+  context?: ModelReasoningEffortContext,
+) {
+  const model = context?.model?.trim();
+  if (!model) {
+    return undefined;
+  }
+  const routedModelId = isRoutedAnthropicClaudeModel(model)
+    ? model
+    : `anthropic/${model}`;
+  if (!isRoutedAnthropicClaudeModel(routedModelId)) {
+    return undefined;
+  }
+  return resolveRoutedAnthropicClaudeCapabilities(routedModelId);
+}
+
+function anthropicClaudeReasoningEffortOptions(
+  context?: ModelReasoningEffortContext,
+  supportedEffortsOverride?: readonly ModelReasoningEffort[],
+): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
+  const capabilities = resolveRoutedAnthropicClaudeCapabilitiesForContext(context);
+  if (capabilities?.thinkingMode === 'budget') {
+    return [{ value: 'default', label: 'Default' }];
+  }
+
+  const supportedEfforts = supportedEffortsOverride ?? capabilities?.supportedEfforts;
+  if (supportedEfforts !== undefined && supportedEfforts.length > 0) {
+    return anthropicReasoningEffortOptionsForSupportedEfforts(supportedEfforts);
+  }
+
+  if (isAnthropicReasoningEffortModel(context)) {
+    return ANTHROPIC_REASONING_EFFORT_OPTIONS;
+  }
+
+  return [{ value: 'default', label: 'Default' }];
 }
 
 function anthropicReasoningEffortValueForContext(

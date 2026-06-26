@@ -48,11 +48,13 @@ export function buildOpenRouterClaudeReasoningBody(
     return { enabled: true };
   }
 
-  if (capabilities.thinkingMode === 'budget' && effort !== undefined) {
-    const budgetKey = effort === 'low' || effort === 'medium' || effort === 'high' ? effort : 'high';
+  if (capabilities.thinkingMode === 'budget') {
+    if (config.vendorExtendedThinking === false) {
+      return { enabled: false };
+    }
     return {
       enabled: true,
-      max_tokens: ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT[budgetKey],
+      max_tokens: ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT.high,
     };
   }
 
