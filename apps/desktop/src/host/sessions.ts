@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import type { ChatArchive } from '@spirit-agent/core';
+import { timelineRuntimeSnapshotToMessages } from './chat-schema.js';
 
 import type {
   ActiveSessionSnapshot,
@@ -297,6 +298,17 @@ export function buildArchiveAssistantAuxFromConversation(
       ...(message.aux.finishTaskNotice ? { finishTaskNotice: message.aux.finishTaskNotice } : {}),
     }];
   });
+}
+
+/** Runtime archive projection from a persisted v2 timeline snapshot. */
+export function buildChatArchiveFromTimeline(
+  timeline: DesktopTimelineTurnSnapshot[],
+): Pick<ChatArchive, 'messages' | 'assistantAux'> {
+  const messages = timelineRuntimeSnapshotToMessages(timeline);
+  return {
+    messages: buildArchiveMessagesFromConversation(messages),
+    assistantAux: buildArchiveAssistantAuxFromConversation(messages),
+  };
 }
 
 export function nextMessageIdFromMessages(messages: ConversationMessageSnapshot[]): number {
