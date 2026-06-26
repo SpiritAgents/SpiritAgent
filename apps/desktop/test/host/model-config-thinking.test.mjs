@@ -72,6 +72,25 @@ test('buildPrimaryTransportConfig disables Alibaba thinking when thinkingEnabled
   assert.equal(config.vendorExtendedThinking, false);
 });
 
+test('buildPrimaryTransportConfig wires Gateway Claude budget thinking off via vendorExtendedThinking', () => {
+  const config = buildPrimaryTransportConfig({
+    apiKey: 'test-key',
+    model: 'anthropic/claude-opus-4-5',
+    baseUrl: 'https://gateway.ai.vercel.com/v1',
+    workspaceRoot: '/tmp',
+    profile: {
+      provider: 'vercel-ai-gateway',
+      transportKind: 'open-responses',
+      reasoningEffort: 'medium',
+      thinkingEnabled: false,
+      capabilities: ['chat'],
+    },
+  });
+  assert.equal(config.transportKind, 'open-responses');
+  assert.equal(config.vendorExtendedThinking, false);
+  assert.equal(config.reasoningEffort, 'medium');
+});
+
 test('buildPrimaryTransportConfig wires Gateway Claude adaptive thinking off via vendorExtendedThinking', () => {
   const config = buildPrimaryTransportConfig({
     apiKey: 'test-key',

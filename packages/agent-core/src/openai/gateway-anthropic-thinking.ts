@@ -53,14 +53,6 @@ function buildAdaptiveThinkingConfig(
   };
 }
 
-function buildBudgetThinkingConfig(effort: AnthropicEffort): AnthropicThinkingConfig {
-  const budgetKey = effort === 'low' || effort === 'medium' || effort === 'high' ? effort : 'high';
-  return {
-    type: 'enabled',
-    budgetTokens: ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT[budgetKey],
-  };
-}
-
 export function buildGatewayAnthropicProviderOptions(
   config: Pick<
     OpenAiTransportConfig,
@@ -93,9 +85,15 @@ export function buildGatewayAnthropicProviderOptions(
     return { anthropic };
   }
 
-  if (capabilities.thinkingMode === 'budget' && effort !== undefined) {
-    anthropic.thinking = buildBudgetThinkingConfig(effort) as unknown as JsonValue;
-    anthropic.effort = effort;
+  if (capabilities.thinkingMode === 'budget') {
+    if (config.vendorExtendedThinking === false) {
+      anthropic.thinking = { type: 'disabled' } as unknown as JsonValue;
+      return { anthropic };
+    }
+    anthropic.thinking = {
+      type: 'enabled',
+      budgetTokens: ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT.high,
+    } as unknown as JsonValue;
     return { anthropic };
   }
 

@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   isAnthropicClaudeAdaptiveThinkingModel,
+  isAnthropicClaudeBudgetThinkingModel,
   isDeepSeekReasoningOnlyModel,
   modelEffortControlLabelKind,
   modelShowsReasoningEffortControl,
@@ -110,16 +111,29 @@ test('Gateway Claude adaptive supports thinking switch and effort label', () => 
   assert.equal(modelEffortControlLabelKind(context), 'effort');
 });
 
-test('Gateway Claude legacy budget uses effort primary control without thinking switch', () => {
+test('Gateway Claude legacy budget supports thinking switch without effort control', () => {
   const context = {
     provider: 'vercel-ai-gateway' as const,
-    model: 'anthropic/claude-sonnet-4-5',
+    model: 'anthropic/claude-opus-4-5',
     transportKind: 'open-responses' as const,
   };
   assert.equal(isAnthropicClaudeAdaptiveThinkingModel(context), false);
-  assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
+  assert.equal(isAnthropicClaudeBudgetThinkingModel(context), true);
+  assert.equal(modelUsesReasoningEffortPrimaryControl(context), false);
+  assert.equal(modelSupportsThinkingSwitch(context), true);
+  assert.equal(modelShowsReasoningEffortControl(context, true), false);
+  assert.equal(modelEffortControlLabelKind(context), 'reasoningEffort');
+});
+
+test('Gateway Claude without extended thinking stays hidden', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'anthropic/claude-3-5-sonnet',
+    transportKind: 'open-responses' as const,
+  };
+  assert.equal(isAnthropicClaudeBudgetThinkingModel(context), false);
+  assert.equal(isAnthropicClaudeAdaptiveThinkingModel(context), false);
   assert.equal(modelSupportsThinkingSwitch(context), false);
-  assert.equal(modelEffortControlLabelKind(context), 'effort');
 });
 
 test('Gateway DeepSeek slug supports thinking switch', () => {
@@ -144,19 +158,32 @@ test('Gateway DeepSeek V4 shows reasoning effort when thinking enabled', () => {
 });
 
 test('resolveAnthropicExplicitThinkingConfig maps adaptive and disabled', () => {
-  const context = {
+  const adaptiveContext = {
     provider: 'vercel-ai-gateway' as const,
     model: 'anthropic/claude-opus-4-8',
     transportKind: 'open-responses' as const,
   };
-  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(undefined, context), {
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(undefined, adaptiveContext), {
     type: 'adaptive',
     display: 'summarized',
   });
-  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(true, context), {
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(true, adaptiveContext), {
     type: 'adaptive',
     display: 'summarized',
   });
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(false, adaptiveContext), {
+    type: 'disabled',
+  });
+});
+
+test('resolveAnthropicExplicitThinkingConfig maps budget disabled only', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'anthropic/claude-opus-4-5',
+    transportKind: 'open-responses' as const,
+  };
+  assert.equal(resolveAnthropicExplicitThinkingConfig(undefined, context), undefined);
+  assert.equal(resolveAnthropicExplicitThinkingConfig(true, context), undefined);
   assert.deepEqual(resolveAnthropicExplicitThinkingConfig(false, context), {
     type: 'disabled',
   });
