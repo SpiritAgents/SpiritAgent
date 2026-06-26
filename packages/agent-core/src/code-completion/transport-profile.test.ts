@@ -64,6 +64,18 @@ test('applyCodeCompletionTransportProfile disables Google Gemini thinking on ope
   assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
 });
 
+test('applyCodeCompletionTransportProfile disables Google Vertex Gemini thinking on openai-compatible transport', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'gemini-2.5-flash',
+    llmVendor: 'google-vertex-ai',
+    reasoningEffort: 'high',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+});
+
 test('applyCodeCompletionTransportProfile disables xAI reasoning on openai-compatible transport', () => {
   const input: OpenAiTransportConfig = {
     apiKey: 'k',
