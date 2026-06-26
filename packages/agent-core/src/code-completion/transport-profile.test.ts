@@ -50,11 +50,23 @@ test('applyCodeCompletionTransportProfile disables OpenAI reasoning on openai-co
   assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
 });
 
-test('applyCodeCompletionTransportProfile leaves unrelated openai-compatible vendors unchanged except profile tag', () => {
+test('applyCodeCompletionTransportProfile disables Google Gemini thinking on openai-compatible transport', () => {
   const input: OpenAiTransportConfig = {
     apiKey: 'k',
     model: 'gemini-2.5-flash',
     llmVendor: 'google',
+    reasoningEffort: 'high',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+});
+
+test('applyCodeCompletionTransportProfile leaves unrelated openai-compatible vendors unchanged except profile tag', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'grok-4',
+    llmVendor: 'xai',
     reasoningEffort: 'medium',
   };
   const result = applyCodeCompletionTransportProfile(input);
