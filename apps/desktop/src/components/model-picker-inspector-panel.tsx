@@ -6,6 +6,7 @@ import {
   modelReasoningEffortOptions,
 } from '@spirit-agent/core/reasoning-effort';
 import {
+  modelEffortControlLabelKind,
   modelShowsReasoningEffortControl,
   modelSupportsThinkingSwitch,
   resolveModelThinkingEnabled,
@@ -66,6 +67,10 @@ export function ModelPickerInspectorPanel({
     pendingThinkingEnabled ?? resolveModelThinkingEnabled(model.thinkingEnabled);
   const showReasoningEffort = modelShowsReasoningEffortControl(modelContext, thinkingEnabled);
   const effortOptions = showReasoningEffort ? modelReasoningEffortOptions(modelContext) : [];
+  const effortLabelKey =
+    modelEffortControlLabelKind(modelContext) === 'effort'
+      ? 'app.modelPickerEffort'
+      : 'app.modelPickerReasoningEffort';
   const labelClass = isList ? DESKTOP_OVERLAY_LIST_DETAIL_LABEL : 'text-xs text-muted-foreground';
   const selectTriggerClass = isList
     ? 'h-7 w-auto border-0 bg-transparent px-0 text-xs shadow-none [&_span]:justify-end'
@@ -91,7 +96,7 @@ export function ModelPickerInspectorPanel({
         ) : null}
         {effortOptions.length > 1 ? (
           <div className="flex items-center justify-between gap-2">
-            <Label className={labelClass}>{t('app.modelPickerReasoningEffort')}</Label>
+            <Label className={labelClass}>{t(effortLabelKey)}</Label>
             <Select
               value={model.reasoningEffort}
               onValueChange={(value) => {

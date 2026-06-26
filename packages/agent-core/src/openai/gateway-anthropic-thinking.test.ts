@@ -130,3 +130,20 @@ test('buildGatewayAnthropicProviderOptions omits budget thinking for legacy clau
     },
   );
 });
+
+test('buildGatewayAnthropicProviderOptions disables adaptive thinking when vendorExtendedThinking false', () => {
+  assert.deepEqual(
+    buildGatewayAnthropicProviderOptions({
+      llmVendor: 'vercel-ai-gateway',
+      model: 'anthropic/claude-opus-4-8',
+      reasoningEffort: 'high',
+      vendorExtendedThinking: false,
+    }),
+    {
+      anthropic: {
+        toolStreaming: true,
+        thinking: { type: 'disabled' },
+      },
+    },
+  );
+});
