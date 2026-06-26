@@ -45,6 +45,10 @@ import {
   isGatewayMoonshotModel,
 } from '../openai/moonshot-thinking-switch.js';
 import {
+  buildGatewayXiaomiProviderOptions,
+  isGatewayXiaomiModel,
+} from '../openai/gateway-xiaomi-thinking.js';
+import {
   buildGatewayGoogleProviderOptions,
   isGatewayGoogleGeminiModel,
 } from '../openai/gateway-google-thinking.js';
@@ -243,6 +247,13 @@ export function buildResponsesProviderOptions(
       const moonshotOptions = buildGatewayMoonshotProviderOptions(config);
       if (Object.keys(moonshotOptions).length > 0) {
         return moonshotOptions;
+      }
+    }
+
+    if (isGatewayXiaomiModel(config.llmVendor, config.model)) {
+      const xiaomiOptions = buildGatewayXiaomiProviderOptions(config);
+      if (Object.keys(xiaomiOptions).length > 0) {
+        return xiaomiOptions;
       }
     }
 
