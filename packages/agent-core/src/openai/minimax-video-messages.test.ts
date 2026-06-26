@@ -9,7 +9,7 @@ import {
   setLlmFetchTransportOverrideForTests,
 } from '../llm-fetch.js';
 import { clearMinimaxVideoUploadCache } from './minimax-files.js';
-import { resolveMinimaxVideoInAnthropicMessages } from './minimax-video-messages.js';
+import { resolveMinimaxVideoInAnthropicMessages, resolveMinimaxVideoUrlsInOpenAiMessages } from './minimax-video-messages.js';
 
 const MINIMAL_MP4_HEADER = Buffer.from([
   0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
@@ -79,4 +79,44 @@ test('resolveMinimaxVideoInAnthropicMessages skips when videoInput is disabled',
 
   const part = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content[0];
   assert.equal(part.video_url.url, 'clip.mp4');
+});
+
+test('resolveMinimaxVideoUrlsInOpenAiMessages uploads for minimax vendor with videoInput', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-agent-core-minimax-openai-video-resolve-'));
+  const videoPath = join(workspaceRoot, 'clip.mp4');
+
+  try {
+    await writeFile(videoPath, MINIMAL_MP4_HEADER);
+    clearMinimaxVideoUploadCache();
+    setLlmFetchTransportOverrideForTests(async (_input, init) => {
+      if (init?.body instanceof FormData) {
+        return new Response(JSON.stringify({ file_id: 'file-openai-1' }), { status: 200 });
+      }
+      return new Response('{}', { status: 200 });
+    });
+
+    const messages = [{
+      role: 'user',
+      content: [{ type: 'video_url', video_url: { url: videoPath } }],
+    }];
+
+    await resolveMinimaxVideoUrlsInOpenAiMessages(
+      {
+        apiKey: 'test-key',
+        baseUrl: 'https://api.minimax.io/v1',
+        llmVendor: 'minimax',
+        model: 'MiniMax-M3',
+        modelCapabilities: { videoInput: true },
+      },
+      messages,
+      workspaceRoot,
+    );
+
+    const part = (messages[0] as { content: Array<{ video_url: { url: string } }> }).content[0];
+    assert.equal(part.video_url.url, 'mm_file://file-openai-1');
+  } finally {
+    setLlmFetchTransportOverrideForTests(undefined);
+    clearMinimaxVideoUploadCache();
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
 });
