@@ -30,12 +30,24 @@ function withCodeCompletionProfile<T extends LlmTransportConfig>(config: T): T {
   };
 }
 
+/** 经 reasoningEffort none 关闭 Gemini thinking 的 OpenAI-compatible 直连厂商。 */
+const OPENAI_COMPAT_GOOGLE_REASONING_NONE_VENDORS = new Set<OpenAiLlmVendor>([
+  'google',
+  'google-vertex-ai',
+]);
+
 function applyOpenAiCompatibleCodeCompletionProfile(
   config: OpenAiTransportConfig,
 ): OpenAiTransportConfig {
   const profiled = withCodeCompletionProfile(config);
   const vendor = profiled.llmVendor;
   if (vendor === 'openai') {
+    return {
+      ...profiled,
+      reasoningEffort: 'none',
+    };
+  }
+  if (vendor !== undefined && OPENAI_COMPAT_GOOGLE_REASONING_NONE_VENDORS.has(vendor)) {
     return {
       ...profiled,
       reasoningEffort: 'none',
