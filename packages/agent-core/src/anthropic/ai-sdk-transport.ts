@@ -41,7 +41,6 @@ import type {
   JsonObject,
   JsonValue,
   LlmMessage,
-  LlmModelCapabilities,
   LlmStreamEvent,
   LlmTransport,
   StartedToolAgentRound,
@@ -50,6 +49,7 @@ import type {
   ToolExecutionOutput,
 } from '../ports.js';
 import { llmMessageHasMedia, llmMessageTextContent } from '../ports.js';
+import type { LlmModelCapabilities } from '../llm-provider-shared.js';
 import type { JsonSchemaTransport } from '../json-schema.js';
 import {
   buildAnthropicProviderOptions,
@@ -538,9 +538,10 @@ function stripAnthropicUserMediaWithoutCapability(
     return messages;
   }
 
+  const capabilities = config.modelCapabilities;
   return messages.map((message) => sanitizeAnthropicMessageForCompatibility(
     message,
-    config.modelCapabilities,
+    capabilities,
   ));
 }
 
