@@ -13,6 +13,7 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   tone = "default",
   size = "default",
   allowHtml = false,
+  singleLineBreaks = true,
   readManagedImagePreviewDataUrl,
 }: {
   content: string;
@@ -20,6 +21,7 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   tone?: MarkdownTone;
   size?: MarkdownSize;
   allowHtml?: boolean;
+  singleLineBreaks?: boolean;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
 }) {
   return (
@@ -30,6 +32,7 @@ export const MarkdownMessage = memo(function MarkdownMessage({
       tone={tone}
       size={size}
       allowHtml={allowHtml}
+      singleLineBreaks={singleLineBreaks}
       readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
     />
   );

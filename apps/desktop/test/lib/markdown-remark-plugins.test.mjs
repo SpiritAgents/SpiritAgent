@@ -5,7 +5,10 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import { visit } from "unist-util-visit";
 
-import { spiritRemarkPluginsForStreamdown } from "../../src/lib/markdown-remark-plugins.ts";
+import {
+  createSpiritRemarkPluginsForStreamdown,
+  spiritRemarkPluginsForStreamdown,
+} from "../../src/lib/markdown-remark-plugins.ts";
 
 function countHardBreaks(markdown, remarkPlugins) {
   let processor = unified().use(remarkParse);
@@ -40,4 +43,14 @@ test("spirit streamdown remark plugins preserve two-line plain text breaks", () 
   const markdown = "第一行文本\n第二行文本";
   const breaks = countHardBreaks(markdown, spiritRemarkPluginsForStreamdown);
   assert.equal(breaks, 1);
+});
+
+test("spirit streamdown remark plugins skip hard breaks when singleLineBreaks is false", () => {
+  const markdown = "主题\n我正在处理";
+  const withoutBreaks = countHardBreaks(
+    markdown,
+    createSpiritRemarkPluginsForStreamdown({ singleLineBreaks: false }),
+  );
+
+  assert.equal(withoutBreaks, 0);
 });
