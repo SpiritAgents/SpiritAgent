@@ -67,7 +67,7 @@ export type ComposerSurfaceProps = {
   onAbort?(): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void;
+  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void | Promise<boolean>;
   onAgentModeChange(mode: DesktopAgentMode): void;
   onLoopEnabledChange?(enabled: boolean): void;
   richInputRef?: RefObject<ComposerRichInputHandle | null>;

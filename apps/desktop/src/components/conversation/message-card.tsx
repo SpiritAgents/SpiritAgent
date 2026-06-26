@@ -149,7 +149,7 @@ export function MessageCard({
   onRewindDrop(event: ReactDragEvent<HTMLElement>): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void;
+  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void | Promise<boolean>;
   onAgentModeChange(mode: DesktopAgentMode): void;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;

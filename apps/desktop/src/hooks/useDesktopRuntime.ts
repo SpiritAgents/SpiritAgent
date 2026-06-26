@@ -1880,42 +1880,24 @@ export function useDesktopRuntime() {
   );
 
   const setModelThinkingEnabled = useCallback(
-    async (name: string, enabled: boolean) => {
+    async (name: string, enabled: boolean): Promise<boolean> => {
       if (!api || !snapshot) {
-        return;
+        return false;
       }
 
       const model = snapshot.config.models.find((item) => item.name === name);
       if (!model) {
-        return;
+        return false;
       }
 
+      const previousSettings = settingsRef.current;
       const next = {
-        ...settingsRef.current,
+        ...previousSettings,
         activeModel: model.name,
         apiBase: model.apiBase,
       };
       settingsRef.current = next;
       setSettings(next);
-
-      const optimisticModels = snapshot.config.models.map((item) => {
-        if (item.name !== name) {
-          return item;
-        }
-        if (enabled) {
-          const { thinkingEnabled: _removed, ...rest } = item;
-          return rest;
-        }
-        return { ...item, thinkingEnabled: false as const };
-      });
-      applySnapshot({
-        ...snapshot,
-        config: {
-          ...snapshot.config,
-          activeModel: model.name,
-          models: optimisticModels,
-        },
-      });
 
       try {
         const res = await api.updateConfig({
@@ -1929,9 +1911,12 @@ export function useDesktopRuntime() {
         applySnapshot(res);
         setRuntimeError("");
         setSettings((current) => ({ ...current, apiKey: "" }));
+        return true;
       } catch (error) {
-        applySnapshot(snapshot);
+        settingsRef.current = previousSettings;
+        setSettings(previousSettings);
         setRuntimeError(describeError(error));
+        return false;
       }
     },
     [api, applySnapshot, snapshot],
