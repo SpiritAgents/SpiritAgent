@@ -122,6 +122,7 @@ export type DesktopToolRequest = HostToolRequest<AskQuestionsQuestionSpec>;
 export type SessionTitleSource = 'seed' | 'llm';
 
 export interface StoredDesktopSession extends ChatArchive {
+  chatSchemaVersion?: 2;
   savedAtUnixMs: number;
   sessionDisplayName?: string;
   sessionTitleSource?: SessionTitleSource;
