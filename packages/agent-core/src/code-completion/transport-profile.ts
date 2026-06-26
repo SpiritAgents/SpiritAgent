@@ -17,6 +17,7 @@ const OPENAI_COMPAT_THINKING_TYPE_VENDORS = new Set<OpenAiLlmVendor>([
   'moonshot-ai',
   'z-ai',
   'zhipu-ai',
+  'minimax',
 ]);
 
 export function isCodeCompletionTransportProfile(
@@ -56,6 +57,8 @@ function applyOpenAiCompatibleCodeCompletionProfile(
     };
   }
   if (vendor !== undefined && OPENAI_COMPAT_THINKING_TYPE_VENDORS.has(vendor)) {
+    // MiniMax：M3 默认关闭 thinking，可用 adaptive 开启；M2.x 无法关闭。
+    // 文档：https://platform.minimaxi.com/docs/api-reference/text-openai-api
     return {
       ...profiled,
       vendorExtendedThinking: false,

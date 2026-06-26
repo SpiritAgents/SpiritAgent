@@ -202,10 +202,15 @@ export function openAiReasoningEffort(
  * Moonshot 已改用 `@ai-sdk/moonshotai` 的 `providerOptions.moonshotai.thinking`。
  */
 export function openAiVendorChatCompletionBodyExtras(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'>,
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking' | 'transportRequestProfile'>,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (config.llmVendor === 'deepseek' || config.llmVendor === 'z-ai' || config.llmVendor === 'zhipu-ai') {
+  if (
+    config.llmVendor === 'deepseek'
+    || config.llmVendor === 'z-ai'
+    || config.llmVendor === 'zhipu-ai'
+    || config.llmVendor === 'minimax'
+  ) {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
   }
