@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import {
   abortCodeCompletionCommand,
+  clearCodeCompletionStateForWorkspace,
   recordCodeCompletionFileStateCommand,
   requestCodeCompletionCommand,
   resetCodeCompletionJournalCommand,
@@ -83,6 +84,18 @@ test('record and reset journal commands do not throw', () => {
   });
   resetCodeCompletionJournalCommand(context);
   abortCodeCompletionCommand(context.workspaceRoot);
+});
+
+test('clearCodeCompletionStateForWorkspace drops journal after record', () => {
+  const root = `${workspaceRoot}-clear`;
+  const context = { workspaceRoot: root, config: baseConfig };
+  recordCodeCompletionFileStateCommand(context, {
+    relativePath: 'src/a.ts',
+    baselineText: 'a',
+    currentText: 'b',
+  });
+  clearCodeCompletionStateForWorkspace(root);
+  resetCodeCompletionJournalCommand(context);
 });
 
 test('buildCodeCompletionTransportConfig disables DeepSeek thinking', () => {
