@@ -1,8 +1,12 @@
+import {
+  COMPOSER_INLINE_CHIP_CLASS,
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+} from "@/lib/composer-inline-chip-styles";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 
-/** 终端选区 chip：结构对齐元素 chip（圆角/边框/padding），配色保持低透明度中性底。 */
-export const TERMINAL_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md border border-border/50 bg-foreground/[0.05] px-1.5 py-0.5 text-xs font-medium leading-none text-muted-foreground select-none align-middle mx-0.5 dark:border-white/10 dark:bg-foreground/[0.08]";
+export const TERMINAL_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
+
+export const TERMINAL_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;
 
 const TERMINAL_ICON_PATH =
   '<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>';
@@ -53,6 +57,7 @@ export function makeTerminalChipNode(attachment: TerminalSnippetAttachment, doc:
   icon.setAttribute("stroke-width", "2");
   icon.setAttribute("stroke-linecap", "round");
   icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("class", TERMINAL_CHIP_ICON_CLASS);
   icon.setAttribute("aria-hidden", "true");
   icon.innerHTML = TERMINAL_ICON_PATH;
   span.appendChild(icon);
