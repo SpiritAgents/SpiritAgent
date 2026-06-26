@@ -79,6 +79,18 @@ test('buildOpenRouterClaudeReasoningBody maps none to effort none', () => {
   );
 });
 
+test('buildOpenRouterClaudeReasoningBody disables adaptive thinking when vendorExtendedThinking false', () => {
+  assert.deepEqual(
+    buildOpenRouterClaudeReasoningBody({
+      llmVendor: 'openrouter',
+      model: 'anthropic/claude-opus-4-8',
+      reasoningEffort: 'high',
+      vendorExtendedThinking: false,
+    }),
+    { enabled: false },
+  );
+});
+
 test('shouldInjectOpenRouterClaudeReasoning follows buildOpenRouterClaudeReasoningBody', () => {
   assert.equal(
     shouldInjectOpenRouterClaudeReasoning({

@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  isAnthropicClaudeAdaptiveThinkingModel,
   isDeepSeekReasoningOnlyModel,
+  modelEffortControlLabelKind,
   modelShowsReasoningEffortControl,
   modelSupportsReasoningEffortWhileThinking,
   modelSupportsThinkingSwitch,
   modelUsesReasoningEffortPrimaryControl,
+  resolveAnthropicExplicitThinkingConfig,
   resolveVendorExtendedThinking,
   shouldPinReasoningEffortToDefault,
 } from './model-thinking-controls.js';
@@ -89,16 +92,34 @@ test('Gateway OpenAI slug uses reasoning effort primary control', () => {
   assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
   assert.equal(modelSupportsThinkingSwitch(context), false);
   assert.equal(modelShowsReasoningEffortControl(context, false), true);
+  assert.equal(modelEffortControlLabelKind(context), 'reasoningEffort');
 });
 
-test('Gateway Claude slug uses reasoning effort primary control', () => {
+test('Gateway Claude adaptive supports thinking switch and effort label', () => {
   const context = {
     provider: 'vercel-ai-gateway' as const,
-    model: 'anthropic/claude-sonnet-4-6',
+    model: 'anthropic/claude-opus-4-8',
     transportKind: 'open-responses' as const,
   };
+  assert.equal(isAnthropicClaudeAdaptiveThinkingModel(context), true);
+  assert.equal(modelUsesReasoningEffortPrimaryControl(context), false);
+  assert.equal(modelSupportsThinkingSwitch(context), true);
+  assert.equal(modelShowsReasoningEffortControl(context, true), true);
+  assert.equal(modelShowsReasoningEffortControl(context, false), true);
+  assert.equal(shouldPinReasoningEffortToDefault(false, context), false);
+  assert.equal(modelEffortControlLabelKind(context), 'effort');
+});
+
+test('Gateway Claude legacy budget uses effort primary control without thinking switch', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'anthropic/claude-sonnet-4-5',
+    transportKind: 'open-responses' as const,
+  };
+  assert.equal(isAnthropicClaudeAdaptiveThinkingModel(context), false);
   assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
   assert.equal(modelSupportsThinkingSwitch(context), false);
+  assert.equal(modelEffortControlLabelKind(context), 'effort');
 });
 
 test('Gateway DeepSeek slug supports thinking switch', () => {
@@ -120,6 +141,25 @@ test('Gateway DeepSeek V4 shows reasoning effort when thinking enabled', () => {
   assert.equal(modelSupportsReasoningEffortWhileThinking(context), true);
   assert.equal(modelShowsReasoningEffortControl(context, true), true);
   assert.equal(modelShowsReasoningEffortControl(context, false), false);
+});
+
+test('resolveAnthropicExplicitThinkingConfig maps adaptive and disabled', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'anthropic/claude-opus-4-8',
+    transportKind: 'open-responses' as const,
+  };
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(undefined, context), {
+    type: 'adaptive',
+    display: 'summarized',
+  });
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(true, context), {
+    type: 'adaptive',
+    display: 'summarized',
+  });
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(false, context), {
+    type: 'disabled',
+  });
 });
 
 test('resolveVendorExtendedThinking maps enabled default to undefined wire omission', () => {

@@ -13,6 +13,7 @@ import {
 } from '@spirit-agent/core/reasoning-effort';
 import {
   modelSupportsThinkingSwitch,
+  resolveAnthropicExplicitThinkingConfig,
   resolveVendorExtendedThinking,
   shouldPinReasoningEffortToDefault,
 } from '@spirit-agent/core/model-thinking-controls';
@@ -236,14 +237,8 @@ function resolveAgentAnthropicExplicitThinking(
   profile: AgentModelProfileFields | undefined,
   model: string,
 ): AnthropicTransportConfig['thinking'] | undefined {
-  if (profile?.thinkingEnabled !== false) {
-    return undefined;
-  }
   const context = buildAgentModelReasoningContext(profile, model);
-  if (!modelSupportsThinkingSwitch(context)) {
-    return undefined;
-  }
-  return { type: 'disabled' };
+  return resolveAnthropicExplicitThinkingConfig(profile?.thinkingEnabled, context);
 }
 
 export function buildPrimaryTransportConfig(input: {
@@ -354,6 +349,7 @@ export function buildPrimaryTransportConfig(input: {
       model: input.model,
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     });
+    const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
 
     return {
       transportKind: 'open-responses',
@@ -370,6 +366,7 @@ export function buildPrimaryTransportConfig(input: {
         : {}),
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
       ...(reasoningSummary ? { reasoningSummary } : {}),
+      ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
     };
   }
 

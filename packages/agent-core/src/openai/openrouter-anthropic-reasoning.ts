@@ -11,7 +11,7 @@ import type { OpenResponsesTransportConfig } from '../open-responses/responses-c
 
 export type OpenRouterClaudeReasoningConfig = Pick<
   OpenAiTransportConfig,
-  'llmVendor' | 'model' | 'reasoningEffort'
+  'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'
 >;
 
 export function isOpenRouterAnthropicClaudeModel(
@@ -39,6 +39,9 @@ export function buildOpenRouterClaudeReasoningBody(
   );
 
   if (capabilities.thinkingMode === 'adaptive') {
+    if (config.vendorExtendedThinking === false) {
+      return { enabled: false };
+    }
     if (effort !== undefined) {
       return { enabled: true, effort };
     }
