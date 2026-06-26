@@ -205,7 +205,7 @@ export function openAiVendorChatCompletionBodyExtras(
   config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'>,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (config.llmVendor === 'deepseek') {
+  if (config.llmVendor === 'deepseek' || config.llmVendor === 'z-ai') {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
   }
