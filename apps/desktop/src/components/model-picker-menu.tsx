@@ -35,8 +35,12 @@ import {
 } from "@/lib/model-catalog-detail";
 import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
 import { modelReasoningEffortLabel } from "@spirit-agent/core/reasoning-effort";
+import {
+  modelSupportsThinkingSwitch,
+  resolveModelThinkingEnabled,
+} from "@spirit-agent/core/model-thinking-controls";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
-import type { DesktopModelReasoningEffort, DesktopSnapshot } from "@/types";
+import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelProfileSnapshot } from "@/types";
 import { cn } from "@/lib/utils";
 
 type ModelPickerItem = DesktopSnapshot["config"]["models"][number];
@@ -265,6 +269,7 @@ export function ModelPickerMenu({
                       reasoningEffort={
                         activeReasoningEffort ?? activeModelProfile.reasoningEffort
                       }
+                      model={activeModelProfile}
                     />
                   ) : (
                     <span className="min-w-0 truncate">{activeModelName}</span>
@@ -358,15 +363,32 @@ export function ModelPickerMenu({
 function ModelPickerTriggerLabel({
   name,
   reasoningEffort,
+  model,
 }: {
   name: string;
   reasoningEffort: DesktopModelReasoningEffort;
+  model: ModelProfileSnapshot;
 }) {
+  const { t } = useTranslation();
+  const modelContext = {
+    ...(model.provider ? { provider: model.provider } : {}),
+    model: model.name,
+    ...(model.supportedReasoningEfforts !== undefined
+      ? { supportedEfforts: model.supportedReasoningEfforts }
+      : {}),
+    ...(model.transportKind ? { transportKind: model.transportKind } : {}),
+  };
+  const showThinkingBadge =
+    modelSupportsThinkingSwitch(modelContext)
+    && resolveModelThinkingEnabled(model.thinkingEnabled);
+
   return (
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
       <span className="min-w-0 truncate">{name}</span>
       <span className={cn("shrink-0", toolCardSecondaryTextClass)}>
-        {modelReasoningEffortLabel(reasoningEffort)}
+        {showThinkingBadge
+          ? t("app.modelPickerThinking")
+          : modelReasoningEffortLabel(reasoningEffort)}
       </span>
     </span>
   );
