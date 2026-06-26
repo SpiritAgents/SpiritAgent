@@ -52,6 +52,12 @@ function applyOpenAiCompatibleCodeCompletionProfile(
       reasoningEffort: 'none',
     };
   }
+  if (vendor === 'custom') {
+    return {
+      ...profiled,
+      reasoningEffort: 'none',
+    };
+  }
   if (vendor !== undefined && OPENAI_COMPAT_GOOGLE_REASONING_NONE_VENDORS.has(vendor)) {
     return {
       ...profiled,

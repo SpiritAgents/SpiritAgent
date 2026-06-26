@@ -91,14 +91,26 @@ test('applyCodeCompletionTransportProfile disables xAI reasoning on openai-compa
 test('applyCodeCompletionTransportProfile leaves unrelated openai-compatible vendors unchanged except profile tag', () => {
   const input: OpenAiTransportConfig = {
     apiKey: 'k',
-    model: 'local-model',
-    llmVendor: 'custom',
+    model: 'Qwen/Qwen3-8B',
+    llmVendor: 'siliconflow',
     reasoningEffort: 'medium',
   };
   const result = applyCodeCompletionTransportProfile(input);
   assert.equal(result.transportRequestProfile, 'code-completion');
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, undefined);
   assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'medium');
+});
+
+test('applyCodeCompletionTransportProfile disables custom vendor reasoning on openai-compatible transport', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'local-model',
+    llmVendor: 'custom',
+    reasoningEffort: 'high',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
 });
 
 test('applyCodeCompletionTransportProfile disables OpenAI reasoning on open-responses transport', () => {
