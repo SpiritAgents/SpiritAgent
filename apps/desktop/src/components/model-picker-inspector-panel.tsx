@@ -37,7 +37,7 @@ type ModelPickerInspectorPanelProps = {
   providerLabel: string;
   density?: 'default' | 'list';
   onReasoningEffortChange: (modelName: string, effort: DesktopModelReasoningEffort) => void;
-  onThinkingEnabledChange?: (modelName: string, enabled: boolean) => void;
+  onThinkingEnabledChange?: (modelName: string, enabled: boolean) => void | Promise<boolean>;
 };
 
 export function ModelPickerInspectorPanel({
@@ -89,7 +89,13 @@ export function ModelPickerInspectorPanel({
               checked={thinkingEnabled}
               onCheckedChange={(checked) => {
                 setPendingThinkingEnabled(checked);
-                onThinkingEnabledChange?.(model.name, checked);
+                void Promise.resolve(onThinkingEnabledChange?.(model.name, checked)).then(
+                  (ok) => {
+                    if (ok === false) {
+                      setPendingThinkingEnabled(null);
+                    }
+                  },
+                );
               }}
             />
           </div>
