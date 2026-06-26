@@ -18,3 +18,19 @@ test('DeepSeek code-completion profile disables thinking via vendorExtendedThink
     },
   );
 });
+
+test('Z.ai code-completion profile disables thinking via request body extras', () => {
+  const config = applyCodeCompletionTransportProfile({
+    apiKey: 'k',
+    model: 'glm-4.7',
+    llmVendor: 'z-ai',
+  });
+
+  assert.equal((config as import('./openai-compat.js').OpenAiTransportConfig).vendorExtendedThinking, false);
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras(config as import('./openai-compat.js').OpenAiTransportConfig),
+    {
+      thinking: { type: 'disabled' },
+    },
+  );
+});
