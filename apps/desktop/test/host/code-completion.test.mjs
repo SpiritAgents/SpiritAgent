@@ -119,7 +119,7 @@ test('buildCodeCompletionTransportConfig disables Moonshot AI thinking', () => {
   assert.equal(config.transportRequestProfile, 'code-completion');
 });
 
-test('buildCodeCompletionTransportConfig leaves other providers unchanged', () => {
+test('buildCodeCompletionTransportConfig disables OpenAI reasoning', () => {
   const config = buildCodeCompletionTransportConfig({
     apiKey: 'test-key',
     model: 'gpt-4o-mini',
@@ -132,5 +132,23 @@ test('buildCodeCompletionTransportConfig leaves other providers unchanged', () =
     },
   });
   assert.equal(config.vendorExtendedThinking, undefined);
+  assert.equal(config.reasoningEffort, 'none');
+  assert.equal(config.transportRequestProfile, 'code-completion');
+});
+
+test('buildCodeCompletionTransportConfig disables custom provider reasoning', () => {
+  const config = buildCodeCompletionTransportConfig({
+    apiKey: 'test-key',
+    model: 'local-model',
+    baseUrl: 'https://llm.example/v1',
+    workspaceRoot,
+    profile: {
+      provider: 'custom',
+      capabilities: ['chat'],
+      reasoningEffort: 'high',
+    },
+  });
+  assert.equal(config.llmVendor, 'custom');
+  assert.equal(config.reasoningEffort, 'none');
   assert.equal(config.transportRequestProfile, 'code-completion');
 });
