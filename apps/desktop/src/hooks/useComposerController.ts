@@ -927,6 +927,21 @@ export function useComposerController({
     composerRichInputRef.current?.focus();
   }, []);
 
+  const dismissFileReferenceSuggestions = useCallback(() => {
+    setDismissedFileReferenceKey(fileReferenceQueryKey);
+    setFileReferenceSelectedIndex(-1);
+    setFileReferenceSuggestions(null);
+  }, [fileReferenceQueryKey]);
+
+  const dismissSlashSuggestions = useCallback(() => {
+    if (!slashQuery) {
+      setSlashSelectedIndex(-1);
+      return;
+    }
+    setDismissedSlashQueryKey(skillSlashQueryKey(slashQuery));
+    setSlashSelectedIndex(-1);
+  }, [slashQuery]);
+
   return {
     composerBrowserElementAttachments,
     setComposerBrowserElementAttachments,
@@ -980,5 +995,7 @@ export function useComposerController({
     commitBusy,
     gitChipBusy,
     focusComposer,
+    dismissFileReferenceSuggestions,
+    dismissSlashSuggestions,
   };
 }
