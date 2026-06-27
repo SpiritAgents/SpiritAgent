@@ -6,14 +6,12 @@ import { WorkspaceFilePickerRow } from '@/components/workspace-file-picker-row'
 type WorkspaceFileReferenceMenuProps = {
   suggestions: string[]
   selectedIndex: number
-  onSelectIndex(index: number): void
   onApplySuggestion(path: string): void
 }
 
 export function WorkspaceFileReferenceMenu({
   suggestions,
   selectedIndex,
-  onSelectIndex,
   onApplySuggestion,
 }: WorkspaceFileReferenceMenuProps) {
   const { t } = useTranslation()
@@ -33,8 +31,6 @@ export function WorkspaceFileReferenceMenu({
           selected={index === selectedIndex}
           title={path}
           onMouseDown={(event) => event.preventDefault()}
-          onMouseEnter={() => onSelectIndex(index)}
-          onFocus={() => onSelectIndex(index)}
           onClick={() => onApplySuggestion(path)}
         >
           <WorkspaceFilePickerRow path={path} tone="menu" layout="stacked" />
