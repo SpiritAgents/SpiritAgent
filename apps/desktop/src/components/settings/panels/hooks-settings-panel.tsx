@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogFooterActions,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -233,7 +234,8 @@ export function HooksSettingsPanel({
           {deleteError ? (
             <p className="text-xs text-destructive">{deleteError}</p>
           ) : null}
-          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+          <DialogFooter>
+            <DialogFooterActions>
             <Button
               type="button"
               variant="outline"
@@ -273,7 +275,8 @@ export function HooksSettingsPanel({
               {hooksBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t("common.delete")}
             </Button>
-          </div>
+            </DialogFooterActions>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -384,19 +387,21 @@ export function HooksSettingsPanel({
               {t("settings.hooksFailClosed")}
             </label>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={hooksBusy || !command.trim()}
-              onClick={() => void handleCreate()}
-            >
-              {hooksBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t("common.save")}
-            </Button>
+          <DialogFooter>
+            <DialogFooterActions>
+              <Button type="button" variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={hooksBusy || !command.trim()}
+                onClick={() => void handleCreate()}
+              >
+                {hooksBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.save")}
+              </Button>
+            </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
       </Dialog>
