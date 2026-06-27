@@ -23,7 +23,6 @@ const MCP_CATALOG_SECTION_PREFIX = '[SPIRIT_MCP_CATALOG]';
 const PLAN_SECTION_PREFIX = '[SPIRIT_PLAN]';
 const AGENT_MODE_SECTION_PREFIX = '[SPIRIT_AGENT_MODE]';
 const LOOP_MODE_SECTION_PREFIX = '[SPIRIT_LOOP_MODE]';
-const ACTIVE_SKILLS_SECTION_PREFIX = '[SPIRIT_ACTIVE_SKILLS]';
 const EXTENSIONS_SECTION_PREFIX = '[SPIRIT_EXTENSIONS]';
 const DREAMS_SECTION_PREFIX = '[SPIRIT_DREAMS]';
 const BASIC_INFO_SECTION_PREFIX = '[SPIRIT_BASIC_INFO]';
@@ -274,7 +273,6 @@ export function buildToolAgentMessages(input: {
   enabledRules?: ToolAgentEnabledRule[];
   enabledSkillCatalog?: ToolAgentEnabledSkillCatalogEntry[];
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot;
-  activeSkills?: ToolAgentActiveSkill[];
   model: string;
   planMetadata?: ToolAgentPlanMetadata;
   extensionSystemPrompts?: ToolAgentExtensionSystemPrompt[];
@@ -290,7 +288,6 @@ export function buildToolAgentMessages(input: {
   const planSystemMessage = buildPlanSystemMessage(input.planMetadata);
   const agentModeSystemMessage = buildAgentModeSystemMessage(input.planMetadata);
   const loopModeSystemMessage = buildLoopModeSystemMessage(input.loopEnabled);
-  const activeSkillsSystemMessage = buildActiveSkillsSystemMessage(input.activeSkills ?? []);
   const extensionsSystemMessage = buildExtensionsSystemMessage(input.extensionSystemPrompts ?? []);
   const dreamsSystemMessage = buildDreamsSystemMessage(input.dreamsContextText);
   const basicInfoSystemMessage = buildBasicInfoSystemMessage(input.basicInfo);
@@ -306,7 +303,6 @@ export function buildToolAgentMessages(input: {
         agentModeSystemMessage,
         loopModeSystemMessage,
         planSystemMessage,
-        activeSkillsSystemMessage,
         extensionsSystemMessage,
         dreamsSystemMessage,
         basicInfoSystemMessage,
@@ -581,7 +577,7 @@ export function buildSkillsCatalogSystemMessage(
   const lines = [
     SKILLS_CATALOG_SECTION_PREFIX,
     'The host exposes the following enabled skills as metadata only.',
-    'Do not assume a skill\'s full instructions unless it appears in the active skills section.',
+    'Do not assume a skill\'s full instructions unless the user message includes an <active_skill> block for it.',
     'If a listed skill seems relevant, you may read it proactively or ask the user to activate it explicitly with its top-level slash command, e.g. /llm-debug.',
     '',
   ];
@@ -729,7 +725,7 @@ export function hasLoopModeSystemMessage(content: string): boolean {
   return content.includes(LOOP_MODE_SECTION_PREFIX);
 }
 
-export function buildActiveSkillsSystemMessage(
+export function buildActiveSkillsBlockContent(
   activeSkills: ToolAgentActiveSkill[],
 ): string | undefined {
   if (activeSkills.length === 0) {
@@ -737,7 +733,6 @@ export function buildActiveSkillsSystemMessage(
   }
 
   const lines = [
-    ACTIVE_SKILLS_SECTION_PREFIX,
     'The following skills were explicitly activated by the user.',
     'Treat them as additive host-provided instructions for subsequent turns.',
     'Do not claim you discovered or read these files yourself; this content was provided by the host after explicit activation.',
@@ -936,7 +931,6 @@ export function findSpiritSystemMessageContent(messages: JsonValue[]): string | 
         PLAN_SECTION_PREFIX,
         AGENT_MODE_SECTION_PREFIX,
         LOOP_MODE_SECTION_PREFIX,
-        ACTIVE_SKILLS_SECTION_PREFIX,
         EXTENSIONS_SECTION_PREFIX,
         DREAMS_SECTION_PREFIX,
         BASIC_INFO_SECTION_PREFIX,

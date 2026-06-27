@@ -55,7 +55,6 @@ async function main(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     config.model,
   );
 

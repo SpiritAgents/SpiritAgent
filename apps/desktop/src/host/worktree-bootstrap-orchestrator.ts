@@ -146,10 +146,6 @@ export async function startWorktreeBootstrapTurnCommand(
   ctx.scheduleSessionTitleGenerationIfNeeded(displayText);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
-  if (turnSkills.length > 0) {
-    await ctx.refreshRuntimeForBundle(bundle);
-    ctx.syncActiveRuntimePointer();
-  }
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);
   ctx.emitLiveSnapshotUpdate();
   return ctx.buildSnapshot();
@@ -167,6 +163,7 @@ async function startStreamingAfterWorktreeBootstrap(
       pending.userPrompt,
       [],
       pending.explicitWorkspaceFiles ?? [],
+      cloneActiveSkills(bundle.currentTurnSkills),
     );
     ctx.refreshArchiveFromRuntime();
     await ctx.recordRewindCheckpoint(pending.userMessageId, pending.beforeUserCheckpoint);

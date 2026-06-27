@@ -182,10 +182,6 @@ export async function submitUserTurnAfterInitializedCommand(
   ctx.scheduleSessionTitleGenerationIfNeeded(displayText);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
-  if (turnSkills.length > 0) {
-    await ctx.refreshRuntimeForBundle(bundle);
-    ctx.syncActiveRuntimePointer();
-  }
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);
 
   const config = ctx.requireConfig();
@@ -222,7 +218,7 @@ export async function submitUserTurnAfterInitializedCommand(
   const runtime = ctx.requireRuntime();
   await ctx.ensureToolExecutor(bundle);
   try {
-    await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles);
+    await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles, turnSkills);
     ctx.refreshArchiveFromRuntime();
     await ctx.recordRewindCheckpoint(userMessage.id, beforeUserCheckpoint);
     await runtime.poll();

@@ -120,7 +120,6 @@ export async function runDesktopAutomationOnce(
       extensionSystemPrompts: [],
       toolExecutor,
       llmTransport: createLlmTransport(transportConfig),
-      activeSkills: [],
       workspaceRoot: input.definition.workspaceRoot,
       basicInfo: buildDesktopRuntimeBasicInfo(
         input.definition.workspaceRoot,

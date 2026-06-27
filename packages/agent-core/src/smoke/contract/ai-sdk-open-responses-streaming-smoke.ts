@@ -96,7 +96,6 @@ async function main(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     'test-open-responses',
   );
   const started = await transport.startToolAgentRoundStreaming(

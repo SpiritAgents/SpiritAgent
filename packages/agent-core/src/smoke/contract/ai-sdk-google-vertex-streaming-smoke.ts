@@ -79,7 +79,6 @@ async function main(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     VERTEX_MODEL,
   );
 

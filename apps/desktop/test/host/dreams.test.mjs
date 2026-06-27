@@ -68,7 +68,6 @@ test('desktop dreams context is injected into the main agent system message', as
       process.cwd(),
       [],
       [],
-      [],
       'gpt-5.4',
       undefined,
       [],

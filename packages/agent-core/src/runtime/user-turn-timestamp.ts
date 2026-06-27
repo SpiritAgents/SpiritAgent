@@ -1,9 +1,37 @@
+import {
+  buildActiveSkillsBlockContent,
+  type ToolAgentActiveSkill,
+} from '../tool-agent.js';
+
 /** Prefix user turn content with a local-time anchor for the LLM (plain text, no separate metadata field). */
 const USER_MESSAGE_AT_OPEN = '<user_message_at>';
 const USER_MESSAGE_AT_CLOSE = '</user_message_at>';
+const ACTIVE_SKILL_OPEN = '<active_skill>';
+const ACTIVE_SKILL_CLOSE = '</active_skill>';
 
-export function formatUserMessageContentForLlm(body: string): string {
-  return `${USER_MESSAGE_AT_OPEN}${formatLocalIsoWithOffset(new Date())}${USER_MESSAGE_AT_CLOSE}\n${body}`;
+export function formatActiveSkillUserMessageMeta(
+  activeSkills: ToolAgentActiveSkill[],
+): string | undefined {
+  const block = buildActiveSkillsBlockContent(activeSkills);
+  if (!block) {
+    return undefined;
+  }
+
+  return `${ACTIVE_SKILL_OPEN}\n${block}\n${ACTIVE_SKILL_CLOSE}`;
+}
+
+export function formatUserMessageContentForLlm(
+  body: string,
+  activeSkills: ToolAgentActiveSkill[] = [],
+): string {
+  const lines: string[] = [];
+  const activeSkillMeta = formatActiveSkillUserMessageMeta(activeSkills);
+  if (activeSkillMeta) {
+    lines.push(activeSkillMeta);
+  }
+  lines.push(`${USER_MESSAGE_AT_OPEN}${formatLocalIsoWithOffset(new Date())}${USER_MESSAGE_AT_CLOSE}`);
+  lines.push(body);
+  return lines.join('\n');
 }
 
 export function userMessageContentMatchesInput(content: string, input: string): boolean {
@@ -11,23 +39,36 @@ export function userMessageContentMatchesInput(content: string, input: string): 
     return true;
   }
 
-  const body = bodyAfterTimestampLine(content);
+  const body = bodyAfterUserMessageMeta(content);
   return body !== undefined && body === input;
 }
 
-function bodyAfterTimestampLine(content: string): string | undefined {
-  const firstLineEnd = content.indexOf('\n');
+function bodyAfterUserMessageMeta(content: string): string | undefined {
+  let remaining = content;
+
+  if (remaining.startsWith(ACTIVE_SKILL_OPEN)) {
+    const closeIndex = remaining.indexOf(ACTIVE_SKILL_CLOSE);
+    if (closeIndex < 0) {
+      return undefined;
+    }
+    remaining = remaining.slice(closeIndex + ACTIVE_SKILL_CLOSE.length);
+    if (remaining.startsWith('\n')) {
+      remaining = remaining.slice(1);
+    }
+  }
+
+  const firstLineEnd = remaining.indexOf('\n');
   if (firstLineEnd < 0) {
     return undefined;
   }
 
-  const firstLine = content.slice(0, firstLineEnd);
+  const firstLine = remaining.slice(0, firstLineEnd);
   if (
     firstLine.startsWith(USER_MESSAGE_AT_OPEN)
     && firstLine.endsWith(USER_MESSAGE_AT_CLOSE)
     && firstLine.length > USER_MESSAGE_AT_OPEN.length + USER_MESSAGE_AT_CLOSE.length
   ) {
-    return content.slice(firstLineEnd + 1);
+    return remaining.slice(firstLineEnd + 1);
   }
 
   return undefined;

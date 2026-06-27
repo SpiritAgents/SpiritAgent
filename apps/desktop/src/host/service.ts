@@ -9,7 +9,6 @@ import {
 import i18n from '../lib/i18n-host.js';
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
-  buildActiveSkillsSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
   buildExtensionsSystemMessage,
@@ -1369,7 +1368,6 @@ class DesktopHostService {
       );
       const planSystemPrompt = buildPlanSystemMessage(state.metadata.planMetadata);
       const agentModeSystemPrompt = buildAgentModeSystemMessage(state.metadata.planMetadata);
-      const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(this.activeBundle().currentTurnSkills);
       const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);
       const dreamsSystemPrompt = buildDreamsSystemMessage(
         await buildDreamContextText({
@@ -1405,9 +1403,6 @@ class DesktopHostService {
           ...(mcpCatalogSystemPrompt === undefined ? {} : { mcpCatalog: mcpCatalogSystemPrompt }),
           ...(planSystemPrompt === undefined ? {} : { plan: planSystemPrompt }),
           agentMode: agentModeSystemPrompt,
-          ...(activeSkillsSystemPrompt === undefined
-            ? {}
-            : { activeSkills: activeSkillsSystemPrompt }),
           ...(extensionsSystemPrompt === undefined ? {} : { extensions: extensionsSystemPrompt }),
           ...(dreamsSystemPrompt === undefined ? {} : { dreams: dreamsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
@@ -2076,7 +2071,7 @@ class DesktopHostService {
     }
     await this.syncPlanStateForBundle(bundle);
     await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
-    // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 promote/refresh 后仍进入 createRuntime。
+    // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
     const activeProfile = state.config.models.find((m) => m.name === state.config.activeModel);
     const activeTransportKind = resolveDesktopTransportKind(activeProfile);
     const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
@@ -2766,7 +2761,6 @@ class DesktopHostService {
       ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
       toolExecutor,
       llmTransport,
-      activeSkills: bundle.currentTurnSkills,
       workspaceRoot,
       basicInfo: buildDesktopRuntimeBasicInfo(
         workspaceRoot,

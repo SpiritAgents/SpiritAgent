@@ -159,7 +159,6 @@ async function main(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     'deepseek-v4-pro',
   );
   const started = await transport.startToolAgentRoundStreaming(
@@ -334,7 +333,6 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
         },
       ],
       process.cwd(),
-      [],
       [],
       [],
       'deepseek-v4-pro',

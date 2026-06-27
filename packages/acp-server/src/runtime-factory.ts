@@ -127,7 +127,7 @@ export async function createAcpRuntime(
     : undefined;
   const providerWebSearchPromptSection = buildProviderWebSearchPromptSection(transportConfig);
 
-  // 7. Mutable active skills array — closures capture the reference, not the value
+  // 7. Mutable active skills array — session bookkeeping for slash activation
   const activeSkills: LlmActiveSkill[] = [];
 
   // 8. State factory functions
@@ -138,7 +138,6 @@ export async function createAcpRuntime(
       workspaceRoot,
       enabledRules,
       enabledSkillCatalog,
-      activeSkills,
       transportConfig.model,
       currentPlanMetadata,
       [], // extensionSystemPrompts
@@ -155,7 +154,6 @@ export async function createAcpRuntime(
       workspaceRoot,
       enabledRules,
       enabledSkillCatalog,
-      activeSkills,
       transportConfig.model,
       currentPlanMetadata,
       [], // extensionSystemPrompts
@@ -191,7 +189,6 @@ export async function createAcpRuntime(
         workspaceRoot,
         enabledRules,
         enabledSkillCatalog,
-        activeSkills,
         transportConfig.model,
         currentPlanMetadata,
         [], // extensionSystemPrompts
