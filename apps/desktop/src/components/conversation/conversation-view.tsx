@@ -94,11 +94,14 @@ export type ComposerDockSectionProps = {
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
   onApplyFileReferenceSuggestion: (path: string) => void;
+  onDismissFileReferenceSuggestions: () => void;
   slashQuery: ActiveSkillSlashQuery | undefined;
   slashSuggestions: SkillSlashSuggestion[];
   slashSelectedIndex: number;
   onSlashSelectedIndexChange: (index: number) => void;
   onApplySlashSuggestionItem: (suggestion: SkillSlashSuggestion) => void;
+  onDismissSlashSuggestions: () => void;
+  composerCursorCodeUnits: number;
   composerPlaceholder: string;
   composerCanSend: boolean;
   conversationInterruptible: boolean;
@@ -352,11 +355,14 @@ export function ConversationView({
             fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
             onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
             onApplyFileReferenceSuggestion={composerDock.onApplyFileReferenceSuggestion}
+            onDismissFileReferenceSuggestions={composerDock.onDismissFileReferenceSuggestions}
             slashQuery={composerDock.slashQuery}
             slashSuggestions={composerDock.slashSuggestions}
             slashSelectedIndex={composerDock.slashSelectedIndex}
             onSlashSelectedIndexChange={composerDock.onSlashSelectedIndexChange}
             onApplySlashSuggestionItem={composerDock.onApplySlashSuggestionItem}
+            onDismissSlashSuggestions={composerDock.onDismissSlashSuggestions}
+            composerCursorCodeUnits={composerDock.composerCursorCodeUnits}
             composerPlaceholder={composerDock.composerPlaceholder}
             composerCanSend={composerDock.composerCanSend}
             conversationInterruptible={composerDock.conversationInterruptible}
