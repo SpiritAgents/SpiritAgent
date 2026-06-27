@@ -7,7 +7,6 @@ import {
 } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -26,16 +25,6 @@ type AutomationHistoryTableProps = {
 };
 
 const columnHelper = createColumnHelper<DesktopAutomationRun>();
-
-function runStatusBadgeVariant(status: DesktopAutomationRunStatus) {
-  if (status === "blocked") {
-    return "outline" as const;
-  }
-  if (status === "failed") {
-    return "destructive" as const;
-  }
-  return "secondary" as const;
-}
 
 function runStatusLabelKey(status: DesktopAutomationRunStatus) {
   return `automations.runStatus.${status}` as const;
@@ -60,11 +49,7 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
       columnHelper.accessor("status", {
         id: "status",
         header: () => t("automations.historyColumnStatus"),
-        cell: ({ getValue }) => (
-          <Badge variant={runStatusBadgeVariant(getValue())} className="text-[11px]">
-            {t(runStatusLabelKey(getValue()))}
-          </Badge>
-        ),
+        cell: ({ getValue }) => t(runStatusLabelKey(getValue())),
       }),
     ],
     [i18n.language, t],
@@ -84,45 +69,58 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
   }
 
   return (
-    <Table>
-      <TableHeader className="sr-only">
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id} className="hover:bg-transparent">
-            {headerGroup.headers.map((header) => (
-              <TableHead
-                key={header.id}
-                className={cn(header.column.id === "status" && "text-right")}
-              >
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow
-            key={row.id}
-            className={cn(
-              "cursor-pointer border-border/40 transition-none hover:bg-transparent",
-              DESKTOP_INSTANT_HOVER_OVERLAY,
-            )}
-            onClick={() => onOpenSession(row.original.sessionPath)}
-            title={t("automations.openSession")}
-          >
-            {row.getVisibleCells().map((cell) => (
-              <TableCell
-                key={cell.id}
-                className={cn(cell.column.id === "status" && "text-right")}
-              >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div
+      className={cn(
+        "overflow-hidden rounded-lg border border-border/40",
+        "[&_[data-slot=table-row]]:border-border/40",
+      )}
+    >
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="hover:bg-transparent">
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  className={cn(
+                    "text-foreground/80",
+                    header.column.id === "status" && "text-right",
+                  )}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={cn(
+                "cursor-pointer transition-none hover:bg-transparent",
+                DESKTOP_INSTANT_HOVER_OVERLAY,
+              )}
+              onClick={() => onOpenSession(row.original.sessionPath)}
+              title={t("automations.openSession")}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell
+                  key={cell.id}
+                  className={cn(
+                    "text-foreground/80",
+                    cell.column.id === "status" && "text-right",
+                  )}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
