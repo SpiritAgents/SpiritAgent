@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DESKTOP_INSTANT_HOVER_OVERLAY } from "@/lib/desktop-chrome";
+import { formatRelativeTime } from "@/lib/format-relative-time";
 import { cn } from "@/lib/utils";
 import type { DesktopAutomationRun, DesktopAutomationRunStatus } from "@/types";
 
@@ -43,8 +44,14 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
       columnHelper.accessor("startedAtUnixMs", {
         id: "time",
         header: () => t("automations.historyColumnTime"),
-        cell: ({ getValue }) =>
-          new Date(getValue()).toLocaleString(i18n.language, { hour12: false }),
+        cell: ({ getValue }) => {
+          const startedAtIso = new Date(getValue()).toISOString();
+          return (
+            <time dateTime={startedAtIso}>
+              {formatRelativeTime(startedAtIso, i18n.language)}
+            </time>
+          );
+        },
       }),
       columnHelper.accessor("status", {
         id: "status",
