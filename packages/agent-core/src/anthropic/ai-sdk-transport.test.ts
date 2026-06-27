@@ -7,6 +7,31 @@ import {
 } from '../ports.js';
 import { AiSdkAnthropicTransport } from './ai-sdk-transport.js';
 
+test('llmHistoryAsApiMessages serializes image and video user parts', () => {
+  const transport = new AiSdkAnthropicTransport();
+  const history: LlmMessage[] = [{
+    role: 'user',
+    content: [
+      { type: 'text', text: 'describe this' },
+      { type: 'image', path: 'shot.png' },
+      { type: 'video', path: 'clip.mp4' },
+    ],
+  }];
+
+  const messages = transport.llmHistoryAsApiMessages(history);
+  assert.equal(messages.length, 1);
+
+  const user = messages[0] as {
+    role: string;
+    content: Array<Record<string, unknown>>;
+  };
+  assert.equal(user.role, 'user');
+  assert.equal(user.content.length, 3);
+  assert.equal(user.content[0]?.type, 'text');
+  assert.equal(user.content[1]?.type, 'image_url');
+  assert.equal(user.content[2]?.type, 'video_url');
+});
+
 test('llmHistoryAsApiMessages preserves anthropic providerState for assistant tool calls', () => {
   const transport = new AiSdkAnthropicTransport();
   const history: LlmMessage[] = [{

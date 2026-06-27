@@ -48,7 +48,8 @@ import type {
   ToolCallRequest,
   ToolExecutionOutput,
 } from '../ports.js';
-import { llmMessageTextContent } from '../ports.js';
+import { llmMessageHasMedia, llmMessageTextContent } from '../ports.js';
+import type { LlmModelCapabilities } from '../llm-provider-shared.js';
 import type { JsonSchemaTransport } from '../json-schema.js';
 import {
   buildAnthropicProviderOptions,
@@ -56,6 +57,13 @@ import {
   DEFAULT_ANTHROPIC_BASE_URL,
   type AnthropicTransportConfig,
 } from './anthropic-compat.js';
+import {
+  isMinimaxAnthropicConfig,
+  mapMinimaxAnthropicImageContentPart,
+  mapMinimaxAnthropicVideoContentPart,
+} from './minimax-multimodal.js';
+import { pathToLocalVideoReference } from '../openai/openai-multimodal-media-path.js';
+import { resolveMinimaxVideoInAnthropicMessages } from '../openai/minimax-video-messages.js';
 
 type AnthropicToolCall = {
   toolCallId: string;
@@ -125,13 +133,18 @@ export class AiSdkAnthropicTransport
       { model: config.model },
       request,
     );
-    const normalizedMessages = normalizeMessagesForAnthropicPrompt(messages);
+    const normalizedMessages = prepareAnthropicToolStateMessages(config, messages);
+    await resolveMinimaxVideoInAnthropicMessages(
+      config,
+      normalizedMessages,
+      anthropicTransportAssetRoot(config),
+    );
     const requestTrace = buildAnthropicRequestTrace(config, 1, normalizedMessages, []);
 
     try {
       const result = await generateObject({
         model: createAnthropicLanguageModel(config),
-        messages: toolStateMessagesToAiSdkMessages(normalizedMessages) as any,
+        messages: toolStateMessagesToAiSdkMessages(normalizedMessages, config) as any,
         allowSystemInMessages: true,
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
@@ -161,7 +174,12 @@ export class AiSdkAnthropicTransport
     };
 
     const requestMessages = nextState.messages.map((message) => cloneJsonValue(message));
-    const normalizedRequestMessages = normalizeMessagesForAnthropicPrompt(requestMessages);
+    const normalizedRequestMessages = prepareAnthropicToolStateMessages(config, requestMessages);
+    await resolveMinimaxVideoInAnthropicMessages(
+      config,
+      normalizedRequestMessages,
+      anthropicTransportAssetRoot(config),
+    );
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAnthropicRequestTrace(
       config,
@@ -173,7 +191,7 @@ export class AiSdkAnthropicTransport
     try {
       const result: any = await generateText({
         model: createAnthropicLanguageModel(config),
-        messages: toolStateMessagesToAiSdkMessages(normalizedRequestMessages) as any,
+        messages: toolStateMessagesToAiSdkMessages(normalizedRequestMessages, config) as any,
         allowSystemInMessages: true,
         ...(normalizedTools.length === 0
           ? {}
@@ -237,7 +255,12 @@ export class AiSdkAnthropicTransport
     };
 
     const requestMessages = nextState.messages.map((message) => cloneJsonValue(message));
-    const normalizedRequestMessages = normalizeMessagesForAnthropicPrompt(requestMessages);
+    const normalizedRequestMessages = prepareAnthropicToolStateMessages(config, requestMessages);
+    await resolveMinimaxVideoInAnthropicMessages(
+      config,
+      normalizedRequestMessages,
+      anthropicTransportAssetRoot(config),
+    );
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAnthropicRequestTrace(
       config,
@@ -251,7 +274,7 @@ export class AiSdkAnthropicTransport
     try {
       const result: any = streamText({
         model: createAnthropicLanguageModel(config),
-        messages: toolStateMessagesToAiSdkMessages(normalizedRequestMessages) as any,
+        messages: toolStateMessagesToAiSdkMessages(normalizedRequestMessages, config) as any,
         allowSystemInMessages: true,
         ...(normalizedTools.length === 0
           ? {}
@@ -315,6 +338,7 @@ export class AiSdkAnthropicTransport
           ? {}
           : { preCompactionArchivePath: context.preCompactionArchivePath }),
       }),
+      config,
     );
     const compactConfig: AnthropicTransportConfig = {
       ...config,
@@ -458,7 +482,10 @@ function buildAiSdkTools(
   );
 }
 
-function toolStateMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<string, unknown>> {
+function toolStateMessagesToAiSdkMessages(
+  messages: JsonValue[],
+  config: AnthropicTransportConfig,
+): Array<Record<string, unknown>> {
   const toolCallNames = buildToolCallNameIndex(messages);
 
   return messages.flatMap((message) => {
@@ -470,7 +497,7 @@ function toolStateMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<s
       case 'system':
         return typeof message.content === 'string' ? [{ role: 'system', content: message.content }] : [];
       case 'user': {
-        const content = userContentToAiSdkContent(message.content);
+        const content = userContentToAiSdkContent(message.content, config);
         return content === undefined ? [] : [{ role: 'user', content }];
       }
       case 'assistant': {
@@ -485,6 +512,71 @@ function toolStateMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<s
         return [];
     }
   });
+}
+
+function prepareAnthropicToolStateMessages(
+  config: AnthropicTransportConfig,
+  messages: JsonValue[],
+): JsonValue[] {
+  return stripAnthropicUserMediaWithoutCapability(
+    normalizeMessagesForAnthropicPrompt(messages),
+    config,
+  );
+}
+
+function anthropicTransportAssetRoot(
+  config: Pick<AnthropicTransportConfig, 'workspaceRoot'>,
+): string {
+  return config.workspaceRoot ?? process.cwd();
+}
+
+function stripAnthropicUserMediaWithoutCapability(
+  messages: JsonValue[],
+  config: Pick<AnthropicTransportConfig, 'modelCapabilities'>,
+): JsonValue[] {
+  if (config.modelCapabilities === undefined) {
+    return messages;
+  }
+
+  const capabilities = config.modelCapabilities;
+  return messages.map((message) => sanitizeAnthropicMessageForCompatibility(
+    message,
+    capabilities,
+  ));
+}
+
+function sanitizeAnthropicMessageForCompatibility(
+  message: JsonValue,
+  capabilities: LlmModelCapabilities,
+): JsonValue {
+  const cloned = cloneJsonValue(message);
+  if (!isJsonObject(cloned) || cloned.role !== 'user' || !Array.isArray(cloned.content)) {
+    return cloned;
+  }
+
+  let content = cloned.content;
+  if (!capabilities.imageInput) {
+    content = content.filter(
+      (part) => !(isJsonObject(part) && part.type === 'image_url'),
+    );
+  }
+  if (!capabilities.videoInput) {
+    content = content.filter(
+      (part) => !(isJsonObject(part) && part.type === 'video_url'),
+    );
+  }
+
+  if (content !== cloned.content) {
+    const textParts = content.filter(
+      (part) => isJsonObject(part) && part.type === 'text' && typeof part.text === 'string',
+    );
+    return {
+      ...cloned,
+      content: textParts.length > 0 ? textParts : '',
+    };
+  }
+
+  return cloned;
 }
 
 function normalizeMessagesForAnthropicPrompt(messages: JsonValue[]): JsonValue[] {
@@ -534,6 +626,7 @@ function projectSeparatedSystemMessageForAnthropic(message: JsonObject): JsonVal
 
 function userContentToAiSdkContent(
   content: JsonValue | undefined,
+  config: AnthropicTransportConfig,
 ): string | Array<Record<string, unknown>> | undefined {
   if (typeof content === 'string') {
     return content;
@@ -557,7 +650,18 @@ function userContentToAiSdkContent(
         break;
       case 'image_url':
         if (isJsonObject(part.image_url) && typeof part.image_url.url === 'string') {
-          parts.push({ type: 'image', image: part.image_url.url });
+          if (isMinimaxAnthropicConfig(config)) {
+            parts.push(mapMinimaxAnthropicImageContentPart(part.image_url.url));
+          } else {
+            parts.push({ type: 'image', image: part.image_url.url });
+          }
+        }
+        break;
+      case 'video_url':
+        if (isJsonObject(part.video_url) && typeof part.video_url.url === 'string') {
+          if (isMinimaxAnthropicConfig(config)) {
+            parts.push(mapMinimaxAnthropicVideoContentPart(part.video_url.url));
+          }
         }
         break;
       default:
@@ -1141,7 +1245,7 @@ function llmMessageToToolStateMessage(message: LlmMessage, assetRoot: string): J
     };
   }
 
-  if (message.role === 'user' && message.content.some((part) => part.type === 'image')) {
+  if (message.role === 'user' && llmMessageHasMedia(message.content)) {
     const parts: JsonValue[] = [];
 
     for (const part of message.content) {
@@ -1155,6 +1259,16 @@ function llmMessageToToolStateMessage(message: LlmMessage, assetRoot: string): J
           type: 'image_url',
           image_url: {
             url: pathToImageUrl(part.path, assetRoot),
+          },
+        });
+        continue;
+      }
+
+      if (part.type === 'video') {
+        parts.push({
+          type: 'video_url',
+          video_url: {
+            url: pathToLocalVideoReference(part.path, assetRoot),
           },
         });
       }
