@@ -5,11 +5,14 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  DESKTOP_OVERLAY_LIST_CONTENT,
   DESKTOP_OVERLAY_LIST_LIST_GAP,
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
   DESKTOP_OVERLAY_LIST_SCROLL_AREA,
   DESKTOP_OVERLAY_LIST_WIDTH,
+  stopOverlayScrollPropagation,
 } from "@/lib/desktop-chrome";
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
@@ -82,15 +85,27 @@ export function ComposerSuggestionDropdown({
         onPointerDownOutside={preventComposerOutsideDismiss}
         onInteractOutside={preventComposerOutsideDismiss}
         className={cn(
-          "flex flex-col",
+          DESKTOP_OVERLAY_LIST_CONTENT,
           DESKTOP_OVERLAY_LIST_WIDTH,
-          DESKTOP_OVERLAY_LIST_LIST_PADDING,
-          DESKTOP_OVERLAY_LIST_LIST_GAP,
-          DESKTOP_OVERLAY_LIST_SCROLL_AREA,
           contentClassName,
         )}
       >
-        {children}
+        <ScrollArea
+          type="always"
+          className={DESKTOP_OVERLAY_LIST_SCROLL_AREA}
+          onWheel={stopOverlayScrollPropagation}
+          onTouchMove={stopOverlayScrollPropagation}
+        >
+          <div
+            className={cn(
+              "flex flex-col",
+              DESKTOP_OVERLAY_LIST_LIST_PADDING,
+              DESKTOP_OVERLAY_LIST_LIST_GAP,
+            )}
+          >
+            {children}
+          </div>
+        </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
   );
