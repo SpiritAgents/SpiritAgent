@@ -16,21 +16,28 @@ function resolveRelativeTimeLocale(locale: string): string {
   return 'en';
 }
 
+/** Intl zh-CN 相对时间默认无空格（如 3分钟前）；与 PR 时间线等 UI 文案统一为「3 分钟前」。 */
+function addZhRelativeTimeSpaces(text: string): string {
+  return text.replace(/(\d)([\u4e00-\u9fff])/g, '$1 $2');
+}
+
 export function formatRelativeTime(isoTimestamp: string, locale: string): string {
   const parsed = Date.parse(isoTimestamp);
   if (!Number.isFinite(parsed)) {
     return isoTimestamp;
   }
 
+  const resolvedLocale = resolveRelativeTimeLocale(locale);
   const deltaSeconds = Math.round((parsed - Date.now()) / 1000);
-  const formatter = new Intl.RelativeTimeFormat(resolveRelativeTimeLocale(locale), {
+  const formatter = new Intl.RelativeTimeFormat(resolvedLocale, {
     numeric: 'auto',
   });
 
   for (const { unit, seconds } of TIME_UNITS) {
     if (Math.abs(deltaSeconds) >= seconds || unit === 'second') {
       const value = Math.round(deltaSeconds / seconds);
-      return formatter.format(value, unit);
+      const formatted = formatter.format(value, unit);
+      return resolvedLocale.startsWith('zh') ? addZhRelativeTimeSpaces(formatted) : formatted;
     }
   }
 
