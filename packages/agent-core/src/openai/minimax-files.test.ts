@@ -71,3 +71,37 @@ test('uploadMinimaxVideoFile posts multipart with purpose=video_understanding an
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
+
+test('uploadMinimaxVideoFile reads nested numeric file.file_id from MiniMax CN response', async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-agent-core-minimax-upload-nested-'));
+
+  try {
+    const videoPath = join(workspaceRoot, 'clip.mp4');
+    await writeFile(videoPath, MINIMAL_MP4_HEADER);
+    clearMinimaxVideoUploadCache();
+    setLlmFetchTransportOverrideForTests(async () => new Response(
+      JSON.stringify({
+        file: {
+          file_id: 413560385741067,
+          bytes: MINIMAL_MP4_HEADER.length,
+          created_at: 1782521293,
+          filename: 'clip.mp4',
+          purpose: 'video_understanding',
+        },
+        base_resp: { status_code: 0, status_msg: 'success' },
+      }),
+      { status: 200 },
+    ));
+
+    const url = await uploadMinimaxVideoFile(
+      { apiKey: 'test-key', baseUrl: 'https://api.minimaxi.com/v1' },
+      videoPath,
+    );
+
+    assert.equal(url, 'mm_file://413560385741067');
+  } finally {
+    setLlmFetchTransportOverrideForTests(undefined);
+    clearMinimaxVideoUploadCache();
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
