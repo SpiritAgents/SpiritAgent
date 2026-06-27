@@ -1,6 +1,8 @@
 import { readFile, stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 
+import { FormData } from 'undici';
+
 import { getLlmFetch } from '../llm-fetch.js';
 import type { OpenAiTransportConfig } from './openai-compat.js';
 import { normalizeOpenAiCompatibleApiBase } from './moonshot-files.js';
@@ -55,7 +57,10 @@ export async function uploadMinimaxVideoFile(
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
     },
-    body: form,
+    // 必须用 undici 的 FormData：getLlmFetch 走 undici 包 fetch，与全局 FormData 非同源，
+    // 全局 FormData 会被当普通对象字符串化、丢失 multipart 边界头（MiniMax 报 2013）。
+    // 全局 fetch 类型不认 undici FormData，故此处断言桥接。
+    body: form as unknown as BodyInit,
   });
 
   if (!response.ok) {
@@ -63,7 +68,7 @@ export async function uploadMinimaxVideoFile(
     throw new Error(`MiniMax video upload failed (${response.status}): ${body}`);
   }
 
-  const payload = (await response.json()) as { file_id?: unknown; id?: unknown };
+  const payload = (await response.json()) as unknown;
   const fileId = readMinimaxUploadedFileId(payload);
   if (!fileId) {
     throw new Error('MiniMax video upload returned no file id');
@@ -74,12 +79,25 @@ export async function uploadMinimaxVideoFile(
   return url;
 }
 
-function readMinimaxUploadedFileId(payload: { file_id?: unknown; id?: unknown }): string | undefined {
-  if (typeof payload.file_id === 'string' && payload.file_id.trim().length > 0) {
-    return payload.file_id.trim();
+/**
+ * MiniMax Files API 实际返回 `{ file: { file_id: <number> } }`，file_id 为数字且嵌套在 file 下。
+ * 文档：https://platform.minimaxi.com/docs/api-reference/file-management-upload
+ * 兼容顶层 file_id/id 仅作兜底；同时接受 string 与 number。
+ */
+function readMinimaxUploadedFileId(payload: unknown): string | undefined {
+  if (typeof payload !== 'object' || payload === null) {
+    return undefined;
   }
-  if (typeof payload.id === 'string' && payload.id.trim().length > 0) {
-    return payload.id.trim();
+  const root = payload as Record<string, unknown>;
+  const file = typeof root.file === 'object' && root.file !== null ? (root.file as Record<string, unknown>) : undefined;
+  const candidates: unknown[] = [file?.file_id, file?.id, root.file_id, root.id];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return String(candidate);
+    }
   }
   return undefined;
 }
