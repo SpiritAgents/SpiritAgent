@@ -10,6 +10,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogFooterActions,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -170,7 +172,8 @@ export function SkillsSettingsPanel({
               {t('settings.deleteSkillConfirm', { name: deleteTarget?.name ?? '', location: deleteTarget ? skillRootKindLabel(deleteTarget.rootKind) : '' })}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+          <DialogFooter>
+            <DialogFooterActions>
             <Button
               type="button"
               variant="outline"
@@ -203,7 +206,8 @@ export function SkillsSettingsPanel({
               {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t('common.delete')}
             </Button>
-          </div>
+            </DialogFooterActions>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -276,7 +280,8 @@ export function SkillsSettingsPanel({
               />
             </div>
           </div>
-          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+          <DialogFooter>
+            <DialogFooterActions>
             <Button
               type="button"
               variant="outline"
@@ -312,7 +317,8 @@ export function SkillsSettingsPanel({
               {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t('common.create')}
             </Button>
-          </div>
+            </DialogFooterActions>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

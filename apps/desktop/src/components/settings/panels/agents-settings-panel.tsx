@@ -8,6 +8,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogFooterActions,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -169,7 +171,8 @@ export function AgentsSettingsPanel({
               })}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+          <DialogFooter>
+            <DialogFooterActions>
             <Button
               type="button"
               variant="outline"
@@ -193,7 +196,8 @@ export function AgentsSettingsPanel({
               {lspInstallBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t("settings.lspInstallConfirmAction")}
             </Button>
-          </div>
+            </DialogFooterActions>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
