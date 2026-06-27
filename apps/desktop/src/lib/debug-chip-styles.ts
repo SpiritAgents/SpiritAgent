@@ -1,7 +1,6 @@
+// 半透明底色试点：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
 export const DEBUG_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md border border-red-200/90 bg-red-50 px-1.5 py-0.5 text-xs font-medium leading-none text-red-900 select-none align-middle mx-0.5 dark:border-red-700/60 dark:bg-red-950 dark:text-red-300";
-
-export const DEBUG_CHIP_ICON_CLASS = "text-red-600 dark:text-red-400";
+  "inline-flex items-center gap-1 rounded-md bg-red-500/10 px-1.5 py-0.5 text-xs font-medium leading-none text-red-700 select-none align-middle mx-0.5 dark:bg-red-500/15 dark:text-red-400";
 
 export function makeDebugChipNode(doc: Document, label = "Debug"): HTMLElement {
   const span = doc.createElement("span");
@@ -20,7 +19,6 @@ export function makeDebugChipNode(doc: Document, label = "Debug"): HTMLElement {
   icon.setAttribute("stroke-width", "2");
   icon.setAttribute("stroke-linecap", "round");
   icon.setAttribute("stroke-linejoin", "round");
-  icon.setAttribute("class", DEBUG_CHIP_ICON_CLASS);
   icon.setAttribute("aria-hidden", "true");
   icon.innerHTML =
     '<path d="M12 12h.01"/><path d="M8 21V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v16"/><path d="M3 7h18"/><path d="M3 11h18"/><path d="M3 15h18"/>';

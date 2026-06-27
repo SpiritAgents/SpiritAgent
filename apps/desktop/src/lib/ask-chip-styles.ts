@@ -1,7 +1,6 @@
+// 半透明底色：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
 export const ASK_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md border border-emerald-200/90 bg-emerald-50 px-1.5 py-0.5 text-xs font-medium leading-none text-emerald-900 select-none align-middle mx-0.5 dark:border-emerald-700/60 dark:bg-emerald-950 dark:text-emerald-300";
-
-export const ASK_CHIP_ICON_CLASS = "text-emerald-600 dark:text-emerald-400";
+  "inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium leading-none text-emerald-900 select-none align-middle mx-0.5 dark:bg-emerald-500/15 dark:text-emerald-500";
 
 export function makeAskChipNode(doc: Document, label = "Ask"): HTMLElement {
   const span = doc.createElement("span");
@@ -20,7 +19,6 @@ export function makeAskChipNode(doc: Document, label = "Ask"): HTMLElement {
   icon.setAttribute("stroke-width", "2");
   icon.setAttribute("stroke-linecap", "round");
   icon.setAttribute("stroke-linejoin", "round");
-  icon.setAttribute("class", ASK_CHIP_ICON_CLASS);
   icon.setAttribute("aria-hidden", "true");
   icon.innerHTML =
     '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>';
