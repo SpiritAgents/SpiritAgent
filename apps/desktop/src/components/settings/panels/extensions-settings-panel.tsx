@@ -10,6 +10,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogFooterActions,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -194,7 +196,8 @@ export function ExtensionsSettingsPanel({
               {t('settings.deleteExtensionConfirm', { name: deleteTarget?.displayName ?? '' })}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col-reverse justify-end gap-2 pt-2 sm:flex-row">
+          <DialogFooter>
+            <DialogFooterActions>
             <Button
               type="button"
               variant="outline"
@@ -227,7 +230,8 @@ export function ExtensionsSettingsPanel({
               {extensionsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
               {t('common.delete')}
             </Button>
-          </div>
+            </DialogFooterActions>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
