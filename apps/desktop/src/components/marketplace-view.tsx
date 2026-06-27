@@ -666,7 +666,7 @@ export function MarketplaceView({
                               className="rounded-lg border border-border/60 bg-background px-3 py-3"
                             >
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-mono text-xs text-foreground">{version.version}</span>
+                                <span className="text-xs text-foreground">{version.version}</span>
                                 <Badge variant="outline" className="text-[10px]">
                                   {version.channel}
                                 </Badge>
@@ -703,7 +703,7 @@ export function MarketplaceView({
                               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0 flex-1 space-y-2">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-mono text-xs text-foreground">{version.version}</span>
+                                    <span className="text-xs text-foreground">{version.version}</span>
                                     <Badge variant="outline" className="text-[10px]">
                                       {version.channel}
                                     </Badge>
