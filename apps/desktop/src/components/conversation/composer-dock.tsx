@@ -390,7 +390,6 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 <WorkspaceFileReferenceMenu
                   suggestions={fileReferenceSuggestions.suggestions}
                   selectedIndex={fileReferenceSelectedIndex}
-                  onSelectIndex={onFileReferenceSelectedIndexChange}
                   onApplySuggestion={onApplyFileReferenceSuggestion}
                 />
               ) : null}
@@ -406,7 +405,6 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 <SkillSlashMenu
                   suggestions={slashSuggestions}
                   selectedIndex={slashSelectedIndex}
-                  onSelectIndex={onSlashSelectedIndexChange}
                   onApplySuggestion={onApplySlashSuggestionItem}
                 />
               ) : null}
