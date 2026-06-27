@@ -11,7 +11,6 @@ import type { SkillSlashSuggestion, SkillSlashSuggestionKind } from '@/lib/skill
 type SkillSlashMenuProps = {
   suggestions: SkillSlashSuggestion[]
   selectedIndex: number
-  onSelectIndex(index: number): void
   onApplySuggestion(suggestion: SkillSlashSuggestion): void
 }
 
@@ -23,7 +22,6 @@ function SlashSuggestionIcon({ kind }: { kind: SkillSlashSuggestionKind }) {
 export function SkillSlashMenu({
   suggestions,
   selectedIndex,
-  onSelectIndex,
   onApplySuggestion,
 }: SkillSlashMenuProps) {
   const { t } = useTranslation()
@@ -48,8 +46,6 @@ export function SkillSlashMenu({
             selected={index === selectedIndex}
             title={`${suggestion.name} — ${description}`}
             onMouseDown={(event) => event.preventDefault()}
-            onMouseEnter={() => onSelectIndex(index)}
-            onFocus={() => onSelectIndex(index)}
             onClick={() => onApplySuggestion(suggestion)}
           >
             <div className="flex min-w-0 flex-1 items-start gap-2">
