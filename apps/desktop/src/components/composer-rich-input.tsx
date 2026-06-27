@@ -21,6 +21,7 @@ import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-select
 import {
   caretAtEnd,
   caretToPlainTextOffset,
+  plainTextOffsetToCaret,
   replaceSkillSlashQueryInSegments,
   replaceWorkspaceFileReferenceInSegments,
   normalizeWorkspaceFilePath,
@@ -155,6 +156,7 @@ export type ComposerRichInputHandle = {
   resetAfterSend(agentMode: DesktopAgentMode): void;
   getSegments(): RichSegment[];
   setSegments(segments: RichSegment[]): void;
+  getPlainTextCaretClientRect(plainTextOffset: number): DOMRect | null;
 };
 
 export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
@@ -720,6 +722,37 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       [commitSegments],
     );
 
+    const getPlainTextCaretClientRect = useCallback((plainTextOffset: number): DOMRect | null => {
+      const root = divRef.current;
+      if (!root) {
+        return null;
+      }
+
+      const segments = segmentsRef.current;
+      const caret = plainTextOffsetToCaret(segments, plainTextOffset);
+      const selection = window.getSelection();
+      const savedRanges: Range[] = [];
+      if (selection) {
+        for (let index = 0; index < selection.rangeCount; index += 1) {
+          savedRanges.push(selection.getRangeAt(index).cloneRange());
+        }
+      }
+
+      caretToDomRange(root, segments, caret);
+
+      let rect: DOMRect | null = null;
+      if (selection && selection.rangeCount > 0) {
+        rect = selection.getRangeAt(0).getBoundingClientRect();
+      }
+
+      selection?.removeAllRanges();
+      for (const range of savedRanges) {
+        selection?.addRange(range);
+      }
+
+      return rect;
+    }, []);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -744,6 +777,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         resetAfterSend,
         getSegments,
         setSegments: (next: RichSegment[]) => applySegments(next),
+        getPlainTextCaretClientRect,
       }),
       [
         insertAttachment,
@@ -765,6 +799,7 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         insertSkillChip,
         resetAfterSend,
         getSegments,
+        getPlainTextCaretClientRect,
         applySegments,
       ],
     );
