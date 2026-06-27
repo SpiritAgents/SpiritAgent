@@ -36,7 +36,6 @@ export function createAiSdkOpenAiDemoRuntime(options: {
         process.cwd(),
         [],
         [],
-        [],
         smokeConfig.model,
       ),
     appendToolResultMessage: appendOpenAiToolResultMessage,

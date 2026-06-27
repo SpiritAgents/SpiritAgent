@@ -12,7 +12,6 @@ import {
   appendLlmToolResultMessage,
   appendLlmUserMessage,
   appendLlmUserLlmMessage,
-  buildActiveSkillsSystemMessage,
   buildBasicInfoSystemMessage,
   buildExtensionsSystemMessage,
   buildAgentModeSystemMessage,
@@ -127,7 +126,7 @@ let transportConfig: LlmTransportConfig | undefined;
 let currentHostToolModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
 let enabledRules: LlmEnabledRule[] = [];
 let enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [];
-let activeSkills: LlmActiveSkill[] = [];
+let pendingTurnActiveSkills: LlmActiveSkill[] = [];
 let planMetadata: LlmPlanMetadata | undefined;
 let activePlanPath: string | undefined;
 let extensionSystemPrompts: LlmExtensionSystemPrompt[] = [];
@@ -1102,7 +1101,7 @@ async function reloadHostMetadataFromInternal(
   enabledRules = [...metadata.rules.enabledRules];
   enabledSkillCatalog = [...metadata.skills.enabledSkillCatalog];
   planMetadata = metadata.planMetadata;
-  activeSkills = pruneActiveSkillsAgainstCatalog(activeSkills, enabledSkillCatalog);
+  pendingTurnActiveSkills = pruneActiveSkillsAgainstCatalog(pendingTurnActiveSkills, enabledSkillCatalog);
   return true;
 }
 
@@ -1732,7 +1731,6 @@ async function createRuntime(
       workspaceRoot,
       enabledRules,
       enabledSkillCatalog,
-      activeSkills,
       config.model,
       planMetadata,
       extensionSystemPrompts,
@@ -1757,7 +1755,6 @@ async function createRuntime(
         workspaceRoot,
         enabledRules,
         enabledSkillCatalog,
-        activeSkills,
         config.model,
         planMetadata,
         extensionSystemPrompts,
@@ -1783,7 +1780,6 @@ async function createRuntime(
         workspaceRoot,
         enabledRules,
         enabledSkillCatalog,
-        activeSkills,
         config.model,
         planMetadata,
         extensionSystemPrompts,
@@ -1982,7 +1978,7 @@ peer.on('runtime.init', async (rawParams) => {
     enabledSkillCatalog = [...(params.enabledSkillCatalog ?? [])];
     planMetadata = params.planMetadata;
   }
-  activeSkills = pruneActiveSkillsAgainstCatalog(activeSkills, enabledSkillCatalog);
+  pendingTurnActiveSkills = pruneActiveSkillsAgainstCatalog(pendingTurnActiveSkills, enabledSkillCatalog);
   currentApprovalLevel = normalizeBridgeApprovalLevel(params.approvalLevel);
   if (typeof params.todoSessionKey === 'string' && params.todoSessionKey.trim()) {
     await updateCliTodoScope(params.todoSessionKey.trim());
@@ -2382,8 +2378,10 @@ peer.on('hostInternal.installMarketplaceExtension', async (rawParams) => {
 
 peer.on('runtime.activateSkill', async (rawParams) => {
   const params = rawParams as RuntimeActivateSkillParams;
-  activeSkills = upsertActiveSkill(activeSkills, params.skill);
-  activeSkills = pruneActiveSkillsAgainstCatalog(activeSkills, enabledSkillCatalog);
+  pendingTurnActiveSkills = pruneActiveSkillsAgainstCatalog(
+    upsertActiveSkill(pendingTurnActiveSkills, params.skill),
+    enabledSkillCatalog,
+  );
   return buildSnapshot(requireRuntime());
 });
 
@@ -2419,6 +2417,15 @@ peer.on('runtime.subagentPendingAuxState', async (rawParams) => {
   return requireRuntime().childSessionPendingAuxState(params.sessionId) ?? null;
 });
 
+function consumePendingTurnActiveSkills(): LlmActiveSkill[] {
+  const skills = pendingTurnActiveSkills.map((skill) => ({
+    ...skill,
+    resources: [...skill.resources],
+  }));
+  pendingTurnActiveSkills = [];
+  return skills;
+}
+
 peer.on('runtime.submitUserTurn', async (rawParams) => {
   const params = rawParams as RuntimeSubmitUserTurnParams;
   await toolExecutor.refreshCaches();
@@ -2437,7 +2444,12 @@ peer.on('runtime.submitUserTurn', async (rawParams) => {
       displayText,
     },
   });
-  await requireRuntime().startUserTurnStreaming(params.text, params.explicitImages ?? []);
+  await requireRuntime().startUserTurnStreaming(
+    params.text,
+    params.explicitImages ?? [],
+    [],
+    consumePendingTurnActiveSkills(),
+  );
   return null;
 });
 
@@ -2457,7 +2469,12 @@ peer.on('runtime.startUserTurnStreaming', async (rawParams) => {
       displayText,
     },
   });
-  await requireRuntime().startUserTurnStreaming(params.text, params.explicitImages ?? []);
+  await requireRuntime().startUserTurnStreaming(
+    params.text,
+    params.explicitImages ?? [],
+    [],
+    consumePendingTurnActiveSkills(),
+  );
   return null;
 });
 
@@ -2665,7 +2682,6 @@ peer.on('runtime.exportState', async () => {
   const planSystemPrompt = buildPlanSystemMessage(planMetadata);
   const agentModeSystemPrompt = buildAgentModeSystemMessage(planMetadata);
   const loopModeSystemPrompt = buildLoopModeSystemMessage(requireRuntime().loopEnabled());
-  const activeSkillsSystemPrompt = buildActiveSkillsSystemMessage(activeSkills);
   const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);
   const workspaceRoot = config.workspaceRoot ?? currentWorkspaceRoot();
   const basicInfoSystemPrompt = buildBasicInfoSystemMessage(
@@ -2690,9 +2706,6 @@ peer.on('runtime.exportState', async () => {
       ...(planSystemPrompt === undefined ? {} : { plan: planSystemPrompt }),
       agentMode: agentModeSystemPrompt,
       ...(loopModeSystemPrompt === undefined ? {} : { loopMode: loopModeSystemPrompt }),
-      ...(activeSkillsSystemPrompt === undefined
-        ? {}
-        : { activeSkills: activeSkillsSystemPrompt }),
       ...(extensionsSystemPrompt === undefined ? {} : { extensions: extensionsSystemPrompt }),
       ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
     },

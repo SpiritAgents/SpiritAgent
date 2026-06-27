@@ -75,7 +75,6 @@ async function main(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     GOOGLE_MODEL,
   );
 

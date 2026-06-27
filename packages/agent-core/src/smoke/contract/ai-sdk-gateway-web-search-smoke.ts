@@ -58,7 +58,6 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     config.model,
   );
   const round = await transport.startToolAgentRound(config, state, []);
@@ -141,7 +140,6 @@ async function runGatewayWebSearchInvocationSmoke(): Promise<void> {
     [],
     'Search the web for the latest AI Gateway web search pricing.',
     process.cwd(),
-    [],
     [],
     [],
     config.model,

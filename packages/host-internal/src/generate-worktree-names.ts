@@ -101,7 +101,6 @@ async function runWorktreeNamingToolAgentRounds(input: {
     input.workspaceRoot,
     [...input.enabledRules],
     [...input.enabledSkillCatalog],
-    [],
     input.transport.model,
     input.planMetadata,
     [...input.extensionSystemPrompts],

@@ -132,7 +132,6 @@ async function main(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     'test-openai-compatible',
   );
   const started = await transport.startToolAgentRoundStreaming(
