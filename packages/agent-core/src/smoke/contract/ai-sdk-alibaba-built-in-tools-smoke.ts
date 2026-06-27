@@ -72,7 +72,6 @@ async function runAlibabaChatSmoke(): Promise<void> {
     process.cwd(),
     [],
     [],
-    [],
     config.model,
   );
   const round = await transport.startToolAgentRound(config, state, []);
@@ -137,7 +136,6 @@ async function runAlibabaResponsesSmoke(): Promise<void> {
     [],
     'Reply with exactly ALIBABA_RESPONSES_OK.',
     process.cwd(),
-    [],
     [],
     [],
     config.model,

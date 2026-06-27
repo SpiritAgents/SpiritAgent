@@ -48,6 +48,7 @@ import {
   toolNameFromRequest,
 } from './runtime/helpers.js';
 import { formatUserMessageContentForLlm } from './runtime/user-turn-timestamp.js';
+import type { ToolAgentActiveSkill } from './tool-agent.js';
 import { prependSubagentWorktreeMeta } from './runtime/subagent-worktree-meta.js';
 import { scopeAgentRuntimeOptionsForSubagentWorkspace } from './runtime/subagent-workspace-scope.js';
 import { prepareSubmittedUserTurn as prepareSubmittedUserTurnInternal } from './runtime/context.js';
@@ -919,6 +920,7 @@ export class AgentRuntime<
     userInput: string,
     explicitImages: string[] = [],
     explicitWorkspaceFiles: PendingWorkspaceFile[] = [],
+    activeSkillsForTurn: ToolAgentActiveSkill[] = [],
   ): Promise<void> {
     if (this.isBusy()) {
       throw new Error('当前已有响应或审批在处理中，请稍候。');
@@ -926,7 +928,12 @@ export class AgentRuntime<
 
     this.completedTurnResultStore = undefined;
     try {
-      const state = await this.prepareSubmittedUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
+      const state = await this.prepareSubmittedUserTurn(
+        userInput,
+        explicitImages,
+        explicitWorkspaceFiles,
+        activeSkillsForTurn,
+      );
       this.startToolAgentRoundAsync(state, userInput, createTurnContext<ToolRequest>());
     } catch (error) {
       if (error instanceof SubmitPromptHookDeniedError) {
@@ -941,6 +948,7 @@ export class AgentRuntime<
     userInput: string,
     explicitImages: string[] = [],
     explicitWorkspaceFiles: PendingWorkspaceFile[] = [],
+    activeSkillsForTurn: ToolAgentActiveSkill[] = [],
   ): Promise<void> {
     if (this.isBusy()) {
       throw new Error('当前已有响应或审批在处理中，请稍候。');
@@ -948,7 +956,12 @@ export class AgentRuntime<
 
     this.completedTurnResultStore = undefined;
     try {
-      const state = await this.prepareSubmittedUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
+      const state = await this.prepareSubmittedUserTurn(
+        userInput,
+        explicitImages,
+        explicitWorkspaceFiles,
+        activeSkillsForTurn,
+      );
       await this.startStreamingRound(
         state,
         userInput,
@@ -2155,12 +2168,14 @@ export class AgentRuntime<
     userInput: string,
     explicitImages: string[],
     explicitWorkspaceFiles: PendingWorkspaceFile[] = [],
+    activeSkillsForTurn: ToolAgentActiveSkill[] = [],
   ): Promise<State> {
     return prepareSubmittedUserTurnInternal(
       this as unknown as ContextRuntime<Config, State, ToolRequest, TrustTarget>,
       userInput,
       explicitImages,
       explicitWorkspaceFiles,
+      activeSkillsForTurn,
     );
   }
 

@@ -1,5 +1,5 @@
 export {
-  buildActiveSkillsSystemMessage,
+  buildActiveSkillsBlockContent,
   buildAgentModeSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
@@ -22,6 +22,7 @@ export {
   truncateOpenAiHistoryForCompaction as truncateLlmHistoryForCompaction,
   truncateOpenAiToolAgentStateForContextRetry as truncateLlmToolAgentStateForContextRetry,
 } from './openai/tool-agent-helpers.js';
+export { formatActiveSkillUserMessageMeta } from './runtime/user-turn-timestamp.js';
 export {
   assistantToolCallMessageFromState,
   assistantToolCallMessageFromState as assistantToolCallMessageFromLlmState,

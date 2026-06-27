@@ -1,7 +1,7 @@
 import type * as acp from '@agentclientprotocol/sdk';
 import type * as schema from '@agentclientprotocol/sdk';
 import { RequestError } from '@agentclientprotocol/sdk';
-import type { JsonValue, RuntimeEvent } from '@spirit-agent/core';
+import type { JsonValue, LlmActiveSkill, RuntimeEvent } from '@spirit-agent/core';
 import type { AuthState } from './auth/auth-state.js';
 import { buildAuthMethods } from './auth/build-auth-methods.js';
 import { TERMINAL_AUTH_METHOD_ID } from './auth/constants.js';
@@ -190,12 +190,14 @@ export class SpiritAcpAgent implements acp.Agent {
 
     // Detect slash command and activate skill if matched
     const parsed = parseSlashCommand(userInput);
+    let activeSkillsForTurn: LlmActiveSkill[] = [];
     if (parsed) {
       const entry = session.enabledSkillCatalog.find((s) => s.name === parsed.skillName);
       if (entry) {
         try {
           const payload = await buildActiveSkillPayload(entry);
           upsertActiveSkill(session.activeSkills, payload);
+          activeSkillsForTurn = [payload];
           userInput = parsed.remainingText
             || `Please follow the activated skill "${parsed.skillName}" to handle the current task.`;
         } catch (err) {
@@ -213,7 +215,7 @@ export class SpiritAcpAgent implements acp.Agent {
 
       try {
         // Use streaming start so onEvent fires real-time chunks
-        await session.runtime.startUserTurnStreaming(userInput, explicitImages);
+        await session.runtime.startUserTurnStreaming(userInput, explicitImages, [], activeSkillsForTurn);
         const result = await session.runtime.waitForCompletedTurnResult();
 
         // Check if a newer prompt has superseded this one

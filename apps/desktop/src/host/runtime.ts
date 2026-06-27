@@ -58,7 +58,6 @@ export function createDesktopRuntime(input: {
   dreamsContextText?: string;
   toolExecutor: DesktopToolExecutor;
   llmTransport: SpiritLlmTransport;
-  activeSkills: LlmActiveSkill[];
   workspaceRoot: string;
   basicInfo: LlmToolAgentBasicInfo;
   getLoopEnabled?: () => boolean;
@@ -91,7 +90,6 @@ export function createDesktopRuntime(input: {
         input.workspaceRoot,
         input.enabledRules,
         input.enabledSkillCatalog,
-        cloneActiveSkills(input.activeSkills),
         input.transportConfig.model,
         input.planMetadata,
         input.extensionSystemPrompts,
@@ -108,7 +106,6 @@ export function createDesktopRuntime(input: {
         input.workspaceRoot,
         input.enabledRules,
         input.enabledSkillCatalog,
-        cloneActiveSkills(input.activeSkills),
         input.transportConfig.model,
         input.planMetadata,
         input.extensionSystemPrompts,
@@ -134,7 +131,6 @@ export function createDesktopRuntime(input: {
         input.workspaceRoot,
         input.enabledRules,
         input.enabledSkillCatalog,
-        cloneActiveSkills(input.activeSkills),
         input.transportConfig.model,
         input.planMetadata,
         input.extensionSystemPrompts,

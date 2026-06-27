@@ -11,6 +11,7 @@ import {
   repairMissingToolResultsInHistory,
 } from './helpers.js';
 import { formatUserMessageContentForLlm } from './user-turn-timestamp.js';
+import type { ToolAgentActiveSkill } from '../tool-agent.js';
 import type {
   AgentRuntimeOptions,
   PendingMcpResource,
@@ -43,6 +44,7 @@ export async function prepareSubmittedUserTurn<
   userInput: string,
   explicitImages: string[],
   explicitWorkspaceFiles: PendingWorkspaceFile[] = [],
+  activeSkillsForTurn: ToolAgentActiveSkill[] = [],
 ): Promise<State> {
   const images = explicitImages.length > 0 ? [...explicitImages] : runtime.takePendingImages();
   const workspaceFiles: PendingWorkspaceFile[] = [
@@ -90,7 +92,7 @@ export async function prepareSubmittedUserTurn<
   }
 
   runtime.historyStore = repairMissingToolResultsInHistory(runtime.historyStore);
-  const contentForLlm = formatUserMessageContentForLlm(userInput);
+  const contentForLlm = formatUserMessageContentForLlm(userInput, activeSkillsForTurn);
   runtime.historyStore.push({
     role: 'user',
     content: createLlmMessageContentFromTextAndImages(contentForLlm, [...imagePaths], [...videoPaths]),
