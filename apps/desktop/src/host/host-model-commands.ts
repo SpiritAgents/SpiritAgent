@@ -694,12 +694,17 @@ export async function addProviderModelsCommand(
       fromCache: false,
       modelCatalog: request.modelCatalog,
     };
-    const pruned = removeDelistedModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
-    const synced = request.modelCatalog?.length
-      ? syncExistingModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult)
+    const configPreview = structuredClone(state.config);
+    const prunedPreview = removeDelistedModelsFromCatalog(
+      configPreview,
+      scopeProfile,
+      catalogRefreshResult,
+    );
+    const syncedPreview = request.modelCatalog?.length
+      ? syncExistingModelsFromCatalog(configPreview, scopeProfile, catalogRefreshResult)
       : 0;
 
-    if (toAdd.length === 0 && synced === 0 && pruned.length === 0) {
+    if (toAdd.length === 0 && syncedPreview === 0 && prunedPreview.length === 0) {
       throw new Error(i18n.t('error.modelsAlreadyExist'));
     }
 
@@ -729,6 +734,11 @@ export async function addProviderModelsCommand(
         await removeProviderApiKey(providerKeyScope);
       }
       throw err;
+    }
+
+    const pruned = removeDelistedModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
+    if (request.modelCatalog?.length) {
+      syncExistingModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
     }
 
     const firstNew = toAdd[0]?.name;
