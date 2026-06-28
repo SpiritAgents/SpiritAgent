@@ -29,6 +29,10 @@ function formatMetaLine(key: string, value: string): string {
   return `${key}: ${sanitizeWebFetchMetaValue(value)}`;
 }
 
+export function escapeMarkdownLinkLabel(text: string): string {
+  return text.replace(/\\/gu, '\\\\').replace(/\[/gu, '\\[').replace(/\]/gu, '\\]');
+}
+
 export function truncateMarkdownAtHeadingBoundary(
   markdown: string,
   maxChars: number,
@@ -77,7 +81,7 @@ function formatLinksSection(
   }
 
   const limited = links.slice(0, WEB_FETCH_MAX_LINKS);
-  const lines = limited.map((link) => `- [${link.text}](${link.url})`);
+  const lines = limited.map((link) => `- [${escapeMarkdownLinkLabel(link.text)}](${link.url})`);
   const truncated = links.length > WEB_FETCH_MAX_LINKS;
   if (truncated) {
     lines.push(`- … (${links.length - WEB_FETCH_MAX_LINKS} more links omitted)`);

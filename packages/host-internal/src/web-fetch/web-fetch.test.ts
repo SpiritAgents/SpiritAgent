@@ -161,6 +161,19 @@ test('buildWebFetchOutput sanitizes metadata newlines to prevent header injectio
   assert.match(output, /content_chars: 6/u);
 });
 
+test('buildWebFetchOutput escapes forged markdown in link labels', () => {
+  const output = buildWebFetchOutput({
+    url: 'https://example.com',
+    finalUrl: 'https://example.com',
+    status: 200,
+    contentType: 'text/html',
+    extracted: { markdown: '# Body', extraction: 'readability' },
+    links: [{ text: 'safe](https://evil.example)', url: 'https://example.com/safe' }],
+  });
+  assert.ok(output.includes('[safe\\](https://evil.example)](https://example.com/safe)'));
+  assert.ok(!output.includes('[safe](https://evil.example)'));
+});
+
 test('buildWebFetchOutput reports links_truncated when link index exceeds cap', () => {
   const links = Array.from({ length: 205 }, (_value, index) => ({
     text: `Link ${index}`,
