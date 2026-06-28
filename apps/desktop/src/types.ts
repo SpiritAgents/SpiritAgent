@@ -1360,7 +1360,7 @@ export interface AskQuestionsRequest {
 export interface AskQuestionsQuestionSpec {
   id: string;
   title: string;
-  allow_multiple: boolean;
+  allowMultiple: boolean;
   options: AskQuestionsOptionSpec[];
 }
 

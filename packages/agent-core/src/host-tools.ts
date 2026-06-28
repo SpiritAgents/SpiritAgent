@@ -350,7 +350,7 @@ export function buildBuiltinHostToolDefinitions(
                   type: 'string',
                   description: 'Question title shown to the user.',
                 },
-                allow_multiple: {
+                allowMultiple: {
                   type: 'boolean',
                   description:
                     'When true, the user may select multiple preset options. Defaults to false.',

@@ -136,7 +136,7 @@ export function PendingQuestionsCard({
         {question.options.length > 0 ? (
           <div className="grid gap-1.5">
             {question.options.map((option) => {
-              const selected = question.allow_multiple
+              const selected = question.allowMultiple
                 ? draft.selectedOptionIds.includes(option.id)
                 : draft.selectedOptionIds[0] === option.id;
               return (
@@ -151,7 +151,7 @@ export function PendingQuestionsCard({
                   )}
                   disabled={questionsBusy}
                   onClick={() =>
-                    question.allow_multiple
+                    question.allowMultiple
                       ? handleMultiSelectToggle(option.id)
                       : handleSingleSelect(option.id)
                   }
