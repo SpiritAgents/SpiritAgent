@@ -108,40 +108,61 @@ export function resolveActiveModelAfterRemoval(
 }
 
 type ModelRemovalConfigTarget = {
-  models: Array<{ name: string }>;
+  models: Array<{ name: string; provider?: DesktopModelProvider }>;
   activeModel: string;
   imageGenerationModel?: string;
   videoGenerationModel?: string;
   lightweightChatModel?: string;
 };
 
+export type ModelRemovalTarget = {
+  name: string;
+  provider?: DesktopModelProvider;
+};
+
+function modelMatchesRemovalTarget(
+  model: { name: string; provider?: DesktopModelProvider },
+  target: ModelRemovalTarget,
+): boolean {
+  if (model.name !== target.name) {
+    return false;
+  }
+  if (target.provider === undefined) {
+    return true;
+  }
+  return modelProviderKeyScope(model.provider) === modelProviderKeyScope(target.provider);
+}
+
+function clearDefaultSlotIfNoRemainingModel(
+  config: ModelRemovalConfigTarget,
+  slot: 'imageGenerationModel' | 'videoGenerationModel' | 'lightweightChatModel',
+): void {
+  const value = config[slot];
+  if (value && !config.models.some((model) => model.name === value)) {
+    delete config[slot];
+  }
+}
+
 /** Remove models from config and clear dependent default slots (same semantics as settings delete). */
 export function applyModelsRemovalToConfig(
   config: ModelRemovalConfigTarget,
-  namesToRemove: readonly string[],
+  targetsToRemove: readonly ModelRemovalTarget[],
 ): number {
-  if (namesToRemove.length === 0) {
+  if (targetsToRemove.length === 0) {
     return 0;
   }
-  const removeSet = new Set(namesToRemove);
   const before = config.models.length;
-  config.models = config.models.filter((model) => !removeSet.has(model.name));
+  config.models = config.models.filter(
+    (model) => !targetsToRemove.some((target) => modelMatchesRemovalTarget(model, target)),
+  );
   const removed = before - config.models.length;
 
-  config.activeModel = resolveActiveModelAfterRemoval(
-    config.activeModel,
-    config.models,
-    namesToRemove,
-  );
-  if (config.imageGenerationModel && removeSet.has(config.imageGenerationModel)) {
-    delete config.imageGenerationModel;
+  if (!config.models.some((model) => model.name === config.activeModel)) {
+    config.activeModel = config.models[0]?.name ?? '';
   }
-  if (config.videoGenerationModel && removeSet.has(config.videoGenerationModel)) {
-    delete config.videoGenerationModel;
-  }
-  if (config.lightweightChatModel && removeSet.has(config.lightweightChatModel)) {
-    delete config.lightweightChatModel;
-  }
+  clearDefaultSlotIfNoRemainingModel(config, 'imageGenerationModel');
+  clearDefaultSlotIfNoRemainingModel(config, 'videoGenerationModel');
+  clearDefaultSlotIfNoRemainingModel(config, 'lightweightChatModel');
   return removed;
 }
 

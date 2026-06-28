@@ -50,7 +50,11 @@ import {
 import { providerConnectSiteRequiresWorkspaceId } from './provider-presets.js';
 import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spirit-agent/host-internal/bedrock-mantle';
 import { modelSupportsChat } from './lightweight-chat-model.js';
-import { modelExistsInProviderScope, applyModelsRemovalToConfig } from './provider-api-key.js';
+import {
+  modelExistsInProviderScope,
+  applyModelsRemovalToConfig,
+  type ModelRemovalTarget,
+} from './provider-api-key.js';
 import {
   loadHostMetadata,
   modelProviderKeyScope,
@@ -949,13 +953,14 @@ export async function removeModelCommand(
     if (!name) {
       throw new Error(i18n.t('error.modelNameRequired'));
     }
-    const before = state.config.models.length;
-    state.config.models = state.config.models.filter((model) => model.name !== name);
-    if (state.config.models.length === before) {
+    const targetsToRemove: ModelRemovalTarget[] = state.config.models
+      .filter((model) => model.name === name)
+      .map((model) => ({ name: model.name, provider: model.provider }));
+    if (targetsToRemove.length === 0) {
       throw new Error(i18n.t('error.modelNotFound', { name }));
     }
 
-    return finalizeModelRemoval(ctx, state, [name], { removeLegacyModelKeys: true });
+    return finalizeModelRemoval(ctx, state, targetsToRemove, { removeLegacyModelKeys: true });
   });
 }
 
@@ -972,34 +977,36 @@ export async function removeProviderModelsCommand(
       throw new Error(i18n.t('error.providerDeleteOnly'));
     }
 
-    const { matched: targets, unmatched } = partitionModelsByProvider(state.config.models, provider);
+    const { matched: targets } = partitionModelsByProvider(state.config.models, provider);
     if (targets.length === 0) {
       throw new Error(i18n.t('error.noModelsInProvider'));
     }
 
-    const namesToRemove = targets.map((model) => model.name);
-    state.config.models = unmatched;
-    return finalizeModelRemoval(ctx, state, namesToRemove, { removeProviderKey: provider });
+    const targetsToRemove: ModelRemovalTarget[] = targets.map((model) => ({
+      name: model.name,
+      provider: model.provider,
+    }));
+    return finalizeModelRemoval(ctx, state, targetsToRemove, { removeProviderKey: provider });
   });
 }
 
 async function finalizeModelRemoval(
   ctx: HostModelCommandContext,
   state: HostModelState,
-  namesToRemove: readonly string[],
+  targetsToRemove: readonly ModelRemovalTarget[],
   options?: {
     removeProviderKey?: DesktopModelProvider;
     removeLegacyModelKeys?: boolean;
   },
 ): Promise<DesktopSnapshot> {
-  applyModelsRemovalToConfig(state.config, namesToRemove);
+  applyModelsRemovalToConfig(state.config, targetsToRemove);
   await saveConfig(state.config);
   if (options?.removeProviderKey) {
     await removeProviderApiKey(options.removeProviderKey);
   }
   if (options?.removeLegacyModelKeys) {
-    for (const name of namesToRemove) {
-      await removeModelApiKey(name);
+    for (const target of targetsToRemove) {
+      await removeModelApiKey(target.name);
     }
   }
   await ctx.refreshModelKeyPresence();
