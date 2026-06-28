@@ -353,3 +353,70 @@ test('removeDelistedModelsFromCatalog clears activeModel when last scope model i
   assert.deepEqual(config.models.map((model) => model.name), ['alibaba/wan-v2.6-t2v']);
   assert.equal(config.activeModel, 'alibaba/wan-v2.6-t2v');
 });
+
+test('removeDelistedModelsFromCatalog keeps same-named models in other provider scopes', () => {
+  const config = {
+    models: [
+      {
+        name: 'shared-id',
+        apiBase: 'https://ai-gateway.vercel.sh/v1',
+        provider: 'vercel-ai-gateway',
+        transportKind: 'open-responses',
+        reasoningEffort: 'default',
+      },
+      {
+        name: 'shared-id',
+        apiBase: 'https://api.openai.com/v1',
+        provider: 'openai',
+        reasoningEffort: 'default',
+      },
+    ],
+    activeModel: 'shared-id',
+  };
+
+  const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
+    modelIds: [],
+    fromCache: false,
+    modelCatalog: [],
+  });
+
+  assert.deepEqual(pruned, []);
+  assert.deepEqual(
+    config.models.map((model) => model.provider),
+    ['vercel-ai-gateway', 'openai'],
+  );
+});
+
+test('removeDelistedModelsFromCatalog prunes delisted gateway model but keeps openai same name', () => {
+  const config = {
+    models: [
+      {
+        name: 'shared-id',
+        apiBase: 'https://ai-gateway.vercel.sh/v1',
+        provider: 'vercel-ai-gateway',
+        transportKind: 'open-responses',
+        reasoningEffort: 'default',
+      },
+      {
+        name: 'shared-id',
+        apiBase: 'https://api.openai.com/v1',
+        provider: 'openai',
+        reasoningEffort: 'default',
+      },
+    ],
+    activeModel: 'shared-id',
+  };
+
+  const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
+    modelIds: ['openai/gpt-4.1'],
+    fromCache: false,
+    modelCatalog: [{ id: 'openai/gpt-4.1', capabilities: ['chat'] }],
+  });
+
+  assert.deepEqual(pruned, ['shared-id']);
+  assert.deepEqual(
+    config.models.map((model) => model.provider),
+    ['openai'],
+  );
+  assert.equal(config.activeModel, 'shared-id');
+});
