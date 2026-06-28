@@ -98,7 +98,7 @@ test('applyModelsRemovalToConfig clears default slots when active model is remov
     lightweightChatModel: 'a',
   };
 
-  assert.equal(applyModelsRemovalToConfig(config, ['a']), 1);
+  assert.equal(applyModelsRemovalToConfig(config, [{ name: 'a', provider: 'openai' }]), 1);
   assert.deepEqual(
     config.models.map((model) => model.name),
     ['b'],
@@ -107,6 +107,28 @@ test('applyModelsRemovalToConfig clears default slots when active model is remov
   assert.equal(config.imageGenerationModel, undefined);
   assert.equal(config.videoGenerationModel, 'b');
   assert.equal(config.lightweightChatModel, undefined);
+});
+
+test('applyModelsRemovalToConfig only removes models in the same provider scope', () => {
+  const config = {
+    models: [
+      { name: 'shared-id', provider: 'openai' },
+      { name: 'shared-id', provider: 'vercel-ai-gateway' },
+    ],
+    activeModel: 'shared-id',
+    videoGenerationModel: 'shared-id',
+  };
+
+  assert.equal(
+    applyModelsRemovalToConfig(config, [{ name: 'shared-id', provider: 'openai' }]),
+    1,
+  );
+  assert.deepEqual(
+    config.models.map((model) => model.provider),
+    ['vercel-ai-gateway'],
+  );
+  assert.equal(config.activeModel, 'shared-id');
+  assert.equal(config.videoGenerationModel, 'shared-id');
 });
 
 test('filterNewProviderModelIds skips only duplicates within provider scope', () => {

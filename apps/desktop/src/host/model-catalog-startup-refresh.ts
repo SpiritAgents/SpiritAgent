@@ -395,20 +395,20 @@ export function removeDelistedModelsFromCatalog(
 
   const transportKind = resolveDesktopTransportKind(profile);
   const apiBase = profile.apiBase.trim() || DEFAULT_API_BASE;
-  const namesToRemove: string[] = [];
+  const targetsToRemove: Array<{ name: string; provider?: typeof provider }> = [];
   for (const model of config.models) {
     if (!modelMatchesCatalogRefreshScope(model, provider, transportKind, apiBase)) {
       continue;
     }
     if (!catalogIds.has(model.name)) {
-      namesToRemove.push(model.name);
+      targetsToRemove.push({ name: model.name, provider: model.provider });
     }
   }
-  if (namesToRemove.length === 0) {
+  if (targetsToRemove.length === 0) {
     return [];
   }
-  applyModelsRemovalToConfig(config, namesToRemove);
-  return namesToRemove;
+  applyModelsRemovalToConfig(config, targetsToRemove);
+  return targetsToRemove.map((target) => target.name);
 }
 
 export async function refreshConfiguredModelCatalogsOnStartup(
