@@ -107,6 +107,44 @@ export function resolveActiveModelAfterRemoval(
   return remainingModels[0]?.name ?? '';
 }
 
+type ModelRemovalConfigTarget = {
+  models: Array<{ name: string }>;
+  activeModel: string;
+  imageGenerationModel?: string;
+  videoGenerationModel?: string;
+  lightweightChatModel?: string;
+};
+
+/** Remove models from config and clear dependent default slots (same semantics as settings delete). */
+export function applyModelsRemovalToConfig(
+  config: ModelRemovalConfigTarget,
+  namesToRemove: readonly string[],
+): number {
+  if (namesToRemove.length === 0) {
+    return 0;
+  }
+  const removeSet = new Set(namesToRemove);
+  const before = config.models.length;
+  config.models = config.models.filter((model) => !removeSet.has(model.name));
+  const removed = before - config.models.length;
+
+  config.activeModel = resolveActiveModelAfterRemoval(
+    config.activeModel,
+    config.models,
+    namesToRemove,
+  );
+  if (config.imageGenerationModel && removeSet.has(config.imageGenerationModel)) {
+    delete config.imageGenerationModel;
+  }
+  if (config.videoGenerationModel && removeSet.has(config.videoGenerationModel)) {
+    delete config.videoGenerationModel;
+  }
+  if (config.lightweightChatModel && removeSet.has(config.lightweightChatModel)) {
+    delete config.lightweightChatModel;
+  }
+  return removed;
+}
+
 /** Model ids from `modelIds` that are not already present under the target provider scope. */
 export function filterNewProviderModelIds(
   existingModels: readonly ExistingModelForProviderAdd[],
