@@ -26,7 +26,6 @@ import {
   writePrChangesTreeWidthPx,
 } from "@/lib/layout-prefs";
 import { useWorkspaceToolsShellRowDividers } from "@/lib/use-workspace-tools-shell-row-dividers";
-import { DESKTOP_COMPOSER_SURFACE_BACKDROP } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type { GitHubPullRequestChangedFile } from "@/types";
 
@@ -182,8 +181,8 @@ function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLE
   return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
 }
 
-/** Matches composer-surface backdrop (without border/radius). */
-const PR_STICKY_PINNED_BACKDROP_CLASS = DESKTOP_COMPOSER_SURFACE_BACKDROP;
+/** Sticky file header when scrolled: opaque panel background (no backdrop blur). */
+const PR_STICKY_PINNED_HEADER_CLASS = "bg-background";
 
 function useStickyHeaderPinned(
   sentinelRef: RefObject<HTMLElement | null>,
@@ -321,7 +320,7 @@ function PrChangedFileCard({
             showExpandedChrome && "sticky top-0 z-10",
             showExpandedChrome &&
               "shadow-[inset_0_-1px_0_0_color-mix(in_oklab,var(--border)_40%,transparent)]",
-            showExpandedChrome && pinned ? PR_STICKY_PINNED_BACKDROP_CLASS : "bg-transparent",
+            showExpandedChrome && pinned ? PR_STICKY_PINNED_HEADER_CLASS : "bg-transparent",
           )}
         >
           <PrChangedFileHeaderButton
