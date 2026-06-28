@@ -141,6 +141,17 @@ export function useTextSelectionActionMenu({
     };
   }, [dismiss, enabled, readSelectionText, rootRef, syncFromSelection]);
 
+  useEffect(() => {
+    if (!enabled || !open) {
+      return;
+    }
+    const onResize = () => {
+      syncFromSelection();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [enabled, open, syncFromSelection]);
+
   return {
     open,
     setOpen,

@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { SelectionAnchorRect } from "@/hooks/use-text-selection-action-menu";
+import { scaleRootFixedAnchorStyle } from "@/lib/scale-root-fixed-anchor-style";
 
 type TextSelectionActionMenuProps = {
   open: boolean;
@@ -25,20 +26,20 @@ export function TextSelectionActionMenu({
     return null;
   }
 
+  const triggerStyle = scaleRootFixedAnchorStyle({
+    left: anchor.x,
+    top: anchor.y,
+    width: anchor.width,
+    height: anchor.height,
+  });
+
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange} modal={false}>
       <DropdownMenuTrigger asChild>
         <span
           aria-hidden
           tabIndex={-1}
-          style={{
-            position: "fixed",
-            left: anchor.x,
-            top: anchor.y,
-            width: anchor.width,
-            height: anchor.height,
-            pointerEvents: "none",
-          }}
+          style={triggerStyle}
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent

@@ -104,6 +104,28 @@ export function viewportPointToScaleRootLocal(
   };
 }
 
+export type ViewportBox = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+/** 视口矩形 → 缩放根内 fixed 锚点盒（自定义 Radix trigger 须与 tooltip 同源换算）。 */
+export function viewportRectToScaleRootLocal(rect: ViewportBox): ViewportBox {
+  if (!isUiLayoutScaleTransformActive()) {
+    return rect;
+  }
+  const scale = getCurrentUiLayoutScale();
+  const { top, left } = viewportPointToScaleRootLocal(rect.top, rect.left);
+  return {
+    left,
+    top,
+    width: Math.max(rect.width / scale, 1),
+    height: Math.max(rect.height / scale, 1),
+  };
+}
+
 function syncWin32ChromeClass(root: HTMLElement): void {
   root.classList.toggle("spirit-desktop-win32", shouldApplyWin32TitleBarCounterZoom());
 }
