@@ -83,6 +83,47 @@ test('late-finalized pre-tool thinking stays above tool preview inserted mid-str
   ]);
 });
 
+test('ensureAfterToolsThinkingPlaceholderRow seeds pending row after terminal provider tools', () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn('search DeepSeek generation');
+  timeline.beginAssistantSegment('initial');
+  timeline.finalizeThinkingSegment('Need web search for current DeepSeek versions.');
+  timeline.upsertToolMessage('web-1', {
+    toolCallId: 'web-1',
+    toolName: 'web_search',
+    phase: 'succeeded',
+    headline: 'Web search',
+    detailLines: [],
+    argsExcerpt: '{}',
+  });
+  timeline.removePendingAssistantText();
+  timeline.ensureAfterToolsThinkingPlaceholderRow();
+
+  const messages = timeline.toMessages();
+  const pendingAfterTool = messages.find(
+    (message, index) =>
+      index > messages.findIndex((candidate) => candidate.tool?.toolCallId === 'web-1')
+      && message.role === 'assistant'
+      && message.pending
+      && !message.tool,
+  );
+  assert.ok(pendingAfterTool, 'expected after-tools pending row for Thinking placeholder');
+
+  assert.deepEqual(
+    buildVisibleMessageSnapshots({
+      messages,
+      livePendingAux: { kind: 'thinking', statusText: '| Thinking...' },
+      rewind: createDesktopRewindMetadata(),
+    }).map(rowToken),
+    [
+      'user:search DeepSeek generation',
+      'thinking:Need web search for current DeepSeek versions.',
+      'tool:web-1:succeeded',
+      'pending:',
+    ],
+  );
+});
+
 test('post-tool thinking in the same segment stays below provider tool rows', () => {
   const timeline = createTimeline();
   timeline.beginUserTurn('search DeepSeek generation');

@@ -434,7 +434,11 @@ export class DesktopRuntimeEventOrchestrator {
       }
       if (event.kind === 'remove-pending-assistant') {
         this.options.assistantMessages.removePendingAssistantMessage();
-        this.options.messageTimeline?.()?.removePendingAssistantText();
+        const timeline = this.options.messageTimeline?.();
+        timeline?.removePendingAssistantText();
+        if (timeline && this.options.runtime()?.isBusy()) {
+          timeline.ensureAfterToolsThinkingPlaceholderRow();
+        }
         continue;
       }
       if (event.kind === 'assistant-thinking-segment-finalized') {

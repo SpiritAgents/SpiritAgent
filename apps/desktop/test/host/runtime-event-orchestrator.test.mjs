@@ -40,6 +40,7 @@ function createHarness() {
   const conversationSnapshotView = new DesktopConversationSnapshotView(allocateMessageId);
   const orchestrator = new DesktopRuntimeEventOrchestrator({
     runtime: () => ({
+      isBusy: () => true,
       takeCompletedTurnResult: () => {
         const next = completedTurnResult;
         completedTurnResult = undefined;
@@ -687,6 +688,50 @@ test('web_search provider builtin preview completes when output_item.done report
 
   const completedTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
   assert.equal(completedTool?.phase, 'succeeded');
+});
+
+test('remove-pending after terminal web_search seeds after-tools Thinking placeholder while busy', () => {
+  const harness = createHarness();
+  harness.pushUser('search DeepSeek generation');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    {
+      kind: 'assistant-thinking-segment-finalized',
+      text: 'Need web search for current DeepSeek versions.',
+    },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek generation', status: 'completed' }),
+    },
+    { kind: 'remove-pending-assistant' },
+  ]);
+
+  const timelineMessages = harness.timeline.toMessages();
+  const pendingAfterTool = timelineMessages.find(
+    (message, index) =>
+      index > timelineMessages.findIndex((candidate) => candidate.tool?.toolCallId === 'ws_1')
+      && message.role === 'assistant'
+      && message.pending
+      && !message.tool,
+  );
+  assert.ok(pendingAfterTool, 'expected after-tools pending row after remove-pending');
+
+  assert.deepEqual(
+    buildVisibleMessageSnapshots({
+      messages: timelineMessages,
+      livePendingAux: { kind: 'thinking', statusText: '| Thinking...' },
+      rewind: createDesktopRewindMetadata(),
+    }).map(rowToken),
+    [
+      'user',
+      'thinking:Need web search for current DeepSeek versions.',
+      'tool:ws_1',
+      'pending-assistant',
+    ],
+  );
 });
 
 test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal preview after in-progress', () => {
