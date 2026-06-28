@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle, RefreshCw } from "lucide-react";
 
@@ -154,6 +154,7 @@ export function ModelsSettingsPanel({
   const [bedrockConnectMode, setBedrockConnectMode] = useState<"bearer" | "iam">("bearer");
   const [vertexConnectMode, setVertexConnectMode] = useState<"adc" | "service-account" | "express">("adc");
   const [modelDefaultsDialogTarget, setModelDefaultsDialogTarget] = useState<string | null>(null);
+  const [modelDefaultsDialogOpen, setModelDefaultsDialogOpen] = useState(false);
   const [modelDefaultAssignments, setModelDefaultAssignments] = useState<ModelDefaultAssignments>({
     activeModel: false,
     imageGenerationModel: false,
@@ -361,17 +362,21 @@ export function ModelsSettingsPanel({
       videoGenerationModel: model.name === videoGenerationModel,
       lightweightChatModel: model.name === lightweightChatModel,
     });
+    setModelDefaultsDialogOpen(true);
   };
 
-  const closeModelDefaultsDialog = () => {
-    setModelDefaultsDialogTarget(null);
-    setModelDefaultAssignments({
-      activeModel: false,
-      imageGenerationModel: false,
-      videoGenerationModel: false,
-      lightweightChatModel: false,
+  const dismissModelDefaultsDialog = useCallback(() => {
+    setModelDefaultsDialogOpen(false);
+    runAfterRadixOverlayClose(() => {
+      setModelDefaultsDialogTarget(null);
+      setModelDefaultAssignments({
+        activeModel: false,
+        imageGenerationModel: false,
+        videoGenerationModel: false,
+        lightweightChatModel: false,
+      });
     });
-  };
+  }, []);
 
   const saveModelDefaultAssignments = async () => {
     if (!modelDefaultsDialogModel) {
@@ -427,12 +432,12 @@ export function ModelsSettingsPanel({
     }
 
     if (Object.keys(patch).length === 0) {
-      closeModelDefaultsDialog();
+      dismissModelDefaultsDialog();
       return;
     }
 
     await onSavePatch(patch);
-    closeModelDefaultsDialog();
+    dismissModelDefaultsDialog();
   };
 
   const saveSingleModelDefaultRole = async (
@@ -1077,10 +1082,12 @@ export function ModelsSettingsPanel({
       </div>
 
       <Dialog
-        open={modelDefaultsDialogTarget !== null}
+        open={modelDefaultsDialogOpen}
         onOpenChange={(open) => {
-          if (!open) {
-            closeModelDefaultsDialog();
+          if (open) {
+            setModelDefaultsDialogOpen(true);
+          } else if (!modelsBusy && !modelsPreviewBusy) {
+            dismissModelDefaultsDialog();
           }
         }}
       >
@@ -1226,7 +1233,7 @@ export function ModelsSettingsPanel({
               type="button"
               variant="outline"
               size="sm"
-              onClick={closeModelDefaultsDialog}
+              onClick={dismissModelDefaultsDialog}
               disabled={modelsBusy || modelsPreviewBusy}
             >
               {t('common.cancel')}
