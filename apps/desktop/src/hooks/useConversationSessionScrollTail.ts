@@ -20,6 +20,8 @@ export function useConversationSessionScrollTail({
 
   useLayoutEffect(() => {
     if (!enabled) {
+      // 空会话等场景会卸载消息列表；下次重新可见时需再次滚到底部
+      previousComposerSessionKeyRef.current = null;
       return;
     }
 
