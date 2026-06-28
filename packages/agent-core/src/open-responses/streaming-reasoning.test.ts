@@ -40,6 +40,18 @@ test('resolveOpenResponsesReasoningSummary disables summary for Bedrock Mantle',
   );
 });
 
+test('resolveOpenResponsesReasoningSummary disables summary for volcengine', () => {
+  assert.equal(
+    resolveOpenResponsesReasoningSummary({
+      model: 'doubao-seed-1-8-251228',
+      llmVendor: 'volcengine',
+      reasoningEffort: 'medium',
+      reasoningSummary: 'auto',
+    }),
+    undefined,
+  );
+});
+
 test('extractOpenResponsesReasoningTextFromRawChunk reads summary delta', () => {
   assert.equal(
     extractOpenResponsesReasoningTextFromRawChunk({

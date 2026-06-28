@@ -200,6 +200,11 @@ export function resolveOpenResponsesReasoningSummary(
     return undefined;
   }
 
+  // 火山方舟 Responses 仅支持 reasoning.effort，拒绝 OpenAI 式 reasoning.summary。
+  if (config.llmVendor === 'volcengine') {
+    return undefined;
+  }
+
   if (config.reasoningSummary === 'off' || config.reasoningEffort === 'none') {
     return undefined;
   }
