@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  applyModelsRemovalToConfig,
   buildModelSecretKeyPresence,
   filterNewProviderModelIds,
   modelExistsInProviderScope,
@@ -83,6 +84,29 @@ test('resolveActiveModelAfterRemoval switches to another model or clears active'
     resolveActiveModelAfterRemoval('b', remaining, ['a']),
     'b',
   );
+});
+
+test('applyModelsRemovalToConfig clears default slots when active model is removed', () => {
+  const config = {
+    models: [
+      { name: 'a', provider: 'openai' },
+      { name: 'b', provider: 'openai' },
+    ],
+    activeModel: 'a',
+    imageGenerationModel: 'a',
+    videoGenerationModel: 'b',
+    lightweightChatModel: 'a',
+  };
+
+  assert.equal(applyModelsRemovalToConfig(config, ['a']), 1);
+  assert.deepEqual(
+    config.models.map((model) => model.name),
+    ['b'],
+  );
+  assert.equal(config.activeModel, 'b');
+  assert.equal(config.imageGenerationModel, undefined);
+  assert.equal(config.videoGenerationModel, 'b');
+  assert.equal(config.lightweightChatModel, undefined);
 });
 
 test('filterNewProviderModelIds skips only duplicates within provider scope', () => {

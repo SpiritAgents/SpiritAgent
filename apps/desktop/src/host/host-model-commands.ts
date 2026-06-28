@@ -29,7 +29,7 @@ import type {
   RemoveProviderModelsRequest,
   UpdateConfigRequest,
 } from '../types.js';
-import { syncExistingModelsFromCatalog } from './model-catalog-startup-refresh.js';
+import { syncExistingModelsFromCatalog, removeDelistedModelsFromCatalog } from './model-catalog-startup-refresh.js';
 import {
   defaultApiBaseForTransport,
   findCatalogEntryForModel,
@@ -50,7 +50,7 @@ import {
 import { providerConnectSiteRequiresWorkspaceId } from './provider-presets.js';
 import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spirit-agent/host-internal/bedrock-mantle';
 import { modelSupportsChat } from './lightweight-chat-model.js';
-import { modelExistsInProviderScope, resolveActiveModelAfterRemoval } from './provider-api-key.js';
+import { modelExistsInProviderScope, applyModelsRemovalToConfig } from './provider-api-key.js';
 import {
   loadHostMetadata,
   modelProviderKeyScope,
@@ -685,15 +685,17 @@ export async function addProviderModelsCommand(
       ...(provider === 'google-vertex-ai' && vertexProject ? { vertexProject } : {}),
       ...(provider === 'google-vertex-ai' && vertexLocation ? { vertexLocation } : {}),
     };
+    const catalogRefreshResult = {
+      modelIds: uniqueIds,
+      fromCache: false,
+      modelCatalog: request.modelCatalog,
+    };
+    const pruned = removeDelistedModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
     const synced = request.modelCatalog?.length
-      ? syncExistingModelsFromCatalog(state.config, scopeProfile, {
-          modelIds: uniqueIds,
-          fromCache: false,
-          modelCatalog: request.modelCatalog,
-        })
+      ? syncExistingModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult)
       : 0;
 
-    if (toAdd.length === 0 && synced === 0) {
+    if (toAdd.length === 0 && synced === 0 && pruned.length === 0) {
       throw new Error(i18n.t('error.modelsAlreadyExist'));
     }
 
@@ -742,6 +744,9 @@ export async function addProviderModelsCommand(
       if (videoGenerationProfile) {
         state.config.videoGenerationModel = videoGenerationProfile.name;
       }
+    }
+    for (const name of pruned) {
+      await removeModelApiKey(name);
     }
     await saveConfig(state.config);
     await ctx.refreshRuntime();
@@ -987,20 +992,7 @@ async function finalizeModelRemoval(
     removeLegacyModelKeys?: boolean;
   },
 ): Promise<DesktopSnapshot> {
-  state.config.activeModel = resolveActiveModelAfterRemoval(
-    state.config.activeModel,
-    state.config.models,
-    namesToRemove,
-  );
-  if (state.config.imageGenerationModel && namesToRemove.includes(state.config.imageGenerationModel)) {
-    delete state.config.imageGenerationModel;
-  }
-  if (state.config.videoGenerationModel && namesToRemove.includes(state.config.videoGenerationModel)) {
-    delete state.config.videoGenerationModel;
-  }
-  if (state.config.lightweightChatModel && namesToRemove.includes(state.config.lightweightChatModel)) {
-    delete state.config.lightweightChatModel;
-  }
+  applyModelsRemovalToConfig(state.config, namesToRemove);
   await saveConfig(state.config);
   if (options?.removeProviderKey) {
     await removeProviderApiKey(options.removeProviderKey);

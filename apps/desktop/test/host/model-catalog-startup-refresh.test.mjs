@@ -7,6 +7,7 @@ import {
   collectModelCatalogRefreshTargets,
   mergeNewCatalogModelsIntoConfig,
   modelCatalogScopeKey,
+  removeDelistedModelsFromCatalog,
   syncExistingModelsFromCatalog,
 } from '../../dist-electron/src/host/model-catalog-startup-refresh.js';
 
@@ -281,4 +282,74 @@ test('applyCatalogEntryToStoredModel backfills contextLength only when unset', (
     false,
   );
   assert.equal(model.contextLength, 128000);
+});
+
+test('removeDelistedModelsFromCatalog drops scope models missing from upstream ids', () => {
+  const config = {
+    models: [
+      {
+        name: 'alibaba/wan-v2.6-t2v',
+        apiBase: 'https://ai-gateway.vercel.sh/v1',
+        provider: 'vercel-ai-gateway',
+        transportKind: 'open-responses',
+        reasoningEffort: 'default',
+        capabilities: ['videoGeneration'],
+      },
+      {
+        name: 'openai/gpt-4.1',
+        apiBase: 'https://ai-gateway.vercel.sh/v1',
+        provider: 'vercel-ai-gateway',
+        transportKind: 'open-responses',
+        reasoningEffort: 'default',
+        capabilities: ['chat'],
+      },
+      {
+        name: 'legacy-local',
+        apiBase: 'http://127.0.0.1:8080/v1',
+        provider: 'custom',
+        reasoningEffort: 'default',
+      },
+    ],
+    activeModel: 'alibaba/wan-v2.6-t2v',
+    videoGenerationModel: 'alibaba/wan-v2.6-t2v',
+  };
+
+  const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
+    modelIds: ['openai/gpt-4.1'],
+    fromCache: false,
+    modelCatalog: [{ id: 'openai/gpt-4.1', capabilities: ['chat'] }],
+  });
+
+  assert.deepEqual(pruned, ['alibaba/wan-v2.6-t2v']);
+  assert.deepEqual(
+    config.models.map((model) => model.name),
+    ['openai/gpt-4.1', 'legacy-local'],
+  );
+  assert.equal(config.activeModel, 'openai/gpt-4.1');
+  assert.equal(config.videoGenerationModel, undefined);
+});
+
+test('removeDelistedModelsFromCatalog clears activeModel when last scope model is removed', () => {
+  const config = {
+    models: [
+      {
+        name: 'alibaba/wan-v2.6-t2v',
+        apiBase: 'https://ai-gateway.vercel.sh/v1',
+        provider: 'vercel-ai-gateway',
+        transportKind: 'open-responses',
+        reasoningEffort: 'default',
+      },
+    ],
+    activeModel: 'alibaba/wan-v2.6-t2v',
+  };
+
+  const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
+    modelIds: [],
+    fromCache: false,
+    modelCatalog: [],
+  });
+
+  assert.deepEqual(pruned, []);
+  assert.deepEqual(config.models.map((model) => model.name), ['alibaba/wan-v2.6-t2v']);
+  assert.equal(config.activeModel, 'alibaba/wan-v2.6-t2v');
 });
