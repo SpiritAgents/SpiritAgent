@@ -11,8 +11,6 @@ files:
   - dist/**/*
   - dist-electron/**/*
   - node_modules/**/*
-  - '!node_modules/spirit-agent-repo/**/*'
-  - '!node_modules/**/spirit-agent-repo/**/*'
   - '!**/target/**/*'
   - from: ../../node_modules/@vscode/ripgrep
     to: node_modules/@vscode/ripgrep
