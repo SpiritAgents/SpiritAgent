@@ -251,7 +251,7 @@ function ReviewTimelineRow({ item }: { item: GitHubPullRequestConversationReview
       {showSummaryCard ? (
         <PrConversationCommentCard>
           {body ? (
-            <WorkspacePrMarkdown content={item.body} />
+            <WorkspacePrMarkdown content={body} />
           ) : (
             <p className="text-xs leading-relaxed text-foreground/80">{cardText}</p>
           )}
