@@ -22,12 +22,14 @@ import type {
   DesktopProviderConnectSiteId,
   DesktopSnapshot,
   DesktopTransportKind,
+  ModelProfileSnapshot,
   PreviewModelsRequest,
   PreviewModelsResponse,
   RemoveModelRequest,
   RemoveProviderModelsRequest,
   UpdateConfigRequest,
 } from '../types.js';
+import { syncExistingModelsFromCatalog } from './model-catalog-startup-refresh.js';
 import {
   defaultApiBaseForTransport,
   findCatalogEntryForModel,
@@ -664,7 +666,34 @@ export async function addProviderModelsCommand(
       toAdd.push(profile);
     }
 
-    if (toAdd.length === 0) {
+    const scopeProfile: ModelProfileSnapshot = {
+      name: uniqueIds[0] ?? '',
+      apiBase,
+      provider,
+      reasoningEffort: defaultModelReasoningEffort({
+        ...(reasoningProviderForTransport(provider, transportKind)
+          ? { provider: reasoningProviderForTransport(provider, transportKind) }
+          : {}),
+        model: uniqueIds[0] ?? '',
+      }),
+      ...(transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock'
+        ? { transportKind }
+        : {}),
+      ...(provider === 'amazon-bedrock' && awsRegion ? { awsRegion } : {}),
+      ...(providerSite ? { providerSite } : {}),
+      ...(provider === 'alibaba' && alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
+      ...(provider === 'google-vertex-ai' && vertexProject ? { vertexProject } : {}),
+      ...(provider === 'google-vertex-ai' && vertexLocation ? { vertexLocation } : {}),
+    };
+    const synced = request.modelCatalog?.length
+      ? syncExistingModelsFromCatalog(state.config, scopeProfile, {
+          modelIds: uniqueIds,
+          fromCache: false,
+          modelCatalog: request.modelCatalog,
+        })
+      : 0;
+
+    if (toAdd.length === 0 && synced === 0) {
       throw new Error(i18n.t('error.modelsAlreadyExist'));
     }
 
