@@ -9,11 +9,12 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Check, Copy, LoaderCircle } from "lucide-react";
+import { Check, Copy, GitCommit, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipItem, useTooltipTriggerProps } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PrConversationTimelineNode } from "@/components/workspace-pr-conversation-timeline";
 import { WorkspaceGitCommitContextMenu } from "@/components/workspace-git-commit-context-menu";
 import { cn } from "@/lib/utils";
 import type { GitCommitGraphRow, GitCommitRecord, GitHistorySnapshot } from "@/types";
@@ -21,7 +22,8 @@ import type { GitCommitGraphRow, GitCommitRecord, GitHistorySnapshot } from "@/t
 const ROW_HEIGHT_PX = 32;
 const LANE_WIDTH_PX = 16;
 const GUTTER_LEADING_PX = 4;
-const NODE_RADIUS_PX = 4;
+/** Half of compact `PrConversationTimelineNode` (size-3.5) — matches `text-xs` row height. */
+const NODE_RADIUS_PX = 7;
 const TEXT_GAP_PX = 4;
 
 function laneCenterX(lane: number): number {
@@ -391,50 +393,61 @@ function CommitGraphGutter({
   const { verticals, curves } = builder.toPathLists();
 
   return (
-    <svg
-      width={graphWidth}
-      height={height}
-      className="pointer-events-none absolute left-0 top-0 shrink-0"
-      aria-hidden
-    >
-      <g className="text-muted-foreground/35">
-        {verticals.map((d, index) => (
-          d ? (
-            <path
-              key={`v-${index}`}
-              d={d}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1}
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-            />
-          ) : null
+    <>
+      <svg
+        width={graphWidth}
+        height={height}
+        className="pointer-events-none absolute left-0 top-0 shrink-0"
+        aria-hidden
+      >
+        <g className="text-border/40">
+          {verticals.map((d, index) => (
+            d ? (
+              <path
+                key={`v-${index}`}
+                d={d}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1}
+                strokeLinecap="butt"
+                strokeLinejoin="round"
+              />
+            ) : null
+          ))}
+          {curves.map((d, index) => (
+            d ? (
+              <path
+                key={`c-${index}`}
+                d={d}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1}
+                strokeLinecap="butt"
+                strokeLinejoin="round"
+              />
+            ) : null
+          ))}
+        </g>
+      </svg>
+      <div
+        className="pointer-events-none absolute left-0 top-0"
+        style={{ width: graphWidth, height }}
+        aria-hidden
+      >
+        {rows.map((row, rowIndex) => (
+          <div
+            key={row.commit.oid}
+            className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: laneCenterX(row.lane),
+              top: rowCenter(rowIndex),
+            }}
+          >
+            <PrConversationTimelineNode icon={GitCommit} size="compact" />
+          </div>
         ))}
-        {curves.map((d, index) => (
-          d ? (
-            <path
-              key={`c-${index}`}
-              d={d}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1}
-              strokeLinecap="butt"
-              strokeLinejoin="round"
-            />
-          ) : null
-        ))}
-      </g>
-      {rows.map((row, rowIndex) => (
-        <circle
-          key={row.commit.oid}
-          cx={laneCenterX(row.lane)}
-          cy={rowCenter(rowIndex)}
-          r={NODE_RADIUS_PX}
-          className="fill-muted-foreground"
-        />
-      ))}
-    </svg>
+      </div>
+    </>
   );
 }
 
@@ -529,7 +542,7 @@ function CommitGraphRowWithHover({
       )}
       onPointerEnter={onPointerEnter}
     >
-      <span className="min-w-0 flex-1 truncate text-xs leading-snug text-foreground">
+      <span className="min-w-0 flex-1 truncate text-xs font-medium leading-snug text-foreground/80">
         {row.commit.subject}
       </span>
     </button>
