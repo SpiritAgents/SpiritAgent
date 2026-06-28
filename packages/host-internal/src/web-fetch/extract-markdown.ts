@@ -192,19 +192,23 @@ export function collectLinksFromHtml(html: string, baseUrl: string): Array<{ tex
   return links;
 }
 
-export function collectLinksFromMarkdown(markdown: string): Array<{ text: string; url: string }> {
+export function collectLinksFromMarkdown(
+  markdown: string,
+  baseUrl: string,
+): Array<{ text: string; url: string }> {
   const links: Array<{ text: string; url: string }> = [];
   const seen = new Set<string>();
   const pattern = /\[([^\]]*)\]\(([^)]+)\)/gu;
 
   for (const match of markdown.matchAll(pattern)) {
     const text = match[1]?.trim() || match[2]?.trim() || '';
-    const url = match[2]?.trim() ?? '';
-    if (url.length === 0 || seen.has(url)) {
+    const href = match[2]?.trim() ?? '';
+    const absolute = resolveAbsoluteUrl(href, baseUrl);
+    if (!absolute || seen.has(absolute)) {
       continue;
     }
-    seen.add(url);
-    links.push({ text: text || url, url });
+    seen.add(absolute);
+    links.push({ text: text || absolute, url: absolute });
   }
 
   return links;
