@@ -799,7 +799,7 @@ test('authorize still requires ask_questions under full-approval approval level'
       questions: [{
         id: 'q1',
         title: 'Choose one',
-        allow_multiple: false,
+        allowMultiple: false,
         options: [{ id: 'a', label: 'A' }],
       }],
     });

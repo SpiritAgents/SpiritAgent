@@ -11,7 +11,7 @@ function pendingQuestions(overrides = {}) {
         {
           id: 'question-1',
           title: 'What should happen next?',
-          allow_multiple: false,
+          allowMultiple: false,
           options: [],
         },
       ],
@@ -64,13 +64,13 @@ test('buildSingleTextQuestionNotificationReplyResult ignores multi-question prom
             {
               id: 'question-1',
               title: 'First?',
-              allow_multiple: false,
+              allowMultiple: false,
               options: [],
             },
             {
               id: 'question-2',
               title: 'Second?',
-              allow_multiple: false,
+              allowMultiple: false,
               options: [],
             },
           ],
