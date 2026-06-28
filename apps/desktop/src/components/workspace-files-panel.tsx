@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
   ChevronDown,
   ChevronRight,
+  FilePlus,
+  FolderPlus,
   ListTodo,
 } from "lucide-react";
 
@@ -49,6 +51,19 @@ function fileBasename(abs: string): string {
   const n = abs.replace(/\\/g, "/");
   const i = n.lastIndexOf("/");
   return i >= 0 ? n.slice(i + 1) || abs : abs;
+}
+
+function parentWorkspaceRelativePath(relativePath: string): string {
+  const posix = relativePath.replace(/\\/g, "/");
+  const index = posix.lastIndexOf("/");
+  return index >= 0 ? posix.slice(0, index) : "";
+}
+
+function workspaceRelFromSelectedEntryKey(selectedEntryKey: string | null | undefined): string | null {
+  if (!selectedEntryKey?.startsWith("workspace:")) {
+    return null;
+  }
+  return selectedEntryKey.slice("workspace:".length);
 }
 
 /** 重命名聚焦时预选文件名主体，不含最后一个扩展名（如 App.tsx → App）。 */
@@ -125,6 +140,18 @@ type PendingMoveTarget = {
   targetDirectoryRel: string;
   targetDirectoryLabel: string;
 };
+
+type CreatingEntryState = {
+  parentRel: string;
+  kind: "file" | "dir";
+  value: string;
+  error: string;
+};
+
+const EXPLORER_CREATE_ROW_BUTTON_CLASS = cn(
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground",
+  "enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground dark:enabled:hover:bg-foreground/10",
+);
 
 export type WorkspaceFilesPanelProps = {
   workspaceRoot: string;
@@ -376,7 +403,10 @@ export function WorkspaceFilesPanel({
   const [revealError, setRevealError] = useState("");
   /** 目录点击暂留；`""` 为工作区根。与文件 selected 高亮互斥。 */
   const [focusedDirectoryRel, setFocusedDirectoryRel] = useState<string | null>(null);
+  const [treeHasFocus, setTreeHasFocus] = useState(false);
+  const [creatingEntry, setCreatingEntry] = useState<CreatingEntryState | null>(null);
   const renameCommitInFlightRef = useRef(false);
+  const treeFocusContainerRef = useRef<HTMLDivElement>(null);
   const prevGitRevisionRef = useRef<number | undefined>(undefined);
   const cacheRef = useRef(cache);
   cacheRef.current = cache;
@@ -583,6 +613,7 @@ export function WorkspaceFilesPanel({
   );
 
   const handleRenameStart = useCallback((target: WorkspaceExplorerContextTarget) => {
+    setCreatingEntry(null);
     setRenamingPath(target.relativePath);
     setRenameValue(target.name);
     setRenameError("");
@@ -799,6 +830,7 @@ export function WorkspaceFilesPanel({
         return;
       }
       clearFocusedDirectory();
+      setCreatingEntry(null);
     },
     [clearFocusedDirectory],
   );
@@ -813,6 +845,67 @@ export function WorkspaceFilesPanel({
     (dirRel: string) => focusedDirectoryRel !== null && focusedDirectoryRel === dirRel,
     [focusedDirectoryRel],
   );
+
+  const resolveCreateParentDir = useCallback((): string => {
+    if (focusedDirectoryRel !== null) {
+      return focusedDirectoryRel;
+    }
+    const fileRel = workspaceRelFromSelectedEntryKey(selectedEntryKey);
+    if (fileRel) {
+      return parentWorkspaceRelativePath(fileRel);
+    }
+    return "";
+  }, [focusedDirectoryRel, selectedEntryKey]);
+
+  const ensureParentDirectoryExpanded = useCallback(
+    (parentRel: string) => {
+      setRootOpen(true);
+      const directoriesToExpand = [""];
+      if (parentRel) {
+        let current = "";
+        for (const segment of parentRel.split("/").filter((part) => part.length > 0)) {
+          current = current ? `${current}/${segment}` : segment;
+          directoriesToExpand.push(current);
+        }
+      }
+      setExpanded((previous) => {
+        const next = { ...previous };
+        for (const directory of directoriesToExpand) {
+          next[directory] = true;
+        }
+        return next;
+      });
+      for (const directory of directoriesToExpand) {
+        void loadDir(directory);
+      }
+    },
+    [loadDir],
+  );
+
+  const handleCreateStart = useCallback(
+    (kind: CreatingEntryState["kind"]) => {
+      if (!isElectron) {
+        return;
+      }
+      handleRenameCancel();
+      const parentRel = resolveCreateParentDir();
+      ensureParentDirectoryExpanded(parentRel);
+      setCreatingEntry({ parentRel, kind, value: "", error: "" });
+    },
+    [ensureParentDirectoryExpanded, handleRenameCancel, isElectron, resolveCreateParentDir],
+  );
+
+  const handleTreeFocusIn = useCallback(() => {
+    setTreeHasFocus(true);
+  }, []);
+
+  const handleTreeFocusOut = useCallback((event: FocusEvent<HTMLDivElement>) => {
+    const next = event.relatedTarget;
+    if (next instanceof Node && treeFocusContainerRef.current?.contains(next)) {
+      return;
+    }
+    setTreeHasFocus(false);
+  }, []);
 
   if (!workspaceRoot.trim()) {
     return <p className="text-muted-foreground">{t("workspace.connectToShowFiles")}</p>;
@@ -1012,32 +1105,69 @@ export function WorkspaceFilesPanel({
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden text-xs">
+    <div
+      ref={treeFocusContainerRef}
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden text-xs"
+      onFocusCapture={handleTreeFocusIn}
+      onBlurCapture={handleTreeFocusOut}
+    >
       {revealError ? (
         <p className="mb-1 shrink-0 text-destructive/90" role="alert">
           {revealError}
         </p>
       ) : null}
-      <WorkspaceFileContextMenu
-        target={rootTarget}
-        workspaceRoot={workspaceRoot}
-        isElectron={isElectron}
-        onReveal={handleReveal}
-      >
-        <button
-          type="button"
-          className={cn(EXPLORER_ROW_TRIGGER_CLASS, "mb-1 shrink-0")}
-          aria-expanded={rootOpen}
-          onClick={() => setRootOpen((o) => !o)}
+      <div className="mb-1 flex shrink-0 items-center gap-0.5">
+        <WorkspaceFileContextMenu
+          target={rootTarget}
+          workspaceRoot={workspaceRoot}
+          isElectron={isElectron}
+          onReveal={handleReveal}
         >
-          {rootOpen ? (
-            <ChevronDown className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
-          ) : (
-            <ChevronRight className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
-          )}
-          <span className="min-w-0 truncate">{rootLabel}</span>
-        </button>
-      </WorkspaceFileContextMenu>
+          <button
+            type="button"
+            className={cn(
+              EXPLORER_ROW_TRIGGER_CLASS,
+              "min-w-0 flex-1",
+              focusedDirectoryRel === "" && "bg-foreground/[0.08] dark:bg-foreground/12",
+            )}
+            aria-expanded={rootOpen}
+            aria-current={focusedDirectoryRel === "" ? "true" : undefined}
+            onClick={() => {
+              setFocusedDirectoryRel("");
+              setRootOpen((open) => !open);
+            }}
+          >
+            {rootOpen ? (
+              <ChevronDown className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
+            ) : (
+              <ChevronRight className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
+            )}
+            <span className="min-w-0 truncate">{rootLabel}</span>
+          </button>
+        </WorkspaceFileContextMenu>
+        {isElectron && treeHasFocus ? (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              className={EXPLORER_CREATE_ROW_BUTTON_CLASS}
+              aria-label={t("workspace.createFile")}
+              title={t("workspace.createFile")}
+              onClick={() => handleCreateStart("file")}
+            >
+              <FilePlus className="size-3.5" aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={EXPLORER_CREATE_ROW_BUTTON_CLASS}
+              aria-label={t("workspace.createFolder")}
+              title={t("workspace.createFolder")}
+              onClick={() => handleCreateStart("dir")}
+            >
+              <FolderPlus className="size-3.5" aria-hidden />
+            </button>
+          </div>
+        ) : null}
+      </div>
       {rootOpen ? (
         <ScrollArea className="min-h-0 min-w-0 flex-1" type="auto">
           <div
