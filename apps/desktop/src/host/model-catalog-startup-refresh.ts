@@ -27,6 +27,7 @@ import {
   hasGoogleVertexRuntimeCredentials,
   modelExistsInProviderScope,
   modelProviderKeyScope,
+  applyModelsRemovalToConfig,
 } from './provider-api-key.js';
 import {
   DEFAULT_API_BASE,
@@ -375,14 +376,58 @@ export function syncExistingModelsFromCatalog(
   return updated;
 }
 
+/** 移除同作用域内已不在上游目录中的已入库模型。 */
+export function removeDelistedModelsFromCatalog(
+  config: DesktopConfigFile,
+  profile: ModelProfileSnapshot,
+  result: LoadedPreviewModelsResult,
+): readonly string[] {
+  const provider = profile.provider;
+  if (!provider) {
+    return [];
+  }
+  const catalogIds = new Set(
+    result.modelIds.map((id) => id.trim()).filter((id) => id.length > 0),
+  );
+  if (catalogIds.size === 0) {
+    return [];
+  }
+
+  const transportKind = resolveDesktopTransportKind(profile);
+  const apiBase = profile.apiBase.trim() || DEFAULT_API_BASE;
+  const namesToRemove: string[] = [];
+  for (const model of config.models) {
+    if (!modelMatchesCatalogRefreshScope(model, provider, transportKind, apiBase)) {
+      continue;
+    }
+    if (!catalogIds.has(model.name)) {
+      namesToRemove.push(model.name);
+    }
+  }
+  if (namesToRemove.length === 0) {
+    return [];
+  }
+  applyModelsRemovalToConfig(config, namesToRemove);
+  return namesToRemove;
+}
+
 export async function refreshConfiguredModelCatalogsOnStartup(
   config: DesktopConfigFile,
-): Promise<{ attempted: number; refreshed: number; skipped: number; merged: number; synced: number }> {
+): Promise<{
+  attempted: number;
+  refreshed: number;
+  skipped: number;
+  merged: number;
+  synced: number;
+  pruned: number;
+  prunedModelNames: readonly string[];
+}> {
   const targets = collectModelCatalogRefreshTargets(config.models);
   let refreshed = 0;
   let skipped = 0;
   let merged = 0;
   let synced = 0;
+  const prunedModelNames: string[] = [];
 
   for (const profile of targets) {
     try {
@@ -390,6 +435,7 @@ export async function refreshConfiguredModelCatalogsOnStartup(
       if (result) {
         refreshed += 1;
         merged += mergeNewCatalogModelsIntoConfig(config, profile, result);
+        prunedModelNames.push(...removeDelistedModelsFromCatalog(config, profile, result));
         synced += syncExistingModelsFromCatalog(config, profile, result);
       } else {
         skipped += 1;
@@ -399,5 +445,13 @@ export async function refreshConfiguredModelCatalogsOnStartup(
     }
   }
 
-  return { attempted: targets.length, refreshed, skipped, merged, synced };
+  return {
+    attempted: targets.length,
+    refreshed,
+    skipped,
+    merged,
+    synced,
+    pruned: prunedModelNames.length,
+    prunedModelNames,
+  };
 }
