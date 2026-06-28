@@ -406,6 +406,7 @@ function ExplorerCreateRow({
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      skipBlurCommitRef.current = true;
       onCancel();
     }
   };
