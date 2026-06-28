@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -148,9 +148,9 @@ type CreatingEntryState = {
   error: string;
 };
 
-const EXPLORER_CREATE_ROW_BUTTON_CLASS = cn(
-  "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground",
-  "enabled:hover:bg-foreground/[0.06] enabled:hover:text-foreground dark:enabled:hover:bg-foreground/10",
+const EXPLORER_ROOT_CREATE_BUTTON_CLASS = cn(
+  "inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground",
+  "hover:bg-foreground/[0.08] hover:text-foreground dark:hover:bg-foreground/12",
 );
 
 export type WorkspaceFilesPanelProps = {
@@ -492,11 +492,11 @@ export function WorkspaceFilesPanel({
   const [revealError, setRevealError] = useState("");
   /** 目录点击暂留；`""` 为工作区根。与文件 selected 高亮互斥。 */
   const [focusedDirectoryRel, setFocusedDirectoryRel] = useState<string | null>(null);
-  const [treeHasFocus, setTreeHasFocus] = useState(false);
+  const [treeHovered, setTreeHovered] = useState(false);
   const [creatingEntry, setCreatingEntry] = useState<CreatingEntryState | null>(null);
   const renameCommitInFlightRef = useRef(false);
   const createCommitInFlightRef = useRef(false);
-  const treeFocusContainerRef = useRef<HTMLDivElement>(null);
+  const treeHoverContainerRef = useRef<HTMLDivElement>(null);
   const prevGitRevisionRef = useRef<number | undefined>(undefined);
   const cacheRef = useRef(cache);
   cacheRef.current = cache;
@@ -704,6 +704,7 @@ export function WorkspaceFilesPanel({
 
   const handleRenameStart = useCallback((target: WorkspaceExplorerContextTarget) => {
     setCreatingEntry(null);
+    setFocusedDirectoryRel(null);
     setRenamingPath(target.relativePath);
     setRenameValue(target.name);
     setRenameError("");
@@ -1019,22 +1020,23 @@ export function WorkspaceFilesPanel({
       }
       handleRenameCancel();
       const parentRel = resolveCreateParentDir();
+      setFocusedDirectoryRel(null);
       ensureParentDirectoryExpanded(parentRel);
       setCreatingEntry({ parentRel, kind, value: "", error: "" });
     },
     [ensureParentDirectoryExpanded, handleRenameCancel, isElectron, resolveCreateParentDir],
   );
 
-  const handleTreeFocusIn = useCallback(() => {
-    setTreeHasFocus(true);
+  const handleTreeMouseEnter = useCallback(() => {
+    setTreeHovered(true);
   }, []);
 
-  const handleTreeFocusOut = useCallback((event: FocusEvent<HTMLDivElement>) => {
-    const next = event.relatedTarget;
-    if (next instanceof Node && treeFocusContainerRef.current?.contains(next)) {
+  const handleTreeMouseLeave = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    const related = event.relatedTarget;
+    if (related instanceof Node && treeHoverContainerRef.current?.contains(related)) {
       return;
     }
-    setTreeHasFocus(false);
+    setTreeHovered(false);
   }, []);
 
   if (!workspaceRoot.trim()) {
@@ -1294,70 +1296,89 @@ export function WorkspaceFilesPanel({
   };
 
   return (
-    <div
-      ref={treeFocusContainerRef}
-      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden text-xs"
-      onFocusCapture={handleTreeFocusIn}
-      onBlurCapture={handleTreeFocusOut}
-    >
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden text-xs">
       {revealError ? (
         <p className="mb-1 shrink-0 text-destructive/90" role="alert">
           {revealError}
         </p>
       ) : null}
-      <div className="mb-1 flex shrink-0 items-center gap-0.5">
-        <WorkspaceFileContextMenu
-          target={rootTarget}
-          workspaceRoot={workspaceRoot}
-          isElectron={isElectron}
-          onReveal={handleReveal}
-        >
-          <button
-            type="button"
+      <div
+        ref={treeHoverContainerRef}
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+        onMouseEnter={handleTreeMouseEnter}
+        onMouseLeave={handleTreeMouseLeave}
+      >
+        <div className="mb-1 shrink-0">
+          <div
             className={cn(
-              EXPLORER_ROW_TRIGGER_CLASS,
-              "min-w-0 flex-1",
+              "relative flex min-w-0 items-center rounded text-foreground/90",
+              "hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
               focusedDirectoryRel === "" && "bg-foreground/[0.08] dark:bg-foreground/12",
             )}
-            aria-expanded={rootOpen}
-            aria-current={focusedDirectoryRel === "" ? "true" : undefined}
-            onClick={() => {
-              setFocusedDirectoryRel("");
-              setRootOpen((open) => !open);
-            }}
           >
-            {rootOpen ? (
-              <ChevronDown className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
-            ) : (
-              <ChevronRight className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
-            )}
-            <span className="min-w-0 truncate">{rootLabel}</span>
-          </button>
-        </WorkspaceFileContextMenu>
-        {isElectron && treeHasFocus ? (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              type="button"
-              className={EXPLORER_CREATE_ROW_BUTTON_CLASS}
-              aria-label={t("workspace.createFile")}
-              title={t("workspace.createFile")}
-              onClick={() => handleCreateStart("file")}
+            <WorkspaceFileContextMenu
+              target={rootTarget}
+              workspaceRoot={workspaceRoot}
+              isElectron={isElectron}
+              onReveal={handleReveal}
             >
-              <FilePlus className="size-3.5" aria-hidden />
-            </button>
-            <button
-              type="button"
-              className={EXPLORER_CREATE_ROW_BUTTON_CLASS}
-              aria-label={t("workspace.createFolder")}
-              title={t("workspace.createFolder")}
-              onClick={() => handleCreateStart("dir")}
-            >
-              <FolderPlus className="size-3.5" aria-hidden />
-            </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex min-w-0 flex-1 items-center gap-1 px-1 py-0.5 text-left",
+                  isElectron && "pr-11",
+                )}
+                aria-expanded={rootOpen}
+                aria-current={focusedDirectoryRel === "" ? "true" : undefined}
+                onClick={() => {
+                  setFocusedDirectoryRel("");
+                  setRootOpen((open) => !open);
+                }}
+              >
+                {rootOpen ? (
+                  <ChevronDown className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
+                ) : (
+                  <ChevronRight className={EXPLORER_ROW_ICON_CLASS} aria-hidden />
+                )}
+                <span className="min-w-0 truncate">{rootLabel}</span>
+              </button>
+            </WorkspaceFileContextMenu>
+            {isElectron ? (
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-y-0 right-0.5 flex items-center gap-0 opacity-0 transition-opacity",
+                  treeHovered && "pointer-events-auto opacity-100",
+                )}
+              >
+                <button
+                  type="button"
+                  className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
+                  aria-label={t("workspace.createFile")}
+                  title={t("workspace.createFile")}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleCreateStart("file");
+                  }}
+                >
+                  <FilePlus className="size-3" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
+                  aria-label={t("workspace.createFolder")}
+                  title={t("workspace.createFolder")}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleCreateStart("dir");
+                  }}
+                >
+                  <FolderPlus className="size-3" aria-hidden />
+                </button>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
-      {rootOpen ? (
+        </div>
+        {rootOpen ? (
         <ScrollArea className="min-h-0 min-w-0 flex-1" type="auto">
           <div
             role="tree"
@@ -1372,6 +1393,7 @@ export function WorkspaceFilesPanel({
       ) : (
         <div className="mb-1">{renderPlanItem()}</div>
       )}
+      </div>
 
       <Dialog
         open={deleteDialogOpen}
