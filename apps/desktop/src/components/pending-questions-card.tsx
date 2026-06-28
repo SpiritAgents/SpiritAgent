@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DesktopFormInput } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { QuestionDraft } from "@/hooks/useDesktopRuntime";
@@ -37,21 +36,9 @@ type PendingQuestionsCardProps = {
 
 function emptyQuestionDraft(): QuestionDraft {
   return {
-    selectedOptionIndexes: [],
-    customInput: "",
-    text: "",
+    selectedOptionIds: [],
+    customText: "",
   };
-}
-
-function isQuestionDraftAnswered(
-  question: AskQuestionsQuestionSpec,
-  draft: QuestionDraft,
-): boolean {
-  if (question.kind === "text") {
-    return draft.text.trim().length > 0;
-  }
-
-  return draft.selectedOptionIndexes.length > 0 || draft.customInput.trim().length > 0;
 }
 
 export function PendingQuestionsCard({
@@ -78,40 +65,18 @@ export function PendingQuestionsCard({
   const draft = questionDrafts[question.id] ?? emptyQuestionDraft();
   const isLastQuestion = currentIndex >= questions.length - 1;
 
-  const goToNextQuestion = () => {
+  const handleContinue = () => {
     if (!isLastQuestion) {
       setCurrentIndex((index) => Math.min(index + 1, questions.length - 1));
-    }
-  };
-
-  const handleContinue = () => {
-    if (question.required && !isQuestionDraftAnswered(question, draft)) {
       return;
-    }
-
-    if (!isLastQuestion) {
-      goToNextQuestion();
-      return;
-    }
-
-    const missingRequiredIndex = questions.findIndex(
-      (item) =>
-        item.required
-        && !isQuestionDraftAnswered(
-          item,
-          questionDrafts[item.id] ?? emptyQuestionDraft(),
-        ),
-    );
-    if (missingRequiredIndex >= 0 && missingRequiredIndex !== currentIndex) {
-      setCurrentIndex(missingRequiredIndex);
     }
     onSubmitQuestions();
   };
 
-  const handleSingleSelect = (index: number) => {
+  const handleSingleSelect = (optionId: string) => {
     onUpdateDraft(question.id, (current) => ({
       ...current,
-      selectedOptionIndexes: [index],
+      selectedOptionIds: [optionId],
     }));
 
     if (!isLastQuestion) {
@@ -119,21 +84,18 @@ export function PendingQuestionsCard({
     }
   };
 
-  const handleMultiSelectToggle = (index: number) => {
+  const handleMultiSelectToggle = (optionId: string) => {
     onUpdateDraft(question.id, (current) => {
-      const selected = current.selectedOptionIndexes.includes(index);
+      const selected = current.selectedOptionIds.includes(optionId);
       const next = selected
-        ? current.selectedOptionIndexes.filter((item) => item !== index)
-        : [...current.selectedOptionIndexes, index];
+        ? current.selectedOptionIds.filter((item) => item !== optionId)
+        : [...current.selectedOptionIds, optionId];
       return {
         ...current,
-        selectedOptionIndexes: Array.from(new Set(next)).sort((left, right) => left - right),
+        selectedOptionIds: Array.from(new Set(next)),
       };
     });
   };
-
-  const continueDisabled =
-    questionsBusy || (question.required && !isQuestionDraftAnswered(question, draft));
 
   return (
     <Card className="gap-0 border-border/50 bg-background/55 py-0 text-sm shadow-sm backdrop-blur-xl dark:border-white/12 supports-[backdrop-filter]:bg-background/40">
@@ -171,13 +133,15 @@ export function PendingQuestionsCard({
         </div>
       </CardHeader>
       <CardContent className="grid gap-1.5 px-3 pb-2 pt-0">
-        {question.kind === "single_select" ? (
+        {question.options.length > 0 ? (
           <div className="grid gap-1.5">
-            {question.options.map((option, index) => {
-              const selected = draft.selectedOptionIndexes[0] === index;
+            {question.options.map((option) => {
+              const selected = question.allow_multiple
+                ? draft.selectedOptionIds.includes(option.id)
+                : draft.selectedOptionIds[0] === option.id;
               return (
                 <button
-                  key={`${question.id}-single-${index}`}
+                  key={option.id}
                   type="button"
                   className={cn(
                     questionOptionClass,
@@ -186,7 +150,11 @@ export function PendingQuestionsCard({
                       : "border-border/60 bg-card/70 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
                   )}
                   disabled={questionsBusy}
-                  onClick={() => handleSingleSelect(index)}
+                  onClick={() =>
+                    question.allow_multiple
+                      ? handleMultiSelectToggle(option.id)
+                      : handleSingleSelect(option.id)
+                  }
                 >
                   <div className="space-y-0.5">
                     <span className="font-medium">{option.label}</span>
@@ -202,85 +170,26 @@ export function PendingQuestionsCard({
           </div>
         ) : null}
 
-        {question.kind === "multi_select" ? (
-          <div className="grid gap-1.5">
-            {question.options.map((option, index) => {
-              const selected = draft.selectedOptionIndexes.includes(index);
-              return (
-                <button
-                  key={`${question.id}-multi-${index}`}
-                  type="button"
-                  className={cn(
-                    questionOptionClass,
-                    selected
-                      ? "border-primary/60 bg-primary/8"
-                      : "border-border/60 bg-card/70 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
-                  )}
-                  disabled={questionsBusy}
-                  onClick={() => handleMultiSelectToggle(index)}
-                >
-                  <div className="space-y-0.5">
-                    <span className="font-medium">{option.label}</span>
-                    {option.summary ? (
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        {option.summary}
-                      </p>
-                    ) : null}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {question.kind === "text" ? (
-          <div className="space-y-1">
-            <Label htmlFor={`${question.id}-text`} className="text-xs">
-              {question.customInputLabel ?? t("app.answer")}
-            </Label>
-            <div className={DESKTOP_FORM_INPUT_SHELL}>
-              <Textarea
-                id={`${question.id}-text`}
-                value={draft.text}
-                onChange={(event) =>
-                  onUpdateDraft(question.id, (current) => ({
-                    ...current,
-                    text: event.target.value,
-                  }))
-                }
-                placeholder={question.customInputPlaceholder ?? t("app.enterAnswer")}
-                className={cn(DESKTOP_FORM_TEXTAREA_INNER, "min-h-20")}
-                disabled={questionsBusy}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {question.allowCustomInput ? (
-          <div
-            className={cn(
-              "space-y-1",
-              (question.kind === "single_select" || question.kind === "multi_select")
-                && "mt-2.5",
-            )}
-          >
-            <Label htmlFor={`${question.id}-custom`} className="text-xs">
-              {question.customInputLabel ?? t("app.customInput")}
-            </Label>
-            <DesktopFormInput
+        <div className={cn("space-y-1", question.options.length > 0 && "mt-2.5")}>
+          <Label htmlFor={`${question.id}-custom`} className="text-xs">
+            {t("app.customAnswer")}
+          </Label>
+          <div className={DESKTOP_FORM_INPUT_SHELL}>
+            <Textarea
               id={`${question.id}-custom`}
-              value={draft.customInput}
+              value={draft.customText}
               onChange={(event) =>
                 onUpdateDraft(question.id, (current) => ({
                   ...current,
-                  customInput: event.target.value,
+                  customText: event.target.value,
                 }))
               }
-              placeholder={question.customInputPlaceholder ?? t("app.supplementOption")}
+              placeholder={t("app.customAnswerPlaceholder")}
+              className={cn(DESKTOP_FORM_TEXTAREA_INNER, "min-h-20")}
               disabled={questionsBusy}
             />
           </div>
-        ) : null}
+        </div>
 
         <div className="flex items-center justify-between gap-2">
           <Button
@@ -301,7 +210,7 @@ export function PendingQuestionsCard({
             type="button"
             size="sm"
             className={cn("h-8 min-w-20", instantHoverMotionClass, "active:!translate-y-0")}
-            disabled={continueDisabled}
+            disabled={questionsBusy}
             onClick={handleContinue}
           >
             {questionsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
