@@ -200,7 +200,7 @@ export interface HostAskQuestionsOptionSpec {
 export interface HostAskQuestionsQuestionSpec {
   id: string;
   title: string;
-  allow_multiple: boolean;
+  allowMultiple: boolean;
   options: HostAskQuestionsOptionSpec[];
 }
 
@@ -2324,7 +2324,7 @@ function parseQuestion(value: HostJsonValue, index: number): HostAskQuestionsQue
   return {
     id: requiredString(value, 'id'),
     title: requiredString(value, 'title'),
-    allow_multiple: optionalBoolean(value, 'allow_multiple') ?? false,
+    allowMultiple: optionalBoolean(value, 'allowMultiple') ?? false,
     options,
   };
 }
@@ -2437,7 +2437,7 @@ function buildExtensionQuestionsAuthorization<QuestionSpec>(
         {
           id: 'execution_note',
           title: '补充执行说明',
-          allow_multiple: false,
+          allowMultiple: false,
           options: [],
         } as QuestionSpec,
       ],

@@ -335,7 +335,7 @@ export function mapPendingQuestions(
       questions: pending.questions.questions.map((question) => ({
         id: question.id,
         title: question.title,
-        allow_multiple: question.allow_multiple === true,
+        allowMultiple: question.allowMultiple === true,
         options: (question.options ?? []).map((option) => ({
           id: option.id,
           label: option.label,

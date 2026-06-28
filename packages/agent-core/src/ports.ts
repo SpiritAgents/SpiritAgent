@@ -519,7 +519,7 @@ export interface AskQuestionsOption {
 export interface AskQuestionsQuestion {
   id: string;
   title: string;
-  allow_multiple?: boolean;
+  allowMultiple?: boolean;
   options?: AskQuestionsOption[];
 }
 
