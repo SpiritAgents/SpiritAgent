@@ -706,6 +706,33 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     : filesTabIcon ?? meta.icon;
                 const selected = item.id === activeTabId;
                 const label = workspaceToolTabLabel(item.kind, tabs, item.id, t);
+                const renderTabButton = () => (
+                  <button
+                    type="button"
+                    role="tab"
+                    id={`workspace-tool-tab-${item.id}`}
+                    aria-selected={selected}
+                    aria-controls={`workspace-tool-panel-${item.id}`}
+                    tabIndex={selected ? 0 : -1}
+                    aria-label={displayTitle ? undefined : label}
+                    className="flex min-w-0 flex-1 items-center gap-1 rounded-t-md bg-transparent py-2 pl-2 pr-2 text-xs font-medium outline-none"
+                    onClick={() => onActiveTabIdChange(item.id)}
+                  >
+                    <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                    {displayTitle ? (
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate">{displayTitle}</span>
+                        {item.tabDirty ? (
+                          <span
+                            className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
+                            role="status"
+                            aria-label={t("workspace.unsavedChangesIndicator")}
+                          />
+                        ) : null}
+                      </span>
+                    ) : null}
+                  </button>
+                );
                 return (
                   <div
                     key={item.id}
@@ -722,31 +749,16 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                     )}
                   >
-                    <button
-                      type="button"
-                      role="tab"
-                      id={`workspace-tool-tab-${item.id}`}
-                      aria-selected={selected}
-                      aria-controls={`workspace-tool-panel-${item.id}`}
-                      tabIndex={selected ? 0 : -1}
-                      title={displayTitle ?? label}
-                      className="flex min-w-0 flex-1 items-center gap-1 rounded-t-md bg-transparent py-2 pl-2 pr-2 text-xs font-medium outline-none"
-                      onClick={() => onActiveTabIdChange(item.id)}
-                    >
-                      <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                      {displayTitle ? (
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate">{displayTitle}</span>
-                          {item.tabDirty ? (
-                            <span
-                              className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
-                              role="status"
-                              aria-label={t("workspace.unsavedChangesIndicator")}
-                            />
-                          ) : null}
-                        </span>
-                      ) : null}
-                    </button>
+                    {displayTitle ? (
+                      renderTabButton()
+                    ) : (
+                      <Tooltip delayDuration={300} disableHoverableContent>
+                        <TooltipTrigger asChild>{renderTabButton()}</TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={4}>
+                          {label}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     {displayTitle ? (
                       <button
                         type="button"
