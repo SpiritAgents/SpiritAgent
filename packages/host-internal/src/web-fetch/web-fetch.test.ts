@@ -99,8 +99,19 @@ test('buildWebFetchOutput marks truncated content in metadata', () => {
 
 test('collectLinksFromMarkdown deduplicates by URL', () => {
   const markdown = '[A](https://example.com/x)\n[B](https://example.com/x)';
-  const links = collectLinksFromMarkdown(markdown);
+  const links = collectLinksFromMarkdown(markdown, 'https://example.com');
   assert.equal(links.length, 1);
+});
+
+test('collectLinksFromMarkdown rejects javascript and data URLs', () => {
+  const markdown = [
+    '[safe](https://example.com/ok)',
+    '[x](javascript:alert(1))',
+    '[y](data:text/html,evil)',
+  ].join('\n');
+  const links = collectLinksFromMarkdown(markdown, 'https://example.com');
+  assert.equal(links.length, 1);
+  assert.equal(links[0]?.url, 'https://example.com/ok');
 });
 
 test('extractWebContent loads JSON fixture with keys metadata', () => {

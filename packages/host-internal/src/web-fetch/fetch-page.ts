@@ -66,7 +66,7 @@ export function convertFetchedPageToToolText(page: FetchedWebPage): string {
   const extracted = extractWebContent(page.raw, page.contentType, page.finalUrl);
   const mime = normalizeMimeType(page.contentType);
 
-  let links = collectLinksFromMarkdown(extracted.markdown);
+  let links = collectLinksFromMarkdown(extracted.markdown, page.finalUrl);
   if (mime.includes('html') || looksLikeHtml(page.raw)) {
     links = mergeLinks(collectLinksFromHtml(page.raw, page.finalUrl), links);
   }
