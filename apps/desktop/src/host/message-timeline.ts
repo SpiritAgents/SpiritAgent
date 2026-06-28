@@ -820,6 +820,29 @@ export class DesktopMessageTimeline {
     segment.activeAssistantTextRowId = undefined;
   }
 
+  /**
+   * Gateway provider-search resume：remove-pending 后、下一段 thinking-chunk 到达前，
+   * 预置 after-tools pending 行供 Thinking 占位 UI 挂载。
+   */
+  ensureAfterToolsThinkingPlaceholderRow(): ConversationMessageSnapshot | undefined {
+    const segment = this.activeSegment();
+    if (!segment || !segmentHasToolRows(segment) || !segmentAllToolsTerminal(segment)) {
+      return undefined;
+    }
+    const existing = this.findAfterToolsAssistantTextRow(segment);
+    if (existing) {
+      if (!existing.content.trim() && !hasRowAux(existing)) {
+        existing.pending = true;
+        segment.activeAssistantTextRowId = existing.rowId;
+        return rowToMessage(existing);
+      }
+      return rowToMessage(existing);
+    }
+    const row = this.createAssistantTextRow(segment, 'after-tools', true);
+    segment.activeAssistantTextRowId = row.rowId;
+    return rowToMessage(row);
+  }
+
   clearContinuationMarkers(): void {
     for (const row of this.allRows()) {
       delete row.canContinue;
