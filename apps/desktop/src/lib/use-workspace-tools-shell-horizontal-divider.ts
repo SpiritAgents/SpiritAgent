@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, type RefObject } from "react";
 
 import {
   getWorkspaceToolsShellDividerLeftPx,
+  getWorkspaceToolsShellDividerLeftPxFromAnchor,
   getWorkspaceToolsShellSplit,
   shellLocalLengthFromViewportDelta,
 } from "@/lib/workspace-tools-panel-edge";
@@ -12,9 +13,21 @@ type UseWorkspaceToolsShellHorizontalDividerOptions = {
   enabled?: boolean;
   edge?: ShellHorizontalDividerEdge;
   dividerAttr: string;
+  /** Distinguish multiple dividers that share the same `dividerAttr`. */
+  dividerKey?: string;
+  /** When set, horizontal divider starts at this anchor edge instead of the shell resize line. */
+  dividerAnchorRef?: RefObject<HTMLElement | null>;
+  dividerAnchorEdge?: "left" | "right";
   /** Re-sync when these elements resize (e.g. sibling pane height changes). */
   watchRefs?: RefObject<HTMLElement | null>[];
 };
+
+function shellHorizontalDividerSelector(dividerAttr: string, dividerKey?: string): string {
+  if (dividerKey === undefined) {
+    return `[${dividerAttr}]`;
+  }
+  return `[${dividerAttr}="${CSS.escape(dividerKey)}"]`;
+}
 
 export function useWorkspaceToolsShellHorizontalDivider(
   anchorRef: RefObject<HTMLElement | null>,
@@ -22,6 +35,9 @@ export function useWorkspaceToolsShellHorizontalDivider(
     enabled = true,
     edge = "bottom",
     dividerAttr,
+    dividerKey,
+    dividerAnchorRef,
+    dividerAnchorEdge = "left",
     watchRefs = [],
   }: UseWorkspaceToolsShellHorizontalDividerOptions,
   layoutDeps: readonly unknown[] = [],
@@ -42,10 +58,12 @@ export function useWorkspaceToolsShellHorizontalDivider(
       return;
     }
 
-    let shellDivider = shellSplit.querySelector<HTMLElement>(`[${dividerAttr}]`);
+    let shellDivider = shellSplit.querySelector<HTMLElement>(
+      shellHorizontalDividerSelector(dividerAttr, dividerKey),
+    );
     if (!shellDivider) {
       shellDivider = document.createElement("div");
-      shellDivider.setAttribute(dividerAttr, "");
+      shellDivider.setAttribute(dividerAttr, dividerKey ?? "");
       shellDivider.className = "pointer-events-none absolute right-0 z-20 h-px bg-border/40";
       shellSplit.appendChild(shellDivider);
     }
@@ -59,7 +77,16 @@ export function useWorkspaceToolsShellHorizontalDivider(
 
       const shellRect = shellSplit.getBoundingClientRect();
       const anchorRect = anchor.getBoundingClientRect();
-      const leftPx = getWorkspaceToolsShellDividerLeftPx(shellSplit);
+      let leftPx: number;
+      if (dividerAnchorRef?.current) {
+        leftPx = getWorkspaceToolsShellDividerLeftPxFromAnchor(
+          shellSplit,
+          dividerAnchorRef.current,
+          dividerAnchorEdge,
+        );
+      } else {
+        leftPx = getWorkspaceToolsShellDividerLeftPx(shellSplit);
+      }
       const topPx =
         edge === "bottom"
           ? shellLocalLengthFromViewportDelta(anchorRect.bottom - shellRect.top - 1)
@@ -80,21 +107,34 @@ export function useWorkspaceToolsShellHorizontalDivider(
       resizeObserver.observe(anchor);
     }
     resizeObserver.observe(shellSplit);
+    const dividerAnchor = dividerAnchorRef?.current;
+    if (dividerAnchor) {
+      resizeObserver.observe(dividerAnchor);
+    }
     for (const watchRef of watchRefsRef.current) {
       const node = watchRef.current;
       if (node) {
         resizeObserver.observe(node);
       }
     }
-    window.addEventListener("resize", sync);
+    const onWindowResize = () => sync();
+    window.addEventListener("resize", onWindowResize);
+
+    const scrollViewport = anchor?.closest<HTMLElement>("[data-radix-scroll-area-viewport]");
+    const onScroll = () => sync();
+    scrollViewport?.addEventListener("scroll", onScroll, { passive: true });
+    if (scrollViewport) {
+      resizeObserver.observe(scrollViewport);
+    }
 
     return () => {
       syncRef.current = null;
       resizeObserver.disconnect();
-      window.removeEventListener("resize", sync);
+      window.removeEventListener("resize", onWindowResize);
+      scrollViewport?.removeEventListener("scroll", onScroll);
       shellDivider!.style.display = "none";
     };
-  }, [anchorRef, dividerAttr, edge, enabled]);
+  }, [anchorRef, dividerAnchorEdge, dividerAnchorRef, dividerAttr, dividerKey, edge, enabled]);
 
   useLayoutEffect(() => {
     syncRef.current?.();

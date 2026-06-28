@@ -26,6 +26,10 @@ import {
   writePrChangesTreeWidthPx,
 } from "@/lib/layout-prefs";
 import { useWorkspaceToolsShellRowDividers } from "@/lib/use-workspace-tools-shell-row-dividers";
+import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
+import {
+  PR_CHANGED_FILE_HEADER_SHELL_DIVIDER_ATTR,
+} from "@/lib/workspace-tools-panel-edge";
 import { cn } from "@/lib/utils";
 import type { GitHubPullRequestChangedFile } from "@/types";
 
@@ -267,16 +271,19 @@ function PrChangedFileCard({
   onOpenChange,
   onOpenExternal,
   getScrollViewport,
+  dividerAnchorRef,
 }: {
   file: GitHubPullRequestChangedFile;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenExternal?: (url: string) => void;
   getScrollViewport: () => HTMLElement | null;
+  dividerAnchorRef: RefObject<HTMLElement | null>;
 }) {
   const { t } = useTranslation();
   const mounted = useCollapsibleChildMount(open);
   const stickySentinelRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
   const diffHostRef = useRef<HTMLDivElement>(null);
   const showExpandedChrome = open || mounted;
   const pinned = useStickyHeaderPinned(stickySentinelRef, getScrollViewport, showExpandedChrome);
@@ -300,6 +307,20 @@ function PrChangedFileCard({
     return installContainedSelectAll(diffRoot);
   }, [file.filename, file.patch, mounted]);
 
+  useWorkspaceToolsShellHorizontalDivider(
+    stickyHeaderRef,
+    {
+      enabled: showExpandedChrome,
+      edge: "bottom",
+      dividerAttr: PR_CHANGED_FILE_HEADER_SHELL_DIVIDER_ATTR,
+      dividerKey: file.filename,
+      dividerAnchorRef,
+      dividerAnchorEdge: "right",
+      watchRefs: [dividerAnchorRef],
+    },
+    [showExpandedChrome, file.filename],
+  );
+
   return (
     <section
       id={prChangedFileAnchorId(file.filename)}
@@ -315,11 +336,10 @@ function PrChangedFileCard({
           />
         ) : null}
         <div
+          ref={stickyHeaderRef}
           className={cn(
             "relative",
             showExpandedChrome && "sticky top-0 z-10",
-            showExpandedChrome &&
-              "shadow-[inset_0_-1px_0_0_color-mix(in_oklab,var(--border)_40%,transparent)]",
             showExpandedChrome && pinned ? PR_STICKY_PINNED_HEADER_CLASS : "bg-transparent",
           )}
         >
@@ -572,6 +592,7 @@ export function WorkspacePrChangesView({
               open={expandedFilenames.has(file.filename)}
               onOpenExternal={onOpenExternal}
               getScrollViewport={getCardsScrollViewport}
+              dividerAnchorRef={treeAsideRef}
               onOpenChange={(nextOpen) => {
                 setExpandedFilenames((previous) => {
                   const next = new Set(previous);
