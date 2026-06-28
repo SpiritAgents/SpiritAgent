@@ -134,7 +134,7 @@ export const DESKTOP_FORM_TEXTAREA_INNER =
 
 /** 置于 DESKTOP_FORM_INPUT_SHELL 内的 Select / 自定义触发器 */
 export const DESKTOP_FORM_FIELD_TRIGGER_INNER =
-  "h-8 min-h-8 w-full rounded-none border-0 bg-transparent px-2.5 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
+  "h-8 min-h-8 w-full rounded-none border-0 bg-transparent px-2.5 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
 /** Root 与 viewport 同步 max-h：仅约束 viewport 时 Root 会随内容撑高，滚动条轨道 h-full 失真 */
 export const DESKTOP_OVERLAY_LIST_SCROLL_AREA =
@@ -159,6 +159,25 @@ export const DESKTOP_OVERLAY_LIST_ITEM = "px-2 py-1.5";
 /** 长列表 DropdownMenuItem 基元；模型 / 工作区 / 审批等浮层列表项共用 */
 export const DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM =
   "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50";
+
+/** Select 下拉项：与 DropdownMenuItem 同密度 + 右侧 ItemIndicator 留白 */
+export const DESKTOP_SELECT_ITEM = cn(DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM, "pr-8");
+
+/** Select 下拉面板：与 Dropdown 同壳 */
+export const DESKTOP_SELECT_CONTENT = cn(
+  DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+  "spirit-scroll z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] overflow-y-auto overflow-x-hidden",
+);
+
+/** 独立边框 Select 触发器（设置页等） */
+export const DESKTOP_SELECT_TRIGGER = cn(
+  "flex h-8 min-h-8 w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs outline-none",
+  "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+  "disabled:cursor-not-allowed disabled:opacity-50",
+  "data-placeholder:text-muted-foreground [&>span]:line-clamp-1",
+);
+
+export const DESKTOP_SELECT_LABEL = DESKTOP_OVERLAY_LIST_GROUP_LABEL;
 
 /** 长列表底部单行操作（添加工作区等），密度对齐 LIST 而非 Dropdown 默认 SHORT */
 export const DESKTOP_OVERLAY_LIST_ACTION_ITEM =
