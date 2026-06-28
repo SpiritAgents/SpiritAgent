@@ -1359,6 +1359,7 @@ export function WorkspaceFilesPanel({
                       type="button"
                       className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
                       aria-label={t("workspace.createFile")}
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={(event) => {
                         event.stopPropagation();
                         handleCreateStart("file");
@@ -1377,6 +1378,7 @@ export function WorkspaceFilesPanel({
                       type="button"
                       className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
                       aria-label={t("workspace.createFolder")}
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={(event) => {
                         event.stopPropagation();
                         handleCreateStart("dir");
