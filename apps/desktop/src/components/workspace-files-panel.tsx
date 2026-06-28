@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHostApi } from "@/hooks/useHostApi";
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
@@ -1351,30 +1352,42 @@ export function WorkspaceFilesPanel({
             </WorkspaceFileContextMenu>
             {isElectron && treeHovered ? (
               <div className="absolute inset-y-0 right-0.5 flex items-center gap-0">
-                <button
-                  type="button"
-                  className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
-                  aria-label={t("workspace.createFile")}
-                  title={t("workspace.createFile")}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleCreateStart("file");
-                  }}
-                >
-                  <FilePlus className="size-3" aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
-                  aria-label={t("workspace.createFolder")}
-                  title={t("workspace.createFolder")}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleCreateStart("dir");
-                  }}
-                >
-                  <FolderPlus className="size-3" aria-hidden />
-                </button>
+                <Tooltip delayDuration={300} disableHoverableContent>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
+                      aria-label={t("workspace.createFile")}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCreateStart("file");
+                      }}
+                    >
+                      <FilePlus className="size-3" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={4}>
+                    {t("workspace.createFile")}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip delayDuration={300} disableHoverableContent>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className={EXPLORER_ROOT_CREATE_BUTTON_CLASS}
+                      aria-label={t("workspace.createFolder")}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCreateStart("dir");
+                      }}
+                    >
+                      <FolderPlus className="size-3" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={4}>
+                    {t("workspace.createFolder")}
+                  </TooltipContent>
+                </Tooltip>
               </div>
             ) : null}
           </div>
