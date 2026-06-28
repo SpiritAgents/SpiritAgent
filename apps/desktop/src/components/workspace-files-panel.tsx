@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -1194,10 +1194,9 @@ export function WorkspaceFilesPanel({
           if (!isDir) {
             const selected = fileRowSelected(childRel);
             return (
-              <>
+              <Fragment key={childRel}>
                 {fileCreateRow}
                 <ExplorerRow
-                  key={childRel}
                 target={target}
                 workspaceRoot={workspaceRoot}
                 depth={depth}
@@ -1223,15 +1222,14 @@ export function WorkspaceFilesPanel({
                 draggable
                 onDragStart={(event) => handleDragStart(event, target)}
               />
-              </>
+              </Fragment>
             );
           }
 
           return (
-            <>
+            <Fragment key={dirRel}>
               {fileCreateRow}
               <ExplorerRow
-                key={dirRel}
               target={target}
               workspaceRoot={workspaceRoot}
               depth={depth}
@@ -1274,7 +1272,7 @@ export function WorkspaceFilesPanel({
             >
               {open ? <div className="min-w-0">{renderDirBody(dirRel, depth + 1)}</div> : null}
             </ExplorerRow>
-            </>
+            </Fragment>
           );
         })}
         {creatingHere?.kind === "file" && firstFileIndex === -1 ? (
