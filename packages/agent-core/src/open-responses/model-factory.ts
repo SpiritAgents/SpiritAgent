@@ -73,6 +73,7 @@ import {
 import { isOpenRouterAnthropicClaudeModel } from '../openai/openrouter-anthropic-reasoning.js';
 import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from './gateway-web-search.js';
 import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
+import { responsesUsesStoredState } from './responses-incremental-input.js';
 import {
   openResponsesPostUrl,
   openResponsesReasoningEffort,
@@ -338,7 +339,7 @@ export function buildResponsesProviderOptions(
 
   if (provider === 'azure') {
     const azureOptions: JsonObject = {
-      store: config.store ?? false,
+      store: config.store ?? true,
       ...(config.truncation === 'auto' ? { truncation: 'auto' } : { truncation: 'disabled' }),
     };
 
@@ -350,7 +351,7 @@ export function buildResponsesProviderOptions(
       azureOptions.reasoningSummary = reasoningSummary;
     }
 
-    if (previousResponseId && shouldAttachPreviousResponseId(config)) {
+    if (previousResponseId && responsesUsesStoredState(config)) {
       azureOptions.previousResponseId = previousResponseId;
     }
 
@@ -392,7 +393,7 @@ export function buildResponsesProviderOptions(
   }
 
   const openaiOptions: JsonObject = {
-    store: config.store ?? false,
+    store: config.store ?? true,
     ...(config.truncation === 'auto' ? { truncation: 'auto' } : { truncation: 'disabled' }),
   };
 
@@ -404,22 +405,9 @@ export function buildResponsesProviderOptions(
     openaiOptions.reasoningSummary = reasoningSummary;
   }
 
-  if (previousResponseId && shouldAttachPreviousResponseId(config)) {
+  if (previousResponseId && responsesUsesStoredState(config)) {
     openaiOptions.previousResponseId = previousResponseId;
   }
 
   return { openai: openaiOptions };
-}
-
-function shouldAttachPreviousResponseId(config: OpenResponsesTransportConfig): boolean {
-  const mode = config.previousResponseMode ?? 'disabled';
-  if (mode === 'disabled') {
-    return false;
-  }
-
-  if (mode === 'stored') {
-    return config.store === true;
-  }
-
-  return mode === 'stateless';
 }

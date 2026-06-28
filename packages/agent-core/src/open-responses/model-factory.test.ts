@@ -368,7 +368,7 @@ test('buildResponsesProviderOptions omits reasoning for code-completion OpenAI p
     buildResponsesProviderOptions(config as import('./responses-compat.js').OpenResponsesTransportConfig),
     {
       openai: {
-        store: false,
+        store: true,
         truncation: 'disabled',
         reasoningEffort: 'none',
       },
