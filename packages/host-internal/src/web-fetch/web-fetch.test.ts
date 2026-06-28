@@ -102,3 +102,47 @@ test('collectLinksFromMarkdown deduplicates by URL', () => {
   const links = collectLinksFromMarkdown(markdown);
   assert.equal(links.length, 1);
 });
+
+test('extractWebContent loads JSON fixture with keys metadata', () => {
+  const json = readFileSync(join(fixturesRoot, 'json-api.json'), 'utf8');
+  const extracted = extractWebContent(json, 'application/json', 'https://example.com/api');
+  assert.match(extracted.markdown, /"items": \[\]/u);
+  assert.equal(extracted.jsonKeys, 'name, version, items');
+});
+
+test('extractWebContent passes through markdown fixture', () => {
+  const markdown = readFileSync(join(fixturesRoot, 'already.md'), 'utf8');
+  const extracted = extractWebContent(markdown, 'text/markdown', 'https://example.com/doc');
+  assert.match(extracted.markdown, /# Already Markdown/u);
+  assert.match(extracted.markdown, /\[Example\]\(https:\/\/example\.com\/example\)/u);
+});
+
+test('list-page fixture keeps links in links section', () => {
+  const html = readFileSync(join(fixturesRoot, 'list-page.html'), 'utf8');
+  const output = convertFetchedPageToToolText({
+    url: 'https://example.com/list',
+    finalUrl: 'https://example.com/list',
+    status: 200,
+    contentType: 'text/html',
+    raw: html,
+  });
+  assert.match(output, /\[Item A\]\(https:\/\/example\.com\/item-a\)/u);
+  assert.match(output, /\[External\]\(https:\/\/example\.com\/external\)/u);
+});
+
+test('buildWebFetchOutput reports links_truncated when link index exceeds cap', () => {
+  const links = Array.from({ length: 205 }, (_value, index) => ({
+    text: `Link ${index}`,
+    url: `https://example.com/p/${index}`,
+  }));
+  const output = buildWebFetchOutput({
+    url: 'https://example.com',
+    finalUrl: 'https://example.com',
+    status: 200,
+    contentType: 'text/html',
+    extracted: { markdown: '# Links', extraction: 'readability' },
+    links,
+  });
+  assert.match(output, /links_truncated: true/u);
+  assert.match(output, /more links omitted/u);
+});
