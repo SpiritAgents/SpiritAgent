@@ -1,4 +1,4 @@
-import { isValidElement, type ComponentType, type ReactNode } from "react";
+import { createElement, isValidElement, type ComponentType, type ReactNode } from "react";
 import type { Element } from "hast";
 import type { CodeHighlighterPlugin } from "streamdown";
 import { useIsCodeFenceIncomplete } from "streamdown";
@@ -47,7 +47,7 @@ export function createSpiritStreamdownCodeComponent(
   return function SpiritStreamdownCode(props: StreamdownCodeProps) {
     const isInline = !("data-block" in props);
     if (isInline) {
-      return inlineCode(props);
+      return createElement(inlineCode, props);
     }
 
     const language = extractFenceLanguage(props.className);
