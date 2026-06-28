@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Kbd } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -58,7 +59,12 @@ export function PendingApprovalCard({
           >
             <Check data-icon="inline-start" />
             {t("app.allow")}
-            <CornerDownLeft className="ml-auto size-3.5 shrink-0 opacity-70" aria-hidden />
+            <Kbd
+              aria-label={t("composer.sendEnterKey")}
+              className="ml-auto h-auto min-w-0 shrink-0 bg-transparent px-0 text-inherit opacity-70"
+            >
+              <CornerDownLeft className="size-3" aria-hidden />
+            </Kbd>
           </Button>
           <Button
             size="sm"
