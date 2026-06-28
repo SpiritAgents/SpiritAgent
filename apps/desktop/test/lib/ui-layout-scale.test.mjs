@@ -71,3 +71,35 @@ test("resolveUiLayoutZoomShortcutAction ignores non-mod and defaultPrevented", (
     null,
   );
 });
+
+test("viewportRectToScaleRootLocal converts viewport box under layout scale", () => {
+  function viewportRectToScaleRootLocal(rect, scaleRootRect, scale, isScaled) {
+    if (!isScaled) {
+      return rect;
+    }
+    return {
+      left: (rect.left - scaleRootRect.left) / scale,
+      top: (rect.top - scaleRootRect.top) / scale,
+      width: Math.max(rect.width / scale, 1),
+      height: Math.max(rect.height / scale, 1),
+    };
+  }
+
+  const viewport = { left: 120, top: 240, width: 8, height: 20 };
+  assert.deepEqual(viewportRectToScaleRootLocal(viewport, { left: 0, top: 0 }, 1, false), viewport);
+  assert.deepEqual(viewportRectToScaleRootLocal(viewport, { left: 0, top: 0 }, 1.1, true), {
+    left: 120 / 1.1,
+    top: 240 / 1.1,
+    width: 8 / 1.1,
+    height: 20 / 1.1,
+  });
+  assert.deepEqual(
+    viewportRectToScaleRootLocal(viewport, { left: 10, top: 20 }, 0.9, true),
+    {
+      left: (120 - 10) / 0.9,
+      top: (240 - 20) / 0.9,
+      width: 8 / 0.9,
+      height: 20 / 0.9,
+    },
+  );
+});

@@ -24,6 +24,7 @@ import {
   RADIX_OVERLAY_CLOSE_MS,
   runAfterRadixOverlayClose,
 } from "@/lib/overlay-motion";
+import { scaleRootFixedAnchorStyle } from "@/lib/scale-root-fixed-anchor-style";
 import { cn } from "@/lib/utils";
 
 type ComposerSuggestionDropdownProps = {
@@ -91,6 +92,13 @@ export function ComposerSuggestionDropdown({
     return null;
   }
 
+  const triggerStyle = scaleRootFixedAnchorStyle({
+    left: displayAnchor.left,
+    top: displayAnchor.top,
+    width: Math.max(displayAnchor.width, 1),
+    height: Math.max(displayAnchor.height, 1),
+  });
+
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setRadixOpen(false);
@@ -110,14 +118,7 @@ export function ComposerSuggestionDropdown({
         <span
           aria-hidden
           tabIndex={-1}
-          style={{
-            position: "fixed",
-            left: displayAnchor.left,
-            top: displayAnchor.top,
-            width: Math.max(displayAnchor.width, 1),
-            height: Math.max(displayAnchor.height, 1),
-            pointerEvents: "none",
-          }}
+          style={triggerStyle}
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent
