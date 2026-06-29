@@ -61,7 +61,6 @@ import {
   listProviderConnectSiteOptions,
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
-  resolveConnectApiBase,
   resolveProviderConnectApiBase,
 } from "@/host/provider-presets";
 import {
@@ -542,21 +541,19 @@ export function ModelsSettingsPanel({
           ? vertexApiBaseFromProjectAndLocation(connectVertexProject, connectVertexLocation)
         : selectedProvider === "custom"
         ? resolveCustomConnectApiBase(connectApiBase)
-        : connectTransportKindForRequest !== undefined
-          ? resolveProviderConnectApiBase(
-              selectedProvider,
-              connectTransportKindForRequest,
-              {
-                ...(connectAlibabaBillingModeForRequest
-                  ? { billingMode: connectAlibabaBillingModeForRequest }
-                  : {}),
-                ...(connectProviderSiteForApiBase ? { site: connectProviderSiteForApiBase } : {}),
-                ...(connectAlibabaWorkspaceIdForRequest
-                  ? { workspaceId: connectAlibabaWorkspaceIdForRequest }
-                  : {}),
-              },
-            )
-          : resolveConnectApiBase(selectedProvider, "");
+        : resolveProviderConnectApiBase(
+            selectedProvider,
+            connectTransportKindForRequest ?? defaultConnectTransportKind(selectedProvider),
+            {
+              ...(connectAlibabaBillingModeForRequest
+                ? { billingMode: connectAlibabaBillingModeForRequest }
+                : {}),
+              ...(connectProviderSiteForApiBase ? { site: connectProviderSiteForApiBase } : {}),
+              ...(connectAlibabaWorkspaceIdForRequest
+                ? { workspaceId: connectAlibabaWorkspaceIdForRequest }
+                : {}),
+            },
+          );
 
   const hasBedrockCatalogCredentials = hasBedrockIamCredentials({
     accessKeyId: connectAccessKeyId,
