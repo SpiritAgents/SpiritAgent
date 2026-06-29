@@ -16,6 +16,7 @@ import i18n from '../lib/i18n-host.js';
 import type {
   AddModelRequest,
   AddProviderModelsRequest,
+  DesktopAlibabaBillingMode,
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
@@ -157,6 +158,9 @@ export async function updateConfigCommand(
           existing.apiBase = defaultApiBaseForTransport(
             existing.provider,
             resolveDesktopTransportKind(existing),
+            existing.providerSite,
+            existing.alibabaWorkspaceId,
+            existing.alibabaBillingMode,
           );
         } else {
           existing.apiBase = apiBase;
@@ -387,13 +391,48 @@ function assertAlibabaConnectWorkspace(input: {
   provider?: DesktopModelProvider;
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
+  alibabaBillingMode?: DesktopAlibabaBillingMode;
 }): void {
-  if (input.provider !== 'alibaba' || !input.providerSite) {
+  if (input.provider !== 'alibaba' || input.alibabaBillingMode === 'token-plan' || !input.providerSite) {
     return;
   }
   if (providerConnectSiteRequiresWorkspaceId('alibaba', input.providerSite)
     && !input.alibabaWorkspaceId?.trim()) {
     throw new Error(i18n.t('error.alibabaWorkspaceIdRequired'));
+  }
+}
+
+function applyAlibabaConnectFields<
+  T extends {
+    providerSite?: DesktopProviderConnectSiteId;
+    alibabaWorkspaceId?: string;
+    alibabaBillingMode?: DesktopAlibabaBillingMode;
+  },
+>(profile: T, input: {
+  provider?: DesktopModelProvider;
+  providerSite?: DesktopProviderConnectSiteId;
+  alibabaWorkspaceId?: string;
+  alibabaBillingMode?: DesktopAlibabaBillingMode;
+}): void {
+  if (input.provider !== 'alibaba') {
+    return;
+  }
+  if (input.alibabaBillingMode === 'token-plan') {
+    profile.alibabaBillingMode = 'token-plan';
+    delete profile.providerSite;
+    delete profile.alibabaWorkspaceId;
+    return;
+  }
+  delete profile.alibabaBillingMode;
+  if (input.providerSite) {
+    profile.providerSite = input.providerSite;
+  } else {
+    delete profile.providerSite;
+  }
+  if (input.alibabaWorkspaceId?.trim()) {
+    profile.alibabaWorkspaceId = input.alibabaWorkspaceId.trim();
+  } else {
+    delete profile.alibabaWorkspaceId;
   }
 }
 
@@ -408,6 +447,7 @@ function resolveManagedConnectApiBase(
   azureResourceName?: string,
   providerSite?: DesktopProviderConnectSiteId,
   alibabaWorkspaceId?: string,
+  alibabaBillingMode?: DesktopAlibabaBillingMode,
 ): string {
   if (provider === 'amazon-bedrock') {
     const region = awsRegion?.trim();
@@ -442,7 +482,13 @@ function resolveManagedConnectApiBase(
     const trimmed = requestApiBase.trim();
     return trimmed || defaultApiBaseForTransport('custom', transportKind);
   }
-  return defaultApiBaseForTransport(provider, transportKind, providerSite, alibabaWorkspaceId);
+  return defaultApiBaseForTransport(
+    provider,
+    transportKind,
+    providerSite,
+    alibabaWorkspaceId,
+    alibabaBillingMode,
+  );
 }
 
 function assertBedrockConnectCredentials(input: {
@@ -519,12 +565,13 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const awsRegion = request.awsRegion?.trim();
   const providerSite = request.providerSite?.trim() as DesktopProviderConnectSiteId | undefined;
   const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
+  const alibabaBillingMode = request.alibabaBillingMode;
   const vertexProject = request.vertexProject?.trim();
   const vertexLocation = request.vertexLocation?.trim();
   if (provider === 'amazon-bedrock' && !awsRegion) {
     throw new Error(i18n.t('error.bedrockRegionRequired'));
   }
-  assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId });
+  assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
   const apiBase = resolveManagedConnectApiBase(
     provider,
     transportKind,
@@ -536,6 +583,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
     undefined,
     providerSite,
     alibabaWorkspaceId,
+    alibabaBillingMode,
   );
   const apiKey = request.apiKey.trim();
   const accessKeyId = request.accessKeyId?.trim();
@@ -596,12 +644,13 @@ export async function addProviderModelsCommand(
     const awsRegion = request.awsRegion?.trim();
     const providerSite = request.providerSite?.trim() as DesktopProviderConnectSiteId | undefined;
     const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
+    const alibabaBillingMode = request.alibabaBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     if (provider === 'amazon-bedrock' && !awsRegion) {
       throw new Error(i18n.t('error.bedrockRegionRequired'));
     }
-    assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId });
+    assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
     const apiBase = resolveManagedConnectApiBase(
       provider,
       transportKind,
@@ -613,6 +662,7 @@ export async function addProviderModelsCommand(
       undefined,
       providerSite,
       alibabaWorkspaceId,
+      alibabaBillingMode,
     );
     const apiKey = request.apiKey.trim();
     const accessKeyId = request.accessKeyId?.trim();
@@ -652,6 +702,7 @@ export async function addProviderModelsCommand(
       awsRegion?: string;
       providerSite?: DesktopProviderConnectSiteId;
       alibabaWorkspaceId?: string;
+      alibabaBillingMode?: DesktopAlibabaBillingMode;
       vertexProject?: string;
       vertexLocation?: string;
     };
@@ -701,12 +752,12 @@ export async function addProviderModelsCommand(
         if (provider === 'amazon-bedrock' && awsRegion) {
           profile.awsRegion = awsRegion;
         }
-        if (providerSite) {
-          profile.providerSite = providerSite;
-        }
-        if (provider === 'alibaba' && alibabaWorkspaceId) {
-          profile.alibabaWorkspaceId = alibabaWorkspaceId;
-        }
+        applyAlibabaConnectFields(profile, {
+          provider,
+          providerSite,
+          alibabaWorkspaceId,
+          alibabaBillingMode,
+        });
         if (provider === 'google-vertex-ai') {
           if (vertexProject) {
             profile.vertexProject = vertexProject;
@@ -733,11 +784,15 @@ export async function addProviderModelsCommand(
         ? { transportKind }
         : {}),
       ...(provider === 'amazon-bedrock' && awsRegion ? { awsRegion } : {}),
-      ...(providerSite ? { providerSite } : {}),
-      ...(provider === 'alibaba' && alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
       ...(provider === 'google-vertex-ai' && vertexProject ? { vertexProject } : {}),
       ...(provider === 'google-vertex-ai' && vertexLocation ? { vertexLocation } : {}),
     };
+    applyAlibabaConnectFields(scopeProfile, {
+      provider,
+      providerSite,
+      alibabaWorkspaceId,
+      alibabaBillingMode,
+    });
     const catalogRefreshResult = {
       modelIds: uniqueIds,
       fromCache: false,
@@ -847,6 +902,7 @@ export async function addModelCommand(
     const awsRegion = request.awsRegion?.trim();
     const providerSite = request.providerSite?.trim() as DesktopProviderConnectSiteId | undefined;
     const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
+    const alibabaBillingMode = request.alibabaBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     const azureResourceName = request.azureResourceName?.trim();
@@ -859,7 +915,7 @@ export async function addModelCommand(
     if (provider === 'azure' && azureResourceName && !isValidAzureResourceName(azureResourceName)) {
       throw new Error(i18n.t('error.azureResourceNameInvalid'));
     }
-    assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId });
+    assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
     const apiBase = resolveManagedConnectApiBase(
       provider,
       transportKind,
@@ -871,6 +927,7 @@ export async function addModelCommand(
       azureResourceName,
       providerSite,
       alibabaWorkspaceId,
+      alibabaBillingMode,
     );
     const apiKey = request.apiKey.trim();
 
@@ -914,6 +971,7 @@ export async function addModelCommand(
       awsRegion?: string;
       providerSite?: DesktopProviderConnectSiteId;
       alibabaWorkspaceId?: string;
+      alibabaBillingMode?: DesktopAlibabaBillingMode;
       vertexProject?: string;
       vertexLocation?: string;
       azureResourceName?: string;
@@ -944,12 +1002,12 @@ export async function addModelCommand(
       if (provider === 'amazon-bedrock' && awsRegion) {
         profile.awsRegion = awsRegion;
       }
-      if (providerSite) {
-        profile.providerSite = providerSite;
-      }
-      if (provider === 'alibaba' && alibabaWorkspaceId) {
-        profile.alibabaWorkspaceId = alibabaWorkspaceId;
-      }
+      applyAlibabaConnectFields(profile, {
+        provider,
+        providerSite,
+        alibabaWorkspaceId,
+        alibabaBillingMode,
+      });
       if (provider === 'google-vertex-ai') {
         if (vertexProject) {
           profile.vertexProject = vertexProject;
