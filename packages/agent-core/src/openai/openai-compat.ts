@@ -205,10 +205,6 @@ export function openAiReasoningEffort(
   });
 }
 
-/**
- * DeepSeek 等仍走 OpenAI-compatible 兜底的网关可在请求体顶层接受 `thinking` 字段。
- * Moonshot 已改用 `@ai-sdk/moonshotai` 的 `providerOptions.moonshotai.thinking`。
- */
 export function openAiVendorChatCompletionBodyExtras(
   config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking' | 'transportRequestProfile'>,
 ): Record<string, unknown> {
