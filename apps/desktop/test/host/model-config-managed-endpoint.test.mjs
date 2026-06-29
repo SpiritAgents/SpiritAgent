@@ -62,6 +62,31 @@ test('resolveProfileApiBase routes Bedrock mantle OpenAI models to bedrock-mantl
   );
 });
 
+test('resolveProfileApiBase uses moonshot providerSite for cn endpoint', () => {
+  assert.equal(
+    resolveProfileApiBase({
+      name: 'kimi-k2.5',
+      provider: 'moonshot-ai',
+      transportKind: 'openai-compatible',
+      apiBase: 'https://api.moonshot.cn/v1',
+      providerSite: 'cn',
+    }),
+    'https://api.moonshot.cn/v1',
+  );
+});
+
+test('resolveProfileApiBase infers moonshot cn site from stored apiBase when providerSite missing', () => {
+  assert.equal(
+    resolveProfileApiBase({
+      name: 'kimi-k2.5',
+      provider: 'moonshot-ai',
+      transportKind: 'openai-compatible',
+      apiBase: 'https://api.moonshot.cn/v1',
+    }),
+    'https://api.moonshot.cn/v1',
+  );
+});
+
 test('buildPrimaryTransportConfig routes Bedrock mantle models to open-responses transport', () => {
   const config = buildPrimaryTransportConfig({
     apiKey: 'bedrock-bearer-key',
