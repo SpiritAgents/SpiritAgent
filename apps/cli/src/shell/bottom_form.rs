@@ -14,6 +14,7 @@ use crate::{
         model_add_provider_id_at_choice_index,         model_add_requires_manual_single_provider,
         model_add_siliconflow_site_api_base, model_add_siliconflow_site_id_from_choice,
         model_add_moonshot_site_api_base, model_add_moonshot_site_id_from_choice,
+        model_add_kimi_code_api_base,
         model_add_minimax_site_api_base, model_add_minimax_site_id_from_choice,
         model_add_alibaba_site_api_base, model_add_alibaba_site_id_from_choice,
         model_add_alibaba_site_ids, model_add_alibaba_site_requires_workspace_id,
@@ -79,6 +80,13 @@ fn model_add_moonshot_provider_index() -> usize {
         .iter()
         .position(|id| id == "moonshot-ai")
         .unwrap_or(7)
+}
+
+fn model_add_kimi_code_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "kimi-code")
+        .unwrap_or(8)
 }
 
 fn model_add_minimax_provider_index() -> usize {
@@ -273,6 +281,7 @@ fn model_add_provider_label(id: &str) -> String {
         "vercel-ai-gateway" => t!("form.model.provider.vercel_ai_gateway"),
         "openrouter" => t!("form.model.provider.openrouter"),
         "moonshot-ai" => t!("form.model.provider.moonshot-ai"),
+        "kimi-code" => t!("form.model.provider.kimi-code"),
         "z-ai" => t!("form.model.provider.z-ai"),
         "zhipu-ai" => t!("form.model.provider.zhipu-ai"),
         "alibaba" => t!("form.model.provider.alibaba"),
@@ -452,6 +461,16 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
             _ => ModelTransportKind::OpenAiCompatible,
         },
         ModelProvider::Siliconflow => match form.fields.get(3).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                if *selected == 1 {
+                    ModelTransportKind::Anthropic
+                } else {
+                    ModelTransportKind::OpenAiCompatible
+                }
+            }
+            _ => ModelTransportKind::OpenAiCompatible,
+        },
+        ModelProvider::KimiCode => match form.fields.get(2).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
                 if *selected == 1 {
                     ModelTransportKind::Anthropic
@@ -760,6 +779,12 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
         _ => 0,
     };
+    let kimi_code_transport_selected = match form.fields.get(2).map(|f| &f.editor) {
+        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+            (*selected).min(1)
+        }
+        _ => 0,
+    };
     let alibaba_site_selected = match form.fields.get(2).map(|f| &f.editor) {
         Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 4 => {
             (*selected).min(3)
@@ -842,6 +867,13 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),
             model_add_moonshot_site_field(moonshot_site_selected),
+            model_add_api_key_field(api_key_raw),
+        ]
+    } else if provider_idx == model_add_kimi_code_provider_index() {
+        vec![
+            model_add_provider_field(provider_idx),
+            model_add_mode_field_preset(),
+            model_add_siliconflow_transport_field(kimi_code_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
     } else if provider_idx == model_add_minimax_provider_index() {
@@ -1654,6 +1686,9 @@ pub(crate) fn parse_model_add_connection(
         let site = model_add_moonshot_site_id_from_choice(site_selected);
         provider_site = Some(site.to_string());
         model_add_moonshot_site_api_base(site)
+            .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
+    } else if provider == ModelProvider::KimiCode {
+        model_add_kimi_code_api_base(transport_kind)
             .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
     } else if provider == ModelProvider::Minimax {
         let site_selected = match form.fields.get(2).map(|f| &f.editor) {
