@@ -87,7 +87,7 @@ Agent Core 决定模型如何「看见」项目上下文：
 - **Smoke 套件** — 位于 `packages/agent-core/src/smoke` 的契约、运行时与线上提供商检查。
 - **Eval 框架** — 针对提示词或工具定义变更的场景对比与评判（在仓库根目录执行 `npm run eval:compare`）。
 
-`@spirit-agent/core` 发布至 npm；[`packages/host-internal`](../packages/host-internal) 为私有包，承载 Desktop 共用的宿主侧发现、扩展、市场、工作区辅助与 LSP 编排。
+`@spirit-agent/core` 发布至 npm；[`packages/host-internal`](../packages/host-internal) 承载 Desktop 共用的宿主侧发现、扩展、市场、工作区辅助与 LSP 编排。
 
 ## Desktop
 

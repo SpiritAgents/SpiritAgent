@@ -88,7 +88,7 @@ Agent Core owns how the model sees project context:
 - **Smoke suites** — contract, runtime, and live provider checks under `packages/agent-core/src/smoke`.
 - **Eval harness** — scenario comparison and judging for prompt or tool-definition changes (`npm run eval:compare` from the repo root).
 
-`@spirit-agent/core` is published to npm; [`packages/host-internal`](packages/host-internal) is private and holds shared host-side discovery, extensions, marketplace, workspace helpers, and LSP orchestration used by Desktop.
+`@spirit-agent/core` is published to npm; [`packages/host-internal`](packages/host-internal) holds shared host-side discovery, extensions, marketplace, workspace helpers, and LSP orchestration used by Desktop.
 
 ## Desktop
 
