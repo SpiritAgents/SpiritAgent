@@ -865,6 +865,8 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             typeof model.alibabaWorkspaceId === 'string' && model.alibabaWorkspaceId.trim().length > 0
               ? model.alibabaWorkspaceId.trim()
               : undefined;
+          const alibabaBillingMode =
+            model.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
           const vertexProject =
             typeof model.vertexProject === 'string' && model.vertexProject.trim().length > 0
               ? model.vertexProject.trim()
@@ -896,6 +898,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
             ...(transportKind ? { transportKind } : {}),
             ...(providerSite ? { providerSite } : {}),
             ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
+            ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
             ...(awsRegion ? { awsRegion } : {}),
             ...(vertexProject ? { vertexProject } : {}),
             ...(vertexLocation ? { vertexLocation } : {}),
