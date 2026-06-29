@@ -21,6 +21,8 @@ pub enum ModelProvider {
     Xai,
     #[serde(rename = "moonshot-ai")]
     Moonshot,
+    #[serde(rename = "kimi-code")]
+    KimiCode,
     #[serde(rename = "z-ai")]
     ZAi,
     #[serde(rename = "zhipu-ai")]
@@ -50,6 +52,7 @@ impl ModelProvider {
             Self::Deepseek => "deepseek",
             Self::Xai => "xai",
             Self::Moonshot => "moonshot-ai",
+            Self::KimiCode => "kimi-code",
             Self::ZAi => "z-ai",
             Self::ZhipuAi => "zhipu-ai",
             Self::Minimax => "minimax",
@@ -78,6 +81,7 @@ impl FromStr for ModelProvider {
             "deepseek" => Ok(Self::Deepseek),
             "xai" => Ok(Self::Xai),
             "moonshot-ai" => Ok(Self::Moonshot),
+            "kimi-code" => Ok(Self::KimiCode),
             "z-ai" => Ok(Self::ZAi),
             "zhipu-ai" => Ok(Self::ZhipuAi),
             "minimax" => Ok(Self::Minimax),
@@ -181,6 +185,7 @@ impl ModelProfile {
         match self.provider {
             Some(ModelProvider::Deepseek) => false,
             Some(ModelProvider::Moonshot) => false,
+            Some(ModelProvider::KimiCode) => false,
             Some(ModelProvider::Xiaomi) => false,
             Some(ModelProvider::Siliconflow) => false,
             Some(ModelProvider::Xai)
