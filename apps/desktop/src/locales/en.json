@@ -317,8 +317,6 @@
     "alibabaBillingMode": "Billing mode",
     "alibabaBillingModeStandard": "Standard (pay-as-you-go)",
     "alibabaBillingModeTokenPlan": "Token Plan",
-    "alibabaBillingModeTokenPlanHelp": "Token Plan uses a fixed cn-beijing endpoint and only requires an API key.",
-    "alibabaBillingModeTokenPlanDocLink": "View documentation",
     "alibabaWorkspaceId": "Workspace ID",
     "alibabaWorkspaceIdPlaceholder": "Business space ID",
     "alibabaWorkspaceIdRequired": "Workspace ID is required for the selected region.",

@@ -317,8 +317,6 @@
     "alibabaBillingMode": "计费模式",
     "alibabaBillingModeStandard": "Standard（按量）",
     "alibabaBillingModeTokenPlan": "Token Plan",
-    "alibabaBillingModeTokenPlanHelp": "Token Plan 使用固定 cn-beijing 端点，仅需 API Key。",
-    "alibabaBillingModeTokenPlanDocLink": "查看文档",
     "alibabaWorkspaceId": "Workspace ID",
     "alibabaWorkspaceIdPlaceholder": "业务空间 ID",
     "alibabaWorkspaceIdRequired": "所选区域必须填写 Workspace ID。",
