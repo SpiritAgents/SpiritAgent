@@ -9,6 +9,7 @@ import { runPostToolUseSideEffects } from '../hooks/tool-hooks.js';
 import { commitToolExecutionOutput, type TurnMachineRuntime } from './turn-machine.js';
 import type {
   AgentRuntimeOptions,
+  DeferredBackgroundToolExecutionSpec,
   PendingEarlyToolExecution,
   PendingBackgroundToolExecution,
   PendingManualBackgroundToolExecution,
@@ -30,6 +31,7 @@ export interface BackgroundToolsRuntime<
   pendingBackgroundToolExecution:
     | PendingBackgroundToolExecution<State, ToolRequest>
     | undefined;
+  deferredBackgroundToolExecutions: DeferredBackgroundToolExecutionSpec<State, ToolRequest>[];
   completedManualToolCommandResultStore:
     | RuntimeCompletedManualToolCommandResult<ToolRequest>
     | undefined;
@@ -63,6 +65,38 @@ export interface BackgroundToolsRuntime<
     resumeAsStreaming?: boolean,
     streamingEmitBeginResponse?: boolean,
   ): Promise<void>;
+  readOutstandingToolTurnFlags?: () => {
+    hasPendingApproval: boolean;
+    hasPendingContinuation: boolean;
+    hasPendingQuestions: boolean;
+    deferredBgCount: number;
+  };
+  advanceTurnToolState?: (
+    turn: RuntimeTurnContext<ToolRequest>,
+    state: State,
+  ) => void;
+  resolveTurnToolState?: (
+    turn: RuntimeTurnContext<ToolRequest>,
+    fallback: State,
+  ) => State;
+}
+
+function hasOutstandingToolTurnWork<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+): boolean {
+  const flags = runtime.readOutstandingToolTurnFlags?.();
+  if (!flags) {
+    return false;
+  }
+  return flags.hasPendingApproval
+    || flags.hasPendingContinuation
+    || flags.hasPendingQuestions
+    || flags.deferredBgCount > 0;
 }
 
 export function startBackgroundToolExecutionAsync<
@@ -144,6 +178,89 @@ export function startBackgroundToolExecutionAsync<
         pending.failed = true;
       }
     });
+}
+
+export function scheduleBackgroundToolExecutionAsync<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+  pendingUserInput: string,
+  state: State,
+  request: ToolRequest,
+  toolCallId: string,
+  toolName: string,
+  argumentsJson: string,
+  turn: RuntimeTurnContext<ToolRequest>,
+  resumeAsStreaming = false,
+  streamingEmitBeginResponse = true,
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  postHookToolInput?: JsonObject,
+): void {
+  if (runtime.pendingBackgroundToolExecution !== undefined) {
+    runtime.deferredBackgroundToolExecutions.push({
+      pendingUserInput,
+      request,
+      toolCallId,
+      toolName,
+      argumentsJson,
+      turn,
+      resumeAsStreaming,
+      streamingEmitBeginResponse,
+      ...(earlyToolExecutions ? { earlyToolExecutions } : {}),
+      ...(postHookToolInput ? { postHookToolInput } : {}),
+    });
+    return;
+  }
+
+  startBackgroundToolExecutionAsync(
+    runtime,
+    pendingUserInput,
+    state,
+    request,
+    toolCallId,
+    toolName,
+    argumentsJson,
+    [],
+    turn,
+    resumeAsStreaming,
+    streamingEmitBeginResponse,
+    earlyToolExecutions,
+    postHookToolInput,
+  );
+}
+
+function startNextDeferredBackgroundToolExecution<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+  resumedState: State,
+): void {
+  const next = runtime.deferredBackgroundToolExecutions.shift();
+  if (!next) {
+    return;
+  }
+
+  startBackgroundToolExecutionAsync(
+    runtime,
+    next.pendingUserInput,
+    resumedState,
+    next.request,
+    next.toolCallId,
+    next.toolName,
+    next.argumentsJson,
+    [],
+    next.turn,
+    next.resumeAsStreaming,
+    next.streamingEmitBeginResponse,
+    next.earlyToolExecutions,
+    next.postHookToolInput,
+  );
 }
 
 export function startManualBackgroundToolExecution<
@@ -273,6 +390,11 @@ export async function pollPendingBackgroundToolExecution<
     pending.toolCallId,
     preparedOutput,
   );
+  runtime.advanceTurnToolState?.(pending.turn, resumedState);
+  if (runtime.deferredBackgroundToolExecutions.length > 0) {
+    startNextDeferredBackgroundToolExecution(runtime, resumedState);
+    return;
+  }
   if (pending.remainingCalls.length > 0) {
     runtime.queuePendingToolCallContinuation(
       resumedState,
@@ -286,9 +408,14 @@ export async function pollPendingBackgroundToolExecution<
     return;
   }
 
+  if (hasOutstandingToolTurnWork(runtime)) {
+    return;
+  }
+
   if (pending.resumeAsStreaming) {
+    const continuationState = runtime.resolveTurnToolState?.(pending.turn, resumedState) ?? resumedState;
     await runtime.startStreamingRound(
-      resumedState,
+      continuationState,
       pending.pendingUserInput,
       pending.turn,
       pending.streamingEmitBeginResponse,
@@ -296,5 +423,6 @@ export async function pollPendingBackgroundToolExecution<
     return;
   }
 
-  runtime.startToolAgentRoundAsync(resumedState, pending.pendingUserInput, pending.turn);
+  const continuationState = runtime.resolveTurnToolState?.(pending.turn, resumedState) ?? resumedState;
+  runtime.startToolAgentRoundAsync(continuationState, pending.pendingUserInput, pending.turn);
 }

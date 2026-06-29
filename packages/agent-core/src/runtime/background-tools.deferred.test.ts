@@ -7,9 +7,12 @@ import {
   type JsonValue,
   type ToolExecutionOutput,
   type ToolExecutor,
-  type ToolRequestExecutionMetadata,
 } from '../ports.js';
-import { startBackgroundToolExecutionAsync, type BackgroundToolsRuntime } from './background-tools.js';
+import {
+  pollPendingBackgroundToolExecution,
+  scheduleBackgroundToolExecutionAsync,
+  type BackgroundToolsRuntime,
+} from './background-tools.js';
 import type { RuntimeEvent, RuntimeTurnContext } from './types.js';
 
 interface ShellToolRequest {
@@ -17,7 +20,11 @@ interface ShellToolRequest {
   command: string;
 }
 
-class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
+type TestState = { messages: string[] };
+
+class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
+  readonly completions = new Map<string, () => void>();
+
   toolDefinitionsJson(): JsonValue {
     return [];
   }
@@ -36,28 +43,15 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
 
   async trust(): Promise<void> {}
 
-  attachRequestMetadata(
-    request: ShellToolRequest,
-    metadata: ToolRequestExecutionMetadata,
-  ): ShellToolRequest {
-    this.lastMetadata = metadata;
-    return request;
-  }
-
-  lastMetadata: ToolRequestExecutionMetadata | undefined;
-
   async execute(request: ShellToolRequest): Promise<ToolExecutionOutput> {
-    this.lastMetadata?.onOutputChunk?.('line1\n');
-    this.lastMetadata?.onOutputChunk?.('line2\n');
-    return createToolExecutionTextOutput(`shell done: ${request.command}`);
+    await new Promise<void>((resolve) => {
+      this.completions.set(request.command, resolve);
+    });
+    return createToolExecutionTextOutput(`done:${request.command}`);
   }
 
   shouldExecuteInBackground(request: ShellToolRequest): boolean {
     return request.name === 'shell';
-  }
-
-  backgroundStatusText(request: ShellToolRequest): string | undefined {
-    return `Shell: ${request.command}`;
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -109,13 +103,8 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 }
 
-test('startBackgroundToolExecutionAsync emits tool-execution-output-chunk for shell', async () => {
-  const executor = new StreamingShellExecutor();
-  const events: RuntimeEvent<ShellToolRequest>[] = [];
-  const request: ShellToolRequest = {
-    name: 'shell',
-    command: 'echo hello',
-  };
+test('scheduleBackgroundToolExecutionAsync defers while background slot is busy', async () => {
+  const executor = new DeferredShellExecutor();
   const turn: RuntimeTurnContext<ShellToolRequest> = {
     requestTrace: [],
     toolExecutions: [],
@@ -123,52 +112,85 @@ test('startBackgroundToolExecutionAsync emits tool-execution-output-chunk for sh
     autoCompactAttempts: 0,
     deferredUserGuidances: [],
   };
-
-  type TestState = { messages: string[] };
+  const state: TestState = { messages: [] };
   const runtime = {
     options: {
       toolExecutor: executor,
-      appendToolResultMessage: (state: TestState) => state,
+      appendToolResultMessage: (
+        currentState: TestState,
+        toolCallId: string,
+        content: string,
+      ) => {
+        currentState.messages.push(`${toolCallId}:${content}`);
+        return currentState;
+      },
     },
-    pendingBackgroundToolStatusStore: undefined as string | undefined,
+    historyStore: [],
+    pendingBackgroundToolStatusStore: undefined,
     pendingBackgroundToolExecution: undefined,
     deferredBackgroundToolExecutions: [],
     completedManualToolCommandResultStore: undefined,
-    emitEvent: (event: RuntimeEvent<ShellToolRequest>) => {
-      events.push(event);
-    },
-    persistToolExecutionResult: () => {},
+    emitEvent: (_event: RuntimeEvent<ShellToolRequest>) => {},
     startToolAgentRoundAsync: () => {},
     startStreamingRound: async () => {},
     queuePendingToolCallContinuation: () => {},
     processToolCallsAsync: async () => {},
   } as unknown as BackgroundToolsRuntime<unknown, TestState, ShellToolRequest>;
 
-  startBackgroundToolExecutionAsync(
+  const firstRequest: ShellToolRequest = { name: 'shell', command: 'first' };
+  const secondRequest: ShellToolRequest = { name: 'shell', command: 'second' };
+
+  scheduleBackgroundToolExecutionAsync(
     runtime,
-    'run shell',
-    { messages: [] },
-    request,
-    'call_shell_1',
+    'run',
+    state,
+    firstRequest,
+    'call_1',
     'shell',
-    '{"command":"echo hello"}',
-    [],
+    '{"command":"first"}',
+    turn,
+  );
+  scheduleBackgroundToolExecutionAsync(
+    runtime,
+    'run',
+    state,
+    secondRequest,
+    'call_2',
+    'shell',
+    '{"command":"second"}',
     turn,
   );
 
+  assert.equal(runtime.deferredBackgroundToolExecutions.length, 1);
+  assert.equal(runtime.pendingBackgroundToolExecution?.kind, 'tool-call');
+  assert.equal(
+    runtime.pendingBackgroundToolExecution?.kind === 'tool-call'
+      ? runtime.pendingBackgroundToolExecution.toolCallId
+      : undefined,
+    'call_1',
+  );
+
+  executor.completions.get('first')?.();
   await new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
+  await pollPendingBackgroundToolExecution(runtime);
 
-  const chunkEvents = events.filter(
-    (event): event is Extract<RuntimeEvent<ShellToolRequest>, { kind: 'tool-execution-output-chunk' }> =>
-      event.kind === 'tool-execution-output-chunk',
+  assert.equal(runtime.deferredBackgroundToolExecutions.length, 0);
+  assert.equal(
+    runtime.pendingBackgroundToolExecution?.kind === 'tool-call'
+      ? runtime.pendingBackgroundToolExecution.toolCallId
+      : undefined,
+    'call_2',
   );
-  assert.equal(chunkEvents.length, 2);
-  assert.equal(chunkEvents[0]?.chunk, 'line1\n');
-  assert.equal(chunkEvents[1]?.chunk, 'line2\n');
-  assert.ok(events.some((event) => event.kind === 'background-tool-status' && event.phase === 'started'));
-  const pending = runtime.pendingBackgroundToolExecution;
-  assert.ok(pending && pending.kind === 'tool-call');
-  assert.equal(pending.output?.summaryText, 'shell done: echo hello');
+  assert.deepEqual(state.messages, ['call_1:done:first']);
+
+  executor.completions.get('second')?.();
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+  await pollPendingBackgroundToolExecution(runtime);
+
+  assert.equal(runtime.pendingBackgroundToolExecution, undefined);
+  assert.deepEqual(state.messages, ['call_1:done:first', 'call_2:done:second']);
 });
