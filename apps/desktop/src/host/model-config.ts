@@ -20,6 +20,8 @@ import {
 } from '@spirit-agent/core/model-thinking-controls';
 import {
   listProviderModels,
+  listProviderConnectSiteOptions,
+  providerSupportsSiteSelection,
   resolveProviderConnectApiBase,
   bedrockApiBaseFromRegion,
   bedrockMantleApiBaseFromRegion,
@@ -62,6 +64,27 @@ import {
 
 export { resolveComposerDirectMediaTool, type DirectMediaTool };
 
+function inferProviderSiteFromStoredApiBase(
+  profile: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase'>,
+): ModelProfileSnapshot['providerSite'] | undefined {
+  const provider = profile.provider;
+  if (!provider || !providerSupportsSiteSelection(provider)) {
+    return undefined;
+  }
+  const storedApiBase = profile.apiBase?.trim();
+  if (!storedApiBase) {
+    return undefined;
+  }
+  const transportKind = resolveDesktopTransportKind(profile);
+  for (const option of listProviderConnectSiteOptions(provider)) {
+    const siteApiBase = resolveProviderConnectApiBase(provider, transportKind, { site: option.id });
+    if (storedApiBase === siteApiBase) {
+      return option.id as ModelProfileSnapshot['providerSite'];
+    }
+  }
+  return undefined;
+}
+
 export function resolveProfileApiBase(
   profile: Pick<
     ModelProfileSnapshot,
@@ -100,10 +123,11 @@ export function resolveProfileApiBase(
   }
 
   if (profile.provider && profile.provider !== 'custom') {
+    const providerSite = profile.providerSite ?? inferProviderSiteFromStoredApiBase(profile);
     return defaultApiBaseForTransport(
       profile.provider,
       resolveDesktopTransportKind(profile),
-      profile.providerSite,
+      providerSite,
       profile.alibabaWorkspaceId,
       profile.alibabaBillingMode,
     );

@@ -48,7 +48,10 @@ import {
   isValidAzureResourceName,
   vertexApiBaseFromProjectAndLocation,
 } from '@spirit-agent/host-internal';
-import { providerConnectSiteRequiresWorkspaceId } from './provider-presets.js';
+import {
+  providerConnectSiteRequiresWorkspaceId,
+  providerSupportsSiteSelection,
+} from './provider-presets.js';
 import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spirit-agent/host-internal/bedrock-mantle';
 import { modelSupportsChat } from './lightweight-chat-model.js';
 import {
@@ -402,7 +405,7 @@ function assertAlibabaConnectWorkspace(input: {
   }
 }
 
-function applyAlibabaConnectFields<
+function applyManagedProviderConnectFields<
   T extends {
     providerSite?: DesktopProviderConnectSiteId;
     alibabaWorkspaceId?: string;
@@ -414,25 +417,33 @@ function applyAlibabaConnectFields<
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
 }): void {
-  if (input.provider !== 'alibaba') {
+  if (input.provider === 'alibaba') {
+    if (input.alibabaBillingMode === 'token-plan') {
+      profile.alibabaBillingMode = 'token-plan';
+      delete profile.providerSite;
+      delete profile.alibabaWorkspaceId;
+      return;
+    }
+    delete profile.alibabaBillingMode;
+    if (input.providerSite) {
+      profile.providerSite = input.providerSite;
+    } else {
+      delete profile.providerSite;
+    }
+    if (input.alibabaWorkspaceId?.trim()) {
+      profile.alibabaWorkspaceId = input.alibabaWorkspaceId.trim();
+    } else {
+      delete profile.alibabaWorkspaceId;
+    }
     return;
   }
-  if (input.alibabaBillingMode === 'token-plan') {
-    profile.alibabaBillingMode = 'token-plan';
-    delete profile.providerSite;
-    delete profile.alibabaWorkspaceId;
-    return;
-  }
-  delete profile.alibabaBillingMode;
-  if (input.providerSite) {
-    profile.providerSite = input.providerSite;
-  } else {
-    delete profile.providerSite;
-  }
-  if (input.alibabaWorkspaceId?.trim()) {
-    profile.alibabaWorkspaceId = input.alibabaWorkspaceId.trim();
-  } else {
-    delete profile.alibabaWorkspaceId;
+
+  if (input.provider && providerSupportsSiteSelection(input.provider)) {
+    if (input.providerSite) {
+      profile.providerSite = input.providerSite;
+    } else {
+      delete profile.providerSite;
+    }
   }
 }
 
@@ -752,7 +763,7 @@ export async function addProviderModelsCommand(
         if (provider === 'amazon-bedrock' && awsRegion) {
           profile.awsRegion = awsRegion;
         }
-        applyAlibabaConnectFields(profile, {
+        applyManagedProviderConnectFields(profile, {
           provider,
           providerSite,
           alibabaWorkspaceId,
@@ -787,7 +798,7 @@ export async function addProviderModelsCommand(
       ...(provider === 'google-vertex-ai' && vertexProject ? { vertexProject } : {}),
       ...(provider === 'google-vertex-ai' && vertexLocation ? { vertexLocation } : {}),
     };
-    applyAlibabaConnectFields(scopeProfile, {
+    applyManagedProviderConnectFields(scopeProfile, {
       provider,
       providerSite,
       alibabaWorkspaceId,
@@ -1002,7 +1013,7 @@ export async function addModelCommand(
       if (provider === 'amazon-bedrock' && awsRegion) {
         profile.awsRegion = awsRegion;
       }
-      applyAlibabaConnectFields(profile, {
+      applyManagedProviderConnectFields(profile, {
         provider,
         providerSite,
         alibabaWorkspaceId,
