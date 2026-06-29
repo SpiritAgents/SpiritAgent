@@ -151,6 +151,7 @@ type StartupMergedProfile = {
   awsRegion?: string;
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
+  alibabaBillingMode?: import('../types.js').DesktopAlibabaBillingMode;
   vertexProject?: string;
   vertexLocation?: string;
 };
@@ -211,6 +212,9 @@ export function mergeNewCatalogModelsIntoConfig(
     }
     if (provider === 'alibaba' && profile.alibabaWorkspaceId?.trim()) {
       merged.alibabaWorkspaceId = profile.alibabaWorkspaceId.trim();
+    }
+    if (provider === 'alibaba' && profile.alibabaBillingMode === 'token-plan') {
+      merged.alibabaBillingMode = 'token-plan';
     }
     if (provider === 'google-vertex-ai') {
       if (profile.vertexProject?.trim()) {
