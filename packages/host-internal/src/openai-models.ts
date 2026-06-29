@@ -1016,6 +1016,10 @@ export async function listProviderModels(
     return listMoonshotModels(options);
   }
 
+  if (options.provider === 'kimi-code') {
+    return listKimiCodeModels(options);
+  }
+
   if (options.provider === 'minimax') {
     return listMinimaxModels(options);
   }
@@ -1123,6 +1127,12 @@ export async function listMoonshotModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   return listOpenAiCompatibleModelsForProvider(options, 'moonshot-ai');
+}
+
+export async function listKimiCodeModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  return listOpenAiCompatibleModelsForProvider(options, 'kimi-code');
 }
 
 export async function listMinimaxModels(
