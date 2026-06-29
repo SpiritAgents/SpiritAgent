@@ -56,7 +56,6 @@ import {
   hasGoogleVertexServiceAccountCredentials,
 } from "@/host/provider-api-key";
 import {
-  ALIBABA_TOKEN_PLAN_DOC_URL,
   PROVIDER_PICKER_ROWS,
   defaultProviderConnectSite,
   listProviderConnectSiteOptions,
@@ -1498,19 +1497,6 @@ export function ModelsSettingsPanel({
                     </SelectContent>
                   </Select>
                 </div>
-                {connectAlibabaBillingMode === "token-plan" ? (
-                  <p className="text-xs leading-5 text-muted-foreground">
-                    {t('settings.alibabaBillingModeTokenPlanHelp')}{" "}
-                    <a
-                      href={ALIBABA_TOKEN_PLAN_DOC_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline underline-offset-2"
-                    >
-                      {t('settings.alibabaBillingModeTokenPlanDocLink')}
-                    </a>
-                  </p>
-                ) : null}
               </div>
             ) : null}
             {selectedProvider && providerSupportsSiteSelection(selectedProvider) && !connectAlibabaIsTokenPlan ? (
