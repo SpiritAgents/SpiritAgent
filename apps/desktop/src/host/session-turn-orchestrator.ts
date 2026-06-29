@@ -504,6 +504,7 @@ export async function replyPendingApprovalCommand(
       ctx.resetStreamingPlacementState(false);
     }
     await runtime.continuePendingApproval(runtimeDecision);
+    await runtime.poll();
     const orchestration = ctx.orchestrationFor(ctx.activeBundle());
     orchestration.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
     orchestration.runtimeEvents.consumeCompletedTurnResult();
