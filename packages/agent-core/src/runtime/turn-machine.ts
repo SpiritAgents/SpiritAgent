@@ -145,6 +145,27 @@ export interface TurnMachineRuntime<
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
     postHookToolInput?: JsonObject,
   ): void;
+  scheduleBackgroundToolExecutionAsync(
+    pendingUserInput: string,
+    state: State,
+    request: ToolRequest,
+    toolCallId: string,
+    toolName: string,
+    argumentsJson: string,
+    turn: RuntimeTurnContext<ToolRequest>,
+    resumeAsStreaming?: boolean,
+    streamingEmitBeginResponse?: boolean,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+    postHookToolInput?: JsonObject,
+  ): void;
+  resolveTurnToolState?: (
+    turn: RuntimeTurnContext<ToolRequest>,
+    fallback: State,
+  ) => State;
+  advanceTurnToolState?: (
+    turn: RuntimeTurnContext<ToolRequest>,
+    state: State,
+  ) => void;
   startHistoryCompactionAsync(
     retryState: State,
     pendingUserInput: string,
@@ -1318,7 +1339,7 @@ export async function processToolCallsAsync<
       );
       runtime.pendingApproval = {
         pendingUserInput,
-        state: currentState,
+        state: runtime.resolveTurnToolState?.(turn, currentState) ?? currentState,
         request,
         prompt: approvalGate.prompt,
         ...(approvalGate.trustTarget !== undefined
@@ -1355,7 +1376,7 @@ export async function processToolCallsAsync<
       const questions = createQuestions(request, call.id, call.name, authorization.questions);
       runtime.pendingQuestions = {
         pendingUserInput,
-        state: currentState,
+        state: runtime.resolveTurnToolState?.(turn, currentState) ?? currentState,
         request,
         questions: authorization.questions,
         toolCallId: call.id,
@@ -1386,21 +1407,32 @@ export async function processToolCallsAsync<
     }
 
     if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
-      runtime.startBackgroundToolExecutionAsync(
+      runtime.scheduleBackgroundToolExecutionAsync(
         pendingUserInput,
         currentState,
         request,
         call.id,
         call.name,
         call.argumentsJson,
-        remaining,
         turn,
         resumeAsStreaming,
         streamingEmitBeginResponse,
         earlyToolExecutions,
         postHookToolInputFromPreGate(preGate, call.argumentsJson),
       );
-      return;
+      if (queueRemainingToolCallsAsync(
+        runtime,
+        currentState,
+        pendingUserInput,
+        remaining,
+        turn,
+        resumeAsStreaming,
+        streamingEmitBeginResponse,
+        earlyToolExecutions,
+      )) {
+        return;
+      }
+      continue;
     }
 
     const internalHandled = await runtime.maybeContinueInternalToolCallAsync?.(

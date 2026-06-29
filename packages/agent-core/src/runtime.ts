@@ -81,6 +81,7 @@ import {
 } from './runtime/turn-machine.js';
 import {
   pollPendingBackgroundToolExecution as pollPendingBackgroundToolExecutionInternal,
+  scheduleBackgroundToolExecutionAsync as scheduleBackgroundToolExecutionAsyncInternal,
   startBackgroundToolExecutionAsync as startBackgroundToolExecutionAsyncInternal,
   startManualBackgroundToolExecution as startManualBackgroundToolExecutionInternal,
 } from './runtime/background-tools.js';
@@ -126,6 +127,7 @@ import type {
   PendingStreamingRound,
   PendingToolCallContinuation,
   PendingToolCallBackgroundToolExecution,
+  DeferredBackgroundToolExecutionSpec,
   PendingToolAgentRound,
   RuntimeApprovalDecision,
   RuntimeCompletedManualToolCommandResult,
@@ -256,6 +258,8 @@ export class AgentRuntime<
   private pendingBackgroundToolExecution:
     | PendingBackgroundToolExecution<State, ToolRequest>
     | undefined;
+  private deferredBackgroundToolExecutions: DeferredBackgroundToolExecutionSpec<State, ToolRequest>[] = [];
+  private readonly turnToolStateByTurn = new WeakMap<RuntimeTurnContext<ToolRequest>, State>();
   private pendingHistoryCompaction: PendingHistoryCompaction<State, ToolRequest> | undefined;
   private childSessionsStore: RuntimeSubagentSessionArchiveEntry[];
   private pendingSubagentExecutions = new Map<
@@ -675,6 +679,34 @@ export class AgentRuntime<
     };
   }
 
+  readOutstandingToolTurnFlags(): {
+    hasPendingApproval: boolean;
+    hasPendingContinuation: boolean;
+    hasPendingQuestions: boolean;
+    deferredBgCount: number;
+  } {
+    return {
+      hasPendingApproval: this.hasPendingApproval(),
+      hasPendingContinuation: this.pendingToolCallContinuation !== undefined,
+      hasPendingQuestions: this.pendingQuestions !== undefined,
+      deferredBgCount: this.deferredBackgroundToolExecutions.length,
+    };
+  }
+
+  advanceTurnToolState(turn: RuntimeTurnContext<ToolRequest>, state: State): void {
+    this.turnToolStateByTurn.set(turn, state);
+    if (this.pendingApproval?.turn === turn) {
+      this.pendingApproval = { ...this.pendingApproval, state };
+    }
+    if (this.pendingToolCallContinuation?.turn === turn) {
+      this.pendingToolCallContinuation = { ...this.pendingToolCallContinuation, state };
+    }
+  }
+
+  resolveTurnToolState(turn: RuntimeTurnContext<ToolRequest>, fallback: State): State {
+    return this.turnToolStateByTurn.get(turn) ?? fallback;
+  }
+
   isBusy(): boolean {
     return (
       this.inFlightSynchronousToolExecutionsStore > 0 ||
@@ -682,6 +714,7 @@ export class AgentRuntime<
       this.pendingToolAgentRound !== undefined ||
       this.pendingToolCallContinuation !== undefined ||
       this.pendingBackgroundToolExecution !== undefined ||
+      this.deferredBackgroundToolExecutions.length > 0 ||
       this.pendingHistoryCompaction !== undefined ||
       this.pendingSubagentExecutions.size > 0 ||
       this.pendingSubagentWorktreeBootstraps.size > 0 ||
@@ -1086,19 +1119,30 @@ export class AgentRuntime<
       }
 
       if (this.options.toolExecutor.shouldExecuteInBackground?.(pending.request) ?? false) {
-        this.startBackgroundToolExecutionAsync(
+        const executionState = this.resolveTurnToolState(pending.turn, pending.state);
+        this.scheduleBackgroundToolExecutionAsync(
           pending.pendingUserInput,
-          pending.state,
+          executionState,
           pending.request,
           pending.toolCallId,
           pending.toolName,
           pending.argumentsJson,
-          pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
           pending.earlyToolExecutions,
         );
+        if (pending.remainingCalls.length > 0) {
+          this.queuePendingToolCallContinuation(
+            executionState,
+            pending.pendingUserInput,
+            pending.remainingCalls,
+            pending.turn,
+            pending.resumeAsStreaming,
+            pending.streamingEmitBeginResponse,
+            pending.earlyToolExecutions,
+          );
+        }
         return;
       }
 
@@ -1395,19 +1439,29 @@ export class AgentRuntime<
 
       const resumedState = pending.state;
       if (this.options.toolExecutor.shouldExecuteInBackground?.(continuedRequest) ?? false) {
-        this.startBackgroundToolExecutionAsync(
+        this.scheduleBackgroundToolExecutionAsync(
           pending.pendingUserInput,
           resumedState,
           continuedRequest,
           pending.toolCallId,
           pending.toolName,
           pending.argumentsJson,
-          pending.remainingCalls,
           pending.turn,
           pending.resumeAsStreaming,
           pending.streamingEmitBeginResponse,
           pending.earlyToolExecutions,
         );
+        if (pending.remainingCalls.length > 0) {
+          this.queuePendingToolCallContinuation(
+            resumedState,
+            pending.pendingUserInput,
+            pending.remainingCalls,
+            pending.turn,
+            pending.resumeAsStreaming,
+            pending.streamingEmitBeginResponse,
+            pending.earlyToolExecutions,
+          );
+        }
         return;
       }
 
@@ -2074,6 +2128,35 @@ export class AgentRuntime<
     );
   }
 
+  private scheduleBackgroundToolExecutionAsync(
+    pendingUserInput: string,
+    state: State,
+    request: ToolRequest,
+    toolCallId: string,
+    toolName: string,
+    argumentsJson: string,
+    turn: RuntimeTurnContext<ToolRequest>,
+    resumeAsStreaming = false,
+    streamingEmitBeginResponse = true,
+    earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+    postHookToolInput?: import('./ports.js').JsonObject,
+  ): void {
+    scheduleBackgroundToolExecutionAsyncInternal(
+      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      pendingUserInput,
+      state,
+      request,
+      toolCallId,
+      toolName,
+      argumentsJson,
+      turn,
+      resumeAsStreaming,
+      streamingEmitBeginResponse,
+      earlyToolExecutions,
+      postHookToolInput,
+    );
+  }
+
   private async pollPendingToolCallContinuation(): Promise<void> {
     const pending = this.pendingToolCallContinuation;
     if (!pending) {
@@ -2348,6 +2431,7 @@ export class AgentRuntime<
     this.pendingToolAgentRound = undefined;
     this.pendingToolCallContinuation = undefined;
     this.pendingBackgroundToolExecution = undefined;
+    this.deferredBackgroundToolExecutions = [];
     this.pendingHistoryCompaction = undefined;
     this.pendingQuestions = undefined;
     this.completedTurnResultStore = undefined;

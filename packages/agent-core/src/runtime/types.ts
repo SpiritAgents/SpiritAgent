@@ -559,6 +559,20 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   failed: boolean | undefined;
 }
 
+/** 后台槽位占用时暂存；真正启动时注入已完成前序工具后的 state。 */
+export interface DeferredBackgroundToolExecutionSpec<State, ToolRequest> {
+  pendingUserInput: string;
+  request: ToolRequest;
+  toolCallId: string;
+  toolName: string;
+  argumentsJson: string;
+  turn: RuntimeTurnContext<ToolRequest>;
+  resumeAsStreaming: boolean;
+  streamingEmitBeginResponse: boolean;
+  earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
+  postHookToolInput?: JsonObject;
+}
+
 export interface PendingManualBackgroundToolExecution<ToolRequest> {
   kind: 'manual';
   request: ToolRequest;
