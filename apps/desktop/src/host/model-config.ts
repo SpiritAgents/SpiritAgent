@@ -65,7 +65,7 @@ export { resolveComposerDirectMediaTool, type DirectMediaTool };
 export function resolveProfileApiBase(
   profile: Pick<
     ModelProfileSnapshot,
-    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId'
+    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode'
   >,
 ): string {
   if (profile.provider === 'amazon-bedrock') {
@@ -105,6 +105,7 @@ export function resolveProfileApiBase(
       resolveDesktopTransportKind(profile),
       profile.providerSite,
       profile.alibabaWorkspaceId,
+      profile.alibabaBillingMode,
     );
   }
 
@@ -143,6 +144,7 @@ export function defaultApiBaseForTransport(
   transportKind?: DesktopTransportKind,
   providerSite?: ModelProfileSnapshot['providerSite'],
   alibabaWorkspaceId?: string,
+  alibabaBillingMode?: ModelProfileSnapshot['alibabaBillingMode'],
 ): string {
   if (!provider) {
     return DEFAULT_API_BASE;
@@ -152,8 +154,13 @@ export function defaultApiBaseForTransport(
     provider,
     transportKind ?? resolveDesktopTransportKind({ provider }),
     {
-      ...(providerSite ? { site: providerSite } : {}),
-      ...(alibabaWorkspaceId?.trim() ? { workspaceId: alibabaWorkspaceId.trim() } : {}),
+      ...(alibabaBillingMode === 'token-plan' ? { billingMode: 'token-plan' } : {}),
+      ...(alibabaBillingMode === 'token-plan'
+        ? {}
+        : {
+            ...(providerSite ? { site: providerSite } : {}),
+            ...(alibabaWorkspaceId?.trim() ? { workspaceId: alibabaWorkspaceId.trim() } : {}),
+          }),
     },
   );
 }
