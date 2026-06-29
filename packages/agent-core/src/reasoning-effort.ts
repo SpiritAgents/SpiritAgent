@@ -20,6 +20,7 @@ export type ModelReasoningProvider =
   | 'deepseek'
   | 'xai'
   | 'moonshot-ai'
+  | 'kimi-code'
   | 'z-ai'
   | 'zhipu-ai'
   | 'minimax'

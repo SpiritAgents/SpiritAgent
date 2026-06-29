@@ -63,6 +63,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (
     input.provider === 'openai'
     || input.provider === 'deepseek'
+    || input.provider === 'kimi-code'
     || input.provider === 'xai'
     || input.provider === 'z-ai'
     || input.provider === 'zhipu-ai'
