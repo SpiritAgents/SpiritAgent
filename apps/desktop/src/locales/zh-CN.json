@@ -311,7 +311,6 @@
     "site": "站点",
     "siliconflowConnectionDescription": "请选择站点与 API 类型，并填写对应站点的 API Key。",
     "moonshotConnectionDescription": "请选择站点并填写对应站点的 API Key。",
-    "kimiCodeConnectionDescription": "请使用 Kimi Code 控制台生成的 API Key，不可使用 Kimi 开放平台 Key。",
     "minimaxConnectionDescription": "请选择站点与 API 类型，并填写对应站点的 API Key。",
     "alibabaConnectionDescription": "请选择区域与 API 类型，按需填写 Workspace ID 与 API Key。",
     "alibabaBillingMode": "计费模式",
