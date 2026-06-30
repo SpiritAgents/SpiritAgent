@@ -4,7 +4,7 @@ import {
   type WorkspaceFileIconColorMode,
 } from '@/lib/workspace-file-icon-resolver';
 import {
-  injectSetiSvgDimensions,
+  prepareSetiSvgForDisplay,
   resolveDomSetiIconTheme,
 } from '@/lib/workspace-file-icon-svg';
 import type { WorkspaceExplorerEntryKind } from '@/types';
@@ -45,7 +45,7 @@ export function appendWorkspaceFileIconSvg(
   }
 
   const template = doc.createElement('template');
-  template.innerHTML = injectSetiSvgDimensions(icon.svg, attrs.size);
+  template.innerHTML = prepareSetiSvgForDisplay(icon.svg, attrs.size);
   const svg = template.content.firstElementChild;
   if (svg) {
     wrapper.appendChild(doc.importNode(svg, true));

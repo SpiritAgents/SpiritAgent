@@ -45,6 +45,7 @@ import { workspaceFileBasename } from "@/lib/file-picker-path";
 import { resolveWorkspaceFileChipPresentation } from "@/lib/workspace-file-chip-styles";
 import { SKILL_CHIP_CLASS } from "@/lib/skill-chip-styles";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-svg";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
@@ -68,9 +69,9 @@ function WorkspaceFileCard({ path }: { path: string }) {
       <WorkspaceFileIcon
         path={presentation.iconPath}
         kind={presentation.iconKind}
-        size={10}
+        size={WORKSPACE_FILE_ICON_CHIP_SIZE_PX}
         colorMode="inherit"
-        className={cn("size-[10px] shrink-0", presentation.iconClass)}
+        className={cn("shrink-0", presentation.iconClass)}
       />
       {workspaceFileBasename(normalized)}
     </span>

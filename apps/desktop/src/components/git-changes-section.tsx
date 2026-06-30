@@ -82,7 +82,7 @@ function ChangeRow({
         title={change.path}
         onClick={() => onOpen?.(change.path)}
       >
-        <WorkspaceFileIcon name={fileName} className="size-3.5 shrink-0" />
+        <WorkspaceFileIcon name={fileName} />
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
           <span className="shrink-0 truncate text-foreground/90">{fileName}</span>
           {dirLabel ? (

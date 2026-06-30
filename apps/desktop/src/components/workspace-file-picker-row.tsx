@@ -32,7 +32,7 @@ export function WorkspaceFilePickerRow({
         <WorkspaceFileIcon
           path={displayPath}
           kind={iconKind}
-          className="mt-0.5 size-3.5 shrink-0"
+          className="mt-0.5 shrink-0"
         />
         <div className="min-w-0 flex-1">
           <div className={DESKTOP_OVERLAY_LIST_ITEM_PRIMARY} title={basename}>
@@ -48,7 +48,7 @@ export function WorkspaceFilePickerRow({
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-      <WorkspaceFileIcon path={displayPath} kind={iconKind} className="size-3.5 shrink-0" />
+      <WorkspaceFileIcon path={displayPath} kind={iconKind} />
       <span
         className={cn(
           'shrink-0 whitespace-nowrap text-sm font-medium leading-6',

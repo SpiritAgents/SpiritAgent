@@ -123,7 +123,7 @@ const EXPLORER_ROW_TRIGGER_CLASS = cn(
   "flex w-full min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left",
   "text-foreground/90 hover:bg-foreground/[0.06] dark:hover:bg-foreground/10",
 );
-const EXPLORER_ROW_ICON_CLASS = "size-3.5 shrink-0";
+const EXPLORER_ROW_ICON_CLASS = "shrink-0";
 const EXPLORER_DIR_CHEVRON_CLASS = "size-3.5 shrink-0 opacity-70";
 const EXPLORER_ROW_LEADING_SPACER = (
   <span className="inline-block w-4 shrink-0" aria-hidden />
