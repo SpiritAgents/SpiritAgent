@@ -12,6 +12,7 @@ export * from './openai/index.js';
 export * from './anthropic/index.js';
 export * from './bedrock/index.js';
 export * from './open-responses/index.js';
+export * from './moonshot/index.js';
 export * from './host-tools.js';
 export * from './shell-tool-result.js';
 export * from './unknown-tool-error.js';
