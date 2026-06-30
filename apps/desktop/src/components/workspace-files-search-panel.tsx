@@ -352,7 +352,7 @@ export function WorkspaceFilesSearchPanel({
                       {PlanTabIcon ? (
                         <PlanTabIcon className="size-3.5 shrink-0 opacity-80" aria-hidden />
                       ) : (
-                        <WorkspaceFileIcon name={headerName} kind="dir" className="opacity-80" />
+                        <WorkspaceFileIcon name={headerName} className="opacity-80" />
                       )}
                       <span className="min-w-0 flex-1 truncate font-medium">
                         {pathBasename(row.relativePath)}
