@@ -153,6 +153,12 @@ import { resolveXiaomiVideoUrlsInOpenAiMessages } from './xiaomi-video-messages.
 import { resolveMinimaxVideoUrlsInOpenAiMessages } from './minimax-video-messages.js';
 import { normalizeMoonshotApiBase } from './moonshot-files.js';
 import {
+  buildMoonshotFormulaTraceToolEntries,
+  createMoonshotFormulaChatCompletionsAwareFetch,
+} from '../moonshot/formula/moonshot-chat-completions-fetch.js';
+import { shouldUseMoonshotFormulaWebSearch } from '../moonshot/formula/formula-eligibility.js';
+import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from '../moonshot/formula/moonshot-formula-tool-loop.js';
+import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
   type OpenAiJsonSchemaCompletionRequest,
@@ -500,6 +506,7 @@ export class AiSdkOpenAiCompatibleTransport
           requestTrace,
           completion,
           usesStructuredReasoningStreamEvents(config),
+          config,
         ),
         completion: completionPromise,
         cancel: () => {
@@ -692,12 +699,24 @@ function buildAiSdkRequestTrace(
     && shouldUseAlibabaChatCompletionsBuiltInTools(config)
     ? buildAlibabaChatCompletionsExtraBody({ streaming: stream })
     : undefined;
+  const moonshotFormulaTraceTools = isMoonshotOfficialAiSdkProvider(config)
+    && shouldUseMoonshotFormulaWebSearch(config)
+    ? buildMoonshotFormulaTraceToolEntries()
+    : undefined;
 
   return [
     {
       ...firstTrace,
       kind,
       ...(alibabaExtraBody ? { extra_body: alibabaExtraBody } : {}),
+      ...(moonshotFormulaTraceTools && isJsonObject(firstTrace)
+        ? {
+            tools: [
+              ...((Array.isArray(firstTrace.tools) ? firstTrace.tools : []) as JsonValue[]),
+              ...moonshotFormulaTraceTools.map((tool) => tool as JsonValue),
+            ],
+          }
+        : {}),
     },
     ...requestTrace.slice(1),
   ];
@@ -803,10 +822,11 @@ function createAiSdkOpenAiCompatibleProvider(
 
 function createAiSdkMoonshotProvider(config: OpenAiTransportConfig) {
   const reasoningEffort = openAiReasoningEffort(config);
+  const formulaAwareFetch = createMoonshotFormulaChatCompletionsAwareFetch(config, getLlmFetch());
   const fetchWrapper = async (input: RequestInfo | URL, init?: RequestInit) => {
     const body = tryParseRequestBody(init?.body);
     if (!isJsonObject(body)) {
-      return getLlmFetch()(input, init);
+      return formulaAwareFetch(input, init);
     }
 
     const requestUrl =
@@ -818,7 +838,7 @@ function createAiSdkMoonshotProvider(config: OpenAiTransportConfig) {
     const moonshotMessages = requestUrl.includes('/chat/completions')
       ? takeMoonshotChatCompletionMessages()
       : undefined;
-    return getLlmFetch()(input, {
+    return formulaAwareFetch(input, {
       ...init,
       body: JSON.stringify({
         ...body,
@@ -1443,6 +1463,7 @@ async function* aiSdkEventStreamToRuntimeEvents(
   requestTrace: JsonValue[],
   completion: Deferred<ToolAgentRoundCompletion<ToolAgentState>>,
   useStructuredReasoningEvents: boolean,
+  config: OpenAiTransportConfig,
 ): AsyncGenerator<LlmStreamEvent, void, undefined> {
   const toolCalls = new Map<number, AggregatedStreamingToolCall>();
   let assistantContent = '';
@@ -1487,6 +1508,7 @@ async function* aiSdkEventStreamToRuntimeEvents(
           const rawToolUpdates = accumulateStreamingToolCallProgressFromRawChunk(
             toolCalls,
             part.rawValue,
+            config,
           );
           if (rawToolUpdates.length > 0) {
             sawAnswerOrToolOutput = true;
@@ -1555,9 +1577,19 @@ function extractFallbackStreamingThinkingTextFromRawChunk(rawValue: unknown): st
   return chunks || undefined;
 }
 
+function resolveStreamingToolPreviewArgumentsJson(
+  config: OpenAiTransportConfig,
+  toolName: string,
+  argumentsJson: string,
+): string {
+  return buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson)
+    ?? argumentsJson;
+}
+
 function accumulateStreamingToolCallProgressFromRawChunk(
   toolCalls: Map<number, AggregatedStreamingToolCall>,
   rawValue: unknown,
+  config: OpenAiTransportConfig,
 ): LlmStreamEvent[] {
   if (!isJsonObjectUnknown(rawValue) || !Array.isArray(rawValue.choices)) {
     return [];
@@ -1606,7 +1638,11 @@ function accumulateStreamingToolCallProgressFromRawChunk(
           kind: 'streaming-tool-preview',
           toolCallId: current.id,
           toolName: current.functionName,
-          argumentsJson: current.functionArguments,
+          argumentsJson: resolveStreamingToolPreviewArgumentsJson(
+            config,
+            current.functionName,
+            current.functionArguments,
+          ),
         });
       }
 
@@ -1642,7 +1678,11 @@ function accumulateStreamingToolCallProgressFromRawChunk(
             kind: 'streaming-tool-preview',
             toolCallId: current.id,
             toolName: current.functionName,
-            argumentsJson: current.functionArguments,
+            argumentsJson: resolveStreamingToolPreviewArgumentsJson(
+              config,
+              current.functionName,
+              current.functionArguments,
+            ),
           });
           current.readyPreviewEmitted = decision.nextState.readyPreviewEmitted;
           if (decision.nextState.lastPreviewArgsLen !== undefined) {

@@ -18,6 +18,10 @@ import {
 import { emitContextUsageUpdated } from './context-usage.js';
 import { isOpenResponsesTransportConfig } from '../provider-config.js';
 import {
+  handleManagedProviderToolCallInTurn,
+  handleManagedProviderToolCallInTurnAsync,
+} from '../moonshot/formula/moonshot-formula-turn-handler.js';
+import {
   buildApplyPatchToolResultProviderState,
   registerPendingApplyPatchCallIds,
 } from '../open-responses/apply-patch-bridge.js';
@@ -594,6 +598,22 @@ export async function processToolCalls<
       break;
     }
 
+    const managedOutcome = await handleManagedProviderToolCallInTurn(
+      runtime,
+      pendingUserInput,
+      currentState,
+      call,
+      remaining,
+      turn,
+    );
+    if (managedOutcome.kind === 'turn-result') {
+      return managedOutcome.result;
+    }
+    if (managedOutcome.kind === 'advance') {
+      currentState = managedOutcome.state;
+      continue;
+    }
+
     let request: ToolRequest;
     let preGate: PreToolUseGateResult<ToolRequest>;
     try {
@@ -1119,6 +1139,20 @@ export async function processToolCallsAsync<
     const call = remaining.shift();
     if (!call) {
       break;
+    }
+
+    const managedHandled = await handleManagedProviderToolCallInTurnAsync(
+      runtime,
+      pendingUserInput,
+      currentState,
+      call,
+      remaining,
+      turn,
+      resumeAsStreaming,
+      streamingEmitBeginResponse,
+    );
+    if (managedHandled) {
+      return;
     }
 
     const earlyOutcome = await matchingEarlyToolExecutionOutcome(call, earlyToolExecutions);
