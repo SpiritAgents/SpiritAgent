@@ -1,5 +1,6 @@
 import {
   isResponsesBuiltInToolName,
+  parseMoonshotFormulaSpiritUiFromArgumentsJson,
   parseResponsesBuiltInToolUiFromArgumentsJson,
   previewRequestFromStreamingArguments,
   resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
@@ -594,9 +595,13 @@ export class DesktopRuntimeEventOrchestrator {
       // 工具预览前先把 defer 在正文 aux 上的思考固化为独立行（before-tools），避免插入工具后 strip 抹掉。
       this.flushDeferredAfterStreamThinking('before-next-tool');
       const isResponsesBuiltIn = isResponsesBuiltInToolName(event.toolName);
+      const formulaUi = isResponsesBuiltIn
+        ? parseMoonshotFormulaSpiritUiFromArgumentsJson(event.argumentsJson)
+        : undefined;
       const providerUi = isResponsesBuiltIn
         ? parseResponsesBuiltInToolUiFromArgumentsJson(event.argumentsJson)
         : undefined;
+      const suppressExpand = formulaUi?.suppressExpand === true;
       const previewRequest = previewRequestFromStreamingArguments(
         event.toolName,
         event.argumentsJson,
@@ -640,6 +645,7 @@ export class DesktopRuntimeEventOrchestrator {
             detailLines: providerUi?.detailLines ?? [],
             argsExcerpt,
             ...(providerUi?.outputExcerpt ? { outputExcerpt: providerUi.outputExcerpt } : {}),
+            ...(suppressExpand ? { suppressExpand: true } : {}),
             ...(FILE_DIFF_TOOL_NAMES.has(event.toolName)
               ? { streamingArgumentsJson: event.argumentsJson }
               : {}),
@@ -895,9 +901,9 @@ export class DesktopRuntimeEventOrchestrator {
         this.activeGenerateVideoTools.delete(execution.toolCallId);
       }
       const callId = execution.toolCallId || `tool:${execution.toolName}`;
+      const existingSnapshot = this.findExistingToolSnapshot(callId);
       if (source === 'turn-result') {
-        const integrated = this.findExistingToolSnapshot(callId);
-        if (integrated?.phase === 'succeeded' || integrated?.phase === 'failed') {
+        if (existingSnapshot?.phase === 'succeeded' || existingSnapshot?.phase === 'failed') {
           continue;
         }
       }
@@ -933,7 +939,9 @@ export class DesktopRuntimeEventOrchestrator {
                     }
                   : this.toolSummaryOptions(),
             );
-      const argsExcerpt = truncateJson(execution.request);
+      const argsExcerpt = existingSnapshot?.argsExcerpt?.trim()
+        ? existingSnapshot.argsExcerpt
+        : truncateJson(execution.request);
       const fileToolDiffArgumentsJson = FILE_DIFF_TOOL_NAMES.has(execution.toolName)
         ? serializeFileToolDiffArgumentsJson(execution.request)
         : undefined;
@@ -947,6 +955,7 @@ export class DesktopRuntimeEventOrchestrator {
             detailLines: [],
             argsExcerpt,
             outputExcerpt: truncateText(execution.output, 4_000),
+            ...(existingSnapshot?.suppressExpand ? { suppressExpand: true } : {}),
             ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
             ...(imagePaths.length > 0 ? { imagePaths } : {}),
             ...(videoPaths.length > 0 ? { videoPaths } : {}),

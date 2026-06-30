@@ -203,6 +203,7 @@ mod tests {
                 video_paths: vec![],
                 args_excerpt: None,
                 output_excerpt: None,
+                suppress_expand: None,
             },
         )];
         assert!(has_active_run_subagent_tool_in_messages(&messages));

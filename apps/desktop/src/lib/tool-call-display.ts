@@ -364,6 +364,9 @@ function fileDiffToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
 }
 
 function responsesBuiltInToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
+  if (tool.suppressExpand) {
+    return false;
+  }
   if (!isResponsesBuiltInToolCard(tool.toolName)) {
     return false;
   }
@@ -375,6 +378,9 @@ function responsesBuiltInToolHasExpandableContent(tool: ToolBlockSnapshot): bool
 }
 
 export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
+  if (tool.suppressExpand) {
+    return false;
+  }
   if (tool.toolName === 'read_file') {
     return false;
   }

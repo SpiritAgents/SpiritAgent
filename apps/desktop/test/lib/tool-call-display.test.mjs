@@ -36,6 +36,33 @@ test('toolHasExpandableContent: read_file is never expandable', () => {
   );
 });
 
+test('toolHasExpandableContent: Moonshot Formula web_search with suppressExpand is not expandable', () => {
+  assert.equal(
+    toolHasExpandableContent({
+      toolName: 'web_search',
+      phase: 'succeeded',
+      headline: 'Web search',
+      headlineDetail: 'latest AI news',
+      detailLines: [],
+      argsExcerpt: 'latest AI news',
+      suppressExpand: true,
+    }),
+    false,
+  );
+  assert.equal(
+    toolHasExpandableContent({
+      toolName: 'web_search',
+      phase: 'succeeded',
+      headline: 'Web search',
+      headlineDetail: 'latest AI news',
+      detailLines: [],
+      argsExcerpt: '1. https://example.com',
+      outputExcerpt: '1. https://example.com',
+    }),
+    true,
+  );
+});
+
 test('getToolCallSummaryParts: shell prefixes reason and keeps command as detail', () => {
   assert.deepEqual(
     getToolCallSummaryParts({

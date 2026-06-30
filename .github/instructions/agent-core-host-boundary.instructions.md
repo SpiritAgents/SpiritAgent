@@ -22,6 +22,13 @@ applyTo: "**/*"
   - **Open Responses**：经 HTTP `tools` 注入 `{ type: web_search }`、`code_interpreter`（不含 `web_extractor`；URL 正文用宿主 `web_fetch`）。
 - 可见性由 eligibility 与 fetch 层门控。**勿**在 system message 追加 provider built-in 使用说明（模型已从请求 `tools` 看见）；Chat Completions 能力经 `extra_body`，亦无 function 名可声明时**不**写 system 小作文。细则见 `llm-visible-copy.instructions.md`。
 
+## Moonshot Formula（Chat Completions）
+
+- **Moonshot AI 直连**（`llmVendor: moonshot-ai`，`openai-compatible`）：经 Formula API 注入 `moonshot/web-search:latest` 远端 schema，模型触发 `web_search` 时由 `agent-core` 调用 `/formulas/{uri}/fibers` 并将 `encrypted_output` 写回 tool message。
+- **不在范围**：Kimi Code（`kimi-code`）、Vercel Gateway 路由的 Moonshot、遗留 `$web_search` builtin_function。
+- **不在** `host-internal` 注册可执行 `web_search`；Formula 执行留在 `agent-core` `moonshot/formula/`。
+- UI：`encrypted_output` 不可展示；Moonshot Formula `web_search` 卡片经 `_spiritUi.suppressExpand` 禁止展开。
+
 ## 术语
 
 ### 工具定义
