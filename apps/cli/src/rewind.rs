@@ -848,6 +848,7 @@ fn tool_block_from_snapshot(snapshot: &ToolBlockSnapshot) -> ToolUiBlock {
         video_paths: snapshot.video_paths.clone(),
         args_excerpt: snapshot.args_excerpt.clone(),
         output_excerpt: snapshot.output_excerpt.clone(),
+        suppress_expand: None,
     }
 }
 

@@ -218,6 +218,8 @@ pub struct ToolUiBlock {
     pub args_excerpt: Option<String>,
     /// 可选：输出摘要（已截断）。
     pub output_excerpt: Option<String>,
+    /// Moonshot Formula 等 provider 工具：禁止展开详情（encrypted 乱码）。
+    pub suppress_expand: Option<bool>,
 }
 
 #[derive(Clone, Debug)]

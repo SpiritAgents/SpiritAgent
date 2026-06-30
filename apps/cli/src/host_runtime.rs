@@ -166,12 +166,34 @@ fn truncate_output_for_tool_ui(text: &str, max_chars: usize) -> String {
     truncate_for_preview(text, max_chars)
 }
 
+fn spirit_ui_suppresses_expand(arguments: &Value) -> bool {
+    arguments
+        .get("_spiritUi")
+        .and_then(|ui| ui.get("suppressExpand"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+}
+
+fn spirit_ui_input_excerpt(arguments: &Value) -> Option<String> {
+    arguments
+        .get("_spiritUi")
+        .and_then(|ui| ui.get("inputExcerpt"))
+        .and_then(Value::as_str)
+        .map(str::to_string)
+}
+
 pub(crate) fn build_tool_preview_block(
     tool_name: &str,
     tool_call_id: &str,
     request: &ToolUiRequest,
 ) -> ToolUiBlock {
     let (headline, detail_lines) = preview_summary_for_tool(tool_name, request);
+    let suppress_expand = spirit_ui_suppresses_expand(&request.arguments);
+    let args_excerpt = if suppress_expand {
+        spirit_ui_input_excerpt(&request.arguments)
+    } else {
+        Some(tool_request_args_excerpt(request))
+    };
     ToolUiBlock {
         tool_call_id: Some(tool_call_id.to_string()),
         tool_name: tool_name.to_string(),
@@ -180,8 +202,9 @@ pub(crate) fn build_tool_preview_block(
         detail_lines,
         image_paths: Vec::new(),
         video_paths: Vec::new(),
-        args_excerpt: Some(tool_request_args_excerpt(request)),
+        args_excerpt,
         output_excerpt: None,
+        suppress_expand: suppress_expand.then_some(true),
     }
 }
 
@@ -252,6 +275,12 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             };
             (headline, lines)
         }
+        "web_search" => {
+            if let Some(query) = spirit_ui_input_excerpt(&request.arguments) {
+                return ("联网搜索".to_string(), vec![query]);
+            }
+            ("联网搜索".to_string(), Vec::new())
+        }
         _ => (
             format!("调用 {}", tool_name),
             Vec::new(),
@@ -291,6 +320,7 @@ pub(crate) fn tool_approval_block(
         video_paths: Vec::new(),
         args_excerpt: None,
         output_excerpt: None,
+        suppress_expand: None,
     }
 }
 
@@ -310,6 +340,7 @@ pub(crate) fn tool_failed_block(
         video_paths: Vec::new(),
         args_excerpt: None,
         output_excerpt: Some(truncate_output_for_tool_ui(err, 2000)),
+        suppress_expand: None,
     }
 }
 
@@ -341,6 +372,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "web_fetch" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -355,6 +387,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "list_directory_files" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -369,6 +402,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "glob" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -383,6 +417,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "read_file" => {
             let (offset, end) = read_file_range_display(request);
@@ -402,6 +437,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: None,
+            suppress_expand: None,
             }
         }
         "grep" => ToolUiBlock {
@@ -417,6 +453,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "run_subagent" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -431,6 +468,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "ask_questions" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -442,6 +480,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         "generate_image" => {
             let image_paths = generated_image_paths_from_output(output);
@@ -458,6 +497,7 @@ pub(crate) fn build_tool_result_block(
                 video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+                suppress_expand: None,
             }
         }
         "generate_video" => {
@@ -475,6 +515,7 @@ pub(crate) fn build_tool_result_block(
                 video_paths,
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+                suppress_expand: None,
             }
         }
         "create_file" => ToolUiBlock {
@@ -490,6 +531,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
+        suppress_expand: None,
         },
         "edit_file" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -504,6 +546,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
+        suppress_expand: None,
         },
         "delete_file" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -518,6 +561,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
+        suppress_expand: None,
         },
         "apply_patch" => {
             let path = apply_patch_path(request).unwrap_or("<unknown>");
@@ -537,6 +581,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: None,
+            suppress_expand: None,
             }
         }
         "shell" => ToolUiBlock {
@@ -552,6 +597,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
         _ => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -563,6 +609,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
+            suppress_expand: None,
         },
     }
 }
@@ -869,5 +916,28 @@ mod tests {
                 .as_deref()
                 .is_some_and(|text| text.contains("src/app.ts"))
         );
+    }
+
+    #[test]
+    fn moonshot_formula_web_search_preview_sets_suppress_expand_and_query_excerpt() {
+        let block = build_tool_preview_block(
+            "web_search",
+            "call_formula_01",
+            &ToolUiRequest::new(
+                "web_search",
+                json!({
+                    "status": "in_progress",
+                    "_spiritUi": {
+                        "inputExcerpt": "latest AI news",
+                        "suppressExpand": true
+                    }
+                }),
+            ),
+        );
+
+        assert_eq!(block.suppress_expand, Some(true));
+        assert_eq!(block.args_excerpt.as_deref(), Some("latest AI news"));
+        assert_eq!(block.headline, "联网搜索");
+        assert_eq!(block.detail_lines, vec!["latest AI news".to_string()]);
     }
 }
