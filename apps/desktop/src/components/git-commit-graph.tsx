@@ -492,7 +492,6 @@ function CommitGraphRowDetail({ row }: { row: GitCommitGraphRow }) {
         <button
           type="button"
           className="truncate border-0 bg-transparent p-0 text-left text-[11px] text-muted-foreground"
-          title={row.commit.oid}
           onClick={() => void copySha()}
           aria-label={t("workspace.git.copySha")}
         >
