@@ -1,5 +1,7 @@
-/** 主会话列最大宽度（居中） */
+/** 主会话列最大宽度（居中）；空会话输入区沿用 */
 export const CONVERSATION_MAX_W = "max-w-[min(86vw,44rem)]";
+/** 非空会话消息列表（较 {@link CONVERSATION_MAX_W} 宽约一 spacing block） */
+export const CONVERSATION_MESSAGE_LIST_MAX_W = "max-w-[min(90vw,48rem)]";
 /** 消息列表、输入区与顶栏横幅共用的水平内边距（侧栏拉宽后列变窄时避免贴窗缘） */
 export const CONVERSATION_GUTTER_X = "px-4 sm:px-5";
 export const CONVERSATION_GUTTER_NEG_X = "-mx-4 sm:-mx-5";

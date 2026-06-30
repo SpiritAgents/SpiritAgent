@@ -28,6 +28,7 @@ import {
   CONVERSATION_GUTTER_NEG_X,
   CONVERSATION_GUTTER_X,
   CONVERSATION_MAX_W,
+  CONVERSATION_MESSAGE_LIST_MAX_W,
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
@@ -179,7 +180,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         className={cn(
           "pointer-events-auto mx-auto w-full",
           CONVERSATION_GUTTER_X,
-          CONVERSATION_MAX_W,
+          isEmptySession ? CONVERSATION_MAX_W : CONVERSATION_MESSAGE_LIST_MAX_W,
         )}
       >
         {isEmptySession ? (

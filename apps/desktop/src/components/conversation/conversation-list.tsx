@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   CONVERSATION_GUTTER_X,
-  CONVERSATION_MAX_W,
+  CONVERSATION_MESSAGE_LIST_MAX_W,
 } from "@/lib/conversation-layout-constants";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
@@ -169,7 +169,7 @@ export function ConversationList({
       className={cn(
         "mx-auto w-full overflow-x-hidden pt-6 sm:pt-7",
         CONVERSATION_GUTTER_X,
-        CONVERSATION_MAX_W,
+        CONVERSATION_MESSAGE_LIST_MAX_W,
       )}
     >
       <ToolCallDiffHostProvider value={toolCallDiffHostValue}>
