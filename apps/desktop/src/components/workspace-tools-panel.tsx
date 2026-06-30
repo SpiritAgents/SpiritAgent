@@ -738,10 +738,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     onClick={() => onActiveTabIdChange(item.id)}
                   >
                     {showFilesSetiIcon ? (
-                      <WorkspaceFileIcon
-                        name={displayTitle}
-                        className="size-3.5 shrink-0 opacity-80"
-                      />
+                      <WorkspaceFileIcon name={displayTitle} className="opacity-80" />
                     ) : (
                       <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
                     )}

@@ -151,7 +151,7 @@ export function WorkspaceFilePickerDialog({
               )}
               onSelect={() => closeAndOpenExternalFile(absolutePathCandidate)}
             >
-              <WorkspaceFileIcon path={absolutePathCandidate} className="size-3.5 shrink-0" />
+              <WorkspaceFileIcon path={absolutePathCandidate} />
               <span className="min-w-0 truncate text-sm text-popover-foreground">
                 {t('workspace.filePickerOpenAbsolutePath', { path: absolutePathCandidate })}
               </span>

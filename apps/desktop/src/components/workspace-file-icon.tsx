@@ -4,11 +4,12 @@ import {
   resolveWorkspaceFileIcon,
   type WorkspaceFileIconColorMode,
 } from '@/lib/workspace-file-icon-resolver';
-import { injectSetiSvgDimensions } from '@/lib/workspace-file-icon-svg';
+import {
+  prepareSetiSvgForDisplay,
+  WORKSPACE_FILE_ICON_LIST_SIZE_PX,
+} from '@/lib/workspace-file-icon-svg';
 import { cn } from '@/lib/utils';
 import type { WorkspaceExplorerEntryKind } from '@/types';
-
-const DEFAULT_SIZE_PX = 14;
 
 export type WorkspaceFileIconProps = {
   name?: string;
@@ -23,7 +24,7 @@ export function WorkspaceFileIcon({
   name,
   path,
   kind = 'file',
-  size = DEFAULT_SIZE_PX,
+  size = WORKSPACE_FILE_ICON_LIST_SIZE_PX,
   className,
   colorMode = 'seti',
 }: WorkspaceFileIconProps) {
@@ -41,9 +42,13 @@ export function WorkspaceFileIcon({
   return (
     <span
       className={cn('inline-flex shrink-0 items-center justify-center', className)}
-      style={icon.color ? { color: icon.color } : undefined}
+      style={{
+        width: size,
+        height: size,
+        ...(icon.color ? { color: icon.color } : undefined),
+      }}
       aria-hidden
-      dangerouslySetInnerHTML={{ __html: injectSetiSvgDimensions(icon.svg, size) }}
+      dangerouslySetInnerHTML={{ __html: prepareSetiSvgForDisplay(icon.svg, size) }}
     />
   );
 }

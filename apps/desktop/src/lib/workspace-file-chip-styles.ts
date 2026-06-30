@@ -8,6 +8,7 @@ import {
   COMPOSER_INLINE_CHIP_ICON_CLASS,
 } from '@/lib/composer-inline-chip-styles';
 import { appendWorkspaceFileIconSvg } from '@/lib/workspace-explorer-icon-dom';
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from '@/lib/workspace-file-icon-svg';
 import type { WorkspaceExplorerEntryKind } from '@/types';
 
 /** 工作区 @ 引用 chip（文件与目录路径） */
@@ -58,7 +59,7 @@ export function makeFileChipNode(path: string, doc: Document): HTMLElement {
   span.title = normalized;
 
   appendWorkspaceFileIconSvg(span, doc, presentation.iconPath, {
-    size: 10,
+    size: WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
     className: presentation.iconClass,
   }, presentation.iconKind, { colorMode: 'inherit' });
 
