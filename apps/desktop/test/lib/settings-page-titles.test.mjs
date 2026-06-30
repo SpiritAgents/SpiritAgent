@@ -9,6 +9,7 @@ const EXPECTED_TABS = [
   "networks",
   "models",
   "agents",
+  "tab",
   "mcps",
   "hooks",
   "skills",

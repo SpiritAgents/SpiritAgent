@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import {
+  ArrowRightToLine,
   BookText,
   Bot,
   ArrowLeft,
@@ -142,6 +143,7 @@ export type SettingsSidebarTab =
   | "networks"
   | "models"
   | "agents"
+  | "tab"
   | "mcps"
   | "hooks"
   | "skills"
@@ -900,6 +902,11 @@ const settingsCapabilityTabs: Array<{
     id: "agents",
     labelKey: "settings.agents",
     icon: Bot,
+  },
+  {
+    id: "tab",
+    labelKey: "settings.tab",
+    icon: ArrowRightToLine,
   },
   {
     id: "skills",
