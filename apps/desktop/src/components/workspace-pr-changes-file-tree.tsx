@@ -40,7 +40,7 @@ function PrChangesTreeNodeRow({
           onClick={() => onSelectFile(node.path)}
         >
           <span className="inline-block w-4 shrink-0" aria-hidden />
-          <WorkspaceFileIcon path={node.path} className="size-3.5 shrink-0" />
+          <WorkspaceFileIcon path={node.path} />
           <span className="min-w-0 truncate">{node.name}</span>
         </button>
       </li>
