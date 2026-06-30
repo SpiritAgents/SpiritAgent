@@ -783,11 +783,12 @@ pub(in crate::ui) fn render_tool_card_lines(
     );
     let rail_sym = "▌ ";
     let indent = message_gutter_padding();
-    let expand_details = show_aux_details
-        || matches!(
-            tool.phase,
-            ToolUiPhase::Preview | ToolUiPhase::PendingApproval | ToolUiPhase::Failed
-        );
+    let expand_details = !tool.suppress_expand.unwrap_or(false)
+        && (show_aux_details
+            || matches!(
+                tool.phase,
+                ToolUiPhase::Preview | ToolUiPhase::PendingApproval | ToolUiPhase::Failed
+            ));
 
     let mut out = Vec::new();
 

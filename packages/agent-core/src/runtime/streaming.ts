@@ -31,6 +31,7 @@ import type { ToolExecutionResult } from './tool-execution.js';
 import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './turn-machine.js';
 import { prepareStateForContextRetryAsync } from './compaction.js';
 import { isResponsesBuiltInToolName } from '../open-responses/responses-built-in-tools.js';
+import { shouldSkipEarlyExecutionForManagedProviderTool } from '../moonshot/formula/moonshot-formula-turn-handler.js';
 import { startEarlyToolExecution } from './turn-machine.js';
 
 export interface StreamingRuntime<
@@ -474,6 +475,7 @@ export async function handlePendingStreamEvent<
       event.toolName === 'read_file' || event.toolName === 'list_directory_files';
     if (
       !isResponsesBuiltInToolName(event.toolName)
+      && !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config)
       && (allowEarlyExecutionDuringStream || pending.streamConsumerFinished)
     ) {
       startEarlyToolExecution(
