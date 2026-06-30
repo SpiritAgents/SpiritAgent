@@ -44,7 +44,8 @@ import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import { resolveWorkspaceFileChipPresentation } from "@/lib/workspace-file-chip-styles";
 import { SKILL_CHIP_CLASS } from "@/lib/skill-chip-styles";
-import { workspaceExplorerIconForPath } from "@/lib/workspace-explorer-icon";
+import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-svg";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
@@ -63,10 +64,15 @@ function ElementCard({ tagName, url }: { tagName: string; url: string }) {
 function WorkspaceFileCard({ path }: { path: string }) {
   const normalized = path.replace(/\\/gu, "/");
   const presentation = resolveWorkspaceFileChipPresentation(normalized);
-  const Icon = workspaceExplorerIconForPath(presentation.iconPath, presentation.iconKind);
   return (
     <span title={normalized} className={presentation.chipClass}>
-      <Icon className={cn("size-[10px] shrink-0", presentation.iconClass)} aria-hidden />
+      <WorkspaceFileIcon
+        path={presentation.iconPath}
+        kind={presentation.iconKind}
+        size={WORKSPACE_FILE_ICON_CHIP_SIZE_PX}
+        colorMode="inherit"
+        className={cn("shrink-0", presentation.iconClass)}
+      />
       {workspaceFileBasename(normalized)}
     </span>
   );
