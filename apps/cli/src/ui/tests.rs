@@ -717,8 +717,9 @@ fn rewind_picker_deemphasizes_tool_messages() {
             image_paths: Vec::new(),
         video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 2,
@@ -772,8 +773,9 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
             image_paths: Vec::new(),
         video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
 
     let body_lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
@@ -1212,6 +1214,7 @@ fn subagent_tool_card_hides_output_when_aux_details_collapsed() {
         video_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
         output_excerpt: Some("命中 3 个结果。".to_string()),
+        suppress_expand: None,
     };
     let message = ChatMessage::with_tool_block(MessageRole::Agent, String::new(), tool);
 
@@ -1234,6 +1237,7 @@ fn subagent_tool_card_shows_output_when_aux_details_expanded() {
         video_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
         output_excerpt: Some("命中 3 个结果。".to_string()),
+        suppress_expand: None,
     };
     let message = ChatMessage::with_tool_block(MessageRole::Agent, String::new(), tool);
 
@@ -1261,8 +1265,9 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
             image_paths: Vec::new(),
         video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
@@ -1292,6 +1297,7 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
             video_paths: Vec::new(),
             args_excerpt: Some("{\n  \"prompt\": \"画一张图\"\n}".to_string()),
             output_excerpt: Some("[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png".to_string()),
+            suppress_expand: None,
         },
     ));
     app.show_aux_details = false;
@@ -1328,6 +1334,7 @@ fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
                 "[generated video]\nvideo_ref: spirit://generated/video/example.mp4"
                     .to_string(),
             ),
+            suppress_expand: None,
         },
     ));
     app.show_aux_details = false;
@@ -1357,8 +1364,9 @@ fn generate_image_tool_card_keeps_rail_on_wrapped_path_lines() {
             image_paths: Vec::new(),
         video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
     app.show_aux_details = false;
 
@@ -1398,8 +1406,9 @@ fn generate_image_tool_card_selection_highlights_wrapped_rail_consistently() {
             image_paths: Vec::new(),
         video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
     app.show_aux_details = false;
 
@@ -1462,8 +1471,9 @@ fn generate_image_history_render_reserves_image_block() {
             image_paths: vec!["demo.png".to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
 
     let render = build_history_render_result(&app, 80);
@@ -1494,8 +1504,9 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
             image_paths: vec![file_path.to_string_lossy().to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
-            output_excerpt: None,
-        },
+        output_excerpt: None,
+        suppress_expand: None,
+    },
     ));
 
     let (lines, buffer) = render_ui_snapshot(&app, 80, 36);
