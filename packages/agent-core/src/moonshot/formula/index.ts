@@ -31,3 +31,21 @@ export type {
   FormulaToolsListResponse,
   FormulaUri,
 } from './formula-types.js';
+export {
+  buildMoonshotFormulaTraceToolEntries,
+  clearMoonshotFormulaToolsCacheForTests,
+  createMoonshotFormulaChatCompletionsAwareFetch,
+  mergeMoonshotFormulaToolsIntoChatCompletionsTools,
+} from './moonshot-chat-completions-fetch.js';
+export {
+  buildMoonshotFormulaStreamingToolPreviewArgumentsJson,
+  executeMoonshotFormulaToolCall,
+  isMoonshotFormulaManagedToolCall,
+  readMoonshotFormulaWebSearchQuery,
+} from './moonshot-formula-tool-loop.js';
+export {
+  handleManagedProviderToolCallInTurn,
+  handleManagedProviderToolCallInTurnAsync,
+  shouldSkipEarlyExecutionForManagedProviderTool,
+  type ManagedProviderToolCallOutcome,
+} from './moonshot-formula-turn-handler.js';
