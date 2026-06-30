@@ -35,8 +35,7 @@ function providerFormulaToolRequestStub<ToolRequest>(
   call: ToolCallRequest,
 ): ToolRequest {
   return {
-    kind: 'moonshot-formula-tool',
-    toolName: call.name,
+    name: call.name,
     argumentsJson: call.argumentsJson,
   } as ToolRequest;
 }
