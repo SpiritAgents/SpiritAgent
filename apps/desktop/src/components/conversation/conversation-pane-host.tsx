@@ -68,6 +68,7 @@ export function ConversationPaneHost({
       onPaneDragStart={split.startPaneDrag}
       onPaneDragLeave={split.clearPaneDrag}
       onPaneDrop={handlePaneDrop}
+      paneDropOverlayActive={split.paneDragActive}
     />
   );
 }

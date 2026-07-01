@@ -198,7 +198,7 @@ export function DesktopLayoutChromeBar({
                   variant="ghost"
                   size="icon"
                   className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
-                  onClick={() => onToggleWorkspaceTools()}
+                  onClick={onToggleWorkspaceTools}
                   aria-label={workspaceToolsOpen ? t('app.collapseTools') : t('app.expandTools')}
                   aria-expanded={workspaceToolsOpen}
                   {...(workspaceToolsOpen ? { "aria-controls": "workspace-tools-panel" } : {})}
