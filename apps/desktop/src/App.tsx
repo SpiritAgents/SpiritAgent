@@ -6,7 +6,9 @@ import { ActionPickerDialog } from "@/components/action-picker-dialog";
 import { AutomationDetailView } from "@/components/automation-detail-view";
 import { AutomationsView } from "@/components/automations-view";
 import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
-import { ConversationView } from "@/components/conversation/conversation-view";
+import { ConversationPaneHost } from "@/components/conversation/conversation-pane-host";
+import { ConversationSplitRoot } from "@/components/conversation/conversation-split-root";
+import { ConversationSplitProvider } from "@/contexts/conversation-split-context";
 import { CreateAutomationDialog } from "@/components/create-automation-dialog";
 import { DesktopTitleBar } from "@/components/desktop-title-bar";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
@@ -505,27 +507,41 @@ export default function App() {
             )}
             aria-hidden={surfaceNav.settingsMode}
           >
-          <ConversationView
+          <ConversationSplitProvider runtime={runtime} snapshot={snapshot}>
+          <ConversationSplitRoot
             useMicaBackdrop={useMicaBackdrop}
-            isEmptySession={surfaceNav.isEmptySession}
-            hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
-            snapshot={snapshot}
-            subagentViewActive={subagentViewActive}
-            onExitSubagentViewer={
-              subagentViewActive
-                ? () => {
-                    void subagentViewer.close();
-                  }
-                : undefined
-            }
-            onNewSession={surfaceNav.handleNewSession}
-            newSessionBusy={newSessionBusy}
-            compactionDemoActive={compactionDemo.active}
-            onCompactionDemoStop={compactionDemo.stop}
-            rewindDraft={messageRewind.rewindDraft}
-            onRewindDraftClear={() => messageRewind.setRewindDraft(null)}
-            conversationScrollBedPaddingPx={conversation.conversationScrollBedPaddingPx}
-            list={{
+            renderPane={(pane) => (
+              <ConversationPaneHost
+                key={pane.paneId}
+                sessionPath={pane.sessionPath}
+                paneId={pane.paneId}
+                isFocused={pane.isFocused}
+                isAnchorPane={pane.isAnchorPane}
+                onFocusPane={pane.onFocusPane}
+                onSplit={pane.onSplit}
+                onClosePane={pane.onClosePane}
+                showClosePane={pane.showClosePane}
+                baseSnapshot={snapshot}
+                useMicaBackdrop={useMicaBackdrop}
+                isEmptySession={surfaceNav.isEmptySession}
+                hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
+                snapshot={snapshot}
+                subagentViewActive={subagentViewActive}
+                onExitSubagentViewer={
+                  subagentViewActive
+                    ? () => {
+                        void subagentViewer.close();
+                      }
+                    : undefined
+                }
+                onNewSession={surfaceNav.handleNewSession}
+                newSessionBusy={newSessionBusy}
+                compactionDemoActive={compactionDemo.active}
+                onCompactionDemoStop={compactionDemo.stop}
+                rewindDraft={messageRewind.rewindDraft}
+                onRewindDraftClear={() => messageRewind.setRewindDraft(null)}
+                conversationScrollBedPaddingPx={conversation.conversationScrollBedPaddingPx}
+                list={{
               messages: conversation.messages,
               conversationRenderItems: conversation.conversationRenderItems,
               composerSessionKey: conversation.composerSessionKey,
@@ -647,7 +663,10 @@ export default function App() {
               onWorkspaceToolsWidthPxChange: workspaceTools.setWorkspaceToolsWidthPx,
               gitChipBusy: composer.gitChipBusy,
             }}
+              />
+            )}
           />
+          </ConversationSplitProvider>
           </div>
         ) : null}
         </div>
