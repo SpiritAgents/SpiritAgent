@@ -31,6 +31,21 @@ test('readHostTextFile reads an absolute path outside any workspace root', async
   }
 });
 
+test('readHostTextFile returns image metadata for validated gif files', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'spirit-host-binary-'));
+  const filePath = path.join(dir, 'anim.gif');
+  const gifHeader = Buffer.from('GIF89a', 'ascii');
+  await writeFile(filePath, gifHeader);
+
+  try {
+    const read = await readHostTextFile(filePath);
+    assert.equal(read.image?.mimeType, 'image/gif');
+    assert.equal(read.binary, undefined);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('readHostTextFile returns image metadata for validated png files', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'spirit-host-binary-'));
   const filePath = path.join(dir, 'icon.png');
