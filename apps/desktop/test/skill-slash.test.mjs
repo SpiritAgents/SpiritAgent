@@ -124,6 +124,14 @@ test("isCompactSlashComposerSegments matches chip-only compact composer", async 
     ]),
     false,
   );
+  assert.equal(
+    isCompactSlashComposerSegments([
+      { kind: "plan" },
+      { kind: "skill", alias: COMPACT_SLASH_ALIAS },
+      { kind: "text", value: " " },
+    ]),
+    false,
+  );
   assert.equal(isCompactSlashComposerRequest(COMPACT_SLASH_ALIAS, []), true);
   assert.equal(
     isCompactSlashComposerRequest(skillContextText(COMPACT_SLASH_ALIAS), [COMPACT_SLASH_ALIAS]),
