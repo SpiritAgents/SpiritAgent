@@ -6,6 +6,35 @@ import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
+type DialogOutsideEvent = {
+  detail: { originalEvent: PointerEvent | FocusEvent | MouseEvent }
+  preventDefault(): void
+}
+
+/** 嵌套 Select/Dropdown 的 disableOutsidePointerEvents 会使 content 穿透点击落到 overlay。 */
+function preventDialogDismissForOverlayPassthrough(
+  event: DialogOutsideEvent,
+  contentEl: HTMLElement | null,
+): void {
+  const originalEvent = event.detail.originalEvent
+  const target = originalEvent.target
+  if (!(target instanceof Element) || !target.closest('[data-slot="dialog-overlay"]')) {
+    return
+  }
+  if (!contentEl || !("clientX" in originalEvent)) {
+    return
+  }
+  const rect = contentEl.getBoundingClientRect()
+  const insideContent =
+    originalEvent.clientX >= rect.left
+    && originalEvent.clientX <= rect.right
+    && originalEvent.clientY >= rect.top
+    && originalEvent.clientY <= rect.bottom
+  if (insideContent) {
+    event.preventDefault()
+  }
+}
+
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -58,20 +87,33 @@ function DialogContent({
   children,
   showCloseButton = true,
   overlayClassName,
+  onPointerDownOutside,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   overlayClassName?: string
 }) {
+  const contentRef = React.useRef<HTMLDivElement>(null)
+
   return (
     <DialogPortal>
       <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
+        ref={contentRef}
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
+        onPointerDownOutside={(event) => {
+          preventDialogDismissForOverlayPassthrough(event, contentRef.current)
+          onPointerDownOutside?.(event)
+        }}
+        onInteractOutside={(event) => {
+          preventDialogDismissForOverlayPassthrough(event, contentRef.current)
+          onInteractOutside?.(event)
+        }}
         {...props}
       >
         {children}
