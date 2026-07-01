@@ -345,6 +345,7 @@ export class AiSdkAnthropicTransport
             ? {}
             : { preCompactionArchivePath: context.preCompactionArchivePath }),
         }),
+        anthropicTransportAssetRoot(config),
       ),
       config,
     );

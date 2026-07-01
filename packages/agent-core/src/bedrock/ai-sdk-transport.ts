@@ -321,6 +321,7 @@ export class AiSdkBedrockTransport
             ? {}
             : { preCompactionArchivePath: context.preCompactionArchivePath }),
         }),
+        config.workspaceRoot ?? process.cwd(),
       ),
     );
     const compactConfig: BedrockTransportConfig = {

@@ -425,6 +425,7 @@ export class AiSdkOpenResponsesTransport
             ? {}
             : { preCompactionArchivePath: context.preCompactionArchivePath }),
         }),
+        config.workspaceRoot ?? process.cwd(),
       ),
     );
     const compactConfig: OpenResponsesTransportConfig = {
