@@ -214,6 +214,7 @@ export type ConversationViewProps = {
   onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   onPaneDragLeave?: () => void;
   onPaneDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  paneDropOverlayActive?: boolean;
 };
 
 export function ConversationView({
@@ -246,6 +247,7 @@ export function ConversationView({
   onPaneDragEnter,
   onPaneDragLeave,
   onPaneDrop,
+  paneDropOverlayActive = false,
 }: ConversationViewProps) {
   const { t } = useTranslation();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
@@ -267,6 +269,8 @@ export function ConversationView({
     enabled: conversationMessagesVisible,
   });
 
+  const dropOverlayActive = Boolean(paneId && onPaneDrop && paneDropOverlayActive);
+
   return (
     <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
       <div
@@ -274,26 +278,6 @@ export function ConversationView({
         className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
         onPointerDown={() => onPaneFocus?.()}
       >
-        {paneId && onPaneDrop ? (
-          <div className="pointer-events-none absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
-            {(["above", "below", "before", "after"] as const).map((zone) => (
-              <div
-                key={zone}
-                className="pointer-events-auto"
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  onPaneDragEnter?.(paneId, zone);
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDragLeave={() => onPaneDragLeave?.()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  onPaneDrop(paneId, zone);
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
           showWorkspaceToggle={showWorkspaceToggle}
@@ -319,6 +303,26 @@ export function ConversationView({
           newSessionBusy={newSessionBusy}
         />
         <div data-spirit-surface="conversation-stage" className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}>
+          {dropOverlayActive ? (
+            <div className="pointer-events-none absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
+              {(["above", "below", "before", "after"] as const).map((zone) => (
+                <div
+                  key={zone}
+                  className="pointer-events-auto"
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    onPaneDragEnter?.(paneId!, zone);
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDragLeave={() => onPaneDragLeave?.()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    onPaneDrop?.(paneId!, zone);
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
           {compactionDemoActive ? (
             <div
               data-spirit-surface="compaction-ui-demo-banner"

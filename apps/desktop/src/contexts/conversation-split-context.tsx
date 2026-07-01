@@ -52,6 +52,7 @@ type ConversationSplitContextValue = {
   startPaneDrag: (paneId: string) => void;
   clearPaneDrag: () => void;
   completePaneDrop: (targetPaneId: string, zone: PaneRepositionZone) => void;
+  paneDragActive: boolean;
 };
 
 const ConversationSplitContext = createContext<ConversationSplitContextValue | null>(null);
@@ -91,6 +92,7 @@ export function ConversationSplitProvider({
   const activeSessionPath = snapshot?.activeSession?.filePath ?? "";
   const [layout, setLayout] = useState<SplitLayoutNode | null>(null);
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
+  const [paneDragActive, setPaneDragActive] = useState(false);
   const visiblePathsSyncedRef = useRef<string>("");
   const dragSourcePaneIdRef = useRef<string | null>(null);
 
@@ -212,16 +214,19 @@ export function ConversationSplitProvider({
 
   const startPaneDrag = useCallback((paneId: string) => {
     dragSourcePaneIdRef.current = paneId;
+    setPaneDragActive(true);
   }, []);
 
   const clearPaneDrag = useCallback(() => {
     dragSourcePaneIdRef.current = null;
+    setPaneDragActive(false);
   }, []);
 
   const completePaneDrop = useCallback(
     (targetPaneId: string, zone: PaneRepositionZone) => {
       const sourcePaneId = dragSourcePaneIdRef.current;
       dragSourcePaneIdRef.current = null;
+      setPaneDragActive(false);
       if (!sourcePaneId) {
         return;
       }
@@ -244,6 +249,7 @@ export function ConversationSplitProvider({
       startPaneDrag,
       clearPaneDrag,
       completePaneDrop,
+      paneDragActive,
     }),
     [
       clearPaneDrag,
@@ -252,6 +258,7 @@ export function ConversationSplitProvider({
       focusPane,
       focusedPaneId,
       layout,
+      paneDragActive,
       repositionPaneById,
       splitPane,
       startPaneDrag,
