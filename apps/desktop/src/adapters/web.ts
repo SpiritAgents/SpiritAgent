@@ -38,6 +38,10 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -319,6 +323,15 @@ export function createWebHostApi(): HostApi {
     },
     openSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/open', { path });
+    },
+    beginSplitPaneSession(request: BeginSplitPaneSessionRequest) {
+      return post<BeginSplitPaneSessionResponse>(baseUrl, '/api/sessions/split/begin', request);
+    },
+    setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/visible', request);
+    },
+    closeSplitPaneSession(request: CloseSplitPaneSessionRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/close', request);
     },
     deleteSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/delete', { path });

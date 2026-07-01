@@ -65,6 +65,15 @@ export interface HostCommandDelegate {
   resetSession(): Promise<unknown>;
   listSessions(): Promise<unknown>;
   openSession(path: string): Promise<unknown>;
+  beginSplitPaneSession(
+    request: CommandPayloads['beginSplitPaneSession']['request'],
+  ): Promise<unknown>;
+  setVisiblePaneSessions(
+    request: CommandPayloads['setVisiblePaneSessions']['request'],
+  ): Promise<unknown>;
+  closeSplitPaneSession(
+    request: CommandPayloads['closeSplitPaneSession']['request'],
+  ): Promise<unknown>;
   deleteSession(path: string): Promise<unknown>;
   listWorkspaceFileReferenceSuggestions(
     request: CommandPayloads['listWorkspaceFileReferenceSuggestions']['request'],
@@ -209,6 +218,9 @@ const hostCommandDispatch = {
   resetSession: (host) => host.resetSession(),
   listSessions: (host) => host.listSessions(),
   openSession: (host, payload) => host.openSession(payload.path),
+  beginSplitPaneSession: (host, payload) => host.beginSplitPaneSession(payload.request),
+  setVisiblePaneSessions: (host, payload) => host.setVisiblePaneSessions(payload.request),
+  closeSplitPaneSession: (host, payload) => host.closeSplitPaneSession(payload.request),
   deleteSession: (host, payload) => host.deleteSession(payload.path),
   listWorkspaceFileReferenceSuggestions: (host, payload) =>
     host.listWorkspaceFileReferenceSuggestions(payload.request),

@@ -69,6 +69,10 @@ import type {
   GitHubPullRequestForBranchResult,
   SearchGitHubAutomationRepositoriesSnapshot,
   SubmitUserTurnRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -202,6 +206,11 @@ export interface HostApi {
   resetSession(): Promise<DesktopSnapshot>;
   listSessions(): Promise<SessionListItem[]>;
   openSession(path: string): Promise<DesktopSnapshot>;
+  beginSplitPaneSession(
+    request: BeginSplitPaneSessionRequest,
+  ): Promise<BeginSplitPaneSessionResponse>;
+  setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest): Promise<DesktopSnapshot>;
+  closeSplitPaneSession(request: CloseSplitPaneSessionRequest): Promise<DesktopSnapshot>;
   deleteSession(path: string): Promise<DesktopSnapshot>;
   listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,

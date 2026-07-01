@@ -216,6 +216,15 @@ export async function createElectronHostApi(): Promise<HostApi> {
     openSession(path) {
       return bridge.openSession(path);
     },
+    beginSplitPaneSession(request) {
+      return bridge.beginSplitPaneSession(request);
+    },
+    setVisiblePaneSessions(request) {
+      return bridge.setVisiblePaneSessions(request);
+    },
+    closeSplitPaneSession(request) {
+      return bridge.closeSplitPaneSession(request);
+    },
     deleteSession(path) {
       return bridge.deleteSession(path);
     },

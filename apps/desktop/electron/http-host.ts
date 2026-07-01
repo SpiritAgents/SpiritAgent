@@ -985,6 +985,50 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/split/begin') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('beginSplitPaneSession', {
+        request: {
+          paneId: typeof jsonBody?.paneId === 'string' ? jsonBody.paneId : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/visible') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setVisiblePaneSessions', {
+        request: {
+          sessionPaths: Array.isArray(jsonBody?.sessionPaths)
+            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === 'string')
+            : [],
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/close') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('closeSplitPaneSession', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/delete') {
     writeJson(
       request,

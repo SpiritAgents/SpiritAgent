@@ -394,6 +394,22 @@ export function provisionalNewSessionPath(workspaceRoot: string): string {
   );
 }
 
+/** Per split-pane provisional slot; not listed until first send. */
+export function splitPaneSessionPath(paneId: string): string {
+  const normalizedPaneId = paneId.trim().replace(/[^a-zA-Z0-9_-]+/gu, '-');
+  return path.join(provisionalChatsDirPath(), `split-${normalizedPaneId}.json`);
+}
+
+export function isSplitProvisionalSessionPath(filePath: string): boolean {
+  const resolved = path.resolve(filePath);
+  const provisionalDir = path.resolve(provisionalChatsDirPath());
+  const relative = path.relative(provisionalDir, resolved);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+  return path.basename(resolved).startsWith('split-');
+}
+
 export function isProvisionalSessionPath(filePath: string): boolean {
   const resolved = path.resolve(filePath);
   const provisionalDir = path.resolve(provisionalChatsDirPath());

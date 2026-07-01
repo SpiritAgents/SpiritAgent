@@ -621,6 +621,32 @@ export interface SubmitUserTurnRequest {
   localFilePaths?: string[];
   referencedWorkspaceFilePaths?: string[];
   skillChipAliases?: string[];
+  /** Target a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface BeginSplitPaneSessionRequest {
+  paneId: string;
+}
+
+export interface BeginSplitPaneSessionResponse {
+  sessionPath: string;
+  snapshot: DesktopSnapshot;
+}
+
+export interface SetVisiblePaneSessionsRequest {
+  sessionPaths: string[];
+}
+
+export interface CloseSplitPaneSessionRequest {
+  sessionPath: string;
+}
+
+export interface PaneSessionSlice {
+  conversation: ConversationSnapshot;
+  activeSession?: ActiveSessionSnapshot;
+  composerSessionKey: string;
+  isForegroundActive: boolean;
 }
 
 export interface QueuedUserTurnRequest {
@@ -816,6 +842,8 @@ export interface DesktopSnapshot {
   lsp: DesktopLspSnapshot;
   codeCompletion: DesktopCodeCompletionSnapshot;
   conversation: ConversationSnapshot;
+  /** Per split-pane session projection keyed by resolved session file path. */
+  paneSessions?: Record<string, PaneSessionSlice>;
   /** 从磁盘打开的会话；未从文件打开时为 `undefined`（新会话/未保存）。 */
   activeSession?: ActiveSessionSnapshot;
   /** Stable key for per-session composer draft persistence (`filePath` or synthetic bundle id). */
