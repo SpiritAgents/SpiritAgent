@@ -127,6 +127,15 @@ declare global {
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;
     openSession(path: string): Promise<DesktopSnapshot>;
+    beginSplitPaneSession(
+      request: import('./types').BeginSplitPaneSessionRequest,
+    ): Promise<import('./types').BeginSplitPaneSessionResponse>;
+    setVisiblePaneSessions(
+      request: import('./types').SetVisiblePaneSessionsRequest,
+    ): Promise<DesktopSnapshot>;
+    closeSplitPaneSession(
+      request: import('./types').CloseSplitPaneSessionRequest,
+    ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,

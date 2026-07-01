@@ -128,6 +128,11 @@ import type {
   InstallMarketplaceExtensionRequest,
   PrepareMarketplaceExtensionInstallRequest,
   SubmitUserTurnRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
+  PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
   UpdateConfigRequest,
@@ -255,6 +260,13 @@ import {
   type SessionActivationContext,
 } from './session-activation.js';
 import { forkSessionCommand, type ForkSessionHostContext } from './fork-session-host.js';
+import {
+  beginSplitPaneSessionCommand,
+  closeSplitPaneSessionCommand,
+  setVisiblePaneSessionsCommand,
+  type SessionSplitHostContext,
+} from './session-split.js';
+import { buildPaneSessionSlice } from './pane-snapshot.js';
 import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
 import {
   finishSessionActivationCommand,
@@ -590,6 +602,7 @@ class DesktopHostService {
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
   private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/host-internal/lsp').LspService>();
   private lspSnapshot = defaultDesktopLspSnapshot();
+  private visiblePaneSessionPaths: string[] = [];
 
   private orchestrationFor(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
@@ -863,6 +876,17 @@ class DesktopHostService {
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
       runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
       runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
+    };
+  }
+
+  private sessionSplitContext(): SessionSplitHostContext {
+    return {
+      ...this.sessionActivationContext(),
+      visiblePaneSessionPaths: () => this.visiblePaneSessionPaths,
+      setVisiblePaneSessionPaths: (paths) => {
+        this.visiblePaneSessionPaths = [...paths];
+      },
+      resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
     };
   }
 
@@ -1459,7 +1483,6 @@ class DesktopHostService {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
       const trimmed = request.text.trim();
-      const bundle = this.activeBundle();
       const hasLocalFiles = Array.isArray(request.localFilePaths) && request.localFilePaths.length > 0;
       const hasReferencedPaths = Array.isArray(request.referencedWorkspaceFilePaths)
         && request.referencedWorkspaceFilePaths.length > 0;
@@ -1467,30 +1490,66 @@ class DesktopHostService {
         throw new Error(i18n.t('error.messageRequired'));
       }
 
-      const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
-      const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
-      if (canEnqueueUserTurn(bundle)) {
-        return enqueueUserTurnCommand(this.sessionTurnContext(), {
-          text: request.text,
+      const targetSessionPath = request.sessionPath?.trim();
+      const previousActive = this.sessionRegistry.getActive();
+      const previousActiveId = this.sessionRegistry.activeSessionId();
+      let restoredActive = false;
+
+      const restorePreviousActive = () => {
+        if (!restoredActive && previousActive && previousActiveId) {
+          this.sessionRegistry.activateExisting(previousActive);
+          this.syncActiveRuntimePointer();
+          restoredActive = true;
+        }
+      };
+
+      try {
+        if (targetSessionPath) {
+          const targetBundle = this.sessionRegistry.findBySessionPath(targetSessionPath);
+          if (!targetBundle) {
+            throw new Error('Session not found.');
+          }
+          if (this.sessionRegistry.getActive() !== targetBundle) {
+            this.sessionRegistry.activateExisting(targetBundle);
+            this.syncActiveRuntimePointer();
+          }
+        }
+
+        const bundle = this.activeBundle();
+        const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
+        const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
+        if (canEnqueueUserTurn(bundle)) {
+          const snapshot = await enqueueUserTurnCommand(this.sessionTurnContext(), {
+            text: request.text,
+            explicitWorkspaceFiles,
+            turnSkills,
+          });
+          restorePreviousActive();
+          return snapshot;
+        }
+
+        const isFirstTurn = bundle.messages.length === 0;
+        if (isFirstTurn && bundle.workLocation === 'worktree') {
+          const snapshot = await startWorktreeBootstrapTurnCommand(
+            this.sessionTurnContext(),
+            this.worktreeBootstrapHost(),
+            request.text,
+            { explicitWorkspaceFiles, turnSkills },
+          );
+          restorePreviousActive();
+          return snapshot;
+        }
+
+        const snapshot = await this.submitUserTurnAfterInitialized(request.text, {
           explicitWorkspaceFiles,
           turnSkills,
         });
+        restorePreviousActive();
+        return snapshot;
+      } catch (error) {
+        restorePreviousActive();
+        throw error;
       }
-
-      const isFirstTurn = bundle.messages.length === 0;
-      if (isFirstTurn && bundle.workLocation === 'worktree') {
-        return startWorktreeBootstrapTurnCommand(
-          this.sessionTurnContext(),
-          this.worktreeBootstrapHost(),
-          request.text,
-          { explicitWorkspaceFiles, turnSkills },
-        );
-      }
-
-      return this.submitUserTurnAfterInitialized(request.text, {
-        explicitWorkspaceFiles,
-        turnSkills,
-      });
     }, 'submit-user-turn');
   }
 
@@ -2102,6 +2161,24 @@ class DesktopHostService {
 
   async openSession(filePath: string): Promise<DesktopSnapshot> {
     return openSessionCommand(this.sessionActivationContext(), filePath);
+  }
+
+  async beginSplitPaneSession(
+    request: BeginSplitPaneSessionRequest,
+  ): Promise<BeginSplitPaneSessionResponse> {
+    return beginSplitPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async setVisiblePaneSessions(
+    request: SetVisiblePaneSessionsRequest,
+  ): Promise<DesktopSnapshot> {
+    return setVisiblePaneSessionsCommand(this.sessionSplitContext(), request);
+  }
+
+  async closeSplitPaneSession(
+    request: CloseSplitPaneSessionRequest,
+  ): Promise<DesktopSnapshot> {
+    return closeSplitPaneSessionCommand(this.sessionSplitContext(), request);
   }
 
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {
@@ -3097,7 +3174,75 @@ class DesktopHostService {
           })()
         : {}),
       automationsList: this.automationsListCache.map((item) => ({ ...item })),
+      ...(() => {
+        const paneSessions = this.buildPaneSessionsSnapshot(activeBundle);
+        return paneSessions ? { paneSessions } : {};
+      })(),
     });
+  }
+
+  private buildPaneSessionsSnapshot(
+    activeBundle: SessionBundle,
+  ): Record<string, PaneSessionSlice> | undefined {
+    if (this.visiblePaneSessionPaths.length === 0) {
+      return undefined;
+    }
+
+    const activePath = path.resolve(
+      activeBundle.activeSession?.filePath ?? activeBundle.id,
+    );
+    const paneSessions: Record<string, PaneSessionSlice> = {};
+
+    for (const sessionPath of this.visiblePaneSessionPaths) {
+      const resolved = path.resolve(sessionPath);
+      const bundle = this.sessionRegistry.findBySessionPath(resolved);
+      if (!bundle) {
+        continue;
+      }
+
+      const isForegroundActive = resolved === activePath;
+      const orchestration = this.orchestrationFor(bundle);
+      const bundleRuntime = isForegroundActive ? this.runtime : bundle.runtime;
+      const pendingApproval = bundleRuntime?.currentPendingApproval();
+      const pendingQuestions = bundleRuntime?.currentPendingQuestions();
+      const pendingAux = bundleRuntime?.pendingAuxState();
+
+      if (isForegroundActive && pendingAux) {
+        syncLivePendingAuxSnapshot({
+          pendingAux,
+          activeBundle: bundle,
+          assistantMessages: orchestration.assistantMessages,
+          conversationSnapshotView: orchestration.conversationSnapshotView,
+        });
+      }
+
+      paneSessions[resolved] = buildPaneSessionSlice({
+        bundle,
+        composerSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+        conversationSnapshotView: orchestration.conversationSnapshotView,
+        livePendingAux: pendingAux,
+        isForegroundActive,
+        ...(pendingApproval
+          ? {
+              pendingApproval: {
+                toolName: pendingApproval.toolName,
+                request: pendingApproval.request as DesktopToolRequest,
+                prompt: pendingApproval.prompt,
+                trustTarget: pendingApproval.trustTarget,
+                subagentSessionId: pendingApproval.subagentSessionId,
+              },
+            }
+          : {}),
+        ...(pendingQuestions ? { pendingQuestions } : {}),
+        pendingImagePaths: [...(bundleRuntime?.pendingImagePaths() ?? [])],
+        pendingMcpResources: [...(bundleRuntime?.pendingMcpResources() ?? [])],
+        ...(bundleRuntime?.pendingUserTurn()
+          ? { pendingUserTurn: bundleRuntime.pendingUserTurn() }
+          : {}),
+      });
+    }
+
+    return Object.keys(paneSessions).length > 0 ? paneSessions : undefined;
   }
 
   private findEphemeralSession(filePath: string): EphemeralSessionRecord | undefined {

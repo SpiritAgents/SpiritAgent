@@ -10,7 +10,7 @@ import {
 } from './session-bundle.js';
 import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import type { RestoredSessionState } from './sessions.js';
-import { defaultNewSessionPath, provisionalNewSessionPath } from './storage.js';
+import { defaultNewSessionPath, provisionalNewSessionPath, splitPaneSessionPath } from './storage.js';
 
 const MAX_LOADED_BUNDLES = 8;
 
@@ -204,6 +204,36 @@ export class SessionRegistry {
     assignProvisionalActiveSession(bundle, provisionalPath);
     this.rekeyBundle(bundle, path.resolve(provisionalPath));
     this.activeId = path.resolve(provisionalPath);
+    return bundle;
+  }
+
+  /** Load or create a split-pane empty session without changing the foreground active bundle. */
+  beginSplitPaneSession(workspaceRoot: string, paneId: string): SessionBundle {
+    const splitPath = splitPaneSessionPath(paneId);
+    const bundle = this.activateProvisionalBackground(workspaceRoot, splitPath);
+    resetSessionBundleInPlace(bundle);
+    bundle.workspaceRoot = workspaceRoot;
+    assignProvisionalActiveSession(bundle, splitPath);
+    this.rekeyBundle(bundle, path.resolve(splitPath));
+    return bundle;
+  }
+
+  private activateProvisionalBackground(workspaceRoot: string, filePath: string): SessionBundle {
+    const resolved = path.resolve(filePath);
+    const existing = this.findBySessionPath(resolved);
+    if (existing) {
+      existing.workspaceRoot = workspaceRoot;
+      if (!existing.activeSession) {
+        assignProvisionalActiveSession(existing, resolved);
+      }
+      this.rekeyBundle(existing, path.resolve(existing.activeSession!.filePath));
+      return existing;
+    }
+
+    this.evictIfNeeded();
+    const bundle = createEmptySessionBundle(workspaceRoot, resolved);
+    bundle.activeSession = buildProvisionalActiveSession(resolved);
+    this.bundles.set(resolved, bundle);
     return bundle;
   }
 

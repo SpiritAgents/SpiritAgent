@@ -49,6 +49,9 @@ import type {
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
   SubmitUserTurnRequest,
+  BeginSplitPaneSessionRequest,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
   UpdateConfigRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
@@ -138,6 +141,9 @@ export type CommandPayloads = {
   resetSession: undefined;
   listSessions: undefined;
   openSession: { path: string };
+  beginSplitPaneSession: { request: BeginSplitPaneSessionRequest };
+  setVisiblePaneSessions: { request: SetVisiblePaneSessionsRequest };
+  closeSplitPaneSession: { request: CloseSplitPaneSessionRequest };
   deleteSession: { path: string };
   listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
   requestCodeCompletion: { request: RequestCodeCompletionRequest };
