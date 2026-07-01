@@ -31,7 +31,7 @@ test('readHostTextFile reads an absolute path outside any workspace root', async
   }
 });
 
-test('readHostTextFile returns binary for non-text files', async () => {
+test('readHostTextFile returns image metadata for validated png files', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'spirit-host-binary-'));
   const filePath = path.join(dir, 'icon.png');
   const pngHeader = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0xff]);
@@ -39,7 +39,23 @@ test('readHostTextFile returns binary for non-text files', async () => {
 
   try {
     const read = await readHostTextFile(filePath);
+    assert.equal(read.image?.mimeType, 'image/png');
+    assert.equal(read.binary, undefined);
+    assert.equal(read.text, '');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('readHostTextFile returns binary for image extension with invalid signature', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'spirit-host-binary-'));
+  const filePath = path.join(dir, 'fake.png');
+  await writeFile(filePath, 'not a real png', 'utf8');
+
+  try {
+    const read = await readHostTextFile(filePath);
     assert.equal(read.binary, true);
+    assert.equal(read.image, undefined);
     assert.equal(read.text, '');
   } finally {
     await rm(dir, { recursive: true, force: true });

@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 type SupportedImageExtension = '.bmp' | '.gif' | '.jpeg' | '.jpg' | '.png' | '.webp';
 
 export interface SupportedImageFile {
@@ -15,6 +13,16 @@ const SUPPORTED_IMAGE_MIME_TYPES: Record<SupportedImageExtension, string> = {
   '.png': 'image/png',
   '.webp': 'image/webp',
 };
+
+function fileExtensionFromPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, '/');
+  const basename = normalized.slice(normalized.lastIndexOf('/') + 1);
+  const dot = basename.lastIndexOf('.');
+  if (dot < 0) {
+    return '';
+  }
+  return basename.slice(dot).toLowerCase();
+}
 
 export function hasSupportedImageExtension(filePath: string): boolean {
   return supportedImageExtension(filePath) !== undefined;
@@ -40,7 +48,7 @@ export function detectSupportedImageFile(
 }
 
 function supportedImageExtension(filePath: string): SupportedImageExtension | undefined {
-  const extension = path.extname(filePath).toLowerCase();
+  const extension = fileExtensionFromPath(filePath);
   switch (extension) {
     case '.bmp':
     case '.gif':
