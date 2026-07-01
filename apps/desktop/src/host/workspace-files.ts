@@ -25,6 +25,32 @@ function isENOENT(error: unknown): boolean {
 /** 单文件上限，避免大文件拖垮渲染进程。 */
 export const WORKSPACE_TEXT_FILE_MAX_BYTES = 2 * 1024 * 1024;
 
+const BINARY_SCAN_BYTES = 8192;
+
+/** 扫描缓冲区前缀：NUL 或非法 UTF-8 视为二进制。 */
+export function isBinaryTextFileBuffer(buffer: Buffer): boolean {
+  if (buffer.length === 0) {
+    return false;
+  }
+  const sample = buffer.subarray(0, Math.min(buffer.length, BINARY_SCAN_BYTES));
+  if (sample.includes(0)) {
+    return true;
+  }
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(sample);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+export function workspaceTextFileResultFromBuffer(buffer: Buffer): WorkspaceReadTextFileResult {
+  if (isBinaryTextFileBuffer(buffer)) {
+    return { text: '', binary: true };
+  }
+  return { text: buffer.toString('utf8') };
+}
+
 /**
  * 将工作区相对路径解析为绝对路径；使用 `/` 分段，禁止 `..` 与绝对路径。
  */
@@ -155,7 +181,7 @@ export async function readWorkspaceTextFile(
     throw new Error(i18n.t('error.fileTooLarge'));
   }
   const buffer = await readFile(filePath);
-  return { text: buffer.toString('utf8') };
+  return workspaceTextFileResultFromBuffer(buffer);
 }
 
 export async function writeWorkspaceTextFile(

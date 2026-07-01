@@ -66,6 +66,7 @@ type MarkdownViewMode = "preview" | "edit";
 type LoadedDoc =
   | { status: "loading"; readOnly: boolean; title: string; subtitle: string }
   | { status: "ready"; text: string; readOnly: boolean; title: string; subtitle: string }
+  | { status: "binary"; readOnly: boolean; title: string; subtitle: string }
   | { status: "error"; message: string; readOnly: boolean; title: string; subtitle: string }
   | { status: "empty"; message: string; readOnly: boolean; title: string; subtitle: string };
 
@@ -628,6 +629,17 @@ export function WorkspaceFilesTab({
     void readFile(filePath)
       .then((r) => {
         if (!cancelled) {
+          if (r.binary) {
+            setDraftText("");
+            setSavedText("");
+            setDoc({
+              status: "binary",
+              readOnly: true,
+              title: pathBasename(filePath),
+              subtitle: filePath,
+            });
+            return;
+          }
           setDraftText(r.text);
           setSavedText(r.text);
           setDoc({
@@ -1017,6 +1029,10 @@ export function WorkspaceFilesTab({
             ) : doc?.status === "empty" ? (
               <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
                 {doc.message}
+              </div>
+            ) : doc?.status === "binary" ? (
+              <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
+                {t("workspace.binaryFileNotSupported")}
               </div>
             ) : doc?.status === "ready" ? (
               isPreviewVisible ? (

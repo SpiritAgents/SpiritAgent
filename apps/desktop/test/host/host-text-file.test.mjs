@@ -31,6 +31,21 @@ test('readHostTextFile reads an absolute path outside any workspace root', async
   }
 });
 
+test('readHostTextFile returns binary for non-text files', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'spirit-host-binary-'));
+  const filePath = path.join(dir, 'icon.png');
+  const pngHeader = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0xff]);
+  await writeFile(filePath, pngHeader);
+
+  try {
+    const read = await readHostTextFile(filePath);
+    assert.equal(read.binary, true);
+    assert.equal(read.text, '');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('statHostTextFile returns false for missing paths', async () => {
   const stat = await statHostTextFile(path.join(os.tmpdir(), 'spirit-missing-file.txt'));
   assert.equal(stat.exists, false);
