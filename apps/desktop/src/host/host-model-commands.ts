@@ -102,7 +102,7 @@ interface HostModelBundle {
 }
 
 export interface HostModelCommandContext {
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(options?: { fastPath?: boolean }): Promise<void>;
   requireState(): HostModelState;
   activeBundle(): HostModelBundle;

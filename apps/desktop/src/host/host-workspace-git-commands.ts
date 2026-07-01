@@ -87,7 +87,7 @@ interface HostWorkspaceGitBundle {
 }
 
 export interface HostWorkspaceGitCommandContext {
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
   requireState(): HostWorkspaceGitState;
   isRuntimeBusy(): boolean;

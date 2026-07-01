@@ -33,7 +33,7 @@ interface ActivationState {
 }
 
 export interface SessionActivationContext {
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(
     workspaceRootOverride?: string,
     options?: {

@@ -89,7 +89,7 @@ type McpBackgroundRefreshable = {
 };
 
 export interface HostExtensionCommandContext {
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
   isInitialized(): boolean;
   requireState(): HostExtensionState;

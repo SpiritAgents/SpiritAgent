@@ -346,7 +346,11 @@ import {
   buildPrimaryTransportConfig,
   resolveDesktopTransportKind,
 } from './model-config.js';
-import { refreshConfiguredModelCatalogsOnStartup, forceRefreshModelCatalogForProfile } from './model-catalog-startup-refresh.js';
+import {
+  applyConfiguredModelCatalogRefreshResults,
+  fetchConfiguredModelCatalogsOnStartup,
+  forceRefreshModelCatalogForProfile,
+} from './model-catalog-startup-refresh.js';
 import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
@@ -607,7 +611,7 @@ class DesktopHostService {
 
   private modelCommandContext(): HostModelCommandContext {
     return {
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (options) => this.ensureInitialized(undefined, options),
       requireState: () => this.requireState(),
       activeBundle: () => this.activeBundle(),
@@ -648,7 +652,7 @@ class DesktopHostService {
 
   private extensionCommandContext(): HostExtensionCommandContext {
     return {
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       isInitialized: () => this.initialized,
       requireState: () => this.requireState(),
@@ -679,7 +683,7 @@ class DesktopHostService {
 
   private workspaceGitCommandContext(): HostWorkspaceGitCommandContext {
     return {
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireState: () => this.requireState(),
       isRuntimeBusy: () => this.runtime?.isBusy() === true,
@@ -708,7 +712,7 @@ class DesktopHostService {
 
   private sessionTurnContext(): SessionTurnOrchestratorContext {
     return {
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireRuntime: () => this.requireRuntime(),
       requireState: () => this.requireState(),
@@ -827,7 +831,7 @@ class DesktopHostService {
 
   private sessionActivationContext(): SessionActivationContext {
     return {
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireState: () => this.requireState(),
       isInitialized: () => this.initialized,
@@ -912,7 +916,7 @@ class DesktopHostService {
         undefined,
         toolExecutor,
       ),
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       activeBundle: () => this.activeBundle(),
       refreshRuntime: () => this.refreshRuntime(),
       clearLastRuntimeError: () => {
@@ -936,7 +940,7 @@ class DesktopHostService {
   private sessionTodosContext(): SessionTodosHostContext {
     return {
       todoClearingBySession: () => this.todoClearingBySession,
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       getActiveBundle: () => this.sessionRegistry.getActive(),
       ensureToolExecutor: (bundle) => this.ensureToolExecutor(bundle),
       refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
@@ -1093,7 +1097,7 @@ class DesktopHostService {
       this.startAutomationSchedulerMonitorIfNeeded();
       await this.refreshAutomationsListCache();
       return this.buildSnapshot();
-    });
+    }, 'bootstrap');
     this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: snapshot.workspaceRoot });
     this.scheduleModelCatalogStartupRefresh();
     return snapshot;
@@ -1110,14 +1114,19 @@ class DesktopHostService {
 
     this.modelCatalogStartupRefreshInFlight = (async () => {
       try {
+        const state = this.state;
+        if (!state) {
+          return;
+        }
+        const fetchSummary = await fetchConfiguredModelCatalogsOnStartup(state.config, { forceRefresh: false });
         await this.runSerialized(async () => {
-          const state = this.state;
-          if (!state) {
+          const applyState = this.state;
+          if (!applyState) {
             return;
           }
-          const summary = await refreshConfiguredModelCatalogsOnStartup(state.config);
+          const summary = applyConfiguredModelCatalogRefreshResults(applyState.config, fetchSummary.fetched);
           if (summary.merged > 0 || summary.synced > 0 || summary.pruned > 0) {
-            await saveConfig(state.config);
+            await saveConfig(applyState.config);
             for (const name of summary.prunedModelNames) {
               await removeModelApiKey(name);
             }
@@ -1133,7 +1142,7 @@ class DesktopHostService {
           ) {
             this.emitLiveSnapshotUpdate();
           }
-        });
+        }, 'model-catalog-startup-refresh-apply');
       } catch {
         // best-effort：启动时目录刷新失败不阻断 Desktop
       } finally {
@@ -1482,7 +1491,7 @@ class DesktopHostService {
         explicitWorkspaceFiles,
         turnSkills,
       });
-    });
+    }, 'submit-user-turn');
   }
 
   async setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot> {
@@ -2785,7 +2794,7 @@ class DesktopHostService {
       sessionPath: filePath,
       title: result.title,
       registry: this.sessionRegistry,
-      runSerialized: (work) => this.runSerialized(work),
+      runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       persistBundle: (target) =>
         this.persistSessionBundle(target, {
           fromRuntime: target.runtime,
@@ -3613,7 +3622,7 @@ class DesktopHostService {
     orchestration.runtimeEvents.reset();
   }
 
-  private async runSerialized<T>(work: () => Promise<T>): Promise<T> {
+  private async runSerialized<T>(work: () => Promise<T>, _label = 'unlabeled'): Promise<T> {
     const previous = this.serialized;
     let release: (() => void) | undefined;
     this.serialized = new Promise<void>((resolve) => {
