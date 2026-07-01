@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -82,72 +83,54 @@ export function WorkspaceImagePreviewPane({
   }, [handleWheel]);
 
   const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
+    (event: ReactPointerEvent<HTMLDivElement>) => {
       if (!canInteract || event.button !== 0 || event.isPrimary === false) {
         return;
       }
       movedDuringDragRef.current = false;
-      setIsDragging(true);
       dragStartRef.current = { x: event.clientX, y: event.clientY };
       panStartRef.current = pan;
+      document.body.style.userSelect = "none";
       event.currentTarget.setPointerCapture(event.pointerId);
+      setIsDragging(true);
     },
     [canInteract, pan],
   );
 
-  const handlePointerMove = useCallback(
-    (event: PointerEvent) => {
-      if (!isDragging) {
-        return;
-      }
-      event.preventDefault();
-      const dx = event.clientX - dragStartRef.current.x;
-      const dy = event.clientY - dragStartRef.current.y;
-      if (
-        Math.abs(dx) > DRAG_CLICK_THRESHOLD_PX ||
-        Math.abs(dy) > DRAG_CLICK_THRESHOLD_PX
-      ) {
-        movedDuringDragRef.current = true;
-      }
-      setPan({
-        x: panStartRef.current.x + dx,
-        y: panStartRef.current.y + dy,
-      });
-    },
-    [isDragging],
-  );
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+    event.preventDefault();
+    const dx = event.clientX - dragStartRef.current.x;
+    const dy = event.clientY - dragStartRef.current.y;
+    if (
+      Math.abs(dx) > DRAG_CLICK_THRESHOLD_PX ||
+      Math.abs(dy) > DRAG_CLICK_THRESHOLD_PX
+    ) {
+      movedDuringDragRef.current = true;
+    }
+    setPan({
+      x: panStartRef.current.x + dx,
+      y: panStartRef.current.y + dy,
+    });
+  }, []);
 
   const handlePointerEnd = useCallback(
-    (event: PointerEvent) => {
-      const wasDragging = isDragging;
-      setIsDragging(false);
-      const target = contentRef.current;
-      if (target instanceof HTMLElement) {
-        target.releasePointerCapture(event.pointerId);
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+        return;
       }
-      if (wasDragging && canInteract && !movedDuringDragRef.current) {
+      const shouldZoomIn = canInteract && !movedDuringDragRef.current;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      document.body.style.userSelect = "";
+      setIsDragging(false);
+      if (shouldZoomIn) {
         zoomInByClick();
       }
     },
-    [canInteract, isDragging, zoomInByClick],
+    [canInteract, zoomInByClick],
   );
-
-  useEffect(() => {
-    const content = contentRef.current;
-    if (!content || !isDragging) {
-      return;
-    }
-    document.body.style.userSelect = "none";
-    content.addEventListener("pointermove", handlePointerMove, { passive: false });
-    content.addEventListener("pointerup", handlePointerEnd);
-    content.addEventListener("pointercancel", handlePointerEnd);
-    return () => {
-      document.body.style.userSelect = "";
-      content.removeEventListener("pointermove", handlePointerMove);
-      content.removeEventListener("pointerup", handlePointerEnd);
-      content.removeEventListener("pointercancel", handlePointerEnd);
-    };
-  }, [handlePointerEnd, handlePointerMove, isDragging]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -209,6 +192,9 @@ export function WorkspaceImagePreviewPane({
             ref={contentRef}
             className="flex h-full min-h-0 w-full items-center justify-center overflow-hidden"
             onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerEnd}
+            onPointerCancel={handlePointerEnd}
           >
             <img
               src={previewDataUrl}
