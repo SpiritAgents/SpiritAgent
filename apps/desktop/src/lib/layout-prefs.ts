@@ -599,3 +599,27 @@ export function writeWorkspaceSidebarGroupOrder(ids: string[]): void {
     // ignore
   }
 }
+
+const CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY = "spirit-desktop-conversation-split-layout-v1";
+
+export function readConversationSplitLayoutJson(): string | null {
+  try {
+    if (typeof localStorage === "undefined") {
+      return null;
+    }
+    return localStorage.getItem(CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeConversationSplitLayoutJson(json: string): void {
+  try {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    localStorage.setItem(CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY, json);
+  } catch {
+    // ignore
+  }
+}
