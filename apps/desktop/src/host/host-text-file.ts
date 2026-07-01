@@ -5,7 +5,7 @@ import path from 'node:path';
 import i18n from '../lib/i18n-host.js';
 import type { HostTextFileStatResult, WorkspaceReadTextFileResult } from '../types.js';
 
-import { WORKSPACE_TEXT_FILE_MAX_BYTES } from './workspace-files.js';
+import { WORKSPACE_TEXT_FILE_MAX_BYTES, workspaceTextFileResultFromBuffer } from './workspace-files.js';
 
 export async function resolveHostTextFilePath(absolutePath: string): Promise<string> {
   const cleaned = absolutePath.replace(/\0/g, '').trim();
@@ -51,7 +51,7 @@ export async function readHostTextFile(absolutePath: string): Promise<WorkspaceR
     throw new Error(i18n.t('error.fileTooLarge'));
   }
   const buffer = await readFile(filePath);
-  return { text: buffer.toString('utf8') };
+  return workspaceTextFileResultFromBuffer(buffer);
 }
 
 export async function writeHostTextFile(absolutePath: string, text: string): Promise<void> {

@@ -708,6 +708,8 @@ export interface WorkspaceFileReferenceIndexSnapshot {
 /** 宿主按 UTF-8 读取的工作区文本文件内容（侧栏编辑器等）。 */
 export interface WorkspaceReadTextFileResult {
   text: string;
+  /** 二进制文件：不返回可编辑文本，由 UI 展示占位提示。 */
+  binary?: true;
 }
 
 /** readWorkspaceTextFile 选项；optional 时文件不存在返回空文本而不抛错。 */
