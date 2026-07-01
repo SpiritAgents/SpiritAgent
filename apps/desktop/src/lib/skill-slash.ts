@@ -8,7 +8,7 @@ import { isComposerPlainEmpty } from '@/lib/composer-segment-model'
 import { skillContextText } from '@/lib/skill-wire-text'
 import type { DesktopSkillListItem } from '@/types'
 
-const COMPACT_COMPOSER_STRUCTURAL_KINDS = new Set(['loop', 'plan', 'ask', 'debug'])
+const COMPACT_COMPOSER_STRUCTURAL_KINDS = new Set(['loop'])
 
 export type SkillSlashSuggestionKind =
   | 'log-session'
