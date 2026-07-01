@@ -24,7 +24,7 @@ export interface PendingTodoClearing {
 
 export interface SessionTodosHostContext {
   todoClearingBySession(): Map<string, PendingTodoClearing>;
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   getActiveBundle(): SessionBundle | undefined;
   ensureToolExecutor(bundle: SessionBundle): Promise<unknown>;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;

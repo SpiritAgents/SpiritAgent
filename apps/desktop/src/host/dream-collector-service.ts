@@ -45,7 +45,7 @@ export interface DreamCollectorServiceContext {
     planMetadata: LlmPlanMetadata,
     toolExecutor: DesktopToolExecutor,
   ): DesktopRuntime;
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   activeBundle(): { deferredRuntimeRefreshWhileBusy: boolean };
   refreshRuntime(): Promise<void>;
   clearLastRuntimeError(): void;

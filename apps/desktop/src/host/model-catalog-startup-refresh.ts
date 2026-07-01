@@ -64,10 +64,12 @@ export function collectModelCatalogRefreshTargets(
   return targets;
 }
 
-export async function forceRefreshModelCatalogForProfile(
+export async function loadModelCatalogForProfile(
   config: Pick<DesktopConfigFile, 'models'>,
   profile: ModelProfileSnapshot,
+  options?: { forceRefresh?: boolean },
 ): Promise<LoadedPreviewModelsResult | undefined> {
+  const forceRefresh = options?.forceRefresh === true;
   const provider = profile.provider;
   if (!provider || !providerSupportsModelCatalogListing(profile)) {
     return undefined;
@@ -97,7 +99,7 @@ export async function forceRefreshModelCatalogForProfile(
       awsRegion: profile.awsRegion,
       accessKeyId: bedrockCredentials.accessKeyId,
       secretAccessKey: bedrockCredentials.secretAccessKey,
-      forceRefresh: true,
+      forceRefresh,
     });
   }
 
@@ -123,7 +125,7 @@ export async function forceRefreshModelCatalogForProfile(
       ...(profile.vertexLocation ? { vertexLocation: profile.vertexLocation } : {}),
       ...(vertexCredentials.clientEmail ? { vertexClientEmail: vertexCredentials.clientEmail } : {}),
       ...(vertexCredentials.privateKey ? { vertexPrivateKey: vertexCredentials.privateKey } : {}),
-      forceRefresh: true,
+      forceRefresh,
     });
   }
 
@@ -136,8 +138,15 @@ export async function forceRefreshModelCatalogForProfile(
     transportKind,
     apiBase,
     apiKey: apiKey.trim(),
-    forceRefresh: true,
+    forceRefresh,
   });
+}
+
+export async function forceRefreshModelCatalogForProfile(
+  config: Pick<DesktopConfigFile, 'models'>,
+  profile: ModelProfileSnapshot,
+): Promise<LoadedPreviewModelsResult | undefined> {
+  return loadModelCatalogForProfile(config, profile, { forceRefresh: true });
 }
 
 type StartupMergedProfile = {
@@ -421,8 +430,98 @@ export function removeDelistedModelsFromCatalog(
   return targetsToRemove.map((target) => target.name);
 }
 
+export type ModelCatalogRefreshFetchResult = {
+  profile: ModelProfileSnapshot;
+  result: LoadedPreviewModelsResult;
+};
+
+export type ModelCatalogStartupFetchSummary = {
+  attempted: number;
+  fetched: ModelCatalogRefreshFetchResult[];
+  skipped: number;
+  fromCache: number;
+  fromNetwork: number;
+};
+
+export type ModelCatalogStartupApplySummary = {
+  refreshed: number;
+  merged: number;
+  synced: number;
+  pruned: number;
+  prunedModelNames: readonly string[];
+};
+
+/** 启动后台刷新：优先本地缓存，仅对过期/缺失 scope 发起网络请求；不修改 config。 */
+export async function fetchConfiguredModelCatalogsOnStartup(
+  config: DesktopConfigFile,
+  options?: { forceRefresh?: boolean },
+): Promise<ModelCatalogStartupFetchSummary> {
+  const targets = collectModelCatalogRefreshTargets(config.models);
+  const forceRefresh = options?.forceRefresh === true;
+  const fetched: ModelCatalogRefreshFetchResult[] = [];
+  let skipped = 0;
+  let fromCache = 0;
+  let fromNetwork = 0;
+
+  const results = await Promise.all(
+    targets.map(async (profile) => {
+      try {
+        const result = await loadModelCatalogForProfile(config, profile, { forceRefresh });
+        return { profile, result };
+      } catch {
+        return { profile, result: undefined };
+      }
+    }),
+  );
+
+  for (const { profile, result } of results) {
+    if (!result) {
+      skipped += 1;
+      continue;
+    }
+    fetched.push({ profile, result });
+    if (result.fromCache) {
+      fromCache += 1;
+    } else {
+      fromNetwork += 1;
+    }
+  }
+
+  return {
+    attempted: targets.length,
+    fetched,
+    skipped,
+    fromCache,
+    fromNetwork,
+  };
+}
+
+export function applyConfiguredModelCatalogRefreshResults(
+  config: DesktopConfigFile,
+  fetched: readonly ModelCatalogRefreshFetchResult[],
+): ModelCatalogStartupApplySummary {
+  let merged = 0;
+  let synced = 0;
+  const prunedModelNames: string[] = [];
+
+  for (const { profile, result } of fetched) {
+    merged += mergeNewCatalogModelsIntoConfig(config, profile, result);
+    prunedModelNames.push(...removeDelistedModelsFromCatalog(config, profile, result));
+    synced += syncExistingModelsFromCatalog(config, profile, result);
+  }
+
+  return {
+    refreshed: fetched.length,
+    merged,
+    synced,
+    pruned: prunedModelNames.length,
+    prunedModelNames,
+  };
+}
+
 export async function refreshConfiguredModelCatalogsOnStartup(
   config: DesktopConfigFile,
+  options?: { forceRefresh?: boolean },
 ): Promise<{
   attempted: number;
   refreshed: number;
@@ -431,37 +530,21 @@ export async function refreshConfiguredModelCatalogsOnStartup(
   synced: number;
   pruned: number;
   prunedModelNames: readonly string[];
+  fromCache: number;
+  fromNetwork: number;
 }> {
-  const targets = collectModelCatalogRefreshTargets(config.models);
-  let refreshed = 0;
-  let skipped = 0;
-  let merged = 0;
-  let synced = 0;
-  const prunedModelNames: string[] = [];
-
-  for (const profile of targets) {
-    try {
-      const result = await forceRefreshModelCatalogForProfile(config, profile);
-      if (result) {
-        refreshed += 1;
-        merged += mergeNewCatalogModelsIntoConfig(config, profile, result);
-        prunedModelNames.push(...removeDelistedModelsFromCatalog(config, profile, result));
-        synced += syncExistingModelsFromCatalog(config, profile, result);
-      } else {
-        skipped += 1;
-      }
-    } catch {
-      skipped += 1;
-    }
-  }
+  const fetchSummary = await fetchConfiguredModelCatalogsOnStartup(config, options);
+  const applySummary = applyConfiguredModelCatalogRefreshResults(config, fetchSummary.fetched);
 
   return {
-    attempted: targets.length,
-    refreshed,
-    skipped,
-    merged,
-    synced,
-    pruned: prunedModelNames.length,
-    prunedModelNames,
+    attempted: fetchSummary.attempted,
+    refreshed: applySummary.refreshed,
+    skipped: fetchSummary.skipped,
+    merged: applySummary.merged,
+    synced: applySummary.synced,
+    pruned: applySummary.pruned,
+    prunedModelNames: applySummary.prunedModelNames,
+    fromCache: fetchSummary.fromCache,
+    fromNetwork: fetchSummary.fromNetwork,
   };
 }

@@ -80,7 +80,7 @@ export interface SubmitUserTurnAfterInitializedOptions {
 }
 
 export interface SessionTurnOrchestratorContext {
-  runSerialized<T>(work: () => Promise<T>): Promise<T>;
+  runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
   requireRuntime(): DesktopRuntime;
   requireState(): { workspaceRoot: string };
@@ -329,7 +329,7 @@ export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<
     ctx.syncActiveRuntimePointer();
     ctx.startDreamCollectorIfNeeded();
     return ctx.buildSnapshot();
-  });
+  }, 'poll');
 }
 
 export async function tickSessionCommand(

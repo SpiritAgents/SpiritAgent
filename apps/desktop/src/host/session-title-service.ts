@@ -8,7 +8,7 @@ export async function applyGeneratedSessionTitle(input: {
   sessionPath: string;
   title: string;
   registry: SessionRegistry;
-  runSerialized: <T>(work: () => Promise<T>) => Promise<T>;
+  runSerialized: <T>(work: () => Promise<T>, label?: string) => Promise<T>;
   persistBundle: (bundle: SessionBundle) => Promise<void>;
   notifySessionListUpdated: () => void;
   onActiveSessionTitleApplied?: () => void;
