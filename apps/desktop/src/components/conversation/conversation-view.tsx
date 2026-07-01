@@ -201,6 +201,19 @@ export type ConversationViewProps = {
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
   workspaceTools: WorkspaceToolsSectionProps;
+  showComposerDock?: boolean;
+  showWorkspaceToolsDock?: boolean;
+  showWorkspaceToggle?: boolean;
+  showSplitMenu?: boolean;
+  showClosePane?: boolean;
+  onSplit?: () => void;
+  onClosePane?: () => void;
+  paneId?: string;
+  onPaneFocus?: () => void;
+  onPaneDragStart?: (paneId: string) => void;
+  onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onPaneDragLeave?: () => void;
+  onPaneDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
 };
 
 export function ConversationView({
@@ -220,6 +233,19 @@ export function ConversationView({
   list,
   composerDock,
   workspaceTools,
+  showComposerDock = true,
+  showWorkspaceToolsDock = true,
+  showWorkspaceToggle = true,
+  showSplitMenu = false,
+  showClosePane = false,
+  onSplit,
+  onClosePane,
+  paneId,
+  onPaneFocus,
+  onPaneDragStart,
+  onPaneDragEnter,
+  onPaneDragLeave,
+  onPaneDrop,
 }: ConversationViewProps) {
   const { t } = useTranslation();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
@@ -243,10 +269,43 @@ export function ConversationView({
 
   return (
     <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
-      <div data-spirit-surface="conversation-shell" className={cn("flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
+      <div
+        data-spirit-surface="conversation-shell"
+        className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
+        onPointerDown={() => onPaneFocus?.()}
+      >
+        {paneId && onPaneDrop ? (
+          <div className="pointer-events-none absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
+            {(["above", "below", "before", "after"] as const).map((zone) => (
+              <div
+                key={zone}
+                className="pointer-events-auto"
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  onPaneDragEnter?.(paneId, zone);
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={() => onPaneDragLeave?.()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  onPaneDrop(paneId, zone);
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
-          showWorkspaceToggle
+          showWorkspaceToggle={showWorkspaceToggle}
+          showSplitMenu={showSplitMenu}
+          showClosePane={showClosePane}
+          onSplit={onSplit}
+          onClosePane={onClosePane}
+          paneId={paneId}
+          onPaneDragStart={onPaneDragStart}
+          onPaneDragEnter={onPaneDragEnter}
+          onPaneDragLeave={onPaneDragLeave}
+          onPaneDrop={onPaneDrop}
           sessionTitle={
             isEmptySession || hideStaleConversationMessages
               ? null
@@ -353,6 +412,7 @@ export function ConversationView({
             </div>
           </ScrollArea>
 
+          {showComposerDock ? (
           <ComposerDock
             ref={composerDock.composerDockRef}
             isEmptySession={isEmptySession}
@@ -404,8 +464,10 @@ export function ConversationView({
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}
           />
+          ) : null}
         </div>
       </div>
+      {showWorkspaceToolsDock ? (
       <div data-spirit-surface="workspace-dock">
         <WorkspaceToolsDock
           useMicaBackdrop={useMicaBackdrop}
@@ -478,6 +540,7 @@ export function ConversationView({
           submitGitChip={list.runtime.submitGitChip}
         />
       </div>
+      ) : null}
     </div>
   );
 }

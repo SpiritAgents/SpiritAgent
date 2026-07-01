@@ -1,0 +1,53 @@
+import type { DesktopSnapshot, PaneSessionSlice } from "@/types";
+
+function normalizeSessionPathKey(sessionPath: string): string {
+  return sessionPath.replace(/\\/g, "/").toLowerCase();
+}
+
+export function lookupPaneSessionSlice(
+  snapshot: DesktopSnapshot | null | undefined,
+  sessionPath: string,
+): PaneSessionSlice | undefined {
+  if (!snapshot?.paneSessions) {
+    return undefined;
+  }
+  const target = normalizeSessionPathKey(sessionPath);
+  for (const [key, slice] of Object.entries(snapshot.paneSessions)) {
+    if (normalizeSessionPathKey(key) === target) {
+      return slice;
+    }
+  }
+  return undefined;
+}
+
+export function resolvePaneDesktopSnapshot(
+  snapshot: DesktopSnapshot | null,
+  sessionPath: string,
+): DesktopSnapshot | null {
+  if (!snapshot) {
+    return null;
+  }
+
+  const pane = lookupPaneSessionSlice(snapshot, sessionPath);
+  if (!pane || pane.isForegroundActive) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    conversation: pane.conversation,
+    ...(pane.activeSession ? { activeSession: pane.activeSession } : {}),
+    composerSessionKey: pane.composerSessionKey,
+  };
+}
+
+export function resolvePaneIsEmptySession(
+  snapshot: DesktopSnapshot | null,
+  sessionPath: string,
+): boolean {
+  const paneSnapshot = resolvePaneDesktopSnapshot(snapshot, sessionPath);
+  if (!paneSnapshot) {
+    return true;
+  }
+  return paneSnapshot.conversation.messages.length === 0;
+}
