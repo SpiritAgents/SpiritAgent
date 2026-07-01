@@ -69,6 +69,10 @@ import type {
   SessionListItem,
   SubmitGitChipRequest,
   SubmitUserTurnRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
   UpdateConfigRequest,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -2058,6 +2062,7 @@ export function useDesktopRuntime() {
         ...(hasLocalFiles ? { localFilePaths } : {}),
         ...(hasReferencedPaths ? { referencedWorkspaceFilePaths } : {}),
         ...(skillChipAliases.length > 0 ? { skillChipAliases } : {}),
+        ...(request.sessionPath?.trim() ? { sessionPath: request.sessionPath.trim() } : {}),
       });
       applySnapshot(next);
       clearActiveComposerDraft();
@@ -2618,6 +2623,43 @@ export function useDesktopRuntime() {
     [acknowledgeSessionAttention, api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
   );
 
+  const beginSplitPaneSession = useCallback(
+    async (paneId: string): Promise<BeginSplitPaneSessionResponse> => {
+      if (!api?.beginSplitPaneSession) {
+        throw new Error("Host does not support split pane sessions.");
+      }
+      const response = await api.beginSplitPaneSession({ paneId });
+      applySnapshot(response.snapshot);
+      setRuntimeError("");
+      void refreshSessions();
+      return response;
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
+  const setVisiblePaneSessions = useCallback(
+    async (sessionPaths: string[]) => {
+      if (!api?.setVisiblePaneSessions) {
+        return;
+      }
+      const next = await api.setVisiblePaneSessions({ sessionPaths });
+      applySnapshot(next);
+    },
+    [api, applySnapshot],
+  );
+
+  const closeSplitPaneSession = useCallback(
+    async (sessionPath: string) => {
+      if (!api?.closeSplitPaneSession) {
+        return;
+      }
+      const next = await api.closeSplitPaneSession({ sessionPath });
+      applySnapshot(next);
+      void refreshSessions();
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
   const deleteSession = useCallback(
     async (path: string) => {
       if (!api) {
@@ -3159,6 +3201,9 @@ export function useDesktopRuntime() {
     pushGitBranch,
     continueAssistantCompletion,
     openSession,
+    beginSplitPaneSession,
+    setVisiblePaneSessions,
+    closeSplitPaneSession,
     deleteSession,
     deleteWorkspace,
     listWorkspaceFileReferenceSuggestions,
