@@ -554,6 +554,7 @@ export class AiSdkOpenAiCompatibleTransport
             ? {}
             : { preCompactionArchivePath: context.preCompactionArchivePath }),
         }),
+        openAiTransportAssetRoot(config),
       ),
     );
     const compactConfig: OpenAiTransportConfig = {
