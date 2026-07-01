@@ -2792,6 +2792,9 @@ class DesktopHostService {
           bumpListSortAt: false,
         }),
       notifySessionListUpdated: () => this.notifySessionListUpdated(),
+      onActiveSessionTitleApplied: () => {
+        this.emitLiveSnapshotUpdate();
+      },
     });
   }
 

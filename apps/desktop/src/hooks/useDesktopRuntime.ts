@@ -278,6 +278,30 @@ function shouldRefreshDreamSessions(prev: DesktopSnapshot, next: DesktopSnapshot
   );
 }
 
+/**
+ * Keep sidebar session title in sync with snapshot without waiting for listSessions IPC.
+ * Match by file path only: `isActive` in the cached list can lag behind session switches.
+ */
+function patchActiveSessionDisplayNameInList(
+  list: SessionListItem[],
+  filePath: string | undefined,
+  displayName: string | undefined,
+): SessionListItem[] | null {
+  if (!filePath || displayName === undefined) {
+    return null;
+  }
+
+  let changed = false;
+  const next = list.map((session) => {
+    if (session.path !== filePath || session.displayName === displayName) {
+      return session;
+    }
+    changed = true;
+    return { ...session, displayName };
+  });
+  return changed ? next : null;
+}
+
 export function useDesktopRuntime() {
   const { api, error: hostError, kind, ready: hostReady } = useHostApi();
   const [snapshot, setSnapshot] = useState<DesktopSnapshot | null>(null);
@@ -511,6 +535,14 @@ export function useDesktopRuntime() {
     appliedComposerSessionKeyRef.current = sessionKey;
     appliedConversationRevisionRef.current = revision;
     setSnapshot(next);
+    setSessions((current) => {
+      const patched = patchActiveSessionDisplayNameInList(
+        current,
+        next.activeSession?.filePath,
+        next.activeSession?.displayName,
+      );
+      return patched ?? current;
+    });
     setRuntimeError(next.runtimeError ?? "");
     setSettings((current) => {
       const activeModelProfile = next.config.models.find(
