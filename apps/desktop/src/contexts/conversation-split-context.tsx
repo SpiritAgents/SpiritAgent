@@ -101,17 +101,33 @@ export function ConversationSplitProvider({
       return;
     }
     setLayout((current) => {
-      if (current) {
-        return updateLeafSessionPath(current, rootPaneIdRef.current, activeSessionPath);
-      }
-      return parseStoredLayout(
-        readConversationSplitLayoutJson(),
-        rootPaneIdRef.current,
-        activeSessionPath,
-      );
+      const next = current
+        ? updateLeafSessionPath(
+            current,
+            findWorkspaceToolsAnchorPaneId(current),
+            activeSessionPath,
+          )
+        : parseStoredLayout(
+            readConversationSplitLayoutJson(),
+            rootPaneIdRef.current,
+            activeSessionPath,
+          );
+      return next;
     });
-    setFocusedPaneId((current) => current ?? rootPaneIdRef.current);
   }, [activeSessionPath]);
+
+  useEffect(() => {
+    if (!layout) {
+      return;
+    }
+    setFocusedPaneId((current) => {
+      if (current && findLeafByPaneId(layout, current)) {
+        return current;
+      }
+      const anchorPaneId = findWorkspaceToolsAnchorPaneId(layout);
+      return anchorPaneId;
+    });
+  }, [layout]);
 
   useEffect(() => {
     if (!layout || !runtime.apiReady) {
