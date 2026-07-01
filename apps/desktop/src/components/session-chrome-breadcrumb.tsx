@@ -6,6 +6,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import {
+  DESKTOP_CHROME_ACTIVE_TEXT,
+  DESKTOP_CHROME_MUTED_TEXT,
+} from '@/lib/desktop-chrome';
 import { cn } from '@/lib/utils';
 
 type SessionChromeBreadcrumbProps = {
@@ -28,7 +32,7 @@ export function SessionChromeBreadcrumb({
 
   return (
     <Breadcrumb className="min-w-0">
-      <BreadcrumbList className="flex-nowrap gap-1.5 text-xs font-medium text-muted-foreground sm:gap-2">
+      <BreadcrumbList className="flex-nowrap gap-1.5 text-xs font-medium sm:gap-2">
         <BreadcrumbItem
           className={cn(
             'min-w-0',
@@ -41,7 +45,11 @@ export function SessionChromeBreadcrumb({
             <BreadcrumbLink asChild>
               <button
                 type="button"
-                className="electron-no-drag min-w-0 truncate text-foreground/90"
+                className={cn(
+                  "electron-no-drag min-w-0 truncate",
+                  DESKTOP_CHROME_MUTED_TEXT,
+                  "hover:text-sidebar-foreground focus-visible:text-sidebar-foreground",
+                )}
                 title={trimmedSessionTitle}
                 onClick={onExitSubagentViewer}
               >
@@ -50,7 +58,7 @@ export function SessionChromeBreadcrumb({
             </BreadcrumbLink>
           ) : (
             <BreadcrumbPage
-              className="min-w-0 truncate font-medium text-foreground/90"
+              className={cn("min-w-0 truncate font-medium", DESKTOP_CHROME_MUTED_TEXT)}
               title={trimmedSessionTitle}
             >
               {trimmedSessionTitle}
@@ -62,7 +70,7 @@ export function SessionChromeBreadcrumb({
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0 max-w-[min(20rem,40vw)] flex-1">
               <BreadcrumbPage
-                className="min-w-0 truncate font-medium text-foreground"
+                className={cn("min-w-0 truncate font-medium", DESKTOP_CHROME_ACTIVE_TEXT)}
                 title={trimmedSubagentPromptText}
               >
                 {trimmedSubagentPromptText}
