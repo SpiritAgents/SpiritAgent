@@ -11,6 +11,7 @@ export async function applyGeneratedSessionTitle(input: {
   runSerialized: <T>(work: () => Promise<T>) => Promise<T>;
   persistBundle: (bundle: SessionBundle) => Promise<void>;
   notifySessionListUpdated: () => void;
+  onActiveSessionTitleApplied?: () => void;
 }): Promise<void> {
   const resolvedPath = path.resolve(input.sessionPath);
   await input.runSerialized(async () => {
@@ -22,7 +23,8 @@ export async function applyGeneratedSessionTitle(input: {
       bundle.activeSession.displayName = input.title;
       bundle.sessionTitleSource = 'llm';
       await input.persistBundle(bundle);
-      input.notifySessionListUpdated();
+      // Active session: snapshot push + renderer sidebar patch; skip async listSessions.
+      input.onActiveSessionTitleApplied?.();
       return;
     }
 
