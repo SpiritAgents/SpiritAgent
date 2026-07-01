@@ -2620,8 +2620,6 @@ function mimeTypeForImageExtension(extension: string): string | undefined {
       return 'image/png';
     case '.webp':
       return 'image/webp';
-    case '.ico':
-      return 'image/x-icon';
     default:
       return undefined;
   }
