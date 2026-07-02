@@ -42,6 +42,8 @@ export type ConversationPaneHostProps = {
   onNewSession?: () => void;
   deleteSessionBusy?: boolean;
   onDeleteSession?: (path: string) => void | Promise<void>;
+  renameSessionBusy?: boolean;
+  onRenameSession?: (path: string, displayName: string) => void | Promise<void>;
   workspaceTools: WorkspaceTools;
   onOpenIntegrationsSettings: () => void;
   onCompactionDemoStop: () => void;
@@ -121,6 +123,15 @@ export function ConversationPaneHost({
     }
   }, [paneId, split, splitPaneCount]);
 
+  const handleRenameSession = useCallback(
+    async (path: string, displayName: string) => {
+      if (controllerInput.onRenameSession) {
+        await controllerInput.onRenameSession(path, displayName);
+      }
+    },
+    [controllerInput.onRenameSession],
+  );
+
   return (
     <ConversationView
       useMicaBackdrop={useMicaBackdrop}
@@ -155,6 +166,13 @@ export function ConversationPaneHost({
       conversationBusy={pane.paneSnapshot?.conversation.isBusy === true}
       onDeleteSession={handleDeleteSession}
       onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
+      showRenameSession={
+        !pane.paneIsEmptySession && Boolean(controllerInput.onRenameSession)
+      }
+      renameSessionPath={sessionPath}
+      renameSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
+      renameSessionBusy={controllerInput.renameSessionBusy}
+      onRenameSession={handleRenameSession}
       compactionDemoActive={pane.compactionDemoActive}
       onCompactionDemoStop={controllerInput.onCompactionDemoStop}
       rewindDraft={pane.rewindDraft}

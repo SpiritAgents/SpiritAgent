@@ -1,4 +1,12 @@
 import {
+  useLayoutEffect,
+  useRef,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
+import { useTranslation } from "react-i18next";
+
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -12,23 +20,116 @@ import {
 } from '@/lib/desktop-chrome';
 import { cn } from '@/lib/utils';
 
+const SESSION_RENAME_INPUT_CLASS =
+  "electron-no-drag min-w-0 flex-1 rounded border border-border/60 bg-background px-1 py-0 text-xs font-medium outline-none focus:border-ring";
+
 type SessionChromeBreadcrumbProps = {
   sessionTitle: string;
   subagentPromptText?: string | null;
   onExitSubagentViewer?: () => void;
+  renaming?: boolean;
+  renameValue?: string;
+  onRenameValueChange?: (value: string) => void;
+  onRenameCommit?: () => void;
+  onRenameCancel?: () => void;
+  onRenameStart?: () => void;
 };
 
 export function SessionChromeBreadcrumb({
   sessionTitle,
   subagentPromptText,
   onExitSubagentViewer,
+  renaming = false,
+  renameValue = "",
+  onRenameValueChange,
+  onRenameCommit,
+  onRenameCancel,
+  onRenameStart,
 }: SessionChromeBreadcrumbProps) {
+  const { t } = useTranslation();
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const skipBlurCommitRef = useRef(false);
   const trimmedSessionTitle = sessionTitle.trim();
   const trimmedSubagentPromptText = subagentPromptText?.trim() ?? '';
 
-  if (!trimmedSessionTitle) {
+  useLayoutEffect(() => {
+    if (!renaming) {
+      return;
+    }
+    const input = renameInputRef.current;
+    if (!input) {
+      return;
+    }
+    const frameId = requestAnimationFrame(() => {
+      input.focus({ preventScroll: true });
+      input.select();
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [renaming, renameValue]);
+
+  if (!trimmedSessionTitle && !renaming) {
     return null;
   }
+
+  const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      skipBlurCommitRef.current = true;
+      onRenameCommit?.();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onRenameCancel?.();
+    }
+  };
+
+  const sessionTitleNode = renaming ? (
+    <input
+      ref={renameInputRef}
+      value={renameValue}
+      className={SESSION_RENAME_INPUT_CLASS}
+      aria-label={t("sidebar.renameSession")}
+      onChange={(event) => onRenameValueChange?.(event.target.value)}
+      onKeyDown={handleRenameKeyDown}
+      onBlur={() => {
+        if (!skipBlurCommitRef.current) {
+          onRenameCommit?.();
+        }
+        skipBlurCommitRef.current = false;
+      }}
+    />
+  ) : trimmedSubagentPromptText ? (
+    <BreadcrumbLink asChild>
+      <button
+        type="button"
+        className={cn(
+          "electron-no-drag min-w-0 truncate",
+          DESKTOP_CHROME_MUTED_TEXT,
+          "hover:text-sidebar-foreground focus-visible:text-sidebar-foreground",
+        )}
+        title={trimmedSessionTitle}
+        onClick={onExitSubagentViewer}
+      >
+        {trimmedSessionTitle}
+      </button>
+    </BreadcrumbLink>
+  ) : (
+    <BreadcrumbPage
+      className={cn("min-w-0 truncate font-medium", DESKTOP_CHROME_MUTED_TEXT)}
+      title={trimmedSessionTitle}
+      onDoubleClick={(event: MouseEvent<HTMLElement>) => {
+        if (!onRenameStart) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        onRenameStart();
+      }}
+    >
+      {trimmedSessionTitle}
+    </BreadcrumbPage>
+  );
 
   return (
     <Breadcrumb className="min-w-0">
@@ -39,31 +140,10 @@ export function SessionChromeBreadcrumb({
             trimmedSubagentPromptText
               ? 'max-w-[min(12rem,30vw)] shrink'
               : 'max-w-[min(20rem,40vw)]',
+            renaming && 'max-w-[min(20rem,40vw)] flex-1',
           )}
         >
-          {trimmedSubagentPromptText ? (
-            <BreadcrumbLink asChild>
-              <button
-                type="button"
-                className={cn(
-                  "electron-no-drag min-w-0 truncate",
-                  DESKTOP_CHROME_MUTED_TEXT,
-                  "hover:text-sidebar-foreground focus-visible:text-sidebar-foreground",
-                )}
-                title={trimmedSessionTitle}
-                onClick={onExitSubagentViewer}
-              >
-                {trimmedSessionTitle}
-              </button>
-            </BreadcrumbLink>
-          ) : (
-            <BreadcrumbPage
-              className={cn("min-w-0 truncate font-medium", DESKTOP_CHROME_MUTED_TEXT)}
-              title={trimmedSessionTitle}
-            >
-              {trimmedSessionTitle}
-            </BreadcrumbPage>
-          )}
+          {sessionTitleNode}
         </BreadcrumbItem>
         {trimmedSubagentPromptText ? (
           <>
