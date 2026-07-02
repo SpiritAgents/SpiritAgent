@@ -128,6 +128,7 @@ export function useConversationPaneController({
     },
     t,
     language,
+    useIsolatedPane,
   });
 
   const composer = useComposerController({
@@ -231,6 +232,7 @@ export function useConversationPaneController({
     composerAgentModeChipPlaceholder: composer.composerAgentModeChipPlaceholder,
     composerCanSend: composer.composerCanSend,
     composerHasPayload: composer.composerHasPayload,
+    composerBusy: composer.composerBusy,
     conversationInterruptible: conversation.conversationInterruptible,
     composerBrowserElementAttachments: composer.composerBrowserElementAttachments,
     onComposerBrowserElementAttachmentsChange: composer.setComposerBrowserElementAttachments,

@@ -141,8 +141,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     refreshGitSnapshot() {
       return bridge.refreshGitSnapshot();
     },
-    abortConversation() {
-      return bridge.abortConversation();
+    abortConversation(request?: AbortConversationRequest) {
+      return bridge.abortConversation(request);
     },
     abortShell(toolCallId) {
       return bridge.abortShell(toolCallId);

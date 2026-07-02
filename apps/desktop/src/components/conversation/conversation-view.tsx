@@ -115,6 +115,7 @@ export type ComposerDockSectionProps = {
   composerAgentModeChipPlaceholder?: string;
   composerCanSend: boolean;
   composerHasPayload: boolean;
+  composerBusy: boolean;
   conversationInterruptible: boolean;
   composerBrowserElementAttachments: BrowserElementAttachment[];
   onComposerBrowserElementAttachmentsChange: (attachments: BrowserElementAttachment[]) => void;
@@ -506,6 +507,7 @@ export function ConversationView({
             composerAgentModeChipPlaceholder={composerDock.composerAgentModeChipPlaceholder}
             composerCanSend={composerDock.composerCanSend}
             composerHasPayload={composerDock.composerHasPayload}
+            composerBusy={composerDock.composerBusy}
             conversationInterruptible={composerDock.conversationInterruptible}
             continueBusy={list.continueBusy}
             composerBrowserElementAttachments={composerDock.composerBrowserElementAttachments}

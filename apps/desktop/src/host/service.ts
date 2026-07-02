@@ -128,6 +128,7 @@ import type {
   InstallMarketplaceExtensionRequest,
   PrepareMarketplaceExtensionInstallRequest,
   SubmitUserTurnRequest,
+  AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
@@ -1753,8 +1754,47 @@ class DesktopHostService {
     return pushGitBranchCommand(this.workspaceGitCommandContext());
   }
 
-  async abortConversation(): Promise<DesktopSnapshot> {
-    return abortConversationCommand(this.sessionTurnContext());
+  async abortConversation(request: AbortConversationRequest = {}): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+
+      const targetSessionPath = request.sessionPath?.trim();
+      const previousActive = this.sessionRegistry.getActive();
+      const previousActiveId = this.sessionRegistry.activeSessionId();
+      let restoredActive = false;
+
+      const restorePreviousActive = () => {
+        if (!restoredActive && previousActive && previousActiveId) {
+          this.sessionRegistry.activateExisting(previousActive);
+          this.syncActiveRuntimePointer();
+          restoredActive = true;
+        }
+      };
+
+      try {
+        if (targetSessionPath) {
+          const targetBundle = this.sessionRegistry.findBySessionPath(targetSessionPath);
+          if (!targetBundle) {
+            throw new Error('Session not found.');
+          }
+          if (this.sessionRegistry.getActive() !== targetBundle) {
+            this.sessionRegistry.activateExisting(targetBundle);
+            this.syncActiveRuntimePointer();
+          }
+        }
+
+        const snapshot = await abortConversationCommand(this.sessionTurnContext());
+        if (targetSessionPath) {
+          restorePreviousActive();
+          return this.buildSnapshot();
+        }
+        restorePreviousActive();
+        return snapshot;
+      } catch (error) {
+        restorePreviousActive();
+        throw error;
+      }
+    });
   }
 
   async reorderQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot> {

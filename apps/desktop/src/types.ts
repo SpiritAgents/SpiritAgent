@@ -625,6 +625,11 @@ export interface SubmitUserTurnRequest {
   sessionPath?: string;
 }
 
+export interface AbortConversationRequest {
+  /** Abort a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
 export interface BeginSplitPaneSessionRequest {
   paneId: string;
   /** When true, only create the in-memory bundle; caller batches snapshot via syncSplitPaneSessions. */

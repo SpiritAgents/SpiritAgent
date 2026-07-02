@@ -20,6 +20,12 @@ import {
   CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX,
   CONVERSATION_SCROLL_BED_EXTRA_PX,
 } from "@/lib/conversation-layout-constants";
+import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
+import {
+  resolvePaneCanInterrupt,
+  resolvePaneCanSend,
+  resolvePaneComposerBusy,
+} from "@/lib/pane-conversation-controls";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -34,6 +40,8 @@ export type UseConversationViewStateOptions = {
   compactionDemo: CompactionDemo;
   t: TFunction;
   language: string;
+  /** When true, composer interrupt/send state follows this pane snapshot, not global runtime. */
+  useIsolatedPane?: boolean;
 };
 
 export function useConversationViewState({
@@ -44,6 +52,7 @@ export function useConversationViewState({
   compactionDemo,
   t,
   language,
+  useIsolatedPane = false,
 }: UseConversationViewStateOptions) {
   const models = snapshot?.config.models ?? [];
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
@@ -121,7 +130,9 @@ export function useConversationViewState({
     subagentViewActive,
     compactionDemoActive: compactionDemo.active,
     isBusy: snapshot?.conversation.isBusy,
-    busyAction: runtime.busyAction,
+    busyAction: useIsolatedPane
+      ? (snapshot?.conversation.isBusy ? "send" : "")
+      : runtime.busyAction,
     pendingAuxState: conversationPendingAuxState,
     sessionMessages,
     planResetKey: conversationListRemountEpoch,
@@ -152,12 +163,27 @@ export function useConversationViewState({
         )
       : CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX;
 
-  const pendingQuestions = runtime.pendingQuestions;
-  const showPendingQuestionsInComposer = Boolean(pendingQuestions);
+  const panePendingQuestions = snapshot?.conversation.pendingQuestions ?? null;
+  const pendingQuestions = useIsolatedPane
+    ? panePendingQuestions
+    : runtime.pendingQuestions;
+  const showPendingQuestionsInComposer = useIsolatedPane
+    ? Boolean(panePendingQuestions)
+    : Boolean(pendingQuestions);
 
   const activeSessionReadOnly = snapshot?.activeSession?.readOnly === true;
-  const conversationInterruptible = runtime.summary.canInterrupt && !runtime.busyAction;
-  const continueBusy = Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
+  const paneSessionPathKey = normalizePaneSessionPathKey(
+    snapshot?.activeSession?.filePath ?? composerSessionKey,
+  );
+  const paneSendBusy = useIsolatedPane
+    && Boolean(paneSessionPathKey)
+    && runtime.paneSendBusySessionPath === paneSessionPathKey;
+  const conversationInterruptible = useIsolatedPane
+    ? resolvePaneCanInterrupt(snapshot)
+    : runtime.summary.canInterrupt && !runtime.busyAction;
+  const continueBusy = useIsolatedPane
+    ? resolvePaneComposerBusy(snapshot, paneSendBusy)
+    : Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
   const conversationAbortShortcutEligible =
     conversationInterruptible && !activeSessionReadOnly;
   const conversationAbortShortcutEligibleRef = useRef(false);
@@ -169,7 +195,9 @@ export function useConversationViewState({
     runtime.busyAction === "session" ||
     Boolean(pendingApproval) ||
     Boolean(pendingQuestions) ||
-    (runtime.busyAction === "send" && !conversationInterruptible);
+    (useIsolatedPane
+      ? snapshot?.conversation.isBusy === true && !conversationInterruptible
+      : runtime.busyAction === "send" && !conversationInterruptible);
 
   const previousComposerSessionKeyRef = useRef(composerSessionKey);
 

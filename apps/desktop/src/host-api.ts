@@ -69,6 +69,7 @@ import type {
   GitHubPullRequestForBranchResult,
   SearchGitHubAutomationRepositoriesSnapshot,
   SubmitUserTurnRequest,
+  AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
@@ -185,7 +186,7 @@ export interface HostApi {
   markGitHubPullRequestReady(
     request: GetGitHubPullRequestDetailRequest,
   ): Promise<GitHubPullRequestDetail>;
-  abortConversation(): Promise<DesktopSnapshot>;
+  abortConversation(request?: AbortConversationRequest): Promise<DesktopSnapshot>;
   abortShell(toolCallId: string): Promise<DesktopSnapshot>;
   continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
   rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;
