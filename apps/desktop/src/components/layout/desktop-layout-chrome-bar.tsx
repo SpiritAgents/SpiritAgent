@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { LoaderCircle, PanelRightClose, PanelRightOpen, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
+import { LoaderCircle, PanelRightClose, PanelRightOpen, Pencil, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
 
 import {
   NewSessionShortcutKbd,
@@ -74,6 +74,11 @@ export function DesktopLayoutChromeBar({
   conversationBusy = false,
   onDeleteSession,
   onDeleteSessionOverlayClosed,
+  showRenameSession = false,
+  renameSessionPath,
+  renameSessionDisplayName,
+  renameSessionBusy = false,
+  onRenameSession,
 }: {
   useMicaBackdrop: boolean;
   showSessionSidebarToggle?: boolean;
@@ -100,6 +105,11 @@ export function DesktopLayoutChromeBar({
   conversationBusy?: boolean;
   onDeleteSession?: (path: string) => void | Promise<void>;
   onDeleteSessionOverlayClosed?: () => void | Promise<void>;
+  showRenameSession?: boolean;
+  renameSessionPath?: string | null;
+  renameSessionDisplayName?: string | null;
+  renameSessionBusy?: boolean;
+  onRenameSession?: (path: string, displayName: string) => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const { open: sessionSidebarOpen } = useSessionSidebarChrome();
@@ -111,8 +121,76 @@ export function DesktopLayoutChromeBar({
   const trimmedSessionTitle = sessionTitle?.trim() ?? "";
   const paneDragEnabled = Boolean(paneId && onPaneDragStart);
   const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false);
+  const [renamingTitle, setRenamingTitle] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const renameCommitInFlightRef = useRef(false);
+  const pendingRenameFocusRef = useRef(false);
   const trimmedDeleteSessionPath = deleteSessionPath?.trim() ?? "";
   const trimmedDeleteSessionDisplayName = deleteSessionDisplayName?.trim() ?? "";
+  const trimmedRenameSessionPath = renameSessionPath?.trim() ?? "";
+  const trimmedRenameSessionDisplayName = renameSessionDisplayName?.trim() ?? "";
+  const trimmedSubagentPromptText = subagentPromptText?.trim() ?? "";
+  const canRenameTitle =
+    showRenameSession
+    && Boolean(onRenameSession)
+    && Boolean(trimmedRenameSessionPath)
+    && !trimmedSubagentPromptText;
+
+  const handleRenameCancel = useCallback(() => {
+    setRenamingTitle(false);
+    setRenameValue("");
+  }, []);
+
+  const handleRenameStart = useCallback(() => {
+    if (renameSessionBusy || conversationBusy || !canRenameTitle) {
+      return;
+    }
+    setRenamingTitle(true);
+    setRenameValue(trimmedSessionTitle || trimmedRenameSessionDisplayName);
+  }, [
+    canRenameTitle,
+    conversationBusy,
+    renameSessionBusy,
+    trimmedRenameSessionDisplayName,
+    trimmedSessionTitle,
+  ]);
+
+  const handleRenameCommit = useCallback(async () => {
+    if (renameCommitInFlightRef.current) {
+      return;
+    }
+    if (!renamingTitle || !onRenameSession || !trimmedRenameSessionPath) {
+      handleRenameCancel();
+      return;
+    }
+    const trimmed = renameValue.trim();
+    const currentName = trimmedSessionTitle || trimmedRenameSessionDisplayName;
+    if (!trimmed || trimmed === currentName) {
+      handleRenameCancel();
+      return;
+    }
+    renameCommitInFlightRef.current = true;
+    try {
+      await onRenameSession(trimmedRenameSessionPath, trimmed);
+      handleRenameCancel();
+    } catch {
+      // Runtime error banner handles host failures.
+    } finally {
+      renameCommitInFlightRef.current = false;
+    }
+  }, [
+    handleRenameCancel,
+    onRenameSession,
+    renameValue,
+    renamingTitle,
+    trimmedRenameSessionDisplayName,
+    trimmedRenameSessionPath,
+    trimmedSessionTitle,
+  ]);
+
+  useEffect(() => {
+    handleRenameCancel();
+  }, [handleRenameCancel, trimmedRenameSessionPath]);
 
   const dismissDeleteSessionDialog = useCallback((afterClose?: () => void) => {
     setDeleteSessionDialogOpen(false);
@@ -206,11 +284,17 @@ export function DesktopLayoutChromeBar({
             </Tooltip>
           </div>
         ) : null}
-        {trimmedSessionTitle ? (
+        {trimmedSessionTitle || renamingTitle ? (
           <SessionChromeBreadcrumb
-            sessionTitle={trimmedSessionTitle}
+            sessionTitle={trimmedSessionTitle || trimmedRenameSessionDisplayName}
             subagentPromptText={subagentPromptText}
             onExitSubagentViewer={onExitSubagentViewer}
+            renaming={renamingTitle}
+            renameValue={renameValue}
+            onRenameValueChange={setRenameValue}
+            onRenameCommit={() => void handleRenameCommit()}
+            onRenameCancel={handleRenameCancel}
+            onRenameStart={canRenameTitle ? handleRenameStart : undefined}
           />
         ) : null}
       </div>
@@ -229,7 +313,17 @@ export function DesktopLayoutChromeBar({
                   <MoreHorizontal className="size-3.5 text-muted-foreground" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "p-0")}>
+              <DropdownMenuContent
+                align="end"
+                className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "p-0")}
+                onCloseAutoFocus={(event) => {
+                  if (!pendingRenameFocusRef.current) {
+                    return;
+                  }
+                  event.preventDefault();
+                  pendingRenameFocusRef.current = false;
+                }}
+              >
                 <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
                   <DropdownMenuItem
                     className="gap-1.5"
@@ -255,6 +349,25 @@ export function DesktopLayoutChromeBar({
                     </DropdownMenuItem>
                   ) : null}
                 </div>
+                {canRenameTitle ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+                      <DropdownMenuItem
+                        className="gap-1.5"
+                        disabled={renameSessionBusy || conversationBusy}
+                        title={conversationBusy ? t("sidebar.cannotRenameBusySession") : undefined}
+                        onSelect={() => {
+                          pendingRenameFocusRef.current = true;
+                          handleRenameStart();
+                        }}
+                      >
+                        <Pencil className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                        <span>{t("sidebar.renameSession")}</span>
+                      </DropdownMenuItem>
+                    </div>
+                  </>
+                ) : null}
                 {showDeleteSession && onDeleteSession && trimmedDeleteSessionPath ? (
                   <>
                     <DropdownMenuSeparator />
