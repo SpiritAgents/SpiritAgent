@@ -2,9 +2,11 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -28,6 +30,7 @@ import {
   Network,
   Package,
   Palette,
+  Pencil,
   Plug,
   Plus,
   SquarePen,
@@ -93,6 +96,13 @@ import {
 const newSessionShortcutLabel = shortcutLabel("N");
 const settingsShortcutLabelText = settingsShortcutLabel();
 
+const SESSION_RENAME_INPUT_CLASS =
+  "min-w-0 flex-1 rounded border border-border/60 bg-background px-1 py-0 text-xs outline-none focus:border-ring";
+
+function describeRenameError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 
 function samePath(a: string, b: string): boolean {
   return a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
@@ -130,6 +140,8 @@ type SessionSidebarProps = {
   sessionNavigationBusy?: boolean;
   deleteSessionBusy?: boolean;
   onDeleteSession?: (path: string) => void | Promise<void>;
+  renameSessionBusy?: boolean;
+  onRenameSession?: (path: string, displayName: string) => void | Promise<void>;
   deleteWorkspaceBusy?: boolean;
   onDeleteWorkspace?: (workspacePath: string) => void | Promise<void>;
   disabled?: boolean;
@@ -276,6 +288,13 @@ type WorkspaceSessionGroupCollapsibleProps = {
   onLoadMore(): void;
   onNewSessionInWorkspace?: (workspaceRoot: string) => void;
   newSessionBusy?: boolean;
+  renamingSessionPath?: string | null;
+  renameValue?: string;
+  onRenameValueChange?: (value: string) => void;
+  onRenameCommit?: () => void;
+  onRenameCancel?: () => void;
+  onRenameStart?: (session: SessionListItem) => void;
+  canRenameSession?: boolean;
   groupNodeRef?(node: HTMLElement | null): void;
   headerPointerHandlers?: {
     onPointerDown(event: PointerEvent<HTMLElement>): void;
@@ -387,6 +406,13 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
   onLoadMore,
   onNewSessionInWorkspace,
   newSessionBusy = false,
+  renamingSessionPath = null,
+  renameValue = "",
+  onRenameValueChange,
+  onRenameCommit,
+  onRenameCancel,
+  onRenameStart,
+  canRenameSession = false,
   groupNodeRef,
   headerPointerHandlers,
   onHeaderClickCapture,
@@ -557,6 +583,16 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
                   disabled={disabled}
                   micaStyle={micaStyle}
                   onSelectPath={onSelectSession}
+                  renaming={renamingSessionPath === session.path}
+                  renameValue={renamingSessionPath === session.path ? renameValue : undefined}
+                  onRenameValueChange={onRenameValueChange}
+                  onRenameCommit={onRenameCommit}
+                  onRenameCancel={onRenameCancel}
+                  onRenameStart={
+                    canRenameSession && !session.isBusy
+                      ? () => onRenameStart?.(session)
+                      : undefined
+                  }
                 />
               </SessionListGitTooltip.Row>
             ))}
@@ -627,6 +663,12 @@ type SessionListRowProps = {
   disabled?: boolean;
   micaStyle?: boolean;
   onSelectPath(path: string): void;
+  renaming?: boolean;
+  renameValue?: string;
+  onRenameValueChange?: (value: string) => void;
+  onRenameCommit?: () => void;
+  onRenameCancel?: () => void;
+  onRenameStart?: () => void;
 };
 
 const SessionListRow = memo(function SessionListRow({
@@ -641,13 +683,102 @@ const SessionListRow = memo(function SessionListRow({
   disabled,
   micaStyle,
   onSelectPath,
+  renaming = false,
+  renameValue = "",
+  onRenameValueChange,
+  onRenameCommit,
+  onRenameCancel,
+  onRenameStart,
 }: SessionListRowProps) {
   const { t } = useTranslation();
   const gitTooltipContext = useOptionalSessionListGitTooltipContext();
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const skipBlurCommitRef = useRef(false);
   const hasIndicator =
     (isBusy && !isBlocked) ||
     (!selected && (isBlocked || showCompletedUnseen));
   const showGitTooltip = Boolean(gitBranch?.trim()) && gitTooltipContext !== null;
+
+  useLayoutEffect(() => {
+    if (!renaming) {
+      return;
+    }
+    const input = renameInputRef.current;
+    if (!input) {
+      return;
+    }
+    const frameId = requestAnimationFrame(() => {
+      input.focus({ preventScroll: true });
+      input.select();
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [renaming, renameValue]);
+
+  const rowClassName = cn(
+    "group flex w-full min-w-0 items-center overflow-hidden rounded-md text-left text-sm outline-none",
+    sidebarInteractionMotionClass,
+    "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
+    nested
+      ? "py-2 pr-2.5 pl-2.5 gap-2"
+      : hasIndicator
+        ? "h-8 pr-2.5 pl-2.5 gap-2"
+        : "h-8 px-2.5",
+    !renaming && (
+      selected
+        ? sessionRowSelectedClass(micaStyle)
+        : cn(sidebarItemDefaultTextClass, sessionRowHoverClass(micaStyle))
+    ),
+  );
+
+  const leading = (nested || hasIndicator) ? (
+    <span className="flex w-3.5 shrink-0 items-center justify-center" aria-hidden>
+      {isBusy && !isBlocked ? (
+        <Spinner
+          className="size-3 shrink-0 text-primary"
+          aria-label={t('common.running')}
+        />
+      ) : !selected && isBlocked ? (
+        <SessionRowStatusDot tone="blocked" label={t("sidebar.sessionBlocked")} />
+      ) : !selected && showCompletedUnseen ? (
+        <SessionRowStatusDot tone="completed" label={t("sidebar.sessionCompleted")} />
+      ) : null}
+    </span>
+  ) : null;
+
+  const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      skipBlurCommitRef.current = true;
+      onRenameCommit?.();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onRenameCancel?.();
+    }
+  };
+
+  if (renaming) {
+    return (
+      <div data-session-path={sessionPath} className={rowClassName}>
+        {leading}
+        <input
+          ref={renameInputRef}
+          value={renameValue}
+          className={SESSION_RENAME_INPUT_CLASS}
+          aria-label={t("sidebar.renameSession")}
+          onChange={(event) => onRenameValueChange?.(event.target.value)}
+          onKeyDown={handleRenameKeyDown}
+          onBlur={() => {
+            if (!skipBlurCommitRef.current) {
+              onRenameCommit?.();
+            }
+            skipBlurCommitRef.current = false;
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <button
@@ -656,34 +787,17 @@ const SessionListRow = memo(function SessionListRow({
       disabled={disabled}
       aria-current={selected ? "true" : undefined}
       onClick={() => onSelectPath(sessionPath)}
-      className={cn(
-        "group flex w-full min-w-0 items-center overflow-hidden rounded-md text-left text-sm outline-none",
-        sidebarInteractionMotionClass,
-        "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-        nested
-          ? "py-2 pr-2.5 pl-2.5 gap-2"
-          : hasIndicator
-            ? "h-8 pr-2.5 pl-2.5 gap-2"
-            : "h-8 px-2.5",
-        selected
-          ? sessionRowSelectedClass(micaStyle)
-          : cn(sidebarItemDefaultTextClass, sessionRowHoverClass(micaStyle)),
-      )}
+      onDoubleClick={(event) => {
+        if (!onRenameStart || disabled || isBusy) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        onRenameStart();
+      }}
+      className={rowClassName}
     >
-      {(nested || hasIndicator) && (
-        <span className="flex w-3.5 shrink-0 items-center justify-center" aria-hidden>
-          {isBusy && !isBlocked ? (
-            <Spinner
-              className="size-3 shrink-0 text-primary"
-              aria-label={t('common.running')}
-            />
-          ) : !selected && isBlocked ? (
-            <SessionRowStatusDot tone="blocked" label={t("sidebar.sessionBlocked")} />
-          ) : !selected && showCompletedUnseen ? (
-            <SessionRowStatusDot tone="completed" label={t("sidebar.sessionCompleted")} />
-          ) : null}
-        </span>
-      )}
+      {leading}
       <span
         className="min-w-0 flex-1 basis-0 truncate text-xs font-medium"
         title={showGitTooltip ? undefined : displayName}
@@ -696,40 +810,49 @@ const SessionListRow = memo(function SessionListRow({
 
 type SessionListNavProps = {
   ariaLabel: string;
+  canRenameSession: boolean;
   canDeleteSession: boolean;
   contextMenuSession: SessionListItem | null;
   contextMenuSessionRef: RefObject<SessionListItem | null>;
+  renameSessionBusy?: boolean;
   deleteSessionBusy?: boolean;
   onSessionContextMenuCapture(event: MouseEvent<HTMLElement>): void;
   onContextMenuOpenChange(open: boolean): void;
+  onContextMenuCloseAutoFocus(event: Event): void;
+  onRequestRename(session: SessionListItem): void;
   onRequestDelete(session: SessionListItem): void;
   children: ReactNode;
 };
 
 function SessionListNav({
   ariaLabel,
+  canRenameSession,
   canDeleteSession,
   contextMenuSession,
   contextMenuSessionRef,
+  renameSessionBusy,
   deleteSessionBusy,
   onSessionContextMenuCapture,
   onContextMenuOpenChange,
+  onContextMenuCloseAutoFocus,
+  onRequestRename,
   onRequestDelete,
   children,
 }: SessionListNavProps) {
   const { t } = useTranslation();
+  const canSessionContextMenu = canRenameSession || canDeleteSession;
 
   const nav = (
     <nav
       className="flex min-w-0 flex-col gap-0.5"
       aria-label={ariaLabel}
-      onContextMenuCapture={canDeleteSession ? onSessionContextMenuCapture : undefined}
+      onContextMenuCapture={canSessionContextMenu ? onSessionContextMenuCapture : undefined}
     >
       {children}
     </nav>
   );
 
-  if (!canDeleteSession) {
+  if (!canSessionContextMenu) {
     return nav;
   }
 
@@ -738,21 +861,42 @@ function SessionListNav({
   return (
     <ContextMenu onOpenChange={onContextMenuOpenChange}>
       <ContextMenuTrigger asChild>{nav}</ContextMenuTrigger>
-      <ContextMenuContent aria-label={t("sidebar.sessionActions")}>
-        <ContextMenuItem
-          variant="destructive"
-          disabled={deleteSessionBusy || busy}
-          title={busy ? t("sidebar.cannotDeleteBusySession") : undefined}
-          onSelect={() => {
-            const session = contextMenuSessionRef.current ?? contextMenuSession;
-            if (session) {
-              onRequestDelete(session);
-            }
-          }}
-        >
-          <Trash2 aria-hidden />
-          {t("common.delete")}
-        </ContextMenuItem>
+      <ContextMenuContent
+        aria-label={t("sidebar.sessionActions")}
+        onCloseAutoFocus={onContextMenuCloseAutoFocus}
+      >
+        {canRenameSession ? (
+          <ContextMenuItem
+            disabled={renameSessionBusy || busy}
+            title={busy ? t("sidebar.cannotRenameBusySession") : undefined}
+            onSelect={() => {
+              const session = contextMenuSessionRef.current ?? contextMenuSession;
+              if (session) {
+                onRequestRename(session);
+              }
+            }}
+          >
+            <Pencil aria-hidden />
+            {t("sidebar.renameSession")}
+          </ContextMenuItem>
+        ) : null}
+        {canRenameSession && canDeleteSession ? <ContextMenuSeparator /> : null}
+        {canDeleteSession ? (
+          <ContextMenuItem
+            variant="destructive"
+            disabled={deleteSessionBusy || busy}
+            title={busy ? t("sidebar.cannotDeleteBusySession") : undefined}
+            onSelect={() => {
+              const session = contextMenuSessionRef.current ?? contextMenuSession;
+              if (session) {
+                onRequestDelete(session);
+              }
+            }}
+          >
+            <Trash2 aria-hidden />
+            {t("common.delete")}
+          </ContextMenuItem>
+        ) : null}
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -760,30 +904,38 @@ function SessionListNav({
 
 type WorkspaceListNavProps = {
   canDeleteWorkspace: boolean;
+  canRenameSession: boolean;
   canDeleteSession: boolean;
   contextMenuWorkspaceGroup: SessionWorkspaceGroup | null;
   contextMenuWorkspaceGroupRef: RefObject<SessionWorkspaceGroup | null>;
   contextMenuSession: SessionListItem | null;
   contextMenuSessionRef: RefObject<SessionListItem | null>;
   deleteWorkspaceBusy?: boolean;
+  renameSessionBusy?: boolean;
   deleteSessionBusy?: boolean;
   onContextMenuCapture(event: MouseEvent<HTMLElement>): void;
+  onContextMenuCloseAutoFocus(event: Event): void;
   onRequestDeleteWorkspace(group: SessionWorkspaceGroup): void;
+  onRequestRenameSession(session: SessionListItem): void;
   onRequestDeleteSession(session: SessionListItem): void;
   children: ReactNode;
 };
 
 function WorkspaceListNav({
   canDeleteWorkspace,
+  canRenameSession,
   canDeleteSession,
   contextMenuWorkspaceGroup,
   contextMenuWorkspaceGroupRef,
   contextMenuSession,
   contextMenuSessionRef,
   deleteWorkspaceBusy,
+  renameSessionBusy,
   deleteSessionBusy,
   onContextMenuCapture,
+  onContextMenuCloseAutoFocus,
   onRequestDeleteWorkspace,
+  onRequestRenameSession,
   onRequestDeleteSession,
   children,
 }: WorkspaceListNavProps) {
@@ -791,7 +943,8 @@ function WorkspaceListNav({
   const { api, kind, ready: hostReady } = useHostApi();
   const canOpenWorkspaceDirectory = kind === "electron" && hostReady && api != null;
 
-  const canShowMenu = canDeleteWorkspace || canDeleteSession || canOpenWorkspaceDirectory;
+  const canShowMenu =
+    canDeleteWorkspace || canRenameSession || canDeleteSession || canOpenWorkspaceDirectory;
 
   const inner = (
     <div
@@ -819,7 +972,10 @@ function WorkspaceListNav({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{inner}</ContextMenuTrigger>
-      <ContextMenuContent aria-label={isWorkspaceTarget ? t("sidebar.workspaceActions") : t("sidebar.sessionActions")}>
+      <ContextMenuContent
+        aria-label={isWorkspaceTarget ? t("sidebar.workspaceActions") : t("sidebar.sessionActions")}
+        onCloseAutoFocus={onContextMenuCloseAutoFocus}
+      >
         {showOpenWorkspaceDirectory ? (
           <ContextMenuItem
             onSelect={() => {
@@ -849,6 +1005,24 @@ function WorkspaceListNav({
             <Trash2 aria-hidden />
             {t("common.delete")}
           </ContextMenuItem>
+        ) : null}
+        {!isWorkspaceTarget && canRenameSession ? (
+          <ContextMenuItem
+            disabled={renameSessionBusy || sessionBusy}
+            title={sessionBusy ? t("sidebar.cannotRenameBusySession") : undefined}
+            onSelect={() => {
+              const session = contextMenuSessionRef.current ?? contextMenuSession;
+              if (session) {
+                onRequestRenameSession(session);
+              }
+            }}
+          >
+            <Pencil aria-hidden />
+            {t("sidebar.renameSession")}
+          </ContextMenuItem>
+        ) : null}
+        {!isWorkspaceTarget && canRenameSession && canDeleteSession ? (
+          <ContextMenuSeparator />
         ) : null}
         {!isWorkspaceTarget && canDeleteSession ? (
           <ContextMenuItem
@@ -1063,6 +1237,8 @@ function SessionSidebarInner({
   sessionNavigationBusy = false,
   deleteSessionBusy = false,
   onDeleteSession,
+  renameSessionBusy = false,
+  onRenameSession,
   deleteWorkspaceBusy = false,
   onDeleteWorkspace,
   disabled,
@@ -1132,6 +1308,11 @@ function SessionSidebarInner({
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
   const [contextMenuWorkspaceGroup, setContextMenuWorkspaceGroup] = useState<SessionWorkspaceGroup | null>(null);
   const contextMenuWorkspaceGroupRef = useRef<SessionWorkspaceGroup | null>(null);
+  const [renamingSessionPath, setRenamingSessionPath] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState("");
+  const renameCommitInFlightRef = useRef(false);
+  const pendingRenameFocusPathRef = useRef<string | null>(null);
   const scrollFadeRegionRef = useRef<HTMLDivElement>(null);
   const [scrollEdgeFades, setScrollEdgeFades] = useState<SidebarScrollEdgeFades>({
     top: false,
@@ -1145,6 +1326,7 @@ function SessionSidebarInner({
     return map;
   }, [sessions]);
   const canDeleteSession = Boolean(onDeleteSession) && !disabled;
+  const canRenameSession = Boolean(onRenameSession) && !disabled;
   const canDeleteWorkspace = Boolean(onDeleteWorkspace) && !disabled;
   const workspaceSectionSessionCount = useMemo(
     () => workspaceGroups.reduce((total, group) => total + group.sessions.length, 0),
@@ -1259,6 +1441,70 @@ function SessionSidebarInner({
     setContextMenuSession(null);
     setDeleteTarget(session);
     setDeleteSessionDialogOpen(true);
+  }, []);
+
+  const handleRenameCancel = useCallback(() => {
+    setRenamingSessionPath(null);
+    setRenameValue("");
+    setRenameError("");
+  }, []);
+
+  const handleRenameStart = useCallback((session: SessionListItem) => {
+    if (session.isBusy) {
+      return;
+    }
+    setRenamingSessionPath(session.path);
+    setRenameValue(session.displayName);
+    setRenameError("");
+  }, []);
+
+  const handleRenameCommit = useCallback(async () => {
+    if (renameCommitInFlightRef.current) {
+      return;
+    }
+    if (!renamingSessionPath || !onRenameSession) {
+      handleRenameCancel();
+      return;
+    }
+    const trimmed = renameValue.trim();
+    const session = sessionByPath.get(renamingSessionPath);
+    if (!trimmed || trimmed === session?.displayName) {
+      handleRenameCancel();
+      return;
+    }
+    renameCommitInFlightRef.current = true;
+    try {
+      await onRenameSession(renamingSessionPath, trimmed);
+      handleRenameCancel();
+    } catch (error) {
+      setRenameError(describeRenameError(error));
+    } finally {
+      renameCommitInFlightRef.current = false;
+    }
+  }, [
+    handleRenameCancel,
+    onRenameSession,
+    renameValue,
+    renamingSessionPath,
+    sessionByPath,
+  ]);
+
+  const handleRenameStartFromMenu = useCallback(
+    (session: SessionListItem) => {
+      pendingRenameFocusPathRef.current = session.path;
+      handleRenameStart(session);
+      contextMenuSessionRef.current = null;
+      setContextMenuSession(null);
+    },
+    [handleRenameStart],
+  );
+
+  const handleContextMenuCloseAutoFocus = useCallback((event: Event) => {
+    if (!pendingRenameFocusPathRef.current) {
+      return;
+    }
+    event.preventDefault();
+    pendingRenameFocusPathRef.current = null;
   }, []);
 
   const isSessionSelected = (sessionPath: string) =>
@@ -1633,15 +1879,19 @@ function SessionSidebarInner({
                 >
                   <WorkspaceListNav
                     canDeleteWorkspace={canDeleteWorkspace}
+                    canRenameSession={canRenameSession}
                     canDeleteSession={canDeleteSession}
                     contextMenuWorkspaceGroup={contextMenuWorkspaceGroup}
                     contextMenuWorkspaceGroupRef={contextMenuWorkspaceGroupRef}
                     contextMenuSession={contextMenuSession}
                     contextMenuSessionRef={contextMenuSessionRef}
                     deleteWorkspaceBusy={deleteWorkspaceBusy}
+                    renameSessionBusy={renameSessionBusy}
                     deleteSessionBusy={deleteSessionBusy}
                     onContextMenuCapture={handleWorkspaceContextMenuCapture}
+                    onContextMenuCloseAutoFocus={handleContextMenuCloseAutoFocus}
                     onRequestDeleteWorkspace={handleWorkspaceContextMenuDelete}
+                    onRequestRenameSession={handleRenameStartFromMenu}
                     onRequestDeleteSession={handleContextMenuDelete}
                   >
                     {workspaceGroups.map((group) => {
@@ -1671,6 +1921,13 @@ function SessionSidebarInner({
                           onLoadMore={() => loadMoreWorkspaceGroupSessions(group.id, group.sessions.length)}
                           onNewSessionInWorkspace={onNewSessionInWorkspace}
                           newSessionBusy={newSessionBusy}
+                          renamingSessionPath={renamingSessionPath}
+                          renameValue={renameValue}
+                          onRenameValueChange={setRenameValue}
+                          onRenameCommit={() => void handleRenameCommit()}
+                          onRenameCancel={handleRenameCancel}
+                          onRenameStart={handleRenameStart}
+                          canRenameSession={canRenameSession}
                           groupNodeRef={(node) => workspaceGroupReorder.registerGroupNode(group.id, node)}
                           headerPointerHandlers={workspaceGroupReorder.getHeaderPointerHandlers(group.id)}
                           onHeaderClickCapture={workspaceGroupReorder.handleHeaderClickCapture}
@@ -1688,12 +1945,16 @@ function SessionSidebarInner({
               ) : null}
               <SessionListNav
                 ariaLabel={t('sidebar.workspaceSessionsAria')}
+                canRenameSession={canRenameSession}
                 canDeleteSession={canDeleteSession}
                 contextMenuSession={contextMenuSession}
                 contextMenuSessionRef={contextMenuSessionRef}
+                renameSessionBusy={renameSessionBusy}
                 deleteSessionBusy={deleteSessionBusy}
                 onSessionContextMenuCapture={handleSessionContextMenuCapture}
                 onContextMenuOpenChange={handleContextMenuOpenChange}
+                onContextMenuCloseAutoFocus={handleContextMenuCloseAutoFocus}
+                onRequestRename={handleRenameStartFromMenu}
                 onRequestDelete={handleContextMenuDelete}
               >
                 {unboundSessions.length > 0 ? (
@@ -1735,6 +1996,16 @@ function SessionSidebarInner({
                               disabled={disabled}
                               micaStyle={micaStyle}
                               onSelectPath={onSelectSession}
+                              renaming={renamingSessionPath === session.path}
+                              renameValue={renamingSessionPath === session.path ? renameValue : undefined}
+                              onRenameValueChange={setRenameValue}
+                              onRenameCommit={() => void handleRenameCommit()}
+                              onRenameCancel={handleRenameCancel}
+                              onRenameStart={
+                                canRenameSession && !session.isBusy
+                                  ? () => handleRenameStart(session)
+                                  : undefined
+                              }
                             />
                           </SessionListGitTooltip.Row>
                         ))}
