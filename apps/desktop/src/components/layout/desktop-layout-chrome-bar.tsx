@@ -104,7 +104,7 @@ export function DesktopLayoutChromeBar({
       }}
       onDragEnd={() => onPaneDragLeave?.()}
       className={cn(
-        "flex h-8 shrink-0 items-center gap-2 px-1.5",
+        "flex h-8 shrink-0 items-center gap-2 px-2",
         showTrailingActions ? "justify-between" : "justify-start",
         desktopMicaTintClass(useMicaBackdrop),
         paneDragEnabled && "cursor-grab active:cursor-grabbing",
