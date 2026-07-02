@@ -42,6 +42,8 @@ import type {
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
   CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
+  SyncSplitPaneSessionsRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -329,6 +331,12 @@ export function createWebHostApi(): HostApi {
     },
     setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/visible', request);
+    },
+    syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/sync', request);
+    },
+    focusPaneSession(request: FocusPaneSessionRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/focus', request);
     },
     closeSplitPaneSession(request: CloseSplitPaneSessionRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/close', request);

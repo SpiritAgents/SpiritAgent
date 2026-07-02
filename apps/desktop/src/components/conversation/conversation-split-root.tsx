@@ -22,11 +22,19 @@ type ConversationSplitRootProps = {
     sessionPath: string;
     isFocused: boolean;
     isAnchorPane: boolean;
+    useIsolatedPane: boolean;
+    splitPaneCount: number;
     onFocusPane: () => void;
-  onSplit: () => void;
-  onSplitVertical: () => void;
-  onClosePane: () => void;
+    onSplit: () => void;
+    onSplitVertical: () => void;
+    onClosePane: () => void;
     showClosePane: boolean;
+    paneReorderEnabled: boolean;
+    onPaneDragStart: (paneId: string) => void;
+    onPaneDragLeave: () => void;
+    onPaneDrop: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneDropZone) => void;
+    paneDropOverlayActive: boolean;
+    paneDragSourcePaneId: string | null;
   }) => ReactNode;
 };
 
@@ -139,6 +147,7 @@ function SplitLayoutRenderer({
   if (node.kind === "leaf") {
     const isFocused = split.focusedPaneId === node.paneId;
     const isAnchorPane = split.anchorPaneId === node.paneId;
+    const paneReorderEnabled = split.paneCount > 1;
     return (
       <>
         {renderPane({
@@ -146,6 +155,8 @@ function SplitLayoutRenderer({
           sessionPath: node.sessionPath,
           isFocused,
           isAnchorPane,
+          useIsolatedPane: split.paneCount > 1,
+          splitPaneCount: split.paneCount,
           onFocusPane: () => split.focusPane(node.paneId, node.sessionPath),
           onSplit: () => {
             void split.splitPane(node.paneId, "horizontal");
@@ -157,6 +168,12 @@ function SplitLayoutRenderer({
             void split.closePaneById(node.paneId, node.sessionPath);
           },
           showClosePane: split.paneCount > 1,
+          paneReorderEnabled,
+          onPaneDragStart: split.startPaneDrag,
+          onPaneDragLeave: split.clearPaneDrag,
+          onPaneDrop: split.completePaneDrop,
+          paneDropOverlayActive: split.paneDragActive,
+          paneDragSourcePaneId: split.paneDragSourcePaneId,
         })}
       </>
     );

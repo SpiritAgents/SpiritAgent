@@ -1,4 +1,5 @@
-import { useConversationSplit } from "@/contexts/conversation-split-context";
+import { memo } from "react";
+
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationPaneController } from "@/hooks/useConversationPaneController";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
@@ -6,6 +7,7 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import type { PaneDropZone } from "@/lib/conversation-split-layout";
+import { paneHostRenderSignature } from "@/lib/pane-desktop-snapshot";
 import type { DesktopSnapshot } from "@/types";
 import type { TFunction } from "i18next";
 
@@ -21,8 +23,11 @@ export type ConversationPaneHostProps = {
   paneId: string;
   isFocused: boolean;
   isAnchorPane: boolean;
+  useIsolatedPane: boolean;
+  splitPaneCount: number;
   onFocusPane: () => void;
   onSplit: () => void;
+  onSplitVertical: () => void;
   onClosePane: () => void;
   showClosePane: boolean;
   useMicaBackdrop: boolean;
@@ -37,38 +42,46 @@ export type ConversationPaneHostProps = {
   workspaceTools: WorkspaceTools;
   onOpenIntegrationsSettings: () => void;
   onCompactionDemoStop: () => void;
+  paneReorderEnabled: boolean;
+  onPaneDragStart?: (paneId: string) => void;
+  onPaneDragLeave?: () => void;
+  onPaneDrop?: (targetPaneId: string, zone: PaneDropZone) => void;
+  paneDropOverlayActive: boolean;
+  paneDragSourcePaneId: string | null;
   t: TFunction;
   language: string;
 };
 
-export function ConversationPaneHost({
+function ConversationPaneHostInner({
   sessionPath,
   paneId,
   isFocused,
   isAnchorPane,
+  useIsolatedPane,
+  splitPaneCount,
   onFocusPane,
   onSplit,
   onSplitVertical,
   onClosePane,
   showClosePane,
   useMicaBackdrop,
+  paneReorderEnabled,
+  onPaneDragStart,
+  onPaneDragLeave,
+  onPaneDrop,
+  paneDropOverlayActive,
+  paneDragSourcePaneId,
   ...controllerInput
 }: ConversationPaneHostProps) {
-  const split = useConversationSplit();
   const pane = useConversationPaneController({
     ...controllerInput,
     sessionPath,
     isFocused,
     isAnchorPane,
-    useIsolatedPane: split.paneCount > 1,
-    splitPaneCount: split.paneCount,
-    layoutNavigationPending: split.layoutNavigationPending,
+    useIsolatedPane,
+    splitPaneCount,
+    layoutNavigationPending: controllerInput.runtime.layoutNavigationPending,
   });
-
-  const handlePaneDrop = (targetPaneId: string, zone: PaneDropZone) => {
-    split.completePaneDrop(targetPaneId, zone);
-  };
-  const paneReorderEnabled = split.paneCount > 1;
 
   return (
     <ConversationView
@@ -78,7 +91,7 @@ export function ConversationPaneHost({
       hideStaleConversationMessages={pane.hideStaleConversationMessages}
       showComposerDock
       showWorkspaceToolsDock={isAnchorPane}
-      showSessionSidebarToggle={split.paneCount <= 1 || !isAnchorPane}
+      showSessionSidebarToggle={splitPaneCount <= 1 || !isAnchorPane}
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
       showClosePane={showClosePane}
@@ -87,11 +100,11 @@ export function ConversationPaneHost({
       onClosePane={onClosePane}
       paneId={paneId}
       onPaneFocus={onFocusPane}
-      onPaneDragStart={paneReorderEnabled ? split.startPaneDrag : undefined}
-      onPaneDragLeave={paneReorderEnabled ? split.clearPaneDrag : undefined}
-      onPaneDrop={paneReorderEnabled ? handlePaneDrop : undefined}
-      paneDropOverlayActive={split.paneDragActive}
-      paneDragSourcePaneId={split.paneDragSourcePaneId}
+      onPaneDragStart={paneReorderEnabled ? onPaneDragStart : undefined}
+      onPaneDragLeave={paneReorderEnabled ? onPaneDragLeave : undefined}
+      onPaneDrop={paneReorderEnabled ? onPaneDrop : undefined}
+      paneDropOverlayActive={paneDropOverlayActive}
+      paneDragSourcePaneId={paneDragSourcePaneId}
       subagentViewActive={pane.subagentViewActive}
       onExitSubagentViewer={pane.onExitSubagentViewer}
       onNewSession={controllerInput.onNewSession}
@@ -107,3 +120,75 @@ export function ConversationPaneHost({
     />
   );
 }
+
+function paneHostPropsEqual(
+  prev: ConversationPaneHostProps,
+  next: ConversationPaneHostProps,
+): boolean {
+  if (prev.isFocused !== next.isFocused) {
+    return false;
+  }
+  if (prev.isAnchorPane !== next.isAnchorPane) {
+    return false;
+  }
+  if (prev.sessionPath !== next.sessionPath) {
+    return false;
+  }
+  if (prev.sessionNavigationBusy !== next.sessionNavigationBusy) {
+    return false;
+  }
+  if (prev.newSessionBusy !== next.newSessionBusy) {
+    return false;
+  }
+  if (prev.hideStaleConversationMessages !== next.hideStaleConversationMessages) {
+    return false;
+  }
+  if (prev.subagentViewActive !== next.subagentViewActive) {
+    return false;
+  }
+  if (
+    (prev.compactionDemo.active && prev.isFocused)
+    !== (next.compactionDemo.active && next.isFocused)
+  ) {
+    return false;
+  }
+  if (prev.showClosePane !== next.showClosePane) {
+    return false;
+  }
+  if (prev.useMicaBackdrop !== next.useMicaBackdrop) {
+    return false;
+  }
+  if (prev.language !== next.language) {
+    return false;
+  }
+  if (prev.useIsolatedPane !== next.useIsolatedPane) {
+    return false;
+  }
+  if (
+    (!prev.useIsolatedPane || !next.useIsolatedPane)
+    && prev.splitPaneCount !== next.splitPaneCount
+  ) {
+    return false;
+  }
+  if (prev.paneReorderEnabled !== next.paneReorderEnabled) {
+    return false;
+  }
+  if (prev.paneDropOverlayActive !== next.paneDropOverlayActive) {
+    return false;
+  }
+  if (prev.paneDragSourcePaneId !== next.paneDragSourcePaneId) {
+    return false;
+  }
+  if (prev.runtime.layoutNavigationPending !== next.runtime.layoutNavigationPending) {
+    return false;
+  }
+  if (prev.runtime.busyAction !== next.runtime.busyAction) {
+    return false;
+  }
+  return (
+    paneHostRenderSignature(prev.baseSnapshot, prev.sessionPath)
+    === paneHostRenderSignature(next.baseSnapshot, next.sessionPath)
+  );
+}
+
+export const ConversationPaneHost = memo(ConversationPaneHostInner, paneHostPropsEqual);

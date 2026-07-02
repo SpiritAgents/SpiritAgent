@@ -75,3 +75,54 @@ export function resolvePaneIsEmptySession(
   }
   return paneSnapshot.conversation.messages.length === 0;
 }
+
+/** Stable per-pane render key: skip React re-render when this pane's projected data is unchanged. */
+export function paneHostRenderSignature(
+  snapshot: DesktopSnapshot | null,
+  sessionPath: string,
+): string {
+  if (!snapshot) {
+    return `${sessionPath}:null`;
+  }
+  const target = normalizeSessionPathKey(sessionPath);
+  const activeKey = snapshot.activeSession?.filePath
+    ? normalizeSessionPathKey(snapshot.activeSession.filePath)
+    : "";
+  const isForeground = Boolean(activeKey && target === activeKey);
+  if (isForeground) {
+    const conv = snapshot.conversation;
+    return [
+      "fg",
+      sessionPath,
+      snapshot.composerSessionKey,
+      conv.revision ?? 0,
+      conv.messages.length,
+      conv.isBusy ? 1 : 0,
+      snapshot.activeSession?.filePath ?? "",
+      snapshot.activeSession?.displayName ?? "",
+      snapshot.git.selectedBranch ?? snapshot.git.branch ?? "",
+      snapshot.git.workLocation ?? "",
+      snapshot.git.isRepository ? 1 : 0,
+      Boolean(conv.pendingToolApproval),
+      Boolean(conv.pendingQuestions),
+    ].join("\0");
+  }
+  const slice = lookupPaneSessionSlice(snapshot, sessionPath);
+  if (!slice) {
+    return `${sessionPath}:missing`;
+  }
+  const conv = slice.conversation;
+  return [
+    "bg",
+    sessionPath,
+    slice.composerSessionKey,
+    conv.revision ?? 0,
+    conv.messages.length,
+    conv.isBusy ? 1 : 0,
+    slice.activeSession?.filePath ?? "",
+    slice.activeSession?.displayName ?? "",
+    slice.isForegroundActive ? 1 : 0,
+    Boolean(conv.pendingToolApproval),
+    Boolean(conv.pendingQuestions),
+  ].join("\0");
+}

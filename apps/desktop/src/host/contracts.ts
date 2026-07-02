@@ -93,6 +93,8 @@ export type HostCommandName =
   | 'openSession'
   | 'beginSplitPaneSession'
   | 'setVisiblePaneSessions'
+  | 'syncSplitPaneSessions'
+  | 'focusPaneSession'
   | 'closeSplitPaneSession'
   | 'deleteSession'
   | 'listWorkspaceFileReferenceSuggestions'

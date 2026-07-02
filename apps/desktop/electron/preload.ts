@@ -253,6 +253,12 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   setVisiblePaneSessions(request: { sessionPaths: string[] }) {
     return ipcRenderer.invoke('desktop:invoke', 'setVisiblePaneSessions', { request });
   },
+  syncSplitPaneSessions(request: { sessionPaths: string[]; focusSessionPath?: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'syncSplitPaneSessions', { request });
+  },
+  focusPaneSession(request: { sessionPath: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'focusPaneSession', { request });
+  },
   closeSplitPaneSession(request: { sessionPath: string }) {
     return ipcRenderer.invoke('desktop:invoke', 'closeSplitPaneSession', { request });
   },

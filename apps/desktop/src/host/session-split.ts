@@ -4,10 +4,13 @@ import type {
   BeginSplitPaneSessionRequest,
   CloseSplitPaneSessionRequest,
   DesktopSnapshot,
+  FocusPaneSessionRequest,
+  SyncSplitPaneSessionsRequest,
   SetVisiblePaneSessionsRequest,
 } from '../types.js';
 import {
   ensureStoredSessionBundleRegistered,
+  finishSessionActivationCommand,
   type SessionActivationContext,
 } from './session-activation.js';
 import { isProvisionalSessionPath, isSplitProvisionalSessionPath, parseSplitPaneIdFromSessionPath, splitPaneSessionPath } from './storage.js';
@@ -55,7 +58,7 @@ async function ensureActiveFromVisiblePanePaths(
 export async function beginSplitPaneSessionCommand(
   ctx: SessionSplitHostContext,
   request: BeginSplitPaneSessionRequest,
-): Promise<{ sessionPath: string; snapshot: DesktopSnapshot }> {
+): Promise<{ sessionPath: string; snapshot?: DesktopSnapshot }> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const paneId = request.paneId.trim();
@@ -65,11 +68,22 @@ export async function beginSplitPaneSessionCommand(
 
     const state = ctx.requireState();
     const sessionPath = path.resolve(splitPaneSessionPath(paneId));
+    const registry = ctx.sessionRegistry();
+
+    if (request.deferSnapshot) {
+      registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+      await ctx.finalizeTodoScopeForNewActiveBundle(
+        registry.findBySessionPath(sessionPath)!,
+        state.workspaceRoot,
+      );
+      return { sessionPath };
+    }
+
     const visible = new Set(ctx.visiblePaneSessionPaths());
     visible.add(sessionPath);
     ctx.setVisiblePaneSessionPaths([...visible]);
 
-    ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
+    registry.beginSplitPaneSession(state.workspaceRoot, paneId);
     await ctx.finalizeTodoScopeForNewActiveBundle(
       ctx.sessionRegistry().findBySessionPath(sessionPath)!,
       state.workspaceRoot,
@@ -82,42 +96,64 @@ export async function beginSplitPaneSessionCommand(
   });
 }
 
+async function registerVisiblePaneSessions(
+  ctx: SessionSplitHostContext,
+  normalized: readonly string[],
+): Promise<void> {
+  const state = ctx.requireState();
+  const registry = ctx.sessionRegistry();
+
+  ctx.setVisiblePaneSessionPaths(normalized);
+
+  for (const sessionPath of normalized) {
+    if (!isSplitProvisionalSessionPath(sessionPath)) {
+      continue;
+    }
+    if (registry.findBySessionPath(sessionPath)) {
+      continue;
+    }
+    const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
+    if (!paneId) {
+      continue;
+    }
+    registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+  }
+
+  for (const sessionPath of normalized) {
+    try {
+      await ensureStoredSessionBundleRegistered(ctx, sessionPath);
+    } catch {
+      // Persisted layout may reference a deleted session file.
+    }
+  }
+
+  for (const sessionPath of normalized) {
+    if (!isSplitProvisionalSessionPath(sessionPath)) {
+      continue;
+    }
+    if (registry.findBySessionPath(sessionPath)) {
+      continue;
+    }
+    const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
+    if (!paneId) {
+      continue;
+    }
+    registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+  }
+}
+
 export async function setVisiblePaneSessionsCommand(
   ctx: SessionSplitHostContext,
   request: SetVisiblePaneSessionsRequest,
 ): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
-    const state = ctx.requireState();
     const normalized = [...new Set(request.sessionPaths.map((entry) => path.resolve(entry)))];
     const registry = ctx.sessionRegistry();
     const activeBefore = registry.getActive();
     const activeIdBefore = registry.activeSessionId();
 
-    // Pin all visible pane paths before registering bundles so eviction cannot drop them mid-sync.
-    ctx.setVisiblePaneSessionPaths(normalized);
-
-    for (const sessionPath of normalized) {
-      if (!isSplitProvisionalSessionPath(sessionPath)) {
-        continue;
-      }
-      if (registry.findBySessionPath(sessionPath)) {
-        continue;
-      }
-      const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
-      if (!paneId) {
-        continue;
-      }
-      registry.beginSplitPaneSession(state.workspaceRoot, paneId);
-    }
-
-    for (const sessionPath of normalized) {
-      try {
-        await ensureStoredSessionBundleRegistered(ctx, sessionPath);
-      } catch {
-        // Persisted layout may reference a deleted session file.
-      }
-    }
+    await registerVisiblePaneSessions(ctx, normalized);
 
     if (
       activeBefore
@@ -128,22 +164,64 @@ export async function setVisiblePaneSessionsCommand(
     }
 
     await ensureActiveFromVisiblePanePaths(ctx, normalized);
-    for (const sessionPath of normalized) {
-      if (!isSplitProvisionalSessionPath(sessionPath)) {
-        continue;
+    return ctx.buildSnapshot();
+  });
+}
+
+/** Register visible pane bundles, optionally focus one path, return a single snapshot. */
+export async function syncSplitPaneSessionsCommand(
+  ctx: SessionSplitHostContext,
+  request: SyncSplitPaneSessionsRequest,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+    const normalized = [...new Set(request.sessionPaths.map((entry) => path.resolve(entry)))];
+    const registry = ctx.sessionRegistry();
+
+    await registerVisiblePaneSessions(ctx, normalized);
+
+    const focusSessionPath = request.focusSessionPath?.trim();
+    if (focusSessionPath) {
+      const resolved = path.resolve(focusSessionPath);
+      const bundle = registry.findBySessionPath(resolved);
+      if (!bundle) {
+        throw new Error('Session not found.');
       }
-      if (registry.findBySessionPath(sessionPath)) {
-        continue;
+      ctx.clearSubagentViewerTarget();
+      if (registry.getActive() !== bundle) {
+        registry.activateExisting(bundle);
+        await finishSessionActivationCommand(ctx, bundle);
       }
-      const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
-      if (!paneId) {
-        continue;
-      }
-      registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+    } else {
+      await ensureActiveFromVisiblePanePaths(ctx, normalized);
     }
 
-    const snapshot = ctx.buildSnapshot();
-    return snapshot;
+    return ctx.buildSnapshot();
+  });
+}
+
+/** Switch foreground bundle within an existing split group without full session navigation. */
+export async function focusPaneSessionCommand(
+  ctx: SessionSplitHostContext,
+  request: FocusPaneSessionRequest,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+    const sessionPath = path.resolve(request.sessionPath.trim());
+    if (!sessionPath) {
+      throw new Error('Split pane session path is required.');
+    }
+    const registry = ctx.sessionRegistry();
+    const bundle = registry.findBySessionPath(sessionPath);
+    if (!bundle) {
+      throw new Error('Session not found.');
+    }
+    ctx.clearSubagentViewerTarget();
+    if (registry.getActive() !== bundle) {
+      registry.activateExisting(bundle);
+      await finishSessionActivationCommand(ctx, bundle);
+    }
+    return ctx.buildSnapshot();
   });
 }
 

@@ -51,7 +51,9 @@ import type {
   SubmitUserTurnRequest,
   BeginSplitPaneSessionRequest,
   SetVisiblePaneSessionsRequest,
+  SyncSplitPaneSessionsRequest,
   CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
   UpdateConfigRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
@@ -143,6 +145,8 @@ export type CommandPayloads = {
   openSession: { path: string };
   beginSplitPaneSession: { request: BeginSplitPaneSessionRequest };
   setVisiblePaneSessions: { request: SetVisiblePaneSessionsRequest };
+  syncSplitPaneSessions: { request: SyncSplitPaneSessionsRequest };
+  focusPaneSession: { request: FocusPaneSessionRequest };
   closeSplitPaneSession: { request: CloseSplitPaneSessionRequest };
   deleteSession: { path: string };
   listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
