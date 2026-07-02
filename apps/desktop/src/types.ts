@@ -691,6 +691,12 @@ export interface SetPaneWorkLocationRequest {
   workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
 }
 
+export interface CheckoutPaneGitBranchRequest {
+  sessionPath: string;
+  branch: string;
+  discardLocalChanges?: boolean;
+}
+
 export interface PaneSessionSlice {
   conversation: ConversationSnapshot;
   activeSession?: ActiveSessionSnapshot;

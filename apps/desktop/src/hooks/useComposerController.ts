@@ -840,6 +840,16 @@ export function useComposerController({
     [isPaneIsolated, paneSessionPath],
   );
 
+  const checkoutBranchForComposer = useCallback(
+    (branch: string, options?: { discardLocalChanges?: boolean }) => {
+      if (isPaneIsolated && paneSessionPath) {
+        return runtime.checkoutPaneGitBranch(paneSessionPath, branch, options);
+      }
+      return runtime.checkoutGitBranch(branch, options);
+    },
+    [isPaneIsolated, paneSessionPath, runtime],
+  );
+
   const submitComposerMessage = useCallback(() => {
     const segs = composerRichInputRef.current?.getSegments() ?? [];
     const fullText = segmentsToMessageText(segs) || composerText;
@@ -893,7 +903,7 @@ export function useComposerController({
         return;
       }
 
-      const result = await runtime.checkoutGitBranch(selectedBranch);
+      const result = await checkoutBranchForComposer(selectedBranch);
       if (result.ok) {
         pendingComposerSendRef.current = null;
         setBranchCheckoutBlockedByChanges(false);
@@ -913,7 +923,7 @@ export function useComposerController({
         setBranchCheckoutBlockedByChanges(true);
       }
     })();
-  }, [runtime, snapshot?.git]);
+  }, [checkoutBranchForComposer, clearPaneComposerDraft, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
 
   const discardBranchChangesAndCheckoutSend = useCallback(() => {
     void (async () => {
@@ -924,7 +934,7 @@ export function useComposerController({
         return;
       }
 
-      const result = await runtime.checkoutGitBranch(selectedBranch, { discardLocalChanges: true });
+      const result = await checkoutBranchForComposer(selectedBranch, { discardLocalChanges: true });
       if (!result.ok) {
         return;
       }
@@ -941,7 +951,7 @@ export function useComposerController({
         }
       });
     })();
-  }, [clearPaneComposerDraft, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [checkoutBranchForComposer, clearPaneComposerDraft, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
 
   const handleBranchCheckoutDialogOpenChange = useCallback((open: boolean) => {
     setBranchCheckoutDialogOpen(open);

@@ -1150,6 +1150,22 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/split/checkout-branch') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('checkoutPaneGitBranch', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+          ...(jsonBody?.discardLocalChanges === true ? { discardLocalChanges: true } : {}),
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/delete') {
     writeJson(
       request,

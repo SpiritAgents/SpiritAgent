@@ -82,6 +82,7 @@ import type {
   SwitchPaneModelRequest,
   SetPanePendingGitBranchRequest,
   SetPaneWorkLocationRequest,
+  CheckoutPaneGitBranchRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -226,6 +227,7 @@ export interface HostApi {
   switchPaneModel(request: SwitchPaneModelRequest): Promise<DesktopSnapshot>;
   setPanePendingGitBranch(request: SetPanePendingGitBranchRequest): Promise<DesktopSnapshot>;
   setPaneWorkLocation(request: SetPaneWorkLocationRequest): Promise<DesktopSnapshot>;
+  checkoutPaneGitBranch(request: CheckoutPaneGitBranchRequest): Promise<DesktopSnapshot>;
   deleteSession(path: string): Promise<DesktopSnapshot>;
   listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,

@@ -8,9 +8,10 @@ import type {
   DesktopSnapshot,
   SetPanePendingGitBranchRequest,
   SetPaneWorkLocationRequest,
+  CheckoutPaneGitBranchRequest,
   SwitchPaneWorkspaceRequest,
 } from '../types.js';
-import { applyGitRevision, readWorkspaceGitSnapshot } from './git.js';
+import { applyGitRevision, checkoutWorkspaceGitBranch, readWorkspaceGitSnapshot } from './git.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionSplitHostContext } from './session-split.js';
 import {
@@ -368,6 +369,72 @@ export async function setPaneWorkLocationCommand(
     bundle.workLocation = workLocation;
     if (bundle.scopedGit) {
       bundle.scopedGit = { ...bundle.scopedGit, workLocation };
+    }
+
+    ctx.invalidatePaneSessionSliceCache(sessionPath);
+    if (!isForeground) {
+      await ensureVisiblePaneScopedGitSnapshots(ctx);
+      ctx.invalidateAllPaneSessionSliceCache();
+    }
+
+    return ctx.buildSnapshot();
+  });
+}
+
+export async function checkoutPaneGitBranchCommand(
+  ctx: PaneWorkspaceHostContext,
+  request: CheckoutPaneGitBranchRequest,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+
+    const sessionPath = path.resolve(request.sessionPath.trim());
+    if (!sessionPath) {
+      throw new Error('Split pane session path is required.');
+    }
+
+    const normalized = request.branch.trim();
+    if (!normalized) {
+      throw new Error(i18n.t('error.branchNameRequired'));
+    }
+
+    const state = ctx.requireState();
+    const registry = ctx.sessionRegistry();
+    const bundle = registry.findBySessionPath(sessionPath);
+    if (!bundle) {
+      throw new Error('Session not found.');
+    }
+    if (bundle.runtime?.isBusy()) {
+      throw new Error(i18n.t('error.runtimeBusy'));
+    }
+
+    const git = await resolvePaneGitSnapshotForMutation(ctx, bundle);
+    if (!git.isRepository) {
+      throw new Error(i18n.t('error.notGitRepo'));
+    }
+    if (!git.branches.includes(normalized)) {
+      throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
+    }
+
+    const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
+    const checkedOut = await checkoutWorkspaceGitBranch(workspaceRoot, normalized, {
+      discardLocalChanges: request.discardLocalChanges === true,
+    });
+    bundle.pendingGitBranch = undefined;
+
+    const isForeground = registry.getActive() === bundle;
+    if (isForeground) {
+      bundle.scopedGit = undefined;
+      state.git = applyGitRevision(checkedOut, state.git.revision ?? 0);
+      await ctx.refreshRuntimeForBundle(bundle);
+      ctx.syncActiveRuntimePointer();
+    } else {
+      bundle.scopedGit = applyGitRevision(
+        checkedOut,
+        bundle.scopedGit?.revision ?? 0,
+        { reset: true },
+      );
+      await ctx.refreshRuntimeForBundle(bundle);
     }
 
     ctx.invalidatePaneSessionSliceCache(sessionPath);

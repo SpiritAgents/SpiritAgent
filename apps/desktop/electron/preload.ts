@@ -281,6 +281,13 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   }) {
     return ipcRenderer.invoke('desktop:invoke', 'setPaneWorkLocation', { request });
   },
+  checkoutPaneGitBranch(request: {
+    sessionPath: string;
+    branch: string;
+    discardLocalChanges?: boolean;
+  }) {
+    return ipcRenderer.invoke('desktop:invoke', 'checkoutPaneGitBranch', { request });
+  },
   deleteSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'deleteSession', { path });
   },

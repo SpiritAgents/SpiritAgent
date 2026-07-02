@@ -154,6 +154,9 @@ declare global {
     setPaneWorkLocation(
       request: import('./types').SetPaneWorkLocationRequest,
     ): Promise<DesktopSnapshot>;
+    checkoutPaneGitBranch(
+      request: import('./types').CheckoutPaneGitBranchRequest,
+    ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,
