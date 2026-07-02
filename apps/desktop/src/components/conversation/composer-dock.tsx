@@ -68,6 +68,13 @@ export type ComposerDockProps = {
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   showPendingQuestionsInComposer: boolean;
   pendingQuestions: DesktopSnapshot["conversation"]["pendingQuestions"];
+  questionDrafts?: Record<string, import("@/hooks/useDesktopRuntime").QuestionDraft>;
+  onUpdateQuestionDraft?: (
+    questionId: string,
+    updater: (draft: import("@/hooks/useDesktopRuntime").QuestionDraft) => import("@/hooks/useDesktopRuntime").QuestionDraft,
+  ) => void;
+  onSubmitQuestions?: () => void;
+  onSkipQuestions?: () => void;
   fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
@@ -129,6 +136,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     pendingApproval,
     showPendingQuestionsInComposer,
     pendingQuestions,
+    questionDrafts: questionDraftsOverride,
+    onUpdateQuestionDraft,
+    onSubmitQuestions,
+    onSkipQuestions,
     fileReferenceSuggestions,
     fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange,
@@ -352,11 +363,23 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
           {showPendingQuestionsInComposer && pendingQuestions ? (
             <PendingQuestionsCard
               pendingQuestions={pendingQuestions}
-              questionDrafts={runtime.questionDrafts}
+              questionDrafts={questionDraftsOverride ?? runtime.questionDrafts}
               questionsBusy={runtime.busyAction === "questions"}
-              onUpdateDraft={runtime.updateQuestionDraft}
-              onSubmitQuestions={() => void runtime.submitQuestions(questionsSessionPath, pendingQuestions)}
-              onSkipQuestions={() => void runtime.skipQuestions(questionsSessionPath, pendingQuestions)}
+              onUpdateDraft={onUpdateQuestionDraft ?? runtime.updateQuestionDraft}
+              onSubmitQuestions={() => {
+                if (onSubmitQuestions) {
+                  onSubmitQuestions();
+                  return;
+                }
+                void runtime.submitQuestions(questionsSessionPath, pendingQuestions);
+              }}
+              onSkipQuestions={() => {
+                if (onSkipQuestions) {
+                  onSkipQuestions();
+                  return;
+                }
+                void runtime.skipQuestions(questionsSessionPath, pendingQuestions);
+              }}
             />
           ) : null}
 

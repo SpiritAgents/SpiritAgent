@@ -244,6 +244,14 @@ export function useConversationPaneController({
     pendingApproval: conversation.pendingApproval,
     showPendingQuestionsInComposer: conversation.showPendingQuestionsInComposer,
     pendingQuestions: conversation.pendingQuestions,
+    ...(composer.paneQuestionControls
+      ? {
+          questionDrafts: composer.paneQuestionControls.questionDrafts,
+          onUpdateQuestionDraft: composer.paneQuestionControls.onUpdateQuestionDraft,
+          onSubmitQuestions: composer.paneQuestionControls.onSubmitQuestions,
+          onSkipQuestions: composer.paneQuestionControls.onSkipQuestions,
+        }
+      : {}),
     fileReferenceSuggestions: composer.fileReferenceSuggestions,
     fileReferenceSelectedIndex: composer.fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange: composer.setFileReferenceSelectedIndex,

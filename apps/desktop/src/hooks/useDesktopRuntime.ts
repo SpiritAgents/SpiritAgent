@@ -2772,13 +2772,14 @@ export function useDesktopRuntime() {
   const submitQuestions = useCallback(async (
     sessionPath?: string,
     questionsSource?: typeof pendingQuestions,
+    draftsSource?: Record<string, QuestionDraft>,
   ) => {
     const effectiveQuestions = questionsSource ?? pendingQuestions;
     if (!api || !effectiveQuestions) {
       return;
     }
 
-    const built = buildAskQuestionsResult(effectiveQuestions.request, questionDrafts);
+    const built = buildAskQuestionsResult(effectiveQuestions.request, draftsSource ?? questionDrafts);
     if (!built.result) {
       setQuestionError(built.error ?? i18n.t('error.completeQuestionnaire'));
       return;
