@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
@@ -77,6 +77,7 @@ export function ConversationPaneHost({
   paneDragSourcePaneId,
   ...controllerInput
 }: ConversationPaneHostProps) {
+  const split = useConversationSplit();
   const pane = useConversationPaneController({
     ...controllerInput,
     sessionPath,
@@ -87,7 +88,15 @@ export function ConversationPaneHost({
     layoutNavigationPending: controllerInput.runtime.layoutNavigationPending,
   });
 
-  const split = useConversationSplit();
+  useEffect(() => {
+    if (!isFocused) {
+      return;
+    }
+    split.setFocusedPaneComposerInsert(pane.composerInsertHandlers);
+    return () => {
+      split.setFocusedPaneComposerInsert(null);
+    };
+  }, [isFocused, pane.composerInsertHandlers, split]);
   const handleDeleteSession = useCallback(
     async (path: string) => {
       if (splitPaneCount > 1) {
