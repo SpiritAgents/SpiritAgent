@@ -2,13 +2,10 @@ import { useCallback, useRef } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
   DragEvent as ReactDragEvent,
-  ComponentProps,
   ComponentRef,
-  Dispatch,
   KeyboardEvent as ReactKeyboardEvent,
   Ref,
   RefObject,
-  SetStateAction,
 } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -17,10 +14,6 @@ import { ConversationList } from "@/components/conversation/conversation-list";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  WorkspaceToolsDock,
-  type WorkspaceToolTab,
-} from "@/components/workspace-tools-panel";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
@@ -29,7 +22,7 @@ import {
   CONVERSATION_MAX_W,
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
-import type { EditorFileTarget, WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
+import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
@@ -140,61 +133,6 @@ export type ComposerDockSectionProps = {
   onOpenGitTab: () => void;
 };
 
-export type WorkspaceToolsSectionProps = {
-  startImplementingDisabled: boolean;
-  workspaceFilesPlanRevealNonce: number;
-  workspaceFilesPlanRevealTargetId: string | null;
-  workspaceFileRevealNonce: number;
-  workspaceFileRevealTargetId: string | null;
-  workspaceFileRevealPath: string;
-  workspaceFileRevealAbsolutePath: string;
-  workspaceFileRevealScope: EditorFileTarget["scope"];
-  workspaceFileRevealViewMode: WorkspaceEditorViewMode;
-  workspaceFileRevealDirectoryOnly: boolean;
-  workspaceFileRevealLine: number | null;
-  workspaceFileRevealColumn: number | null;
-  workspacePrRevealNonce: number;
-  workspacePrRevealTargetId: string | null;
-  workspacePrRevealRequest: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
-  onOpenWorkspaceFile: (
-    relativePath: string,
-    options?: { viewMode?: WorkspaceEditorViewMode },
-  ) => void;
-  onOpenWorkspaceFileInNewTab: (
-    relativePath: string,
-    options?: { viewMode?: WorkspaceEditorViewMode },
-  ) => void;
-  workspaceToolTabs: WorkspaceToolTab[];
-  activeWorkspaceToolTabId: string;
-  onWorkspaceToolTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
-  onActiveWorkspaceToolTabIdChange: (id: string) => void;
-  onBrowserElementPicked: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onBrowserElementPicked"]
-  >;
-  onPrDiffAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onPrDiffAddToSession"]
-  >;
-  onTerminalAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onTerminalAddToSession"]
-  >;
-  onFileSnippetAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onFileSnippetAddToSession"]
-  >;
-  onWorkspaceFileAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onWorkspaceFileAddToSession"]
-  >;
-  onGitCommitAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onGitCommitAddToSession"]
-  >;
-  onBrowserOpenInNewTab: (rawUrl: string) => void;
-  browserTabEnabled: boolean;
-  prTabEnabled: boolean;
-  onOpenIntegrationsSettings?: () => void;
-  workspaceToolsWidthPx: number;
-  onWorkspaceToolsWidthPxChange: (next: number) => void;
-  gitChipBusy: boolean;
-};
-
 export type ConversationViewProps = {
   useMicaBackdrop: boolean;
   isEmptySession: boolean;
@@ -211,9 +149,7 @@ export type ConversationViewProps = {
   conversationScrollBedPaddingPx: number;
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
-  workspaceTools: WorkspaceToolsSectionProps;
   showComposerDock?: boolean;
-  showWorkspaceToolsDock?: boolean;
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle?: boolean;
   showSplitMenu?: boolean;
@@ -247,9 +183,7 @@ export function ConversationView({
   conversationScrollBedPaddingPx,
   list,
   composerDock,
-  workspaceTools,
   showComposerDock = true,
-  showWorkspaceToolsDock = true,
   showSessionSidebarToggle = true,
   showWorkspaceToggle = true,
   showSplitMenu = false,
@@ -353,7 +287,7 @@ export function ConversationView({
   );
 
   return (
-    <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
+    <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
       <div
         ref={dropHostRef}
         data-spirit-surface="conversation-shell"
@@ -597,80 +531,6 @@ export function ConversationView({
         </div>
         </div>
       </div>
-      {showWorkspaceToolsDock ? (
-      <div data-spirit-surface="workspace-dock">
-        <WorkspaceToolsDock
-          useMicaBackdrop={useMicaBackdrop}
-          workspaceRoot={snapshot?.workspaceRoot ?? ""}
-          listExplorerChildren={list.runtime.listWorkspaceExplorerChildren}
-          readWorkspaceTextFile={list.runtime.readWorkspaceTextFile}
-          writeWorkspaceTextFile={list.runtime.writeWorkspaceTextFile}
-          readHostTextFile={list.runtime.readHostTextFile}
-          writeHostTextFile={list.runtime.writeHostTextFile}
-          readManagedImagePreviewDataUrl={list.runtime.readManagedImagePreviewDataUrl}
-          readLocalImagePreviewDataUrl={list.runtime.readLocalImagePreviewDataUrl}
-          plan={snapshot?.plan ?? { path: "", exists: false }}
-          onStartImplementing={() => {
-            composerDock.onComposerAgentModeChange("agent");
-            void list.runtime.submitStartImplementing();
-          }}
-          startImplementingDisabled={
-            workspaceTools.startImplementingDisabled || !snapshot?.plan?.exists
-          }
-          autoRevealPlanNonce={workspaceTools.workspaceFilesPlanRevealNonce}
-          planRevealTabId={workspaceTools.workspaceFilesPlanRevealTargetId}
-          autoRevealFileNonce={workspaceTools.workspaceFileRevealNonce}
-          fileRevealTabId={workspaceTools.workspaceFileRevealTargetId}
-          fileRevealPath={workspaceTools.workspaceFileRevealPath}
-          fileRevealAbsolutePath={workspaceTools.workspaceFileRevealAbsolutePath}
-          fileRevealScope={workspaceTools.workspaceFileRevealScope}
-          fileRevealViewMode={workspaceTools.workspaceFileRevealViewMode}
-          fileRevealDirectoryOnly={workspaceTools.workspaceFileRevealDirectoryOnly}
-          fileRevealLine={workspaceTools.workspaceFileRevealLine}
-          fileRevealColumn={workspaceTools.workspaceFileRevealColumn}
-          searchWorkspaceContent={list.runtime.searchWorkspaceContent}
-          prRevealNonce={workspaceTools.workspacePrRevealNonce}
-          prRevealTabId={workspaceTools.workspacePrRevealTargetId}
-          prRevealRequest={workspaceTools.workspacePrRevealRequest}
-          onOpenWorkspaceFile={workspaceTools.onOpenWorkspaceFile}
-          onOpenWorkspaceFileInNewTab={workspaceTools.onOpenWorkspaceFileInNewTab}
-          tabs={workspaceTools.workspaceToolTabs}
-          activeTabId={workspaceTools.activeWorkspaceToolTabId}
-          onTabsChange={workspaceTools.onWorkspaceToolTabsChange}
-          onActiveTabIdChange={workspaceTools.onActiveWorkspaceToolTabIdChange}
-          onBrowserElementPicked={workspaceTools.onBrowserElementPicked}
-          onPrDiffAddToSession={workspaceTools.onPrDiffAddToSession}
-          onTerminalAddToSession={workspaceTools.onTerminalAddToSession}
-          onFileSnippetAddToSession={workspaceTools.onFileSnippetAddToSession}
-          onWorkspaceFileAddToSession={workspaceTools.onWorkspaceFileAddToSession}
-          onGitCommitAddToSession={workspaceTools.onGitCommitAddToSession}
-          onBrowserOpenInNewTab={workspaceTools.onBrowserOpenInNewTab}
-          browserTabEnabled={workspaceTools.browserTabEnabled}
-          prTabEnabled={workspaceTools.prTabEnabled}
-          onOpenIntegrationsSettings={workspaceTools.onOpenIntegrationsSettings}
-          getGitHubAuthStatus={list.runtime.getGitHubAuthStatus}
-          getGitHubPullRequestForCurrentBranch={list.runtime.getGitHubPullRequestForCurrentBranch}
-          listGitHubPullRequests={list.runtime.listGitHubPullRequests}
-          getGitHubPullRequestTabCounts={list.runtime.getGitHubPullRequestTabCounts}
-          getGitHubPullRequestDetail={list.runtime.getGitHubPullRequestDetail}
-          getGitHubPullRequestConversation={list.runtime.getGitHubPullRequestConversation}
-          getGitHubPullRequestFiles={list.runtime.getGitHubPullRequestFiles}
-          getGitHubPullRequestCommits={list.runtime.getGitHubPullRequestCommits}
-          getGitHubPullRequestChecks={list.runtime.getGitHubPullRequestChecks}
-          mergeGitHubPullRequest={list.runtime.mergeGitHubPullRequest}
-          markGitHubPullRequestReady={list.runtime.markGitHubPullRequestReady}
-          codeCompletionEnabled={snapshot?.codeCompletion?.userEnabled !== false}
-          widthPx={workspaceTools.workspaceToolsWidthPx}
-          onWidthPxChange={workspaceTools.onWorkspaceToolsWidthPxChange}
-          gitSnapshot={snapshot?.git}
-          gitChipBusy={workspaceTools.gitChipBusy}
-          readGitWorkingTree={list.runtime.readGitWorkingTree}
-          readGitHistory={list.runtime.readGitHistory}
-          readGitCommitMessage={list.runtime.readGitCommitMessage}
-          submitGitChip={list.runtime.submitGitChip}
-        />
-      </div>
-      ) : null}
     </div>
   );
 }

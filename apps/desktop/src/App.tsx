@@ -8,6 +8,7 @@ import { AutomationsView } from "@/components/automations-view";
 import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationPaneHost } from "@/components/conversation/conversation-pane-host";
 import { ConversationSplitRoot } from "@/components/conversation/conversation-split-root";
+import { ConversationWorkspaceToolsDock } from "@/components/conversation/conversation-workspace-tools-dock";
 import { ConversationSplitProvider } from "@/contexts/conversation-split-context";
 import { CreateAutomationDialog } from "@/components/create-automation-dialog";
 import { DesktopTitleBar } from "@/components/desktop-title-bar";
@@ -509,12 +510,13 @@ export default function App() {
         {surfaceNav.preserveConversationSurface ? (
           <div
             className={cn(
-              "flex min-h-0 min-w-0 flex-1 flex-col",
+              "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
               desktopMicaTintInnerClass(useMicaBackdrop),
               surfaceNav.settingsMode && "hidden",
             )}
             aria-hidden={surfaceNav.settingsMode}
           >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ConversationSplitProvider runtime={runtime} snapshot={snapshot}>
           <ConversationSplitRoot
             useMicaBackdrop={useMicaBackdrop}
@@ -559,6 +561,16 @@ export default function App() {
             )}
           />
           </ConversationSplitProvider>
+          </div>
+          <ConversationWorkspaceToolsDock
+            useMicaBackdrop={useMicaBackdrop}
+            snapshot={snapshot}
+            runtime={runtime}
+            conversation={conversation}
+            composer={composer}
+            workspaceTools={workspaceTools}
+            onOpenIntegrationsSettings={openIntegrationsSettings}
+          />
           </div>
         ) : null}
         </div>
