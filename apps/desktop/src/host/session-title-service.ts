@@ -20,6 +20,9 @@ export async function applyGeneratedSessionTitle(input: {
       bundle?.activeSession
       && path.resolve(bundle.activeSession.filePath) === resolvedPath
     ) {
+      if (bundle.sessionTitleSource === 'manual') {
+        return;
+      }
       bundle.activeSession.displayName = input.title;
       bundle.sessionTitleSource = 'llm';
       await input.persistBundle(bundle);
@@ -29,7 +32,7 @@ export async function applyGeneratedSessionTitle(input: {
     }
 
     const stored = await loadStoredSession(resolvedPath);
-    if (stored.sessionTitleSource === 'llm') {
+    if (stored.sessionTitleSource === 'llm' || stored.sessionTitleSource === 'manual') {
       return;
     }
     await saveStoredSession(resolvedPath, {

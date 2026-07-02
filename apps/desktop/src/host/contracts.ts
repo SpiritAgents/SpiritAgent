@@ -102,6 +102,7 @@ export type HostCommandName =
   | 'setPaneWorkLocation'
   | 'checkoutPaneGitBranch'
   | 'deleteSession'
+  | 'renameSession'
   | 'listWorkspaceFileReferenceSuggestions'
   | 'requestCodeCompletion'
   | 'abortCodeCompletion'
@@ -133,7 +134,7 @@ export type HostCommandName =
 /** 与 `apps/cli/src/tool_runtime.rs` 中 `ToolRequest` 对齐的宿主工具请求。 */
 export type DesktopToolRequest = HostToolRequest<AskQuestionsQuestionSpec>;
 
-export type SessionTitleSource = 'seed' | 'llm';
+export type SessionTitleSource = 'seed' | 'llm' | 'manual';
 
 export interface StoredDesktopSession {
   chatSchemaVersion: 2;

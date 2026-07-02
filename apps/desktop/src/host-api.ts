@@ -229,6 +229,7 @@ export interface HostApi {
   setPaneWorkLocation(request: SetPaneWorkLocationRequest): Promise<DesktopSnapshot>;
   checkoutPaneGitBranch(request: CheckoutPaneGitBranchRequest): Promise<DesktopSnapshot>;
   deleteSession(path: string): Promise<DesktopSnapshot>;
+  renameSession(path: string, displayName: string): Promise<DesktopSnapshot>;
   listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,
   ): Promise<WorkspaceFileReferenceSuggestionsResponse>;
