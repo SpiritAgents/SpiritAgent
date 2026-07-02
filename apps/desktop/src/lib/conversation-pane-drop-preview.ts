@@ -85,6 +85,34 @@ function visibleZonePair(
   return null;
 }
 
+/**
+ * When two zones are expanded to a half-pane pair, grid cell labels (e.g. below = BR)
+ * no longer match reposition semantics (below = vertical). Map to before/after/above/below.
+ */
+export function effectiveRepositionZone(
+  zone: PaneRepositionZone,
+  visibleZones: readonly PaneRepositionZone[],
+): PaneRepositionZone {
+  const pair = visibleZonePair(visibleZones);
+  if (pair === "left-right") {
+    if (zone === "above" || zone === "before") {
+      return "before";
+    }
+    if (zone === "after" || zone === "below") {
+      return "after";
+    }
+  }
+  if (pair === "top-bottom") {
+    if (zone === "above" || zone === "after") {
+      return "above";
+    }
+    if (zone === "before" || zone === "below") {
+      return "below";
+    }
+  }
+  return zone;
+}
+
 /** Grid classes for the drop hit layer when some zones are hidden. */
 export function paneDropZoneGridLayoutClass(
   visibleZones: readonly PaneRepositionZone[],
