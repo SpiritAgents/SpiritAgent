@@ -1095,12 +1095,17 @@ export function useComposerController({
         runtime.busyAction !== "approve"
       ) {
         event.preventDefault();
-        void runtime.submitApproval({ kind: "allow" });
+        void runtime.submitApproval(
+          { kind: "allow" },
+          isPaneIsolated ? paneSessionPath : undefined,
+        );
       }
     },
     [
       handleComposerAgentModeChange,
       handleComposerSuggestionKeyDown,
+      isPaneIsolated,
+      paneSessionPath,
       pendingApproval,
       runtime,
     ],
