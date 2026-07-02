@@ -65,15 +65,15 @@ export async function beginSplitPaneSessionCommand(
 
     const state = ctx.requireState();
     const sessionPath = path.resolve(splitPaneSessionPath(paneId));
+    const visible = new Set(ctx.visiblePaneSessionPaths());
+    visible.add(sessionPath);
+    ctx.setVisiblePaneSessionPaths([...visible]);
+
     ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
     await ctx.finalizeTodoScopeForNewActiveBundle(
       ctx.sessionRegistry().findBySessionPath(sessionPath)!,
       state.workspaceRoot,
     );
-
-    const visible = new Set(ctx.visiblePaneSessionPaths());
-    visible.add(sessionPath);
-    ctx.setVisiblePaneSessionPaths([...visible]);
 
     return {
       sessionPath,
@@ -93,7 +93,9 @@ export async function setVisiblePaneSessionsCommand(
     const registry = ctx.sessionRegistry();
     const activeBefore = registry.getActive();
     const activeIdBefore = registry.activeSessionId();
-    const registeredPaths: string[] = [];
+
+    // Pin all visible pane paths before registering bundles so eviction cannot drop them mid-sync.
+    ctx.setVisiblePaneSessionPaths(normalized);
 
     for (const sessionPath of normalized) {
       if (!isSplitProvisionalSessionPath(sessionPath)) {
@@ -107,15 +109,11 @@ export async function setVisiblePaneSessionsCommand(
         continue;
       }
       registry.beginSplitPaneSession(state.workspaceRoot, paneId);
-      registeredPaths.push(sessionPath);
     }
 
     for (const sessionPath of normalized) {
       try {
-        const bundle = await ensureStoredSessionBundleRegistered(ctx, sessionPath);
-        if (bundle) {
-          registeredPaths.push(path.resolve(bundle.activeSession?.filePath ?? bundle.id));
-        }
+        await ensureStoredSessionBundleRegistered(ctx, sessionPath);
       } catch {
         // Persisted layout may reference a deleted session file.
       }
@@ -129,8 +127,21 @@ export async function setVisiblePaneSessionsCommand(
       registry.activateExisting(activeBefore);
     }
 
-    ctx.setVisiblePaneSessionPaths(normalized);
     await ensureActiveFromVisiblePanePaths(ctx, normalized);
+    for (const sessionPath of normalized) {
+      if (!isSplitProvisionalSessionPath(sessionPath)) {
+        continue;
+      }
+      if (registry.findBySessionPath(sessionPath)) {
+        continue;
+      }
+      const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
+      if (!paneId) {
+        continue;
+      }
+      registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+    }
+
     const snapshot = ctx.buildSnapshot();
     return snapshot;
   });
