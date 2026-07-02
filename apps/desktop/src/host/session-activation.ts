@@ -1,5 +1,10 @@
 import path from 'node:path';
 
+import {
+  needsHostActiveModelSync,
+  resolveEffectivePaneActiveModel,
+} from './active-model-sync.js';
+
 import type { SessionEndHookInput, SessionStartHookInput } from '@spirit-agent/core';
 
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
@@ -60,6 +65,7 @@ export interface SessionActivationContext {
   ): DesktopMessageTimeline;
   syncPlanStateForBundle(bundle: SessionBundle): Promise<void>;
   syncHostWorkspaceRootToActiveBundle(bundle: SessionBundle): Promise<boolean>;
+  syncHostActiveModelToActiveBundle(bundle: SessionBundle): Promise<boolean>;
   tickSession(bundle: SessionBundle): Promise<void>;
   syncActiveRuntimePointer(): void;
   refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void>;
@@ -297,7 +303,7 @@ export function runtimeActivationSignature(
 ): string {
   const state = ctx.requireState();
   return JSON.stringify({
-    model: state.config.activeModel,
+    model: resolveEffectivePaneActiveModel(bundle, state),
     imageModel: state.config.imageGenerationModel ?? '',
     apiBase: currentApiBase(state.config),
     workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
@@ -331,6 +337,7 @@ export async function finishSessionActivationCommand(
   if (!adoptedWorkspaceRoot) {
     await ctx.syncPlanStateForBundle(bundle);
   }
+  await ctx.syncHostActiveModelToActiveBundle(bundle);
   if (bundle.runtime?.isBusy()) {
     await ctx.tickSession(bundle);
     ctx.syncActiveRuntimePointer();

@@ -450,7 +450,7 @@ export function ConversationView({
                   rewindRichInputRef={list.rewindRichInputRef}
                   models={list.models}
                   catalogHints={snapshot?.config.modelCatalogHints}
-                  activeModel={list.runtime.settings.activeModel}
+                  activeModel={snapshot?.config.activeModel ?? list.runtime.settings.activeModel}
                   agentMode={list.runtime.settings.agentMode}
                   onOpenSubagentViewer={list.onOpenSubagentViewer}
                   onOpenReadFile={list.onOpenReadFile}

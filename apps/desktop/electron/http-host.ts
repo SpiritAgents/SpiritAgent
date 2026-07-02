@@ -1081,6 +1081,21 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/split/model') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('switchPaneModel', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          modelName: typeof jsonBody?.modelName === 'string' ? jsonBody.modelName : '',
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/delete') {
     writeJson(
       request,

@@ -269,6 +269,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   }) {
     return ipcRenderer.invoke('desktop:invoke', 'switchPaneWorkspace', { request });
   },
+  switchPaneModel(request: { sessionPath: string; modelName: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'switchPaneModel', { request });
+  },
   deleteSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'deleteSession', { path });
   },

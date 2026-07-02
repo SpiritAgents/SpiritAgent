@@ -658,6 +658,9 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
     ...(parsed.approvalLevel === 'default' || parsed.approvalLevel === 'full-approval'
       ? { approvalLevel: parsed.approvalLevel }
       : {}),
+    ...(typeof parsed.activeModel === 'string' && parsed.activeModel.trim()
+      ? { activeModel: parsed.activeModel.trim() }
+      : {}),
     desktopMessageTimeline,
     savedAtUnixMs:
       typeof parsed.savedAtUnixMs === 'number' ? parsed.savedAtUnixMs : Date.now(),

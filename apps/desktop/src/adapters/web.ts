@@ -344,6 +344,9 @@ export function createWebHostApi(): HostApi {
     switchPaneWorkspace(request: import('../types').SwitchPaneWorkspaceRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/workspace', request);
     },
+    switchPaneModel(request: import('../types').SwitchPaneModelRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/model', request);
+    },
     deleteSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/delete', { path });
     },

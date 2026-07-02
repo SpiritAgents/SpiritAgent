@@ -15,6 +15,10 @@ import {
 } from './session-activation.js';
 import { isProvisionalSessionPath, isSplitProvisionalSessionPath, parseSplitPaneIdFromSessionPath, splitPaneSessionPath } from './storage.js';
 import type { SessionBundle } from './session-bundle.js';
+import {
+  ensureVisiblePaneActiveModels,
+  freezePaneActiveModelIfNeeded,
+} from './active-model-sync.js';
 
 export interface SessionSplitHostContext extends SessionActivationContext {
   visiblePaneSessionPaths(): readonly string[];
@@ -72,6 +76,10 @@ export async function beginSplitPaneSessionCommand(
 
     if (request.deferSnapshot) {
       registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+      const splitBundle = registry.findBySessionPath(sessionPath);
+      if (splitBundle) {
+        splitBundle.activeModel = state.config.activeModel;
+      }
       await ctx.finalizeTodoScopeForNewActiveBundle(
         registry.findBySessionPath(sessionPath)!,
         state.workspaceRoot,
@@ -83,7 +91,17 @@ export async function beginSplitPaneSessionCommand(
     visible.add(sessionPath);
     ctx.setVisiblePaneSessionPaths([...visible]);
 
+    ensureVisiblePaneActiveModels(
+      [...visible]
+        .map((entry) => registry.findBySessionPath(entry))
+        .filter((entry): entry is SessionBundle => Boolean(entry)),
+      state,
+    );
     registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+    const splitBundle = registry.findBySessionPath(sessionPath);
+    if (splitBundle) {
+      splitBundle.activeModel = state.config.activeModel;
+    }
     await ctx.finalizeTodoScopeForNewActiveBundle(
       ctx.sessionRegistry().findBySessionPath(sessionPath)!,
       state.workspaceRoot,
@@ -212,6 +230,10 @@ export async function focusPaneSessionCommand(
       throw new Error('Split pane session path is required.');
     }
     const registry = ctx.sessionRegistry();
+    const previous = registry.getActive();
+    if (previous && ctx.visiblePaneSessionPaths().length > 1) {
+      freezePaneActiveModelIfNeeded(previous, ctx.requireState());
+    }
     const bundle = registry.findBySessionPath(sessionPath);
     if (!bundle) {
       throw new Error('Session not found.');

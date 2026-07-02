@@ -67,6 +67,14 @@ export function resolvePaneDesktopSnapshot(
     ...(pane.workspaceRoot ? { workspaceRoot: pane.workspaceRoot } : {}),
     ...(pane.workspaceBinding ? { workspaceBinding: pane.workspaceBinding } : {}),
     ...(pane.git ? { git: pane.git } : {}),
+    ...(pane.activeModel
+      ? {
+          config: {
+            ...snapshot.config,
+            activeModel: pane.activeModel,
+          },
+        }
+      : {}),
   };
 }
 
@@ -109,6 +117,7 @@ export function paneHostRenderSignature(
       snapshot.git.workLocation ?? "",
       snapshot.git.isRepository ? 1 : 0,
       conv.approvalLevel ?? "default",
+      snapshot.config.activeModel ?? "",
       Boolean(conv.pendingToolApproval),
       Boolean(conv.pendingQuestions),
     ].join("\0");
@@ -134,6 +143,7 @@ export function paneHostRenderSignature(
     slice.git?.selectedBranch ?? slice.git?.branch ?? "",
     slice.git?.workLocation ?? "",
     conv.approvalLevel ?? "default",
+    slice.activeModel ?? snapshot.config.activeModel ?? "",
     Boolean(conv.pendingToolApproval),
     Boolean(conv.pendingQuestions),
   ].join("\0");

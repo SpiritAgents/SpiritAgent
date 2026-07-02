@@ -879,6 +879,26 @@ export function useDesktopRuntime() {
     [api, applySnapshot],
   );
 
+  const switchPaneModel = useCallback(
+    async (sessionPath: string, modelName: string): Promise<boolean> => {
+      if (!api?.switchPaneModel) {
+        return false;
+      }
+
+      try {
+        const next = await api.switchPaneModel({ sessionPath, modelName });
+        applySnapshot(next);
+        setQuestionError("");
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
   const switchPaneToNoWorkspaceBinding = useCallback(
     async (sessionPath: string): Promise<boolean> => {
       if (!api?.switchPaneWorkspace) {
@@ -3302,6 +3322,7 @@ export function useDesktopRuntime() {
     switchWorkspaceRoot,
     switchToNoWorkspaceBinding,
     switchPaneWorkspace,
+    switchPaneModel,
     switchPaneToNoWorkspaceBinding,
     rememberWorkspaceRoot,
     pickWorkspaceDirectory,

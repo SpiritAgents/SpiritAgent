@@ -145,6 +145,9 @@ declare global {
     switchPaneWorkspace(
       request: import('./types').SwitchPaneWorkspaceRequest,
     ): Promise<DesktopSnapshot>;
+    switchPaneModel(
+      request: import('./types').SwitchPaneModelRequest,
+    ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,

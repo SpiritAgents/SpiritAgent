@@ -97,6 +97,7 @@ export type HostCommandName =
   | 'focusPaneSession'
   | 'closeSplitPaneSession'
   | 'switchPaneWorkspace'
+  | 'switchPaneModel'
   | 'deleteSession'
   | 'listWorkspaceFileReferenceSuggestions'
   | 'requestCodeCompletion'
@@ -137,6 +138,7 @@ export interface StoredDesktopSession {
   subagentSessions?: ChatArchive['subagentSessions'];
   loopEnabled?: boolean;
   approvalLevel?: ApprovalLevel;
+  activeModel?: string;
   desktopMessageTimeline: PersistedDesktopTimelineTurnSnapshot[];
   savedAtUnixMs: number;
   sessionDisplayName?: string;

@@ -234,6 +234,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     switchPaneWorkspace(request) {
       return bridge.switchPaneWorkspace(request);
     },
+    switchPaneModel(request) {
+      return bridge.switchPaneModel(request);
+    },
     deleteSession(path) {
       return bridge.deleteSession(path);
     },

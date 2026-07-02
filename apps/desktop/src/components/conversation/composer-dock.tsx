@@ -378,10 +378,16 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 localFileAttachments={composerLocalFileAttachments}
                 models={models}
                 catalogHints={snapshot?.config.modelCatalogHints}
-                activeModel={runtime.settings.activeModel}
+                activeModel={snapshot?.config.activeModel ?? runtime.settings.activeModel}
                 agentMode={runtime.settings.agentMode}
                 loopEnabled={snapshot?.conversation.loopEnabled === true}
-                onModelSelect={runtime.setActiveModel}
+                onModelSelect={(name) => {
+                  if (useIsolatedPaneWorkspace && paneSessionPath) {
+                    void runtime.switchPaneModel(paneSessionPath, name);
+                    return;
+                  }
+                  runtime.setActiveModel(name);
+                }}
                 onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
                 onModelThinkingEnabledSelect={runtime.setModelThinkingEnabled}
                 onAgentModeChange={onComposerAgentModeChange}

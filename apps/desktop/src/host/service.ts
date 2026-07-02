@@ -135,6 +135,7 @@ import type {
   FocusPaneSessionRequest,
   SyncSplitPaneSessionsRequest,
   SwitchPaneWorkspaceRequest,
+  SwitchPaneModelRequest,
   PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
@@ -279,6 +280,17 @@ import {
   prefetchScopedGitBeforeGlobalWorkspaceChange,
   type PaneWorkspaceHostContext,
 } from './host-pane-workspace.js';
+import {
+  switchPaneModelCommand,
+  type PaneModelHostContext,
+} from './host-pane-model.js';
+import {
+  needsHostActiveModelSync,
+  resolveEffectivePaneActiveModel,
+  resolvePaneModelProjection,
+  freezePaneActiveModelIfNeeded,
+  ensureVisiblePaneActiveModels,
+} from './active-model-sync.js';
 import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
 import {
   finishSessionActivationCommand,
@@ -888,6 +900,7 @@ class DesktopHostService {
         this.createMessageTimelineFromMessages(messages, timelineSnapshot),
       syncPlanStateForBundle: (bundle) => this.syncPlanStateForBundle(bundle),
       syncHostWorkspaceRootToActiveBundle: (bundle) => this.syncHostWorkspaceRootToActiveBundle(bundle),
+      syncHostActiveModelToActiveBundle: (bundle) => this.syncHostActiveModelToActiveBundle(bundle),
       tickSession: (bundle) => this.tickSession(bundle),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
@@ -951,6 +964,59 @@ class DesktopHostService {
     }
     await ensureVisiblePaneScopedGitSnapshots(this.paneWorkspaceContext());
     this.paneSessionSliceCache.clear();
+  }
+
+  private paneModelContext(): PaneModelHostContext {
+    return {
+      ...this.sessionSplitContext(),
+      adoptActiveModelForForeground: (modelName) => this.adoptActiveModelForForeground(modelName),
+      refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
+      invalidatePaneSessionSliceCache: (sessionPath) => {
+        this.paneSessionSliceCache.delete(path.resolve(sessionPath));
+      },
+      invalidateAllPaneSessionSliceCache: () => {
+        this.paneSessionSliceCache.clear();
+      },
+      persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
+    };
+  }
+
+  private async adoptActiveModelForForeground(modelName: string): Promise<void> {
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+    const normalized = modelName.trim();
+    if (!normalized) {
+      throw new Error(i18n.t('error.modelNameRequired'));
+    }
+    if (!state.config.models.some((model) => model.name === normalized)) {
+      throw new Error(i18n.t('error.modelNotFound', { model: normalized }));
+    }
+
+    const modelChanged = state.config.activeModel !== normalized;
+    bundle.activeModel = normalized;
+    if (!modelChanged) {
+      await this.refreshRuntimeForBundle(bundle);
+      this.syncActiveRuntimePointer();
+      return;
+    }
+
+    state.config.activeModel = normalized;
+    await saveConfig(state.config);
+    this.clearActiveBundleContextUsage();
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    await this.persistCurrentSessionIfNeeded();
+  }
+
+  private async syncHostActiveModelToActiveBundle(
+    bundle: SessionBundle = this.activeBundle(),
+  ): Promise<boolean> {
+    const state = this.requireState();
+    if (!needsHostActiveModelSync(bundle, state)) {
+      return false;
+    }
+    await this.adoptActiveModelForForeground(resolveEffectivePaneActiveModel(bundle, state));
+    return true;
   }
 
   private forkSessionContext(): ForkSessionHostContext {
@@ -1155,7 +1221,7 @@ class DesktopHostService {
         if (!state) {
           return undefined;
         }
-        const activeModelName = state.config.activeModel.trim();
+        const activeModelName = resolveEffectivePaneActiveModel(bundle, state).trim();
         return state.config.models.find((model) => model.name === activeModelName);
       },
       resolveCatalogHints: () => buildModelCatalogHints(this.requireState().config),
@@ -2261,6 +2327,10 @@ class DesktopHostService {
     return switchPaneWorkspaceCommand(this.paneWorkspaceContext(), request);
   }
 
+  async switchPaneModel(request: SwitchPaneModelRequest): Promise<DesktopSnapshot> {
+    return switchPaneModelCommand(this.paneModelContext(), request);
+  }
+
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {
     return deleteSessionCommand(this.sessionDeleteContext(), filePath);
   }
@@ -2368,7 +2438,8 @@ class DesktopHostService {
       await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
     }
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
-    const activeProfile = state.config.models.find((m) => m.name === state.config.activeModel);
+    const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
+    const activeProfile = state.config.models.find((m) => m.name === effectiveActiveModel);
     const activeTransportKind = resolveDesktopTransportKind(activeProfile);
     const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
       ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(activeProfile.provider))
@@ -2376,7 +2447,7 @@ class DesktopHostService {
     const googleVertexCredentials = activeProfile?.provider === 'google-vertex-ai'
       ? readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai')
       : undefined;
-    const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
+    const apiKey = await resolveApiKeyForConfigModel(state.config, effectiveActiveModel);
     const azureResourceNameReady = activeProfile?.provider !== 'azure'
       || Boolean(activeProfile.azureResourceName?.trim());
     const runtimeAuthReady = activeTransportKind === 'bedrock'
@@ -2426,7 +2497,7 @@ class DesktopHostService {
 
     let runtimeTransportConfig = buildPrimaryTransportConfig({
       apiKey: apiKey ?? bedrockCredentials?.apiKey ?? '',
-      model: state.config.activeModel,
+      model: effectiveActiveModel,
       baseUrl: currentApiBase(state.config),
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       profile: activeProfile,
@@ -3302,6 +3373,11 @@ class DesktopHostService {
         state: this.requireState(),
         isForegroundActive,
       });
+      const paneModel = resolvePaneModelProjection({
+        bundle,
+        state: this.requireState(),
+        isForegroundActive,
+      });
       const sliceSignature = [
         resolved,
         isForegroundActive ? 1 : 0,
@@ -3319,6 +3395,7 @@ class DesktopHostService {
         paneWorkspace?.git?.revision ?? 0,
         paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? '',
         bundle.approvalLevel,
+        paneModel?.activeModel ?? resolveEffectivePaneActiveModel(bundle, this.requireState()),
       ].join('\0');
       const cached = this.paneSessionSliceCache.get(resolved);
       if (cached?.signature === sliceSignature) {
@@ -3333,6 +3410,7 @@ class DesktopHostService {
         livePendingAux: pendingAux,
         isForegroundActive,
         ...(paneWorkspace ? { paneWorkspace } : {}),
+        ...(paneModel ? { paneModel } : {}),
         ...(pendingApproval
           ? {
               pendingApproval: {

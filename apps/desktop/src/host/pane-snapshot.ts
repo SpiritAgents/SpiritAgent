@@ -39,6 +39,9 @@ export function buildPaneSessionSlice(input: {
     workspaceBinding: DesktopWorkspaceBinding;
     git: DesktopGitSnapshot;
   };
+  paneModel?: {
+    activeModel: string;
+  };
 }): PaneSessionSlice {
   const { bundle } = input;
   const rawConversationMessages = input.conversationSnapshotView
@@ -98,6 +101,9 @@ export function buildPaneSessionSlice(input: {
           workspaceBinding: input.paneWorkspace.workspaceBinding,
           git: input.paneWorkspace.git,
         }
+      : {}),
+    ...(input.paneModel && !input.isForegroundActive
+      ? { activeModel: input.paneModel.activeModel }
       : {}),
   };
 }

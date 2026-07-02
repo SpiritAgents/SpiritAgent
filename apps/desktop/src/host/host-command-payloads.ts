@@ -55,6 +55,7 @@ import type {
   CloseSplitPaneSessionRequest,
   FocusPaneSessionRequest,
   SwitchPaneWorkspaceRequest,
+  SwitchPaneModelRequest,
   UpdateConfigRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
@@ -150,6 +151,7 @@ export type CommandPayloads = {
   focusPaneSession: { request: FocusPaneSessionRequest };
   closeSplitPaneSession: { request: CloseSplitPaneSessionRequest };
   switchPaneWorkspace: { request: SwitchPaneWorkspaceRequest };
+  switchPaneModel: { request: SwitchPaneModelRequest };
   deleteSession: { path: string };
   listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
   requestCodeCompletion: { request: RequestCodeCompletionRequest };

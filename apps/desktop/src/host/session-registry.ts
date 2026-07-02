@@ -330,6 +330,7 @@ export class SessionRegistry {
     bundle.archiveSubagentSessions = restored.archiveSubagentSessions;
     bundle.loopEnabled = restored.loopEnabled;
     bundle.approvalLevel = restored.approvalLevel;
+    bundle.activeModel = restored.activeModel;
     bundle.sessionTitleSource = restored.sessionTitleSource;
     bundle.rewind = restored.rewind;
     bundle.rewindWarnings = [];

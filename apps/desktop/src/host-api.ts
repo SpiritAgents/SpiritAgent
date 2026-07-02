@@ -76,6 +76,7 @@ import type {
   CloseSplitPaneSessionRequest,
   FocusPaneSessionRequest,
   SwitchPaneWorkspaceRequest,
+  SwitchPaneModelRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -217,6 +218,7 @@ export interface HostApi {
   focusPaneSession(request: FocusPaneSessionRequest): Promise<DesktopSnapshot>;
   closeSplitPaneSession(request: CloseSplitPaneSessionRequest): Promise<DesktopSnapshot>;
   switchPaneWorkspace(request: SwitchPaneWorkspaceRequest): Promise<DesktopSnapshot>;
+  switchPaneModel(request: SwitchPaneModelRequest): Promise<DesktopSnapshot>;
   deleteSession(path: string): Promise<DesktopSnapshot>;
   listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,
