@@ -114,6 +114,7 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   ReplyPendingApprovalRequest,
+  ReplyPendingQuestionsRequest,
   ForkSessionRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
@@ -2083,8 +2084,18 @@ class DesktopHostService {
     });
   }
 
-  async replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot> {
-    return replyPendingQuestionsCommand(this.sessionTurnContext(), result);
+  async replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const sessionPath = request.sessionPath?.trim();
+      if (sessionPath) {
+        await withOptionalPaneSessionActivation(this, sessionPath, async () => {
+          await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+        });
+        return this.buildSnapshot();
+      }
+      return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+    });
   }
 
   async resetSession(): Promise<DesktopSnapshot> {

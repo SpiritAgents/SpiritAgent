@@ -204,8 +204,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     replyPendingApproval(request) {
       return bridge.replyPendingApproval(request);
     },
-    replyPendingQuestions(result) {
-      return bridge.replyPendingQuestions(result);
+    replyPendingQuestions(request) {
+      return bridge.replyPendingQuestions(request);
     },
     resetSession() {
       return bridge.resetSession();

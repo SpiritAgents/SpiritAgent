@@ -977,7 +977,14 @@ async function handleApiRequest({
       request,
       response,
       200,
-      await runHostCommand('replyPendingQuestions', { result: jsonBody?.result }),
+      await runHostCommand('replyPendingQuestions', {
+        request: {
+          result: jsonBody?.result,
+          ...(typeof jsonBody.sessionPath === 'string'
+            ? { sessionPath: jsonBody.sessionPath }
+            : {}),
+        },
+      }),
     );
     return;
   }

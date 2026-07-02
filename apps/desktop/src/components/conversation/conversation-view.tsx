@@ -98,6 +98,7 @@ export type ComposerDockSectionProps = {
   showPendingApprovalInComposer: boolean;
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   showPendingQuestionsInComposer: boolean;
+  pendingQuestions: DesktopSnapshot["conversation"]["pendingQuestions"];
   fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
@@ -511,6 +512,7 @@ export function ConversationView({
             showPendingApprovalInComposer={composerDock.showPendingApprovalInComposer}
             pendingApproval={composerDock.pendingApproval}
             showPendingQuestionsInComposer={composerDock.showPendingQuestionsInComposer}
+            pendingQuestions={composerDock.pendingQuestions}
             fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
             fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
             onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}

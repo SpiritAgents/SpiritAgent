@@ -38,6 +38,7 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   ReplyPendingApprovalRequest,
+  ReplyPendingQuestionsRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
@@ -142,7 +143,7 @@ export type CommandPayloads = {
   deleteAutomation: { automationId: string };
   setAutomationEnabled: { automationId: string; enabled: boolean };
   replyPendingApproval: { request: ReplyPendingApprovalRequest };
-  replyPendingQuestions: { result: AskQuestionsResult };
+  replyPendingQuestions: { request: ReplyPendingQuestionsRequest };
   resetSession: undefined;
   listSessions: undefined;
   openSession: { path: string };

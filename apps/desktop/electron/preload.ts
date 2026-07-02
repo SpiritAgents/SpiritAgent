@@ -235,8 +235,8 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   replyPendingApproval(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'replyPendingApproval', { request });
   },
-  replyPendingQuestions(result: unknown) {
-    return ipcRenderer.invoke('desktop:invoke', 'replyPendingQuestions', { result });
+  replyPendingQuestions(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'replyPendingQuestions', { request });
   },
   resetSession() {
     return ipcRenderer.invoke('desktop:invoke', 'resetSession');
