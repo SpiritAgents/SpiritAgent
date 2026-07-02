@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 import {
   isSplitProvisionalSessionPath,
+  parseSplitPaneIdFromSessionPath,
   splitPaneSessionPath,
 } from '../../dist-electron/src/host/storage.js';
 
@@ -13,6 +14,12 @@ test('splitPaneSessionPath is stable for the same pane id', () => {
 
 test('splitPaneSessionPath differs across pane ids', () => {
   assert.notEqual(splitPaneSessionPath('pane-a'), splitPaneSessionPath('pane-b'));
+});
+
+test('parseSplitPaneIdFromSessionPath round-trips splitPaneSessionPath', () => {
+  const paneId = 'pane-a';
+  const splitPath = splitPaneSessionPath(paneId);
+  assert.equal(parseSplitPaneIdFromSessionPath(splitPath), paneId);
 });
 
 test('isSplitProvisionalSessionPath detects split provisional chat paths only', () => {
