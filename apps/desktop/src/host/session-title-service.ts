@@ -20,6 +20,9 @@ export async function applyGeneratedSessionTitle(input: {
       bundle?.activeSession
       && path.resolve(bundle.activeSession.filePath) === resolvedPath
     ) {
+      if (bundle.sessionTitleSource === 'manual') {
+        return;
+      }
       bundle.activeSession.displayName = input.title;
       bundle.sessionTitleSource = 'llm';
       await input.persistBundle(bundle);
