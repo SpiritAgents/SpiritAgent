@@ -421,6 +421,8 @@
     "extensionSettings": "Extension Settings",
     "workspaceSessionsAria": "Workspace Sessions",
     "sessionActions": "Session actions",
+    "renameSession": "Rename",
+    "cannotRenameBusySession": "Cannot rename while the session is running.",
     "deleteSession": "Delete session",
     "deleteSessionConfirm": "Delete session \"{{name}}\"? This cannot be undone.",
     "cannotDeleteBusySession": "Cannot delete while the session is running.",

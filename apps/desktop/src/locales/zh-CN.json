@@ -421,6 +421,8 @@
     "extensionSettings": "扩展设置",
     "workspaceSessionsAria": "工作区会话",
     "sessionActions": "会话操作",
+    "renameSession": "重命名",
+    "cannotRenameBusySession": "会话运行中，无法重命名。",
     "deleteSession": "删除会话",
     "deleteSessionConfirm": "确定删除会话「{{name}}」？此操作无法撤销。",
     "cannotDeleteBusySession": "会话运行中，无法删除。",
