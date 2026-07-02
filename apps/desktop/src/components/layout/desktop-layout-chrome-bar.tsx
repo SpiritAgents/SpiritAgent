@@ -136,7 +136,7 @@ export function DesktopLayoutChromeBar({
             aria-hidden
           />
         ) : null}
-        {onNewSession ? (
+        {onNewSession && showSessionSidebarToggle ? (
           <div
             className={cn(
               "shrink-0 overflow-hidden",
