@@ -12,7 +12,7 @@ import type {
 import type { DesktopRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionRegistry } from './session-registry.js';
-import { loadStoredSession, type DesktopConfigFile, type DesktopWorkspaceBinding } from './storage.js';
+import { loadStoredSession, isProvisionalSessionPath, isSplitProvisionalSessionPath, parseSplitPaneIdFromSessionPath, type DesktopConfigFile, type DesktopWorkspaceBinding } from './storage.js';
 import {
   isEphemeralDebugSessionPath,
   restoreEphemeralSessionState,
@@ -79,6 +79,54 @@ export interface SessionActivationContext {
     bundle: SessionBundle,
     source: SessionStartHookInput['source'],
   ): Promise<void>;
+}
+
+/** Register a stored chat session in the registry without foreground activation side effects. */
+export async function ensureStoredSessionBundleRegistered(
+  ctx: SessionActivationContext,
+  filePath: string,
+): Promise<SessionBundle | null> {
+  const resolvedPath = path.resolve(filePath);
+  const existing = ctx.sessionRegistry().findBySessionPath(resolvedPath);
+  if (existing) {
+    return existing;
+  }
+
+  if (
+    isProvisionalSessionPath(resolvedPath)
+    || isSplitProvisionalSessionPath(resolvedPath)
+    || isEphemeralDebugSessionPath(filePath)
+  ) {
+    return null;
+  }
+
+  const loaded = await loadStoredSession(filePath);
+  const workspaceRoot = loaded.workspaceRoot
+    ? await resolveStoredSessionWorkspaceRoot({
+        workspaceRoot: loaded.workspaceRoot,
+        gitBranch: loaded.gitBranch,
+      })
+    : ctx.requireState().workspaceRoot;
+  const sameWorkspace =
+    ctx.isInitialized()
+    && Boolean(ctx.currentWorkspaceRoot())
+    && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
+  await ctx.ensureInitialized(workspaceRoot, {
+    ...(sameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
+    preserveRecentWorkspaces: true,
+  });
+  const restored = restoreStoredSessionState({
+    filePath,
+    loaded,
+  });
+  const bundle = ctx.sessionRegistry().upsertFromRestored(
+    workspaceRoot,
+    restored,
+    (messages, timelineSnapshot) =>
+      ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+  );
+  bundle.listSortSavedAtUnixMs = loaded.savedAtUnixMs;
+  return bundle;
 }
 
 export async function resetSessionCommand(ctx: SessionActivationContext): Promise<DesktopSnapshot> {
@@ -177,6 +225,30 @@ export async function openSessionCommand(
         },
       });
       return ctx.buildSnapshot();
+    }
+
+    if (
+      warmBundle?.activeSession
+      && (isProvisionalSessionPath(resolvedPath) || isSplitProvisionalSessionPath(resolvedPath))
+    ) {
+      await ctx.ensureInitialized(warmBundle.workspaceRoot, { fastPath: true });
+      ctx.sessionRegistry().activateExisting(warmBundle);
+      await finishSessionActivationCommand(ctx, warmBundle, { sessionStartSource: 'open' });
+      ctx.setLastRuntimeError('');
+      return ctx.buildSnapshot();
+    }
+
+    if (isSplitProvisionalSessionPath(resolvedPath)) {
+      const paneId = parseSplitPaneIdFromSessionPath(resolvedPath);
+      if (paneId) {
+        await ctx.ensureInitialized(undefined, { fastPath: true });
+        const state = ctx.requireState();
+        const bundle = ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
+        ctx.sessionRegistry().activateExisting(bundle);
+        await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'open' });
+        ctx.setLastRuntimeError('');
+        return ctx.buildSnapshot();
+      }
     }
 
     const loaded = await loadStoredSession(filePath);

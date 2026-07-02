@@ -6,8 +6,11 @@ import type {
   DesktopSnapshot,
   SetVisiblePaneSessionsRequest,
 } from '../types.js';
-import type { SessionActivationContext } from './session-activation.js';
-import { isProvisionalSessionPath, isSplitProvisionalSessionPath, splitPaneSessionPath } from './storage.js';
+import {
+  ensureStoredSessionBundleRegistered,
+  type SessionActivationContext,
+} from './session-activation.js';
+import { isProvisionalSessionPath, isSplitProvisionalSessionPath, parseSplitPaneIdFromSessionPath, splitPaneSessionPath } from './storage.js';
 import type { SessionBundle } from './session-bundle.js';
 
 export interface SessionSplitHostContext extends SessionActivationContext {
@@ -52,9 +55,50 @@ export async function setVisiblePaneSessionsCommand(
 ): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
+    const state = ctx.requireState();
     const normalized = [...new Set(request.sessionPaths.map((entry) => path.resolve(entry)))];
+    const registry = ctx.sessionRegistry();
+    const activeBefore = registry.getActive();
+    const activeIdBefore = registry.activeSessionId();
+    const registeredPaths: string[] = [];
+
+    for (const sessionPath of normalized) {
+      if (!isSplitProvisionalSessionPath(sessionPath)) {
+        continue;
+      }
+      if (registry.findBySessionPath(sessionPath)) {
+        continue;
+      }
+      const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
+      if (!paneId) {
+        continue;
+      }
+      registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+      registeredPaths.push(sessionPath);
+    }
+
+    for (const sessionPath of normalized) {
+      try {
+        const bundle = await ensureStoredSessionBundleRegistered(ctx, sessionPath);
+        if (bundle) {
+          registeredPaths.push(path.resolve(bundle.activeSession?.filePath ?? bundle.id));
+        }
+      } catch {
+        // Persisted layout may reference a deleted session file.
+      }
+    }
+
+    if (
+      activeBefore
+      && activeIdBefore
+      && registry.activeSessionId() !== activeIdBefore
+    ) {
+      registry.activateExisting(activeBefore);
+    }
+
     ctx.setVisiblePaneSessionPaths(normalized);
-    return ctx.buildSnapshot();
+    const snapshot = ctx.buildSnapshot();
+    return snapshot;
   });
 }
 

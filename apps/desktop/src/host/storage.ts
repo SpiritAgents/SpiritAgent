@@ -410,6 +410,19 @@ export function isSplitProvisionalSessionPath(filePath: string): boolean {
   return path.basename(resolved).startsWith('split-');
 }
 
+/** Inverse of splitPaneSessionPath for rehydrating in-memory split bundles. */
+export function parseSplitPaneIdFromSessionPath(filePath: string): string | null {
+  if (!isSplitProvisionalSessionPath(filePath)) {
+    return null;
+  }
+  const base = path.basename(filePath, '.json');
+  if (!base.startsWith('split-')) {
+    return null;
+  }
+  const paneId = base.slice('split-'.length).trim();
+  return paneId.length > 0 ? paneId : null;
+}
+
 export function isProvisionalSessionPath(filePath: string): boolean {
   const resolved = path.resolve(filePath);
   const provisionalDir = path.resolve(provisionalChatsDirPath());
