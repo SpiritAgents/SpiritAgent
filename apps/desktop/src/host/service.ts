@@ -604,6 +604,17 @@ class DesktopHostService {
   private lspSnapshot = defaultDesktopLspSnapshot();
   private visiblePaneSessionPaths: string[] = [];
 
+  private replaceVisiblePaneSessionPath(before: string, after: string): void {
+    const beforeResolved = path.resolve(before);
+    const afterResolved = path.resolve(after);
+    if (beforeResolved === afterResolved || this.visiblePaneSessionPaths.length === 0) {
+      return;
+    }
+    this.visiblePaneSessionPaths = this.visiblePaneSessionPaths.map((entry) =>
+      path.resolve(entry) === beforeResolved ? afterResolved : path.resolve(entry),
+    );
+  }
+
   private orchestrationFor(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
     runtimeEvents: DesktopRuntimeEventOrchestrator;
@@ -1518,32 +1529,37 @@ class DesktopHostService {
         const bundle = this.activeBundle();
         const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
         const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
+        const resolvedTargetPath = targetSessionPath ? path.resolve(targetSessionPath) : null;
+        let snapshot: DesktopSnapshot;
         if (canEnqueueUserTurn(bundle)) {
-          const snapshot = await enqueueUserTurnCommand(this.sessionTurnContext(), {
+          snapshot = await enqueueUserTurnCommand(this.sessionTurnContext(), {
             text: request.text,
             explicitWorkspaceFiles,
             turnSkills,
           });
-          restorePreviousActive();
-          return snapshot;
-        }
-
-        const isFirstTurn = bundle.messages.length === 0;
-        if (isFirstTurn && bundle.workLocation === 'worktree') {
-          const snapshot = await startWorktreeBootstrapTurnCommand(
+        } else if (bundle.messages.length === 0 && bundle.workLocation === 'worktree') {
+          snapshot = await startWorktreeBootstrapTurnCommand(
             this.sessionTurnContext(),
             this.worktreeBootstrapHost(),
             request.text,
             { explicitWorkspaceFiles, turnSkills },
           );
-          restorePreviousActive();
-          return snapshot;
+        } else {
+          snapshot = await this.submitUserTurnAfterInitialized(request.text, {
+            explicitWorkspaceFiles,
+            turnSkills,
+          });
         }
 
-        const snapshot = await this.submitUserTurnAfterInitialized(request.text, {
-          explicitWorkspaceFiles,
-          turnSkills,
-        });
+        if (resolvedTargetPath) {
+          const promotedPath = path.resolve(bundle.activeSession?.filePath ?? bundle.id);
+          if (promotedPath !== resolvedTargetPath) {
+            this.replaceVisiblePaneSessionPath(resolvedTargetPath, promotedPath);
+          }
+          restorePreviousActive();
+          return this.buildSnapshot();
+        }
+
         restorePreviousActive();
         return snapshot;
       } catch (error) {
