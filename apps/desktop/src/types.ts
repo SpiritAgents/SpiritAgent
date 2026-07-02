@@ -681,6 +681,16 @@ export interface SwitchPaneModelRequest {
   modelName: string;
 }
 
+export interface SetPanePendingGitBranchRequest {
+  sessionPath: string;
+  branch: string;
+}
+
+export interface SetPaneWorkLocationRequest {
+  sessionPath: string;
+  workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
+}
+
 export interface PaneSessionSlice {
   conversation: ConversationSnapshot;
   activeSession?: ActiveSessionSnapshot;

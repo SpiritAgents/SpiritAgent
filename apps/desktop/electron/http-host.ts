@@ -1117,6 +1117,39 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/split/pending-branch') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setPanePendingGitBranch', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/work-location') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setPaneWorkLocation', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          workLocation:
+            jsonBody?.workLocation === 'worktree' || jsonBody?.workLocation === 'local'
+              ? jsonBody.workLocation
+              : 'local',
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/delete') {
     writeJson(
       request,

@@ -348,6 +348,12 @@ export function createWebHostApi(): HostApi {
     switchPaneModel(request: import('../types').SwitchPaneModelRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/model', request);
     },
+    setPanePendingGitBranch(request: import('../types').SetPanePendingGitBranchRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/pending-branch', request);
+    },
+    setPaneWorkLocation(request: import('../types').SetPaneWorkLocationRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/work-location', request);
+    },
     deleteSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/delete', { path });
     },

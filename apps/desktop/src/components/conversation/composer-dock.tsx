@@ -281,6 +281,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     currentBranch={snapshot?.git.branch}
                     disabled={gitControlsDisabled}
                     onBranchChange={(branch) => {
+                      if (useIsolatedPaneWorkspace && paneSessionPath) {
+                        void runtime.setPanePendingGitBranch(paneSessionPath, branch);
+                        return;
+                      }
                       void runtime.setPendingGitBranch(branch);
                     }}
                   />
@@ -291,6 +295,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                       || snapshot?.git.isRepository !== true
                     }
                     onWorkLocationChange={(workLocation) => {
+                      if (useIsolatedPaneWorkspace && paneSessionPath) {
+                        void runtime.setPaneWorkLocation(paneSessionPath, workLocation);
+                        return;
+                      }
                       void runtime.setWorkLocation(workLocation);
                     }}
                   />

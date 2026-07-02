@@ -1,6 +1,15 @@
 import path from 'node:path';
 
-import type { DesktopSnapshot, SwitchPaneWorkspaceRequest } from '../types.js';
+import { normalizeWorkLocationKind } from '@spirit-agent/host-internal';
+
+import i18n from '../lib/i18n-host.js';
+import type {
+  DesktopGitSnapshot,
+  DesktopSnapshot,
+  SetPanePendingGitBranchRequest,
+  SetPaneWorkLocationRequest,
+  SwitchPaneWorkspaceRequest,
+} from '../types.js';
 import { applyGitRevision, readWorkspaceGitSnapshot } from './git.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionSplitHostContext } from './session-split.js';
@@ -206,7 +215,7 @@ export async function switchPaneWorkspaceCommand(
   });
 }
 
-function resolveEffectivePaneWorkspaceRoot(
+export function resolveEffectivePaneWorkspaceRoot(
   bundle: Pick<SessionBundle, 'workspaceRoot'>,
   state: { workspaceRoot: string },
 ): string {
@@ -271,4 +280,102 @@ export function resolvePaneWorkspaceProjection(input: {
     workspaceBinding,
     git,
   };
+}
+
+async function resolvePaneGitSnapshotForMutation(
+  ctx: Pick<PaneWorkspaceHostContext, 'sessionRegistry' | 'requireState'>,
+  bundle: SessionBundle,
+): Promise<DesktopGitSnapshot> {
+  const state = ctx.requireState();
+  const registry = ctx.sessionRegistry();
+  if (registry.getActive() === bundle) {
+    return state.git;
+  }
+  if (bundle.scopedGit) {
+    return bundle.scopedGit;
+  }
+  const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
+  return readWorkspaceGitSnapshot(workspaceRoot);
+}
+
+export async function setPanePendingGitBranchCommand(
+  ctx: PaneWorkspaceHostContext,
+  request: SetPanePendingGitBranchRequest,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+
+    const sessionPath = path.resolve(request.sessionPath.trim());
+    if (!sessionPath) {
+      throw new Error('Split pane session path is required.');
+    }
+
+    const normalized = request.branch.trim();
+    if (!normalized) {
+      throw new Error(i18n.t('error.branchNameRequired'));
+    }
+
+    const registry = ctx.sessionRegistry();
+    const bundle = registry.findBySessionPath(sessionPath);
+    if (!bundle) {
+      throw new Error('Session not found.');
+    }
+
+    const git = await resolvePaneGitSnapshotForMutation(ctx, bundle);
+    if (!git.isRepository) {
+      throw new Error(i18n.t('error.notGitRepo'));
+    }
+    if (!git.branches.includes(normalized)) {
+      throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
+    }
+
+    const isForeground = registry.getActive() === bundle;
+    bundle.pendingGitBranch = normalized;
+    if (bundle.scopedGit) {
+      bundle.scopedGit = { ...bundle.scopedGit, selectedBranch: normalized };
+    }
+
+    ctx.invalidatePaneSessionSliceCache(sessionPath);
+    if (!isForeground) {
+      await ensureVisiblePaneScopedGitSnapshots(ctx);
+      ctx.invalidateAllPaneSessionSliceCache();
+    }
+
+    return ctx.buildSnapshot();
+  });
+}
+
+export async function setPaneWorkLocationCommand(
+  ctx: PaneWorkspaceHostContext,
+  request: SetPaneWorkLocationRequest,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+
+    const sessionPath = path.resolve(request.sessionPath.trim());
+    if (!sessionPath) {
+      throw new Error('Split pane session path is required.');
+    }
+
+    const registry = ctx.sessionRegistry();
+    const bundle = registry.findBySessionPath(sessionPath);
+    if (!bundle) {
+      throw new Error('Session not found.');
+    }
+
+    const isForeground = registry.getActive() === bundle;
+    const workLocation = normalizeWorkLocationKind(request.workLocation);
+    bundle.workLocation = workLocation;
+    if (bundle.scopedGit) {
+      bundle.scopedGit = { ...bundle.scopedGit, workLocation };
+    }
+
+    ctx.invalidatePaneSessionSliceCache(sessionPath);
+    if (!isForeground) {
+      await ensureVisiblePaneScopedGitSnapshots(ctx);
+      ctx.invalidateAllPaneSessionSliceCache();
+    }
+
+    return ctx.buildSnapshot();
+  });
 }

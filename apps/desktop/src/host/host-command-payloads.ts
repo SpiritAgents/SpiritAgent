@@ -58,6 +58,8 @@ import type {
   FocusPaneSessionRequest,
   SwitchPaneWorkspaceRequest,
   SwitchPaneModelRequest,
+  SetPanePendingGitBranchRequest,
+  SetPaneWorkLocationRequest,
   UpdateConfigRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
@@ -154,6 +156,8 @@ export type CommandPayloads = {
   closeSplitPaneSession: { request: CloseSplitPaneSessionRequest };
   switchPaneWorkspace: { request: SwitchPaneWorkspaceRequest };
   switchPaneModel: { request: SwitchPaneModelRequest };
+  setPanePendingGitBranch: { request: SetPanePendingGitBranchRequest };
+  setPaneWorkLocation: { request: SetPaneWorkLocationRequest };
   deleteSession: { path: string };
   listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
   requestCodeCompletion: { request: RequestCodeCompletionRequest };

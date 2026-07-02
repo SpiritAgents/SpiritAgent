@@ -901,6 +901,44 @@ export function useDesktopRuntime() {
     [api, applySnapshot],
   );
 
+  const setPanePendingGitBranch = useCallback(
+    async (sessionPath: string, branch: string): Promise<boolean> => {
+      if (!api?.setPanePendingGitBranch) {
+        return false;
+      }
+
+      try {
+        const next = await api.setPanePendingGitBranch({ sessionPath, branch });
+        applySnapshot(next);
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const setPaneWorkLocation = useCallback(
+    async (sessionPath: string, workLocation: import('@spirit-agent/host-internal').WorkLocationKind): Promise<boolean> => {
+      if (!api?.setPaneWorkLocation) {
+        return false;
+      }
+
+      try {
+        const next = await api.setPaneWorkLocation({ sessionPath, workLocation });
+        applySnapshot(next);
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
   const switchPaneToNoWorkspaceBinding = useCallback(
     async (sessionPath: string): Promise<boolean> => {
       if (!api?.switchPaneWorkspace) {
@@ -3365,6 +3403,8 @@ export function useDesktopRuntime() {
     switchToNoWorkspaceBinding,
     switchPaneWorkspace,
     switchPaneModel,
+    setPanePendingGitBranch,
+    setPaneWorkLocation,
     switchPaneToNoWorkspaceBinding,
     rememberWorkspaceRoot,
     pickWorkspaceDirectory,

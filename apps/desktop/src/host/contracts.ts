@@ -98,6 +98,8 @@ export type HostCommandName =
   | 'closeSplitPaneSession'
   | 'switchPaneWorkspace'
   | 'switchPaneModel'
+  | 'setPanePendingGitBranch'
+  | 'setPaneWorkLocation'
   | 'deleteSession'
   | 'listWorkspaceFileReferenceSuggestions'
   | 'requestCodeCompletion'
