@@ -262,6 +262,13 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   closeSplitPaneSession(request: { sessionPath: string }) {
     return ipcRenderer.invoke('desktop:invoke', 'closeSplitPaneSession', { request });
   },
+  switchPaneWorkspace(request: {
+    sessionPath: string;
+    workspaceRoot?: string;
+    workspaceBinding: 'project' | 'none';
+  }) {
+    return ipcRenderer.invoke('desktop:invoke', 'switchPaneWorkspace', { request });
+  },
   deleteSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'deleteSession', { path });
   },

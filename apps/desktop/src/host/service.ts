@@ -134,6 +134,7 @@ import type {
   CloseSplitPaneSessionRequest,
   FocusPaneSessionRequest,
   SyncSplitPaneSessionsRequest,
+  SwitchPaneWorkspaceRequest,
   PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
@@ -271,6 +272,13 @@ import {
   type SessionSplitHostContext,
 } from './session-split.js';
 import { buildPaneSessionSlice } from './pane-snapshot.js';
+import {
+  switchPaneWorkspaceCommand,
+  resolvePaneWorkspaceProjection,
+  ensureVisiblePaneScopedGitSnapshots,
+  prefetchScopedGitBeforeGlobalWorkspaceChange,
+  type PaneWorkspaceHostContext,
+} from './host-pane-workspace.js';
 import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
 import {
   finishSessionActivationCommand,
@@ -382,6 +390,9 @@ import {
   saveConfig,
   removeModelApiKey,
   spiritAgentDataDir,
+  normalizeWorkspaceBinding,
+  resolveDesktopHomeDirectory,
+  mergeRecentWorkspaceRoots,
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
   type DesktopWorkspaceBinding,
@@ -906,6 +917,40 @@ class DesktopHostService {
       },
       resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
     };
+  }
+
+  private paneWorkspaceContext(): PaneWorkspaceHostContext {
+    return {
+      ...this.sessionSplitContext(),
+      adoptProjectWorkspaceForForeground: async (workspaceRoot, options) => {
+        await this.adoptWorkspaceRootForActiveBundle(workspaceRoot, options);
+        const state = this.requireState();
+        state.workspaceBinding = 'project';
+        state.config = {
+          ...state.config,
+          workspaceBinding: 'project',
+          recentWorkspaces: mergeRecentWorkspaceRoots(state.config.recentWorkspaces, workspaceRoot),
+          lastProjectWorkspaceRoot: workspaceRoot,
+        };
+        await saveConfig(state.config);
+      },
+      adoptNoWorkspaceForForeground: (options) => this.adoptNoWorkspaceBindingForActiveBundle(options),
+      refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
+      invalidatePaneSessionSliceCache: (sessionPath) => {
+        this.paneSessionSliceCache.delete(path.resolve(sessionPath));
+      },
+      invalidateAllPaneSessionSliceCache: () => {
+        this.paneSessionSliceCache.clear();
+      },
+    };
+  }
+
+  private async ensureVisiblePaneScopedGit(): Promise<void> {
+    if (this.visiblePaneSessionPaths.length <= 1) {
+      return;
+    }
+    await ensureVisiblePaneScopedGitSnapshots(this.paneWorkspaceContext());
+    this.paneSessionSliceCache.clear();
   }
 
   private forkSessionContext(): ForkSessionHostContext {
@@ -2212,6 +2257,10 @@ class DesktopHostService {
     return closeSplitPaneSessionCommand(this.sessionSplitContext(), request);
   }
 
+  async switchPaneWorkspace(request: SwitchPaneWorkspaceRequest): Promise<DesktopSnapshot> {
+    return switchPaneWorkspaceCommand(this.paneWorkspaceContext(), request);
+  }
+
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {
     return deleteSessionCommand(this.sessionDeleteContext(), filePath);
   }
@@ -3248,6 +3297,11 @@ class DesktopHostService {
       }
 
       const conversationView = orchestration.conversationSnapshotView;
+      const paneWorkspace = resolvePaneWorkspaceProjection({
+        bundle,
+        state: this.requireState(),
+        isForegroundActive,
+      });
       const sliceSignature = [
         resolved,
         isForegroundActive ? 1 : 0,
@@ -3260,6 +3314,10 @@ class DesktopHostService {
         pendingQuestions ? JSON.stringify(pendingQuestions.request) : '',
         bundleRuntime?.pendingUserTurn() ?? '',
         (bundleRuntime?.pendingImagePaths()?.length ?? 0),
+        paneWorkspace?.workspaceRoot ?? '',
+        paneWorkspace?.workspaceBinding ?? '',
+        paneWorkspace?.git?.revision ?? 0,
+        paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? '',
       ].join('\0');
       const cached = this.paneSessionSliceCache.get(resolved);
       if (cached?.signature === sliceSignature) {
@@ -3273,6 +3331,7 @@ class DesktopHostService {
         conversationSnapshotView: conversationView,
         livePendingAux: pendingAux,
         isForegroundActive,
+        ...(paneWorkspace ? { paneWorkspace } : {}),
         ...(pendingApproval
           ? {
               pendingApproval: {
@@ -3345,11 +3404,23 @@ class DesktopHostService {
     return true;
   }
 
-  private async adoptWorkspaceRootForActiveBundle(workspaceRoot: string): Promise<void> {
+  private async adoptWorkspaceRootForActiveBundle(
+    workspaceRoot: string,
+    options?: { deferHeavyWork?: boolean },
+  ): Promise<void> {
     const resolved = path.resolve(workspaceRoot);
     const state = this.requireState();
     const bundle = this.activeBundle();
     const switchingWorkspace = !sameWorkspaceRoot(state.workspaceRoot, resolved);
+
+    if (this.visiblePaneSessionPaths.length > 1) {
+      await prefetchScopedGitBeforeGlobalWorkspaceChange(
+        this.paneWorkspaceContext(),
+        resolved,
+        'project',
+      );
+      this.paneSessionSliceCache.clear();
+    }
 
     if (switchingWorkspace) {
       await this.extensionManager().deactivateAll();
@@ -3367,12 +3438,110 @@ class DesktopHostService {
     );
     bundle.workspaceRoot = resolved;
     await this.syncPlanStateForBundle(bundle);
+
+    if (options?.deferHeavyWork) {
+      await this.ensureVisiblePaneScopedGit();
+      void this.runSerialized(async () => {
+        await this.completeWorkspaceAdoptionFollowUp(bundle, resolved, switchingWorkspace);
+      });
+      return;
+    }
+
     await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
     if (switchingWorkspace) {
       await this.refreshExtensionsList({ metadataOnly: true });
       this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: resolved });
     }
+    await this.ensureVisiblePaneScopedGit();
+  }
+
+  private async completeWorkspaceAdoptionFollowUp(
+    bundle: SessionBundle,
+    workspaceRoot: string,
+    switchingWorkspace: boolean,
+  ): Promise<void> {
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    if (switchingWorkspace) {
+      await this.refreshExtensionsList({ metadataOnly: true });
+      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot });
+    }
+  }
+
+  private async adoptNoWorkspaceBindingForActiveBundle(
+    options?: { deferHeavyWork?: boolean },
+  ): Promise<void> {
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+    const home = resolveDesktopHomeDirectory();
+    const switchingWorkspace = !sameWorkspaceRoot(state.workspaceRoot, home);
+    const previousBinding = normalizeWorkspaceBinding(state.workspaceBinding);
+
+    if (this.visiblePaneSessionPaths.length > 1) {
+      await prefetchScopedGitBeforeGlobalWorkspaceChange(
+        this.paneWorkspaceContext(),
+        home,
+        'none',
+      );
+      this.paneSessionSliceCache.clear();
+    }
+
+    if (switchingWorkspace) {
+      await this.extensionManager().deactivateAll();
+      this.invalidateExtensionWarmup();
+      this.lastRuntimeError = '';
+      this.toolExecutor = undefined;
+      this.resetStreamingPlacementState(true);
+    }
+
+    const git = applyGitRevision(
+      await readWorkspaceGitSnapshot(home),
+      0,
+      { reset: true },
+    );
+    git.workLocation = bundle.workLocation;
+
+    let lastProjectWorkspaceRoot = state.config.lastProjectWorkspaceRoot;
+    if (
+      previousBinding === 'project'
+      && state.workspaceRoot
+      && !sameWorkspaceRoot(state.workspaceRoot, home)
+    ) {
+      lastProjectWorkspaceRoot = state.workspaceRoot;
+    }
+
+    state.workspaceBinding = 'none';
+    state.workspaceRoot = home;
+    state.git = git;
+    bundle.workspaceRoot = home;
+    bundle.workspaceBinding = 'none';
+    bundle.scopedGit = undefined;
+
+    state.config = {
+      ...state.config,
+      workspaceBinding: 'none',
+      ...(lastProjectWorkspaceRoot ? { lastProjectWorkspaceRoot } : {}),
+    };
+    await saveConfig(state.config);
+
+    await this.syncPlanStateForBundle(bundle);
+
+    if (options?.deferHeavyWork) {
+      await this.ensureVisiblePaneScopedGit();
+      void this.runSerialized(async () => {
+        await this.completeWorkspaceAdoptionFollowUp(bundle, home, switchingWorkspace);
+      });
+      return;
+    }
+
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    if (switchingWorkspace) {
+      await this.refreshExtensionsList({ metadataOnly: true });
+      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: home });
+    }
+    await this.ensureVisiblePaneScopedGit();
   }
 
   private async generateWorktreeNamesFromModel(

@@ -185,6 +185,9 @@ function paneHostPropsEqual(
   if (prev.runtime.busyAction !== next.runtime.busyAction) {
     return false;
   }
+  if (prev.runtime.paneWorkspaceBusySessionPath !== next.runtime.paneWorkspaceBusySessionPath) {
+    return false;
+  }
   return (
     paneHostRenderSignature(prev.baseSnapshot, prev.sessionPath)
     === paneHostRenderSignature(next.baseSnapshot, next.sessionPath)

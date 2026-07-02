@@ -34,6 +34,7 @@ import { desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
+import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import { shouldShowComposerChangesCard } from "@/lib/composer-changes-card-visibility";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,8 @@ export type ComposerDockProps = {
   isEmptySession: boolean;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
+  paneSessionPath?: string;
+  useIsolatedPaneWorkspace?: boolean;
   composerText: string;
   onComposerTextChange: (text: string) => void;
   composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
@@ -109,6 +112,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     isEmptySession,
     emptySessionGreeting,
     showWorkspaceBindingControls,
+    paneSessionPath,
+    useIsolatedPaneWorkspace = false,
     composerText,
     onComposerTextChange,
     composerLocalFileAttachments,
@@ -178,6 +183,11 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
   const showChangesCard = shouldShowComposerChangesCard(snapshot?.git);
   const changesLineDelta = snapshot?.git.workingTreeLineDelta;
   const hasComposerTodos = Boolean(snapshot?.conversation.todos);
+  const workspaceControlsDisabled =
+    useIsolatedPaneWorkspace && paneSessionPath
+      ? runtime.paneWorkspaceBusySessionPath === normalizePaneSessionPathKey(paneSessionPath)
+      : runtime.busyAction === "bootstrap" || runtime.busyAction === "session";
+  const gitControlsDisabled = workspaceControlsDisabled || commitBusy;
 
   return (
     <div
@@ -217,7 +227,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 currentWorkspaceRoot={snapshot?.workspaceRoot ?? ""}
                 workspaceBinding={snapshot?.workspaceBinding ?? "project"}
                 availableWorkspaces={snapshot?.availableWorkspaces ?? []}
-                disabled={runtime.busyAction === "bootstrap" || runtime.busyAction === "session"}
+                disabled={workspaceControlsDisabled}
                 onSelectWorkspace={(workspaceRoot) => {
                   if (
                     snapshot?.workspaceBinding === "project"
@@ -226,10 +236,18 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   ) {
                     return;
                   }
+                  if (useIsolatedPaneWorkspace && paneSessionPath) {
+                    void runtime.switchPaneWorkspace(paneSessionPath, workspaceRoot);
+                    return;
+                  }
                   void runtime.switchWorkspaceRoot(workspaceRoot);
                 }}
                 onSelectNoWorkspace={() => {
                   if (snapshot?.workspaceBinding === "none") {
+                    return;
+                  }
+                  if (useIsolatedPaneWorkspace && paneSessionPath) {
+                    void runtime.switchPaneToNoWorkspaceBinding(paneSessionPath);
                     return;
                   }
                   void runtime.switchToNoWorkspaceBinding();
@@ -238,6 +256,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   void (async () => {
                     const workspaceRoot = await runtime.pickWorkspaceDirectory();
                     if (!workspaceRoot) {
+                      return;
+                    }
+                    if (useIsolatedPaneWorkspace && paneSessionPath) {
+                      await runtime.switchPaneWorkspace(paneSessionPath, workspaceRoot);
                       return;
                     }
                     await runtime.switchWorkspaceRoot(workspaceRoot);
@@ -250,11 +272,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     branches={snapshot?.git.branches ?? []}
                     selectedBranch={snapshot?.git.selectedBranch}
                     currentBranch={snapshot?.git.branch}
-                    disabled={
-                      runtime.busyAction === "bootstrap"
-                      || runtime.busyAction === "session"
-                      || commitBusy
-                    }
+                    disabled={gitControlsDisabled}
                     onBranchChange={(branch) => {
                       void runtime.setPendingGitBranch(branch);
                     }}
@@ -262,9 +280,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   <WorkLocationMenu
                     workLocation={snapshot?.git.workLocation ?? "local"}
                     disabled={
-                      runtime.busyAction === "bootstrap"
-                      || runtime.busyAction === "session"
-                      || commitBusy
+                      gitControlsDisabled
                       || snapshot?.git.isRepository !== true
                     }
                     onWorkLocationChange={(workLocation) => {

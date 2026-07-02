@@ -30,6 +30,10 @@ export interface SessionBundle {
   /** Stable id: `activeSession.filePath` or synthetic until first persist. */
   id: string;
   workspaceRoot: string;
+  /** Per-pane workspace binding; foreground syncs to global config on activation. */
+  workspaceBinding?: import('../types.js').DesktopWorkspaceBinding;
+  /** Git snapshot for background panes whose workspace differs from host state. */
+  scopedGit?: import('../types.js').DesktopGitSnapshot;
   activeSession?: ActiveSessionSnapshot;
   messages: ConversationMessageSnapshot[];
   messageTimeline: DesktopMessageTimeline;

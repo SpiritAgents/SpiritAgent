@@ -26,6 +26,7 @@ import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { readSessionSplitBinding } from "@/lib/session-split-binding";
 import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
+import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
 import type {
   AddModelRequest,
@@ -359,6 +360,9 @@ export function useDesktopRuntime() {
     llmHttpVersion: "http2",
   });
   const [busyAction, setBusyAction] = useState<BusyAction>("");
+  const [paneWorkspaceBusySessionPath, setPaneWorkspaceBusySessionPath] = useState<string | null>(
+    null,
+  );
   const [layoutNavigationPending, setLayoutNavigationPendingState] = useState(false);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [unseenCompletedSessionPaths, setUnseenCompletedSessionPaths] = useState<ReadonlySet<string>>(
@@ -375,6 +379,7 @@ export function useDesktopRuntime() {
   const appliedComposerSessionKeyRef = useRef("");
   const sessionNavigationGenerationRef = useRef(0);
   const busyActionRef = useRef<BusyAction>("");
+  const paneWorkspaceBusySessionPathRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
   const micaSaveSeqRef = useRef(0);
@@ -488,6 +493,10 @@ export function useDesktopRuntime() {
   }, [busyAction]);
 
   useEffect(() => {
+    paneWorkspaceBusySessionPathRef.current = paneWorkspaceBusySessionPath;
+  }, [paneWorkspaceBusySessionPath]);
+
+  useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
 
@@ -533,7 +542,17 @@ export function useDesktopRuntime() {
     snapshot?.composerSessionKey,
   ]);
 
-  const applySnapshot = useCallback((next: DesktopSnapshot, options?: { navGeneration?: number }) => {
+  const applySnapshot = useCallback((next: DesktopSnapshot, options?: {
+    navGeneration?: number;
+    fromPaneWorkspaceSwitch?: boolean;
+  }) => {
+    if (
+      paneWorkspaceBusySessionPathRef.current
+      && !options?.fromPaneWorkspaceSwitch
+    ) {
+      return;
+    }
+
     if (
       options?.navGeneration === undefined &&
       (busyActionRef.current === "session" || busyActionRef.current === "reset")
@@ -832,6 +851,59 @@ export function useDesktopRuntime() {
       setBusyAction("");
     }
   }, [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
+
+  const switchPaneWorkspace = useCallback(
+    async (sessionPath: string, workspaceRoot: string): Promise<boolean> => {
+      if (!api?.switchPaneWorkspace) {
+        return false;
+      }
+
+      setPaneWorkspaceBusySessionPath(normalizePaneSessionPathKey(sessionPath));
+      try {
+        const next = await api.switchPaneWorkspace({
+          sessionPath,
+          workspaceRoot,
+          workspaceBinding: "project",
+        });
+        applySnapshot(next, { fromPaneWorkspaceSwitch: true });
+        setQuestionError("");
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setPaneWorkspaceBusySessionPath(null);
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const switchPaneToNoWorkspaceBinding = useCallback(
+    async (sessionPath: string): Promise<boolean> => {
+      if (!api?.switchPaneWorkspace) {
+        return false;
+      }
+
+      setPaneWorkspaceBusySessionPath(normalizePaneSessionPathKey(sessionPath));
+      try {
+        const next = await api.switchPaneWorkspace({
+          sessionPath,
+          workspaceBinding: "none",
+        });
+        applySnapshot(next, { fromPaneWorkspaceSwitch: true });
+        setQuestionError("");
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setPaneWorkspaceBusySessionPath(null);
+      }
+    },
+    [api, applySnapshot],
+  );
 
   const rememberWorkspaceRoot = useCallback(
     async (workspaceRoot: string): Promise<boolean> => {
@@ -3188,6 +3260,7 @@ export function useDesktopRuntime() {
     apiReady: hostReady,
     hostConnectionError: hostError,
     busyAction,
+    paneWorkspaceBusySessionPath,
     layoutNavigationPending,
     setLayoutNavigationPending,
     agentModeChipDismissed,
@@ -3228,6 +3301,8 @@ export function useDesktopRuntime() {
     bootstrap,
     switchWorkspaceRoot,
     switchToNoWorkspaceBinding,
+    switchPaneWorkspace,
+    switchPaneToNoWorkspaceBinding,
     rememberWorkspaceRoot,
     pickWorkspaceDirectory,
     pickLocalFile,
