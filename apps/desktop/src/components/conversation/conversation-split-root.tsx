@@ -5,11 +5,13 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import { useTranslation } from "react-i18next";
 
 import { useConversationSplit } from "@/contexts/conversation-split-context";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
-import { clampSplitRatio, type SplitLayoutNode } from "@/lib/conversation-split-layout";
+import {
+  clampSplitRatio,
+  type SplitLayoutNode,
+} from "@/lib/conversation-split-layout";
 import { cn } from "@/lib/utils";
 
 type ConversationSplitRootProps = {
@@ -97,7 +99,7 @@ function SplitDivider({
         role="separator"
         aria-orientation={direction === "horizontal" ? "vertical" : "horizontal"}
         className={cn(
-          "group relative z-10 touch-none select-none",
+          "group relative z-20 touch-none select-none",
           direction === "horizontal"
             ? "h-full w-1 shrink-0 cursor-col-resize"
             : "h-1 w-full shrink-0 cursor-row-resize",

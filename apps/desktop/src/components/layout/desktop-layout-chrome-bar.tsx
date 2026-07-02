@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 
 export function DesktopLayoutChromeBar({
   useMicaBackdrop,
+  showSessionSidebarToggle = true,
   showWorkspaceToggle,
   showSplitMenu = false,
   showClosePane = false,
@@ -46,6 +47,7 @@ export function DesktopLayoutChromeBar({
   onPaneDrop,
 }: {
   useMicaBackdrop: boolean;
+  showSessionSidebarToggle?: boolean;
   showWorkspaceToggle: boolean;
   showSplitMenu?: boolean;
   showClosePane?: boolean;
@@ -99,14 +101,16 @@ export function DesktopLayoutChromeBar({
         }}
         onDragEnd={() => onPaneDragLeave?.()}
       >
-        {pinSidebarToggleOnDarwin ? (
-          <div data-darwin-pinned-sidebar-toggle>
-            <SessionSidebarToggleButton />
-          </div>
-        ) : (
-          <SessionSidebarToggleButton className="mr-1" />
-        )}
-        {pinSidebarToggleOnDarwin ? (
+        {showSessionSidebarToggle ? (
+          pinSidebarToggleOnDarwin ? (
+            <div data-darwin-pinned-sidebar-toggle>
+              <SessionSidebarToggleButton />
+            </div>
+          ) : (
+            <SessionSidebarToggleButton className="mr-1" />
+          )
+        ) : null}
+        {showSessionSidebarToggle && pinSidebarToggleOnDarwin ? (
           <div
             className={cn(
               "shrink-0 overflow-hidden",
