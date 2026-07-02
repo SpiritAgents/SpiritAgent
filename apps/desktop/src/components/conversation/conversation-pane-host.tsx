@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { useCallback } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
@@ -8,7 +8,6 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import type { PaneDropZone } from "@/lib/conversation-split-layout";
-import { paneHostRenderSignature } from "@/lib/pane-desktop-snapshot";
 import type { DesktopSnapshot } from "@/types";
 import type { TFunction } from "i18next";
 
@@ -56,7 +55,7 @@ export type ConversationPaneHostProps = {
   language: string;
 };
 
-function ConversationPaneHostInner({
+export function ConversationPaneHost({
   sessionPath,
   paneId,
   isFocused,
@@ -153,84 +152,3 @@ function ConversationPaneHostInner({
     />
   );
 }
-
-function paneHostPropsEqual(
-  prev: ConversationPaneHostProps,
-  next: ConversationPaneHostProps,
-): boolean {
-  if (prev.isFocused !== next.isFocused) {
-    return false;
-  }
-  if (prev.isAnchorPane !== next.isAnchorPane) {
-    return false;
-  }
-  if (prev.sessionPath !== next.sessionPath) {
-    return false;
-  }
-  if (prev.sessionNavigationBusy !== next.sessionNavigationBusy) {
-    return false;
-  }
-  if (prev.newSessionBusy !== next.newSessionBusy) {
-    return false;
-  }
-  if (prev.deleteSessionBusy !== next.deleteSessionBusy) {
-    return false;
-  }
-  if (prev.hideStaleConversationMessages !== next.hideStaleConversationMessages) {
-    return false;
-  }
-  if (prev.subagentViewActive !== next.subagentViewActive) {
-    return false;
-  }
-  if (
-    (prev.compactionDemo.active && prev.isFocused)
-    !== (next.compactionDemo.active && next.isFocused)
-  ) {
-    return false;
-  }
-  if (prev.showClosePane !== next.showClosePane) {
-    return false;
-  }
-  if (prev.useMicaBackdrop !== next.useMicaBackdrop) {
-    return false;
-  }
-  if (prev.language !== next.language) {
-    return false;
-  }
-  if (prev.useIsolatedPane !== next.useIsolatedPane) {
-    return false;
-  }
-  if (
-    (!prev.useIsolatedPane || !next.useIsolatedPane)
-    && prev.splitPaneCount !== next.splitPaneCount
-  ) {
-    return false;
-  }
-  if (prev.paneReorderEnabled !== next.paneReorderEnabled) {
-    return false;
-  }
-  if (prev.paneDropOverlayActive !== next.paneDropOverlayActive) {
-    return false;
-  }
-  if (prev.paneDragSourcePaneId !== next.paneDragSourcePaneId) {
-    return false;
-  }
-  if (prev.runtime.layoutNavigationPending !== next.runtime.layoutNavigationPending) {
-    return false;
-  }
-  if (prev.runtime.busyAction !== next.runtime.busyAction) {
-    return false;
-  }
-  if (prev.runtime.paneWorkspaceBusySessionPath !== next.runtime.paneWorkspaceBusySessionPath) {
-    return false;
-  }
-  if (prev.runtime.paneSendBusySessionPath !== next.runtime.paneSendBusySessionPath) {
-    return false;
-  }
-  return (
-    paneHostRenderSignature(prev.baseSnapshot, prev.sessionPath)
-    === paneHostRenderSignature(next.baseSnapshot, next.sessionPath)
-  );
-}
-
-export const ConversationPaneHost = memo(ConversationPaneHostInner, paneHostPropsEqual);
