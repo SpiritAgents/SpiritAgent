@@ -1034,6 +1034,7 @@
     "fileChangeSnapshotMissing": "File change snapshot missing; skipped this rewind item.",
     "ephemeralSessionExpired": "Temporary debug session does not exist or has expired.",
     "invalidSessionPath": "Invalid session path.",
+    "emptySessionDisplayName": "Session title cannot be empty.",
     "cannotDeleteBusySession": "Cannot delete a session while it is running.",
     "apiKeyNotConfigured": "API Key is not configured. Please fill it in Settings.",
     "mcpExecutorNotInitialized": "Desktop MCP tool executor has not been initialized.",

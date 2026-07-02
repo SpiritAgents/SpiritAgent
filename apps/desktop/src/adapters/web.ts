@@ -360,6 +360,9 @@ export function createWebHostApi(): HostApi {
     deleteSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/delete', { path });
     },
+    renameSession(path: string, displayName: string) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/rename', { path, displayName });
+    },
     listWorkspaceFileReferenceSuggestions(request: QueryWorkspaceFileReferenceSuggestionsRequest) {
       return post<WorkspaceFileReferenceSuggestionsResponse>(
         baseUrl,

@@ -178,7 +178,9 @@ export function restoreStoredSessionState(input: {
       ? { activeModel: input.loaded.activeModel.trim() }
       : {}),
     ...(activePlanPath ? { activePlanPath } : {}),
-    ...(input.loaded.sessionTitleSource === 'seed' || input.loaded.sessionTitleSource === 'llm'
+    ...(input.loaded.sessionTitleSource === 'seed'
+      || input.loaded.sessionTitleSource === 'llm'
+      || input.loaded.sessionTitleSource === 'manual'
       ? { sessionTitleSource: input.loaded.sessionTitleSource }
       : {}),
     ...(input.loaded.contextUsage ? { contextUsage: { ...input.loaded.contextUsage } } : {}),

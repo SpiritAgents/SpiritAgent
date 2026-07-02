@@ -291,6 +291,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   deleteSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'deleteSession', { path });
   },
+  renameSession(path: string, displayName: string) {
+    return ipcRenderer.invoke('desktop:invoke', 'renameSession', { path, displayName });
+  },
   listWorkspaceFileReferenceSuggestions(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'listWorkspaceFileReferenceSuggestions', {
       request,

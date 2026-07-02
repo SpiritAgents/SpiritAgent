@@ -1178,6 +1178,19 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/rename') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('renameSession', {
+        path: typeof jsonBody?.path === 'string' ? jsonBody.path : '',
+        displayName: typeof jsonBody?.displayName === 'string' ? jsonBody.displayName : '',
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/workspace/explorer') {
     writeJson(
       request,

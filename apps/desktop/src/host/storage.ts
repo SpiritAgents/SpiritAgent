@@ -667,7 +667,9 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
     ...(normalizeDisplayName(parsed.sessionDisplayName)
       ? { sessionDisplayName: normalizeDisplayName(parsed.sessionDisplayName) }
       : {}),
-    ...(parsed.sessionTitleSource === 'seed' || parsed.sessionTitleSource === 'llm'
+    ...(parsed.sessionTitleSource === 'seed'
+      || parsed.sessionTitleSource === 'llm'
+      || parsed.sessionTitleSource === 'manual'
       ? { sessionTitleSource: parsed.sessionTitleSource }
       : {}),
     ...(resolveStoredWorkspaceRoot(parsed.workspaceRoot)
