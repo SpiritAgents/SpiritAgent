@@ -10,6 +10,7 @@ import type {
 import { useTranslation } from "react-i18next";
 
 import { ComposerDock } from "@/components/conversation/composer-dock";
+import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationList } from "@/components/conversation/conversation-list";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,16 @@ export type ComposerDockSectionProps = {
   onOpenGitTab: () => void;
 };
 
+export type BranchCheckoutSectionProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  branchCheckoutBlockedByChanges: boolean;
+  commitBusy: boolean;
+  onCancel: () => void;
+  onConfirmCheckout: () => void;
+  onDiscardAndCheckout: () => void;
+};
+
 export type ConversationViewProps = {
   useMicaBackdrop: boolean;
   isEmptySession: boolean;
@@ -160,6 +171,7 @@ export type ConversationViewProps = {
   conversationScrollBedPaddingPx: number;
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
+  branchCheckout?: BranchCheckoutSectionProps;
   showComposerDock?: boolean;
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle?: boolean;
@@ -201,6 +213,7 @@ export function ConversationView({
   conversationScrollBedPaddingPx,
   list,
   composerDock,
+  branchCheckout,
   showComposerDock = true,
   showSessionSidebarToggle = true,
   showWorkspaceToggle = true,
@@ -563,6 +576,18 @@ export function ConversationView({
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}
           />
+          ) : null}
+          {showComposerDock && branchCheckout ? (
+            <BranchCheckoutDialog
+              open={branchCheckout.open}
+              onOpenChange={branchCheckout.onOpenChange}
+              branchCheckoutBlockedByChanges={branchCheckout.branchCheckoutBlockedByChanges}
+              git={snapshot?.git}
+              commitBusy={branchCheckout.commitBusy}
+              onCancel={branchCheckout.onCancel}
+              onConfirmCheckout={branchCheckout.onConfirmCheckout}
+              onDiscardAndCheckout={branchCheckout.onDiscardAndCheckout}
+            />
           ) : null}
         </div>
         </div>

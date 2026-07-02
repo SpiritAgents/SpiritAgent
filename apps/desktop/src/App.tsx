@@ -5,7 +5,6 @@ import { SessionSidebarChromeProvider } from "@/contexts/session-sidebar-chrome-
 import { ActionPickerDialog } from "@/components/action-picker-dialog";
 import { AutomationDetailView } from "@/components/automation-detail-view";
 import { AutomationsView } from "@/components/automations-view";
-import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationPaneHost } from "@/components/conversation/conversation-pane-host";
 import { ConversationSplitRoot } from "@/components/conversation/conversation-split-root";
 import { ConversationWorkspaceToolsDock } from "@/components/conversation/conversation-workspace-tools-dock";
@@ -621,17 +620,6 @@ export default function App() {
         statHostTextFile={runtime.statHostTextFile}
         indexReady={composer.workspaceFileIndex.ready}
         searchWorkspaceFiles={composer.workspaceFileIndex.searchFilesOnly}
-      />
-
-      <BranchCheckoutDialog
-        open={composer.branchCheckoutDialogOpen}
-        onOpenChange={composer.handleBranchCheckoutDialogOpenChange}
-        branchCheckoutBlockedByChanges={composer.branchCheckoutBlockedByChanges}
-        git={snapshot?.git}
-        commitBusy={composer.commitBusy}
-        onCancel={composer.cancelBranchCheckoutDialog}
-        onConfirmCheckout={composer.confirmBranchCheckoutAndSend}
-        onDiscardAndCheckout={composer.discardBranchChangesAndCheckoutSend}
       />
 
     </div>

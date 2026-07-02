@@ -159,6 +159,7 @@ export function ConversationPaneHost({
       conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
       list={pane.list}
       composerDock={pane.composerDock}
+      branchCheckout={pane.branchCheckout}
     />
   );
 }
