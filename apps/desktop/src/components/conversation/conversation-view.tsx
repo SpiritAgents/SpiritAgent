@@ -160,6 +160,12 @@ export type ConversationViewProps = {
   onSplit?: () => void;
   onSplitVertical?: () => void;
   onClosePane?: () => void;
+  showDeleteSession?: boolean;
+  deleteSessionPath?: string | null;
+  deleteSessionDisplayName?: string | null;
+  deleteSessionBusy?: boolean;
+  conversationBusy?: boolean;
+  onDeleteSession?: (path: string) => void | Promise<void>;
   paneId?: string;
   onPaneFocus?: () => void;
   onPaneDragStart?: (paneId: string) => void;
@@ -194,6 +200,12 @@ export function ConversationView({
   onSplit,
   onSplitVertical,
   onClosePane,
+  showDeleteSession = false,
+  deleteSessionPath,
+  deleteSessionDisplayName,
+  deleteSessionBusy = false,
+  conversationBusy = false,
+  onDeleteSession,
   paneId,
   onPaneFocus,
   onPaneDragStart,
@@ -326,6 +338,12 @@ export function ConversationView({
           onExitSubagentViewer={onExitSubagentViewer}
           onNewSession={isEmptySession ? undefined : onNewSession}
           newSessionBusy={newSessionBusy}
+          showDeleteSession={showDeleteSession}
+          deleteSessionPath={deleteSessionPath}
+          deleteSessionDisplayName={deleteSessionDisplayName}
+          deleteSessionBusy={deleteSessionBusy}
+          conversationBusy={conversationBusy}
+          onDeleteSession={onDeleteSession}
         />
         {showDropTargets ? (() => {
           const visibleDropZones = resolveVisibleDropZones();
