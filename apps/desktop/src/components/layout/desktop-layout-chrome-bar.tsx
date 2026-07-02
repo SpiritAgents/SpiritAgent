@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { PanelRightClose, PanelRightOpen, Plus, MoreHorizontal } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, X } from "lucide-react";
 
 import {
   NewSessionShortcutKbd,
@@ -20,6 +20,8 @@ import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-conte
 import { useWorkspaceToolsChrome } from "@/contexts/workspace-tools-chrome-context";
 import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
+  DESKTOP_OVERLAY_SHORT_LIST_PADDING,
+  DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
@@ -190,27 +192,32 @@ export function DesktopLayoutChromeBar({
                   <MoreHorizontal className="size-3.5 text-muted-foreground" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-40 p-0">
-                <DropdownMenuItem
-                  className="cursor-pointer rounded-none px-3 py-2 text-sm"
-                  onSelect={() => onSplit?.()}
-                >
-                  {t("app.splitHorizontal")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer rounded-none px-3 py-2 text-sm"
-                  onSelect={() => onSplitVertical?.()}
-                >
-                  {t("app.splitVertical")}
-                </DropdownMenuItem>
-                {showClosePane ? (
+              <DropdownMenuContent align="end" className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "p-0")}>
+                <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
                   <DropdownMenuItem
-                    className="cursor-pointer rounded-none px-3 py-2 text-sm"
-                    onSelect={() => onClosePane?.()}
+                    className="gap-1.5"
+                    onSelect={() => onSplit?.()}
                   >
-                    {t("app.closePane")}
+                    <SquareSplitHorizontal className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                    <span>{t("app.splitRight")}</span>
                   </DropdownMenuItem>
-                ) : null}
+                  <DropdownMenuItem
+                    className="gap-1.5"
+                    onSelect={() => onSplitVertical?.()}
+                  >
+                    <SquareSplitVertical className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                    <span>{t("app.splitDown")}</span>
+                  </DropdownMenuItem>
+                  {showClosePane ? (
+                    <DropdownMenuItem
+                      className="gap-1.5"
+                      onSelect={() => onClosePane?.()}
+                    >
+                      <X className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                      <span>{t("app.closePane")}</span>
+                    </DropdownMenuItem>
+                  ) : null}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
