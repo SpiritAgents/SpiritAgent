@@ -9,6 +9,7 @@ import {
 } from "@/components/layout/desktop-shortcut-kbds";
 import { SessionSidebarToggleButton } from "@/components/layout/session-sidebar-toggle-button";
 import { SessionChromeBreadcrumb } from "@/components/session-chrome-breadcrumb";
+import type { SessionGitTooltipItem } from "@/components/session-list-git-tooltip";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,6 +56,7 @@ export function DesktopLayoutChromeBar({
   showSplitMenu = false,
   showClosePane = false,
   sessionTitle,
+  sessionTooltip,
   subagentPromptText,
   onExitSubagentViewer,
   onNewSession,
@@ -86,6 +88,7 @@ export function DesktopLayoutChromeBar({
   showSplitMenu?: boolean;
   showClosePane?: boolean;
   sessionTitle?: string | null;
+  sessionTooltip?: SessionGitTooltipItem | null;
   subagentPromptText?: string | null;
   onExitSubagentViewer?: () => void;
   onNewSession?: () => void;
@@ -287,6 +290,7 @@ export function DesktopLayoutChromeBar({
         {trimmedSessionTitle || renamingTitle ? (
           <SessionChromeBreadcrumb
             sessionTitle={trimmedSessionTitle || trimmedRenameSessionDisplayName}
+            sessionTooltip={sessionTooltip}
             subagentPromptText={subagentPromptText}
             onExitSubagentViewer={onExitSubagentViewer}
             renaming={renamingTitle}

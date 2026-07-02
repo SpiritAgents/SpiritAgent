@@ -82,6 +82,7 @@ import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { isViteDev } from "@/lib/vite-dev";
 import { cn } from "@/lib/utils";
 import { SettingsShortcutKbd } from "@/components/layout/desktop-shortcut-kbds";
+import { SESSION_TITLE_RENAME_INPUT_CLASS } from "@/lib/desktop-chrome";
 import { shortcutLabel, settingsShortcutLabel } from "@/lib/desktop-shell";
 import i18n from "@/lib/i18n";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -95,9 +96,6 @@ import {
 /** 平台快捷键提示，模块加载时计算（平台不会运行时变化）。 */
 const newSessionShortcutLabel = shortcutLabel("N");
 const settingsShortcutLabelText = settingsShortcutLabel();
-
-const SESSION_RENAME_INPUT_CLASS =
-  "min-w-0 flex-1 rounded border border-border/60 bg-background px-1 py-0 text-xs outline-none focus:border-ring";
 
 function describeRenameError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -765,7 +763,7 @@ const SessionListRow = memo(function SessionListRow({
         <input
           ref={renameInputRef}
           value={renameValue}
-          className={SESSION_RENAME_INPUT_CLASS}
+          className={cn(SESSION_TITLE_RENAME_INPUT_CLASS, "flex-1 basis-0")}
           aria-label={t("sidebar.renameSession")}
           onChange={(event) => onRenameValueChange?.(event.target.value)}
           onKeyDown={handleRenameKeyDown}
