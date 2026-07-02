@@ -31,6 +31,8 @@ export function assignProvisionalActiveSession(bundle: SessionBundle, filePath?:
 export class SessionRegistry {
   private readonly bundles = new Map<string, SessionBundle>();
   private activeId: string | undefined;
+  /** Split-view pane paths that must stay loaded even when over MAX_LOADED_BUNDLES. */
+  private protectedSessionPaths = new Set<string>();
 
   hasActive(): boolean {
     return this.activeId !== undefined && this.bundles.has(this.activeId);
@@ -98,6 +100,21 @@ export class SessionRegistry {
 
   activeSessionId(): string | undefined {
     return this.activeId;
+  }
+
+  setProtectedSessionPaths(paths: Iterable<string>): void {
+    this.protectedSessionPaths = new Set(
+      [...paths].map((entry) => path.resolve(entry)),
+    );
+  }
+
+  private isProtectedBundle(bundle: SessionBundle, mapKey?: string): boolean {
+    const candidates = [
+      mapKey,
+      bundle.id,
+      bundle.activeSession?.filePath,
+    ].filter((entry): entry is string => Boolean(entry?.trim()));
+    return candidates.some((entry) => this.protectedSessionPaths.has(path.resolve(entry)));
   }
 
   all(): Iterable<SessionBundle> {
@@ -326,18 +343,23 @@ export class SessionRegistry {
   }
 
   private evictIfNeeded(): void {
-    if (this.bundles.size < MAX_LOADED_BUNDLES) {
-      return;
-    }
-    for (const [id, bundle] of this.bundles) {
-      if (id === this.activeId) {
-        continue;
+    while (this.bundles.size >= MAX_LOADED_BUNDLES) {
+      let evicted = false;
+      for (const [id, bundle] of this.bundles) {
+        if (id === this.activeId) {
+          continue;
+        }
+        if (bundle.runtime?.isBusy()) {
+          continue;
+        }
+        if (this.isProtectedBundle(bundle, id)) {
+          continue;
+        }
+        this.bundles.delete(id);
+        evicted = true;
+        break;
       }
-      if (bundle.runtime?.isBusy()) {
-        continue;
-      }
-      this.bundles.delete(id);
-      if (this.bundles.size < MAX_LOADED_BUNDLES) {
+      if (!evicted) {
         return;
       }
     }

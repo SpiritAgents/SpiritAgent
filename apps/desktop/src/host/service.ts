@@ -613,6 +613,7 @@ class DesktopHostService {
     this.visiblePaneSessionPaths = this.visiblePaneSessionPaths.map((entry) =>
       path.resolve(entry) === beforeResolved ? afterResolved : path.resolve(entry),
     );
+    this.sessionRegistry.setProtectedSessionPaths(this.visiblePaneSessionPaths);
   }
 
   private orchestrationFor(bundle: SessionBundle): {
@@ -896,6 +897,7 @@ class DesktopHostService {
       visiblePaneSessionPaths: () => this.visiblePaneSessionPaths,
       setVisiblePaneSessionPaths: (paths) => {
         this.visiblePaneSessionPaths = [...paths];
+        this.sessionRegistry.setProtectedSessionPaths(paths);
       },
       resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
     };
