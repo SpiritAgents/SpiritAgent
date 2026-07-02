@@ -2874,6 +2874,7 @@ export function useDesktopRuntime() {
         void refreshSessions();
       } catch (error) {
         setRuntimeError(describeError(error));
+        throw error;
       } finally {
         if (navGeneration === sessionNavigationGenerationRef.current) {
           setBusyAction("");

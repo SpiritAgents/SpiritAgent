@@ -353,7 +353,7 @@ export function DesktopLayoutChromeBar({
                         void onDeleteSessionOverlayClosed?.();
                       });
                     } catch {
-                      dismissDeleteSessionDialog();
+                      // Keep dialog open; runtime surfaces the error.
                     }
                   })();
                 }}
