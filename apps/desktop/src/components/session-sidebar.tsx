@@ -544,7 +544,6 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
                   sidebarItemDefaultTextClass,
                   sidebarInteractionMotionClass,
                   sidebarItemHoverClass(micaStyle),
-                  workspaceNewSessionDragEnabled && "cursor-grab active:cursor-grabbing",
                 )}
                 disabled={disabled || newSessionBusy}
                 aria-label={t("sidebar.newSessionInWorkspace", { workspace: group.label })}
@@ -833,10 +832,7 @@ const SessionListRow = memo(function SessionListRow({
         event.stopPropagation();
         onRenameStart();
       }}
-      className={cn(
-        rowClassName,
-        sessionDragEnabled && "cursor-grab active:cursor-grabbing",
-      )}
+      className={rowClassName}
     >
       {leading}
       <span
@@ -1738,7 +1734,6 @@ function SessionSidebarInner({
               narrow
                 ? "size-8 shrink-0"
                 : "group h-8 w-full justify-start gap-2",
-              newSessionDragEnabled && "cursor-grab active:cursor-grabbing",
             )}
             disabled={disabled || (newSessionBusy && !newSessionNavActive)}
             onClick={onNewSession}
