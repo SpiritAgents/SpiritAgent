@@ -54,6 +54,8 @@ import {
 
   splitPaneAt,
 
+  splitPaneAtZone,
+
   updateLeafSessionPath,
 
   updateSplitRatio,
@@ -99,7 +101,14 @@ import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-compo
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 import type { DesktopSnapshot } from "@/types";
 
+import { sameWorkspacePath } from "@/lib/workspace-display-label";
+
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
+
+export type SidebarSessionDragPayload =
+  | { kind: "stored"; sessionPath: string }
+  | { kind: "new" }
+  | { kind: "new-in-workspace"; workspaceRoot: string };
 
 
 
@@ -155,6 +164,19 @@ type ConversationSplitContextValue = {
 
   setPaneDropTarget: (target: { paneId: string; zone: PaneDropZone } | null) => void;
 
+  sidebarSessionDragActive: boolean;
+
+  sidebarSessionDragPayload: SidebarSessionDragPayload | null;
+
+  startSidebarSessionDrag: (payload: SidebarSessionDragPayload) => void;
+
+  clearSidebarSessionDrag: () => void;
+
+  completeSidebarSessionDrop: (
+    targetPaneId: string,
+    zone: PaneRepositionZone,
+  ) => Promise<void>;
+
   layoutNavigationPending: boolean;
 
   focusedPaneComposerInsertRef: MutableRefObject<FocusedPaneComposerInsertHandlers | null>;
@@ -181,6 +203,19 @@ function layoutIncludesSessionPath(layout: SplitLayoutNode, sessionPath: string)
 
   );
 
+}
+
+function findPaneIdBySessionPath(
+  layout: SplitLayoutNode,
+  sessionPath: string,
+): string | null {
+  const target = normalizeSessionPathKey(sessionPath);
+  for (const leaf of collectSplitLayoutLeaves(layout)) {
+    if (normalizeSessionPathKey(leaf.sessionPath) === target) {
+      return leaf.paneId;
+    }
+  }
+  return null;
 }
 
 
@@ -470,6 +505,8 @@ export function ConversationSplitProvider({
 
   conversationAbortShortcutTargetRef = null,
 
+  onEnsureConversationSurface,
+
   children,
 
 }: {
@@ -479,6 +516,8 @@ export function ConversationSplitProvider({
   snapshot: DesktopSnapshot | null;
 
   conversationAbortShortcutTargetRef?: ConversationAbortShortcutTargetRef | null;
+
+  onEnsureConversationSurface?: () => void;
 
   children: ReactNode;
 
@@ -498,6 +537,11 @@ export function ConversationSplitProvider({
     paneId: string;
     zone: PaneDropZone;
   } | null>(null);
+
+  const [sidebarSessionDragPayload, setSidebarSessionDragPayload] =
+    useState<SidebarSessionDragPayload | null>(null);
+
+  const sidebarSessionDragActive = sidebarSessionDragPayload !== null;
 
   const focusedPaneComposerInsertRef = useRef<FocusedPaneComposerInsertHandlers | null>(null);
 
@@ -1435,7 +1479,79 @@ export function ConversationSplitProvider({
 
   );
 
+  const startSidebarSessionDrag = useCallback((payload: SidebarSessionDragPayload) => {
+    setSidebarSessionDragPayload(payload);
+  }, []);
 
+  const clearSidebarSessionDrag = useCallback(() => {
+    setSidebarSessionDragPayload(null);
+    setPaneDropTarget(null);
+  }, [setPaneDropTarget]);
+
+  const completeSidebarSessionDrop = useCallback(
+    async (targetPaneId: string, zone: PaneRepositionZone) => {
+      const payload = sidebarSessionDragPayload;
+      clearSidebarSessionDrag();
+      if (!payload || !layout || !runtime.apiReady) {
+        return;
+      }
+
+      onEnsureConversationSurface?.();
+
+      if (payload.kind === "stored") {
+        const existingPaneId = findPaneIdBySessionPath(layout, payload.sessionPath);
+        if (existingPaneId) {
+          focusPane(existingPaneId, payload.sessionPath);
+          return;
+        }
+      }
+
+      const newPaneId = createPaneId();
+      let newSessionPath: string;
+
+      if (payload.kind === "stored") {
+        newSessionPath = payload.sessionPath;
+      } else {
+        if (payload.kind === "new-in-workspace") {
+          const trimmed = payload.workspaceRoot.trim();
+          if (trimmed) {
+            const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
+            const needsSwitch =
+              snapshot?.workspaceBinding !== "project"
+              || !currentRoot
+              || !sameWorkspacePath(currentRoot, trimmed);
+            if (needsSwitch) {
+              const switched = await runtime.switchWorkspaceRoot(trimmed);
+              if (!switched) {
+                return;
+              }
+            }
+          }
+        }
+        const response = await runtime.beginSplitPaneSession(newPaneId, { deferSnapshot: true });
+        newSessionPath = response.sessionPath;
+      }
+
+      const newLeaf = createLeafNode(newPaneId, newSessionPath);
+      const nextLayout = splitPaneAtZone(layout, targetPaneId, zone, newLeaf);
+      setLayout(nextLayout);
+      setFocusedPaneId(newPaneId);
+      persistSessionSplitBinding(nextLayout);
+      const paths = collectPaneSessionPaths(nextLayout);
+      visiblePathsSyncedRef.current = paths.join("\0");
+      await runtime.syncSplitPaneSessions(paths, newSessionPath);
+    },
+    [
+      clearSidebarSessionDrag,
+      focusPane,
+      layout,
+      onEnsureConversationSurface,
+      runtime,
+      sidebarSessionDragPayload,
+      snapshot?.workspaceBinding,
+      snapshot?.workspaceRoot,
+    ],
+  );
 
   const value = useMemo<ConversationSplitContextValue>(
 
@@ -1483,6 +1599,16 @@ export function ConversationSplitProvider({
 
       setPaneDropTarget,
 
+      sidebarSessionDragActive,
+
+      sidebarSessionDragPayload,
+
+      startSidebarSessionDrag,
+
+      clearSidebarSessionDrag,
+
+      completeSidebarSessionDrop,
+
       layoutNavigationPending,
 
       focusedPaneComposerInsertRef,
@@ -1497,11 +1623,15 @@ export function ConversationSplitProvider({
 
       clearPaneDrag,
 
+      clearSidebarSessionDrag,
+
       closePaneById,
 
       collapsePaneLayoutById,
 
       completePaneDrop,
+
+      completeSidebarSessionDrop,
 
       focusPane,
 
@@ -1517,6 +1647,10 @@ export function ConversationSplitProvider({
 
       paneDropTarget,
 
+      sidebarSessionDragActive,
+
+      sidebarSessionDragPayload,
+
       repositionPaneById,
 
       setPaneDropTarget,
@@ -1524,6 +1658,8 @@ export function ConversationSplitProvider({
       splitPane,
 
       startPaneDrag,
+
+      startSidebarSessionDrag,
 
       updateRatio,
 
