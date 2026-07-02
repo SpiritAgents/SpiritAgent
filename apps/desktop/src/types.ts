@@ -659,6 +659,11 @@ export interface SwitchPaneWorkspaceRequest {
   workspaceBinding: DesktopWorkspaceBinding;
 }
 
+export interface SwitchPaneModelRequest {
+  sessionPath: string;
+  modelName: string;
+}
+
 export interface PaneSessionSlice {
   conversation: ConversationSnapshot;
   activeSession?: ActiveSessionSnapshot;
@@ -667,6 +672,7 @@ export interface PaneSessionSlice {
   workspaceRoot?: string;
   workspaceBinding?: DesktopWorkspaceBinding;
   git?: DesktopGitSnapshot;
+  activeModel?: string;
 }
 
 export interface QueuedUserTurnRequest {

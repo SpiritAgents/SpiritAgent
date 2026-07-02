@@ -83,6 +83,9 @@ export interface HostCommandDelegate {
   switchPaneWorkspace(
     request: CommandPayloads['switchPaneWorkspace']['request'],
   ): Promise<unknown>;
+  switchPaneModel(
+    request: CommandPayloads['switchPaneModel']['request'],
+  ): Promise<unknown>;
   deleteSession(path: string): Promise<unknown>;
   listWorkspaceFileReferenceSuggestions(
     request: CommandPayloads['listWorkspaceFileReferenceSuggestions']['request'],
@@ -233,6 +236,7 @@ const hostCommandDispatch = {
   focusPaneSession: (host, payload) => host.focusPaneSession(payload.request),
   closeSplitPaneSession: (host, payload) => host.closeSplitPaneSession(payload.request),
   switchPaneWorkspace: (host, payload) => host.switchPaneWorkspace(payload.request),
+  switchPaneModel: (host, payload) => host.switchPaneModel(payload.request),
   deleteSession: (host, payload) => host.deleteSession(payload.path),
   listWorkspaceFileReferenceSuggestions: (host, payload) =>
     host.listWorkspaceFileReferenceSuggestions(payload.request),

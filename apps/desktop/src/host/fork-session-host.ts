@@ -58,6 +58,7 @@ function applyForkStateToBundle(
   );
   forkBundle.loopEnabled = input.sourceBundle.loopEnabled;
   forkBundle.approvalLevel = input.sourceBundle.approvalLevel;
+  forkBundle.activeModel = input.sourceBundle.activeModel;
   forkBundle.workLocation = input.sourceBundle.workLocation;
   forkBundle.rewind = createDesktopRewindMetadata();
   forkBundle.rewindWarnings = [];

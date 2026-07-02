@@ -98,6 +98,7 @@ interface HostModelState {
 
 interface HostModelBundle {
   activePlanPath?: string;
+  activeModel?: string;
   deferredRuntimeRefreshWhileBusy: boolean;
 }
 
@@ -342,6 +343,7 @@ export async function updateConfigCommand(
 
     if (state.config.activeModel !== prevActiveModel) {
       ctx.clearActiveContextUsage();
+      ctx.activeBundle().activeModel = state.config.activeModel;
     }
 
     const transportOrPlanChanged =

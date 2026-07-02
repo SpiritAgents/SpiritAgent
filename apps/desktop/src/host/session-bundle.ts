@@ -41,6 +41,7 @@ export interface SessionBundle {
   archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
+  activeModel?: string;
   pendingGitBranch?: string;
   workLocation: WorkLocationKind;
   rewind: StoredDesktopRewindMetadata;
@@ -146,6 +147,7 @@ export function sessionBundleFromRestored(
     archiveSubagentSessions: restored.archiveSubagentSessions,
     loopEnabled: restored.loopEnabled,
     approvalLevel: restored.approvalLevel,
+    ...(restored.activeModel ? { activeModel: restored.activeModel } : {}),
     workLocation: 'local',
     rewind: restored.rewind,
     rewindWarnings: [],
@@ -184,6 +186,7 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.archiveSubagentSessions = [];
   bundle.loopEnabled = false;
   bundle.approvalLevel = 'default';
+  bundle.activeModel = undefined;
   bundle.pendingGitBranch = undefined;
   bundle.workLocation = 'local';
   bundle.rewind = createDesktopRewindMetadata();
