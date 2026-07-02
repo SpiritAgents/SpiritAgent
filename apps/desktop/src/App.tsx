@@ -521,12 +521,13 @@ export default function App() {
             )}
             aria-hidden={surfaceNav.settingsMode}
           >
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ConversationSplitProvider
             runtime={runtime}
             snapshot={snapshot}
             conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
           >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ConversationSplitRoot
             useMicaBackdrop={useMicaBackdrop}
             renderPane={(pane) => (
@@ -571,7 +572,6 @@ export default function App() {
               />
             )}
           />
-          </ConversationSplitProvider>
           </div>
           <ConversationWorkspaceToolsDock
             useMicaBackdrop={useMicaBackdrop}
@@ -582,6 +582,8 @@ export default function App() {
             workspaceTools={workspaceTools}
             onOpenIntegrationsSettings={openIntegrationsSettings}
           />
+          </div>
+          </ConversationSplitProvider>
           </div>
         ) : null}
         </div>
