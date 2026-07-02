@@ -45,6 +45,7 @@ import {
   findLeafByPaneId,
 
   findWorkspaceToolsAnchorPaneId,
+  findSessionSidebarAnchorPaneId,
 
   repositionPane,
 
@@ -104,6 +105,8 @@ type ConversationSplitContextValue = {
   focusedPaneId: string | null;
 
   anchorPaneId: string | null;
+
+  sessionSidebarAnchorPaneId: string | null;
 
   paneCount: number;
 
@@ -1294,6 +1297,8 @@ export function ConversationSplitProvider({
       focusedPaneId,
 
       anchorPaneId: layout ? findWorkspaceToolsAnchorPaneId(layout) : null,
+
+      sessionSidebarAnchorPaneId: layout ? findSessionSidebarAnchorPaneId(layout) : null,
 
       paneCount: layout ? countPanes(layout) : 0,
 

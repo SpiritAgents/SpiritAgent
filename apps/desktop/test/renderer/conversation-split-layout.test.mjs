@@ -8,6 +8,7 @@ import {
   createSinglePaneLayout,
   findLeafByPaneId,
   findWorkspaceToolsAnchorPaneId,
+  findSessionSidebarAnchorPaneId,
   repositionPane,
   splitPaneAt,
   updateSplitRatio,
@@ -18,12 +19,14 @@ test("splitPaneAt inserts a horizontal sibling", () => {
   const next = splitPaneAt(root, "a", "horizontal", createLeafNode("b", "/sessions/b.json"));
   assert.equal(countPanes(next), 2);
   assert.equal(findWorkspaceToolsAnchorPaneId(next), "b");
+  assert.equal(findSessionSidebarAnchorPaneId(next), "a");
 });
 
 test("vertical split anchors the top pane", () => {
   const root = createSinglePaneLayout("a", "/sessions/a.json");
   const next = splitPaneAt(root, "a", "vertical", createLeafNode("b", "/sessions/b.json"));
   assert.equal(findWorkspaceToolsAnchorPaneId(next), "a");
+  assert.equal(findSessionSidebarAnchorPaneId(next), "a");
 });
 
 test("closePane collapses back to a single leaf", () => {
@@ -73,6 +76,7 @@ test("repositionPane moves a leaf below the target", () => {
   }
   assert.equal(moved.direction, "vertical");
   assert.equal(findWorkspaceToolsAnchorPaneId(moved), "a");
+  assert.equal(findSessionSidebarAnchorPaneId(moved), "a");
 });
 
 test("splitPaneAt supports more than four panes", () => {
