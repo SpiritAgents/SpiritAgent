@@ -24,6 +24,8 @@ import { isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { clearGitHubAutomationRepositoriesCache } from "@/lib/github-automation-repositories-cache";
 import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
+import { readSessionSplitBinding } from "@/lib/session-split-binding";
+import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
 import type {
   AddModelRequest,
@@ -306,6 +308,26 @@ function patchActiveSessionDisplayNameInList(
   return changed ? next : null;
 }
 
+function normalizeSessionPathKey(sessionPath: string): string {
+  return sessionPath.replace(/\\/g, "/").toLowerCase();
+}
+
+function shouldHoldSessionBusyForSplitRestore(
+  sessionPath: string,
+  snapshot: DesktopSnapshot,
+): boolean {
+  const binding = readSessionSplitBinding(sessionPath);
+  if (!binding) {
+    return false;
+  }
+  const bindingPaths = collectPaneSessionPaths(binding);
+  const paneKeys = Object.keys(snapshot.paneSessions ?? {});
+  return bindingPaths.some(
+    (path) =>
+      !paneKeys.some((key) => normalizeSessionPathKey(key) === normalizeSessionPathKey(path)),
+  );
+}
+
 export function useDesktopRuntime() {
   const { api, error: hostError, kind, ready: hostReady } = useHostApi();
   const [snapshot, setSnapshot] = useState<DesktopSnapshot | null>(null);
@@ -337,6 +359,7 @@ export function useDesktopRuntime() {
     llmHttpVersion: "http2",
   });
   const [busyAction, setBusyAction] = useState<BusyAction>("");
+  const [layoutNavigationPending, setLayoutNavigationPendingState] = useState(false);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [unseenCompletedSessionPaths, setUnseenCompletedSessionPaths] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -2601,6 +2624,7 @@ export function useDesktopRuntime() {
       acknowledgeSessionAttention(path);
       const navGeneration = sessionNavigationGenerationRef.current + 1;
       sessionNavigationGenerationRef.current = navGeneration;
+      let holdBusyForSplitRestore = false;
       setBusyAction("session");
       try {
         stashSessionUi(snapshotRef.current);
@@ -2610,18 +2634,33 @@ export function useDesktopRuntime() {
         }
         applySnapshot(next, { navGeneration });
         restoreSessionUi(next);
+        holdBusyForSplitRestore = shouldHoldSessionBusyForSplitRestore(path, next);
         setRuntimeError("");
         void refreshSessions();
       } catch (error) {
         setRuntimeError(describeError(error));
       } finally {
         if (navGeneration === sessionNavigationGenerationRef.current) {
-          setBusyAction("");
+          if (!holdBusyForSplitRestore) {
+            setBusyAction("");
+          } else {
+          }
         }
       }
     },
     [acknowledgeSessionAttention, api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
   );
+
+  const releaseSessionNavigationBusy = useCallback(() => {
+    if (busyActionRef.current !== "session") {
+      return;
+    }
+    setBusyAction("");
+  }, []);
+
+  const setLayoutNavigationPending = useCallback((pending: boolean) => {
+    setLayoutNavigationPendingState((current) => (current === pending ? current : pending));
+  }, []);
 
   const beginSplitPaneSession = useCallback(
     async (paneId: string): Promise<BeginSplitPaneSessionResponse> => {
@@ -2643,7 +2682,11 @@ export function useDesktopRuntime() {
         return;
       }
       const next = await api.setVisiblePaneSessions({ sessionPaths });
-      applySnapshot(next);
+      const navGeneration =
+        busyActionRef.current === "session"
+          ? sessionNavigationGenerationRef.current
+          : undefined;
+      applySnapshot(next, navGeneration !== undefined ? { navGeneration } : undefined);
     },
     [api, applySnapshot],
   );
@@ -3114,6 +3157,8 @@ export function useDesktopRuntime() {
     apiReady: hostReady,
     hostConnectionError: hostError,
     busyAction,
+    layoutNavigationPending,
+    setLayoutNavigationPending,
     agentModeChipDismissed,
     composer,
     composerInitialSegments,
@@ -3201,6 +3246,7 @@ export function useDesktopRuntime() {
     pushGitBranch,
     continueAssistantCompletion,
     openSession,
+    releaseSessionNavigationBusy,
     beginSplitPaneSession,
     setVisiblePaneSessions,
     closeSplitPaneSession,
