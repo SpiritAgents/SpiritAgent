@@ -1,4 +1,5 @@
 import { WorkspaceToolsDock } from "@/components/workspace-tools-panel";
+import { useConversationSplit } from "@/contexts/conversation-split-context";
 import type { useComposerController } from "@/hooks/useComposerController";
 import type { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
@@ -30,6 +31,9 @@ export function ConversationWorkspaceToolsDock({
   workspaceTools,
   onOpenIntegrationsSettings,
 }: ConversationWorkspaceToolsDockProps) {
+  const split = useConversationSplit();
+  const composerInsert = split.focusedPaneComposerInsert ?? composer;
+
   return (
     <div data-spirit-surface="workspace-dock" className="flex min-h-0 shrink-0">
       <WorkspaceToolsDock
@@ -71,12 +75,12 @@ export function ConversationWorkspaceToolsDock({
         activeTabId={workspaceTools.activeWorkspaceToolTabId}
         onTabsChange={workspaceTools.setWorkspaceToolTabs}
         onActiveTabIdChange={workspaceTools.setActiveWorkspaceToolTabId}
-        onBrowserElementPicked={composer.handleBrowserElementPicked}
-        onPrDiffAddToSession={composer.handlePrDiffAddToSession}
-        onTerminalAddToSession={composer.handleTerminalAddToSession}
-        onFileSnippetAddToSession={composer.handleFileSnippetAddToSession}
-        onWorkspaceFileAddToSession={composer.handleWorkspaceFileAddToSession}
-        onGitCommitAddToSession={composer.handleGitCommitAddToSession}
+        onBrowserElementPicked={composerInsert.handleBrowserElementPicked}
+        onPrDiffAddToSession={composerInsert.handlePrDiffAddToSession}
+        onTerminalAddToSession={composerInsert.handleTerminalAddToSession}
+        onFileSnippetAddToSession={composerInsert.handleFileSnippetAddToSession}
+        onWorkspaceFileAddToSession={composerInsert.handleWorkspaceFileAddToSession}
+        onGitCommitAddToSession={composerInsert.handleGitCommitAddToSession}
         onBrowserOpenInNewTab={workspaceTools.openBrowserUrlInNewTab}
         browserTabEnabled={workspaceTools.browserTabEnabled}
         prTabEnabled={workspaceTools.prTabEnabled}

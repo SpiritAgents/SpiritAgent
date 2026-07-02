@@ -94,6 +94,7 @@ import {
   normalizeSessionPathKey,
 } from "@/lib/session-path-kind";
 
+import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-composer-insert";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -153,6 +154,10 @@ type ConversationSplitContextValue = {
   setPaneDropTarget: (target: { paneId: string; zone: PaneDropZone } | null) => void;
 
   layoutNavigationPending: boolean;
+
+  focusedPaneComposerInsert: FocusedPaneComposerInsertHandlers | null;
+
+  setFocusedPaneComposerInsert: (handlers: FocusedPaneComposerInsertHandlers | null) => void;
 
 };
 
@@ -479,6 +484,9 @@ export function ConversationSplitProvider({
     paneId: string;
     zone: PaneDropZone;
   } | null>(null);
+
+  const [focusedPaneComposerInsert, setFocusedPaneComposerInsert] =
+    useState<FocusedPaneComposerInsertHandlers | null>(null);
 
   const setPaneDropTarget = useCallback(
     (target: { paneId: string; zone: PaneDropZone } | null) => {
@@ -1457,6 +1465,10 @@ export function ConversationSplitProvider({
 
       layoutNavigationPending,
 
+      focusedPaneComposerInsert,
+
+      setFocusedPaneComposerInsert,
+
     }),
 
     [
@@ -1470,6 +1482,8 @@ export function ConversationSplitProvider({
       completePaneDrop,
 
       focusPane,
+
+      focusedPaneComposerInsert,
 
       focusedPaneId,
 

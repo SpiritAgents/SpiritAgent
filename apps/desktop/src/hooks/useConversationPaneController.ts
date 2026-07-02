@@ -253,6 +253,25 @@ export function useConversationPaneController({
     onOpenGitTab: workspaceTools.openGitTab,
   };
 
+  const composerInsertHandlers = useMemo(
+    () => ({
+      handleBrowserElementPicked: composer.handleBrowserElementPicked,
+      handlePrDiffAddToSession: composer.handlePrDiffAddToSession,
+      handleGitCommitAddToSession: composer.handleGitCommitAddToSession,
+      handleTerminalAddToSession: composer.handleTerminalAddToSession,
+      handleFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
+      handleWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
+    }),
+    [
+      composer.handleBrowserElementPicked,
+      composer.handleFileSnippetAddToSession,
+      composer.handleGitCommitAddToSession,
+      composer.handlePrDiffAddToSession,
+      composer.handleTerminalAddToSession,
+      composer.handleWorkspaceFileAddToSession,
+    ],
+  );
+
   return {
     paneSnapshot,
     paneIsEmptySession,
@@ -269,5 +288,6 @@ export function useConversationPaneController({
       : undefined,
     subagentViewActive: paneSubagentViewActive,
     compactionDemoActive: paneCompactionDemoActive,
+    composerInsertHandlers,
   };
 }
