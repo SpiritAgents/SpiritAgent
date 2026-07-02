@@ -339,6 +339,12 @@ function resolveLayoutForActiveSession(
 
     }
 
+    if (splitLayoutHasPromotedSuccessor(current, activeSessionPath, snapshot)) {
+
+      return normalizeBindingLayoutForSnapshot(current, snapshot);
+
+    }
+
   }
 
 
