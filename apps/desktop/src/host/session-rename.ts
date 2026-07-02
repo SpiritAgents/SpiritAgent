@@ -35,7 +35,7 @@ export async function renameSessionCommand(
 
     const resolvedPath = path.resolve(trimmedPath);
     if (ctx.bundleRuntimeIsBusy(resolvedPath)) {
-      throw new Error(i18n.t('error.cannotDeleteBusySession'));
+      throw new Error(i18n.t('error.cannotRenameBusySession'));
     }
 
     const registry = ctx.sessionRegistry();
