@@ -199,8 +199,10 @@ export type ConversationViewProps = {
   onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   onPaneDragLeave?: () => void;
   onPaneDrop?: (paneId: string, zone: PaneDropZone) => void;
+  onSidebarSessionDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   paneDropOverlayActive?: boolean;
   paneDragSourcePaneId?: string | null;
+  sidebarSessionDragActive?: boolean;
 };
 
 export function ConversationView({
@@ -246,8 +248,10 @@ export function ConversationView({
   onPaneDragEnter,
   onPaneDragLeave,
   onPaneDrop,
+  onSidebarSessionDrop,
   paneDropOverlayActive = false,
   paneDragSourcePaneId = null,
+  sidebarSessionDragActive = false,
 }: ConversationViewProps) {
   const { t } = useTranslation();
   const split = useConversationSplit();
@@ -279,12 +283,19 @@ export function ConversationView({
     enabled: conversationMessagesVisible,
   });
 
-  const dropOverlayActive = Boolean(paneId && onPaneDrop && paneDropOverlayActive);
+  const dropOverlayActive = Boolean(
+    paneId
+    && paneDropOverlayActive
+    && (onPaneDrop || onSidebarSessionDrop),
+  );
   const isDragSourcePane = Boolean(paneId && paneDragSourcePaneId === paneId);
   const showDropTargets = dropOverlayActive && !isDragSourcePane;
   const dropHostRef = useRef<HTMLDivElement | null>(null);
 
   const resolveVisibleDropZones = useCallback(() => {
+    if (sidebarSessionDragActive) {
+      return PANE_DROP_ZONE_ORDER;
+    }
     if (!paneId || !paneDragSourcePaneId) {
       return PANE_DROP_ZONE_ORDER;
     }
@@ -296,7 +307,7 @@ export function ConversationView({
       sourcePaneHost: sourceHost instanceof HTMLElement ? sourceHost : null,
       targetPaneHost: dropHostRef.current,
     });
-  }, [paneDragSourcePaneId, paneId, split.paneCount]);
+  }, [paneDragSourcePaneId, paneId, sidebarSessionDragActive, split.paneCount]);
 
   const updateDropTarget = useCallback(
     (zone: PaneDropZone) => {
@@ -423,11 +434,16 @@ export function ConversationView({
                   if (!visibleDropZones.includes(zone)) {
                     return;
                   }
+                  const repositionZone = effectiveRepositionZone(zone, visibleDropZones);
+                  if (sidebarSessionDragActive && onSidebarSessionDrop) {
+                    void onSidebarSessionDrop(paneId!, repositionZone);
+                    return;
+                  }
                   if (zone === "swap") {
                     onPaneDrop?.(paneId!, zone);
                     return;
                   }
-                  onPaneDrop?.(paneId!, effectiveRepositionZone(zone, visibleDropZones));
+                  onPaneDrop?.(paneId!, repositionZone);
                 }}
               />
             ))}

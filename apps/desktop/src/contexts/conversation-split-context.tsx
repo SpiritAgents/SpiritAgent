@@ -569,7 +569,7 @@ export function ConversationSplitProvider({
 
   // 指针不在有效 drop zone 上时同步清除 target（dragLeave 在快速滑过源面板时可能误判）
   useEffect(() => {
-    if (!paneDragActive) {
+    if (!paneDragActive && !sidebarSessionDragActive) {
       return;
     }
     const sourcePaneId = paneDragSourcePaneId;
@@ -583,7 +583,7 @@ export function ConversationSplitProvider({
       if (zoneEl instanceof HTMLElement) {
         const hostEl = zoneEl.closest("[data-pane-drop-host]");
         const hostPaneId = hostEl?.getAttribute("data-pane-drop-host");
-        if (hostPaneId && hostPaneId !== sourcePaneId) {
+        if (hostPaneId && (sidebarSessionDragActive || hostPaneId !== sourcePaneId)) {
           return;
         }
       }
@@ -591,7 +591,7 @@ export function ConversationSplitProvider({
     };
     document.addEventListener("dragover", handleDocumentDragOver);
     return () => document.removeEventListener("dragover", handleDocumentDragOver);
-  }, [paneDragActive, paneDragSourcePaneId, setPaneDropTarget]);
+  }, [paneDragActive, paneDragSourcePaneId, setPaneDropTarget, sidebarSessionDragActive]);
 
   const [layoutNavigationPending, setLayoutNavigationPending] = useState(false);
 
