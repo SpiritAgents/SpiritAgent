@@ -131,13 +131,15 @@ export function useComposerController({
     if (!isPaneIsolated || !paneComposerDraftKey) {
       return;
     }
-    const stored = readComposerDraft(paneComposerDraftKey);
+    const stored =
+      readComposerDraft(paneComposerDraftKey)
+      ?? (composerSessionKey ? readComposerDraft(composerSessionKey) : null);
     setPaneComposer(stored?.text ?? "");
     setPaneComposerInitialSegments(stored?.segments ?? null);
     setPaneLocalFileAttachments(
       (stored?.localFilePaths ?? []).map((filePath) => composerAttachmentViewFromPath(filePath)),
     );
-  }, [isPaneIsolated, paneComposerDraftKey]);
+  }, [composerSessionKey, isPaneIsolated, paneComposerDraftKey]);
 
   const composerText = isPaneIsolated ? paneComposer : runtime.composer;
   const setComposerText = isPaneIsolated ? setPaneComposer : runtime.setComposer;

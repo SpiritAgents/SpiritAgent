@@ -278,7 +278,7 @@ function SplitLayoutRenderer({
           isFocused,
           isAnchorPane,
           isSessionSidebarAnchorPane,
-          useIsolatedPane: split.paneCount > 1,
+          useIsolatedPane: true,
           splitPaneCount: split.paneCount,
           onFocusPane: () => split.focusPane(node.paneId, node.sessionPath),
           onSplit: () => {
