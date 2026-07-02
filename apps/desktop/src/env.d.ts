@@ -148,6 +148,12 @@ declare global {
     switchPaneModel(
       request: import('./types').SwitchPaneModelRequest,
     ): Promise<DesktopSnapshot>;
+    setPanePendingGitBranch(
+      request: import('./types').SetPanePendingGitBranchRequest,
+    ): Promise<DesktopSnapshot>;
+    setPaneWorkLocation(
+      request: import('./types').SetPaneWorkLocationRequest,
+    ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,

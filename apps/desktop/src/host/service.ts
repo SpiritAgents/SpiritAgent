@@ -139,6 +139,8 @@ import type {
   SyncSplitPaneSessionsRequest,
   SwitchPaneWorkspaceRequest,
   SwitchPaneModelRequest,
+  SetPanePendingGitBranchRequest,
+  SetPaneWorkLocationRequest,
   PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
@@ -278,6 +280,8 @@ import {
 import { buildPaneSessionSlice } from './pane-snapshot.js';
 import {
   switchPaneWorkspaceCommand,
+  setPanePendingGitBranchCommand,
+  setPaneWorkLocationCommand,
   resolvePaneWorkspaceProjection,
   ensureVisiblePaneScopedGitSnapshots,
   prefetchScopedGitBeforeGlobalWorkspaceChange,
@@ -2392,6 +2396,14 @@ class DesktopHostService {
 
   async switchPaneModel(request: SwitchPaneModelRequest): Promise<DesktopSnapshot> {
     return switchPaneModelCommand(this.paneModelContext(), request);
+  }
+
+  async setPanePendingGitBranch(request: SetPanePendingGitBranchRequest): Promise<DesktopSnapshot> {
+    return setPanePendingGitBranchCommand(this.paneWorkspaceContext(), request);
+  }
+
+  async setPaneWorkLocation(request: SetPaneWorkLocationRequest): Promise<DesktopSnapshot> {
+    return setPaneWorkLocationCommand(this.paneWorkspaceContext(), request);
   }
 
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {

@@ -272,6 +272,15 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   switchPaneModel(request: { sessionPath: string; modelName: string }) {
     return ipcRenderer.invoke('desktop:invoke', 'switchPaneModel', { request });
   },
+  setPanePendingGitBranch(request: { sessionPath: string; branch: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'setPanePendingGitBranch', { request });
+  },
+  setPaneWorkLocation(request: {
+    sessionPath: string;
+    workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
+  }) {
+    return ipcRenderer.invoke('desktop:invoke', 'setPaneWorkLocation', { request });
+  },
   deleteSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'deleteSession', { path });
   },

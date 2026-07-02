@@ -237,6 +237,12 @@ export async function createElectronHostApi(): Promise<HostApi> {
     switchPaneModel(request) {
       return bridge.switchPaneModel(request);
     },
+    setPanePendingGitBranch(request) {
+      return bridge.setPanePendingGitBranch(request);
+    },
+    setPaneWorkLocation(request) {
+      return bridge.setPaneWorkLocation(request);
+    },
     deleteSession(path) {
       return bridge.deleteSession(path);
     },
