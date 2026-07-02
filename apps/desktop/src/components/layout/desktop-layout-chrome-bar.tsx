@@ -1,6 +1,7 @@
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { PanelRightClose, PanelRightOpen, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, X } from "lucide-react";
+import { LoaderCircle, PanelRightClose, PanelRightOpen, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
 
 import {
   NewSessionShortcutKbd,
@@ -10,9 +11,19 @@ import { SessionSidebarToggleButton } from "@/components/layout/session-sidebar-
 import { SessionChromeBreadcrumb } from "@/components/session-chrome-breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogFooterActions,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,6 +37,7 @@ import {
 } from "@/lib/desktop-chrome";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
 import { isDarwinElectronShell } from "@/lib/desktop-shell";
+import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { useDarwinWindowFullscreen } from "@/hooks/useDarwinWindowFullscreen";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +67,12 @@ export function DesktopLayoutChromeBar({
   onPaneDragEnter,
   onPaneDragLeave,
   onPaneDrop,
+  showDeleteSession = false,
+  deleteSessionDisplayName,
+  deleteSessionPath,
+  deleteSessionBusy = false,
+  conversationBusy = false,
+  onDeleteSession,
 }: {
   useMicaBackdrop: boolean;
   showSessionSidebarToggle?: boolean;
@@ -74,6 +92,12 @@ export function DesktopLayoutChromeBar({
   onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   onPaneDragLeave?: () => void;
   onPaneDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  showDeleteSession?: boolean;
+  deleteSessionDisplayName?: string | null;
+  deleteSessionPath?: string | null;
+  deleteSessionBusy?: boolean;
+  conversationBusy?: boolean;
+  onDeleteSession?: (path: string) => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const { open: sessionSidebarOpen } = useSessionSidebarChrome();
@@ -84,6 +108,15 @@ export function DesktopLayoutChromeBar({
   const showTrailingActions = showWorkspaceToggle || showSplitMenu;
   const trimmedSessionTitle = sessionTitle?.trim() ?? "";
   const paneDragEnabled = Boolean(paneId && onPaneDragStart);
+  const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false);
+  const trimmedDeleteSessionPath = deleteSessionPath?.trim() ?? "";
+  const trimmedDeleteSessionDisplayName = deleteSessionDisplayName?.trim() ?? "";
+
+  const dismissDeleteSessionDialog = useCallback(() => {
+    setDeleteSessionDialogOpen(false);
+    runAfterRadixOverlayClose(() => {});
+  }, []);
+
   return (
     <div
       role="toolbar"
@@ -218,6 +251,25 @@ export function DesktopLayoutChromeBar({
                     </DropdownMenuItem>
                   ) : null}
                 </div>
+                {showDeleteSession && onDeleteSession && trimmedDeleteSessionPath ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        className="gap-1.5"
+                        disabled={deleteSessionBusy || conversationBusy}
+                        title={conversationBusy ? t("sidebar.cannotDeleteBusySession") : undefined}
+                        onSelect={() => {
+                          setDeleteSessionDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="size-3.5 shrink-0" aria-hidden />
+                        <span>{t("common.delete")}</span>
+                      </DropdownMenuItem>
+                    </div>
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -249,6 +301,64 @@ export function DesktopLayoutChromeBar({
           ) : null}
         </div>
       ) : null}
+      <Dialog
+        open={deleteSessionDialogOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setDeleteSessionDialogOpen(true);
+          } else if (!deleteSessionBusy) {
+            dismissDeleteSessionDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={!deleteSessionBusy}>
+          <DialogHeader>
+            <DialogTitle>{t("sidebar.deleteSession")}</DialogTitle>
+            <DialogDescription>
+              {t("sidebar.deleteSessionConfirm", { name: trimmedDeleteSessionDisplayName })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogFooterActions>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!deleteSessionBusy) {
+                    dismissDeleteSessionDialog();
+                  }
+                }}
+                disabled={deleteSessionBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={deleteSessionBusy || !trimmedDeleteSessionPath || !onDeleteSession}
+                onClick={() => {
+                  if (!onDeleteSession) {
+                    return;
+                  }
+                  void (async () => {
+                    try {
+                      await onDeleteSession(trimmedDeleteSessionPath);
+                      dismissDeleteSessionDialog();
+                    } catch {
+                      dismissDeleteSessionDialog();
+                    }
+                  })();
+                }}
+              >
+                {deleteSessionBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
+                {t("common.delete")}
+              </Button>
+            </DialogFooterActions>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

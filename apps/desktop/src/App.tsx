@@ -552,6 +552,8 @@ export default function App() {
                 sessionNavigationBusy={sessionNavigationBusy}
                 newSessionBusy={newSessionBusy}
                 onNewSession={surfaceNav.handleNewSession}
+                deleteSessionBusy={sessionNavigationBusy}
+                onDeleteSession={(path) => runtime.deleteSession(path)}
                 workspaceTools={workspaceTools}
                 onOpenIntegrationsSettings={openIntegrationsSettings}
                 onCompactionDemoStop={compactionDemo.stop}

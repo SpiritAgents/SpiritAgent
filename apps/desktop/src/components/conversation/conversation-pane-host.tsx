@@ -40,6 +40,8 @@ export type ConversationPaneHostProps = {
   sessionNavigationBusy: boolean;
   newSessionBusy: boolean;
   onNewSession?: () => void;
+  deleteSessionBusy?: boolean;
+  onDeleteSession?: (path: string) => void | Promise<void>;
   workspaceTools: WorkspaceTools;
   onOpenIntegrationsSettings: () => void;
   onCompactionDemoStop: () => void;
@@ -110,6 +112,14 @@ function ConversationPaneHostInner({
       onExitSubagentViewer={pane.onExitSubagentViewer}
       onNewSession={controllerInput.onNewSession}
       newSessionBusy={controllerInput.newSessionBusy}
+      showDeleteSession={
+        !pane.paneIsEmptySession && Boolean(controllerInput.onDeleteSession)
+      }
+      deleteSessionPath={sessionPath}
+      deleteSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
+      deleteSessionBusy={controllerInput.deleteSessionBusy}
+      conversationBusy={pane.paneSnapshot?.conversation.isBusy === true}
+      onDeleteSession={controllerInput.onDeleteSession}
       compactionDemoActive={pane.compactionDemoActive}
       onCompactionDemoStop={controllerInput.onCompactionDemoStop}
       rewindDraft={pane.rewindDraft}
@@ -138,6 +148,9 @@ function paneHostPropsEqual(
     return false;
   }
   if (prev.newSessionBusy !== next.newSessionBusy) {
+    return false;
+  }
+  if (prev.deleteSessionBusy !== next.deleteSessionBusy) {
     return false;
   }
   if (prev.hideStaleConversationMessages !== next.hideStaleConversationMessages) {
