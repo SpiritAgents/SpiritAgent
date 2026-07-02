@@ -930,7 +930,16 @@ async function handleApiRequest({
   }
 
   if (request.method === 'POST' && pathname === '/api/abort') {
-    writeJson(request, response, 200, await runHostCommand('abortConversation'));
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('abortConversation', {
+        ...(typeof jsonBody?.sessionPath === 'string' && jsonBody.sessionPath.trim()
+          ? { sessionPath: jsonBody.sessionPath.trim() }
+          : {}),
+      }),
+    );
     return;
   }
 

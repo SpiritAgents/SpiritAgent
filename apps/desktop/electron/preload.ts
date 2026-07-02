@@ -154,8 +154,8 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   refreshGitSnapshot() {
     return ipcRenderer.invoke('desktop:invoke', 'refreshGitSnapshot');
   },
-  abortConversation() {
-    return ipcRenderer.invoke('desktop:invoke', 'abortConversation');
+  abortConversation(request?: { sessionPath?: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'abortConversation', request ?? {});
   },
   abortShell(toolCallId: string) {
     return ipcRenderer.invoke('desktop:invoke', 'abortShell', { toolCallId });

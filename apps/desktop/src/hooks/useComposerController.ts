@@ -63,6 +63,11 @@ import {
   resolveComposerDropAbsolutePaths,
   resolveComposerDropEffect,
 } from "@/lib/composer-file-drop";
+import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
+import {
+  resolvePaneCanSend,
+  resolvePaneComposerBusy,
+} from "@/lib/pane-conversation-controls";
 import type {
   DesktopSnapshot,
   SubmitUserTurnRequest,
@@ -260,6 +265,12 @@ export function useComposerController({
     composerLocalFileAttachments.length,
   ]);
 
+  const paneSessionPathKey = isPaneIsolated && paneSessionPath
+    ? normalizePaneSessionPathKey(paneSessionPath)
+    : "";
+  const paneSendBusy = isPaneIsolated
+    && Boolean(paneSessionPathKey)
+    && runtime.paneSendBusySessionPath === paneSessionPathKey;
   const composerCanSend =
     !compactionDemoActive &&
     !subagentViewActive &&
@@ -268,12 +279,20 @@ export function useComposerController({
     runtime.busyAction !== "session" &&
     !pendingApproval &&
     !pendingQuestions &&
-    (runtime.summary.canSend || conversationInterruptible) &&
-    !(runtime.busyAction === "send" && !conversationInterruptible);
+    (isPaneIsolated
+      ? (resolvePaneCanSend(snapshot) || conversationInterruptible)
+      : (runtime.summary.canSend || conversationInterruptible)) &&
+    !(isPaneIsolated
+      ? paneSendBusy && !conversationInterruptible
+      : runtime.busyAction === "send" && !conversationInterruptible);
 
   const commitBusy = runtime.busyAction === "git";
-  const gitChipBusy =
-    runtime.busyAction === "send" || snapshot?.conversation.isBusy === true;
+  const composerBusy = isPaneIsolated
+    ? resolvePaneComposerBusy(snapshot, paneSendBusy)
+    : runtime.busyAction === "send";
+  const gitChipBusy = isPaneIsolated
+    ? resolvePaneComposerBusy(snapshot, paneSendBusy)
+    : runtime.busyAction === "send" || snapshot?.conversation.isBusy === true;
 
   const composerCursorChars = useMemo(
     () => codeUnitIndexToCharCount(composerText, composerCursorCodeUnits),
@@ -1171,6 +1190,7 @@ export function useComposerController({
     composerAgentModeChipPlaceholder,
     composerCanSend,
     composerHasPayload,
+    composerBusy,
     messageRewindComposerEnabled,
     commitBusy,
     gitChipBusy,

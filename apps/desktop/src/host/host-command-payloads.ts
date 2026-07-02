@@ -129,7 +129,7 @@ export type CommandPayloads = {
   exportSessionLog: undefined;
   compactHistory: undefined;
   submitUserTurn: SubmitUserTurnRequest;
-  abortConversation: undefined;
+  abortConversation: import('../types.js').AbortConversationRequest | undefined;
   abortShell: { toolCallId: string };
   continueAssistantCompletion: { messageId: number };
   poll: undefined;

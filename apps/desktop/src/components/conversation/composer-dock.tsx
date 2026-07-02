@@ -84,6 +84,7 @@ export type ComposerDockProps = {
   composerAgentModeChipPlaceholder?: string;
   composerCanSend: boolean;
   composerHasPayload: boolean;
+  composerBusy: boolean;
   conversationInterruptible: boolean;
   continueBusy: boolean;
   composerBrowserElementAttachments: BrowserElementAttachment[];
@@ -143,6 +144,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     composerAgentModeChipPlaceholder,
     composerCanSend,
     composerHasPayload,
+    composerBusy,
     conversationInterruptible,
     continueBusy,
     composerBrowserElementAttachments,
@@ -372,7 +374,13 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 onSubmit={onSubmitComposerMessage}
                 browserElementAttachments={composerBrowserElementAttachments}
                 onElementAttachmentsChange={onComposerBrowserElementAttachmentsChange}
-                onAbort={() => void runtime.abortConversation()}
+                onAbort={() => {
+                  void runtime.abortConversation(
+                    useIsolatedPaneWorkspace && paneSessionPath
+                      ? { sessionPath: paneSessionPath }
+                      : undefined,
+                  );
+                }}
                 placeholder={composerPlaceholder}
                 agentModeChipPlaceholder={composerAgentModeChipPlaceholder}
                 localFileAttachments={composerLocalFileAttachments}
@@ -404,7 +412,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 canSend={composerCanSend}
                 hasComposerPayload={composerHasPayload}
                 canAbort={conversationInterruptible}
-                busy={runtime.busyAction === "send"}
+                busy={composerBusy}
                 conversationBusy={continueBusy}
                 agentModeChipDismissed={runtime.agentModeChipDismissed}
                 onAgentModeChipDismissChange={runtime.setAgentModeChipDismissed}

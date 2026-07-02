@@ -49,7 +49,7 @@ export interface HostCommandDelegate {
   mergeWorktreeToMain(): Promise<unknown>;
   pushGitBranch(): Promise<unknown>;
   refreshGitSnapshot(): Promise<unknown>;
-  abortConversation(): Promise<unknown>;
+  abortConversation(request?: CommandPayloads['abortConversation']): Promise<unknown>;
   abortShell(toolCallId: string): Promise<unknown>;
   continueAssistantCompletion(messageId: number): Promise<unknown>;
   poll(): Promise<unknown>;
@@ -214,7 +214,7 @@ const hostCommandDispatch = {
   mergeWorktreeToMain: (host) => host.mergeWorktreeToMain(),
   pushGitBranch: (host) => host.pushGitBranch(),
   refreshGitSnapshot: (host) => host.refreshGitSnapshot(),
-  abortConversation: (host) => host.abortConversation(),
+  abortConversation: (host, payload) => host.abortConversation(payload ?? {}),
   abortShell: (host, payload) => host.abortShell(payload.toolCallId),
   continueAssistantCompletion: (host, payload) => host.continueAssistantCompletion(payload.messageId),
   poll: (host) => host.poll(),

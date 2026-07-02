@@ -38,6 +38,7 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
+  AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
@@ -254,8 +255,8 @@ export function createWebHostApi(): HostApi {
     markGitHubPullRequestReady() {
       return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
     },
-    abortConversation() {
-      return post<DesktopSnapshot>(baseUrl, '/api/abort');
+    abortConversation(request?: AbortConversationRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/abort', request ?? {});
     },
     abortShell(toolCallId: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/abort-shell-command', { toolCallId });

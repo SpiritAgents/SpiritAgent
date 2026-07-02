@@ -26,7 +26,7 @@ import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { readSessionSplitBinding } from "@/lib/session-split-binding";
 import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
-import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
+import { normalizePaneSessionPathKey, resolvePaneDesktopSnapshot } from "@/lib/pane-desktop-snapshot";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
 import type {
   AddModelRequest,
@@ -72,6 +72,7 @@ import type {
   SessionListItem,
   SubmitGitChipRequest,
   SubmitUserTurnRequest,
+  AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
@@ -363,6 +364,7 @@ export function useDesktopRuntime() {
   const [paneWorkspaceBusySessionPath, setPaneWorkspaceBusySessionPath] = useState<string | null>(
     null,
   );
+  const [paneSendBusySessionPath, setPaneSendBusySessionPath] = useState<string | null>(null);
   const [layoutNavigationPending, setLayoutNavigationPendingState] = useState(false);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [unseenCompletedSessionPaths, setUnseenCompletedSessionPaths] = useState<ReadonlySet<string>>(
@@ -2152,21 +2154,33 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
-    if (snapshot?.activeSession?.readOnly) {
+    const targetSessionPath = request.sessionPath?.trim();
+    const effectiveSnapshot = targetSessionPath && snapshot
+      ? resolvePaneDesktopSnapshot(snapshot, targetSessionPath)
+      : snapshot;
+
+    if (effectiveSnapshot?.activeSession?.readOnly) {
       setRuntimeError(i18n.t('error.readonlySessionSend'));
       return false;
     }
 
     const canEnqueueWhileBusy =
-      snapshot?.conversation.isBusy === true &&
-      !snapshot.conversation.pendingToolApproval &&
-      !snapshot.conversation.pendingQuestions;
-    if (snapshot?.conversation.isBusy && !canEnqueueWhileBusy) {
+      effectiveSnapshot?.conversation.isBusy === true &&
+      !effectiveSnapshot.conversation.pendingToolApproval &&
+      !effectiveSnapshot.conversation.pendingQuestions;
+    if (effectiveSnapshot?.conversation.isBusy && !canEnqueueWhileBusy) {
       setRuntimeError(i18n.t('error.pendingApprovalSend'));
       return false;
     }
 
-    setBusyAction("send");
+    const paneSendKey = targetSessionPath
+      ? normalizePaneSessionPathKey(targetSessionPath)
+      : null;
+    if (paneSendKey) {
+      setPaneSendBusySessionPath(paneSendKey);
+    } else {
+      setBusyAction("send");
+    }
     try {
       if (hasLocalFiles && skillChipAliases.length > 0) {
         setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
@@ -2177,7 +2191,7 @@ export function useDesktopRuntime() {
         ...(hasLocalFiles ? { localFilePaths } : {}),
         ...(hasReferencedPaths ? { referencedWorkspaceFilePaths } : {}),
         ...(skillChipAliases.length > 0 ? { skillChipAliases } : {}),
-        ...(request.sessionPath?.trim() ? { sessionPath: request.sessionPath.trim() } : {}),
+        ...(targetSessionPath ? { sessionPath: targetSessionPath } : {}),
       });
       applySnapshot(next);
       clearActiveComposerDraft();
@@ -2188,7 +2202,11 @@ export function useDesktopRuntime() {
       setRuntimeError(describeError(error));
       return false;
     } finally {
-      setBusyAction("");
+      if (paneSendKey) {
+        setPaneSendBusySessionPath(null);
+      } else {
+        setBusyAction("");
+      }
     }
   }, [api, applySnapshot, clearActiveComposerDraft, composer, refreshSessions, snapshot]);
 
@@ -2244,16 +2262,20 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, clearActiveComposerDraft, refreshSessions]);
 
-  const abortConversation = useCallback(async (): Promise<boolean> => {
+  const abortConversation = useCallback(async (request?: AbortConversationRequest): Promise<boolean> => {
     if (!api) {
       return false;
     }
 
     try {
-      const next = await api.abortConversation();
+      const next = await api.abortConversation(request);
       applySnapshot(next);
       setRuntimeError("");
-      if (!next.conversation.isBusy) {
+      const targetSessionPath = request?.sessionPath?.trim();
+      const targetBusy = targetSessionPath
+        ? resolvePaneDesktopSnapshot(next, targetSessionPath)?.conversation.isBusy === true
+        : next.conversation.isBusy;
+      if (!targetBusy) {
         void refreshSessions();
       }
       return true;
@@ -3281,6 +3303,7 @@ export function useDesktopRuntime() {
     hostConnectionError: hostError,
     busyAction,
     paneWorkspaceBusySessionPath,
+    paneSendBusySessionPath,
     layoutNavigationPending,
     setLayoutNavigationPending,
     agentModeChipDismissed,
