@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
-import { resolvePendingApprovalSessionPath } from "@/lib/pane-pending-turn-routing";
+import { resolvePendingApprovalSessionPath, resolvePendingQuestionsSessionPath, resolvePendingQuestionsSnapshot } from "@/lib/pane-pending-turn-routing";
 import i18n from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
@@ -2710,8 +2710,10 @@ export function useDesktopRuntime() {
       if (payload.kind !== 'ask-questions') {
         return;
       }
+      const sessionPath = resolvePendingQuestionsSessionPath(snapshotRef.current);
+      const pendingForReply = resolvePendingQuestionsSnapshot(snapshotRef.current, sessionPath);
       const result = buildSingleTextQuestionNotificationReplyResult(
-        snapshotRef.current?.conversation.pendingQuestions,
+        pendingForReply,
         payload,
       );
       if (!result) {
@@ -2720,7 +2722,10 @@ export function useDesktopRuntime() {
       void (async () => {
         setBusyAction('questions');
         try {
-          const next = await api.replyPendingQuestions({ result });
+          const next = await api.replyPendingQuestions({
+            result,
+            ...(sessionPath ? { sessionPath } : {}),
+          });
           applySnapshot(next);
           setQuestionError('');
           setRuntimeError('');
