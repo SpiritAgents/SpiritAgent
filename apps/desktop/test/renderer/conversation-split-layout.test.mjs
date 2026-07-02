@@ -12,6 +12,7 @@ import {
   findSessionSidebarAnchorPaneId,
   repositionPane,
   splitPaneAt,
+  splitPaneAtZone,
   updateSplitRatio,
   updateSplitRatios,
   collectSplitJunctions,
@@ -84,6 +85,54 @@ test("updateSplitRatio updates the matching split node", () => {
     return;
   }
   assert.equal(updated.ratio, 0.7);
+});
+
+test("splitPaneAtZone places incoming before target horizontally", () => {
+  const root = createSinglePaneLayout("a", "/sessions/a.json");
+  const next = splitPaneAtZone(root, "a", "before", createLeafNode("b", "/sessions/b.json"));
+  assert.equal(next.kind, "split");
+  if (next.kind !== "split") {
+    return;
+  }
+  assert.equal(next.direction, "horizontal");
+  assert.equal(next.first.paneId, "b");
+  assert.equal(next.second.paneId, "a");
+});
+
+test("splitPaneAtZone places incoming after target horizontally", () => {
+  const root = createSinglePaneLayout("a", "/sessions/a.json");
+  const next = splitPaneAtZone(root, "a", "after", createLeafNode("b", "/sessions/b.json"));
+  assert.equal(next.kind, "split");
+  if (next.kind !== "split") {
+    return;
+  }
+  assert.equal(next.direction, "horizontal");
+  assert.equal(next.first.paneId, "a");
+  assert.equal(next.second.paneId, "b");
+});
+
+test("splitPaneAtZone places incoming above target vertically", () => {
+  const root = createSinglePaneLayout("a", "/sessions/a.json");
+  const next = splitPaneAtZone(root, "a", "above", createLeafNode("b", "/sessions/b.json"));
+  assert.equal(next.kind, "split");
+  if (next.kind !== "split") {
+    return;
+  }
+  assert.equal(next.direction, "vertical");
+  assert.equal(next.first.paneId, "b");
+  assert.equal(next.second.paneId, "a");
+});
+
+test("splitPaneAtZone places incoming below target vertically", () => {
+  const root = createSinglePaneLayout("a", "/sessions/a.json");
+  const next = splitPaneAtZone(root, "a", "below", createLeafNode("b", "/sessions/b.json"));
+  assert.equal(next.kind, "split");
+  if (next.kind !== "split") {
+    return;
+  }
+  assert.equal(next.direction, "vertical");
+  assert.equal(next.first.paneId, "a");
+  assert.equal(next.second.paneId, "b");
 });
 
 test("repositionPane moves a leaf below the target", () => {
