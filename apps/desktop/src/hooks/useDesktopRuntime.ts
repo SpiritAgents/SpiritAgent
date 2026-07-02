@@ -2679,7 +2679,7 @@ export function useDesktopRuntime() {
       void (async () => {
         setBusyAction('questions');
         try {
-          const next = await api.replyPendingQuestions(result);
+          const next = await api.replyPendingQuestions({ result });
           applySnapshot(next);
           setQuestionError('');
           setRuntimeError('');
@@ -2692,12 +2692,16 @@ export function useDesktopRuntime() {
     });
   }, [api, applySnapshot]);
 
-  const submitQuestions = useCallback(async () => {
-    if (!api || !pendingQuestions) {
+  const submitQuestions = useCallback(async (
+    sessionPath?: string,
+    questionsSource?: typeof pendingQuestions,
+  ) => {
+    const effectiveQuestions = questionsSource ?? pendingQuestions;
+    if (!api || !effectiveQuestions) {
       return;
     }
 
-    const built = buildAskQuestionsResult(pendingQuestions.request, questionDrafts);
+    const built = buildAskQuestionsResult(effectiveQuestions.request, questionDrafts);
     if (!built.result) {
       setQuestionError(built.error ?? i18n.t('error.completeQuestionnaire'));
       return;
@@ -2705,7 +2709,10 @@ export function useDesktopRuntime() {
 
     setBusyAction("questions");
     try {
-      const next = await api.replyPendingQuestions(built.result);
+      const next = await api.replyPendingQuestions({
+        result: built.result,
+        ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
+      });
       applySnapshot(next);
       setQuestionError("");
       setRuntimeError("");
@@ -2716,15 +2723,20 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, pendingQuestions, questionDrafts]);
 
-  const skipQuestions = useCallback(async () => {
-    if (!api || !pendingQuestions) {
+  const skipQuestions = useCallback(async (
+    sessionPath?: string,
+    questionsSource?: typeof pendingQuestions,
+  ) => {
+    const effectiveQuestions = questionsSource ?? pendingQuestions;
+    if (!api || !effectiveQuestions) {
       return;
     }
 
     setBusyAction("questions");
     try {
       const next = await api.replyPendingQuestions({
-        status: "skipped",
+        result: { status: "skipped" },
+        ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
       });
       applySnapshot(next);
       setQuestionError("");

@@ -215,6 +215,7 @@ export function useConversationPaneController({
     showPendingApprovalInComposer: conversation.showPendingApprovalInComposer,
     pendingApproval: conversation.pendingApproval,
     showPendingQuestionsInComposer: conversation.showPendingQuestionsInComposer,
+    pendingQuestions: conversation.pendingQuestions,
     fileReferenceSuggestions: composer.fileReferenceSuggestions,
     fileReferenceSelectedIndex: composer.fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange: composer.setFileReferenceSelectedIndex,

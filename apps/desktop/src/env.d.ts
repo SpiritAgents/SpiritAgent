@@ -123,7 +123,7 @@ declare global {
     automationsSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     sessionListSubscribe(callback: () => void): () => void;
     replyPendingApproval(request: import('./types').ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
-    replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot>;
+    replyPendingQuestions(request: import('./types').ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;
     openSession(path: string): Promise<DesktopSnapshot>;

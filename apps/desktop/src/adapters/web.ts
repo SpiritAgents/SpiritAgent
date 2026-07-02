@@ -315,8 +315,8 @@ export function createWebHostApi(): HostApi {
     replyPendingApproval(request) {
       return post<DesktopSnapshot>(baseUrl, '/api/approval', request);
     },
-    replyPendingQuestions(result: AskQuestionsResult) {
-      return post<DesktopSnapshot>(baseUrl, '/api/questions', { result });
+    replyPendingQuestions(request: import('../types').ReplyPendingQuestionsRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/questions', request);
     },
     resetSession() {
       return post<DesktopSnapshot>(baseUrl, '/api/reset');

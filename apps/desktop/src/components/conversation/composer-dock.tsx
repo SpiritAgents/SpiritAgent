@@ -67,6 +67,7 @@ export type ComposerDockProps = {
   showPendingApprovalInComposer: boolean;
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   showPendingQuestionsInComposer: boolean;
+  pendingQuestions: DesktopSnapshot["conversation"]["pendingQuestions"];
   fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
@@ -127,6 +128,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     showPendingApprovalInComposer,
     pendingApproval,
     showPendingQuestionsInComposer,
+    pendingQuestions,
     fileReferenceSuggestions,
     fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange,
@@ -192,6 +194,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
   const gitControlsDisabled = workspaceControlsDisabled || commitBusy;
   const approvalSessionPath =
     useIsolatedPaneWorkspace && paneSessionPath ? paneSessionPath : undefined;
+  const questionsSessionPath = approvalSessionPath;
 
   return (
     <div
@@ -338,14 +341,14 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
             />
           ) : null}
 
-          {showPendingQuestionsInComposer && runtime.pendingQuestions ? (
+          {showPendingQuestionsInComposer && pendingQuestions ? (
             <PendingQuestionsCard
-              pendingQuestions={runtime.pendingQuestions}
+              pendingQuestions={pendingQuestions}
               questionDrafts={runtime.questionDrafts}
               questionsBusy={runtime.busyAction === "questions"}
               onUpdateDraft={runtime.updateQuestionDraft}
-              onSubmitQuestions={() => void runtime.submitQuestions()}
-              onSkipQuestions={() => void runtime.skipQuestions()}
+              onSubmitQuestions={() => void runtime.submitQuestions(questionsSessionPath, pendingQuestions)}
+              onSkipQuestions={() => void runtime.skipQuestions(questionsSessionPath, pendingQuestions)}
             />
           ) : null}
 
