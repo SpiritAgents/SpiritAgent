@@ -1,4 +1,7 @@
-import type { DesktopSnapshot, PaneSessionSlice } from "@/types";
+import type {
+  DesktopSnapshot,
+  PaneSessionSlice,
+} from "@/types";
 
 function normalizeSessionPathKey(sessionPath: string): string {
   return sessionPath.replace(/\\/g, "/").toLowerCase();
@@ -28,8 +31,29 @@ export function resolvePaneDesktopSnapshot(
     return null;
   }
 
+  const target = normalizeSessionPathKey(sessionPath);
+  const activeKey = snapshot.activeSession?.filePath
+    ? normalizeSessionPathKey(snapshot.activeSession.filePath)
+    : "";
+  if (activeKey && target === activeKey) {
+    return snapshot;
+  }
+
   const pane = lookupPaneSessionSlice(snapshot, sessionPath);
-  if (!pane || pane.isForegroundActive) {
+  if (!pane) {
+    // Stale layout path after promote: do not project the foreground conversation onto this pane.
+    if (snapshot.paneSessions && Object.keys(snapshot.paneSessions).length > 0) {
+      return {
+        ...snapshot,
+        conversation: {
+          ...snapshot.conversation,
+          messages: [],
+        },
+      };
+    }
+    return snapshot;
+  }
+  if (pane.isForegroundActive) {
     return snapshot;
   }
 

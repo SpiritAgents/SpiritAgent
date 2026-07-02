@@ -623,3 +623,15 @@ export function writeConversationSplitLayoutJson(json: string): void {
     // ignore
   }
 }
+
+/** @deprecated Global split layout; split state is session-scoped via session-split-binding. */
+export function clearConversationSplitLayoutJson(): void {
+  try {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    localStorage.removeItem(CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}

@@ -55,6 +55,32 @@ export function collectPaneSessionPaths(node: SplitLayoutNode): string[] {
   return [...collectPaneSessionPaths(node.first), ...collectPaneSessionPaths(node.second)];
 }
 
+export function collectSplitLayoutLeaves(node: SplitLayoutNode): SplitLayoutLeafNode[] {
+  if (node.kind === "leaf") {
+    return [node];
+  }
+  return [...collectSplitLayoutLeaves(node.first), ...collectSplitLayoutLeaves(node.second)];
+}
+
+function normalizeSessionPathKey(sessionPath: string): string {
+  return sessionPath.replace(/\\/g, "/").toLowerCase();
+}
+
+/** Leaves whose sessionPath duplicates an earlier leaf in the same layout tree. */
+export function findDuplicateSessionPathLeaves(node: SplitLayoutNode): SplitLayoutLeafNode[] {
+  const seen = new Set<string>();
+  const duplicates: SplitLayoutLeafNode[] = [];
+  for (const leaf of collectSplitLayoutLeaves(node)) {
+    const key = normalizeSessionPathKey(leaf.sessionPath);
+    if (seen.has(key)) {
+      duplicates.push(leaf);
+      continue;
+    }
+    seen.add(key);
+  }
+  return duplicates;
+}
+
 export function findLeafByPaneId(
   node: SplitLayoutNode,
   paneId: string,
@@ -85,6 +111,24 @@ export function updateLeafSessionPath(
     ...node,
     first: updateLeafSessionPath(node.first, paneId, sessionPath),
     second: updateLeafSessionPath(node.second, paneId, sessionPath),
+  };
+}
+
+export function replaceSessionPathInLayout(
+  node: SplitLayoutNode,
+  fromPath: string,
+  toPath: string,
+): SplitLayoutNode {
+  const fromKey = normalizeSessionPathKey(fromPath);
+  if (node.kind === "leaf") {
+    return normalizeSessionPathKey(node.sessionPath) === fromKey
+      ? { ...node, sessionPath: toPath }
+      : node;
+  }
+  return {
+    ...node,
+    first: replaceSessionPathInLayout(node.first, fromPath, toPath),
+    second: replaceSessionPathInLayout(node.second, fromPath, toPath),
   };
 }
 
