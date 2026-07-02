@@ -1,8 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { effectiveRepositionZone, hiddenPaneDropZonesForTwoPaneDrag, paneDropZoneRect } from "../../src/lib/conversation-pane-drop-preview.ts";
-import { createLeafNode, createSinglePaneLayout, repositionPane, splitPaneAt } from "../../src/lib/conversation-split-layout.ts";
+import {
+  effectiveRepositionZone,
+  hiddenPaneDropZonesForTwoPaneDrag,
+  paneDropIndicatorRect,
+  paneDropZoneRect,
+  visiblePaneDropZonesForDrag,
+} from "../../src/lib/conversation-pane-drop-preview.ts";
+import {
+  createLeafNode,
+  createSinglePaneLayout,
+  repositionPane,
+  splitPaneAt,
+  swapAdjacentPanes,
+} from "../../src/lib/conversation-split-layout.ts";
 
 function rect(left, top, width, height) {
   return {
@@ -25,67 +37,51 @@ test("hiddenPaneDropZonesForTwoPaneDrag hides right edge when source is on the r
   assert.deepEqual([...hidden].sort(), ["after", "below"]);
 });
 
-test("hiddenPaneDropZonesForTwoPaneDrag hides left edge when source is on the left", () => {
-  const target = rect(420, 0, 400, 400);
-  const source = rect(0, 0, 400, 400);
-  const hidden = hiddenPaneDropZonesForTwoPaneDrag(source, target);
-  assert.deepEqual([...hidden].sort(), ["above", "before"]);
-});
-
-test("hiddenPaneDropZonesForTwoPaneDrag hides bottom edge when source is below", () => {
+test("visiblePaneDropZonesForDrag exposes swap row for horizontal adjacency", () => {
   const target = rect(0, 0, 400, 400);
-  const source = rect(0, 420, 400, 400);
-  const hidden = hiddenPaneDropZonesForTwoPaneDrag(source, target);
-  assert.deepEqual([...hidden].sort(), ["before", "below"]);
+  const source = rect(420, 0, 400, 400);
+  const visible = visiblePaneDropZonesForDrag({
+    paneCount: 2,
+    sourcePaneHost: { getBoundingClientRect: () => source },
+    targetPaneHost: { getBoundingClientRect: () => target },
+  });
+  assert.deepEqual(visible, ["above", "swap", "below"]);
 });
 
-test("hiddenPaneDropZonesForTwoPaneDrag hides top edge when source is above", () => {
+test("visiblePaneDropZonesForDrag exposes swap column for vertical adjacency", () => {
   const target = rect(0, 420, 400, 400);
   const source = rect(0, 0, 400, 400);
-  const hidden = hiddenPaneDropZonesForTwoPaneDrag(source, target);
-  assert.deepEqual([...hidden].sort(), ["above", "after"]);
+  const visible = visiblePaneDropZonesForDrag({
+    paneCount: 2,
+    sourcePaneHost: { getBoundingClientRect: () => source },
+    targetPaneHost: { getBoundingClientRect: () => target },
+  });
+  assert.deepEqual(visible, ["before", "swap", "after"]);
 });
 
-test("paneDropZoneRect expands top-bottom pair to full width halves", () => {
-  const host = rect(0, 0, 400, 400);
-  const visible = ["above", "before"];
-  const above = paneDropZoneRect(host, "above", visible);
-  const before = paneDropZoneRect(host, "before", visible);
-  assert.equal(above.width, 400);
-  assert.equal(before.width, 400);
-  assert.equal(above.height, 200);
-  assert.equal(before.height, 200);
-  assert.equal(before.y, 200);
+test("paneDropIndicatorRect expands swap to full target pane", () => {
+  const host = rect(10, 20, 400, 300);
+  const visible = ["above", "swap", "below"];
+  const indicator = paneDropIndicatorRect(host, "swap", visible);
+  assert.deepEqual(indicator, { x: 10, y: 20, width: 400, height: 300 });
+  const edge = paneDropIndicatorRect(host, "above", visible);
+  assert.equal(edge.height, 120);
+  assert.equal(edge.width, 400);
 });
 
-test("paneDropZoneRect expands left-right pair to full height halves", () => {
+test("paneDropZoneRect keeps swap hit target in a narrow center band", () => {
   const host = rect(0, 0, 400, 400);
-  const visible = ["above", "after"];
-  const above = paneDropZoneRect(host, "above", visible);
-  const after = paneDropZoneRect(host, "after", visible);
-  assert.equal(above.height, 400);
-  assert.equal(after.height, 400);
-  assert.equal(above.width, 200);
-  assert.equal(after.width, 200);
-  assert.equal(after.x, 200);
+  const visible = ["above", "swap", "below"];
+  const swapHit = paneDropZoneRect(host, "swap", visible);
+  assert.equal(swapHit.height, 80);
+  assert.equal(swapHit.y, 160);
+  assert.equal(swapHit.width, 400);
 });
 
 test("effectiveRepositionZone maps collapsed left-right below to after", () => {
   const visible = ["before", "below"];
   assert.equal(effectiveRepositionZone("below", visible), "after");
   assert.equal(effectiveRepositionZone("before", visible), "before");
-});
-
-test("effectiveRepositionZone maps collapsed left-right above to before", () => {
-  const visible = ["above", "after"];
-  assert.equal(effectiveRepositionZone("above", visible), "before");
-  assert.equal(effectiveRepositionZone("after", visible), "after");
-});
-
-test("effectiveRepositionZone maps collapsed top-bottom before to below", () => {
-  const visible = ["above", "before"];
-  assert.equal(effectiveRepositionZone("before", visible), "below");
-  assert.equal(effectiveRepositionZone("above", visible), "above");
 });
 
 test("repositionPane converts vertical split to horizontal when dropping top onto bottom-right", () => {
@@ -95,8 +91,8 @@ test("repositionPane converts vertical split to horizontal when dropping top ont
     "vertical",
     createLeafNode("bottom", "/sessions/bottom.json"),
   );
-  const visible = ["before", "below"];
-  const zone = effectiveRepositionZone("below", visible);
+  const visible = ["before", "swap", "after"];
+  const zone = effectiveRepositionZone("after", visible);
   assert.equal(zone, "after");
   const moved = repositionPane(split, "top", "bottom", zone);
   assert.ok(moved);
@@ -105,4 +101,26 @@ test("repositionPane converts vertical split to horizontal when dropping top ont
     return;
   }
   assert.equal(moved.direction, "horizontal");
+});
+
+test("swapAdjacentPanes swaps horizontal siblings", () => {
+  const split = splitPaneAt(
+    createSinglePaneLayout("left", "/sessions/left.json"),
+    "left",
+    "horizontal",
+    createLeafNode("right", "/sessions/right.json"),
+  );
+  assert.equal(split.kind, "split");
+  if (split.kind !== "split") {
+    return;
+  }
+  assert.equal(split.first.paneId, "left");
+  assert.equal(split.second.paneId, "right");
+  const swapped = swapAdjacentPanes(split, "right", "left");
+  assert.equal(swapped.kind, "split");
+  if (swapped.kind !== "split") {
+    return;
+  }
+  assert.equal(swapped.first.paneId, "right");
+  assert.equal(swapped.second.paneId, "left");
 });

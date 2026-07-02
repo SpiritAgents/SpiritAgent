@@ -6,7 +6,7 @@ import {
   applyPickerOverlayGeometry,
   hidePickerOverlayBox,
 } from "@/lib/browser-element-picker";
-import { paneDropZoneRect, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import { paneDropIndicatorRect, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
 
 const OVERLAY_MOTION_TRANSITION =
   "left 200ms ease-out, top 200ms ease-out, width 200ms ease-out, height 200ms ease-out, opacity 150ms ease-out";
@@ -65,7 +65,7 @@ export function ConversationPaneDropIndicator() {
       return;
     }
 
-    const rect = paneDropZoneRect(
+    const rect = paneDropIndicatorRect(
       host.getBoundingClientRect(),
       paneDropTarget.zone,
       visibleZones,

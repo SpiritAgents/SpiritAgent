@@ -234,6 +234,11 @@ export function closePane(node: SplitLayoutNode, paneId: string): SplitLayoutNod
 
 export type PaneRepositionZone = "before" | "after" | "above" | "below";
 
+/** Drop target that swaps sibling panes instead of wrapping a new split. */
+export type PaneSwapZone = "swap";
+
+export type PaneDropZone = PaneRepositionZone | PaneSwapZone;
+
 function wrapWithSplit(
   target: SplitLayoutNode,
   incoming: SplitLayoutLeafNode,
@@ -294,6 +299,49 @@ export function repositionPane(
 
   const replacement = wrapWithSplit(targetLeaf, sourceLeaf, zone);
   return replaceLeaf(withoutSource, targetPaneId, replacement);
+}
+
+function containsPane(node: SplitLayoutNode, paneId: string): boolean {
+  return findLeafByPaneId(node, paneId) !== undefined;
+}
+
+/** Swap two panes that share the same immediate split parent (e.g. left/right siblings). */
+export function swapAdjacentPanes(
+  node: SplitLayoutNode,
+  paneAId: string,
+  paneBId: string,
+): SplitLayoutNode {
+  if (paneAId === paneBId) {
+    return node;
+  }
+  if (node.kind === "leaf") {
+    return node;
+  }
+
+  const aInFirst = containsPane(node.first, paneAId);
+  const aInSecond = containsPane(node.second, paneAId);
+  const bInFirst = containsPane(node.first, paneBId);
+  const bInSecond = containsPane(node.second, paneBId);
+
+  if ((aInFirst && bInSecond) || (bInFirst && aInSecond)) {
+    return {
+      ...node,
+      first: node.second,
+      second: node.first,
+      ratio: clampSplitRatio(1 - node.ratio),
+    };
+  }
+
+  const nextFirst = swapAdjacentPanes(node.first, paneAId, paneBId);
+  const nextSecond = swapAdjacentPanes(node.second, paneAId, paneBId);
+  if (nextFirst === node.first && nextSecond === node.second) {
+    return node;
+  }
+  return {
+    ...node,
+    first: nextFirst,
+    second: nextSecond,
+  };
 }
 
 export function createPaneId(): string {
