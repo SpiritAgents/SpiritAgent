@@ -13,6 +13,7 @@ import { ComposerDock } from "@/components/conversation/composer-dock";
 import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationList } from "@/components/conversation/conversation-list";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
+import { sessionGitTooltipItemFromChromeSession } from "@/components/session-list-git-tooltip";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
@@ -254,7 +255,14 @@ export function ConversationView({
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
-
+  const sessionTooltip =
+    sessionTitleVisible && snapshot?.activeSession
+      ? sessionGitTooltipItemFromChromeSession({
+          path: snapshot.activeSession.filePath,
+          gitBranch: snapshot.git?.branch,
+          workspaceRoot: snapshot.workspaceRoot,
+        })
+      : null;
 
   useConversationSessionScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
@@ -365,6 +373,7 @@ export function ConversationView({
               ? snapshot?.activeSession?.displayName
               : null
           }
+          sessionTooltip={sessionTooltip}
           subagentPromptText={
             subagentViewActive ? snapshot?.subagentViewer?.promptText : null
           }

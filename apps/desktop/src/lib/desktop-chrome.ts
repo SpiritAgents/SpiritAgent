@@ -29,6 +29,21 @@ export const DESKTOP_SHELL_LAYOUT_TRANSITION =
 /** 顶栏默认字色/图标色，与侧栏 `sidebarItemDefaultTextClass` 对齐 */
 export const DESKTOP_CHROME_MUTED_TEXT = "text-sidebar-action-foreground";
 
+/** 会话标题内联重命名 input：ghost、无边框，字色与侧栏/顶栏会话名一致 */
+export const SESSION_TITLE_RENAME_INPUT_CLASS = cn(
+  "min-w-0 rounded-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 focus-visible:ring-0",
+  "text-xs font-medium",
+  DESKTOP_CHROME_MUTED_TEXT,
+);
+
+/** 顶栏/侧栏会话标题 hover：半透明铺底 + 字色变亮，与侧栏 `sidebarMenuHoverClass` 一致 */
+export const DESKTOP_SESSION_TITLE_HOVER_CLASS = cn(
+  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
+  "dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
+  "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
+  instantHoverMotionClass,
+);
+
 /** 顶栏 hover/focus/当前项字色，与侧栏 `sidebarItemActiveTextClass` 对齐 */
 export const DESKTOP_CHROME_ACTIVE_TEXT = "text-sidebar-foreground";
 
