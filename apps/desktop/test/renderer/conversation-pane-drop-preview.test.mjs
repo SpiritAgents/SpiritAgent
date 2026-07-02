@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { hiddenPaneDropZonesForTwoPaneDrag, paneDropZoneRect } from "../../src/lib/conversation-pane-drop-preview.ts";
+import { effectiveRepositionZone, hiddenPaneDropZonesForTwoPaneDrag, paneDropZoneRect } from "../../src/lib/conversation-pane-drop-preview.ts";
+import { createLeafNode, createSinglePaneLayout, repositionPane, splitPaneAt } from "../../src/lib/conversation-split-layout.ts";
 
 function rect(left, top, width, height) {
   return {
@@ -67,4 +68,41 @@ test("paneDropZoneRect expands left-right pair to full height halves", () => {
   assert.equal(above.width, 200);
   assert.equal(after.width, 200);
   assert.equal(after.x, 200);
+});
+
+test("effectiveRepositionZone maps collapsed left-right below to after", () => {
+  const visible = ["before", "below"];
+  assert.equal(effectiveRepositionZone("below", visible), "after");
+  assert.equal(effectiveRepositionZone("before", visible), "before");
+});
+
+test("effectiveRepositionZone maps collapsed left-right above to before", () => {
+  const visible = ["above", "after"];
+  assert.equal(effectiveRepositionZone("above", visible), "before");
+  assert.equal(effectiveRepositionZone("after", visible), "after");
+});
+
+test("effectiveRepositionZone maps collapsed top-bottom before to below", () => {
+  const visible = ["above", "before"];
+  assert.equal(effectiveRepositionZone("before", visible), "below");
+  assert.equal(effectiveRepositionZone("above", visible), "above");
+});
+
+test("repositionPane converts vertical split to horizontal when dropping top onto bottom-right", () => {
+  const split = splitPaneAt(
+    createSinglePaneLayout("top", "/sessions/top.json"),
+    "top",
+    "vertical",
+    createLeafNode("bottom", "/sessions/bottom.json"),
+  );
+  const visible = ["before", "below"];
+  const zone = effectiveRepositionZone("below", visible);
+  assert.equal(zone, "after");
+  const moved = repositionPane(split, "top", "bottom", zone);
+  assert.ok(moved);
+  assert.equal(moved.kind, "split");
+  if (moved.kind !== "split") {
+    return;
+  }
+  assert.equal(moved.direction, "horizontal");
 });
