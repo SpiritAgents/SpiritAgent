@@ -1,18 +1,15 @@
-import {
-  useCallback,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useRef, useState, type RefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import { ConversationPaneDropIndicator } from "@/components/conversation/conversation-pane-drop-indicator";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
-import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
 import {
   clampSplitRatio,
+  collectSplitJunctions,
+  type SplitJunctionSpec,
   type SplitLayoutNode,
+  type SplitLayoutSplitNode,
 } from "@/lib/conversation-split-layout";
+import { useConversationSplitShellDivider, syncAllConversationSplitShellDividers } from "@/lib/use-conversation-split-shell-divider";
 import { cn } from "@/lib/utils";
 
 type ConversationSplitRootProps = {
@@ -39,18 +36,42 @@ type ConversationSplitRootProps = {
   }) => ReactNode;
 };
 
+function splitIdsForJunction(junction: SplitJunctionSpec): string[] {
+  return [...new Set([...junction.xSplitIds, ...junction.ySplitIds])];
+}
+
 function SplitDivider({
+  splitId,
   direction,
-  useMicaBackdrop,
+  ratio,
+  boundsRef,
+  highlighted,
   onRatioChange,
 }: {
+  splitId: string;
   direction: "horizontal" | "vertical";
-  useMicaBackdrop: boolean;
+  ratio: number;
+  boundsRef: RefObject<HTMLDivElement | null>;
+  highlighted: boolean;
   onRatioChange: (ratio: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const separatorRef = useRef<HTMLDivElement | null>(null);
   const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const dragRef = useRef<{ start: number; startRatio: number } | null>(null);
+  const lineActive = highlighted || isResizing || isHovered;
+
+  const { sync: syncShellLine } = useConversationSplitShellDivider(
+    separatorRef,
+    {
+      splitId,
+      lineOrientation: direction === "horizontal" ? "vertical" : "horizontal",
+      boundsRef,
+      active: lineActive,
+    },
+    [lineActive, ratio],
+  );
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -83,9 +104,13 @@ function SplitDivider({
         direction === "horizontal"
           ? (event.clientX - rect.left) / Math.max(rect.width, 1)
           : (event.clientY - rect.top) / Math.max(rect.height, 1);
-      onRatioChange(clampSplitRatio(nextRatio));
+      const clamped = clampSplitRatio(nextRatio);
+      onRatioChange(clamped);
+      requestAnimationFrame(() => {
+        syncShellLine();
+      });
     },
-    [direction, onRatioChange],
+    [direction, onRatioChange, syncShellLine],
   );
 
   const endResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
@@ -101,36 +126,106 @@ function SplitDivider({
   return (
     <div
       ref={containerRef}
+      data-split-id={splitId}
       className={cn(
         "relative flex min-h-0 min-w-0",
         direction === "horizontal" ? "h-full w-0 shrink-0" : "h-0 w-full shrink-0",
       )}
     >
       <div
+        ref={separatorRef}
         role="separator"
         aria-orientation={direction === "horizontal" ? "vertical" : "horizontal"}
         className={cn(
           "group relative z-20 touch-none select-none",
           direction === "horizontal"
-            ? "h-full w-1 shrink-0 cursor-col-resize"
-            : "h-1 w-full shrink-0 cursor-row-resize",
+            ? "h-full w-1 shrink-0 cursor-col-resize before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']"
+            : "h-1 w-full shrink-0 cursor-row-resize before:absolute before:inset-x-0 before:-top-1 before:h-3 before:content-['']",
           isResizing ? "transition-none" : undefined,
-          desktopMicaTintClass(useMicaBackdrop),
         )}
+        onPointerEnter={() => setIsHovered(true)}
+        onPointerLeave={() => setIsHovered(false)}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endResize}
         onPointerCancel={endResize}
-      >
-        <div
-          className={cn(
-            "pointer-events-none absolute bg-border/40 transition-colors group-hover:bg-border/55",
-            direction === "horizontal" ? "inset-y-0 left-0 w-px" : "inset-x-0 top-0 h-px",
-          )}
-          aria-hidden
-        />
-      </div>
+      />
     </div>
+  );
+}
+
+function SplitJunctionHandle({
+  junction,
+  onResize,
+  onHighlight,
+}: {
+  junction: SplitJunctionSpec;
+  onResize: (junction: SplitJunctionSpec, clientX: number, clientY: number) => void;
+  onHighlight: (splitIds: Iterable<string> | null) => void;
+}) {
+  const draggingRef = useRef(false);
+
+  const onPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      draggingRef.current = true;
+      onHighlight(splitIdsForJunction(junction));
+      event.currentTarget.setPointerCapture(event.pointerId);
+      onResize(junction, event.clientX, event.clientY);
+    },
+    [junction, onHighlight, onResize],
+  );
+
+  const onPointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!draggingRef.current) {
+        return;
+      }
+      onResize(junction, event.clientX, event.clientY);
+    },
+    [junction, onResize],
+  );
+
+  const endDrag = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      draggingRef.current = false;
+      onHighlight(null);
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // already released
+      }
+    },
+    [onHighlight],
+  );
+
+  return (
+    <div
+      role="separator"
+      aria-label="Resize split intersection"
+      className={cn(
+        "absolute z-30 touch-none select-none",
+        "before:absolute before:-inset-2 before:content-['']",
+        "cursor-move",
+      )}
+      style={{
+        left: `calc(${junction.xRatio * 100}% - 4px)`,
+        top: `calc(${junction.yRatio * 100}% - 4px)`,
+        width: 8,
+        height: 8,
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onPointerEnter={() => onHighlight(splitIdsForJunction(junction))}
+      onPointerLeave={() => {
+        if (!draggingRef.current) {
+          onHighlight(null);
+        }
+      }}
+    />
   );
 }
 
@@ -144,6 +239,31 @@ function SplitLayoutRenderer({
   renderPane: ConversationSplitRootProps["renderPane"];
 }) {
   const split = useConversationSplit();
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const handleJunctionResize = useCallback(
+    (junction: SplitJunctionSpec, clientX: number, clientY: number) => {
+      const container = splitContainerRef.current;
+      if (!container) {
+        return;
+      }
+      const rect = container.getBoundingClientRect();
+      const xRatio = clampSplitRatio((clientX - rect.left) / Math.max(rect.width, 1));
+      const yRatio = clampSplitRatio((clientY - rect.top) / Math.max(rect.height, 1));
+      const updates: { splitId: string; ratio: number }[] = [];
+      for (const splitId of junction.xSplitIds) {
+        updates.push({ splitId, ratio: xRatio });
+      }
+      for (const splitId of junction.ySplitIds) {
+        updates.push({ splitId, ratio: yRatio });
+      }
+      split.updateRatios(updates);
+      requestAnimationFrame(() => {
+        syncAllConversationSplitShellDividers();
+      });
+    },
+    [split],
+  );
 
   if (node.kind === "leaf") {
     const isFocused = split.focusedPaneId === node.paneId;
@@ -182,16 +302,19 @@ function SplitLayoutRenderer({
     );
   }
 
-  const isHorizontal = node.direction === "horizontal";
-  const firstFlex = node.ratio;
-  const secondFlex = 1 - node.ratio;
+  const splitNode = node as SplitLayoutSplitNode;
+  const isHorizontal = splitNode.direction === "horizontal";
+  const firstFlex = splitNode.ratio;
+  const secondFlex = 1 - splitNode.ratio;
+  const junctions = collectSplitJunctions(splitNode);
 
   return (
     <div
+      ref={splitContainerRef}
       data-spirit-surface="conversation-split"
-      data-split-direction={node.direction}
+      data-split-direction={splitNode.direction}
       className={cn(
-        "flex min-h-0 min-w-0 flex-1 overflow-hidden",
+        "relative flex min-h-0 min-w-0 flex-1 overflow-hidden",
         isHorizontal ? "flex-row" : "flex-col",
       )}
     >
@@ -200,26 +323,37 @@ function SplitLayoutRenderer({
         style={{ flex: `${firstFlex} 1 0%` }}
       >
         <SplitLayoutRenderer
-          node={node.first}
+          node={splitNode.first}
           useMicaBackdrop={useMicaBackdrop}
           renderPane={renderPane}
         />
       </div>
       <SplitDivider
-        direction={node.direction}
-        useMicaBackdrop={useMicaBackdrop}
-        onRatioChange={(ratio) => split.updateRatio(node.splitId, ratio)}
+        splitId={splitNode.splitId}
+        direction={splitNode.direction}
+        ratio={splitNode.ratio}
+        boundsRef={splitContainerRef}
+        highlighted={split.highlightedSplitIds.has(splitNode.splitId)}
+        onRatioChange={(nextRatio) => split.updateRatio(splitNode.splitId, nextRatio)}
       />
       <div
         className="flex min-h-0 min-w-0 overflow-hidden"
         style={{ flex: `${secondFlex} 1 0%` }}
       >
         <SplitLayoutRenderer
-          node={node.second}
+          node={splitNode.second}
           useMicaBackdrop={useMicaBackdrop}
           renderPane={renderPane}
         />
       </div>
+      {junctions.map((junction) => (
+        <SplitJunctionHandle
+          key={junction.id}
+          junction={junction}
+          onResize={handleJunctionResize}
+          onHighlight={split.setSplitResizeHighlight}
+        />
+      ))}
     </div>
   );
 }
@@ -236,8 +370,9 @@ export function ConversationSplitRoot({
 
   return (
     <div
+      data-conversation-split-shell
       data-spirit-surface="conversation-split-root"
-      className="flex min-h-0 min-w-0 flex-1 overflow-hidden"
+      className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden"
     >
       <ConversationPaneDropIndicator />
       <SplitLayoutRenderer

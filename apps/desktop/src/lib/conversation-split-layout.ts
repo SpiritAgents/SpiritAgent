@@ -157,6 +157,106 @@ export function updateSplitRatio(
   };
 }
 
+export type SplitRatioUpdate = {
+  splitId: string;
+  ratio: number;
+};
+
+export function updateSplitRatios(
+  node: SplitLayoutNode,
+  updates: readonly SplitRatioUpdate[],
+): SplitLayoutNode {
+  return updates.reduce(
+    (layout, update) => updateSplitRatio(layout, update.splitId, update.ratio),
+    node,
+  );
+}
+
+/** Perpendicular divider intersection within one split container (fractions 0–1). */
+export type SplitJunctionSpec = {
+  id: string;
+  xRatio: number;
+  yRatio: number;
+  /** Vertical divider lines — updated from pointer X in this container. */
+  xSplitIds: readonly string[];
+  /** Horizontal divider lines — updated from pointer Y in this container. */
+  ySplitIds: readonly string[];
+};
+
+const JUNCTION_MERGE_EPSILON = 0.002;
+
+function mergeAxisAlignedJunctions(junctions: SplitJunctionSpec[]): SplitJunctionSpec[] {
+  if (junctions.length !== 2) {
+    return junctions;
+  }
+  const [first, second] = junctions;
+  if (Math.abs(first.xRatio - second.xRatio) < JUNCTION_MERGE_EPSILON) {
+    return [{
+      id: `${first.id}:merged`,
+      xRatio: first.xRatio,
+      yRatio: first.yRatio,
+      xSplitIds: first.xSplitIds,
+      ySplitIds: [...new Set([...first.ySplitIds, ...second.ySplitIds])],
+    }];
+  }
+  if (Math.abs(first.yRatio - second.yRatio) < JUNCTION_MERGE_EPSILON) {
+    return [{
+      id: `${first.id}:merged`,
+      xRatio: first.xRatio,
+      yRatio: first.yRatio,
+      xSplitIds: [...new Set([...first.xSplitIds, ...second.xSplitIds])],
+      ySplitIds: first.ySplitIds,
+    }];
+  }
+  return junctions;
+}
+
+export function collectSplitJunctions(node: SplitLayoutSplitNode): SplitJunctionSpec[] {
+  const junctions: SplitJunctionSpec[] = [];
+
+  if (node.direction === "horizontal") {
+    if (node.first.kind === "split" && node.first.direction === "vertical") {
+      junctions.push({
+        id: `${node.splitId}:first`,
+        xRatio: node.ratio,
+        yRatio: node.first.ratio,
+        xSplitIds: [node.splitId],
+        ySplitIds: [node.first.splitId],
+      });
+    }
+    if (node.second.kind === "split" && node.second.direction === "vertical") {
+      junctions.push({
+        id: `${node.splitId}:second`,
+        xRatio: node.ratio,
+        yRatio: node.second.ratio,
+        xSplitIds: [node.splitId],
+        ySplitIds: [node.second.splitId],
+      });
+    }
+    return mergeAxisAlignedJunctions(junctions);
+  }
+
+  if (node.first.kind === "split" && node.first.direction === "horizontal") {
+    junctions.push({
+      id: `${node.splitId}:first`,
+      xRatio: node.first.ratio,
+      yRatio: node.ratio,
+      xSplitIds: [node.first.splitId],
+      ySplitIds: [node.splitId],
+    });
+  }
+  if (node.second.kind === "split" && node.second.direction === "horizontal") {
+    junctions.push({
+      id: `${node.splitId}:second`,
+      xRatio: node.second.ratio,
+      yRatio: node.ratio,
+      xSplitIds: [node.second.splitId],
+      ySplitIds: [node.splitId],
+    });
+  }
+  return mergeAxisAlignedJunctions(junctions);
+}
+
 export function splitPaneAt(
   node: SplitLayoutNode,
   paneId: string,
