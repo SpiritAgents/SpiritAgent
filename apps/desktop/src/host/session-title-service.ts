@@ -29,7 +29,7 @@ export async function applyGeneratedSessionTitle(input: {
     }
 
     const stored = await loadStoredSession(resolvedPath);
-    if (stored.sessionTitleSource === 'llm') {
+    if (stored.sessionTitleSource === 'llm' || stored.sessionTitleSource === 'manual') {
       return;
     }
     await saveStoredSession(resolvedPath, {

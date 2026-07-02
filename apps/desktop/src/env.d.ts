@@ -158,6 +158,7 @@ declare global {
       request: import('./types').CheckoutPaneGitBranchRequest,
     ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
+    renameSession(path: string, displayName: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,
     ): Promise<WorkspaceFileReferenceSuggestionsResponse>;

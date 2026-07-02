@@ -303,6 +303,7 @@ import {
   ensureVisiblePaneActiveModels,
 } from './active-model-sync.js';
 import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
+import { renameSessionCommand, type SessionRenameContext } from './session-rename.js';
 import {
   finishSessionActivationCommand,
   isBundleRuntimeFresh,
@@ -2424,6 +2425,22 @@ class DesktopHostService {
 
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {
     return deleteSessionCommand(this.sessionDeleteContext(), filePath);
+  }
+
+  async renameSession(filePath: string, displayName: string): Promise<DesktopSnapshot> {
+    return renameSessionCommand(this.sessionRenameContext(), filePath, displayName);
+  }
+
+  private sessionRenameContext(): SessionRenameContext {
+    return {
+      ...this.sessionActivationContext(),
+      bundleRuntimeIsBusy: (sessionPath) => {
+        const bundle = this.sessionRegistry.findBySessionPath(sessionPath);
+        return isSessionBundleBusy(bundle);
+      },
+      notifySessionListUpdated: () => this.notifySessionListUpdated(),
+      emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
+    };
   }
 
   private sessionDeleteContext(): SessionDeleteContext {

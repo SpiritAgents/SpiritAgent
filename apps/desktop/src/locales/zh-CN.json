@@ -1031,6 +1031,7 @@
     "fileChangeSnapshotMissing": "文件变更快照缺失，已跳过该项回溯。",
     "ephemeralSessionExpired": "临时调试会话不存在或已过期。",
     "invalidSessionPath": "无效的会话路径。",
+    "emptySessionDisplayName": "会话标题不能为空。",
     "cannotDeleteBusySession": "运行中的会话无法删除。",
     "apiKeyNotConfigured": "未配置 API Key，请在设置中填写。",
     "mcpExecutorNotInitialized": "Desktop MCP tool executor 尚未初始化。",
