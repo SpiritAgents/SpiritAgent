@@ -9,7 +9,7 @@ import {
 import { paneDropIndicatorRect, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
 
 const OVERLAY_MOTION_TRANSITION =
-  "left 200ms ease-out, top 200ms ease-out, width 200ms ease-out, height 200ms ease-out, opacity 150ms ease-out";
+  "left 120ms ease-out, top 120ms ease-out, width 120ms ease-out, height 120ms ease-out, opacity 150ms ease-out";
 
 /** Single viewport-fixed ring that glides between pane drop quadrants (matches browser element picker). */
 export function ConversationPaneDropIndicator() {

@@ -100,7 +100,7 @@ export function buildPickerInjectScript(): string {
   var marqueeDrag = false;
   var overlayMotionEnabled = false;
   var ELEMENT_OVERLAY_TRANSITION =
-    'left 200ms ease-out, top 200ms ease-out, width 200ms ease-out, height 200ms ease-out, opacity 150ms ease-out';
+    'left 120ms ease-out, top 120ms ease-out, width 120ms ease-out, height 120ms ease-out, opacity 150ms ease-out';
 
   var overlayEl = document.createElement('div');
   overlayEl.id = '__spiritPickerOverlay';
