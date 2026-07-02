@@ -75,6 +75,7 @@ export async function persistDesktopSessionBundle(
     rewind: bundle.rewind,
     loopEnabled: bundle.loopEnabled,
     approvalLevel: bundle.approvalLevel,
+    ...(bundle.activeModel ? { activeModel: bundle.activeModel } : {}),
     ...(bundle.contextUsage ? { contextUsage: { ...bundle.contextUsage } } : {}),
     ...(serializeSubagentTimelinesFromMessages(bundle.subagentDesktopMessagesBySessionId)
       ? {

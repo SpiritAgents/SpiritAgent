@@ -710,7 +710,12 @@ async function handleApiRequest({
         response,
         200,
         await runHostCommand('replyPendingApproval', {
-          decision: normalizeApprovalDecisionPayload(jsonBody.decision),
+          request: {
+            decision: normalizeApprovalDecisionPayload(jsonBody.decision),
+            ...(typeof jsonBody.sessionPath === 'string'
+              ? { sessionPath: jsonBody.sessionPath }
+              : {}),
+          },
         }),
       );
       return;
@@ -930,7 +935,16 @@ async function handleApiRequest({
   }
 
   if (request.method === 'POST' && pathname === '/api/abort') {
-    writeJson(request, response, 200, await runHostCommand('abortConversation'));
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('abortConversation', {
+        ...(typeof jsonBody?.sessionPath === 'string' && jsonBody.sessionPath.trim()
+          ? { sessionPath: jsonBody.sessionPath.trim() }
+          : {}),
+      }),
+    );
     return;
   }
 
@@ -963,7 +977,14 @@ async function handleApiRequest({
       request,
       response,
       200,
-      await runHostCommand('replyPendingQuestions', { result: jsonBody?.result }),
+      await runHostCommand('replyPendingQuestions', {
+        request: {
+          result: jsonBody?.result,
+          ...(typeof jsonBody?.sessionPath === 'string'
+            ? { sessionPath: jsonBody.sessionPath }
+            : {}),
+        },
+      }),
     );
     return;
   }
@@ -980,6 +1001,166 @@ async function handleApiRequest({
       200,
       await runHostCommand('openSession', {
         path: typeof jsonBody?.path === 'string' ? jsonBody.path : '',
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/begin') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('beginSplitPaneSession', {
+        request: {
+          paneId: typeof jsonBody?.paneId === 'string' ? jsonBody.paneId : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/visible') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setVisiblePaneSessions', {
+        request: {
+          sessionPaths: Array.isArray(jsonBody?.sessionPaths)
+            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === 'string')
+            : [],
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/sync') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('syncSplitPaneSessions', {
+        request: {
+          sessionPaths: Array.isArray(jsonBody?.sessionPaths)
+            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === 'string')
+            : [],
+          focusSessionPath:
+            typeof jsonBody?.focusSessionPath === 'string' ? jsonBody.focusSessionPath : undefined,
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/focus') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('focusPaneSession', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/close') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('closeSplitPaneSession', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/workspace') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('switchPaneWorkspace', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          workspaceRoot:
+            typeof jsonBody?.workspaceRoot === 'string' ? jsonBody.workspaceRoot : undefined,
+          workspaceBinding:
+            jsonBody?.workspaceBinding === 'none' || jsonBody?.workspaceBinding === 'project'
+              ? jsonBody.workspaceBinding
+              : 'project',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/model') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('switchPaneModel', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          modelName: typeof jsonBody?.modelName === 'string' ? jsonBody.modelName : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/pending-branch') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setPanePendingGitBranch', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/work-location') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('setPaneWorkLocation', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          workLocation:
+            jsonBody?.workLocation === 'worktree' || jsonBody?.workLocation === 'local'
+              ? jsonBody.workLocation
+              : 'local',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/checkout-branch') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('checkoutPaneGitBranch', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+          ...(jsonBody?.discardLocalChanges === true ? { discardLocalChanges: true } : {}),
+        },
       }),
     );
     return;

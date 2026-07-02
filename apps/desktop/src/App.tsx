@@ -5,8 +5,10 @@ import { SessionSidebarChromeProvider } from "@/contexts/session-sidebar-chrome-
 import { ActionPickerDialog } from "@/components/action-picker-dialog";
 import { AutomationDetailView } from "@/components/automation-detail-view";
 import { AutomationsView } from "@/components/automations-view";
-import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
-import { ConversationView } from "@/components/conversation/conversation-view";
+import { ConversationPaneHost } from "@/components/conversation/conversation-pane-host";
+import { ConversationSplitRoot } from "@/components/conversation/conversation-split-root";
+import { ConversationWorkspaceToolsDock } from "@/components/conversation/conversation-workspace-tools-dock";
+import { ConversationSplitProvider } from "@/contexts/conversation-split-context";
 import { CreateAutomationDialog } from "@/components/create-automation-dialog";
 import { DesktopTitleBar } from "@/components/desktop-title-bar";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
@@ -24,12 +26,14 @@ import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { useConversationSessionFocusComposer } from "@/hooks/useConversationSessionFocusComposer";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
+import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
 import { useUiLayoutScale } from "@/hooks/useUiLayoutScale";
 import { useDesktopKeyboardShortcuts } from "@/hooks/useDesktopKeyboardShortcuts";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useDesktopRuntimeErrorToast } from "@/hooks/use-desktop-runtime-error-toast";
 import { useDesktopQuestionErrorToast } from "@/hooks/use-desktop-question-error-toast";
 import { useDesktopShellEffects } from "@/hooks/useDesktopShellEffects";
+import { useSettledSidebarActivePath } from "@/hooks/use-settled-sidebar-active-path";
 import { useFont } from "@/hooks/useFont";
 import { useMessageRewind } from "@/hooks/useMessageRewind";
 import { useSubagentViewer } from "@/hooks/useSubagentViewer";
@@ -87,10 +91,21 @@ export default function App() {
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const sessionNavigationBusy = runtime.busyAction === "session";
   const newSessionBusy = runtime.busyAction === "reset";
+  const conversationNavigationPending =
+    sessionNavigationBusy || runtime.layoutNavigationPending;
+  const activeFilePath = snapshot?.activeSession?.filePath ?? null;
+  const sidebarActiveFilePath = useSettledSidebarActivePath(
+    activeFilePath,
+    conversationNavigationPending,
+  );
   const composerAutomationApiRef = useRef<{
     setSlashSelectedIndex: (index: number) => void;
     focusComposer: () => void;
   } | null>(null);
+  const conversationAbortShortcutTargetRef = useRef<ConversationAbortShortcutTarget>({
+    eligible: false,
+  });
+
 
   // Hook order is intentional — do not reorder without checking cross-hook deps:
   // 1. surfaceNav — session surface routing; handleGenerateAutomation reads composerAutomationApiRef
@@ -120,9 +135,8 @@ export default function App() {
     compactionDemo,
     t,
     language: i18n.language,
+    conversationAbortShortcutTargetRef,
   });
-
-  const activeFilePath = snapshot?.activeSession?.filePath ?? null;
 
   const workspaceTools = useWorkspaceToolsController({
     runtime,
@@ -172,6 +186,7 @@ export default function App() {
       && surfaceNav.activeSurface === "conversation"
       && !surfaceNav.settingsMode
       && !sessionNavigationBusy
+      && !runtime.layoutNavigationPending
       && !newSessionBusy,
   });
 
@@ -187,6 +202,7 @@ export default function App() {
     runtime,
     activeSurfaceRef: surfaceNav.activeSurfaceRef,
     conversationAbortShortcutEligibleRef: conversation.conversationAbortShortcutEligibleRef,
+    conversationAbortShortcutTargetRef,
     sessionSidebarChromeApiRef: surfaceNav.sessionSidebarChromeApiRef,
     handleNewSession: surfaceNav.handleNewSession,
     handleOpenSettings: surfaceNav.handleOpenSettings,
@@ -287,7 +303,7 @@ export default function App() {
             mode={surfaceNav.settingsMode ? "settings" : "sessions"}
             userHomeDirectory={snapshot?.userHomeDirectory ?? null}
             sessions={runtime.sessions}
-            activeFilePath={activeFilePath}
+            activeFilePath={sidebarActiveFilePath}
             onNewSession={surfaceNav.handleNewSession}
             onNewSessionInWorkspace={(workspaceRoot) => {
               void surfaceNav.handleNewSessionInWorkspace(workspaceRoot);
@@ -499,155 +515,75 @@ export default function App() {
         {surfaceNav.preserveConversationSurface ? (
           <div
             className={cn(
-              "flex min-h-0 min-w-0 flex-1 flex-col",
+              "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
               desktopMicaTintInnerClass(useMicaBackdrop),
               surfaceNav.settingsMode && "hidden",
             )}
             aria-hidden={surfaceNav.settingsMode}
           >
-          <ConversationView
-            useMicaBackdrop={useMicaBackdrop}
-            isEmptySession={surfaceNav.isEmptySession}
-            hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
+          <ConversationSplitProvider
+            runtime={runtime}
             snapshot={snapshot}
-            subagentViewActive={subagentViewActive}
-            onExitSubagentViewer={
-              subagentViewActive
-                ? () => {
-                    void subagentViewer.close();
-                  }
-                : undefined
-            }
-            onNewSession={surfaceNav.handleNewSession}
-            newSessionBusy={newSessionBusy}
-            compactionDemoActive={compactionDemo.active}
-            onCompactionDemoStop={compactionDemo.stop}
-            rewindDraft={messageRewind.rewindDraft}
-            onRewindDraftClear={() => messageRewind.setRewindDraft(null)}
-            conversationScrollBedPaddingPx={conversation.conversationScrollBedPaddingPx}
-            list={{
-              messages: conversation.messages,
-              conversationRenderItems: conversation.conversationRenderItems,
-              composerSessionKey: conversation.composerSessionKey,
-              conversationListScopeKey: conversation.conversationListScopeKey,
-              conversationListRemountEpoch: conversation.conversationListRemountEpoch,
-              conversationPendingAuxState: conversation.conversationPendingAuxState,
-              processGroupManualOpen: conversation.processGroupManualOpen,
-              processGroupManualOpenKey: conversation.processGroupManualOpenKey,
-              onProcessGroupManualOpenChange: (groupId, open) => {
-                conversation.setProcessGroupManualOpen((current) => ({
-                  ...current,
-                  [conversation.processGroupManualOpenKey(groupId)]: open,
-                }));
-              },
-              shouldPlayProcessSealAnimation: conversation.shouldPlayProcessSealAnimation,
-              runtime,
-              turnContinue: conversation.turnContinue,
-              activeSessionReadOnly: conversation.activeSessionReadOnly,
-              continueBusy: conversation.continueBusy,
-              rewindDraft: messageRewind.rewindDraft,
-              onRewindDraftChange: messageRewind.setRewindDraft,
-              messageRewindComposerEnabled: composer.messageRewindComposerEnabled,
-              rewindRichInputRef: messageRewind.rewindRichInputRef,
-              models: conversation.models,
-              onOpenSubagentViewer: subagentViewActive ? undefined : conversation.handleOpenSubagentViewer,
-              onOpenReadFile: (target) => {
-                workspaceTools.openEditorFile(target);
-              },
-              onStartMessageRewind: messageRewind.startMessageRewind,
-              onForkMessage: (message, listIndex) => {
-                void runtime.forkSession({ messageId: message.id, listIndex });
-              },
-              onSubmitMessageRewind: messageRewind.submitMessageRewind,
-              onRewindRemoveLocalFileAttachment: messageRewind.removeRewindLocalFileAttachment,
-              onRewindPickLocalFile: messageRewind.pickRewindLocalFileFromPalette,
-              onRewindPaste: messageRewind.handleRewindComposerPaste,
-              onRewindDragOver: messageRewind.handleRewindComposerDragOver,
-              onRewindDrop: messageRewind.handleRewindComposerDrop,
-              onComposerAgentModeChange: composer.handleComposerAgentModeChange,
-            }}
-            composerDock={{
-              composerDockRef: conversation.composerDockRef,
-              emptySessionGreeting: conversation.emptySessionGreeting,
-              showWorkspaceBindingControls: surfaceNav.showWorkspaceBindingControls,
-              commitBusy: composer.commitBusy,
-              rewindWarnings: conversation.rewindWarnings,
-              showPendingApprovalInComposer: conversation.showPendingApprovalInComposer,
-              pendingApproval: conversation.pendingApproval,
-              showPendingQuestionsInComposer: conversation.showPendingQuestionsInComposer,
-              fileReferenceSuggestions: composer.fileReferenceSuggestions,
-              fileReferenceSelectedIndex: composer.fileReferenceSelectedIndex,
-              onFileReferenceSelectedIndexChange: composer.setFileReferenceSelectedIndex,
-              onApplyFileReferenceSuggestion: composer.applyFileReferenceSuggestion,
-              onDismissFileReferenceSuggestions: composer.dismissFileReferenceSuggestions,
-              activeFileReferenceQuery: composer.activeFileReferenceQuery,
-              slashQuery: composer.slashQuery,
-              slashSuggestions: composer.slashSuggestions,
-              slashSelectedIndex: composer.slashSelectedIndex,
-              onSlashSelectedIndexChange: composer.setSlashSelectedIndex,
-              onApplySlashSuggestionItem: composer.applySlashSuggestionItem,
-              onDismissSlashSuggestions: composer.dismissSlashSuggestions,
-              composerCursorCodeUnits: composer.composerCursorCodeUnits,
-              composerPlaceholder: composer.composerPlaceholder,
-              composerAgentModeChipPlaceholder: composer.composerAgentModeChipPlaceholder,
-              composerCanSend: composer.composerCanSend,
-              composerHasPayload: composer.composerHasPayload,
-              conversationInterruptible: conversation.conversationInterruptible,
-              composerBrowserElementAttachments: composer.composerBrowserElementAttachments,
-              onComposerBrowserElementAttachmentsChange: composer.setComposerBrowserElementAttachments,
-              onSubmitComposerMessage: composer.submitComposerMessage,
-              onComposerAgentModeChange: composer.handleComposerAgentModeChange,
-              composerRichInputRef: composer.composerRichInputRef,
-              onComposerKeyDown: composer.handleComposerKeyDown,
-              onComposerCursorCodeUnitsChange: composer.setComposerCursorCodeUnits,
-              onInsertFileReferenceTrigger: composer.insertFileReferenceTrigger,
-              onPickLocalFileFromPalette: composer.pickLocalFileFromPalette,
-              onInsertSkillTriggerFromPalette: composer.insertSkillTriggerFromPalette,
-              onRemoveLocalFileAttachment: composer.removeLocalFileAttachment,
-              onComposerPaste: composer.handleComposerPaste,
-              onComposerDragOver: composer.handleComposerDragOver,
-              onComposerDrop: composer.handleComposerDrop,
-              onComposerSegmentsCommit: composer.handleComposerSegmentsCommit,
-              models: conversation.models,
-              onOpenGitTab: workspaceTools.openGitTab,
-            }}
-            workspaceTools={{
-              startImplementingDisabled: conversation.startImplementingDisabled,
-              workspaceFilesPlanRevealNonce: workspaceTools.workspaceFilesPlanRevealNonce,
-              workspaceFilesPlanRevealTargetId: workspaceTools.workspaceFilesPlanRevealTargetId,
-              workspaceFileRevealNonce: workspaceTools.workspaceFileRevealNonce,
-              workspaceFileRevealTargetId: workspaceTools.workspaceFileRevealTargetId,
-              workspaceFileRevealPath: workspaceTools.workspaceFileRevealPath,
-              workspaceFileRevealAbsolutePath: workspaceTools.workspaceFileRevealAbsolutePath,
-              workspaceFileRevealScope: workspaceTools.workspaceFileRevealScope,
-              workspaceFileRevealViewMode: workspaceTools.workspaceFileRevealViewMode,
-              workspaceFileRevealDirectoryOnly: workspaceTools.workspaceFileRevealDirectoryOnly,
-              workspaceFileRevealLine: workspaceTools.workspaceFileRevealLine,
-              workspaceFileRevealColumn: workspaceTools.workspaceFileRevealColumn,
-              workspacePrRevealNonce: workspaceTools.workspacePrRevealNonce,
-              workspacePrRevealTargetId: workspaceTools.workspacePrRevealTargetId,
-              workspacePrRevealRequest: workspaceTools.workspacePrRevealRequest,
-              onOpenWorkspaceFile: workspaceTools.openWorkspaceFile,
-              onOpenWorkspaceFileInNewTab: workspaceTools.openWorkspaceFileInNewTab,
-              workspaceToolTabs: workspaceTools.workspaceToolTabs,
-              activeWorkspaceToolTabId: workspaceTools.activeWorkspaceToolTabId,
-              onWorkspaceToolTabsChange: workspaceTools.setWorkspaceToolTabs,
-              onActiveWorkspaceToolTabIdChange: workspaceTools.setActiveWorkspaceToolTabId,
-              onBrowserElementPicked: composer.handleBrowserElementPicked,
-              onPrDiffAddToSession: composer.handlePrDiffAddToSession,
-              onTerminalAddToSession: composer.handleTerminalAddToSession,
-              onFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
-              onWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
-              onGitCommitAddToSession: composer.handleGitCommitAddToSession,
-              onBrowserOpenInNewTab: workspaceTools.openBrowserUrlInNewTab,
-              browserTabEnabled: workspaceTools.browserTabEnabled,
-              prTabEnabled: workspaceTools.prTabEnabled,
-              onOpenIntegrationsSettings: openIntegrationsSettings,
-              workspaceToolsWidthPx: workspaceTools.workspaceToolsWidthPx,
-              onWorkspaceToolsWidthPxChange: workspaceTools.setWorkspaceToolsWidthPx,
-              gitChipBusy: composer.gitChipBusy,
-            }}
+            conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
+          >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <ConversationSplitRoot
+            useMicaBackdrop={useMicaBackdrop}
+            renderPane={(pane) => (
+              <ConversationPaneHost
+                key={pane.paneId}
+                runtime={runtime}
+                baseSnapshot={snapshot}
+                sessionPath={pane.sessionPath}
+                paneId={pane.paneId}
+                isFocused={pane.isFocused}
+                isAnchorPane={pane.isAnchorPane}
+                isSessionSidebarAnchorPane={pane.isSessionSidebarAnchorPane}
+                useIsolatedPane={pane.useIsolatedPane}
+                splitPaneCount={pane.splitPaneCount}
+                onFocusPane={pane.onFocusPane}
+                onSplit={pane.onSplit}
+                onSplitVertical={pane.onSplitVertical}
+                onClosePane={pane.onClosePane}
+                showClosePane={pane.showClosePane}
+                paneReorderEnabled={pane.paneReorderEnabled}
+                onPaneDragStart={pane.onPaneDragStart}
+                onPaneDragLeave={pane.onPaneDragLeave}
+                onPaneDrop={pane.onPaneDrop}
+                paneDropOverlayActive={pane.paneDropOverlayActive}
+                paneDragSourcePaneId={pane.paneDragSourcePaneId}
+                useMicaBackdrop={useMicaBackdrop}
+                subagentViewActive={subagentViewActive}
+                subagentViewer={subagentViewer}
+                compactionDemo={compactionDemo}
+                hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
+                showWorkspaceBindingControls={surfaceNav.showWorkspaceBindingControls}
+                sessionNavigationBusy={sessionNavigationBusy}
+                newSessionBusy={newSessionBusy}
+                onNewSession={surfaceNav.handleNewSession}
+                deleteSessionBusy={sessionNavigationBusy}
+                onDeleteSession={(path) => runtime.deleteSession(path)}
+                workspaceTools={workspaceTools}
+                onOpenIntegrationsSettings={openIntegrationsSettings}
+                onCompactionDemoStop={compactionDemo.stop}
+                t={t}
+                language={i18n.language}
+              />
+            )}
           />
+          </div>
+          <ConversationWorkspaceToolsDock
+            useMicaBackdrop={useMicaBackdrop}
+            snapshot={snapshot}
+            runtime={runtime}
+            conversation={conversation}
+            composer={composer}
+            workspaceTools={workspaceTools}
+            onOpenIntegrationsSettings={openIntegrationsSettings}
+          />
+          </div>
+          </ConversationSplitProvider>
           </div>
         ) : null}
         </div>
@@ -686,17 +622,6 @@ export default function App() {
         statHostTextFile={runtime.statHostTextFile}
         indexReady={composer.workspaceFileIndex.ready}
         searchWorkspaceFiles={composer.workspaceFileIndex.searchFilesOnly}
-      />
-
-      <BranchCheckoutDialog
-        open={composer.branchCheckoutDialogOpen}
-        onOpenChange={composer.handleBranchCheckoutDialogOpenChange}
-        branchCheckoutBlockedByChanges={composer.branchCheckoutBlockedByChanges}
-        git={snapshot?.git}
-        commitBusy={composer.commitBusy}
-        onCancel={composer.cancelBranchCheckoutDialog}
-        onConfirmCheckout={composer.confirmBranchCheckoutAndSend}
-        onDiscardAndCheckout={composer.discardBranchChangesAndCheckoutSend}
       />
 
     </div>

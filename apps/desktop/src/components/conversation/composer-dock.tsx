@@ -1,10 +1,10 @@
 import {
   forwardRef,
+  useRef,
   type ClipboardEvent as ReactClipboardEvent,
   type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
-  useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -34,7 +34,9 @@ import { desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
+import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import { shouldShowComposerChangesCard } from "@/lib/composer-changes-card-visibility";
+import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
 import { useComposerSuggestionAnchor } from "@/hooks/use-composer-suggestion-anchor";
 import type {
@@ -49,6 +51,14 @@ export type ComposerDockProps = {
   isEmptySession: boolean;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
+  paneSessionPath?: string;
+  useIsolatedPaneWorkspace?: boolean;
+  composerText: string;
+  onComposerTextChange: (text: string) => void;
+  composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
+  onComposerLocalFileAttachmentsChange: (
+    attachments: ComposerLocalFileAttachmentView[],
+  ) => void;
   snapshot: DesktopSnapshot | null;
   runtime: DesktopRuntime;
   commitBusy: boolean;
@@ -57,6 +67,14 @@ export type ComposerDockProps = {
   showPendingApprovalInComposer: boolean;
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   showPendingQuestionsInComposer: boolean;
+  pendingQuestions: DesktopSnapshot["conversation"]["pendingQuestions"];
+  questionDrafts?: Record<string, import("@/hooks/useDesktopRuntime").QuestionDraft>;
+  onUpdateQuestionDraft?: (
+    questionId: string,
+    updater: (draft: import("@/hooks/useDesktopRuntime").QuestionDraft) => import("@/hooks/useDesktopRuntime").QuestionDraft,
+  ) => void;
+  onSubmitQuestions?: () => void;
+  onSkipQuestions?: () => void;
   fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
@@ -74,6 +92,7 @@ export type ComposerDockProps = {
   composerAgentModeChipPlaceholder?: string;
   composerCanSend: boolean;
   composerHasPayload: boolean;
+  composerBusy: boolean;
   conversationInterruptible: boolean;
   continueBusy: boolean;
   composerBrowserElementAttachments: BrowserElementAttachment[];
@@ -94,6 +113,7 @@ export type ComposerDockProps = {
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
+  composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
 };
 
 export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(function ComposerDock(
@@ -101,6 +121,12 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     isEmptySession,
     emptySessionGreeting,
     showWorkspaceBindingControls,
+    paneSessionPath,
+    useIsolatedPaneWorkspace = false,
+    composerText,
+    onComposerTextChange,
+    composerLocalFileAttachments,
+    onComposerLocalFileAttachmentsChange,
     snapshot,
     runtime,
     commitBusy,
@@ -109,6 +135,11 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     showPendingApprovalInComposer,
     pendingApproval,
     showPendingQuestionsInComposer,
+    pendingQuestions,
+    questionDrafts: questionDraftsOverride,
+    onUpdateQuestionDraft,
+    onSubmitQuestions,
+    onSkipQuestions,
     fileReferenceSuggestions,
     fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange,
@@ -126,6 +157,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     composerAgentModeChipPlaceholder,
     composerCanSend,
     composerHasPayload,
+    composerBusy,
     conversationInterruptible,
     continueBusy,
     composerBrowserElementAttachments,
@@ -146,6 +178,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     models,
     useMicaBackdrop,
     onOpenGitTab,
+    composerInitialSegments,
   },
   ref,
 ) {
@@ -165,6 +198,14 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
   const showChangesCard = shouldShowComposerChangesCard(snapshot?.git);
   const changesLineDelta = snapshot?.git.workingTreeLineDelta;
   const hasComposerTodos = Boolean(snapshot?.conversation.todos);
+  const workspaceControlsDisabled =
+    useIsolatedPaneWorkspace && paneSessionPath
+      ? runtime.paneWorkspaceBusySessionPath === normalizePaneSessionPathKey(paneSessionPath)
+      : runtime.busyAction === "bootstrap" || runtime.busyAction === "session";
+  const gitControlsDisabled = workspaceControlsDisabled || commitBusy;
+  const approvalSessionPath =
+    useIsolatedPaneWorkspace && paneSessionPath ? paneSessionPath : undefined;
+  const questionsSessionPath = approvalSessionPath;
 
   return (
     <div
@@ -204,7 +245,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 currentWorkspaceRoot={snapshot?.workspaceRoot ?? ""}
                 workspaceBinding={snapshot?.workspaceBinding ?? "project"}
                 availableWorkspaces={snapshot?.availableWorkspaces ?? []}
-                disabled={runtime.busyAction === "bootstrap" || runtime.busyAction === "session"}
+                disabled={workspaceControlsDisabled}
                 onSelectWorkspace={(workspaceRoot) => {
                   if (
                     snapshot?.workspaceBinding === "project"
@@ -213,10 +254,18 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   ) {
                     return;
                   }
+                  if (useIsolatedPaneWorkspace && paneSessionPath) {
+                    void runtime.switchPaneWorkspace(paneSessionPath, workspaceRoot);
+                    return;
+                  }
                   void runtime.switchWorkspaceRoot(workspaceRoot);
                 }}
                 onSelectNoWorkspace={() => {
                   if (snapshot?.workspaceBinding === "none") {
+                    return;
+                  }
+                  if (useIsolatedPaneWorkspace && paneSessionPath) {
+                    void runtime.switchPaneToNoWorkspaceBinding(paneSessionPath);
                     return;
                   }
                   void runtime.switchToNoWorkspaceBinding();
@@ -225,6 +274,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   void (async () => {
                     const workspaceRoot = await runtime.pickWorkspaceDirectory();
                     if (!workspaceRoot) {
+                      return;
+                    }
+                    if (useIsolatedPaneWorkspace && paneSessionPath) {
+                      await runtime.switchPaneWorkspace(paneSessionPath, workspaceRoot);
                       return;
                     }
                     await runtime.switchWorkspaceRoot(workspaceRoot);
@@ -237,24 +290,26 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     branches={snapshot?.git.branches ?? []}
                     selectedBranch={snapshot?.git.selectedBranch}
                     currentBranch={snapshot?.git.branch}
-                    disabled={
-                      runtime.busyAction === "bootstrap"
-                      || runtime.busyAction === "session"
-                      || commitBusy
-                    }
+                    disabled={gitControlsDisabled}
                     onBranchChange={(branch) => {
+                      if (useIsolatedPaneWorkspace && paneSessionPath) {
+                        void runtime.setPanePendingGitBranch(paneSessionPath, branch);
+                        return;
+                      }
                       void runtime.setPendingGitBranch(branch);
                     }}
                   />
                   <WorkLocationMenu
                     workLocation={snapshot?.git.workLocation ?? "local"}
                     disabled={
-                      runtime.busyAction === "bootstrap"
-                      || runtime.busyAction === "session"
-                      || commitBusy
+                      gitControlsDisabled
                       || snapshot?.git.isRepository !== true
                     }
                     onWorkLocationChange={(workLocation) => {
+                      if (useIsolatedPaneWorkspace && paneSessionPath) {
+                        void runtime.setPaneWorkLocation(paneSessionPath, workLocation);
+                        return;
+                      }
                       void runtime.setWorkLocation(workLocation);
                     }}
                   />
@@ -290,29 +345,41 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   void runtime.submitApproval({
                     kind: "allow",
                     ...(decision.persistTrust ? { persistTrust: true } : {}),
-                  });
+                  }, approvalSessionPath);
                   return;
                 }
                 if (decision.kind === "deny") {
-                  void runtime.submitApproval({ kind: "deny" });
+                  void runtime.submitApproval({ kind: "deny" }, approvalSessionPath);
                   return;
                 }
                 void runtime.submitApproval({
                   kind: "guidance",
                   userMessage: decision.userMessage ?? "",
-                });
+                }, approvalSessionPath);
               }}
             />
           ) : null}
 
-          {showPendingQuestionsInComposer && runtime.pendingQuestions ? (
+          {showPendingQuestionsInComposer && pendingQuestions ? (
             <PendingQuestionsCard
-              pendingQuestions={runtime.pendingQuestions}
-              questionDrafts={runtime.questionDrafts}
+              pendingQuestions={pendingQuestions}
+              questionDrafts={questionDraftsOverride ?? runtime.questionDrafts}
               questionsBusy={runtime.busyAction === "questions"}
-              onUpdateDraft={runtime.updateQuestionDraft}
-              onSubmitQuestions={() => void runtime.submitQuestions()}
-              onSkipQuestions={() => void runtime.skipQuestions()}
+              onUpdateDraft={onUpdateQuestionDraft ?? runtime.updateQuestionDraft}
+              onSubmitQuestions={() => {
+                if (onSubmitQuestions) {
+                  onSubmitQuestions();
+                  return;
+                }
+                void runtime.submitQuestions(questionsSessionPath, pendingQuestions);
+              }}
+              onSkipQuestions={() => {
+                if (onSkipQuestions) {
+                  onSkipQuestions();
+                  return;
+                }
+                void runtime.skipQuestions(questionsSessionPath, pendingQuestions);
+              }}
             />
           ) : null}
 
@@ -337,22 +404,34 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 </div>
               ) : null}
               <ComposerSurface
-                value={runtime.composer}
-                onChange={runtime.setComposer}
-                initialSegments={runtime.composerInitialSegments}
+                value={composerText}
+                onChange={onComposerTextChange}
+                initialSegments={composerInitialSegments ?? runtime.composerInitialSegments}
                 onSubmit={onSubmitComposerMessage}
                 browserElementAttachments={composerBrowserElementAttachments}
                 onElementAttachmentsChange={onComposerBrowserElementAttachmentsChange}
-                onAbort={() => void runtime.abortConversation()}
+                onAbort={() => {
+                  void runtime.abortConversation(
+                    useIsolatedPaneWorkspace && paneSessionPath
+                      ? { sessionPath: paneSessionPath }
+                      : undefined,
+                  );
+                }}
                 placeholder={composerPlaceholder}
                 agentModeChipPlaceholder={composerAgentModeChipPlaceholder}
-                localFileAttachments={runtime.composerLocalFileAttachments}
+                localFileAttachments={composerLocalFileAttachments}
                 models={models}
                 catalogHints={snapshot?.config.modelCatalogHints}
-                activeModel={runtime.settings.activeModel}
+                activeModel={snapshot?.config.activeModel ?? runtime.settings.activeModel}
                 agentMode={runtime.settings.agentMode}
                 loopEnabled={snapshot?.conversation.loopEnabled === true}
-                onModelSelect={runtime.setActiveModel}
+                onModelSelect={(name) => {
+                  if (useIsolatedPaneWorkspace && paneSessionPath) {
+                    void runtime.switchPaneModel(paneSessionPath, name);
+                    return;
+                  }
+                  runtime.setActiveModel(name);
+                }}
                 onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
                 onModelThinkingEnabledSelect={runtime.setModelThinkingEnabled}
                 onAgentModeChange={onComposerAgentModeChange}
@@ -369,7 +448,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 canSend={composerCanSend}
                 hasComposerPayload={composerHasPayload}
                 canAbort={conversationInterruptible}
-                busy={runtime.busyAction === "send"}
+                busy={composerBusy}
                 conversationBusy={continueBusy}
                 agentModeChipDismissed={runtime.agentModeChipDismissed}
                 onAgentModeChipDismissChange={runtime.setAgentModeChipDismissed}

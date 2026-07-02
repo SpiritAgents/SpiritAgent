@@ -59,6 +59,7 @@ export interface RestoredSessionState {
   rewind: StoredDesktopRewindMetadata;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
+  activeModel?: string;
   activePlanPath?: string;
   sessionTitleSource?: SessionTitleSource;
   contextUsage?: ConversationContextUsageSnapshot;
@@ -173,6 +174,9 @@ export function restoreStoredSessionState(input: {
     rewind: input.loaded.rewind ?? createDesktopRewindMetadata(),
     loopEnabled: input.loaded.loopEnabled === true,
     approvalLevel: normalizeApprovalLevel(input.loaded.approvalLevel),
+    ...(typeof input.loaded.activeModel === 'string' && input.loaded.activeModel.trim()
+      ? { activeModel: input.loaded.activeModel.trim() }
+      : {}),
     ...(activePlanPath ? { activePlanPath } : {}),
     ...(input.loaded.sessionTitleSource === 'seed' || input.loaded.sessionTitleSource === 'llm'
       ? { sessionTitleSource: input.loaded.sessionTitleSource }
@@ -204,6 +208,7 @@ export function buildStoredDesktopSession(input: {
   rewind: StoredDesktopRewindMetadata;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
+  activeModel?: string;
   contextUsage?: ConversationContextUsageSnapshot;
   subagentDesktopTimelines?: Record<string, PersistedDesktopTimelineTurnSnapshot[]>;
   queuedUserTurns?: QueuedUserTurn[];
@@ -218,6 +223,7 @@ export function buildStoredDesktopSession(input: {
     ...(input.subagentSessions?.length ? { subagentSessions: input.subagentSessions } : {}),
     loopEnabled: input.loopEnabled,
     approvalLevel: input.approvalLevel,
+    ...(input.activeModel ? { activeModel: input.activeModel } : {}),
     desktopMessageTimeline,
     savedAtUnixMs: input.savedAtUnixMs ?? Date.now(),
     sessionDisplayName: input.sessionDisplayName,

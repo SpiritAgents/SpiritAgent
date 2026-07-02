@@ -599,3 +599,39 @@ export function writeWorkspaceSidebarGroupOrder(ids: string[]): void {
     // ignore
   }
 }
+
+const CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY = "spirit-desktop-conversation-split-layout-v1";
+
+export function readConversationSplitLayoutJson(): string | null {
+  try {
+    if (typeof localStorage === "undefined") {
+      return null;
+    }
+    return localStorage.getItem(CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeConversationSplitLayoutJson(json: string): void {
+  try {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    localStorage.setItem(CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY, json);
+  } catch {
+    // ignore
+  }
+}
+
+/** @deprecated Global split layout; split state is session-scoped via session-split-binding. */
+export function clearConversationSplitLayoutJson(): void {
+  try {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    localStorage.removeItem(CONVERSATION_SPLIT_LAYOUT_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}

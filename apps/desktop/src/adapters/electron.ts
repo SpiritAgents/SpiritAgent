@@ -141,8 +141,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     refreshGitSnapshot() {
       return bridge.refreshGitSnapshot();
     },
-    abortConversation() {
-      return bridge.abortConversation();
+    abortConversation(request?: AbortConversationRequest) {
+      return bridge.abortConversation(request);
     },
     abortShell(toolCallId) {
       return bridge.abortShell(toolCallId);
@@ -201,11 +201,11 @@ export async function createElectronHostApi(): Promise<HostApi> {
     subscribeSessionListUpdates(callback) {
       return bridge.sessionListSubscribe(callback);
     },
-    replyPendingApproval(decision) {
-      return bridge.replyPendingApproval(decision);
+    replyPendingApproval(request) {
+      return bridge.replyPendingApproval(request);
     },
-    replyPendingQuestions(result) {
-      return bridge.replyPendingQuestions(result);
+    replyPendingQuestions(request) {
+      return bridge.replyPendingQuestions(request);
     },
     resetSession() {
       return bridge.resetSession();
@@ -215,6 +215,36 @@ export async function createElectronHostApi(): Promise<HostApi> {
     },
     openSession(path) {
       return bridge.openSession(path);
+    },
+    beginSplitPaneSession(request) {
+      return bridge.beginSplitPaneSession(request);
+    },
+    setVisiblePaneSessions(request) {
+      return bridge.setVisiblePaneSessions(request);
+    },
+    syncSplitPaneSessions(request) {
+      return bridge.syncSplitPaneSessions(request);
+    },
+    focusPaneSession(request) {
+      return bridge.focusPaneSession(request);
+    },
+    closeSplitPaneSession(request) {
+      return bridge.closeSplitPaneSession(request);
+    },
+    switchPaneWorkspace(request) {
+      return bridge.switchPaneWorkspace(request);
+    },
+    switchPaneModel(request) {
+      return bridge.switchPaneModel(request);
+    },
+    setPanePendingGitBranch(request) {
+      return bridge.setPanePendingGitBranch(request);
+    },
+    setPaneWorkLocation(request) {
+      return bridge.setPaneWorkLocation(request);
+    },
+    checkoutPaneGitBranch(request) {
+      return bridge.checkoutPaneGitBranch(request);
     },
     deleteSession(path) {
       return bridge.deleteSession(path);

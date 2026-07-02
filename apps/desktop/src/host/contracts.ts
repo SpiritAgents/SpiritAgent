@@ -91,6 +91,16 @@ export type HostCommandName =
   | 'resetSession'
   | 'listSessions'
   | 'openSession'
+  | 'beginSplitPaneSession'
+  | 'setVisiblePaneSessions'
+  | 'syncSplitPaneSessions'
+  | 'focusPaneSession'
+  | 'closeSplitPaneSession'
+  | 'switchPaneWorkspace'
+  | 'switchPaneModel'
+  | 'setPanePendingGitBranch'
+  | 'setPaneWorkLocation'
+  | 'checkoutPaneGitBranch'
   | 'deleteSession'
   | 'listWorkspaceFileReferenceSuggestions'
   | 'requestCodeCompletion'
@@ -131,6 +141,7 @@ export interface StoredDesktopSession {
   subagentSessions?: ChatArchive['subagentSessions'];
   loopEnabled?: boolean;
   approvalLevel?: ApprovalLevel;
+  activeModel?: string;
   desktopMessageTimeline: PersistedDesktopTimelineTurnSnapshot[];
   savedAtUnixMs: number;
   sessionDisplayName?: string;
