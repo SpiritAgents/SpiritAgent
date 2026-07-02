@@ -1,3 +1,5 @@
+import { useMemo, type MutableRefObject } from "react";
+
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
@@ -12,3 +14,46 @@ export type FocusedPaneComposerInsertHandlers = {
   handleFileSnippetAddToSession: (attachment: FileSnippetAttachment) => void;
   handleWorkspaceFileAddToSession: (relativePath: string) => void;
 };
+
+/** Stable proxies: read focused pane handlers from ref at call time (no Provider re-render on register). */
+export function useFocusedPaneComposerInsertCallbacks(
+  insertRef: MutableRefObject<FocusedPaneComposerInsertHandlers | null>,
+  fallback: FocusedPaneComposerInsertHandlers,
+): FocusedPaneComposerInsertHandlers {
+  return useMemo(
+    () => ({
+      handleBrowserElementPicked: (attachment) =>
+        (insertRef.current?.handleBrowserElementPicked ?? fallback.handleBrowserElementPicked)(
+          attachment,
+        ),
+      handlePrDiffAddToSession: (attachment) =>
+        (insertRef.current?.handlePrDiffAddToSession ?? fallback.handlePrDiffAddToSession)(attachment),
+      handleGitCommitAddToSession: (attachment) =>
+        (insertRef.current?.handleGitCommitAddToSession ?? fallback.handleGitCommitAddToSession)(
+          attachment,
+        ),
+      handleTerminalAddToSession: (attachment) =>
+        (insertRef.current?.handleTerminalAddToSession ?? fallback.handleTerminalAddToSession)(
+          attachment,
+        ),
+      handleFileSnippetAddToSession: (attachment) =>
+        (insertRef.current?.handleFileSnippetAddToSession ?? fallback.handleFileSnippetAddToSession)(
+          attachment,
+        ),
+      handleWorkspaceFileAddToSession: (relativePath) =>
+        (
+          insertRef.current?.handleWorkspaceFileAddToSession ??
+          fallback.handleWorkspaceFileAddToSession
+        )(relativePath),
+    }),
+    [
+      fallback.handleBrowserElementPicked,
+      fallback.handleFileSnippetAddToSession,
+      fallback.handleGitCommitAddToSession,
+      fallback.handlePrDiffAddToSession,
+      fallback.handleTerminalAddToSession,
+      fallback.handleWorkspaceFileAddToSession,
+      insertRef,
+    ],
+  );
+}

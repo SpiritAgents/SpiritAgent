@@ -16,6 +16,7 @@ import {
 
   useState,
 
+  type MutableRefObject,
   type ReactNode,
 
 } from "react";
@@ -156,7 +157,7 @@ type ConversationSplitContextValue = {
 
   layoutNavigationPending: boolean;
 
-  focusedPaneComposerInsert: FocusedPaneComposerInsertHandlers | null;
+  focusedPaneComposerInsertRef: MutableRefObject<FocusedPaneComposerInsertHandlers | null>;
 
   setFocusedPaneComposerInsert: (handlers: FocusedPaneComposerInsertHandlers | null) => void;
 
@@ -498,8 +499,14 @@ export function ConversationSplitProvider({
     zone: PaneDropZone;
   } | null>(null);
 
-  const [focusedPaneComposerInsert, setFocusedPaneComposerInsert] =
-    useState<FocusedPaneComposerInsertHandlers | null>(null);
+  const focusedPaneComposerInsertRef = useRef<FocusedPaneComposerInsertHandlers | null>(null);
+
+  const setFocusedPaneComposerInsert = useCallback(
+    (handlers: FocusedPaneComposerInsertHandlers | null) => {
+      focusedPaneComposerInsertRef.current = handlers;
+    },
+    [],
+  );
 
   const setPaneDropTarget = useCallback(
     (target: { paneId: string; zone: PaneDropZone } | null) => {
@@ -1478,7 +1485,7 @@ export function ConversationSplitProvider({
 
       layoutNavigationPending,
 
-      focusedPaneComposerInsert,
+      focusedPaneComposerInsertRef,
 
       setFocusedPaneComposerInsert,
 
@@ -1497,8 +1504,6 @@ export function ConversationSplitProvider({
       completePaneDrop,
 
       focusPane,
-
-      focusedPaneComposerInsert,
 
       focusedPaneId,
 
