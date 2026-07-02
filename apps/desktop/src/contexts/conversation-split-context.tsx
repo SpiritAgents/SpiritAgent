@@ -118,6 +118,8 @@ type ConversationSplitContextValue = {
 
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
+  collapsePaneLayoutById: (paneId: string) => Promise<void>;
+
   updateRatio: (splitId: string, ratio: number) => void;
 
   updateRatios: (updates: readonly { splitId: string; ratio: number }[]) => void;
@@ -1147,6 +1149,66 @@ export function ConversationSplitProvider({
 
 
 
+  const collapsePaneLayoutById = useCallback(
+
+    async (paneId: string) => {
+
+      if (!layout) {
+
+        return;
+
+      }
+
+      if (countPanes(layout) <= 1) {
+
+        return;
+
+      }
+
+      const pathsBeforeClose = collectPaneSessionPaths(layout);
+
+      const nextLayout = closePane(layout, paneId);
+
+      if (!nextLayout) {
+
+        return;
+
+      }
+
+      clearSessionSplitBindings(pathsBeforeClose);
+
+      setLayout(nextLayout);
+
+      await syncVisiblePaths(nextLayout);
+
+      if (countPanes(nextLayout) > 1) {
+
+        persistSessionSplitBinding(nextLayout);
+
+      }
+
+      if (focusedPaneId === paneId) {
+
+        const anchorPaneId = findWorkspaceToolsAnchorPaneId(nextLayout);
+
+        const anchorLeaf = findLeafByPaneId(nextLayout, anchorPaneId);
+
+        if (anchorLeaf) {
+
+          focusPane(anchorLeaf.paneId, anchorLeaf.sessionPath);
+
+        }
+
+      }
+
+    },
+
+    [focusPane, focusedPaneId, layout, syncVisiblePaths],
+
+  );
+
+
+
   const updateRatio = useCallback((splitId: string, ratio: number) => {
 
     setLayout((current) => {
@@ -1367,6 +1429,8 @@ export function ConversationSplitProvider({
 
       closePaneById,
 
+      collapsePaneLayoutById,
+
       updateRatio,
 
       updateRatios,
@@ -1400,6 +1464,8 @@ export function ConversationSplitProvider({
       clearPaneDrag,
 
       closePaneById,
+
+      collapsePaneLayoutById,
 
       completePaneDrop,
 

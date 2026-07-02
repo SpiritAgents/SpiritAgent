@@ -73,6 +73,7 @@ export function DesktopLayoutChromeBar({
   deleteSessionBusy = false,
   conversationBusy = false,
   onDeleteSession,
+  onDeleteSessionOverlayClosed,
 }: {
   useMicaBackdrop: boolean;
   showSessionSidebarToggle?: boolean;
@@ -98,6 +99,7 @@ export function DesktopLayoutChromeBar({
   deleteSessionBusy?: boolean;
   conversationBusy?: boolean;
   onDeleteSession?: (path: string) => void | Promise<void>;
+  onDeleteSessionOverlayClosed?: () => void | Promise<void>;
 }) {
   const { t } = useTranslation();
   const { open: sessionSidebarOpen } = useSessionSidebarChrome();
@@ -112,9 +114,11 @@ export function DesktopLayoutChromeBar({
   const trimmedDeleteSessionPath = deleteSessionPath?.trim() ?? "";
   const trimmedDeleteSessionDisplayName = deleteSessionDisplayName?.trim() ?? "";
 
-  const dismissDeleteSessionDialog = useCallback(() => {
+  const dismissDeleteSessionDialog = useCallback((afterClose?: () => void) => {
     setDeleteSessionDialogOpen(false);
-    runAfterRadixOverlayClose(() => {});
+    runAfterRadixOverlayClose(() => {
+      afterClose?.();
+    });
   }, []);
 
   return (
@@ -345,7 +349,9 @@ export function DesktopLayoutChromeBar({
                   void (async () => {
                     try {
                       await onDeleteSession(trimmedDeleteSessionPath);
-                      dismissDeleteSessionDialog();
+                      dismissDeleteSessionDialog(() => {
+                        void onDeleteSessionOverlayClosed?.();
+                      });
                     } catch {
                       dismissDeleteSessionDialog();
                     }
