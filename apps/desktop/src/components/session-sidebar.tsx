@@ -710,7 +710,7 @@ const SessionListRow = memo(function SessionListRow({
       input.select();
     });
     return () => cancelAnimationFrame(frameId);
-  }, [renaming, renameValue]);
+  }, [renaming]);
 
   const rowClassName = cn(
     "group flex w-full min-w-0 items-center overflow-hidden rounded-md text-left text-sm outline-none",

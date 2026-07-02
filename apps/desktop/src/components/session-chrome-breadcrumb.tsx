@@ -110,7 +110,7 @@ export function SessionChromeBreadcrumb({
       input.select();
     });
     return () => cancelAnimationFrame(frameId);
-  }, [renaming, renameValue]);
+  }, [renaming]);
 
   if (!trimmedSessionTitle && !renaming) {
     return null;
