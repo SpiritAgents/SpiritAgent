@@ -627,11 +627,13 @@ export interface SubmitUserTurnRequest {
 
 export interface BeginSplitPaneSessionRequest {
   paneId: string;
+  /** When true, only create the in-memory bundle; caller batches snapshot via syncSplitPaneSessions. */
+  deferSnapshot?: boolean;
 }
 
 export interface BeginSplitPaneSessionResponse {
   sessionPath: string;
-  snapshot: DesktopSnapshot;
+  snapshot?: DesktopSnapshot;
 }
 
 export interface SetVisiblePaneSessionsRequest {
@@ -640,6 +642,15 @@ export interface SetVisiblePaneSessionsRequest {
 
 export interface CloseSplitPaneSessionRequest {
   sessionPath: string;
+}
+
+export interface FocusPaneSessionRequest {
+  sessionPath: string;
+}
+
+export interface SyncSplitPaneSessionsRequest {
+  sessionPaths: string[];
+  focusSessionPath?: string;
 }
 
 export interface PaneSessionSlice {

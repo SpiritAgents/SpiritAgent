@@ -132,6 +132,8 @@ import type {
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
   CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
+  SyncSplitPaneSessionsRequest,
   PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
@@ -263,7 +265,9 @@ import { forkSessionCommand, type ForkSessionHostContext } from './fork-session-
 import {
   beginSplitPaneSessionCommand,
   closeSplitPaneSessionCommand,
+  focusPaneSessionCommand,
   setVisiblePaneSessionsCommand,
+  syncSplitPaneSessionsCommand,
   type SessionSplitHostContext,
 } from './session-split.js';
 import { buildPaneSessionSlice } from './pane-snapshot.js';
@@ -603,6 +607,7 @@ class DesktopHostService {
   private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/host-internal/lsp').LspService>();
   private lspSnapshot = defaultDesktopLspSnapshot();
   private visiblePaneSessionPaths: string[] = [];
+  private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
 
   private replaceVisiblePaneSessionPath(before: string, after: string): void {
     const beforeResolved = path.resolve(before);
@@ -2193,6 +2198,14 @@ class DesktopHostService {
     return setVisiblePaneSessionsCommand(this.sessionSplitContext(), request);
   }
 
+  async focusPaneSession(request: FocusPaneSessionRequest): Promise<DesktopSnapshot> {
+    return focusPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest): Promise<DesktopSnapshot> {
+    return syncSplitPaneSessionsCommand(this.sessionSplitContext(), request);
+  }
+
   async closeSplitPaneSession(
     request: CloseSplitPaneSessionRequest,
   ): Promise<DesktopSnapshot> {
@@ -3234,10 +3247,30 @@ class DesktopHostService {
         });
       }
 
-      paneSessions[resolved] = buildPaneSessionSlice({
+      const conversationView = orchestration.conversationSnapshotView;
+      const sliceSignature = [
+        resolved,
+        isForegroundActive ? 1 : 0,
+        this.resolveTodoSessionKeyForBundle(bundle),
+        bundle.conversationRevision,
+        bundle.messageTimeline.toMessages().length,
+        isSessionBundleBusy(bundle) ? 1 : 0,
+        bundle.activeSession?.filePath ?? bundle.id,
+        pendingApproval?.toolCallId ?? '',
+        pendingQuestions ? JSON.stringify(pendingQuestions.request) : '',
+        bundleRuntime?.pendingUserTurn() ?? '',
+        (bundleRuntime?.pendingImagePaths()?.length ?? 0),
+      ].join('\0');
+      const cached = this.paneSessionSliceCache.get(resolved);
+      if (cached?.signature === sliceSignature) {
+        paneSessions[resolved] = cached.slice;
+        continue;
+      }
+
+      const slice = buildPaneSessionSlice({
         bundle,
         composerSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
-        conversationSnapshotView: orchestration.conversationSnapshotView,
+        conversationSnapshotView: conversationView,
         livePendingAux: pendingAux,
         isForegroundActive,
         ...(pendingApproval
@@ -3258,6 +3291,14 @@ class DesktopHostService {
           ? { pendingUserTurn: bundleRuntime.pendingUserTurn() }
           : {}),
       });
+      this.paneSessionSliceCache.set(resolved, { signature: sliceSignature, slice });
+      paneSessions[resolved] = slice;
+    }
+
+    for (const key of this.paneSessionSliceCache.keys()) {
+      if (!paneSessions[key]) {
+        this.paneSessionSliceCache.delete(key);
+      }
     }
 
     return Object.keys(paneSessions).length > 0 ? paneSessions : undefined;

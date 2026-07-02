@@ -1015,6 +1015,38 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/split/sync') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('syncSplitPaneSessions', {
+        request: {
+          sessionPaths: Array.isArray(jsonBody?.sessionPaths)
+            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === 'string')
+            : [],
+          focusSessionPath:
+            typeof jsonBody?.focusSessionPath === 'string' ? jsonBody.focusSessionPath : undefined,
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/split/focus') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('focusPaneSession', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/split/close') {
     writeJson(
       request,

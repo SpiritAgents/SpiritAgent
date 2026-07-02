@@ -2663,12 +2663,20 @@ export function useDesktopRuntime() {
   }, []);
 
   const beginSplitPaneSession = useCallback(
-    async (paneId: string): Promise<BeginSplitPaneSessionResponse> => {
+    async (
+      paneId: string,
+      options?: { deferSnapshot?: boolean },
+    ): Promise<BeginSplitPaneSessionResponse> => {
       if (!api?.beginSplitPaneSession) {
         throw new Error("Host does not support split pane sessions.");
       }
-      const response = await api.beginSplitPaneSession({ paneId });
-      applySnapshot(response.snapshot);
+      const response = await api.beginSplitPaneSession({
+        paneId,
+        deferSnapshot: options?.deferSnapshot,
+      });
+      if (response.snapshot) {
+        applySnapshot(response.snapshot);
+      }
       setRuntimeError("");
       void refreshSessions();
       return response;
@@ -2689,6 +2697,29 @@ export function useDesktopRuntime() {
       applySnapshot(next, navGeneration !== undefined ? { navGeneration } : undefined);
     },
     [api, applySnapshot],
+  );
+
+  const syncSplitPaneSessions = useCallback(
+    async (sessionPaths: string[], focusSessionPath?: string) => {
+      if (!api?.syncSplitPaneSessions) {
+        return;
+      }
+      const next = await api.syncSplitPaneSessions({ sessionPaths, focusSessionPath });
+      applySnapshot(next);
+    },
+    [api, applySnapshot],
+  );
+
+  const focusPaneSession = useCallback(
+    async (sessionPath: string) => {
+      if (!api?.focusPaneSession) {
+        return;
+      }
+      acknowledgeSessionAttention(sessionPath);
+      const next = await api.focusPaneSession({ sessionPath });
+      applySnapshot(next);
+    },
+    [acknowledgeSessionAttention, api, applySnapshot],
   );
 
   const closeSplitPaneSession = useCallback(
@@ -3249,6 +3280,8 @@ export function useDesktopRuntime() {
     releaseSessionNavigationBusy,
     beginSplitPaneSession,
     setVisiblePaneSessions,
+    syncSplitPaneSessions,
+    focusPaneSession,
     closeSplitPaneSession,
     deleteSession,
     deleteWorkspace,

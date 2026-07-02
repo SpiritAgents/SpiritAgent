@@ -1013,15 +1013,27 @@ export function ConversationSplitProvider({
 
       setFocusedPaneId(paneId);
 
-      if (snapshot?.activeSession?.filePath !== sessionPath) {
+      if (snapshot?.activeSession?.filePath === sessionPath) {
 
-        void runtime.openSession(sessionPath);
+        return;
 
       }
 
+      const paneCount = layout ? countPanes(layout) : 0;
+
+      if (paneCount > 1 && layout && layoutIncludesSessionPath(layout, sessionPath)) {
+
+        void runtime.focusPaneSession(sessionPath);
+
+        return;
+
+      }
+
+      void runtime.openSession(sessionPath);
+
     },
 
-    [runtime, snapshot?.activeSession?.filePath],
+    [layout, runtime, snapshot?.activeSession?.filePath],
 
   );
 
@@ -1039,7 +1051,7 @@ export function ConversationSplitProvider({
 
       const newPaneId = createPaneId();
 
-      const response = await runtime.beginSplitPaneSession(newPaneId);
+      const response = await runtime.beginSplitPaneSession(newPaneId, { deferSnapshot: true });
 
       const newLeaf = createLeafNode(newPaneId, response.sessionPath);
 
@@ -1047,16 +1059,19 @@ export function ConversationSplitProvider({
 
       setLayout(nextLayout);
 
+      setFocusedPaneId(newPaneId);
+
       persistSessionSplitBinding(nextLayout);
 
+      const paths = collectPaneSessionPaths(nextLayout);
 
-      await syncVisiblePaths(nextLayout);
+      visiblePathsSyncedRef.current = paths.join("\0");
 
-      focusPane(newPaneId, response.sessionPath);
+      await runtime.syncSplitPaneSessions(paths, response.sessionPath);
 
     },
 
-    [focusPane, layout, runtime, syncVisiblePaths],
+    [layout, runtime],
 
   );
 

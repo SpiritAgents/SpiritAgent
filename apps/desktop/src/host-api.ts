@@ -72,7 +72,9 @@ import type {
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
+  SyncSplitPaneSessionsRequest,
   CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -210,6 +212,8 @@ export interface HostApi {
     request: BeginSplitPaneSessionRequest,
   ): Promise<BeginSplitPaneSessionResponse>;
   setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest): Promise<DesktopSnapshot>;
+  syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest): Promise<DesktopSnapshot>;
+  focusPaneSession(request: FocusPaneSessionRequest): Promise<DesktopSnapshot>;
   closeSplitPaneSession(request: CloseSplitPaneSessionRequest): Promise<DesktopSnapshot>;
   deleteSession(path: string): Promise<DesktopSnapshot>;
   listWorkspaceFileReferenceSuggestions(

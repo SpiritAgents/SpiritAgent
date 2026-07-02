@@ -133,6 +133,12 @@ declare global {
     setVisiblePaneSessions(
       request: import('./types').SetVisiblePaneSessionsRequest,
     ): Promise<DesktopSnapshot>;
+    syncSplitPaneSessions(
+      request: import('./types').SyncSplitPaneSessionsRequest,
+    ): Promise<DesktopSnapshot>;
+    focusPaneSession(
+      request: import('./types').FocusPaneSessionRequest,
+    ): Promise<DesktopSnapshot>;
     closeSplitPaneSession(
       request: import('./types').CloseSplitPaneSessionRequest,
     ): Promise<DesktopSnapshot>;
