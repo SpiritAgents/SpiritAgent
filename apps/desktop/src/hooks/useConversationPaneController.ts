@@ -4,7 +4,6 @@ import type { TFunction } from "i18next";
 import type {
   ComposerDockSectionProps,
   ConversationListSectionProps,
-  WorkspaceToolsSectionProps,
 } from "@/components/conversation/conversation-view";
 import { useComposerController } from "@/hooks/useComposerController";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
@@ -250,50 +249,12 @@ export function useConversationPaneController({
     onOpenGitTab: workspaceTools.openGitTab,
   };
 
-  const workspaceToolsSection: WorkspaceToolsSectionProps = {
-    startImplementingDisabled: conversation.startImplementingDisabled,
-    workspaceFilesPlanRevealNonce: workspaceTools.workspaceFilesPlanRevealNonce,
-    workspaceFilesPlanRevealTargetId: workspaceTools.workspaceFilesPlanRevealTargetId,
-    workspaceFileRevealNonce: workspaceTools.workspaceFileRevealNonce,
-    workspaceFileRevealTargetId: workspaceTools.workspaceFileRevealTargetId,
-    workspaceFileRevealPath: workspaceTools.workspaceFileRevealPath,
-    workspaceFileRevealAbsolutePath: workspaceTools.workspaceFileRevealAbsolutePath,
-    workspaceFileRevealScope: workspaceTools.workspaceFileRevealScope,
-    workspaceFileRevealViewMode: workspaceTools.workspaceFileRevealViewMode,
-    workspaceFileRevealDirectoryOnly: workspaceTools.workspaceFileRevealDirectoryOnly,
-    workspaceFileRevealLine: workspaceTools.workspaceFileRevealLine,
-    workspaceFileRevealColumn: workspaceTools.workspaceFileRevealColumn,
-    workspacePrRevealNonce: workspaceTools.workspacePrRevealNonce,
-    workspacePrRevealTargetId: workspaceTools.workspacePrRevealTargetId,
-    workspacePrRevealRequest: workspaceTools.workspacePrRevealRequest,
-    onOpenWorkspaceFile: workspaceTools.openWorkspaceFile,
-    onOpenWorkspaceFileInNewTab: workspaceTools.openWorkspaceFileInNewTab,
-    workspaceToolTabs: workspaceTools.workspaceToolTabs,
-    activeWorkspaceToolTabId: workspaceTools.activeWorkspaceToolTabId,
-    onWorkspaceToolTabsChange: workspaceTools.setWorkspaceToolTabs,
-    onActiveWorkspaceToolTabIdChange: workspaceTools.setActiveWorkspaceToolTabId,
-    onBrowserElementPicked: composer.handleBrowserElementPicked,
-    onPrDiffAddToSession: composer.handlePrDiffAddToSession,
-    onTerminalAddToSession: composer.handleTerminalAddToSession,
-    onFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
-    onWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
-    onGitCommitAddToSession: composer.handleGitCommitAddToSession,
-    onBrowserOpenInNewTab: workspaceTools.openBrowserUrlInNewTab,
-    browserTabEnabled: workspaceTools.browserTabEnabled,
-    prTabEnabled: workspaceTools.prTabEnabled,
-    onOpenIntegrationsSettings,
-    workspaceToolsWidthPx: workspaceTools.workspaceToolsWidthPx,
-    onWorkspaceToolsWidthPxChange: workspaceTools.setWorkspaceToolsWidthPx,
-    gitChipBusy: composer.gitChipBusy,
-  };
-
   return {
     paneSnapshot,
     paneIsEmptySession,
     hideStaleConversationMessages: paneHideStaleConversationMessages,
     list,
     composerDock,
-    workspaceTools: workspaceToolsSection,
     conversationScrollBedPaddingPx: conversation.conversationScrollBedPaddingPx,
     rewindDraft: messageRewind.rewindDraft,
     onRewindDraftClear: () => messageRewind.setRewindDraft(null),

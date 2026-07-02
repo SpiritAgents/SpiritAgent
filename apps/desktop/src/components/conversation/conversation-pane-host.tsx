@@ -92,7 +92,6 @@ function ConversationPaneHostInner({
       isEmptySession={pane.paneIsEmptySession}
       hideStaleConversationMessages={pane.hideStaleConversationMessages}
       showComposerDock
-      showWorkspaceToolsDock={isAnchorPane}
       showSessionSidebarToggle={splitPaneCount <= 1 || isSessionSidebarAnchorPane}
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
@@ -118,7 +117,6 @@ function ConversationPaneHostInner({
       conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
       list={pane.list}
       composerDock={pane.composerDock}
-      workspaceTools={pane.workspaceTools}
     />
   );
 }
