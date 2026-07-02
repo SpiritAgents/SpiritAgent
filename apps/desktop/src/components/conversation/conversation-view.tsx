@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
   DragEvent as ReactDragEvent,
@@ -46,6 +46,8 @@ import { useConversationStreamScrollTail } from "@/hooks/useConversationStreamSc
 import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
 import type { TurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import type { PendingAssistantAux } from "@/types";
+import { useConversationSplit } from "@/contexts/conversation-split-context";
+import { PANE_DROP_ZONE_GRID_CLASS, PANE_DROP_ZONE_ORDER, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
@@ -224,6 +226,7 @@ export type ConversationViewProps = {
   onPaneDragLeave?: () => void;
   onPaneDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   paneDropOverlayActive?: boolean;
+  paneDragSourcePaneId?: string | null;
 };
 
 export function ConversationView({
@@ -258,8 +261,10 @@ export function ConversationView({
   onPaneDragLeave,
   onPaneDrop,
   paneDropOverlayActive = false,
+  paneDragSourcePaneId = null,
 }: ConversationViewProps) {
   const { t } = useTranslation();
+  const split = useConversationSplit();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
@@ -282,6 +287,67 @@ export function ConversationView({
   });
 
   const dropOverlayActive = Boolean(paneId && onPaneDrop && paneDropOverlayActive);
+  const isDragSourcePane = Boolean(paneId && paneDragSourcePaneId === paneId);
+  const showDropTargets = dropOverlayActive && !isDragSourcePane;
+  const dropHostRef = useRef<HTMLDivElement | null>(null);
+
+  const resolveVisibleDropZones = useCallback(() => {
+    if (!paneId || !paneDragSourcePaneId) {
+      return PANE_DROP_ZONE_ORDER;
+    }
+    const sourceHost = document.querySelector(
+      `[data-pane-drop-host="${paneDragSourcePaneId}"]`,
+    );
+    return visiblePaneDropZonesForDrag({
+      paneCount: split.paneCount,
+      sourcePaneHost: sourceHost instanceof HTMLElement ? sourceHost : null,
+      targetPaneHost: dropHostRef.current,
+    });
+  }, [paneDragSourcePaneId, paneId, split.paneCount]);
+
+  const updateDropTarget = useCallback(
+    (zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => {
+      if (!paneId) {
+        return;
+      }
+      const visible = resolveVisibleDropZones();
+      if (!visible.includes(zone)) {
+        return;
+      }
+      split.setPaneDropTarget({ paneId, zone });
+    },
+    [paneId, resolveVisibleDropZones, split],
+  );
+
+  const clearDropTargetIfLeavingHost = useCallback(
+    (event: ReactDragEvent<HTMLElement>) => {
+      if (!paneId || !showDropTargets) {
+        return;
+      }
+      const related = event.relatedTarget;
+      if (related instanceof Node && dropHostRef.current?.contains(related)) {
+        return;
+      }
+      if (related instanceof Element) {
+        const relatedHostEl = related.closest("[data-pane-drop-host]");
+        const otherPaneId =
+          relatedHostEl instanceof HTMLElement
+            ? relatedHostEl.getAttribute("data-pane-drop-host")
+            : null;
+        const enteringValidTargetHost =
+          otherPaneId
+          && otherPaneId !== paneId
+          && otherPaneId !== paneDragSourcePaneId;
+        if (enteringValidTargetHost) {
+          return;
+        }
+      }
+      if (split.paneDropTarget?.paneId === paneId) {
+        split.setPaneDropTarget(null);
+      }
+    },
+    [paneDragSourcePaneId, paneId, showDropTargets, split],
+  );
 
   return (
     <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
@@ -321,27 +387,55 @@ export function ConversationView({
           onNewSession={isEmptySession ? undefined : onNewSession}
           newSessionBusy={newSessionBusy}
         />
-        <div data-spirit-surface="conversation-stage" className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}>
-          {dropOverlayActive ? (
-            <div className="pointer-events-none absolute inset-0 z-20 grid grid-cols-2 grid-rows-2">
-              {(["above", "below", "before", "after"] as const).map((zone) => (
+        <div
+          ref={dropHostRef}
+          {...(paneId ? { "data-pane-drop-host": paneId } : {})}
+          data-spirit-surface="conversation-drop-host"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col"
+          onDragLeave={clearDropTargetIfLeavingHost}
+        >
+          {showDropTargets ? (() => {
+            const visibleDropZones = resolveVisibleDropZones();
+            const expandedPair = visibleDropZones.length === 2;
+            return (
+            <div
+              className={cn(
+                "absolute inset-0 z-30 grid cursor-crosshair",
+                paneDropZoneGridLayoutClass(visibleDropZones),
+              )}
+            >
+              {visibleDropZones.map((zone) => (
                 <div
                   key={zone}
-                  className="pointer-events-auto"
+                  data-pane-drop-zone={zone}
+                  className={cn(
+                    "pointer-events-auto",
+                    expandedPair ? undefined : PANE_DROP_ZONE_GRID_CLASS[zone],
+                  )}
                   onDragEnter={(event) => {
                     event.preventDefault();
-                    onPaneDragEnter?.(paneId!, zone);
+                    updateDropTarget(zone);
                   }}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDragLeave={() => onPaneDragLeave?.()}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    updateDropTarget(zone);
+                  }}
                   onDrop={(event) => {
                     event.preventDefault();
+                    if (!visibleDropZones.includes(zone)) {
+                      return;
+                    }
                     onPaneDrop?.(paneId!, zone);
                   }}
                 />
               ))}
             </div>
-          ) : null}
+            );
+          })() : null}
+        <div
+          data-spirit-surface="conversation-stage"
+          className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}
+        >
           {compactionDemoActive ? (
             <div
               data-spirit-surface="compaction-ui-demo-banner"
@@ -493,6 +587,7 @@ export function ConversationView({
             onOpenGitTab={composerDock.onOpenGitTab}
           />
           ) : null}
+        </div>
         </div>
       </div>
       {showWorkspaceToolsDock ? (

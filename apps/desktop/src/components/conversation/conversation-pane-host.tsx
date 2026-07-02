@@ -88,6 +88,7 @@ export function ConversationPaneHost({
       onPaneDragLeave={split.clearPaneDrag}
       onPaneDrop={handlePaneDrop}
       paneDropOverlayActive={split.paneDragActive}
+      paneDragSourcePaneId={split.paneDragSourcePaneId}
       subagentViewActive={pane.subagentViewActive}
       onExitSubagentViewer={pane.onExitSubagentViewer}
       onNewSession={controllerInput.onNewSession}

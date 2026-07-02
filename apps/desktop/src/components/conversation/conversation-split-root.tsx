@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { ConversationPaneDropIndicator } from "@/components/conversation/conversation-pane-drop-indicator";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
 import {
@@ -214,6 +215,7 @@ export function ConversationSplitRoot({
       data-spirit-surface="conversation-split-root"
       className="flex min-h-0 min-w-0 flex-1 overflow-hidden"
     >
+      <ConversationPaneDropIndicator />
       <SplitLayoutRenderer
         node={layout}
         useMicaBackdrop={useMicaBackdrop}
