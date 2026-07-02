@@ -5,6 +5,8 @@ import type { SessionBundle } from './session-bundle.js';
 import type {
   ActiveSessionSnapshot,
   ConversationSnapshot,
+  DesktopGitSnapshot,
+  DesktopWorkspaceBinding,
   PaneSessionSlice,
   PendingAssistantAux,
 } from '../types.js';
@@ -32,6 +34,11 @@ export function buildPaneSessionSlice(input: {
   pendingImagePaths?: string[];
   pendingMcpResources?: import('../types.js').PendingMcpResource[];
   pendingUserTurn?: string;
+  paneWorkspace?: {
+    workspaceRoot: string;
+    workspaceBinding: DesktopWorkspaceBinding;
+    git: DesktopGitSnapshot;
+  };
 }): PaneSessionSlice {
   const { bundle } = input;
   const rawConversationMessages = input.conversationSnapshotView
@@ -85,6 +92,13 @@ export function buildPaneSessionSlice(input: {
     ...(bundle.activeSession ? { activeSession: { ...bundle.activeSession } } : {}),
     composerSessionKey: input.composerSessionKey,
     isForegroundActive: input.isForegroundActive,
+    ...(input.paneWorkspace && !input.isForegroundActive
+      ? {
+          workspaceRoot: input.paneWorkspace.workspaceRoot,
+          workspaceBinding: input.paneWorkspace.workspaceBinding,
+          git: input.paneWorkspace.git,
+        }
+      : {}),
   };
 }
 

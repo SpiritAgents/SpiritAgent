@@ -1061,6 +1061,26 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/split/workspace') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('switchPaneWorkspace', {
+        request: {
+          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          workspaceRoot:
+            typeof jsonBody?.workspaceRoot === 'string' ? jsonBody.workspaceRoot : undefined,
+          workspaceBinding:
+            jsonBody?.workspaceBinding === 'none' || jsonBody?.workspaceBinding === 'project'
+              ? jsonBody.workspaceBinding
+              : 'project',
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/delete') {
     writeJson(
       request,

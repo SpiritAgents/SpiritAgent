@@ -203,6 +203,8 @@ export function useConversationPaneController({
     composerInitialSegments: composer.composerInitialSegments,
     emptySessionGreeting: conversation.emptySessionGreeting,
     showWorkspaceBindingControls: paneShowWorkspaceBindingControls,
+    paneSessionPath: useIsolatedPane ? sessionPath : undefined,
+    useIsolatedPaneWorkspace: useIsolatedPane,
     composerText: composer.composerText,
     onComposerTextChange: composer.setComposerText,
     composerLocalFileAttachments: composer.composerLocalFileAttachments,

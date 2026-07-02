@@ -653,11 +653,20 @@ export interface SyncSplitPaneSessionsRequest {
   focusSessionPath?: string;
 }
 
+export interface SwitchPaneWorkspaceRequest {
+  sessionPath: string;
+  workspaceRoot?: string;
+  workspaceBinding: DesktopWorkspaceBinding;
+}
+
 export interface PaneSessionSlice {
   conversation: ConversationSnapshot;
   activeSession?: ActiveSessionSnapshot;
   composerSessionKey: string;
   isForegroundActive: boolean;
+  workspaceRoot?: string;
+  workspaceBinding?: DesktopWorkspaceBinding;
+  git?: DesktopGitSnapshot;
 }
 
 export interface QueuedUserTurnRequest {

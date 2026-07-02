@@ -142,6 +142,9 @@ declare global {
     closeSplitPaneSession(
       request: import('./types').CloseSplitPaneSessionRequest,
     ): Promise<DesktopSnapshot>;
+    switchPaneWorkspace(
+      request: import('./types').SwitchPaneWorkspaceRequest,
+    ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,

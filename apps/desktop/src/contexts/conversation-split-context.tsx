@@ -609,7 +609,6 @@ export function ConversationSplitProvider({
 
     const currentPaneCount = current ? countPanes(current) : 0;
 
-
     if (decision !== "restore-binding") {
       runtimeRef.current.releaseSessionNavigationBusy();
     }

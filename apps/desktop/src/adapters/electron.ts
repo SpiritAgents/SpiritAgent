@@ -231,6 +231,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     closeSplitPaneSession(request) {
       return bridge.closeSplitPaneSession(request);
     },
+    switchPaneWorkspace(request) {
+      return bridge.switchPaneWorkspace(request);
+    },
     deleteSession(path) {
       return bridge.deleteSession(path);
     },

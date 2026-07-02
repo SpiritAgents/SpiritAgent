@@ -96,6 +96,7 @@ export type HostCommandName =
   | 'syncSplitPaneSessions'
   | 'focusPaneSession'
   | 'closeSplitPaneSession'
+  | 'switchPaneWorkspace'
   | 'deleteSession'
   | 'listWorkspaceFileReferenceSuggestions'
   | 'requestCodeCompletion'

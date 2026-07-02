@@ -7,6 +7,8 @@ function normalizeSessionPathKey(sessionPath: string): string {
   return sessionPath.replace(/\\/g, "/").toLowerCase();
 }
 
+export const normalizePaneSessionPathKey = normalizeSessionPathKey;
+
 export function lookupPaneSessionSlice(
   snapshot: DesktopSnapshot | null | undefined,
   sessionPath: string,
@@ -62,6 +64,9 @@ export function resolvePaneDesktopSnapshot(
     conversation: pane.conversation,
     ...(pane.activeSession ? { activeSession: pane.activeSession } : {}),
     composerSessionKey: pane.composerSessionKey,
+    ...(pane.workspaceRoot ? { workspaceRoot: pane.workspaceRoot } : {}),
+    ...(pane.workspaceBinding ? { workspaceBinding: pane.workspaceBinding } : {}),
+    ...(pane.git ? { git: pane.git } : {}),
   };
 }
 
@@ -122,6 +127,11 @@ export function paneHostRenderSignature(
     slice.activeSession?.filePath ?? "",
     slice.activeSession?.displayName ?? "",
     slice.isForegroundActive ? 1 : 0,
+    slice.workspaceRoot ?? "",
+    slice.workspaceBinding ?? "",
+    slice.git?.revision ?? 0,
+    slice.git?.selectedBranch ?? slice.git?.branch ?? "",
+    slice.git?.workLocation ?? "",
     Boolean(conv.pendingToolApproval),
     Boolean(conv.pendingQuestions),
   ].join("\0");

@@ -85,6 +85,8 @@ export type ComposerDockSectionProps = {
   composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
+  paneSessionPath?: string;
+  useIsolatedPaneWorkspace?: boolean;
   composerText: string;
   onComposerTextChange: (text: string) => void;
   composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
@@ -477,6 +479,8 @@ export function ConversationView({
             emptySessionGreeting={composerDock.emptySessionGreeting}
             composerInitialSegments={composerDock.composerInitialSegments}
             showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
+            paneSessionPath={composerDock.paneSessionPath}
+            useIsolatedPaneWorkspace={composerDock.useIsolatedPaneWorkspace}
             composerText={composerDock.composerText}
             onComposerTextChange={composerDock.onComposerTextChange}
             composerLocalFileAttachments={composerDock.composerLocalFileAttachments}
