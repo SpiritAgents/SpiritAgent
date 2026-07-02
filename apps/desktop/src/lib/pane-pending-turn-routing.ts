@@ -1,4 +1,4 @@
-import type { DesktopSnapshot, PendingQuestionsSnapshot } from "@/types";
+import type { DesktopSnapshot, PaneSessionSlice, PendingQuestionsSnapshot } from '../types.js';
 
 /** Foreground session path when it holds pending approval; otherwise a background pane slice. */
 export function resolvePendingApprovalSessionPath(
@@ -8,7 +8,9 @@ export function resolvePendingApprovalSessionPath(
     if (!snapshot?.paneSessions) {
       return undefined;
     }
-    for (const [sessionPath, slice] of Object.entries(snapshot.paneSessions)) {
+    for (const [sessionPath, slice] of Object.entries(snapshot.paneSessions) as Array<
+      [string, PaneSessionSlice]
+    >) {
       if (slice.conversation.pendingToolApproval && !slice.isForegroundActive) {
         return sessionPath;
       }
@@ -26,7 +28,9 @@ export function resolvePendingQuestionsSessionPath(
     if (!snapshot?.paneSessions) {
       return undefined;
     }
-    for (const [sessionPath, slice] of Object.entries(snapshot.paneSessions)) {
+    for (const [sessionPath, slice] of Object.entries(snapshot.paneSessions) as Array<
+      [string, PaneSessionSlice]
+    >) {
       if (slice.conversation.pendingQuestions && !slice.isForegroundActive) {
         return sessionPath;
       }

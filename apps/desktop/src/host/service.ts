@@ -289,7 +289,7 @@ import {
   prefetchScopedGitBeforeGlobalWorkspaceChange,
   type PaneWorkspaceHostContext,
 } from './host-pane-workspace.js';
-import { withOptionalPaneSessionActivation } from './host-pane-session-scope.js';
+import { withOptionalPaneSessionActivation, type PaneSessionScopeHostContext } from './host-pane-session-scope.js';
 import { resolvePendingApprovalSessionPath } from '../lib/pane-pending-turn-routing.js';
 import {
   switchPaneModelCommand,
@@ -928,6 +928,13 @@ class DesktopHostService {
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
       runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
       runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
+    };
+  }
+
+  private paneSessionScopeContext(): PaneSessionScopeHostContext {
+    return {
+      sessionRegistry: () => this.sessionRegistry,
+      syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
     };
   }
 
@@ -2084,7 +2091,7 @@ class DesktopHostService {
         request.sessionPath?.trim()
         ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
       if (sessionPath) {
-        await withOptionalPaneSessionActivation(this, sessionPath, async () => {
+        await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
           await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
         });
         return this.buildSnapshot();
@@ -2098,7 +2105,7 @@ class DesktopHostService {
       await this.ensureInitialized(undefined, { fastPath: true });
       const sessionPath = request.sessionPath?.trim();
       if (sessionPath) {
-        await withOptionalPaneSessionActivation(this, sessionPath, async () => {
+        await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
           await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
         });
         return this.buildSnapshot();

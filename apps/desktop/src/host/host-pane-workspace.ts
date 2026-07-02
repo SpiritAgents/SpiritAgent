@@ -296,7 +296,11 @@ async function resolvePaneGitSnapshotForMutation(
     return bundle.scopedGit;
   }
   const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
-  return readWorkspaceGitSnapshot(workspaceRoot);
+  return applyGitRevision(
+    await readWorkspaceGitSnapshot(workspaceRoot),
+    0,
+    { reset: true },
+  );
 }
 
 export async function setPanePendingGitBranchCommand(

@@ -18,6 +18,7 @@ import {
 } from "@/lib/desktop-keyboard-shortcut-eligibility";
 import { triggerWorkspaceNewToolTabShortcut } from "@/lib/workspace-new-tool-tab-shortcut-bridge";
 import { resolveUiLayoutZoomShortcutAction } from "@/lib/ui-layout-scale";
+import type { AppSurface } from "@/hooks/useAppSurfaceNavigation";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;

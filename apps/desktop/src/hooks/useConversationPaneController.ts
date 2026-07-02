@@ -243,7 +243,7 @@ export function useConversationPaneController({
     showPendingApprovalInComposer: conversation.showPendingApprovalInComposer,
     pendingApproval: conversation.pendingApproval,
     showPendingQuestionsInComposer: conversation.showPendingQuestionsInComposer,
-    pendingQuestions: conversation.pendingQuestions,
+    pendingQuestions: conversation.pendingQuestions ?? undefined,
     ...(composer.paneQuestionControls
       ? {
           questionDrafts: composer.paneQuestionControls.questionDrafts,

@@ -980,7 +980,7 @@ async function handleApiRequest({
       await runHostCommand('replyPendingQuestions', {
         request: {
           result: jsonBody?.result,
-          ...(typeof jsonBody.sessionPath === 'string'
+          ...(typeof jsonBody?.sessionPath === 'string'
             ? { sessionPath: jsonBody.sessionPath }
             : {}),
         },
