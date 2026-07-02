@@ -1,11 +1,22 @@
-import { useMemo } from "react";
-
-import { ConversationView, type ConversationViewProps } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
-import { resolvePaneDesktopSnapshot, resolvePaneIsEmptySession } from "@/lib/pane-desktop-snapshot";
+import { ConversationView } from "@/components/conversation/conversation-view";
+import { useConversationPaneController } from "@/hooks/useConversationPaneController";
+import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
+import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
+import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import type { PaneRepositionZone } from "@/lib/conversation-split-layout";
+import type { DesktopSnapshot } from "@/types";
+import type { TFunction } from "i18next";
 
-export type ConversationPaneHostProps = ConversationViewProps & {
+type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
+type SubagentViewer = ReturnType<typeof useSubagentViewer>;
+type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
+type WorkspaceTools = ReturnType<typeof useWorkspaceToolsController>;
+
+export type ConversationPaneHostProps = {
+  runtime: DesktopRuntime;
+  baseSnapshot: DesktopSnapshot | null;
   sessionPath: string;
   paneId: string;
   isFocused: boolean;
@@ -14,7 +25,20 @@ export type ConversationPaneHostProps = ConversationViewProps & {
   onSplit: () => void;
   onClosePane: () => void;
   showClosePane: boolean;
-  baseSnapshot: ConversationViewProps["snapshot"];
+  useMicaBackdrop: boolean;
+  subagentViewActive: boolean;
+  subagentViewer: SubagentViewer;
+  compactionDemo: CompactionDemo;
+  hideStaleConversationMessages: boolean;
+  showWorkspaceBindingControls: boolean;
+  sessionNavigationBusy: boolean;
+  newSessionBusy: boolean;
+  onNewSession?: () => void;
+  workspaceTools: WorkspaceTools;
+  onOpenIntegrationsSettings: () => void;
+  onCompactionDemoStop: () => void;
+  t: TFunction;
+  language: string;
 };
 
 export function ConversationPaneHost({
@@ -26,25 +50,19 @@ export function ConversationPaneHost({
   onSplit,
   onClosePane,
   showClosePane,
-  baseSnapshot,
-  isEmptySession,
-  hideStaleConversationMessages,
-  snapshot,
-  ...rest
+  useMicaBackdrop,
+  ...controllerInput
 }: ConversationPaneHostProps) {
   const split = useConversationSplit();
-
-  const paneSnapshot = useMemo(
-    () => resolvePaneDesktopSnapshot(baseSnapshot ?? snapshot, sessionPath),
-    [baseSnapshot, sessionPath, snapshot],
-  );
-
-  const paneIsEmptySession = useMemo(() => {
-    if (isFocused) {
-      return isEmptySession;
-    }
-    return resolvePaneIsEmptySession(baseSnapshot ?? snapshot, sessionPath);
-  }, [baseSnapshot, isEmptySession, isFocused, sessionPath, snapshot]);
+  const pane = useConversationPaneController({
+    ...controllerInput,
+    sessionPath,
+    isFocused,
+    isAnchorPane,
+    useIsolatedPane: split.paneCount > 1,
+    splitPaneCount: split.paneCount,
+    layoutNavigationPending: split.layoutNavigationPending,
+  });
 
   const handlePaneDrop = (targetPaneId: string, zone: PaneRepositionZone) => {
     split.completePaneDrop(targetPaneId, zone);
@@ -52,12 +70,13 @@ export function ConversationPaneHost({
 
   return (
     <ConversationView
-      {...rest}
-      snapshot={paneSnapshot}
-      isEmptySession={paneIsEmptySession}
-      hideStaleConversationMessages={isFocused ? hideStaleConversationMessages : false}
-      showComposerDock={isFocused}
+      useMicaBackdrop={useMicaBackdrop}
+      snapshot={pane.paneSnapshot}
+      isEmptySession={pane.paneIsEmptySession}
+      hideStaleConversationMessages={pane.hideStaleConversationMessages}
+      showComposerDock
       showWorkspaceToolsDock={isAnchorPane}
+      showSessionSidebarToggle={split.paneCount <= 1 || !isAnchorPane}
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
       showClosePane={showClosePane}
@@ -69,6 +88,18 @@ export function ConversationPaneHost({
       onPaneDragLeave={split.clearPaneDrag}
       onPaneDrop={handlePaneDrop}
       paneDropOverlayActive={split.paneDragActive}
+      subagentViewActive={pane.subagentViewActive}
+      onExitSubagentViewer={pane.onExitSubagentViewer}
+      onNewSession={controllerInput.onNewSession}
+      newSessionBusy={controllerInput.newSessionBusy}
+      compactionDemoActive={pane.compactionDemoActive}
+      onCompactionDemoStop={controllerInput.onCompactionDemoStop}
+      rewindDraft={pane.rewindDraft}
+      onRewindDraftClear={pane.onRewindDraftClear}
+      conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
+      list={pane.list}
+      composerDock={pane.composerDock}
+      workspaceTools={pane.workspaceTools}
     />
   );
 }

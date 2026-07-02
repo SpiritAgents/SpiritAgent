@@ -33,6 +33,7 @@ import { useWorkspaceFileIndex } from "@/hooks/use-workspace-file-index";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import {
   appendComposerLocalFileAttachment,
+  composerAttachmentViewFromPath,
   normalizeSlashPath,
   removeComposerLocalFileAttachment,
 } from "@/lib/local-file-attachments";
@@ -54,14 +55,20 @@ import { canForkSession } from "@/lib/fork-eligibility";
 import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { shouldPromptGitBranchCheckoutBeforeSend } from "@/lib/composer-branch-checkout-gate";
 import {
+  readComposerDraft,
+  writeComposerDraft,
+} from "@/lib/composer-draft-store";
+import {
   isComposerFileDropAccepted,
   resolveComposerDropAbsolutePaths,
   resolveComposerDropEffect,
 } from "@/lib/composer-file-drop";
 import type {
   DesktopSnapshot,
+  SubmitUserTurnRequest,
   WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
+import type { RichSegment } from "@/lib/composer-segment-model";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
@@ -81,6 +88,8 @@ export type UseComposerControllerOptions = {
     surface: "conversation" | "settings" | "marketplace" | "automations" | "automation-detail",
   ) => void;
   setLastNonSettingsSurface: (surface: "conversation" | "marketplace" | "automations") => void;
+  /** When set, composer state is isolated per pane and sends target this session path. */
+  paneSessionPath?: string;
 };
 
 export function useComposerController({
@@ -97,7 +106,82 @@ export function useComposerController({
   handleNewSession,
   setActiveSurface,
   setLastNonSettingsSurface,
+  paneSessionPath,
 }: UseComposerControllerOptions) {
+  const isPaneIsolated = Boolean(paneSessionPath?.trim());
+  const [paneComposer, setPaneComposer] = useState("");
+  const [paneLocalFileAttachments, setPaneLocalFileAttachments] = useState(
+    runtime.composerLocalFileAttachments,
+  );
+  const [paneComposerInitialSegments, setPaneComposerInitialSegments] = useState<RichSegment[] | null>(
+    null,
+  );
+
+  const composerSessionKey = snapshot?.composerSessionKey ?? "";
+  const paneComposerDraftKey =
+    isPaneIsolated && paneSessionPath?.trim()
+      ? `pane:${paneSessionPath.replace(/\\/g, "/").toLowerCase()}`
+      : composerSessionKey;
+  useEffect(() => {
+    if (!isPaneIsolated || !paneComposerDraftKey) {
+      return;
+    }
+    const stored = readComposerDraft(paneComposerDraftKey);
+    setPaneComposer(stored?.text ?? "");
+    setPaneComposerInitialSegments(stored?.segments ?? null);
+    setPaneLocalFileAttachments(
+      (stored?.localFilePaths ?? []).map((filePath) => composerAttachmentViewFromPath(filePath)),
+    );
+  }, [isPaneIsolated, paneComposerDraftKey]);
+
+  const composerText = isPaneIsolated ? paneComposer : runtime.composer;
+  const setComposerText = isPaneIsolated ? setPaneComposer : runtime.setComposer;
+  const composerLocalFileAttachments = isPaneIsolated
+    ? paneLocalFileAttachments
+    : runtime.composerLocalFileAttachments;
+  const setComposerLocalFileAttachments = isPaneIsolated
+    ? setPaneLocalFileAttachments
+    : runtime.setComposerLocalFileAttachments;
+  const composerInitialSegments = isPaneIsolated
+    ? paneComposerInitialSegments
+    : runtime.composerInitialSegments;
+
+  const pendingComposerSendRef = useRef<{
+    text: string;
+    localFilePaths?: string[];
+  } | null>(null);
+  const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
+
+  const persistPaneComposerDraft = useCallback(() => {
+    if (!isPaneIsolated || !paneComposerDraftKey) {
+      return;
+    }
+    writeComposerDraft(paneComposerDraftKey, {
+      text: composerText,
+      localFilePaths: composerLocalFileAttachments.map((item) => item.path),
+      segments: composerRichInputRef.current?.getSegments() ?? [],
+    });
+  }, [
+    composerLocalFileAttachments,
+    paneComposerDraftKey,
+    composerText,
+    isPaneIsolated,
+  ]);
+
+  const clearPaneComposerDraft = useCallback(() => {
+    if (!isPaneIsolated || !paneComposerDraftKey) {
+      return;
+    }
+    setPaneComposer("");
+    setPaneComposerInitialSegments(null);
+    setPaneLocalFileAttachments([]);
+    writeComposerDraft(paneComposerDraftKey, {
+      text: "",
+      localFilePaths: [],
+      segments: [],
+    });
+  }, [isPaneIsolated, paneComposerDraftKey]);
+
   const [composerBrowserElementAttachments, setComposerBrowserElementAttachments] = useState<
     BrowserElementAttachment[]
   >([]);
@@ -113,15 +197,10 @@ export function useComposerController({
   const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
   const [branchCheckoutBlockedByChanges, setBranchCheckoutBlockedByChanges] = useState(false);
-  const pendingComposerSendRef = useRef<{
-    text: string;
-    localFilePaths?: string[];
-  } | null>(null);
-  const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
 
   useLocalFileAttachmentPreviews(
-    runtime.composerLocalFileAttachments,
-    runtime.setComposerLocalFileAttachments,
+    composerLocalFileAttachments,
+    setComposerLocalFileAttachments,
     runtime.readLocalImagePreviewDataUrl,
   );
 
@@ -171,14 +250,14 @@ export function useComposerController({
     void composerSegmentsRevision;
     const segments = composerRichInputRef.current?.getSegments() ?? [];
     return (
-      Boolean(runtime.composer.trim())
-      || runtime.composerLocalFileAttachments.length > 0
+      Boolean(composerText.trim())
+      || composerLocalFileAttachments.length > 0
       || isCompactSlashComposerSegments(segments)
     );
   }, [
     composerSegmentsRevision,
-    runtime.composer,
-    runtime.composerLocalFileAttachments.length,
+    composerText,
+    composerLocalFileAttachments.length,
   ]);
 
   const composerCanSend =
@@ -197,12 +276,12 @@ export function useComposerController({
     runtime.busyAction === "send" || snapshot?.conversation.isBusy === true;
 
   const composerCursorChars = useMemo(
-    () => codeUnitIndexToCharCount(runtime.composer, composerCursorCodeUnits),
-    [composerCursorCodeUnits, runtime.composer],
+    () => codeUnitIndexToCharCount(composerText, composerCursorCodeUnits),
+    [composerCursorCodeUnits, composerText],
   );
 
   const slashQuery = useMemo(() => {
-    const query = currentSkillSlashQueryAtCursor(runtime.composer, composerCursorChars);
+    const query = currentSkillSlashQueryAtCursor(composerText, composerCursorChars);
     if (!query) {
       return undefined;
     }
@@ -210,7 +289,7 @@ export function useComposerController({
       return undefined;
     }
     return query;
-  }, [composerCursorChars, dismissedSlashQueryKey, runtime.composer]);
+  }, [composerCursorChars, dismissedSlashQueryKey, composerText]);
 
   const slashSuggestions = useMemo(
     () => buildSkillSlashSuggestions(slashQuery?.raw, snapshot?.skillsList ?? []),
@@ -221,10 +300,10 @@ export function useComposerController({
     const segments = composerRichInputRef.current?.getSegments() ?? [];
     return currentWorkspaceFileReferenceQueryFromSegments(
       segments,
-      runtime.composer,
+      composerText,
       composerCursorChars,
     );
-  }, [composerCursorChars, composerSegmentsRevision, runtime.composer]);
+  }, [composerCursorChars, composerSegmentsRevision, composerText]);
 
   useEffect(() => {
     if (!fileReferenceQuery && dismissedFileReferenceKey !== null) {
@@ -233,11 +312,11 @@ export function useComposerController({
   }, [dismissedFileReferenceKey, fileReferenceQuery]);
 
   useEffect(() => {
-    const query = currentSkillSlashQueryAtCursor(runtime.composer, composerCursorChars);
+    const query = currentSkillSlashQueryAtCursor(composerText, composerCursorChars);
     if (!query && dismissedSlashQueryKey !== null) {
       setDismissedSlashQueryKey(null);
     }
-  }, [composerCursorChars, dismissedSlashQueryKey, runtime.composer]);
+  }, [composerCursorChars, dismissedSlashQueryKey, composerText]);
 
   const fileReferenceQueryKey = useMemo(
     () =>
@@ -346,7 +425,7 @@ export function useComposerController({
       if (slashQuery) {
         composerRichInputRef.current?.replaceSkillSlashQuery(slashQuery, replacement, true);
       } else {
-        runtime.setComposer(replacement);
+        setComposerText(replacement);
       }
       setSlashSelectedIndex(-1);
       setDismissedSlashQueryKey(null);
@@ -418,7 +497,7 @@ export function useComposerController({
     }
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    runtime.setComposer("");
+    setComposerText("");
     composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
     void runtime.forkSession({ messageId });
   }, [activeSessionReadOnly, runtime, snapshot?.conversation.isBusy, snapshot?.conversation.messages]);
@@ -473,7 +552,7 @@ export function useComposerController({
       const alias = skillSlashAlias(skillName);
       setLastNonSettingsSurface("conversation");
       setActiveSurface("conversation");
-      runtime.setComposer("");
+      setComposerText("");
       setSlashSelectedIndex(-1);
       setDismissedSlashQueryKey(null);
       queueMicrotask(() => {
@@ -568,8 +647,8 @@ export function useComposerController({
       } else {
         const selectionStart = composerCursorCodeUnits;
         const selectionEnd = selectionStart;
-        const nextValue = `${runtime.composer.slice(0, selectionStart)}${text}${runtime.composer.slice(selectionEnd)}`;
-        runtime.setComposer(nextValue);
+        const nextValue = `${composerText.slice(0, selectionStart)}${text}${composerText.slice(selectionEnd)}`;
+        setComposerText(nextValue);
         setComposerCursorCodeUnits(selectionStart + text.length);
       }
       setSlashSelectedIndex(-1);
@@ -593,14 +672,14 @@ export function useComposerController({
   }, [insertComposerText]);
 
   const removeLocalFileAttachment = useCallback((path: string) => {
-    removeComposerLocalFileAttachment(runtime.setComposerLocalFileAttachments, path);
-  }, [runtime.setComposerLocalFileAttachments]);
+    removeComposerLocalFileAttachment(setComposerLocalFileAttachments, path);
+  }, [setComposerLocalFileAttachments]);
 
   const attachLocalFilePath = useCallback(
     async (filePath: string) => {
       const route = await runtime.classifyLocalFileComposerRoute(filePath);
       if (route === "media") {
-        appendComposerLocalFileAttachment(runtime.setComposerLocalFileAttachments, filePath, {
+        appendComposerLocalFileAttachment(setComposerLocalFileAttachments, filePath, {
           onAfterAttach: () => {
             queueMicrotask(() => {
               composerRichInputRef.current?.focus();
@@ -612,7 +691,7 @@ export function useComposerController({
       composerRichInputRef.current?.insertWorkspaceFileAtCaret(normalizeSlashPath(filePath));
       composerRichInputRef.current?.focus();
     },
-    [runtime.classifyLocalFileComposerRoute, runtime.setComposerLocalFileAttachments],
+    [runtime.classifyLocalFileComposerRoute, setComposerLocalFileAttachments],
   );
 
   const handleBrowserElementPicked = useCallback(
@@ -732,9 +811,17 @@ export function useComposerController({
     ],
   );
 
+  const withPaneSessionPath = useCallback(
+    (request: SubmitUserTurnRequest): SubmitUserTurnRequest => ({
+      ...request,
+      ...(isPaneIsolated && paneSessionPath ? { sessionPath: paneSessionPath } : {}),
+    }),
+    [isPaneIsolated, paneSessionPath],
+  );
+
   const submitComposerMessage = useCallback(() => {
     const segs = composerRichInputRef.current?.getSegments() ?? [];
-    const fullText = segmentsToMessageText(segs) || runtime.composer;
+    const fullText = segmentsToMessageText(segs) || composerText;
     const trimmed = fullText.trim();
     if (trimmed === FORK_SLASH_ALIAS) {
       applyForkSlash();
@@ -743,9 +830,9 @@ export function useComposerController({
     const chipMetadata = extractComposerChipMetadata(segs);
     const payload = {
       text: fullText,
-      ...(runtime.composerLocalFileAttachments.length > 0
+      ...(composerLocalFileAttachments.length > 0
         ? {
-            localFilePaths: runtime.composerLocalFileAttachments.map((item) => item.path),
+            localFilePaths: composerLocalFileAttachments.map((item) => item.path),
           }
         : {}),
       ...(chipMetadata.referencedWorkspaceFilePaths.length > 0
@@ -765,13 +852,16 @@ export function useComposerController({
       }
     }
 
-    void runtime.sendMessage(payload).then((ok) => {
+    void runtime.sendMessage(withPaneSessionPath(payload)).then((ok) => {
       if (ok) {
         setComposerBrowserElementAttachments([]);
         composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
+        if (isPaneIsolated) {
+          clearPaneComposerDraft();
+        }
       }
     });
-  }, [applyForkSlash, isEmptySession, runtime, snapshot?.git]);
+  }, [applyForkSlash, clearPaneComposerDraft, isEmptySession, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
 
   const confirmBranchCheckoutAndSend = useCallback(() => {
     void (async () => {
@@ -787,9 +877,12 @@ export function useComposerController({
         pendingComposerSendRef.current = null;
         setBranchCheckoutBlockedByChanges(false);
         setBranchCheckoutDialogOpen(false);
-        void runtime.sendMessage(pending).then((ok) => {
+        void runtime.sendMessage(withPaneSessionPath(pending)).then((ok) => {
           if (ok) {
             composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
+            if (isPaneIsolated) {
+              clearPaneComposerDraft();
+            }
           }
         });
         return;
@@ -818,13 +911,16 @@ export function useComposerController({
       pendingComposerSendRef.current = null;
       setBranchCheckoutBlockedByChanges(false);
       setBranchCheckoutDialogOpen(false);
-      void runtime.sendMessage(pending).then((ok) => {
+      void runtime.sendMessage(withPaneSessionPath(pending)).then((ok) => {
         if (ok) {
           composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
+          if (isPaneIsolated) {
+            clearPaneComposerDraft();
+          }
         }
       });
     })();
-  }, [runtime, snapshot?.git]);
+  }, [clearPaneComposerDraft, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
 
   const handleBranchCheckoutDialogOpenChange = useCallback((open: boolean) => {
     setBranchCheckoutDialogOpen(open);
@@ -1010,11 +1106,20 @@ export function useComposerController({
 
   const handleComposerSegmentsCommit = useCallback(() => {
     const segments = composerRichInputRef.current?.getSegments() ?? [];
-    runtime.setComposerDraftSegments(segments);
+    if (isPaneIsolated) {
+      persistPaneComposerDraft();
+    } else {
+      runtime.setComposerDraftSegments(segments);
+    }
     setComposerSegmentsRevision((revision) => revision + 1);
-  }, [runtime]);
+  }, [isPaneIsolated, persistPaneComposerDraft, runtime]);
 
   return {
+    composerText,
+    setComposerText,
+    composerLocalFileAttachments,
+    setComposerLocalFileAttachments,
+    composerInitialSegments,
     composerBrowserElementAttachments,
     setComposerBrowserElementAttachments,
     composerCursorCodeUnits,

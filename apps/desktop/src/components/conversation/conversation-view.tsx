@@ -32,6 +32,7 @@ import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-m
 import type { EditorFileTarget, WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
+import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
 import type {
   ConversationMessageSnapshot,
@@ -85,8 +86,15 @@ export type ConversationListSectionProps = {
 
 export type ComposerDockSectionProps = {
   composerDockRef: Ref<HTMLDivElement | null>;
+  composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
+  composerText: string;
+  onComposerTextChange: (text: string) => void;
+  composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
+  onComposerLocalFileAttachmentsChange: (
+    attachments: ComposerLocalFileAttachmentView[],
+  ) => void;
   commitBusy: boolean;
   rewindWarnings: NonNullable<DesktopSnapshot["conversation"]["rewindWarnings"]>;
   showPendingApprovalInComposer: boolean;
@@ -203,6 +211,7 @@ export type ConversationViewProps = {
   workspaceTools: WorkspaceToolsSectionProps;
   showComposerDock?: boolean;
   showWorkspaceToolsDock?: boolean;
+  showSessionSidebarToggle?: boolean;
   showWorkspaceToggle?: boolean;
   showSplitMenu?: boolean;
   showClosePane?: boolean;
@@ -236,6 +245,7 @@ export function ConversationView({
   workspaceTools,
   showComposerDock = true,
   showWorkspaceToolsDock = true,
+  showSessionSidebarToggle = true,
   showWorkspaceToggle = true,
   showSplitMenu = false,
   showClosePane = false,
@@ -253,6 +263,8 @@ export function ConversationView({
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
+  const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
+
 
   useConversationSessionScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
@@ -276,10 +288,17 @@ export function ConversationView({
       <div
         data-spirit-surface="conversation-shell"
         className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
-        onPointerDown={() => onPaneFocus?.()}
+        onPointerDown={(event) => {
+          const target = event.target;
+          if (target instanceof Element && target.closest('[data-spirit-surface="composer-dock"]')) {
+            return;
+          }
+          onPaneFocus?.();
+        }}
       >
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
+          showSessionSidebarToggle={showSessionSidebarToggle}
           showWorkspaceToggle={showWorkspaceToggle}
           showSplitMenu={showSplitMenu}
           showClosePane={showClosePane}
@@ -291,9 +310,9 @@ export function ConversationView({
           onPaneDragLeave={onPaneDragLeave}
           onPaneDrop={onPaneDrop}
           sessionTitle={
-            isEmptySession || hideStaleConversationMessages
-              ? null
-              : snapshot?.activeSession?.displayName
+            sessionTitleVisible
+              ? snapshot?.activeSession?.displayName
+              : null
           }
           subagentPromptText={
             subagentViewActive ? snapshot?.subagentViewer?.promptText : null
@@ -421,7 +440,12 @@ export function ConversationView({
             ref={composerDock.composerDockRef}
             isEmptySession={isEmptySession}
             emptySessionGreeting={composerDock.emptySessionGreeting}
+            composerInitialSegments={composerDock.composerInitialSegments}
             showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
+            composerText={composerDock.composerText}
+            onComposerTextChange={composerDock.onComposerTextChange}
+            composerLocalFileAttachments={composerDock.composerLocalFileAttachments}
+            onComposerLocalFileAttachmentsChange={composerDock.onComposerLocalFileAttachmentsChange}
             snapshot={snapshot}
             runtime={list.runtime}
             commitBusy={composerDock.commitBusy}
