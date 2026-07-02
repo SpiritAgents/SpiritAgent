@@ -154,8 +154,8 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   refreshGitSnapshot() {
     return ipcRenderer.invoke('desktop:invoke', 'refreshGitSnapshot');
   },
-  abortConversation() {
-    return ipcRenderer.invoke('desktop:invoke', 'abortConversation');
+  abortConversation(request?: { sessionPath?: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'abortConversation', request ?? {});
   },
   abortShell(toolCallId: string) {
     return ipcRenderer.invoke('desktop:invoke', 'abortShell', { toolCallId });
@@ -232,11 +232,11 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
       ipcRenderer.removeListener('desktop:session-list-updated', onSessionListUpdate);
     };
   },
-  replyPendingApproval(decision: unknown) {
-    return ipcRenderer.invoke('desktop:invoke', 'replyPendingApproval', { decision });
+  replyPendingApproval(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'replyPendingApproval', { request });
   },
-  replyPendingQuestions(result: unknown) {
-    return ipcRenderer.invoke('desktop:invoke', 'replyPendingQuestions', { result });
+  replyPendingQuestions(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'replyPendingQuestions', { request });
   },
   resetSession() {
     return ipcRenderer.invoke('desktop:invoke', 'resetSession');
@@ -246,6 +246,47 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   },
   openSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'openSession', { path });
+  },
+  beginSplitPaneSession(request: { paneId: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'beginSplitPaneSession', { request });
+  },
+  setVisiblePaneSessions(request: { sessionPaths: string[] }) {
+    return ipcRenderer.invoke('desktop:invoke', 'setVisiblePaneSessions', { request });
+  },
+  syncSplitPaneSessions(request: { sessionPaths: string[]; focusSessionPath?: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'syncSplitPaneSessions', { request });
+  },
+  focusPaneSession(request: { sessionPath: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'focusPaneSession', { request });
+  },
+  closeSplitPaneSession(request: { sessionPath: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'closeSplitPaneSession', { request });
+  },
+  switchPaneWorkspace(request: {
+    sessionPath: string;
+    workspaceRoot?: string;
+    workspaceBinding: 'project' | 'none';
+  }) {
+    return ipcRenderer.invoke('desktop:invoke', 'switchPaneWorkspace', { request });
+  },
+  switchPaneModel(request: { sessionPath: string; modelName: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'switchPaneModel', { request });
+  },
+  setPanePendingGitBranch(request: { sessionPath: string; branch: string }) {
+    return ipcRenderer.invoke('desktop:invoke', 'setPanePendingGitBranch', { request });
+  },
+  setPaneWorkLocation(request: {
+    sessionPath: string;
+    workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
+  }) {
+    return ipcRenderer.invoke('desktop:invoke', 'setPaneWorkLocation', { request });
+  },
+  checkoutPaneGitBranch(request: {
+    sessionPath: string;
+    branch: string;
+    discardLocalChanges?: boolean;
+  }) {
+    return ipcRenderer.invoke('desktop:invoke', 'checkoutPaneGitBranch', { request });
   },
   deleteSession(path: string) {
     return ipcRenderer.invoke('desktop:invoke', 'deleteSession', { path });

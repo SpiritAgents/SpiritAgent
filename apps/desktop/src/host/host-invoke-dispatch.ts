@@ -49,7 +49,7 @@ export interface HostCommandDelegate {
   mergeWorktreeToMain(): Promise<unknown>;
   pushGitBranch(): Promise<unknown>;
   refreshGitSnapshot(): Promise<unknown>;
-  abortConversation(): Promise<unknown>;
+  abortConversation(request?: CommandPayloads['abortConversation']): Promise<unknown>;
   abortShell(toolCallId: string): Promise<unknown>;
   continueAssistantCompletion(messageId: number): Promise<unknown>;
   poll(): Promise<unknown>;
@@ -60,11 +60,41 @@ export interface HostCommandDelegate {
   updateAutomation(automationId: string, patch: CommandPayloads['updateAutomation']['patch']): Promise<unknown>;
   deleteAutomation(automationId: string): Promise<unknown>;
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<unknown>;
-  replyPendingApproval(decision: CommandPayloads['replyPendingApproval']['decision']): Promise<unknown>;
-  replyPendingQuestions(result: CommandPayloads['replyPendingQuestions']['result']): Promise<unknown>;
+  replyPendingApproval(request: CommandPayloads['replyPendingApproval']['request']): Promise<unknown>;
+  replyPendingQuestions(request: CommandPayloads['replyPendingQuestions']['request']): Promise<unknown>;
   resetSession(): Promise<unknown>;
   listSessions(): Promise<unknown>;
   openSession(path: string): Promise<unknown>;
+  beginSplitPaneSession(
+    request: CommandPayloads['beginSplitPaneSession']['request'],
+  ): Promise<unknown>;
+  setVisiblePaneSessions(
+    request: CommandPayloads['setVisiblePaneSessions']['request'],
+  ): Promise<unknown>;
+  syncSplitPaneSessions(
+    request: CommandPayloads['syncSplitPaneSessions']['request'],
+  ): Promise<unknown>;
+  focusPaneSession(
+    request: CommandPayloads['focusPaneSession']['request'],
+  ): Promise<unknown>;
+  closeSplitPaneSession(
+    request: CommandPayloads['closeSplitPaneSession']['request'],
+  ): Promise<unknown>;
+  switchPaneWorkspace(
+    request: CommandPayloads['switchPaneWorkspace']['request'],
+  ): Promise<unknown>;
+  switchPaneModel(
+    request: CommandPayloads['switchPaneModel']['request'],
+  ): Promise<unknown>;
+  setPanePendingGitBranch(
+    request: CommandPayloads['setPanePendingGitBranch']['request'],
+  ): Promise<unknown>;
+  setPaneWorkLocation(
+    request: CommandPayloads['setPaneWorkLocation']['request'],
+  ): Promise<unknown>;
+  checkoutPaneGitBranch(
+    request: CommandPayloads['checkoutPaneGitBranch']['request'],
+  ): Promise<unknown>;
   deleteSession(path: string): Promise<unknown>;
   listWorkspaceFileReferenceSuggestions(
     request: CommandPayloads['listWorkspaceFileReferenceSuggestions']['request'],
@@ -193,7 +223,7 @@ const hostCommandDispatch = {
   mergeWorktreeToMain: (host) => host.mergeWorktreeToMain(),
   pushGitBranch: (host) => host.pushGitBranch(),
   refreshGitSnapshot: (host) => host.refreshGitSnapshot(),
-  abortConversation: (host) => host.abortConversation(),
+  abortConversation: (host, payload) => host.abortConversation(payload ?? {}),
   abortShell: (host, payload) => host.abortShell(payload.toolCallId),
   continueAssistantCompletion: (host, payload) => host.continueAssistantCompletion(payload.messageId),
   poll: (host) => host.poll(),
@@ -204,11 +234,21 @@ const hostCommandDispatch = {
   updateAutomation: (host, payload) => host.updateAutomation(payload.automationId, payload.patch),
   deleteAutomation: (host, payload) => host.deleteAutomation(payload.automationId),
   setAutomationEnabled: (host, payload) => host.setAutomationEnabled(payload.automationId, payload.enabled),
-  replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.decision),
-  replyPendingQuestions: (host, payload) => host.replyPendingQuestions(payload.result),
+  replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.request),
+  replyPendingQuestions: (host, payload) => host.replyPendingQuestions(payload.request),
   resetSession: (host) => host.resetSession(),
   listSessions: (host) => host.listSessions(),
   openSession: (host, payload) => host.openSession(payload.path),
+  beginSplitPaneSession: (host, payload) => host.beginSplitPaneSession(payload.request),
+  setVisiblePaneSessions: (host, payload) => host.setVisiblePaneSessions(payload.request),
+  syncSplitPaneSessions: (host, payload) => host.syncSplitPaneSessions(payload.request),
+  focusPaneSession: (host, payload) => host.focusPaneSession(payload.request),
+  closeSplitPaneSession: (host, payload) => host.closeSplitPaneSession(payload.request),
+  switchPaneWorkspace: (host, payload) => host.switchPaneWorkspace(payload.request),
+  switchPaneModel: (host, payload) => host.switchPaneModel(payload.request),
+  setPanePendingGitBranch: (host, payload) => host.setPanePendingGitBranch(payload.request),
+  setPaneWorkLocation: (host, payload) => host.setPaneWorkLocation(payload.request),
+  checkoutPaneGitBranch: (host, payload) => host.checkoutPaneGitBranch(payload.request),
   deleteSession: (host, payload) => host.deleteSession(payload.path),
   listWorkspaceFileReferenceSuggestions: (host, payload) =>
     host.listWorkspaceFileReferenceSuggestions(payload.request),

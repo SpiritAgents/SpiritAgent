@@ -394,6 +394,35 @@ export function provisionalNewSessionPath(workspaceRoot: string): string {
   );
 }
 
+/** Per split-pane provisional slot; not listed until first send. */
+export function splitPaneSessionPath(paneId: string): string {
+  const normalizedPaneId = paneId.trim().replace(/[^a-zA-Z0-9_-]+/gu, '-');
+  return path.join(provisionalChatsDirPath(), `split-${normalizedPaneId}.json`);
+}
+
+export function isSplitProvisionalSessionPath(filePath: string): boolean {
+  const resolved = path.resolve(filePath);
+  const provisionalDir = path.resolve(provisionalChatsDirPath());
+  const relative = path.relative(provisionalDir, resolved);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+  return path.basename(resolved).startsWith('split-');
+}
+
+/** Inverse of splitPaneSessionPath for rehydrating in-memory split bundles. */
+export function parseSplitPaneIdFromSessionPath(filePath: string): string | null {
+  if (!isSplitProvisionalSessionPath(filePath)) {
+    return null;
+  }
+  const base = path.basename(filePath, '.json');
+  if (!base.startsWith('split-')) {
+    return null;
+  }
+  const paneId = base.slice('split-'.length).trim();
+  return paneId.length > 0 ? paneId : null;
+}
+
 export function isProvisionalSessionPath(filePath: string): boolean {
   const resolved = path.resolve(filePath);
   const provisionalDir = path.resolve(provisionalChatsDirPath());
@@ -628,6 +657,9 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
     loopEnabled: parsed.loopEnabled === true,
     ...(parsed.approvalLevel === 'default' || parsed.approvalLevel === 'full-approval'
       ? { approvalLevel: parsed.approvalLevel }
+      : {}),
+    ...(typeof parsed.activeModel === 'string' && parsed.activeModel.trim()
+      ? { activeModel: parsed.activeModel.trim() }
       : {}),
     desktopMessageTimeline,
     savedAtUnixMs:

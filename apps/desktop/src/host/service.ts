@@ -113,6 +113,8 @@ import type {
   PendingAssistantAux,
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
+  ReplyPendingApprovalRequest,
+  ReplyPendingQuestionsRequest,
   ForkSessionRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
@@ -128,6 +130,19 @@ import type {
   InstallMarketplaceExtensionRequest,
   PrepareMarketplaceExtensionInstallRequest,
   SubmitUserTurnRequest,
+  AbortConversationRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
+  SyncSplitPaneSessionsRequest,
+  SwitchPaneWorkspaceRequest,
+  SwitchPaneModelRequest,
+  SetPanePendingGitBranchRequest,
+  SetPaneWorkLocationRequest,
+  CheckoutPaneGitBranchRequest,
+  PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
   UpdateConfigRequest,
@@ -255,6 +270,38 @@ import {
   type SessionActivationContext,
 } from './session-activation.js';
 import { forkSessionCommand, type ForkSessionHostContext } from './fork-session-host.js';
+import {
+  beginSplitPaneSessionCommand,
+  closeSplitPaneSessionCommand,
+  focusPaneSessionCommand,
+  setVisiblePaneSessionsCommand,
+  syncSplitPaneSessionsCommand,
+  type SessionSplitHostContext,
+} from './session-split.js';
+import { buildPaneSessionSlice } from './pane-snapshot.js';
+import {
+  switchPaneWorkspaceCommand,
+  setPanePendingGitBranchCommand,
+  setPaneWorkLocationCommand,
+  checkoutPaneGitBranchCommand,
+  resolvePaneWorkspaceProjection,
+  ensureVisiblePaneScopedGitSnapshots,
+  prefetchScopedGitBeforeGlobalWorkspaceChange,
+  type PaneWorkspaceHostContext,
+} from './host-pane-workspace.js';
+import { withOptionalPaneSessionActivation, type PaneSessionScopeHostContext } from './host-pane-session-scope.js';
+import { resolvePendingApprovalSessionPath } from '../lib/pane-pending-turn-routing.js';
+import {
+  switchPaneModelCommand,
+  type PaneModelHostContext,
+} from './host-pane-model.js';
+import {
+  needsHostActiveModelSync,
+  resolveEffectivePaneActiveModel,
+  resolvePaneModelProjection,
+  freezePaneActiveModelIfNeeded,
+  ensureVisiblePaneActiveModels,
+} from './active-model-sync.js';
 import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
 import {
   finishSessionActivationCommand,
@@ -366,6 +413,9 @@ import {
   saveConfig,
   removeModelApiKey,
   spiritAgentDataDir,
+  normalizeWorkspaceBinding,
+  resolveDesktopHomeDirectory,
+  mergeRecentWorkspaceRoots,
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
   type DesktopWorkspaceBinding,
@@ -590,6 +640,20 @@ class DesktopHostService {
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
   private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/host-internal/lsp').LspService>();
   private lspSnapshot = defaultDesktopLspSnapshot();
+  private visiblePaneSessionPaths: string[] = [];
+  private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
+
+  private replaceVisiblePaneSessionPath(before: string, after: string): void {
+    const beforeResolved = path.resolve(before);
+    const afterResolved = path.resolve(after);
+    if (beforeResolved === afterResolved || this.visiblePaneSessionPaths.length === 0) {
+      return;
+    }
+    this.visiblePaneSessionPaths = this.visiblePaneSessionPaths.map((entry) =>
+      path.resolve(entry) === beforeResolved ? afterResolved : path.resolve(entry),
+    );
+    this.sessionRegistry.setProtectedSessionPaths(this.visiblePaneSessionPaths);
+  }
 
   private orchestrationFor(bundle: SessionBundle): {
     assistantMessages: DesktopAssistantMessageStateMachine;
@@ -847,6 +911,7 @@ class DesktopHostService {
         this.createMessageTimelineFromMessages(messages, timelineSnapshot),
       syncPlanStateForBundle: (bundle) => this.syncPlanStateForBundle(bundle),
       syncHostWorkspaceRootToActiveBundle: (bundle) => this.syncHostWorkspaceRootToActiveBundle(bundle),
+      syncHostActiveModelToActiveBundle: (bundle) => this.syncHostActiveModelToActiveBundle(bundle),
       tickSession: (bundle) => this.tickSession(bundle),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
@@ -864,6 +929,112 @@ class DesktopHostService {
       runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
       runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
     };
+  }
+
+  private paneSessionScopeContext(): PaneSessionScopeHostContext {
+    return {
+      sessionRegistry: () => this.sessionRegistry,
+      syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
+    };
+  }
+
+  private sessionSplitContext(): SessionSplitHostContext {
+    return {
+      ...this.sessionActivationContext(),
+      visiblePaneSessionPaths: () => this.visiblePaneSessionPaths,
+      setVisiblePaneSessionPaths: (paths) => {
+        this.visiblePaneSessionPaths = [...paths];
+        this.sessionRegistry.setProtectedSessionPaths(paths);
+      },
+      resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
+    };
+  }
+
+  private paneWorkspaceContext(): PaneWorkspaceHostContext {
+    return {
+      ...this.sessionSplitContext(),
+      adoptProjectWorkspaceForForeground: async (workspaceRoot, options) => {
+        await this.adoptWorkspaceRootForActiveBundle(workspaceRoot, options);
+        const state = this.requireState();
+        state.workspaceBinding = 'project';
+        state.config = {
+          ...state.config,
+          workspaceBinding: 'project',
+          recentWorkspaces: mergeRecentWorkspaceRoots(state.config.recentWorkspaces, workspaceRoot),
+          lastProjectWorkspaceRoot: workspaceRoot,
+        };
+        await saveConfig(state.config);
+      },
+      adoptNoWorkspaceForForeground: (options) => this.adoptNoWorkspaceBindingForActiveBundle(options),
+      refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
+      invalidatePaneSessionSliceCache: (sessionPath) => {
+        this.paneSessionSliceCache.delete(path.resolve(sessionPath));
+      },
+      invalidateAllPaneSessionSliceCache: () => {
+        this.paneSessionSliceCache.clear();
+      },
+    };
+  }
+
+  private async ensureVisiblePaneScopedGit(): Promise<void> {
+    if (this.visiblePaneSessionPaths.length <= 1) {
+      return;
+    }
+    await ensureVisiblePaneScopedGitSnapshots(this.paneWorkspaceContext());
+    this.paneSessionSliceCache.clear();
+  }
+
+  private paneModelContext(): PaneModelHostContext {
+    return {
+      ...this.sessionSplitContext(),
+      adoptActiveModelForForeground: (modelName) => this.adoptActiveModelForForeground(modelName),
+      refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
+      invalidatePaneSessionSliceCache: (sessionPath) => {
+        this.paneSessionSliceCache.delete(path.resolve(sessionPath));
+      },
+      invalidateAllPaneSessionSliceCache: () => {
+        this.paneSessionSliceCache.clear();
+      },
+      persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
+    };
+  }
+
+  private async adoptActiveModelForForeground(modelName: string): Promise<void> {
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+    const normalized = modelName.trim();
+    if (!normalized) {
+      throw new Error(i18n.t('error.modelNameRequired'));
+    }
+    if (!state.config.models.some((model) => model.name === normalized)) {
+      throw new Error(i18n.t('error.modelNotFound', { model: normalized }));
+    }
+
+    const modelChanged = state.config.activeModel !== normalized;
+    bundle.activeModel = normalized;
+    if (!modelChanged) {
+      await this.refreshRuntimeForBundle(bundle);
+      this.syncActiveRuntimePointer();
+      return;
+    }
+
+    state.config.activeModel = normalized;
+    await saveConfig(state.config);
+    this.clearActiveBundleContextUsage();
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    await this.persistCurrentSessionIfNeeded();
+  }
+
+  private async syncHostActiveModelToActiveBundle(
+    bundle: SessionBundle = this.activeBundle(),
+  ): Promise<boolean> {
+    const state = this.requireState();
+    if (!needsHostActiveModelSync(bundle, state)) {
+      return false;
+    }
+    await this.adoptActiveModelForForeground(resolveEffectivePaneActiveModel(bundle, state));
+    return true;
   }
 
   private forkSessionContext(): ForkSessionHostContext {
@@ -1068,7 +1239,7 @@ class DesktopHostService {
         if (!state) {
           return undefined;
         }
-        const activeModelName = state.config.activeModel.trim();
+        const activeModelName = resolveEffectivePaneActiveModel(bundle, state).trim();
         return state.config.models.find((model) => model.name === activeModelName);
       },
       resolveCatalogHints: () => buildModelCatalogHints(this.requireState().config),
@@ -1459,7 +1630,6 @@ class DesktopHostService {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
       const trimmed = request.text.trim();
-      const bundle = this.activeBundle();
       const hasLocalFiles = Array.isArray(request.localFilePaths) && request.localFilePaths.length > 0;
       const hasReferencedPaths = Array.isArray(request.referencedWorkspaceFilePaths)
         && request.referencedWorkspaceFilePaths.length > 0;
@@ -1467,30 +1637,71 @@ class DesktopHostService {
         throw new Error(i18n.t('error.messageRequired'));
       }
 
-      const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
-      const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
-      if (canEnqueueUserTurn(bundle)) {
-        return enqueueUserTurnCommand(this.sessionTurnContext(), {
-          text: request.text,
-          explicitWorkspaceFiles,
-          turnSkills,
-        });
-      }
+      const targetSessionPath = request.sessionPath?.trim();
+      const previousActive = this.sessionRegistry.getActive();
+      const previousActiveId = this.sessionRegistry.activeSessionId();
+      let restoredActive = false;
 
-      const isFirstTurn = bundle.messages.length === 0;
-      if (isFirstTurn && bundle.workLocation === 'worktree') {
-        return startWorktreeBootstrapTurnCommand(
-          this.sessionTurnContext(),
-          this.worktreeBootstrapHost(),
-          request.text,
-          { explicitWorkspaceFiles, turnSkills },
-        );
-      }
+      const restorePreviousActive = () => {
+        if (!restoredActive && previousActive && previousActiveId) {
+          this.sessionRegistry.activateExisting(previousActive);
+          this.syncActiveRuntimePointer();
+          restoredActive = true;
+        }
+      };
 
-      return this.submitUserTurnAfterInitialized(request.text, {
-        explicitWorkspaceFiles,
-        turnSkills,
-      });
+      try {
+        if (targetSessionPath) {
+          const targetBundle = this.sessionRegistry.findBySessionPath(targetSessionPath);
+          if (!targetBundle) {
+            throw new Error('Session not found.');
+          }
+          if (this.sessionRegistry.getActive() !== targetBundle) {
+            this.sessionRegistry.activateExisting(targetBundle);
+            this.syncActiveRuntimePointer();
+          }
+        }
+
+        const bundle = this.activeBundle();
+        const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
+        const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
+        const resolvedTargetPath = targetSessionPath ? path.resolve(targetSessionPath) : null;
+        let snapshot: DesktopSnapshot;
+        if (canEnqueueUserTurn(bundle)) {
+          snapshot = await enqueueUserTurnCommand(this.sessionTurnContext(), {
+            text: request.text,
+            explicitWorkspaceFiles,
+            turnSkills,
+          });
+        } else if (bundle.messages.length === 0 && bundle.workLocation === 'worktree') {
+          snapshot = await startWorktreeBootstrapTurnCommand(
+            this.sessionTurnContext(),
+            this.worktreeBootstrapHost(),
+            request.text,
+            { explicitWorkspaceFiles, turnSkills },
+          );
+        } else {
+          snapshot = await this.submitUserTurnAfterInitialized(request.text, {
+            explicitWorkspaceFiles,
+            turnSkills,
+          });
+        }
+
+        if (resolvedTargetPath) {
+          const promotedPath = path.resolve(bundle.activeSession?.filePath ?? bundle.id);
+          if (promotedPath !== resolvedTargetPath) {
+            this.replaceVisiblePaneSessionPath(resolvedTargetPath, promotedPath);
+          }
+          restorePreviousActive();
+          return this.buildSnapshot();
+        }
+
+        restorePreviousActive();
+        return snapshot;
+      } catch (error) {
+        restorePreviousActive();
+        throw error;
+      }
     }, 'submit-user-turn');
   }
 
@@ -1560,8 +1771,47 @@ class DesktopHostService {
     return pushGitBranchCommand(this.workspaceGitCommandContext());
   }
 
-  async abortConversation(): Promise<DesktopSnapshot> {
-    return abortConversationCommand(this.sessionTurnContext());
+  async abortConversation(request: AbortConversationRequest = {}): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+
+      const targetSessionPath = request.sessionPath?.trim();
+      const previousActive = this.sessionRegistry.getActive();
+      const previousActiveId = this.sessionRegistry.activeSessionId();
+      let restoredActive = false;
+
+      const restorePreviousActive = () => {
+        if (!restoredActive && previousActive && previousActiveId) {
+          this.sessionRegistry.activateExisting(previousActive);
+          this.syncActiveRuntimePointer();
+          restoredActive = true;
+        }
+      };
+
+      try {
+        if (targetSessionPath) {
+          const targetBundle = this.sessionRegistry.findBySessionPath(targetSessionPath);
+          if (!targetBundle) {
+            throw new Error('Session not found.');
+          }
+          if (this.sessionRegistry.getActive() !== targetBundle) {
+            this.sessionRegistry.activateExisting(targetBundle);
+            this.syncActiveRuntimePointer();
+          }
+        }
+
+        const snapshot = await abortConversationCommand(this.sessionTurnContext());
+        if (targetSessionPath) {
+          restorePreviousActive();
+          return this.buildSnapshot();
+        }
+        restorePreviousActive();
+        return snapshot;
+      } catch (error) {
+        restorePreviousActive();
+        throw error;
+      }
+    });
   }
 
   async reorderQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot> {
@@ -1834,12 +2084,34 @@ class DesktopHostService {
     return tickSessionCommand(this.sessionTurnContext(), bundle, options);
   }
 
-  async replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot> {
-    return replyPendingApprovalCommand(this.sessionTurnContext(), decision);
+  async replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const sessionPath =
+        request.sessionPath?.trim()
+        ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
+      if (sessionPath) {
+        await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
+          await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+        });
+        return this.buildSnapshot();
+      }
+      return replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+    });
   }
 
-  async replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot> {
-    return replyPendingQuestionsCommand(this.sessionTurnContext(), result);
+  async replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const sessionPath = request.sessionPath?.trim();
+      if (sessionPath) {
+        await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
+          await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+        });
+        return this.buildSnapshot();
+      }
+      return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+    });
   }
 
   async resetSession(): Promise<DesktopSnapshot> {
@@ -2104,13 +2376,62 @@ class DesktopHostService {
     return openSessionCommand(this.sessionActivationContext(), filePath);
   }
 
+  async beginSplitPaneSession(
+    request: BeginSplitPaneSessionRequest,
+  ): Promise<BeginSplitPaneSessionResponse> {
+    return beginSplitPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async setVisiblePaneSessions(
+    request: SetVisiblePaneSessionsRequest,
+  ): Promise<DesktopSnapshot> {
+    return setVisiblePaneSessionsCommand(this.sessionSplitContext(), request);
+  }
+
+  async focusPaneSession(request: FocusPaneSessionRequest): Promise<DesktopSnapshot> {
+    return focusPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest): Promise<DesktopSnapshot> {
+    return syncSplitPaneSessionsCommand(this.sessionSplitContext(), request);
+  }
+
+  async closeSplitPaneSession(
+    request: CloseSplitPaneSessionRequest,
+  ): Promise<DesktopSnapshot> {
+    return closeSplitPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async switchPaneWorkspace(request: SwitchPaneWorkspaceRequest): Promise<DesktopSnapshot> {
+    return switchPaneWorkspaceCommand(this.paneWorkspaceContext(), request);
+  }
+
+  async switchPaneModel(request: SwitchPaneModelRequest): Promise<DesktopSnapshot> {
+    return switchPaneModelCommand(this.paneModelContext(), request);
+  }
+
+  async setPanePendingGitBranch(request: SetPanePendingGitBranchRequest): Promise<DesktopSnapshot> {
+    return setPanePendingGitBranchCommand(this.paneWorkspaceContext(), request);
+  }
+
+  async setPaneWorkLocation(request: SetPaneWorkLocationRequest): Promise<DesktopSnapshot> {
+    return setPaneWorkLocationCommand(this.paneWorkspaceContext(), request);
+  }
+
+  async checkoutPaneGitBranch(request: CheckoutPaneGitBranchRequest): Promise<DesktopSnapshot> {
+    return checkoutPaneGitBranchCommand(this.paneWorkspaceContext(), request);
+  }
+
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {
     return deleteSessionCommand(this.sessionDeleteContext(), filePath);
   }
 
   private sessionDeleteContext(): SessionDeleteContext {
+    const split = this.sessionSplitContext();
     return {
       ...this.sessionActivationContext(),
+      visiblePaneSessionPaths: split.visiblePaneSessionPaths,
+      setVisiblePaneSessionPaths: split.setVisiblePaneSessionPaths,
       removeEphemeralSession: (filePath) => {
         const state = this.requireState();
         state.ephemeralSessions = removeEphemeralSessionRecord(state.ephemeralSessions, filePath);
@@ -2211,7 +2532,8 @@ class DesktopHostService {
       await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
     }
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
-    const activeProfile = state.config.models.find((m) => m.name === state.config.activeModel);
+    const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
+    const activeProfile = state.config.models.find((m) => m.name === effectiveActiveModel);
     const activeTransportKind = resolveDesktopTransportKind(activeProfile);
     const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
       ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(activeProfile.provider))
@@ -2219,7 +2541,7 @@ class DesktopHostService {
     const googleVertexCredentials = activeProfile?.provider === 'google-vertex-ai'
       ? readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai')
       : undefined;
-    const apiKey = await resolveApiKeyForConfigModel(state.config, state.config.activeModel);
+    const apiKey = await resolveApiKeyForConfigModel(state.config, effectiveActiveModel);
     const azureResourceNameReady = activeProfile?.provider !== 'azure'
       || Boolean(activeProfile.azureResourceName?.trim());
     const runtimeAuthReady = activeTransportKind === 'bedrock'
@@ -2269,7 +2591,7 @@ class DesktopHostService {
 
     let runtimeTransportConfig = buildPrimaryTransportConfig({
       apiKey: apiKey ?? bedrockCredentials?.apiKey ?? '',
-      model: state.config.activeModel,
+      model: effectiveActiveModel,
       baseUrl: currentApiBase(state.config),
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       profile: activeProfile,
@@ -3097,7 +3419,121 @@ class DesktopHostService {
           })()
         : {}),
       automationsList: this.automationsListCache.map((item) => ({ ...item })),
+      ...(() => {
+        const paneSessions = this.buildPaneSessionsSnapshot(activeBundle);
+        return paneSessions ? { paneSessions } : {};
+      })(),
     });
+  }
+
+  private buildPaneSessionsSnapshot(
+    activeBundle: SessionBundle,
+  ): Record<string, PaneSessionSlice> | undefined {
+    if (this.visiblePaneSessionPaths.length === 0) {
+      return undefined;
+    }
+
+    const activePath = path.resolve(
+      activeBundle.activeSession?.filePath ?? activeBundle.id,
+    );
+    const paneSessions: Record<string, PaneSessionSlice> = {};
+
+    for (const sessionPath of this.visiblePaneSessionPaths) {
+      const resolved = path.resolve(sessionPath);
+      const bundle = this.sessionRegistry.findBySessionPath(resolved);
+      if (!bundle) {
+        continue;
+      }
+
+      const isForegroundActive = resolved === activePath;
+      const orchestration = this.orchestrationFor(bundle);
+      const bundleRuntime = isForegroundActive ? this.runtime : bundle.runtime;
+      const pendingApproval = bundleRuntime?.currentPendingApproval();
+      const pendingQuestions = bundleRuntime?.currentPendingQuestions();
+      const pendingAux = bundleRuntime?.pendingAuxState();
+
+      if (isForegroundActive && pendingAux) {
+        syncLivePendingAuxSnapshot({
+          pendingAux,
+          activeBundle: bundle,
+          assistantMessages: orchestration.assistantMessages,
+          conversationSnapshotView: orchestration.conversationSnapshotView,
+        });
+      }
+
+      const conversationView = orchestration.conversationSnapshotView;
+      const paneWorkspace = resolvePaneWorkspaceProjection({
+        bundle,
+        state: this.requireState(),
+        isForegroundActive,
+      });
+      const paneModel = resolvePaneModelProjection({
+        bundle,
+        state: this.requireState(),
+        isForegroundActive,
+      });
+      const sliceSignature = [
+        resolved,
+        isForegroundActive ? 1 : 0,
+        this.resolveTodoSessionKeyForBundle(bundle),
+        bundle.conversationRevision,
+        bundle.messageTimeline.toMessages().length,
+        isSessionBundleBusy(bundle) ? 1 : 0,
+        bundle.activeSession?.filePath ?? bundle.id,
+        pendingApproval?.toolCallId ?? '',
+        pendingQuestions ? JSON.stringify(pendingQuestions.request) : '',
+        bundleRuntime?.pendingUserTurn() ?? '',
+        (bundleRuntime?.pendingImagePaths()?.length ?? 0),
+        paneWorkspace?.workspaceRoot ?? '',
+        paneWorkspace?.workspaceBinding ?? '',
+        paneWorkspace?.git?.revision ?? 0,
+        paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? '',
+        bundle.approvalLevel,
+        paneModel?.activeModel ?? resolveEffectivePaneActiveModel(bundle, this.requireState()),
+      ].join('\0');
+      const cached = this.paneSessionSliceCache.get(resolved);
+      if (cached?.signature === sliceSignature) {
+        paneSessions[resolved] = cached.slice;
+        continue;
+      }
+
+      const slice = buildPaneSessionSlice({
+        bundle,
+        composerSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+        conversationSnapshotView: conversationView,
+        livePendingAux: pendingAux,
+        isForegroundActive,
+        ...(paneWorkspace ? { paneWorkspace } : {}),
+        ...(paneModel ? { paneModel } : {}),
+        ...(pendingApproval
+          ? {
+              pendingApproval: {
+                toolName: pendingApproval.toolName,
+                request: pendingApproval.request as DesktopToolRequest,
+                prompt: pendingApproval.prompt,
+                trustTarget: pendingApproval.trustTarget,
+                subagentSessionId: pendingApproval.subagentSessionId,
+              },
+            }
+          : {}),
+        ...(pendingQuestions ? { pendingQuestions } : {}),
+        pendingImagePaths: [...(bundleRuntime?.pendingImagePaths() ?? [])],
+        pendingMcpResources: [...(bundleRuntime?.pendingMcpResources() ?? [])],
+        ...(bundleRuntime?.pendingUserTurn()
+          ? { pendingUserTurn: bundleRuntime.pendingUserTurn() }
+          : {}),
+      });
+      this.paneSessionSliceCache.set(resolved, { signature: sliceSignature, slice });
+      paneSessions[resolved] = slice;
+    }
+
+    for (const key of this.paneSessionSliceCache.keys()) {
+      if (!paneSessions[key]) {
+        this.paneSessionSliceCache.delete(key);
+      }
+    }
+
+    return Object.keys(paneSessions).length > 0 ? paneSessions : undefined;
   }
 
   private findEphemeralSession(filePath: string): EphemeralSessionRecord | undefined {
@@ -3141,11 +3577,23 @@ class DesktopHostService {
     return true;
   }
 
-  private async adoptWorkspaceRootForActiveBundle(workspaceRoot: string): Promise<void> {
+  private async adoptWorkspaceRootForActiveBundle(
+    workspaceRoot: string,
+    options?: { deferHeavyWork?: boolean },
+  ): Promise<void> {
     const resolved = path.resolve(workspaceRoot);
     const state = this.requireState();
     const bundle = this.activeBundle();
     const switchingWorkspace = !sameWorkspaceRoot(state.workspaceRoot, resolved);
+
+    if (this.visiblePaneSessionPaths.length > 1) {
+      await prefetchScopedGitBeforeGlobalWorkspaceChange(
+        this.paneWorkspaceContext(),
+        resolved,
+        'project',
+      );
+      this.paneSessionSliceCache.clear();
+    }
 
     if (switchingWorkspace) {
       await this.extensionManager().deactivateAll();
@@ -3163,12 +3611,110 @@ class DesktopHostService {
     );
     bundle.workspaceRoot = resolved;
     await this.syncPlanStateForBundle(bundle);
+
+    if (options?.deferHeavyWork) {
+      await this.ensureVisiblePaneScopedGit();
+      void this.runSerialized(async () => {
+        await this.completeWorkspaceAdoptionFollowUp(bundle, resolved, switchingWorkspace);
+      });
+      return;
+    }
+
     await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
     if (switchingWorkspace) {
       await this.refreshExtensionsList({ metadataOnly: true });
       this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: resolved });
     }
+    await this.ensureVisiblePaneScopedGit();
+  }
+
+  private async completeWorkspaceAdoptionFollowUp(
+    bundle: SessionBundle,
+    workspaceRoot: string,
+    switchingWorkspace: boolean,
+  ): Promise<void> {
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    if (switchingWorkspace) {
+      await this.refreshExtensionsList({ metadataOnly: true });
+      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot });
+    }
+  }
+
+  private async adoptNoWorkspaceBindingForActiveBundle(
+    options?: { deferHeavyWork?: boolean },
+  ): Promise<void> {
+    const state = this.requireState();
+    const bundle = this.activeBundle();
+    const home = resolveDesktopHomeDirectory();
+    const switchingWorkspace = !sameWorkspaceRoot(state.workspaceRoot, home);
+    const previousBinding = normalizeWorkspaceBinding(state.workspaceBinding);
+
+    if (this.visiblePaneSessionPaths.length > 1) {
+      await prefetchScopedGitBeforeGlobalWorkspaceChange(
+        this.paneWorkspaceContext(),
+        home,
+        'none',
+      );
+      this.paneSessionSliceCache.clear();
+    }
+
+    if (switchingWorkspace) {
+      await this.extensionManager().deactivateAll();
+      this.invalidateExtensionWarmup();
+      this.lastRuntimeError = '';
+      this.toolExecutor = undefined;
+      this.resetStreamingPlacementState(true);
+    }
+
+    const git = applyGitRevision(
+      await readWorkspaceGitSnapshot(home),
+      0,
+      { reset: true },
+    );
+    git.workLocation = bundle.workLocation;
+
+    let lastProjectWorkspaceRoot = state.config.lastProjectWorkspaceRoot;
+    if (
+      previousBinding === 'project'
+      && state.workspaceRoot
+      && !sameWorkspaceRoot(state.workspaceRoot, home)
+    ) {
+      lastProjectWorkspaceRoot = state.workspaceRoot;
+    }
+
+    state.workspaceBinding = 'none';
+    state.workspaceRoot = home;
+    state.git = git;
+    bundle.workspaceRoot = home;
+    bundle.workspaceBinding = 'none';
+    bundle.scopedGit = undefined;
+
+    state.config = {
+      ...state.config,
+      workspaceBinding: 'none',
+      ...(lastProjectWorkspaceRoot ? { lastProjectWorkspaceRoot } : {}),
+    };
+    await saveConfig(state.config);
+
+    await this.syncPlanStateForBundle(bundle);
+
+    if (options?.deferHeavyWork) {
+      await this.ensureVisiblePaneScopedGit();
+      void this.runSerialized(async () => {
+        await this.completeWorkspaceAdoptionFollowUp(bundle, home, switchingWorkspace);
+      });
+      return;
+    }
+
+    await this.refreshRuntimeForBundle(bundle);
+    this.syncActiveRuntimePointer();
+    if (switchingWorkspace) {
+      await this.refreshExtensionsList({ metadataOnly: true });
+      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: home });
+    }
+    await this.ensureVisiblePaneScopedGit();
   }
 
   private async generateWorktreeNamesFromModel(

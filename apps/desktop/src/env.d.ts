@@ -99,7 +99,7 @@ declare global {
     mergeWorktreeToMain(): Promise<DesktopSnapshot>;
     pushGitBranch(): Promise<DesktopSnapshot>;
     refreshGitSnapshot(): Promise<DesktopSnapshot>;
-    abortConversation(): Promise<DesktopSnapshot>;
+    abortConversation(request?: import('./types.js').AbortConversationRequest): Promise<DesktopSnapshot>;
     abortShell(toolCallId: string): Promise<DesktopSnapshot>;
     continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
     rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;
@@ -122,11 +122,41 @@ declare global {
     dreamSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     automationsSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     sessionListSubscribe(callback: () => void): () => void;
-    replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot>;
-    replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot>;
+    replyPendingApproval(request: import('./types').ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
+    replyPendingQuestions(request: import('./types').ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;
     openSession(path: string): Promise<DesktopSnapshot>;
+    beginSplitPaneSession(
+      request: import('./types').BeginSplitPaneSessionRequest,
+    ): Promise<import('./types').BeginSplitPaneSessionResponse>;
+    setVisiblePaneSessions(
+      request: import('./types').SetVisiblePaneSessionsRequest,
+    ): Promise<DesktopSnapshot>;
+    syncSplitPaneSessions(
+      request: import('./types').SyncSplitPaneSessionsRequest,
+    ): Promise<DesktopSnapshot>;
+    focusPaneSession(
+      request: import('./types').FocusPaneSessionRequest,
+    ): Promise<DesktopSnapshot>;
+    closeSplitPaneSession(
+      request: import('./types').CloseSplitPaneSessionRequest,
+    ): Promise<DesktopSnapshot>;
+    switchPaneWorkspace(
+      request: import('./types').SwitchPaneWorkspaceRequest,
+    ): Promise<DesktopSnapshot>;
+    switchPaneModel(
+      request: import('./types').SwitchPaneModelRequest,
+    ): Promise<DesktopSnapshot>;
+    setPanePendingGitBranch(
+      request: import('./types').SetPanePendingGitBranchRequest,
+    ): Promise<DesktopSnapshot>;
+    setPaneWorkLocation(
+      request: import('./types').SetPaneWorkLocationRequest,
+    ): Promise<DesktopSnapshot>;
+    checkoutPaneGitBranch(
+      request: import('./types').CheckoutPaneGitBranchRequest,
+    ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     listWorkspaceFileReferenceSuggestions(
       request: QueryWorkspaceFileReferenceSuggestionsRequest,

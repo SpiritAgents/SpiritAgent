@@ -38,6 +38,13 @@ import type {
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
   ForkSessionRequest,
+  AbortConversationRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
+  SyncSplitPaneSessionsRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -248,8 +255,8 @@ export function createWebHostApi(): HostApi {
     markGitHubPullRequestReady() {
       return Promise.reject(new Error('GitHub pull requests are only available in the Electron desktop app.'));
     },
-    abortConversation() {
-      return post<DesktopSnapshot>(baseUrl, '/api/abort');
+    abortConversation(request?: AbortConversationRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/abort', request ?? {});
     },
     abortShell(toolCallId: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/abort-shell-command', { toolCallId });
@@ -305,11 +312,11 @@ export function createWebHostApi(): HostApi {
     subscribeAutomationsUpdates() {
       return () => {};
     },
-    replyPendingApproval(decision) {
-      return post<DesktopSnapshot>(baseUrl, '/api/approval', { decision });
+    replyPendingApproval(request) {
+      return post<DesktopSnapshot>(baseUrl, '/api/approval', request);
     },
-    replyPendingQuestions(result: AskQuestionsResult) {
-      return post<DesktopSnapshot>(baseUrl, '/api/questions', { result });
+    replyPendingQuestions(request: import('../types').ReplyPendingQuestionsRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/questions', request);
     },
     resetSession() {
       return post<DesktopSnapshot>(baseUrl, '/api/reset');
@@ -319,6 +326,36 @@ export function createWebHostApi(): HostApi {
     },
     openSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/open', { path });
+    },
+    beginSplitPaneSession(request: BeginSplitPaneSessionRequest) {
+      return post<BeginSplitPaneSessionResponse>(baseUrl, '/api/sessions/split/begin', request);
+    },
+    setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/visible', request);
+    },
+    syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/sync', request);
+    },
+    focusPaneSession(request: FocusPaneSessionRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/focus', request);
+    },
+    closeSplitPaneSession(request: CloseSplitPaneSessionRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/close', request);
+    },
+    switchPaneWorkspace(request: import('../types').SwitchPaneWorkspaceRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/workspace', request);
+    },
+    switchPaneModel(request: import('../types').SwitchPaneModelRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/model', request);
+    },
+    setPanePendingGitBranch(request: import('../types').SetPanePendingGitBranchRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/pending-branch', request);
+    },
+    setPaneWorkLocation(request: import('../types').SetPaneWorkLocationRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/work-location', request);
+    },
+    checkoutPaneGitBranch(request: import('../types').CheckoutPaneGitBranchRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/checkout-branch', request);
     },
     deleteSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/delete', { path });

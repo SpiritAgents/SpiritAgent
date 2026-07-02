@@ -37,6 +37,8 @@ import type {
   RemoveProviderModelsRequest,
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
+  ReplyPendingApprovalRequest,
+  ReplyPendingQuestionsRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
@@ -49,6 +51,16 @@ import type {
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
   SubmitUserTurnRequest,
+  BeginSplitPaneSessionRequest,
+  SetVisiblePaneSessionsRequest,
+  SyncSplitPaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
+  SwitchPaneWorkspaceRequest,
+  SwitchPaneModelRequest,
+  SetPanePendingGitBranchRequest,
+  SetPaneWorkLocationRequest,
+  CheckoutPaneGitBranchRequest,
   UpdateConfigRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
@@ -122,7 +134,7 @@ export type CommandPayloads = {
   exportSessionLog: undefined;
   compactHistory: undefined;
   submitUserTurn: SubmitUserTurnRequest;
-  abortConversation: undefined;
+  abortConversation: import('../types.js').AbortConversationRequest | undefined;
   abortShell: { toolCallId: string };
   continueAssistantCompletion: { messageId: number };
   poll: undefined;
@@ -133,11 +145,21 @@ export type CommandPayloads = {
   updateAutomation: { automationId: string; patch: DesktopUpdateAutomationRequest };
   deleteAutomation: { automationId: string };
   setAutomationEnabled: { automationId: string; enabled: boolean };
-  replyPendingApproval: { decision: DesktopApprovalDecision };
-  replyPendingQuestions: { result: AskQuestionsResult };
+  replyPendingApproval: { request: ReplyPendingApprovalRequest };
+  replyPendingQuestions: { request: ReplyPendingQuestionsRequest };
   resetSession: undefined;
   listSessions: undefined;
   openSession: { path: string };
+  beginSplitPaneSession: { request: BeginSplitPaneSessionRequest };
+  setVisiblePaneSessions: { request: SetVisiblePaneSessionsRequest };
+  syncSplitPaneSessions: { request: SyncSplitPaneSessionsRequest };
+  focusPaneSession: { request: FocusPaneSessionRequest };
+  closeSplitPaneSession: { request: CloseSplitPaneSessionRequest };
+  switchPaneWorkspace: { request: SwitchPaneWorkspaceRequest };
+  switchPaneModel: { request: SwitchPaneModelRequest };
+  setPanePendingGitBranch: { request: SetPanePendingGitBranchRequest };
+  setPaneWorkLocation: { request: SetPaneWorkLocationRequest };
+  checkoutPaneGitBranch: { request: CheckoutPaneGitBranchRequest };
   deleteSession: { path: string };
   listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
   requestCodeCompletion: { request: RequestCodeCompletionRequest };

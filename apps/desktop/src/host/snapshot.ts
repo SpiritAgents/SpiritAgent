@@ -50,6 +50,7 @@ export interface BuildDesktopSnapshotInput {
   composerSessionKey: string;
   subagentViewer?: DesktopSnapshot['subagentViewer'];
   automationsList: DesktopAutomationListItem[];
+  paneSessions?: DesktopSnapshot['paneSessions'];
 }
 
 export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopSnapshot {
@@ -145,6 +146,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
       userEnabled: normalizeAgentsConfig(input.config.agents).codeCompletion.enabled,
     },
     conversation: input.conversation,
+    ...(input.paneSessions ? { paneSessions: input.paneSessions } : {}),
     ...(input.activeSession ? { activeSession: { ...input.activeSession } } : {}),
     composerSessionKey: input.composerSessionKey,
     ...(input.subagentViewer ? { subagentViewer: input.subagentViewer } : {}),

@@ -69,6 +69,20 @@ import type {
   GitHubPullRequestForBranchResult,
   SearchGitHubAutomationRepositoriesSnapshot,
   SubmitUserTurnRequest,
+  AbortConversationRequest,
+  ReplyPendingApprovalRequest,
+  ReplyPendingQuestionsRequest,
+  BeginSplitPaneSessionRequest,
+  BeginSplitPaneSessionResponse,
+  SetVisiblePaneSessionsRequest,
+  SyncSplitPaneSessionsRequest,
+  CloseSplitPaneSessionRequest,
+  FocusPaneSessionRequest,
+  SwitchPaneWorkspaceRequest,
+  SwitchPaneModelRequest,
+  SetPanePendingGitBranchRequest,
+  SetPaneWorkLocationRequest,
+  CheckoutPaneGitBranchRequest,
   SessionListItem,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -177,7 +191,7 @@ export interface HostApi {
   markGitHubPullRequestReady(
     request: GetGitHubPullRequestDetailRequest,
   ): Promise<GitHubPullRequestDetail>;
-  abortConversation(): Promise<DesktopSnapshot>;
+  abortConversation(request?: AbortConversationRequest): Promise<DesktopSnapshot>;
   abortShell(toolCallId: string): Promise<DesktopSnapshot>;
   continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
   rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;
@@ -197,11 +211,23 @@ export interface HostApi {
   subscribeDreamUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
   subscribeAutomationsUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
   subscribeSessionListUpdates?(callback: () => void): () => void;
-  replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot>;
-  replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot>;
+  replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
+  replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
   resetSession(): Promise<DesktopSnapshot>;
   listSessions(): Promise<SessionListItem[]>;
   openSession(path: string): Promise<DesktopSnapshot>;
+  beginSplitPaneSession(
+    request: BeginSplitPaneSessionRequest,
+  ): Promise<BeginSplitPaneSessionResponse>;
+  setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest): Promise<DesktopSnapshot>;
+  syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest): Promise<DesktopSnapshot>;
+  focusPaneSession(request: FocusPaneSessionRequest): Promise<DesktopSnapshot>;
+  closeSplitPaneSession(request: CloseSplitPaneSessionRequest): Promise<DesktopSnapshot>;
+  switchPaneWorkspace(request: SwitchPaneWorkspaceRequest): Promise<DesktopSnapshot>;
+  switchPaneModel(request: SwitchPaneModelRequest): Promise<DesktopSnapshot>;
+  setPanePendingGitBranch(request: SetPanePendingGitBranchRequest): Promise<DesktopSnapshot>;
+  setPaneWorkLocation(request: SetPaneWorkLocationRequest): Promise<DesktopSnapshot>;
+  checkoutPaneGitBranch(request: CheckoutPaneGitBranchRequest): Promise<DesktopSnapshot>;
   deleteSession(path: string): Promise<DesktopSnapshot>;
   listWorkspaceFileReferenceSuggestions(
     request: QueryWorkspaceFileReferenceSuggestionsRequest,

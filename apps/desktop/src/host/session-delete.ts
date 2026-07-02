@@ -7,6 +7,10 @@ import {
   type SessionActivationContext,
 } from './session-activation.js';
 import {
+  ensureActiveFromVisiblePanePaths,
+  type SessionSplitHostContext,
+} from './session-split.js';
+import {
   isEphemeralDebugSessionPath,
   removeEphemeralSessionRecord,
 } from './sessions.js';
@@ -16,7 +20,9 @@ function sameSessionPath(left: string, right: string): boolean {
   return path.resolve(left).toLowerCase() === path.resolve(right).toLowerCase();
 }
 
-export interface SessionDeleteContext extends SessionActivationContext {
+export interface SessionDeleteContext
+  extends SessionActivationContext,
+    Pick<SessionSplitHostContext, 'visiblePaneSessionPaths' | 'setVisiblePaneSessionPaths'> {
   removeEphemeralSession(filePath: string): void;
   bundleRuntimeIsBusy(sessionPath: string): boolean;
 }
@@ -54,6 +60,26 @@ export async function deleteSessionCommand(
       ctx.removeEphemeralSession(resolvedPath);
     } else {
       await deleteStoredSession(resolvedPath);
+    }
+
+    const visiblePaths = ctx.visiblePaneSessionPaths();
+    const deletedFromMultiPane =
+      visiblePaths.length > 1
+      && visiblePaths.some((entry) => sameSessionPath(entry, resolvedPath));
+
+    if (deletedFromMultiPane) {
+      const nextVisible = visiblePaths.filter((entry) => !sameSessionPath(entry, resolvedPath));
+      ctx.setVisiblePaneSessionPaths(nextVisible);
+      if (!registry.hasActive()) {
+        ctx.clearSubagentViewerTarget();
+        await ensureActiveFromVisiblePanePaths(ctx, nextVisible);
+        const active = registry.getActive();
+        if (active) {
+          await finishSessionActivationCommand(ctx, active);
+        }
+      }
+      ctx.setLastRuntimeError('');
+      return ctx.buildSnapshot();
     }
 
     if (wasActive) {

@@ -1,26 +1,20 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
   DragEvent as ReactDragEvent,
-  ComponentProps,
   ComponentRef,
-  Dispatch,
   KeyboardEvent as ReactKeyboardEvent,
   Ref,
   RefObject,
-  SetStateAction,
 } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ComposerDock } from "@/components/conversation/composer-dock";
+import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationList } from "@/components/conversation/conversation-list";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  WorkspaceToolsDock,
-  type WorkspaceToolTab,
-} from "@/components/workspace-tools-panel";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
@@ -29,9 +23,10 @@ import {
   CONVERSATION_MAX_W,
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
-import type { EditorFileTarget, WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
+import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
+import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
 import type {
   ConversationMessageSnapshot,
@@ -45,6 +40,9 @@ import { useConversationStreamScrollTail } from "@/hooks/useConversationStreamSc
 import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
 import type { TurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import type { PendingAssistantAux } from "@/types";
+import { useConversationSplit } from "@/contexts/conversation-split-context";
+import { PANE_DROP_ZONE_ORDER, effectiveRepositionZone, paneDropZoneGridCellClass, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import type { PaneDropZone } from "@/lib/conversation-split-layout";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
@@ -85,13 +83,30 @@ export type ConversationListSectionProps = {
 
 export type ComposerDockSectionProps = {
   composerDockRef: Ref<HTMLDivElement | null>;
+  composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
+  paneSessionPath?: string;
+  useIsolatedPaneWorkspace?: boolean;
+  composerText: string;
+  onComposerTextChange: (text: string) => void;
+  composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
+  onComposerLocalFileAttachmentsChange: (
+    attachments: ComposerLocalFileAttachmentView[],
+  ) => void;
   commitBusy: boolean;
   rewindWarnings: NonNullable<DesktopSnapshot["conversation"]["rewindWarnings"]>;
   showPendingApprovalInComposer: boolean;
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   showPendingQuestionsInComposer: boolean;
+  pendingQuestions: DesktopSnapshot["conversation"]["pendingQuestions"];
+  questionDrafts?: Record<string, import("@/hooks/useDesktopRuntime").QuestionDraft>;
+  onUpdateQuestionDraft?: (
+    questionId: string,
+    updater: (draft: import("@/hooks/useDesktopRuntime").QuestionDraft) => import("@/hooks/useDesktopRuntime").QuestionDraft,
+  ) => void;
+  onSubmitQuestions?: () => void;
+  onSkipQuestions?: () => void;
   fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
@@ -109,6 +124,7 @@ export type ComposerDockSectionProps = {
   composerAgentModeChipPlaceholder?: string;
   composerCanSend: boolean;
   composerHasPayload: boolean;
+  composerBusy: boolean;
   conversationInterruptible: boolean;
   composerBrowserElementAttachments: BrowserElementAttachment[];
   onComposerBrowserElementAttachmentsChange: (attachments: BrowserElementAttachment[]) => void;
@@ -129,59 +145,14 @@ export type ComposerDockSectionProps = {
   onOpenGitTab: () => void;
 };
 
-export type WorkspaceToolsSectionProps = {
-  startImplementingDisabled: boolean;
-  workspaceFilesPlanRevealNonce: number;
-  workspaceFilesPlanRevealTargetId: string | null;
-  workspaceFileRevealNonce: number;
-  workspaceFileRevealTargetId: string | null;
-  workspaceFileRevealPath: string;
-  workspaceFileRevealAbsolutePath: string;
-  workspaceFileRevealScope: EditorFileTarget["scope"];
-  workspaceFileRevealViewMode: WorkspaceEditorViewMode;
-  workspaceFileRevealDirectoryOnly: boolean;
-  workspaceFileRevealLine: number | null;
-  workspaceFileRevealColumn: number | null;
-  workspacePrRevealNonce: number;
-  workspacePrRevealTargetId: string | null;
-  workspacePrRevealRequest: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
-  onOpenWorkspaceFile: (
-    relativePath: string,
-    options?: { viewMode?: WorkspaceEditorViewMode },
-  ) => void;
-  onOpenWorkspaceFileInNewTab: (
-    relativePath: string,
-    options?: { viewMode?: WorkspaceEditorViewMode },
-  ) => void;
-  workspaceToolTabs: WorkspaceToolTab[];
-  activeWorkspaceToolTabId: string;
-  onWorkspaceToolTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
-  onActiveWorkspaceToolTabIdChange: (id: string) => void;
-  onBrowserElementPicked: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onBrowserElementPicked"]
-  >;
-  onPrDiffAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onPrDiffAddToSession"]
-  >;
-  onTerminalAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onTerminalAddToSession"]
-  >;
-  onFileSnippetAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onFileSnippetAddToSession"]
-  >;
-  onWorkspaceFileAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onWorkspaceFileAddToSession"]
-  >;
-  onGitCommitAddToSession?: NonNullable<
-    ComponentProps<typeof WorkspaceToolsDock>["onGitCommitAddToSession"]
-  >;
-  onBrowserOpenInNewTab: (rawUrl: string) => void;
-  browserTabEnabled: boolean;
-  prTabEnabled: boolean;
-  onOpenIntegrationsSettings?: () => void;
-  workspaceToolsWidthPx: number;
-  onWorkspaceToolsWidthPxChange: (next: number) => void;
-  gitChipBusy: boolean;
+export type BranchCheckoutSectionProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  branchCheckoutBlockedByChanges: boolean;
+  commitBusy: boolean;
+  onCancel: () => void;
+  onConfirmCheckout: () => void;
+  onDiscardAndCheckout: () => void;
 };
 
 export type ConversationViewProps = {
@@ -200,7 +171,30 @@ export type ConversationViewProps = {
   conversationScrollBedPaddingPx: number;
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
-  workspaceTools: WorkspaceToolsSectionProps;
+  branchCheckout?: BranchCheckoutSectionProps;
+  showComposerDock?: boolean;
+  showSessionSidebarToggle?: boolean;
+  showWorkspaceToggle?: boolean;
+  showSplitMenu?: boolean;
+  showClosePane?: boolean;
+  onSplit?: () => void;
+  onSplitVertical?: () => void;
+  onClosePane?: () => void;
+  showDeleteSession?: boolean;
+  deleteSessionPath?: string | null;
+  deleteSessionDisplayName?: string | null;
+  deleteSessionBusy?: boolean;
+  conversationBusy?: boolean;
+  onDeleteSession?: (path: string) => void | Promise<void>;
+  onDeleteSessionOverlayClosed?: () => void | Promise<void>;
+  paneId?: string;
+  onPaneFocus?: () => void;
+  onPaneDragStart?: (paneId: string) => void;
+  onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onPaneDragLeave?: () => void;
+  onPaneDrop?: (paneId: string, zone: PaneDropZone) => void;
+  paneDropOverlayActive?: boolean;
+  paneDragSourcePaneId?: string | null;
 };
 
 export function ConversationView({
@@ -219,12 +213,38 @@ export function ConversationView({
   conversationScrollBedPaddingPx,
   list,
   composerDock,
-  workspaceTools,
+  branchCheckout,
+  showComposerDock = true,
+  showSessionSidebarToggle = true,
+  showWorkspaceToggle = true,
+  showSplitMenu = false,
+  showClosePane = false,
+  onSplit,
+  onSplitVertical,
+  onClosePane,
+  showDeleteSession = false,
+  deleteSessionPath,
+  deleteSessionDisplayName,
+  deleteSessionBusy = false,
+  conversationBusy = false,
+  onDeleteSession,
+  onDeleteSessionOverlayClosed,
+  paneId,
+  onPaneFocus,
+  onPaneDragStart,
+  onPaneDragEnter,
+  onPaneDragLeave,
+  onPaneDrop,
+  paneDropOverlayActive = false,
+  paneDragSourcePaneId = null,
 }: ConversationViewProps) {
   const { t } = useTranslation();
+  const split = useConversationSplit();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
+  const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
+
 
   useConversationSessionScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
@@ -241,16 +261,99 @@ export function ConversationView({
     enabled: conversationMessagesVisible,
   });
 
+  const dropOverlayActive = Boolean(paneId && onPaneDrop && paneDropOverlayActive);
+  const isDragSourcePane = Boolean(paneId && paneDragSourcePaneId === paneId);
+  const showDropTargets = dropOverlayActive && !isDragSourcePane;
+  const dropHostRef = useRef<HTMLDivElement | null>(null);
+
+  const resolveVisibleDropZones = useCallback(() => {
+    if (!paneId || !paneDragSourcePaneId) {
+      return PANE_DROP_ZONE_ORDER;
+    }
+    const sourceHost = document.querySelector(
+      `[data-pane-drop-host="${paneDragSourcePaneId}"]`,
+    );
+    return visiblePaneDropZonesForDrag({
+      paneCount: split.paneCount,
+      sourcePaneHost: sourceHost instanceof HTMLElement ? sourceHost : null,
+      targetPaneHost: dropHostRef.current,
+    });
+  }, [paneDragSourcePaneId, paneId, split.paneCount]);
+
+  const updateDropTarget = useCallback(
+    (zone: PaneDropZone) => {
+      if (!paneId) {
+        return;
+      }
+      const visible = resolveVisibleDropZones();
+      if (!visible.includes(zone)) {
+        return;
+      }
+      split.setPaneDropTarget({ paneId, zone });
+    },
+    [paneId, resolveVisibleDropZones, split],
+  );
+
+  const clearDropTargetIfLeavingHost = useCallback(
+    (event: ReactDragEvent<HTMLElement>) => {
+      if (!paneId || !showDropTargets) {
+        return;
+      }
+      const related = event.relatedTarget;
+      if (related instanceof Node && dropHostRef.current?.contains(related)) {
+        return;
+      }
+      if (related instanceof Element) {
+        const relatedHostEl = related.closest("[data-pane-drop-host]");
+        const otherPaneId =
+          relatedHostEl instanceof HTMLElement
+            ? relatedHostEl.getAttribute("data-pane-drop-host")
+            : null;
+        const enteringValidTargetHost =
+          otherPaneId
+          && otherPaneId !== paneId
+          && otherPaneId !== paneDragSourcePaneId;
+        if (enteringValidTargetHost) {
+          return;
+        }
+      }
+      if (split.paneDropTarget?.paneId === paneId) {
+        split.setPaneDropTarget(null);
+      }
+    },
+    [paneDragSourcePaneId, paneId, showDropTargets, split],
+  );
+
   return (
-    <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
-      <div data-spirit-surface="conversation-shell" className={cn("flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
+    <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
+      <div
+        ref={dropHostRef}
+        data-spirit-surface="conversation-shell"
+        {...(paneId ? { "data-pane-drop-host": paneId } : {})}
+        className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
+        onPointerDown={() => {
+          onPaneFocus?.();
+        }}
+        onDragLeave={clearDropTargetIfLeavingHost}
+      >
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
-          showWorkspaceToggle
+          showSessionSidebarToggle={showSessionSidebarToggle}
+          showWorkspaceToggle={showWorkspaceToggle}
+          showSplitMenu={showSplitMenu}
+          showClosePane={showClosePane}
+          onSplit={onSplit}
+          onSplitVertical={onSplitVertical}
+          onClosePane={onClosePane}
+          paneId={paneId}
+          onPaneDragStart={onPaneDragStart}
+          onPaneDragEnter={onPaneDragEnter}
+          onPaneDragLeave={onPaneDragLeave}
+          onPaneDrop={onPaneDrop}
           sessionTitle={
-            isEmptySession || hideStaleConversationMessages
-              ? null
-              : snapshot?.activeSession?.displayName
+            sessionTitleVisible
+              ? snapshot?.activeSession?.displayName
+              : null
           }
           subagentPromptText={
             subagentViewActive ? snapshot?.subagentViewer?.promptText : null
@@ -258,8 +361,63 @@ export function ConversationView({
           onExitSubagentViewer={onExitSubagentViewer}
           onNewSession={isEmptySession ? undefined : onNewSession}
           newSessionBusy={newSessionBusy}
+          showDeleteSession={showDeleteSession}
+          deleteSessionPath={deleteSessionPath}
+          deleteSessionDisplayName={deleteSessionDisplayName}
+          deleteSessionBusy={deleteSessionBusy}
+          conversationBusy={conversationBusy}
+          onDeleteSession={onDeleteSession}
+          onDeleteSessionOverlayClosed={onDeleteSessionOverlayClosed}
         />
-        <div data-spirit-surface="conversation-stage" className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}>
+        {showDropTargets ? (() => {
+          const visibleDropZones = resolveVisibleDropZones();
+          return (
+          <div
+            className={cn(
+              "absolute inset-0 z-30 grid cursor-crosshair",
+              paneDropZoneGridLayoutClass(visibleDropZones),
+            )}
+          >
+            {visibleDropZones.map((zone) => (
+              <div
+                key={zone}
+                data-pane-drop-zone={zone}
+                className={cn(
+                  "pointer-events-auto",
+                  paneDropZoneGridCellClass(zone, visibleDropZones),
+                )}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  updateDropTarget(zone);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  updateDropTarget(zone);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (!visibleDropZones.includes(zone)) {
+                    return;
+                  }
+                  if (zone === "swap") {
+                    onPaneDrop?.(paneId!, zone);
+                    return;
+                  }
+                  onPaneDrop?.(paneId!, effectiveRepositionZone(zone, visibleDropZones));
+                }}
+              />
+            ))}
+          </div>
+          );
+        })() : null}
+        <div
+          data-spirit-surface="conversation-drop-host"
+          className="relative flex min-h-0 min-w-0 flex-1 flex-col"
+        >
+        <div
+          data-spirit-surface="conversation-stage"
+          className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}
+        >
           {compactionDemoActive ? (
             <div
               data-spirit-surface="compaction-ui-demo-banner"
@@ -335,7 +493,7 @@ export function ConversationView({
                   rewindRichInputRef={list.rewindRichInputRef}
                   models={list.models}
                   catalogHints={snapshot?.config.modelCatalogHints}
-                  activeModel={list.runtime.settings.activeModel}
+                  activeModel={snapshot?.config.activeModel ?? list.runtime.settings.activeModel}
                   agentMode={list.runtime.settings.agentMode}
                   onOpenSubagentViewer={list.onOpenSubagentViewer}
                   onOpenReadFile={list.onOpenReadFile}
@@ -353,11 +511,19 @@ export function ConversationView({
             </div>
           </ScrollArea>
 
+          {showComposerDock ? (
           <ComposerDock
             ref={composerDock.composerDockRef}
             isEmptySession={isEmptySession}
             emptySessionGreeting={composerDock.emptySessionGreeting}
+            composerInitialSegments={composerDock.composerInitialSegments}
             showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
+            paneSessionPath={composerDock.paneSessionPath}
+            useIsolatedPaneWorkspace={composerDock.useIsolatedPaneWorkspace}
+            composerText={composerDock.composerText}
+            onComposerTextChange={composerDock.onComposerTextChange}
+            composerLocalFileAttachments={composerDock.composerLocalFileAttachments}
+            onComposerLocalFileAttachmentsChange={composerDock.onComposerLocalFileAttachmentsChange}
             snapshot={snapshot}
             runtime={list.runtime}
             commitBusy={composerDock.commitBusy}
@@ -366,6 +532,11 @@ export function ConversationView({
             showPendingApprovalInComposer={composerDock.showPendingApprovalInComposer}
             pendingApproval={composerDock.pendingApproval}
             showPendingQuestionsInComposer={composerDock.showPendingQuestionsInComposer}
+            pendingQuestions={composerDock.pendingQuestions}
+            questionDrafts={composerDock.questionDrafts}
+            onUpdateQuestionDraft={composerDock.onUpdateQuestionDraft}
+            onSubmitQuestions={composerDock.onSubmitQuestions}
+            onSkipQuestions={composerDock.onSkipQuestions}
             fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
             fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
             onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
@@ -383,6 +554,7 @@ export function ConversationView({
             composerAgentModeChipPlaceholder={composerDock.composerAgentModeChipPlaceholder}
             composerCanSend={composerDock.composerCanSend}
             composerHasPayload={composerDock.composerHasPayload}
+            composerBusy={composerDock.composerBusy}
             conversationInterruptible={composerDock.conversationInterruptible}
             continueBusy={list.continueBusy}
             composerBrowserElementAttachments={composerDock.composerBrowserElementAttachments}
@@ -404,79 +576,21 @@ export function ConversationView({
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}
           />
+          ) : null}
+          {showComposerDock && branchCheckout ? (
+            <BranchCheckoutDialog
+              open={branchCheckout.open}
+              onOpenChange={branchCheckout.onOpenChange}
+              branchCheckoutBlockedByChanges={branchCheckout.branchCheckoutBlockedByChanges}
+              git={snapshot?.git}
+              commitBusy={branchCheckout.commitBusy}
+              onCancel={branchCheckout.onCancel}
+              onConfirmCheckout={branchCheckout.onConfirmCheckout}
+              onDiscardAndCheckout={branchCheckout.onDiscardAndCheckout}
+            />
+          ) : null}
         </div>
-      </div>
-      <div data-spirit-surface="workspace-dock">
-        <WorkspaceToolsDock
-          useMicaBackdrop={useMicaBackdrop}
-          workspaceRoot={snapshot?.workspaceRoot ?? ""}
-          listExplorerChildren={list.runtime.listWorkspaceExplorerChildren}
-          readWorkspaceTextFile={list.runtime.readWorkspaceTextFile}
-          writeWorkspaceTextFile={list.runtime.writeWorkspaceTextFile}
-          readHostTextFile={list.runtime.readHostTextFile}
-          writeHostTextFile={list.runtime.writeHostTextFile}
-          readManagedImagePreviewDataUrl={list.runtime.readManagedImagePreviewDataUrl}
-          readLocalImagePreviewDataUrl={list.runtime.readLocalImagePreviewDataUrl}
-          plan={snapshot?.plan ?? { path: "", exists: false }}
-          onStartImplementing={() => {
-            composerDock.onComposerAgentModeChange("agent");
-            void list.runtime.submitStartImplementing();
-          }}
-          startImplementingDisabled={
-            workspaceTools.startImplementingDisabled || !snapshot?.plan?.exists
-          }
-          autoRevealPlanNonce={workspaceTools.workspaceFilesPlanRevealNonce}
-          planRevealTabId={workspaceTools.workspaceFilesPlanRevealTargetId}
-          autoRevealFileNonce={workspaceTools.workspaceFileRevealNonce}
-          fileRevealTabId={workspaceTools.workspaceFileRevealTargetId}
-          fileRevealPath={workspaceTools.workspaceFileRevealPath}
-          fileRevealAbsolutePath={workspaceTools.workspaceFileRevealAbsolutePath}
-          fileRevealScope={workspaceTools.workspaceFileRevealScope}
-          fileRevealViewMode={workspaceTools.workspaceFileRevealViewMode}
-          fileRevealDirectoryOnly={workspaceTools.workspaceFileRevealDirectoryOnly}
-          fileRevealLine={workspaceTools.workspaceFileRevealLine}
-          fileRevealColumn={workspaceTools.workspaceFileRevealColumn}
-          searchWorkspaceContent={list.runtime.searchWorkspaceContent}
-          prRevealNonce={workspaceTools.workspacePrRevealNonce}
-          prRevealTabId={workspaceTools.workspacePrRevealTargetId}
-          prRevealRequest={workspaceTools.workspacePrRevealRequest}
-          onOpenWorkspaceFile={workspaceTools.onOpenWorkspaceFile}
-          onOpenWorkspaceFileInNewTab={workspaceTools.onOpenWorkspaceFileInNewTab}
-          tabs={workspaceTools.workspaceToolTabs}
-          activeTabId={workspaceTools.activeWorkspaceToolTabId}
-          onTabsChange={workspaceTools.onWorkspaceToolTabsChange}
-          onActiveTabIdChange={workspaceTools.onActiveWorkspaceToolTabIdChange}
-          onBrowserElementPicked={workspaceTools.onBrowserElementPicked}
-          onPrDiffAddToSession={workspaceTools.onPrDiffAddToSession}
-          onTerminalAddToSession={workspaceTools.onTerminalAddToSession}
-          onFileSnippetAddToSession={workspaceTools.onFileSnippetAddToSession}
-          onWorkspaceFileAddToSession={workspaceTools.onWorkspaceFileAddToSession}
-          onGitCommitAddToSession={workspaceTools.onGitCommitAddToSession}
-          onBrowserOpenInNewTab={workspaceTools.onBrowserOpenInNewTab}
-          browserTabEnabled={workspaceTools.browserTabEnabled}
-          prTabEnabled={workspaceTools.prTabEnabled}
-          onOpenIntegrationsSettings={workspaceTools.onOpenIntegrationsSettings}
-          getGitHubAuthStatus={list.runtime.getGitHubAuthStatus}
-          getGitHubPullRequestForCurrentBranch={list.runtime.getGitHubPullRequestForCurrentBranch}
-          listGitHubPullRequests={list.runtime.listGitHubPullRequests}
-          getGitHubPullRequestTabCounts={list.runtime.getGitHubPullRequestTabCounts}
-          getGitHubPullRequestDetail={list.runtime.getGitHubPullRequestDetail}
-          getGitHubPullRequestConversation={list.runtime.getGitHubPullRequestConversation}
-          getGitHubPullRequestFiles={list.runtime.getGitHubPullRequestFiles}
-          getGitHubPullRequestCommits={list.runtime.getGitHubPullRequestCommits}
-          getGitHubPullRequestChecks={list.runtime.getGitHubPullRequestChecks}
-          mergeGitHubPullRequest={list.runtime.mergeGitHubPullRequest}
-          markGitHubPullRequestReady={list.runtime.markGitHubPullRequestReady}
-          codeCompletionEnabled={snapshot?.codeCompletion?.userEnabled !== false}
-          widthPx={workspaceTools.workspaceToolsWidthPx}
-          onWidthPxChange={workspaceTools.onWorkspaceToolsWidthPxChange}
-          gitSnapshot={snapshot?.git}
-          gitChipBusy={workspaceTools.gitChipBusy}
-          readGitWorkingTree={list.runtime.readGitWorkingTree}
-          readGitHistory={list.runtime.readGitHistory}
-          readGitCommitMessage={list.runtime.readGitCommitMessage}
-          submitGitChip={list.runtime.submitGitChip}
-        />
+        </div>
       </div>
     </div>
   );

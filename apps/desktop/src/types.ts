@@ -621,6 +621,91 @@ export interface SubmitUserTurnRequest {
   localFilePaths?: string[];
   referencedWorkspaceFilePaths?: string[];
   skillChipAliases?: string[];
+  /** Target a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface AbortConversationRequest {
+  /** Abort a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface ReplyPendingApprovalRequest {
+  decision: DesktopApprovalDecision;
+  /** Reply for a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface ReplyPendingQuestionsRequest {
+  result: AskQuestionsResult;
+  /** Reply for a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface BeginSplitPaneSessionRequest {
+  paneId: string;
+  /** When true, only create the in-memory bundle; caller batches snapshot via syncSplitPaneSessions. */
+  deferSnapshot?: boolean;
+}
+
+export interface BeginSplitPaneSessionResponse {
+  sessionPath: string;
+  snapshot?: DesktopSnapshot;
+}
+
+export interface SetVisiblePaneSessionsRequest {
+  sessionPaths: string[];
+}
+
+export interface CloseSplitPaneSessionRequest {
+  sessionPath: string;
+}
+
+export interface FocusPaneSessionRequest {
+  sessionPath: string;
+}
+
+export interface SyncSplitPaneSessionsRequest {
+  sessionPaths: string[];
+  focusSessionPath?: string;
+}
+
+export interface SwitchPaneWorkspaceRequest {
+  sessionPath: string;
+  workspaceRoot?: string;
+  workspaceBinding: DesktopWorkspaceBinding;
+}
+
+export interface SwitchPaneModelRequest {
+  sessionPath: string;
+  modelName: string;
+}
+
+export interface SetPanePendingGitBranchRequest {
+  sessionPath: string;
+  branch: string;
+}
+
+export interface SetPaneWorkLocationRequest {
+  sessionPath: string;
+  workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
+}
+
+export interface CheckoutPaneGitBranchRequest {
+  sessionPath: string;
+  branch: string;
+  discardLocalChanges?: boolean;
+}
+
+export interface PaneSessionSlice {
+  conversation: ConversationSnapshot;
+  activeSession?: ActiveSessionSnapshot;
+  composerSessionKey: string;
+  isForegroundActive: boolean;
+  workspaceRoot?: string;
+  workspaceBinding?: DesktopWorkspaceBinding;
+  git?: DesktopGitSnapshot;
+  activeModel?: string;
 }
 
 export interface QueuedUserTurnRequest {
@@ -816,6 +901,8 @@ export interface DesktopSnapshot {
   lsp: DesktopLspSnapshot;
   codeCompletion: DesktopCodeCompletionSnapshot;
   conversation: ConversationSnapshot;
+  /** Per split-pane session projection keyed by resolved session file path. */
+  paneSessions?: Record<string, PaneSessionSlice>;
   /** 从磁盘打开的会话；未从文件打开时为 `undefined`（新会话/未保存）。 */
   activeSession?: ActiveSessionSnapshot;
   /** Stable key for per-session composer draft persistence (`filePath` or synthetic bundle id). */
