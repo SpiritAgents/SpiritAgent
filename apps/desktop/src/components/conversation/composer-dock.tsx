@@ -1,10 +1,10 @@
 import {
   forwardRef,
+  useRef,
   type ClipboardEvent as ReactClipboardEvent,
   type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
-  useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -35,6 +35,7 @@ import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-m
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import { shouldShowComposerChangesCard } from "@/lib/composer-changes-card-visibility";
+import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
 import { useComposerSuggestionAnchor } from "@/hooks/use-composer-suggestion-anchor";
 import type {
@@ -49,6 +50,12 @@ export type ComposerDockProps = {
   isEmptySession: boolean;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
+  composerText: string;
+  onComposerTextChange: (text: string) => void;
+  composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
+  onComposerLocalFileAttachmentsChange: (
+    attachments: ComposerLocalFileAttachmentView[],
+  ) => void;
   snapshot: DesktopSnapshot | null;
   runtime: DesktopRuntime;
   commitBusy: boolean;
@@ -94,6 +101,7 @@ export type ComposerDockProps = {
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
+  composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
 };
 
 export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(function ComposerDock(
@@ -101,6 +109,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     isEmptySession,
     emptySessionGreeting,
     showWorkspaceBindingControls,
+    composerText,
+    onComposerTextChange,
+    composerLocalFileAttachments,
+    onComposerLocalFileAttachmentsChange,
     snapshot,
     runtime,
     commitBusy,
@@ -146,6 +158,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     models,
     useMicaBackdrop,
     onOpenGitTab,
+    composerInitialSegments,
   },
   ref,
 ) {
@@ -337,16 +350,16 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 </div>
               ) : null}
               <ComposerSurface
-                value={runtime.composer}
-                onChange={runtime.setComposer}
-                initialSegments={runtime.composerInitialSegments}
+                value={composerText}
+                onChange={onComposerTextChange}
+                initialSegments={composerInitialSegments ?? runtime.composerInitialSegments}
                 onSubmit={onSubmitComposerMessage}
                 browserElementAttachments={composerBrowserElementAttachments}
                 onElementAttachmentsChange={onComposerBrowserElementAttachmentsChange}
                 onAbort={() => void runtime.abortConversation()}
                 placeholder={composerPlaceholder}
                 agentModeChipPlaceholder={composerAgentModeChipPlaceholder}
-                localFileAttachments={runtime.composerLocalFileAttachments}
+                localFileAttachments={composerLocalFileAttachments}
                 models={models}
                 catalogHints={snapshot?.config.modelCatalogHints}
                 activeModel={runtime.settings.activeModel}

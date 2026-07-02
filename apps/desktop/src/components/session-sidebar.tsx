@@ -1265,7 +1265,6 @@ function SessionSidebarInner({
     !marketplaceActive &&
     !automationsActive &&
     !newSessionBusy &&
-    !sessionNavigationBusy &&
     activeFilePath !== null &&
     samePath(sessionPath, activeFilePath);
 
