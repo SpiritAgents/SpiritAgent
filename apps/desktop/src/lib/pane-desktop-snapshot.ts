@@ -108,6 +108,7 @@ export function paneHostRenderSignature(
       snapshot.git.selectedBranch ?? snapshot.git.branch ?? "",
       snapshot.git.workLocation ?? "",
       snapshot.git.isRepository ? 1 : 0,
+      conv.approvalLevel ?? "default",
       Boolean(conv.pendingToolApproval),
       Boolean(conv.pendingQuestions),
     ].join("\0");
@@ -132,6 +133,7 @@ export function paneHostRenderSignature(
     slice.git?.revision ?? 0,
     slice.git?.selectedBranch ?? slice.git?.branch ?? "",
     slice.git?.workLocation ?? "",
+    conv.approvalLevel ?? "default",
     Boolean(conv.pendingToolApproval),
     Boolean(conv.pendingQuestions),
   ].join("\0");
