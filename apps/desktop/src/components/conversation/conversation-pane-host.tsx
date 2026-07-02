@@ -89,15 +89,18 @@ export function ConversationPaneHost({
     conversationAbortShortcutTargetRef: split.conversationAbortShortcutTargetRef ?? undefined,
   });
 
+  const setFocusedPaneComposerInsert = split.setFocusedPaneComposerInsert;
+
   useEffect(() => {
     if (!isFocused) {
+      setFocusedPaneComposerInsert(null);
       return;
     }
-    split.setFocusedPaneComposerInsert(pane.composerInsertHandlers);
+    setFocusedPaneComposerInsert(pane.composerInsertHandlers);
     return () => {
-      split.setFocusedPaneComposerInsert(null);
+      setFocusedPaneComposerInsert(null);
     };
-  }, [isFocused, pane.composerInsertHandlers, split]);
+  }, [isFocused, pane.composerInsertHandlers, setFocusedPaneComposerInsert]);
   const handleDeleteSession = useCallback(
     async (path: string) => {
       if (splitPaneCount > 1) {

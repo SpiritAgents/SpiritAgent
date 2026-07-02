@@ -4,6 +4,7 @@ import type { useComposerController } from "@/hooks/useComposerController";
 import type { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
+import { useFocusedPaneComposerInsertCallbacks } from "@/lib/focused-pane-composer-insert";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -32,7 +33,17 @@ export function ConversationWorkspaceToolsDock({
   onOpenIntegrationsSettings,
 }: ConversationWorkspaceToolsDockProps) {
   const split = useConversationSplit();
-  const composerInsert = split.focusedPaneComposerInsert ?? composer;
+  const composerInsert = useFocusedPaneComposerInsertCallbacks(
+    split.focusedPaneComposerInsertRef,
+    {
+      handleBrowserElementPicked: composer.handleBrowserElementPicked,
+      handlePrDiffAddToSession: composer.handlePrDiffAddToSession,
+      handleGitCommitAddToSession: composer.handleGitCommitAddToSession,
+      handleTerminalAddToSession: composer.handleTerminalAddToSession,
+      handleFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
+      handleWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
+    },
+  );
 
   return (
     <div data-spirit-surface="workspace-dock" className="flex min-h-0 shrink-0">
