@@ -2376,8 +2376,11 @@ class DesktopHostService {
   }
 
   private sessionDeleteContext(): SessionDeleteContext {
+    const split = this.sessionSplitContext();
     return {
       ...this.sessionActivationContext(),
+      visiblePaneSessionPaths: split.visiblePaneSessionPaths,
+      setVisiblePaneSessionPaths: split.setVisiblePaneSessionPaths,
       removeEphemeralSession: (filePath) => {
         const state = this.requireState();
         state.ephemeralSessions = removeEphemeralSessionRecord(state.ephemeralSessions, filePath);

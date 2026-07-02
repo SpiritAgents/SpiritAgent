@@ -166,6 +166,7 @@ export type ConversationViewProps = {
   deleteSessionBusy?: boolean;
   conversationBusy?: boolean;
   onDeleteSession?: (path: string) => void | Promise<void>;
+  onDeleteSessionOverlayClosed?: () => void | Promise<void>;
   paneId?: string;
   onPaneFocus?: () => void;
   onPaneDragStart?: (paneId: string) => void;
@@ -206,6 +207,7 @@ export function ConversationView({
   deleteSessionBusy = false,
   conversationBusy = false,
   onDeleteSession,
+  onDeleteSessionOverlayClosed,
   paneId,
   onPaneFocus,
   onPaneDragStart,
@@ -344,6 +346,7 @@ export function ConversationView({
           deleteSessionBusy={deleteSessionBusy}
           conversationBusy={conversationBusy}
           onDeleteSession={onDeleteSession}
+          onDeleteSessionOverlayClosed={onDeleteSessionOverlayClosed}
         />
         {showDropTargets ? (() => {
           const visibleDropZones = resolveVisibleDropZones();

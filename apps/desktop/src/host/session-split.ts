@@ -27,7 +27,7 @@ export interface SessionSplitHostContext extends SessionActivationContext {
 }
 
 /** Closing an empty split pane may remove the foreground bundle; repoint before buildSnapshot. */
-async function ensureActiveFromVisiblePanePaths(
+export async function ensureActiveFromVisiblePanePaths(
   ctx: SessionSplitHostContext,
   visiblePaths: readonly string[],
 ): Promise<void> {

@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
+import { useConversationSplit } from "@/contexts/conversation-split-context";
 import { useConversationPaneController } from "@/hooks/useConversationPaneController";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
@@ -87,6 +88,27 @@ function ConversationPaneHostInner({
     layoutNavigationPending: controllerInput.runtime.layoutNavigationPending,
   });
 
+  const split = useConversationSplit();
+  const handleDeleteSession = useCallback(
+    async (path: string) => {
+      if (splitPaneCount > 1) {
+        if (controllerInput.runtime.apiReady) {
+          await controllerInput.runtime.deleteSession(path);
+        }
+        return;
+      }
+      if (controllerInput.onDeleteSession) {
+        await controllerInput.onDeleteSession(path);
+      }
+    },
+    [controllerInput.onDeleteSession, controllerInput.runtime, splitPaneCount],
+  );
+  const handleDeleteSessionOverlayClosed = useCallback(() => {
+    if (splitPaneCount > 1) {
+      void split.collapsePaneLayoutById(paneId);
+    }
+  }, [paneId, split, splitPaneCount]);
+
   return (
     <ConversationView
       useMicaBackdrop={useMicaBackdrop}
@@ -119,7 +141,8 @@ function ConversationPaneHostInner({
       deleteSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
       deleteSessionBusy={controllerInput.deleteSessionBusy}
       conversationBusy={pane.paneSnapshot?.conversation.isBusy === true}
-      onDeleteSession={controllerInput.onDeleteSession}
+      onDeleteSession={handleDeleteSession}
+      onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
       compactionDemoActive={pane.compactionDemoActive}
       onCompactionDemoStop={controllerInput.onCompactionDemoStop}
       rewindDraft={pane.rewindDraft}
