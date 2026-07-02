@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type DragEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -83,6 +84,8 @@ import { isViteDev } from "@/lib/vite-dev";
 import { cn } from "@/lib/utils";
 import { SettingsShortcutKbd } from "@/components/layout/desktop-shortcut-kbds";
 import { SESSION_TITLE_RENAME_INPUT_CLASS } from "@/lib/desktop-chrome";
+import { useOptionalConversationSplit } from "@/contexts/conversation-split-context";
+import { isSidebarSessionDragBlockedTarget, setSidebarSessionDragData } from "@/lib/sidebar-session-drag";
 import { shortcutLabel, settingsShortcutLabel } from "@/lib/desktop-shell";
 import i18n from "@/lib/i18n";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -419,7 +422,10 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
   workspaceReorderActive = false,
 }: WorkspaceSessionGroupCollapsibleProps) {
   const { t } = useTranslation();
+  const split = useOptionalConversationSplit();
   const workspaceRoot = group.rootPath?.trim() ?? "";
+  const workspaceNewSessionDragEnabled =
+    Boolean(split) && Boolean(workspaceRoot) && !disabled && !newSessionBusy;
   const [workspaceRowHovered, setWorkspaceRowHovered] = useState(false);
   const [plusTooltipAnchorLocked, setPlusTooltipAnchorLocked] = useState(false);
   const showWorkspaceRowHoverChrome = workspaceRowHovered || isDragging || isPressing;
@@ -528,6 +534,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
                 variant="ghost"
                 size="icon"
                 data-workspace-new-session=""
+                draggable={workspaceNewSessionDragEnabled}
                 className={cn(
                   "mr-0.5 size-6 shrink-0",
                   workspaceRowHovered || plusTooltipAnchorLocked
@@ -537,10 +544,24 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
                   sidebarItemDefaultTextClass,
                   sidebarInteractionMotionClass,
                   sidebarItemHoverClass(micaStyle),
+                  workspaceNewSessionDragEnabled && "cursor-grab active:cursor-grabbing",
                 )}
                 disabled={disabled || newSessionBusy}
                 aria-label={t("sidebar.newSessionInWorkspace", { workspace: group.label })}
                 onClick={() => onNewSessionInWorkspace(workspaceRoot)}
+                onDragStart={(event) => {
+                  if (!split || !workspaceNewSessionDragEnabled) {
+                    event.preventDefault();
+                    return;
+                  }
+                  const payload = {
+                    kind: "new-in-workspace" as const,
+                    workspaceRoot,
+                  };
+                  setSidebarSessionDragData(event.dataTransfer, payload);
+                  split.startSidebarSessionDrag(payload);
+                }}
+                onDragEnd={() => split?.clearSidebarSessionDrag()}
               >
                 <Plus className="size-3.5" aria-hidden />
               </Button>
@@ -689,9 +710,11 @@ const SessionListRow = memo(function SessionListRow({
   onRenameStart,
 }: SessionListRowProps) {
   const { t } = useTranslation();
+  const split = useOptionalConversationSplit();
   const gitTooltipContext = useOptionalSessionListGitTooltipContext();
   const renameInputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
+  const sessionDragEnabled = Boolean(split) && !disabled && !isBusy && !renaming;
   const hasIndicator =
     (isBusy && !isBlocked) ||
     (!selected && (isBlocked || showCompletedUnseen));
@@ -756,6 +779,20 @@ const SessionListRow = memo(function SessionListRow({
     }
   };
 
+  const handleSessionDragStart = (event: DragEvent<HTMLButtonElement>) => {
+    if (!split || !sessionDragEnabled || isSidebarSessionDragBlockedTarget(event.target)) {
+      event.preventDefault();
+      return;
+    }
+    const payload = { kind: "stored" as const, sessionPath };
+    setSidebarSessionDragData(event.dataTransfer, payload);
+    split.startSidebarSessionDrag(payload);
+  };
+
+  const handleSessionDragEnd = () => {
+    split?.clearSidebarSessionDrag();
+  };
+
   if (renaming) {
     return (
       <div data-session-path={sessionPath} className={rowClassName}>
@@ -783,8 +820,11 @@ const SessionListRow = memo(function SessionListRow({
       type="button"
       data-session-path={sessionPath}
       disabled={disabled}
+      draggable={sessionDragEnabled}
       aria-current={selected ? "true" : undefined}
       onClick={() => onSelectPath(sessionPath)}
+      onDragStart={handleSessionDragStart}
+      onDragEnd={handleSessionDragEnd}
       onDoubleClick={(event) => {
         if (!onRenameStart || disabled || isBusy) {
           return;
@@ -793,7 +833,10 @@ const SessionListRow = memo(function SessionListRow({
         event.stopPropagation();
         onRenameStart();
       }}
-      className={rowClassName}
+      className={cn(
+        rowClassName,
+        sessionDragEnabled && "cursor-grab active:cursor-grabbing",
+      )}
     >
       {leading}
       <span
@@ -1243,6 +1286,7 @@ function SessionSidebarInner({
   unseenCompletedSessionPaths,
 }: SessionSidebarProps) {
   const { t, i18n } = useTranslation();
+  const split = useOptionalConversationSplit();
   const settingsMode = mode === "settings";
 
   useEffect(() => {
@@ -1521,6 +1565,8 @@ function SessionSidebarInner({
     !automationsActive &&
     !sessionNavigationBusy &&
     (newSessionBusy || !isActiveSessionInSidebar);
+  const newSessionDragEnabled =
+    Boolean(split) && !disabled && !(newSessionBusy && !newSessionNavActive);
 
   useEffect(() => {
     if (!activeFilePath) {
@@ -1681,6 +1727,7 @@ function SessionSidebarInner({
             variant={sidebarNavButtonVariant(micaStyle, newSessionNavActive)}
             size={narrow ? "icon" : "sm"}
             aria-current={newSessionNavActive ? "page" : undefined}
+            draggable={newSessionDragEnabled}
             className={cn(
               "text-xs",
               sidebarItemDefaultTextClass,
@@ -1691,9 +1738,20 @@ function SessionSidebarInner({
               narrow
                 ? "size-8 shrink-0"
                 : "group h-8 w-full justify-start gap-2",
+              newSessionDragEnabled && "cursor-grab active:cursor-grabbing",
             )}
             disabled={disabled || (newSessionBusy && !newSessionNavActive)}
             onClick={onNewSession}
+            onDragStart={(event) => {
+              if (!split || !newSessionDragEnabled) {
+                event.preventDefault();
+                return;
+              }
+              const payload = { kind: "new" as const };
+              setSidebarSessionDragData(event.dataTransfer, payload);
+              split.startSidebarSessionDrag(payload);
+            }}
+            onDragEnd={() => split?.clearSidebarSessionDrag()}
           >
             <SquarePen className="size-3.5" aria-hidden />
             <span className={cn(narrow && "sr-only")}>{t('sidebar.newSession')}</span>
