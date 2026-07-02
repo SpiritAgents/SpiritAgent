@@ -95,6 +95,7 @@ import {
 } from "@/lib/session-path-kind";
 
 import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-composer-insert";
+import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -158,6 +159,8 @@ type ConversationSplitContextValue = {
   focusedPaneComposerInsert: FocusedPaneComposerInsertHandlers | null;
 
   setFocusedPaneComposerInsert: (handlers: FocusedPaneComposerInsertHandlers | null) => void;
+
+  conversationAbortShortcutTargetRef: ConversationAbortShortcutTargetRef | null;
 
 };
 
@@ -458,6 +461,8 @@ export function ConversationSplitProvider({
 
   snapshot,
 
+  conversationAbortShortcutTargetRef = null,
+
   children,
 
 }: {
@@ -465,6 +470,8 @@ export function ConversationSplitProvider({
   runtime: DesktopRuntime;
 
   snapshot: DesktopSnapshot | null;
+
+  conversationAbortShortcutTargetRef?: ConversationAbortShortcutTargetRef | null;
 
   children: ReactNode;
 
@@ -1468,6 +1475,8 @@ export function ConversationSplitProvider({
       focusedPaneComposerInsert,
 
       setFocusedPaneComposerInsert,
+
+      conversationAbortShortcutTargetRef,
 
     }),
 

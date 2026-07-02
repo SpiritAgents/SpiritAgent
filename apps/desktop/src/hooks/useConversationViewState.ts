@@ -27,6 +27,10 @@ import {
   resolvePaneComposerBusy,
 } from "@/lib/pane-conversation-controls";
 import type { DesktopSnapshot } from "@/types";
+import {
+  countVisiblePaneSessions,
+  type ConversationAbortShortcutTargetRef,
+} from "@/lib/conversation-abort-shortcut";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
@@ -42,6 +46,7 @@ export type UseConversationViewStateOptions = {
   language: string;
   /** When true, composer interrupt/send state follows this pane snapshot, not global runtime. */
   useIsolatedPane?: boolean;
+  conversationAbortShortcutTargetRef?: ConversationAbortShortcutTargetRef;
 };
 
 export function useConversationViewState({
@@ -53,6 +58,7 @@ export function useConversationViewState({
   t,
   language,
   useIsolatedPane = false,
+  conversationAbortShortcutTargetRef,
 }: UseConversationViewStateOptions) {
   const models = snapshot?.config.models ?? [];
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
@@ -188,6 +194,22 @@ export function useConversationViewState({
     conversationInterruptible && !activeSessionReadOnly;
   const conversationAbortShortcutEligibleRef = useRef(false);
   conversationAbortShortcutEligibleRef.current = conversationAbortShortcutEligible;
+
+  useEffect(() => {
+    if (!conversationAbortShortcutTargetRef) {
+      return;
+    }
+    if (countVisiblePaneSessions(snapshot) > 1) {
+      return;
+    }
+    conversationAbortShortcutTargetRef.current = {
+      eligible: conversationAbortShortcutEligible,
+    };
+  }, [
+    conversationAbortShortcutEligible,
+    conversationAbortShortcutTargetRef,
+    snapshot,
+  ]);
 
   const startImplementingDisabled =
     !snapshot?.runtimeReady ||

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import type { TFunction } from "i18next";
 
 import type {
@@ -15,6 +15,7 @@ import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsContr
 import { resolveEffectiveEmptySession } from "@/lib/conversation-surface-stale";
 import { resolvePaneDesktopSnapshot, lookupPaneSessionSlice } from "@/lib/pane-desktop-snapshot";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
+import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 import type { DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -43,6 +44,7 @@ export type UseConversationPaneControllerOptions = {
   onOpenIntegrationsSettings: () => void;
   t: TFunction;
   language: string;
+  conversationAbortShortcutTargetRef?: ConversationAbortShortcutTargetRef;
 };
 
 export function useConversationPaneController({
@@ -66,6 +68,7 @@ export function useConversationPaneController({
   onOpenIntegrationsSettings,
   t,
   language,
+  conversationAbortShortcutTargetRef,
 }: UseConversationPaneControllerOptions) {
   const paneSnapshot = useMemo(
     () => resolvePaneDesktopSnapshot(baseSnapshot, sessionPath),
@@ -129,7 +132,32 @@ export function useConversationPaneController({
     t,
     language,
     useIsolatedPane,
+    conversationAbortShortcutTargetRef,
   });
+
+  useEffect(() => {
+    const ref = conversationAbortShortcutTargetRef;
+    if (!ref || !isFocused || splitPaneCount <= 1) {
+      return;
+    }
+    ref.current = {
+      eligible: conversation.conversationInterruptible && !conversation.activeSessionReadOnly,
+      sessionPath: useIsolatedPane ? sessionPath : undefined,
+    };
+    return () => {
+      if (ref.current.sessionPath === sessionPath || !useIsolatedPane) {
+        ref.current = { eligible: false };
+      }
+    };
+  }, [
+    conversation.activeSessionReadOnly,
+    conversation.conversationInterruptible,
+    conversationAbortShortcutTargetRef,
+    isFocused,
+    sessionPath,
+    splitPaneCount,
+    useIsolatedPane,
+  ]);
 
   const composer = useComposerController({
     runtime,
