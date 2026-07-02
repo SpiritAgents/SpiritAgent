@@ -29,6 +29,34 @@ feat(desktop): macOS 侧栏切换按钮钉在红绿灯右侧
 
 ❌ 错位：`新增 useDarwinWindowFullscreen 读取 html class，不重复订阅 Electron IPC`——父提交里并无重复订阅，这是会话内对刚写代码的后续改写叙事，与本次 diff 无关
 
+### 命令行传递（多行 subject / body）
+
+- **PowerShell**：用字面量 here-string `@' … '@` 传给 `git commit -m`
+- **bash**：用 `git commit -m "$(cat <<'EOF' … EOF)"`
+
+PowerShell 示例：
+
+```powershell
+git commit -m @'
+feat(desktop): 示例 subject
+
+- 第一条 body
+- 第二条 body
+'@
+```
+
+bash 示例：
+
+```bash
+git commit -m "$(cat <<'EOF'
+feat(desktop): 示例 subject
+
+- 第一条 body
+- 第二条 body
+EOF
+)"
+```
+
 ## 通用约定
 
 - 优先保持跨平台兼容（含 Windows 分支与条件编译）。

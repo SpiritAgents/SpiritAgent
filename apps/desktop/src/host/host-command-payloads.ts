@@ -161,6 +161,7 @@ export type CommandPayloads = {
   setPaneWorkLocation: { request: SetPaneWorkLocationRequest };
   checkoutPaneGitBranch: { request: CheckoutPaneGitBranchRequest };
   deleteSession: { path: string };
+  renameSession: { path: string; displayName: string };
   listWorkspaceFileReferenceSuggestions: { request: QueryWorkspaceFileReferenceSuggestionsRequest };
   requestCodeCompletion: { request: RequestCodeCompletionRequest };
   abortCodeCompletion: undefined;

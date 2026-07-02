@@ -31,6 +31,22 @@ export function sessionGitTooltipItemFromSession(
   };
 }
 
+export function sessionGitTooltipItemFromChromeSession(input: {
+  path: string;
+  gitBranch?: string;
+  workspaceRoot: string;
+}): SessionGitTooltipItem | null {
+  const gitBranch = input.gitBranch?.trim();
+  if (!gitBranch) {
+    return null;
+  }
+  return {
+    path: input.path,
+    gitBranch,
+    workspaceRoot: input.workspaceRoot,
+  };
+}
+
 type SessionListGitTooltipProps = {
   children: ReactNode;
   delayDuration?: number;
@@ -99,6 +115,8 @@ function SessionListGitTooltipPanel({ item }: { item: SessionGitTooltipItem }) {
     </>
   );
 }
+
+export { SessionListGitTooltipPanel };
 
 export const SessionListGitTooltip = Object.assign(SessionListGitTooltipRoot, {
   Zone: Tooltip.Zone,

@@ -96,6 +96,7 @@ export interface HostCommandDelegate {
     request: CommandPayloads['checkoutPaneGitBranch']['request'],
   ): Promise<unknown>;
   deleteSession(path: string): Promise<unknown>;
+  renameSession(path: string, displayName: string): Promise<unknown>;
   listWorkspaceFileReferenceSuggestions(
     request: CommandPayloads['listWorkspaceFileReferenceSuggestions']['request'],
   ): Promise<unknown>;
@@ -250,6 +251,7 @@ const hostCommandDispatch = {
   setPaneWorkLocation: (host, payload) => host.setPaneWorkLocation(payload.request),
   checkoutPaneGitBranch: (host, payload) => host.checkoutPaneGitBranch(payload.request),
   deleteSession: (host, payload) => host.deleteSession(payload.path),
+  renameSession: (host, payload) => host.renameSession(payload.path, payload.displayName),
   listWorkspaceFileReferenceSuggestions: (host, payload) =>
     host.listWorkspaceFileReferenceSuggestions(payload.request),
   requestCodeCompletion: (host, payload) => host.requestCodeCompletion(payload.request),
