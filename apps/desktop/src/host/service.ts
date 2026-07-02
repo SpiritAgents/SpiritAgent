@@ -141,6 +141,7 @@ import type {
   SwitchPaneModelRequest,
   SetPanePendingGitBranchRequest,
   SetPaneWorkLocationRequest,
+  CheckoutPaneGitBranchRequest,
   PaneSessionSlice,
   SubmitGitChipRequest,
   SubmitSkillSlashRequest,
@@ -282,6 +283,7 @@ import {
   switchPaneWorkspaceCommand,
   setPanePendingGitBranchCommand,
   setPaneWorkLocationCommand,
+  checkoutPaneGitBranchCommand,
   resolvePaneWorkspaceProjection,
   ensureVisiblePaneScopedGitSnapshots,
   prefetchScopedGitBeforeGlobalWorkspaceChange,
@@ -2404,6 +2406,10 @@ class DesktopHostService {
 
   async setPaneWorkLocation(request: SetPaneWorkLocationRequest): Promise<DesktopSnapshot> {
     return setPaneWorkLocationCommand(this.paneWorkspaceContext(), request);
+  }
+
+  async checkoutPaneGitBranch(request: CheckoutPaneGitBranchRequest): Promise<DesktopSnapshot> {
+    return checkoutPaneGitBranchCommand(this.paneWorkspaceContext(), request);
   }
 
   async deleteSession(filePath: string): Promise<DesktopSnapshot> {

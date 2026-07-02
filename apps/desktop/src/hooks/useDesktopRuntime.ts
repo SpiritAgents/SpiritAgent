@@ -2463,6 +2463,37 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, refreshSessions]);
 
+  const checkoutPaneGitBranch = useCallback(async (
+    sessionPath: string,
+    branch: string,
+    options?: { discardLocalChanges?: boolean },
+  ): Promise<CheckoutGitBranchResult> => {
+    if (!api?.checkoutPaneGitBranch) {
+      return { ok: false, reason: "error" };
+    }
+
+    setBusyAction("git");
+    try {
+      const next = await api.checkoutPaneGitBranch({
+        sessionPath,
+        branch,
+        discardLocalChanges: options?.discardLocalChanges === true,
+      });
+      applySnapshot(next);
+      setRuntimeError("");
+      void refreshSessions();
+      return { ok: true };
+    } catch (error) {
+      if (isCheckoutBlockedByLocalChanges(error)) {
+        return { ok: false, reason: "local-changes" };
+      }
+      setRuntimeError(sanitizeGitErrorMessage(error));
+      return { ok: false, reason: "error" };
+    } finally {
+      setBusyAction("");
+    }
+  }, [api, applySnapshot, refreshSessions]);
+
   const mergeWorktreeToMain = useCallback(async (): Promise<boolean> => {
     if (!api) {
       return false;
@@ -3459,6 +3490,7 @@ export function useDesktopRuntime() {
     setPendingGitBranch,
     setWorkLocation,
     checkoutGitBranch,
+    checkoutPaneGitBranch,
     mergeWorktreeToMain,
     pushGitBranch,
     continueAssistantCompletion,

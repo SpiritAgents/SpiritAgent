@@ -92,6 +92,9 @@ export interface HostCommandDelegate {
   setPaneWorkLocation(
     request: CommandPayloads['setPaneWorkLocation']['request'],
   ): Promise<unknown>;
+  checkoutPaneGitBranch(
+    request: CommandPayloads['checkoutPaneGitBranch']['request'],
+  ): Promise<unknown>;
   deleteSession(path: string): Promise<unknown>;
   listWorkspaceFileReferenceSuggestions(
     request: CommandPayloads['listWorkspaceFileReferenceSuggestions']['request'],
@@ -245,6 +248,7 @@ const hostCommandDispatch = {
   switchPaneModel: (host, payload) => host.switchPaneModel(payload.request),
   setPanePendingGitBranch: (host, payload) => host.setPanePendingGitBranch(payload.request),
   setPaneWorkLocation: (host, payload) => host.setPaneWorkLocation(payload.request),
+  checkoutPaneGitBranch: (host, payload) => host.checkoutPaneGitBranch(payload.request),
   deleteSession: (host, payload) => host.deleteSession(payload.path),
   listWorkspaceFileReferenceSuggestions: (host, payload) =>
     host.listWorkspaceFileReferenceSuggestions(payload.request),

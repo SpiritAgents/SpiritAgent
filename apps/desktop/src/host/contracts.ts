@@ -100,6 +100,7 @@ export type HostCommandName =
   | 'switchPaneModel'
   | 'setPanePendingGitBranch'
   | 'setPaneWorkLocation'
+  | 'checkoutPaneGitBranch'
   | 'deleteSession'
   | 'listWorkspaceFileReferenceSuggestions'
   | 'requestCodeCompletion'

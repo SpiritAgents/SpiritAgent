@@ -354,6 +354,9 @@ export function createWebHostApi(): HostApi {
     setPaneWorkLocation(request: import('../types').SetPaneWorkLocationRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/work-location', request);
     },
+    checkoutPaneGitBranch(request: import('../types').CheckoutPaneGitBranchRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/checkout-branch', request);
+    },
     deleteSession(path: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/delete', { path });
     },
