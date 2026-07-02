@@ -290,6 +290,7 @@ import {
   type PaneWorkspaceHostContext,
 } from './host-pane-workspace.js';
 import { withOptionalPaneSessionActivation } from './host-pane-session-scope.js';
+import { resolvePendingApprovalSessionPath } from '../lib/pane-pending-turn-routing.js';
 import {
   switchPaneModelCommand,
   type PaneModelHostContext,
@@ -2079,7 +2080,9 @@ class DesktopHostService {
   async replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
-      const sessionPath = request.sessionPath?.trim();
+      const sessionPath =
+        request.sessionPath?.trim()
+        ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
       if (sessionPath) {
         await withOptionalPaneSessionActivation(this, sessionPath, async () => {
           await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
