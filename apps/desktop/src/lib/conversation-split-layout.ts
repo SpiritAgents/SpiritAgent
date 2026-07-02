@@ -294,12 +294,6 @@ function promoteSingleChildSplit(node: SplitLayoutSplitNode): SplitLayoutNode {
   if (secondCount === 0) {
     return node.first;
   }
-  if (firstCount === 1 && secondCount > 1) {
-    return node.second;
-  }
-  if (secondCount === 1 && firstCount > 1) {
-    return node.first;
-  }
   return node;
 }
 

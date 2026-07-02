@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   closePane,
+  collectSplitLayoutLeaves,
   countPanes,
   createLeafNode,
   createSinglePaneLayout,
@@ -42,6 +43,28 @@ test("closePane collapses back to a single leaf", () => {
   assert.ok(closed);
   assert.equal(closed?.kind, "leaf");
   assert.equal(closed.paneId, "a");
+});
+
+test("closePane in 4-pane grid removes only the closed leaf", () => {
+  const topLeft = createLeafNode("tl", "/sessions/tl.json");
+  const bottomLeft = createLeafNode("bl", "/sessions/bl.json");
+  const topRight = createLeafNode("tr", "/sessions/tr.json");
+  const bottomRight = createLeafNode("br", "/sessions/br.json");
+  const twoColumns = splitPaneAt(
+    createSinglePaneLayout("tl", "/sessions/tl.json"),
+    "tl",
+    "horizontal",
+    topRight,
+  );
+  const leftColumn = splitPaneAt(twoColumns, "tl", "vertical", bottomLeft);
+  const grid = splitPaneAt(leftColumn, "tr", "vertical", bottomRight);
+  assert.equal(countPanes(grid), 4);
+
+  const closed = closePane(grid, "tl");
+  assert.ok(closed);
+  assert.equal(countPanes(closed), 3);
+  const paneIds = collectSplitLayoutLeaves(closed).map((leaf) => leaf.paneId).sort();
+  assert.deepEqual(paneIds, ["bl", "br", "tr"]);
 });
 
 test("updateSplitRatio updates the matching split node", () => {
