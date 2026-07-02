@@ -295,11 +295,7 @@ export function ConversationView({
         data-spirit-surface="conversation-shell"
         {...(paneId ? { "data-pane-drop-host": paneId } : {})}
         className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
-        onPointerDown={(event) => {
-          const target = event.target;
-          if (target instanceof Element && target.closest('[data-spirit-surface="composer-dock"]')) {
-            return;
-          }
+        onPointerDown={() => {
           onPaneFocus?.();
         }}
         onDragLeave={clearDropTargetIfLeavingHost}
