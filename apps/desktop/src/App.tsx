@@ -27,6 +27,7 @@ import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { useConversationSessionFocusComposer } from "@/hooks/useConversationSessionFocusComposer";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
+import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
 import { useUiLayoutScale } from "@/hooks/useUiLayoutScale";
 import { useDesktopKeyboardShortcuts } from "@/hooks/useDesktopKeyboardShortcuts";
 import { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
@@ -102,6 +103,9 @@ export default function App() {
     setSlashSelectedIndex: (index: number) => void;
     focusComposer: () => void;
   } | null>(null);
+  const conversationAbortShortcutTargetRef = useRef<ConversationAbortShortcutTarget>({
+    eligible: false,
+  });
 
 
   // Hook order is intentional — do not reorder without checking cross-hook deps:
@@ -132,6 +136,7 @@ export default function App() {
     compactionDemo,
     t,
     language: i18n.language,
+    conversationAbortShortcutTargetRef,
   });
 
   const workspaceTools = useWorkspaceToolsController({
@@ -198,6 +203,7 @@ export default function App() {
     runtime,
     activeSurfaceRef: surfaceNav.activeSurfaceRef,
     conversationAbortShortcutEligibleRef: conversation.conversationAbortShortcutEligibleRef,
+    conversationAbortShortcutTargetRef,
     sessionSidebarChromeApiRef: surfaceNav.sessionSidebarChromeApiRef,
     handleNewSession: surfaceNav.handleNewSession,
     handleOpenSettings: surfaceNav.handleOpenSettings,
@@ -517,7 +523,11 @@ export default function App() {
             aria-hidden={surfaceNav.settingsMode}
           >
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <ConversationSplitProvider runtime={runtime} snapshot={snapshot}>
+          <ConversationSplitProvider
+            runtime={runtime}
+            snapshot={snapshot}
+            conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
+          >
           <ConversationSplitRoot
             useMicaBackdrop={useMicaBackdrop}
             renderPane={(pane) => (

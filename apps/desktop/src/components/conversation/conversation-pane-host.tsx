@@ -86,6 +86,7 @@ export function ConversationPaneHost({
     useIsolatedPane,
     splitPaneCount,
     layoutNavigationPending: controllerInput.runtime.layoutNavigationPending,
+    conversationAbortShortcutTargetRef: split.conversationAbortShortcutTargetRef ?? undefined,
   });
 
   useEffect(() => {

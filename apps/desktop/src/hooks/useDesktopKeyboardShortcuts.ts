@@ -18,7 +18,7 @@ import {
 } from "@/lib/desktop-keyboard-shortcut-eligibility";
 import { triggerWorkspaceNewToolTabShortcut } from "@/lib/workspace-new-tool-tab-shortcut-bridge";
 import { resolveUiLayoutZoomShortcutAction } from "@/lib/ui-layout-scale";
-import type { AppSurface } from "@/hooks/useAppSurfaceNavigation";
+import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
@@ -32,6 +32,7 @@ export type UseDesktopKeyboardShortcutsOptions = {
   runtime: DesktopRuntime;
   activeSurfaceRef: MutableRefObject<AppSurface>;
   conversationAbortShortcutEligibleRef: MutableRefObject<boolean>;
+  conversationAbortShortcutTargetRef?: ConversationAbortShortcutTargetRef;
   sessionSidebarChromeApiRef: MutableRefObject<SessionSidebarChromeApi | null>;
   handleNewSession: () => void;
   handleOpenSettings: () => void;
@@ -45,6 +46,7 @@ export function useDesktopKeyboardShortcuts({
   runtime,
   activeSurfaceRef,
   conversationAbortShortcutEligibleRef,
+  conversationAbortShortcutTargetRef,
   sessionSidebarChromeApiRef,
   handleNewSession,
   handleOpenSettings,
@@ -142,17 +144,25 @@ export function useDesktopKeyboardShortcuts({
       if (
         !shouldTriggerConversationAbortShortcut(event, {
           activeSurface: activeSurfaceRef.current,
-          conversationAbortShortcutEligible: conversationAbortShortcutEligibleRef.current,
+          conversationAbortShortcutEligible:
+            conversationAbortShortcutTargetRef?.current.eligible
+            ?? conversationAbortShortcutEligibleRef.current,
         })
       ) {
         return;
       }
       event.preventDefault();
-      void runtime.abortConversation();
+      const sessionPath = conversationAbortShortcutTargetRef?.current.sessionPath?.trim();
+      void runtime.abortConversation(sessionPath ? { sessionPath } : undefined);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeSurfaceRef, conversationAbortShortcutEligibleRef, runtime.abortConversation]);
+  }, [
+    activeSurfaceRef,
+    conversationAbortShortcutEligibleRef,
+    conversationAbortShortcutTargetRef,
+    runtime.abortConversation,
+  ]);
 
   // Cmd/Ctrl+N — global new session (macOS menu accelerator handles this; skip here).
   useEffect(() => {
