@@ -12,6 +12,8 @@ import {
   repositionPane,
   splitPaneAt,
   updateSplitRatio,
+  updateSplitRatios,
+  collectSplitJunctions,
 } from "../../src/lib/conversation-split-layout.ts";
 
 test("splitPaneAt inserts a horizontal sibling", () => {
@@ -117,4 +119,58 @@ test("repositionPane nests a pane into a target quadrant inside a larger layout"
   assert.equal(countPanes(moved), 4);
   assert.equal(findLeafByPaneId(moved, "d")?.paneId, "d");
   assert.equal(findLeafByPaneId(moved, "a")?.paneId, "a");
+});
+
+test("collectSplitJunctions merges four-pane center into one handle", () => {
+  let layout = createSinglePaneLayout("tl", "/sessions/tl.json");
+  layout = splitPaneAt(layout, "tl", "horizontal", createLeafNode("tr", "/sessions/tr.json"));
+  layout = splitPaneAt(layout, "tl", "vertical", createLeafNode("bl", "/sessions/bl.json"));
+  layout = splitPaneAt(layout, "tr", "vertical", createLeafNode("br", "/sessions/br.json"));
+  assert.equal(countPanes(layout), 4);
+  assert.equal(layout.kind, "split");
+  if (layout.kind !== "split") {
+    return;
+  }
+  assert.equal(layout.first.kind, "split");
+  assert.equal(layout.second.kind, "split");
+  const junctions = collectSplitJunctions(layout);
+  assert.equal(junctions.length, 1);
+  assert.deepEqual(junctions[0].xSplitIds, [layout.splitId]);
+  assert.equal(junctions[0].ySplitIds.length, 2);
+  assert.ok(junctions[0].ySplitIds.includes(layout.first.splitId));
+  assert.ok(junctions[0].ySplitIds.includes(layout.second.splitId));
+});
+
+test("updateSplitRatios applies multiple split updates", () => {
+  const split = splitPaneAt(
+    createSinglePaneLayout("a", "/sessions/a.json"),
+    "a",
+    "horizontal",
+    createLeafNode("b", "/sessions/b.json"),
+  );
+  assert.equal(split.kind, "split");
+  if (split.kind !== "split") {
+    return;
+  }
+  const nested = splitPaneAt(
+    split.first,
+    "a",
+    "vertical",
+    createLeafNode("c", "/sessions/c.json"),
+  );
+  const layout = { ...split, first: nested };
+  assert.equal(layout.kind, "split");
+  if (layout.kind !== "split" || layout.first.kind !== "split") {
+    return;
+  }
+  const updated = updateSplitRatios(layout, [
+    { splitId: layout.splitId, ratio: 0.6 },
+    { splitId: layout.first.splitId, ratio: 0.4 },
+  ]);
+  assert.equal(updated.kind, "split");
+  if (updated.kind !== "split" || updated.first.kind !== "split") {
+    return;
+  }
+  assert.equal(updated.ratio, 0.6);
+  assert.equal(updated.first.ratio, 0.4);
 });

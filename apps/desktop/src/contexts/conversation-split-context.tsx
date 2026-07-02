@@ -57,6 +57,8 @@ import {
 
   updateSplitRatio,
 
+  updateSplitRatios,
+
   type PaneDropZone,
 
   type PaneRepositionZone,
@@ -117,6 +119,12 @@ type ConversationSplitContextValue = {
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
   updateRatio: (splitId: string, ratio: number) => void;
+
+  updateRatios: (updates: readonly { splitId: string; ratio: number }[]) => void;
+
+  highlightedSplitIds: ReadonlySet<string>;
+
+  setSplitResizeHighlight: (splitIds: Iterable<string> | null) => void;
 
   repositionPaneById: (
 
@@ -1165,6 +1173,58 @@ export function ConversationSplitProvider({
 
 
 
+  const updateRatios = useCallback((updates: readonly { splitId: string; ratio: number }[]) => {
+
+    if (updates.length === 0) {
+
+      return;
+
+    }
+
+    setLayout((current) => {
+
+      if (!current) {
+
+        return current;
+
+      }
+
+      const next = updateSplitRatios(current, updates);
+
+      if (countPanes(next) > 1) {
+
+        persistSessionSplitBinding(next);
+
+      }
+
+      return next;
+
+    });
+
+  }, []);
+
+
+
+  const [highlightedSplitIds, setHighlightedSplitIds] = useState<ReadonlySet<string>>(() => new Set());
+
+
+
+  const setSplitResizeHighlight = useCallback((splitIds: Iterable<string> | null) => {
+
+    if (!splitIds) {
+
+      setHighlightedSplitIds(new Set());
+
+      return;
+
+    }
+
+    setHighlightedSplitIds(new Set(splitIds));
+
+  }, []);
+
+
+
   const repositionPaneById = useCallback(
 
     (sourcePaneId: string, targetPaneId: string, zone: PaneRepositionZone) => {
@@ -1309,6 +1369,12 @@ export function ConversationSplitProvider({
 
       updateRatio,
 
+      updateRatios,
+
+      highlightedSplitIds,
+
+      setSplitResizeHighlight,
+
       repositionPaneById,
 
       startPaneDrag,
@@ -1360,6 +1426,12 @@ export function ConversationSplitProvider({
       startPaneDrag,
 
       updateRatio,
+
+      updateRatios,
+
+      highlightedSplitIds,
+
+      setSplitResizeHighlight,
 
     ],
 
