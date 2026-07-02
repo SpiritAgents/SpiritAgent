@@ -2603,7 +2603,10 @@ export function useDesktopRuntime() {
     [api, applySnapshot, clearActiveComposerDraft, refreshSessions],
   );
 
-  const submitApproval = useCallback(async (decision: DesktopApprovalDecision) => {
+  const submitApproval = useCallback(async (
+    decision: DesktopApprovalDecision,
+    sessionPath?: string,
+  ) => {
     if (!api) {
       return;
     }
@@ -2615,7 +2618,10 @@ export function useDesktopRuntime() {
 
     setBusyAction("approve");
     try {
-      const next = await api.replyPendingApproval(decision);
+      const next = await api.replyPendingApproval({
+        decision,
+        ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
+      });
       applySnapshot(next);
       setApprovalGuidance("");
       setRuntimeError("");

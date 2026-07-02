@@ -37,6 +37,7 @@ import type {
   RemoveProviderModelsRequest,
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
+  ReplyPendingApprovalRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
@@ -140,7 +141,7 @@ export type CommandPayloads = {
   updateAutomation: { automationId: string; patch: DesktopUpdateAutomationRequest };
   deleteAutomation: { automationId: string };
   setAutomationEnabled: { automationId: string; enabled: boolean };
-  replyPendingApproval: { decision: DesktopApprovalDecision };
+  replyPendingApproval: { request: ReplyPendingApprovalRequest };
   replyPendingQuestions: { result: AskQuestionsResult };
   resetSession: undefined;
   listSessions: undefined;

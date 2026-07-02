@@ -232,8 +232,8 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
       ipcRenderer.removeListener('desktop:session-list-updated', onSessionListUpdate);
     };
   },
-  replyPendingApproval(decision: unknown) {
-    return ipcRenderer.invoke('desktop:invoke', 'replyPendingApproval', { decision });
+  replyPendingApproval(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'replyPendingApproval', { request });
   },
   replyPendingQuestions(result: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'replyPendingQuestions', { result });

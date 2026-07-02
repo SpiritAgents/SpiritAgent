@@ -113,6 +113,7 @@ import type {
   PendingAssistantAux,
   QueuedUserTurnRequest,
   RewindAndSubmitMessageRequest,
+  ReplyPendingApprovalRequest,
   ForkSessionRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
@@ -281,6 +282,7 @@ import {
   prefetchScopedGitBeforeGlobalWorkspaceChange,
   type PaneWorkspaceHostContext,
 } from './host-pane-workspace.js';
+import { withOptionalPaneSessionActivation } from './host-pane-session-scope.js';
 import {
   switchPaneModelCommand,
   type PaneModelHostContext,
@@ -2067,8 +2069,18 @@ class DesktopHostService {
     return tickSessionCommand(this.sessionTurnContext(), bundle, options);
   }
 
-  async replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot> {
-    return replyPendingApprovalCommand(this.sessionTurnContext(), decision);
+  async replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot> {
+    return this.runSerialized(async () => {
+      await this.ensureInitialized(undefined, { fastPath: true });
+      const sessionPath = request.sessionPath?.trim();
+      if (sessionPath) {
+        await withOptionalPaneSessionActivation(this, sessionPath, async () => {
+          await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+        });
+        return this.buildSnapshot();
+      }
+      return replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+    });
   }
 
   async replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot> {

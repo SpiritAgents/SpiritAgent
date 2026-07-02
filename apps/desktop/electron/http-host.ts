@@ -710,7 +710,12 @@ async function handleApiRequest({
         response,
         200,
         await runHostCommand('replyPendingApproval', {
-          decision: normalizeApprovalDecisionPayload(jsonBody.decision),
+          request: {
+            decision: normalizeApprovalDecisionPayload(jsonBody.decision),
+            ...(typeof jsonBody.sessionPath === 'string'
+              ? { sessionPath: jsonBody.sessionPath }
+              : {}),
+          },
         }),
       );
       return;

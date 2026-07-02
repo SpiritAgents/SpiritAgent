@@ -201,8 +201,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     subscribeSessionListUpdates(callback) {
       return bridge.sessionListSubscribe(callback);
     },
-    replyPendingApproval(decision) {
-      return bridge.replyPendingApproval(decision);
+    replyPendingApproval(request) {
+      return bridge.replyPendingApproval(request);
     },
     replyPendingQuestions(result) {
       return bridge.replyPendingQuestions(result);

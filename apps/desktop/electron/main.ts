@@ -294,7 +294,7 @@ async function handleApprovalNotificationAction(decision: 'allow' | 'deny'): Pro
 
   try {
     const next = await invokeMainDesktopHostCommand('replyPendingApproval', {
-      decision: { kind: decision },
+      request: { decision: { kind: decision } },
     });
     if (isDesktopSnapshot(next)) {
       for (const window of BrowserWindow.getAllWindows()) {

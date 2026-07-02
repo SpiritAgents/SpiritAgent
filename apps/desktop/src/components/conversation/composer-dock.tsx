@@ -190,6 +190,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
       ? runtime.paneWorkspaceBusySessionPath === normalizePaneSessionPathKey(paneSessionPath)
       : runtime.busyAction === "bootstrap" || runtime.busyAction === "session";
   const gitControlsDisabled = workspaceControlsDisabled || commitBusy;
+  const approvalSessionPath =
+    useIsolatedPaneWorkspace && paneSessionPath ? paneSessionPath : undefined;
 
   return (
     <div
@@ -321,17 +323,17 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   void runtime.submitApproval({
                     kind: "allow",
                     ...(decision.persistTrust ? { persistTrust: true } : {}),
-                  });
+                  }, approvalSessionPath);
                   return;
                 }
                 if (decision.kind === "deny") {
-                  void runtime.submitApproval({ kind: "deny" });
+                  void runtime.submitApproval({ kind: "deny" }, approvalSessionPath);
                   return;
                 }
                 void runtime.submitApproval({
                   kind: "guidance",
                   userMessage: decision.userMessage ?? "",
-                });
+                }, approvalSessionPath);
               }}
             />
           ) : null}
