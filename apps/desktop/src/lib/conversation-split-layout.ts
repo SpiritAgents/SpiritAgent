@@ -17,7 +17,6 @@ export type SplitLayoutSplitNode = {
 
 export type SplitLayoutNode = SplitLayoutLeafNode | SplitLayoutSplitNode;
 
-export const MAX_SPLIT_PANES = 4;
 export const DEFAULT_SPLIT_RATIO = 0.5;
 const MIN_SPLIT_RATIO = 0.15;
 const MAX_SPLIT_RATIO = 0.85;
@@ -156,9 +155,6 @@ export function splitPaneAt(
   direction: SplitDirection,
   newPane: SplitLayoutLeafNode,
 ): SplitLayoutNode {
-  if (countPanes(node) >= MAX_SPLIT_PANES) {
-    return node;
-  }
   if (node.kind === "leaf") {
     if (node.paneId !== paneId) {
       return node;

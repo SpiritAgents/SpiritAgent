@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  arePaneHostsAdjacent,
   effectiveRepositionZone,
   hiddenPaneDropZonesForTwoPaneDrag,
   paneDropIndicatorRect,
@@ -39,7 +40,7 @@ test("hiddenPaneDropZonesForTwoPaneDrag hides right edge when source is on the r
 
 test("visiblePaneDropZonesForDrag exposes swap row for horizontal adjacency", () => {
   const target = rect(0, 0, 400, 400);
-  const source = rect(420, 0, 400, 400);
+  const source = rect(400, 0, 400, 400);
   const visible = visiblePaneDropZonesForDrag({
     paneCount: 2,
     sourcePaneHost: { getBoundingClientRect: () => source },
@@ -49,7 +50,7 @@ test("visiblePaneDropZonesForDrag exposes swap row for horizontal adjacency", ()
 });
 
 test("visiblePaneDropZonesForDrag exposes swap column for vertical adjacency", () => {
-  const target = rect(0, 420, 400, 400);
+  const target = rect(0, 400, 400, 400);
   const source = rect(0, 0, 400, 400);
   const visible = visiblePaneDropZonesForDrag({
     paneCount: 2,
@@ -101,6 +102,30 @@ test("repositionPane converts vertical split to horizontal when dropping top ont
     return;
   }
   assert.equal(moved.direction, "horizontal");
+});
+
+test("visiblePaneDropZonesForDrag uses full quadrants when panes are not adjacent", () => {
+  const target = rect(0, 0, 400, 400);
+  const source = rect(500, 500, 400, 400);
+  const visible = visiblePaneDropZonesForDrag({
+    paneCount: 5,
+    sourcePaneHost: { getBoundingClientRect: () => source },
+    targetPaneHost: { getBoundingClientRect: () => target },
+  });
+  assert.deepEqual(visible, ["above", "after", "before", "below"]);
+});
+
+test("arePaneHostsAdjacent detects horizontally touching panes", () => {
+  const left = rect(0, 0, 400, 400);
+  const right = rect(400, 0, 400, 400);
+  assert.equal(arePaneHostsAdjacent(right, left), true);
+  assert.equal(arePaneHostsAdjacent(left, right), true);
+});
+
+test("arePaneHostsAdjacent rejects diagonally separated panes", () => {
+  const target = rect(0, 0, 400, 400);
+  const source = rect(500, 500, 400, 400);
+  assert.equal(arePaneHostsAdjacent(source, target), false);
 });
 
 test("swapAdjacentPanes swaps horizontal siblings", () => {

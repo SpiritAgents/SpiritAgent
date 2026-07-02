@@ -66,21 +66,43 @@ function twoPaneAdjacencyOrientation(
   return dx >= dy ? "horizontal" : "vertical";
 }
 
+const ADJACENCY_TOLERANCE_PX = 4;
+
+/** True when two pane hosts share a screen edge (siblings in the layout chrome). */
+export function arePaneHostsAdjacent(sourceRect: DOMRect, targetRect: DOMRect): boolean {
+  const overlapX = Math.min(sourceRect.right, targetRect.right) - Math.max(sourceRect.left, targetRect.left);
+  const overlapY = Math.min(sourceRect.bottom, targetRect.bottom) - Math.max(sourceRect.top, targetRect.top);
+  const verticalEdgeTouch =
+    Math.abs(sourceRect.right - targetRect.left) <= ADJACENCY_TOLERANCE_PX
+    || Math.abs(sourceRect.left - targetRect.right) <= ADJACENCY_TOLERANCE_PX;
+  const horizontalEdgeTouch =
+    Math.abs(sourceRect.bottom - targetRect.top) <= ADJACENCY_TOLERANCE_PX
+    || Math.abs(sourceRect.top - targetRect.bottom) <= ADJACENCY_TOLERANCE_PX;
+
+  if (verticalEdgeTouch && overlapY > ADJACENCY_TOLERANCE_PX) {
+    return true;
+  }
+  if (horizontalEdgeTouch && overlapX > ADJACENCY_TOLERANCE_PX) {
+    return true;
+  }
+  return false;
+}
+
 export function visiblePaneDropZonesForDrag(input: {
   paneCount: number;
   sourcePaneHost: HTMLElement | null;
   targetPaneHost: HTMLElement | null;
 }): readonly PaneDropZone[] {
-  if (
-    input.paneCount !== 2
-    || !input.sourcePaneHost
-    || !input.targetPaneHost
-  ) {
+  if (!input.sourcePaneHost || !input.targetPaneHost) {
     return PANE_DROP_ZONE_ORDER;
   }
 
   const sourceRect = input.sourcePaneHost.getBoundingClientRect();
   const targetRect = input.targetPaneHost.getBoundingClientRect();
+  if (!arePaneHostsAdjacent(sourceRect, targetRect)) {
+    return PANE_DROP_ZONE_ORDER;
+  }
+
   if (twoPaneAdjacencyOrientation(sourceRect, targetRect) === "horizontal") {
     return ["above", "swap", "below"];
   }

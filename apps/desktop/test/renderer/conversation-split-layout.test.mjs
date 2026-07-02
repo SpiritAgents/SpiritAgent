@@ -6,6 +6,7 @@ import {
   countPanes,
   createLeafNode,
   createSinglePaneLayout,
+  findLeafByPaneId,
   findWorkspaceToolsAnchorPaneId,
   repositionPane,
   splitPaneAt,
@@ -72,4 +73,44 @@ test("repositionPane moves a leaf below the target", () => {
   }
   assert.equal(moved.direction, "vertical");
   assert.equal(findWorkspaceToolsAnchorPaneId(moved), "a");
+});
+
+test("splitPaneAt supports more than four panes", () => {
+  let layout = createSinglePaneLayout("1", "/sessions/1.json");
+  for (let i = 2; i <= 6; i += 1) {
+    layout = splitPaneAt(
+      layout,
+      "1",
+      "horizontal",
+      createLeafNode(String(i), `/sessions/${i}.json`),
+    );
+  }
+  assert.equal(countPanes(layout), 6);
+});
+
+test("repositionPane nests a pane into a target quadrant inside a larger layout", () => {
+  let layout = splitPaneAt(
+    createSinglePaneLayout("a", "/sessions/a.json"),
+    "a",
+    "horizontal",
+    createLeafNode("b", "/sessions/b.json"),
+  );
+  layout = splitPaneAt(
+    layout,
+    "b",
+    "vertical",
+    createLeafNode("c", "/sessions/c.json"),
+  );
+  layout = splitPaneAt(
+    layout,
+    "b",
+    "horizontal",
+    createLeafNode("d", "/sessions/d.json"),
+  );
+  assert.equal(countPanes(layout), 4);
+  const moved = repositionPane(layout, "d", "a", "after");
+  assert.ok(moved);
+  assert.equal(countPanes(moved), 4);
+  assert.equal(findLeafByPaneId(moved, "d")?.paneId, "d");
+  assert.equal(findLeafByPaneId(moved, "a")?.paneId, "a");
 });
