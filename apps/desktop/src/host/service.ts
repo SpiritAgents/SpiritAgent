@@ -3318,6 +3318,7 @@ class DesktopHostService {
         paneWorkspace?.workspaceBinding ?? '',
         paneWorkspace?.git?.revision ?? 0,
         paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? '',
+        bundle.approvalLevel,
       ].join('\0');
       const cached = this.paneSessionSliceCache.get(resolved);
       if (cached?.signature === sliceSignature) {
