@@ -19,6 +19,39 @@ export interface SessionSplitHostContext extends SessionActivationContext {
   resolveTodoSessionKeyForBundle(bundle: SessionBundle): string;
 }
 
+/** Closing an empty split pane may remove the foreground bundle; repoint before buildSnapshot. */
+async function ensureActiveFromVisiblePanePaths(
+  ctx: SessionSplitHostContext,
+  visiblePaths: readonly string[],
+): Promise<void> {
+  const registry = ctx.sessionRegistry();
+  if (registry.hasActive()) {
+    return;
+  }
+
+  for (const sessionPath of visiblePaths) {
+    let bundle = registry.findBySessionPath(sessionPath);
+    if (!bundle && !isSplitProvisionalSessionPath(sessionPath)) {
+      try {
+        const registered = await ensureStoredSessionBundleRegistered(ctx, sessionPath);
+        if (registered) {
+          bundle = registered;
+        }
+      } catch {
+        // Persisted layout may reference a deleted session file.
+      }
+    }
+    if (bundle) {
+      registry.activateExisting(bundle);
+      ctx.syncActiveRuntimePointer();
+      return;
+    }
+  }
+
+  registry.ensureDraft(ctx.requireState().workspaceRoot);
+  ctx.syncActiveRuntimePointer();
+}
+
 export async function beginSplitPaneSessionCommand(
   ctx: SessionSplitHostContext,
   request: BeginSplitPaneSessionRequest,
@@ -97,6 +130,7 @@ export async function setVisiblePaneSessionsCommand(
     }
 
     ctx.setVisiblePaneSessionPaths(normalized);
+    await ensureActiveFromVisiblePanePaths(ctx, normalized);
     const snapshot = ctx.buildSnapshot();
     return snapshot;
   });
@@ -111,9 +145,11 @@ export async function closeSplitPaneSessionCommand(
     const sessionPath = path.resolve(request.sessionPath);
     const bundle = ctx.sessionRegistry().findBySessionPath(sessionPath);
     if (!bundle) {
-      ctx.setVisiblePaneSessionPaths(
-        ctx.visiblePaneSessionPaths().filter((entry) => path.resolve(entry) !== sessionPath),
+      const nextVisible = ctx.visiblePaneSessionPaths().filter(
+        (entry) => path.resolve(entry) !== sessionPath,
       );
+      ctx.setVisiblePaneSessionPaths(nextVisible);
+      await ensureActiveFromVisiblePanePaths(ctx, nextVisible);
       return ctx.buildSnapshot();
     }
 
@@ -127,9 +163,11 @@ export async function closeSplitPaneSessionCommand(
       ctx.sessionRegistry().removeBySessionPath(sessionPath);
     }
 
-    ctx.setVisiblePaneSessionPaths(
-      ctx.visiblePaneSessionPaths().filter((entry) => path.resolve(entry) !== sessionPath),
+    const nextVisible = ctx.visiblePaneSessionPaths().filter(
+      (entry) => path.resolve(entry) !== sessionPath,
     );
+    ctx.setVisiblePaneSessionPaths(nextVisible);
+    await ensureActiveFromVisiblePanePaths(ctx, nextVisible);
     return ctx.buildSnapshot();
   });
 }
