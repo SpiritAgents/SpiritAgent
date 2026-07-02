@@ -557,8 +557,10 @@ export default function App() {
                 onPaneDragStart={pane.onPaneDragStart}
                 onPaneDragLeave={pane.onPaneDragLeave}
                 onPaneDrop={pane.onPaneDrop}
+                onSidebarSessionDrop={pane.onSidebarSessionDrop}
                 paneDropOverlayActive={pane.paneDropOverlayActive}
                 paneDragSourcePaneId={pane.paneDragSourcePaneId}
+                sidebarSessionDragActive={pane.sidebarSessionDragActive}
                 useMicaBackdrop={useMicaBackdrop}
                 subagentViewActive={subagentViewActive}
                 subagentViewer={subagentViewer}
