@@ -89,8 +89,6 @@ import {
 
 import type { DesktopSnapshot } from "@/types";
 
-
-
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
 
@@ -130,6 +128,12 @@ type ConversationSplitContextValue = {
   completePaneDrop: (targetPaneId: string, zone: PaneRepositionZone) => void;
 
   paneDragActive: boolean;
+
+  paneDragSourcePaneId: string | null;
+
+  paneDropTarget: { paneId: string; zone: PaneRepositionZone } | null;
+
+  setPaneDropTarget: (target: { paneId: string; zone: PaneRepositionZone } | null) => void;
 
   layoutNavigationPending: boolean;
 
@@ -452,6 +456,52 @@ export function ConversationSplitProvider({
   const [focusedPaneId, setFocusedPaneId] = useState<string | null>(null);
 
   const [paneDragActive, setPaneDragActive] = useState(false);
+  const [paneDragSourcePaneId, setPaneDragSourcePaneId] = useState<string | null>(null);
+  const [paneDropTarget, setPaneDropTargetState] = useState<{
+    paneId: string;
+    zone: PaneRepositionZone;
+  } | null>(null);
+
+  const setPaneDropTarget = useCallback(
+    (target: { paneId: string; zone: PaneRepositionZone } | null) => {
+      setPaneDropTargetState((current) => {
+        if (
+          current?.paneId === target?.paneId
+          && current?.zone === target?.zone
+        ) {
+          return current;
+        }
+        return target;
+      });
+    },
+    [],
+  );
+
+  // 指针不在有效 drop zone 上时同步清除 target（dragLeave 在快速滑过源面板时可能误判）
+  useEffect(() => {
+    if (!paneDragActive) {
+      return;
+    }
+    const sourcePaneId = paneDragSourcePaneId;
+    const handleDocumentDragOver = (event: DragEvent) => {
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      if (!(hit instanceof Element)) {
+        setPaneDropTarget(null);
+        return;
+      }
+      const zoneEl = hit.closest("[data-pane-drop-zone]");
+      if (zoneEl instanceof HTMLElement) {
+        const hostEl = zoneEl.closest("[data-pane-drop-host]");
+        const hostPaneId = hostEl?.getAttribute("data-pane-drop-host");
+        if (hostPaneId && hostPaneId !== sourcePaneId) {
+          return;
+        }
+      }
+      setPaneDropTarget(null);
+    };
+    document.addEventListener("dragover", handleDocumentDragOver);
+    return () => document.removeEventListener("dragover", handleDocumentDragOver);
+  }, [paneDragActive, paneDragSourcePaneId, setPaneDropTarget]);
 
   const [layoutNavigationPending, setLayoutNavigationPending] = useState(false);
 
@@ -1129,6 +1179,8 @@ export function ConversationSplitProvider({
 
     dragSourcePaneIdRef.current = paneId;
 
+    setPaneDragSourcePaneId(paneId);
+
     setPaneDragActive(true);
 
   }, []);
@@ -1138,6 +1190,10 @@ export function ConversationSplitProvider({
   const clearPaneDrag = useCallback(() => {
 
     dragSourcePaneIdRef.current = null;
+
+    setPaneDragSourcePaneId(null);
+
+    setPaneDropTarget(null);
 
     setPaneDragActive(false);
 
@@ -1152,6 +1208,10 @@ export function ConversationSplitProvider({
       const sourcePaneId = dragSourcePaneIdRef.current;
 
       dragSourcePaneIdRef.current = null;
+
+      setPaneDragSourcePaneId(null);
+
+      setPaneDropTarget(null);
 
       setPaneDragActive(false);
 
@@ -1201,6 +1261,12 @@ export function ConversationSplitProvider({
 
       paneDragActive,
 
+      paneDragSourcePaneId,
+
+      paneDropTarget,
+
+      setPaneDropTarget,
+
       layoutNavigationPending,
 
     }),
@@ -1223,7 +1289,13 @@ export function ConversationSplitProvider({
 
       paneDragActive,
 
+      paneDragSourcePaneId,
+
+      paneDropTarget,
+
       repositionPaneById,
+
+      setPaneDropTarget,
 
       splitPane,
 

@@ -47,16 +47,24 @@ export function pickerRectsEqual(
 const PICKER_OVERLAY_RING =
   "inset 0 0 0 2px #60a5fa";
 
+/** Shared with in-app split pane drop preview (matches guest-page picker overlay). */
+export const PICKER_OVERLAY_RING_SHADOW = PICKER_OVERLAY_RING;
+export const PICKER_OVERLAY_FILL = "rgba(147,197,253,0.15)";
+
 /** Direct DOM update for marquee overlay (bypasses React render during drag). */
-export function applyPickerOverlayBox(el: HTMLElement, rect: MarqueeRect): void {
+export function applyPickerOverlayGeometry(el: HTMLElement, rect: MarqueeRect): void {
   el.style.left = `${rect.x}px`;
   el.style.top = `${rect.y}px`;
   el.style.width = `${rect.width}px`;
   el.style.height = `${rect.height}px`;
-  el.style.opacity = "1";
   el.style.boxShadow = PICKER_OVERLAY_RING;
-  el.style.background = "rgba(147,197,253,0.15)";
+  el.style.background = PICKER_OVERLAY_FILL;
   el.style.borderRadius = "2px";
+}
+
+export function applyPickerOverlayBox(el: HTMLElement, rect: MarqueeRect): void {
+  applyPickerOverlayGeometry(el, rect);
+  el.style.opacity = "1";
 }
 
 export function hidePickerOverlayBox(el: HTMLElement): void {
