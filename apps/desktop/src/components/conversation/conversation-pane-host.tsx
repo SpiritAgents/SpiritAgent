@@ -5,7 +5,7 @@ import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
-import type { PaneRepositionZone } from "@/lib/conversation-split-layout";
+import type { PaneDropZone } from "@/lib/conversation-split-layout";
 import type { DesktopSnapshot } from "@/types";
 import type { TFunction } from "i18next";
 
@@ -48,6 +48,7 @@ export function ConversationPaneHost({
   isAnchorPane,
   onFocusPane,
   onSplit,
+  onSplitVertical,
   onClosePane,
   showClosePane,
   useMicaBackdrop,
@@ -64,9 +65,10 @@ export function ConversationPaneHost({
     layoutNavigationPending: split.layoutNavigationPending,
   });
 
-  const handlePaneDrop = (targetPaneId: string, zone: PaneRepositionZone) => {
+  const handlePaneDrop = (targetPaneId: string, zone: PaneDropZone) => {
     split.completePaneDrop(targetPaneId, zone);
   };
+  const paneReorderEnabled = split.paneCount > 1;
 
   return (
     <ConversationView
@@ -81,12 +83,13 @@ export function ConversationPaneHost({
       showSplitMenu
       showClosePane={showClosePane}
       onSplit={onSplit}
+      onSplitVertical={onSplitVertical}
       onClosePane={onClosePane}
       paneId={paneId}
       onPaneFocus={onFocusPane}
-      onPaneDragStart={split.startPaneDrag}
-      onPaneDragLeave={split.clearPaneDrag}
-      onPaneDrop={handlePaneDrop}
+      onPaneDragStart={paneReorderEnabled ? split.startPaneDrag : undefined}
+      onPaneDragLeave={paneReorderEnabled ? split.clearPaneDrag : undefined}
+      onPaneDrop={paneReorderEnabled ? handlePaneDrop : undefined}
       paneDropOverlayActive={split.paneDragActive}
       paneDragSourcePaneId={split.paneDragSourcePaneId}
       subagentViewActive={pane.subagentViewActive}

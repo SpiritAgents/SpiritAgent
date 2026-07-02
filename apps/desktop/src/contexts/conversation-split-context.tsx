@@ -48,11 +48,15 @@ import {
 
   repositionPane,
 
+  swapAdjacentPanes,
+
   splitPaneAt,
 
   updateLeafSessionPath,
 
   updateSplitRatio,
+
+  type PaneDropZone,
 
   type PaneRepositionZone,
 
@@ -125,15 +129,15 @@ type ConversationSplitContextValue = {
 
   clearPaneDrag: () => void;
 
-  completePaneDrop: (targetPaneId: string, zone: PaneRepositionZone) => void;
+  completePaneDrop: (targetPaneId: string, zone: PaneDropZone) => void;
 
   paneDragActive: boolean;
 
   paneDragSourcePaneId: string | null;
 
-  paneDropTarget: { paneId: string; zone: PaneRepositionZone } | null;
+  paneDropTarget: { paneId: string; zone: PaneDropZone } | null;
 
-  setPaneDropTarget: (target: { paneId: string; zone: PaneRepositionZone } | null) => void;
+  setPaneDropTarget: (target: { paneId: string; zone: PaneDropZone } | null) => void;
 
   layoutNavigationPending: boolean;
 
@@ -459,11 +463,11 @@ export function ConversationSplitProvider({
   const [paneDragSourcePaneId, setPaneDragSourcePaneId] = useState<string | null>(null);
   const [paneDropTarget, setPaneDropTargetState] = useState<{
     paneId: string;
-    zone: PaneRepositionZone;
+    zone: PaneDropZone;
   } | null>(null);
 
   const setPaneDropTarget = useCallback(
-    (target: { paneId: string; zone: PaneRepositionZone } | null) => {
+    (target: { paneId: string; zone: PaneDropZone } | null) => {
       setPaneDropTargetState((current) => {
         if (
           current?.paneId === target?.paneId
@@ -1177,6 +1181,14 @@ export function ConversationSplitProvider({
 
   const startPaneDrag = useCallback((paneId: string) => {
 
+    const current = layoutRef.current;
+
+    if (!current || countPanes(current) <= 1) {
+
+      return;
+
+    }
+
     dragSourcePaneIdRef.current = paneId;
 
     setPaneDragSourcePaneId(paneId);
@@ -1203,7 +1215,7 @@ export function ConversationSplitProvider({
 
   const completePaneDrop = useCallback(
 
-    (targetPaneId: string, zone: PaneRepositionZone) => {
+    (targetPaneId: string, zone: PaneDropZone) => {
 
       const sourcePaneId = dragSourcePaneIdRef.current;
 
@@ -1216,6 +1228,32 @@ export function ConversationSplitProvider({
       setPaneDragActive(false);
 
       if (!sourcePaneId) {
+
+        return;
+
+      }
+
+      if (zone === "swap") {
+
+        setLayout((current) => {
+
+          if (!current) {
+
+            return current;
+
+          }
+
+          const next = swapAdjacentPanes(current, sourcePaneId, targetPaneId);
+
+          if (countPanes(next) > 1) {
+
+            persistSessionSplitBinding(next);
+
+          }
+
+          return next;
+
+        });
 
         return;
 

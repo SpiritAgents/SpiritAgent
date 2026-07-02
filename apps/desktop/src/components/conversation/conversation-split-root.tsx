@@ -23,8 +23,9 @@ type ConversationSplitRootProps = {
     isFocused: boolean;
     isAnchorPane: boolean;
     onFocusPane: () => void;
-    onSplit: () => void;
-    onClosePane: () => void;
+  onSplit: () => void;
+  onSplitVertical: () => void;
+  onClosePane: () => void;
     showClosePane: boolean;
   }) => ReactNode;
 };
@@ -148,6 +149,9 @@ function SplitLayoutRenderer({
           onFocusPane: () => split.focusPane(node.paneId, node.sessionPath),
           onSplit: () => {
             void split.splitPane(node.paneId, "horizontal");
+          },
+          onSplitVertical: () => {
+            void split.splitPane(node.paneId, "vertical");
           },
           onClosePane: () => {
             void split.closePaneById(node.paneId, node.sessionPath);

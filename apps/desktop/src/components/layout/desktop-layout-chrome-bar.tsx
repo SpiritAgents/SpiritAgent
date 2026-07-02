@@ -27,6 +27,13 @@ import { isDarwinElectronShell } from "@/lib/desktop-shell";
 import { useDarwinWindowFullscreen } from "@/hooks/useDarwinWindowFullscreen";
 import { cn } from "@/lib/utils";
 
+function isPaneDragBlockedTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element
+    && Boolean(target.closest('button, a, input, textarea, select, [role="menuitem"], [data-no-pane-drag]'))
+  );
+}
+
 export function DesktopLayoutChromeBar({
   useMicaBackdrop,
   showSessionSidebarToggle = true,
@@ -39,6 +46,7 @@ export function DesktopLayoutChromeBar({
   onNewSession,
   newSessionBusy = false,
   onSplit,
+  onSplitVertical,
   onClosePane,
   paneId,
   onPaneDragStart,
@@ -57,6 +65,7 @@ export function DesktopLayoutChromeBar({
   onNewSession?: () => void;
   newSessionBusy?: boolean;
   onSplit?: () => void;
+  onSplitVertical?: () => void;
   onClosePane?: () => void;
   paneId?: string;
   onPaneDragStart?: (paneId: string) => void;
@@ -72,6 +81,7 @@ export function DesktopLayoutChromeBar({
   const pinSidebarToggleOnDarwin = darwinElectron && !darwinFullScreen;
   const showTrailingActions = showWorkspaceToggle || showSplitMenu;
   const trimmedSessionTitle = sessionTitle?.trim() ?? "";
+  const paneDragEnabled = Boolean(paneId && onPaneDragStart);
   return (
     <div
       role="toolbar"
@@ -79,10 +89,23 @@ export function DesktopLayoutChromeBar({
       data-spirit-surface="layout-chrome"
       data-session-sidebar-open={sessionSidebarOpen ? "true" : "false"}
       data-pane-id={paneId}
+      draggable={paneDragEnabled}
+      onDragStart={(event) => {
+        if (!paneDragEnabled || !paneId || !onPaneDragStart) {
+          return;
+        }
+        if (isPaneDragBlockedTarget(event.target)) {
+          event.preventDefault();
+          return;
+        }
+        onPaneDragStart(paneId);
+      }}
+      onDragEnd={() => onPaneDragLeave?.()}
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-1.5",
         showTrailingActions ? "justify-between" : "justify-start",
         desktopMicaTintClass(useMicaBackdrop),
+        paneDragEnabled && "cursor-grab active:cursor-grabbing",
       )}
       onDragOver={(event) => {
         if (!paneId || !onPaneDrop) {
@@ -91,16 +114,7 @@ export function DesktopLayoutChromeBar({
         event.preventDefault();
       }}
     >
-      <div
-        className="flex min-w-0 items-center"
-        draggable={Boolean(paneId && onPaneDragStart)}
-        onDragStart={() => {
-          if (paneId && onPaneDragStart) {
-            onPaneDragStart(paneId);
-          }
-        }}
-        onDragEnd={() => onPaneDragLeave?.()}
-      >
+      <div className="flex min-w-0 flex-1 items-center">
         {showSessionSidebarToggle ? (
           pinSidebarToggleOnDarwin ? (
             <div data-darwin-pinned-sidebar-toggle>
@@ -162,7 +176,7 @@ export function DesktopLayoutChromeBar({
         ) : null}
       </div>
       {showTrailingActions ? (
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1" data-no-pane-drag>
           {showSplitMenu ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -181,7 +195,13 @@ export function DesktopLayoutChromeBar({
                   className="cursor-pointer rounded-none px-3 py-2 text-sm"
                   onSelect={() => onSplit?.()}
                 >
-                  {t("app.split")}
+                  {t("app.splitHorizontal")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer rounded-none px-3 py-2 text-sm"
+                  onSelect={() => onSplitVertical?.()}
+                >
+                  {t("app.splitVertical")}
                 </DropdownMenuItem>
                 {showClosePane ? (
                   <DropdownMenuItem

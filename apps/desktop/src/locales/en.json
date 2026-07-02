@@ -653,6 +653,8 @@
     "collapseTools": "Collapse Tools",
     "expandTools": "Expand Tools",
     "split": "Split",
+    "splitHorizontal": "Split horizontally",
+    "splitVertical": "Split vertically",
     "closePane": "Close",
     "conversationPaneMenu": "Conversation pane menu",
     "compactionDemo": "Context Compaction UI Demo",

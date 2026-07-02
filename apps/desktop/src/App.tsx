@@ -529,6 +529,7 @@ export default function App() {
                 isAnchorPane={pane.isAnchorPane}
                 onFocusPane={pane.onFocusPane}
                 onSplit={pane.onSplit}
+                onSplitVertical={pane.onSplitVertical}
                 onClosePane={pane.onClosePane}
                 showClosePane={pane.showClosePane}
                 useMicaBackdrop={useMicaBackdrop}

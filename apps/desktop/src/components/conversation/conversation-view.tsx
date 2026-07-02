@@ -47,7 +47,8 @@ import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
 import type { TurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import type { PendingAssistantAux } from "@/types";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
-import { PANE_DROP_ZONE_GRID_CLASS, PANE_DROP_ZONE_ORDER, effectiveRepositionZone, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import { PANE_DROP_ZONE_ORDER, effectiveRepositionZone, paneDropZoneGridCellClass, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import type { PaneDropZone } from "@/lib/conversation-split-layout";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
@@ -218,13 +219,14 @@ export type ConversationViewProps = {
   showSplitMenu?: boolean;
   showClosePane?: boolean;
   onSplit?: () => void;
+  onSplitVertical?: () => void;
   onClosePane?: () => void;
   paneId?: string;
   onPaneFocus?: () => void;
   onPaneDragStart?: (paneId: string) => void;
   onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   onPaneDragLeave?: () => void;
-  onPaneDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onPaneDrop?: (paneId: string, zone: PaneDropZone) => void;
   paneDropOverlayActive?: boolean;
   paneDragSourcePaneId?: string | null;
 };
@@ -253,6 +255,7 @@ export function ConversationView({
   showSplitMenu = false,
   showClosePane = false,
   onSplit,
+  onSplitVertical,
   onClosePane,
   paneId,
   onPaneFocus,
@@ -306,7 +309,7 @@ export function ConversationView({
   }, [paneDragSourcePaneId, paneId, split.paneCount]);
 
   const updateDropTarget = useCallback(
-    (zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => {
+    (zone: PaneDropZone) => {
       if (!paneId) {
         return;
       }
@@ -352,7 +355,9 @@ export function ConversationView({
   return (
     <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
       <div
+        ref={dropHostRef}
         data-spirit-surface="conversation-shell"
+        {...(paneId ? { "data-pane-drop-host": paneId } : {})}
         className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
         onPointerDown={(event) => {
           const target = event.target;
@@ -361,6 +366,7 @@ export function ConversationView({
           }
           onPaneFocus?.();
         }}
+        onDragLeave={clearDropTargetIfLeavingHost}
       >
         <DesktopLayoutChromeBar
           useMicaBackdrop={useMicaBackdrop}
@@ -369,6 +375,7 @@ export function ConversationView({
           showSplitMenu={showSplitMenu}
           showClosePane={showClosePane}
           onSplit={onSplit}
+          onSplitVertical={onSplitVertical}
           onClosePane={onClosePane}
           paneId={paneId}
           onPaneDragStart={onPaneDragStart}
@@ -387,52 +394,51 @@ export function ConversationView({
           onNewSession={isEmptySession ? undefined : onNewSession}
           newSessionBusy={newSessionBusy}
         />
+        {showDropTargets ? (() => {
+          const visibleDropZones = resolveVisibleDropZones();
+          return (
+          <div
+            className={cn(
+              "absolute inset-0 z-30 grid cursor-crosshair",
+              paneDropZoneGridLayoutClass(visibleDropZones),
+            )}
+          >
+            {visibleDropZones.map((zone) => (
+              <div
+                key={zone}
+                data-pane-drop-zone={zone}
+                className={cn(
+                  "pointer-events-auto",
+                  paneDropZoneGridCellClass(zone, visibleDropZones),
+                )}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  updateDropTarget(zone);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  updateDropTarget(zone);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (!visibleDropZones.includes(zone)) {
+                    return;
+                  }
+                  if (zone === "swap") {
+                    onPaneDrop?.(paneId!, zone);
+                    return;
+                  }
+                  onPaneDrop?.(paneId!, effectiveRepositionZone(zone, visibleDropZones));
+                }}
+              />
+            ))}
+          </div>
+          );
+        })() : null}
         <div
-          ref={dropHostRef}
-          {...(paneId ? { "data-pane-drop-host": paneId } : {})}
           data-spirit-surface="conversation-drop-host"
           className="relative flex min-h-0 min-w-0 flex-1 flex-col"
-          onDragLeave={clearDropTargetIfLeavingHost}
         >
-          {showDropTargets ? (() => {
-            const visibleDropZones = resolveVisibleDropZones();
-            const expandedPair = visibleDropZones.length === 2;
-            return (
-            <div
-              className={cn(
-                "absolute inset-0 z-30 grid cursor-crosshair",
-                paneDropZoneGridLayoutClass(visibleDropZones),
-              )}
-            >
-              {visibleDropZones.map((zone) => (
-                <div
-                  key={zone}
-                  data-pane-drop-zone={zone}
-                  className={cn(
-                    "pointer-events-auto",
-                    expandedPair ? undefined : PANE_DROP_ZONE_GRID_CLASS[zone],
-                  )}
-                  onDragEnter={(event) => {
-                    event.preventDefault();
-                    updateDropTarget(zone);
-                  }}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    updateDropTarget(zone);
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    if (!visibleDropZones.includes(zone)) {
-                      return;
-                    }
-                    const repositionZone = effectiveRepositionZone(zone, visibleDropZones);
-                    onPaneDrop?.(paneId!, repositionZone);
-                  }}
-                />
-              ))}
-            </div>
-            );
-          })() : null}
         <div
           data-spirit-surface="conversation-stage"
           className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}

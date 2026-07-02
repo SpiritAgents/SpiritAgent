@@ -650,6 +650,8 @@
     "collapseTools": "收起工具区",
     "expandTools": "展开工具区",
     "split": "拆分",
+    "splitHorizontal": "左右拆分",
+    "splitVertical": "上下拆分",
     "closePane": "关闭",
     "conversationPaneMenu": "会话面板菜单",
     "compactionDemo": "上下文压缩 UI 演示",
