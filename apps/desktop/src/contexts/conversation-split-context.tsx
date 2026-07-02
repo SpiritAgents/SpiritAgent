@@ -305,15 +305,16 @@ function resolveLayoutForActiveSession(
 
   if (current && countPanes(current) > 1) {
 
-    if (isForegroundProvisionalSessionPath(activeSessionPath)) {
-
-      return createSinglePaneLayout(rootPaneId, activeSessionPath);
-
-    }
-
+    // 须先判断 path 是否已在当前 layout 中；否则点击空会话 anchor pane 会因 foreground provisional 被误折叠为单 pane
     if (layoutIncludesSessionPath(current, activeSessionPath)) {
 
       return current;
+
+    }
+
+    if (isForegroundProvisionalSessionPath(activeSessionPath)) {
+
+      return createSinglePaneLayout(rootPaneId, activeSessionPath);
 
     }
 
