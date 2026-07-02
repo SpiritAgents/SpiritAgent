@@ -22,6 +22,7 @@ type ConversationSplitRootProps = {
     sessionPath: string;
     isFocused: boolean;
     isAnchorPane: boolean;
+    isSessionSidebarAnchorPane: boolean;
     useIsolatedPane: boolean;
     splitPaneCount: number;
     onFocusPane: () => void;
@@ -147,6 +148,7 @@ function SplitLayoutRenderer({
   if (node.kind === "leaf") {
     const isFocused = split.focusedPaneId === node.paneId;
     const isAnchorPane = split.anchorPaneId === node.paneId;
+    const isSessionSidebarAnchorPane = split.sessionSidebarAnchorPaneId === node.paneId;
     const paneReorderEnabled = split.paneCount > 1;
     return (
       <>
@@ -155,6 +157,7 @@ function SplitLayoutRenderer({
           sessionPath: node.sessionPath,
           isFocused,
           isAnchorPane,
+          isSessionSidebarAnchorPane,
           useIsolatedPane: split.paneCount > 1,
           splitPaneCount: split.paneCount,
           onFocusPane: () => split.focusPane(node.paneId, node.sessionPath),

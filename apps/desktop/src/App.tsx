@@ -527,6 +527,7 @@ export default function App() {
                 paneId={pane.paneId}
                 isFocused={pane.isFocused}
                 isAnchorPane={pane.isAnchorPane}
+                isSessionSidebarAnchorPane={pane.isSessionSidebarAnchorPane}
                 useIsolatedPane={pane.useIsolatedPane}
                 splitPaneCount={pane.splitPaneCount}
                 onFocusPane={pane.onFocusPane}

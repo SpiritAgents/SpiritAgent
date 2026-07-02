@@ -23,6 +23,7 @@ export type ConversationPaneHostProps = {
   paneId: string;
   isFocused: boolean;
   isAnchorPane: boolean;
+  isSessionSidebarAnchorPane: boolean;
   useIsolatedPane: boolean;
   splitPaneCount: number;
   onFocusPane: () => void;
@@ -57,6 +58,7 @@ function ConversationPaneHostInner({
   paneId,
   isFocused,
   isAnchorPane,
+  isSessionSidebarAnchorPane,
   useIsolatedPane,
   splitPaneCount,
   onFocusPane,
@@ -91,7 +93,7 @@ function ConversationPaneHostInner({
       hideStaleConversationMessages={pane.hideStaleConversationMessages}
       showComposerDock
       showWorkspaceToolsDock={isAnchorPane}
-      showSessionSidebarToggle={splitPaneCount <= 1 || !isAnchorPane}
+      showSessionSidebarToggle={splitPaneCount <= 1 || isSessionSidebarAnchorPane}
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
       showClosePane={showClosePane}
