@@ -630,6 +630,18 @@ export interface AbortConversationRequest {
   sessionPath?: string;
 }
 
+export interface ReplyPendingApprovalRequest {
+  decision: DesktopApprovalDecision;
+  /** Reply for a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface ReplyPendingQuestionsRequest {
+  result: AskQuestionsResult;
+  /** Reply for a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
 export interface BeginSplitPaneSessionRequest {
   paneId: string;
   /** When true, only create the in-memory bundle; caller batches snapshot via syncSplitPaneSessions. */

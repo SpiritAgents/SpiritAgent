@@ -60,7 +60,7 @@ export interface HostCommandDelegate {
   updateAutomation(automationId: string, patch: CommandPayloads['updateAutomation']['patch']): Promise<unknown>;
   deleteAutomation(automationId: string): Promise<unknown>;
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<unknown>;
-  replyPendingApproval(decision: CommandPayloads['replyPendingApproval']['decision']): Promise<unknown>;
+  replyPendingApproval(request: CommandPayloads['replyPendingApproval']['request']): Promise<unknown>;
   replyPendingQuestions(result: CommandPayloads['replyPendingQuestions']['result']): Promise<unknown>;
   resetSession(): Promise<unknown>;
   listSessions(): Promise<unknown>;
@@ -225,7 +225,7 @@ const hostCommandDispatch = {
   updateAutomation: (host, payload) => host.updateAutomation(payload.automationId, payload.patch),
   deleteAutomation: (host, payload) => host.deleteAutomation(payload.automationId),
   setAutomationEnabled: (host, payload) => host.setAutomationEnabled(payload.automationId, payload.enabled),
-  replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.decision),
+  replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.request),
   replyPendingQuestions: (host, payload) => host.replyPendingQuestions(payload.result),
   resetSession: (host) => host.resetSession(),
   listSessions: (host) => host.listSessions(),

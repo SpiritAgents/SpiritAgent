@@ -312,8 +312,8 @@ export function createWebHostApi(): HostApi {
     subscribeAutomationsUpdates() {
       return () => {};
     },
-    replyPendingApproval(decision) {
-      return post<DesktopSnapshot>(baseUrl, '/api/approval', { decision });
+    replyPendingApproval(request) {
+      return post<DesktopSnapshot>(baseUrl, '/api/approval', request);
     },
     replyPendingQuestions(result: AskQuestionsResult) {
       return post<DesktopSnapshot>(baseUrl, '/api/questions', { result });

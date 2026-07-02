@@ -122,7 +122,7 @@ declare global {
     dreamSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     automationsSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     sessionListSubscribe(callback: () => void): () => void;
-    replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot>;
+    replyPendingApproval(request: import('./types').ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
     replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot>;
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;

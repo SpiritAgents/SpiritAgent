@@ -70,6 +70,7 @@ import type {
   SearchGitHubAutomationRepositoriesSnapshot,
   SubmitUserTurnRequest,
   AbortConversationRequest,
+  ReplyPendingApprovalRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   SetVisiblePaneSessionsRequest,
@@ -206,7 +207,7 @@ export interface HostApi {
   subscribeDreamUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
   subscribeAutomationsUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
   subscribeSessionListUpdates?(callback: () => void): () => void;
-  replyPendingApproval(decision: DesktopApprovalDecision): Promise<DesktopSnapshot>;
+  replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
   replyPendingQuestions(result: AskQuestionsResult): Promise<DesktopSnapshot>;
   resetSession(): Promise<DesktopSnapshot>;
   listSessions(): Promise<SessionListItem[]>;
