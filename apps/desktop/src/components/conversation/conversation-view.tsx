@@ -42,7 +42,7 @@ import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
 import type { TurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import type { PendingAssistantAux } from "@/types";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
-import { PANE_DROP_ZONE_ORDER, effectiveRepositionZone, paneDropZoneGridCellClass, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import { PANE_DROP_ZONE_ORDER, effectiveRepositionZone, paneDropZoneGridCellClass, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag, visiblePaneDropZonesForSidebarSessionDrag } from "@/lib/conversation-pane-drop-preview";
 import type { PaneDropZone } from "@/lib/conversation-split-layout";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -294,7 +294,7 @@ export function ConversationView({
 
   const resolveVisibleDropZones = useCallback(() => {
     if (sidebarSessionDragActive) {
-      return PANE_DROP_ZONE_ORDER;
+      return visiblePaneDropZonesForSidebarSessionDrag();
     }
     if (!paneId || !paneDragSourcePaneId) {
       return PANE_DROP_ZONE_ORDER;

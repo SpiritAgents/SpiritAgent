@@ -1,7 +1,7 @@
 import type { MarqueeRect } from "@/lib/browser-element-picker";
 import type { PaneDropZone, PaneRepositionZone } from "@/lib/conversation-split-layout";
 
-/** 2×2 grid: TL above, TR after, BL before, BR below. */
+/** 2×2 grid: TL above, TR after, BL before, BR below. Used when pane reorder has no adjacent source. */
 export const PANE_DROP_ZONE_ORDER: readonly PaneRepositionZone[] = [
   "above",
   "after",
@@ -9,10 +9,32 @@ export const PANE_DROP_ZONE_ORDER: readonly PaneRepositionZone[] = [
   "below",
 ];
 
+/**
+ * Sidebar session drag: left/right edge columns (full height) + center column (above/below).
+ * Indicators tile the full left/right/top/bottom half — not quadrant corners.
+ */
+export const SIDEBAR_SESSION_DROP_ZONE_ORDER: readonly PaneRepositionZone[] = [
+  "before",
+  "above",
+  "after",
+  "below",
+];
+
+export function visiblePaneDropZonesForSidebarSessionDrag(): readonly PaneRepositionZone[] {
+  return SIDEBAR_SESSION_DROP_ZONE_ORDER;
+}
+
 export const PANE_DROP_ZONE_GRID_CLASS: Record<PaneRepositionZone, string> = {
   above: "col-start-1 row-start-1",
   after: "col-start-2 row-start-1",
   before: "col-start-1 row-start-2",
+  below: "col-start-2 row-start-2",
+};
+
+const PANE_DROP_ZONE_SIDEBAR_SPLIT_CLASS: Record<PaneRepositionZone, string> = {
+  before: "col-start-1 row-span-2 row-start-1",
+  above: "col-start-2 row-start-1",
+  after: "col-start-3 row-span-2 row-start-1",
   below: "col-start-2 row-start-2",
 };
 
@@ -113,11 +135,27 @@ type VisibleZoneLayout =
   | "top-bottom"
   | "left-right"
   | "triple-row"
-  | "triple-col";
+  | "triple-col"
+  | "sidebar-split";
+
+function isSidebarSplitZoneSet(visibleZones: readonly PaneDropZone[]): boolean {
+  const set = new Set(visibleZones);
+  return (
+    visibleZones.length === 4
+    && set.has("before")
+    && set.has("after")
+    && set.has("above")
+    && set.has("below")
+    && !set.has("swap")
+  );
+}
 
 function visibleZoneLayout(
   visibleZones: readonly PaneDropZone[],
 ): VisibleZoneLayout | null {
+  if (isSidebarSplitZoneSet(visibleZones)) {
+    return "sidebar-split";
+  }
   const set = new Set(visibleZones);
   if (set.has("swap") && set.has("above") && set.has("below")) {
     return "triple-row";
@@ -185,10 +223,100 @@ function tripleBandSizes(length: number): { edge: number; swap: number } {
   return { edge, swap };
 }
 
+function sidebarSplitColBandSizes(width: number): { edge: number; center: number } {
+  const center = width * (SWAP_BAND_FR / TRIPLE_BAND_TOTAL_FR);
+  const edge = (width - center) / 2;
+  return { edge, center };
+}
+
+function sidebarSplitHitRect(hostRect: DOMRect, zone: PaneRepositionZone): MarqueeRect {
+  const left = hostRect.left;
+  const top = hostRect.top;
+  const width = hostRect.width;
+  const height = hostRect.height;
+  const { edge: edgeW, center: centerW } = sidebarSplitColBandSizes(width);
+  const halfH = height / 2;
+  const centerLeft = left + edgeW;
+
+  switch (zone) {
+    case "before":
+      return {
+        x: Math.round(left),
+        y: Math.round(top),
+        width: Math.round(edgeW),
+        height: Math.round(height),
+      };
+    case "after":
+      return {
+        x: Math.round(left + edgeW + centerW),
+        y: Math.round(top),
+        width: Math.round(edgeW),
+        height: Math.round(height),
+      };
+    case "above":
+      return {
+        x: Math.round(centerLeft),
+        y: Math.round(top),
+        width: Math.round(centerW),
+        height: Math.round(halfH),
+      };
+    case "below":
+      return {
+        x: Math.round(centerLeft),
+        y: Math.round(top + halfH),
+        width: Math.round(centerW),
+        height: Math.round(halfH),
+      };
+  }
+}
+
+function sidebarSplitIndicatorRect(hostRect: DOMRect, zone: PaneRepositionZone): MarqueeRect {
+  const left = hostRect.left;
+  const top = hostRect.top;
+  const width = hostRect.width;
+  const height = hostRect.height;
+  const halfW = width / 2;
+  const halfH = height / 2;
+
+  switch (zone) {
+    case "before":
+      return {
+        x: Math.round(left),
+        y: Math.round(top),
+        width: Math.round(halfW),
+        height: Math.round(height),
+      };
+    case "after":
+      return {
+        x: Math.round(left + halfW),
+        y: Math.round(top),
+        width: Math.round(halfW),
+        height: Math.round(height),
+      };
+    case "above":
+      return {
+        x: Math.round(left),
+        y: Math.round(top),
+        width: Math.round(width),
+        height: Math.round(halfH),
+      };
+    case "below":
+      return {
+        x: Math.round(left),
+        y: Math.round(top + halfH),
+        width: Math.round(width),
+        height: Math.round(halfH),
+      };
+  }
+}
+
 export function paneDropZoneGridLayoutClass(
   visibleZones: readonly PaneDropZone[],
 ): string {
   const layout = visibleZoneLayout(visibleZones);
+  if (layout === "sidebar-split") {
+    return `grid-cols-[${TRIPLE_EDGE_FR}fr_${SWAP_BAND_FR}fr_${TRIPLE_EDGE_FR}fr] grid-rows-2`;
+  }
   if (layout === "triple-row" || layout === "top-bottom") {
     return `grid-cols-1 grid-rows-[${TRIPLE_EDGE_FR}fr_${SWAP_BAND_FR}fr_${TRIPLE_EDGE_FR}fr]`;
   }
@@ -203,6 +331,9 @@ export function paneDropZoneGridCellClass(
   visibleZones: readonly PaneDropZone[],
 ): string | undefined {
   const layout = visibleZoneLayout(visibleZones);
+  if (layout === "sidebar-split" && (zone === "before" || zone === "above" || zone === "after" || zone === "below")) {
+    return PANE_DROP_ZONE_SIDEBAR_SPLIT_CLASS[zone];
+  }
   if (layout === "triple-row" && (zone === "above" || zone === "swap" || zone === "below")) {
     return PANE_DROP_ZONE_TRIPLE_ROW_CLASS[zone];
   }
@@ -227,6 +358,10 @@ export function paneDropZoneRect(
   const halfW = width / 2;
   const halfH = height / 2;
   const layout = visibleZoneLayout(visibleZones);
+
+  if (layout === "sidebar-split" && zone !== "swap") {
+    return sidebarSplitHitRect(hostRect, zone);
+  }
 
   if (layout === "triple-row") {
     const { edge: edgeH, swap: swapH } = tripleBandSizes(height);
@@ -375,6 +510,9 @@ export function paneDropIndicatorRect(
       width: Math.round(hostRect.width),
       height: Math.round(hostRect.height),
     };
+  }
+  if (visibleZoneLayout(visibleZones) === "sidebar-split") {
+    return sidebarSplitIndicatorRect(hostRect, zone);
   }
   return paneDropZoneRect(hostRect, zone, visibleZones);
 }

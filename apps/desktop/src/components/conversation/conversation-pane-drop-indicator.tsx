@@ -6,7 +6,7 @@ import {
   applyPickerOverlayGeometry,
   hidePickerOverlayBox,
 } from "@/lib/browser-element-picker";
-import { paneDropIndicatorRect, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import { paneDropIndicatorRect, visiblePaneDropZonesForDrag, visiblePaneDropZonesForSidebarSessionDrag } from "@/lib/conversation-pane-drop-preview";
 
 const OVERLAY_MOTION_TRANSITION =
   "left 120ms ease-out, top 120ms ease-out, width 120ms ease-out, height 120ms ease-out, opacity 150ms ease-out";
@@ -54,16 +54,18 @@ export function ConversationPaneDropIndicator() {
     const sourceHost = paneDragSourcePaneId
       ? document.querySelector(`[data-pane-drop-host="${paneDragSourcePaneId}"]`)
       : null;
-    const visibleZones = visiblePaneDropZonesForDrag({
-      paneCount,
-      sourcePaneHost:
-        sidebarSessionDragActive || !paneDragSourcePaneId
-          ? null
-          : sourceHost instanceof HTMLElement
-            ? sourceHost
-            : null,
-      targetPaneHost: host,
-    });
+    const visibleZones = sidebarSessionDragActive
+      ? visiblePaneDropZonesForSidebarSessionDrag()
+      : visiblePaneDropZonesForDrag({
+          paneCount,
+          sourcePaneHost:
+            !paneDragSourcePaneId
+              ? null
+              : sourceHost instanceof HTMLElement
+                ? sourceHost
+                : null,
+          targetPaneHost: host,
+        });
     if (!visibleZones.includes(paneDropTarget.zone)) {
       el.style.transition = OVERLAY_MOTION_TRANSITION;
       hidePickerOverlayBox(el);
