@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
+import { resolvePendingApprovalSessionPath } from "@/lib/pane-pending-turn-routing";
 import i18n from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
@@ -2676,7 +2677,8 @@ export function useDesktopRuntime() {
       return;
     }
     return bridge.subscribeApprovalFromNotification(({ decision }) => {
-      void submitApproval({ kind: decision });
+      const sessionPath = resolvePendingApprovalSessionPath(snapshotRef.current);
+      void submitApproval({ kind: decision }, sessionPath);
     });
   }, [submitApproval]);
 
@@ -2694,7 +2696,8 @@ export function useDesktopRuntime() {
       if (!current || !userMessage) {
         return;
       }
-      void submitApproval({ kind: 'guidance', userMessage });
+      const sessionPath = resolvePendingApprovalSessionPath(snapshotRef.current);
+      void submitApproval({ kind: 'guidance', userMessage }, sessionPath);
     });
   }, [submitApproval]);
 
