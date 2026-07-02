@@ -30,7 +30,7 @@ import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useWorkspaceFileIndex } from "@/hooks/use-workspace-file-index";
-import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
+import type { useDesktopRuntime, QuestionDraft } from "@/hooks/useDesktopRuntime";
 import {
   appendComposerLocalFileAttachment,
   composerAttachmentViewFromPath,
@@ -121,6 +121,7 @@ export function useComposerController({
   const [paneComposerInitialSegments, setPaneComposerInitialSegments] = useState<RichSegment[] | null>(
     null,
   );
+  const [paneQuestionDrafts, setPaneQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
 
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
   const paneComposerDraftKey =
@@ -140,6 +141,20 @@ export function useComposerController({
       (stored?.localFilePaths ?? []).map((filePath) => composerAttachmentViewFromPath(filePath)),
     );
   }, [composerSessionKey, isPaneIsolated, paneComposerDraftKey]);
+
+  useEffect(() => {
+    if (!isPaneIsolated || !pendingQuestions) {
+      setPaneQuestionDrafts({});
+      return;
+    }
+    setPaneQuestionDrafts((current) => {
+      const next: Record<string, QuestionDraft> = {};
+      for (const question of pendingQuestions.request.questions) {
+        next[question.id] = current[question.id] ?? { selectedOptionIds: [], customText: "" };
+      }
+      return next;
+    });
+  }, [isPaneIsolated, pendingQuestions]);
 
   const composerText = isPaneIsolated ? paneComposer : runtime.composer;
   const setComposerText = isPaneIsolated ? setPaneComposer : runtime.setComposer;
@@ -1215,5 +1230,25 @@ export function useComposerController({
     dismissFileReferenceSuggestions,
     dismissSlashSuggestions,
     handleComposerSegmentsCommit,
+    paneQuestionControls: isPaneIsolated && pendingQuestions
+      ? {
+          questionDrafts: paneQuestionDrafts,
+          onUpdateQuestionDraft: (
+            questionId: string,
+            updater: (draft: QuestionDraft) => QuestionDraft,
+          ) => {
+            setPaneQuestionDrafts((current) => ({
+              ...current,
+              [questionId]: updater(current[questionId] ?? { selectedOptionIds: [], customText: "" }),
+            }));
+          },
+          onSubmitQuestions: () => {
+            void runtime.submitQuestions(paneSessionPath, pendingQuestions, paneQuestionDrafts);
+          },
+          onSkipQuestions: () => {
+            void runtime.skipQuestions(paneSessionPath, pendingQuestions);
+          },
+        }
+      : null,
   };
 }

@@ -99,6 +99,13 @@ export type ComposerDockSectionProps = {
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   showPendingQuestionsInComposer: boolean;
   pendingQuestions: DesktopSnapshot["conversation"]["pendingQuestions"];
+  questionDrafts?: Record<string, import("@/hooks/useDesktopRuntime").QuestionDraft>;
+  onUpdateQuestionDraft?: (
+    questionId: string,
+    updater: (draft: import("@/hooks/useDesktopRuntime").QuestionDraft) => import("@/hooks/useDesktopRuntime").QuestionDraft,
+  ) => void;
+  onSubmitQuestions?: () => void;
+  onSkipQuestions?: () => void;
   fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
@@ -513,6 +520,10 @@ export function ConversationView({
             pendingApproval={composerDock.pendingApproval}
             showPendingQuestionsInComposer={composerDock.showPendingQuestionsInComposer}
             pendingQuestions={composerDock.pendingQuestions}
+            questionDrafts={composerDock.questionDrafts}
+            onUpdateQuestionDraft={composerDock.onUpdateQuestionDraft}
+            onSubmitQuestions={composerDock.onSubmitQuestions}
+            onSkipQuestions={composerDock.onSkipQuestions}
             fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
             fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
             onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
