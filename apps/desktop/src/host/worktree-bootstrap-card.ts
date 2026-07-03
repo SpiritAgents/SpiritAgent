@@ -1,4 +1,5 @@
 import type { PendingWorkspaceFile } from '@spirit-agent/core';
+import type { SubagentSessionStatus } from '@spirit-agent/core';
 
 import i18n from '../lib/i18n-host.js';
 import { phaseToVerbContext } from '../lib/tool-verb-context.js';
@@ -45,6 +46,14 @@ export function isWorktreeBootstrapInFlight(
   pending: PendingWorktreeBootstrap | undefined,
 ): boolean {
   return pending?.phase === 'running';
+}
+
+/** Subagent 会话是否启用了 worktree 委派（仅此类会话应展示 worktree bootstrap 卡片）。 */
+export function isWorktreeSubagentSession(summary: {
+  status: SubagentSessionStatus;
+  worktreePath?: string;
+}): boolean {
+  return summary.status === 'bootstrapping' || Boolean(summary.worktreePath?.trim());
 }
 
 export function upsertWorktreeBootstrapCardInTimeline(
