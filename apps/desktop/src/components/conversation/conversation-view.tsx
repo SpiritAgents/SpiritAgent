@@ -25,6 +25,7 @@ import {
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
+import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
@@ -167,6 +168,13 @@ export type ConversationViewProps = {
   newSessionBusy: boolean;
   compactionDemoActive: boolean;
   onCompactionDemoStop: () => void;
+  longConversationListDemoActive: boolean;
+  onLongConversationListDemoStop: () => void;
+  longConversationListDemoStats: {
+    turnCount: number;
+    messageCount: number;
+    toolCount: number;
+  } | null;
   rewindDraft: MessageRewindDraftState | null;
   onRewindDraftClear: () => void;
   conversationScrollBedPaddingPx: number;
@@ -216,6 +224,9 @@ export function ConversationView({
   newSessionBusy,
   compactionDemoActive,
   onCompactionDemoStop,
+  longConversationListDemoActive,
+  onLongConversationListDemoStop,
+  longConversationListDemoStats,
   rewindDraft,
   onRewindDraftClear,
   conversationScrollBedPaddingPx,
@@ -256,6 +267,10 @@ export function ConversationView({
   const { t } = useTranslation();
   const split = useConversationSplit();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
+  const getConversationScrollElement = useCallback(
+    () => scrollAreaViewport(conversationScrollAreaRef.current),
+    [],
+  );
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
@@ -268,10 +283,11 @@ export function ConversationView({
         })
       : null;
 
-  useConversationSessionScrollTail({
+  const { listSettling } = useConversationSessionScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
-    composerSessionKey: list.composerSessionKey,
+    contentKey: `${list.composerSessionKey || "__no-session__"}:${list.conversationListScopeKey}:e${list.conversationListRemountEpoch}`,
     enabled: conversationMessagesVisible,
+    streaming: snapshot?.conversation.isBusy === true,
   });
 
   useConversationStreamScrollTail({
@@ -458,9 +474,13 @@ export function ConversationView({
           data-spirit-surface="conversation-stage"
           className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}
         >
-          {compactionDemoActive ? (
+          {compactionDemoActive || longConversationListDemoActive ? (
             <div
-              data-spirit-surface="compaction-ui-demo-banner"
+              data-spirit-surface={
+                longConversationListDemoActive
+                  ? "long-list-demo-banner"
+                  : "compaction-ui-demo-banner"
+              }
               className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}
             >
               <div
@@ -471,13 +491,39 @@ export function ConversationView({
                 )}
               >
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">{t('app.compactionDemo')}</span>
-                  <span className="hidden sm:inline">
-                    {" "}
-                    · {t('app.compactionDemoDescription')}
-                  </span>
+                  {longConversationListDemoActive ? (
+                    <>
+                      <span className="font-medium text-foreground">
+                        {t("app.longConversationListDemo")}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {" "}
+                        · {t("app.longConversationListDemoDescription")}
+                        {longConversationListDemoStats
+                          ? ` · ${t("app.longConversationListDemoStats", longConversationListDemoStats)}`
+                          : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">{t('app.compactionDemo')}</span>
+                      <span className="hidden sm:inline">
+                        {" "}
+                        · {t('app.compactionDemoDescription')}
+                      </span>
+                    </>
+                  )}
                 </p>
-                <Button type="button" variant="outline" size="sm" onClick={onCompactionDemoStop}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={
+                    longConversationListDemoActive
+                      ? onLongConversationListDemoStop
+                      : onCompactionDemoStop
+                  }
+                >
                   {t('app.exitDemo')}
                 </Button>
               </div>
@@ -502,16 +548,19 @@ export function ConversationView({
             <div
               data-spirit-surface="conversation-scroll-body"
               className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
-              style={
-                (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
+              style={{
+                ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                   ? { paddingBottom: conversationScrollBedPaddingPx }
-                  : undefined
-              }
+                  : undefined),
+                // 定底 settled 前隐藏列表，避免「估高定底 → 实测修正」两次可见位移
+                ...(listSettling ? { visibility: "hidden" as const } : undefined),
+              }}
             >
               {(!isEmptySession || subagentViewActive) && !hideStaleConversationMessages ? (
                 <ConversationList
                   messages={list.messages}
                   conversationRenderItems={list.conversationRenderItems}
+                  getScrollElement={getConversationScrollElement}
                   subagentViewActive={subagentViewActive}
                   composerSessionKey={list.composerSessionKey}
                   conversationListScopeKey={list.conversationListScopeKey}

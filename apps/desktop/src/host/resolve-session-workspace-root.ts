@@ -18,13 +18,15 @@ export async function resolveStoredSessionWorkspaceRoot(input: {
   }
 
   const resolved = path.resolve(trimmed);
-  const context = await readWorktreeContext(resolved);
-  if (context.isWorktree) {
+  // 非 spirit 分支时无论 readWorktreeContext 结果如何都原样返回 resolved，
+  // 先判分支可省去每次 openSession 两次 git 子进程 spawn（Windows 上 100ms+）。
+  const branch = input.gitBranch?.trim();
+  if (!branch || !isSpiritBranchName(branch)) {
     return resolved;
   }
 
-  const branch = input.gitBranch?.trim();
-  if (!branch || !isSpiritBranchName(branch)) {
+  const context = await readWorktreeContext(resolved);
+  if (context.isWorktree) {
     return resolved;
   }
 

@@ -71,6 +71,7 @@ export function SettingsView({
   onGenerateRuleNavigate,
   onGenerateHookNavigate,
   onStartCompactionUiDemo,
+  onStartLongConversationListDemo,
   useMicaBackdrop = false,
   getGitHubAuthStatus,
   beginGitHubDeviceLogin,
@@ -120,7 +121,10 @@ export function SettingsView({
                 onUpdateExtensionSecret={onUpdateExtensionSecret}
               />
             ) : tab === "developer" && isViteDev ? (
-              <DeveloperSettingsPanel onStartCompactionUiDemo={onStartCompactionUiDemo} />
+              <DeveloperSettingsPanel
+                onStartCompactionUiDemo={onStartCompactionUiDemo}
+                onStartLongConversationListDemo={onStartLongConversationListDemo}
+              />
             ) : tab === "dreams" ? (
               <DreamSettingsPanel
                 theme={theme}

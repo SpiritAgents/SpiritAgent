@@ -23,8 +23,10 @@ import { WorkspaceMarkdownLinkProvider } from "@/components/workspace-markdown-l
 import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
+import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
 import { useUiLayoutScale } from "@/hooks/useUiLayoutScale";
@@ -86,6 +88,7 @@ export default function App() {
   });
 
   const compactionDemo = useCompactionUiDemo();
+  const longConversationListDemo = useLongConversationListDemo();
   const subagentViewer = useSubagentViewer(runtime.setSubagentViewerTarget);
   const subagentViewActive = subagentViewer.active && Boolean(snapshot?.subagentViewer);
   const sessionMessages = snapshot?.conversation.messages ?? [];
@@ -98,10 +101,7 @@ export default function App() {
     activeFilePath,
     conversationNavigationPending,
   );
-  const composerAutomationApiRef = useRef<{
-    setSlashSelectedIndex: (index: number) => void;
-    focusComposer: () => void;
-  } | null>(null);
+  const composerAutomationApiRef = useRef<FocusedPaneComposerControls | null>(null);
   const conversationAbortShortcutTargetRef = useRef<ConversationAbortShortcutTarget>({
     eligible: false,
   });
@@ -121,6 +121,7 @@ export default function App() {
     sessionMessages,
     subagentViewActive,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
     sessionNavigationBusy,
     newSessionBusy,
     t,
@@ -133,6 +134,7 @@ export default function App() {
     subagentViewActive,
     subagentViewer,
     compactionDemo,
+    longConversationListDemo,
     t,
     language: i18n.language,
     conversationAbortShortcutTargetRef,
@@ -162,6 +164,7 @@ export default function App() {
     isEmptySession: surfaceNav.isEmptySession,
     activeSessionReadOnly: conversation.activeSessionReadOnly,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
     subagentViewActive,
     pendingApproval: conversation.pendingApproval,
     pendingQuestions: conversation.pendingQuestions,
@@ -299,7 +302,6 @@ export default function App() {
             && !newSessionBusy
           }
           composerAutomationApiRef={composerAutomationApiRef}
-          setSlashSelectedIndex={composer.setSlashSelectedIndex}
         />
         <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
           <SessionSidebar
@@ -402,20 +404,26 @@ export default function App() {
               onCreateSkill={runtime.createSkill}
               onCreateRule={runtime.createRule}
               onStartCompactionUiDemo={() => {
+                longConversationListDemo.stop();
                 surfaceNav.setActiveSurface("conversation");
                 compactionDemo.start();
+              }}
+              onStartLongConversationListDemo={() => {
+                compactionDemo.stop();
+                surfaceNav.setActiveSurface("conversation");
+                longConversationListDemo.start();
               }}
               onDeleteSkill={runtime.deleteSkill}
               onDeleteRule={runtime.deleteRule}
               onListDreamsOverview={runtime.listDreamsOverview}
               onGenerateSkillNavigate={() => {
-                composer.prefillComposerSkillChip("create-skill");
+                surfaceNav.handlePrefillComposerSkillChip("create-skill");
               }}
               onGenerateRuleNavigate={() => {
-                composer.prefillComposerSkillChip("create-rule");
+                surfaceNav.handlePrefillComposerSkillChip("create-rule");
               }}
               onGenerateHookNavigate={() => {
-                composer.prefillComposerSkillChip("create-hook");
+                surfaceNav.handlePrefillComposerSkillChip("create-hook");
               }}
               getGitHubAuthStatus={runtime.getGitHubAuthStatus}
               beginGitHubDeviceLogin={runtime.beginGitHubDeviceLogin}
@@ -560,6 +568,7 @@ export default function App() {
                 subagentViewActive={subagentViewActive}
                 subagentViewer={subagentViewer}
                 compactionDemo={compactionDemo}
+                longConversationListDemo={longConversationListDemo}
                 hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
                 showWorkspaceBindingControls={surfaceNav.showWorkspaceBindingControls}
                 sessionNavigationBusy={sessionNavigationBusy}
@@ -572,6 +581,7 @@ export default function App() {
                 workspaceTools={workspaceTools}
                 onOpenIntegrationsSettings={openIntegrationsSettings}
                 onCompactionDemoStop={compactionDemo.stop}
+                onLongConversationListDemoStop={longConversationListDemo.stop}
                 t={t}
                 language={i18n.language}
               />

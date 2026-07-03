@@ -11,10 +11,12 @@ import { resolveConversationListScopeKey } from "@/lib/conversation-list-scope";
 import { buildConversationRenderItems } from "@/lib/conversation-process-groups";
 import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import { useProcessSealAnimationGate } from "@/lib/process-seal-animation";
+import { resolveEffectiveEmptySession } from "@/lib/conversation-surface-stale";
 import { useElementBoxHeight } from "@/hooks/use-element-box-height";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import {
   CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX,
@@ -35,6 +37,7 @@ import {
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
 type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
+type LongConversationListDemo = ReturnType<typeof useLongConversationListDemo>;
 
 export type UseConversationViewStateOptions = {
   runtime: DesktopRuntime;
@@ -42,6 +45,7 @@ export type UseConversationViewStateOptions = {
   subagentViewActive: boolean;
   subagentViewer: SubagentViewer;
   compactionDemo: CompactionDemo;
+  longConversationListDemo: LongConversationListDemo;
   t: TFunction;
   language: string;
   /** When true, composer interrupt/send state follows this pane snapshot, not global runtime. */
@@ -55,6 +59,7 @@ export function useConversationViewState({
   subagentViewActive,
   subagentViewer,
   compactionDemo,
+  longConversationListDemo,
   t,
   language,
   useIsolatedPane = false,
@@ -99,13 +104,16 @@ export function useConversationViewState({
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const messages = subagentViewActive
     ? (snapshot?.subagentViewer?.messages ?? [])
-    : compactionDemo.active
-      ? compactionDemo.messages
-      : sessionMessages;
+    : longConversationListDemo.active
+      ? longConversationListDemo.messages
+      : compactionDemo.active
+        ? compactionDemo.messages
+        : sessionMessages;
   const conversationListScopeKey = resolveConversationListScopeKey({
     subagentViewActive,
     subagentToolCallId: subagentViewer.toolCallId,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
   });
   const conversationRenderItems = useMemo(
     () => buildConversationRenderItems(messages, conversationListScopeKey),
@@ -135,6 +143,7 @@ export function useConversationViewState({
     renderItems: conversationRenderItems,
     subagentViewActive,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
     isBusy: snapshot?.conversation.isBusy,
     busyAction: useIsolatedPane
       ? (snapshot?.conversation.isBusy ? "send" : "")
@@ -146,8 +155,11 @@ export function useConversationViewState({
 
   const [processGroupManualOpen, setProcessGroupManualOpen] = useState<Record<string, boolean>>({});
   const turnContinue = useMemo(
-    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
-    [compactionDemo.active, messages, subagentViewActive],
+    () =>
+      compactionDemo.active || longConversationListDemo.active || subagentViewActive
+        ? undefined
+        : resolveTurnContinuePresentation(messages),
+    [compactionDemo.active, longConversationListDemo.active, messages, subagentViewActive],
   );
 
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
@@ -160,7 +172,16 @@ export function useConversationViewState({
     ),
   );
 
-  const { ref: composerDockRef, heightPx: composerDockHeightPx } = useElementBoxHeight<HTMLDivElement>();
+  // hero ↔ 底部 dock 布局切换时 pre-paint 重测；demo 注入消息但 session 仍为空时也算非 hero。
+  const composerLayoutHero = resolveEffectiveEmptySession({
+    sessionMessageCount: sessionMessages.length,
+    subagentViewActive,
+    compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
+    newSessionBusy: false,
+  });
+  const { ref: composerDockRef, heightPx: composerDockHeightPx } =
+    useElementBoxHeight<HTMLDivElement>(composerLayoutHero);
   const conversationScrollBedPaddingPx =
     composerDockHeightPx > 0
       ? Math.max(
@@ -248,9 +269,10 @@ export function useConversationViewState({
   const handleOpenSubagentViewer = useCallback(
     (toolCallId: string) => {
       compactionDemo.stop();
+      longConversationListDemo.stop();
       void subagentViewer.open(toolCallId);
     },
-    [compactionDemo, subagentViewer],
+    [compactionDemo, longConversationListDemo, subagentViewer],
   );
 
   return {

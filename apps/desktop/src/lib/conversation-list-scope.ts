@@ -5,12 +5,16 @@ export function resolveConversationListScopeKey(input: {
   subagentViewActive: boolean;
   subagentToolCallId: string | null;
   compactionDemoActive: boolean;
+  longConversationListDemoActive: boolean;
 }): string {
   if (input.subagentViewActive && input.subagentToolCallId) {
     return `subagent:${input.subagentToolCallId}`;
   }
   if (input.compactionDemoActive) {
     return 'compaction-demo';
+  }
+  if (input.longConversationListDemoActive) {
+    return 'long-list-demo';
   }
   return 'main';
 }

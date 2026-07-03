@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, GitBranch } from "lucide-react";
 
@@ -16,6 +16,7 @@ import {
   useOptionalTooltipStableActions,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTruncatedElement } from "@/hooks/use-truncated-element";
 import { DESKTOP_OVERLAY_LIST_WIDTH, DESKTOP_OVERLAY_SHORT_LIST_PADDING } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 
@@ -26,38 +27,6 @@ type BranchSelectMenuProps = {
   disabled?: boolean;
   onBranchChange(branch: string): void;
 };
-
-function useTruncatedElement<T extends HTMLElement>(dependency: unknown) {
-  const ref = useRef<T>(null);
-  const [isTruncated, setIsTruncated] = useState(false);
-  const updateTruncation = useCallback(() => {
-    const element = ref.current;
-    if (!element) {
-      return;
-    }
-    setIsTruncated(element.scrollWidth > element.clientWidth);
-  }, []);
-
-  useLayoutEffect(() => {
-    updateTruncation();
-  }, [dependency, updateTruncation]);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver(() => {
-      updateTruncation();
-    });
-    observer.observe(element);
-    return () => {
-      observer.disconnect();
-    };
-  }, [updateTruncation]);
-
-  return { ref, isTruncated };
-}
 
 function BranchSelectMenuItem({
   branch,
