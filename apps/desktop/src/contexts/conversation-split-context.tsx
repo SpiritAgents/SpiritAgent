@@ -1534,12 +1534,21 @@ export function ConversationSplitProvider({
 
       const newLeaf = createLeafNode(newPaneId, newSessionPath);
       const nextLayout = splitPaneAtZone(layout, targetPaneId, zone, newLeaf);
-      setLayout(nextLayout);
-      setFocusedPaneId(newPaneId);
-      persistSessionSplitBinding(nextLayout);
       const paths = collectPaneSessionPaths(nextLayout);
+
+      layoutNavigationLockRef.current = true;
+      setLayoutNavigationPending(true);
       visiblePathsSyncedRef.current = paths.join("\0");
-      await runtime.syncSplitPaneSessions(paths, newSessionPath);
+
+      try {
+        await runtime.syncSplitPaneSessions(paths, newSessionPath);
+        setLayout(nextLayout);
+        setFocusedPaneId(newPaneId);
+        persistSessionSplitBinding(nextLayout);
+      } finally {
+        layoutNavigationLockRef.current = false;
+        setLayoutNavigationPending(false);
+      }
     },
     [
       clearSidebarSessionDrag,
