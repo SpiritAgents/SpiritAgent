@@ -154,3 +154,26 @@ export function shouldCompactAfterPreviousRenderItem(
     current,
   );
 }
+
+// 行间距自包含：虚拟化后相邻兄弟 margin 折叠失效，行间 gap 折进下一行 paddingTop（由 measureElement 量到）。
+// 普通 = pb-3 + space-y-3 = 24px；compact（-mt-4）= 8px；tighten（-mt-3）= 12px；首行由 shell pt-6/7 承担。
+const CONVERSATION_ROW_GAP_NORMAL_PX = 24;
+const CONVERSATION_ROW_GAP_COMPACT_PX = 8;
+const CONVERSATION_ROW_GAP_TIGHTEN_PX = 12;
+
+export function conversationRenderItemGapBeforePx(options: {
+  isFirst: boolean;
+  compactAfterPrevious: boolean;
+  tightenAfterPreviousMeta: boolean;
+}): number {
+  if (options.isFirst) {
+    return 0;
+  }
+  if (options.compactAfterPrevious) {
+    return CONVERSATION_ROW_GAP_COMPACT_PX;
+  }
+  if (options.tightenAfterPreviousMeta) {
+    return CONVERSATION_ROW_GAP_TIGHTEN_PX;
+  }
+  return CONVERSATION_ROW_GAP_NORMAL_PX;
+}

@@ -112,6 +112,7 @@ export function MessageCard({
   onAssistantTurnPointerEnter,
   onAssistantTurnPointerLeave,
   hiddenByProcessGroup = false,
+  externalRowGap = false,
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -120,6 +121,8 @@ export function MessageCard({
   message: ConversationMessageSnapshot;
   listIndex: number;
   hiddenByProcessGroup?: boolean;
+  /** 行间距由虚拟行 paddingTop 承担时去掉 pb-3 / 负 margin 折叠。 */
+  externalRowGap?: boolean;
   compactAfterPrevious: boolean;
   tightenAfterPreviousMeta: boolean;
   showContinueButton: boolean;
@@ -250,9 +253,10 @@ export function MessageCard({
           : (event) => onAssistantTurnPointerLeave(event, assistantTurnStartIndex)
       }
       className={cn(
-        "scroll-mt-4 flex w-full pb-3 last:pb-0",
-        compactAfterPrevious && "-mt-4",
-        tightenAfterPreviousMeta && "-mt-3",
+        "scroll-mt-4 flex w-full",
+        externalRowGap ? "pb-0" : "pb-3 last:pb-0",
+        !externalRowGap && compactAfterPrevious && "-mt-4",
+        !externalRowGap && tightenAfterPreviousMeta && "-mt-3",
         isUser ? "justify-end" : "justify-start",
         rewindSelected && "relative z-40",
       )}

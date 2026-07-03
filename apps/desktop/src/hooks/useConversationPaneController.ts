@@ -11,6 +11,7 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useMessageRewind } from "@/hooks/useMessageRewind";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import { resolveEffectiveEmptySession } from "@/lib/conversation-surface-stale";
 import { resolvePaneDesktopSnapshot, lookupPaneSessionSlice } from "@/lib/pane-desktop-snapshot";
@@ -21,6 +22,7 @@ import type { DesktopSnapshot } from "@/types";
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
 type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
+type LongConversationListDemo = ReturnType<typeof useLongConversationListDemo>;
 type WorkspaceTools = ReturnType<typeof useWorkspaceToolsController>;
 
 export type UseConversationPaneControllerOptions = {
@@ -33,6 +35,7 @@ export type UseConversationPaneControllerOptions = {
   subagentViewActive: boolean;
   subagentViewer: SubagentViewer;
   compactionDemo: CompactionDemo;
+  longConversationListDemo: LongConversationListDemo;
   hideStaleConversationMessages: boolean;
   showWorkspaceBindingControls: boolean;
   sessionNavigationBusy: boolean;
@@ -57,6 +60,7 @@ export function useConversationPaneController({
   subagentViewActive,
   subagentViewer,
   compactionDemo,
+  longConversationListDemo,
   hideStaleConversationMessages,
   showWorkspaceBindingControls,
   sessionNavigationBusy,
@@ -77,6 +81,7 @@ export function useConversationPaneController({
 
   const paneSubagentViewActive = isFocused && subagentViewActive;
   const paneCompactionDemoActive = isFocused && compactionDemo.active;
+  const paneLongConversationListDemoActive = isFocused && longConversationListDemo.active;
 
   const paneMissingSliceDuringNav = useMemo(() => {
     if (!layoutNavigationPending || splitPaneCount <= 1) {
@@ -102,6 +107,7 @@ export function useConversationPaneController({
         sessionMessageCount: paneSnapshot?.conversation.messages.length ?? 0,
         subagentViewActive: paneSubagentViewActive,
         compactionDemoActive: paneCompactionDemoActive,
+        longConversationListDemoActive: paneLongConversationListDemoActive,
         newSessionBusy: isFocused && splitPaneCount <= 1 ? newSessionBusy : false,
       });
     },
@@ -109,6 +115,7 @@ export function useConversationPaneController({
       isFocused,
       newSessionBusy,
       paneCompactionDemoActive,
+      paneLongConversationListDemoActive,
       paneMissingSliceDuringNav,
       paneSnapshot?.conversation.messages.length,
       paneSubagentViewActive,
@@ -128,6 +135,10 @@ export function useConversationPaneController({
     compactionDemo: {
       ...compactionDemo,
       active: paneCompactionDemoActive,
+    },
+    longConversationListDemo: {
+      ...longConversationListDemo,
+      active: paneLongConversationListDemoActive,
     },
     t,
     language,
@@ -166,6 +177,7 @@ export function useConversationPaneController({
     isEmptySession: paneIsEmptySession,
     activeSessionReadOnly: conversation.activeSessionReadOnly,
     compactionDemoActive: paneCompactionDemoActive,
+    longConversationListDemoActive: paneLongConversationListDemoActive,
     subagentViewActive: paneSubagentViewActive,
     pendingApproval: conversation.pendingApproval,
     pendingQuestions: conversation.pendingQuestions,
@@ -309,6 +321,21 @@ export function useConversationPaneController({
     ],
   );
 
+  const composerControls = useMemo(
+    () => ({
+      focusComposer: composer.focusComposer,
+      setComposerText: composer.setComposerText,
+      setSlashSelectedIndex: composer.setSlashSelectedIndex,
+      prefillSkillChip: composer.prefillSkillChip,
+    }),
+    [
+      composer.focusComposer,
+      composer.prefillSkillChip,
+      composer.setComposerText,
+      composer.setSlashSelectedIndex,
+    ],
+  );
+
   return {
     paneSnapshot,
     paneIsEmptySession,
@@ -334,7 +361,8 @@ export function useConversationPaneController({
       : undefined,
     subagentViewActive: paneSubagentViewActive,
     compactionDemoActive: paneCompactionDemoActive,
+    longConversationListDemoActive: paneLongConversationListDemoActive,
     composerInsertHandlers,
-    focusComposer: composer.focusComposer,
+    composerControls,
   };
 }

@@ -4,6 +4,7 @@ import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
 import { useConversationPaneController } from "@/hooks/useConversationPaneController";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
@@ -14,6 +15,7 @@ import type { TFunction } from "i18next";
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
 type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
+type LongConversationListDemo = ReturnType<typeof useLongConversationListDemo>;
 type WorkspaceTools = ReturnType<typeof useWorkspaceToolsController>;
 
 export type ConversationPaneHostProps = {
@@ -35,6 +37,7 @@ export type ConversationPaneHostProps = {
   subagentViewActive: boolean;
   subagentViewer: SubagentViewer;
   compactionDemo: CompactionDemo;
+  longConversationListDemo: LongConversationListDemo;
   hideStaleConversationMessages: boolean;
   showWorkspaceBindingControls: boolean;
   sessionNavigationBusy: boolean;
@@ -47,6 +50,7 @@ export type ConversationPaneHostProps = {
   workspaceTools: WorkspaceTools;
   onOpenIntegrationsSettings: () => void;
   onCompactionDemoStop: () => void;
+  onLongConversationListDemoStop: () => void;
   paneReorderEnabled: boolean;
   onPaneDragStart?: (paneId: string) => void;
   onPaneDragLeave?: () => void;
@@ -96,7 +100,7 @@ export function ConversationPaneHost({
   });
 
   const setFocusedPaneComposerInsert = split.setFocusedPaneComposerInsert;
-  const setFocusedPaneComposerFocus = split.setFocusedPaneComposerFocus;
+  const setFocusedPaneComposerControls = split.setFocusedPaneComposerControls;
 
   useEffect(() => {
     if (!isFocused) {
@@ -111,14 +115,14 @@ export function ConversationPaneHost({
 
   useEffect(() => {
     if (!isFocused) {
-      setFocusedPaneComposerFocus(null);
+      setFocusedPaneComposerControls(null);
       return;
     }
-    setFocusedPaneComposerFocus(pane.focusComposer);
+    setFocusedPaneComposerControls(pane.composerControls);
     return () => {
-      setFocusedPaneComposerFocus(null);
+      setFocusedPaneComposerControls(null);
     };
-  }, [isFocused, pane.focusComposer, setFocusedPaneComposerFocus]);
+  }, [isFocused, pane.composerControls, setFocusedPaneComposerControls]);
   const handleDeleteSession = useCallback(
     async (path: string) => {
       if (splitPaneCount > 1) {
@@ -193,6 +197,9 @@ export function ConversationPaneHost({
       onRenameSession={handleRenameSession}
       compactionDemoActive={pane.compactionDemoActive}
       onCompactionDemoStop={controllerInput.onCompactionDemoStop}
+      longConversationListDemoActive={pane.longConversationListDemoActive}
+      onLongConversationListDemoStop={controllerInput.onLongConversationListDemoStop}
+      longConversationListDemoStats={controllerInput.longConversationListDemo.stats}
       rewindDraft={pane.rewindDraft}
       onRewindDraftClear={pane.onRewindDraftClear}
       conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
