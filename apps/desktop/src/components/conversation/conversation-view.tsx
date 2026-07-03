@@ -25,6 +25,7 @@ import {
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
+import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
@@ -266,6 +267,10 @@ export function ConversationView({
   const { t } = useTranslation();
   const split = useConversationSplit();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
+  const getConversationScrollElement = useCallback(
+    () => scrollAreaViewport(conversationScrollAreaRef.current),
+    [],
+  );
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
@@ -552,6 +557,7 @@ export function ConversationView({
                 <ConversationList
                   messages={list.messages}
                   conversationRenderItems={list.conversationRenderItems}
+                  getScrollElement={getConversationScrollElement}
                   subagentViewActive={subagentViewActive}
                   composerSessionKey={list.composerSessionKey}
                   conversationListScopeKey={list.conversationListScopeKey}
