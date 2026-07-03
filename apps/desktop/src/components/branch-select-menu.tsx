@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, GitBranch } from "lucide-react";
 
@@ -30,12 +30,40 @@ export function BranchSelectMenu({
 }: BranchSelectMenuProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [isLabelTruncated, setIsLabelTruncated] = useState(false);
   const isRepository = branches.length > 0 || Boolean(currentBranch);
   const activeBranch = selectedBranch ?? currentBranch;
   const label = isRepository ? (activeBranch ?? t('error.noBranch')) : t('app.notGitRepoLabel');
   const triggerDisabled = disabled || !isRepository;
   const suppressTooltip = menuOpen || triggerDisabled;
-  const branchTitle = isRepository && activeBranch ? activeBranch : undefined;
+  const tooltipText = isLabelTruncated ? label : t('composer.selectBranch');
+
+  const updateLabelTruncation = useCallback(() => {
+    const element = labelRef.current;
+    if (!element) {
+      return;
+    }
+    setIsLabelTruncated(element.scrollWidth > element.clientWidth);
+  }, []);
+
+  useLayoutEffect(() => {
+    updateLabelTruncation();
+  }, [label, updateLabelTruncation]);
+
+  useEffect(() => {
+    const element = labelRef.current;
+    if (!element) {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      updateLabelTruncation();
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+    };
+  }, [updateLabelTruncation]);
 
   return (
     <DropdownMenu onOpenChange={setMenuOpen}>
@@ -56,7 +84,7 @@ export function BranchSelectMenu({
               )}
             >
               <GitBranch className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
-              <span className="min-w-0 flex-1 truncate" title={branchTitle}>
+              <span ref={labelRef} className="min-w-0 flex-1 truncate">
                 {label}
               </span>
               <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
@@ -64,7 +92,7 @@ export function BranchSelectMenu({
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={4}>
-          {branchTitle ?? t('composer.selectBranch')}
+          {tooltipText}
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="start" side="top" className={cn(DESKTOP_OVERLAY_LIST_WIDTH, "p-0")}>
