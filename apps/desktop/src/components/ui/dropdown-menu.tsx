@@ -163,6 +163,22 @@ function DropdownMenuSeparator({
   );
 }
 
+function DropdownMenuShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="dropdown-menu-shortcut"
+      className={cn(
+        "ml-auto text-xs tracking-widest text-muted-foreground",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 function DropdownMenuCheckboxItem({
   className,
   children,
@@ -197,6 +213,7 @@ export {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  resolveModBackslashSplitShortcutAction,
   resolveModCommaSettingsShortcutAction,
   resolveModPShortcutAction,
   resolveModTNewToolTabShortcutAction,
@@ -46,6 +47,57 @@ test('resolveModPShortcutAction returns null when mod is not pressed', () => {
       shiftKey: false,
       modPressed: false,
     }),
+    null,
+  );
+});
+
+test('resolveModBackslashSplitShortcutAction returns split-right for Mod+Backslash on conversation', () => {
+  assert.equal(
+    resolveModBackslashSplitShortcutAction(
+      {
+        defaultPrevented: false,
+        shiftKey: false,
+        altKey: false,
+        code: 'Backslash',
+        target: { tagName: 'DIV', closest: () => null },
+        modPressed: true,
+      },
+      conversationContext,
+    ),
+    'split-right',
+  );
+});
+
+test('resolveModBackslashSplitShortcutAction returns split-down for Mod+Shift+Backslash', () => {
+  assert.equal(
+    resolveModBackslashSplitShortcutAction(
+      {
+        defaultPrevented: false,
+        shiftKey: true,
+        altKey: false,
+        code: 'Backslash',
+        target: { tagName: 'DIV', closest: () => null },
+        modPressed: true,
+      },
+      conversationContext,
+    ),
+    'split-down',
+  );
+});
+
+test('resolveModBackslashSplitShortcutAction returns null outside conversation surface', () => {
+  assert.equal(
+    resolveModBackslashSplitShortcutAction(
+      {
+        defaultPrevented: false,
+        shiftKey: false,
+        altKey: false,
+        code: 'Backslash',
+        target: { tagName: 'DIV', closest: () => null },
+        modPressed: true,
+      },
+      { activeSurface: 'settings' },
+    ),
     null,
   );
 });

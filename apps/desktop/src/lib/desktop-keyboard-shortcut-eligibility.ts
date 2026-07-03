@@ -130,6 +130,32 @@ export function resolveModTNewToolTabShortcutAction(
   return "open-new-tool-tab";
 }
 
+/** Mod+\\ splits right; Mod+Shift+\\ splits down on the conversation surface. */
+export function resolveModBackslashSplitShortcutAction(
+  event: Pick<KeyboardEventLike, "defaultPrevented" | "shiftKey" | "altKey" | "code" | "target"> & {
+    modPressed: boolean;
+  },
+  context: SettingsShortcutSurfaceContext,
+): "split-right" | "split-down" | null {
+  if (event.defaultPrevented || !event.modPressed || event.altKey) {
+    return null;
+  }
+  if (event.code !== "Backslash") {
+    return null;
+  }
+  if (context.activeSurface !== "conversation") {
+    return null;
+  }
+  const target = event.target as HTMLElement | null;
+  if (isEditableShortcutTarget(target)) {
+    return null;
+  }
+  if (target?.closest(".workspace-shell-xterm, .xterm, .monaco-editor")) {
+    return null;
+  }
+  return event.shiftKey ? "split-down" : "split-right";
+}
+
 /** Escape returns from settings when no modal is open and focus is not in an editable field. */
 export function shouldTriggerSettingsEscapeShortcut(
   event: KeyboardEventLike,

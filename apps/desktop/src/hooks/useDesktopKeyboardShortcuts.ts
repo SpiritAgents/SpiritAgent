@@ -11,12 +11,14 @@ import {
 } from "@/lib/desktop-shell";
 import {
   resolveModCommaSettingsShortcutAction,
+  resolveModBackslashSplitShortcutAction,
   resolveModPShortcutAction,
   resolveModTNewToolTabShortcutAction,
   shouldTriggerConversationAbortShortcut,
   shouldTriggerSettingsEscapeShortcut,
 } from "@/lib/desktop-keyboard-shortcut-eligibility";
 import { triggerWorkspaceNewToolTabShortcut } from "@/lib/workspace-new-tool-tab-shortcut-bridge";
+import { triggerSplitPaneShortcut } from "@/lib/split-pane-shortcut-bridge";
 import { resolveUiLayoutZoomShortcutAction } from "@/lib/ui-layout-scale";
 import type { AppSurface } from "@/hooks/useAppSurfaceNavigation";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
@@ -131,6 +133,32 @@ export function useDesktopKeyboardShortcuts({
         return;
       }
       if (!triggerWorkspaceNewToolTabShortcut()) {
+        return;
+      }
+      event.preventDefault();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeSurfaceRef]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const action = resolveModBackslashSplitShortcutAction(
+        {
+          defaultPrevented: event.defaultPrevented,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey,
+          code: event.code,
+          target: event.target,
+          modPressed: isModShortcutPressed(event),
+        },
+        { activeSurface: activeSurfaceRef.current },
+      );
+      if (!action) {
+        return;
+      }
+      const direction = action === "split-down" ? "vertical" : "horizontal";
+      if (!triggerSplitPaneShortcut(direction)) {
         return;
       }
       event.preventDefault();
