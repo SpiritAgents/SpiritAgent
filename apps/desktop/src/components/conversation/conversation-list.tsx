@@ -31,7 +31,7 @@ import type {
 } from "@/types";
 import type { PointerEvent, ReactNode, RefObject } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { elementScroll, useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   CONVERSATION_GUTTER_X,
@@ -44,20 +44,6 @@ import {
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
-
-// 临时观测日志（Phase 4 移除）：记录 virtual-core 补偿性 scrollTop 写入（offset/delta/方向），
-// 用于验证上滑无非预期补偿。除日志外行为与默认 elementScroll 完全一致。
-const conversationVirtualScrollToFn: typeof elementScroll = (offset, options, instance) => {
-  if (import.meta.env.DEV && options.adjustments !== undefined) {
-    console.debug("[virtual-list] scroll adjust", {
-      offset,
-      adjustments: options.adjustments,
-      isScrolling: instance.isScrolling,
-      direction: instance.scrollDirection,
-    });
-  }
-  elementScroll(offset, options, instance);
-};
 
 export type ConversationListProps = {
   messages: readonly ConversationMessageSnapshot[];
@@ -226,7 +212,6 @@ export function ConversationList({
     estimateSize,
     overscan: 8,
     scrollMargin,
-    scrollToFn: conversationVirtualScrollToFn,
   });
 
   // scrollMargin = 列表起点相对滚动 viewport 顶部的偏移（含 shell pt-6/7），
