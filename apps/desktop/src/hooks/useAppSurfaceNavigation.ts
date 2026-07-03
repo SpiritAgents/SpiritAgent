@@ -39,6 +39,7 @@ export type UseAppSurfaceNavigationOptions = {
   sessionMessages: DesktopSnapshot["conversation"]["messages"];
   subagentViewActive: boolean;
   compactionDemoActive: boolean;
+  longConversationListDemoActive: boolean;
   sessionNavigationBusy: boolean;
   newSessionBusy: boolean;
   t: TFunction;
@@ -51,6 +52,7 @@ export function useAppSurfaceNavigation({
   sessionMessages,
   subagentViewActive,
   compactionDemoActive,
+  longConversationListDemoActive,
   sessionNavigationBusy,
   newSessionBusy,
   t,
@@ -109,6 +111,7 @@ export function useAppSurfaceNavigation({
     sessionMessageCount: sessionMessages.length,
     subagentViewActive,
     compactionDemoActive,
+    longConversationListDemoActive,
     newSessionBusy,
   });
   const showWorkspaceBindingControls = isEmptySession;

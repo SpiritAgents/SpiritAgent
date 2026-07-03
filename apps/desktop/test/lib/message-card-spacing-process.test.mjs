@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  conversationRenderItemGapBeforePx,
   shouldTightenAfterPreviousMetaMessage,
   shouldTightenAfterPreviousRenderItem,
   shouldUseDefaultSpacingAfterAbortedThought,
@@ -99,4 +100,39 @@ test('shouldTightenAfterPreviousMetaMessage keeps meta tighten for tool-turn Tho
 
   assert.equal(shouldUseDefaultSpacingAfterAbortedThought(messages[2], messages[3], messages, 3), false);
   assert.equal(shouldTightenAfterPreviousMetaMessage(messages[2], messages[3], messages, 3), true);
+});
+
+test('conversationRenderItemGapBeforePx maps virtual row spacing', () => {
+  assert.equal(
+    conversationRenderItemGapBeforePx({
+      isFirst: true,
+      compactAfterPrevious: false,
+      tightenAfterPreviousMeta: false,
+    }),
+    0,
+  );
+  assert.equal(
+    conversationRenderItemGapBeforePx({
+      isFirst: false,
+      compactAfterPrevious: false,
+      tightenAfterPreviousMeta: false,
+    }),
+    24,
+  );
+  assert.equal(
+    conversationRenderItemGapBeforePx({
+      isFirst: false,
+      compactAfterPrevious: true,
+      tightenAfterPreviousMeta: false,
+    }),
+    8,
+  );
+  assert.equal(
+    conversationRenderItemGapBeforePx({
+      isFirst: false,
+      compactAfterPrevious: false,
+      tightenAfterPreviousMeta: true,
+    }),
+    12,
+  );
 });

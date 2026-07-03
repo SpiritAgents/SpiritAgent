@@ -86,6 +86,7 @@ export type UseComposerControllerOptions = {
   isEmptySession: boolean;
   activeSessionReadOnly: boolean;
   compactionDemoActive: boolean;
+  longConversationListDemoActive: boolean;
   subagentViewActive: boolean;
   pendingApproval: DesktopSnapshot["conversation"]["pendingToolApproval"];
   pendingQuestions: ReturnType<typeof useDesktopRuntime>["pendingQuestions"];
@@ -106,6 +107,7 @@ export function useComposerController({
   isEmptySession,
   activeSessionReadOnly,
   compactionDemoActive,
+  longConversationListDemoActive,
   subagentViewActive,
   pendingApproval,
   pendingQuestions,
@@ -257,6 +259,7 @@ export function useComposerController({
 
   const messageRewindComposerEnabled =
     !compactionDemoActive &&
+    !longConversationListDemoActive &&
     !subagentViewActive &&
     !activeSessionReadOnly &&
     !pendingApproval &&
@@ -286,6 +289,7 @@ export function useComposerController({
     && runtime.paneSendBusySessionPath === paneSessionPathKey;
   const composerCanSend =
     !compactionDemoActive &&
+    !longConversationListDemoActive &&
     !subagentViewActive &&
     composerHasPayload &&
     !activeSessionReadOnly &&

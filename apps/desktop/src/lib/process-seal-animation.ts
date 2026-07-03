@@ -16,12 +16,17 @@ export function isLiveComposeViewKey(viewKey: string): boolean {
 export function resolveProcessSealLiveTurnActive(options: {
   subagentViewActive: boolean;
   compactionDemoActive: boolean;
+  longConversationListDemoActive?: boolean;
   isBusy?: boolean;
   busyAction?: string | null;
   pendingAuxState?: PendingAssistantAux | null;
   messages: readonly ConversationMessageSnapshot[];
 }): boolean {
-  if (options.subagentViewActive || options.compactionDemoActive) {
+  if (
+    options.subagentViewActive
+    || options.compactionDemoActive
+    || options.longConversationListDemoActive === true
+  ) {
     return false;
   }
   if (options.busyAction === 'session') {
@@ -165,6 +170,7 @@ export function useProcessSealAnimationGate(input: {
   renderItems: readonly ConversationRenderItem[];
   subagentViewActive: boolean;
   compactionDemoActive: boolean;
+  longConversationListDemoActive?: boolean;
   isBusy?: boolean;
   busyAction?: string | null;
   pendingAuxState?: PendingAssistantAux;
@@ -184,6 +190,7 @@ export function useProcessSealAnimationGate(input: {
   const liveTurnActive = resolveProcessSealLiveTurnActive({
     subagentViewActive: input.subagentViewActive,
     compactionDemoActive: input.compactionDemoActive,
+    longConversationListDemoActive: input.longConversationListDemoActive,
     isBusy: input.isBusy,
     busyAction: input.busyAction,
     pendingAuxState: input.pendingAuxState,

@@ -74,6 +74,7 @@ test('resolveEffectiveEmptySession treats pending reset as empty even with stale
       sessionMessageCount: 4,
       subagentViewActive: false,
       compactionDemoActive: false,
+      longConversationListDemoActive: false,
       newSessionBusy: true,
     }),
     true,
@@ -83,6 +84,7 @@ test('resolveEffectiveEmptySession treats pending reset as empty even with stale
       sessionMessageCount: 4,
       subagentViewActive: false,
       compactionDemoActive: false,
+      longConversationListDemoActive: false,
       newSessionBusy: false,
     }),
     false,
@@ -92,9 +94,20 @@ test('resolveEffectiveEmptySession treats pending reset as empty even with stale
       sessionMessageCount: 0,
       subagentViewActive: false,
       compactionDemoActive: false,
+      longConversationListDemoActive: false,
       newSessionBusy: false,
     }),
     true,
+  );
+  assert.equal(
+    resolveEffectiveEmptySession({
+      sessionMessageCount: 0,
+      subagentViewActive: false,
+      compactionDemoActive: false,
+      longConversationListDemoActive: true,
+      newSessionBusy: false,
+    }),
+    false,
   );
 });
 

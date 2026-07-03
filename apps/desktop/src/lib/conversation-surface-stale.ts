@@ -43,9 +43,14 @@ export function resolveEffectiveEmptySession(input: {
   sessionMessageCount: number;
   subagentViewActive: boolean;
   compactionDemoActive: boolean;
+  longConversationListDemoActive: boolean;
   newSessionBusy: boolean;
 }): boolean {
-  if (input.compactionDemoActive || input.subagentViewActive) {
+  if (
+    input.compactionDemoActive
+    || input.longConversationListDemoActive
+    || input.subagentViewActive
+  ) {
     return false;
   }
   if (input.newSessionBusy || input.sessionMessageCount === 0) {
