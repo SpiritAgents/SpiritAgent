@@ -6,10 +6,13 @@ import {
 } from '@/lib/message-card-spacing';
 import type { ConversationMessageSnapshot } from '@/types';
 
-const PROCESS_GROUP_BODY_ESTIMATE_PX = 220;
-const USER_MESSAGE_BODY_ESTIMATE_PX = 72;
+// 估高误差 = virtual-core 首测补偿量 = 手动上滑时的可感知跳变幅度（补偿同步写
+// scrollTop，行位置经 React 异步更新，错帧暴露为跳动），故必须贴近实测：
+// process-group 按「折叠态」量取（展开由实测缓存接管），数值来自长会话 demo 实测。
+const PROCESS_GROUP_BODY_ESTIMATE_PX = 20;
+const USER_MESSAGE_BODY_ESTIMATE_PX = 68;
 const TOOL_MESSAGE_BODY_ESTIMATE_PX = 52;
-const ASSISTANT_BODY_ESTIMATE_PX = 168;
+const ASSISTANT_BODY_ESTIMATE_PX = 253;
 const ASSISTANT_META_BODY_ESTIMATE_PX = 92;
 const FALLBACK_BODY_ESTIMATE_PX = 132;
 
