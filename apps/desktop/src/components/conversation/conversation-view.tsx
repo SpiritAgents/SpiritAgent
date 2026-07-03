@@ -283,9 +283,9 @@ export function ConversationView({
         })
       : null;
 
-  useConversationSessionScrollTail({
+  const { listSettling } = useConversationSessionScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
-    composerSessionKey: list.composerSessionKey,
+    contentKey: `${list.composerSessionKey || "__no-session__"}:${list.conversationListScopeKey}:e${list.conversationListRemountEpoch}`,
     enabled: conversationMessagesVisible,
   });
 
@@ -547,11 +547,13 @@ export function ConversationView({
             <div
               data-spirit-surface="conversation-scroll-body"
               className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
-              style={
-                (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
+              style={{
+                ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                   ? { paddingBottom: conversationScrollBedPaddingPx }
-                  : undefined
-              }
+                  : undefined),
+                // 定底 settled 前隐藏列表，避免「估高定底 → 实测修正」两次可见位移
+                ...(listSettling ? { visibility: "hidden" as const } : undefined),
+              }}
             >
               {(!isEmptySession || subagentViewActive) && !hideStaleConversationMessages ? (
                 <ConversationList

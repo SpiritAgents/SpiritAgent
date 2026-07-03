@@ -1,45 +1,75 @@
-import { useLayoutEffect, useRef, type ComponentRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type ComponentRef, type RefObject } from "react";
 
 import type { ScrollArea } from "@/components/ui/scroll-area";
-import { scrollAreaToBottom, scrollAreaViewport } from "@/lib/scroll-area-viewport";
+import {
+  scrollAreaToBottom,
+  scrollAreaViewport,
+  scrollDistanceFromBottom,
+} from "@/lib/scroll-area-viewport";
 
 export type UseConversationSessionScrollTailOptions = {
   scrollAreaRef: RefObject<ComponentRef<typeof ScrollArea> | null>;
-  composerSessionKey: string;
+  /** 列表内容标识（session key + scope key + remount epoch）；变化即重新定底 */
+  contentKey: string;
   /** 会话内容可见（非空、非导航占位隐藏）时才滚动 */
   enabled: boolean;
 };
 
-/** 切换 composer 会话后默认滚到对话尾部（最新消息）。 */
+// 定底收敛帧数上限：切入正在流式输出的会话时 scrollHeight 持续增长、永不 settled，
+// 到达上限后直接显示，交由 stream tail 继续跟随。
+const SETTLE_MAX_FRAMES = 12;
+
+/**
+ * 切换 composer 会话（或列表 scope / remount epoch 变化）后定底到最新消息。
+ *
+ * 虚拟化下首帧按估高布局滚底，随后实测修正 totalSize 需再次滚底，两次可见位移
+ * 即「进入会话卡两下」。故 settled（滚底后下一帧仍贴底）前返回 listSettling=true，
+ * 由调用方隐藏列表（visibility:hidden 不影响布局测量），settled 后一次性显示。
+ */
 export function useConversationSessionScrollTail({
   scrollAreaRef,
-  composerSessionKey,
+  contentKey,
   enabled,
-}: UseConversationSessionScrollTailOptions): void {
-  const previousComposerSessionKeyRef = useRef<string | null>(null);
+}: UseConversationSessionScrollTailOptions): { listSettling: boolean } {
+  const previousContentKeyRef = useRef<string | null>(null);
+  const [settling, setSettling] = useState(enabled);
 
   useLayoutEffect(() => {
     if (!enabled) {
-      // 空会话等场景会卸载消息列表；下次重新可见时需再次滚到底部
-      previousComposerSessionKeyRef.current = null;
+      // 空会话等场景会卸载消息列表；下次重新可见时需再次定底
+      previousContentKeyRef.current = null;
+      setSettling(false);
       return;
     }
 
-    const sessionChanged = previousComposerSessionKeyRef.current !== composerSessionKey;
-    if (!sessionChanged) {
+    const contentChanged = previousContentKeyRef.current !== contentKey;
+    if (!contentChanged) {
       return;
     }
-    previousComposerSessionKeyRef.current = composerSessionKey;
+    previousContentKeyRef.current = contentKey;
 
-    const scrollToTail = () => {
-      const viewport = scrollAreaViewport(scrollAreaRef.current);
-      if (!viewport) {
+    const viewport = scrollAreaViewport(scrollAreaRef.current);
+    if (!viewport) {
+      setSettling(false);
+      return;
+    }
+
+    setSettling(true);
+    scrollAreaToBottom(viewport);
+
+    let frame = 0;
+    let rafId = requestAnimationFrame(function step() {
+      frame += 1;
+      // 帧首仍贴底 = 上一帧滚底后的实测修正没有把视口推离底部，视为 settled
+      if (scrollDistanceFromBottom(viewport) <= 1 || frame >= SETTLE_MAX_FRAMES) {
+        setSettling(false);
         return;
       }
       scrollAreaToBottom(viewport);
-    };
+      rafId = requestAnimationFrame(step);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [contentKey, enabled, scrollAreaRef]);
 
-    scrollToTail();
-    requestAnimationFrame(scrollToTail);
-  }, [composerSessionKey, enabled, scrollAreaRef]);
+  return { listSettling: settling };
 }
