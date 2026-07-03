@@ -10,6 +10,7 @@ import {
   type DesktopTimelineSegmentKind,
 } from './message-timeline.js';
 import {
+  isWorktreeSubagentSession,
   resolveWorktreeBootstrapCardPhaseFromSubagentStatus,
   upsertWorktreeBootstrapCardInTimeline,
 } from './worktree-bootstrap-card.js';
@@ -112,7 +113,9 @@ export class SubagentConversationProjection {
       ? existingMessages.map((message) => ({ ...message }))
       : seedMessagesFromSubagentSession(session);
     const projection = new SubagentConversationProjection(session.summary.sessionId, messages);
-    syncWorktreeBootstrapCardOnProjection(projection, session.summary.status, session.summary.sessionId);
+    if (isWorktreeSubagentSession(session.summary)) {
+      syncWorktreeBootstrapCardOnProjection(projection, session.summary.status, session.summary.sessionId);
+    }
     return projection;
   }
 
@@ -228,9 +231,7 @@ function syncSubagentWorktreeBootstrapCards(
   runtime: DesktopRuntime,
 ): void {
   for (const session of runtime.childSessionArchives()) {
-    const isWorktreeSubagent =
-      session.summary.status === 'bootstrapping'
-      || Boolean(session.summary.worktreePath);
+    const isWorktreeSubagent = isWorktreeSubagentSession(session.summary);
     if (!isWorktreeSubagent) {
       continue;
     }
