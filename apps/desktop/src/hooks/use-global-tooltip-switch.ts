@@ -322,11 +322,18 @@ export function useGlobalTooltipSwitch({
     commitClose(closingRegistrationId);
   }, [activeSlot, clearHoverCloseTimer, clearHoverOpenTimer, commitClose]);
 
+  const cancelPendingOpen = useCallback(() => {
+    clearHoverOpenTimer();
+    clearPointerSlot();
+  }, [clearHoverOpenTimer, clearPointerSlot]);
+
   const dismissIfOpen = useCallback(() => {
     if (activeItemRef.current !== null) {
       dismissActiveItem();
+      return;
     }
-  }, [dismissActiveItem]);
+    cancelPendingOpen();
+  }, [cancelPendingOpen, dismissActiveItem]);
 
   const onTriggerPointerDown = useCallback(
     (registrationId: string, itemId: string) => {
@@ -543,10 +550,11 @@ export function useGlobalTooltipSwitch({
           return;
         }
       }
+      clearHoverOpenTimer();
       clearPointerSlot();
       pointerDismissedRegistrationsRef.current.delete(registrationId);
     },
-    [isRelatedTarget],
+    [clearHoverOpenTimer, clearPointerSlot, isRelatedTarget],
   );
 
   const registerTriggerZone = useCallback((registrationId: string, zone: HTMLDivElement | null) => {
@@ -578,6 +586,30 @@ export function useGlobalTooltipSwitch({
     (registrationId: string, itemId: string) => isTooltipAnchorSlot(registrationId, itemId),
     [],
   );
+
+  useEffect(() => {
+    const cancelPendingOpenOnPointerLeave = (event: PointerEvent) => {
+      if (hoverOpenTimerRef.current === undefined) {
+        return;
+      }
+      const pointer = pointerSlotRef.current;
+      if (!pointer) {
+        return;
+      }
+      const target = event.target;
+      if (!isDomNode(target)) {
+        cancelPendingOpen();
+        return;
+      }
+      const cachedEnter = lastEnterTargetByRegistrationRef.current.get(pointer.registrationId);
+      if (cachedEnter?.contains(target)) {
+        return;
+      }
+      cancelPendingOpen();
+    };
+    document.addEventListener("pointermove", cancelPendingOpenOnPointerLeave, true);
+    return () => document.removeEventListener("pointermove", cancelPendingOpenOnPointerLeave, true);
+  }, [cancelPendingOpen]);
 
   useEffect(() => {
     if (!open) {
