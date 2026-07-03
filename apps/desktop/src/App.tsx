@@ -297,6 +297,15 @@ export default function App() {
           />
         ) : null}
         <div data-spirit-surface="main-frame" className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+        <ConversationSplitProvider
+          runtime={runtime}
+          snapshot={snapshot}
+          conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
+          onEnsureConversationSurface={() => {
+            surfaceNav.setLastNonSettingsSurface("conversation");
+            surfaceNav.setActiveSurface("conversation");
+          }}
+        >
         <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
           <SessionSidebar
             narrow={false}
@@ -523,11 +532,6 @@ export default function App() {
             )}
             aria-hidden={surfaceNav.settingsMode}
           >
-          <ConversationSplitProvider
-            runtime={runtime}
-            snapshot={snapshot}
-            conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
-          >
           <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ConversationSplitRoot
@@ -553,8 +557,10 @@ export default function App() {
                 onPaneDragStart={pane.onPaneDragStart}
                 onPaneDragLeave={pane.onPaneDragLeave}
                 onPaneDrop={pane.onPaneDrop}
+                onSidebarSessionDrop={pane.onSidebarSessionDrop}
                 paneDropOverlayActive={pane.paneDropOverlayActive}
                 paneDragSourcePaneId={pane.paneDragSourcePaneId}
+                sidebarSessionDragActive={pane.sidebarSessionDragActive}
                 useMicaBackdrop={useMicaBackdrop}
                 subagentViewActive={subagentViewActive}
                 subagentViewer={subagentViewer}
@@ -587,9 +593,9 @@ export default function App() {
             onOpenIntegrationsSettings={openIntegrationsSettings}
           />
           </div>
-          </ConversationSplitProvider>
           </div>
         ) : null}
+        </ConversationSplitProvider>
         </div>
       </div>
 

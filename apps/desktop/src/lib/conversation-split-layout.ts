@@ -370,6 +370,21 @@ function replaceLeaf(
   };
 }
 
+/** Split a target pane by wrapping it with a new leaf at the given drop zone (sidebar session drag). */
+export function splitPaneAtZone(
+  node: SplitLayoutNode,
+  targetPaneId: string,
+  zone: PaneRepositionZone,
+  newLeaf: SplitLayoutLeafNode,
+): SplitLayoutNode {
+  const targetLeaf = findLeafByPaneId(node, targetPaneId);
+  if (!targetLeaf) {
+    return node;
+  }
+  const replacement = wrapWithSplit(targetLeaf, newLeaf, zone);
+  return replaceLeaf(node, targetPaneId, replacement);
+}
+
 export function repositionPane(
   node: SplitLayoutNode,
   sourcePaneId: string,
