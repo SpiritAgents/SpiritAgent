@@ -97,6 +97,7 @@ import {
   normalizeSessionPathKey,
 } from "@/lib/session-path-kind";
 
+import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-composer-insert";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 import {
@@ -187,9 +188,9 @@ type ConversationSplitContextValue = {
 
   setFocusedPaneComposerInsert: (handlers: FocusedPaneComposerInsertHandlers | null) => void;
 
-  focusedPaneComposerFocusRef: MutableRefObject<(() => void) | null>;
+  focusedPaneComposerControlsRef: MutableRefObject<FocusedPaneComposerControls | null>;
 
-  setFocusedPaneComposerFocus: (focus: (() => void) | null) => void;
+  setFocusedPaneComposerControls: (controls: FocusedPaneComposerControls | null) => void;
 
   conversationAbortShortcutTargetRef: ConversationAbortShortcutTargetRef | null;
 
@@ -553,7 +554,7 @@ export function ConversationSplitProvider({
 
   const focusedPaneComposerInsertRef = useRef<FocusedPaneComposerInsertHandlers | null>(null);
 
-  const focusedPaneComposerFocusRef = useRef<(() => void) | null>(null);
+  const focusedPaneComposerControlsRef = useRef<FocusedPaneComposerControls | null>(null);
 
   const setFocusedPaneComposerInsert = useCallback(
     (handlers: FocusedPaneComposerInsertHandlers | null) => {
@@ -562,9 +563,12 @@ export function ConversationSplitProvider({
     [],
   );
 
-  const setFocusedPaneComposerFocus = useCallback((focus: (() => void) | null) => {
-    focusedPaneComposerFocusRef.current = focus;
-  }, []);
+  const setFocusedPaneComposerControls = useCallback(
+    (controls: FocusedPaneComposerControls | null) => {
+      focusedPaneComposerControlsRef.current = controls;
+    },
+    [],
+  );
 
   const setPaneDropTarget = useCallback(
     (target: { paneId: string; zone: PaneDropZone } | null) => {
@@ -1675,9 +1679,9 @@ export function ConversationSplitProvider({
 
       setFocusedPaneComposerInsert,
 
-      focusedPaneComposerFocusRef,
+      focusedPaneComposerControlsRef,
 
-      setFocusedPaneComposerFocus,
+      setFocusedPaneComposerControls,
 
       conversationAbortShortcutTargetRef,
 

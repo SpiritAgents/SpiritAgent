@@ -55,7 +55,9 @@ import { canForkSession } from "@/lib/fork-eligibility";
 import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { shouldPromptGitBranchCheckoutBeforeSend } from "@/lib/composer-branch-checkout-gate";
 import {
-  readComposerDraft,
+  buildPaneComposerDraftKey,
+  clearComposerDraft,
+  resolvePaneComposerDraft,
   writeComposerDraft,
 } from "@/lib/composer-draft-store";
 import {
@@ -126,15 +128,13 @@ export function useComposerController({
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
   const paneComposerDraftKey =
     isPaneIsolated && paneSessionPath?.trim()
-      ? `pane:${paneSessionPath.replace(/\\/g, "/").toLowerCase()}`
+      ? buildPaneComposerDraftKey(paneSessionPath)
       : composerSessionKey;
   useEffect(() => {
     if (!isPaneIsolated || !paneComposerDraftKey) {
       return;
     }
-    const stored =
-      readComposerDraft(paneComposerDraftKey)
-      ?? (composerSessionKey ? readComposerDraft(composerSessionKey) : null);
+    const stored = resolvePaneComposerDraft(paneComposerDraftKey, composerSessionKey);
     setPaneComposer(stored?.text ?? "");
     setPaneComposerInitialSegments(stored?.segments ?? null);
     setPaneLocalFileAttachments(
@@ -197,11 +197,7 @@ export function useComposerController({
     setPaneComposer("");
     setPaneComposerInitialSegments(null);
     setPaneLocalFileAttachments([]);
-    writeComposerDraft(paneComposerDraftKey, {
-      text: "",
-      localFilePaths: [],
-      segments: [],
-    });
+    clearComposerDraft(paneComposerDraftKey);
   }, [isPaneIsolated, paneComposerDraftKey]);
 
   const [composerBrowserElementAttachments, setComposerBrowserElementAttachments] = useState<
@@ -583,11 +579,9 @@ export function useComposerController({
     setActiveSurface("conversation");
   }, [setActiveSurface, setLastNonSettingsSurface]);
 
-  const prefillComposerSkillChip = useCallback(
+  const prefillSkillChip = useCallback(
     (skillName: string) => {
       const alias = skillSlashAlias(skillName);
-      setLastNonSettingsSurface("conversation");
-      setActiveSurface("conversation");
       setComposerText("");
       setSlashSelectedIndex(-1);
       setDismissedSlashQueryKey(null);
@@ -599,7 +593,7 @@ export function useComposerController({
         composerRichInputRef.current?.focus();
       });
     },
-    [runtime, setActiveSurface, setLastNonSettingsSurface],
+    [setComposerText],
   );
 
   const isActionPaletteItemDisabled = useCallback(
@@ -1194,7 +1188,7 @@ export function useComposerController({
     slashQuery,
     slashSuggestions,
     applySlashSuggestionItem,
-    prefillComposerSkillChip,
+    prefillSkillChip,
     runActionPaletteItem,
     isActionPaletteItemDisabled,
     applyFileReferenceSuggestion,
