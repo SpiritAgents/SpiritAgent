@@ -104,16 +104,34 @@ export interface ToolAgentMcpToolCatalogToolEntry {
   description: string;
 }
 
+export interface ToolAgentMcpResourceCatalogEntry {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeTypes?: string[];
+}
+
+export interface McpResourceIndexEntry {
+  server: string;
+  uri: string;
+  name: string;
+  description?: string;
+  mimeTypes?: string[];
+}
+
 export interface ToolAgentMcpToolCatalogServerEntry {
   name: string;
   displayName: string;
   state: McpServerRuntimeState;
   lastError?: string;
   tools: ToolAgentMcpToolCatalogToolEntry[];
+  resources: ToolAgentMcpResourceCatalogEntry[];
 }
 
 export interface ToolAgentMcpToolCatalogSnapshot {
   servers: ToolAgentMcpToolCatalogServerEntry[];
   truncated: boolean;
   totalToolCount: number;
+  resourcesTruncated: boolean;
+  totalResourceCount: number;
 }

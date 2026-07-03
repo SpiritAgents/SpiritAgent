@@ -24,6 +24,10 @@ import {
   normalizeMcpServerConfig,
 } from './config.js';
 import { SdkMcpConnection } from './client.js';
+import {
+  aggregateListedResourcesForServer,
+  buildMcpToolCatalogSnapshot,
+} from './catalog-snapshot.js';
 import { McpConfigError } from './errors.js';
 import { McpRegistry } from './registry.js';
 import type {
@@ -31,6 +35,7 @@ import type {
   McpConfigFile,
   McpServerConfig,
   McpServerRuntimeState,
+  McpResourceIndexEntry,
   McpToolIndexEntry,
   ResolvedMcpHttpTransportConfig,
   ResolvedMcpServerConfig,
@@ -48,7 +53,6 @@ import {
 const WINDOWS_USER_ENV_REGISTRY_PATH = 'HKCU\\Environment';
 const WINDOWS_MACHINE_ENV_REGISTRY_PATH =
   'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment';
-const MCP_CATALOG_TOOL_LIMIT = 128;
 
 interface McpPromptCatalogEntry {
   name: string;
@@ -82,6 +86,7 @@ type EnvLookupStore = Map<string, string>;
 interface UserMcpToolingCacheEntry {
   digest: string;
   indexEntries: McpToolIndexEntry[];
+  resourceEntries: McpResourceIndexEntry[];
   prompts: Map<string, McpPromptCatalogEntry[]>;
   serverStates: Map<string, { state: McpServerRuntimeState; cachedTools: number; lastError?: string }>;
 }
@@ -102,6 +107,7 @@ export class McpService {
   };
   private configDigestStore = mcpConfigDigest({ servers: {} });
   private toolIndexStore: McpToolIndexEntry[] = [];
+  private resourceIndexStore: McpResourceIndexEntry[] = [];
   private catalogRevisionStore = 0;
   private promptCatalogStore = new Map<string, McpPromptCatalogEntry[]>();
   private loadErrorStore: string | undefined;
@@ -131,6 +137,7 @@ export class McpService {
   catalogSnapshot(): ToolAgentMcpToolCatalogSnapshot {
     return buildMcpToolCatalogSnapshot(
       this.toolIndexStore,
+      this.resourceIndexStore,
       this.registry,
       this.loadedConfigStore.resolved,
     );
@@ -409,7 +416,7 @@ export class McpService {
       supportsResources: server.capabilities.resources,
       supportsPrompts: server.capabilities.prompts,
       toolsCount: status.cachedTools,
-      resourcesCount: 0,
+      resourcesCount: this.resourceIndexStore.filter((entry) => entry.server === name).length,
       promptsCount: (this.promptCatalogStore.get(name) ?? []).length,
     };
   }
@@ -691,6 +698,7 @@ export class McpService {
     }
 
     const indexEntries: McpToolIndexEntry[] = [];
+    const resourceEntries: McpResourceIndexEntry[] = [];
     const prompts = new Map<string, McpPromptCatalogEntry[]>();
 
     const { user: userConfigFile } = await loadMergedMcpConfigForWorkspace(
@@ -707,6 +715,7 @@ export class McpService {
     ) {
       userCacheHit = true;
       indexEntries.push(...sharedUserMcpToolingCache.indexEntries);
+      resourceEntries.push(...sharedUserMcpToolingCache.resourceEntries);
       for (const [serverName, entries] of sharedUserMcpToolingCache.prompts) {
         prompts.set(serverName, entries);
       }
@@ -718,22 +727,30 @@ export class McpService {
       }
     } else if (userServers.length > 0) {
       const userIndexEntries: McpToolIndexEntry[] = [];
+      const userResourceEntries: McpResourceIndexEntry[] = [];
       const userPrompts = new Map<string, McpPromptCatalogEntry[]>();
       const userServerStates = new Map<
         string,
         { state: McpServerRuntimeState; cachedTools: number; lastError?: string }
       >();
       for (const server of userServers) {
-        const status = await this.discoverServerTooling(server, userIndexEntries, userPrompts);
+        const status = await this.discoverServerTooling(
+          server,
+          userIndexEntries,
+          userResourceEntries,
+          userPrompts,
+        );
         userServerStates.set(server.name, status);
       }
       sharedUserMcpToolingCache = {
         digest: currentUserDigest,
         indexEntries: [...userIndexEntries],
+        resourceEntries: [...userResourceEntries],
         prompts: new Map(userPrompts),
         serverStates: new Map(userServerStates),
       };
       indexEntries.push(...userIndexEntries);
+      resourceEntries.push(...userResourceEntries);
       for (const [serverName, entries] of userPrompts) {
         prompts.set(serverName, entries);
       }
@@ -747,15 +764,17 @@ export class McpService {
     });
 
     for (const server of workspaceServers) {
-      await this.discoverServerTooling(server, indexEntries, prompts);
+      await this.discoverServerTooling(server, indexEntries, resourceEntries, prompts);
     }
 
     this.toolIndexStore = indexEntries;
+    this.resourceIndexStore = resourceEntries;
     this.catalogRevisionStore += 1;
     this.promptCatalogStore = prompts;
     this.toolingCacheInitialized = true;
     console.error('[mcp-service] refreshToolingCaches.done', {
       indexedTools: indexEntries.length,
+      indexedResources: resourceEntries.length,
       promptServers: prompts.size,
       userCacheHit,
     });
@@ -764,6 +783,7 @@ export class McpService {
   private async discoverServerTooling(
     server: ResolvedMcpServerConfig,
     indexEntries: McpToolIndexEntry[],
+    resourceEntries: McpResourceIndexEntry[],
     prompts: Map<string, McpPromptCatalogEntry[]>,
   ): Promise<{ state: McpServerRuntimeState; cachedTools: number; lastError?: string }> {
     this.registry.setServerState(server.name, 'loading', { cachedTools: 0 });
@@ -774,6 +794,10 @@ export class McpService {
       const discoveredTools =
         server.capabilities.tools && capabilities?.tools !== undefined
           ? (await connection.listTools()).tools
+          : [];
+      const discoveredResources =
+        server.capabilities.resources && capabilities?.resources !== undefined
+          ? (await connection.listResources()).resources
           : [];
       const discoveredPrompts =
         server.capabilities.prompts && capabilities?.prompts !== undefined
@@ -797,6 +821,18 @@ export class McpService {
           inputSchema,
         });
       }
+
+      resourceEntries.push(
+        ...aggregateListedResourcesForServer(
+          server.name,
+          discoveredResources.map((resource) => ({
+            uri: resource.uri,
+            name: resource.name,
+            ...(resource.description === undefined ? {} : { description: resource.description }),
+            ...(resource.mimeType === undefined ? {} : { mimeType: resource.mimeType }),
+          })),
+        ),
+      );
 
       prompts.set(
         server.name,
@@ -1347,47 +1383,4 @@ function findToolIndexEntry(
   toolName: string,
 ): McpToolIndexEntry | undefined {
   return entries.find((entry) => entry.server === serverName && entry.toolName === toolName);
-}
-
-function buildMcpToolCatalogSnapshot(
-  indexEntries: McpToolIndexEntry[],
-  registry: McpRegistry,
-  resolvedServers: Record<string, ResolvedMcpServerConfig>,
-): ToolAgentMcpToolCatalogSnapshot {
-  const grouped = new Map<string, McpToolIndexEntry[]>();
-  for (const entry of indexEntries) {
-    const current = grouped.get(entry.server) ?? [];
-    current.push(entry);
-    grouped.set(entry.server, current);
-  }
-
-  const totalToolCount = indexEntries.length;
-  const truncated = totalToolCount > MCP_CATALOG_TOOL_LIMIT;
-  let remaining = MCP_CATALOG_TOOL_LIMIT;
-  const servers = Object.values(resolvedServers)
-    .filter((server) => server.enabled)
-    .sort((left, right) => left.name.localeCompare(right.name))
-    .map((server) => {
-      const status = registry.get(server.name);
-      const toolsForServer = grouped.get(server.name) ?? [];
-      const visibleTools = remaining > 0 ? toolsForServer.slice(0, remaining) : [];
-      remaining -= visibleTools.length;
-      return {
-        name: server.name,
-        displayName: server.displayName,
-        state: status?.state ?? 'idle',
-        ...(status?.lastError === undefined ? {} : { lastError: status.lastError }),
-        tools: visibleTools.map((tool) => ({
-          name: tool.toolName,
-          description: tool.description,
-        })),
-      };
-    })
-    .filter((server) => server.tools.length > 0 || server.state === 'error');
-
-  return {
-    servers,
-    truncated,
-    totalToolCount,
-  };
 }
