@@ -494,7 +494,18 @@ export function ConversationList({
           {virtualItems.map((virtualItem) => (
             <div
               key={virtualItem.key}
-              ref={virtualizer.measureElement}
+              ref={(el) => {
+                virtualizer.measureElement(el);
+                // 滚动中挂载的行 virtual-core 会跳过同步实测（isScrolling 且无
+                // scrollState 时仅注册 RO，见其 measureElement 源码），实测与
+                // scrollTop 补偿延迟到 paint 后的 RO 回调，估算误差直接暴露为
+                // 可见跳变（上滑下跳、入场闪一下）。此处在 ref 挂载时强制同步
+                // 实测：补偿与行位置更新同 commit、paint 前完成；已实测过的行
+                // delta=0 为 no-op。量取口径与库默认一致（offsetHeight）。
+                if (el) {
+                  virtualizer.resizeItem(virtualItem.index, el.offsetHeight);
+                }
+              }}
               data-index={virtualItem.index}
               className="absolute left-0 top-0 w-full"
               style={{
