@@ -19,7 +19,7 @@
 
 ## Overview
 
-Spirit Agent is a monorepo for a **tool-using coding agent** that runs against a real project root. The same runtime powers a native desktop workspace and a terminal UI. Shared logic lives in TypeScript packages; hosts add platform-specific execution, discovery, and UI.
+Spirit Agent is a **tool-using coding agent** that runs against a real project root. The same runtime powers a native desktop workspace and a terminal UI. Shared logic lives in TypeScript packages; hosts add platform-specific execution, discovery, and UI.
 
 ```
 ┌───────────────────────────────────────────────────────┐
