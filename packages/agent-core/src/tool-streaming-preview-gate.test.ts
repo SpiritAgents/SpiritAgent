@@ -13,6 +13,8 @@ import {
   tryExtractPartialPlanName,
   tryExtractPartialReadFileFields,
   tryExtractPartialToolPath,
+  tryExtractPartialWebSearchQuery,
+  webSearchStreamingPreviewSignature,
 } from './tool-streaming-preview-gate.js';
 
 test('shouldEmitStreamingToolNamePreview fires once when name first appears', () => {
@@ -144,4 +146,30 @@ test('resolveStreamingToolPreviewEmit repeats edit_file when line delta changes'
   const paddedSameDelta = `${withExtraLine}${'x'.repeat(500)}`;
   const third = resolveStreamingToolPreviewEmit('edit_file', paddedSameDelta, second.nextState);
   assert.equal(third.emit, false);
+});
+
+test('web_search early preview extracts query from incomplete JSON', () => {
+  const partial = '{"query":"Spirit Agent 是什么项目"';
+  assert.equal(tryExtractPartialWebSearchQuery(partial), 'Spirit Agent 是什么项目');
+  assert.equal(hostToolArgumentsReadyForEarlyStreamingPreview('web_search', partial), true);
+  assert.equal(hostToolArgumentsReadyForPreview('web_search', partial), false);
+  assert.deepEqual(previewRequestFromStreamingArguments('web_search', partial), {
+    query: 'Spirit Agent 是什么项目',
+  });
+});
+
+test('resolveStreamingToolPreviewEmit repeats web_search preview when query grows', () => {
+  const partial = '{"query":"Spirit';
+  const first = resolveStreamingToolPreviewEmit('web_search', partial, {
+    readyPreviewEmitted: false,
+  });
+  assert.equal(first.emit, true);
+  assert.equal(webSearchStreamingPreviewSignature(partial), 'Spirit');
+
+  const longer = '{"query":"Spirit Agent"';
+  const second = resolveStreamingToolPreviewEmit('web_search', longer, first.nextState);
+  assert.equal(second.emit, true);
+
+  const unchanged = resolveStreamingToolPreviewEmit('web_search', longer, second.nextState);
+  assert.equal(unchanged.emit, false);
 });

@@ -2,6 +2,7 @@ import type { JsonObject } from '../../ports.js';
 import { isJsonObject } from '../../tool-agent.js';
 import type { OpenAiTransportConfig } from '../../openai/openai-compat.js';
 import type { ToolCallRequest } from '../../ports.js';
+import { tryExtractPartialWebSearchQuery } from '../../tool-streaming-preview-gate.js';
 import { invokeFormulaFiber } from './formula-client.js';
 import {
   isMoonshotFormulaWebSearchTool,
@@ -30,7 +31,7 @@ export function readMoonshotFormulaWebSearchQuery(argumentsJson: string): string
     const query = parsed.query;
     return typeof query === 'string' ? query.trim() : '';
   } catch {
-    return '';
+    return tryExtractPartialWebSearchQuery(argumentsJson) ?? '';
   }
 }
 

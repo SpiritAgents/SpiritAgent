@@ -676,6 +676,7 @@ test('web_search provider builtin preview completes when output_item.done report
 
   const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
   assert.equal(previewTool?.phase, 'preview');
+  assert.equal(previewTool?.headlineDetail, 'DeepSeek generation');
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
@@ -941,6 +942,7 @@ test('Moonshot Formula web_search tool-execution-finished preserves preview supp
   assert.equal(tool?.phase, 'succeeded');
   assert.equal(tool?.suppressExpand, true);
   assert.equal(tool?.argsExcerpt, 'DeepSeek 是什么');
+  assert.equal(tool?.headlineDetail, 'DeepSeek 是什么');
 });
 
 test('failed llm turn reuses streamed error text instead of duplicating assistant rows', () => {
