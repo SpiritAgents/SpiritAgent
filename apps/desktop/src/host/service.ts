@@ -2086,33 +2086,29 @@ class DesktopHostService {
   }
 
   async replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
+    const sessionPath =
+      request.sessionPath?.trim()
+      ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
+    if (sessionPath) {
+      await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
+        await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+      });
       await this.ensureInitialized(undefined, { fastPath: true });
-      const sessionPath =
-        request.sessionPath?.trim()
-        ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
-      if (sessionPath) {
-        await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
-          await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
-        });
-        return this.buildSnapshot();
-      }
-      return replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
-    });
+      return this.buildSnapshot();
+    }
+    return replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
   }
 
   async replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot> {
-    return this.runSerialized(async () => {
+    const sessionPath = request.sessionPath?.trim();
+    if (sessionPath) {
+      await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
+        await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+      });
       await this.ensureInitialized(undefined, { fastPath: true });
-      const sessionPath = request.sessionPath?.trim();
-      if (sessionPath) {
-        await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
-          await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
-        });
-        return this.buildSnapshot();
-      }
-      return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
-    });
+      return this.buildSnapshot();
+    }
+    return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
   }
 
   async resetSession(): Promise<DesktopSnapshot> {
