@@ -1,4 +1,5 @@
 import type { HostApi } from '../host-api';
+import type { AbortConversationRequest } from '../types';
 
 export async function createElectronHostApi(): Promise<HostApi> {
   if (typeof window === 'undefined' || !window.spiritDesktop) {
