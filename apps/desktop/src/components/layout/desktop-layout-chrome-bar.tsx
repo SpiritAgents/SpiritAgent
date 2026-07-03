@@ -33,8 +33,6 @@ import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-conte
 import { useWorkspaceToolsChrome } from "@/contexts/workspace-tools-chrome-context";
 import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
-  DESKTOP_OVERLAY_SHORT_LIST_PADDING,
-  DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
@@ -327,7 +325,7 @@ export function DesktopLayoutChromeBar({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "p-0")}
+                className="min-w-40 p-0"
                 onCloseAutoFocus={(event) => {
                   if (!pendingRenameFocusRef.current) {
                     return;
@@ -336,29 +334,29 @@ export function DesktopLayoutChromeBar({
                   pendingRenameFocusRef.current = false;
                 }}
               >
-                <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+                <div className="p-1">
                   <DropdownMenuItem
-                    className="gap-1.5"
+                    className="gap-2"
                     onSelect={() => onSplit?.()}
                   >
-                    <SquareSplitHorizontal className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                    <SquareSplitHorizontal className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                     <span>{t("app.splitRight")}</span>
                     <DropdownMenuShortcut>{splitRightShortcutLabel}</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    className="gap-1.5"
+                    className="gap-2"
                     onSelect={() => onSplitVertical?.()}
                   >
-                    <SquareSplitVertical className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                    <SquareSplitVertical className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                     <span>{t("app.splitDown")}</span>
                     <DropdownMenuShortcut>{splitDownShortcutLabel}</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   {showClosePane ? (
                     <DropdownMenuItem
-                      className="gap-1.5"
+                      className="gap-2"
                       onSelect={() => onClosePane?.()}
                     >
-                      <X className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                      <X className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                       <span>{t("app.closePane")}</span>
                     </DropdownMenuItem>
                   ) : null}
@@ -366,9 +364,9 @@ export function DesktopLayoutChromeBar({
                 {canRenameTitle ? (
                   <>
                     <DropdownMenuSeparator />
-                    <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+                    <div className="p-1">
                       <DropdownMenuItem
-                        className="gap-1.5"
+                        className="gap-2"
                         disabled={renameSessionBusy || conversationBusy}
                         title={conversationBusy ? t("sidebar.cannotRenameBusySession") : undefined}
                         onSelect={() => {
@@ -376,7 +374,7 @@ export function DesktopLayoutChromeBar({
                           handleRenameStart();
                         }}
                       >
-                        <Pencil className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
+                        <Pencil className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                         <span>{t("sidebar.renameSession")}</span>
                       </DropdownMenuItem>
                     </div>
@@ -385,10 +383,10 @@ export function DesktopLayoutChromeBar({
                 {showDeleteSession && onDeleteSession && trimmedDeleteSessionPath ? (
                   <>
                     <DropdownMenuSeparator />
-                    <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
+                    <div className="p-1">
                       <DropdownMenuItem
                         variant="destructive"
-                        className="gap-1.5"
+                        className="gap-2"
                         disabled={deleteSessionBusy || conversationBusy}
                         title={conversationBusy ? t("sidebar.cannotDeleteBusySession") : undefined}
                         onSelect={() => {
