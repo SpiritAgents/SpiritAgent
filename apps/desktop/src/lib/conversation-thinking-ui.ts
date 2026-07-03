@@ -4,10 +4,6 @@ import {
 } from './subagent-display.js';
 import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
 
-export function isMcpBackgroundStatusThinkingText(text: string | undefined): boolean {
-  return /^MCP 工具执行中:/u.test(text?.trim() ?? '');
-}
-
 export function isStandaloneThinkingMessage(
   message: ConversationMessageSnapshot | undefined,
 ): boolean {
@@ -160,14 +156,12 @@ export function shouldStripThinkingAuxNearToolCard(
     return false;
   }
   if (message.tool) {
-    return isMcpBackgroundStatusThinkingText(thinking);
+    return false;
   }
   if (!hasAssistantToolInCurrentTurn(messages, messageIndex)) {
     return false;
   }
-  return (
-    isMcpBackgroundStatusThinkingText(thinking) || isGenericPendingThinkingStatusText(thinking)
-  );
+  return isGenericPendingThinkingStatusText(thinking);
 }
 
 export function shouldShowAssistantThinkingCollapsible(
@@ -199,7 +193,6 @@ export function shouldShowAssistantThinkingCollapsible(
   const hasDisplayableThinkingAux = Boolean(
     thinking &&
       !isGenericPendingThinkingStatusText(thinking) &&
-      !isMcpBackgroundStatusThinkingText(thinking) &&
       (!message.content.trim() || thinking !== message.content.trim()),
   );
   const show =
