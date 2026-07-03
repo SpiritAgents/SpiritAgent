@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { AtSign, File, Plus } from 'lucide-react'
@@ -28,6 +28,8 @@ type ComposerInsertMenuProps = {
   onInsertSkillTrigger(): void
 }
 
+type PendingInsertAction = 'at' | 'slash' | 'local'
+
 function SlashBadge() {
   return (
     <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-muted/65 text-[10px] font-semibold text-muted-foreground">
@@ -45,10 +47,34 @@ export function ComposerInsertMenu({
 }: ComposerInsertMenuProps) {
   const { t } = useTranslation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const pendingActionRef = useRef<PendingInsertAction | null>(null)
   const suppressTooltip = menuOpen || disabled
 
+  const handleMenuOpenChange = useCallback((open: boolean) => {
+    setMenuOpen(open)
+    if (open) {
+      return
+    }
+    const action = pendingActionRef.current
+    if (!action) {
+      return
+    }
+    pendingActionRef.current = null
+    switch (action) {
+      case 'at':
+        onInsertWorkspaceReference()
+        break
+      case 'slash':
+        onInsertSkillTrigger()
+        break
+      case 'local':
+        void onPickLocalFile()
+        break
+    }
+  }, [onInsertSkillTrigger, onInsertWorkspaceReference, onPickLocalFile])
+
   return (
-    <DropdownMenu modal onOpenChange={setMenuOpen}>
+    <DropdownMenu modal onOpenChange={handleMenuOpenChange}>
       <Tooltip
         open={suppressTooltip ? false : undefined}
         delayDuration={300}
@@ -97,7 +123,7 @@ export function ComposerInsertMenu({
             'text-popover-foreground',
           )}
           onSelect={() => {
-            onInsertWorkspaceReference()
+            pendingActionRef.current = 'at'
           }}
         >
           <AtSign className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -111,7 +137,7 @@ export function ComposerInsertMenu({
             'text-popover-foreground',
           )}
           onSelect={() => {
-            void onPickLocalFile()
+            pendingActionRef.current = 'local'
           }}
         >
           <File className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -124,7 +150,7 @@ export function ComposerInsertMenu({
             'text-popover-foreground',
           )}
           onSelect={() => {
-            onInsertSkillTrigger()
+            pendingActionRef.current = 'slash'
           }}
         >
           <SlashBadge />

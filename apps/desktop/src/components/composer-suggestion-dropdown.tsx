@@ -101,9 +101,14 @@ export function ComposerSuggestionDropdown({
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
+      if (active) {
+        return;
+      }
       setRadixOpen(false);
       runAfterRadixOverlayClose(onDismiss);
+      return;
     }
+    setRadixOpen(true);
   };
 
   const preventComposerOutsideDismiss = (event: { target: EventTarget | null; preventDefault(): void }) => {
