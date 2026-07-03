@@ -63,17 +63,42 @@ export function useConversationStreamScrollTail({
     if (!enabled) {
       return;
     }
-    const viewport = scrollAreaViewport(scrollAreaRef.current);
-    if (!viewport) {
+    const root = scrollAreaRef.current;
+    const viewport = scrollAreaViewport(root);
+    if (!root || !viewport) {
       return;
     }
 
+    // stick 语义 =「用户主动离开底部」，只能由用户输入解除，不能从 scroll 事件
+    // 反推：流式期间内容频繁增删（收拢/终版渲染/clamp），scroll 事件送达时读到的
+    // scrollTop 与距底都是过期信号——曾两次实测被误判为用户上滚（距底阈值版、
+    // scrollTop 上移版），把跟底误关后内容 RO 不再重钉底，即「流式结束后上跳」。
+    // 现规则：wheel 上滚或在 viewport 外按下指针（Radix 滚动条）→ 解除；
+    // scroll 事件仅在贴近底部时恢复，永不解除。
+    const onWheel = (event: WheelEvent) => {
+      if (event.deltaY < 0) {
+        stickToBottomRef.current = false;
+      }
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !viewport.contains(event.target)) {
+        stickToBottomRef.current = false;
+      }
+    };
     const onScroll = () => {
-      stickToBottomRef.current = isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX);
+      if (!stickToBottomRef.current && isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX)) {
+        stickToBottomRef.current = true;
+      }
     };
 
+    viewport.addEventListener("wheel", onWheel, { passive: true });
+    root.addEventListener("pointerdown", onPointerDown, { passive: true });
     viewport.addEventListener("scroll", onScroll, { passive: true });
-    return () => viewport.removeEventListener("scroll", onScroll);
+    return () => {
+      viewport.removeEventListener("wheel", onWheel);
+      root.removeEventListener("pointerdown", onPointerDown);
+      viewport.removeEventListener("scroll", onScroll);
+    };
   }, [enabled, scrollAreaRef]);
 
   useLayoutEffect(() => {

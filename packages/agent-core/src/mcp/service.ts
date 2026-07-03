@@ -7,10 +7,15 @@ import { isAbsolute, join } from 'node:path';
 import type { JsonValue } from '../ports.js';
 import {
   buildLazyToolGatewayDefinitions,
+  buildFetchMcpResourceDefinition,
   createMcpLazyToolGatewayBackend,
+  executeFetchMcpResourceCall,
   executeLazyToolGatewayCall,
+  isFetchMcpResourceToolName,
+  isFetchMcpResourceToolRequest as isFetchMcpResourceToolRequestValue,
   isLazyToolGatewayToolName,
   isLazyToolGatewayToolRequest as isLazyToolGatewayToolRequestValue,
+  parseFetchMcpResourceArguments,
 } from '../tool-gateway/index.js';
 import {
   parseMcpConfigFile,
@@ -24,6 +29,11 @@ import {
   normalizeMcpServerConfig,
 } from './config.js';
 import { SdkMcpConnection } from './client.js';
+import {
+  aggregateListedResourcesForServer,
+  buildMcpToolCatalogSnapshot,
+  findResourceIndexEntry,
+} from './catalog-snapshot.js';
 import { McpConfigError } from './errors.js';
 import { McpRegistry } from './registry.js';
 import type {
@@ -31,6 +41,7 @@ import type {
   McpConfigFile,
   McpServerConfig,
   McpServerRuntimeState,
+  McpResourceIndexEntry,
   McpToolIndexEntry,
   ResolvedMcpHttpTransportConfig,
   ResolvedMcpServerConfig,
@@ -48,7 +59,6 @@ import {
 const WINDOWS_USER_ENV_REGISTRY_PATH = 'HKCU\\Environment';
 const WINDOWS_MACHINE_ENV_REGISTRY_PATH =
   'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment';
-const MCP_CATALOG_TOOL_LIMIT = 128;
 
 interface McpPromptCatalogEntry {
   name: string;
@@ -82,6 +92,7 @@ type EnvLookupStore = Map<string, string>;
 interface UserMcpToolingCacheEntry {
   digest: string;
   indexEntries: McpToolIndexEntry[];
+  resourceEntries: McpResourceIndexEntry[];
   prompts: Map<string, McpPromptCatalogEntry[]>;
   serverStates: Map<string, { state: McpServerRuntimeState; cachedTools: number; lastError?: string }>;
 }
@@ -102,6 +113,7 @@ export class McpService {
   };
   private configDigestStore = mcpConfigDigest({ servers: {} });
   private toolIndexStore: McpToolIndexEntry[] = [];
+  private resourceIndexStore: McpResourceIndexEntry[] = [];
   private catalogRevisionStore = 0;
   private promptCatalogStore = new Map<string, McpPromptCatalogEntry[]>();
   private loadErrorStore: string | undefined;
@@ -117,11 +129,14 @@ export class McpService {
   }
 
   toolDefinitionsJson(): JsonValue[] {
-    if (this.toolIndexStore.length === 0) {
-      return [];
+    const definitions: JsonValue[] = [];
+    if (this.toolIndexStore.length > 0) {
+      definitions.push(...buildLazyToolGatewayDefinitions());
     }
-
-    return buildLazyToolGatewayDefinitions();
+    if (this.resourceIndexStore.length > 0) {
+      definitions.push(buildFetchMcpResourceDefinition());
+    }
+    return definitions;
   }
 
   catalogRevision(): number {
@@ -131,6 +146,7 @@ export class McpService {
   catalogSnapshot(): ToolAgentMcpToolCatalogSnapshot {
     return buildMcpToolCatalogSnapshot(
       this.toolIndexStore,
+      this.resourceIndexStore,
       this.registry,
       this.loadedConfigStore.resolved,
     );
@@ -164,23 +180,9 @@ export class McpService {
   }
 
   lazyToolGatewayBackgroundStatusText(value: JsonValue): string | undefined {
-    if (!isLazyToolGatewayToolRequestValue(value)) {
-      return undefined;
-    }
-
-    try {
-      const parsed = JSON.parse(value.argumentsJson) as JsonValue;
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        return `Lazy tool gateway: ${value.name}`;
-      }
-      const server = typeof parsed.server === 'string' ? parsed.server : 'unknown';
-      const tool = typeof parsed.tool === 'string' ? parsed.tool : 'unknown';
-      return value.name === 'tool_call'
-        ? `MCP 工具执行中: ${server} / ${tool}`
-        : `MCP 工具 schema 读取中: ${server} / ${tool}`;
-    } catch {
-      return `Lazy tool gateway: ${value.name}`;
-    }
+    // 状态由工具卡展示；勿写入 thinking aux（与 host-internal shell/web_fetch 一致）。
+    void value;
+    return undefined;
   }
 
   isToolRequest(value: JsonValue): value is McpToolRequest {
@@ -188,11 +190,9 @@ export class McpService {
   }
 
   backgroundStatusText(value: JsonValue): string | undefined {
-    if (!isMcpToolRequest(value)) {
-      return undefined;
-    }
-
-    return `MCP 工具执行中: ${value.displayName} / ${value.toolName}`;
+    // 状态由工具卡展示；勿写入 thinking aux。
+    void value;
+    return undefined;
   }
 
   statusSnapshot(): {
@@ -289,11 +289,28 @@ export class McpService {
     this.launchBackgroundRefresh(force);
   }
 
-  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<{
-    kind: 'lazyToolGateway';
-    name: string;
-    argumentsJson: string;
-  } | undefined> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<
+    | {
+        kind: 'lazyToolGateway';
+        name: string;
+        argumentsJson: string;
+      }
+    | {
+        kind: 'fetchMcpResource';
+        server: string;
+        uri: string;
+      }
+    | undefined
+  > {
+    if (isFetchMcpResourceToolName(name)) {
+      const parsed = parseFetchMcpResourceArguments(argumentsJson);
+      return {
+        kind: 'fetchMcpResource',
+        server: parsed.server,
+        uri: parsed.uri,
+      };
+    }
+
     if (!isLazyToolGatewayToolName(name)) {
       return undefined;
     }
@@ -303,6 +320,41 @@ export class McpService {
       name,
       argumentsJson,
     };
+  }
+
+  isFetchMcpResourceToolRequest(
+    value: JsonValue,
+  ): value is import('../tool-gateway/fetch-mcp-resource.js').FetchMcpResourceToolRequest {
+    return isFetchMcpResourceToolRequestValue(value);
+  }
+
+  async executeFetchMcpResourceToolRequest(
+    request: import('../tool-gateway/fetch-mcp-resource.js').FetchMcpResourceToolRequest,
+  ): Promise<string> {
+    return executeFetchMcpResourceCall(
+      { server: request.server, uri: request.uri },
+      this,
+    );
+  }
+
+  fetchMcpResourceBackgroundStatusText(
+    value: JsonValue,
+  ): string | undefined {
+    // 状态由工具卡展示；勿写入 thinking aux。
+    void value;
+    return undefined;
+  }
+
+  async assertResourceReadable(server: string, uri: string): Promise<void> {
+    await this.ensureToolingCache();
+    const snapshot = this.catalogSnapshot();
+    if (snapshot.resourcesTruncated) {
+      return;
+    }
+
+    if (!findResourceIndexEntry(this.resourceIndexStore, server, uri)) {
+      throw new McpConfigError(`Unknown MCP resource: ${server}/${uri}`);
+    }
   }
 
   async createToolRequest(
@@ -409,7 +461,7 @@ export class McpService {
       supportsResources: server.capabilities.resources,
       supportsPrompts: server.capabilities.prompts,
       toolsCount: status.cachedTools,
-      resourcesCount: 0,
+      resourcesCount: this.resourceIndexStore.filter((entry) => entry.server === name).length,
       promptsCount: (this.promptCatalogStore.get(name) ?? []).length,
     };
   }
@@ -691,6 +743,7 @@ export class McpService {
     }
 
     const indexEntries: McpToolIndexEntry[] = [];
+    const resourceEntries: McpResourceIndexEntry[] = [];
     const prompts = new Map<string, McpPromptCatalogEntry[]>();
 
     const { user: userConfigFile } = await loadMergedMcpConfigForWorkspace(
@@ -705,35 +758,51 @@ export class McpService {
       && sharedUserMcpToolingCache
       && sharedUserMcpToolingCache.digest === currentUserDigest
     ) {
-      userCacheHit = true;
-      indexEntries.push(...sharedUserMcpToolingCache.indexEntries);
-      for (const [serverName, entries] of sharedUserMcpToolingCache.prompts) {
-        prompts.set(serverName, entries);
+      const cached = sharedUserMcpToolingCache;
+      if (!Array.isArray(cached.resourceEntries)) {
+        // 同进程内热更新后旧缓存无 resourceEntries，丢弃并走下方重新发现
+        sharedUserMcpToolingCache = undefined;
+      } else {
+        userCacheHit = true;
+        indexEntries.push(...cached.indexEntries);
+        resourceEntries.push(...cached.resourceEntries);
+        for (const [serverName, entries] of cached.prompts) {
+          prompts.set(serverName, entries);
+        }
+        for (const [serverName, status] of cached.serverStates) {
+          this.registry.setServerState(serverName, status.state, {
+            cachedTools: status.cachedTools,
+            ...(status.lastError === undefined ? {} : { lastError: status.lastError }),
+          });
+        }
       }
-      for (const [serverName, status] of sharedUserMcpToolingCache.serverStates) {
-        this.registry.setServerState(serverName, status.state, {
-          cachedTools: status.cachedTools,
-          ...(status.lastError === undefined ? {} : { lastError: status.lastError }),
-        });
-      }
-    } else if (userServers.length > 0) {
+    }
+    if (!userCacheHit && userServers.length > 0) {
       const userIndexEntries: McpToolIndexEntry[] = [];
+      const userResourceEntries: McpResourceIndexEntry[] = [];
       const userPrompts = new Map<string, McpPromptCatalogEntry[]>();
       const userServerStates = new Map<
         string,
         { state: McpServerRuntimeState; cachedTools: number; lastError?: string }
       >();
       for (const server of userServers) {
-        const status = await this.discoverServerTooling(server, userIndexEntries, userPrompts);
+        const status = await this.discoverServerTooling(
+          server,
+          userIndexEntries,
+          userResourceEntries,
+          userPrompts,
+        );
         userServerStates.set(server.name, status);
       }
       sharedUserMcpToolingCache = {
         digest: currentUserDigest,
         indexEntries: [...userIndexEntries],
+        resourceEntries: [...userResourceEntries],
         prompts: new Map(userPrompts),
         serverStates: new Map(userServerStates),
       };
       indexEntries.push(...userIndexEntries);
+      resourceEntries.push(...userResourceEntries);
       for (const [serverName, entries] of userPrompts) {
         prompts.set(serverName, entries);
       }
@@ -747,15 +816,17 @@ export class McpService {
     });
 
     for (const server of workspaceServers) {
-      await this.discoverServerTooling(server, indexEntries, prompts);
+      await this.discoverServerTooling(server, indexEntries, resourceEntries, prompts);
     }
 
     this.toolIndexStore = indexEntries;
+    this.resourceIndexStore = resourceEntries;
     this.catalogRevisionStore += 1;
     this.promptCatalogStore = prompts;
     this.toolingCacheInitialized = true;
     console.error('[mcp-service] refreshToolingCaches.done', {
       indexedTools: indexEntries.length,
+      indexedResources: resourceEntries.length,
       promptServers: prompts.size,
       userCacheHit,
     });
@@ -764,6 +835,7 @@ export class McpService {
   private async discoverServerTooling(
     server: ResolvedMcpServerConfig,
     indexEntries: McpToolIndexEntry[],
+    resourceEntries: McpResourceIndexEntry[],
     prompts: Map<string, McpPromptCatalogEntry[]>,
   ): Promise<{ state: McpServerRuntimeState; cachedTools: number; lastError?: string }> {
     this.registry.setServerState(server.name, 'loading', { cachedTools: 0 });
@@ -774,6 +846,10 @@ export class McpService {
       const discoveredTools =
         server.capabilities.tools && capabilities?.tools !== undefined
           ? (await connection.listTools()).tools
+          : [];
+      const discoveredResources =
+        server.capabilities.resources && capabilities?.resources !== undefined
+          ? (await connection.listResources()).resources
           : [];
       const discoveredPrompts =
         server.capabilities.prompts && capabilities?.prompts !== undefined
@@ -797,6 +873,18 @@ export class McpService {
           inputSchema,
         });
       }
+
+      resourceEntries.push(
+        ...aggregateListedResourcesForServer(
+          server.name,
+          discoveredResources.map((resource) => ({
+            uri: resource.uri,
+            name: resource.name,
+            ...(resource.description === undefined ? {} : { description: resource.description }),
+            ...(resource.mimeType === undefined ? {} : { mimeType: resource.mimeType }),
+          })),
+        ),
+      );
 
       prompts.set(
         server.name,
@@ -1347,47 +1435,4 @@ function findToolIndexEntry(
   toolName: string,
 ): McpToolIndexEntry | undefined {
   return entries.find((entry) => entry.server === serverName && entry.toolName === toolName);
-}
-
-function buildMcpToolCatalogSnapshot(
-  indexEntries: McpToolIndexEntry[],
-  registry: McpRegistry,
-  resolvedServers: Record<string, ResolvedMcpServerConfig>,
-): ToolAgentMcpToolCatalogSnapshot {
-  const grouped = new Map<string, McpToolIndexEntry[]>();
-  for (const entry of indexEntries) {
-    const current = grouped.get(entry.server) ?? [];
-    current.push(entry);
-    grouped.set(entry.server, current);
-  }
-
-  const totalToolCount = indexEntries.length;
-  const truncated = totalToolCount > MCP_CATALOG_TOOL_LIMIT;
-  let remaining = MCP_CATALOG_TOOL_LIMIT;
-  const servers = Object.values(resolvedServers)
-    .filter((server) => server.enabled)
-    .sort((left, right) => left.name.localeCompare(right.name))
-    .map((server) => {
-      const status = registry.get(server.name);
-      const toolsForServer = grouped.get(server.name) ?? [];
-      const visibleTools = remaining > 0 ? toolsForServer.slice(0, remaining) : [];
-      remaining -= visibleTools.length;
-      return {
-        name: server.name,
-        displayName: server.displayName,
-        state: status?.state ?? 'idle',
-        ...(status?.lastError === undefined ? {} : { lastError: status.lastError }),
-        tools: visibleTools.map((tool) => ({
-          name: tool.toolName,
-          description: tool.description,
-        })),
-      };
-    })
-    .filter((server) => server.tools.length > 0 || server.state === 'error');
-
-  return {
-    servers,
-    truncated,
-    totalToolCount,
-  };
 }

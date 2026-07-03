@@ -32,6 +32,7 @@ import {
   McpService,
   McpStatusSnapshot,
   TOOL_CALL_TOOL_NAME,
+  FETCH_MCP_RESOURCE_TOOL_NAME,
   type McpToolRequest,
   type ToolAgentMcpToolCatalogSnapshot,
   type ToolExecutionOutput,
@@ -310,6 +311,9 @@ export class DesktopToolExecutor
   async authorize(
     request: DesktopToolRequest,
   ): Promise<AuthorizationDecision<string>> {
+    if (this.mcp.isFetchMcpResourceToolRequest(request as JsonValue)) {
+      return { kind: 'allowed' };
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
       return { kind: 'allowed' };
     }
@@ -329,6 +333,17 @@ export class DesktopToolExecutor
   }
 
   async execute(request: DesktopToolRequest): Promise<ToolExecutionOutput> {
+    if (this.mcp.isFetchMcpResourceToolRequest(request as JsonValue)) {
+      return createToolExecutionTextOutput(
+        await this.mcp.executeFetchMcpResourceToolRequest(
+          request as unknown as {
+            kind: 'fetchMcpResource';
+            server: string;
+            uri: string;
+          },
+        ),
+      );
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
       return createToolExecutionTextOutput(
         await this.mcp.executeLazyToolGatewayToolRequest(
@@ -407,6 +422,9 @@ export class DesktopToolExecutor
 
   shouldExecuteInBackground(request: DesktopToolRequest): boolean {
     const jsonRequest = request as JsonValue;
+    if (this.mcp.isFetchMcpResourceToolRequest(jsonRequest)) {
+      return true;
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(jsonRequest)) {
       return jsonRequest.name === TOOL_CALL_TOOL_NAME;
     }
@@ -419,6 +437,9 @@ export class DesktopToolExecutor
 
   backgroundStatusText(request: DesktopToolRequest): string | undefined {
     const jsonRequest = request as JsonValue;
+    if (this.mcp.isFetchMcpResourceToolRequest(jsonRequest)) {
+      return this.mcp.fetchMcpResourceBackgroundStatusText(jsonRequest);
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(jsonRequest)) {
       return this.mcp.lazyToolGatewayBackgroundStatusText(jsonRequest);
     }

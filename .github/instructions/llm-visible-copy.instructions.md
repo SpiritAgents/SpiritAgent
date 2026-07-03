@@ -16,7 +16,9 @@ LLM 上下文段使用小写 XML 标签（如 `<rules>`、`<agent_mode>`、`<com
 
 | 内容 | 注入位置 | 说明 |
 | --- | --- | --- |
-| Host 主策略 + Rules / Skills catalog / MCP catalog / Agent mode / Loop / Extensions / Dreams / Basic info | 单条 `role: system`（`buildToolAgentMessages`） | 各段分别包在 `<rules>`、`<skills_catalog>`、`<mcp_catalog>`、`<agent_mode>`、`<loop_mode>`、`<extensions>`、`<dreams>`、`<basic_info>` 中 |
+| Host 主策略 + Rules / Skills catalog / MCP catalog / Agent mode / Loop / Extensions / Dreams / Basic info | 单条 `role: system`（`buildToolAgentMessages`） | 各段分别包在 `<rules>`、`<skills_catalog>`、`<mcp_catalog>`、`<agent_mode>`、`<loop_mode>`、`<extensions>`、`<dreams>`、`<basic_info>` 中；`<mcp_catalog>` 含 `<tool>` 与 `<resource>` 薄元数据 |
+| MCP resource 全文（模型按需） | 请求 `tools` 中的 `fetch_mcp_resource` → tool result JSON | catalog 仅 uri/name/可选 description 与 mimeTypes |
+| MCP resource 全文（用户 CLI attach） | submit 时 `role: system` 的 `[MCP_RESOURCE]` 块 | 仅 `/mcp resource attach` 用户显式附加；与 Agent 调 `fetch_mcp_resource` 同理念、不同入口 |
 | 用户显式激活的 Skill 全文 | 该条用户消息最前的 `<active_skill>…</active_skill>` | 与 `<user_message_at>` 同属 user meta，非 system |
 | Plan 模式指引 | `<agent_mode>` 段（Plan 模式文案） | **无** 单独 plan 系统段；plan 文件由 `create_plan` 等工具落盘 |
 | apply_patch transport | system 内一行 plain 英文 | `buildApplyPatchFileToolsPromptSection` |

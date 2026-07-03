@@ -4,7 +4,6 @@ import { test } from 'node:test';
 import {
   hasAssistantToolLaterInTurn,
   shouldShowAssistantThinkingCollapsible,
-  shouldStripThinkingAuxNearToolCard,
 } from '../dist-electron/src/lib/conversation-thinking-ui.js';
 
 test('shouldShowAssistantThinkingCollapsible hides finalized Thought when live Thinking is adjacent', () => {
@@ -131,38 +130,6 @@ test('shouldShowAssistantThinkingCollapsible keeps pre-tool Thought when tool is
   );
   assert.equal(
     shouldShowAssistantThinkingCollapsible(messages[3], undefined, messages, 3),
-    true,
-  );
-});
-
-test('shouldStripThinkingAuxNearToolCard removes MCP status near tool row', () => {
-  const messages = [
-    { id: 1, role: 'user', content: 'hi', pending: false },
-    {
-      id: 2,
-      role: 'assistant',
-      content: '',
-      pending: false,
-      aux: { thinking: 'MCP 工具执行中: MicrosoftLearn / microsoft_docs_search' },
-    },
-    {
-      id: 3,
-      role: 'assistant',
-      content: '',
-      pending: false,
-      tool: {
-        toolCallId: 't1',
-        toolName: 'tool_call',
-        phase: 'running',
-        headline: '调用工具',
-        headlineDetail: 'mcp / microsoft-learn / microsoft_docs_search',
-        detailLines: [],
-      },
-    },
-  ];
-
-  assert.equal(
-    shouldStripThinkingAuxNearToolCard(messages[1], messages, 1),
     true,
   );
 });
