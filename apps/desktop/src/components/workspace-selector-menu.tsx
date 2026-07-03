@@ -230,9 +230,7 @@ export function WorkspaceSelectorMenu({
               return (
                 <div className="flex max-w-xs flex-col gap-0.5">
                   {item.label ? <span>{item.label}</span> : null}
-                  {item.path ? (
-                    <span className="text-muted-foreground">{item.path}</span>
-                  ) : null}
+                  {item.path ? <span>{item.path}</span> : null}
                 </div>
               );
             }}
