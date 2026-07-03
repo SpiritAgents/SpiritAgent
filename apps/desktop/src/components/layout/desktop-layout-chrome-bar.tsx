@@ -286,7 +286,7 @@ export function DesktopLayoutChromeBar({
                   <Plus className="size-3.5" aria-hidden />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={4}>
+              <TooltipContent side="top" align="start" sideOffset={4}>
                 {t("sidebar.newSession")}{" "}
                 <NewSessionShortcutKbd />
               </TooltipContent>
@@ -422,7 +422,7 @@ export function DesktopLayoutChromeBar({
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={4}>
+              <TooltipContent side="top" align={workspaceToolsOpen ? "center" : "end"} sideOffset={4}>
                 {workspaceToolsOpen ? t("app.collapseTools") : t("app.expandTools")}{" "}
                 <WorkspaceToolsShortcutKbd />
               </TooltipContent>
