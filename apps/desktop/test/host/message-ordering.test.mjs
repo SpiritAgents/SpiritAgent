@@ -11,6 +11,7 @@ import {
   toolCallSummaryCopyForRequest,
   toolCallSummaryForPhase,
   toolCallSummaryForStreamingPreview,
+  toolCallSummaryCopyForResponsesBuiltInTool,
 } from '../../dist-electron/src/host/message-ordering.js';
 import i18n from '../../dist-electron/src/lib/i18n-host.js';
 
@@ -84,6 +85,45 @@ test('toolCallSummaryCopyForRequest: web_search uses web search headline + query
     }),
     {
       headline: '联网搜索',
+    },
+  );
+});
+
+test('toolCallSummaryCopyForRequest: web_search reads query from argumentsJson', () => {
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('web_search', {
+      name: 'web_search',
+      argumentsJson: '{"query":"Spirit Agent 是什么项目"}',
+    }),
+    {
+      headline: '联网搜索',
+      headlineDetail: 'Spirit Agent 是什么项目',
+    },
+  );
+});
+
+test('toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query detail without sources', () => {
+  assert.deepEqual(
+    toolCallSummaryCopyForResponsesBuiltInTool(
+      'web_search',
+      'preview',
+      { headline: '联网搜索', headlineDetail: 'Spirit Agent 是什么项目' },
+    ),
+    {
+      headline: '联网搜索',
+      headlineDetail: 'Spirit Agent 是什么项目',
+    },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForResponsesBuiltInTool(
+      'web_search',
+      'succeeded',
+      { headline: '联网搜索' },
+      { headlineDetail: 'Spirit Agent 是什么项目', inputExcerpt: 'Spirit Agent 是什么项目' },
+    ),
+    {
+      headline: '联网搜索',
+      headlineDetail: 'Spirit Agent 是什么项目',
     },
   );
 });

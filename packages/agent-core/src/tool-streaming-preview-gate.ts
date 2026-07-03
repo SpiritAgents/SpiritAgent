@@ -4,6 +4,7 @@ import { isJsonObject } from './tool-agent.js';
 
 const PARTIAL_PATH_PATTERN = /"path"\s*:\s*"((?:\\.|[^"\\])*)"/;
 const PARTIAL_PLAN_NAME_PATTERN = /"name"\s*:\s*"((?:\\.|[^"\\])*)"/;
+const PARTIAL_QUERY_PATTERN = /"query"\s*:\s*"((?:\\.|[^"\\])*)/;
 const PARTIAL_APPLY_PATCH_OPERATION_TYPE_PATTERN =
   /"type"\s*:\s*"(create_file|update_file|delete_file)"/;
 const PARTIAL_POSITIVE_INT_FIELD_PATTERN = (key: string): RegExp =>
@@ -98,7 +99,35 @@ export function tryExtractPartialToolPath(argumentsJson: string): string | undef
   return decodePartialJsonString(match[1]);
 }
 
-/** Extract `name` (plan slug) from complete or in-flight create_plan argument JSON. */
+/** Extract `query` from complete or in-flight web_search argument JSON. */
+export function tryExtractPartialWebSearchQuery(argumentsJson: string): string | undefined {
+  const trimmed = argumentsJson.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as JsonValue;
+    if (isJsonObject(parsed) && typeof parsed.query === 'string' && parsed.query.trim()) {
+      return parsed.query.trim();
+    }
+  } catch {
+    // Streaming JSON may be incomplete.
+  }
+
+  const match = trimmed.match(PARTIAL_QUERY_PATTERN);
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const decoded = decodePartialJsonString(match[1]);
+  return decoded?.trim() ? decoded.trim() : undefined;
+}
+
+export function webSearchStreamingPreviewSignature(argumentsJson: string): string | undefined {
+  return tryExtractPartialWebSearchQuery(argumentsJson);
+}
+
 export function tryExtractPartialPlanName(argumentsJson: string): string | undefined {
   const trimmed = argumentsJson.trim();
   if (!trimmed) {
@@ -195,6 +224,8 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
     case 'web_fetch':
     case 'run_subagent':
       return hostToolArgumentsReadyForPreview(name, argumentsJson);
+    case 'web_search':
+      return tryExtractPartialWebSearchQuery(argumentsJson) !== undefined;
     default:
       return false;
   }
@@ -305,6 +336,15 @@ export function shouldRepeatStreamingToolPreview(
   if (toolName === 'create_file' || toolName === 'create_plan') {
     const nextSignature = options?.nextArgumentsJson
       ? createContentStreamingPreviewSignature(options.nextArgumentsJson)
+      : undefined;
+    if (!nextSignature) {
+      return false;
+    }
+    return options?.previousDetailSignature !== nextSignature;
+  }
+  if (toolName === 'web_search') {
+    const nextSignature = options?.nextArgumentsJson
+      ? webSearchStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
     if (!nextSignature) {
       return false;
@@ -432,6 +472,10 @@ export function previewRequestFromStreamingArguments(
     if (toolName === 'tool_call' || toolName === 'tool_describe') {
       const fields = tryExtractPartialLazyToolGatewayFields(argumentsJson);
       return fields.provider || fields.server || fields.tool ? fields : undefined;
+    }
+    if (toolName === 'web_search') {
+      const query = tryExtractPartialWebSearchQuery(argumentsJson);
+      return query ? { query } : undefined;
     }
     return undefined;
   }
@@ -614,7 +658,9 @@ export function resolveStreamingToolPreviewEmit(
         ? editFileStreamingPreviewSignature(argumentsJson)
         : toolName === 'create_file' || toolName === 'create_plan'
           ? createContentStreamingPreviewSignature(argumentsJson)
-          : undefined;
+          : toolName === 'web_search'
+            ? webSearchStreamingPreviewSignature(argumentsJson)
+            : undefined;
 
   const emit =
     !state.readyPreviewEmitted ||

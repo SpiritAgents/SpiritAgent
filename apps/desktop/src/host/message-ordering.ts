@@ -11,6 +11,8 @@ import {
   isGenericProviderWebSearchQuery,
   llmMessageTextContent,
   previewRequestFromStreamingArguments,
+  RESPONSES_BUILT_IN_SPIRIT_UI_KEY,
+  tryExtractPartialWebSearchQuery,
 } from '@spirit-agent/core';
 
 import {
@@ -1082,7 +1084,13 @@ export function toolCallSummaryCopyForResponsesBuiltInTool(
         headlineDetail: i18n.t('tool.webSearchSourceCount', { count: providerUi.sourceCount }),
       };
     }
-    return { headline: previewSummary.headline };
+    const headlineDetail =
+      previewSummary.headlineDetail?.trim()
+      || providerUi?.headlineDetail?.trim();
+    return {
+      headline: previewSummary.headline,
+      ...(headlineDetail ? { headlineDetail } : {}),
+    };
   }
   if (providerUi?.headlineDetail) {
     return {
@@ -1176,6 +1184,30 @@ function webSearchQueryFromArguments(record: Record<string, unknown>): string {
       return value.trim();
     }
   }
+
+  const spiritUi = record[RESPONSES_BUILT_IN_SPIRIT_UI_KEY];
+  if (spiritUi && typeof spiritUi === 'object' && !Array.isArray(spiritUi)) {
+    const headlineDetail = (spiritUi as Record<string, unknown>).headlineDetail;
+    if (typeof headlineDetail === 'string' && headlineDetail.trim()) {
+      return headlineDetail.trim();
+    }
+  }
+
+  const argumentsJson = record.argumentsJson;
+  if (typeof argumentsJson === 'string' && argumentsJson.trim()) {
+    try {
+      const parsed = JSON.parse(argumentsJson) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return webSearchQueryFromArguments(parsed as Record<string, unknown>);
+      }
+    } catch {
+      const partial = tryExtractPartialWebSearchQuery(argumentsJson);
+      if (partial) {
+        return partial;
+      }
+    }
+  }
+
   const action = record.action;
   if (action && typeof action === 'object' && !Array.isArray(action)) {
     return webSearchQueryFromArguments(action as Record<string, unknown>);
