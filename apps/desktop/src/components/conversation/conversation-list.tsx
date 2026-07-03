@@ -513,6 +513,15 @@ export function ConversationList({
                   messages,
                 ),
                 transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)`,
+                // translateY 使行 wrapper 自成 stacking context，卡片内 z-40 无法
+                // 跨出与 z-30 的 rewind 遮罩竞争；rewind 行须在 wrapper 层提升 z。
+                ...(rewindDraft
+                && (() => {
+                  const item = conversationRenderItems[virtualItem.index];
+                  return item?.kind === "message" && item.messageIndex === rewindDraft.listIndex;
+                })()
+                  ? { zIndex: 40 }
+                  : undefined),
               }}
             >
               {renderRow(virtualItem.index)}
