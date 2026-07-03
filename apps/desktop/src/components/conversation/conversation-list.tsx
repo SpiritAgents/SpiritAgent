@@ -176,8 +176,26 @@ export function ConversationList({
   // 必须用 useLayoutEffect：useEffect 在 paint 后才绑定 scrollElement，导航切入会先
   // 上屏一帧空列表（virtualItems 为空），可感知为空白闪烁。layout effect 中的 setState
   // 在 paint 前同步 flush，virtual-core 注册 observeElementRect 时同步量取 rect，首帧即有行。
+  // 整页 reload（如 HMR）后快照首个 commit 即就绪，本组件与祖先 ScrollArea 同一次
+  // commit 挂载；子 layout effect 先于祖先 viewport ref 附加执行，此处会拿到 null。
+  // 一次性绑定会让 virtualizer 永无滚动元素（列表空白），故轮询至 viewport 可用。
   useLayoutEffect(() => {
-    setScrollElement(getScrollElement());
+    const el = getScrollElement();
+    if (el) {
+      setScrollElement(el);
+      return;
+    }
+    let rafId = 0;
+    const waitForViewport = () => {
+      const next = getScrollElement();
+      if (!next) {
+        rafId = requestAnimationFrame(waitForViewport);
+        return;
+      }
+      setScrollElement(next);
+    };
+    rafId = requestAnimationFrame(waitForViewport);
+    return () => cancelAnimationFrame(rafId);
   }, [getScrollElement]);
 
   const getItemKey = useCallback(
