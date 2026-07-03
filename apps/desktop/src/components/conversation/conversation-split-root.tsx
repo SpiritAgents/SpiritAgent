@@ -31,8 +31,10 @@ type ConversationSplitRootProps = {
     onPaneDragStart: (paneId: string) => void;
     onPaneDragLeave: () => void;
     onPaneDrop: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneDropZone) => void;
+    onSidebarSessionDrop: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
     paneDropOverlayActive: boolean;
     paneDragSourcePaneId: string | null;
+    sidebarSessionDragActive: boolean;
   }) => ReactNode;
 };
 
@@ -295,8 +297,12 @@ function SplitLayoutRenderer({
           onPaneDragStart: split.startPaneDrag,
           onPaneDragLeave: split.clearPaneDrag,
           onPaneDrop: split.completePaneDrop,
-          paneDropOverlayActive: split.paneDragActive,
+          onSidebarSessionDrop: (targetPaneId, zone) => {
+            void split.completeSidebarSessionDrop(targetPaneId, zone);
+          },
+          paneDropOverlayActive: split.paneDragActive || split.sidebarSessionDragActive,
           paneDragSourcePaneId: split.paneDragSourcePaneId,
+          sidebarSessionDragActive: split.sidebarSessionDragActive,
         })}
       </>
     );

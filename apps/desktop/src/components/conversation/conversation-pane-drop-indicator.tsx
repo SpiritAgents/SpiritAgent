@@ -6,15 +6,16 @@ import {
   applyPickerOverlayGeometry,
   hidePickerOverlayBox,
 } from "@/lib/browser-element-picker";
-import { paneDropIndicatorRect, visiblePaneDropZonesForDrag } from "@/lib/conversation-pane-drop-preview";
+import { paneDropIndicatorRect, visiblePaneDropZonesForDrag, visiblePaneDropZonesForSidebarSessionDrag } from "@/lib/conversation-pane-drop-preview";
 
 const OVERLAY_MOTION_TRANSITION =
   "left 120ms ease-out, top 120ms ease-out, width 120ms ease-out, height 120ms ease-out, opacity 150ms ease-out";
 
 /** Single viewport-fixed ring that glides between pane drop quadrants (matches browser element picker). */
 export function ConversationPaneDropIndicator() {
-  const { paneDragActive, paneDragSourcePaneId, paneDropTarget, paneCount } =
+  const { paneDragActive, sidebarSessionDragActive, paneDragSourcePaneId, paneDropTarget, paneCount } =
     useConversationSplit();
+  const dropDragActive = paneDragActive || sidebarSessionDragActive;
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const motionEnabledRef = useRef(false);
 
@@ -25,9 +26,9 @@ export function ConversationPaneDropIndicator() {
     }
 
     const shouldHide =
-      !paneDragActive
+      !dropDragActive
       || !paneDropTarget
-      || paneDropTarget.paneId === paneDragSourcePaneId;
+      || (paneDragSourcePaneId !== null && paneDropTarget.paneId === paneDragSourcePaneId);
 
     if (shouldHide) {
       if (el.style.opacity === "1" || motionEnabledRef.current) {
@@ -53,11 +54,18 @@ export function ConversationPaneDropIndicator() {
     const sourceHost = paneDragSourcePaneId
       ? document.querySelector(`[data-pane-drop-host="${paneDragSourcePaneId}"]`)
       : null;
-    const visibleZones = visiblePaneDropZonesForDrag({
-      paneCount,
-      sourcePaneHost: sourceHost instanceof HTMLElement ? sourceHost : null,
-      targetPaneHost: host,
-    });
+    const visibleZones = sidebarSessionDragActive
+      ? visiblePaneDropZonesForSidebarSessionDrag()
+      : visiblePaneDropZonesForDrag({
+          paneCount,
+          sourcePaneHost:
+            !paneDragSourcePaneId
+              ? null
+              : sourceHost instanceof HTMLElement
+                ? sourceHost
+                : null,
+          targetPaneHost: host,
+        });
     if (!visibleZones.includes(paneDropTarget.zone)) {
       el.style.transition = OVERLAY_MOTION_TRANSITION;
       hidePickerOverlayBox(el);
@@ -84,13 +92,13 @@ export function ConversationPaneDropIndicator() {
 
     el.style.transition = OVERLAY_MOTION_TRANSITION;
     applyPickerOverlayBox(el, rect);
-  }, [paneCount, paneDragActive, paneDragSourcePaneId, paneDropTarget]);
+  }, [dropDragActive, paneCount, paneDragSourcePaneId, paneDropTarget, sidebarSessionDragActive]);
 
   useLayoutEffect(() => {
-    if (!paneDragActive) {
+    if (!dropDragActive) {
       motionEnabledRef.current = false;
     }
-  }, [paneDragActive]);
+  }, [dropDragActive]);
 
   return (
     <div

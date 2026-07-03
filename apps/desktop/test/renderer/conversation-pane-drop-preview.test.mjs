@@ -8,6 +8,7 @@ import {
   paneDropIndicatorRect,
   paneDropZoneRect,
   visiblePaneDropZonesForDrag,
+  visiblePaneDropZonesForSidebarSessionDrag,
 } from "../../src/lib/conversation-pane-drop-preview.ts";
 import {
   createLeafNode,
@@ -102,6 +103,36 @@ test("repositionPane converts vertical split to horizontal when dropping top ont
     return;
   }
   assert.equal(moved.direction, "horizontal");
+});
+
+test("visiblePaneDropZonesForSidebarSessionDrag uses edge columns and center above/below", () => {
+  const visible = visiblePaneDropZonesForSidebarSessionDrag();
+  assert.deepEqual(visible, ["before", "above", "after", "below"]);
+});
+
+test("paneDropIndicatorRect tiles full halves for sidebar session split", () => {
+  const host = rect(0, 0, 400, 400);
+  const visible = visiblePaneDropZonesForSidebarSessionDrag();
+  const above = paneDropIndicatorRect(host, "above", visible);
+  assert.deepEqual(above, { x: 0, y: 0, width: 400, height: 200 });
+  const before = paneDropIndicatorRect(host, "before", visible);
+  assert.deepEqual(before, { x: 0, y: 0, width: 200, height: 400 });
+  const after = paneDropIndicatorRect(host, "after", visible);
+  assert.deepEqual(after, { x: 200, y: 0, width: 200, height: 400 });
+  const below = paneDropIndicatorRect(host, "below", visible);
+  assert.deepEqual(below, { x: 0, y: 200, width: 400, height: 200 });
+});
+
+test("paneDropZoneRect keeps sidebar above/below hits in the center column band", () => {
+  const host = rect(0, 0, 400, 400);
+  const visible = visiblePaneDropZonesForSidebarSessionDrag();
+  const aboveHit = paneDropZoneRect(host, "above", visible);
+  assert.equal(aboveHit.width, 80);
+  assert.equal(aboveHit.x, 160);
+  assert.equal(aboveHit.height, 200);
+  const beforeHit = paneDropZoneRect(host, "before", visible);
+  assert.equal(beforeHit.width, 160);
+  assert.equal(beforeHit.height, 400);
 });
 
 test("visiblePaneDropZonesForDrag uses full quadrants when panes are not adjacent", () => {

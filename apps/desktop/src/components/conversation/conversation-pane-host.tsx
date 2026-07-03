@@ -51,8 +51,10 @@ export type ConversationPaneHostProps = {
   onPaneDragStart?: (paneId: string) => void;
   onPaneDragLeave?: () => void;
   onPaneDrop?: (targetPaneId: string, zone: PaneDropZone) => void;
+  onSidebarSessionDrop?: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
   paneDropOverlayActive: boolean;
   paneDragSourcePaneId: string | null;
+  sidebarSessionDragActive: boolean;
   t: TFunction;
   language: string;
 };
@@ -75,8 +77,10 @@ export function ConversationPaneHost({
   onPaneDragStart,
   onPaneDragLeave,
   onPaneDrop,
+  onSidebarSessionDrop,
   paneDropOverlayActive,
   paneDragSourcePaneId,
+  sidebarSessionDragActive,
   ...controllerInput
 }: ConversationPaneHostProps) {
   const split = useConversationSplit();
@@ -151,8 +155,10 @@ export function ConversationPaneHost({
       onPaneDragStart={paneReorderEnabled ? onPaneDragStart : undefined}
       onPaneDragLeave={paneReorderEnabled ? onPaneDragLeave : undefined}
       onPaneDrop={paneReorderEnabled ? onPaneDrop : undefined}
+      onSidebarSessionDrop={onSidebarSessionDrop}
       paneDropOverlayActive={paneDropOverlayActive}
       paneDragSourcePaneId={paneDragSourcePaneId}
+      sidebarSessionDragActive={sidebarSessionDragActive}
       subagentViewActive={pane.subagentViewActive}
       onExitSubagentViewer={pane.onExitSubagentViewer}
       onNewSession={controllerInput.onNewSession}
