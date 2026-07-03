@@ -46,10 +46,10 @@ export function useConversationSessionScrollTail({
     if (!contentChanged) {
       return;
     }
-    previousContentKeyRef.current = contentKey;
 
     const viewport = scrollAreaViewport(scrollAreaRef.current);
     if (!viewport) {
+      previousContentKeyRef.current = contentKey;
       setSettling(false);
       return;
     }
@@ -62,6 +62,10 @@ export function useConversationSessionScrollTail({
       frame += 1;
       // 帧首仍贴底 = 上一帧滚底后的实测修正没有把视口推离底部，视为 settled
       if (scrollDistanceFromBottom(viewport) <= 1 || frame >= SETTLE_MAX_FRAMES) {
+        // 完成时才记录 key：StrictMode 挂载双跑会先启动循环、cleanup 随即取消，
+        // 若在启动时记录，第二遍 effect 会因 same-key 提前返回，settling 永卡 true
+        // （列表 visibility:hidden 不再恢复）。被取消的定底视为未发生，下次重做。
+        previousContentKeyRef.current = contentKey;
         setSettling(false);
         return;
       }
