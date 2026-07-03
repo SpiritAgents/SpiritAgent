@@ -466,8 +466,11 @@ export function ConversationList({
   return (
     <div
       data-spirit-surface="conversation-list-shell"
+      // overflow-x 必须用 clip 而非 hidden：hidden 会把 overflow-y 计算为 auto，
+      // 流式时虚拟行实测先于 totalSize 提交、短暂溢出 sizing 容器，shell 即闪原生
+      // 滚动条并挤窄布局；clip 不构成滚动容器，x 轴裁剪行为不变。
       className={cn(
-        "mx-auto w-full overflow-x-hidden pt-6 sm:pt-7",
+        "mx-auto w-full overflow-x-clip pt-6 sm:pt-7",
         CONVERSATION_GUTTER_X,
         CONVERSATION_MESSAGE_LIST_MAX_W,
       )}
