@@ -9,12 +9,13 @@ import type { ConversationMessageSnapshot } from '@/types';
 // 估高误差 = virtual-core 首测补偿量 = 手动上滑时的可感知跳变幅度（补偿同步写
 // scrollTop，行位置经 React 异步更新，错帧暴露为跳动），故必须贴近实测：
 // process-group 按「折叠态」量取（展开由实测缓存接管），数值来自长会话 demo 实测。
+// 消息行 body 估高不含 pb-3：虚拟行间距由 paddingTop 承担，MessageCard 使用 externalRowGap。
 const PROCESS_GROUP_BODY_ESTIMATE_PX = 20;
-const USER_MESSAGE_BODY_ESTIMATE_PX = 68;
-const TOOL_MESSAGE_BODY_ESTIMATE_PX = 52;
-const ASSISTANT_BODY_ESTIMATE_PX = 253;
-const ASSISTANT_META_BODY_ESTIMATE_PX = 92;
-const FALLBACK_BODY_ESTIMATE_PX = 132;
+const USER_MESSAGE_BODY_ESTIMATE_PX = 56;
+const TOOL_MESSAGE_BODY_ESTIMATE_PX = 40;
+const ASSISTANT_BODY_ESTIMATE_PX = 241;
+const ASSISTANT_META_BODY_ESTIMATE_PX = 80;
+const FALLBACK_BODY_ESTIMATE_PX = 120;
 
 function gapBeforePxForRenderIndex(
   index: number,

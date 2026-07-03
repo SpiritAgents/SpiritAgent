@@ -364,6 +364,7 @@ export function ConversationList({
         listIndex={index}
         message={message}
         hiddenByProcessGroup={hiddenByProcessGroup}
+        externalRowGap
         compactAfterPrevious={false}
         tightenAfterPreviousMeta={false}
         showContinueButton={
