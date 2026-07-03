@@ -10,12 +10,20 @@ import {
   FilteredOverlayMenuTrigger,
 } from "@/components/ui/filtered-overlay-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipItem,
+  TooltipTrigger,
+  useOptionalTooltipStableActions,
+} from "@/components/ui/tooltip";
+import {
   DESKTOP_OVERLAY_LIST_ACTION_ITEM,
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
+import { useTruncatedElement } from "@/hooks/use-truncated-element";
 import {
   resolveWorkspaceSelectorLabel,
   sameWorkspacePath,
@@ -35,6 +43,51 @@ export type WorkspaceSelectorMenuProps = {
   triggerClassName?: string;
 };
 
+type WorkspaceListTooltipItem = {
+  id: string;
+  label?: string;
+  path?: string;
+};
+
+function WorkspaceSelectorMenuItem({
+  workspace,
+  selected,
+  onSelect,
+}: {
+  workspace: DesktopSnapshot["availableWorkspaces"][number];
+  selected: boolean;
+  onSelect(): void;
+}) {
+  const { ref: labelRef, isTruncated: isLabelTruncated } = useTruncatedElement<HTMLDivElement>(workspace.label);
+  const { ref: pathRef, isTruncated: isPathTruncated } = useTruncatedElement<HTMLDivElement>(workspace.path);
+  const tooltipItem: WorkspaceListTooltipItem | null =
+    isLabelTruncated || isPathTruncated
+      ? {
+          id: workspace.path,
+          label: isLabelTruncated ? workspace.label : undefined,
+          path: isPathTruncated ? workspace.path : undefined,
+        }
+      : null;
+
+  return (
+    <TooltipItem item={tooltipItem}>
+      <DropdownMenuItem
+        onSelect={onSelect}
+        className={cn("items-start", DESKTOP_OVERLAY_LIST_ITEM, selected && "bg-accent/40")}
+      >
+        <div className="min-w-0 flex-1">
+          <div ref={labelRef} className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "truncate")}>
+            {workspace.label}
+          </div>
+          <div ref={pathRef} className={cn(DESKTOP_OVERLAY_LIST_ITEM_SECONDARY, "truncate")}>
+            {workspace.path}
+          </div>
+        </div>
+      </DropdownMenuItem>
+    </TooltipItem>
+  );
+}
+
 export function WorkspaceSelectorMenu({
   currentWorkspaceRoot,
   workspaceBinding,
@@ -47,6 +100,8 @@ export function WorkspaceSelectorMenu({
   triggerClassName,
 }: WorkspaceSelectorMenuProps) {
   const { t } = useTranslation();
+  const tooltipActions = useOptionalTooltipStableActions();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [workspaceFilter, setWorkspaceFilter] = useState("");
   const filteredWorkspaces = useMemo(() => {
     const query = workspaceFilter.trim().toLowerCase();
@@ -67,6 +122,12 @@ export function WorkspaceSelectorMenu({
       ),
     [availableWorkspaces, currentWorkspaceRoot, t, workspaceBinding],
   );
+  const suppressTooltip = menuOpen || disabled === true;
+  const { ref: triggerLabelRef, isTruncated: isTriggerLabelTruncated } =
+    useTruncatedElement<HTMLSpanElement>(currentWorkspaceLabel);
+  const triggerTooltipText = isTriggerLabelTruncated
+    ? currentWorkspaceLabel
+    : t("app.selectWorkspace");
 
   return (
     <FilteredOverlayMenu
@@ -75,28 +136,41 @@ export function WorkspaceSelectorMenu({
       onFilterChange={setWorkspaceFilter}
       filterPlaceholder={t("app.searchWorkspace")}
       onOpenChange={(open) => {
+        setMenuOpen(open);
         if (!open) {
           setWorkspaceFilter("");
+          tooltipActions?.dismissIfOpen();
         }
       }}
       trigger={
-        <FilteredOverlayMenuTrigger asChild>
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label={t("app.selectWorkspace")}
-            className={cn(
-              "inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-              instantHoverMotionClass,
-              triggerClassName,
-            )}
-          >
-            <span className="min-w-0 truncate" title={currentWorkspaceRoot}>
-              {currentWorkspaceLabel}
-            </span>
-            <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
-          </button>
-        </FilteredOverlayMenuTrigger>
+        <Tooltip
+          open={suppressTooltip ? false : undefined}
+          delayDuration={300}
+          disableHoverableContent
+        >
+          <TooltipTrigger asChild>
+            <FilteredOverlayMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={t("app.selectWorkspace")}
+                className={cn(
+                  "inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                  instantHoverMotionClass,
+                  triggerClassName,
+                )}
+              >
+                <span ref={triggerLabelRef} className="min-w-0 truncate">
+                  {currentWorkspaceLabel}
+                </span>
+                <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
+              </button>
+            </FilteredOverlayMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={4}>
+            {triggerTooltipText}
+          </TooltipContent>
+        </Tooltip>
       }
       footer={
         onAddWorkspace || onSelectNoWorkspace ? (
@@ -127,27 +201,43 @@ export function WorkspaceSelectorMenu({
       {filteredWorkspaces.length === 0 ? (
         <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("app.noMatches")}</p>
       ) : (
-        filteredWorkspaces.map((workspace) => {
-          const selected =
-            workspaceBinding === "project"
-            && sameWorkspacePath(workspace.path, currentWorkspaceRoot);
-          return (
-            <DropdownMenuItem
-              key={workspace.path}
-              onSelect={() => onSelectWorkspace(workspace.path)}
-              className={cn("items-start", DESKTOP_OVERLAY_LIST_ITEM, selected && "bg-accent/40")}
-            >
-              <div className="min-w-0 flex-1">
-                <div className={DESKTOP_OVERLAY_LIST_ITEM_PRIMARY} title={workspace.label}>
-                  {workspace.label}
+        <Tooltip<WorkspaceListTooltipItem>
+          getItemId={(item) => item.id}
+          delayDuration={300}
+          disableHoverableContent
+        >
+          <Tooltip.Zone>
+            {filteredWorkspaces.map((workspace) => {
+              const selected =
+                workspaceBinding === "project"
+                && sameWorkspacePath(workspace.path, currentWorkspaceRoot);
+              return (
+                <WorkspaceSelectorMenuItem
+                  key={workspace.path}
+                  workspace={workspace}
+                  selected={selected}
+                  onSelect={() => onSelectWorkspace(workspace.path)}
+                />
+              );
+            })}
+          </Tooltip.Zone>
+          <TooltipContent side="right" sideOffset={8}>
+            {(activeItem) => {
+              if (!activeItem || typeof activeItem !== "object") {
+                return null;
+              }
+              const item = activeItem as WorkspaceListTooltipItem;
+              return (
+                <div className="flex max-w-xs flex-col gap-0.5">
+                  {item.label ? <span>{item.label}</span> : null}
+                  {item.path ? (
+                    <span className="text-muted-foreground">{item.path}</span>
+                  ) : null}
                 </div>
-                <div className={DESKTOP_OVERLAY_LIST_ITEM_SECONDARY} title={workspace.path}>
-                  {workspace.path}
-                </div>
-              </div>
-            </DropdownMenuItem>
-          );
-        })
+              );
+            }}
+          </TooltipContent>
+        </Tooltip>
       )}
     </FilteredOverlayMenu>
   );
