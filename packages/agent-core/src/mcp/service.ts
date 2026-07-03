@@ -758,19 +758,26 @@ export class McpService {
       && sharedUserMcpToolingCache
       && sharedUserMcpToolingCache.digest === currentUserDigest
     ) {
-      userCacheHit = true;
-      indexEntries.push(...sharedUserMcpToolingCache.indexEntries);
-      resourceEntries.push(...sharedUserMcpToolingCache.resourceEntries);
-      for (const [serverName, entries] of sharedUserMcpToolingCache.prompts) {
-        prompts.set(serverName, entries);
+      const cached = sharedUserMcpToolingCache;
+      if (!Array.isArray(cached.resourceEntries)) {
+        // 同进程内热更新后旧缓存无 resourceEntries，丢弃并走下方重新发现
+        sharedUserMcpToolingCache = undefined;
+      } else {
+        userCacheHit = true;
+        indexEntries.push(...cached.indexEntries);
+        resourceEntries.push(...cached.resourceEntries);
+        for (const [serverName, entries] of cached.prompts) {
+          prompts.set(serverName, entries);
+        }
+        for (const [serverName, status] of cached.serverStates) {
+          this.registry.setServerState(serverName, status.state, {
+            cachedTools: status.cachedTools,
+            ...(status.lastError === undefined ? {} : { lastError: status.lastError }),
+          });
+        }
       }
-      for (const [serverName, status] of sharedUserMcpToolingCache.serverStates) {
-        this.registry.setServerState(serverName, status.state, {
-          cachedTools: status.cachedTools,
-          ...(status.lastError === undefined ? {} : { lastError: status.lastError }),
-        });
-      }
-    } else if (userServers.length > 0) {
+    }
+    if (!userCacheHit && userServers.length > 0) {
       const userIndexEntries: McpToolIndexEntry[] = [];
       const userResourceEntries: McpResourceIndexEntry[] = [];
       const userPrompts = new Map<string, McpPromptCatalogEntry[]>();
