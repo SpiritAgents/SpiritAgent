@@ -299,7 +299,7 @@
     "videoGenModelUsage": "Used for generate_video and other video outputs; after unchecking, no default video model will be specified.",
     "setVideoGenModel": "Set as default video generation model",
     "lightweightChatModelLabel": "Lightweight Chat Model",
-    "lightweightChatModelUsage": "Used for dream collection, worktree naming, editor Tab completion, and other lightweight background tasks. When unset, falls back by name rules then the current inference model.",
+    "lightweightChatModelUsage": "Used for dream collection, worktree naming, editor Tab completion, and other lightweight background tasks.",
     "noDefaultRolesForModel": "This model currently has no default roles that can be set.",
     "deleteModel": "Delete Model",
     "deleteModelConfirm": "Are you sure you want to delete model \"{{name}}\"? Configuration and separately saved key will be removed together.",
