@@ -9,6 +9,7 @@ import {
   type MouseEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Check, Copy, GitCommit, LoaderCircle } from "lucide-react";
 
@@ -18,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { PrConversationTimelineNode } from "@/components/workspace-pr-conversation-timeline";
 import { WorkspaceGitCommitContextMenuContent } from "@/components/workspace-git-commit-context-menu";
+import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import { cn } from "@/lib/utils";
 import type { GitCommitGraphRow, GitCommitRecord, GitHistorySnapshot } from "@/types";
 
@@ -635,6 +637,14 @@ export function GitCommitGraph({
     }
   }, [loadingMore]);
 
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollAreaViewport(scrollAreaRef.current),
+    estimateSize: () => ROW_HEIGHT_PX,
+    overscan: 12,
+    getItemKey: (index) => rows[index]?.commit.oid ?? index,
+  });
+
   useLayoutEffect(() => {
     const container = rowsContainerRef.current;
     if (!container || rows.length === 0) {
@@ -720,13 +730,27 @@ export function GitCommitGraph({
       <CommitGraphGutter rows={rows} graphWidth={graphWidth} geometry={geometry} />
       <Tooltip<GitCommitGraphRow> getItemId={(row) => row.commit.oid}>
         <Tooltip.Zone ref={rowsContainerRef} className="relative">
-          {rows.map((row, rowIndex) => (
-            <CommitGraphRowWithHover
-              key={row.commit.oid}
-              row={row}
-              textInset={textInsetForRow(row, rowIndex, rows)}
-            />
-          ))}
+          <div
+            className="relative w-full"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const row = rows[virtualItem.index]!;
+              const rowIndex = virtualItem.index;
+              return (
+                <div
+                  key={row.commit.oid}
+                  className="absolute left-0 top-0 w-full"
+                  style={{ transform: `translateY(${virtualItem.start}px)` }}
+                >
+                  <CommitGraphRowWithHover
+                    row={row}
+                    textInset={textInsetForRow(row, rowIndex, rows)}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </Tooltip.Zone>
         <TooltipContent
           appearance="detail"
