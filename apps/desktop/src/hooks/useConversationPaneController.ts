@@ -335,5 +335,6 @@ export function useConversationPaneController({
     subagentViewActive: paneSubagentViewActive,
     compactionDemoActive: paneCompactionDemoActive,
     composerInsertHandlers,
+    focusComposer: composer.focusComposer,
   };
 }
