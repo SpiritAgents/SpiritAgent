@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -9,6 +8,7 @@ import {
   type MouseEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { Check, Copy, GitCommit, LoaderCircle } from "lucide-react";
 
@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { PrConversationTimelineNode } from "@/components/workspace-pr-conversation-timeline";
 import { WorkspaceGitCommitContextMenuContent } from "@/components/workspace-git-commit-context-menu";
+import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import { cn } from "@/lib/utils";
 import type { GitCommitGraphRow, GitCommitRecord, GitHistorySnapshot } from "@/types";
 
@@ -211,27 +212,17 @@ function mergeParentRowIndex(
   return undefined;
 }
 
-type RowGeometry = { tops: number[]; heights: number[]; centers: number[]; total: number };
-
 function CommitGraphGutter({
   rows,
   graphWidth,
-  geometry,
 }: {
   rows: GitCommitGraphRow[];
   graphWidth: number;
-  geometry: RowGeometry | null;
 }) {
-  // Use measured DOM row offsets/heights so the graph aligns with variable-height rows
-  // (ref badges, multi-line subjects). Fall back to fixed rows before first measurement.
-  const rowTop = (i: number): number =>
-    geometry && geometry.tops[i] !== undefined ? geometry.tops[i]! : rowTopY(i);
-  const rowHeight = (i: number): number =>
-    geometry && geometry.heights[i] !== undefined ? geometry.heights[i]! : ROW_HEIGHT_PX;
-  const rowCenter = (i: number): number =>
-    geometry?.centers[i] !== undefined ? geometry.centers[i]! : rowTop(i) + rowHeight(i) / 2;
-  const rowBottom = (i: number): number => rowTop(i) + rowHeight(i);
-  const height = geometry ? geometry.total : rows.length * ROW_HEIGHT_PX;
+  const rowTop = rowTopY;
+  const rowCenter = (i: number): number => rowTop(i) + ROW_HEIGHT_PX / 2;
+  const rowBottom = (i: number): number => rowTop(i) + ROW_HEIGHT_PX;
+  const height = rows.length * ROW_HEIGHT_PX;
   const builder = new LanePathBuilder();
 
   const pushVertical = (lane: number, x: number, y1: number, y2: number): void => {
@@ -575,11 +566,9 @@ export function GitCommitGraph({
     () => new Map(rows.map((row) => [row.commit.oid, row.commit])),
     [rows],
   );
-  const rowsContainerRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const loadMoreInFlightRef = useRef(false);
-  const [geometry, setGeometry] = useState<RowGeometry | null>(null);
   const [commitContextMenuTarget, setCommitContextMenuTarget] = useState<GitCommitRecord | null>(
     null,
   );
@@ -635,57 +624,13 @@ export function GitCommitGraph({
     }
   }, [loadingMore]);
 
-  useLayoutEffect(() => {
-    const container = rowsContainerRef.current;
-    if (!container || rows.length === 0) {
-      setGeometry(null);
-      return;
-    }
-    const measure = (): void => {
-      const children = Array.from(container.children) as HTMLElement[];
-      const tops: number[] = [];
-      const heights: number[] = [];
-      const centers: number[] = [];
-      for (let i = 0; i < rows.length; i += 1) {
-        const el = children[i];
-        const top = el ? el.offsetTop : i * ROW_HEIGHT_PX;
-        const height = el ? el.offsetHeight : ROW_HEIGHT_PX;
-        tops.push(top);
-        heights.push(height);
-        if (el) {
-          const button = el.querySelector("button");
-          if (button instanceof HTMLElement) {
-            centers.push(top + button.offsetTop + button.offsetHeight / 2);
-          } else {
-            centers.push(top + height / 2);
-          }
-        } else {
-          centers.push(top + height / 2);
-        }
-      }
-      setGeometry((prev) => {
-        const total = container.offsetHeight;
-        if (
-          prev &&
-          prev.total === total &&
-          prev.tops.length === tops.length &&
-          prev.tops.every((v, i) => v === tops[i]) &&
-          prev.heights.every((v, i) => v === heights[i]) &&
-          prev.centers.every((v, i) => v === centers[i])
-        ) {
-          return prev;
-        }
-        return { tops, heights, centers, total };
-      });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(container);
-    for (const child of Array.from(container.children)) {
-      observer.observe(child);
-    }
-    return () => observer.disconnect();
-  }, [rows]);
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollAreaViewport(scrollAreaRef.current),
+    estimateSize: () => ROW_HEIGHT_PX,
+    overscan: 12,
+    getItemKey: (index) => rows[index]?.commit.oid ?? index,
+  });
 
   if (loading) {
     return (
@@ -717,16 +662,30 @@ export function GitCommitGraph({
       className="relative min-w-0 pr-1"
       onContextMenuCapture={onAddCommitToSession ? handleCommitContextMenuCapture : undefined}
     >
-      <CommitGraphGutter rows={rows} graphWidth={graphWidth} geometry={geometry} />
+      <CommitGraphGutter rows={rows} graphWidth={graphWidth} />
       <Tooltip<GitCommitGraphRow> getItemId={(row) => row.commit.oid}>
-        <Tooltip.Zone ref={rowsContainerRef} className="relative">
-          {rows.map((row, rowIndex) => (
-            <CommitGraphRowWithHover
-              key={row.commit.oid}
-              row={row}
-              textInset={textInsetForRow(row, rowIndex, rows)}
-            />
-          ))}
+        <Tooltip.Zone className="relative">
+          <div
+            className="relative w-full"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const row = rows[virtualItem.index]!;
+              const rowIndex = virtualItem.index;
+              return (
+                <div
+                  key={row.commit.oid}
+                  className="absolute left-0 top-0 w-full"
+                  style={{ transform: `translateY(${virtualItem.start}px)` }}
+                >
+                  <CommitGraphRowWithHover
+                    row={row}
+                    textInset={textInsetForRow(row, rowIndex, rows)}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </Tooltip.Zone>
         <TooltipContent
           appearance="detail"
