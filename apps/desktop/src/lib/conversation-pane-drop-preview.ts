@@ -494,6 +494,13 @@ export function paneDropZoneRect(
         width: Math.round(halfW),
         height: Math.round(halfH),
       };
+    case "swap":
+      return {
+        x: Math.round(left),
+        y: Math.round(top),
+        width: Math.round(width),
+        height: Math.round(height),
+      };
   }
 }
 
