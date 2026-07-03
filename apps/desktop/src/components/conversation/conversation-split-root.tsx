@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type RefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import { ConversationPaneDropIndicator } from "@/components/conversation/conversation-pane-drop-indicator";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
@@ -48,14 +48,18 @@ function SplitDivider({
   ratio,
   boundsRef,
   highlighted,
-  onRatioChange,
+  onResizeBegin,
+  onRatioPreview,
+  onRatioCommit,
 }: {
   splitId: string;
   direction: "horizontal" | "vertical";
   ratio: number;
   boundsRef: RefObject<HTMLDivElement | null>;
   highlighted: boolean;
-  onRatioChange: (ratio: number) => void;
+  onResizeBegin: () => void;
+  onRatioPreview: (ratio: number) => void;
+  onRatioCommit: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const separatorRef = useRef<HTMLDivElement | null>(null);
@@ -91,8 +95,9 @@ function SplitDivider({
       startRatio,
     };
     setIsResizing(true);
+    onResizeBegin();
     event.currentTarget.setPointerCapture(event.pointerId);
-  }, [direction]);
+  }, [direction, onResizeBegin]);
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -107,17 +112,18 @@ function SplitDivider({
           ? (event.clientX - rect.left) / Math.max(rect.width, 1)
           : (event.clientY - rect.top) / Math.max(rect.height, 1);
       const clamped = clampSplitRatio(nextRatio);
-      onRatioChange(clamped);
+      onRatioPreview(clamped);
       requestAnimationFrame(() => {
         syncAllConversationSplitShellDividers();
       });
     },
-    [direction, onRatioChange],
+    [direction, onRatioPreview],
   );
 
   const endResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     dragRef.current = null;
     setIsResizing(false);
+    onRatioCommit();
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
@@ -126,7 +132,7 @@ function SplitDivider({
     requestAnimationFrame(() => {
       syncAllConversationSplitShellDividers();
     });
-  }, []);
+  }, [onRatioCommit]);
 
   return (
     <div
@@ -163,10 +169,12 @@ function SplitJunctionHandle({
   junction,
   onResize,
   onHighlight,
+  onDragEnd,
 }: {
   junction: SplitJunctionSpec;
   onResize: (junction: SplitJunctionSpec, clientX: number, clientY: number) => void;
   onHighlight: (splitIds: Iterable<string> | null) => void;
+  onDragEnd: () => void;
 }) {
   const draggingRef = useRef(false);
 
@@ -196,13 +204,14 @@ function SplitJunctionHandle({
     (event: ReactPointerEvent<HTMLDivElement>) => {
       draggingRef.current = false;
       onHighlight(null);
+      onDragEnd();
       try {
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch {
         // already released
       }
     },
-    [onHighlight],
+    [onDragEnd, onHighlight],
   );
 
   return (
@@ -244,31 +253,6 @@ function SplitLayoutRenderer({
   renderPane: ConversationSplitRootProps["renderPane"];
 }) {
   const split = useConversationSplit();
-  const splitContainerRef = useRef<HTMLDivElement | null>(null);
-
-  const handleJunctionResize = useCallback(
-    (junction: SplitJunctionSpec, clientX: number, clientY: number) => {
-      const container = splitContainerRef.current;
-      if (!container) {
-        return;
-      }
-      const rect = container.getBoundingClientRect();
-      const xRatio = clampSplitRatio((clientX - rect.left) / Math.max(rect.width, 1));
-      const yRatio = clampSplitRatio((clientY - rect.top) / Math.max(rect.height, 1));
-      const updates: { splitId: string; ratio: number }[] = [];
-      for (const splitId of junction.xSplitIds) {
-        updates.push({ splitId, ratio: xRatio });
-      }
-      for (const splitId of junction.ySplitIds) {
-        updates.push({ splitId, ratio: yRatio });
-      }
-      split.updateRatios(updates);
-      requestAnimationFrame(() => {
-        syncAllConversationSplitShellDividers();
-      });
-    },
-    [split],
-  );
 
   if (node.kind === "leaf") {
     const isFocused = split.focusedPaneId === node.paneId;
@@ -311,46 +295,122 @@ function SplitLayoutRenderer({
     );
   }
 
-  const splitNode = node as SplitLayoutSplitNode;
-  const isHorizontal = splitNode.direction === "horizontal";
-  const firstFlex = splitNode.ratio;
-  const secondFlex = 1 - splitNode.ratio;
-  const junctions = collectSplitJunctions(splitNode);
+  return (
+    <SplitLayoutSplitRenderer
+      node={node}
+      useMicaBackdrop={useMicaBackdrop}
+      renderPane={renderPane}
+    />
+  );
+}
+
+function SplitLayoutSplitRenderer({
+  node,
+  useMicaBackdrop,
+  renderPane,
+}: {
+  node: SplitLayoutSplitNode;
+  useMicaBackdrop: boolean;
+  renderPane: ConversationSplitRootProps["renderPane"];
+}) {
+  const split = useConversationSplit();
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const firstPaneRef = useRef<HTMLDivElement | null>(null);
+  const secondPaneRef = useRef<HTMLDivElement | null>(null);
+  const pendingRatioRef = useRef(node.ratio);
+
+  const applyFlexRatio = useCallback((ratio: number) => {
+    const clamped = clampSplitRatio(ratio);
+    pendingRatioRef.current = clamped;
+    const nextFirstFlex = clamped;
+    const nextSecondFlex = 1 - clamped;
+    if (firstPaneRef.current) {
+      firstPaneRef.current.style.flex = `${nextFirstFlex} 1 0%`;
+    }
+    if (secondPaneRef.current) {
+      secondPaneRef.current.style.flex = `${nextSecondFlex} 1 0%`;
+    }
+  }, []);
+
+  const commitFlexRatio = useCallback(() => {
+    const ratio = pendingRatioRef.current;
+    split.updateRatio(node.splitId, ratio, { persist: false });
+    split.persistLayoutBinding();
+    split.endSplitLayoutResize();
+  }, [node.splitId, split]);
+
+  useLayoutEffect(() => {
+    pendingRatioRef.current = node.ratio;
+    applyFlexRatio(node.ratio);
+  }, [applyFlexRatio, node.ratio]);
+
+  const handleJunctionResize = useCallback(
+    (junction: SplitJunctionSpec, clientX: number, clientY: number) => {
+      const container = splitContainerRef.current;
+      if (!container) {
+        return;
+      }
+      const rect = container.getBoundingClientRect();
+      const xRatio = clampSplitRatio((clientX - rect.left) / Math.max(rect.width, 1));
+      const yRatio = clampSplitRatio((clientY - rect.top) / Math.max(rect.height, 1));
+      const updates: { splitId: string; ratio: number }[] = [];
+      for (const splitId of junction.xSplitIds) {
+        updates.push({ splitId, ratio: xRatio });
+      }
+      for (const splitId of junction.ySplitIds) {
+        updates.push({ splitId, ratio: yRatio });
+      }
+      split.updateRatios(updates, { persist: false });
+      requestAnimationFrame(() => {
+        syncAllConversationSplitShellDividers();
+      });
+    },
+    [split],
+  );
+
+  const isHorizontal = node.direction === "horizontal";
+  const firstFlex = node.ratio;
+  const secondFlex = 1 - node.ratio;
+  const junctions = collectSplitJunctions(node);
 
   return (
     <div
       ref={splitContainerRef}
       data-spirit-surface="conversation-split"
-      data-split-direction={splitNode.direction}
+      data-split-direction={node.direction}
       className={cn(
         "relative flex min-h-0 min-w-0 flex-1 overflow-hidden",
         isHorizontal ? "flex-row" : "flex-col",
       )}
     >
       <div
+        ref={firstPaneRef}
         className="flex min-h-0 min-w-0 overflow-hidden"
         style={{ flex: `${firstFlex} 1 0%` }}
       >
         <SplitLayoutRenderer
-          node={splitNode.first}
+          node={node.first}
           useMicaBackdrop={useMicaBackdrop}
           renderPane={renderPane}
         />
       </div>
       <SplitDivider
-        splitId={splitNode.splitId}
-        direction={splitNode.direction}
-        ratio={splitNode.ratio}
+        splitId={node.splitId}
+        direction={node.direction}
+        ratio={node.ratio}
         boundsRef={splitContainerRef}
-        highlighted={split.highlightedSplitIds.has(splitNode.splitId)}
-        onRatioChange={(nextRatio) => split.updateRatio(splitNode.splitId, nextRatio)}
+        highlighted={split.highlightedSplitIds.has(node.splitId)}
+        onResizeBegin={() => split.beginSplitLayoutResize()}
+        onRatioPreview={applyFlexRatio}
+        onRatioCommit={commitFlexRatio}
       />
       <div
+        ref={secondPaneRef}
         className="flex min-h-0 min-w-0 overflow-hidden"
         style={{ flex: `${secondFlex} 1 0%` }}
       >
         <SplitLayoutRenderer
-          node={splitNode.second}
+          node={node.second}
           useMicaBackdrop={useMicaBackdrop}
           renderPane={renderPane}
         />
@@ -361,6 +421,7 @@ function SplitLayoutRenderer({
           junction={junction}
           onResize={handleJunctionResize}
           onHighlight={split.setSplitResizeHighlight}
+          onDragEnd={() => split.persistLayoutBinding()}
         />
       ))}
     </div>

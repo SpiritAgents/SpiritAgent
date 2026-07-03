@@ -137,9 +137,19 @@ type ConversationSplitContextValue = {
 
   collapsePaneLayoutById: (paneId: string) => Promise<void>;
 
-  updateRatio: (splitId: string, ratio: number) => void;
+  updateRatio: (splitId: string, ratio: number, options?: { persist?: boolean }) => void;
 
-  updateRatios: (updates: readonly { splitId: string; ratio: number }[]) => void;
+  updateRatios: (
+    updates: readonly { splitId: string; ratio: number }[],
+    options?: { persist?: boolean },
+  ) => void;
+
+  /** 将当前 layout 写入 session split binding（拖拽结束时调用，避免 pointermove 落盘）。 */
+  persistLayoutBinding: () => void;
+
+  beginSplitLayoutResize: () => void;
+
+  endSplitLayoutResize: () => void;
 
   highlightedSplitIds: ReadonlySet<string>;
 
@@ -637,6 +647,8 @@ export function ConversationSplitProvider({
 
   const legacyLayoutClearedRef = useRef(false);
 
+  const splitRatioResizeActiveRef = useRef(false);
+
 
 
   useEffect(() => {
@@ -923,6 +935,12 @@ export function ConversationSplitProvider({
   useEffect(() => {
 
     if (!layout || layoutNavigationLockRef.current || layoutNavigationPending) {
+
+      return;
+
+    }
+
+    if (splitRatioResizeActiveRef.current) {
 
       return;
 
@@ -1327,7 +1345,39 @@ export function ConversationSplitProvider({
 
 
 
-  const updateRatio = useCallback((splitId: string, ratio: number) => {
+  const endSplitLayoutResize = useCallback(() => {
+
+    splitRatioResizeActiveRef.current = false;
+
+  }, []);
+
+
+
+  const beginSplitLayoutResize = useCallback(() => {
+
+    splitRatioResizeActiveRef.current = true;
+
+  }, []);
+
+
+
+  const persistLayoutBinding = useCallback(() => {
+
+    const current = layoutRef.current;
+
+    if (current && countPanes(current) > 1) {
+
+      persistSessionSplitBinding(current);
+
+    }
+
+  }, []);
+
+
+
+  const updateRatio = useCallback((splitId: string, ratio: number, options?: { persist?: boolean }) => {
+
+    const shouldPersist = options?.persist !== false;
 
     setLayout((current) => {
 
@@ -1339,7 +1389,7 @@ export function ConversationSplitProvider({
 
       const next = updateSplitRatio(current, splitId, ratio);
 
-      if (countPanes(next) > 1) {
+      if (shouldPersist && countPanes(next) > 1) {
 
         persistSessionSplitBinding(next);
 
@@ -1353,13 +1403,18 @@ export function ConversationSplitProvider({
 
 
 
-  const updateRatios = useCallback((updates: readonly { splitId: string; ratio: number }[]) => {
+  const updateRatios = useCallback((
+    updates: readonly { splitId: string; ratio: number }[],
+    options?: { persist?: boolean },
+  ) => {
 
     if (updates.length === 0) {
 
       return;
 
     }
+
+    const shouldPersist = options?.persist !== false;
 
     setLayout((current) => {
 
@@ -1371,7 +1426,7 @@ export function ConversationSplitProvider({
 
       const next = updateSplitRatios(current, updates);
 
-      if (countPanes(next) > 1) {
+      if (shouldPersist && countPanes(next) > 1) {
 
         persistSessionSplitBinding(next);
 
@@ -1643,6 +1698,12 @@ export function ConversationSplitProvider({
 
       updateRatios,
 
+      persistLayoutBinding,
+
+      beginSplitLayoutResize,
+
+      endSplitLayoutResize,
+
       highlightedSplitIds,
 
       setSplitResizeHighlight,
@@ -1732,6 +1793,12 @@ export function ConversationSplitProvider({
       updateRatio,
 
       updateRatios,
+
+      persistLayoutBinding,
+
+      beginSplitLayoutResize,
+
+      endSplitLayoutResize,
 
       highlightedSplitIds,
 
