@@ -64,7 +64,7 @@ function SplitDivider({
   const dragRef = useRef<{ start: number; startRatio: number } | null>(null);
   const lineActive = highlighted || isResizing || isHovered;
 
-  const { sync: syncShellLine } = useConversationSplitShellDivider(
+  useConversationSplitShellDivider(
     separatorRef,
     {
       splitId,
@@ -109,10 +109,10 @@ function SplitDivider({
       const clamped = clampSplitRatio(nextRatio);
       onRatioChange(clamped);
       requestAnimationFrame(() => {
-        syncShellLine();
+        syncAllConversationSplitShellDividers();
       });
     },
-    [direction, onRatioChange, syncShellLine],
+    [direction, onRatioChange],
   );
 
   const endResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
@@ -123,6 +123,9 @@ function SplitDivider({
     } catch {
       // already released
     }
+    requestAnimationFrame(() => {
+      syncAllConversationSplitShellDividers();
+    });
   }, []);
 
   return (
