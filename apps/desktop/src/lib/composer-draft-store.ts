@@ -1,4 +1,5 @@
 import type { RichSegment } from "./composer-segment-model.js";
+import { normalizeSessionPathKey } from "./session-path-kind.js";
 
 export const COMPOSER_DRAFT_STORAGE_KEY = 'spirit-desktop-composer-drafts';
 
@@ -91,6 +92,38 @@ function isComposerDraftEmpty(
   return !entry.text.trim()
     && entry.localFilePaths.length === 0
     && !hasMeaningfulDraftSegments(entry.segments);
+}
+
+function isComposerDraftEntryEmpty(
+  entry: Pick<ComposerDraftEntry, 'text' | 'localFilePaths' | 'segments'> | undefined,
+): boolean {
+  return !entry || isComposerDraftEmpty(entry);
+}
+
+/** Prefer non-empty pane draft; fall back to composerSessionKey when pane draft is empty. */
+export function resolvePaneComposerDraft(
+  paneComposerDraftKey: string,
+  composerSessionKey: string,
+  storage: ComposerDraftStorage | undefined = defaultStorage(),
+): ComposerDraftEntry | undefined {
+  const paneDraft = paneComposerDraftKey.trim()
+    ? readComposerDraft(paneComposerDraftKey, storage)
+    : undefined;
+  if (!isComposerDraftEntryEmpty(paneDraft)) {
+    return paneDraft;
+  }
+  const sessionDraft = composerSessionKey.trim()
+    ? readComposerDraft(composerSessionKey, storage)
+    : undefined;
+  if (!isComposerDraftEntryEmpty(sessionDraft)) {
+    return sessionDraft;
+  }
+  return paneDraft ?? sessionDraft;
+}
+
+export function buildPaneComposerDraftKey(sessionPath: string): string {
+  const normalized = normalizeSessionPathKey(sessionPath.trim());
+  return normalized ? `pane:${normalized}` : '';
 }
 
 function readStoreFile(storage: ComposerDraftStorage): ComposerDraftStoreFile {

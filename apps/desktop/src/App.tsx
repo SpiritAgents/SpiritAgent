@@ -25,6 +25,7 @@ import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
+import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
 import { useUiLayoutScale } from "@/hooks/useUiLayoutScale";
@@ -98,10 +99,7 @@ export default function App() {
     activeFilePath,
     conversationNavigationPending,
   );
-  const composerAutomationApiRef = useRef<{
-    setSlashSelectedIndex: (index: number) => void;
-    focusComposer: () => void;
-  } | null>(null);
+  const composerAutomationApiRef = useRef<FocusedPaneComposerControls | null>(null);
   const conversationAbortShortcutTargetRef = useRef<ConversationAbortShortcutTarget>({
     eligible: false,
   });
@@ -299,7 +297,6 @@ export default function App() {
             && !newSessionBusy
           }
           composerAutomationApiRef={composerAutomationApiRef}
-          setSlashSelectedIndex={composer.setSlashSelectedIndex}
         />
         <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
           <SessionSidebar
@@ -409,13 +406,13 @@ export default function App() {
               onDeleteRule={runtime.deleteRule}
               onListDreamsOverview={runtime.listDreamsOverview}
               onGenerateSkillNavigate={() => {
-                composer.prefillComposerSkillChip("create-skill");
+                surfaceNav.handlePrefillComposerSkillChip("create-skill");
               }}
               onGenerateRuleNavigate={() => {
-                composer.prefillComposerSkillChip("create-rule");
+                surfaceNav.handlePrefillComposerSkillChip("create-rule");
               }}
               onGenerateHookNavigate={() => {
-                composer.prefillComposerSkillChip("create-hook");
+                surfaceNav.handlePrefillComposerSkillChip("create-hook");
               }}
               getGitHubAuthStatus={runtime.getGitHubAuthStatus}
               beginGitHubDeviceLogin={runtime.beginGitHubDeviceLogin}

@@ -96,7 +96,7 @@ export function ConversationPaneHost({
   });
 
   const setFocusedPaneComposerInsert = split.setFocusedPaneComposerInsert;
-  const setFocusedPaneComposerFocus = split.setFocusedPaneComposerFocus;
+  const setFocusedPaneComposerControls = split.setFocusedPaneComposerControls;
 
   useEffect(() => {
     if (!isFocused) {
@@ -111,14 +111,14 @@ export function ConversationPaneHost({
 
   useEffect(() => {
     if (!isFocused) {
-      setFocusedPaneComposerFocus(null);
+      setFocusedPaneComposerControls(null);
       return;
     }
-    setFocusedPaneComposerFocus(pane.focusComposer);
+    setFocusedPaneComposerControls(pane.composerControls);
     return () => {
-      setFocusedPaneComposerFocus(null);
+      setFocusedPaneComposerControls(null);
     };
-  }, [isFocused, pane.focusComposer, setFocusedPaneComposerFocus]);
+  }, [isFocused, pane.composerControls, setFocusedPaneComposerControls]);
   const handleDeleteSession = useCallback(
     async (path: string) => {
       if (splitPaneCount > 1) {

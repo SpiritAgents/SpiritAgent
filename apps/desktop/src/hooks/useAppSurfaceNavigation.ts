@@ -18,6 +18,7 @@ import {
   shouldMarkConversationSnapshotStale,
   shouldSuppressStaleConversation,
 } from "@/lib/conversation-surface-stale";
+import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import type { DesktopSnapshot } from "@/types";
 
@@ -32,11 +33,6 @@ export type AppSurface =
 
 export type NonSettingsSurface = "conversation" | "marketplace" | "automations";
 
-export type ComposerAutomationApi = {
-  setSlashSelectedIndex: (index: number) => void;
-  focusComposer: () => void;
-};
-
 export type UseAppSurfaceNavigationOptions = {
   runtime: DesktopRuntime;
   snapshot: DesktopSnapshot | null;
@@ -46,7 +42,7 @@ export type UseAppSurfaceNavigationOptions = {
   sessionNavigationBusy: boolean;
   newSessionBusy: boolean;
   t: TFunction;
-  composerAutomationApiRef?: MutableRefObject<ComposerAutomationApi | null>;
+  composerAutomationApiRef?: MutableRefObject<FocusedPaneComposerControls | null>;
 };
 
 export function useAppSurfaceNavigation({
@@ -155,15 +151,25 @@ export function useAppSurfaceNavigation({
     [runtime, snapshot?.workspaceBinding, snapshot?.workspaceRoot],
   );
 
+  const handlePrefillComposerSkillChip = useCallback(
+    (skillName: string) => {
+      setLastNonSettingsSurface("conversation");
+      setActiveSurface("conversation");
+      queueMicrotask(() => {
+        composerAutomationApiRef?.current?.prefillSkillChip(skillName);
+      });
+    },
+    [composerAutomationApiRef, setActiveSurface, setLastNonSettingsSurface],
+  );
+
   const handleGenerateAutomation = useCallback(async () => {
     setLastNonSettingsSurface("conversation");
     setActiveSurface("conversation");
     const seed = t("automations.generateComposerSeed");
-    const resetOk = await runtime.resetSession();
+    const resetOk = await runtime.resetSession({ composerSeed: seed });
     if (!resetOk) {
       return;
     }
-    runtime.setComposer(seed);
     const composerApi = composerAutomationApiRef?.current;
     composerApi?.setSlashSelectedIndex(-1);
     queueMicrotask(() => {
@@ -232,6 +238,7 @@ export function useAppSurfaceNavigation({
     handleNewSession,
     handleNewSessionInWorkspace,
     handleGenerateAutomation,
+    handlePrefillComposerSkillChip,
     handleOpenSettings,
     handleCloseSettings,
     extensionSettingsItems,

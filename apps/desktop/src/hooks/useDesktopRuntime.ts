@@ -7,6 +7,7 @@ import i18n from "@/lib/i18n";
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
 import {
+  buildPaneComposerDraftKey,
   clearComposerDraft,
   readComposerDraft,
   writeComposerDraft,
@@ -475,6 +476,44 @@ export function useDesktopRuntime() {
       setComposerLocalFileAttachments(attachmentsFromPaths(stored?.localFilePaths ?? []));
       setAgentModeChipDismissed(false);
       setQuestionError("");
+    },
+    [sessionUiKey],
+  );
+
+  const applyComposerSeed = useCallback(
+    (seed: string, targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession">) => {
+      const key = sessionUiKey(targetSnapshot.composerSessionKey);
+      const seedPayload = {
+        text: seed,
+        localFilePaths: [] as string[],
+        segments: [] as RichSegment[],
+      };
+      setComposer(seed);
+      setComposerInitialSegments(null);
+      composerDraftSegmentsRef.current = [];
+      setComposerLocalFileAttachments([]);
+      setAgentModeChipDismissed(false);
+      if (!key || targetSnapshot.activeSession?.readOnly) {
+        return;
+      }
+      sessionUiCacheRef.current.set(key, {
+        composer: seed,
+        composerSegments: [],
+        questionDrafts: {},
+        localFilePaths: [],
+        agentModeChipDismissed: false,
+      });
+      persistSessionUiDraft(key, {
+        composer: seed,
+        localFilePaths: seedPayload.localFilePaths,
+        composerSegments: seedPayload.segments,
+      });
+      const paneDraftKey = targetSnapshot.activeSession?.filePath
+        ? buildPaneComposerDraftKey(targetSnapshot.activeSession.filePath)
+        : "";
+      if (paneDraftKey) {
+        writeComposerDraft(paneDraftKey, seedPayload);
+      }
     },
     [sessionUiKey],
   );
@@ -3321,7 +3360,7 @@ export function useDesktopRuntime() {
     [api],
   );
 
-  const resetSession = useCallback(async (): Promise<boolean> => {
+  const resetSession = useCallback(async (options?: { composerSeed?: string }): Promise<boolean> => {
     if (!api) {
       return false;
     }
@@ -3337,6 +3376,9 @@ export function useDesktopRuntime() {
       }
       applySnapshot(next, { navGeneration });
       restoreSessionUi(next);
+      if (options?.composerSeed !== undefined) {
+        applyComposerSeed(options.composerSeed, next);
+      }
       setRuntimeError("");
       void refreshSessions();
       return true;
@@ -3348,7 +3390,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
-  }, [api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
+  }, [api, applyComposerSeed, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
 
   const summary = useMemo(() => {
     const canEnqueueWhileBusy =

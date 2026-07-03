@@ -309,6 +309,21 @@ export function useConversationPaneController({
     ],
   );
 
+  const composerControls = useMemo(
+    () => ({
+      focusComposer: composer.focusComposer,
+      setComposerText: composer.setComposerText,
+      setSlashSelectedIndex: composer.setSlashSelectedIndex,
+      prefillSkillChip: composer.prefillSkillChip,
+    }),
+    [
+      composer.focusComposer,
+      composer.prefillSkillChip,
+      composer.setComposerText,
+      composer.setSlashSelectedIndex,
+    ],
+  );
+
   return {
     paneSnapshot,
     paneIsEmptySession,
@@ -335,6 +350,6 @@ export function useConversationPaneController({
     subagentViewActive: paneSubagentViewActive,
     compactionDemoActive: paneCompactionDemoActive,
     composerInsertHandlers,
-    focusComposer: composer.focusComposer,
+    composerControls,
   };
 }
