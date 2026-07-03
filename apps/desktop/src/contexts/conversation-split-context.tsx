@@ -187,6 +187,10 @@ type ConversationSplitContextValue = {
 
   setFocusedPaneComposerInsert: (handlers: FocusedPaneComposerInsertHandlers | null) => void;
 
+  focusedPaneComposerFocusRef: MutableRefObject<(() => void) | null>;
+
+  setFocusedPaneComposerFocus: (focus: (() => void) | null) => void;
+
   conversationAbortShortcutTargetRef: ConversationAbortShortcutTargetRef | null;
 
 };
@@ -549,12 +553,18 @@ export function ConversationSplitProvider({
 
   const focusedPaneComposerInsertRef = useRef<FocusedPaneComposerInsertHandlers | null>(null);
 
+  const focusedPaneComposerFocusRef = useRef<(() => void) | null>(null);
+
   const setFocusedPaneComposerInsert = useCallback(
     (handlers: FocusedPaneComposerInsertHandlers | null) => {
       focusedPaneComposerInsertRef.current = handlers;
     },
     [],
   );
+
+  const setFocusedPaneComposerFocus = useCallback((focus: (() => void) | null) => {
+    focusedPaneComposerFocusRef.current = focus;
+  }, []);
 
   const setPaneDropTarget = useCallback(
     (target: { paneId: string; zone: PaneDropZone } | null) => {
@@ -1664,6 +1674,10 @@ export function ConversationSplitProvider({
       focusedPaneComposerInsertRef,
 
       setFocusedPaneComposerInsert,
+
+      focusedPaneComposerFocusRef,
+
+      setFocusedPaneComposerFocus,
 
       conversationAbortShortcutTargetRef,
 

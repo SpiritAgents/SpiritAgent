@@ -24,7 +24,7 @@ import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useComposerController } from "@/hooks/useComposerController";
-import { useConversationSessionFocusComposer } from "@/hooks/useConversationSessionFocusComposer";
+import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
 import { useUiLayoutScale } from "@/hooks/useUiLayoutScale";
@@ -171,24 +171,6 @@ export default function App() {
     setLastNonSettingsSurface: surfaceNav.setLastNonSettingsSurface,
   });
 
-  useEffect(() => {
-    composerAutomationApiRef.current = {
-      setSlashSelectedIndex: composer.setSlashSelectedIndex,
-      focusComposer: composer.focusComposer,
-    };
-  }, [composer.focusComposer, composer.setSlashSelectedIndex]);
-
-  useConversationSessionFocusComposer({
-    composerSessionKey: conversation.composerSessionKey,
-    focusComposer: composer.focusComposer,
-    enabled:
-      snapshot != null
-      && surfaceNav.activeSurface === "conversation"
-      && !surfaceNav.settingsMode
-      && !sessionNavigationBusy
-      && !runtime.layoutNavigationPending
-      && !newSessionBusy,
-  });
 
   const messageRewind = useMessageRewind({
     runtime,
@@ -306,6 +288,19 @@ export default function App() {
             surfaceNav.setActiveSurface("conversation");
           }}
         >
+        <ConversationSessionFocusComposerBridge
+          composerSessionKey={conversation.composerSessionKey}
+          enabled={
+            snapshot != null
+            && surfaceNav.activeSurface === "conversation"
+            && !surfaceNav.settingsMode
+            && !sessionNavigationBusy
+            && !runtime.layoutNavigationPending
+            && !newSessionBusy
+          }
+          composerAutomationApiRef={composerAutomationApiRef}
+          setSlashSelectedIndex={composer.setSlashSelectedIndex}
+        />
         <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
           <SessionSidebar
             narrow={false}
