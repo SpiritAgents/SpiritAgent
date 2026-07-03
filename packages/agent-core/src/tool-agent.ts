@@ -641,16 +641,35 @@ export function buildMcpCatalogSystemMessage(
     return undefined;
   }
 
-  const lines = [
-    'The host lists enabled MCP tools as metadata only.',
-    'Use tool_describe to fetch a tool input schema before tool_call.',
-    '',
-  ];
+  const hasTools = catalog.totalToolCount > 0;
+  const hasResources = catalog.totalResourceCount > 0;
+  const lines: string[] = [];
+
+  if (hasTools) {
+    lines.push(
+      'The host lists enabled MCP tools as metadata only.',
+      'Use tool_describe to fetch a tool input schema before tool_call.',
+      '',
+    );
+  }
+
+  if (hasResources) {
+    lines.push('Use fetch_mcp_resource to read resource contents when needed.', '');
+  }
 
   if (catalog.truncated) {
     lines.push(
       `<catalog truncated="true" totalTools="${catalog.totalToolCount}">`,
       'Some tools were omitted from this catalog. Use tool_describe with the server and tool name to fetch schemas for tools not listed here.',
+      '</catalog>',
+      '',
+    );
+  }
+
+  if (catalog.resourcesTruncated) {
+    lines.push(
+      `<catalog resourcesTruncated="true" totalResources="${catalog.totalResourceCount}">`,
+      'Some resources were omitted from this catalog.',
       '</catalog>',
       '',
     );
@@ -668,6 +687,19 @@ export function buildMcpCatalogSystemMessage(
       lines.push(`<tool name="${escapeRuleAttribute(tool.name)}">`);
       lines.push(tool.description.trimEnd());
       lines.push('</tool>');
+    }
+    for (const resource of server.resources) {
+      const mimeTypesAttribute =
+        resource.mimeTypes === undefined || resource.mimeTypes.length === 0
+          ? ''
+          : ` mimeTypes="${escapeRuleAttribute(resource.mimeTypes.join(','))}"`;
+      lines.push(
+        `<resource uri="${escapeRuleAttribute(resource.uri)}" name="${escapeRuleAttribute(resource.name)}"${mimeTypesAttribute}>`,
+      );
+      if (resource.description !== undefined && resource.description.trim()) {
+        lines.push(resource.description.trimEnd());
+      }
+      lines.push('</resource>');
     }
     lines.push('</mcp-server>');
     lines.push('');

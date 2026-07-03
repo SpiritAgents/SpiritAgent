@@ -112,7 +112,7 @@ export interface DesktopRuntimeEventOrchestratorOptions {
 }
 
 function isMcpLikeToolName(toolName: string): boolean {
-  return toolName === 'tool_call' || toolName === 'tool_describe';
+  return toolName === 'tool_call' || toolName === 'tool_describe' || toolName === 'fetch_mcp_resource';
 }
 
 export class DesktopRuntimeEventOrchestrator {
