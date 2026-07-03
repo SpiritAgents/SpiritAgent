@@ -667,6 +667,12 @@ export function ConversationSplitProvider({
 
     }
 
+    if (layoutNavigationLockRef.current) {
+
+      return;
+
+    }
+
     const generation = ++layoutResolveGenerationRef.current;
 
     const current = layoutRef.current;
@@ -1492,55 +1498,65 @@ export function ConversationSplitProvider({
     async (targetPaneId: string, zone: PaneRepositionZone) => {
       const payload = sidebarSessionDragPayload;
       clearSidebarSessionDrag();
-      if (!payload || !layout || !runtime.apiReady) {
+      const layoutBeforeDrop = layoutRef.current;
+      if (!payload || !layoutBeforeDrop || !runtime.apiReady) {
+        return;
+      }
+
+      if (!findLeafByPaneId(layoutBeforeDrop, targetPaneId)) {
         return;
       }
 
       onEnsureConversationSurface?.();
 
       if (payload.kind === "stored") {
-        const existingPaneId = findPaneIdBySessionPath(layout, payload.sessionPath);
+        const existingPaneId = findPaneIdBySessionPath(layoutBeforeDrop, payload.sessionPath);
         if (existingPaneId) {
           focusPane(existingPaneId, payload.sessionPath);
           return;
         }
       }
 
-      const newPaneId = createPaneId();
-      let newSessionPath: string;
+      layoutNavigationLockRef.current = true;
+      setLayoutNavigationPending(true);
 
-      if (payload.kind === "stored") {
-        newSessionPath = payload.sessionPath;
-      } else {
-        if (payload.kind === "new-in-workspace") {
-          const trimmed = payload.workspaceRoot.trim();
-          if (trimmed) {
-            const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
-            const needsSwitch =
-              snapshot?.workspaceBinding !== "project"
-              || !currentRoot
-              || !sameWorkspacePath(currentRoot, trimmed);
-            if (needsSwitch) {
-              const switched = await runtime.switchWorkspaceRoot(trimmed);
-              if (!switched) {
-                return;
+      try {
+        const newPaneId = createPaneId();
+        let newSessionPath: string;
+
+        if (payload.kind === "stored") {
+          newSessionPath = payload.sessionPath;
+        } else {
+          if (payload.kind === "new-in-workspace") {
+            const trimmed = payload.workspaceRoot.trim();
+            if (trimmed) {
+              const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
+              const needsSwitch =
+                snapshot?.workspaceBinding !== "project"
+                || !currentRoot
+                || !sameWorkspacePath(currentRoot, trimmed);
+              if (needsSwitch) {
+                const switched = await runtime.switchWorkspaceRoot(trimmed);
+                if (!switched) {
+                  return;
+                }
               }
             }
           }
+          const response = await runtime.beginSplitPaneSession(newPaneId, { deferSnapshot: true });
+          newSessionPath = response.sessionPath;
         }
-        const response = await runtime.beginSplitPaneSession(newPaneId, { deferSnapshot: true });
-        newSessionPath = response.sessionPath;
-      }
 
-      const newLeaf = createLeafNode(newPaneId, newSessionPath);
-      const nextLayout = splitPaneAtZone(layout, targetPaneId, zone, newLeaf);
-      const paths = collectPaneSessionPaths(nextLayout);
+        const layoutForSplit = layoutRef.current;
+        if (!layoutForSplit || !findLeafByPaneId(layoutForSplit, targetPaneId)) {
+          return;
+        }
 
-      layoutNavigationLockRef.current = true;
-      setLayoutNavigationPending(true);
-      visiblePathsSyncedRef.current = paths.join("\0");
+        const newLeaf = createLeafNode(newPaneId, newSessionPath);
+        const nextLayout = splitPaneAtZone(layoutForSplit, targetPaneId, zone, newLeaf);
+        const paths = collectPaneSessionPaths(nextLayout);
+        visiblePathsSyncedRef.current = paths.join("\0");
 
-      try {
         await runtime.syncSplitPaneSessions(paths, newSessionPath);
         setLayout(nextLayout);
         setFocusedPaneId(newPaneId);
@@ -1553,7 +1569,6 @@ export function ConversationSplitProvider({
     [
       clearSidebarSessionDrag,
       focusPane,
-      layout,
       onEnsureConversationSurface,
       runtime,
       sidebarSessionDragPayload,
