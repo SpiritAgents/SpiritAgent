@@ -11,8 +11,12 @@
   background: color-mix(in oklab, var(--muted) 30%, transparent) !important;
   padding: 0 !important;
   gap: 0 !important;
-  content-visibility: visible;
-  contain-intrinsic-size: auto;
+  /* Streamdown 以内联样式写 content-visibility:auto + contain-intrinsic-size:auto 200px，
+     不加 !important 压不过（此前两行静默无效）。skipped 态的 200px 占位会在虚拟行
+     ref 时刻被同步实测采到，paint 后又被 RO 修正为真实高度，缓存被交替污染引发
+     滚动跳变；消息列表已虚拟化，无需嵌套 content-visibility 跳渲染。 */
+  content-visibility: visible !important;
+  contain-intrinsic-size: auto !important;
 }
 
 .text-muted-foreground [data-streamdown="code-block"] {
