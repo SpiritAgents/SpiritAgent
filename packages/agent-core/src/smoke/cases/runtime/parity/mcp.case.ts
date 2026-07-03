@@ -13,6 +13,7 @@ import {
   type RuntimeParityCaseResult,
   userMessageContentMatchesInput,
 } from './harness.js';
+import { formatMcpResourceFetchResultJson } from '../../../../tool-gateway/fetch-mcp-resource.js';
 
 export async function runMcpCase(): Promise<RuntimeParityCaseResult> {
   const promptRuntime = new AgentRuntime({
@@ -135,6 +136,14 @@ export async function runMcpCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('attachMcpResource smoke 提交后应清空 pending resources。');
   }
 
+  const hostExecutor = new HostExecutor();
+  const resourceValue = await hostExecutor.readMcpResource('demo', 'mcp://demo/doc');
+  const resourceJson = formatMcpResourceFetchResultJson(resourceValue);
+  const parsed = JSON.parse(resourceJson) as { text?: string };
+  if (parsed.text !== 'resource body') {
+    throw new Error('fetch_mcp_resource JSON 格式化 smoke 不正确。');
+  }
+
   const archive = resourceRuntime.toArchive(
     [{ role: 'user', content: 'u' }],
     [],
@@ -153,5 +162,5 @@ export async function runMcpCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('replaceFromArchive smoke 未恢复 llmHistory。');
   }
 
-  return { promptApplied, drainedStreamingPromptEvents, resourceResult, archive };
+  return { promptApplied, drainedStreamingPromptEvents, resourceResult, resourceJson, archive };
 }
