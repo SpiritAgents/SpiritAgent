@@ -51,51 +51,70 @@ export function useConversationSessionScrollTail({
       return;
     }
 
-    const viewport = scrollAreaViewport(scrollAreaRef.current);
-    if (!viewport) {
-      previousContentKeyRef.current = contentKey;
-      setSettling(false);
-      return;
-    }
+    let canceled = false;
+    let rafId = 0;
 
-    setSettling(true);
-    scrollAreaToBottom(viewport);
+    const finishSettle = (viewport: HTMLElement) => {
+      setSettling(true);
+      scrollAreaToBottom(viewport);
 
-    if (!streaming) {
-      // 静态内容：虚拟行的同步测量与 scrollTop 补偿全部发生在本次 paint 之前的
-      // 同步 commit 链里（layout effect 中 setState 会嵌套同步 flush）。microtask
-      // 在这些 commit 全部结束后、浏览器 paint 之前执行，此时做最终滚底并同步
-      // 揭示列表，首帧即定好底的内容——不产生任何 visibility:hidden 空白帧。
-      let canceled = false;
-      queueMicrotask(() => {
+      if (!streaming) {
+        queueMicrotask(() => {
+          if (canceled) {
+            return;
+          }
+          scrollAreaToBottom(viewport);
+          previousContentKeyRef.current = contentKey;
+          flushSync(() => setSettling(false));
+        });
+        return;
+      }
+
+      let frame = 0;
+      const step = () => {
         if (canceled) {
           return;
         }
+        frame += 1;
+        if (scrollDistanceFromBottom(viewport) <= 1 || frame >= SETTLE_MAX_FRAMES) {
+          previousContentKeyRef.current = contentKey;
+          setSettling(false);
+          return;
+        }
         scrollAreaToBottom(viewport);
-        previousContentKeyRef.current = contentKey;
-        flushSync(() => setSettling(false));
-      });
+        rafId = requestAnimationFrame(step);
+      };
+      rafId = requestAnimationFrame(step);
+    };
+
+    const viewport = scrollAreaViewport(scrollAreaRef.current);
+    if (viewport) {
+      finishSettle(viewport);
       return () => {
         canceled = true;
+        cancelAnimationFrame(rafId);
       };
     }
 
-    let frame = 0;
-    let rafId = requestAnimationFrame(function step() {
-      frame += 1;
-      // 帧首仍贴底 = 上一帧滚底后的实测修正没有把视口推离底部，视为 settled
-      if (scrollDistanceFromBottom(viewport) <= 1 || frame >= SETTLE_MAX_FRAMES) {
-        // 完成时才记录 key：StrictMode 挂载双跑会先启动循环、cleanup 随即取消，
-        // 若在启动时记录，第二遍 effect 会因 same-key 提前返回，settling 永卡 true
-        // （列表 visibility:hidden 不再恢复）。被取消的定底视为未发生，下次重做。
-        previousContentKeyRef.current = contentKey;
-        setSettling(false);
+    // Radix viewport 可能晚于 contentKey 变化一帧挂载；勿标记 key 已处理，轮询至可用。
+    setSettling(true);
+    const waitForViewport = () => {
+      if (canceled) {
         return;
       }
-      scrollAreaToBottom(viewport);
-      rafId = requestAnimationFrame(step);
-    });
-    return () => cancelAnimationFrame(rafId);
+      const nextViewport = scrollAreaViewport(scrollAreaRef.current);
+      if (!nextViewport) {
+        rafId = requestAnimationFrame(waitForViewport);
+        return;
+      }
+      finishSettle(nextViewport);
+    };
+    rafId = requestAnimationFrame(waitForViewport);
+
+    return () => {
+      canceled = true;
+      cancelAnimationFrame(rafId);
+    };
   }, [contentKey, enabled, streaming, scrollAreaRef]);
 
   return { listSettling: settling };
