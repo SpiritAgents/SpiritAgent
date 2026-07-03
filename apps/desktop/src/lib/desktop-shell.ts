@@ -131,6 +131,28 @@ export function settingsShortcutLabel(): string {
   return isMacDesktopPlatform() ? keys.join("") : keys.join("+");
 }
 
+/** Cmd/Ctrl + \\ shortcut keys for tooltip Kbd chips. */
+export function modBackslashShortcutKbdKeys(): readonly string[] {
+  return isMacDesktopPlatform() ? ["⌘", "\\"] : ["Ctrl", "\\"];
+}
+
+/** Cmd/Ctrl + Shift + \\ shortcut keys for tooltip Kbd chips. */
+export function modShiftBackslashShortcutKbdKeys(): readonly string[] {
+  return isMacDesktopPlatform() ? ["⌘", "⇧", "\\"] : ["Ctrl", "Shift", "\\"];
+}
+
+/** Cmd/Ctrl + \\ shortcut label for split-right. */
+export function modBackslashShortcutLabel(): string {
+  const keys = modBackslashShortcutKbdKeys();
+  return isMacDesktopPlatform() ? keys.join("") : keys.join("+");
+}
+
+/** Cmd/Ctrl + Shift + \\ shortcut label for split-down. */
+export function modShiftBackslashShortcutLabel(): string {
+  const keys = modShiftBackslashShortcutKbdKeys();
+  return isMacDesktopPlatform() ? keys.join("") : keys.join("+");
+}
+
 type KeyboardModifierState = Pick<KeyboardEvent, "altKey" | "ctrlKey" | "metaKey">;
 
 /** Whether the platform primary shortcut modifier (⌘ on macOS, Ctrl elsewhere) is held. */

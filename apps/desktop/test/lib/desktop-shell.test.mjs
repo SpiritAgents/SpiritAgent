@@ -6,8 +6,12 @@ import {
   isModAltShortcutPressed,
   isModShortcutPressed,
   modAltLetterShortcutKbdKeys,
+  modBackslashShortcutKbdKeys,
+  modBackslashShortcutLabel,
   modCommaShortcutKbdKeys,
   modLetterShortcutKbdKeys,
+  modShiftBackslashShortcutKbdKeys,
+  modShiftBackslashShortcutLabel,
   modSlashShortcutKbdKeys,
   modSlashShortcutLabel,
   settingsShortcutLabel,
@@ -116,6 +120,42 @@ test("settingsShortcutLabel formats comma shortcut per platform", () => {
   });
   withDesktopPlatform("linux", () => {
     assert.equal(settingsShortcutLabel(), "Ctrl+,");
+  });
+});
+
+test("modShiftBackslashShortcutKbdKeys returns split-down shortcut chips per platform", () => {
+  withDesktopPlatform("darwin", () => {
+    assert.deepEqual(modShiftBackslashShortcutKbdKeys(), ["⌘", "⇧", "\\"]);
+  });
+  withDesktopPlatform("win32", () => {
+    assert.deepEqual(modShiftBackslashShortcutKbdKeys(), ["Ctrl", "Shift", "\\"]);
+  });
+});
+
+test("modBackslashShortcutKbdKeys returns split-right shortcut chips per platform", () => {
+  withDesktopPlatform("darwin", () => {
+    assert.deepEqual(modBackslashShortcutKbdKeys(), ["⌘", "\\"]);
+  });
+  withDesktopPlatform("win32", () => {
+    assert.deepEqual(modBackslashShortcutKbdKeys(), ["Ctrl", "\\"]);
+  });
+});
+
+test("modBackslashShortcutLabel formats split-right shortcut per platform", () => {
+  withDesktopPlatform("darwin", () => {
+    assert.equal(modBackslashShortcutLabel(), "⌘\\");
+  });
+  withDesktopPlatform("win32", () => {
+    assert.equal(modBackslashShortcutLabel(), "Ctrl+\\");
+  });
+});
+
+test("modShiftBackslashShortcutLabel formats split-down shortcut per platform", () => {
+  withDesktopPlatform("darwin", () => {
+    assert.equal(modShiftBackslashShortcutLabel(), "⌘⇧\\");
+  });
+  withDesktopPlatform("win32", () => {
+    assert.equal(modShiftBackslashShortcutLabel(), "Ctrl+Shift+\\");
   });
 });
 

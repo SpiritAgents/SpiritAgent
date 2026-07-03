@@ -99,6 +99,10 @@ import {
 
 import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-composer-insert";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
+import {
+  registerSplitPaneShortcut,
+  unregisterSplitPaneShortcut,
+} from "@/lib/split-pane-shortcut-bridge";
 import type { DesktopSnapshot } from "@/types";
 
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
@@ -600,6 +604,10 @@ export function ConversationSplitProvider({
   const layoutRef = useRef<SplitLayoutNode | null>(null);
 
   layoutRef.current = layout;
+
+  const focusedPaneIdRef = useRef<string | null>(null);
+
+  focusedPaneIdRef.current = focusedPaneId;
 
   const layoutResolveGenerationRef = useRef(0);
 
@@ -1164,6 +1172,24 @@ export function ConversationSplitProvider({
     [layout, runtime],
 
   );
+
+  useEffect(() => {
+    registerSplitPaneShortcut({
+      splitFocusedPane(direction) {
+        const currentLayout = layoutRef.current;
+        if (!currentLayout) {
+          return;
+        }
+        const focused = focusedPaneIdRef.current;
+        const paneId =
+          focused && findLeafByPaneId(currentLayout, focused)
+            ? focused
+            : findWorkspaceToolsAnchorPaneId(currentLayout);
+        void splitPane(paneId, direction);
+      },
+    });
+    return () => unregisterSplitPaneShortcut();
+  }, [splitPane]);
 
 
 

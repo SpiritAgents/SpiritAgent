@@ -25,6 +25,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -37,10 +38,17 @@ import {
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
-import { isDarwinElectronShell } from "@/lib/desktop-shell";
+import {
+  isDarwinElectronShell,
+  modBackslashShortcutLabel,
+  modShiftBackslashShortcutLabel,
+} from "@/lib/desktop-shell";
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { useDarwinWindowFullscreen } from "@/hooks/useDarwinWindowFullscreen";
 import { cn } from "@/lib/utils";
+
+const splitRightShortcutLabel = modBackslashShortcutLabel();
+const splitDownShortcutLabel = modShiftBackslashShortcutLabel();
 
 function isPaneDragBlockedTarget(target: EventTarget | null): boolean {
   return (
@@ -335,6 +343,7 @@ export function DesktopLayoutChromeBar({
                   >
                     <SquareSplitHorizontal className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
                     <span>{t("app.splitRight")}</span>
+                    <DropdownMenuShortcut>{splitRightShortcutLabel}</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="gap-1.5"
@@ -342,6 +351,7 @@ export function DesktopLayoutChromeBar({
                   >
                     <SquareSplitVertical className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
                     <span>{t("app.splitDown")}</span>
+                    <DropdownMenuShortcut>{splitDownShortcutLabel}</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   {showClosePane ? (
                     <DropdownMenuItem
