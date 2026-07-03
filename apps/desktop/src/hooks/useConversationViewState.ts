@@ -171,7 +171,10 @@ export function useConversationViewState({
     ),
   );
 
-  const { ref: composerDockRef, heightPx: composerDockHeightPx } = useElementBoxHeight<HTMLDivElement>();
+  // 空会话（居中 hero composer）与有内容会话（底部 dock）布局切换时 pre-paint 重测，
+  // 避免换页首帧滚动床 padding 沿用旧布局高度。
+  const { ref: composerDockRef, heightPx: composerDockHeightPx } =
+    useElementBoxHeight<HTMLDivElement>(sessionMessages.length === 0);
   const conversationScrollBedPaddingPx =
     composerDockHeightPx > 0
       ? Math.max(

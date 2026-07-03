@@ -169,11 +169,14 @@ export function ConversationList({
 
   const sizingRef = useRef<HTMLDivElement | null>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
-  // viewport 是父组件 ScrollArea 的 DOM，其 ref 在本组件 layoutEffect 之后才 attach；
-  // 首帧 getScrollElement() 为 null，须经 useEffect 转成 state 才能让 virtualizer 绑定 scroll 监听。
+  // viewport 是父组件 ScrollArea 的 DOM，冷启动首帧 getScrollElement() 为 null，
+  // 须转成 state 才能让 virtualizer 重新执行 _willUpdate 绑定 scroll 监听。
   const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
 
-  useEffect(() => {
+  // 必须用 useLayoutEffect：useEffect 在 paint 后才绑定 scrollElement，导航切入会先
+  // 上屏一帧空列表（virtualItems 为空），可感知为空白闪烁。layout effect 中的 setState
+  // 在 paint 前同步 flush，virtual-core 注册 observeElementRect 时同步量取 rect，首帧即有行。
+  useLayoutEffect(() => {
     setScrollElement(getScrollElement());
   }, [getScrollElement]);
 

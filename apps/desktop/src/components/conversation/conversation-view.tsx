@@ -287,6 +287,7 @@ export function ConversationView({
     scrollAreaRef: conversationScrollAreaRef,
     contentKey: `${list.composerSessionKey || "__no-session__"}:${list.conversationListScopeKey}:e${list.conversationListRemountEpoch}`,
     enabled: conversationMessagesVisible,
+    streaming: snapshot?.conversation.isBusy === true,
   });
 
   useConversationStreamScrollTail({

@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ComponentRef, type RefObject } from "react";
+import { flushSync } from "react-dom";
 
 import type { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -13,6 +14,8 @@ export type UseConversationSessionScrollTailOptions = {
   contentKey: string;
   /** 会话内容可见（非空、非导航占位隐藏）时才滚动 */
   enabled: boolean;
+  /** 会话正在流式输出：内容持续增长无法在 paint 前收敛，走跨帧 rAF 定底 */
+  streaming: boolean;
 };
 
 // 定底收敛帧数上限：切入正在流式输出的会话时 scrollHeight 持续增长、永不 settled，
@@ -30,6 +33,7 @@ export function useConversationSessionScrollTail({
   scrollAreaRef,
   contentKey,
   enabled,
+  streaming,
 }: UseConversationSessionScrollTailOptions): { listSettling: boolean } {
   const previousContentKeyRef = useRef<string | null>(null);
   const [settling, setSettling] = useState(enabled);
@@ -57,6 +61,25 @@ export function useConversationSessionScrollTail({
     setSettling(true);
     scrollAreaToBottom(viewport);
 
+    if (!streaming) {
+      // 静态内容：虚拟行的同步测量与 scrollTop 补偿全部发生在本次 paint 之前的
+      // 同步 commit 链里（layout effect 中 setState 会嵌套同步 flush）。microtask
+      // 在这些 commit 全部结束后、浏览器 paint 之前执行，此时做最终滚底并同步
+      // 揭示列表，首帧即定好底的内容——不产生任何 visibility:hidden 空白帧。
+      let canceled = false;
+      queueMicrotask(() => {
+        if (canceled) {
+          return;
+        }
+        scrollAreaToBottom(viewport);
+        previousContentKeyRef.current = contentKey;
+        flushSync(() => setSettling(false));
+      });
+      return () => {
+        canceled = true;
+      };
+    }
+
     let frame = 0;
     let rafId = requestAnimationFrame(function step() {
       frame += 1;
@@ -73,7 +96,7 @@ export function useConversationSessionScrollTail({
       rafId = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(rafId);
-  }, [contentKey, enabled, scrollAreaRef]);
+  }, [contentKey, enabled, streaming, scrollAreaRef]);
 
   return { listSettling: settling };
 }
