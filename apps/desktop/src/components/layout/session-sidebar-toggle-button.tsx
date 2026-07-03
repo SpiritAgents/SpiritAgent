@@ -33,7 +33,7 @@ export function SessionSidebarToggleButton({ className }: { className?: string }
           )}
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={4}>
+      <TooltipContent side="top" align={sessionSidebarOpen ? "center" : "start"} sideOffset={4}>
         {sessionSidebarOpen ? t("app.hideSidebar") : t("app.showSidebar")}{" "}
         <SessionSidebarShortcutKbd />
       </TooltipContent>
