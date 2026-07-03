@@ -100,6 +100,8 @@ export type SettingsViewProps = {
   onGenerateHookNavigate?: () => void;
   /** 开发者页：在对话区播放上下文压缩 UI 演示（不调用模型）。 */
   onStartCompactionUiDemo?: () => void;
+  /** 开发者页：在对话区加载极长消息列表性能演示（不调用模型）。 */
+  onStartLongConversationListDemo?: () => void;
   /** Windows 云母 / macOS Vibrancy：内层透明以避免与 settings-shell 双层 tint 叠深。 */
   useMicaBackdrop?: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;

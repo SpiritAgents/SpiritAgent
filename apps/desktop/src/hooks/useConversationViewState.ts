@@ -15,6 +15,7 @@ import { useElementBoxHeight } from "@/hooks/use-element-box-height";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import {
   CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX,
@@ -35,6 +36,7 @@ import {
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
 type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
+type LongConversationListDemo = ReturnType<typeof useLongConversationListDemo>;
 
 export type UseConversationViewStateOptions = {
   runtime: DesktopRuntime;
@@ -42,6 +44,7 @@ export type UseConversationViewStateOptions = {
   subagentViewActive: boolean;
   subagentViewer: SubagentViewer;
   compactionDemo: CompactionDemo;
+  longConversationListDemo: LongConversationListDemo;
   t: TFunction;
   language: string;
   /** When true, composer interrupt/send state follows this pane snapshot, not global runtime. */
@@ -55,6 +58,7 @@ export function useConversationViewState({
   subagentViewActive,
   subagentViewer,
   compactionDemo,
+  longConversationListDemo,
   t,
   language,
   useIsolatedPane = false,
@@ -99,13 +103,16 @@ export function useConversationViewState({
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const messages = subagentViewActive
     ? (snapshot?.subagentViewer?.messages ?? [])
-    : compactionDemo.active
-      ? compactionDemo.messages
-      : sessionMessages;
+    : longConversationListDemo.active
+      ? longConversationListDemo.messages
+      : compactionDemo.active
+        ? compactionDemo.messages
+        : sessionMessages;
   const conversationListScopeKey = resolveConversationListScopeKey({
     subagentViewActive,
     subagentToolCallId: subagentViewer.toolCallId,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
   });
   const conversationRenderItems = useMemo(
     () => buildConversationRenderItems(messages, conversationListScopeKey),
@@ -135,6 +142,7 @@ export function useConversationViewState({
     renderItems: conversationRenderItems,
     subagentViewActive,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
     isBusy: snapshot?.conversation.isBusy,
     busyAction: useIsolatedPane
       ? (snapshot?.conversation.isBusy ? "send" : "")
@@ -146,8 +154,11 @@ export function useConversationViewState({
 
   const [processGroupManualOpen, setProcessGroupManualOpen] = useState<Record<string, boolean>>({});
   const turnContinue = useMemo(
-    () => (compactionDemo.active || subagentViewActive ? undefined : resolveTurnContinuePresentation(messages)),
-    [compactionDemo.active, messages, subagentViewActive],
+    () =>
+      compactionDemo.active || longConversationListDemo.active || subagentViewActive
+        ? undefined
+        : resolveTurnContinuePresentation(messages),
+    [compactionDemo.active, longConversationListDemo.active, messages, subagentViewActive],
   );
 
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
@@ -248,9 +259,10 @@ export function useConversationViewState({
   const handleOpenSubagentViewer = useCallback(
     (toolCallId: string) => {
       compactionDemo.stop();
+      longConversationListDemo.stop();
       void subagentViewer.open(toolCallId);
     },
-    [compactionDemo, subagentViewer],
+    [compactionDemo, longConversationListDemo, subagentViewer],
   );
 
   return {

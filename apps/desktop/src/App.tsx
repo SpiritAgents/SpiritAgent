@@ -23,6 +23,7 @@ import { WorkspaceMarkdownLinkProvider } from "@/components/workspace-markdown-l
 import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
 import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
@@ -87,6 +88,7 @@ export default function App() {
   });
 
   const compactionDemo = useCompactionUiDemo();
+  const longConversationListDemo = useLongConversationListDemo();
   const subagentViewer = useSubagentViewer(runtime.setSubagentViewerTarget);
   const subagentViewActive = subagentViewer.active && Boolean(snapshot?.subagentViewer);
   const sessionMessages = snapshot?.conversation.messages ?? [];
@@ -119,6 +121,7 @@ export default function App() {
     sessionMessages,
     subagentViewActive,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
     sessionNavigationBusy,
     newSessionBusy,
     t,
@@ -131,6 +134,7 @@ export default function App() {
     subagentViewActive,
     subagentViewer,
     compactionDemo,
+    longConversationListDemo,
     t,
     language: i18n.language,
     conversationAbortShortcutTargetRef,
@@ -160,6 +164,7 @@ export default function App() {
     isEmptySession: surfaceNav.isEmptySession,
     activeSessionReadOnly: conversation.activeSessionReadOnly,
     compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
     subagentViewActive,
     pendingApproval: conversation.pendingApproval,
     pendingQuestions: conversation.pendingQuestions,
@@ -399,8 +404,14 @@ export default function App() {
               onCreateSkill={runtime.createSkill}
               onCreateRule={runtime.createRule}
               onStartCompactionUiDemo={() => {
+                longConversationListDemo.stop();
                 surfaceNav.setActiveSurface("conversation");
                 compactionDemo.start();
+              }}
+              onStartLongConversationListDemo={() => {
+                compactionDemo.stop();
+                surfaceNav.setActiveSurface("conversation");
+                longConversationListDemo.start();
               }}
               onDeleteSkill={runtime.deleteSkill}
               onDeleteRule={runtime.deleteRule}
@@ -557,6 +568,7 @@ export default function App() {
                 subagentViewActive={subagentViewActive}
                 subagentViewer={subagentViewer}
                 compactionDemo={compactionDemo}
+                longConversationListDemo={longConversationListDemo}
                 hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
                 showWorkspaceBindingControls={surfaceNav.showWorkspaceBindingControls}
                 sessionNavigationBusy={sessionNavigationBusy}
@@ -569,6 +581,7 @@ export default function App() {
                 workspaceTools={workspaceTools}
                 onOpenIntegrationsSettings={openIntegrationsSettings}
                 onCompactionDemoStop={compactionDemo.stop}
+                onLongConversationListDemoStop={longConversationListDemo.stop}
                 t={t}
                 language={i18n.language}
               />

@@ -167,6 +167,13 @@ export type ConversationViewProps = {
   newSessionBusy: boolean;
   compactionDemoActive: boolean;
   onCompactionDemoStop: () => void;
+  longConversationListDemoActive: boolean;
+  onLongConversationListDemoStop: () => void;
+  longConversationListDemoStats: {
+    turnCount: number;
+    messageCount: number;
+    toolCount: number;
+  } | null;
   rewindDraft: MessageRewindDraftState | null;
   onRewindDraftClear: () => void;
   conversationScrollBedPaddingPx: number;
@@ -216,6 +223,9 @@ export function ConversationView({
   newSessionBusy,
   compactionDemoActive,
   onCompactionDemoStop,
+  longConversationListDemoActive,
+  onLongConversationListDemoStop,
+  longConversationListDemoStats,
   rewindDraft,
   onRewindDraftClear,
   conversationScrollBedPaddingPx,
@@ -458,9 +468,13 @@ export function ConversationView({
           data-spirit-surface="conversation-stage"
           className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}
         >
-          {compactionDemoActive ? (
+          {compactionDemoActive || longConversationListDemoActive ? (
             <div
-              data-spirit-surface="compaction-ui-demo-banner"
+              data-spirit-surface={
+                longConversationListDemoActive
+                  ? "long-list-demo-banner"
+                  : "compaction-ui-demo-banner"
+              }
               className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}
             >
               <div
@@ -471,13 +485,39 @@ export function ConversationView({
                 )}
               >
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">{t('app.compactionDemo')}</span>
-                  <span className="hidden sm:inline">
-                    {" "}
-                    · {t('app.compactionDemoDescription')}
-                  </span>
+                  {longConversationListDemoActive ? (
+                    <>
+                      <span className="font-medium text-foreground">
+                        {t("app.longConversationListDemo")}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {" "}
+                        · {t("app.longConversationListDemoDescription")}
+                        {longConversationListDemoStats
+                          ? ` · ${t("app.longConversationListDemoStats", longConversationListDemoStats)}`
+                          : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">{t('app.compactionDemo')}</span>
+                      <span className="hidden sm:inline">
+                        {" "}
+                        · {t('app.compactionDemoDescription')}
+                      </span>
+                    </>
+                  )}
                 </p>
-                <Button type="button" variant="outline" size="sm" onClick={onCompactionDemoStop}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={
+                    longConversationListDemoActive
+                      ? onLongConversationListDemoStop
+                      : onCompactionDemoStop
+                  }
+                >
                   {t('app.exitDemo')}
                 </Button>
               </div>
