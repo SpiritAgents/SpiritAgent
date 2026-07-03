@@ -180,23 +180,9 @@ export class McpService {
   }
 
   lazyToolGatewayBackgroundStatusText(value: JsonValue): string | undefined {
-    if (!isLazyToolGatewayToolRequestValue(value)) {
-      return undefined;
-    }
-
-    try {
-      const parsed = JSON.parse(value.argumentsJson) as JsonValue;
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        return `Lazy tool gateway: ${value.name}`;
-      }
-      const server = typeof parsed.server === 'string' ? parsed.server : 'unknown';
-      const tool = typeof parsed.tool === 'string' ? parsed.tool : 'unknown';
-      return value.name === 'tool_call'
-        ? `MCP 工具执行中: ${server} / ${tool}`
-        : `MCP 工具 schema 读取中: ${server} / ${tool}`;
-    } catch {
-      return `Lazy tool gateway: ${value.name}`;
-    }
+    // 状态由工具卡展示；勿写入 thinking aux（与 host-internal shell/web_fetch 一致）。
+    void value;
+    return undefined;
   }
 
   isToolRequest(value: JsonValue): value is McpToolRequest {
@@ -204,11 +190,9 @@ export class McpService {
   }
 
   backgroundStatusText(value: JsonValue): string | undefined {
-    if (!isMcpToolRequest(value)) {
-      return undefined;
-    }
-
-    return `MCP 工具执行中: ${value.displayName} / ${value.toolName}`;
+    // 状态由工具卡展示；勿写入 thinking aux。
+    void value;
+    return undefined;
   }
 
   statusSnapshot(): {
@@ -356,11 +340,9 @@ export class McpService {
   fetchMcpResourceBackgroundStatusText(
     value: JsonValue,
   ): string | undefined {
-    if (!isFetchMcpResourceToolRequestValue(value)) {
-      return undefined;
-    }
-
-    return `MCP resource 读取中: ${value.server} / ${value.uri}`;
+    // 状态由工具卡展示；勿写入 thinking aux。
+    void value;
+    return undefined;
   }
 
   async assertResourceReadable(server: string, uri: string): Promise<void> {
