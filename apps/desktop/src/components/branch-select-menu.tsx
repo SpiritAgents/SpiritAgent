@@ -8,7 +8,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipItem,
+  TooltipTrigger,
+  useOptionalTooltipStableActions,
+} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DESKTOP_OVERLAY_LIST_WIDTH, DESKTOP_OVERLAY_SHORT_LIST_PADDING } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
@@ -21,6 +27,63 @@ type BranchSelectMenuProps = {
   onBranchChange(branch: string): void;
 };
 
+function useTruncatedElement<T extends HTMLElement>(dependency: unknown) {
+  const ref = useRef<T>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const updateTruncation = useCallback(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+    setIsTruncated(element.scrollWidth > element.clientWidth);
+  }, []);
+
+  useLayoutEffect(() => {
+    updateTruncation();
+  }, [dependency, updateTruncation]);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      updateTruncation();
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+    };
+  }, [updateTruncation]);
+
+  return { ref, isTruncated };
+}
+
+function BranchSelectMenuItem({
+  branch,
+  activeBranch,
+  onSelect,
+}: {
+  branch: string;
+  activeBranch?: string;
+  onSelect(): void;
+}) {
+  const { ref: labelRef, isTruncated } = useTruncatedElement<HTMLSpanElement>(branch);
+
+  return (
+    <TooltipItem item={isTruncated ? branch : null}>
+      <DropdownMenuItem
+        onSelect={onSelect}
+        className={cn("min-w-0", activeBranch === branch && "bg-accent/40")}
+      >
+        <span ref={labelRef} className="min-w-0 truncate">
+          {branch}
+        </span>
+      </DropdownMenuItem>
+    </TooltipItem>
+  );
+}
+
 export function BranchSelectMenu({
   branches,
   selectedBranch,
@@ -29,44 +92,25 @@ export function BranchSelectMenu({
   onBranchChange,
 }: BranchSelectMenuProps) {
   const { t } = useTranslation();
+  const tooltipActions = useOptionalTooltipStableActions();
   const [menuOpen, setMenuOpen] = useState(false);
-  const labelRef = useRef<HTMLSpanElement>(null);
-  const [isLabelTruncated, setIsLabelTruncated] = useState(false);
   const isRepository = branches.length > 0 || Boolean(currentBranch);
   const activeBranch = selectedBranch ?? currentBranch;
   const label = isRepository ? (activeBranch ?? t('error.noBranch')) : t('app.notGitRepoLabel');
   const triggerDisabled = disabled || !isRepository;
   const suppressTooltip = menuOpen || triggerDisabled;
+  const { ref: labelRef, isTruncated: isLabelTruncated } = useTruncatedElement<HTMLSpanElement>(label);
   const tooltipText = isLabelTruncated ? label : t('composer.selectBranch');
 
-  const updateLabelTruncation = useCallback(() => {
-    const element = labelRef.current;
-    if (!element) {
-      return;
-    }
-    setIsLabelTruncated(element.scrollWidth > element.clientWidth);
-  }, []);
-
-  useLayoutEffect(() => {
-    updateLabelTruncation();
-  }, [label, updateLabelTruncation]);
-
-  useEffect(() => {
-    const element = labelRef.current;
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver(() => {
-      updateLabelTruncation();
-    });
-    observer.observe(element);
-    return () => {
-      observer.disconnect();
-    };
-  }, [updateLabelTruncation]);
-
   return (
-    <DropdownMenu onOpenChange={setMenuOpen}>
+    <DropdownMenu
+      onOpenChange={(open) => {
+        setMenuOpen(open);
+        if (!open) {
+          tooltipActions?.dismissIfOpen();
+        }
+      }}
+    >
       <Tooltip
         open={suppressTooltip ? false : undefined}
         delayDuration={300}
@@ -107,17 +151,25 @@ export function BranchSelectMenu({
           }}
         >
           <div className={cn(DESKTOP_OVERLAY_SHORT_LIST_PADDING, "pr-2")}>
-            {branches.map((branch) => (
-              <DropdownMenuItem
-                key={branch}
-                onSelect={() => onBranchChange(branch)}
-                className={cn("min-w-0", activeBranch === branch && "bg-accent/40")}
-              >
-                <span className="min-w-0 truncate" title={branch}>
-                  {branch}
-                </span>
-              </DropdownMenuItem>
-            ))}
+            <Tooltip<string>
+              getItemId={(branch) => branch}
+              delayDuration={300}
+              disableHoverableContent
+            >
+              <Tooltip.Zone>
+                {branches.map((branch) => (
+                  <BranchSelectMenuItem
+                    key={branch}
+                    branch={branch}
+                    activeBranch={activeBranch}
+                    onSelect={() => onBranchChange(branch)}
+                  />
+                ))}
+              </Tooltip.Zone>
+              <TooltipContent side="right" sideOffset={8}>
+                {(activeItem) => (typeof activeItem === "string" ? activeItem : null)}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </ScrollArea>
       </DropdownMenuContent>
