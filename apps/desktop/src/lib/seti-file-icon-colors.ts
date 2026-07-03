@@ -23,7 +23,7 @@ export const SETI_FILE_ICON_COLORS_DARK: SetiFileIconColorMap = {
   purple: '#a074c4',
   red: '#cc3e44',
   white: '#d4d7d6',
-  yellow: '#e5c07b',
+  yellow: '#f2bc4a',
   ignore: '#41535b',
 };
 
