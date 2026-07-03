@@ -5,6 +5,16 @@ export {
   isLazyToolGatewayToolName,
 } from './definitions.js';
 export {
+  FETCH_MCP_RESOURCE_TOOL_NAME,
+  buildFetchMcpResourceDefinition,
+  executeFetchMcpResourceCall,
+  formatMcpResourceFetchResultJson,
+  isFetchMcpResourceToolName,
+  isFetchMcpResourceToolRequest,
+  parseFetchMcpResourceArguments,
+  type FetchMcpResourceToolRequest,
+} from './fetch-mcp-resource.js';
+export {
   createMcpLazyToolGatewayBackend,
   executeLazyToolGatewayCall,
   isLazyToolGatewayToolRequest,

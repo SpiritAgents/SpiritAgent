@@ -223,6 +223,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>> {
+    if (this.mcp.isFetchMcpResourceToolRequest(request)) {
+      return { kind: 'allowed' };
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(request)) {
       return { kind: 'allowed' };
     }
@@ -254,6 +257,11 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async execute(request: JsonValue): Promise<ToolExecutionOutput> {
+    if (this.mcp.isFetchMcpResourceToolRequest(request)) {
+      return createToolExecutionTextOutput(
+        await this.mcp.executeFetchMcpResourceToolRequest(request),
+      );
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(request)) {
       return createToolExecutionTextOutput(
         await this.mcp.executeLazyToolGatewayToolRequest(request),
@@ -337,6 +345,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   shouldExecuteInBackground(request: JsonValue): boolean {
+    if (this.mcp.isFetchMcpResourceToolRequest(request)) {
+      return true;
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(request)) {
       return request.name === TOOL_CALL_TOOL_NAME;
     }
@@ -352,6 +363,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   backgroundStatusText(request: JsonValue): string | undefined {
+    if (this.mcp.isFetchMcpResourceToolRequest(request)) {
+      return this.mcp.fetchMcpResourceBackgroundStatusText(request);
+    }
     if (this.mcp.isLazyToolGatewayToolRequest(request)) {
       return this.mcp.lazyToolGatewayBackgroundStatusText(request);
     }

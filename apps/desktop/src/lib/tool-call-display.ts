@@ -67,6 +67,7 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
   todo_list: 'tool.todoList',
   tool_call: 'tool.lazyToolCall',
   tool_describe: 'tool.lazyToolDescribe',
+  fetch_mcp_resource: 'tool.fetchMcpResource',
   create_plan: 'tool.create',
   create_automation: 'automations.create',
 };
