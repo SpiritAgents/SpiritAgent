@@ -346,6 +346,15 @@ export function toolCallSummaryCopyForRequest(
         ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
       };
     }
+    case 'fetch_mcp_resource': {
+      const server = typeof record.server === 'string' ? record.server.trim() : '';
+      const uri = typeof record.uri === 'string' ? record.uri.trim() : '';
+      const detail = [server, uri].filter((part) => part.length > 0).join(' / ');
+      return {
+        headline: i18n.t('tool.fetchMcpResource', tOpts),
+        ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
+      };
+    }
     case 'web_search': {
       const query = webSearchQueryFromArguments(record);
       return {
@@ -463,6 +472,12 @@ function resolveToolSummaryRequest(toolName: string, request: unknown): unknown 
     return request;
   }
   const record = request as Record<string, unknown>;
+  if (record.kind === 'fetchMcpResource') {
+    return {
+      server: typeof record.server === 'string' ? record.server : '',
+      uri: typeof record.uri === 'string' ? record.uri : '',
+    };
+  }
   if (record.kind !== 'lazyToolGateway' || typeof record.argumentsJson !== 'string') {
     return request;
   }

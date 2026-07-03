@@ -59,11 +59,23 @@ test('McpService toolDefinitionsJson returns gateway tools only when index is no
     },
   ];
 
+  const withTools = service.toolDefinitionsJson();
+  assert.equal(withTools.length, 2);
+  assert.ok(withTools.some((entry) => (entry as { function?: { name?: string } }).function?.name === 'tool_describe'));
+});
+
+test('McpService toolDefinitionsJson returns fetch_mcp_resource when resource index is non-empty', async () => {
+  const { McpService } = await import('./service.js');
+  const { FETCH_MCP_RESOURCE_TOOL_NAME } = await import('../tool-gateway/fetch-mcp-resource.js');
+  const service = new McpService(process.cwd());
+
+  (service as unknown as { resourceIndexStore: Array<{ server: string; uri: string; name: string }> })
+    .resourceIndexStore = [{ server: 'docs', uri: 'mcp://readme', name: 'readme' }];
+
   const definitions = service.toolDefinitionsJson();
-  assert.equal(definitions.length, 2);
-  const names = definitions.map((entry) => {
-    const fn = (entry as { function?: { name?: string } }).function;
-    return fn?.name;
-  });
-  assert.deepEqual(names, ['tool_describe', 'tool_call']);
+  assert.equal(definitions.length, 1);
+  assert.equal(
+    (definitions[0] as { function?: { name?: string } }).function?.name,
+    FETCH_MCP_RESOURCE_TOOL_NAME,
+  );
 });

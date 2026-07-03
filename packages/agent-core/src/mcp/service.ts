@@ -7,10 +7,15 @@ import { isAbsolute, join } from 'node:path';
 import type { JsonValue } from '../ports.js';
 import {
   buildLazyToolGatewayDefinitions,
+  buildFetchMcpResourceDefinition,
   createMcpLazyToolGatewayBackend,
+  executeFetchMcpResourceCall,
   executeLazyToolGatewayCall,
+  isFetchMcpResourceToolName,
+  isFetchMcpResourceToolRequest as isFetchMcpResourceToolRequestValue,
   isLazyToolGatewayToolName,
   isLazyToolGatewayToolRequest as isLazyToolGatewayToolRequestValue,
+  parseFetchMcpResourceArguments,
 } from '../tool-gateway/index.js';
 import {
   parseMcpConfigFile,
@@ -27,6 +32,7 @@ import { SdkMcpConnection } from './client.js';
 import {
   aggregateListedResourcesForServer,
   buildMcpToolCatalogSnapshot,
+  findResourceIndexEntry,
 } from './catalog-snapshot.js';
 import { McpConfigError } from './errors.js';
 import { McpRegistry } from './registry.js';
@@ -123,11 +129,14 @@ export class McpService {
   }
 
   toolDefinitionsJson(): JsonValue[] {
-    if (this.toolIndexStore.length === 0) {
-      return [];
+    const definitions: JsonValue[] = [];
+    if (this.toolIndexStore.length > 0) {
+      definitions.push(...buildLazyToolGatewayDefinitions());
     }
-
-    return buildLazyToolGatewayDefinitions();
+    if (this.resourceIndexStore.length > 0) {
+      definitions.push(buildFetchMcpResourceDefinition());
+    }
+    return definitions;
   }
 
   catalogRevision(): number {
@@ -296,11 +305,28 @@ export class McpService {
     this.launchBackgroundRefresh(force);
   }
 
-  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<{
-    kind: 'lazyToolGateway';
-    name: string;
-    argumentsJson: string;
-  } | undefined> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<
+    | {
+        kind: 'lazyToolGateway';
+        name: string;
+        argumentsJson: string;
+      }
+    | {
+        kind: 'fetchMcpResource';
+        server: string;
+        uri: string;
+      }
+    | undefined
+  > {
+    if (isFetchMcpResourceToolName(name)) {
+      const parsed = parseFetchMcpResourceArguments(argumentsJson);
+      return {
+        kind: 'fetchMcpResource',
+        server: parsed.server,
+        uri: parsed.uri,
+      };
+    }
+
     if (!isLazyToolGatewayToolName(name)) {
       return undefined;
     }
@@ -310,6 +336,43 @@ export class McpService {
       name,
       argumentsJson,
     };
+  }
+
+  isFetchMcpResourceToolRequest(
+    value: JsonValue,
+  ): value is import('../tool-gateway/fetch-mcp-resource.js').FetchMcpResourceToolRequest {
+    return isFetchMcpResourceToolRequestValue(value);
+  }
+
+  async executeFetchMcpResourceToolRequest(
+    request: import('../tool-gateway/fetch-mcp-resource.js').FetchMcpResourceToolRequest,
+  ): Promise<string> {
+    return executeFetchMcpResourceCall(
+      { server: request.server, uri: request.uri },
+      this,
+    );
+  }
+
+  fetchMcpResourceBackgroundStatusText(
+    value: JsonValue,
+  ): string | undefined {
+    if (!isFetchMcpResourceToolRequestValue(value)) {
+      return undefined;
+    }
+
+    return `MCP resource 读取中: ${value.server} / ${value.uri}`;
+  }
+
+  async assertResourceReadable(server: string, uri: string): Promise<void> {
+    await this.ensureToolingCache();
+    const snapshot = this.catalogSnapshot();
+    if (snapshot.resourcesTruncated) {
+      return;
+    }
+
+    if (!findResourceIndexEntry(this.resourceIndexStore, server, uri)) {
+      throw new McpConfigError(`Unknown MCP resource: ${server}/${uri}`);
+    }
   }
 
   async createToolRequest(

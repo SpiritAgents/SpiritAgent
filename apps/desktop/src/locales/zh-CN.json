@@ -1218,7 +1218,8 @@
     "diagnosticsIssueCount_one": "{{count}} 个问题",
     "diagnosticsIssueCount_other": "{{count}} 个问题",
     "lazyToolDescribe": "读取工具 schema",
-    "lazyToolCall": "调用工具"
+    "lazyToolCall": "调用工具",
+    "fetchMcpResource": "读取 MCP resource"
   },
   "process": {
     "separator": "，",

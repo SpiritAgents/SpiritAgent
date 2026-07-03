@@ -202,6 +202,46 @@ function tryExtractPartialLazyToolGatewayFields(argumentsJson: string): {
   }
 }
 
+function tryExtractPartialFetchMcpResourceFields(argumentsJson: string): {
+  server?: string;
+  uri?: string;
+} {
+  const trimmed = argumentsJson.trim();
+  if (!trimmed) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as JsonValue;
+    if (!isJsonObject(parsed)) {
+      return {};
+    }
+    return {
+      ...(typeof parsed.server === 'string' && parsed.server.trim()
+        ? { server: parsed.server.trim() }
+        : {}),
+      ...(typeof parsed.uri === 'string' && parsed.uri.trim() ? { uri: parsed.uri.trim() } : {}),
+    };
+  } catch {
+    const serverMatch = trimmed.match(/"server"\s*:\s*"((?:\\.|[^"\\])*)"/);
+    const uriMatch = trimmed.match(/"uri"\s*:\s*"((?:\\.|[^"\\])*)"/);
+    const fields: { server?: string; uri?: string } = {};
+    if (serverMatch?.[1]) {
+      const server = decodePartialJsonString(serverMatch[1]);
+      if (server) {
+        fields.server = server;
+      }
+    }
+    if (uriMatch?.[1]) {
+      const uri = decodePartialJsonString(uriMatch[1]);
+      if (uri) {
+        fields.uri = uri;
+      }
+    }
+    return fields;
+  }
+}
+
 export function hostToolArgumentsReadyForEarlyStreamingPreview(
   name: string,
   argumentsJson: string,
@@ -472,6 +512,10 @@ export function previewRequestFromStreamingArguments(
     if (toolName === 'tool_call' || toolName === 'tool_describe') {
       const fields = tryExtractPartialLazyToolGatewayFields(argumentsJson);
       return fields.provider || fields.server || fields.tool ? fields : undefined;
+    }
+    if (toolName === 'fetch_mcp_resource') {
+      const fields = tryExtractPartialFetchMcpResourceFields(argumentsJson);
+      return fields.server || fields.uri ? fields : undefined;
     }
     if (toolName === 'web_search') {
       const query = tryExtractPartialWebSearchQuery(argumentsJson);
