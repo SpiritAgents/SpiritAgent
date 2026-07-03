@@ -11,6 +11,7 @@ import { resolveConversationListScopeKey } from "@/lib/conversation-list-scope";
 import { buildConversationRenderItems } from "@/lib/conversation-process-groups";
 import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import { useProcessSealAnimationGate } from "@/lib/process-seal-animation";
+import { resolveEffectiveEmptySession } from "@/lib/conversation-surface-stale";
 import { useElementBoxHeight } from "@/hooks/use-element-box-height";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
@@ -171,10 +172,16 @@ export function useConversationViewState({
     ),
   );
 
-  // 空会话（居中 hero composer）与有内容会话（底部 dock）布局切换时 pre-paint 重测，
-  // 避免换页首帧滚动床 padding 沿用旧布局高度。
+  // hero ↔ 底部 dock 布局切换时 pre-paint 重测；demo 注入消息但 session 仍为空时也算非 hero。
+  const composerLayoutHero = resolveEffectiveEmptySession({
+    sessionMessageCount: sessionMessages.length,
+    subagentViewActive,
+    compactionDemoActive: compactionDemo.active,
+    longConversationListDemoActive: longConversationListDemo.active,
+    newSessionBusy: false,
+  });
   const { ref: composerDockRef, heightPx: composerDockHeightPx } =
-    useElementBoxHeight<HTMLDivElement>(sessionMessages.length === 0);
+    useElementBoxHeight<HTMLDivElement>(composerLayoutHero);
   const conversationScrollBedPaddingPx =
     composerDockHeightPx > 0
       ? Math.max(
