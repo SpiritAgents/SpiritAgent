@@ -3,6 +3,7 @@ import { setImmediate as waitForImmediate } from 'node:timers/promises';
 import type { AuthorizationDecision } from '../ports.js';
 
 import { renderError, toolNameFromRequest } from './helpers.js';
+import { applyAutoReviewToApprovalGate } from './auto-approval-integration.js';
 import type { ToolExecutionResult } from './tool-execution.js';
 import type {
   AgentRuntimeOptions,
@@ -85,36 +86,60 @@ export async function startManualToolCommand<
   }
 
   if (authorization.kind === 'need-approval') {
-    runtime.pendingManualApproval = {
-      request,
-      prompt: authorization.prompt,
-      ...(authorization.trustTarget !== undefined
-        ? { trustTarget: authorization.trustTarget }
-        : {}),
-      toolName,
-    };
-    runtime.emitEvent({
-      kind: 'approval-requested',
-      approval: {
+    const activeGate = await applyAutoReviewToApprovalGate(
+      runtime.options.getApprovalLevel?.(),
+      runtime.options.reviewToolApproval,
+      runtime.options.toolExecutor.toolDefinitionsJson(),
+      {
+        name: toolName,
+        argumentsJson: JSON.stringify(request),
+      },
+      {
         prompt: authorization.prompt,
+        trustTarget: authorization.trustTarget,
+      },
+    );
+    if (activeGate) {
+      runtime.pendingManualApproval = {
         request,
-        ...(authorization.trustTarget !== undefined
-          ? { trustTarget: authorization.trustTarget }
+        prompt: activeGate.prompt,
+        ...(activeGate.trustTarget !== undefined
+          ? { trustTarget: activeGate.trustTarget }
+          : {}),
+        ...(activeGate.autoReviewBlockReason !== undefined
+          ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
           : {}),
         toolName,
-      },
-    });
-    return {
-      kind: 'requires-approval',
-      approval: {
-        prompt: authorization.prompt,
-        request,
-        ...(authorization.trustTarget !== undefined
-          ? { trustTarget: authorization.trustTarget }
-          : {}),
-        toolName,
-      },
-    };
+      };
+      runtime.emitEvent({
+        kind: 'approval-requested',
+        approval: {
+          prompt: activeGate.prompt,
+          request,
+          ...(activeGate.trustTarget !== undefined
+            ? { trustTarget: activeGate.trustTarget }
+            : {}),
+          ...(activeGate.autoReviewBlockReason !== undefined
+            ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
+            : {}),
+          toolName,
+        },
+      });
+      return {
+        kind: 'requires-approval',
+        approval: {
+          prompt: activeGate.prompt,
+          request,
+          ...(activeGate.trustTarget !== undefined
+            ? { trustTarget: activeGate.trustTarget }
+            : {}),
+          ...(activeGate.autoReviewBlockReason !== undefined
+            ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
+            : {}),
+          toolName,
+        },
+      };
+    }
   }
 
   if (authorization.kind === 'need-questions') {

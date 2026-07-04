@@ -29,6 +29,8 @@ import {
   type LlmTransportConfig,
   type SpiritLlmTransport,
   type SubagentWorkspaceBootstrap,
+  type ToolAutoReviewer,
+  type SessionApprovalLevel,
 } from '@spirit-agent/core';
 import {
   persistPreCompactionHistoryArchive,
@@ -64,6 +66,8 @@ export function createDesktopRuntime(input: {
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
   bootstrapSubagentWorkspace?: SubagentWorkspaceBootstrap<DesktopToolRequest, string>;
+  getApprovalLevel?: () => SessionApprovalLevel;
+  reviewToolApproval?: ToolAutoReviewer;
 }): DesktopRuntime {
   const resolveLoopEnabled = () => input.getLoopEnabled?.() === true;
   const applyPatchFileToolsPromptSection = resolveApplyPatchFileToolsPromptSection(
@@ -160,6 +164,8 @@ export function createDesktopRuntime(input: {
     ...(input.bootstrapSubagentWorkspace
       ? { bootstrapSubagentWorkspace: input.bootstrapSubagentWorkspace }
       : {}),
+    ...(input.getApprovalLevel ? { getApprovalLevel: input.getApprovalLevel } : {}),
+    ...(input.reviewToolApproval ? { reviewToolApproval: input.reviewToolApproval } : {}),
     persistPreCompactionHistory: async ({ archive, sessionId }) =>
       persistPreCompactionHistoryArchive(spiritAgentDataDir(), archive, {
         ...(sessionId !== undefined ? { sessionId } : {}),

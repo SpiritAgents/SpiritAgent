@@ -41,6 +41,7 @@ export function mapPendingToolApproval(input: {
   prompt: string;
   trustTarget?: unknown;
   subagentSessionId?: string;
+  autoReviewBlockReason?: string;
 }): PendingToolApprovalSnapshot {
   return {
     toolName: displayTitleForTool(
@@ -56,6 +57,9 @@ export function mapPendingToolApproval(input: {
       : {}),
     ...(typeof input.subagentSessionId === 'string' && input.subagentSessionId.trim()
       ? { subagentSessionId: input.subagentSessionId.trim() }
+      : {}),
+    ...(typeof input.autoReviewBlockReason === 'string' && input.autoReviewBlockReason.trim()
+      ? { autoReviewBlockReason: input.autoReviewBlockReason.trim() }
       : {}),
   };
 }

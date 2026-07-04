@@ -820,7 +820,16 @@ export class DesktopRuntimeEventOrchestrator {
             toolName: approval.toolName,
             phase: 'pending-approval',
             headline: approvalSummary.headline,
-            detailLines: [stripReasonLineFromShellPrompt(approval.toolName, approval.prompt)],
+            detailLines: [
+              stripReasonLineFromShellPrompt(approval.toolName, approval.prompt),
+              ...(approval.autoReviewBlockReason?.trim()
+                ? [
+                    i18n.t('app.autoReviewBlockReason', {
+                      reason: approval.autoReviewBlockReason.trim(),
+                    }),
+                  ]
+                : []),
+            ],
             argsExcerpt: truncateJson(approval.request),
             ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
           },

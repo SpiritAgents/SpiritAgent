@@ -62,6 +62,7 @@ impl TsBridgeRuntime {
                                         approval.tool_call_id.as_deref(),
                                         &approval.prompt,
                                         approval.trust_target.is_some(),
+                                        approval.auto_review_block_reason.as_deref(),
                                     ),
                                 ),
                             ),
@@ -86,6 +87,7 @@ impl TsBridgeRuntime {
                                     approval.tool_call_id.as_deref(),
                                     &approval.prompt,
                                     approval.trust_target.is_some(),
+                                    approval.auto_review_block_reason.as_deref(),
                                 ),
                             ),
                         ));

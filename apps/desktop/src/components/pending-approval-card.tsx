@@ -46,6 +46,13 @@ export function PendingApprovalCard({
             className="pr-3 [&>[data-radix-scroll-area-viewport]]:max-h-24 [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
           >
             <div className="whitespace-pre-wrap">{pendingApproval.prompt}</div>
+            {pendingApproval.autoReviewBlockReason ? (
+              <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                {t("app.autoReviewBlockReason", {
+                  reason: pendingApproval.autoReviewBlockReason,
+                })}
+              </div>
+            ) : null}
           </ScrollArea>
         </CardDescription>
       </CardHeader>

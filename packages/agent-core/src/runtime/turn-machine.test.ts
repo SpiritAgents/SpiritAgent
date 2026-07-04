@@ -937,6 +937,134 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
   assert.equal(performExecutionCount, 1);
 });
 
+test('processToolCalls auto-approval reviewer allow skips manual approval', async () => {
+  const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
+  let performExecutionCount = 0;
+  const runtime = {
+    options: {
+      config: {},
+      llmTransport: {
+        startToolAgentRound: async () => ({
+          kind: 'failure',
+          error: 'unused',
+          requestTrace: [],
+        }),
+        isContextOverflowError: () => false,
+      },
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async () => ({ name: 'shell', command: 'echo hi', reason: 'test' }),
+        authorize: async () => ({
+          kind: 'need-approval',
+          prompt: '高风险工具调用: shell\n命令: echo hi',
+        }),
+        execute: async () => ({ content: [], summaryText: 'ok' }),
+      },
+      getApprovalLevel: () => 'auto-approval' as const,
+      reviewToolApproval: async () => ({ allow: true, reason: 'benign echo' }),
+      createToolAgentState: () => state,
+      appendToolResultMessage: (currentState: typeof state) => currentState,
+      extractAssistantText: () => 'done',
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: undefined,
+    pendingApproval: undefined,
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async () => {
+      performExecutionCount += 1;
+      return {
+        output: { content: [], summaryText: 'ok' },
+        failed: false,
+        backgroundExecution: false,
+      };
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error('unused');
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string; command: string; reason: string }>;
+
+  const result = await processToolCalls(
+    runtime,
+    state,
+    'run shell',
+    [{ id: 'call_shell', name: 'shell', argumentsJson: '{"command":"echo hi","reason":"test"}' }],
+    createTurnContext(),
+  );
+
+  assert.notEqual(result.kind, 'requires-approval');
+  assert.equal(performExecutionCount, 1);
+});
+
+test('processToolCalls auto-approval reviewer block requires manual approval with reason', async () => {
+  const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
+  const runtime = {
+    options: {
+      config: {},
+      llmTransport: {
+        startToolAgentRound: async () => ({
+          kind: 'failure',
+          error: 'unused',
+          requestTrace: [],
+        }),
+        isContextOverflowError: () => false,
+      },
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async () => ({ name: 'shell', command: 'rm -rf /', reason: 'test' }),
+        authorize: async () => ({
+          kind: 'need-approval',
+          prompt: '高风险工具调用: shell\n命令: rm -rf /',
+        }),
+        execute: async () => ({ content: [], summaryText: 'ok' }),
+      },
+      getApprovalLevel: () => 'auto-approval' as const,
+      reviewToolApproval: async () => ({ allow: false, reason: 'destructive command' }),
+      createToolAgentState: () => state,
+      appendToolResultMessage: (currentState: typeof state) => currentState,
+      extractAssistantText: () => undefined,
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: undefined,
+    pendingApproval: undefined,
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async () => {
+      throw new Error('should not execute');
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error('unused');
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string; command: string; reason: string }>;
+
+  const result = await processToolCalls(
+    runtime,
+    state,
+    'run shell',
+    [{ id: 'call_shell', name: 'shell', argumentsJson: '{"command":"rm -rf /","reason":"test"}' }],
+    createTurnContext(),
+  );
+
+  assert.equal(result.kind, 'requires-approval');
+  if (result.kind === 'requires-approval') {
+    assert.equal(result.approval.autoReviewBlockReason, 'destructive command');
+  }
+});
+
 test('processToolCalls hook ask triggers approval when host allows', async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = {
@@ -964,6 +1092,7 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
           error: 'unused',
           requestTrace: [],
         }),
+        isContextOverflowError: () => false,
       },
       toolExecutor: {
         toolDefinitionsJson: () => [],
@@ -1007,6 +1136,85 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
   if (result.kind === 'requires-approval') {
     assert.equal(result.approval.prompt, 'hook confirmation required');
     assert.equal(result.approval.toolName, 'grep');
+  }
+});
+
+test('processToolCalls auto-approval does not bypass hook ask permission', async () => {
+  let performExecutionCount = 0;
+  const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
+  const runtime = {
+    options: {
+      config: {},
+      hookRunner: createStubHookRunner(async () => ({
+        records: [],
+        denied: false,
+        permission: 'ask',
+        userMessage: 'hook confirmation required',
+        agentMessage: undefined,
+        updatedInput: undefined,
+        additionalContexts: [],
+        followupMessage: undefined,
+      })),
+      hookSessionContext: {
+        sessionId: 's1',
+        conversationPath: null,
+        workspaceRoot: '/w',
+        model: 'm',
+      },
+      llmTransport: {
+        startToolAgentRound: async () => ({
+          kind: 'failure',
+          error: 'unused',
+          requestTrace: [],
+        }),
+        isContextOverflowError: () => false,
+      },
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async (name: string) => ({ name }),
+        authorize: async () => ({ kind: 'allowed' }),
+        execute: async () => ({ content: [], summaryText: 'ok' }),
+      },
+      getApprovalLevel: () => 'auto-approval' as const,
+      reviewToolApproval: async () => ({ allow: true, reason: 'would allow' }),
+      createToolAgentState: () => state,
+      appendToolResultMessage: (currentState: typeof state) => currentState,
+      extractAssistantText: () => undefined,
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: undefined,
+    pendingApproval: undefined,
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async () => {
+      performExecutionCount += 1;
+      return { content: [], summaryText: 'ok' };
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error('unused');
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string }>;
+
+  const result = await processToolCalls(
+    runtime,
+    state,
+    'run grep',
+    [{ id: 'call_grep', name: 'grep', argumentsJson: '{"pattern":"hook"}' }],
+    createTurnContext(),
+  );
+
+  assert.equal(result.kind, 'requires-approval');
+  assert.equal(performExecutionCount, 0);
+  if (result.kind === 'requires-approval') {
+    assert.equal(result.approval.prompt, 'hook confirmation required');
+    assert.equal(result.approval.autoReviewBlockReason, undefined);
   }
 });
 

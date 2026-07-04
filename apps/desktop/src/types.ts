@@ -1429,6 +1429,7 @@ export interface PendingToolApprovalSnapshot {
   prompt: string;
   trustTarget?: string;
   subagentSessionId?: string;
+  autoReviewBlockReason?: string;
 }
 
 export type DesktopApprovalDecision =

@@ -306,6 +306,16 @@ fn footer_shows_mode_without_tab_toggle_hint() {
 }
 
 #[test]
+fn footer_auto_approval_uses_blue_style() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "welcome"));
+    app.approval_level = "auto-approval".to_string();
+    let line = build_footer_line(&app, 80);
+    assert!(line.spans.iter().any(|span| {
+        span.style.fg == Some(Color::Rgb(96, 165, 250))
+    }));
+}
+
+#[test]
 fn footer_full_approval_uses_yellow_style() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "welcome"));
     app.approval_level = "full-approval".to_string();

@@ -29,6 +29,7 @@ export function buildPaneSessionSlice(input: {
     prompt?: string;
     trustTarget?: string;
     subagentSessionId?: string;
+    autoReviewBlockReason?: string;
   };
   pendingQuestions?: import('@spirit-agent/core').RuntimePendingQuestions<DesktopToolRequest>;
   pendingImagePaths?: string[];
@@ -77,6 +78,9 @@ export function buildPaneSessionSlice(input: {
             ...(input.pendingApproval.trustTarget ? { trustTarget: input.pendingApproval.trustTarget } : {}),
             ...(input.pendingApproval.subagentSessionId
               ? { subagentSessionId: input.pendingApproval.subagentSessionId }
+              : {}),
+            ...(input.pendingApproval.autoReviewBlockReason
+              ? { autoReviewBlockReason: input.pendingApproval.autoReviewBlockReason }
               : {}),
           }),
         }

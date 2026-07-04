@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ApprovalLevel } from "@spirit-agent/host-internal";
-import { ChevronDown, ShieldCheck } from "lucide-react";
+import { Brain, ChevronDown, ShieldBan, ShieldCheck, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -11,6 +11,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DESKTOP_OVERLAY_SHORT_LIST_PADDING, DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
+import {
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+  COMPOSER_INLINE_CHIP_TEXT_CLASS,
+} from "@/lib/composer-inline-chip-styles";
 import { cn } from "@/lib/utils";
 
 type ApprovalLevelMenuProps = {
@@ -18,6 +22,42 @@ type ApprovalLevelMenuProps = {
   disabled?: boolean;
   onApprovalLevelChange(level: ApprovalLevel): void;
 };
+
+const APPROVAL_LEVEL_ICONS: Record<ApprovalLevel, LucideIcon> = {
+  default: ShieldCheck,
+  "auto-approval": Brain,
+  "full-approval": ShieldBan,
+};
+
+function approvalLevelTriggerIconClass(level: ApprovalLevel): string {
+  if (level === "full-approval") {
+    return "text-yellow-600 dark:text-yellow-500";
+  }
+  if (level === "auto-approval") {
+    return COMPOSER_INLINE_CHIP_ICON_CLASS;
+  }
+  return "text-muted-foreground/80";
+}
+
+function approvalLevelTriggerTextClass(level: ApprovalLevel): string {
+  if (level === "full-approval") {
+    return "text-yellow-600 hover:text-yellow-600 dark:text-yellow-500 dark:hover:text-yellow-500";
+  }
+  if (level === "auto-approval") {
+    return `${COMPOSER_INLINE_CHIP_TEXT_CLASS} hover:text-blue-800 dark:hover:text-blue-400`;
+  }
+  return "text-muted-foreground";
+}
+
+function approvalLevelChevronClass(level: ApprovalLevel): string {
+  if (level === "full-approval") {
+    return "text-yellow-600/85 dark:text-yellow-500/80";
+  }
+  if (level === "auto-approval") {
+    return "text-blue-600/85 dark:text-blue-400/80";
+  }
+  return "text-muted-foreground/80";
+}
 
 export function ApprovalLevelMenu({
   approvalLevel,
@@ -28,10 +68,11 @@ export function ApprovalLevelMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const options = [
     { value: "default" as ApprovalLevel, label: t('composer.approvalDefault') },
+    { value: "auto-approval" as ApprovalLevel, label: t('composer.approvalAuto') },
     { value: "full-approval" as ApprovalLevel, label: t('composer.approvalBypass') },
   ];
   const label = options.find((option) => option.value === approvalLevel)?.label ?? t('composer.approvalDefault');
-  const isFullApproval = approvalLevel === "full-approval";
+  const TriggerIcon = APPROVAL_LEVEL_ICONS[approvalLevel];
   const suppressTooltip = menuOpen || disabled;
 
   return (
@@ -49,26 +90,18 @@ export function ApprovalLevelMenu({
               disabled={disabled}
               className={cn(
                 "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
-                isFullApproval
-                  ? "text-yellow-600 hover:text-yellow-600 dark:text-yellow-500 dark:hover:text-yellow-500"
-                  : "text-muted-foreground",
+                approvalLevelTriggerTextClass(approvalLevel),
               )}
             >
-              <ShieldCheck
-                className={cn(
-                  "size-3.5 shrink-0",
-                  isFullApproval ? "text-yellow-600 dark:text-yellow-500" : "text-muted-foreground/80",
-                )}
+              <TriggerIcon
+                className={cn("size-3.5 shrink-0", approvalLevelTriggerIconClass(approvalLevel))}
                 aria-hidden
               />
               <span className="min-w-0 truncate">
                 {label}
               </span>
               <ChevronDown
-                className={cn(
-                  "size-3 shrink-0",
-                  isFullApproval ? "text-yellow-600/85 dark:text-yellow-500/80" : "text-muted-foreground/80",
-                )}
+                className={cn("size-3 shrink-0", approvalLevelChevronClass(approvalLevel))}
                 aria-hidden
               />
             </button>
@@ -84,15 +117,25 @@ export function ApprovalLevelMenu({
         className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "p-0")}
       >
         <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
-          {options.map((option) => (
-            <DropdownMenuItem
-              key={option.value}
-              onSelect={() => onApprovalLevelChange(option.value)}
-              className={cn(approvalLevel === option.value && "bg-accent/40")}
-            >
-              {option.label}
-            </DropdownMenuItem>
-          ))}
+          {options.map((option) => {
+            const OptionIcon = APPROVAL_LEVEL_ICONS[option.value];
+            return (
+              <DropdownMenuItem
+                key={option.value}
+                onSelect={() => onApprovalLevelChange(option.value)}
+                className={cn(
+                  "gap-2",
+                  approvalLevel === option.value && "bg-accent/40",
+                )}
+              >
+                <OptionIcon
+                  className="size-3.5 shrink-0 text-muted-foreground/80"
+                  aria-hidden
+                />
+                {option.label}
+              </DropdownMenuItem>
+            );
+          })}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -408,7 +408,7 @@ export interface ChatArchive {
   llmHistory: Array<StoredLlmMessageArchiveEntry | LegacyLlmMessageArchiveEntry>;
   subagentSessions?: SubagentSessionArchiveEntry[];
   loopEnabled?: boolean;
-  approvalLevel?: 'default' | 'full-approval';
+  approvalLevel?: 'default' | 'auto-approval' | 'full-approval';
 }
 
 export type McpStatusState = 'idle' | 'loading' | 'ready' | 'error';

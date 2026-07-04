@@ -525,10 +525,19 @@ pub(in crate::ui) fn build_subagent_picker_lines(
 }
 
 pub(crate) fn approval_level_label(level: &str) -> String {
-    if level == "full-approval" {
-        t!("ui.footer.approval.full").into_owned()
-    } else {
-        t!("ui.footer.approval.default").into_owned()
+    match crate::ports::normalize_approval_level(level).as_str() {
+        "full-approval" => t!("ui.footer.approval.full").into_owned(),
+        "auto-approval" => t!("ui.footer.approval.auto").into_owned(),
+        _ => t!("ui.footer.approval.default").into_owned(),
+    }
+}
+
+/// Footer accent for approval levels (TUI palette; loosely aligned with Desktop).
+pub(in crate::ui) fn approval_level_accent_color(level: &str) -> Option<Color> {
+    match crate::ports::normalize_approval_level(level).as_str() {
+        "full-approval" => Some(Color::Yellow),
+        "auto-approval" => Some(Color::Rgb(96, 165, 250)),
+        _ => None,
     }
 }
 
@@ -544,7 +553,7 @@ pub(in crate::ui) fn build_approval_picker_lines(
     app: &TuiViewModel,
     max_items: usize,
 ) -> Vec<Line<'static>> {
-    const OPTIONS: [&str; 2] = ["default", "full-approval"];
+    const OPTIONS: [&str; 3] = ["default", "auto-approval", "full-approval"];
     let selected = app
         .approval_picker_index
         .min(OPTIONS.len().saturating_sub(1));
