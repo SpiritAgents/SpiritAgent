@@ -226,6 +226,9 @@ export function useConversationPaneController({
     onOpenReadFile: (target: EditorFileTarget) => {
       workspaceTools.openEditorFile(target);
     },
+    onOpenPlan: () => {
+      workspaceTools.openWorkspacePlan();
+    },
     onStartMessageRewind: messageRewind.startMessageRewind,
     onForkMessage: (message, listIndex) => {
       void runtime.forkSession({ messageId: message.id, listIndex });
