@@ -44,7 +44,7 @@ function approvalLevelTriggerTextClass(level: ApprovalLevel): string {
     return "text-yellow-600 hover:text-yellow-600 dark:text-yellow-500 dark:hover:text-yellow-500";
   }
   if (level === "auto-approval") {
-    return `${COMPOSER_INLINE_CHIP_TEXT_CLASS} hover:text-blue-800 dark:hover:text-blue-400`;
+    return `${COMPOSER_INLINE_CHIP_TEXT_CLASS} hover:text-blue-500 dark:hover:text-blue-400`;
   }
   return "text-muted-foreground";
 }
@@ -54,7 +54,7 @@ function approvalLevelChevronClass(level: ApprovalLevel): string {
     return "text-yellow-600/85 dark:text-yellow-500/80";
   }
   if (level === "auto-approval") {
-    return "text-blue-600/85 dark:text-blue-400/80";
+    return "text-blue-500/85 dark:text-blue-400/80";
   }
   return "text-muted-foreground/80";
 }
