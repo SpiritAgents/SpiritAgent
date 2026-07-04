@@ -36,10 +36,8 @@ export const SESSION_TITLE_RENAME_INPUT_CLASS = cn(
   DESKTOP_CHROME_MUTED_TEXT,
 );
 
-/** 顶栏/侧栏会话标题 hover：半透明铺底 + 字色变亮，与侧栏 `sidebarMenuHoverClass` 一致 */
+/** 顶栏会话标题 hover：仅字色变亮，无半透明铺底 */
 export const DESKTOP_SESSION_TITLE_HOVER_CLASS = cn(
-  "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
-  "dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
   instantHoverMotionClass,
 );
