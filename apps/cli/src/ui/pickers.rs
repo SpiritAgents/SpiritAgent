@@ -532,6 +532,15 @@ pub(crate) fn approval_level_label(level: &str) -> String {
     }
 }
 
+/// Footer accent for approval levels (TUI palette; loosely aligned with Desktop).
+pub(in crate::ui) fn approval_level_accent_color(level: &str) -> Option<Color> {
+    match crate::ports::normalize_approval_level(level).as_str() {
+        "full-approval" => Some(Color::Yellow),
+        "auto-approval" => Some(Color::Rgb(96, 165, 250)),
+        _ => None,
+    }
+}
+
 pub(crate) fn llm_http_version_label(version: &str) -> String {
     if crate::ports::normalize_llm_http_version(version) == "http1.1" {
         t!("ui.footer.networks.http11").into_owned()
