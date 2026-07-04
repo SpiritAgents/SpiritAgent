@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { resolveToolAutoReviewGate } from './gate.js';
+import { applyAutoReviewToApprovalGate } from '../runtime/auto-approval-integration.js';
 import { buildAutoApprovalReviewPrompt } from './prompt.js';
 import { normalizeAutoApprovalReviewResult } from './run-review.js';
 import { resolveToolInputSchema } from './resolve-tool-schema.js';
@@ -76,4 +77,16 @@ test('resolveToolAutoReviewGate blocks when reviewer returns deny', async () => 
 test('resolveToolAutoReviewGate falls back to manual when reviewer is unavailable', async () => {
   const gate = await resolveToolAutoReviewGate('auto-approval', async () => undefined, sampleInput);
   assert.equal(gate.kind, 'manual');
+});
+
+test('applyAutoReviewToApprovalGate skips auto review when hook requested approval', async () => {
+  const gate = await applyAutoReviewToApprovalGate(
+    'auto-approval',
+    async () => ({ allow: true, reason: 'would allow' }),
+    [],
+    { name: 'grep', argumentsJson: '{}' },
+    { prompt: 'hook confirmation required', trustTarget: undefined },
+    { kind: 'needs-approval', request: { name: 'grep' }, prompt: 'hook confirmation required' },
+  );
+  assert.deepEqual(gate, { prompt: 'hook confirmation required', trustTarget: undefined });
 });

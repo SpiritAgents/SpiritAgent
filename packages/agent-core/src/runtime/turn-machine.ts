@@ -697,6 +697,7 @@ export async function processToolCalls<
         runtime.options.toolExecutor.toolDefinitionsJson(),
         call,
         initialGate,
+        preGate,
       )
       : null;
     if (approvalGate) {
@@ -1403,6 +1404,7 @@ export async function processToolCallsAsync<
         runtime.options.toolExecutor.toolDefinitionsJson(),
         call,
         initialGate,
+        preGate,
       )
       : null;
     if (approvalGate) {
