@@ -197,6 +197,7 @@ export interface RuntimePendingApproval<ToolRequest, TrustTarget> {
   toolName: string;
   subagentSessionId?: string;
   subagentTitle?: string;
+  autoReviewBlockReason?: string;
 }
 
 export interface RuntimeSubagentSessionSummary {
@@ -434,6 +435,8 @@ export interface AgentRuntimeOptions<
     userInput: string,
   ) => Promise<PendingWorkspaceFile[]> | PendingWorkspaceFile[];
   bootstrapSubagentWorkspace?: SubagentWorkspaceBootstrap<ToolRequest, TrustTarget>;
+  getApprovalLevel?: () => import('../auto-approval/types.js').SessionApprovalLevel;
+  reviewToolApproval?: import('../auto-approval/types.js').ToolAutoReviewer;
 }
 
 export interface SubagentWorkspaceBootstrapInput {
@@ -516,6 +519,7 @@ export interface PendingManualApprovalState<ToolRequest, TrustTarget> {
   prompt: string;
   trustTarget?: TrustTarget;
   toolName: string;
+  autoReviewBlockReason?: string;
 }
 
 export interface PendingStreamingRound<State, ToolRequest> {
