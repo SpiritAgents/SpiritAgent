@@ -24,3 +24,4 @@ export * from './lsp/index.js';
 export * from './code-completion/index.js';
 export * from './eval/index.js';
 export * from './hooks/index.js';
+export * from './auto-approval/index.js';
