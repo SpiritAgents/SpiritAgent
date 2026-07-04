@@ -1139,6 +1139,85 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
   }
 });
 
+test('processToolCalls auto-approval does not bypass hook ask permission', async () => {
+  let performExecutionCount = 0;
+  const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
+  const runtime = {
+    options: {
+      config: {},
+      hookRunner: createStubHookRunner(async () => ({
+        records: [],
+        denied: false,
+        permission: 'ask',
+        userMessage: 'hook confirmation required',
+        agentMessage: undefined,
+        updatedInput: undefined,
+        additionalContexts: [],
+        followupMessage: undefined,
+      })),
+      hookSessionContext: {
+        sessionId: 's1',
+        conversationPath: null,
+        workspaceRoot: '/w',
+        model: 'm',
+      },
+      llmTransport: {
+        startToolAgentRound: async () => ({
+          kind: 'failure',
+          error: 'unused',
+          requestTrace: [],
+        }),
+        isContextOverflowError: () => false,
+      },
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async (name: string) => ({ name }),
+        authorize: async () => ({ kind: 'allowed' }),
+        execute: async () => ({ content: [], summaryText: 'ok' }),
+      },
+      getApprovalLevel: () => 'auto-approval' as const,
+      reviewToolApproval: async () => ({ allow: true, reason: 'would allow' }),
+      createToolAgentState: () => state,
+      appendToolResultMessage: (currentState: typeof state) => currentState,
+      extractAssistantText: () => undefined,
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: undefined,
+    pendingApproval: undefined,
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async () => {
+      performExecutionCount += 1;
+      return { content: [], summaryText: 'ok' };
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error('unused');
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string }>;
+
+  const result = await processToolCalls(
+    runtime,
+    state,
+    'run grep',
+    [{ id: 'call_grep', name: 'grep', argumentsJson: '{"pattern":"hook"}' }],
+    createTurnContext(),
+  );
+
+  assert.equal(result.kind, 'requires-approval');
+  assert.equal(performExecutionCount, 0);
+  if (result.kind === 'requires-approval') {
+    assert.equal(result.approval.prompt, 'hook confirmation required');
+    assert.equal(result.approval.autoReviewBlockReason, undefined);
+  }
+});
+
 test('processToolCalls persists the full assistant tool-call message from state', async () => {
   const state = {
     messages: [{

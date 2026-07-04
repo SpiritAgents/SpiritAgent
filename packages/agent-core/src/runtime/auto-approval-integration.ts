@@ -6,6 +6,7 @@ import {
   type ToolAutoReviewer,
 } from '../auto-approval/index.js';
 import type { JsonValue } from '../ports.js';
+import type { PreToolUseGateResult } from '../hooks/tool-hooks.js';
 import type { ToolApprovalGate } from '../hooks/tool-hooks.js';
 
 export interface ResolvedToolApprovalGate<TrustTarget = string>
@@ -32,14 +33,19 @@ export function buildToolAutoReviewInput(input: {
   };
 }
 
-export async function applyAutoReviewToApprovalGate<TrustTarget>(
+export async function applyAutoReviewToApprovalGate<TrustTarget, ToolRequest>(
   approvalLevel: SessionApprovalLevel | undefined,
   reviewToolApproval: ToolAutoReviewer | undefined,
   toolDefinitions: JsonValue,
   call: { name: string; argumentsJson: string },
   gate: ToolApprovalGate<TrustTarget>,
+  preGate?: PreToolUseGateResult<ToolRequest>,
 ): Promise<ResolvedToolApprovalGate<TrustTarget> | null> {
   if (!reviewToolApproval || approvalLevel !== 'auto-approval') {
+    return gate;
+  }
+  // Hook permission: ask must stay on manual approval; auto review must not bypass it.
+  if (preGate?.kind === 'needs-approval') {
     return gate;
   }
 
