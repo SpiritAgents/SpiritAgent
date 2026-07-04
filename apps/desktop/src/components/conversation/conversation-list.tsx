@@ -79,6 +79,7 @@ export type ConversationListProps = {
   agentMode: DesktopAgentMode;
   onOpenSubagentViewer: ((toolCallId: string) => void) | undefined;
   onOpenReadFile: ((target: EditorFileTarget) => void) | undefined;
+  onOpenPlan: (() => void) | undefined;
   onStartMessageRewind: (message: ConversationMessageSnapshot, listIndex: number) => void;
   onSubmitMessageRewind: () => void;
   onRewindRemoveLocalFileAttachment: (path: string) => void;
@@ -120,6 +121,7 @@ export function ConversationList({
   agentMode,
   onOpenSubagentViewer,
   onOpenReadFile,
+  onOpenPlan,
   onStartMessageRewind,
   onSubmitMessageRewind,
   onRewindRemoveLocalFileAttachment,
@@ -350,6 +352,7 @@ export function ConversationList({
                   saveLocalImageAs={runtime.saveLocalImageAs}
                   onOpenSubagentViewer={onOpenSubagentViewer}
                   onOpenReadFile={onOpenReadFile}
+                  onOpenPlan={onOpenPlan}
                   onAbortShell={(toolCallId) => {
                     void runtime.abortShell(toolCallId);
                   }}
@@ -477,6 +480,7 @@ export function ConversationList({
         workspaceRoot={workspaceRoot}
         onOpenSubagentViewer={onOpenSubagentViewer}
         onOpenReadFile={onOpenReadFile}
+        onOpenPlan={onOpenPlan}
         onAbortShell={(toolCallId) => {
           void runtime.abortShell(toolCallId);
         }}

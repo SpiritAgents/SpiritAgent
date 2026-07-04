@@ -72,6 +72,7 @@ export type ConversationListSectionProps = {
   models: DesktopSnapshot["config"]["models"];
   onOpenSubagentViewer: ((toolCallId: string) => void) | undefined;
   onOpenReadFile: ((target: EditorFileTarget) => void) | undefined;
+  onOpenPlan: (() => void) | undefined;
   onStartMessageRewind: (message: ConversationMessageSnapshot, listIndex: number) => void;
   onForkMessage: (message: ConversationMessageSnapshot, listIndex: number) => void;
   onSubmitMessageRewind: () => void;
@@ -587,6 +588,7 @@ export function ConversationView({
                   agentMode={list.runtime.settings.agentMode}
                   onOpenSubagentViewer={list.onOpenSubagentViewer}
                   onOpenReadFile={list.onOpenReadFile}
+                  onOpenPlan={list.onOpenPlan}
                   onStartMessageRewind={list.onStartMessageRewind}
                   onForkMessage={list.onForkMessage}
                   onSubmitMessageRewind={list.onSubmitMessageRewind}
