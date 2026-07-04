@@ -87,12 +87,6 @@ export function assertPathUnderSkillRoot(
   }
 }
 
-function deriveSkillFrontmatterDescription(content: string, skillName: string): string {
-  const firstLine =
-    content.split(/\r?\n/u).find((line) => line.trim().length > 0)?.trim() ?? '';
-  return firstLine.replace(/^#+\s*/u, '').trim() || skillName;
-}
-
 export async function createSkillFile(
   workspaceRoot: string,
   request: CreateSkillRequest,
@@ -105,18 +99,20 @@ export async function createSkillFile(
     throw new Error(nameIssue);
   }
 
-  const content = (request.description ?? '').trim();
+  const summary = request.summary.trim();
+  if (!summary) {
+    throw new Error(i18n.t('error.skillSummaryRequired'));
+  }
+  const content = request.content.trim();
   if (!content) {
-    throw new Error(i18n.t('error.descriptionRequired'));
+    throw new Error(i18n.t('error.skillContentRequired'));
   }
   const skillDir = resolveSkillDir(instructionPaths, name, rootKind);
   if (existsSync(skillDir)) {
     throw new Error(i18n.t('error.skillAlreadyExists', { name }));
   }
 
-  const frontmatterDescription = formatYamlScalarForSkillFrontmatter(
-    deriveSkillFrontmatterDescription(content, name),
-  );
+  const frontmatterDescription = formatYamlScalarForSkillFrontmatter(summary);
   const fileContent = `---
 name: ${name}
 description: ${frontmatterDescription}

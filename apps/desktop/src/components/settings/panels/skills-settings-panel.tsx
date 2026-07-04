@@ -55,6 +55,7 @@ export function SkillsSettingsPanel({
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteSkillRequest | null>(null);
   const [newName, setNewName] = useState("");
+  const [newSummary, setNewSummary] = useState("");
   const [newContent, setNewContent] = useState("");
   const [createRootKind, setCreateRootKind] = useState<DesktopSkillRootKind>("user");
 
@@ -73,6 +74,7 @@ export function SkillsSettingsPanel({
 
   const resetForm = () => {
     setNewName("");
+    setNewSummary("");
     setNewContent("");
     setCreateRootKind("user");
   };
@@ -220,7 +222,7 @@ export function SkillsSettingsPanel({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md" showCloseButton>
+        <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
             <DialogTitle>{t('settings.newSkill')}</DialogTitle>
             <DialogDescription>{t('settings.newSkillDescription')}</DialogDescription>
@@ -268,6 +270,16 @@ export function SkillsSettingsPanel({
               />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="new-skill-summary">{t('settings.description')}</Label>
+              <DesktopFormInput
+                id="new-skill-summary"
+                value={newSummary}
+                onChange={(e) => setNewSummary(e.target.value)}
+                placeholder={t('settings.skillDescPlaceholder')}
+                autoComplete="off"
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="new-skill-content">{t('settings.content')}</Label>
               <DesktopFormTextarea
                 id="new-skill-content"
@@ -295,7 +307,7 @@ export function SkillsSettingsPanel({
               type="button"
               size="sm"
               disabled={
-                skillsBusy || !newName.trim() || !newContent.trim()
+                skillsBusy || !newName.trim() || !newSummary.trim() || !newContent.trim()
               }
               onClick={() => {
                 void (async () => {
@@ -303,7 +315,8 @@ export function SkillsSettingsPanel({
                     const payload: CreateSkillRequest = {
                       name: newName,
                       rootKind: createRootKind,
-                      description: newContent.trim(),
+                      summary: newSummary.trim(),
+                      content: newContent.trim(),
                     };
                     await onCreateSkill(payload);
                     setAddDialogOpen(false);

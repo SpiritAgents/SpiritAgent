@@ -1084,6 +1084,8 @@
     "invalidApproval": "审批结果无效。",
     "invalidSkillRootKind": "无效的 Skill 根类型。",
     "skillPathOutsideRoot": "Skill 路径不在允许的根目录内。",
+    "skillSummaryRequired": "概述不能为空。",
+    "skillContentRequired": "正文不能为空。",
     "descriptionRequired": "描述不能为空。",
     "skillAlreadyExists": "该位置已存在同名 Skill：{{name}}",
     "invalidPath": "无效路径",

@@ -570,8 +570,8 @@ async function handleApiRequest({
         request: {
           name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
           rootKind,
-          description:
-            typeof jsonBody?.description === 'string' ? jsonBody.description : '',
+          summary: typeof jsonBody?.summary === 'string' ? jsonBody.summary : '',
+          content: typeof jsonBody?.content === 'string' ? jsonBody.content : '',
         },
       }),
     );
