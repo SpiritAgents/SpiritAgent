@@ -49,6 +49,7 @@ import {
 } from './extensions.js';
 import {
   CREATE_AUTOMATION_TOOL_NAME,
+  type CreateAutomationApprovalLevel,
   deriveAutomationTitle,
   formatCreateAutomationApprovalLabel,
   parseCreateAutomationApprovalLevel,
@@ -291,7 +292,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       title: string;
       overview: string;
       trigger: HostAutomationTrigger;
-      approval_level: ApprovalLevel;
+      approval_level: CreateAutomationApprovalLevel;
     };
 
 export type HostAuthorizationDecision<QuestionSpec = HostAskQuestionsQuestionSpec> =

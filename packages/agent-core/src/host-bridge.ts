@@ -36,6 +36,7 @@ import {
   type LlmToolAgentState,
 } from './llm-tool-agent.js';
 import { buildContributedHostToolDefinitions, buildTodoHostToolDefinitions } from './host-tools.js';
+import { createCliAutoApprovalReviewer } from './host-bridge/cli-auto-approval-review.js';
 import type { PreCompactionHistoryArchive } from './compaction-archive.js';
 import {
   buildApplyPatchFileToolsPromptSection,
@@ -1875,6 +1876,8 @@ async function createRuntime(
         return undefined;
       }
     },
+    getApprovalLevel: () => currentApprovalLevel,
+    reviewToolApproval: createCliAutoApprovalReviewer(config),
   }, history) as HostRuntime;
 }
 

@@ -18,20 +18,21 @@ export function resolveToolInputSchema(
     }
 
     const fn = entry.function;
-    if (
-      isJsonObject(fn)
-      && fn.name === toolName
-      && isJsonObject(fn.parameters)
-    ) {
-      return fn.parameters;
+    if (fn !== undefined && isJsonObject(fn)) {
+      const parameters = fn.parameters;
+      if (fn.name === toolName && parameters !== undefined && isJsonObject(parameters)) {
+        return parameters;
+      }
     }
 
+    const parameters = entry.parameters;
     if (
       entry.type === 'function'
       && entry.name === toolName
-      && isJsonObject(entry.parameters)
+      && parameters !== undefined
+      && isJsonObject(parameters)
     ) {
-      return entry.parameters;
+      return parameters;
     }
   }
 
