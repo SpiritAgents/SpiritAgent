@@ -288,50 +288,16 @@ declare global {
       onExit: (payload: { id: string; exitCode: number; signal?: number }) => void;
       onProcessTitle?: (payload: { id: string; title: string }) => void;
     }): () => void;
-    syncBrowserPageView(payload: {
-      tabId: string;
-      bounds: { x: number; y: number; width: number; height: number };
-      visible: boolean;
-      url?: string;
-      devtoolsWidthPx?: number;
-    }): Promise<void>;
-    navigateBrowserPageView(payload: {
-      tabId: string;
-      action: 'back' | 'forward' | 'reload' | 'load';
-      url?: string;
-    }): Promise<void>;
-    toggleBrowserPageDevTools(
-      tabId: string,
-    ): Promise<{ open: boolean; widthPx: number } | undefined>;
-    setBrowserPageDevtoolsWidth(
-      tabId: string,
-      widthPx: number,
-    ): Promise<{ open: boolean; widthPx: number } | undefined>;
-    executeBrowserPageView(payload: {
-      tabId: string;
-      kind: 'script' | 'insert-css' | 'remove-css';
-      script?: string;
-      css?: string;
-      cssKey?: string;
-    }): Promise<unknown>;
-    captureBrowserPageView(
-      tabId: string,
-      rect: { x: number; y: number; width: number; height: number },
-    ): Promise<string>;
-    destroyBrowserPageView(tabId: string): Promise<void>;
-    subscribeBrowserPageEvents(
-      callback: (event: {
-        tabId: string;
-        type: 'url' | 'title' | 'nav-state' | 'devtools';
-        url?: string;
-        title?: string;
-        canGoBack?: boolean;
-        canGoForward?: boolean;
-        open?: boolean;
-        widthPx?: number;
-      }) => void,
-    ): () => void;
     ingestBrowserElementScreenshot(base64: string): Promise<string | null>;
+    registerBrowserGuestF12(tabId: string, guestWebContentsId: number): Promise<void>;
+    unregisterBrowserGuestF12(guestWebContentsId: number): Promise<void>;
+    bindBrowserGuestDevtools(
+      pageWebContentsId: number,
+      devtoolsWebContentsId: number,
+    ): Promise<void>;
+    openBrowserGuestDevtools(pageWebContentsId: number): Promise<boolean>;
+    closeBrowserGuestDevtools(pageWebContentsId: number): Promise<void>;
+    subscribeBrowserGuestF12(callback: (payload: { tabId: string }) => void): () => void;
     readClipboardText(): string;
     writeClipboardText(text: string): void;
     showNotification(request: import('./lib/desktop-notification-types.js').DesktopShowNotificationRequest): Promise<boolean>;
@@ -364,6 +330,71 @@ declare global {
     spiritDesktop?: SpiritDesktopApi;
   }
 
+  interface SpiritWebviewGuestWebContents {
+    setDevToolsWebContents(devToolsWebContents: SpiritWebviewGuestWebContents): void;
+    openDevTools(options?: { mode?: string; activate?: boolean }): void;
+    closeDevTools(): void;
+    isDevToolsOpened(): boolean;
+    on(
+      event: "before-input-event",
+      listener: (
+        event: { preventDefault: () => void },
+        input: { type: string; key: string },
+      ) => void,
+    ): void;
+    removeListener(
+      event: "before-input-event",
+      listener: (
+        event: { preventDefault: () => void },
+        input: { type: string; key: string },
+      ) => void,
+    ): void;
+  }
+
+  interface SpiritWebviewCaptureImage {
+    toDataURL(): string;
+  }
+
+  interface SpiritWebviewWillNavigateEvent extends Event {
+    url: string;
+    preventDefault(): void;
+  }
+
+  interface SpiritWebviewNewWindowEvent extends Event {
+    url: string;
+    preventDefault(): void;
+  }
+
+  interface SpiritWebviewTag extends HTMLElement {
+    src: string;
+    partition: string;
+    webpreferences: string;
+    getURL(): string;
+    loadURL(url: string): void;
+    goBack(): void;
+    goForward(): void;
+    reload(): void;
+    canGoBack(): boolean;
+    canGoForward(): boolean;
+    getWebContentsId(): number;
+    executeJavaScript(code: string): Promise<unknown>;
+    insertCSS(css: string): Promise<string>;
+    removeInsertedCSS(key: string): Promise<void>;
+    capturePage(rect: { x: number; y: number; width: number; height: number }): Promise<SpiritWebviewCaptureImage>;
+    addEventListener(type: string, listener: (...args: unknown[]) => void): void;
+    removeEventListener(type: string, listener: (...args: unknown[]) => void): void;
+  }
+
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: React.DetailedHTMLProps<React.HTMLAttributes<SpiritWebviewTag>, SpiritWebviewTag> & {
+        src?: string;
+        partition?: string;
+        webpreferences?: string;
+        allowpopups?: string;
+      };
+    }
+  }
 }
 
 export {};

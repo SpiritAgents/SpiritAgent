@@ -998,7 +998,6 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                         browserUrl={item.browserUrl}
                         browserTabEnabled={browserTabEnabled}
                         isActive={selected}
-                        nativeViewSuspended={addToolTabMenuOpen && selected}
                         useMicaBackdrop={useMicaBackdrop}
                         onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
                         onOpenUrlInNewTab={onBrowserOpenInNewTab}
