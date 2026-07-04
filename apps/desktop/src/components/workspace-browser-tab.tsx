@@ -811,7 +811,7 @@ export function WorkspaceBrowserTab({
                   onPointerCancel={endDevtoolsResize}
                 >
                   <div
-                    className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+                    className="pointer-events-none absolute inset-y-0 right-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
                     aria-hidden
                   />
                 </div>
