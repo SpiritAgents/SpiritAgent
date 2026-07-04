@@ -50,6 +50,8 @@ export type ConversationListProps = {
   conversationRenderItems: readonly ConversationRenderItem[];
   /** 虚拟化滚动容器（Radix ScrollArea viewport）；由 ConversationView 提供。 */
   getScrollElement: () => HTMLElement | null;
+  /** 跟底时同步钉底（stream tail 持有 stick 语义）；每次 totalSize 变化的 commit 中调用 */
+  pinScrollToTail: () => void;
   subagentViewActive: boolean;
   composerSessionKey: string;
   conversationListScopeKey: string;
@@ -92,6 +94,7 @@ export function ConversationList({
   messages,
   conversationRenderItems,
   getScrollElement,
+  pinScrollToTail,
   subagentViewActive,
   composerSessionKey,
   conversationListScopeKey,
@@ -226,6 +229,17 @@ export function ConversationList({
   // virtual-core 3.17.x 默认策略已内建「首测补偿 / backward 重测跳过」，上次实验中
   // 覆盖它（isScrolling 一律 false）正是上滑下跳的根因；anchorTo:'end' 的 wasAtEnd
   // 路径会绕过 shouldAdjust 直接改写 scrollTop（日志见 stash 实验），一并弃用。
+  //
+  // directDomUpdates：容器高度与行位移在 onChange（RO 回调内）同步直写 DOM。
+  // 行内折叠卡动画逐帧改行高时，React 异步重渲染会让 totalSize/translateY 晚一帧，
+  // 期间钉底是空操作（scrollHeight 未变），组行底边先下冲再回弹（实测 10px 起跳 +
+  // 每帧 ±1px），即「居底展开过程卡片内卡片、下方卡片上下震」。直写让行高变化、
+  // 容器长高与 onChange 里的钉底同帧完成。
+  //
+  // onChange 的钉底必须以 totalSize 变化为门槛：onChange 对纯滚动也会触发，
+  // 而用户向下滚进 48px 阈值时 stick 恰会恢复，若无门槛则下一次滚动通知立即
+  // 把视口按到底（实测距底 14~17px 被强拉），即「往下滚未到底突然跳底」。
+  const lastPinnedTotalSizeRef = useRef(-1);
   const virtualizer = useVirtualizer({
     count: conversationRenderItems.length,
     getScrollElement: () => scrollElement,
@@ -233,6 +247,15 @@ export function ConversationList({
     estimateSize,
     overscan: 8,
     scrollMargin,
+    directDomUpdates: true,
+    onChange: (instance) => {
+      const totalSize = instance.getTotalSize();
+      if (totalSize === lastPinnedTotalSizeRef.current) {
+        return;
+      }
+      lastPinnedTotalSizeRef.current = totalSize;
+      pinScrollToTail();
+    },
   });
 
   // scrollMargin = 列表起点相对滚动 viewport 顶部的偏移（含 shell pt-6/7），
@@ -484,6 +507,16 @@ export function ConversationList({
   };
 
   const virtualItems = virtualizer.getVirtualItems();
+  const virtualTotalSize = virtualizer.getTotalSize();
+
+  // 跟底钉底须在每次 totalSize 变化的 commit 里同步补一次：卡片高度动画每帧
+  // 引发多轮布局反馈（行高变化 → 重测 → 重渲染 totalSize），浏览器 RO 有循环
+  // 上限、超限通知推迟到下一帧，仅靠 stream tail 的内容 RO 钉底会让部分帧带着
+  // 未钉底偏差上屏（实测 4~17px 振荡，即「居底展开过程卡片上下震」）。layout
+  // effect 与本次重排同处一个 JS 任务，不受 RO 循环上限影响；非跟底时为空操作。
+  useLayoutEffect(() => {
+    pinScrollToTail();
+  }, [virtualTotalSize, pinScrollToTail]);
 
   return (
     <div
@@ -505,10 +538,14 @@ export function ConversationList({
         ) : null}
         <div
           key={`${composerSessionKey || "__no-session__"}:${conversationListScopeKey}:e${conversationListRemountEpoch}`}
-          ref={sizingRef}
+          // directDomUpdates：容器高度与行 transform 由 virtualizer 直写，
+          // JSX 不得再设 height / translateY（见上方 useVirtualizer 注释）。
+          ref={(el) => {
+            sizingRef.current = el;
+            virtualizer.containerRef(el);
+          }}
           data-spirit-surface="conversation-list"
           className="relative w-full"
-          style={{ height: virtualizer.getTotalSize() }}
         >
           {virtualItems.map((virtualItem) => (
             <div
@@ -530,9 +567,9 @@ export function ConversationList({
                   conversationRenderItems,
                   messages,
                 ),
-                transform: `translateY(${virtualItem.start - virtualizer.options.scrollMargin}px)`,
-                // translateY 使行 wrapper 自成 stacking context，卡片内 z-40 无法
-                // 跨出与 z-30 的 rewind 遮罩竞争；rewind 行须在 wrapper 层提升 z。
+                // translateY（由 virtualizer 直写）使行 wrapper 自成 stacking
+                // context，卡片内 z-40 无法跨出与 z-30 的 rewind 遮罩竞争；
+                // rewind 行须在 wrapper 层提升 z。
                 ...(rewindDraft
                 && (() => {
                   const item = conversationRenderItems[virtualItem.index];

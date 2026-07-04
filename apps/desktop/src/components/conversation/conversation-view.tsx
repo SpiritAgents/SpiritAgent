@@ -290,7 +290,7 @@ export function ConversationView({
     streaming: snapshot?.conversation.isBusy === true,
   });
 
-  useConversationStreamScrollTail({
+  const { pinScrollToTail } = useConversationStreamScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
     messages: list.messages,
     pendingAuxState: list.conversationPendingAuxState,
@@ -561,6 +561,7 @@ export function ConversationView({
                   messages={list.messages}
                   conversationRenderItems={list.conversationRenderItems}
                   getScrollElement={getConversationScrollElement}
+                  pinScrollToTail={pinScrollToTail}
                   subagentViewActive={subagentViewActive}
                   composerSessionKey={list.composerSessionKey}
                   conversationListScopeKey={list.conversationListScopeKey}
