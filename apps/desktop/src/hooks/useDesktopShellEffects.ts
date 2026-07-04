@@ -45,6 +45,7 @@ export function useDesktopShellEffects({
     } else {
       document.documentElement.classList.remove("spirit-desktop-darwin");
       document.documentElement.classList.remove("spirit-desktop-darwin-fullscreen");
+      document.documentElement.classList.remove("spirit-desktop-darwin-conversation-split");
     }
   }, [darwinElectronChrome]);
 

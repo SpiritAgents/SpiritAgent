@@ -276,6 +276,13 @@ html.spirit-desktop-darwin [data-spirit-surface="workspace-panel"] > div:first-c
   -webkit-app-region: no-drag;
 }
 
+/* Split 后顶栏用于 pane 拖拽/重排，禁用窗口级拖拽以免与 HTML5 drag 冲突 */
+html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split #session-sidebar-panel::before,
+html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split [data-spirit-surface="layout-chrome"],
+html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split [data-spirit-surface="workspace-panel"] > div:first-child {
+  -webkit-app-region: no-drag;
+}
+
 /* 侧栏收起时主区顶栏从窗口左缘开始，需右移避让红绿灯 */
 html.spirit-desktop-darwin
   [data-spirit-surface="layout-chrome"][data-session-sidebar-open="false"] {

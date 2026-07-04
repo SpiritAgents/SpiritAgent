@@ -23,6 +23,7 @@ import {
 
 
 
+import { useDarwinConversationSplitChrome } from "@/hooks/useDarwinConversationSplitChrome";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 import {
@@ -1672,6 +1673,9 @@ export function ConversationSplitProvider({
     ],
   );
 
+  const paneCount = layout ? countPanes(layout) : 0;
+  useDarwinConversationSplitChrome(paneCount);
+
   const value = useMemo<ConversationSplitContextValue>(
 
     () => ({
@@ -1684,7 +1688,7 @@ export function ConversationSplitProvider({
 
       sessionSidebarAnchorPaneId: layout ? findSessionSidebarAnchorPaneId(layout) : null,
 
-      paneCount: layout ? countPanes(layout) : 0,
+      paneCount,
 
       focusPane,
 
