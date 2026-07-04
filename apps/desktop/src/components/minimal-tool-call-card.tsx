@@ -40,6 +40,7 @@ import {
   toolCardSecondaryTextClass,
 } from "@/lib/file-tool-lsp-diagnostics-display";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { resolveFileDiffToolEditorTarget } from "@/lib/file-tool-navigation";
 import { resolveReadFileTargetFromTool } from "@/lib/read-file-tool-navigation";
 import { cn } from "@/lib/utils";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
@@ -93,6 +94,8 @@ function ToolCallSummaryRow({
   shellSummary,
   shimmerActive = false,
   detailTone = "default",
+  hideLineDelta = false,
+  hideLspBadge = false,
 }: {
   tool: ToolBlockSnapshot;
   headline: string;
@@ -100,6 +103,8 @@ function ToolCallSummaryRow({
   shellSummary?: ShellToolSummaryParts;
   shimmerActive?: boolean;
   detailTone?: ToolSummaryDetailTone;
+  hideLineDelta?: boolean;
+  hideLspBadge?: boolean;
 }) {
   const { t } = useTranslation("settings");
   const editLineDelta = useMemo(() => resolveToolLineDeltaForDisplay(tool), [
@@ -135,12 +140,12 @@ function ToolCallSummaryRow({
           statusSuffixTone={statusSuffixTone}
         />
       </span>
-      {editLineDelta ? (
+      {editLineDelta && !hideLineDelta ? (
         <span className="shrink-0">
           <EditFileLineDeltaBadge delta={editLineDelta} />
         </span>
       ) : null}
-      {shouldShowLspDiagnosticsOnToolCard(tool) ? (
+      {!hideLspBadge && shouldShowLspDiagnosticsOnToolCard(tool) ? (
         <span className="shrink-0">
           <FileToolLspDiagnosticsBadge diagnostics={tool.lspWriteDiagnostics} />
         </span>
@@ -492,12 +497,14 @@ export function MinimalToolCallCard({
   workspaceRoot = "",
   onOpenSubagentViewer,
   onOpenReadFile,
+  onOpenPlan,
   onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
   workspaceRoot?: string;
   onOpenSubagentViewer?: (toolCallId: string) => void;
   onOpenReadFile?: (target: EditorFileTarget) => void;
+  onOpenPlan?: () => void;
   onAbortShell?: (toolCallId: string) => void;
 }) {
   const summary = getToolCallSummaryParts(tool);
@@ -511,6 +518,27 @@ export function MinimalToolCallCard({
     [tool, workspaceRoot],
   );
   const canOpenReadFile = Boolean(readFileTarget && onOpenReadFile);
+  const isFileDiffNavTool =
+    tool.toolName === "create_file" ||
+    tool.toolName === "edit_file" ||
+    tool.toolName === "create_plan";
+  const fileDiffEditorTarget = useMemo(
+    () =>
+      tool.toolName === "create_file" || tool.toolName === "edit_file"
+        ? resolveFileDiffToolEditorTarget(tool, workspaceRoot)
+        : null,
+    [tool, workspaceRoot],
+  );
+  const canOpenFileDiffNav = Boolean(
+    !shimmerActive &&
+      isFileDiffNavTool &&
+      ((tool.toolName === "create_plan" && onOpenPlan) ||
+        (fileDiffEditorTarget && onOpenReadFile)),
+  );
+  const editLineDelta = useMemo(
+    () => resolveToolLineDeltaForDisplay(tool),
+    [tool.phase, tool.toolName, tool.editLineDelta, tool.argsExcerpt],
+  );
   const isFileDiff = isFileDiffTool(tool.toolName);
   const isResponsesBuiltIn = isResponsesBuiltInToolCard(tool.toolName);
   const shellCommand = useMemo(
@@ -531,7 +559,43 @@ export function MinimalToolCallCard({
       shellSummary={summary.shellSummary}
       shimmerActive={shimmerActive}
       detailTone={isShell ? "shell-command" : "default"}
+      hideLineDelta={canOpenFileDiffNav}
+      hideLspBadge={canOpenFileDiffNav}
     />
+  );
+
+  const fileDiffNavLspBadge =
+    canOpenFileDiffNav && shouldShowLspDiagnosticsOnToolCard(tool) ? (
+      <span className="shrink-0">
+        <FileToolLspDiagnosticsBadge diagnostics={tool.lspWriteDiagnostics} />
+      </span>
+    ) : null;
+
+  const toggleFileDiffExpand = (event?: { stopPropagation: () => void }) => {
+    event?.stopPropagation();
+    setOpen((value) => !value);
+  };
+
+  const expandChevronButton = (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-label={open ? "Collapse tool details" : "Expand tool details"}
+      onClick={(event) => toggleFileDiffExpand(event)}
+      className={cn(
+        "shrink-0 outline-none",
+        "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+      )}
+    >
+      <ChevronRight
+        className={cn(
+          "size-3 text-muted-foreground/55 transition-all duration-150",
+          "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+          open && "rotate-90",
+        )}
+        aria-hidden
+      />
+    </button>
   );
 
   if (!expandable) {
@@ -623,6 +687,44 @@ export function MinimalToolCallCard({
           aria-hidden
         />
       </button>
+    </div>
+  ) : canOpenFileDiffNav ? (
+    <div className="group flex w-full min-w-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={() => {
+          if (tool.toolName === "create_plan") {
+            onOpenPlan?.();
+            return;
+          }
+          if (fileDiffEditorTarget) {
+            onOpenReadFile?.(fileDiffEditorTarget);
+          }
+        }}
+        className={cn(
+          "min-w-0 overflow-hidden text-left outline-none",
+          "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+          clickableToolCardTriggerClass,
+        )}
+      >
+        {summaryRow}
+      </button>
+      {fileDiffNavLspBadge}
+      {editLineDelta ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={open ? "Collapse tool details" : "Expand tool details"}
+          onClick={(event) => toggleFileDiffExpand(event)}
+          className={cn(
+            "shrink-0 outline-none",
+            "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+          )}
+        >
+          <EditFileLineDeltaBadge delta={editLineDelta} />
+        </button>
+      ) : null}
+      {expandChevronButton}
     </div>
   ) : (
     <button
