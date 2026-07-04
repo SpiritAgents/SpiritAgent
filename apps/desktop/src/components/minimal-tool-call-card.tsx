@@ -590,7 +590,7 @@ export function MinimalToolCallCard({
       <ChevronRight
         className={cn(
           "size-3 text-muted-foreground/55 transition-all duration-150",
-          "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+          "opacity-0 group-hover:opacity-100 group-has-[:focus-visible]:opacity-100",
           open && "rotate-90",
         )}
         aria-hidden
