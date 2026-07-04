@@ -656,7 +656,7 @@ type SessionRowStatusTone = "blocked" | "completed";
 function sessionRowStatusDotClass(tone: SessionRowStatusTone): string {
   return tone === "blocked"
     ? "bg-yellow-500"
-    : "bg-blue-500 dark:bg-blue-400";
+    : "bg-blue-500";
 }
 
 function SessionRowStatusDot({ tone, label }: { tone: SessionRowStatusTone; label: string }) {
