@@ -230,6 +230,32 @@ export function useWorkspaceToolsController({
     setActiveWorkspaceToolTabId(navigation.activeTabId);
   }, []);
 
+  const openWorkspacePlan = useCallback(() => {
+    setWorkspaceToolsOpen(true);
+
+    const tabs = workspaceToolTabsRef.current;
+    const activeTabId = activeWorkspaceToolTabIdRef.current;
+    const activeTab = findWorkspaceToolTab(tabs, activeTabId);
+    let targetFilesTabId: string;
+    if (activeTab?.kind === "files") {
+      targetFilesTabId = activeTabId;
+    } else {
+      const firstFilesId = focusFirstTabOfKind(tabs, "files");
+      if (firstFilesId) {
+        targetFilesTabId = firstFilesId;
+        setActiveWorkspaceToolTabId(firstFilesId);
+      } else {
+        const added = addWorkspaceToolTab(tabs, "files");
+        setWorkspaceToolTabs(added.tabs);
+        setActiveWorkspaceToolTabId(added.activeId);
+        targetFilesTabId = added.activeId;
+      }
+    }
+
+    setWorkspaceFilesPlanRevealTargetId(targetFilesTabId);
+    setWorkspaceFilesPlanRevealNonce((value) => value + 1);
+  }, [setWorkspaceToolsOpen]);
+
   useEffect(() => {
     if (!runtime.apiReady || runtime.hostKind == null) {
       return;
@@ -297,34 +323,13 @@ export function useWorkspaceToolsController({
       return;
     }
 
-    setWorkspaceToolsOpen(true);
-
-    const activeTab = findWorkspaceToolTab(workspaceToolTabs, activeWorkspaceToolTabId);
-    let targetFilesTabId: string;
-    if (activeTab?.kind === "files") {
-      targetFilesTabId = activeWorkspaceToolTabId;
-    } else {
-      const firstFilesId = focusFirstTabOfKind(workspaceToolTabs, "files");
-      if (firstFilesId) {
-        targetFilesTabId = firstFilesId;
-        setActiveWorkspaceToolTabId(firstFilesId);
-      } else {
-        const added = addWorkspaceToolTab(workspaceToolTabs, "files");
-        setWorkspaceToolTabs(added.tabs);
-        setActiveWorkspaceToolTabId(added.activeId);
-        targetFilesTabId = added.activeId;
-      }
-    }
-
-    setWorkspaceFilesPlanRevealTargetId(targetFilesTabId);
-    setWorkspaceFilesPlanRevealNonce((value) => value + 1);
+    openWorkspacePlan();
   }, [
     activeFilePath,
-    activeWorkspaceToolTabId,
+    openWorkspacePlan,
     snapshot?.plan?.exists,
     snapshot?.plan?.modifiedAtUnixMs,
     snapshot?.plan,
-    workspaceToolTabs,
   ]);
 
   return {
@@ -355,6 +360,7 @@ export function useWorkspaceToolsController({
     revealWorkspaceDirectory,
     openPullRequestInPrTab,
     openGitTab,
+    openWorkspacePlan,
     workspacePrRevealNonce,
     workspacePrRevealTargetId,
     workspacePrRevealRequest,
