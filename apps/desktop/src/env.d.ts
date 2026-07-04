@@ -289,6 +289,15 @@ declare global {
       onProcessTitle?: (payload: { id: string; title: string }) => void;
     }): () => void;
     ingestBrowserElementScreenshot(base64: string): Promise<string | null>;
+    registerBrowserGuestF12(tabId: string, guestWebContentsId: number): Promise<void>;
+    unregisterBrowserGuestF12(guestWebContentsId: number): Promise<void>;
+    bindBrowserGuestDevtools(
+      pageWebContentsId: number,
+      devtoolsWebContentsId: number,
+    ): Promise<void>;
+    openBrowserGuestDevtools(pageWebContentsId: number): Promise<boolean>;
+    closeBrowserGuestDevtools(pageWebContentsId: number): Promise<void>;
+    subscribeBrowserGuestF12(callback: (payload: { tabId: string }) => void): () => void;
     readClipboardText(): string;
     writeClipboardText(text: string): void;
     showNotification(request: import('./lib/desktop-notification-types.js').DesktopShowNotificationRequest): Promise<boolean>;
@@ -367,7 +376,7 @@ declare global {
     reload(): void;
     canGoBack(): boolean;
     canGoForward(): boolean;
-    getWebContents(): SpiritWebviewGuestWebContents;
+    getWebContentsId(): number;
     executeJavaScript(code: string): Promise<unknown>;
     insertCSS(css: string): Promise<string>;
     removeInsertedCSS(key: string): Promise<void>;

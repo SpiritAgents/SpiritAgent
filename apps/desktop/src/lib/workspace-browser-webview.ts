@@ -9,7 +9,6 @@ export type BrowserPageEventHandlers = {
   onUrl?: (url: string) => void;
   onTitle?: (title: string) => void;
   onNavState?: (canGoBack: boolean, canGoForward: boolean) => void;
-  onToggleDevtools?: () => void;
 };
 
 export function browserWebviewPartition(tabId: string): string {
@@ -18,13 +17,38 @@ export function browserWebviewPartition(tabId: string): string {
 
 export const BROWSER_WEBVIEW_WEBPREFERENCES = "contextIsolation=yes, sandbox=yes";
 
+function isWebviewNavigationReady(wv: SpiritWebviewTag): boolean {
+  try {
+    const url = wv.getURL();
+    return Boolean(url && url !== "about:blank");
+  } catch {
+    return false;
+  }
+}
+
 export function waitForWebviewDomReady(wv: SpiritWebviewTag): Promise<void> {
   return new Promise((resolve) => {
-    const onReady = () => {
-      wv.removeEventListener("dom-ready", onReady);
+    let settled = false;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      wv.removeEventListener("dom-ready", onDomReady);
+      wv.removeEventListener("did-attach", onDidAttach);
       resolve();
     };
-    wv.addEventListener("dom-ready", onReady);
+
+    const onDomReady = () => finish();
+    const onDidAttach = () => finish();
+
+    if (isWebviewNavigationReady(wv)) {
+      finish();
+      return;
+    }
+
+    wv.addEventListener("dom-ready", onDomReady);
+    wv.addEventListener("did-attach", onDidAttach);
   });
 }
 
@@ -114,18 +138,6 @@ export function attachBrowserPageEventListeners(
   wv.addEventListener("page-title-updated", onTitle);
   wv.addEventListener("did-stop-loading", onStopLoading);
 
-  const guest = wv.getWebContents();
-  const onBeforeInput = (
-    event: { preventDefault: () => void },
-    input: { type: string; key: string },
-  ) => {
-    if (input.type === "keyDown" && input.key === "F12") {
-      event.preventDefault();
-      handlers.onToggleDevtools?.();
-    }
-  };
-  guest.on("before-input-event", onBeforeInput);
-
   emitNavState();
 
   return () => {
@@ -133,7 +145,6 @@ export function attachBrowserPageEventListeners(
     wv.removeEventListener("did-navigate-in-page", onNavigate);
     wv.removeEventListener("page-title-updated", onTitle);
     wv.removeEventListener("did-stop-loading", onStopLoading);
-    guest.removeListener("before-input-event", onBeforeInput);
   };
 }
 
@@ -143,22 +154,30 @@ export async function bindDevtoolsHost(
 ): Promise<void> {
   await waitForWebviewDomReady(pageWv);
   await waitForWebviewDomReady(devtoolsWv);
-  const pageWC = pageWv.getWebContents();
-  const devtoolsWC = devtoolsWv.getWebContents();
-  pageWC.setDevToolsWebContents(devtoolsWC);
+  const bridge = window.spiritDesktop;
+  if (!bridge?.bindBrowserGuestDevtools) {
+    throw new Error("Desktop browser guest bridge unavailable");
+  }
+  await bridge.bindBrowserGuestDevtools(
+    pageWv.getWebContentsId(),
+    devtoolsWv.getWebContentsId(),
+  );
 }
 
 export async function openEmbeddedDevtools(
   pageWv: SpiritWebviewTag,
   devtoolsWv: SpiritWebviewTag,
 ): Promise<void> {
-  const pageWC = pageWv.getWebContents();
-  if (pageWC.isDevToolsOpened()) {
+  const bridge = window.spiritDesktop;
+  if (!bridge?.openBrowserGuestDevtools) {
+    throw new Error("Desktop browser guest bridge unavailable");
+  }
+  const opened = await bridge.openBrowserGuestDevtools(pageWv.getWebContentsId());
+  if (!opened) {
     return;
   }
   // Win32 titleBarOverlay 会强制原生 dock 变 detach（electron/electron#42079），
   // 故用 setDevToolsWebContents 将 DevTools 画进右侧 webview。
-  pageWC.openDevTools({ mode: "detach", activate: true });
   try {
     await devtoolsWv.executeJavaScript("window.location.reload()");
   } catch {
@@ -167,10 +186,11 @@ export async function openEmbeddedDevtools(
 }
 
 export function closeEmbeddedDevtools(pageWv: SpiritWebviewTag): void {
-  const pageWC = pageWv.getWebContents();
-  if (pageWC.isDevToolsOpened()) {
-    pageWC.closeDevTools();
+  const bridge = window.spiritDesktop;
+  if (!bridge?.closeBrowserGuestDevtools) {
+    return;
   }
+  void bridge.closeBrowserGuestDevtools(pageWv.getWebContentsId());
 }
 
 export async function captureWebviewPngBase64(

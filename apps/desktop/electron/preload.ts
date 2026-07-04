@@ -543,6 +543,38 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   ingestBrowserElementScreenshot(base64: string): Promise<string | null> {
     return ipcRenderer.invoke('desktop:ingest-browser-element-screenshot', { base64 });
   },
+  registerBrowserGuestF12(tabId: string, guestWebContentsId: number): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-register-f12', { tabId, guestWebContentsId });
+  },
+  unregisterBrowserGuestF12(guestWebContentsId: number): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-unregister-f12', { guestWebContentsId });
+  },
+  bindBrowserGuestDevtools(
+    pageWebContentsId: number,
+    devtoolsWebContentsId: number,
+  ): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-bind-devtools', {
+      pageWebContentsId,
+      devtoolsWebContentsId,
+    });
+  },
+  openBrowserGuestDevtools(pageWebContentsId: number): Promise<boolean> {
+    return ipcRenderer.invoke('desktop:browser-guest-open-devtools', { pageWebContentsId });
+  },
+  closeBrowserGuestDevtools(pageWebContentsId: number): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-close-devtools', { pageWebContentsId });
+  },
+  subscribeBrowserGuestF12(callback: (payload: { tabId: string }) => void): () => void {
+    const onEvent = (_event: Electron.IpcRendererEvent, payload: { tabId?: string }) => {
+      if (typeof payload?.tabId === 'string' && payload.tabId) {
+        callback({ tabId: payload.tabId });
+      }
+    };
+    ipcRenderer.on('desktop:browser-guest-f12', onEvent);
+    return () => {
+      ipcRenderer.removeListener('desktop:browser-guest-f12', onEvent);
+    };
+  },
   readClipboardText() {
     return clipboard.readText();
   },
