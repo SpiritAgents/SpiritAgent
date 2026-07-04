@@ -540,97 +540,40 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
       ipcRenderer.removeListener('desktop:local-listeners-done', onDone);
     };
   },
-  syncBrowserPageView(payload: {
-    tabId: string;
-    bounds: { x: number; y: number; width: number; height: number };
-    visible: boolean;
-    url?: string;
-    devtoolsWidthPx?: number;
-  }): Promise<void> {
-    return ipcRenderer.invoke('desktop:browser-page-sync', payload);
-  },
-  navigateBrowserPageView(payload: {
-    tabId: string;
-    action: 'back' | 'forward' | 'reload' | 'load';
-    url?: string;
-  }): Promise<void> {
-    return ipcRenderer.invoke('desktop:browser-page-nav', payload);
-  },
-  toggleBrowserPageDevTools(
-    tabId: string,
-  ): Promise<{ open: boolean; widthPx: number } | undefined> {
-    return ipcRenderer.invoke('desktop:browser-page-toggle-devtools', { tabId });
-  },
-  setBrowserPageDevtoolsWidth(
-    tabId: string,
-    widthPx: number,
-  ): Promise<{ open: boolean; widthPx: number } | undefined> {
-    return ipcRenderer.invoke('desktop:browser-page-set-devtools-width', { tabId, widthPx });
-  },
-  executeBrowserPageView(payload: {
-    tabId: string;
-    kind: 'script' | 'insert-css' | 'remove-css';
-    script?: string;
-    css?: string;
-    cssKey?: string;
-  }): Promise<unknown> {
-    return ipcRenderer.invoke('desktop:browser-page-execute', payload);
-  },
-  captureBrowserPageView(
-    tabId: string,
-    rect: { x: number; y: number; width: number; height: number },
-  ): Promise<string> {
-    return ipcRenderer.invoke('desktop:browser-page-capture', { tabId, rect });
-  },
-  destroyBrowserPageView(tabId: string): Promise<void> {
-    return ipcRenderer.invoke('desktop:browser-page-destroy', { tabId });
-  },
-  subscribeBrowserPageEvents(
-    callback: (event: {
-      tabId: string;
-      type: 'url' | 'title' | 'nav-state' | 'devtools';
-      url?: string;
-      title?: string;
-      canGoBack?: boolean;
-      canGoForward?: boolean;
-      open?: boolean;
-      widthPx?: number;
-    }) => void,
-  ) {
-    const onEvent = (
-      _event: Electron.IpcRendererEvent,
-      payload: {
-        tabId?: string;
-        type?: 'url' | 'title' | 'nav-state' | 'devtools';
-        url?: string;
-        title?: string;
-        canGoBack?: boolean;
-        canGoForward?: boolean;
-        open?: boolean;
-        widthPx?: number;
-      },
-    ) => {
-      if (typeof payload?.tabId !== 'string' || !payload.type) {
-        return;
-      }
-      callback({
-        tabId: payload.tabId,
-        type: payload.type,
-        url: payload.url,
-        title: payload.title,
-        canGoBack: payload.canGoBack,
-        canGoForward: payload.canGoForward,
-        open: payload.open,
-        widthPx: payload.widthPx,
-      });
-    };
-    ipcRenderer.on('desktop:browser-page-event', onEvent);
-    return () => {
-      ipcRenderer.removeListener('desktop:browser-page-event', onEvent);
-    };
-  },
   ingestBrowserElementScreenshot(base64: string): Promise<string | null> {
     return ipcRenderer.invoke('desktop:ingest-browser-element-screenshot', { base64 });
+  },
+  registerBrowserGuestF12(tabId: string, guestWebContentsId: number): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-register-f12', { tabId, guestWebContentsId });
+  },
+  unregisterBrowserGuestF12(guestWebContentsId: number): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-unregister-f12', { guestWebContentsId });
+  },
+  bindBrowserGuestDevtools(
+    pageWebContentsId: number,
+    devtoolsWebContentsId: number,
+  ): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-bind-devtools', {
+      pageWebContentsId,
+      devtoolsWebContentsId,
+    });
+  },
+  openBrowserGuestDevtools(pageWebContentsId: number): Promise<boolean> {
+    return ipcRenderer.invoke('desktop:browser-guest-open-devtools', { pageWebContentsId });
+  },
+  closeBrowserGuestDevtools(pageWebContentsId: number): Promise<void> {
+    return ipcRenderer.invoke('desktop:browser-guest-close-devtools', { pageWebContentsId });
+  },
+  subscribeBrowserGuestF12(callback: (payload: { tabId: string }) => void): () => void {
+    const onEvent = (_event: Electron.IpcRendererEvent, payload: { tabId?: string }) => {
+      if (typeof payload?.tabId === 'string' && payload.tabId) {
+        callback({ tabId: payload.tabId });
+      }
+    };
+    ipcRenderer.on('desktop:browser-guest-f12', onEvent);
+    return () => {
+      ipcRenderer.removeListener('desktop:browser-guest-f12', onEvent);
+    };
   },
   readClipboardText() {
     return clipboard.readText();
