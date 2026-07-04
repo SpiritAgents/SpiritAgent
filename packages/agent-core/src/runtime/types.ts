@@ -479,6 +479,7 @@ export interface PendingApprovalState<State, ToolRequest, TrustTarget> {
   request: ToolRequest;
   prompt: string;
   trustTarget?: TrustTarget;
+  autoReviewBlockReason?: string;
   toolCallId: string;
   toolName: string;
   argumentsJson: string;
