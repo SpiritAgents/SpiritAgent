@@ -396,7 +396,7 @@ export function HooksSettingsPanel({
                 autoComplete="off"
               />
             </div>
-            <label htmlFor="hook-fail-closed" className="flex items-center gap-2 text-sm text-foreground">
+            <Label htmlFor="hook-fail-closed">
               <Checkbox
                 id="hook-fail-closed"
                 checked={failClosed}
@@ -405,7 +405,7 @@ export function HooksSettingsPanel({
                 className="size-5"
               />
               {t("settings.hooksFailClosed")}
-            </label>
+            </Label>
           </div>
           <DialogFooter>
             <DialogFooterActions>
