@@ -30,7 +30,14 @@ function buildStreamContentSig(
   return `${messages.length}:${last?.id ?? ""}:${last?.content.length ?? 0}:${last?.pending === true ? 1 : 0}:${auxSig}`;
 }
 
-/** 流式输出时若用户仍在尾部附近，持续滚到对话底部；用户上滚后停止跟随。 */
+/**
+ * 流式输出时若用户仍在尾部附近，持续滚到对话底部；用户上滚后停止跟随。
+ *
+ * 返回 pinScrollToTail 供虚拟列表在每次 commit 的 layout effect 里同步补钉：
+ * 卡片高度动画每帧引发多轮布局反馈（行高变化 → 重测 → 重渲染 totalSize），
+ * 浏览器 ResizeObserver 有循环上限，超限通知推迟到下一帧，仅靠内容 RO 钉底
+ * 会让部分帧带着未钉底偏差上屏（实测 4~17px 振荡，即「居底展开过程卡片震动」）。
+ */
 export function useConversationStreamScrollTail({
   scrollAreaRef,
   messages,
@@ -38,7 +45,7 @@ export function useConversationStreamScrollTail({
   isBusy,
   scrollBedPaddingPx,
   enabled,
-}: UseConversationStreamScrollTailOptions): void {
+}: UseConversationStreamScrollTailOptions): { pinScrollToTail: () => void } {
   const stickToBottomRef = useRef(true);
   const prevBusyRef = useRef(false);
   const prevContentSigRef = useRef("");
@@ -169,4 +176,6 @@ export function useConversationStreamScrollTail({
     observer.observe(content);
     return () => observer.disconnect();
   }, [enabled, scrollAreaRef]);
+
+  return { pinScrollToTail: scrollToTail };
 }

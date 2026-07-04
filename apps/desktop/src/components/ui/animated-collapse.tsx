@@ -108,6 +108,12 @@ function AnimatedCollapseContent({
   const allowAnimationRef = useRef(!open);
   const hasOpenedRef = useRef(false);
   const prevOpenRef = useRef(open);
+  // 展开动画结束后移除动画类、高度交还布局（auto）。fill-mode:forwards 会把高度
+  // 永久钉在 var(--…-content-height) 上，此后嵌套折叠卡动画只能靠 RO 每帧回写
+  // 变量追赶，滞后且受 RO 循环上限限制，实测行高呈锯齿（17/85/11/47px），在
+  // 跟底的会话列表中即「过程卡片内展开收起上下震」。settled 后高度由内容驱动，
+  // 嵌套动画经纯布局同帧传导。
+  const [expandSettled, setExpandSettled] = useState(false);
   const mounted = useCollapsibleChildMount(open);
 
   if (prevOpenRef.current !== open) {
@@ -120,6 +126,7 @@ function AnimatedCollapseContent({
 
   useLayoutEffect(() => {
     prevOpenRef.current = open;
+    setExpandSettled(false);
   }, [open]);
 
   useLayoutEffect(() => {
@@ -171,10 +178,16 @@ function AnimatedCollapseContent({
       id={contentId}
       data-slot="animated-collapse-content"
       data-state={open ? "open" : "closed"}
+      onAnimationEnd={(event) => {
+        if (open && event.target === outerRef.current) {
+          setExpandSettled(true);
+        }
+      }}
       className={cn(
         "overflow-hidden",
         shouldAnimate &&
           open &&
+          !expandSettled &&
           "animate-spirit-collapsible-down data-[state=open]:[animation-fill-mode:forwards]",
         shouldAnimate &&
           !open &&
