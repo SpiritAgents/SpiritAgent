@@ -78,6 +78,9 @@ export function buildPaneSessionSlice(input: {
             ...(input.pendingApproval.subagentSessionId
               ? { subagentSessionId: input.pendingApproval.subagentSessionId }
               : {}),
+            ...(input.pendingApproval.autoReviewBlockReason
+              ? { autoReviewBlockReason: input.pendingApproval.autoReviewBlockReason }
+              : {}),
           }),
         }
       : {}),

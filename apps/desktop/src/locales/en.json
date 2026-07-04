@@ -693,6 +693,7 @@
     "skip": "Skip",
     "submitAnswers": "Submit Answers",
     "allow": "Allow",
+    "autoReviewBlockReason": "Blocked: {{reason}}",
     "alwaysTrust": "Always Trust",
     "deny": "Deny",
     "approvalGuidancePlaceholder": "Instructions for the model when adjustments are needed",

@@ -690,6 +690,7 @@
     "skip": "跳过",
     "submitAnswers": "提交答案",
     "allow": "允许",
+    "autoReviewBlockReason": "阻挡原因：{{reason}}",
     "alwaysTrust": "始终信任",
     "deny": "拒绝",
     "approvalGuidancePlaceholder": "需要调整时，写给模型的说明",
