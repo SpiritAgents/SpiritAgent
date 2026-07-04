@@ -2,8 +2,10 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    env,
     fs,
     path::PathBuf,
+    process::Command,
 };
 
 use serde::Deserialize;
@@ -43,53 +45,91 @@ fn provider_uses_catalog_display(provider: ModelProvider) -> bool {
     )
 }
 
-fn is_pure_digit_token(token: &str) -> bool {
-    !token.is_empty() && token.chars().all(|ch| ch.is_ascii_digit())
-}
-
-fn merge_consecutive_numeric_version_segments(tokens: &[&str]) -> Vec<String> {
-    let mut merged = Vec::new();
-    let mut index = 0;
-    while index < tokens.len() {
-        if index + 1 < tokens.len()
-            && is_pure_digit_token(tokens[index])
-            && is_pure_digit_token(tokens[index + 1])
-        {
-            merged.push(format!("{}.{}", tokens[index], tokens[index + 1]));
-            index += 2;
-        } else {
-            merged.push(tokens[index].to_string());
-            index += 1;
+fn resolve_host_internal_model_display_name_path() -> Result<PathBuf, String> {
+    if let Ok(path) = env::var("SPIRIT_HOST_INTERNAL_MODULE_PATH") {
+        let candidate = PathBuf::from(&path);
+        let model_display_name = candidate
+            .parent()
+            .map(|parent| parent.join("model-display-name.js"))
+            .ok_or_else(|| "host-internal 模块路径无效".to_string())?;
+        if model_display_name.exists() {
+            return Ok(model_display_name);
         }
+        return Err(format!(
+            "环境变量 SPIRIT_HOST_INTERNAL_MODULE_PATH 旁未找到 model-display-name.js: {}",
+            model_display_name.display()
+        ));
     }
-    merged
+
+    let from_crate = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("packages")
+        .join("host-internal")
+        .join("dist")
+        .join("model-display-name.js");
+    if from_crate.exists() {
+        return Ok(from_crate);
+    }
+
+    Err(format!(
+        "未找到 host-internal model-display-name.js。请先在 packages/host-internal 执行 npm run build:tsc。默认查找路径: {}",
+        from_crate.display()
+    ))
 }
 
-fn format_model_display_name_from_id(model_id: &str) -> String {
-    let normalized = model_id
-        .trim()
-        .replace(['-', ':', '/'], " ");
-    let tokens: Vec<&str> = normalized.split_whitespace().collect();
-    if tokens.is_empty() {
-        return model_id.to_string();
+fn format_model_display_names_via_host_internal(
+    model_ids: &[String],
+) -> Result<HashMap<String, String>, String> {
+    if model_ids.is_empty() {
+        return Ok(HashMap::new());
     }
-    let tokens = merge_consecutive_numeric_version_segments(&tokens);
-    tokens
-        .iter()
-        .map(|word| {
-            let mut chars = word.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(first) => {
-                    let mut formatted = String::new();
-                    formatted.extend(first.to_uppercase());
-                    formatted.extend(chars);
-                    formatted
-                }
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
+
+    let module_path = resolve_host_internal_model_display_name_path()?;
+    let module_url = module_path
+        .to_str()
+        .ok_or_else(|| "host-internal 模块路径无效".to_string())?
+        .replace('\\', "/");
+    let module_url = if module_url.starts_with('/') {
+        format!("file://{module_url}")
+    } else {
+        format!("file:///{module_url}")
+    };
+
+    let payload = serde_json::to_string(model_ids)
+        .map_err(|err| format!("序列化模型 id 列表失败：{err}"))?;
+
+    let script = format!(
+        r#"
+import {{ buildFormattedDisplayTitlesFromIds }} from '{module_url}';
+const modelIds = JSON.parse(process.argv[1]);
+console.log(JSON.stringify(buildFormattedDisplayTitlesFromIds(modelIds)));
+"#
+    );
+
+    let output = Command::new("node")
+        .arg("--input-type=module")
+        .arg("-e")
+        .arg(script)
+        .arg(payload)
+        .output()
+        .map_err(|err| format!("启动 Node 格式化模型展示名进程失败：{err}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let detail = if !stderr.is_empty() { stderr } else { stdout };
+        return Err(if detail.is_empty() {
+            "格式化模型展示名失败。".to_string()
+        } else {
+            format!("格式化模型展示名失败：{detail}")
+        });
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: HashMap<String, String> = serde_json::from_str(stdout.trim())
+        .map_err(|err| format!("解析模型展示名响应失败：{err}"))?;
+    Ok(parsed)
 }
 
 #[derive(Debug, Deserialize)]
@@ -137,13 +177,11 @@ pub fn build_model_display_titles(models: &[ModelProfile]) -> HashMap<String, St
     let mut titles = HashMap::new();
     let mut cache_by_hint: HashMap<String, HashMap<String, String>> = HashMap::new();
     let mut loaded_hints = HashSet::new();
+    let mut ids_to_format = Vec::new();
 
     for model in models {
         let Some(provider) = model.provider else {
-            let formatted = format_model_display_name_from_id(&model.name);
-            if formatted != model.name {
-                titles.insert(model.name.clone(), formatted);
-            }
+            ids_to_format.push(model.name.clone());
             continue;
         };
         if provider_uses_catalog_display(provider) {
@@ -167,10 +205,11 @@ pub fn build_model_display_titles(models: &[ModelProfile]) -> HashMap<String, St
             continue;
         }
 
-        let formatted = format_model_display_name_from_id(&model.name);
-        if formatted != model.name {
-            titles.insert(model.name.clone(), formatted);
-        }
+        ids_to_format.push(model.name.clone());
+    }
+
+    if let Ok(formatted_titles) = format_model_display_names_via_host_internal(&ids_to_format) {
+        titles.extend(formatted_titles);
     }
 
     titles
@@ -247,10 +286,12 @@ mod tests {
             extra: serde_json::Map::new(),
         }];
         let titles = build_model_display_titles(&models);
-        assert_eq!(
-            titles.get("gpt-4o-mini").map(String::as_str),
-            Some("Gpt 4o Mini")
-        );
+        if resolve_host_internal_model_display_name_path().is_ok() {
+            assert_eq!(
+                titles.get("gpt-4o-mini").map(String::as_str),
+                Some("Gpt 4o Mini")
+            );
+        }
     }
 
     #[test]
@@ -293,22 +334,6 @@ mod tests {
         assert_eq!(
             titles.get("gemini-2.5-flash").map(String::as_str),
             Some("Gemini 2.5 Flash")
-        );
-    }
-
-    #[test]
-    fn format_model_display_name_from_id_replaces_separators() {
-        assert_eq!(
-            format_model_display_name_from_id("anthropic/claude-sonnet-4"),
-            "Anthropic Claude Sonnet 4"
-        );
-        assert_eq!(
-            format_model_display_name_from_id("claude-opus-4-8"),
-            "Claude Opus 4.8"
-        );
-        assert_eq!(
-            format_model_display_name_from_id("claude-3-5-sonnet"),
-            "Claude 3.5 Sonnet"
         );
     }
 }

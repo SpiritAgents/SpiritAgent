@@ -48,3 +48,33 @@ export function formatModelDisplayNameFromId(modelId: string): string {
     })
     .join(' ');
 }
+
+export function resolveModelDisplayTitle(input: {
+  modelId: string;
+  catalogDisplayName?: string | null;
+  /** 无 catalog displayName 时保留原始 model id，而非格式化 */
+  preserveRawIdWithoutCatalogDisplayName?: boolean;
+}): string {
+  const catalogDisplayName = input.catalogDisplayName?.trim();
+  if (catalogDisplayName) {
+    return catalogDisplayName;
+  }
+  if (input.preserveRawIdWithoutCatalogDisplayName) {
+    return input.modelId;
+  }
+  return formatModelDisplayNameFromId(input.modelId);
+}
+
+/** 批量格式化模型 id；仅当结果与 id 不同时写入映射。 */
+export function buildFormattedDisplayTitlesFromIds(
+  modelIds: readonly string[],
+): Record<string, string> {
+  const titles: Record<string, string> = {};
+  for (const modelId of modelIds) {
+    const formatted = formatModelDisplayNameFromId(modelId);
+    if (formatted !== modelId) {
+      titles[modelId] = formatted;
+    }
+  }
+  return titles;
+}

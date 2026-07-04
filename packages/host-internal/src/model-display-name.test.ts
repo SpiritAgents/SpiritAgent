@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { formatModelDisplayNameFromId } from './model-display-name.js';
+import {
+  buildFormattedDisplayTitlesFromIds,
+  formatModelDisplayNameFromId,
+  resolveModelDisplayTitle,
+} from './model-display-name.js';
 
 test('formatModelDisplayNameFromId replaces separators and title-cases words', () => {
   assert.equal(formatModelDisplayNameFromId('gpt-4o-mini'), 'Gpt 4o Mini');
@@ -20,4 +24,41 @@ test('formatModelDisplayNameFromId merges consecutive numeric version segments',
 test('formatModelDisplayNameFromId keeps empty input as-is', () => {
   assert.equal(formatModelDisplayNameFromId(''), '');
   assert.equal(formatModelDisplayNameFromId('   '), '   ');
+});
+
+test('resolveModelDisplayTitle prefers catalog displayName', () => {
+  assert.equal(
+    resolveModelDisplayTitle({
+      modelId: 'openai/gpt-5',
+      catalogDisplayName: 'GPT-5',
+      preserveRawIdWithoutCatalogDisplayName: true,
+    }),
+    'GPT-5',
+  );
+});
+
+test('resolveModelDisplayTitle preserves raw id for catalog providers without displayName', () => {
+  assert.equal(
+    resolveModelDisplayTitle({
+      modelId: 'openai/gpt-5',
+      preserveRawIdWithoutCatalogDisplayName: true,
+    }),
+    'openai/gpt-5',
+  );
+});
+
+test('resolveModelDisplayTitle formats non-catalog model ids', () => {
+  assert.equal(
+    resolveModelDisplayTitle({
+      modelId: 'gpt-4o-mini',
+    }),
+    'Gpt 4o Mini',
+  );
+});
+
+test('buildFormattedDisplayTitlesFromIds only includes changed titles', () => {
+  assert.deepEqual(
+    buildFormattedDisplayTitlesFromIds(['gpt-4o-mini', 'Gpt']),
+    { 'gpt-4o-mini': 'Gpt 4o Mini' },
+  );
 });
