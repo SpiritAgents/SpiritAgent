@@ -35,7 +35,10 @@ test('resolveToolInputSchema reads OpenAI function definitions', () => {
     }],
     'shell',
   );
-  assert.deepEqual(schema?.properties?.command, { type: 'string' });
+  assert.ok(schema);
+  const properties = schema.properties;
+  assert.ok(properties && typeof properties === 'object' && !Array.isArray(properties));
+  assert.deepEqual(properties.command, { type: 'string' });
 });
 
 test('normalizeAutoApprovalReviewResult validates output', () => {

@@ -3531,6 +3531,7 @@ class DesktopHostService {
                 prompt: pendingApproval.prompt,
                 trustTarget: pendingApproval.trustTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
+                autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               },
             }
           : {}),

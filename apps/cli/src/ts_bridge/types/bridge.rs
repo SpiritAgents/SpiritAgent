@@ -141,6 +141,8 @@ pub(crate) struct BridgePendingApproval {
     pub(crate) tool_name: String,
     pub(crate) subagent_session_id: Option<String>,
     pub(crate) subagent_title: Option<String>,
+    #[serde(default)]
+    pub(crate) auto_review_block_reason: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

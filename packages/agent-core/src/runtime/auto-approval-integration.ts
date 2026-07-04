@@ -20,10 +20,11 @@ export function buildToolAutoReviewInput(input: {
   toolDefinitions: JsonValue;
   targetMcpToolSchema?: JsonValue;
 }): ToolAutoReviewInput {
+  const inputSchema = resolveToolInputSchema(input.toolDefinitions, input.toolName);
   return {
     toolName: input.toolName,
     argumentsJson: input.argumentsJson,
-    inputSchema: resolveToolInputSchema(input.toolDefinitions, input.toolName),
+    ...(inputSchema !== undefined ? { inputSchema } : {}),
     ...(input.targetMcpToolSchema !== undefined
       ? { targetMcpToolSchema: input.targetMcpToolSchema }
       : {}),

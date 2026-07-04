@@ -29,6 +29,7 @@ export function buildPaneSessionSlice(input: {
     prompt?: string;
     trustTarget?: string;
     subagentSessionId?: string;
+    autoReviewBlockReason?: string;
   };
   pendingQuestions?: import('@spirit-agent/core').RuntimePendingQuestions<DesktopToolRequest>;
   pendingImagePaths?: string[];
