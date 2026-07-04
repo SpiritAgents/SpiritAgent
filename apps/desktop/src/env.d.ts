@@ -364,6 +364,71 @@ declare global {
     spiritDesktop?: SpiritDesktopApi;
   }
 
+  interface SpiritWebviewGuestWebContents {
+    setDevToolsWebContents(devToolsWebContents: SpiritWebviewGuestWebContents): void;
+    openDevTools(options?: { mode?: string; activate?: boolean }): void;
+    closeDevTools(): void;
+    isDevToolsOpened(): boolean;
+    on(
+      event: "before-input-event",
+      listener: (
+        event: { preventDefault: () => void },
+        input: { type: string; key: string },
+      ) => void,
+    ): void;
+    removeListener(
+      event: "before-input-event",
+      listener: (
+        event: { preventDefault: () => void },
+        input: { type: string; key: string },
+      ) => void,
+    ): void;
+  }
+
+  interface SpiritWebviewCaptureImage {
+    toDataURL(): string;
+  }
+
+  interface SpiritWebviewWillNavigateEvent extends Event {
+    url: string;
+    preventDefault(): void;
+  }
+
+  interface SpiritWebviewNewWindowEvent extends Event {
+    url: string;
+    preventDefault(): void;
+  }
+
+  interface SpiritWebviewTag extends HTMLElement {
+    src: string;
+    partition: string;
+    webpreferences: string;
+    getURL(): string;
+    loadURL(url: string): void;
+    goBack(): void;
+    goForward(): void;
+    reload(): void;
+    canGoBack(): boolean;
+    canGoForward(): boolean;
+    getWebContents(): SpiritWebviewGuestWebContents;
+    executeJavaScript(code: string): Promise<unknown>;
+    insertCSS(css: string): Promise<string>;
+    removeInsertedCSS(key: string): Promise<void>;
+    capturePage(rect: { x: number; y: number; width: number; height: number }): Promise<SpiritWebviewCaptureImage>;
+    addEventListener(type: string, listener: (...args: unknown[]) => void): void;
+    removeEventListener(type: string, listener: (...args: unknown[]) => void): void;
+  }
+
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: React.DetailedHTMLProps<React.HTMLAttributes<SpiritWebviewTag>, SpiritWebviewTag> & {
+        src?: string;
+        partition?: string;
+        webpreferences?: string;
+        allowpopups?: string;
+      };
+    }
+  }
 }
 
 export {};
