@@ -19,6 +19,7 @@ export function ToolCallCollapsible({
   saveLocalImageAs,
   onOpenSubagentViewer,
   onOpenReadFile,
+  onOpenPlan,
   onAbortShell,
 }: {
   tool: ToolBlockSnapshot;
@@ -29,6 +30,7 @@ export function ToolCallCollapsible({
   saveLocalImageAs: SaveLocalImageAs;
   onOpenSubagentViewer?: (toolCallId: string) => void;
   onOpenReadFile?: (target: EditorFileTarget) => void;
+  onOpenPlan?: () => void;
   onAbortShell?: (toolCallId: string) => void;
 }) {
   if (tool.toolName === "finish_task") {
@@ -61,6 +63,7 @@ export function ToolCallCollapsible({
       workspaceRoot={workspaceRoot}
       onOpenSubagentViewer={onOpenSubagentViewer}
       onOpenReadFile={onOpenReadFile}
+      onOpenPlan={onOpenPlan}
       onAbortShell={onAbortShell}
     />
   );

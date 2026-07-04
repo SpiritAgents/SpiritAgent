@@ -126,7 +126,7 @@ export function resolvePlanRelativePath(
   return undefined;
 }
 
-function extractPathFromRequest(
+export function extractPathFromRequest(
   toolName: string,
   record: Record<string, unknown>,
 ): string | undefined {
@@ -138,7 +138,7 @@ function extractPathFromRequest(
   return typeof pathValue === 'string' && pathValue.trim() ? pathValue.trim() : undefined;
 }
 
-function parseRequestRecord(
+export function parseRequestRecord(
   tool: ToolBlockSnapshot,
   argumentsJson?: string,
 ): Record<string, unknown> | undefined {
@@ -204,6 +204,18 @@ function parsePartialRequestRecord(
   }
 
   return undefined;
+}
+
+/** 从工具快照解析 create/edit/delete/plan 类工具的相对或绝对路径。 */
+export function resolvePathFromFileDiffToolSnapshot(
+  tool: ToolBlockSnapshot,
+  argumentsJson?: string,
+): string | undefined {
+  const record = parseRequestRecord(tool, argumentsJson);
+  if (!record) {
+    return undefined;
+  }
+  return extractPathFromRequest(tool.toolName, record);
 }
 
 function resolveFromRecord(

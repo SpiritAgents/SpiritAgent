@@ -95,6 +95,7 @@ export function MessageCard({
   saveLocalImageAs,
   onOpenSubagentViewer,
   onOpenReadFile,
+  onOpenPlan,
   onAbortShell,
   queuedCanMoveUp = false,
   queueActionBusy = false,
@@ -161,6 +162,7 @@ export function MessageCard({
   saveLocalImageAs: SaveLocalImageAs;
   onOpenSubagentViewer?: (toolCallId: string) => void;
   onOpenReadFile?: (target: EditorFileTarget) => void;
+  onOpenPlan?: () => void;
   onAbortShell?: (toolCallId: string) => void;
   queuedCanMoveUp?: boolean;
   queueActionBusy?: boolean;
@@ -387,6 +389,7 @@ export function MessageCard({
             saveLocalImageAs={saveLocalImageAs}
             onOpenSubagentViewer={onOpenSubagentViewer}
             onOpenReadFile={onOpenReadFile}
+            onOpenPlan={onOpenPlan}
             onAbortShell={onAbortShell}
           />
         ) : null}
