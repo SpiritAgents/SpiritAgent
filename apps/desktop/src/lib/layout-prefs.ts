@@ -64,6 +64,8 @@ const WORKSPACE_TOOLS_WIDTH_RATIO_STORAGE_KEY = "spirit-desktop-workspace-tools-
 
 export const WORKSPACE_TOOLS_MIN_WIDTH_PX = 240;
 export const WORKSPACE_TOOLS_DEFAULT_WIDTH_PX = 420;
+/** 左侧拖拽分隔条在 flex 布局中占用的宽度（可见 1px 线；命中区由 ::before 向左扩展）。 */
+export const WORKSPACE_TOOLS_RESIZE_SEPARATOR_PX = 1;
 export const WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO = 0.62;
 export const WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO =
   WORKSPACE_TOOLS_DEFAULT_WIDTH_PX / 1200;
@@ -183,6 +185,17 @@ export function readWorkspaceToolsWidthPx(
     WORKSPACE_TOOLS_MIN_WIDTH_PX,
     max,
   );
+}
+
+export function workspaceToolsShellWidthExpression(widthPx: number): string {
+  return `calc(${WORKSPACE_TOOLS_RESIZE_SEPARATOR_PX}px + ${widthPx}px)`;
+}
+
+export function workspaceToolsShellWidthWhenOpen(
+  open: boolean,
+  widthPx: number,
+): string {
+  return open ? workspaceToolsShellWidthExpression(widthPx) : "0px";
 }
 
 export function writeWorkspaceToolsWidthPx(
