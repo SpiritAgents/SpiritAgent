@@ -520,6 +520,9 @@ export class AgentRuntime<
         ...(this.pendingApproval.trustTarget !== undefined
           ? { trustTarget: this.pendingApproval.trustTarget }
           : {}),
+        ...(this.pendingApproval.autoReviewBlockReason !== undefined
+          ? { autoReviewBlockReason: this.pendingApproval.autoReviewBlockReason }
+          : {}),
         toolCallId: this.pendingApproval.toolCallId,
         toolName: this.pendingApproval.toolName,
       };
@@ -531,6 +534,9 @@ export class AgentRuntime<
         request: this.pendingManualApproval.request,
         ...(this.pendingManualApproval.trustTarget !== undefined
           ? { trustTarget: this.pendingManualApproval.trustTarget }
+          : {}),
+        ...(this.pendingManualApproval.autoReviewBlockReason !== undefined
+          ? { autoReviewBlockReason: this.pendingManualApproval.autoReviewBlockReason }
           : {}),
         toolName: this.pendingManualApproval.toolName,
       };

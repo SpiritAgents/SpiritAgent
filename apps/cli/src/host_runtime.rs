@@ -293,6 +293,7 @@ pub(crate) fn tool_approval_block(
     tool_call_id: Option<&str>,
     prompt: &str,
     supports_trust: bool,
+    auto_review_block_reason: Option<&str>,
 ) -> ToolUiBlock {
     let (shell_reason, mut detail_lines) = if tool_name == "shell" {
         strip_shell_reason_from_prompt(prompt)
@@ -305,6 +306,9 @@ pub(crate) fn tool_approval_block(
                 .collect::<Vec<_>>(),
         )
     };
+    if let Some(reason) = auto_review_block_reason.map(str::trim).filter(|r| !r.is_empty()) {
+        detail_lines.push(format!("阻挡原因：{reason}"));
+    }
     detail_lines.push(if supports_trust {
         "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string()
     } else {
@@ -812,12 +816,35 @@ mod tests {
     }
 
     #[test]
+    fn tool_approval_block_shows_auto_review_block_reason_before_shortcuts() {
+        let block = tool_approval_block(
+            "shell",
+            Some("call_00_block"),
+            "高风险工具调用: shell\n命令: rm -rf /",
+            false,
+            Some("destructive command"),
+        );
+
+        assert_eq!(
+            block.detail_lines.last(),
+            Some(&"快捷键: Y 允许一次 / N 拒绝".to_string())
+        );
+        assert!(
+            block
+                .detail_lines
+                .iter()
+                .any(|line| line == "阻挡原因：destructive command")
+        );
+    }
+
+    #[test]
     fn tool_approval_block_uses_shell_reason_as_headline() {
         let block = tool_approval_block(
             "shell",
             Some("call_00_demo"),
             "理由: 查看构建输出\n高风险工具调用: shell\n终端: Command Prompt (cmd.exe)\n命令: echo hi",
             true,
+            None,
         );
 
         assert_eq!(block.headline, "查看构建输出");

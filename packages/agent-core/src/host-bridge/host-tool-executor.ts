@@ -38,6 +38,7 @@ import type { LspDiagnosticsToolRequest } from '../lsp/types.js';
 import type { LspHostBindings, LspHostServiceInstance } from './lsp-host-bindings.js';
 import { McpService, type McpToolRequest } from '../mcp/service.js';
 import { TOOL_CALL_TOOL_NAME } from '../tool-gateway/definitions.js';
+import { authorizeLazyToolGatewayRequest, type LazyToolGatewayApprovalLevel } from '../tool-gateway/authorize.js';
 import { JsonRpcPeer } from './framing.js';
 
 interface HostToolRequestMetadata {
@@ -82,6 +83,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private localHostService: LocalHostToolService | undefined;
   private imageGenerationAvailable = false;
   private videoGenerationAvailable = false;
+  private approvalLevel: LazyToolGatewayApprovalLevel = 'default';
   private transportConfigForToolDefinitions: LlmTransportConfig | undefined;
 
   constructor(protected readonly peer: JsonRpcPeer) {}
@@ -132,6 +134,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
   setPlanModeToolExposure(planMode: boolean): void {
     this.setAgentModeToolExposure(planMode ? 'plan' : 'agent');
+  }
+
+  setApprovalLevel(level: LazyToolGatewayApprovalLevel): void {
+    this.approvalLevel = level;
   }
 
   setLspHostBindings(bindings: LspHostBindings | undefined): void {
@@ -227,7 +233,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       return { kind: 'allowed' };
     }
     if (this.mcp.isLazyToolGatewayToolRequest(request)) {
-      return { kind: 'allowed' };
+      return authorizeLazyToolGatewayRequest(request, this.approvalLevel);
     }
     if (this.mcp.isToolRequest(request)) {
       await this.mcp.authorizeToolRequest(request);

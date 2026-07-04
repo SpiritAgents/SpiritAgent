@@ -6,6 +6,7 @@ import {
   deleteFileBaselineTextForPath,
   lineDeltaForDeleteFilePath,
 } from './delete-file-line-delta.js';
+import { createDesktopAutoApprovalReviewer } from './auto-approval-review.js';
 import i18n from '../lib/i18n-host.js';
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
@@ -3275,6 +3276,11 @@ class DesktopHostService {
         gitBranchLabelForBasicInfo(this.requireState().git),
       ),
       getLoopEnabled: () => bundle.loopEnabled,
+      getApprovalLevel: () => normalizeApprovalLevel(bundle.approvalLevel),
+      reviewToolApproval: createDesktopAutoApprovalReviewer({
+        config: this.requireState().config,
+        workspaceRoot,
+      }),
       hookRunner,
       hookSessionContext,
       bootstrapSubagentWorkspace: this.createSubagentWorkspaceBootstrap(toolExecutor, transportConfig),
@@ -3405,6 +3411,7 @@ class DesktopHostService {
                 prompt: pendingApproval.prompt,
                 trustTarget: pendingApproval.trustTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
+                autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               }),
             }
           : {}),
@@ -3524,6 +3531,7 @@ class DesktopHostService {
                 prompt: pendingApproval.prompt,
                 trustTarget: pendingApproval.trustTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
+                autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               },
             }
           : {}),

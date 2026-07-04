@@ -33,6 +33,7 @@ import {
   McpStatusSnapshot,
   TOOL_CALL_TOOL_NAME,
   FETCH_MCP_RESOURCE_TOOL_NAME,
+  authorizeLazyToolGatewayRequest,
   type McpToolRequest,
   type ToolAgentMcpToolCatalogSnapshot,
   type ToolExecutionOutput,
@@ -315,7 +316,14 @@ export class DesktopToolExecutor
       return { kind: 'allowed' };
     }
     if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
-      return { kind: 'allowed' };
+      return authorizeLazyToolGatewayRequest(
+        request as unknown as {
+          kind: 'lazyToolGateway';
+          name: string;
+          argumentsJson: string;
+        },
+        this.approvalLevel,
+      );
     }
     if (this.mcp.isToolRequest(request as JsonValue)) {
       await this.mcp.authorizeToolRequest(request as unknown as McpToolRequest);

@@ -49,6 +49,7 @@ import {
 } from './extensions.js';
 import {
   CREATE_AUTOMATION_TOOL_NAME,
+  type CreateAutomationApprovalLevel,
   deriveAutomationTitle,
   formatCreateAutomationApprovalLabel,
   parseCreateAutomationApprovalLevel,
@@ -291,7 +292,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
       title: string;
       overview: string;
       trigger: HostAutomationTrigger;
-      approval_level: ApprovalLevel;
+      approval_level: CreateAutomationApprovalLevel;
     };
 
 export type HostAuthorizationDecision<QuestionSpec = HostAskQuestionsQuestionSpec> =
@@ -385,11 +386,14 @@ export interface HostExtensionRuntimeBinding<THostApi> {
   logger?: Pick<Console, 'error' | 'log'>;
 }
 
-export type ApprovalLevel = 'default' | 'full-approval';
+export type ApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
 
 export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
   if (value === 'full-approval' || value === 'full-access') {
     return 'full-approval';
+  }
+  if (value === 'auto-approval') {
+    return 'auto-approval';
   }
   return 'default';
 }
