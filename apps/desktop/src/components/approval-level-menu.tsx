@@ -11,6 +11,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DESKTOP_OVERLAY_SHORT_LIST_PADDING, DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
+import {
+  COMPOSER_INLINE_CHIP_ICON_CLASS,
+  COMPOSER_INLINE_CHIP_TEXT_CLASS,
+} from "@/lib/composer-inline-chip-styles";
 import { cn } from "@/lib/utils";
 
 type ApprovalLevelMenuProps = {
@@ -32,6 +36,7 @@ export function ApprovalLevelMenu({
     { value: "full-approval" as ApprovalLevel, label: t('composer.approvalBypass') },
   ];
   const label = options.find((option) => option.value === approvalLevel)?.label ?? t('composer.approvalDefault');
+  const isAutoApproval = approvalLevel === "auto-approval";
   const isFullApproval = approvalLevel === "full-approval";
   const suppressTooltip = menuOpen || disabled;
 
@@ -52,13 +57,19 @@ export function ApprovalLevelMenu({
                 "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
                 isFullApproval
                   ? "text-yellow-600 hover:text-yellow-600 dark:text-yellow-500 dark:hover:text-yellow-500"
-                  : "text-muted-foreground",
+                  : isAutoApproval
+                    ? `${COMPOSER_INLINE_CHIP_TEXT_CLASS} hover:text-blue-800 dark:hover:text-blue-400`
+                    : "text-muted-foreground",
               )}
             >
               <ShieldCheck
                 className={cn(
                   "size-3.5 shrink-0",
-                  isFullApproval ? "text-yellow-600 dark:text-yellow-500" : "text-muted-foreground/80",
+                  isFullApproval
+                    ? "text-yellow-600 dark:text-yellow-500"
+                    : isAutoApproval
+                      ? COMPOSER_INLINE_CHIP_ICON_CLASS
+                      : "text-muted-foreground/80",
                 )}
                 aria-hidden
               />
@@ -68,7 +79,11 @@ export function ApprovalLevelMenu({
               <ChevronDown
                 className={cn(
                   "size-3 shrink-0",
-                  isFullApproval ? "text-yellow-600/85 dark:text-yellow-500/80" : "text-muted-foreground/80",
+                  isFullApproval
+                    ? "text-yellow-600/85 dark:text-yellow-500/80"
+                    : isAutoApproval
+                      ? "text-blue-600/85 dark:text-blue-400/80"
+                      : "text-muted-foreground/80",
                 )}
                 aria-hidden
               />

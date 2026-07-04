@@ -79,11 +79,9 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
         t!("ui.footer.loop.off")
     };
     let approval_label = approval_level_label(&app.approval_level);
-    let approval_style = if app.approval_level == "full-approval" {
-        Style::default().fg(Color::Yellow)
-    } else {
-        footer_style
-    };
+    let approval_style = approval_level_accent_color(&app.approval_level)
+        .map(|color| Style::default().fg(color))
+        .unwrap_or(footer_style);
     let left_prefix = format!("{}  |  ", mode_label);
     let left_after_approval = format!("  |  {}", loop_label);
     let (left_suffix, left_suffix_plain) = if app.rewind_picker.is_some() {
