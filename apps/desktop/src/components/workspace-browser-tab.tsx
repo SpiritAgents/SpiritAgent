@@ -299,6 +299,7 @@ export function WorkspaceBrowserTab({
 
     let cancelled = false;
     let detachListeners: (() => void) | undefined;
+    let f12Registered = false;
 
     void (async () => {
       await waitForWebviewDomReady(wv);
@@ -323,20 +324,35 @@ export function WorkspaceBrowserTab({
         },
       });
       const guestWebContentsId = wv.getWebContentsId();
-      guestWebContentsIdRef.current = guestWebContentsId;
       const bridge = window.spiritDesktop;
-      if (bridge?.registerBrowserGuestF12) {
-        await bridge.registerBrowserGuestF12(browserTabId, guestWebContentsId);
-      }
+
       detachListeners = () => {
         detachNav();
         detachPage();
-        const registeredGuestId = guestWebContentsIdRef.current;
-        if (registeredGuestId !== null) {
-          void window.spiritDesktop?.unregisterBrowserGuestF12(registeredGuestId);
-          guestWebContentsIdRef.current = null;
+        if (f12Registered) {
+          void bridge?.unregisterBrowserGuestF12(guestWebContentsId);
         }
+        guestWebContentsIdRef.current = null;
       };
+
+      if (cancelled) {
+        detachListeners();
+        detachListeners = undefined;
+        return;
+      }
+
+      if (bridge?.registerBrowserGuestF12) {
+        await bridge.registerBrowserGuestF12(browserTabId, guestWebContentsId);
+        f12Registered = true;
+      }
+
+      if (cancelled) {
+        detachListeners();
+        detachListeners = undefined;
+        return;
+      }
+
+      guestWebContentsIdRef.current = guestWebContentsId;
     })();
 
     return () => {
