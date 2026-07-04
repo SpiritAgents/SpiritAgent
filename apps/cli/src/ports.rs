@@ -198,6 +198,8 @@ fn default_approval_level() -> String {
 pub fn normalize_approval_level(value: &str) -> String {
     if value == "full-approval" || value == "full-access" {
         "full-approval".to_string()
+    } else if value == "auto-approval" {
+        "auto-approval".to_string()
     } else {
         "default".to_string()
     }

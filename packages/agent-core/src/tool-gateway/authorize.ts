@@ -3,7 +3,7 @@ import { TOOL_CALL_TOOL_NAME, TOOL_DESCRIBE_TOOL_NAME } from './definitions.js';
 import { parseLazyToolGatewayArguments } from './parse.js';
 import type { LazyToolCallRequest, LazyToolGatewayToolRequest } from './types.js';
 
-export type LazyToolGatewayApprovalLevel = 'default' | 'full-approval';
+export type LazyToolGatewayApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
 
 export function authorizeLazyToolGatewayRequest(
   request: LazyToolGatewayToolRequest,

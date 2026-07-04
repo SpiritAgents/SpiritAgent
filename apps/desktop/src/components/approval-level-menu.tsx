@@ -28,6 +28,7 @@ export function ApprovalLevelMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const options = [
     { value: "default" as ApprovalLevel, label: t('composer.approvalDefault') },
+    { value: "auto-approval" as ApprovalLevel, label: t('composer.approvalAuto') },
     { value: "full-approval" as ApprovalLevel, label: t('composer.approvalBypass') },
   ];
   const label = options.find((option) => option.value === approvalLevel)?.label ?? t('composer.approvalDefault');

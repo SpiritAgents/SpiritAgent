@@ -933,6 +933,7 @@
     "openInsertPanel": "打开插入面板",
     "insert": "插入",
     "approvalDefault": "默认审批",
+    "approvalAuto": "自动审批",
     "approvalBypass": "绕过审批",
     "approvalLevel": "审批级别",
     "selectBranch": "选择分支",

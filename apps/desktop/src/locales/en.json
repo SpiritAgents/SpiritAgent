@@ -936,6 +936,7 @@
     "openInsertPanel": "Open Insert Panel",
     "insert": "Insert",
     "approvalDefault": "Default Approval",
+    "approvalAuto": "Auto Approval",
     "approvalBypass": "Bypass Approval",
     "approvalLevel": "Approval Level",
     "selectBranch": "Select Branch",
