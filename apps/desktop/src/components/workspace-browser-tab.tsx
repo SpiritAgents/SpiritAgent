@@ -359,30 +359,6 @@ export function WorkspaceBrowserTab({
   }, [browserTabId, toggleDevtools]);
 
   useEffect(() => {
-    const wv = pageWebviewRef.current;
-    if (!wv || !pageEmbeddable || !browserUrl) {
-      return;
-    }
-
-    let cancelled = false;
-    void waitForWebviewDomReady(wv).then(() => {
-      if (cancelled) {
-        return;
-      }
-      const current = wv.getURL();
-      const willLoad =
-        !current || current === "about:blank" || current !== browserUrl;
-      if (willLoad) {
-        wv.loadURL(browserUrl);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [browserUrl, pageEmbeddable]);
-
-  useEffect(() => {
     if (!devtoolsOpen) {
       devtoolsBoundRef.current = false;
       const pageWv = pageWebviewRef.current;
@@ -452,10 +428,6 @@ export function WorkspaceBrowserTab({
       return;
     }
     onBrowserUrlChange(normalized);
-    const wv = pageWebviewRef.current;
-    if (wv) {
-      void waitForWebviewDomReady(wv).then(() => wv.loadURL(normalized));
-    }
   }, [addressDraft, onBrowserUrlChange]);
 
   const exitPicker = useCallback(() => {
