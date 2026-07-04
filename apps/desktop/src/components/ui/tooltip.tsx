@@ -90,6 +90,13 @@ const TooltipStableRegistrationContext =
 const TooltipRegistrationContext =
   React.createContext<TooltipRegistrationContextValue<any> | null>(null)
 
+/** DropdownMenuItem reads this to keep Radix hover/focus styling while item tooltip is open. */
+const TooltipItemMenuHighlightContext = React.createContext(false)
+
+export function useOptionalTooltipItemMenuHighlight(): boolean {
+  return React.useContext(TooltipItemMenuHighlightContext)
+}
+
 function useTooltipGlobalContext(): TooltipGlobalContextValue {
   const value = React.useContext(TooltipGlobalContext)
   if (!value) {
@@ -644,6 +651,14 @@ function TooltipItem<TItem>({ item, children, className }: TooltipItemProps<TIte
         : false,
     () => false,
   )
+  const isHighlighted = useSyncExternalStore(
+    subscribeTooltipItemInteraction,
+    () =>
+      registrationId !== undefined && resolvedItemId !== null
+        ? isTooltipItemHighlighted(registrationId, resolvedItemId)
+        : false,
+    () => false,
+  )
 
   React.useLayoutEffect(() => {
     if (!isAnchor || registrationId === undefined || !actions) {
@@ -694,15 +709,19 @@ function TooltipItem<TItem>({ item, children, className }: TooltipItemProps<TIte
     </div>
   )
 
-  if (isAnchor) {
-    return (
-      <TooltipPrimitive.Trigger data-slot="tooltip-trigger" asChild>
-        {rowWrapper}
-      </TooltipPrimitive.Trigger>
-    )
-  }
+  const highlightedRow = (
+    <TooltipItemMenuHighlightContext.Provider value={isHighlighted}>
+      {isAnchor ? (
+        <TooltipPrimitive.Trigger data-slot="tooltip-trigger" asChild>
+          {rowWrapper}
+        </TooltipPrimitive.Trigger>
+      ) : (
+        rowWrapper
+      )}
+    </TooltipItemMenuHighlightContext.Provider>
+  )
 
-  return rowWrapper
+  return highlightedRow
 }
 TooltipItem.displayName = "TooltipItem"
 

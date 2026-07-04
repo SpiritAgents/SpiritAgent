@@ -7,6 +7,7 @@ import {
   DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM,
 } from "@/lib/desktop-chrome";
 import { isEventTargetWithinTooltipCompanionOverlays } from "@/hooks/tooltip-switch-registry";
+import { useOptionalTooltipItemMenuHighlight } from "@/components/ui/tooltip";
 import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale";
 import { radixAnchoredOverlayMotion } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
@@ -135,6 +136,8 @@ function DropdownMenuItem({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   variant?: "default" | "destructive";
 }) {
+  const tooltipMenuHighlight = useOptionalTooltipItemMenuHighlight();
+
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -144,6 +147,9 @@ function DropdownMenuItem({
         variant === "destructive" &&
           "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 [&_svg]:text-destructive",
         className,
+        tooltipMenuHighlight &&
+          variant !== "destructive" &&
+          "!bg-accent text-accent-foreground",
       )}
       {...props}
     />
