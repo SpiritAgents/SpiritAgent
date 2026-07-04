@@ -43,18 +43,39 @@ fn provider_uses_catalog_display(provider: ModelProvider) -> bool {
     )
 }
 
+fn is_pure_digit_token(token: &str) -> bool {
+    !token.is_empty() && token.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn merge_consecutive_numeric_version_segments(tokens: &[&str]) -> Vec<String> {
+    let mut merged = Vec::new();
+    let mut index = 0;
+    while index < tokens.len() {
+        if index + 1 < tokens.len()
+            && is_pure_digit_token(tokens[index])
+            && is_pure_digit_token(tokens[index + 1])
+        {
+            merged.push(format!("{}.{}", tokens[index], tokens[index + 1]));
+            index += 2;
+        } else {
+            merged.push(tokens[index].to_string());
+            index += 1;
+        }
+    }
+    merged
+}
+
 fn format_model_display_name_from_id(model_id: &str) -> String {
     let normalized = model_id
         .trim()
-        .replace(['-', ':', '/'], " ")
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ");
-    if normalized.is_empty() {
+        .replace(['-', ':', '/'], " ");
+    let tokens: Vec<&str> = normalized.split_whitespace().collect();
+    if tokens.is_empty() {
         return model_id.to_string();
     }
-    normalized
-        .split(' ')
+    let tokens = merge_consecutive_numeric_version_segments(&tokens);
+    tokens
+        .iter()
         .map(|word| {
             let mut chars = word.chars();
             match chars.next() {
@@ -280,6 +301,14 @@ mod tests {
         assert_eq!(
             format_model_display_name_from_id("anthropic/claude-sonnet-4"),
             "Anthropic Claude Sonnet 4"
+        );
+        assert_eq!(
+            format_model_display_name_from_id("claude-opus-4-8"),
+            "Claude Opus 4.8"
+        );
+        assert_eq!(
+            format_model_display_name_from_id("claude-3-5-sonnet"),
+            "Claude 3.5 Sonnet"
         );
     }
 }
