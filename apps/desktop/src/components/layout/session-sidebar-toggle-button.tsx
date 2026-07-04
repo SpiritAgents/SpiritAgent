@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSessionSidebarChrome } from "@/contexts/session-sidebar-chrome-context";
 import { DESKTOP_CHROME_TOGGLE_ICON_BTN } from "@/lib/desktop-chrome";
+import { isMacDesktopPlatform } from "@/lib/desktop-shell";
 import { cn } from "@/lib/utils";
 
 export function SessionSidebarToggleButton({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { open: sessionSidebarOpen, toggle: onToggleSessionSidebar } = useSessionSidebarChrome();
+  const tooltipAlign =
+    sessionSidebarOpen || isMacDesktopPlatform() ? "center" : "start";
 
   return (
     <Tooltip delayDuration={300} disableHoverableContent>
@@ -33,7 +36,7 @@ export function SessionSidebarToggleButton({ className }: { className?: string }
           )}
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="top" align={sessionSidebarOpen ? "center" : "start"} sideOffset={4}>
+      <TooltipContent side="top" align={tooltipAlign} sideOffset={4}>
         {sessionSidebarOpen ? t("app.hideSidebar") : t("app.showSidebar")}{" "}
         <SessionSidebarShortcutKbd />
       </TooltipContent>
