@@ -58,6 +58,13 @@ import {
 import { openSystemTerminalInDirectory } from './open-system-terminal.js';
 import { WorkspacePtyManager } from './workspace-pty.js';
 import { isAllowedExternalUrl, getCachedLocalListeningEndpoints, getScanningPromise, startLocalListenersScan } from './local-listeners.js';
+import {
+  bindBrowserGuestDevtools,
+  closeBrowserGuestDevtools,
+  openBrowserGuestDevtools,
+  registerBrowserGuestF12,
+  unregisterBrowserGuestF12,
+} from './workspace-browser-guest.js';
 
 import type { DesktopSnapshot } from '../src/types.js';
 
@@ -1038,6 +1045,74 @@ if (gotSpiritSingleInstanceLock) {
     }
     event.sender.send('desktop:browser-open-url', { url });
   });
+
+  ipcMain.handle(
+    'desktop:browser-guest-register-f12',
+    (event: IpcMainInvokeEvent, payload: { tabId?: string; guestWebContentsId?: number }) => {
+      const tabId = payload?.tabId;
+      const guestWebContentsId = payload?.guestWebContentsId;
+      if (typeof tabId !== 'string' || !tabId) {
+        throw new Error('Invalid browser tab id');
+      }
+      if (typeof guestWebContentsId !== 'number' || !Number.isFinite(guestWebContentsId)) {
+        throw new Error('Invalid browser guest webContents id');
+      }
+      registerBrowserGuestF12(event.sender, tabId, guestWebContentsId);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-guest-unregister-f12',
+    (_event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
+      const guestWebContentsId = payload?.guestWebContentsId;
+      if (typeof guestWebContentsId !== 'number' || !Number.isFinite(guestWebContentsId)) {
+        throw new Error('Invalid browser guest webContents id');
+      }
+      unregisterBrowserGuestF12(guestWebContentsId);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-guest-bind-devtools',
+    (
+      _event: IpcMainInvokeEvent,
+      payload: { pageWebContentsId?: number; devtoolsWebContentsId?: number },
+    ) => {
+      const pageWebContentsId = payload?.pageWebContentsId;
+      const devtoolsWebContentsId = payload?.devtoolsWebContentsId;
+      if (
+        typeof pageWebContentsId !== 'number' ||
+        !Number.isFinite(pageWebContentsId) ||
+        typeof devtoolsWebContentsId !== 'number' ||
+        !Number.isFinite(devtoolsWebContentsId)
+      ) {
+        throw new Error('Invalid browser devtools bind payload');
+      }
+      bindBrowserGuestDevtools(pageWebContentsId, devtoolsWebContentsId);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-guest-open-devtools',
+    (_event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+      const pageWebContentsId = payload?.pageWebContentsId;
+      if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
+        throw new Error('Invalid browser page webContents id');
+      }
+      return openBrowserGuestDevtools(pageWebContentsId);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:browser-guest-close-devtools',
+    (_event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+      const pageWebContentsId = payload?.pageWebContentsId;
+      if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
+        throw new Error('Invalid browser page webContents id');
+      }
+      closeBrowserGuestDevtools(pageWebContentsId);
+    },
+  );
 
   ipcMain.handle('desktop:list-local-listeners', () => {
     const cached = getCachedLocalListeningEndpoints();

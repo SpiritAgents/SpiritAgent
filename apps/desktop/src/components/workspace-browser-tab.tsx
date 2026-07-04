@@ -229,6 +229,7 @@ export function WorkspaceBrowserTab({
   const pageSlotRef = useRef<HTMLDivElement | null>(null);
   const pageWebviewRef = useRef<SpiritWebviewTag | null>(null);
   const devtoolsWebviewRef = useRef<SpiritWebviewTag | null>(null);
+  const guestWebContentsIdRef = useRef<number | null>(null);
   const devtoolsBoundRef = useRef(false);
   const showNewTab = isBrowserNewTabUrl(browserUrl);
   const [addressDraft, setAddressDraft] = useState("");
@@ -320,11 +321,21 @@ export function WorkspaceBrowserTab({
           setCanGoBack(back);
           setCanGoForward(forward);
         },
-        onToggleDevtools: toggleDevtools,
       });
+      const guestWebContentsId = wv.getWebContentsId();
+      guestWebContentsIdRef.current = guestWebContentsId;
+      const bridge = window.spiritDesktop;
+      if (bridge?.registerBrowserGuestF12) {
+        await bridge.registerBrowserGuestF12(browserTabId, guestWebContentsId);
+      }
       detachListeners = () => {
         detachNav();
         detachPage();
+        const registeredGuestId = guestWebContentsIdRef.current;
+        if (registeredGuestId !== null) {
+          void window.spiritDesktop?.unregisterBrowserGuestF12(registeredGuestId);
+          guestWebContentsIdRef.current = null;
+        }
       };
     })();
 
@@ -332,7 +343,20 @@ export function WorkspaceBrowserTab({
       cancelled = true;
       detachListeners?.();
     };
-  }, [browserTabId, canEmbed, showNewTab, toggleDevtools]);
+  }, [browserTabId, canEmbed, showNewTab]);
+
+  useEffect(() => {
+    const bridge = window.spiritDesktop;
+    if (!bridge?.subscribeBrowserGuestF12) {
+      return;
+    }
+    return bridge.subscribeBrowserGuestF12((payload) => {
+      if (payload.tabId !== browserTabId) {
+        return;
+      }
+      toggleDevtools();
+    });
+  }, [browserTabId, toggleDevtools]);
 
   useEffect(() => {
     const wv = pageWebviewRef.current;
@@ -346,7 +370,9 @@ export function WorkspaceBrowserTab({
         return;
       }
       const current = wv.getURL();
-      if (!current || current === "about:blank" || current !== browserUrl) {
+      const willLoad =
+        !current || current === "about:blank" || current !== browserUrl;
+      if (willLoad) {
         wv.loadURL(browserUrl);
       }
     });
@@ -374,14 +400,18 @@ export function WorkspaceBrowserTab({
 
     let cancelled = false;
     void (async () => {
-      if (!devtoolsBoundRef.current) {
-        await bindDevtoolsHost(pageWv, devtoolsWv);
-        devtoolsBoundRef.current = true;
+      try {
+        if (!devtoolsBoundRef.current) {
+          await bindDevtoolsHost(pageWv, devtoolsWv);
+          devtoolsBoundRef.current = true;
+        }
+        if (cancelled) {
+          return;
+        }
+        await openEmbeddedDevtools(pageWv, devtoolsWv);
+      } catch {
+        // bind/open 失败时由用户重试 F12
       }
-      if (cancelled) {
-        return;
-      }
-      await openEmbeddedDevtools(pageWv, devtoolsWv);
     })();
 
     return () => {
@@ -444,11 +474,14 @@ export function WorkspaceBrowserTab({
     }
 
     let cssKey: string | undefined;
-    void waitForWebviewDomReady(wv).then(() => {
-      void executeWebviewScript(wv, buildPickerInjectScript());
-      void insertWebviewCss(wv, PICKER_INJECT_CSS).then((key) => {
+    void waitForWebviewDomReady(wv).then(async () => {
+      try {
+        await executeWebviewScript(wv, buildPickerInjectScript());
+        const key = await insertWebviewCss(wv, PICKER_INJECT_CSS);
         cssKey = typeof key === "string" ? key : undefined;
-      });
+      } catch (err) {
+        console.warn("[picker] inject failed:", err);
+      }
     });
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -500,8 +533,8 @@ export function WorkspaceBrowserTab({
               return;
             }
           }
-        } catch {
-          // webview may not be ready
+        } catch (err) {
+          console.warn("[picker] tick failed:", err);
         } finally {
           syncInFlight = false;
         }
@@ -617,7 +650,8 @@ export function WorkspaceBrowserTab({
       }
       const root = rootRef.current;
       const active = document.activeElement;
-      if (!root || !active || !root.contains(active)) {
+      const contained = Boolean(root && active && root.contains(active));
+      if (!root || !active || !contained) {
         return;
       }
       event.preventDefault();
@@ -738,6 +772,7 @@ export function WorkspaceBrowserTab({
           >
             <webview
               ref={pageWebviewRef}
+              src={pageEmbeddable && browserUrl ? browserUrl : "about:blank"}
               partition={browserWebviewPartition(browserTabId)}
               className={cn(
                 "electron-no-drag absolute inset-y-0 left-0",
@@ -748,8 +783,11 @@ export function WorkspaceBrowserTab({
             />
             {devtoolsOpen ? (
               <>
+                {/* 无 src 的 webview 不会创建 guest，也不触发 did-attach/dom-ready；
+                    先挂 about:blank 建 guest，bind 后由 DevTools 前端接管 */}
                 <webview
                   ref={devtoolsWebviewRef}
+                  src="about:blank"
                   className={cn(
                     "electron-no-drag absolute top-0 bottom-0 right-0",
                     !pageEmbeddable && "hidden",
