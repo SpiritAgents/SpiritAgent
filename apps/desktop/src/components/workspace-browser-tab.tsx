@@ -744,7 +744,7 @@ export function WorkspaceBrowserTab({
           >
             <webview
               ref={pageWebviewRef}
-              src={pageEmbeddable && browserUrl ? browserUrl : "about:blank"}
+              src={!showNewTab && browserUrl && canEmbed ? browserUrl : "about:blank"}
               partition={browserWebviewPartition(browserTabId)}
               className={cn(
                 "electron-no-drag absolute inset-y-0 left-0",
