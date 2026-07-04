@@ -50,8 +50,6 @@ export type WorkspaceBrowserTabProps = {
   browserTabEnabled?: boolean;
   /** 当前浏览器工具标签是否为右侧工作区激活页 */
   isActive?: boolean;
-  /** 宿主 HTML 浮层（如工具标签栏下拉）打开时暂挂嵌入式 BrowserView，避免原生层挡住菜单 */
-  nativeViewSuspended?: boolean;
   /** Windows 云母 / macOS Vibrancy：页槽使用略高的半透明底色。 */
   useMicaBackdrop?: boolean;
 };
@@ -64,7 +62,7 @@ type LocalListeningEndpoint = {
   title?: string;
 };
 
-/** 与 workspace-browser-view DEVTOOLS_SPLITTER_WIDTH_PX 一致 */
+/** DevTools 与页面之间的拖拽条宽度（px） */
 const DEVTOOLS_SPLITTER_WIDTH_PX = 4;
 const DEVTOOLS_MIN_WIDTH_PX = 200;
 const DEFAULT_DEVTOOLS_WIDTH_PX = 320;
@@ -112,34 +110,6 @@ function clampDevtoolsWidthPx(totalWidth: number, widthPx: number): number {
   );
   return Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.min(maxDevtools, Math.round(widthPx)));
 }
-
-/** webview 坐标：主页面区域（DevTools 打开时不含右侧面板）。 */
-function readPageCaptureRect(
-  slot: HTMLElement,
-  devtoolsOpen: boolean,
-  devtoolsWidthPx: number,
-): { x: number; y: number; width: number; height: number } | null {
-  const slotRect = slot.getBoundingClientRect();
-  const height = Math.max(0, Math.round(slotRect.height));
-  const totalWidth = Math.max(0, Math.round(slotRect.width));
-  if (height < 1 || totalWidth < 1) {
-    return null;
-  }
-  if (!devtoolsOpen) {
-    return { x: 0, y: 0, width: totalWidth, height };
-  }
-  const devtoolsWidth = clampDevtoolsWidthPx(totalWidth, devtoolsWidthPx);
-  const pageWidth = Math.max(
-    DEVTOOLS_MIN_WIDTH_PX,
-    totalWidth - devtoolsWidth - DEVTOOLS_SPLITTER_WIDTH_PX,
-  );
-  return { x: 0, y: 0, width: pageWidth, height };
-}
-
-type NativeViewSuspendSnapshot = {
-  dataUrl: string;
-  pageWidthPx: number;
-};
 
 function BrowserNewTabPage({
   onNavigate,
@@ -251,7 +221,6 @@ export function WorkspaceBrowserTab({
   onElementPicked,
   browserTabEnabled = false,
   isActive = false,
-  nativeViewSuspended = false,
   useMicaBackdrop = false,
 }: WorkspaceBrowserTabProps) {
   const { t } = useTranslation();
@@ -271,10 +240,6 @@ export function WorkspaceBrowserTab({
   const [devtoolsWidthPx, setDevtoolsWidthPx] = useState(readStoredDevtoolsWidthPx);
   const [isDevtoolsResizing, setIsDevtoolsResizing] = useState(false);
   const devtoolsDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
-  const capturingSuspendSnapshotRef = useRef(false);
-  const [isCapturingSuspendSnapshot, setIsCapturingSuspendSnapshot] = useState(false);
-  const [nativeViewSuspendSnapshot, setNativeViewSuspendSnapshot] =
-    useState<NativeViewSuspendSnapshot | null>(null);
   const [currentPageUrl, setCurrentPageUrl] = useState<string | undefined>(browserUrl);
   const onElementPickedRef = useRef(onElementPicked);
   useLayoutEffect(() => {
@@ -423,61 +388,6 @@ export function WorkspaceBrowserTab({
       cancelled = true;
     };
   }, [devtoolsOpen]);
-
-  useLayoutEffect(() => {
-    if (!nativeViewSuspended) {
-      capturingSuspendSnapshotRef.current = false;
-      setIsCapturingSuspendSnapshot(false);
-      setNativeViewSuspendSnapshot(null);
-      return;
-    }
-
-    if (!pageEmbeddable) {
-      return;
-    }
-
-    let cancelled = false;
-    capturingSuspendSnapshotRef.current = true;
-    setIsCapturingSuspendSnapshot(true);
-
-    void (async () => {
-      const wv = pageWebviewRef.current;
-      const slot = pageSlotRef.current;
-      if (!wv || !slot) {
-        capturingSuspendSnapshotRef.current = false;
-        setIsCapturingSuspendSnapshot(false);
-        return;
-      }
-
-      const captureRect = readPageCaptureRect(slot, devtoolsOpen, devtoolsWidthPx);
-      if (!captureRect) {
-        capturingSuspendSnapshotRef.current = false;
-        setIsCapturingSuspendSnapshot(false);
-        return;
-      }
-
-      try {
-        await waitForWebviewDomReady(wv);
-        const base64 = await captureWebviewPngBase64(wv, captureRect);
-        if (cancelled) {
-          return;
-        }
-        setNativeViewSuspendSnapshot({
-          dataUrl: `data:image/png;base64,${base64}`,
-          pageWidthPx: captureRect.width,
-        });
-      } catch {
-        // 截帧失败时仍隐藏 webview，只是无静态图垫层
-      } finally {
-        capturingSuspendSnapshotRef.current = false;
-        setIsCapturingSuspendSnapshot(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [devtoolsOpen, devtoolsWidthPx, nativeViewSuspended, pageEmbeddable]);
 
   useEffect(() => {
     const slot = pageSlotRef.current;
@@ -719,8 +629,6 @@ export function WorkspaceBrowserTab({
   }, [canEmbed, isActive, showNewTab, toggleDevtools]);
 
   const navDisabled = showNewTab;
-  const pageWebviewVisible =
-    pageEmbeddable && (!nativeViewSuspended || isCapturingSuspendSnapshot);
   const pageWebviewRight = devtoolsOpen
     ? devtoolsWidthPx + DEVTOOLS_SPLITTER_WIDTH_PX
     : 0;
@@ -833,20 +741,11 @@ export function WorkspaceBrowserTab({
               partition={browserWebviewPartition(browserTabId)}
               className={cn(
                 "electron-no-drag absolute inset-y-0 left-0",
-                !pageWebviewVisible && "hidden",
+                !pageEmbeddable && "hidden",
               )}
               style={{ right: pageWebviewRight }}
               webpreferences={BROWSER_WEBVIEW_WEBPREFERENCES}
             />
-            {nativeViewSuspendSnapshot ? (
-              <img
-                src={nativeViewSuspendSnapshot.dataUrl}
-                alt=""
-                aria-hidden
-                className="electron-no-drag pointer-events-none absolute top-0 left-0 z-10 h-full object-cover object-left"
-                style={{ width: nativeViewSuspendSnapshot.pageWidthPx }}
-              />
-            ) : null}
             {devtoolsOpen ? (
               <>
                 <webview
