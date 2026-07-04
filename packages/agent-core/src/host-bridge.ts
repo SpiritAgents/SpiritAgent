@@ -708,6 +708,11 @@ function normalizeBridgeApprovalLevel(value: unknown): import('./host-bridge/pro
   return 'default';
 }
 
+function applyCliApprovalLevel(level: import('./host-bridge/protocol.js').BridgeApprovalLevel): void {
+  currentApprovalLevel = level;
+  toolExecutor.setApprovalLevel(level);
+}
+
 function logBridge(message: string, extra?: unknown): void {
   if (extra === undefined) {
     console.error(`[host-bridge] ${message}`);
@@ -1980,7 +1985,7 @@ peer.on('runtime.init', async (rawParams) => {
     planMetadata = params.planMetadata;
   }
   pendingTurnActiveSkills = pruneActiveSkillsAgainstCatalog(pendingTurnActiveSkills, enabledSkillCatalog);
-  currentApprovalLevel = normalizeBridgeApprovalLevel(params.approvalLevel);
+  applyCliApprovalLevel(normalizeBridgeApprovalLevel(params.approvalLevel));
   if (typeof params.todoSessionKey === 'string' && params.todoSessionKey.trim()) {
     await updateCliTodoScope(params.todoSessionKey.trim());
   }
@@ -2395,7 +2400,7 @@ peer.on('runtime.replaceHistory', async (rawParams) => {
 peer.on('runtime.replaceFromArchive', async (archive) => {
   const typedArchive = archive as { approvalLevel?: unknown };
   if (typedArchive.approvalLevel !== undefined) {
-    currentApprovalLevel = normalizeBridgeApprovalLevel(typedArchive.approvalLevel);
+    applyCliApprovalLevel(normalizeBridgeApprovalLevel(typedArchive.approvalLevel));
   }
   requireRuntime().replaceFromArchive(archive as never);
   await dispatchCliExtensionEvent({
@@ -2507,7 +2512,7 @@ peer.on('runtime.setLoopEnabled', async (rawParams) => {
 
 peer.on('runtime.setApprovalLevel', async (rawParams) => {
   const params = rawParams as import('./host-bridge/protocol.js').RuntimeSetApprovalLevelParams;
-  currentApprovalLevel = normalizeBridgeApprovalLevel(params.approvalLevel);
+  applyCliApprovalLevel(normalizeBridgeApprovalLevel(params.approvalLevel));
   return buildSnapshot(requireRuntime());
 });
 

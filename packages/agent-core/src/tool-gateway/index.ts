@@ -21,6 +21,10 @@ export {
 } from './mcp-backend.js';
 export { parseLazyToolGatewayArguments } from './parse.js';
 export {
+  authorizeLazyToolGatewayRequest,
+  type LazyToolGatewayApprovalLevel,
+} from './authorize.js';
+export {
   LAZY_TOOL_PROVIDER_MCP,
   type LazyToolCallRequest,
   type LazyToolDescribeRequest,
