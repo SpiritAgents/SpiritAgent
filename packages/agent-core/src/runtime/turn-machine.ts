@@ -27,6 +27,9 @@ import {
 } from '../open-responses/apply-patch-bridge.js';
 import { APPLY_PATCH_HOST_TOOL_NAME } from '../open-responses/apply-patch-eligibility.js';
 import {
+  applyAutoReviewToApprovalGate,
+} from './auto-approval-integration.js';
+import {
   hookDeniedToolOutput,
   postHookToolInputFromPreGate,
   resolveApprovalGateAfterAuthorize,
@@ -348,41 +351,57 @@ export async function resumePendingQuestions<
     }
 
     if (authorization.kind === 'need-approval') {
-      const approval = createApproval(
-        authorization.prompt,
-        continuedRequest,
-        pending.toolCallId,
-        pending.toolName,
-        authorization.trustTarget,
+      const activeGate = await applyAutoReviewToApprovalGate(
+        runtime.options.getApprovalLevel?.(),
+        runtime.options.reviewToolApproval,
+        runtime.options.toolExecutor.toolDefinitionsJson(),
+        { name: pending.toolName, argumentsJson: pending.argumentsJson },
+        {
+          prompt: authorization.prompt,
+          trustTarget: authorization.trustTarget,
+        },
       );
-      runtime.pendingApproval = {
-        pendingUserInput: pending.pendingUserInput,
-        state: pending.state,
-        request: continuedRequest,
-        prompt: authorization.prompt,
-        ...(authorization.trustTarget !== undefined
-          ? { trustTarget: authorization.trustTarget }
-          : {}),
-        toolCallId: pending.toolCallId,
-        toolName: pending.toolName,
-        argumentsJson: pending.argumentsJson,
-        remainingCalls: pending.remainingCalls,
-        turn: pending.turn,
-        resumeAsStreaming: false,
-        streamingEmitBeginResponse: true,
-      };
-      runtime.emitEvent({
-        kind: 'approval-requested',
-        approval,
-      });
+      if (activeGate) {
+        const approval = createApproval(
+          activeGate.prompt,
+          continuedRequest,
+          pending.toolCallId,
+          pending.toolName,
+          activeGate.trustTarget,
+          activeGate.autoReviewBlockReason,
+        );
+        runtime.pendingApproval = {
+          pendingUserInput: pending.pendingUserInput,
+          state: pending.state,
+          request: continuedRequest,
+          prompt: activeGate.prompt,
+          ...(activeGate.trustTarget !== undefined
+            ? { trustTarget: activeGate.trustTarget }
+            : {}),
+          ...(activeGate.autoReviewBlockReason !== undefined
+            ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
+            : {}),
+          toolCallId: pending.toolCallId,
+          toolName: pending.toolName,
+          argumentsJson: pending.argumentsJson,
+          remainingCalls: pending.remainingCalls,
+          turn: pending.turn,
+          resumeAsStreaming: false,
+          streamingEmitBeginResponse: true,
+        };
+        runtime.emitEvent({
+          kind: 'approval-requested',
+          approval,
+        });
 
-      return {
-        kind: 'requires-approval',
-        approval,
-        requestTrace: [...pending.turn.requestTrace],
-        toolExecutions: [...pending.turn.toolExecutions],
-        compactions: [...pending.turn.compactions],
-      };
+        return {
+          kind: 'requires-approval',
+          approval,
+          requestTrace: [...pending.turn.requestTrace],
+          toolExecutions: [...pending.turn.toolExecutions],
+          compactions: [...pending.turn.compactions],
+        };
+      }
     }
 
     if (authorization.kind === 'need-questions') {
@@ -670,7 +689,16 @@ export async function processToolCalls<
       continue;
     }
 
-    const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    const approvalGate = initialGate
+      ? await applyAutoReviewToApprovalGate(
+        runtime.options.getApprovalLevel?.(),
+        runtime.options.reviewToolApproval,
+        runtime.options.toolExecutor.toolDefinitionsJson(),
+        call,
+        initialGate,
+      )
+      : null;
     if (approvalGate) {
       const approval = createApproval(
         approvalGate.prompt,
@@ -678,6 +706,7 @@ export async function processToolCalls<
         call.id,
         call.name,
         approvalGate.trustTarget,
+        approvalGate.autoReviewBlockReason,
       );
       runtime.pendingApproval = {
         pendingUserInput,
@@ -686,6 +715,9 @@ export async function processToolCalls<
         prompt: approvalGate.prompt,
         ...(approvalGate.trustTarget !== undefined
           ? { trustTarget: approvalGate.trustTarget }
+          : {}),
+        ...(approvalGate.autoReviewBlockReason !== undefined
+          ? { autoReviewBlockReason: approvalGate.autoReviewBlockReason }
           : {}),
         toolCallId: call.id,
         toolName: call.name,
@@ -1363,7 +1395,16 @@ export async function processToolCallsAsync<
       continue;
     }
 
-    const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    const approvalGate = initialGate
+      ? await applyAutoReviewToApprovalGate(
+        runtime.options.getApprovalLevel?.(),
+        runtime.options.reviewToolApproval,
+        runtime.options.toolExecutor.toolDefinitionsJson(),
+        call,
+        initialGate,
+      )
+      : null;
     if (approvalGate) {
       const approval = createApproval(
         approvalGate.prompt,
@@ -1371,6 +1412,7 @@ export async function processToolCallsAsync<
         call.id,
         call.name,
         approvalGate.trustTarget,
+        approvalGate.autoReviewBlockReason,
       );
       runtime.pendingApproval = {
         pendingUserInput,
@@ -1379,6 +1421,9 @@ export async function processToolCallsAsync<
         prompt: approvalGate.prompt,
         ...(approvalGate.trustTarget !== undefined
           ? { trustTarget: approvalGate.trustTarget }
+          : {}),
+        ...(approvalGate.autoReviewBlockReason !== undefined
+          ? { autoReviewBlockReason: approvalGate.autoReviewBlockReason }
           : {}),
         toolCallId: call.id,
         toolName: call.name,
@@ -2100,11 +2145,13 @@ function createApproval<ToolRequest, TrustTarget>(
   toolCallId: string,
   toolName: string,
   trustTarget: TrustTarget | undefined,
+  autoReviewBlockReason?: string,
 ): RuntimePendingApproval<ToolRequest, TrustTarget> {
   return {
     prompt,
     request,
     ...(trustTarget !== undefined ? { trustTarget } : {}),
+    ...(autoReviewBlockReason !== undefined ? { autoReviewBlockReason } : {}),
     toolCallId,
     toolName,
   };
