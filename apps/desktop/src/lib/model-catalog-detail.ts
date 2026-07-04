@@ -1,4 +1,4 @@
-import { formatModelDisplayNameFromId } from '@spirit-agent/core/model-display-name';
+import { resolveModelDisplayTitle } from '@spirit-agent/host-internal/model-display-name';
 import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal/openai-api-base';
 
 import { formatCompactTokenCount } from '@/lib/format-compact-token-count';
@@ -145,14 +145,11 @@ export function modelCatalogDisplayTitle(
   model: ModelProfileSnapshot,
   catalogEntry: PreviewModelCatalogEntry | undefined,
 ): string {
-  const catalogDisplayName = catalogEntry?.displayName?.trim();
-  if (catalogDisplayName && catalogDisplayName.length > 0) {
-    return catalogDisplayName;
-  }
-  if (providerSupportsModelCatalogDetail(model.provider)) {
-    return model.name;
-  }
-  return formatModelDisplayNameFromId(model.name);
+  return resolveModelDisplayTitle({
+    modelId: model.name,
+    catalogDisplayName: catalogEntry?.displayName,
+    preserveRawIdWithoutCatalogDisplayName: providerSupportsModelCatalogDetail(model.provider),
+  });
 }
 
 export function modelSettingsRowAriaLabel(

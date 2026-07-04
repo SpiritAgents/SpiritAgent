@@ -13,7 +13,6 @@ const desktopSrc = join(repoRoot, 'apps', 'desktop', 'src');
 /** value import 允许的 agent-core 子路径（须零 Node 传递依赖）。 */
 const RENDERER_SAFE_AGENT_CORE_SUBPATHS = new Set([
   'reasoning-effort',
-  'model-display-name',
   'shell-tool-result',
   'code-completion-to-monaco',
   'code-completion-delete-diff',

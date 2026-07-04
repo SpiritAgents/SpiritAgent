@@ -1,4 +1,4 @@
-import { formatModelDisplayNameFromId } from '@spirit-agent/core/model-display-name';
+import { formatModelDisplayNameFromId } from '@spirit-agent/host-internal/model-display-name';
 import {
   gatewayGoogleGeminiSupportedEfforts,
   routedAnthropicClaudeSupportedEfforts,
