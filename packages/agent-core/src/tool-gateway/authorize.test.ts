@@ -39,6 +39,18 @@ test('authorizeLazyToolGatewayRequest requires approval for tool_call under defa
   }
 });
 
+test('authorizeLazyToolGatewayRequest requires approval for tool_call under auto-approval', () => {
+  const decision = authorizeLazyToolGatewayRequest(
+    lazyRequest(TOOL_CALL_TOOL_NAME, {
+      provider: 'mcp',
+      server: 'msftlearn',
+      tool: 'microsoft_docs_search',
+    }),
+    'auto-approval',
+  );
+  assert.equal(decision.kind, 'need-approval');
+});
+
 test('authorizeLazyToolGatewayRequest allows tool_call under full-approval', () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {

@@ -143,7 +143,7 @@ interface CliHostInternalModule {
         logger?: Pick<Console, 'error' | 'log'>;
       };
       getModelCompatibilityProfile?: () => OpenAiModelCompatibilityProfile | undefined;
-      getApprovalLevel?: () => 'default' | 'full-approval';
+      getApprovalLevel?: () => 'default' | 'auto-approval' | 'full-approval';
       todoScope?: { sessionKey: string };
       fileChangeObserver?: { recordFileChange(change: unknown): Promise<void> };
     },
@@ -704,6 +704,9 @@ let bridgeLoopEnabled = false;
 function normalizeBridgeApprovalLevel(value: unknown): import('./host-bridge/protocol.js').BridgeApprovalLevel {
   if (value === 'full-approval' || value === 'full-access') {
     return 'full-approval';
+  }
+  if (value === 'auto-approval') {
+    return 'auto-approval';
   }
   return 'default';
 }
