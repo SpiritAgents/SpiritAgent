@@ -5,7 +5,6 @@ import { LoaderCircle } from "lucide-react";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,17 +27,10 @@ import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
 import type {
   DeleteMcpServerRequest,
-  DesktopMcpCapabilityToggles,
   DesktopMcpScope,
   DesktopMcpServerListItem,
   DesktopMcpTransportType,
 } from "@/types";
-
-const defaultMcpCapabilities: DesktopMcpCapabilityToggles = {
-  tools: true,
-  resources: true,
-  prompts: true,
-};
 
 function mcpTransportTypeLabel(type: DesktopMcpTransportType): string {
   return type === "http" ? "HTTP" : "Stdio";
@@ -62,20 +54,6 @@ function mcpMetadataPlaceholder(type: DesktopMcpTransportType): string {
   return type === "http"
     ? "Authorization: Bearer ${env:GITHUB_TOKEN}; X-Client: spirit-agent"
     : "PATH=C:/Tools; NODE_ENV=production";
-}
-
-function mcpCapabilitiesLabel(item: DesktopMcpServerListItem): string {
-  const enabled: string[] = [];
-  if (item.capabilities.tools) {
-    enabled.push("tools");
-  }
-  if (item.capabilities.resources) {
-    enabled.push("resources");
-  }
-  if (item.capabilities.prompts) {
-    enabled.push("prompts");
-  }
-  return enabled.length > 0 ? enabled.join(" / ") : "none";
 }
 
 function formatMcpMetadata(metadata: Record<string, string>, type: DesktopMcpTransportType): string {
@@ -159,7 +137,6 @@ export function McpsSettingsPanel({
   const [newName, setNewName] = useState("");
   const [newEndpoint, setNewEndpoint] = useState("");
   const [newMetadata, setNewMetadata] = useState("");
-  const [capabilities, setCapabilities] = useState<DesktopMcpCapabilityToggles>(defaultMcpCapabilities);
   const [runtimeInfo, setRuntimeInfo] = useState<Record<string, McpServerRuntimeInfo>>({});
   const runtimeInfoRef = useRef(runtimeInfo);
   runtimeInfoRef.current = runtimeInfo;
@@ -262,7 +239,6 @@ export function McpsSettingsPanel({
     setNewName("");
     setNewEndpoint("");
     setNewMetadata("");
-    setCapabilities(defaultMcpCapabilities);
   };
 
   return (
@@ -501,28 +477,6 @@ export function McpsSettingsPanel({
                 className="min-h-24"
               />
             </div>
-
-            <div className="grid gap-2">
-              <Label>Capabilities</Label>
-              <div className="grid gap-2 rounded-lg border border-border/40 bg-muted/15 p-3">
-                {(["tools", "resources", "prompts"] as const).map((key) => (
-                  <label key={key} className="flex items-center justify-between gap-3 text-sm text-foreground">
-                    <span>{key}</span>
-                    <Checkbox
-                      checked={capabilities[key]}
-                      onCheckedChange={(value) =>
-                        setCapabilities((current) => ({
-                          ...current,
-                          [key]: value === true,
-                        }))
-                      }
-                      disabled={mcpsBusy}
-                      className="size-5"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
           </div>
 
           <DialogFooter>
@@ -549,7 +503,6 @@ export function McpsSettingsPanel({
                       transportType,
                       endpoint: newEndpoint,
                       metadata: newMetadata,
-                      capabilities,
                     });
                     setAddDialogOpen(false);
                     resetForm();
