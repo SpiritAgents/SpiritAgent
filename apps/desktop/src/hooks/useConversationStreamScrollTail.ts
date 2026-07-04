@@ -74,7 +74,11 @@ export function useConversationStreamScrollTail({
     // scrollTop 与距底都是过期信号——曾两次实测被误判为用户上滚（距底阈值版、
     // scrollTop 上移版），把跟底误关后内容 RO 不再重钉底，即「流式结束后上跳」。
     // 现规则：wheel 上滚或在 viewport 外按下指针（Radix 滚动条）→ 解除；
-    // scroll 事件仅在贴近底部时恢复，永不解除。
+    // scroll 事件仅在「向底部方向滚动且贴近底部」时恢复，永不解除。恢复必须带
+    // 方向条件：从底部起步的上滑手势是渐进的，首个 scroll 事件送达时常仍在
+    // 48px 阈值内（实测 dist=1），无方向条件会把刚被 wheel 关掉的 stick 立即
+    // 误重开，之后侧栏开合等触发内容 RO 即钉底（「上滑一点点后开合侧栏跳底」）。
+    // 方向仅用于打开而非关闭：误判最坏只是漏开一次，用户继续向下滚会补上。
     const onWheel = (event: WheelEvent) => {
       if (event.deltaY < 0) {
         stickToBottomRef.current = false;
@@ -85,8 +89,16 @@ export function useConversationStreamScrollTail({
         stickToBottomRef.current = false;
       }
     };
+    let lastScrollTop = viewport.scrollTop;
     const onScroll = () => {
-      if (!stickToBottomRef.current && isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX)) {
+      const top = viewport.scrollTop;
+      const movedTowardBottom = top > lastScrollTop;
+      lastScrollTop = top;
+      if (
+        !stickToBottomRef.current
+        && movedTowardBottom
+        && isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX)
+      ) {
         stickToBottomRef.current = true;
       }
     };
