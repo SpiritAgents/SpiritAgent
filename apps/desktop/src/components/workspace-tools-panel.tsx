@@ -61,6 +61,8 @@ import { maskFadeHorizontalEnd } from "@/lib/mask-styles";
 import {
   WORKSPACE_TOOLS_MIN_WIDTH_PX,
   computeWorkspaceToolsMaxWidthPx,
+  workspaceToolsShellWidthExpression,
+  workspaceToolsShellWidthWhenOpen,
   writeWorkspaceToolsWidthPx,
 } from "@/lib/layout-prefs";
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
@@ -327,7 +329,7 @@ function WorkspaceToolsDockShell({
   );
 
   const applyDragWidthPx = useCallback((next: number) => {
-    const splitWidth = `calc(0.25rem + ${next}px)`;
+    const splitWidth = workspaceToolsShellWidthExpression(next);
     if (shellRef.current) {
       shellRef.current.style.width = splitWidth;
     }
@@ -389,7 +391,7 @@ function WorkspaceToolsDockShell({
     [onResizingChange, onWidthPxChange],
   );
 
-  const shellWidth = open ? `calc(0.25rem + ${widthPx}px)` : "0px";
+  const shellWidth = workspaceToolsShellWidthWhenOpen(open, widthPx);
 
   return (
     <div
@@ -411,7 +413,7 @@ function WorkspaceToolsDockShell({
           "relative flex h-full min-h-0 shrink-0 flex-row self-stretch",
           !open && "pointer-events-none select-none",
         )}
-        style={{ width: `calc(0.25rem + ${widthPx}px)` }}
+        style={{ width: workspaceToolsShellWidthExpression(widthPx) }}
         aria-hidden={!open}
         inert={!open}
       >
@@ -420,7 +422,7 @@ function WorkspaceToolsDockShell({
           aria-orientation="vertical"
           aria-label={t('workspace.resizeToolsWidth')}
           className={cn(
-            "group relative z-10 w-1 shrink-0 cursor-col-resize touch-none select-none",
+            "group relative z-10 w-px shrink-0 cursor-col-resize touch-none select-none",
             "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
             desktopMicaTintClass(useMicaBackdrop),
           )}

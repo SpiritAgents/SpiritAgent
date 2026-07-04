@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { readWorkspaceToolsWidthPx } from "@/lib/layout-prefs";
+import { readWorkspaceToolsWidthPx, workspaceToolsShellWidthExpression, workspaceToolsShellWidthWhenOpen } from "@/lib/layout-prefs";
 
 type WorkspaceToolsChromeActions = {
   setOpen: (updater: boolean | ((current: boolean) => boolean)) => void;
@@ -41,9 +41,11 @@ function applyWorkspaceToolsShellWidthImmediate(nextOpen: boolean): void {
   }
   const widthRaw = aside.style.width;
   const widthPx =
-    widthRaw && widthRaw.endsWith("px") ? widthRaw : `${readWorkspaceToolsWidthPx()}px`;
-  const splitWidth = `calc(0.25rem + ${widthPx})`;
-  shell.style.width = nextOpen ? splitWidth : "0px";
+    widthRaw && widthRaw.endsWith("px")
+      ? Number.parseInt(widthRaw, 10)
+      : readWorkspaceToolsWidthPx();
+  const splitWidth = workspaceToolsShellWidthExpression(widthPx);
+  shell.style.width = workspaceToolsShellWidthWhenOpen(nextOpen, widthPx);
   const split = shell.querySelector("[data-workspace-tools-split]");
   if (split instanceof HTMLElement) {
     split.style.width = splitWidth;
