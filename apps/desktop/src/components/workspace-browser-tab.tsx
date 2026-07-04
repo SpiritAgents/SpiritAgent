@@ -20,6 +20,20 @@ import {
 import { desktopMicaBrowserTintClass } from "@/lib/desktop-mica-surface";
 import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
 import { BROWSER_NAV_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
+import {
+  attachBrowserNavigationPolicy,
+  attachBrowserPageEventListeners,
+  bindDevtoolsHost,
+  BROWSER_WEBVIEW_WEBPREFERENCES,
+  browserWebviewPartition,
+  captureWebviewPngBase64,
+  closeEmbeddedDevtools,
+  executeWebviewScript,
+  insertWebviewCss,
+  openEmbeddedDevtools,
+  removeWebviewCss,
+  waitForWebviewDomReady,
+} from "@/lib/workspace-browser-webview";
 import { cn } from "@/lib/utils";
 
 export type WorkspaceBrowserTabProps = {
@@ -50,12 +64,11 @@ type LocalListeningEndpoint = {
   title?: string;
 };
 
-type PageViewBounds = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+/** 与 workspace-browser-view DEVTOOLS_SPLITTER_WIDTH_PX 一致 */
+const DEVTOOLS_SPLITTER_WIDTH_PX = 4;
+const DEVTOOLS_MIN_WIDTH_PX = 200;
+const DEFAULT_DEVTOOLS_WIDTH_PX = 320;
+const DEVTOOLS_WIDTH_STORAGE_KEY = "spirit-desktop-browser-devtools-width";
 
 function isElectronDesktop(): boolean {
   if (typeof window === "undefined") {
@@ -70,14 +83,6 @@ function isElectronDesktop(): boolean {
 function canUseEmbeddedBrowser(): boolean {
   return isElectronDesktop();
 }
-
-/** 与 workspace-tools-panel 分隔条 w-1（0.25rem）一致 */
-const WORKSPACE_PANEL_HANDLE_PX = 4;
-/** 与 workspace-browser-view DEVTOOLS_SPLITTER_WIDTH_PX 一致 */
-const DEVTOOLS_SPLITTER_WIDTH_PX = 4;
-const DEVTOOLS_MIN_WIDTH_PX = 200;
-const DEFAULT_DEVTOOLS_WIDTH_PX = 320;
-const DEVTOOLS_WIDTH_STORAGE_KEY = "spirit-desktop-browser-devtools-width";
 
 function readStoredDevtoolsWidthPx(): number {
   try {
@@ -108,64 +113,27 @@ function clampDevtoolsWidthPx(totalWidth: number, widthPx: number): number {
   return Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.min(maxDevtools, Math.round(widthPx)));
 }
 
-/**
- * 按工具栏 shell 可见宽度计算 BrowserView bounds，使展开/收起与 CSS width 过渡同步。
- * slot 在折叠重开时 left 会漂到屏外，故水平位置以 shell 裁剪区为准。
- */
-function readBrowserPageBounds(slot: HTMLElement): PageViewBounds | null {
-  const slotRect = slot.getBoundingClientRect();
-  const y = Math.round(slotRect.top);
-  const height = Math.max(0, Math.round(slotRect.height));
-  if (height < 1) {
-    return null;
-  }
-
-  const shell = document.getElementById("workspace-tools-panel-shell");
-  if (!shell) {
-    return {
-      x: Math.round(slotRect.left),
-      y,
-      width: Math.max(0, Math.round(slotRect.width)),
-      height,
-    };
-  }
-
-  const shellRect = shell.getBoundingClientRect();
-  if (shellRect.width < 1) {
-    return null;
-  }
-
-  const contentLeft = shellRect.left + WORKSPACE_PANEL_HANDLE_PX;
-  const contentWidth = Math.max(0, shellRect.width - WORKSPACE_PANEL_HANDLE_PX);
-  const width = Math.max(0, Math.round(Math.min(contentWidth, slotRect.width)));
-  if (width < 1) {
-    return null;
-  }
-
-  const x = Math.round(contentLeft);
-
-  return { x, y, width, height };
-}
-
-/** BrowserView webContents 坐标：主页面区域（DevTools 打开时不含右侧面板）。 */
+/** webview 坐标：主页面区域（DevTools 打开时不含右侧面板）。 */
 function readPageCaptureRect(
   slot: HTMLElement,
   devtoolsOpen: boolean,
   devtoolsWidthPx: number,
-): PageViewBounds | null {
-  const bounds = readBrowserPageBounds(slot);
-  if (!bounds) {
+): { x: number; y: number; width: number; height: number } | null {
+  const slotRect = slot.getBoundingClientRect();
+  const height = Math.max(0, Math.round(slotRect.height));
+  const totalWidth = Math.max(0, Math.round(slotRect.width));
+  if (height < 1 || totalWidth < 1) {
     return null;
   }
   if (!devtoolsOpen) {
-    return { x: 0, y: 0, width: bounds.width, height: bounds.height };
+    return { x: 0, y: 0, width: totalWidth, height };
   }
-  const devtoolsWidth = clampDevtoolsWidthPx(bounds.width, devtoolsWidthPx);
+  const devtoolsWidth = clampDevtoolsWidthPx(totalWidth, devtoolsWidthPx);
   const pageWidth = Math.max(
     DEVTOOLS_MIN_WIDTH_PX,
-    bounds.width - devtoolsWidth - DEVTOOLS_SPLITTER_WIDTH_PX,
+    totalWidth - devtoolsWidth - DEVTOOLS_SPLITTER_WIDTH_PX,
   );
-  return { x: 0, y: 0, width: pageWidth, height: bounds.height };
+  return { x: 0, y: 0, width: pageWidth, height };
 }
 
 type NativeViewSuspendSnapshot = {
@@ -290,6 +258,9 @@ export function WorkspaceBrowserTab({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const navBarRef = useRef<HTMLDivElement | null>(null);
   const pageSlotRef = useRef<HTMLDivElement | null>(null);
+  const pageWebviewRef = useRef<SpiritWebviewTag | null>(null);
+  const devtoolsWebviewRef = useRef<SpiritWebviewTag | null>(null);
+  const devtoolsBoundRef = useRef(false);
   const showNewTab = isBrowserNewTabUrl(browserUrl);
   const [addressDraft, setAddressDraft] = useState("");
   const [canGoBack, setCanGoBack] = useState(false);
@@ -301,6 +272,7 @@ export function WorkspaceBrowserTab({
   const [isDevtoolsResizing, setIsDevtoolsResizing] = useState(false);
   const devtoolsDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
   const capturingSuspendSnapshotRef = useRef(false);
+  const [isCapturingSuspendSnapshot, setIsCapturingSuspendSnapshot] = useState(false);
   const [nativeViewSuspendSnapshot, setNativeViewSuspendSnapshot] =
     useState<NativeViewSuspendSnapshot | null>(null);
   const [currentPageUrl, setCurrentPageUrl] = useState<string | undefined>(browserUrl);
@@ -321,6 +293,20 @@ export function WorkspaceBrowserTab({
 
   const pageEmbeddable = isActive && !showNewTab && canEmbed;
 
+  const toggleDevtools = useCallback(() => {
+    setDevtoolsOpen((open) => {
+      const next = !open;
+      if (!next) {
+        devtoolsBoundRef.current = false;
+        const pageWv = pageWebviewRef.current;
+        if (pageWv) {
+          closeEmbeddedDevtools(pageWv);
+        }
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     const prevUrl = prevBrowserUrlRef.current;
     prevBrowserUrlRef.current = browserUrl;
@@ -340,117 +326,139 @@ export function WorkspaceBrowserTab({
   }, [browserUrl, showNewTab]);
 
   useEffect(() => {
-    const bridge = window.spiritDesktop;
-    if (!bridge?.subscribeBrowserPageEvents) {
+    const wv = pageWebviewRef.current;
+    if (!wv || !canEmbed || showNewTab) {
       return;
     }
-    return bridge.subscribeBrowserPageEvents((event) => {
-      if (event.tabId !== browserTabId) {
+
+    let cancelled = false;
+    let detachListeners: (() => void) | undefined;
+
+    void (async () => {
+      await waitForWebviewDomReady(wv);
+      if (cancelled) {
         return;
       }
-      if (event.type === "url" && event.url) {
-        setAddressDraft(event.url);
-        setCurrentPageUrl(event.url);
-      } else if (event.type === "title") {
-        onTitleChangeRef.current?.(event.title || undefined);
-      } else if (event.type === "nav-state") {
-        setCanGoBack(event.canGoBack ?? false);
-        setCanGoForward(event.canGoForward ?? false);
-      } else if (event.type === "devtools") {
-        setDevtoolsOpen(event.open === true);
-        if (typeof event.widthPx === "number" && Number.isFinite(event.widthPx)) {
-          setDevtoolsWidthPx(event.widthPx);
-          writeStoredDevtoolsWidthPx(event.widthPx);
-        }
+
+      const detachNav = attachBrowserNavigationPolicy(wv, (url) => {
+        onOpenUrlInNewTabRef.current?.(url);
+      });
+      const detachPage = attachBrowserPageEventListeners(wv, {
+        onUrl: (url) => {
+          setAddressDraft(url);
+          setCurrentPageUrl(url);
+        },
+        onTitle: (title) => {
+          onTitleChangeRef.current?.(title || undefined);
+        },
+        onNavState: (back, forward) => {
+          setCanGoBack(back);
+          setCanGoForward(forward);
+        },
+        onToggleDevtools: toggleDevtools,
+      });
+      detachListeners = () => {
+        detachNav();
+        detachPage();
+      };
+    })();
+
+    return () => {
+      cancelled = true;
+      detachListeners?.();
+    };
+  }, [browserTabId, canEmbed, showNewTab, toggleDevtools]);
+
+  useEffect(() => {
+    const wv = pageWebviewRef.current;
+    if (!wv || !pageEmbeddable || !browserUrl) {
+      return;
+    }
+
+    let cancelled = false;
+    void waitForWebviewDomReady(wv).then(() => {
+      if (cancelled) {
+        return;
+      }
+      const current = wv.getURL();
+      if (!current || current === "about:blank" || current !== browserUrl) {
+        wv.loadURL(browserUrl);
       }
     });
-  }, [browserTabId]);
 
-  const syncPageView = useCallback(() => {
-    const bridge = window.spiritDesktop;
-    const slot = pageSlotRef.current;
-    if (!bridge?.syncBrowserPageView || !slot) {
+    return () => {
+      cancelled = true;
+    };
+  }, [browserUrl, pageEmbeddable]);
+
+  useEffect(() => {
+    if (!devtoolsOpen) {
+      devtoolsBoundRef.current = false;
+      const pageWv = pageWebviewRef.current;
+      if (pageWv) {
+        closeEmbeddedDevtools(pageWv);
+      }
       return;
     }
 
-    if (!pageEmbeddable || (nativeViewSuspended && !capturingSuspendSnapshotRef.current)) {
-      void bridge.syncBrowserPageView({
-        tabId: browserTabId,
-        bounds: { x: 0, y: 0, width: 0, height: 0 },
-        visible: false,
-      });
+    const pageWv = pageWebviewRef.current;
+    const devtoolsWv = devtoolsWebviewRef.current;
+    if (!pageWv || !devtoolsWv) {
       return;
     }
 
-    const bounds = readBrowserPageBounds(slot);
-    if (!bounds) {
-      void bridge.syncBrowserPageView({
-        tabId: browserTabId,
-        bounds: { x: 0, y: 0, width: 0, height: 0 },
-        visible: false,
-      });
-      return;
-    }
+    let cancelled = false;
+    void (async () => {
+      if (!devtoolsBoundRef.current) {
+        await bindDevtoolsHost(pageWv, devtoolsWv);
+        devtoolsBoundRef.current = true;
+      }
+      if (cancelled) {
+        return;
+      }
+      await openEmbeddedDevtools(pageWv, devtoolsWv);
+    })();
 
-    const syncedDevtoolsWidth = devtoolsOpen
-      ? clampDevtoolsWidthPx(bounds.width, devtoolsWidthPx)
-      : undefined;
-    if (
-      syncedDevtoolsWidth !== undefined &&
-      syncedDevtoolsWidth !== devtoolsWidthPx
-    ) {
-      setDevtoolsWidthPx(syncedDevtoolsWidth);
-      writeStoredDevtoolsWidthPx(syncedDevtoolsWidth);
-    }
-    void bridge.syncBrowserPageView({
-      tabId: browserTabId,
-      bounds,
-      visible: true,
-      url: browserUrl,
-      ...(syncedDevtoolsWidth !== undefined
-        ? { devtoolsWidthPx: syncedDevtoolsWidth }
-        : {}),
-    });
-  }, [browserTabId, browserUrl, devtoolsOpen, devtoolsWidthPx, nativeViewSuspended, pageEmbeddable]);
+    return () => {
+      cancelled = true;
+    };
+  }, [devtoolsOpen]);
 
   useLayoutEffect(() => {
     if (!nativeViewSuspended) {
       capturingSuspendSnapshotRef.current = false;
+      setIsCapturingSuspendSnapshot(false);
       setNativeViewSuspendSnapshot(null);
-      syncPageView();
       return;
     }
 
     if (!pageEmbeddable) {
-      syncPageView();
       return;
     }
 
     let cancelled = false;
     capturingSuspendSnapshotRef.current = true;
+    setIsCapturingSuspendSnapshot(true);
 
     void (async () => {
-      const bridge = window.spiritDesktop;
+      const wv = pageWebviewRef.current;
       const slot = pageSlotRef.current;
-      if (!bridge?.captureBrowserPageView || !slot) {
+      if (!wv || !slot) {
         capturingSuspendSnapshotRef.current = false;
-        if (!cancelled) {
-          syncPageView();
-        }
+        setIsCapturingSuspendSnapshot(false);
         return;
       }
 
       const captureRect = readPageCaptureRect(slot, devtoolsOpen, devtoolsWidthPx);
       if (!captureRect) {
         capturingSuspendSnapshotRef.current = false;
-        if (!cancelled) {
-          syncPageView();
-        }
+        setIsCapturingSuspendSnapshot(false);
         return;
       }
 
       try {
-        const base64 = await bridge.captureBrowserPageView(browserTabId, captureRect);
+        await waitForWebviewDomReady(wv);
+        const base64 = await captureWebviewPngBase64(wv, captureRect);
         if (cancelled) {
           return;
         }
@@ -459,78 +467,44 @@ export function WorkspaceBrowserTab({
           pageWidthPx: captureRect.width,
         });
       } catch {
-        // 截帧失败时仍隐藏原生视图，只是无静态图垫层
+        // 截帧失败时仍隐藏 webview，只是无静态图垫层
       } finally {
         capturingSuspendSnapshotRef.current = false;
-        if (!cancelled) {
-          syncPageView();
-        }
+        setIsCapturingSuspendSnapshot(false);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [
-    browserTabId,
-    devtoolsOpen,
-    devtoolsWidthPx,
-    nativeViewSuspended,
-    pageEmbeddable,
-    syncPageView,
-  ]);
+  }, [devtoolsOpen, devtoolsWidthPx, nativeViewSuspended, pageEmbeddable]);
 
   useEffect(() => {
-    if (!canEmbed || showNewTab) {
-      const bridge = window.spiritDesktop;
-      if (bridge?.syncBrowserPageView) {
-        void bridge.syncBrowserPageView({
-          tabId: browserTabId,
-          bounds: { x: 0, y: 0, width: 0, height: 0 },
-          visible: false,
-        });
-      }
-      return;
-    }
-
     const slot = pageSlotRef.current;
-    const root = rootRef.current;
-    if (!slot) {
+    if (!slot || !devtoolsOpen) {
       return;
     }
 
-    syncPageView();
-    const resizeObserver = new ResizeObserver(() => syncPageView());
-    resizeObserver.observe(slot);
-    if (root) {
-      resizeObserver.observe(root);
-    }
-    window.addEventListener("resize", syncPageView);
-
-    const shell = document.getElementById("workspace-tools-panel-shell");
-    if (shell) {
-      resizeObserver.observe(shell);
-    }
-    const onShellTransitionEnd = (event: TransitionEvent) => {
-      if (event.target !== shell || event.propertyName !== "width") {
+    const clampWidth = () => {
+      const totalWidth = Math.round(slot.getBoundingClientRect().width);
+      if (totalWidth < 1) {
         return;
       }
-      syncPageView();
+      const clamped = clampDevtoolsWidthPx(totalWidth, devtoolsWidthPx);
+      if (clamped !== devtoolsWidthPx) {
+        setDevtoolsWidthPx(clamped);
+        writeStoredDevtoolsWidthPx(clamped);
+      }
     };
-    shell?.addEventListener("transitionend", onShellTransitionEnd);
+
+    const resizeObserver = new ResizeObserver(clampWidth);
+    resizeObserver.observe(slot);
+    clampWidth();
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", syncPageView);
-      shell?.removeEventListener("transitionend", onShellTransitionEnd);
     };
-  }, [browserTabId, canEmbed, showNewTab, syncPageView]);
-
-  useEffect(() => {
-    return () => {
-      void window.spiritDesktop?.destroyBrowserPageView(browserTabId);
-    };
-  }, [browserTabId]);
+  }, [devtoolsOpen, devtoolsWidthPx]);
 
   const submitAddress = useCallback(() => {
     const normalized = normalizeBrowserUrl(addressDraft);
@@ -538,12 +512,11 @@ export function WorkspaceBrowserTab({
       return;
     }
     onBrowserUrlChange(normalized);
-    void window.spiritDesktop?.navigateBrowserPageView({
-      tabId: browserTabId,
-      action: "load",
-      url: normalized,
-    });
-  }, [addressDraft, browserTabId, onBrowserUrlChange]);
+    const wv = pageWebviewRef.current;
+    if (wv) {
+      void waitForWebviewDomReady(wv).then(() => wv.loadURL(normalized));
+    }
+  }, [addressDraft, onBrowserUrlChange]);
 
   const exitPicker = useCallback(() => {
     setIsPickerActive(false);
@@ -555,27 +528,18 @@ export function WorkspaceBrowserTab({
   }, [browserUrl]);
 
   useEffect(() => {
-    const bridge = window.spiritDesktop;
-    if (!isPickerActive || showNewTab || !canEmbed || !pageEmbeddable || !bridge?.executeBrowserPageView) {
+    const wv = pageWebviewRef.current;
+    if (!isPickerActive || showNewTab || !canEmbed || !pageEmbeddable || !wv) {
       return;
     }
 
-    void bridge.executeBrowserPageView({
-      tabId: browserTabId,
-      kind: "script",
-      script: buildPickerInjectScript(),
-    });
-
     let cssKey: string | undefined;
-    void bridge
-      .executeBrowserPageView({
-        tabId: browserTabId,
-        kind: "insert-css",
-        css: PICKER_INJECT_CSS,
-      })
-      .then((key) => {
+    void waitForWebviewDomReady(wv).then(() => {
+      void executeWebviewScript(wv, buildPickerInjectScript());
+      void insertWebviewCss(wv, PICKER_INJECT_CSS).then((key) => {
         cssKey = typeof key === "string" ? key : undefined;
       });
+    });
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") exitPicker();
@@ -594,27 +558,17 @@ export function WorkspaceBrowserTab({
       syncInFlight = true;
       void (async () => {
         try {
-          const done = await bridge.executeBrowserPageView({
-            tabId: browserTabId,
-            kind: "script",
-            script: "window.__spiritPickerDone || false",
-          });
+          const done = await executeWebviewScript(wv, "window.__spiritPickerDone || false");
           if (done) {
-            const result = await bridge.executeBrowserPageView({
-              tabId: browserTabId,
-              kind: "script",
-              script: "window.__spiritPickerResult",
-            });
-            await bridge.executeBrowserPageView({
-              tabId: browserTabId,
-              kind: "script",
-              script:
-                "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
-            });
+            const result = await executeWebviewScript(wv, "window.__spiritPickerResult");
+            await executeWebviewScript(
+              wv,
+              "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
+            );
             const r = result as PickerMarqueeResult | null;
-            if (r && r.tagName && r.outerHTML && !cancelled && bridge.captureBrowserPageView) {
+            if (r && r.tagName && r.outerHTML && !cancelled) {
               try {
-                const base64 = await bridge.captureBrowserPageView(browserTabId, {
+                const base64 = await captureWebviewPngBase64(wv, {
                   x: r.x,
                   y: r.y,
                   width: Math.max(r.width, 1),
@@ -637,7 +591,7 @@ export function WorkspaceBrowserTab({
             }
           }
         } catch {
-          // page view may not be ready
+          // webview may not be ready
         } finally {
           syncInFlight = false;
         }
@@ -650,22 +604,15 @@ export function WorkspaceBrowserTab({
       cancelled = true;
       cancelAnimationFrame(frameId);
       window.removeEventListener("keydown", handleKeyDown, true);
-      void bridge.executeBrowserPageView({
-        tabId: browserTabId,
-        kind: "script",
-        script:
-          "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
-      });
+      void executeWebviewScript(
+        wv,
+        "if(window.__spiritPickerCleanup){window.__spiritPickerCleanup();window.__spiritPickerCleanup=null;}window.__spiritPickerDone=false;",
+      );
       if (cssKey) {
-        void bridge.executeBrowserPageView({
-          tabId: browserTabId,
-          kind: "remove-css",
-          cssKey,
-        });
+        void removeWebviewCss(wv, cssKey);
       }
     };
   }, [
-    browserTabId,
     browserUrl,
     canEmbed,
     currentPageUrl,
@@ -676,51 +623,39 @@ export function WorkspaceBrowserTab({
   ]);
 
   const handleGoBack = useCallback(() => {
-    if (canGoBack) {
-      void window.spiritDesktop?.navigateBrowserPageView({
-        tabId: browserTabId,
-        action: "back",
-      });
+    const wv = pageWebviewRef.current;
+    if (canGoBack && wv) {
+      wv.goBack();
       return;
     }
     onBrowserUrlChange(BROWSER_NEW_TAB_SENTINEL);
-  }, [browserTabId, canGoBack, onBrowserUrlChange]);
+  }, [canGoBack, onBrowserUrlChange]);
 
   const handleGoForward = useCallback(() => {
     if (showNewTab && lastVisitedUrl) {
       onBrowserUrlChange(lastVisitedUrl);
       return;
     }
-    void window.spiritDesktop?.navigateBrowserPageView({
-      tabId: browserTabId,
-      action: "forward",
-    });
-  }, [browserTabId, lastVisitedUrl, onBrowserUrlChange, showNewTab]);
+    pageWebviewRef.current?.goForward();
+  }, [lastVisitedUrl, onBrowserUrlChange, showNewTab]);
 
   const handleReload = useCallback(() => {
     if (showNewTab) {
       return;
     }
-    void window.spiritDesktop?.navigateBrowserPageView({
-      tabId: browserTabId,
-      action: "reload",
-    });
-  }, [browserTabId, showNewTab]);
+    pageWebviewRef.current?.reload();
+  }, [showNewTab]);
 
-  const applyDevtoolsWidth = useCallback(
-    (nextWidthPx: number) => {
-      const slot = pageSlotRef.current;
-      const totalWidth = slot ? Math.round(slot.getBoundingClientRect().width) : 0;
-      const clamped =
-        totalWidth > 0
-          ? clampDevtoolsWidthPx(totalWidth, nextWidthPx)
-          : Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.round(nextWidthPx));
-      setDevtoolsWidthPx(clamped);
-      writeStoredDevtoolsWidthPx(clamped);
-      void window.spiritDesktop?.setBrowserPageDevtoolsWidth(browserTabId, clamped);
-    },
-    [browserTabId],
-  );
+  const applyDevtoolsWidth = useCallback((nextWidthPx: number) => {
+    const slot = pageSlotRef.current;
+    const totalWidth = slot ? Math.round(slot.getBoundingClientRect().width) : 0;
+    const clamped =
+      totalWidth > 0
+        ? clampDevtoolsWidthPx(totalWidth, nextWidthPx)
+        : Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.round(nextWidthPx));
+    setDevtoolsWidthPx(clamped);
+    writeStoredDevtoolsWidthPx(clamped);
+  }, []);
 
   const onDevtoolsResizePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -776,21 +711,19 @@ export function WorkspaceBrowserTab({
         return;
       }
       event.preventDefault();
-      void window.spiritDesktop?.toggleBrowserPageDevTools(browserTabId).then((result) => {
-        if (!result) {
-          return;
-        }
-        setDevtoolsOpen(result.open);
-        setDevtoolsWidthPx(result.widthPx);
-        writeStoredDevtoolsWidthPx(result.widthPx);
-      });
+      toggleDevtools();
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [browserTabId, canEmbed, isActive, showNewTab]);
+  }, [canEmbed, isActive, showNewTab, toggleDevtools]);
 
   const navDisabled = showNewTab;
+  const pageWebviewVisible =
+    pageEmbeddable && (!nativeViewSuspended || isCapturingSuspendSnapshot);
+  const pageWebviewRight = devtoolsOpen
+    ? devtoolsWidthPx + DEVTOOLS_SPLITTER_WIDTH_PX
+    : 0;
 
   useWorkspaceToolsShellHorizontalDivider(
     navBarRef,
@@ -887,14 +820,23 @@ export function WorkspaceBrowserTab({
         {showNewTab ? (
           <BrowserNewTabPage onNavigate={onBrowserUrlChange} />
         ) : (
-          <div className="relative min-h-0 min-w-0 flex-1">
-            <div
-              ref={pageSlotRef}
+          <div
+            ref={pageSlotRef}
+            className={cn(
+              "relative min-h-0 min-w-0 flex-1",
+              desktopMicaBrowserTintClass(useMicaBackdrop),
+              isPickerActive && "cursor-crosshair",
+            )}
+          >
+            <webview
+              ref={pageWebviewRef}
+              partition={browserWebviewPartition(browserTabId)}
               className={cn(
-                "electron-no-drag absolute inset-0",
-                desktopMicaBrowserTintClass(useMicaBackdrop),
-                isPickerActive && "cursor-crosshair",
+                "electron-no-drag absolute inset-y-0 left-0",
+                !pageWebviewVisible && "hidden",
               )}
+              style={{ right: pageWebviewRight }}
+              webpreferences={BROWSER_WEBVIEW_WEBPREFERENCES}
             />
             {nativeViewSuspendSnapshot ? (
               <img
@@ -906,26 +848,37 @@ export function WorkspaceBrowserTab({
               />
             ) : null}
             {devtoolsOpen ? (
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                aria-label={t("workspace.browserResizeDevtoolsWidth")}
-                className={cn(
-                  "electron-no-drag group absolute top-0 bottom-0 z-20 w-1 cursor-col-resize touch-none select-none",
-                  "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
-                  isDevtoolsResizing && "cursor-col-resize",
-                )}
-                style={{ right: devtoolsWidthPx }}
-                onPointerDown={onDevtoolsResizePointerDown}
-                onPointerMove={onDevtoolsResizePointerMove}
-                onPointerUp={endDevtoolsResize}
-                onPointerCancel={endDevtoolsResize}
-              >
-                <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
-                  aria-hidden
+              <>
+                <webview
+                  ref={devtoolsWebviewRef}
+                  className={cn(
+                    "electron-no-drag absolute top-0 bottom-0 right-0",
+                    !pageEmbeddable && "hidden",
+                  )}
+                  style={{ width: devtoolsWidthPx }}
+                  webpreferences={BROWSER_WEBVIEW_WEBPREFERENCES}
                 />
-              </div>
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label={t("workspace.browserResizeDevtoolsWidth")}
+                  className={cn(
+                    "electron-no-drag group absolute top-0 bottom-0 z-20 w-1 cursor-col-resize touch-none select-none",
+                    "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
+                    isDevtoolsResizing && "cursor-col-resize",
+                  )}
+                  style={{ right: devtoolsWidthPx }}
+                  onPointerDown={onDevtoolsResizePointerDown}
+                  onPointerMove={onDevtoolsResizePointerMove}
+                  onPointerUp={endDevtoolsResize}
+                  onPointerCancel={endDevtoolsResize}
+                >
+                  <div
+                    className="pointer-events-none absolute inset-y-0 left-0 w-px bg-border/40 transition-colors group-hover:bg-border/55"
+                    aria-hidden
+                  />
+                </div>
+              </>
             ) : null}
           </div>
         )}
