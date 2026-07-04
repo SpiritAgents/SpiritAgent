@@ -260,17 +260,7 @@ export function WorkspaceBrowserTab({
   const pageEmbeddable = isActive && !showNewTab && canEmbed;
 
   const toggleDevtools = useCallback(() => {
-    setDevtoolsOpen((open) => {
-      const next = !open;
-      if (!next) {
-        devtoolsBoundRef.current = false;
-        const pageWv = pageWebviewRef.current;
-        if (pageWv) {
-          closeEmbeddedDevtools(pageWv);
-        }
-      }
-      return next;
-    });
+    setDevtoolsOpen((open) => !open);
   }, []);
 
   useEffect(() => {
@@ -376,11 +366,6 @@ export function WorkspaceBrowserTab({
 
   useEffect(() => {
     if (!devtoolsOpen) {
-      devtoolsBoundRef.current = false;
-      const pageWv = pageWebviewRef.current;
-      if (pageWv) {
-        closeEmbeddedDevtools(pageWv);
-      }
       return;
     }
 
@@ -408,6 +393,11 @@ export function WorkspaceBrowserTab({
 
     return () => {
       cancelled = true;
+      devtoolsBoundRef.current = false;
+      const guestId = guestWebContentsIdRef.current;
+      if (guestId != null) {
+        closeEmbeddedDevtools(guestId);
+      }
     };
   }, [devtoolsOpen]);
 
