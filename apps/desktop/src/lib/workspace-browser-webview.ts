@@ -110,7 +110,18 @@ export function attachBrowserPageEventListeners(
     handlers.onNavState?.(wv.canGoBack(), wv.canGoForward());
   };
 
-  const onNavigate = (_event: unknown, url: unknown) => {
+  const onNavigate = (event: unknown) => {
+    let url =
+      typeof event === "object" && event !== null && "url" in event
+        ? (event as { url: unknown }).url
+        : undefined;
+    if (typeof url !== "string" || !url) {
+      try {
+        url = wv.getURL();
+      } catch {
+        url = undefined;
+      }
+    }
     if (typeof url === "string" && url && url !== "about:blank") {
       handlers.onUrl?.(url);
     }
