@@ -196,12 +196,12 @@ export async function openEmbeddedDevtools(
   }
 }
 
-export function closeEmbeddedDevtools(pageWv: SpiritWebviewTag): void {
+export function closeEmbeddedDevtools(pageGuestId: number): void {
   const bridge = window.spiritDesktop;
   if (!bridge?.closeBrowserGuestDevtools) {
     return;
   }
-  void bridge.closeBrowserGuestDevtools(pageWv.getWebContentsId());
+  void bridge.closeBrowserGuestDevtools(pageGuestId);
 }
 
 export async function captureWebviewPngBase64(
