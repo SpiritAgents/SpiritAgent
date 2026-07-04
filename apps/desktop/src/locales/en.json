@@ -1087,6 +1087,8 @@
     "invalidApproval": "Invalid approval result.",
     "invalidSkillRootKind": "Invalid Skill root kind.",
     "skillPathOutsideRoot": "Skill path is outside the allowed root directory.",
+    "skillSummaryRequired": "Summary cannot be empty.",
+    "skillContentRequired": "Content cannot be empty.",
     "descriptionRequired": "Description cannot be empty.",
     "skillAlreadyExists": "A Skill with the same name already exists at this location: {{name}}",
     "invalidPath": "Invalid path",
