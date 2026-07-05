@@ -5,10 +5,13 @@ import {
   CREATE_AUTOMATION_CONTRIBUTED_TOOL,
   CREATE_AUTOMATION_TOOL_NAME,
   buildAutomationHostToolDefinitions,
+  buildCreateAutomationApprovalPrompt,
   deriveAutomationTitle,
   parseCreateAutomationApprovalLevel,
   parseCreateAutomationTrigger,
   parseCreateAutomationTriggerInput,
+  previewCreateAutomationFromArguments,
+  toBuiltInLazyToolIndexEntry,
 } from './automation-host-tool.js';
 
 test('CREATE_AUTOMATION_CONTRIBUTED_TOOL exposes required overview', () => {
@@ -100,4 +103,23 @@ test('parseCreateAutomationApprovalLevel defaults to default and accepts full-ap
   assert.equal(parseCreateAutomationApprovalLevel(undefined), 'default');
   assert.equal(parseCreateAutomationApprovalLevel('full-approval'), 'full-approval');
   assert.equal(parseCreateAutomationApprovalLevel('full-access'), 'full-approval');
+});
+
+test('previewCreateAutomationFromArguments derives title and trigger', () => {
+  const preview = previewCreateAutomationFromArguments({
+    overview: 'Summarize CI failures.',
+    title: 'CI check',
+    trigger: { kind: 'time', schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 } },
+  });
+  assert.equal(preview.title, 'CI check');
+  assert.match(buildCreateAutomationApprovalPrompt(preview), /创建自动化/u);
+  assert.match(buildCreateAutomationApprovalPrompt(preview), /CI check/u);
+});
+
+test('toBuiltInLazyToolIndexEntry maps contributed metadata to lazy index entry', () => {
+  const entry = toBuiltInLazyToolIndexEntry(CREATE_AUTOMATION_CONTRIBUTED_TOOL);
+  assert.equal(entry.server, 'desktop');
+  assert.equal(entry.toolName, CREATE_AUTOMATION_TOOL_NAME);
+  assert.equal(entry.agentModeExposure, 'agent');
+  assert.equal(entry.excludeFromAskMode, true);
 });

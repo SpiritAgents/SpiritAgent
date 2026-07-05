@@ -182,6 +182,27 @@ test('toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP d
   });
 });
 
+test('toolCallSummaryForPhase: built-in create_automation preserves automation card copy', () => {
+  const lazyRequest = {
+    kind: 'lazyToolGateway',
+    name: 'tool_call',
+    argumentsJson: JSON.stringify({
+      provider: 'built-in',
+      server: 'desktop',
+      tool: 'create_automation',
+      arguments: {
+        overview: 'Summarize CI failures.',
+        title: 'CI check',
+        trigger: { kind: 'time', schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 } },
+      },
+    }),
+  };
+  assert.deepEqual(toolCallSummaryForPhase('running', 'tool_call', lazyRequest), {
+    headline: '创建自动化',
+    headlineDetail: 'CI check · Weekly Mon 09:00',
+  });
+});
+
 test('isSubagentStatusSurfaceText detects runtime status lines', () => {
   assert.equal(
     isSubagentStatusSurfaceText('输出 "Spirit 牛逼" 这句话，不要做任何其他事情。: 运行中'),
