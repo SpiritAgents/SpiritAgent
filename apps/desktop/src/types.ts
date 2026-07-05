@@ -1,12 +1,12 @@
-import type { ModelProviderId, ProviderConnectSiteId } from '@spirit-agent/host-internal/model-provider-presets';
-import type { ModelReasoningEffort } from '@spirit-agent/core/reasoning-effort';
-import type { LspWriteDiagnosticsUi } from '@spirit-agent/core';
+import type { ModelProviderId, ProviderConnectSiteId } from '@spiritagent/host-internal/model-provider-presets';
+import type { ModelReasoningEffort } from '@spiritagent/agent-core/reasoning-effort';
+import type { LspWriteDiagnosticsUi } from '@spiritagent/agent-core';
 
 import type { DesktopAgentMode } from './lib/agent-mode.js';
 import type { DesktopAutomationTrigger } from './lib/automation-trigger.js';
 
 export type { DesktopAgentMode };
-import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel, GitHubPullRequestCommit } from '@spirit-agent/host-internal';
+import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel, GitHubPullRequestCommit } from '@spiritagent/host-internal';
 
 export type { ApprovalLevel };
 
@@ -697,7 +697,7 @@ export interface SetPanePendingGitBranchRequest {
 
 export interface SetPaneWorkLocationRequest {
   sessionPath: string;
-  workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
+  workLocation: import('@spiritagent/host-internal').WorkLocationKind;
 }
 
 export interface CheckoutPaneGitBranchRequest {
@@ -1121,7 +1121,7 @@ export interface DesktopGitSnapshot {
   /** User-selected branch for the next send; defaults to `branch` when unset. */
   selectedBranch?: string;
   /** Session work-location preference; populated on client snapshots. */
-  workLocation?: import('@spirit-agent/host-internal').WorkLocationKind;
+  workLocation?: import('@spiritagent/host-internal').WorkLocationKind;
   /** True when the active workspace path is a linked Git worktree. */
   isWorktreeSession?: boolean;
   /** Primary repository root for the active worktree session. */
@@ -1221,7 +1221,7 @@ export type {
   GitHubPullRequestTabCounts,
   GitHubPullRequestTaskListProgress,
   GitHubRepositoryRef,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 export interface ListGitHubPullRequestsRequest {
   owner: string;
@@ -1252,13 +1252,13 @@ export interface GetGitHubPullRequestDetailRequest {
 }
 
 export interface MergeGitHubPullRequestRequest extends GetGitHubPullRequestDetailRequest {
-  mergeMethod: import('@spirit-agent/host-internal').GitHubPullRequestMergeMethod;
+  mergeMethod: import('@spiritagent/host-internal').GitHubPullRequestMergeMethod;
 }
 
 export type {
   GitHubPullRequestMergeMethod,
   GitHubPullRequestMergeResult,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 export interface ModelProfileSnapshot {
   name: string;

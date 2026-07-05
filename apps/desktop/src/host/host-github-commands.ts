@@ -29,7 +29,7 @@ import {
   type GitHubPullRequestMergeResult,
   type GitHubPullRequestTabCounts,
   type GitHubRepositoryRef,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   DesktopGitSnapshot,

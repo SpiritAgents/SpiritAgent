@@ -5,7 +5,7 @@ import {
   pollGitHubDeviceToken,
   requestGitHubDeviceCode,
   type GitHubDeviceAuthChallenge,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import { saveGitHubOAuthCredentials } from '../src/host/github-auth-storage.js';
 

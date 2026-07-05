@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { hooksUserConfigPath } from '@spirit-agent/core';
+import { hooksUserConfigPath } from '@spiritagent/agent-core';
 
 import { loadHooksConfigFileAt, loadHooksConfigFileForMutation, validateHooksConfig } from './loader.js';
 

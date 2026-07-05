@@ -1,5 +1,5 @@
-import { resolveModelDisplayTitle } from '@spirit-agent/host-internal/model-display-name';
-import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal/openai-api-base';
+import { resolveModelDisplayTitle } from '@spiritagent/host-internal/model-display-name';
+import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
 
 import { formatCompactTokenCount } from '@/lib/format-compact-token-count';
 import { parseModelContextLength } from '@/lib/model-context-length';

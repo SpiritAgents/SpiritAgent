@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { mergePreEventHookPermission } from '@spirit-agent/core';
+import { mergePreEventHookPermission } from '@spiritagent/agent-core';
 
 import { createHookRunner } from './service.js';
 

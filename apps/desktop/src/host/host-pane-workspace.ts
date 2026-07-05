@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { normalizeWorkLocationKind } from '@spirit-agent/host-internal';
+import { normalizeWorkLocationKind } from '@spiritagent/host-internal';
 
 import i18n from '../lib/i18n-host.js';
 import type {

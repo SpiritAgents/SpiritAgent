@@ -1,4 +1,4 @@
-import type { JsonValue, RuntimeApprovalDecision, RuntimePendingApproval } from '@spirit-agent/core';
+import type { JsonValue, RuntimeApprovalDecision, RuntimePendingApproval } from '@spiritagent/agent-core';
 import type { AgentSideConnection } from '@agentclientprotocol/sdk';
 import type * as schema from '@agentclientprotocol/sdk';
 import { mapToolNameToKind, buildToolCallTitle } from './tool-call-mapper.js';

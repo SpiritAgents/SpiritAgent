@@ -2,7 +2,7 @@ import {
   buildDreamCollectorSystemMessage,
   type LlmPlanMetadata,
   type LlmTransportConfig,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import i18n from '../lib/i18n-host.js';
 import type {

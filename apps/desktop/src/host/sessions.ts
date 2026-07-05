@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { ChatArchive } from '@spirit-agent/core';
+import type { ChatArchive } from '@spiritagent/agent-core';
 import {
   CHAT_SCHEMA_VERSION,
   hydrateTimelineSnapshotFromPersistence,
@@ -18,8 +18,8 @@ import type {
   ConversationMessageSnapshot,
   SessionListItem,
 } from '../types.js';
-import { extractActivePlanPathFromLlmHistory, normalizeApprovalLevel } from '@spirit-agent/host-internal';
-import type { ApprovalLevel } from '@spirit-agent/host-internal';
+import { extractActivePlanPathFromLlmHistory, normalizeApprovalLevel } from '@spiritagent/host-internal';
+import type { ApprovalLevel } from '@spiritagent/host-internal';
 import type { QueuedUserTurn } from './message-queue.js';
 import type { SessionTitleSource } from './contracts.js';
 import type { DesktopTimelineTurnSnapshot } from './message-timeline.js';

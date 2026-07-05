@@ -9,7 +9,7 @@ import {
   type JsonValue,
   type RuntimeEvent,
   type GeneratedImageSaveRequest,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   startLlmToolAgentState,
   continueLlmToolAgentState,
@@ -28,12 +28,12 @@ import {
   type LlmEnabledRule,
   type LlmEnabledSkillCatalogEntry,
   type LlmPlanMetadata,
-} from '@spirit-agent/core';
-import { buildApplyPatchFileToolsPromptSection } from '@spirit-agent/core';
-import { buildProviderWebSearchPromptSection } from '@spirit-agent/core';
-import type { SpiritAgentMode } from '@spirit-agent/core';
-import type { LocalHostToolService } from '@spirit-agent/core/host-bridge';
-import { HostToolExecutorProxy } from '@spirit-agent/core/host-bridge';
+} from '@spiritagent/agent-core';
+import { buildApplyPatchFileToolsPromptSection } from '@spiritagent/agent-core';
+import { buildProviderWebSearchPromptSection } from '@spiritagent/agent-core';
+import type { SpiritAgentMode } from '@spiritagent/agent-core';
+import type { LocalHostToolService } from '@spiritagent/agent-core/host-bridge';
+import { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
 
 import {
   NodeHostToolService,
@@ -44,7 +44,7 @@ import {
   persistToolOutputArchive,
   readGitBranchLabelForBasicInfo,
   removePreCompactionHistoryArchive,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
 import { resolveTransportConfig } from './transport/resolve-transport.js';

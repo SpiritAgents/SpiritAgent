@@ -1,4 +1,4 @@
-import type { LspWriteDiagnosticsUi } from '@spirit-agent/core';
+import type { LspWriteDiagnosticsUi } from '@spiritagent/agent-core';
 
 import type { ToolBlockSnapshot } from '@/types';
 

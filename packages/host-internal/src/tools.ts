@@ -19,7 +19,7 @@ import {
   throwUnknownToolError,
   toolNamesFromDefinitions,
   type JsonValue,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import { applyDiff } from './apply-diff.js';
 import {
@@ -90,7 +90,7 @@ import { filterWorkspaceFilePathsByIgnore } from './workspace-ignore.js';
 import {
   buildShellToolResult,
   serializeShellToolResult,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   convertFetchedPageToToolText,
   WEB_FETCH_ACCEPT_HEADER,

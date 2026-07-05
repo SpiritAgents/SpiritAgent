@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Desktop renderer 仅允许从 agent-core 的 renderer-safe 子路径做 value import。
- * 主入口 @spirit-agent/core 的 value import 会拉入 AI SDK / Node 依赖链。
+ * 主入口 @spiritagent/agent-core 的 value import 会拉入 AI SDK / Node 依赖链。
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -22,7 +22,7 @@ const RENDERER_SAFE_AGENT_CORE_SUBPATHS = new Set([
 const RENDERER_SCAN_ROOTS = ['components', 'hooks', 'lib', 'App.tsx'];
 
 const IMPORT_RE =
-  /import\s+(?:type\s+)?(?:[\w*{}\s,]+\s+from\s+)?['"]@spirit-agent\/core(?:\/([^'"]+))?['"]/gu;
+  /import\s+(?:type\s+)?(?:[\w*{}\s,]+\s+from\s+)?['"]@spiritagent\/agent-core(?:\/([^'"]+))?['"]/gu;
 
 function collectSourceFiles(entryPath) {
   const stat = statSync(entryPath);
@@ -50,7 +50,7 @@ function scanFile(filePath) {
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    if (!line.includes('@spirit-agent/core')) {
+    if (!line.includes('@spiritagent/agent-core')) {
       continue;
     }
     if (isTypeOnlyImport(line)) {
@@ -63,7 +63,7 @@ function scanFile(filePath) {
         violations.push({
           file: relative(repoRoot, filePath),
           line: index + 1,
-          reason: '禁止从 @spirit-agent/core 主入口做 value import',
+          reason: '禁止从 @spiritagent/agent-core 主入口做 value import',
         });
         continue;
       }

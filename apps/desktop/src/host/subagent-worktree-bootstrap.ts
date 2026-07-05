@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { SubagentWorkspaceBootstrap } from '@spirit-agent/core';
+import type { SubagentWorkspaceBootstrap } from '@spiritagent/agent-core';
 
 import type { DesktopToolRequest } from './contracts.js';
 import type { DesktopToolExecutor } from './tool-executor.js';

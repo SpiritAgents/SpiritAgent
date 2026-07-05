@@ -1,4 +1,4 @@
-# @spirit-agent/core
+# @spiritagent/agent-core
 
 TypeScript core runtime for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent) — the **single source of agent semantics** in the project. Desktop, CLI, and ACP hosts consume this package; they supply platform-specific execution and UI.
 
@@ -17,8 +17,8 @@ TypeScript core runtime for [Spirit Agent](https://github.com/SpiritAgents/Spiri
 
 ## Related packages
 
-- [`@spirit-agent/host-internal`](https://www.npmjs.com/package/@spirit-agent/host-internal) — shared host discovery, tools, extensions, and LSP helpers.
-- [`@spirit-agent/acp-server`](https://www.npmjs.com/package/@spirit-agent/acp-server) — ACP server adapter for editor integration.
+- [`@spiritagent/host-internal`](https://www.npmjs.com/package/@spiritagent/host-internal) — shared host discovery, tools, extensions, and LSP helpers.
+- [`@spiritagent/acp-server`](https://www.npmjs.com/package/@spiritagent/acp-server) — ACP server adapter for editor integration.
 
 ## License
 

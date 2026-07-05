@@ -33,7 +33,7 @@ import {
   type RuntimeToolExecution,
   type SpiritLlmTransport,
   type LlmActiveSkill,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   buildStartImplementingUserTurn,
   extractActivePlanPathFromLlmHistory,
@@ -56,7 +56,7 @@ import {
   gitBranchLabelForBasicInfo,
   setGitHubFetchImplementation,
   type WorkLocationKind,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   ActiveSessionSnapshot,
@@ -475,7 +475,7 @@ import {
   runDesktopSessionEndHook,
   runDesktopSessionStartHook,
 } from './hook-runtime.js';
-import type { HookRunner, SessionEndHookInput, SessionStartHookInput } from '@spirit-agent/core';
+import type { HookRunner, SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
 import {
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
@@ -485,7 +485,7 @@ import {
   ensureLspServiceReady,
   lspUserConfigFromEnabled,
   sharedLspServiceForWorkspace,
-} from '@spirit-agent/host-internal/lsp';
+} from '@spiritagent/host-internal/lsp';
 import { buildDesktopLspSnapshot, defaultDesktopLspSnapshot } from './lsp-snapshot.js';
 import { installLspProviderCommand } from './lsp-commands.js';
 import {
@@ -642,7 +642,7 @@ class DesktopHostService {
   private lastToolSnapshotLogSignature: string | undefined;
   /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
-  private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spirit-agent/host-internal/lsp').LspService>();
+  private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spiritagent/host-internal/lsp').LspService>();
   private lspSnapshot = defaultDesktopLspSnapshot();
   private visiblePaneSessionPaths: string[] = [];
   private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();

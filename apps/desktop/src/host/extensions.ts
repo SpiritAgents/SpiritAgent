@@ -6,12 +6,12 @@ import {
   type JsonObject,
   type JsonValue,
   type OpenAiExtensionSystemPrompt,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   collectHostExtensionContributedTools,
   type HostExtensionManager,
   type HostInstalledExtension,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   DesktopExtensionCssLayer,

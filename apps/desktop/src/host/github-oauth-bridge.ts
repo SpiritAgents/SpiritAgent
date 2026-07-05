@@ -1,4 +1,4 @@
-import type { GitHubDeviceAuthChallenge } from '@spirit-agent/host-internal';
+import type { GitHubDeviceAuthChallenge } from '@spiritagent/host-internal';
 
 export type BeginGitHubDeviceLoginRunner = () => Promise<GitHubDeviceAuthChallenge>;
 export type CompleteGitHubDeviceLoginRunner = () => Promise<{ login: string }>;

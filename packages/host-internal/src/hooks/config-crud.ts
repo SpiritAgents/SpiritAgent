@@ -8,7 +8,7 @@ import {
   type HookDefinition,
   type HookEventName,
   type HooksConfigFile,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import { loadHooksConfigFileAt, loadHooksConfigFileForMutation } from './loader.js';
 

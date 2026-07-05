@@ -20,7 +20,7 @@ import {
   resolveDefaultBranch,
   resolvePrimaryRepoRoot,
   type GitCheckoutOptions,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   DesktopGitSnapshot,

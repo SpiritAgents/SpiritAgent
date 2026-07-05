@@ -1,7 +1,7 @@
 import type {
   ApprovalLevel,
   WorkLocationKind,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   AddMcpServerRequest,

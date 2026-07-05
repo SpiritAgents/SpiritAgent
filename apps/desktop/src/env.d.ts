@@ -92,9 +92,9 @@ declare global {
     compactHistory(): Promise<DesktopSnapshot>;
     submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot>;
     setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot>;
-    setApprovalLevel(approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel): Promise<DesktopSnapshot>;
+    setApprovalLevel(approvalLevel: import('@spiritagent/host-internal').ApprovalLevel): Promise<DesktopSnapshot>;
     setPendingGitBranch(branch: string): Promise<DesktopSnapshot>;
-    setWorkLocation(workLocation: import('@spirit-agent/host-internal').WorkLocationKind): Promise<DesktopSnapshot>;
+    setWorkLocation(workLocation: import('@spiritagent/host-internal').WorkLocationKind): Promise<DesktopSnapshot>;
     checkoutGitBranch(request: import('./types.js').CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
     mergeWorktreeToMain(): Promise<DesktopSnapshot>;
     pushGitBranch(): Promise<DesktopSnapshot>;
@@ -241,7 +241,7 @@ declare global {
     statHostTextFile(absolutePath: string): Promise<HostTextFileStatResult>;
     classifyLocalFileComposerRoute(
       absolutePath: string,
-    ): Promise<import('@spirit-agent/host-internal').LocalFileComposerRoute>;
+    ): Promise<import('@spiritagent/host-internal').LocalFileComposerRoute>;
     pickWorkspaceDirectory(): Promise<string | null>;
     pickLocalFile(): Promise<string | null>;
     getPathForDroppedFile(file: File): string;

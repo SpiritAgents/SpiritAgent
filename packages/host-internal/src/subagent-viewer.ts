@@ -1,5 +1,5 @@
-import type { LlmMessageContent, LlmToolCall, StoredLlmMessageArchiveEntry } from '@spirit-agent/core';
-import { llmMessageTextContent } from '@spirit-agent/core';
+import type { LlmMessageContent, LlmToolCall, StoredLlmMessageArchiveEntry } from '@spiritagent/agent-core';
+import { llmMessageTextContent } from '@spiritagent/agent-core';
 
 export type SubagentViewerSessionStatus = 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked';
 
