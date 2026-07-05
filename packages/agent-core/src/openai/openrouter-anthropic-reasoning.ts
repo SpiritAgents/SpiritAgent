@@ -4,6 +4,7 @@ import type { OpenAiLlmVendor, OpenAiTransportConfig } from './openai-compat.js'
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
+  routedAnthropicClaudeThinkingSwitchable,
   ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT,
   routedAnthropicEffortFromReasoningEffort,
 } from './routed-anthropic-claude-capabilities.js';
@@ -39,7 +40,7 @@ export function buildOpenRouterClaudeReasoningBody(
   );
 
   if (capabilities.thinkingMode === 'adaptive') {
-    if (config.vendorExtendedThinking === false) {
+    if (config.vendorExtendedThinking === false && routedAnthropicClaudeThinkingSwitchable(capabilities)) {
       return { enabled: false };
     }
     if (effort !== undefined) {

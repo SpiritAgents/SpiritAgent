@@ -61,8 +61,17 @@ export function resolveAnthropicThinkingConfig(
   }
 
   const normalizedModel = config.model.trim().toLowerCase();
-  if (normalizedModel.includes('claude-opus-4-7')) {
+  if (
+    normalizedModel.includes('claude-fable-5')
+    || normalizedModel.includes('claude-mythos-5')
+    || normalizedModel.includes('claude-opus-4-7')
+    || normalizedModel.includes('claude-opus-4-8')
+  ) {
     return { type: 'adaptive', display: 'summarized' };
+  }
+
+  if (normalizedModel.includes('claude-sonnet-5')) {
+    return { type: 'adaptive' };
   }
 
   if (

@@ -35,6 +35,21 @@ test('resolveAnthropicThinkingConfig keeps known adaptive defaults', () => {
   );
 });
 
+test('resolveAnthropicThinkingConfig keeps Claude 5 generation adaptive defaults', () => {
+  assert.deepEqual(
+    resolveAnthropicThinkingConfig({
+      model: 'claude-fable-5',
+    }),
+    { type: 'adaptive', display: 'summarized' },
+  );
+  assert.deepEqual(
+    resolveAnthropicThinkingConfig({
+      model: 'claude-sonnet-5',
+    }),
+    { type: 'adaptive' },
+  );
+});
+
 test('resolveAnthropicThinkingConfig leaves unknown models undefined', () => {
   assert.equal(
     resolveAnthropicThinkingConfig({

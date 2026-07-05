@@ -17,6 +17,7 @@ import { isZaiThinkingSwitchEligibleModel } from './openai/gateway-zai-thinking.
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
+  routedAnthropicClaudeThinkingSwitchable,
   type RoutedAnthropicClaudeCapabilities,
 } from './openai/routed-anthropic-claude-capabilities.js';
 
@@ -85,12 +86,15 @@ export function isAnthropicClaudeBudgetThinkingModel(
   return capabilities?.thinkingMode === 'budget';
 }
 
-/** Claude 可开关 thinking（adaptive 或 budget）；thinkingMode=none 的型号不在此列。 */
+/** Claude 可开关 thinking（adaptive 或 budget）；thinkingMode=none 与常开 adaptive 不在此列。 */
 export function isAnthropicClaudeSwitchableThinkingModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
-  return isAnthropicClaudeAdaptiveThinkingModel(context)
-    || isAnthropicClaudeBudgetThinkingModel(context);
+  const capabilities = resolveAnthropicClaudeCapabilitiesForContext(context);
+  if (capabilities === undefined) {
+    return false;
+  }
+  return routedAnthropicClaudeThinkingSwitchable(capabilities);
 }
 
 export function modelEffortControlLabelKind(
@@ -316,7 +320,7 @@ export function resolveAnthropicExplicitThinkingConfig(
   const capabilities = resolveAnthropicClaudeCapabilitiesForContext(context);
 
   if (capabilities?.thinkingMode === 'adaptive') {
-    if (thinkingEnabled === false) {
+    if (thinkingEnabled === false && routedAnthropicClaudeThinkingSwitchable(capabilities)) {
       return { type: 'disabled' };
     }
     return {
