@@ -199,7 +199,7 @@ export interface HostApi {
   reorderQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot>;
   sendQueuedUserTurnNow(request: QueuedUserTurnRequest): Promise<DesktopSnapshot>;
   removeQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot>;
-  poll(): Promise<DesktopSnapshot>;
+  poll(request?: import('./types').PollRequest): Promise<DesktopSnapshot>;
   setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot>;
   listDreamsOverview(): Promise<DesktopDreamOverviewItem[]>;
   listAutomations(): Promise<DesktopAutomationListItem[]>;

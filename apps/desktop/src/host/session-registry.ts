@@ -224,6 +224,17 @@ export class SessionRegistry {
     return bundle;
   }
 
+  /** New empty session without changing the foreground active bundle (remote web new chat). */
+  beginNewBackground(workspaceRoot: string): SessionBundle {
+    const provisionalPath = provisionalNewSessionPath(workspaceRoot);
+    const bundle = this.activateProvisionalBackground(workspaceRoot, provisionalPath);
+    resetSessionBundleInPlace(bundle);
+    bundle.workspaceRoot = workspaceRoot;
+    assignProvisionalActiveSession(bundle, provisionalPath);
+    this.rekeyBundle(bundle, path.resolve(provisionalPath));
+    return bundle;
+  }
+
   /** Load or create a split-pane empty session without changing the foreground active bundle. */
   beginSplitPaneSession(workspaceRoot: string, paneId: string): SessionBundle {
     const splitPath = splitPaneSessionPath(paneId);

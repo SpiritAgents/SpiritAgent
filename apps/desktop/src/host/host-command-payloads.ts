@@ -137,7 +137,7 @@ export type CommandPayloads = {
   abortConversation: import('../types.js').AbortConversationRequest | undefined;
   abortShell: { toolCallId: string };
   continueAssistantCompletion: { messageId: number };
-  poll: undefined;
+  poll: { sessionPath?: string } | undefined;
   listDreamsOverview: undefined;
   listAutomations: undefined;
   getAutomation: { automationId: string };
@@ -147,9 +147,9 @@ export type CommandPayloads = {
   setAutomationEnabled: { automationId: string; enabled: boolean };
   replyPendingApproval: { request: ReplyPendingApprovalRequest };
   replyPendingQuestions: { request: ReplyPendingQuestionsRequest };
-  resetSession: undefined;
+  resetSession: { activate?: boolean } | undefined;
   listSessions: undefined;
-  openSession: { path: string };
+  openSession: { path: string; activate?: boolean };
   beginSplitPaneSession: { request: BeginSplitPaneSessionRequest };
   setVisiblePaneSessions: { request: SetVisiblePaneSessionsRequest };
   syncSplitPaneSessions: { request: SyncSplitPaneSessionsRequest };

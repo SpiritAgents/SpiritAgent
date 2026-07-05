@@ -166,8 +166,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     removeQueuedUserTurn(request) {
       return bridge.removeQueuedUserTurn(request);
     },
-    poll() {
-      return bridge.poll();
+    poll(request?: import('../types').PollRequest) {
+      return bridge.poll(request);
     },
     setSubagentViewerTarget(parentToolCallId) {
       return bridge.setSubagentViewerTarget(parentToolCallId);

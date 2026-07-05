@@ -178,8 +178,8 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   removeQueuedUserTurn(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'removeQueuedUserTurn', { request });
   },
-  poll() {
-    return ipcRenderer.invoke('desktop:invoke', 'poll');
+  poll(request?: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'poll', request);
   },
   setSubagentViewerTarget(parentToolCallId: string | null) {
     return ipcRenderer.invoke('desktop:invoke', 'setSubagentViewerTarget', { parentToolCallId });

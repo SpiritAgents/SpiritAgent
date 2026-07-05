@@ -107,7 +107,7 @@ declare global {
     reorderQueuedUserTurn(request: import('./types.js').QueuedUserTurnRequest): Promise<DesktopSnapshot>;
     sendQueuedUserTurnNow(request: import('./types.js').QueuedUserTurnRequest): Promise<DesktopSnapshot>;
     removeQueuedUserTurn(request: import('./types.js').QueuedUserTurnRequest): Promise<DesktopSnapshot>;
-    poll(): Promise<DesktopSnapshot>;
+    poll(request?: import('./types').PollRequest): Promise<DesktopSnapshot>;
     setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot>;
     listDreamsOverview(): Promise<DesktopDreamOverviewItem[]>;
     listAutomations(): Promise<import('./types.js').DesktopAutomationListItem[]>;

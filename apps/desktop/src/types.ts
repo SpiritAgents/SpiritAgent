@@ -18,6 +18,8 @@ export type DesktopWorkspaceBinding = 'project' | 'none';
 export interface BootstrapRequest {
   workspaceRoot?: string;
   workspaceBinding?: DesktopWorkspaceBinding;
+  /** HTTP web host: bind to a background provisional session without stealing desktop foreground. */
+  isolateSession?: boolean;
 }
 
 export interface RememberWorkspaceRequest {
@@ -624,6 +626,11 @@ export interface SubmitUserTurnRequest {
   referencedWorkspaceFilePaths?: string[];
   skillChipAliases?: string[];
   /** Target a loaded split pane session without switching sidebar foreground. */
+  sessionPath?: string;
+}
+
+export interface PollRequest {
+  /** Project poll snapshot for this session without switching host foreground. */
   sessionPath?: string;
 }
 

@@ -207,6 +207,10 @@ export class DesktopRuntimeEventOrchestrator {
   }
 
   private scheduleLiveSnapshotUpdateForShellOutput(): void {
+    this.scheduleThrottledLiveSnapshotUpdate();
+  }
+
+  private scheduleThrottledLiveSnapshotUpdate(): void {
     if (this.shellOutputSnapshotTimer !== undefined) {
       return;
     }
@@ -418,6 +422,7 @@ export class DesktopRuntimeEventOrchestrator {
         }
         this.options.assistantMessages.appendPendingAssistantChunk(event.text);
         this.options.messageTimeline?.()?.appendAssistantTextChunk(event.text);
+        this.scheduleThrottledLiveSnapshotUpdate();
         continue;
       }
       if (event.kind === 'replace-pending-assistant') {

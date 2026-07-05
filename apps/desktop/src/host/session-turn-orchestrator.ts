@@ -568,7 +568,8 @@ export function applyDrainedRuntimeHostEvents(
   const shouldEmitLiveUpdate =
     runtimeEventsIncludeAppliedFinishTaskPreview(splitBuiltin.toApply)
     || runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(splitBuiltin.toApply)
-    || runtimeEventsIncludeAppliedHostToolStreamingUpdate(splitBuiltin.toApply);
+    || runtimeEventsIncludeAppliedHostToolStreamingUpdate(splitBuiltin.toApply)
+    || splitBuiltin.toApply.some((event) => event.kind === 'assistant-chunk');
   if (shouldEmitLiveUpdate) {
     bundle.conversationRevision += 1;
     ctx.emitLiveSnapshotUpdate();

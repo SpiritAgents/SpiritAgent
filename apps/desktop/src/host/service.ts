@@ -266,7 +266,9 @@ import {
   reorderQueuedUserTurnCommand,
 } from './message-queue.js';
 import {
+  openSessionBackgroundCommand,
   openSessionCommand,
+  resetSessionBackgroundCommand,
   resetSessionCommand,
   type SessionActivationContext,
 } from './session-activation.js';
@@ -927,6 +929,7 @@ class DesktopHostService {
       scheduleSessionExtensionWarmup: (event) =>
         this.scheduleExtensionWarmup({ type: 'session', event }),
       buildSnapshot: () => this.buildSnapshot(),
+      buildSnapshotProjectedForBundle: (bundle) => this.buildSnapshotProjectedForBundle(bundle),
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
       runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
       runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
@@ -1269,6 +1272,14 @@ class DesktopHostService {
       this.startDreamCollectorMonitorIfNeeded();
       this.startAutomationSchedulerMonitorIfNeeded();
       await this.refreshAutomationsListCache();
+      if (request?.isolateSession) {
+        this.clearSubagentViewerTarget();
+        const state = this.requireState();
+        const bundle = this.sessionRegistry.beginNewBackground(state.workspaceRoot);
+        await this.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
+        this.lastRuntimeError = '';
+        return this.buildSnapshotProjectedForBundle(bundle);
+      }
       return this.buildSnapshot();
     }, 'bootstrap');
     this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: snapshot.workspaceRoot });
@@ -1695,7 +1706,7 @@ class DesktopHostService {
             this.replaceVisiblePaneSessionPath(resolvedTargetPath, promotedPath);
           }
           restorePreviousActive();
-          return this.buildSnapshot();
+          return this.buildSnapshotProjectedForBundle(bundle);
         }
 
         restorePreviousActive();
@@ -2048,8 +2059,18 @@ class DesktopHostService {
     return this.buildSnapshot();
   }
 
-  async poll(): Promise<DesktopSnapshot> {
-    return pollCommand(this.sessionTurnContext());
+  async poll(request?: import('../types.js').PollRequest): Promise<DesktopSnapshot> {
+    await pollCommand(this.sessionTurnContext());
+    const sessionPath = request?.sessionPath?.trim();
+    if (!sessionPath) {
+      return this.buildSnapshot();
+    }
+    const bundle = this.sessionRegistry.findBySessionPath(path.resolve(sessionPath));
+    if (!bundle) {
+      return this.buildSnapshot();
+    }
+    const projected = this.buildSnapshotProjectedForBundle(bundle);
+    return projected;
   }
 
   async setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot> {
@@ -2110,7 +2131,10 @@ class DesktopHostService {
     return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
   }
 
-  async resetSession(): Promise<DesktopSnapshot> {
+  async resetSession(options?: { activate?: boolean }): Promise<DesktopSnapshot> {
+    if (options?.activate === false) {
+      return resetSessionBackgroundCommand(this.sessionActivationContext());
+    }
     return resetSessionCommand(this.sessionActivationContext());
   }
 
@@ -2368,7 +2392,13 @@ class DesktopHostService {
     return resolveLocalFileComposerRoute(absolutePath);
   }
 
-  async openSession(filePath: string): Promise<DesktopSnapshot> {
+  async openSession(
+    filePath: string,
+    options?: { activate?: boolean },
+  ): Promise<DesktopSnapshot> {
+    if (options?.activate === false) {
+      return openSessionBackgroundCommand(this.sessionActivationContext(), filePath);
+    }
     return openSessionCommand(this.sessionActivationContext(), filePath);
   }
 
@@ -3330,6 +3360,54 @@ class DesktopHostService {
     return buildConversationTodoSnapshotFromService(this.sessionTodosContext(), bundle);
   }
 
+  private buildSnapshotProjectedForBundle(bundle: SessionBundle): DesktopSnapshot {
+    const base = this.buildSnapshot();
+    const orchestration = this.orchestrationFor(bundle);
+    const bundleRuntime = bundle.runtime;
+    const pendingApproval = bundleRuntime?.currentPendingApproval();
+    const pendingQuestions = bundleRuntime?.currentPendingQuestions();
+    const pendingAux = bundleRuntime?.pendingAuxState();
+    const slice = buildPaneSessionSlice({
+      bundle,
+      composerSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+      conversationSnapshotView: orchestration.conversationSnapshotView,
+      livePendingAux: pendingAux,
+      isForegroundActive: false,
+      ...(pendingApproval
+        ? {
+            pendingApproval: {
+              toolName: pendingApproval.toolName,
+              request: pendingApproval.request as DesktopToolRequest,
+              prompt: pendingApproval.prompt,
+              trustTarget: pendingApproval.trustTarget,
+              subagentSessionId: pendingApproval.subagentSessionId,
+              autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
+            },
+          }
+        : {}),
+      ...(pendingQuestions ? { pendingQuestions } : {}),
+      pendingImagePaths: [...(bundleRuntime?.pendingImagePaths() ?? [])],
+      pendingMcpResources: mapPendingMcpResources(bundleRuntime?.pendingMcpResources() ?? []),
+      ...(bundleRuntime?.pendingUserTurn()
+        ? { pendingUserTurn: bundleRuntime.pendingUserTurn() }
+        : {}),
+    });
+    const {
+      conversation: _foregroundConversation,
+      activeSession: _foregroundActiveSession,
+      composerSessionKey: _foregroundComposerSessionKey,
+      ...sharedSnapshot
+    } = base;
+    const projectedActiveSession = slice.activeSession
+      ?? (bundle.activeSession ? { ...bundle.activeSession } : undefined);
+    return {
+      ...sharedSnapshot,
+      conversation: slice.conversation,
+      ...(projectedActiveSession ? { activeSession: projectedActiveSession } : {}),
+      composerSessionKey: slice.composerSessionKey,
+    };
+  }
+
   private buildSnapshot(): DesktopSnapshot {
     const state = this.requireState();
     const pendingApproval = this.runtime?.currentPendingApproval();
@@ -3510,7 +3588,8 @@ class DesktopHostService {
         paneModel?.activeModel ?? resolveEffectivePaneActiveModel(bundle, this.requireState()),
       ].join('\0');
       const cached = this.paneSessionSliceCache.get(resolved);
-      if (cached?.signature === sliceSignature) {
+      // 流式回合中 messageTimeline 内容会变但 revision/msgCount 签名常不变；忙碌时禁用缓存（19a224c6 回归）。
+      if (!isSessionBundleBusy(bundle) && cached?.signature === sliceSignature) {
         paneSessions[resolved] = cached.slice;
         continue;
       }

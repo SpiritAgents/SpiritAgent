@@ -52,7 +52,7 @@ export interface HostCommandDelegate {
   abortConversation(request?: CommandPayloads['abortConversation']): Promise<unknown>;
   abortShell(toolCallId: string): Promise<unknown>;
   continueAssistantCompletion(messageId: number): Promise<unknown>;
-  poll(): Promise<unknown>;
+  poll(request?: import('../types.js').PollRequest): Promise<unknown>;
   listDreamsOverview(): Promise<unknown>;
   listAutomations(): Promise<unknown>;
   getAutomation(automationId: string): Promise<unknown>;
@@ -62,9 +62,9 @@ export interface HostCommandDelegate {
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<unknown>;
   replyPendingApproval(request: CommandPayloads['replyPendingApproval']['request']): Promise<unknown>;
   replyPendingQuestions(request: CommandPayloads['replyPendingQuestions']['request']): Promise<unknown>;
-  resetSession(): Promise<unknown>;
+  resetSession(payload?: CommandPayloads['resetSession']): Promise<unknown>;
   listSessions(): Promise<unknown>;
-  openSession(path: string): Promise<unknown>;
+  openSession(path: string, options?: { activate?: boolean }): Promise<unknown>;
   beginSplitPaneSession(
     request: CommandPayloads['beginSplitPaneSession']['request'],
   ): Promise<unknown>;
@@ -227,7 +227,7 @@ const hostCommandDispatch = {
   abortConversation: (host, payload) => host.abortConversation(payload ?? {}),
   abortShell: (host, payload) => host.abortShell(payload.toolCallId),
   continueAssistantCompletion: (host, payload) => host.continueAssistantCompletion(payload.messageId),
-  poll: (host) => host.poll(),
+  poll: (host, payload) => host.poll(payload),
   listDreamsOverview: (host) => host.listDreamsOverview(),
   listAutomations: (host) => host.listAutomations(),
   getAutomation: (host, payload) => host.getAutomation(payload.automationId),
@@ -237,9 +237,13 @@ const hostCommandDispatch = {
   setAutomationEnabled: (host, payload) => host.setAutomationEnabled(payload.automationId, payload.enabled),
   replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.request),
   replyPendingQuestions: (host, payload) => host.replyPendingQuestions(payload.request),
-  resetSession: (host) => host.resetSession(),
+  resetSession: (host, payload) => host.resetSession(
+    payload && typeof payload === 'object' && payload.activate === false
+      ? { activate: false }
+      : undefined,
+  ),
   listSessions: (host) => host.listSessions(),
-  openSession: (host, payload) => host.openSession(payload.path),
+  openSession: (host, payload) => host.openSession(payload.path, { activate: payload.activate }),
   beginSplitPaneSession: (host, payload) => host.beginSplitPaneSession(payload.request),
   setVisiblePaneSessions: (host, payload) => host.setVisiblePaneSessions(payload.request),
   syncSplitPaneSessions: (host, payload) => host.syncSplitPaneSessions(payload.request),
