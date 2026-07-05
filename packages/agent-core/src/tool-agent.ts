@@ -637,20 +637,38 @@ export function buildSkillsCatalogSystemMessage(
 export function buildMcpCatalogSystemMessage(
   catalog?: ToolAgentMcpToolCatalogSnapshot,
 ): string | undefined {
-  if (!catalog || catalog.servers.length === 0) {
+  const mcpServerCount = catalog?.servers.length ?? 0;
+  const builtInServerCount = catalog?.builtInServers?.length ?? 0;
+  if (!catalog || (mcpServerCount === 0 && builtInServerCount === 0)) {
     return undefined;
   }
 
-  const hasTools = catalog.totalToolCount > 0;
+  const mcpToolCount = catalog.totalToolCount;
+  const builtInToolCount = catalog.builtInToolCount ?? 0;
+  const hasTools = mcpToolCount > 0 || builtInToolCount > 0;
   const hasResources = catalog.totalResourceCount > 0;
   const lines: string[] = [];
 
   if (hasTools) {
-    lines.push(
-      'The host lists enabled MCP tools as metadata only.',
-      'Use tool_describe to fetch a tool input schema before tool_call.',
-      '',
-    );
+    if (mcpToolCount > 0 && builtInToolCount > 0) {
+      lines.push(
+        'The host lists enabled MCP and built-in tools as metadata only.',
+        'Use tool_describe to fetch a tool input schema before tool_call.',
+        '',
+      );
+    } else if (builtInToolCount > 0) {
+      lines.push(
+        'The host lists built-in tools as metadata only.',
+        'Use tool_describe to fetch a tool input schema before tool_call.',
+        '',
+      );
+    } else {
+      lines.push(
+        'The host lists enabled MCP tools as metadata only.',
+        'Use tool_describe to fetch a tool input schema before tool_call.',
+        '',
+      );
+    }
   }
 
   if (hasResources) {
@@ -702,6 +720,19 @@ export function buildMcpCatalogSystemMessage(
       lines.push('</resource>');
     }
     lines.push('</mcp-server>');
+    lines.push('');
+  }
+
+  for (const server of catalog.builtInServers ?? []) {
+    lines.push(
+      `<built-in-server name="${escapeRuleAttribute(server.name)}" displayName="${escapeRuleAttribute(server.displayName)}">`,
+    );
+    for (const tool of server.tools) {
+      lines.push(`<tool name="${escapeRuleAttribute(tool.name)}">`);
+      lines.push(tool.description.trimEnd());
+      lines.push('</tool>');
+    }
+    lines.push('</built-in-server>');
     lines.push('');
   }
 

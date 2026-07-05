@@ -35,6 +35,36 @@ test('parseLazyToolGatewayArguments parses call requests', () => {
   });
 });
 
+test('parseLazyToolGatewayArguments parses built-in describe requests', () => {
+  const parsed = parseLazyToolGatewayArguments(
+    TOOL_DESCRIBE_TOOL_NAME,
+    JSON.stringify({ provider: 'built-in', server: 'desktop', tool: 'create_automation' }),
+  );
+  assert.deepEqual(parsed, {
+    provider: 'built-in',
+    server: 'desktop',
+    tool: 'create_automation',
+  });
+});
+
+test('parseLazyToolGatewayArguments parses built-in call requests', () => {
+  const parsed = parseLazyToolGatewayArguments(
+    TOOL_CALL_TOOL_NAME,
+    JSON.stringify({
+      provider: 'built-in',
+      server: 'desktop',
+      tool: 'create_automation',
+      arguments: { overview: 'Daily summary.' },
+    }),
+  );
+  assert.deepEqual(parsed, {
+    provider: 'built-in',
+    server: 'desktop',
+    tool: 'create_automation',
+    arguments: { overview: 'Daily summary.' },
+  });
+});
+
 test('parseLazyToolGatewayArguments rejects unsupported providers', () => {
   assert.throws(
     () =>
