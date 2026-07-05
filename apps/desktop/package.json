@@ -1,7 +1,7 @@
 {
   "name": "@spiritagent/desktop",
   "private": true,
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Desktop application for Spirit Agent",
   "homepage": "https://github.com/SpiritAgents/SpiritAgent",
   "author": {
@@ -46,6 +46,7 @@
     "@shikijs/monaco": "^3.23.0",
     "@shikijs/themes": "^3.23.0",
     "@spiritagent/agent-core": "file:../../packages/agent-core",
+    "@spiritagent/dev-root": "file:../..",
     "@spiritagent/host-internal": "file:../../packages/host-internal",
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",

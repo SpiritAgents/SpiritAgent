@@ -3312,7 +3312,7 @@ dependencies = [
 
 [[package]]
 name = "spirit-agent"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "anyhow",
  "arboard",
