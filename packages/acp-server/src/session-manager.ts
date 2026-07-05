@@ -1,5 +1,5 @@
-import type { JsonValue, RuntimeEvent, SpiritAgentMode } from '@spirit-agent/core';
-import type { HostToolExecutorProxy } from '@spirit-agent/core/host-bridge';
+import type { JsonValue, RuntimeEvent, SpiritAgentMode } from '@spiritagent/agent-core';
+import type { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
 import type { AcpServerConfig, AcpSessionState } from './types.js';
 import { AVAILABLE_MODES, normalizeModeId } from './types.js';
 import { createAcpRuntime, type AcpHostRuntime, type AcpRuntimeResult } from './runtime-factory.js';
@@ -22,7 +22,7 @@ export class SessionManager {
     workspaceRoot: string,
     onEvent: (sessionId: string, event: RuntimeEvent<JsonValue>) => void,
     initialMode: SpiritAgentMode = 'agent',
-  ): Promise<{ sessionId: string; modes: typeof AVAILABLE_MODES; enabledSkillCatalog: import('@spirit-agent/core').LlmEnabledSkillCatalogEntry[] }> {
+  ): Promise<{ sessionId: string; modes: typeof AVAILABLE_MODES; enabledSkillCatalog: import('@spiritagent/agent-core').LlmEnabledSkillCatalogEntry[] }> {
     const sessionId = generateSessionId();
 
     const sessionConfig: AcpServerConfig = {

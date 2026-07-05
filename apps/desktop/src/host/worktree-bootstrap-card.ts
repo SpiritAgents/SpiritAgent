@@ -1,5 +1,5 @@
-import type { PendingWorkspaceFile } from '@spirit-agent/core';
-import type { SubagentSessionStatus } from '@spirit-agent/core';
+import type { PendingWorkspaceFile } from '@spiritagent/agent-core';
+import type { SubagentSessionStatus } from '@spiritagent/agent-core';
 
 import i18n from '../lib/i18n-host.js';
 import { phaseToVerbContext } from '../lib/tool-verb-context.js';

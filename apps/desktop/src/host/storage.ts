@@ -24,11 +24,11 @@ import {
   configureLlmHttpVersion,
   normalizeLlmHttpVersion,
   type LlmHttpVersion,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   normalizeModelReasoningEffort,
   resolveModelReasoningEffortForContext,
-} from '@spirit-agent/core/reasoning-effort';
+} from '@spiritagent/agent-core/reasoning-effort';
 import {
   createFileExtensionStateStore,
   type ExtensionManagementContext,
@@ -39,7 +39,7 @@ import {
   type HostInstructionMetadataSummary,
   type HostRuleDiscoveryResult,
   type HostSkillDiscoveryResult,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
 import { normalizeContextUsageSnapshot } from '../lib/context-usage.js';

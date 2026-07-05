@@ -1,7 +1,7 @@
 import {
   charCountToCodeUnitIndex,
   codeUnitIndexToCharCount,
-} from '@spirit-agent/host-internal/workspace-file-reference-query'
+} from '@spiritagent/host-internal/workspace-file-reference-query'
 
 import type { RichSegment } from '@/lib/composer-segment-model'
 import { isComposerPlainEmpty } from '@/lib/composer-segment-model'

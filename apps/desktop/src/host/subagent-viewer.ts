@@ -1,9 +1,9 @@
-import type { SubagentSessionArchiveEntry } from '@spirit-agent/core';
+import type { SubagentSessionArchiveEntry } from '@spiritagent/agent-core';
 import {
   buildSubagentConversationSnapshots,
   resolveSubagentPromptFromTaskFields,
   type SubagentViewerMessage,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   ConversationMessageSnapshot,

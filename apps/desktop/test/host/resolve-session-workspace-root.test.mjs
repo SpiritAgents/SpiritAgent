@@ -9,7 +9,7 @@ import test from 'node:test';
 import {
   addGitWorktree,
   buildWorktreeRootPath,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import { resolveStoredSessionWorkspaceRoot } from '../../dist-electron/src/host/resolve-session-workspace-root.js';
 

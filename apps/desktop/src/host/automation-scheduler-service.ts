@@ -13,7 +13,7 @@ import {
   type GitHubAutomationPollMatch,
   type HostAutomationDefinition,
   type HostAutomationRun,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import { cloneDesktopConfig } from './service-utils.js';
 import { loadGitHubAccessToken } from './github-auth-storage.js';

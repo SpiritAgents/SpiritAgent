@@ -1,4 +1,4 @@
-import { findLspProvider, installLspProvider } from '@spirit-agent/host-internal/lsp';
+import { findLspProvider, installLspProvider } from '@spiritagent/host-internal/lsp';
 
 import type { DesktopSnapshot, InstallLspProviderRequest } from '../types.js';
 import { buildDesktopLspSnapshot } from './lsp-snapshot.js';

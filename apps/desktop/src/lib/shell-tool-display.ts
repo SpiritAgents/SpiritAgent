@@ -1,7 +1,7 @@
 import {
   parseShellToolResult as parseShellToolResultPayload,
   type ShellToolResult,
-} from "@spirit-agent/core/shell-tool-result";
+} from "@spiritagent/agent-core/shell-tool-result";
 
 import i18n from "@/lib/i18n";
 import type { ToolBlockSnapshot } from "@/types";

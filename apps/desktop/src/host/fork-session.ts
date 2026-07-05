@@ -1,4 +1,4 @@
-import type { ChatArchive, LlmMessage } from '@spirit-agent/core';
+import type { ChatArchive, LlmMessage } from '@spiritagent/agent-core';
 
 import type { ConversationMessageSnapshot } from '../types.js';
 import {

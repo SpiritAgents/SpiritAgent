@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { mapRuntimeEventToUpdate, createEventMapperState } from '../src/event-mapper.js';
-import type { RuntimeEvent, JsonValue } from '@spirit-agent/core';
+import type { RuntimeEvent, JsonValue } from '@spiritagent/agent-core';
 
 const SESSION_ID = 'sess_test123';
 

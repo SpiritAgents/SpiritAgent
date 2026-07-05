@@ -1,7 +1,7 @@
 import {
   isWorkspaceReferenceDirectoryPath,
   normalizeWorkspaceReferenceDirectoryPath,
-} from '@spirit-agent/host-internal/workspace-file-reference-query';
+} from '@spiritagent/host-internal/workspace-file-reference-query';
 import { workspaceFileBasename } from '@/lib/file-picker-path';
 import {
   COMPOSER_INLINE_CHIP_CLASS,

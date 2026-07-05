@@ -1,5 +1,5 @@
-import type { RuntimeEvent, SubagentSessionArchiveEntry, SubagentSessionStatus } from '@spirit-agent/core';
-import { llmMessageTextContent } from '@spirit-agent/core';
+import type { RuntimeEvent, SubagentSessionArchiveEntry, SubagentSessionStatus } from '@spiritagent/agent-core';
+import { llmMessageTextContent } from '@spiritagent/agent-core';
 
 import type { ConversationMessageSnapshot } from '../types.js';
 import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';

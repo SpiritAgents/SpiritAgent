@@ -1,9 +1,9 @@
-import { formatModelDisplayNameFromId } from '@spirit-agent/host-internal/model-display-name';
+import { formatModelDisplayNameFromId } from '@spiritagent/host-internal/model-display-name';
 import {
   gatewayGoogleGeminiSupportedEfforts,
   routedAnthropicClaudeSupportedEfforts,
-} from '@spirit-agent/core';
-import type { ProviderListedModelEntry } from '@spirit-agent/host-internal';
+} from '@spiritagent/agent-core';
+import type { ProviderListedModelEntry } from '@spiritagent/host-internal';
 
 import type {
   DesktopModelCapability,

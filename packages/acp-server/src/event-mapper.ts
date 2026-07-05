@@ -1,4 +1,4 @@
-import type { JsonValue, RuntimeEvent } from '@spirit-agent/core';
+import type { JsonValue, RuntimeEvent } from '@spiritagent/agent-core';
 import type * as schema from '@agentclientprotocol/sdk';
 import { mapToolNameToKind, buildToolCallTitle, extractToolCallLocations } from './tool-call-mapper.js';
 
@@ -153,7 +153,7 @@ export function mapRuntimeEventToUpdate(
  * Formats tool execution output into ACP ToolCallContent array.
  */
 function formatToolExecutionOutput(
-  output: string | import('@spirit-agent/core').ToolExecutionOutput,
+  output: string | import('@spiritagent/agent-core').ToolExecutionOutput,
 ): schema.ToolCallContent[] | undefined {
   if (typeof output === 'string') {
     if (output.length === 0) return undefined;

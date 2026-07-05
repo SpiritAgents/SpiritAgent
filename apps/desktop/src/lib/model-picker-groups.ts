@@ -1,8 +1,8 @@
 import {
   MODEL_PROVIDER_PICKER_ORDER,
   PROVIDER_PICKER_ROWS,
-} from "@spirit-agent/host-internal/model-provider-presets";
-import { normalizeOpenAiApiBase } from "@spirit-agent/host-internal/openai-api-base";
+} from "@spiritagent/host-internal/model-provider-presets";
+import { normalizeOpenAiApiBase } from "@spiritagent/host-internal/openai-api-base";
 import type {
   DesktopModelCatalogHint,
   DesktopModelProvider,

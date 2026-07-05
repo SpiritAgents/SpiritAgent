@@ -6,7 +6,7 @@ import {
   gatewayAnthropicClaudeSupportedEfforts,
   gatewayGoogleGeminiSupportedEfforts,
   routedAnthropicClaudeSupportedEfforts,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import type { ModelProviderId, ProviderModelTransportKind } from './model-provider-presets.js';
 import { resolveProviderConnectApiBase } from './model-provider-presets.js';

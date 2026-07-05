@@ -1,4 +1,4 @@
-import type { ModelProviderId, ProviderModelTransportKind } from '@spirit-agent/host-internal';
+import type { ModelProviderId, ProviderModelTransportKind } from '@spiritagent/host-internal';
 
 export type SpiritModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration' | 'videoGeneration';
 

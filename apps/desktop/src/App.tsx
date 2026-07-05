@@ -50,7 +50,7 @@ import {
   resolveUseMicaBackdrop,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
-import { isWorkspaceReferenceDirectoryPath, normalizeWorkspaceReferenceDirectoryPath } from "@spirit-agent/host-internal/workspace-file-reference-query";
+import { isWorkspaceReferenceDirectoryPath, normalizeWorkspaceReferenceDirectoryPath } from "@spiritagent/host-internal/workspace-file-reference-query";
 import { tryHandleDesktopWorkspaceLink } from "@/lib/workspace-navigation-link";
 import {
   applyUiLayoutScaleToDocument,

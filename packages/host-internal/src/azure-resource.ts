@@ -6,4 +6,4 @@ export {
   isValidAzureResourceName,
   normalizeAzureResourceName,
   validateAzureResourceName,
-} from '@spirit-agent/core/azure-resource';
+} from '@spiritagent/agent-core/azure-resource';

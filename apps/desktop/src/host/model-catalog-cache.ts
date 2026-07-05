@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal';
+import { normalizeOpenAiApiBase } from '@spiritagent/host-internal';
 
 import type {
   DesktopModelCapability,

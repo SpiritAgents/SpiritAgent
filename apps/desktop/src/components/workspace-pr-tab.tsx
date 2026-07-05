@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
-import { appendPullRequestChecksPages } from "@spirit-agent/host-internal/github-pull-request-checks-pages";
-import { appendPullRequestConversationPages } from "@spirit-agent/host-internal/github-pull-request-conversation-pages";
+import { appendPullRequestChecksPages } from "@spiritagent/host-internal/github-pull-request-checks-pages";
+import { appendPullRequestConversationPages } from "@spiritagent/host-internal/github-pull-request-conversation-pages";
 
 import { Button } from "@/components/ui/button";
 import { GitHubSignInPrompt } from "@/components/github-sign-in-prompt";

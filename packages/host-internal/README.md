@@ -1,6 +1,6 @@
-# @spirit-agent/host-internal
+# @spiritagent/host-internal
 
-Shared **host-side implementation** for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent). It sits between platform hosts (Desktop, CLI, ACP server) and [`@spirit-agent/core`](https://www.npmjs.com/package/@spirit-agent/core), providing discovery, workspace helpers, and local execution plumbing.
+Shared **host-side implementation** for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent). It sits between platform hosts (Desktop, CLI, ACP server) and [`@spiritagent/agent-core`](https://www.npmjs.com/package/@spiritagent/agent-core), providing discovery, workspace helpers, and local execution plumbing.
 
 ## What it provides
 
@@ -13,12 +13,12 @@ Shared **host-side implementation** for [Spirit Agent](https://github.com/Spirit
 ## Requirements
 
 - Node.js 22+
-- [`@spirit-agent/core`](https://www.npmjs.com/package/@spirit-agent/core) at a matching version
+- [`@spiritagent/agent-core`](https://www.npmjs.com/package/@spiritagent/agent-core) at a matching version
 
 ## Related packages
 
-- [`@spirit-agent/core`](https://www.npmjs.com/package/@spirit-agent/core) — agent runtime, prompts, tool definitions, and transports.
-- [`@spirit-agent/acp-server`](https://www.npmjs.com/package/@spirit-agent/acp-server) — ACP server adapter that depends on this package for local tool execution.
+- [`@spiritagent/agent-core`](https://www.npmjs.com/package/@spiritagent/agent-core) — agent runtime, prompts, tool definitions, and transports.
+- [`@spiritagent/acp-server`](https://www.npmjs.com/package/@spiritagent/acp-server) — ACP server adapter that depends on this package for local tool execution.
 
 ## License
 

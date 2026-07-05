@@ -1,4 +1,4 @@
-import type { ModelProviderId } from '@spirit-agent/host-internal';
+import type { ModelProviderId } from '@spiritagent/host-internal';
 
 import { keyringStore } from './keyring-store.js';
 import {

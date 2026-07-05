@@ -5,7 +5,7 @@ import type {
   PendingWorkspaceFile,
   RuntimeApprovalDecision,
   RuntimeEvent,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import { cloneActiveSkills } from './runtime.js';
 
 import i18n from '../lib/i18n-host.js';
@@ -122,7 +122,7 @@ export interface SessionTurnOrchestratorContext {
   latestContinuableAssistantMessage(): ConversationMessageSnapshot | undefined;
   insertUserApprovalReplyMessage(content: string, pendingToolCallId?: string): void;
   normalizeApprovalDecision(decision: DesktopApprovalDecision | undefined): RuntimeApprovalDecision;
-  runSessionEndForActive?(reason: import('@spirit-agent/core').SessionEndHookInput['reason']): Promise<void>;
+  runSessionEndForActive?(reason: import('@spiritagent/agent-core').SessionEndHookInput['reason']): Promise<void>;
   worktreeBootstrapHost?: WorktreeBootstrapHostContext;
 }
 

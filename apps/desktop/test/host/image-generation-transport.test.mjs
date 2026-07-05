@@ -5,7 +5,7 @@ import {
   AiSdkOpenResponsesTransport,
   createLlmTransport,
   isOpenAiCompatibleTransportConfig,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 test('deepseek primary transport without transportKind must still count as openai-compatible', () => {
   const runtimeTransportConfig = {
