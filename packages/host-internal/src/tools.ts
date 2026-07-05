@@ -48,10 +48,10 @@ import {
   type HostExtensionToolExecutionMode,
 } from './extensions.js';
 import {
+  buildCreateAutomationApprovalPrompt,
   CREATE_AUTOMATION_TOOL_NAME,
   type CreateAutomationApprovalLevel,
   deriveAutomationTitle,
-  formatCreateAutomationApprovalLabel,
   parseCreateAutomationApprovalLevel,
   parseCreateAutomationTriggerInput,
 } from './automation-host-tool.js';
@@ -937,12 +937,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case CREATE_AUTOMATION_TOOL_NAME:
         return {
           kind: 'need-approval',
-          prompt:
-            `高风险工具调用: 创建自动化\n` +
-            `标题: ${request.title}\n` +
-            `调度: ${formatTriggerLabel(request.trigger)}\n` +
-            `运行审批: ${formatCreateAutomationApprovalLabel(request.approval_level)}\n` +
-            `概述长度: ${[...request.overview].length} 字符`,
+          prompt: buildCreateAutomationApprovalPrompt(request),
         };
       case 'edit_file':
         return {

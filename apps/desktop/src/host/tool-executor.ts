@@ -9,11 +9,9 @@ import {
   createLlmVideoContentPart,
   createLlmTextContentPart,
   buildBuiltinHostToolDefinitions,
-  buildContributedHostToolDefinitions,
   buildDreamHostToolDefinitions,
   buildDreamReadHostToolDefinitions,
   assertAgentModeAllowsHostTool,
-  assertContributedHostToolAllowed,
   assertFinishTaskToolAllowed,
   filterContributedToolDefinitionsForAgentMode,
   filterHostToolDefinitionsForAgentMode,
@@ -34,6 +32,18 @@ import {
   TOOL_CALL_TOOL_NAME,
   FETCH_MCP_RESOURCE_TOOL_NAME,
   authorizeLazyToolGatewayRequest,
+  buildLazyToolGatewayDefinitions,
+  createBuiltInLazyToolGatewayBackendWithCall,
+  createCompositeLazyToolGatewayBackend,
+  createMcpLazyToolGatewayBackend,
+  executeLazyToolGatewayCall,
+  LAZY_BUILT_IN_SERVER_DESKTOP,
+  LAZY_TOOL_PROVIDER_BUILT_IN,
+  mergeLazyToolCatalogSnapshots,
+  parseBuiltInLazyToolCallArguments,
+  parseLazyToolGatewayArguments,
+  type LazyToolGatewayToolRequest,
+  type BuiltInLazyToolIndexEntry,
   type McpToolRequest,
   type ToolAgentMcpToolCatalogSnapshot,
   type ToolExecutionOutput,
@@ -50,6 +60,10 @@ import {
 } from '@spiritagent/host-internal/lsp';
 import {
   CREATE_AUTOMATION_CONTRIBUTED_TOOL,
+  CREATE_AUTOMATION_TOOL_NAME,
+  buildCreateAutomationApprovalPrompt,
+  previewCreateAutomationFromArguments,
+  toBuiltInLazyToolIndexEntry,
   type HostAutomationCreateDefaults,
   type HostAutomationDefinition,
   type HostDreamScope,
@@ -78,7 +92,7 @@ type DesktopDreamToolMode = 'read-only' | 'collector';
 
 const READ_ONLY_DREAM_TOOL_NAMES = new Set<DreamHostToolName>(['dream_list', 'dream_read']);
 
-const DESKTOP_HOST_CONTRIBUTED_TOOL_DEFINITIONS = [CREATE_AUTOMATION_CONTRIBUTED_TOOL];
+const DESKTOP_BUILT_IN_LAZY_TOOL_DEFINITIONS = [CREATE_AUTOMATION_CONTRIBUTED_TOOL];
 
 function isDreamToolRequest(request: DesktopToolRequest): request is Extract<DesktopToolRequest, { name: DreamHostToolName }> {
   return typeof request?.name === 'string' && request.name.startsWith('dream_');
@@ -241,20 +255,17 @@ export class DesktopToolExecutor
       this.agentMode,
     );
     const hostDefinitionItems = Array.isArray(mergedHostDefinitions) ? mergedHostDefinitions : [];
-    const hostContributedToolDefinitions = this.hostContributedToolsEnabled
-      ? buildContributedHostToolDefinitions(
-          filterContributedToolDefinitionsForAgentMode(
-            DESKTOP_HOST_CONTRIBUTED_TOOL_DEFINITIONS,
-            this.agentMode,
-          ),
-        )
-      : [];
+    const mcpDefinitions = this.mcp.toolDefinitionsJson();
+    const builtInLazyGatewayDefinitions =
+      this.builtInLazyToolIndex().length > 0 && mcpDefinitions.length === 0
+        ? buildLazyToolGatewayDefinitions()
+        : [];
 
     return mergeToolDefinitions(
       ...hostDefinitionItems,
-      ...hostContributedToolDefinitions,
+      ...builtInLazyGatewayDefinitions,
       ...this.extensionToolDefinitions,
-      ...this.mcp.toolDefinitionsJson(),
+      ...mcpDefinitions,
       ...(this.lsp?.enabled
         ? buildLspHostToolDefinitions(this.lsp.readyProvidersForToolDefinitions())
         : []),
@@ -280,14 +291,6 @@ export class DesktopToolExecutor
     const availableDefinitions = this.toolDefinitionsJson();
     assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled, availableDefinitions);
     assertAgentModeAllowsHostTool(name, this.agentMode, availableDefinitions);
-    if (this.hostContributedToolsEnabled) {
-      assertContributedHostToolAllowed(
-        name,
-        this.agentMode,
-        DESKTOP_HOST_CONTRIBUTED_TOOL_DEFINITIONS,
-        availableDefinitions,
-      );
-    }
     try {
       const localMcpRequest = await this.mcp.requestFromFunctionCall(name, argumentsJson);
       if (localMcpRequest) {
@@ -316,13 +319,8 @@ export class DesktopToolExecutor
       return { kind: 'allowed' };
     }
     if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
-      return authorizeLazyToolGatewayRequest(
-        request as unknown as {
-          kind: 'lazyToolGateway';
-          name: string;
-          argumentsJson: string;
-        },
-        this.approvalLevel,
+      return this.authorizeLazyToolGateway(
+        request as unknown as LazyToolGatewayToolRequest,
       );
     }
     if (this.mcp.isToolRequest(request as JsonValue)) {
@@ -354,12 +352,10 @@ export class DesktopToolExecutor
     }
     if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
       return createToolExecutionTextOutput(
-        await this.mcp.executeLazyToolGatewayToolRequest(
-          request as unknown as {
-            kind: 'lazyToolGateway';
-            name: string;
-            argumentsJson: string;
-          },
+        await executeLazyToolGatewayCall(
+          (request as unknown as LazyToolGatewayToolRequest).name,
+          (request as unknown as LazyToolGatewayToolRequest).argumentsJson,
+          this.lazyToolGatewayBackend(),
         ),
       );
     }
@@ -483,7 +479,10 @@ export class DesktopToolExecutor
   }
 
   mcpToolCatalogSnapshot(): ToolAgentMcpToolCatalogSnapshot {
-    return this.mcp.catalogSnapshot();
+    return mergeLazyToolCatalogSnapshots(
+      this.mcp.catalogSnapshot(),
+      this.builtInLazyToolIndex(),
+    );
   }
 
   mcpCatalogRevision(): number {
@@ -508,6 +507,72 @@ export class DesktopToolExecutor
 
   async listMcpResources(name: string): Promise<unknown[]> {
     return this.mcp.listResources(name);
+  }
+
+  private builtInLazyToolIndex(): BuiltInLazyToolIndexEntry[] {
+    if (!this.hostContributedToolsEnabled) {
+      return [];
+    }
+
+    return filterContributedToolDefinitionsForAgentMode(
+      DESKTOP_BUILT_IN_LAZY_TOOL_DEFINITIONS,
+      this.agentMode,
+    ).map((definition) => toBuiltInLazyToolIndexEntry(definition));
+  }
+
+  private lazyToolGatewayBackend() {
+    return createCompositeLazyToolGatewayBackend({
+      mcp: createMcpLazyToolGatewayBackend(this.mcp),
+      builtIn: createBuiltInLazyToolGatewayBackendWithCall(
+        this.builtInLazyToolIndex(),
+        async (callRequest) => {
+          if (
+            callRequest.provider !== LAZY_TOOL_PROVIDER_BUILT_IN
+            || callRequest.server !== LAZY_BUILT_IN_SERVER_DESKTOP
+            || callRequest.tool !== CREATE_AUTOMATION_TOOL_NAME
+          ) {
+            throw new Error(`Unknown built-in tool: ${callRequest.server}/${callRequest.tool}`);
+          }
+
+          const args = parseBuiltInLazyToolCallArguments(callRequest);
+          const hostRequest = await this.tools.requestFromFunctionCall(
+            CREATE_AUTOMATION_TOOL_NAME,
+            JSON.stringify(args),
+          );
+          const output = await this.tools.execute(hostRequest);
+          return typeof output === 'string' ? output : output.summaryText;
+        },
+      ),
+    });
+  }
+
+  private authorizeLazyToolGateway(
+    request: LazyToolGatewayToolRequest,
+  ): AuthorizationDecision<string> {
+    if (request.name === TOOL_CALL_TOOL_NAME && this.approvalLevel !== 'full-approval') {
+      const parsed = parseLazyToolGatewayArguments(request.name, request.argumentsJson);
+      if (
+        parsed.provider === LAZY_TOOL_PROVIDER_BUILT_IN
+        && parsed.server === LAZY_BUILT_IN_SERVER_DESKTOP
+        && parsed.tool === CREATE_AUTOMATION_TOOL_NAME
+        && 'arguments' in parsed
+      ) {
+        try {
+          const preview = previewCreateAutomationFromArguments(
+            parseBuiltInLazyToolCallArguments(parsed),
+          );
+          return {
+            kind: 'need-approval',
+            prompt: buildCreateAutomationApprovalPrompt(preview),
+            trustTarget: `built-in:${parsed.server}:${parsed.tool}`,
+          };
+        } catch {
+          // Fall through to generic lazy gateway authorization.
+        }
+      }
+    }
+
+    return authorizeLazyToolGatewayRequest(request, this.approvalLevel);
   }
 
   private assertAllowedDreamToolRequest(request: DesktopToolRequest): void {
