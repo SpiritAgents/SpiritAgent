@@ -96,7 +96,9 @@ export default function App() {
   const newSessionBusy = runtime.busyAction === "reset";
   const conversationNavigationPending =
     sessionNavigationBusy || runtime.layoutNavigationPending;
-  const activeFilePath = snapshot?.activeSession?.filePath ?? null;
+  const activeFilePath = runtime.hostKind === "web"
+    ? (runtime.viewingSessionPath ?? snapshot?.activeSession?.filePath ?? null)
+    : (snapshot?.activeSession?.filePath ?? null);
   const sidebarActiveFilePath = useSettledSidebarActivePath(
     activeFilePath,
     conversationNavigationPending,

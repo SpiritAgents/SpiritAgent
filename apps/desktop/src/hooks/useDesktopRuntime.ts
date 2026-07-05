@@ -29,6 +29,7 @@ import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { readSessionSplitBinding } from "@/lib/session-split-binding";
 import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
 import { normalizePaneSessionPathKey, resolvePaneDesktopSnapshot } from "@/lib/pane-desktop-snapshot";
+import { getWebClientViewingSessionPath, setWebClientViewingSessionPath } from "@/adapters/web";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
 import type {
   AddModelRequest,
@@ -332,9 +333,32 @@ function shouldHoldSessionBusyForSplitRestore(
   );
 }
 
+function isRemoteWebHostClient(apiKind: string | null | undefined): boolean {
+  if (apiKind === 'web') {
+    return true;
+  }
+  return typeof window !== 'undefined' && !window.spiritDesktop;
+}
+
+function webPollRequestForSnapshot(
+  apiKind: string | null | undefined,
+  snapshot: DesktopSnapshot | null | undefined,
+  viewingSessionPath?: string,
+): import('../types').PollRequest | undefined {
+  if (!isRemoteWebHostClient(apiKind)) {
+    return undefined;
+  }
+  const sessionPath =
+    viewingSessionPath?.trim()
+    ?? getWebClientViewingSessionPath().trim()
+    ?? snapshot?.activeSession?.filePath?.trim();
+  return sessionPath ? { sessionPath } : undefined;
+}
+
 export function useDesktopRuntime() {
   const { api, error: hostError, kind, ready: hostReady } = useHostApi();
   const [snapshot, setSnapshot] = useState<DesktopSnapshot | null>(null);
+  const [webViewingSessionPath, setWebViewingSessionPath] = useState("");
   const [runtimeError, setRuntimeError] = useState("");
   const [webHostPairingRequired, setWebHostPairingRequired] = useState(false);
   const [composer, setComposer] = useState("");
@@ -386,6 +410,17 @@ export function useDesktopRuntime() {
   const paneWorkspaceBusySessionPathRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
   const snapshotRef = useRef<DesktopSnapshot | null>(null);
+  const webViewingSessionPathRef = useRef("");
+
+  const syncWebViewingSessionPath = useCallback((sessionPath: string | undefined) => {
+    const trimmed = sessionPath?.trim();
+    if (!trimmed) {
+      return;
+    }
+    webViewingSessionPathRef.current = trimmed;
+    setWebClientViewingSessionPath(trimmed);
+    setWebViewingSessionPath(trimmed);
+  }, []);
   const micaSaveSeqRef = useRef(0);
   const micaInFlightRef = useRef(0);
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
@@ -620,26 +655,38 @@ export function useDesktopRuntime() {
       appliedConversationRevisionRef.current = 0;
     }
 
-    appliedComposerSessionKeyRef.current = sessionKey;
-    appliedConversationRevisionRef.current = revision;
-    setSnapshot(next);
+    let effectiveNext = next;
+    if (isRemoteWebHostClient(api?.kind)) {
+      const viewingPath =
+        webViewingSessionPathRef.current.trim() || webViewingSessionPath.trim();
+      const incomingPath = next.activeSession?.filePath?.trim() ?? "";
+      if (viewingPath && incomingPath && viewingPath !== incomingPath) {
+        const projected = resolvePaneDesktopSnapshot(next, viewingPath);
+        if (projected) {
+          effectiveNext = projected;
+        }
+      }
+    }
+    appliedComposerSessionKeyRef.current = effectiveNext.composerSessionKey;
+    appliedConversationRevisionRef.current = effectiveNext.conversation.revision ?? revision;
+    setSnapshot(effectiveNext);
     setSessions((current) => {
       const patched = patchActiveSessionDisplayNameInList(
         current,
-        next.activeSession?.filePath,
-        next.activeSession?.displayName,
+        effectiveNext.activeSession?.filePath,
+        effectiveNext.activeSession?.displayName,
       );
       return patched ?? current;
     });
-    setRuntimeError(next.runtimeError ?? "");
+    setRuntimeError(effectiveNext.runtimeError ?? "");
     setSettings((current) => {
-      const activeModelProfile = next.config.models.find(
-        (model) => model.name === next.config.activeModel,
+      const activeModelProfile = effectiveNext.config.models.find(
+        (model) => model.name === effectiveNext.config.activeModel,
       );
-      const configAgentMode = (next.config.agentMode ?? "agent") as DesktopAgentMode;
+      const configAgentMode = (effectiveNext.config.agentMode ?? "agent") as DesktopAgentMode;
       // 回合进行中 poll 可能仍带旧 config.agentMode；勿覆盖用户 dismiss Chip 后 saveSettingsPatch 的乐观 agentMode。
       const turnInFlight =
-        next.conversation.isBusy === true || busyActionRef.current === "send";
+        effectiveNext.conversation.isBusy === true || busyActionRef.current === "send";
       const chipDismissed = agentModeChipDismissedRef.current;
       let agentMode: DesktopAgentMode =
         turnInFlight && current.agentMode !== configAgentMode
@@ -832,6 +879,9 @@ export function useDesktopRuntime() {
     setBusyAction("bootstrap");
     try {
       const next = await api.bootstrap(request);
+      if (isRemoteWebHostClient(api.kind)) {
+        syncWebViewingSessionPath(next.activeSession?.filePath);
+      }
       applySnapshot(next);
       restoreSessionUi(next);
       setRuntimeError("");
@@ -843,7 +893,7 @@ export function useDesktopRuntime() {
     } finally {
       setBusyAction("");
     }
-  }, [api, applySnapshot, refreshSessions, restoreSessionUi]);
+  }, [api, applySnapshot, refreshSessions, restoreSessionUi, syncWebViewingSessionPath]);
 
   const switchWorkspaceRoot = useCallback(
     async (workspaceRoot: string): Promise<boolean> => {
@@ -1260,7 +1310,9 @@ export function useDesktopRuntime() {
 
   /** Active or background session busy: poll until none are busy. */
   useEffect(() => {
-    const shouldPoll = snapshot?.conversation.isBusy === true || backgroundSessionsBusy;
+    const shouldPoll = isRemoteWebHostClient(api?.kind)
+      ? snapshot?.conversation.isBusy === true
+      : snapshot?.conversation.isBusy === true || backgroundSessionsBusy;
     if (!api || !shouldPoll) {
       return;
     }
@@ -1270,9 +1322,37 @@ export function useDesktopRuntime() {
     void (async () => {
       try {
         while (!cancelled) {
-          const next = await api.poll();
+          const pollRequest = webPollRequestForSnapshot(
+            api.kind,
+            snapshotRef.current,
+            webViewingSessionPathRef.current,
+          );
+          const next = await api.poll(pollRequest);
           if (cancelled) {
             break;
+          }
+          const localForegroundBusy = snapshotRef.current?.conversation.isBusy === true;
+          const localPath = snapshotRef.current?.activeSession?.filePath?.trim() ?? '';
+          const nextPath = next.activeSession?.filePath?.trim() ?? '';
+          const blockPollForegroundSwap =
+            api.kind === 'electron'
+            && !localForegroundBusy
+            && backgroundSessionsBusy
+            && localPath.length > 0
+            && nextPath.length > 0
+            && localPath !== nextPath
+            && busyActionRef.current !== 'session';
+          if (blockPollForegroundSwap) {
+            const sessionItems = await api.listSessions();
+            if (cancelled) {
+              break;
+            }
+            applySessionList(sessionItems);
+            const stillBusy = sessionItems.some((session) => session.isBusy === true);
+            if (!stillBusy) {
+              break;
+            }
+            continue;
           }
           applySnapshot(next);
           if (next.conversation.isBusy === true) {
@@ -1307,8 +1387,25 @@ export function useDesktopRuntime() {
 
     return api.subscribeDreamUpdates((next) => {
       const previous = snapshotRef.current;
+      const prevPath = previous?.activeSession?.filePath;
+      const nextPath = next.activeSession?.filePath;
+      const blockForegroundSwap =
+        api.kind === 'electron'
+        && Boolean(prevPath)
+        && Boolean(nextPath)
+        && prevPath !== nextPath
+        && busyActionRef.current !== 'session';
+      if (blockForegroundSwap && previous) {
+        applySnapshot({
+          ...next,
+          activeSession: previous.activeSession!,
+          conversation: previous.conversation,
+          composerSessionKey: previous.composerSessionKey,
+        });
+      } else {
+        applySnapshot(next);
+      }
       const needRefreshSessions = previous ? shouldRefreshDreamSessions(previous, next) : false;
-      applySnapshot(next);
       if (needRefreshSessions) {
         void refreshSessions();
       }
@@ -1349,7 +1446,12 @@ export function useDesktopRuntime() {
 
     const pollDreams = async () => {
       try {
-        const next = await api.poll();
+        const pollRequest = webPollRequestForSnapshot(
+          api.kind,
+          snapshotRef.current,
+          webViewingSessionPathRef.current,
+        );
+        const next = await api.poll(pollRequest);
         if (cancelled) {
           return;
         }
@@ -2232,7 +2334,14 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
-    const targetSessionPath = request.sessionPath?.trim();
+    const targetSessionPath =
+      request.sessionPath?.trim()
+      ?? (isRemoteWebHostClient(api.kind)
+        ? webViewingSessionPathRef.current.trim() || webViewingSessionPath.trim()
+        : undefined);
+    if (isRemoteWebHostClient(api.kind) && !targetSessionPath) {
+      return false;
+    }
     const effectiveSnapshot = targetSessionPath && snapshot
       ? resolvePaneDesktopSnapshot(snapshot, targetSessionPath)
       : snapshot;
@@ -2271,6 +2380,9 @@ export function useDesktopRuntime() {
         ...(skillChipAliases.length > 0 ? { skillChipAliases } : {}),
         ...(targetSessionPath ? { sessionPath: targetSessionPath } : {}),
       });
+      if (isRemoteWebHostClient(api.kind)) {
+        syncWebViewingSessionPath(next.activeSession?.filePath ?? targetSessionPath);
+      }
       applySnapshot(next);
       clearActiveComposerDraft();
       setRuntimeError("");
@@ -2881,6 +2993,9 @@ export function useDesktopRuntime() {
         if (navGeneration !== sessionNavigationGenerationRef.current) {
           return;
         }
+        if (isRemoteWebHostClient(api.kind)) {
+          syncWebViewingSessionPath(next.activeSession?.filePath ?? path);
+        }
         applySnapshot(next, { navGeneration });
         restoreSessionUi(next);
         holdBusyForSplitRestore = shouldHoldSessionBusyForSplitRestore(path, next);
@@ -2897,7 +3012,7 @@ export function useDesktopRuntime() {
         }
       }
     },
-    [acknowledgeSessionAttention, api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi],
+    [acknowledgeSessionAttention, api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi, syncWebViewingSessionPath],
   );
 
   const releaseSessionNavigationBusy = useCallback(() => {
@@ -3374,6 +3489,9 @@ export function useDesktopRuntime() {
       if (navGeneration !== sessionNavigationGenerationRef.current) {
         return false;
       }
+      if (isRemoteWebHostClient(api.kind)) {
+        syncWebViewingSessionPath(next.activeSession?.filePath);
+      }
       applySnapshot(next, { navGeneration });
       restoreSessionUi(next);
       if (options?.composerSeed !== undefined) {
@@ -3390,7 +3508,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
-  }, [api, applyComposerSeed, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi]);
+  }, [api, applyComposerSeed, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi, syncWebViewingSessionPath]);
 
   const summary = useMemo(() => {
     const canEnqueueWhileBusy =
@@ -3421,7 +3539,12 @@ export function useDesktopRuntime() {
       return;
     }
     try {
-      const next = await api.poll();
+      const pollRequest = webPollRequestForSnapshot(
+        api.kind,
+        snapshotRef.current,
+        webViewingSessionPathRef.current,
+      );
+      const next = await api.poll(pollRequest);
       applySnapshot(next);
       void refreshSessions();
     } catch {
@@ -3472,6 +3595,9 @@ export function useDesktopRuntime() {
     composerLocalFileAttachments,
     setComposerDraftSegments,
     hostKind: kind,
+    viewingSessionPath: isRemoteWebHostClient(kind)
+      ? (webViewingSessionPath || snapshot?.activeSession?.filePath || null)
+      : (snapshot?.activeSession?.filePath ?? null),
     pendingQuestions,
     questionDrafts,
     questionError,

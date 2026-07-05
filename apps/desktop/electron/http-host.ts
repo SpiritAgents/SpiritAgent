@@ -680,12 +680,20 @@ async function handleApiRequest({
   }
 
   if (request.method === 'POST' && pathname === '/api/submit') {
+    const submitSessionPath =
+      typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath.trim() : '';
     writeJson(
       request,
       response,
       200,
       await runHostCommand('submitUserTurn', {
         text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+        ...(submitSessionPath ? { sessionPath: submitSessionPath } : {}),
+        ...(Array.isArray(jsonBody?.localFilePaths) ? { localFilePaths: jsonBody.localFilePaths } : {}),
+        ...(Array.isArray(jsonBody?.referencedWorkspaceFilePaths)
+          ? { referencedWorkspaceFilePaths: jsonBody.referencedWorkspaceFilePaths }
+          : {}),
+        ...(Array.isArray(jsonBody?.skillChipAliases) ? { skillChipAliases: jsonBody.skillChipAliases } : {}),
       }),
     );
     return;
@@ -915,7 +923,15 @@ async function handleApiRequest({
   }
 
   if (request.method === 'POST' && pathname === '/api/poll') {
-    writeJson(request, response, 200, await runHostCommand('poll'));
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand(
+        'poll',
+        typeof jsonBody?.sessionPath === 'string' ? { sessionPath: jsonBody.sessionPath } : undefined,
+      ),
+    );
     return;
   }
 
@@ -990,7 +1006,12 @@ async function handleApiRequest({
   }
 
   if (request.method === 'POST' && pathname === '/api/reset') {
-    writeJson(request, response, 200, await runHostCommand('resetSession'));
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('resetSession', { activate: false }),
+    );
     return;
   }
 
@@ -1001,6 +1022,8 @@ async function handleApiRequest({
       200,
       await runHostCommand('openSession', {
         path: typeof jsonBody?.path === 'string' ? jsonBody.path : '',
+        // HTTP clients are remote viewers; never steal the desktop foreground session.
+        activate: false,
       }),
     );
     return;

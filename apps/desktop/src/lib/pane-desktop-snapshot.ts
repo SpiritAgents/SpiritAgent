@@ -45,12 +45,21 @@ export function resolvePaneDesktopSnapshot(
   if (!pane) {
     // Stale layout path after promote: do not project the foreground conversation onto this pane.
     if (snapshot.paneSessions && Object.keys(snapshot.paneSessions).length > 0) {
+      const isProvisional = sessionPath.includes('__provisional__');
       return {
         ...snapshot,
+        activeSession: {
+          filePath: sessionPath,
+          displayName: sessionPath.split(/[/\\]/).pop()?.replace(/\.json$/i, '') ?? sessionPath,
+          kind: isProvisional ? 'ephemeral' : 'stored',
+          readOnly: false,
+        },
         conversation: {
           ...snapshot.conversation,
           messages: [],
+          isBusy: false,
         },
+        composerSessionKey: sessionPath,
       };
     }
     return snapshot;

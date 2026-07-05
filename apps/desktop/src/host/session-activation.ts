@@ -76,6 +76,7 @@ export interface SessionActivationContext {
   setLastRuntimeError(error: string): void;
   scheduleSessionExtensionWarmup(event: HostExtensionEvent): void;
   buildSnapshot(): DesktopSnapshot;
+  buildSnapshotProjectedForBundle(bundle: SessionBundle): DesktopSnapshot;
   clearSubagentViewerTarget(): void;
   runSessionEndForBundle?(
     bundle: SessionBundle,
@@ -294,6 +295,103 @@ export async function openSessionCommand(
       },
     });
     return ctx.buildSnapshot();
+  });
+}
+
+/** Load or warm a session bundle without changing host foreground activation (remote web open). */
+async function registerSessionBundleForOpen(
+  ctx: SessionActivationContext,
+  filePath: string,
+): Promise<SessionBundle> {
+  if (isEphemeralDebugSessionPath(filePath)) {
+    const ephemeral = ctx.findEphemeralSession(filePath);
+    if (!ephemeral) {
+      throw new Error(i18n.t('error.ephemeralSessionExpired'));
+    }
+    const ephemeralSameWorkspace = Boolean(
+      ctx.isInitialized()
+      && ctx.currentWorkspaceRoot()
+      && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, ephemeral.workspaceRoot),
+    );
+    await ctx.ensureInitialized(ephemeral.workspaceRoot, {
+      preserveRecentWorkspaces: true,
+      ...(ephemeralSameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
+    });
+    const restored = restoreEphemeralSessionState(ephemeral);
+    return ctx.sessionRegistry().upsertFromRestored(
+      ephemeral.workspaceRoot,
+      restored,
+      (messages, timelineSnapshot) => ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+    );
+  }
+
+  const resolvedPath = path.resolve(filePath);
+  const warmBundle = ctx.sessionRegistry().findBySessionPath(resolvedPath);
+  if (warmBundle?.activeSession) {
+    await ctx.ensureInitialized(warmBundle.workspaceRoot, { fastPath: true });
+    return warmBundle;
+  }
+
+  if (isSplitProvisionalSessionPath(resolvedPath)) {
+    const paneId = parseSplitPaneIdFromSessionPath(resolvedPath);
+    if (paneId) {
+      await ctx.ensureInitialized(undefined, { fastPath: true });
+      const state = ctx.requireState();
+      return ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
+    }
+  }
+
+  const loaded = await loadStoredSession(filePath);
+  const workspaceRoot = loaded.workspaceRoot
+    ? await resolveStoredSessionWorkspaceRoot({
+        workspaceRoot: loaded.workspaceRoot,
+        gitBranch: loaded.gitBranch,
+      })
+    : ctx.requireState().workspaceRoot;
+  const sameWorkspace =
+    ctx.isInitialized()
+    && Boolean(ctx.currentWorkspaceRoot())
+    && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
+  await ctx.ensureInitialized(workspaceRoot, {
+    ...(sameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
+    preserveRecentWorkspaces: true,
+  });
+  const restored = restoreStoredSessionState({
+    filePath,
+    loaded,
+  });
+  const bundle = ctx.sessionRegistry().upsertFromRestored(
+    workspaceRoot,
+    restored,
+    (messages, timelineSnapshot) => ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+  );
+  bundle.listSortSavedAtUnixMs = loaded.savedAtUnixMs;
+  return bundle;
+}
+
+export async function openSessionBackgroundCommand(
+  ctx: SessionActivationContext,
+  filePath: string,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    const bundle = await registerSessionBundleForOpen(ctx, filePath);
+    ctx.setLastRuntimeError('');
+    return ctx.buildSnapshotProjectedForBundle(bundle);
+  });
+}
+
+/** Create a new empty session for remote web without changing host foreground activation. */
+export async function resetSessionBackgroundCommand(
+  ctx: SessionActivationContext,
+): Promise<DesktopSnapshot> {
+  return ctx.runSerialized(async () => {
+    await ctx.ensureInitialized(undefined, { fastPath: true });
+    ctx.clearSubagentViewerTarget();
+    const state = ctx.requireState();
+    const bundle = ctx.sessionRegistry().beginNewBackground(state.workspaceRoot);
+    await ctx.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
+    ctx.setLastRuntimeError('');
+    return ctx.buildSnapshotProjectedForBundle(bundle);
   });
 }
 

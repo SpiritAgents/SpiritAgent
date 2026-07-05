@@ -65,13 +65,57 @@ type WebHostPairingResponse = {
   token: string;
 };
 
+/** Remote web client viewing session; HTTP submit/poll always scope to this path. */
+let webViewingSessionPath = '';
+
+export function setWebClientViewingSessionPath(sessionPath: string): void {
+  webViewingSessionPath = sessionPath.trim();
+}
+
+export function getWebClientViewingSessionPath(): string {
+  return webViewingSessionPath;
+}
+
+function rememberWebViewingSession(snapshot: DesktopSnapshot | null | undefined): void {
+  const sessionPath = snapshot?.activeSession?.filePath?.trim();
+  if (sessionPath) {
+    webViewingSessionPath = sessionPath;
+  }
+}
+
+function rememberWebViewingSessionAfterSubmit(
+  request: { sessionPath?: string },
+  snapshot: DesktopSnapshot,
+): void {
+  const responsePath = snapshot.activeSession?.filePath?.trim();
+  if (!responsePath) {
+    return;
+  }
+  const requestPath = request.sessionPath?.trim();
+  if (requestPath) {
+    webViewingSessionPath = responsePath;
+  }
+}
+
+function withWebViewingSessionPath<T extends { sessionPath?: string }>(request: T): T {
+  const sessionPath = request.sessionPath?.trim() || webViewingSessionPath.trim();
+  return sessionPath ? { ...request, sessionPath } : request;
+}
+
 export function createWebHostApi(): HostApi {
   const baseUrl = DEFAULT_HOST_URL || '';
 
   return {
     kind: 'web',
     bootstrap(request?: BootstrapRequest) {
-      return post<DesktopSnapshot>(baseUrl, '/api/bootstrap', request ?? {});
+      const shouldIsolate = !request?.workspaceRoot;
+      return post<DesktopSnapshot>(baseUrl, '/api/bootstrap', {
+        ...(request ?? {}),
+        ...(shouldIsolate ? { isolateSession: true } : {}),
+      }).then((snapshot) => {
+        rememberWebViewingSession(snapshot);
+        return snapshot;
+      });
     },
     commitChanges(request: CommitChangesRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/git/commit', request);
@@ -169,7 +213,12 @@ export function createWebHostApi(): HostApi {
       return post<DesktopSnapshot>(baseUrl, '/api/compact');
     },
     submitUserTurn(request) {
-      return post<DesktopSnapshot>(baseUrl, '/api/submit', request);
+      return post<DesktopSnapshot>(baseUrl, '/api/submit', withWebViewingSessionPath(request)).then(
+        (snapshot) => {
+          rememberWebViewingSessionAfterSubmit(request, snapshot);
+          return snapshot;
+        },
+      );
     },
     setLoopEnabled(enabled: boolean) {
       return post<DesktopSnapshot>(baseUrl, '/api/loop', { enabled });
@@ -279,8 +328,9 @@ export function createWebHostApi(): HostApi {
     removeQueuedUserTurn(request: QueuedUserTurnRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/queue/remove', request);
     },
-    poll() {
-      return post<DesktopSnapshot>(baseUrl, '/api/poll');
+    poll(request?: import('../types.js').PollRequest) {
+      const body = withWebViewingSessionPath(request ?? {});
+      return post<DesktopSnapshot>(baseUrl, '/api/poll', body);
     },
     setSubagentViewerTarget(parentToolCallId: string | null) {
       return post<DesktopSnapshot>(baseUrl, '/api/subagent-viewer-target', { parentToolCallId });
@@ -319,13 +369,16 @@ export function createWebHostApi(): HostApi {
       return post<DesktopSnapshot>(baseUrl, '/api/questions', request);
     },
     resetSession() {
-      return post<DesktopSnapshot>(baseUrl, '/api/reset');
+      return post<DesktopSnapshot>(baseUrl, '/api/reset').then((snapshot) => {
+        rememberWebViewingSession(snapshot);
+        return snapshot;
+      });
     },
     listSessions() {
       return get<SessionListItem[]>(baseUrl, '/api/sessions');
     },
     openSession(path: string) {
-      return post<DesktopSnapshot>(baseUrl, '/api/sessions/open', { path });
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/open', { path, activate: false });
     },
     beginSplitPaneSession(request: BeginSplitPaneSessionRequest) {
       return post<BeginSplitPaneSessionResponse>(baseUrl, '/api/sessions/split/begin', request);
