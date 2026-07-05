@@ -5,7 +5,7 @@ import {
   resolveEffectivePaneActiveModel,
 } from './active-model-sync.js';
 
-import type { SessionEndHookInput, SessionStartHookInput } from '@spirit-agent/core';
+import type { SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
 
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import i18n from '../lib/i18n-host.js';
@@ -26,7 +26,7 @@ import {
 } from './sessions.js';
 import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from './message-timeline.js';
 import { currentApiBase, sameWorkspaceRoot } from './service-utils.js';
-import type { HostExtensionEvent } from '@spirit-agent/host-internal';
+import type { HostExtensionEvent } from '@spiritagent/host-internal';
 import { cancelPendingWorktreeBootstrapOnBundle } from './worktree-bootstrap-orchestrator.js';
 import { resolveStoredSessionWorkspaceRoot } from './resolve-session-workspace-root.js';
 

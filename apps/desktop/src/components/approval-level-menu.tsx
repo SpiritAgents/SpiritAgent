@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ApprovalLevel } from "@spirit-agent/host-internal";
+import type { ApprovalLevel } from "@spiritagent/host-internal";
 import { Brain, ChevronDown, ShieldBan, ShieldCheck, type LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

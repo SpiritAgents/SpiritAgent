@@ -31,12 +31,12 @@ import {
   type SubagentWorkspaceBootstrap,
   type ToolAutoReviewer,
   type SessionApprovalLevel,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   persistPreCompactionHistoryArchive,
   persistToolOutputArchive,
   removePreCompactionHistoryArchive,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type { DesktopToolRequest } from './contracts.js';
 import { spiritAgentDataDir } from './storage.js';

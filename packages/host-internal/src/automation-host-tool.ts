@@ -3,7 +3,7 @@ import {
   type ContributedHostToolDefinition,
   type JsonObject,
   type JsonValue,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import type { HostAutomationTrigger } from './automations.js';
 import { normalizeAutomationTrigger } from './automations.js';

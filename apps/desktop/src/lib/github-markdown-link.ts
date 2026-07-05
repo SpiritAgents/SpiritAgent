@@ -1,8 +1,8 @@
-import { parseGitHubPullRequestUrl } from "@spirit-agent/host-internal/github-pull-request-url";
+import { parseGitHubPullRequestUrl } from "@spiritagent/host-internal/github-pull-request-url";
 
 import type { GitHubPullRequestRevealRequest } from "@/lib/workspace-pr-navigation";
 
-export type { GitHubPullRequestUrlRef } from "@spirit-agent/host-internal/github-pull-request-url";
+export type { GitHubPullRequestUrlRef } from "@spiritagent/host-internal/github-pull-request-url";
 
 export type OpenPullRequestInPrTab = (request: GitHubPullRequestRevealRequest) => void;
 

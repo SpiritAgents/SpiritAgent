@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
-import type { PendingWorkspaceFile, LlmActiveSkill } from '@spirit-agent/core';
+import type { PendingWorkspaceFile, LlmActiveSkill } from '@spiritagent/agent-core';
 
 import i18n from '../lib/i18n-host.js';
 import type { ConversationMessageSnapshot, DesktopSnapshot } from '../types.js';

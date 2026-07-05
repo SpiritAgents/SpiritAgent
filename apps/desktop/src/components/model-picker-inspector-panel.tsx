@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 import {
   modelReasoningEffortLabel,
   modelReasoningEffortOptions,
-} from '@spirit-agent/core/reasoning-effort';
+} from '@spiritagent/agent-core/reasoning-effort';
 import {
   modelEffortControlLabelKind,
   modelShowsReasoningEffortControl,
   modelSupportsThinkingSwitch,
   resolveModelThinkingEnabled,
-} from '@spirit-agent/core/model-thinking-controls';
+} from '@spiritagent/agent-core/model-thinking-controls';
 
 import { ModelCatalogDetailPanel } from '@/components/model-catalog-detail-panel';
 import { modelCatalogHasDetailBody } from '@/lib/model-catalog-detail';

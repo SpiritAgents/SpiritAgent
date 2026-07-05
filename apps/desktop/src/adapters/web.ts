@@ -223,13 +223,13 @@ export function createWebHostApi(): HostApi {
     setLoopEnabled(enabled: boolean) {
       return post<DesktopSnapshot>(baseUrl, '/api/loop', { enabled });
     },
-    setApprovalLevel(approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel) {
+    setApprovalLevel(approvalLevel: import('@spiritagent/host-internal').ApprovalLevel) {
       return post<DesktopSnapshot>(baseUrl, '/api/approval', { approvalLevel });
     },
     setPendingGitBranch(branch: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/git/pending-branch', { branch });
     },
-    setWorkLocation(workLocation: import('@spirit-agent/host-internal').WorkLocationKind) {
+    setWorkLocation(workLocation: import('@spiritagent/host-internal').WorkLocationKind) {
       return post<DesktopSnapshot>(baseUrl, '/api/git/work-location', { workLocation });
     },
     checkoutGitBranch(request: import('../types.js').CheckoutGitBranchRequest) {
@@ -512,7 +512,7 @@ export function createWebHostApi(): HostApi {
       return post<HostTextFileStatResult>(baseUrl, '/api/host/file/stat', { absolutePath });
     },
     classifyLocalFileComposerRoute(absolutePath: string) {
-      return post<import('@spirit-agent/host-internal').LocalFileComposerRoute>(
+      return post<import('@spiritagent/host-internal').LocalFileComposerRoute>(
         baseUrl,
         '/api/host/file/classify-composer-route',
         { absolutePath },

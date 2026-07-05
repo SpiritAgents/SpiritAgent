@@ -1,4 +1,4 @@
-import { buildCodeCompletionIdentityPrompt } from '@spirit-agent/core';
+import { buildCodeCompletionIdentityPrompt } from '@spiritagent/agent-core';
 
 import { buildCodeCompletionContextSlices } from './context.js';
 import type { CodeCompletionRequestContext } from './types.js';

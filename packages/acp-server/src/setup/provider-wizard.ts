@@ -1,10 +1,10 @@
-import type { ModelProviderId, ProviderModelTransportKind } from '@spirit-agent/host-internal';
+import type { ModelProviderId, ProviderModelTransportKind } from '@spiritagent/host-internal';
 import {
   listProviderConnectSiteOptions,
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
   resolveProviderConnectApiBase,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type { SpiritModelProfile } from '../credentials/types.js';
 

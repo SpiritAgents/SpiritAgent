@@ -8,7 +8,7 @@ import {
 } from 'node:http';
 import path from 'node:path';
 
-import { parseModelProviderId, parsePresetModelProviderId } from '@spirit-agent/host-internal/model-provider-presets';
+import { parseModelProviderId, parsePresetModelProviderId } from '@spiritagent/host-internal/model-provider-presets';
 
 import type { HostCommandName } from '../src/host/contracts.js';
 

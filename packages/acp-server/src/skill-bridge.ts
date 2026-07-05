@@ -6,7 +6,7 @@ import type {
   LlmActiveSkill,
   LlmActiveSkillResourceEntry,
   LlmEnabledSkillCatalogEntry,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import type * as schema from '@agentclientprotocol/sdk';
 
 // --- Constants (aligned with Desktop) ---

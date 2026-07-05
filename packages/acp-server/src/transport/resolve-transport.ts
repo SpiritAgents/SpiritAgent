@@ -4,16 +4,16 @@ import {
   type LlmModelCapabilities,
   type LlmTransportConfig,
   type OpenResponsesSdkProvider,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   resolveAnthropicTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
-} from '@spirit-agent/core/reasoning-effort';
+} from '@spiritagent/agent-core/reasoning-effort';
 import {
   bedrockMantleApiBaseFromRegion,
   isBedrockMantleOpenAiModel,
   type ModelProviderId,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import {
   loadActiveModelProfile,

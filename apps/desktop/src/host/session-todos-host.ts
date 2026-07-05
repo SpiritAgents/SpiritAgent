@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { HostTodoRecord } from '@spirit-agent/host-internal';
+import type { HostTodoRecord } from '@spiritagent/host-internal';
 
 import type { ConversationTodoSnapshot } from '../types.js';
 import type { SessionBundle } from './session-bundle.js';

@@ -1,4 +1,4 @@
-import { isToolOutputArchivePath } from '@spirit-agent/host-internal/tool-output-archive-path';
+import { isToolOutputArchivePath } from '@spiritagent/host-internal/tool-output-archive-path';
 
 export { isToolOutputArchivePath };
 

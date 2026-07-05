@@ -4,7 +4,7 @@ import {
   runAutoApprovalReview,
   type ToolAutoReviewInput,
   type ToolAutoReviewResult,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import { resolveLightweightChatModelProfile } from './lightweight-chat-model.js';
 import { buildPrimaryTransportConfig } from './model-config.js';

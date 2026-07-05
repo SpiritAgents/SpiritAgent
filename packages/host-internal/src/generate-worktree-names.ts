@@ -11,7 +11,7 @@ import {
   type LlmToolAgentBasicInfo,
   type LlmTransportConfig,
   type ToolExecutor,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import {
   buildWorktreeNamingPrompt,

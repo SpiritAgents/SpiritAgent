@@ -1,4 +1,4 @@
-import { JsonRpcPeer } from '@spirit-agent/core/host-bridge';
+import { JsonRpcPeer } from '@spiritagent/agent-core/host-bridge';
 import { PassThrough } from 'node:stream';
 
 /**

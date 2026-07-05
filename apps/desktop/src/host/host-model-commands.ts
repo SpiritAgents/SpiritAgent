@@ -2,13 +2,13 @@ import {
   parseModelProviderId,
   parsePresetModelProviderId,
   partitionModelsByProvider,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 import {
   defaultModelReasoningEffort,
   resolveModelReasoningEffortForContext,
   type ModelReasoningEffort,
-} from '@spirit-agent/core/reasoning-effort';
-import { shouldPinReasoningEffortToDefault } from '@spirit-agent/core/model-thinking-controls';
+} from '@spiritagent/agent-core/reasoning-effort';
+import { shouldPinReasoningEffortToDefault } from '@spiritagent/agent-core/model-thinking-controls';
 
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import { parseModelContextLength } from '../lib/context-usage.js';
@@ -47,12 +47,12 @@ import {
   azureApiBaseFromResourceName,
   isValidAzureResourceName,
   vertexApiBaseFromProjectAndLocation,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 import {
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
 } from './provider-presets.js';
-import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spirit-agent/host-internal/bedrock-mantle';
+import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spiritagent/host-internal/bedrock-mantle';
 import { modelSupportsChat } from './lightweight-chat-model.js';
 import {
   modelExistsInProviderScope,

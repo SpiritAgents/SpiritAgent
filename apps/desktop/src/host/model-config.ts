@@ -5,19 +5,19 @@ import {
   type LlmModelCapabilities,
   type LlmTransportConfig,
   type OpenResponsesSdkProvider,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   isXiaomiResponsesReasoningEffortContext,
   resolveAnthropicTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
   type ModelReasoningEffortContext,
-} from '@spirit-agent/core/reasoning-effort';
+} from '@spiritagent/agent-core/reasoning-effort';
 import {
   modelSupportsThinkingSwitch,
   resolveAnthropicExplicitThinkingConfig,
   resolveVendorExtendedThinking,
   shouldPinReasoningEffortToDefault,
-} from '@spirit-agent/core/model-thinking-controls';
+} from '@spiritagent/agent-core/model-thinking-controls';
 import {
   listProviderModels,
   listProviderConnectSiteOptions,
@@ -29,7 +29,7 @@ import {
   azureApiBaseFromResourceName,
   vertexApiBaseFromProjectAndLocation,
   type ProviderListedModelEntry,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   AddProviderModelsRequest,

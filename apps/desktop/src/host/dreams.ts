@@ -8,18 +8,18 @@ import type {
   LlmPlanMetadata,
   LlmToolAgentState,
   LlmTransportConfig,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   llmMessageTextContent,
   normalizeStoredLlmMessage,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   createHostDreamStore,
   DREAM_RETENTION_MS as HOST_DREAM_RETENTION_MS,
   dreamLogsDirPath,
   type HostDreamRecord,
   type HostDreamSessionProgress,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type {
   ConversationMessageSnapshot,

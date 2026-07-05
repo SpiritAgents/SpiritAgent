@@ -9,7 +9,7 @@ import {
   WORKSPACE_CONTENT_SEARCH_MAX_MATCHES,
   type WorkLocationKind,
   type WorkspaceFileReferenceIndexSnapshot,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import i18n from '../lib/i18n-host.js';
 import { clearCodeCompletionStateForWorkspace } from './code-completion-commands.js';

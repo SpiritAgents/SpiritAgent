@@ -88,13 +88,13 @@ import type {
   PreviewModelsRequest,
   PreviewModelsResponse,
 } from "@/types";
-import { bedrockApiBaseFromRegion } from "@spirit-agent/host-internal/bedrock-region";
+import { bedrockApiBaseFromRegion } from "@spiritagent/host-internal/bedrock-region";
 import {
   bedrockMantleApiBaseFromRegion,
   isBedrockMantleOpenAiModel,
-} from "@spirit-agent/host-internal/bedrock-mantle";
-import { azureApiBaseFromResourceName, isValidAzureResourceName } from "@spirit-agent/host-internal/azure-resource";
-import { vertexApiBaseFromProjectAndLocation } from "@spirit-agent/host-internal/google-vertex-endpoints";
+} from "@spiritagent/host-internal/bedrock-mantle";
+import { azureApiBaseFromResourceName, isValidAzureResourceName } from "@spiritagent/host-internal/azure-resource";
+import { vertexApiBaseFromProjectAndLocation } from "@spiritagent/host-internal/google-vertex-endpoints";
 
 export function ModelsSettingsPanel({
   settings,

@@ -1,6 +1,6 @@
 import { setImmediate as waitForImmediate } from 'node:timers/promises';
 
-import type { RuntimeEvent, RuntimeTurnResult } from '@spirit-agent/core';
+import type { RuntimeEvent, RuntimeTurnResult } from '@spiritagent/agent-core';
 
 import type { ConversationMessageSnapshot } from '../types.js';
 import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';

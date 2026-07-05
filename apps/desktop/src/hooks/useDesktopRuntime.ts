@@ -1011,7 +1011,7 @@ export function useDesktopRuntime() {
   );
 
   const setPaneWorkLocation = useCallback(
-    async (sessionPath: string, workLocation: import('@spirit-agent/host-internal').WorkLocationKind): Promise<boolean> => {
+    async (sessionPath: string, workLocation: import('@spiritagent/host-internal').WorkLocationKind): Promise<boolean> => {
       if (!api?.setPaneWorkLocation) {
         return false;
       }
@@ -1107,7 +1107,7 @@ export function useDesktopRuntime() {
   }, [api]);
 
   const classifyLocalFileComposerRoute = useCallback(
-    async (absolutePath: string): Promise<import('@spirit-agent/host-internal').LocalFileComposerRoute> => {
+    async (absolutePath: string): Promise<import('@spiritagent/host-internal').LocalFileComposerRoute> => {
       if (!api) {
         return 'reference';
       }
@@ -2534,7 +2534,7 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot]);
 
-  const setApprovalLevel = useCallback(async (approvalLevel: import('@spirit-agent/host-internal').ApprovalLevel): Promise<boolean> => {
+  const setApprovalLevel = useCallback(async (approvalLevel: import('@spiritagent/host-internal').ApprovalLevel): Promise<boolean> => {
     if (!api) {
       return false;
     }
@@ -2568,7 +2568,7 @@ export function useDesktopRuntime() {
   }, [api, applySnapshot]);
 
   const setWorkLocation = useCallback(async (
-    workLocation: import('@spirit-agent/host-internal').WorkLocationKind,
+    workLocation: import('@spiritagent/host-internal').WorkLocationKind,
   ): Promise<boolean> => {
     if (!api) {
       return false;

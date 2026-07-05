@@ -1,4 +1,4 @@
-import type { ModelProviderId } from '@spirit-agent/host-internal';
+import type { ModelProviderId } from '@spiritagent/host-internal';
 
 export const KEYRING_SERVICE = 'SpiritAgent';
 export const KEYRING_GLOBAL_ACCOUNT = 'openai_api_key';

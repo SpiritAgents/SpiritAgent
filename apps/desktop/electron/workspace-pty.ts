@@ -5,9 +5,9 @@ import path from 'node:path';
 
 import type { WebContents } from 'electron';
 
-import { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spirit-agent/host-internal/default-terminal-shell';
+import { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spiritagent/host-internal/default-terminal-shell';
 
-export { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spirit-agent/host-internal/default-terminal-shell';
+export { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spiritagent/host-internal/default-terminal-shell';
 
 const require = createRequire(import.meta.url);
 

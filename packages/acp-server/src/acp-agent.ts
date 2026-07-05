@@ -1,7 +1,7 @@
 import type * as acp from '@agentclientprotocol/sdk';
 import type * as schema from '@agentclientprotocol/sdk';
 import { RequestError } from '@agentclientprotocol/sdk';
-import type { JsonValue, LlmActiveSkill, RuntimeEvent } from '@spirit-agent/core';
+import type { JsonValue, LlmActiveSkill, RuntimeEvent } from '@spiritagent/agent-core';
 import type { AuthState } from './auth/auth-state.js';
 import { buildAuthMethods } from './auth/build-auth-methods.js';
 import { TERMINAL_AUTH_METHOD_ID } from './auth/constants.js';

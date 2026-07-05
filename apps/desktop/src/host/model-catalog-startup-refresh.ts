@@ -1,5 +1,5 @@
-import { defaultModelReasoningEffort, type ModelReasoningEffort } from '@spirit-agent/core/reasoning-effort';
-import { normalizeOpenAiApiBase } from '@spirit-agent/host-internal/openai-api-base';
+import { defaultModelReasoningEffort, type ModelReasoningEffort } from '@spiritagent/agent-core/reasoning-effort';
+import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
 
 import type {
   DesktopModelCapability,

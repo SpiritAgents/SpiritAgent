@@ -34,11 +34,11 @@ import {
   modelDisplayTitleFromMap,
 } from "@/lib/model-catalog-detail";
 import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
-import { modelReasoningEffortLabel } from "@spirit-agent/core/reasoning-effort";
+import { modelReasoningEffortLabel } from "@spiritagent/agent-core/reasoning-effort";
 import {
   modelSupportsThinkingSwitch,
   resolveModelThinkingEnabled,
-} from "@spirit-agent/core/model-thinking-controls";
+} from "@spiritagent/agent-core/model-thinking-controls";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
 import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelProfileSnapshot, PreviewModelCatalogEntry } from "@/types";
 import { cn } from "@/lib/utils";

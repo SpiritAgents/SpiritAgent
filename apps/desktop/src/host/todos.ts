@@ -5,7 +5,7 @@ import {
   createHostTodoStore,
   type HostTodoRecord,
   type HostTodoScope,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type { DesktopTodoItem } from '../types.js';
 import { isProvisionalSessionPath, spiritAgentDataDir } from './storage.js';

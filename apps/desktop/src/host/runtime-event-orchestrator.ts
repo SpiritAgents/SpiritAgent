@@ -8,9 +8,9 @@ import {
   type RuntimeEvent,
   type RuntimeToolExecution,
   type RuntimeTurnResult,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import { toolCallPhaseShowsShimmer } from '../lib/tool-call-shimmer.js';
-import type { HostExtensionEvent } from '@spirit-agent/host-internal';
+import type { HostExtensionEvent } from '@spiritagent/host-internal';
 
 import {
   attachEditFileLineDelta,
