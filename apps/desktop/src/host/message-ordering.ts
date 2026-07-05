@@ -1,4 +1,4 @@
-import { formatTriggerLabel, normalizeAutomationTrigger } from '@spiritagent/host-internal';
+import { formatTriggerLabel, normalizeAutomationTrigger, previewCreateAutomationFromArguments } from '@spiritagent/host-internal';
 
 import i18n from '../lib/i18n-host.js';
 import type {
@@ -334,6 +334,12 @@ export function toolCallSummaryCopyForRequest(
     }
     case 'tool_describe':
     case 'tool_call': {
+      if (toolName === 'tool_call') {
+        const builtInCopy = lazyBuiltInCreateAutomationSummaryCopy(record, tOpts);
+        if (builtInCopy) {
+          return builtInCopy;
+        }
+      }
       const provider = typeof record.provider === 'string' ? record.provider.trim() : '';
       const server = typeof record.server === 'string' ? record.server.trim() : '';
       const tool = typeof record.tool === 'string' ? record.tool.trim() : '';
@@ -465,6 +471,37 @@ function dreamIdSummaryCopy(
     headline,
     ...(id ? { headlineDetail: truncateSummaryDetail(id) } : {}),
   };
+}
+
+function lazyBuiltInCreateAutomationSummaryCopy(
+  record: Record<string, unknown>,
+  tOpts: Record<string, unknown>,
+): ToolCallSummaryCopy | undefined {
+  const provider = typeof record.provider === 'string' ? record.provider.trim() : '';
+  const tool = typeof record.tool === 'string' ? record.tool.trim() : '';
+  if (provider !== 'built-in' || tool !== 'create_automation') {
+    return undefined;
+  }
+
+  const args =
+    record.arguments && typeof record.arguments === 'object' && !Array.isArray(record.arguments)
+      ? (record.arguments as Record<string, unknown>)
+      : record;
+
+  try {
+    const preview = previewCreateAutomationFromArguments(args);
+    const triggerLabel = formatTriggerLabel(preview.trigger);
+    const detail = [preview.title, triggerLabel].filter((part) => part.length > 0).join(' · ');
+    return {
+      headline: i18n.t('automations.create', tOpts),
+      headlineDetail: truncateSummaryDetail(detail || 'automation'),
+    };
+  } catch {
+    return {
+      headline: i18n.t('automations.create', tOpts),
+      headlineDetail: truncateSummaryDetail('automation'),
+    };
+  }
 }
 
 function resolveToolSummaryRequest(toolName: string, request: unknown): unknown {

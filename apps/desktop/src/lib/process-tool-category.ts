@@ -93,12 +93,21 @@ function classifyApplyPatch(headline: string | undefined): ProcessToolCategory {
   return 'edit';
 }
 
+const CREATE_AUTOMATION_HEADLINES = new Set(['创建自动化', 'Create automation']);
+
+function isCreateAutomationHeadline(headline: string | undefined): boolean {
+  return CREATE_AUTOMATION_HEADLINES.has(headline?.trim() ?? '');
+}
+
 export function classifyProcessToolCategory(
   toolName: string,
   headline?: string,
 ): ProcessToolCategory {
   if (isProcessGroupExcludedToolName(toolName)) {
     return 'other';
+  }
+  if (toolName === 'tool_call' && isCreateAutomationHeadline(headline)) {
+    return 'create';
   }
   if (toolName === 'generate_image' || toolName === 'generate_video') {
     return 'generate';

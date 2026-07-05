@@ -1,12 +1,14 @@
 import {
   buildContributedHostToolDefinitions,
+  LAZY_BUILT_IN_SERVER_DESKTOP,
+  type BuiltInLazyToolIndexEntry,
   type ContributedHostToolDefinition,
   type JsonObject,
   type JsonValue,
 } from '@spiritagent/agent-core';
 
 import type { HostAutomationTrigger } from './automations.js';
-import { normalizeAutomationTrigger } from './automations.js';
+import { formatTriggerLabel, normalizeAutomationTrigger } from './automations.js';
 
 export type CreateAutomationApprovalLevel = 'default' | 'full-approval';
 
@@ -59,6 +61,53 @@ export function parseCreateAutomationTriggerInput(parsed: Record<string, unknown
     throw new Error('create_automation 缺少 trigger。');
   }
   return parseCreateAutomationTrigger(parsed.trigger);
+}
+
+export type CreateAutomationPreviewInput = {
+  title: string;
+  overview: string;
+  trigger: HostAutomationTrigger;
+  approval_level: CreateAutomationApprovalLevel;
+};
+
+export function previewCreateAutomationFromArguments(
+  args: Record<string, unknown>,
+): CreateAutomationPreviewInput {
+  const overview = typeof args.overview === 'string' ? args.overview : '';
+  if (!overview.trim()) {
+    throw new Error('create_automation 需要非空的 overview 或 title。');
+  }
+  const explicitTitle = typeof args.title === 'string' ? args.title : undefined;
+  return {
+    title: deriveAutomationTitle(overview, explicitTitle),
+    overview: overview.trim(),
+    trigger: parseCreateAutomationTriggerInput(args),
+    approval_level: parseCreateAutomationApprovalLevel(args.approval_level),
+  };
+}
+
+export function buildCreateAutomationApprovalPrompt(input: CreateAutomationPreviewInput): string {
+  return (
+    `高风险工具调用: 创建自动化\n` +
+    `标题: ${input.title}\n` +
+    `调度: ${formatTriggerLabel(input.trigger)}\n` +
+    `运行审批: ${formatCreateAutomationApprovalLabel(input.approval_level)}\n` +
+    `概述长度: ${[...input.overview].length} 字符`
+  );
+}
+
+export function toBuiltInLazyToolIndexEntry(
+  definition: ContributedHostToolDefinition,
+  server = LAZY_BUILT_IN_SERVER_DESKTOP,
+): BuiltInLazyToolIndexEntry {
+  return {
+    server,
+    toolName: definition.name,
+    description: definition.description,
+    inputSchema: definition.inputSchema,
+    ...(definition.excludeFromAskMode ? { excludeFromAskMode: true } : {}),
+    ...(definition.agentModeExposure ? { agentModeExposure: definition.agentModeExposure } : {}),
+  };
 }
 
 export const CREATE_AUTOMATION_CONTRIBUTED_TOOL: ContributedHostToolDefinition = {
