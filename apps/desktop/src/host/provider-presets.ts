@@ -1,4 +1,4 @@
-/** 薄封装：预设提供商数据来自 `@spirit-agent/host-internal`，避免 Desktop 与 CLI 分叉。 */
+/** 薄封装：预设提供商数据来自 `@spiritagent/host-internal`，避免 Desktop 与 CLI 分叉。 */
 export {
   DEFAULT_CUSTOM_API_BASE,
   MODEL_PROVIDER_PICKER_ORDER,
@@ -11,10 +11,10 @@ export {
   providerConnectSiteRequiresWorkspaceId,
   resolveConnectApiBase,
   resolveProviderConnectApiBase,
-} from '@spirit-agent/host-internal/model-provider-presets';
+} from '@spiritagent/host-internal/model-provider-presets';
 export type {
   ModelProviderId,
   ProviderConnectSiteId,
   ProviderModelTransportKind,
   ResolveProviderConnectApiBaseOptions,
-} from '@spirit-agent/host-internal/model-provider-presets';
+} from '@spiritagent/host-internal/model-provider-presets';

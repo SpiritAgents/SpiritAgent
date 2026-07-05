@@ -5,7 +5,7 @@ import {
   PROVIDER_PICKER_ROWS,
   listProviderModels,
   type ModelProviderId,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type { ProviderSetupResult } from '../credentials/types.js';
 import {

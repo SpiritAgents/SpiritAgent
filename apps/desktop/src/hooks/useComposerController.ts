@@ -12,7 +12,7 @@ import type { TFunction } from "i18next";
 
 import {
   codeUnitIndexToCharCount,
-} from "@spirit-agent/host-internal/workspace-file-reference-query";
+} from "@spiritagent/host-internal/workspace-file-reference-query";
 
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { segmentsToMessageText } from "@/components/composer-rich-input";

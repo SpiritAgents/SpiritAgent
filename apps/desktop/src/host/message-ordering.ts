@@ -1,11 +1,11 @@
-import { formatTriggerLabel, normalizeAutomationTrigger } from '@spirit-agent/host-internal';
+import { formatTriggerLabel, normalizeAutomationTrigger } from '@spiritagent/host-internal';
 
 import i18n from '../lib/i18n-host.js';
 import type {
   LlmMessageContent,
   RuntimePendingApproval,
   RuntimePendingQuestions,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   finishTaskNoticeFromSummary,
   isGenericProviderWebSearchQuery,
@@ -13,13 +13,13 @@ import {
   previewRequestFromStreamingArguments,
   RESPONSES_BUILT_IN_SPIRIT_UI_KEY,
   tryExtractPartialWebSearchQuery,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import {
   hasAssistantToolLaterInTurn,
   isStandaloneThinkingMessage,
 } from '../lib/conversation-thinking-ui.js';
-import { listDirectoryToolDisplayPath } from '@spirit-agent/host-internal/skill-paths';
+import { listDirectoryToolDisplayPath } from '@spiritagent/host-internal/skill-paths';
 
 import {
   isSkillMarkdownPath,
@@ -939,7 +939,7 @@ export {
   finishTaskNoticeFromSummary,
   finishTaskNoticePreviewFromArguments,
   finishTaskSummaryFromStreamingArguments,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 export function finishTaskSummaryFromExecution(input: {
   request: unknown;

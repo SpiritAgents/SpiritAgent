@@ -43,11 +43,11 @@ import {
   isLspDiagnosticsToolRequest,
   requestFromGetDiagnosticsFunctionCall,
   executeGetDiagnostics,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   LspService,
   appendLspDiagnosticsAfterWriteIfNeeded,
-} from '@spirit-agent/host-internal/lsp';
+} from '@spiritagent/host-internal/lsp';
 import {
   CREATE_AUTOMATION_CONTRIBUTED_TOOL,
   type HostAutomationCreateDefaults,
@@ -67,7 +67,7 @@ import {
   NodeHostToolService,
   normalizeApprovalLevel,
   createNoopMcpAdapter,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type { AskQuestionsQuestionSpec } from '../types.js';
 import { spiritAgentDataDir } from './storage.js';

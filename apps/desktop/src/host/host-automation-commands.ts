@@ -5,7 +5,7 @@ import {
   type HostAutomationDefinition,
   type HostAutomationRun,
   type HostAutomationUpdateInput,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import type { DesktopAutomationDetail, DesktopAutomationListItem } from '../types.js';
 import { spiritAgentDataDir } from './storage.js';

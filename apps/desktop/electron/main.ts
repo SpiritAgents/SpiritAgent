@@ -20,7 +20,7 @@ import {
   type WebContents,
 } from 'electron';
 
-import { detectSupportedImageFile } from '@spirit-agent/host-internal/image-file-support';
+import { detectSupportedImageFile } from '@spiritagent/host-internal/image-file-support';
 
 import {
   registerDesktopNotifications,

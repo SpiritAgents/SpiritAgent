@@ -1,6 +1,6 @@
-import type { AgentRuntime, LlmActiveSkill, LlmEnabledSkillCatalogEntry, LlmTransportConfig, SpiritAgentMode } from '@spirit-agent/core';
-import type { HostToolExecutorProxy } from '@spirit-agent/core/host-bridge';
-import type { JsonValue } from '@spirit-agent/core';
+import type { AgentRuntime, LlmActiveSkill, LlmEnabledSkillCatalogEntry, LlmTransportConfig, SpiritAgentMode } from '@spiritagent/agent-core';
+import type { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
+import type { JsonValue } from '@spiritagent/agent-core';
 
 /**
  * ACP Server runtime paths. LLM transport is resolved from shared Spirit config + keyring.

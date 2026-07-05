@@ -7,7 +7,7 @@ import {
   type HookCommandOutput,
   type HookExecutionRecord,
   type ResolvedHookDefinition,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 export interface RunCommandHookOptions {
   definition: ResolvedHookDefinition;

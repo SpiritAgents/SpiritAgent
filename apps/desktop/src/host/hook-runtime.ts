@@ -5,8 +5,8 @@ import {
   type HookSessionContext,
   type SessionEndHookInput,
   type SessionStartHookInput,
-} from '@spirit-agent/core';
-import { createHookRunner } from '@spirit-agent/host-internal';
+} from '@spiritagent/agent-core';
+import { createHookRunner } from '@spiritagent/host-internal';
 
 import type { SessionBundle } from './session-bundle.js';
 import type { DesktopRuntime } from './runtime.js';

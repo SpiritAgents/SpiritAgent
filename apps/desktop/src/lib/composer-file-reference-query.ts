@@ -1,5 +1,5 @@
-import { currentWorkspaceFileReferenceQuery } from "@spirit-agent/host-internal/workspace-file-reference-query";
-import type { ActiveWorkspaceFileReferenceQuery } from "@spirit-agent/host-internal/workspace-file-reference-query";
+import { currentWorkspaceFileReferenceQuery } from "@spiritagent/host-internal/workspace-file-reference-query";
+import type { ActiveWorkspaceFileReferenceQuery } from "@spiritagent/host-internal/workspace-file-reference-query";
 
 import {
   mergeAdjacentTextSegments,

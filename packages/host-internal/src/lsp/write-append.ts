@@ -1,9 +1,9 @@
-import type { JsonValue, ToolExecutionOutput } from '@spirit-agent/core';
-import { APPEND_DIAGNOSTICS_AFTER_WRITES, HOST_WRITE_TOOL_NAMES } from '@spirit-agent/core';
+import type { JsonValue, ToolExecutionOutput } from '@spiritagent/agent-core';
+import { APPEND_DIAGNOSTICS_AFTER_WRITES, HOST_WRITE_TOOL_NAMES } from '@spiritagent/agent-core';
 import {
   buildLspWriteDiagnosticsUi,
   formatDiagnosticsSummaryBlock,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import { DEFAULT_LSP_TIMING } from './config.js';
 import { LspTimeoutError } from './errors.js';

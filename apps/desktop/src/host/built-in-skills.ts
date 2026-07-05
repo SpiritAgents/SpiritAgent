@@ -7,7 +7,7 @@ import {
   SKILL_FILE_NAME,
   SKILLS_DIR_NAME,
   ensureBuiltinAuthoringSkills,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 export const BUILTIN_GIT_SKILL_NAMES = ['git-commit', 'git-push', 'git-merge'] as const;
 

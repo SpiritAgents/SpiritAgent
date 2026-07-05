@@ -1,7 +1,7 @@
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { PreCompactionHistoryArchive } from '@spirit-agent/core';
+import type { PreCompactionHistoryArchive } from '@spiritagent/agent-core';
 
 import { sanitizeSessionIdForFilename } from './spirit-filename-sanitize.js';
 

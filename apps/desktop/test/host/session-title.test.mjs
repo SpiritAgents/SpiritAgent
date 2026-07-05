@@ -5,7 +5,7 @@ import {
   buildSessionTitlePrompt,
   normalizeGeneratedSessionTitle,
   SESSION_TITLE_MAX_LENGTH,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 import { DesktopMessageTimeline } from '../../dist-electron/src/host/message-timeline.js';
 import {
   countUserMessages,

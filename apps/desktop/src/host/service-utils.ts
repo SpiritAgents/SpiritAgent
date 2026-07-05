@@ -2,11 +2,11 @@ import type {
   AskQuestionsResult as RuntimeAskQuestionsResult,
   ChatArchive,
   RuntimePendingQuestions,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   cloneLlmMessageContent,
   cloneLlmProviderState,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import i18n from '../lib/i18n-host.js';
 import type {
@@ -20,7 +20,7 @@ import {
   normalizeGeneratedWorktreeNames as normalizeGeneratedWorktreeNamesInternal,
   parseGeneratedWorktreeNamingResponse as parseGeneratedWorktreeNamingResponseInternal,
   resolveWorkspaceGroupingRoot,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 import type { GeneratedWorktreeNames } from './worktree-naming.js';
 import {
   type DesktopConfigFile,

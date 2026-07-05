@@ -1,6 +1,6 @@
-import { createJsonSchemaTransport } from '@spirit-agent/core';
-import { CodeCompletionService } from '@spirit-agent/host-internal';
-import type { CodeCompletionResult } from '@spirit-agent/core';
+import { createJsonSchemaTransport } from '@spiritagent/agent-core';
+import { CodeCompletionService } from '@spiritagent/host-internal';
+import type { CodeCompletionResult } from '@spiritagent/agent-core';
 
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import { resolveLightweightChatModelProfile } from './lightweight-chat-model.js';

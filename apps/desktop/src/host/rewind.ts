@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { ChatArchive } from '@spirit-agent/core';
-import type { HostRecordedFileChange, HostTodoRecord } from '@spirit-agent/host-internal';
+import type { ChatArchive } from '@spiritagent/agent-core';
+import type { HostRecordedFileChange, HostTodoRecord } from '@spiritagent/host-internal';
 
 import type { PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
 import type { ConversationMessageSnapshot } from '../types.js';

@@ -8,7 +8,7 @@ import {
   buildShellToolResult,
   combineShellToolOutput,
   serializeShellToolResult,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import { runShell } from './shell-execution.js';
 

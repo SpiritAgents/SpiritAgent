@@ -6,8 +6,8 @@ import { test } from 'node:test';
 
 import {
   startOpenAiToolAgentState,
-} from '@spirit-agent/core';
-import { createHostDreamStore } from '@spirit-agent/host-internal';
+} from '@spiritagent/agent-core';
+import { createHostDreamStore } from '@spiritagent/host-internal';
 
 import {
   buildDreamCollectorPlanMetadata,

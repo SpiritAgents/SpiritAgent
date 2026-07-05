@@ -3,9 +3,9 @@ import type {
   LlmActiveSkill,
   RuntimeEvent,
   SpiritLlmTransport,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import type { DesktopToolRequest, SessionTitleSource } from './contracts.js';
-import type { ApprovalLevel, WorkLocationKind } from '@spirit-agent/host-internal';
+import type { ApprovalLevel, WorkLocationKind } from '@spiritagent/host-internal';
 
 import type { DesktopRuntime } from './runtime.js';
 import type { DesktopToolExecutor } from './tool-executor.js';

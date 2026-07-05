@@ -7,8 +7,8 @@ import {
   type DeleteHookEntryRequest as HostDeleteHookEntryRequest,
   type HookListItem,
   type SaveHookEntryRequest as HostSaveHookEntryRequest,
-} from '@spirit-agent/host-internal';
-import { hooksUserConfigPath, hooksWorkspaceConfigPath } from '@spirit-agent/core';
+} from '@spiritagent/host-internal';
+import { hooksUserConfigPath, hooksWorkspaceConfigPath } from '@spiritagent/agent-core';
 
 import type {
   DeleteHookEntryRequest,

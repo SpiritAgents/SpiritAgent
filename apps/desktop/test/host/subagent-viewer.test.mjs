@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import {
   buildSubagentConversationSnapshots,
   resolveSubagentPromptFromTaskFields,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 test('buildSubagentConversationSnapshots maps user, assistant text, and tool results', () => {
   const messages = buildSubagentConversationSnapshots(

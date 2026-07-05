@@ -13,7 +13,7 @@ import {
   type HookInput,
   type HooksConfigFile,
   hookMatcherTarget,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 export interface LoadHooksConfigOptions {
   spiritDataDir: string;

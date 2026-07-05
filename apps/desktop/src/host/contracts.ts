@@ -1,5 +1,5 @@
-import type { ChatArchive } from '@spirit-agent/core';
-import type { HostToolRequest, ApprovalLevel } from '@spirit-agent/host-internal';
+import type { ChatArchive } from '@spiritagent/agent-core';
+import type { HostToolRequest, ApprovalLevel } from '@spiritagent/host-internal';
 import type { PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
 import type { StoredDesktopRewindMetadata } from './rewind.js';
 

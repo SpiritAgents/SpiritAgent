@@ -11,7 +11,7 @@ import {
   parseHooksConfigFile,
   resolveHookCommandPath,
   resolveMergedHookDefinitions,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 test('parseHooksConfigFile accepts valid config', () => {
   const parsed = parseHooksConfigFile({

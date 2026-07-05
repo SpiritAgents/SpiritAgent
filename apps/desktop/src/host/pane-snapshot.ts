@@ -31,7 +31,7 @@ export function buildPaneSessionSlice(input: {
     subagentSessionId?: string;
     autoReviewBlockReason?: string;
   };
-  pendingQuestions?: import('@spirit-agent/core').RuntimePendingQuestions<DesktopToolRequest>;
+  pendingQuestions?: import('@spiritagent/agent-core').RuntimePendingQuestions<DesktopToolRequest>;
   pendingImagePaths?: string[];
   pendingMcpResources?: import('../types.js').PendingMcpResource[];
   pendingUserTurn?: string;

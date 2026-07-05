@@ -1,7 +1,7 @@
 import {
   isWorkspaceReferenceDirectoryPath,
   normalizeWorkspaceReferenceDirectoryPath,
-} from '@spirit-agent/host-internal/workspace-file-reference-query'
+} from '@spiritagent/host-internal/workspace-file-reference-query'
 import {
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,

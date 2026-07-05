@@ -1,5 +1,5 @@
 {
-  "name": "@spirit-agent/host-internal",
+  "name": "@spiritagent/host-internal",
   "version": "0.2.6",
   "description": "Internal TypeScript host implementation boundaries for Spirit Agent",
   "license": "MIT",
@@ -150,7 +150,7 @@
   "dependencies": {
     "@aws-sdk/client-bedrock": "^3.1068.0",
     "@mozilla/readability": "^0.6.0",
-    "@spirit-agent/core": "0.2.6",
+    "@spiritagent/agent-core": "0.2.6",
     "@vscode/ripgrep": "^1.18.0",
     "fast-glob": "^3.3.3",
     "fflate": "^0.8.2",

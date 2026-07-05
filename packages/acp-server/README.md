@@ -1,4 +1,4 @@
-# @spirit-agent/acp-server
+# @spiritagent/acp-server
 
 ACP ([Agent Client Protocol](https://agentclientprotocol.com)) server adapter for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent). Exposes the same agent runtime as Desktop and CLI over **stdio / ndJSON**, so ACP-compatible editors (for example **Zed** or **JetBrains Junie**) can use Spirit Agent without bespoke integration.
 
@@ -14,7 +14,7 @@ ACP ([Agent Client Protocol](https://agentclientprotocol.com)) server adapter fo
 ## Quick start
 
 ```bash
-npx @spirit-agent/acp-server --setup
+npx @spiritagent/acp-server --setup
 ```
 
 Setup writes to the shared Spirit data directory (`config.json` + OS keyring — same store as Desktop/CLI). After setup, your ACP client calls `authenticate`, then `session/new`.
@@ -30,8 +30,8 @@ Setup writes to the shared Spirit data directory (`config.json` + OS keyring —
 
 ## Related packages
 
-- [`@spirit-agent/core`](https://www.npmjs.com/package/@spirit-agent/core) — agent runtime and tool contracts.
-- [`@spirit-agent/host-internal`](https://www.npmjs.com/package/@spirit-agent/host-internal) — local tool execution and discovery.
+- [`@spiritagent/agent-core`](https://www.npmjs.com/package/@spiritagent/agent-core) — agent runtime and tool contracts.
+- [`@spiritagent/host-internal`](https://www.npmjs.com/package/@spiritagent/host-internal) — local tool execution and discovery.
 
 ## License
 

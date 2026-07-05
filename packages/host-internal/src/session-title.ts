@@ -1,4 +1,4 @@
-import type { JsonObject } from '@spirit-agent/core';
+import type { JsonObject } from '@spiritagent/agent-core';
 
 export const SESSION_TITLE_MAX_LENGTH = 40;
 

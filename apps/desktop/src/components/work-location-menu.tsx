@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { WorkLocationKind } from "@spirit-agent/host-internal";
+import type { WorkLocationKind } from "@spiritagent/host-internal";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, GitFork, Monitor } from "lucide-react";
 import { useTranslation } from "react-i18next";

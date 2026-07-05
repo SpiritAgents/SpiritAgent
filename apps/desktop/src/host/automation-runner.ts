@@ -5,7 +5,7 @@ import {
   createLlmTransport,
   type LlmPlanMetadata,
   type LlmTransportConfig,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 import {
   buildAutomationTriggerMessage,
   createHostAutomationStore,
@@ -15,7 +15,7 @@ import {
   type AutomationRunTriggerContext,
   type HostAutomationDefinition,
   type HostAutomationRun,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 import {
   AutomationConversationProjection,
   runAutomationStreamingTurn,

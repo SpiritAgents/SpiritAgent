@@ -10,7 +10,7 @@ import {
   type HookRunner,
   type HookRunnerContext,
   isPreHookEvent,
-} from '@spirit-agent/core';
+} from '@spiritagent/agent-core';
 
 import { runCommandHook } from './command-runner.js';
 import { listHookDefinitionsForInput, loadHooksConfig, type LoadedHooksConfig } from './loader.js';

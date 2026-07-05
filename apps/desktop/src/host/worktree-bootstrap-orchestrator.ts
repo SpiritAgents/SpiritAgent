@@ -3,7 +3,7 @@ import path from 'node:path';
 /**
  * 主会话首条 Worktree 消息的非阻塞 bootstrap：先入 timeline，再在 poll tick 中完成 git/LLM 命名并 gate LLM turn。
  */
-import type { PendingWorkspaceFile } from '@spirit-agent/core';
+import type { PendingWorkspaceFile } from '@spiritagent/agent-core';
 import { cloneActiveSkills } from './runtime.js';
 
 import i18n from '../lib/i18n-host.js';

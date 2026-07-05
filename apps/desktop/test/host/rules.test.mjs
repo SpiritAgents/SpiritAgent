@@ -96,7 +96,7 @@ test('deleteRuleFile removes managed rule file', async () => {
     const instructionPaths = desktopInstructionPaths(workspaceRoot);
     const targetPath = resolveRuleFilePath(instructionPaths, 'workspaceSpirit');
     await writeFile(targetPath, '# Rules\n', 'utf8');
-    const entries = await import('@spirit-agent/host-internal').then((mod) =>
+    const entries = await import('@spiritagent/host-internal').then((mod) =>
       mod.discoverRuleEntries({
         workspaceRoot,
         spiritDataDir,

@@ -1,10 +1,10 @@
 // Desktop 首批消费方：首条用户消息后异步生成会话标题；CLI 待产品定义后再接入。
-import { buildSpiritAgentCoreHostPrompt, createJsonSchemaTransport } from '@spirit-agent/core';
+import { buildSpiritAgentCoreHostPrompt, createJsonSchemaTransport } from '@spiritagent/agent-core';
 import {
   buildSessionTitlePrompt,
   normalizeGeneratedSessionTitle,
   SESSION_TITLE_JSON_SCHEMA,
-} from '@spirit-agent/host-internal';
+} from '@spiritagent/host-internal';
 
 import { resolveLightweightChatModelProfile } from './lightweight-chat-model.js';
 import { buildPrimaryTransportConfig } from './model-config.js';

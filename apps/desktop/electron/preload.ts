@@ -277,7 +277,7 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   },
   setPaneWorkLocation(request: {
     sessionPath: string;
-    workLocation: import('@spirit-agent/host-internal').WorkLocationKind;
+    workLocation: import('@spiritagent/host-internal').WorkLocationKind;
   }) {
     return ipcRenderer.invoke('desktop:invoke', 'setPaneWorkLocation', { request });
   },
