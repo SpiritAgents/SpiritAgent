@@ -664,6 +664,15 @@ export class DesktopRuntimeEventOrchestrator {
       );
       this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
       this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, runningTool);
+      if (
+        isResponsesBuiltIn
+        && (toolPhase === 'succeeded' || toolPhase === 'failed')
+        && this.options.runtime()?.isBusy()
+      ) {
+        // Gateway resume 且轮次带工具前正文时不发 remove-pending-assistant（正文非空），
+        // 占位行不能只挂在该事件上；内建工具终态落地即预置 after-tools Thinking 占位。
+        this.options.messageTimeline?.()?.ensureAfterToolsThinkingPlaceholderRow();
+      }
       if (isResponsesBuiltIn) {
         this.options.requestLiveSnapshotUpdate?.();
       }
@@ -1244,12 +1253,16 @@ export function splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(
 export function runtimeEventsIncludeAppliedResponsesBuiltInToolPreview(
   events: RuntimeEvent<DesktopToolRequest>[],
 ): boolean {
-  return events.some(
-    (event) =>
-      event.kind === 'streaming-tool-preview'
-      && isResponsesBuiltInToolName(event.toolName)
-      && resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson) === 'preview',
-  );
+  return events.some((event) => {
+    if (event.kind !== 'streaming-tool-preview' || !isResponsesBuiltInToolName(event.toolName)) {
+      return false;
+    }
+    // Gateway 流式 preview 的 argumentsJson 常为空/不完整 JSON（tool-input-start/delta），
+    // phase 解析为 undefined；UI 与 split 均按 preview 处理，登记「已见 preview」须一致，
+    // 否则终态事件会因 previewSeenCallIds 缺失被永久 defer。
+    const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
+    return phase !== 'succeeded' && phase !== 'failed';
+  });
 }
 
 export function runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(
