@@ -5,18 +5,20 @@ export const TOOL_CALL_TOOL_NAME = 'tool_call';
 
 const LAZY_TOOL_PROVIDER_PROPERTY: JsonObject = {
   type: 'string',
-  description: 'Tool provider namespace. Only "mcp" is supported in this host.',
-  enum: ['mcp'],
+  description: 'Tool provider namespace: "mcp" for MCP servers, "built-in" for host tools.',
+  enum: ['mcp', 'built-in'],
 };
 
 const LAZY_TOOL_SERVER_PROPERTY: JsonObject = {
   type: 'string',
-  description: 'Provider-specific server identifier. For MCP, the configured server name.',
+  description:
+    'Provider-specific server identifier. For MCP, the configured server name. For built-in, the host namespace (for example "desktop").',
 };
 
 const LAZY_TOOL_NAME_PROPERTY: JsonObject = {
   type: 'string',
-  description: 'Provider-specific tool name. For MCP, the tool name reported by the server.',
+  description:
+    'Provider-specific tool name. For MCP, the tool name reported by the server. For built-in, the host tool name.',
 };
 
 export function isLazyToolGatewayToolName(name: string): boolean {
