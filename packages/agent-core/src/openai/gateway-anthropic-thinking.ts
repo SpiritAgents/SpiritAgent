@@ -5,6 +5,7 @@ import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
   routedAnthropicClaudeSupportedEfforts,
+  routedAnthropicClaudeThinkingSwitchable,
   routedAnthropicEffortFromReasoningEffort,
   ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT,
   type RoutedAnthropicClaudeCapabilities,
@@ -74,7 +75,7 @@ export function buildGatewayAnthropicProviderOptions(
   };
 
   if (capabilities.thinkingMode === 'adaptive') {
-    if (config.vendorExtendedThinking === false) {
+    if (config.vendorExtendedThinking === false && routedAnthropicClaudeThinkingSwitchable(capabilities)) {
       anthropic.thinking = { type: 'disabled' } as unknown as JsonValue;
       return { anthropic };
     }

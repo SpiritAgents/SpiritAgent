@@ -253,6 +253,44 @@ test('Gateway OpenAI slug uses reasoning effort primary control', () => {
   assert.equal(modelEffortControlLabelKind(context), 'reasoningEffort');
 });
 
+test('Gateway Claude Fable 5 shows effort without thinking switch', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'anthropic/claude-fable-5',
+    transportKind: 'open-responses' as const,
+  };
+  assert.equal(isAnthropicClaudeAdaptiveThinkingModel(context), true);
+  assert.equal(modelSupportsThinkingSwitch(context), false);
+  assert.equal(modelShowsReasoningEffortControl(context, false), true);
+  assert.equal(modelEffortControlLabelKind(context), 'effort');
+});
+
+test('Gateway Claude Sonnet 5 supports thinking switch and full effort levels', () => {
+  const context = {
+    provider: 'vercel-ai-gateway' as const,
+    model: 'anthropic/claude-sonnet-5',
+    transportKind: 'open-responses' as const,
+  };
+  assert.equal(isAnthropicClaudeAdaptiveThinkingModel(context), true);
+  assert.equal(modelSupportsThinkingSwitch(context), true);
+  assert.equal(modelShowsReasoningEffortControl(context, false), true);
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(false, context), {
+    type: 'disabled',
+  });
+});
+
+test('resolveAnthropicExplicitThinkingConfig ignores disabled for always-on Claude Fable 5', () => {
+  const context = {
+    provider: 'anthropic' as const,
+    model: 'claude-fable-5',
+    transportKind: 'anthropic' as const,
+  };
+  assert.deepEqual(resolveAnthropicExplicitThinkingConfig(false, context), {
+    type: 'adaptive',
+    display: 'summarized',
+  });
+});
+
 test('Gateway Claude adaptive supports thinking switch and effort label', () => {
   const context = {
     provider: 'vercel-ai-gateway' as const,

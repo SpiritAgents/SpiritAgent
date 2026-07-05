@@ -91,6 +91,18 @@ test('buildOpenRouterClaudeReasoningBody maps none to effort none', () => {
   );
 });
 
+test('buildOpenRouterClaudeReasoningBody keeps adaptive enabled for Claude Fable 5 when disabled', () => {
+  assert.deepEqual(
+    buildOpenRouterClaudeReasoningBody({
+      llmVendor: 'openrouter',
+      model: 'anthropic/claude-fable-5',
+      reasoningEffort: 'high',
+      vendorExtendedThinking: false,
+    }),
+    { enabled: true, effort: 'high' },
+  );
+});
+
 test('buildOpenRouterClaudeReasoningBody disables adaptive thinking when vendorExtendedThinking false', () => {
   assert.deepEqual(
     buildOpenRouterClaudeReasoningBody({

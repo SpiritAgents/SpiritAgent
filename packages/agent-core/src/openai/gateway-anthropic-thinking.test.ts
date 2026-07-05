@@ -35,6 +35,43 @@ test('isGatewayAnthropicClaudeModel matches vercel-ai-gateway anthropic routes o
   );
 });
 
+test('resolveGatewayAnthropicClaudeCapabilities maps Claude 5 generation models', () => {
+  assert.deepEqual(resolveGatewayAnthropicClaudeCapabilities('anthropic/claude-fable-5'), {
+    thinkingMode: 'adaptive',
+    supportedEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+    adaptiveDisplay: 'summarized',
+    thinkingSwitchable: false,
+  });
+  assert.deepEqual(resolveGatewayAnthropicClaudeCapabilities('anthropic/claude-mythos-5'), {
+    thinkingMode: 'adaptive',
+    supportedEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+    adaptiveDisplay: 'summarized',
+    thinkingSwitchable: false,
+  });
+  assert.deepEqual(resolveGatewayAnthropicClaudeCapabilities('anthropic/claude-sonnet-5'), {
+    thinkingMode: 'adaptive',
+    supportedEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
+  });
+});
+
+test('buildGatewayAnthropicProviderOptions keeps adaptive thinking for Claude Fable 5 when disabled', () => {
+  assert.deepEqual(
+    buildGatewayAnthropicProviderOptions({
+      llmVendor: 'vercel-ai-gateway',
+      model: 'anthropic/claude-fable-5',
+      reasoningEffort: 'high',
+      vendorExtendedThinking: false,
+    }),
+    {
+      anthropic: {
+        toolStreaming: true,
+        thinking: { type: 'adaptive', display: 'summarized' },
+        effort: 'high',
+      },
+    },
+  );
+});
+
 test('resolveGatewayAnthropicClaudeCapabilities maps adaptive models and effort levels', () => {
   assert.deepEqual(resolveGatewayAnthropicClaudeCapabilities('anthropic/claude-sonnet-4.6'), {
     thinkingMode: 'adaptive',
