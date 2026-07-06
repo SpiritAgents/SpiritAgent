@@ -40,7 +40,7 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   return (
     <div className="flex min-w-0 items-center gap-2 overflow-hidden">
       <SlashCommandIcon kind={item.kind} />
-      <span className="shrink-0 whitespace-nowrap DESKTOP_LIST_ITEM_PRIMARY_CLASS leading-6">
+      <span className={cn("shrink-0 whitespace-nowrap leading-6", DESKTOP_LIST_ITEM_PRIMARY_CLASS)}>
         {item.name}
       </span>
       <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
