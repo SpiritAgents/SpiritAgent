@@ -10,7 +10,7 @@ import {
 import type { HostAutomationTrigger } from './automations.js';
 import { formatTriggerLabel, normalizeAutomationTrigger } from './automations.js';
 
-export type CreateAutomationApprovalLevel = 'default' | 'full-approval';
+export type CreateAutomationApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
 
 export const CREATE_AUTOMATION_TOOL_NAME = 'create_automation';
 
@@ -38,6 +38,9 @@ export function parseCreateAutomationApprovalLevel(value: unknown): CreateAutoma
     throw new Error('Invalid approval_level for create_automation.');
   }
   const trimmed = value.trim();
+  if (trimmed === 'auto-approval') {
+    return 'auto-approval';
+  }
   if (trimmed === 'full-approval' || trimmed === 'full-access') {
     return 'full-approval';
   }
@@ -45,7 +48,13 @@ export function parseCreateAutomationApprovalLevel(value: unknown): CreateAutoma
 }
 
 export function formatCreateAutomationApprovalLabel(level: CreateAutomationApprovalLevel): string {
-  return level === 'full-approval' ? '跳过审批' : '默认审批';
+  if (level === 'full-approval') {
+    return '跳过审批';
+  }
+  if (level === 'auto-approval') {
+    return '自动审批';
+  }
+  return '默认审批';
 }
 
 export function parseCreateAutomationTrigger(value: unknown): HostAutomationTrigger {
@@ -133,9 +142,9 @@ export const CREATE_AUTOMATION_CONTRIBUTED_TOOL: ContributedHostToolDefinition =
       },
       approval_level: {
         type: 'string',
-        enum: ['default', 'full-approval'],
+        enum: ['default', 'auto-approval', 'full-approval'],
         description:
-          'Approval policy when the automation runs. default: normal tool approval prompts; full-approval: skip high-risk approval prompts for that automation run. Omit to use default.',
+          'Approval policy when the automation runs. default: normal tool approval prompts; auto-approval: AI reviewer auto-approves safe tool calls, uncertain ones still prompt; full-approval: skip high-risk approval prompts for that automation run. Omit to use default.',
       },
       trigger: {
         type: 'object',
