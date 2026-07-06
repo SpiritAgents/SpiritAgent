@@ -1,6 +1,7 @@
 import { McpConfigError } from '../mcp/errors.js';
 import type { JsonValue } from '../ports.js';
 import {
+  LAZY_TOOL_PROVIDER_BUILT_IN,
   LAZY_TOOL_PROVIDER_MCP,
   type LazyToolCallRequest,
   type LazyToolDescribeRequest,
@@ -26,7 +27,7 @@ export function parseLazyToolGatewayArguments(
   const server = readRequiredString(parsed, 'server');
   const tool = readRequiredString(parsed, 'tool');
 
-  if (provider !== LAZY_TOOL_PROVIDER_MCP) {
+  if (provider !== LAZY_TOOL_PROVIDER_MCP && provider !== LAZY_TOOL_PROVIDER_BUILT_IN) {
     throw new McpConfigError(`Unsupported lazy tool provider: ${provider}`);
   }
 

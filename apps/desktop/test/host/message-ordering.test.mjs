@@ -12,6 +12,7 @@ import {
   toolCallSummaryForPhase,
   toolCallSummaryForStreamingPreview,
   toolCallSummaryCopyForResponsesBuiltInTool,
+  displayTitleForTool,
 } from '../../dist-electron/src/host/message-ordering.js';
 import i18n from '../../dist-electron/src/lib/i18n-host.js';
 
@@ -180,6 +181,76 @@ test('toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP d
     headline: '读取工具 schema',
     headlineDetail: 'mcp / microsoft-learn / microsoft_docs_fetch',
   });
+});
+
+test('toolCallSummaryForPhase: built-in create_automation preserves automation card copy', () => {
+  const lazyRequest = {
+    kind: 'lazyToolGateway',
+    name: 'tool_call',
+    argumentsJson: JSON.stringify({
+      provider: 'built-in',
+      server: 'desktop',
+      tool: 'create_automation',
+      arguments: {
+        overview: 'Summarize CI failures.',
+        title: 'CI check',
+        trigger: { kind: 'time', schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 } },
+      },
+    }),
+  };
+  assert.deepEqual(toolCallSummaryForPhase('running', 'tool_call', lazyRequest), {
+    headline: '创建自动化',
+    headlineDetail: 'CI check · Weekly Mon 09:00',
+  });
+});
+
+test('toolCallSummaryForStreamingPreview: built-in create_automation uses progressive streaming JSON', () => {
+  const partialGateway =
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
+  assert.deepEqual(
+    toolCallSummaryForStreamingPreview([], 'tool-1', 'tool_call', undefined, {
+      streamingArgumentsJson: partialGateway,
+    }),
+    { headline: '创建自动化', headlineDetail: 'AI 新闻日报 · Daily 08:00' },
+  );
+
+  const titleOnly =
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报"';
+  assert.deepEqual(
+    toolCallSummaryForStreamingPreview([], 'tool-1', 'tool_call', undefined, {
+      streamingArgumentsJson: titleOnly,
+    }),
+    { headline: '创建自动化', headlineDetail: 'AI 新闻日报' },
+  );
+
+  const gatewayIdentified =
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{';
+  assert.deepEqual(
+    toolCallSummaryForStreamingPreview([], 'tool-1', 'tool_call', undefined, {
+      streamingArgumentsJson: gatewayIdentified,
+    }),
+    { headline: '创建自动化' },
+  );
+});
+
+test('displayTitleForTool: built-in create_automation approval uses automation headline', () => {
+  assert.equal(
+    displayTitleForTool('tool_call', {
+      kind: 'lazyToolGateway',
+      name: 'tool_call',
+      argumentsJson: JSON.stringify({
+        provider: 'built-in',
+        server: 'desktop',
+        tool: 'create_automation',
+        arguments: {
+          overview: 'Summarize CI failures.',
+          title: 'CI check',
+          trigger: { kind: 'time', schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 } },
+        },
+      }),
+    }),
+    '创建自动化',
+  );
 });
 
 test('isSubagentStatusSurfaceText detects runtime status lines', () => {

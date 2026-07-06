@@ -443,6 +443,62 @@ test('getToolCallSummaryParts: todo_write preview prefers snapshot over unreliab
   );
 });
 
+test('getToolCallSummaryParts: built-in create_automation preview uses streaming JSON for progressive detail', () => {
+  const previewTool = {
+    toolName: 'tool_call',
+    phase: 'preview',
+    headline: 'Running: tool_call',
+    argsExcerpt: '{"provider":"built-in"',
+    streamingArgumentsJson:
+      '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}',
+    detailLines: [],
+  };
+
+  assert.deepEqual(getToolCallSummaryParts(previewTool), {
+    headline: '创建自动化',
+    detail: 'AI 新闻日报 · 每天 08:00',
+  });
+});
+
+test('getToolCallSummaryParts: built-in create_automation uses automation headline instead of lazy gateway verb', async () => {
+  const callTool = {
+    toolName: 'tool_call',
+    phase: 'running',
+    headline: '创建自动化',
+    headlineDetail: 'CI check · Weekly Mon 09:00',
+    argsExcerpt: JSON.stringify({
+      kind: 'lazyToolGateway',
+      name: 'tool_call',
+      argumentsJson: JSON.stringify({
+        provider: 'built-in',
+        server: 'desktop',
+        tool: 'create_automation',
+        arguments: {
+          overview: 'Summarize CI failures.',
+          title: 'CI check',
+          trigger: { kind: 'time', schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 } },
+        },
+      }),
+    }),
+    detailLines: [],
+  };
+
+  assert.deepEqual(getToolCallSummaryParts(callTool), {
+    headline: '创建自动化',
+    detail: 'CI check · Weekly Mon 09:00',
+  });
+
+  await i18n.changeLanguage('en');
+  try {
+    assert.deepEqual(getToolCallSummaryParts(callTool), {
+      headline: 'Create automation',
+      detail: 'CI check · Weekly Mon 09:00',
+    });
+  } finally {
+    await i18n.changeLanguage('zh-CN');
+  }
+});
+
 test('getToolCallSummaryParts: lazy gateway tools re-translate on language switch', async () => {
   const describeTool = {
     toolName: 'tool_describe',

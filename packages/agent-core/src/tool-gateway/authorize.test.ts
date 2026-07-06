@@ -51,6 +51,24 @@ test('authorizeLazyToolGatewayRequest requires approval for tool_call under auto
   assert.equal(decision.kind, 'need-approval');
 });
 
+test('authorizeLazyToolGatewayRequest requires approval for built-in tool_call under default', () => {
+  const decision = authorizeLazyToolGatewayRequest(
+    lazyRequest(TOOL_CALL_TOOL_NAME, {
+      provider: 'built-in',
+      server: 'desktop',
+      tool: 'create_automation',
+      arguments: { overview: 'Daily summary.' },
+    }),
+    'default',
+  );
+  assert.equal(decision.kind, 'need-approval');
+  if (decision.kind === 'need-approval') {
+    assert.match(decision.prompt, /built-in tool_call/u);
+    assert.match(decision.prompt, /create_automation/u);
+    assert.equal(decision.trustTarget, 'built-in:desktop:create_automation');
+  }
+});
+
 test('authorizeLazyToolGatewayRequest allows tool_call under full-approval', () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {
