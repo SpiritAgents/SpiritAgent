@@ -39,6 +39,7 @@ import {
   reasoningProviderForTransport,
   resolveAddedModelCapabilities,
   resolveDesktopTransportKind,
+  resolveProfileApiBase,
   supportsImageGeneration,
   supportsVideoGeneration,
 } from './model-config.js';
@@ -159,13 +160,10 @@ export async function updateConfigCommand(
     if (activeModel) {
       if (existing) {
         if (existing.provider && existing.provider !== 'custom') {
-          existing.apiBase = defaultApiBaseForTransport(
-            existing.provider,
-            resolveDesktopTransportKind(existing),
-            existing.providerSite,
-            existing.alibabaWorkspaceId,
-            existing.alibabaBillingMode,
-          );
+          // 仅切换 activeModel 时归一化 apiBase；agentMode 等无关 patch 不得把已存 endpoint 打回 provider 默认站点
+          if (state.config.activeModel !== activeModel) {
+            existing.apiBase = resolveProfileApiBase(existing);
+          }
         } else {
           existing.apiBase = apiBase;
         }
