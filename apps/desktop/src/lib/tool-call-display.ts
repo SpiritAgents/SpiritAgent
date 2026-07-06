@@ -19,6 +19,11 @@ import {
 } from '@/lib/read-file-tool-display';
 import { phaseToVerbContext } from '@/lib/tool-verb-context';
 import { grepToolHeadlineDetail, parseGrepRequestFromArgsExcerpt } from '@/lib/grep-tool-display';
+import { buildAutomationTriggerFormatLabels } from './automation-trigger-i18n.js';
+import { formatDesktopAutomationTriggerLabel } from './automation-trigger.js';
+import {
+  builtInCreateAutomationToolCallSummaryParts,
+} from './lazy-built-in-tool-display.js';
 import { resolveTodoWriteBeforeSnapshot, todoWriteSummaryDetail } from '@/lib/todo-tool-display.js';
 import type { ToolBlockSnapshot } from '@/types';
 
@@ -251,6 +256,33 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
       return {
         headline: i18n.t('tool.diagnosticsIssueCount', { count: issueCount }),
         ...(snapshotDetail ? { detail: snapshotDetail } : {}),
+      };
+    }
+  }
+
+  if (tool.toolName === 'tool_call') {
+    const ctx = phaseToVerbContext(tool.phase);
+    const tOpts = ctx ? { context: ctx } : {};
+    const gatewayJson =
+      tool.streamingArgumentsJson?.trim() || tool.argsExcerpt?.trim() || '';
+    const triggerLabels = buildAutomationTriggerFormatLabels((key, opts) =>
+      i18n.t(key, ctx ? { context: ctx, ...opts } : opts),
+    );
+    const parts = builtInCreateAutomationToolCallSummaryParts({
+      gatewayJson: gatewayJson || undefined,
+      headline: i18n.t('automations.create', tOpts),
+      formatTriggerLabel: (trigger) =>
+        formatDesktopAutomationTriggerLabel(trigger, triggerLabels),
+    });
+    if (parts) {
+      const snapshotDetail = tool.headlineDetail?.trim();
+      const useProgressiveDetail = tool.phase === 'preview';
+      const resolvedDetail = useProgressiveDetail
+        ? (parts.detail ?? snapshotDetail)
+        : (snapshotDetail ?? parts.detail);
+      return {
+        headline: parts.headline,
+        ...(resolvedDetail ? { detail: resolvedDetail } : {}),
       };
     }
   }
