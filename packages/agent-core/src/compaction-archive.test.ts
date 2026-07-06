@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildPreCompactionHistoryArchive } from './compaction-archive.js';
+import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from './compaction-ui-status.js';
 import { wrapCompactSummaryBlock } from './llm-context-block.js';
 import {
   buildCompactHistorySystemPrompt,
@@ -51,6 +52,30 @@ test('buildPreCompactionHistoryArchive keeps user and assistant messages with to
   ]);
   assert.equal(archive.messages[2]?.role, 'assistant');
   assert.equal(archive.messages[2]?.toolCalls, undefined);
+});
+
+test('buildPreCompactionHistoryArchive omits manual compaction UI status assistant messages', () => {
+  const archive = buildPreCompactionHistoryArchive(
+    [
+      {
+        role: 'assistant',
+        content: createLlmMessageContentFromText(MANUAL_COMPACTION_SKIPPED_STATUS_ZH),
+      },
+      {
+        role: 'user',
+        content: createLlmMessageContentFromText('hello'),
+      },
+      {
+        role: 'assistant',
+        content: createLlmMessageContentFromText('done'),
+      },
+    ],
+    1_700_000_000_000,
+  );
+
+  assert.equal(archive.message_count, 2);
+  assert.equal(archive.messages[0]?.role, 'user');
+  assert.equal(archive.messages[1]?.role, 'assistant');
 });
 
 test('buildCompactHistorySystemPrompt omits archive section when no path is provided', () => {

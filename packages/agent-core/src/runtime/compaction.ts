@@ -1,6 +1,7 @@
 import { setImmediate as waitForImmediate } from 'node:timers/promises';
 
 import { buildPreCompactionHistoryArchive } from '../compaction-archive.js';
+import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from '../compaction-ui-status.js';
 import type { CompactHistoryManualContext, LlmMessage } from '../ports.js';
 import { resolveHookSessionContext } from '../hooks/integration.js';
 import {
@@ -417,7 +418,7 @@ export async function pollPendingHistoryCompaction<
       kind: 'replace-pending-assistant',
       text:
         result.droppedMessages === 0
-          ? '当前可压缩历史较少，已跳过压缩。'
+          ? MANUAL_COMPACTION_SKIPPED_STATUS_ZH
           : `压缩完成：上下文消息 ${result.beforeLength} -> ${result.afterLength}，已合并 ${result.droppedMessages} 条历史消息。`,
     });
     runtime.emitEvent({ kind: 'assistant-response-completed' });
