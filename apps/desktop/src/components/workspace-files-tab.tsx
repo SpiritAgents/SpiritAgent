@@ -213,7 +213,7 @@ function WorkspaceFilesExplorerToolbar({
         </Tooltip>
         {fileOpen ? (
           <span
-            className="min-w-0 truncate text-xs font-medium text-foreground/95"
+            className="min-w-0 truncate text-xs font-normal text-foreground/95"
             title={headerSubtitle || undefined}
           >
             {headerTitle}

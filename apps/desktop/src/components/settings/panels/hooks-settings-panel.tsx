@@ -24,8 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  DESKTOP_EDITOR_TAB_CLASS,
+  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
+  DESKTOP_PAGE_TITLE_CLASS,
+} from "@/lib/desktop-typography";
 import type {
-import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
   DeleteHookEntryRequest,
   DesktopHookEventName,
   DesktopHookListItem,

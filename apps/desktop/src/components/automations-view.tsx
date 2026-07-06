@@ -2,7 +2,8 @@ import { useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode
 import { LoaderCircle, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { DESKTOP_PAGE_TITLE_CLASS, FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
+import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
+import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -294,7 +295,7 @@ function AutomationListRow({
       )}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-foreground">{item.title}</span>
+        <span className="text-sm font-normal text-foreground">{item.title}</span>
         {!item.enabled ? (
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {t("automations.disabled")}
