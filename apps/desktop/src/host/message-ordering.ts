@@ -41,6 +41,10 @@ import {
   type TodoDisplayItem,
 } from '../lib/todo-tool-display.js';
 import {
+  builtInCreateAutomationToolCallSummaryParts,
+  parseLazyToolGatewayFieldsFromJson,
+} from '../lib/lazy-built-in-tool-display.js';
+import {
   hasActiveRunSubagentToolInMessages,
   hasInFlightSubagentDelegationInMessages,
   hasRunSubagentToolInCurrentTurn,
@@ -181,7 +185,20 @@ export function reasonForShellTool(toolName: string, request: unknown): string |
 }
 
 export function displayTitleForTool(toolName: string, request: unknown): string {
-  return reasonForShellTool(toolName, request) ?? toolName;
+  const shellReason = reasonForShellTool(toolName, request);
+  if (shellReason) {
+    return shellReason;
+  }
+  if (toolName === 'tool_call' || toolName === 'tool_describe') {
+    const summary = toolCallSummaryCopyForRequest(
+      toolName,
+      resolveToolSummaryRequest(toolName, request),
+    );
+    if (summary?.headline) {
+      return summary.headline;
+    }
+  }
+  return toolName;
 }
 
 export function stripReasonLineFromShellPrompt(toolName: string, prompt: string): string {
@@ -208,6 +225,8 @@ export type ToolCallSummaryOptions = {
   executionOutput?: unknown;
   /** Session todos before todo_write ran; used for incremental UI detail. */
   todosBeforeWrite?: ReadonlyArray<TodoDisplayItem>;
+  /** Incomplete tool-call arguments JSON while streaming preview is in flight. */
+  streamingArgumentsJson?: string;
 };
 
 export { todoWriteSummaryDetail, type TodoDisplayItem } from '../lib/todo-tool-display.js';
@@ -335,7 +354,7 @@ export function toolCallSummaryCopyForRequest(
     case 'tool_describe':
     case 'tool_call': {
       if (toolName === 'tool_call') {
-        const builtInCopy = lazyBuiltInCreateAutomationSummaryCopy(record, tOpts);
+        const builtInCopy = lazyBuiltInCreateAutomationSummaryCopy(record, tOpts, options);
         if (builtInCopy) {
           return builtInCopy;
         }
@@ -476,32 +495,44 @@ function dreamIdSummaryCopy(
 function lazyBuiltInCreateAutomationSummaryCopy(
   record: Record<string, unknown>,
   tOpts: Record<string, unknown>,
+  options?: ToolCallSummaryOptions,
 ): ToolCallSummaryCopy | undefined {
-  const provider = typeof record.provider === 'string' ? record.provider.trim() : '';
-  const tool = typeof record.tool === 'string' ? record.tool.trim() : '';
-  if (provider !== 'built-in' || tool !== 'create_automation') {
+  const gatewayJson = options?.streamingArgumentsJson?.trim() ?? '';
+  const partialFields = gatewayJson ? parseLazyToolGatewayFieldsFromJson(gatewayJson) : {};
+  const provider =
+    (typeof record.provider === 'string' ? record.provider.trim() : '') ||
+    partialFields.provider ||
+    '';
+  const server =
+    (typeof record.server === 'string' ? record.server.trim() : '') ||
+    partialFields.server ||
+    '';
+  const tool =
+    (typeof record.tool === 'string' ? record.tool.trim() : '') ||
+    partialFields.tool ||
+    '';
+  if (
+    provider !== 'built-in'
+    || server !== 'desktop'
+    || tool !== 'create_automation'
+  ) {
     return undefined;
   }
 
-  const args =
-    record.arguments && typeof record.arguments === 'object' && !Array.isArray(record.arguments)
-      ? (record.arguments as Record<string, unknown>)
-      : record;
-
-  try {
-    const preview = previewCreateAutomationFromArguments(args);
-    const triggerLabel = formatTriggerLabel(preview.trigger);
-    const detail = [preview.title, triggerLabel].filter((part) => part.length > 0).join(' · ');
-    return {
-      headline: i18n.t('automations.create', tOpts),
-      headlineDetail: truncateSummaryDetail(detail || 'automation'),
-    };
-  } catch {
-    return {
-      headline: i18n.t('automations.create', tOpts),
-      headlineDetail: truncateSummaryDetail('automation'),
-    };
+  const headline = i18n.t('automations.create', tOpts);
+  const parts = builtInCreateAutomationToolCallSummaryParts({
+    gatewayJson: gatewayJson || undefined,
+    requestRecord: record,
+    headline,
+    formatTriggerLabel: (trigger) => formatTriggerLabel(trigger),
+  });
+  if (!parts) {
+    return { headline };
   }
+  return {
+    headline: parts.headline,
+    ...(parts.detail ? { headlineDetail: truncateSummaryDetail(parts.detail) } : {}),
+  };
 }
 
 function resolveToolSummaryRequest(toolName: string, request: unknown): unknown {
@@ -1164,9 +1195,33 @@ export function toolCallSummaryForStreamingPreview(
     return readFileSummaryCopy(request, 'running');
   }
 
+  const streamingJson = options?.streamingArgumentsJson?.trim();
+  let effectiveRequest: unknown = request;
+  if (streamingJson && (toolName === 'tool_call' || toolName === 'tool_describe')) {
+    const fromStream = previewRequestFromStreamingArguments(toolName, streamingJson);
+    if (
+      fromStream &&
+      request !== undefined &&
+      typeof request === 'object' &&
+      typeof fromStream === 'object'
+    ) {
+      effectiveRequest = {
+        ...(fromStream as Record<string, unknown>),
+        ...(request as Record<string, unknown>),
+      };
+    } else if (fromStream !== undefined) {
+      effectiveRequest = fromStream;
+    }
+  }
+  const summaryOptions =
+    streamingJson && options
+      ? { ...options, streamingArgumentsJson: streamingJson }
+      : streamingJson
+        ? { streamingArgumentsJson: streamingJson }
+        : options;
   const custom =
-    request !== undefined
-      ? toolCallSummaryCopyForRequest(toolName, request, 'running', options)
+    effectiveRequest !== undefined
+      ? toolCallSummaryCopyForRequest(toolName, effectiveRequest, 'running', summaryOptions)
       : undefined;
   if (custom) {
     return custom;
@@ -1177,6 +1232,15 @@ export function toolCallSummaryForStreamingPreview(
     return {
       headline: i18n.t('tool.diagnosticsChecking'),
       ...(detail ? { headlineDetail: detail } : {}),
+    };
+  }
+
+  if (toolName === 'tool_call' || toolName === 'tool_describe') {
+    const tOpts = { context: 'running' as const };
+    return {
+      headline: hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
+        ? i18n.t('tool.queued', { toolName })
+        : i18n.t(toolName === 'tool_call' ? 'tool.lazyToolCall' : 'tool.lazyToolDescribe', tOpts),
     };
   }
 
