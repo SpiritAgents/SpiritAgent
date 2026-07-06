@@ -23,7 +23,6 @@ export const connectTransportOptionCatalog = {
   responsesApi: {
     value: "open-responses" as const,
     label: "Responses API",
-    summaryKey: 'settings.transportResponsesApi',
   },
   openResponsesApi: {
     value: "open-responses" as const,
@@ -66,7 +65,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "volcengine":
       return [
         connectTransportOptionCatalog.chatCompletions,
-        { ...connectTransportOptionCatalog.responsesApi, summaryKey: undefined },
+        connectTransportOptionCatalog.responsesApi,
       ];
     case "amazon-bedrock":
       return [connectTransportOptionCatalog.bedrockApi];
@@ -138,20 +137,8 @@ export function resolveConnectTransportKindForProvider(
 
 export function connectTransportOptionSummary(
   option: ConnectTransportOption,
-  provider: DesktopModelProvider | null,
+  _provider: DesktopModelProvider | null,
 ): string | undefined {
-  if (option.value === "open-responses" && provider === "xai") {
-    return i18n.t('settings.transportXaiResponses');
-  }
-
-  if (option.value === "open-responses" && provider === "alibaba") {
-    return i18n.t('settings.transportAlibabaResponses');
-  }
-
-  if (option.value === "open-responses" && provider === "xiaomi") {
-    return i18n.t('settings.transportResponsesApi');
-  }
-
   return option.summaryKey ? i18n.t(option.summaryKey) : undefined;
 }
 
