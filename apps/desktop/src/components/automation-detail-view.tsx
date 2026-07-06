@@ -11,6 +11,7 @@ import type {
   GitHubAutomationRepositoriesSnapshot,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
+import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 type AutomationDetailViewProps = {
@@ -145,7 +146,7 @@ export function AutomationDetailView({
               {t("automations.detailBack")}
             </button>
             <ChevronRight className="size-3.5 text-muted-foreground/70" aria-hidden />
-            <span className="font-semibold text-foreground">
+            <span className={cn(FONT_WEIGHT_MEDIUM, "text-foreground")}>
               {definition?.title ?? listFallback?.title ?? automationId}
             </span>
           </nav>

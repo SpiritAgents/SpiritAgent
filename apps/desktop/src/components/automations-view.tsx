@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode
 import { LoaderCircle, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { DESKTOP_PAGE_TITLE_CLASS, FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -100,7 +100,7 @@ export function AutomationsView({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
-              <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
                 {t("automations.title")}
               </h1>
               <p className="text-sm text-muted-foreground">{t("automations.subtitle")}</p>

@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DeleteExtensionRequest, DesktopExtensionListItem } from "@/types";
-import { DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_SECTION_LABEL_COMPACT_CLASS } from "@/lib/desktop-typography";
+import {DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_SECTION_LABEL_COMPACT_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function ExtensionsSettingsPanel({
   snapshot,
@@ -66,7 +66,7 @@ export function ExtensionsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.extensionsTitle')}</h1>
+            <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.extensionsTitle')}</h1>
             {snapshot?.extensionsLoading ? (
               <LoaderCircle className="size-4 animate-spin text-muted-foreground" aria-label={t('common.loading')} />
             ) : null}

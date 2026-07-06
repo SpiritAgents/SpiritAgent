@@ -95,7 +95,7 @@ import {
 } from "@spiritagent/host-internal/bedrock-mantle";
 import { azureApiBaseFromResourceName, isValidAzureResourceName } from "@spiritagent/host-internal/azure-resource";
 import { vertexApiBaseFromProjectAndLocation } from "@spiritagent/host-internal/google-vertex-endpoints";
-import { DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
+import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function ModelsSettingsPanel({
   settings,
@@ -813,7 +813,7 @@ export function ModelsSettingsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.modelsTitle')}</h1>
+        <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.modelsTitle')}</h1>
         <Button
           type="button"
           size="sm"

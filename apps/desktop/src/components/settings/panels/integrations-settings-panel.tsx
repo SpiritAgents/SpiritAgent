@@ -7,8 +7,7 @@ import { GitHubDeviceLoginDialog } from "@/components/github-device-login-dialog
 import { GitHubMarkIcon } from "@/components/github-mark-icon";
 import { Button } from "@/components/ui/button";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
-import {
-import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
+import {import { DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
   useGitHubDeviceLogin,
   type GitHubDeviceLoginRuntime,
 } from "@/hooks/use-github-device-login";
@@ -75,7 +74,7 @@ export function IntegrationsSettingsPanel({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">
+      <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
         {t("settings.integrations")}
       </h1>
 
