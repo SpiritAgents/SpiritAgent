@@ -1,6 +1,8 @@
+import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
+
 // 半透明底色：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
 export const PLAN_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md bg-orange-300/20 px-1.5 py-0.5 text-xs font-medium leading-none text-yellow-600 select-none align-middle mx-0.5 dark:bg-orange-300/15 dark:text-orange-300";
+  `inline-flex items-center gap-1 rounded-md bg-orange-300/20 px-1.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none text-yellow-600 select-none align-middle mx-0.5 dark:bg-orange-300/15 dark:text-orange-300`;
 
 export function makePlanChipNode(doc: Document, label = "Plan"): HTMLElement {
   const span = doc.createElement("span");
