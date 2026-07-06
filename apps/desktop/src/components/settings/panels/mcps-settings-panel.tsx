@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
 import type {
+import { DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
   DeleteMcpServerRequest,
   DesktopMcpScope,
   DesktopMcpServerListItem,
@@ -277,7 +278,7 @@ export function McpsSettingsPanel({
             >
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{item.displayName}</span>
+                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.displayName}</span>
                   <McpRuntimeBadge state={runtimeInfo[runtimeKey]?.state ?? (item.enabled ? "loading" : "disabled")} />
                   <Badge variant="outline" className="text-muted-foreground">
                     {item.scope === "user" ? t('settings.skillUserDirShort') : t('settings.mcpScopeWorkspace')}
@@ -400,7 +401,7 @@ export function McpsSettingsPanel({
                     role="tab"
                     aria-selected={createScope === opt.scope}
                     className={cn(
-                      "rounded-md px-2.5 text-xs font-medium transition-colors",
+                      DESKTOP_EDITOR_TAB_CLASS,
                       createScope === opt.scope
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
@@ -431,7 +432,7 @@ export function McpsSettingsPanel({
                     role="tab"
                     aria-selected={transportType === value}
                     className={cn(
-                      "rounded-md px-2.5 text-xs font-medium transition-colors",
+                      DESKTOP_EDITOR_TAB_CLASS,
                       transportType === value
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
