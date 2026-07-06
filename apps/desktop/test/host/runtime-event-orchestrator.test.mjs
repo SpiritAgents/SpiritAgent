@@ -654,7 +654,7 @@ test('provider builtin tool card maps _spiritUi to headline detail and output ex
 
   const tool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
   assert.equal(tool?.phase, 'succeeded');
-  assert.equal(tool?.headlineDetail, '1 个来源');
+  assert.equal(tool?.headlineDetail, 'DeepSeek V4');
   assert.equal(tool?.outputExcerpt, '1. https://www.deepseek.com/');
   assert.match(tool?.argsExcerpt ?? '', /DeepSeek V4/);
   assert.ok(tool?.outputExcerpt?.trim() && tool?.argsExcerpt?.trim());

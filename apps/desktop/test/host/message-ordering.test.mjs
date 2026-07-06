@@ -129,6 +129,36 @@ test('toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
   );
 });
 
+test('toolCallSummaryCopyForResponsesBuiltInTool: web_search prefers query over source count', () => {
+  assert.deepEqual(
+    toolCallSummaryCopyForResponsesBuiltInTool(
+      'web_search',
+      'succeeded',
+      { headline: '联网搜索', headlineDetail: 'latest models' },
+      { sourceCount: 5 },
+    ),
+    {
+      headline: '联网搜索',
+      headlineDetail: 'latest models',
+    },
+  );
+});
+
+test('toolCallSummaryCopyForResponsesBuiltInTool: web_search falls back to source count without query detail', () => {
+  assert.deepEqual(
+    toolCallSummaryCopyForResponsesBuiltInTool(
+      'web_search',
+      'succeeded',
+      { headline: '联网搜索' },
+      { sourceCount: 2 },
+    ),
+    {
+      headline: '联网搜索',
+      headlineDetail: '2 个来源',
+    },
+  );
+});
+
 test('toolCallSummaryCopyForRequest: search tools use Chinese headline + detail', () => {
   assert.deepEqual(toolCallSummaryCopyForRequest('grep', { query: 'TODO' }), {
     headline: '搜索',

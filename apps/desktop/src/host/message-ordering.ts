@@ -1161,15 +1161,20 @@ export function toolCallSummaryCopyForResponsesBuiltInTool(
   providerUi?: { headlineDetail?: string; sourceCount?: number },
 ): ToolCallSummaryCopy {
   if (toolName === 'web_search') {
-    if (phase === 'succeeded' && providerUi?.sourceCount && providerUi.sourceCount > 0) {
+    const headlineDetail =
+      previewSummary.headlineDetail?.trim()
+      || providerUi?.headlineDetail?.trim();
+    if (
+      !headlineDetail
+      && phase === 'succeeded'
+      && providerUi?.sourceCount
+      && providerUi.sourceCount > 0
+    ) {
       return {
         headline: previewSummary.headline,
         headlineDetail: i18n.t('tool.webSearchSourceCount', { count: providerUi.sourceCount }),
       };
     }
-    const headlineDetail =
-      previewSummary.headlineDetail?.trim()
-      || providerUi?.headlineDetail?.trim();
     return {
       headline: previewSummary.headline,
       ...(headlineDetail ? { headlineDetail } : {}),
