@@ -95,6 +95,7 @@ export function BranchSelectMenu({
               disabled={triggerDisabled}
               className={cn(
                 "inline-flex h-7 min-w-0 max-w-[min(12rem,28vw)] items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                 "text-muted-foreground",
               )}
             >

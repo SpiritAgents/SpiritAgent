@@ -158,6 +158,7 @@ export function WorkspaceSelectorMenu({
                 aria-label={t("app.selectWorkspace")}
                 className={cn(
                   "inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-md border-0 bg-transparent px-1 text-left text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                  DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                   instantHoverMotionClass,
                   triggerClassName,
                 )}
