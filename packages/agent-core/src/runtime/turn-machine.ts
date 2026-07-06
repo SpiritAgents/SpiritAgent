@@ -40,6 +40,7 @@ import {
 import { toolInputFromArgumentsJson } from '../hooks/integration.js';
 import { appendToolResultMessages, isJsonObject } from '../tool-agent.js';
 import { prepareStateForContextRetryAsync } from './compaction.js';
+import { syncPreparedToolResultContentToHistory } from './tool-execution.js';
 import { buildEarlyExecutableArgumentsJson } from '../tool-streaming-preview-gate.js';
 import {
   applyDeferredUserGuidance,
@@ -1697,6 +1698,35 @@ function persistAssistantToolCalls<
       argumentsJson: call.argumentsJson,
     })),
   });
+}
+
+export function persistProviderBuiltinToolRoundToHistoryStore<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: Pick<
+    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    'historyStore' | 'options'
+  >,
+  state: State,
+  round: {
+    calls: ToolCallRequest[];
+    toolResults: ReadonlyArray<{ toolCallId: string; content: string }>;
+  },
+): void {
+  if (round.calls.length === 0) {
+    return;
+  }
+
+  if (!shouldSkipPersistAssistantToolCalls(runtime.historyStore, round.calls)) {
+    persistAssistantToolCalls(runtime, state, round.calls);
+  }
+
+  for (const result of round.toolResults) {
+    syncPreparedToolResultContentToHistory(runtime, result.toolCallId, result.content);
+  }
 }
 
 function requestStubFromToolCall(call: ToolCallRequest): Record<string, unknown> {

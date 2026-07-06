@@ -198,6 +198,74 @@ export function persistProviderBuiltinToolRoundToState(
   }
 }
 
+export function findLatestProviderBuiltinToolRoundInState(
+  state: ToolAgentState,
+): {
+  calls: ToolCallRequest[];
+  toolResults: Array<{ toolCallId: string; content: string }>;
+} | undefined {
+  const toolResultsById = new Map<string, string>();
+  for (const message of state.messages) {
+    if (!isJsonObject(message) || message.role !== 'tool') {
+      continue;
+    }
+
+    const toolCallId = typeof message.tool_call_id === 'string' ? message.tool_call_id : undefined;
+    const content = typeof message.content === 'string' ? message.content : undefined;
+    if (toolCallId && content !== undefined) {
+      toolResultsById.set(toolCallId, content);
+    }
+  }
+
+  for (let index = state.messages.length - 1; index >= 0; index -= 1) {
+    const message = state.messages[index];
+    if (!isJsonObject(message) || message.role !== 'assistant') {
+      continue;
+    }
+    if (!Array.isArray(message.tool_calls)) {
+      continue;
+    }
+
+    const calls: ToolCallRequest[] = [];
+    for (const entry of message.tool_calls) {
+      if (!isJsonObject(entry) || !isJsonObject(entry.function)) {
+        continue;
+      }
+      if (typeof entry.id !== 'string' || typeof entry.function.name !== 'string') {
+        continue;
+      }
+      if (!isResponsesBuiltInToolName(entry.function.name)) {
+        continue;
+      }
+
+      calls.push({
+        id: entry.id,
+        name: entry.function.name,
+        argumentsJson: typeof entry.function.arguments === 'string'
+          ? entry.function.arguments
+          : JSON.stringify(entry.function.arguments ?? {}),
+      });
+    }
+
+    if (calls.length === 0) {
+      continue;
+    }
+
+    const toolResults = calls.flatMap((call) => {
+      const content = toolResultsById.get(call.id);
+      return content !== undefined ? [{ toolCallId: call.id, content }] : [];
+    });
+
+    if (toolResults.length !== calls.length) {
+      continue;
+    }
+
+    return { calls, toolResults };
+  }
+
+  return undefined;
+}
+
 export function shouldResumeStreamingAfterProviderSearch(
   config: OpenResponsesTransportConfig,
   executedProviderBuiltinToolCallIds: ReadonlySet<string>,
