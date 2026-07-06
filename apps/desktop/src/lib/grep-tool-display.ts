@@ -29,10 +29,8 @@ export function grepToolHeadlineDetail(
 ): string | undefined {
   const query = request.query?.trim() ?? '';
   const glob = request.glob?.trim() ?? '';
-  const prefix = request.is_regexp === true ? t('tool.regexPrefix') : '';
-  const queryLabel = `${prefix}${query}`;
-  if (queryLabel && glob) {
-    return t('tool.searchQueryInGlob', { query: queryLabel, glob });
+  if (query && glob) {
+    return t('tool.searchQueryInGlob', { query, glob });
   }
-  return queryLabel || glob || undefined;
+  return query || glob || undefined;
 }
