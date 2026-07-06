@@ -49,7 +49,7 @@ export function parseCreateAutomationApprovalLevel(value: unknown): CreateAutoma
 
 export function formatCreateAutomationApprovalLabel(level: CreateAutomationApprovalLevel): string {
   if (level === 'full-approval') {
-    return '跳过审批';
+    return '绕过审批';
   }
   if (level === 'auto-approval') {
     return '自动审批';
