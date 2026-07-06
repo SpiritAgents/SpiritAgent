@@ -1,3 +1,9 @@
+import {
+  DESKTOP_OVERLAY_GROUP_LABEL_CLASS,
+  DESKTOP_OVERLAY_ITEM_PRIMARY_CLASS,
+  DESKTOP_SIDEBAR_TEXT_CLASS,
+  FONT_WEIGHT_NORMAL,
+} from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,7 +38,7 @@ export const DESKTOP_CHROME_MUTED_TEXT = "text-sidebar-action-foreground";
 /** 会话标题内联重命名 input：ghost、无边框，字色与侧栏/顶栏会话名一致 */
 export const SESSION_TITLE_RENAME_INPUT_CLASS = cn(
   "min-w-0 rounded-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 focus-visible:ring-0",
-  "text-xs font-medium",
+  DESKTOP_SIDEBAR_TEXT_CLASS,
   DESKTOP_CHROME_MUTED_TEXT,
 );
 
@@ -64,7 +70,8 @@ export const DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN = cn(
 );
 
 export const DESKTOP_CHROME_COMMIT_BTN = cn(
-  "h-7 rounded-md px-2 text-xs font-medium text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10",
+  "h-7 rounded-md px-2 text-xs text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10",
+  FONT_WEIGHT_NORMAL,
   instantHoverMotionClass,
 );
 
@@ -172,12 +179,13 @@ export const DESKTOP_OVERLAY_LIST_LIST_PADDING = "p-1 pr-1.5";
 
 export const DESKTOP_OVERLAY_LIST_LIST_GAP = "gap-0.5";
 
-export const DESKTOP_OVERLAY_LIST_GROUP_LABEL =
-  "px-2 py-1.5 text-[11px] font-medium tracking-wide text-muted-foreground";
+export const DESKTOP_OVERLAY_LIST_GROUP_LABEL = cn(
+  "px-2 py-1.5",
+  DESKTOP_OVERLAY_GROUP_LABEL_CLASS,
+);
 
 /** 详情 Popover 内嵌标签（无额外 padding，配合 DESKTOP_OVERLAY_LIST_DETAIL_* 使用） */
-export const DESKTOP_OVERLAY_LIST_DETAIL_LABEL =
-  "text-[11px] font-medium tracking-wide text-muted-foreground";
+export const DESKTOP_OVERLAY_LIST_DETAIL_LABEL = DESKTOP_OVERLAY_GROUP_LABEL_CLASS;
 
 export const DESKTOP_OVERLAY_LIST_ITEM = "px-2 py-1.5";
 
@@ -208,8 +216,7 @@ export const DESKTOP_SELECT_LABEL = DESKTOP_OVERLAY_LIST_GROUP_LABEL;
 export const DESKTOP_OVERLAY_LIST_ACTION_ITEM =
   "px-2 py-1.5 text-xs text-popover-foreground";
 
-export const DESKTOP_OVERLAY_LIST_ITEM_PRIMARY =
-  "truncate text-xs font-medium text-popover-foreground";
+export const DESKTOP_OVERLAY_LIST_ITEM_PRIMARY = DESKTOP_OVERLAY_ITEM_PRIMARY_CLASS;
 
 export const DESKTOP_OVERLAY_LIST_ITEM_SECONDARY =
   "truncate text-[11px] text-muted-foreground";

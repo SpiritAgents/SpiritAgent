@@ -7,7 +7,9 @@ import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import i18n from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import type { DesktopDreamOverviewItem, DesktopSnapshot } from "@/types";
+import { DESKTOP_LIST_ITEM_PRIMARY_CLASS, FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 
 function dreamCollectorStateLabel(state: DesktopSnapshot["dreams"]["collector"]["state"]): string {
   switch (state) {
@@ -118,11 +120,11 @@ export function DreamSettingsPanel({
         </SettingsRow>
 
         <div className="py-4">
-          <p className="text-sm font-medium text-foreground">{t("settings.collectorStatus")}</p>
+          <p className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{t("settings.collectorStatus")}</p>
           <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:text-right">
             <p>
               {t("settings.status")}
-              <span className="font-medium text-foreground">
+              <span className={cn(FONT_WEIGHT_NORMAL, "text-foreground")}>
                 {dreamCollectorStateLabel(collector?.state ?? "disabled")}
               </span>
             </p>

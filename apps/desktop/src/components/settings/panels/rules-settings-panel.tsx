@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
 import type { CreateRuleRequest, DesktopRuleListItem, DesktopSkillRootKind } from "@/types";
+import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 const ruleCreateRootOptions: Array<{
   kind: DesktopSkillRootKind;
@@ -99,7 +100,7 @@ export function RulesSettingsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.rules')}</h1>
+          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.rules')}</h1>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
@@ -145,7 +146,7 @@ export function RulesSettingsPanel({
             >
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{ruleFileBaseName(item.shortLabel)}</span>
+                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{ruleFileBaseName(item.shortLabel)}</span>
                   <Badge variant="secondary" className="text-muted-foreground">
                     {ruleLocationLabel(item)}
                   </Badge>
@@ -267,7 +268,7 @@ export function RulesSettingsPanel({
                     role="tab"
                     aria-selected={createRootKind === opt.kind}
                     className={cn(
-                      "rounded-md px-2.5 text-xs font-medium transition-colors",
+                      DESKTOP_EDITOR_TAB_CLASS,
                       createRootKind === opt.kind
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",

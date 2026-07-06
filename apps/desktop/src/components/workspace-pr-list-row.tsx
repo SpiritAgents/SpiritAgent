@@ -60,7 +60,7 @@ export function WorkspacePrListRow({ item, onSelect }: WorkspacePrListRowProps) 
               alt=""
               className="size-3 shrink-0 rounded-full bg-muted object-cover"
             />
-            <span className="truncate text-xs font-medium text-foreground/80">{item.authorLogin}</span>
+            <span className="truncate text-xs font-normal text-foreground/80">{item.authorLogin}</span>
           </span>
           <span className="shrink-0 text-[11px] text-muted-foreground/75 dark:text-muted-foreground/65">
             #{item.number}

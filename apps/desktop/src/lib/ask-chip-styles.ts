@@ -1,6 +1,8 @@
+import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
+
 // 半透明底色：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
 export const ASK_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium leading-none text-emerald-900 select-none align-middle mx-0.5 dark:bg-emerald-500/15 dark:text-emerald-500";
+  `inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none text-emerald-900 select-none align-middle mx-0.5 dark:bg-emerald-500/15 dark:text-emerald-500`;
 
 export function makeAskChipNode(doc: Document, label = "Ask"): HTMLElement {
   const span = doc.createElement("span");

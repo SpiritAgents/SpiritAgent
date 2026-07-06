@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Menubar as MenubarPrimitive } from "radix-ui"
 
+import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils"
 import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
@@ -62,7 +63,8 @@ function MenubarTrigger({
     <MenubarPrimitive.Trigger
       data-slot="menubar-trigger"
       className={cn(
-        "flex cursor-pointer items-center rounded-sm px-1.5 py-[2px] text-sm font-medium outline-hidden select-none hover:bg-muted aria-expanded:bg-muted",
+        "flex cursor-pointer items-center rounded-sm px-1.5 py-[2px] text-sm outline-hidden select-none hover:bg-muted aria-expanded:bg-muted",
+        FONT_WEIGHT_NORMAL,
         className
       )}
       {...props}
@@ -186,7 +188,8 @@ function MenubarLabel({
       data-slot="menubar-label"
       data-inset={inset}
       className={cn(
-        "px-1.5 py-1 text-sm font-medium data-inset:pl-7",
+        "px-1.5 py-1 text-sm data-inset:pl-7",
+        FONT_WEIGHT_NORMAL,
         className
       )}
       {...props}

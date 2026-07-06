@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { DesktopSnapshot } from "@/types";
+import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 
 function webHostStatusLabel(state: DesktopSnapshot["webHost"]["status"]["state"]): string {
   switch (state) {
@@ -149,7 +150,7 @@ export function NetworksSettingsPanel({
           </SettingsRow>
 
           <div className="py-4">
-            <p className="text-sm font-medium text-foreground">{t("settings.remoteStatus")}</p>
+            <p className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{t("settings.remoteStatus")}</p>
             <div className="mt-2 grid gap-1 text-sm text-muted-foreground sm:text-right">
               <p className="truncate">
                 <span className="text-foreground">

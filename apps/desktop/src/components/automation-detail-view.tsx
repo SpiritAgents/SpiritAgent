@@ -11,6 +11,7 @@ import type {
   GitHubAutomationRepositoriesSnapshot,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
+import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 type AutomationDetailViewProps = {
@@ -68,7 +69,7 @@ function AutomationDetailTabs({
             className={cn(
               "rounded-md px-3 py-2 text-sm",
               activeTab === id
-                ? "font-medium text-foreground underline decoration-foreground/80 underline-offset-[10px]"
+                ? "font-normal text-foreground underline decoration-foreground/80 underline-offset-[10px]"
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
             )}
             onClick={() => onTabChange(id)}
@@ -140,12 +141,12 @@ export function AutomationDetailView({
             <button
               type="button"
               onClick={onBack}
-              className="font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="font-normal text-muted-foreground transition-colors hover:text-foreground"
             >
               {t("automations.detailBack")}
             </button>
             <ChevronRight className="size-3.5 text-muted-foreground/70" aria-hidden />
-            <span className="font-semibold text-foreground">
+            <span className={cn(FONT_WEIGHT_MEDIUM, "text-foreground")}>
               {definition?.title ?? listFallback?.title ?? automationId}
             </span>
           </nav>

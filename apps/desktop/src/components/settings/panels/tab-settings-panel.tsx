@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AgentsSettingsRow } from "@/components/settings/panels/agents-settings-panel";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function TabSettingsPanel({
   settings,
@@ -12,7 +13,7 @@ export function TabSettingsPanel({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("settings.tab")}</h1>
+      <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("settings.tab")}</h1>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
         <AgentsSettingsRow
