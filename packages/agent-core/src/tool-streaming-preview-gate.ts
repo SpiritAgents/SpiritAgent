@@ -266,6 +266,11 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
       return hostToolArgumentsReadyForPreview(name, argumentsJson);
     case 'web_search':
       return tryExtractPartialWebSearchQuery(argumentsJson) !== undefined;
+    case 'tool_call':
+    case 'tool_describe': {
+      const fields = tryExtractPartialLazyToolGatewayFields(argumentsJson);
+      return Boolean(fields.provider || fields.server || fields.tool);
+    }
     default:
       return false;
   }
@@ -346,6 +351,37 @@ export function hostToolArgumentsReadyForPreview(name: string, argumentsJson: st
 
 const STREAMING_PREVIEW_UPDATE_MIN_DELTA_CHARS = 400;
 
+function lazyToolGatewayStreamingPreviewSignature(argumentsJson: string): string | undefined {
+  const fields = tryExtractPartialLazyToolGatewayFields(argumentsJson);
+  const parts: string[] = [];
+  if (fields.provider) {
+    parts.push(`p:${fields.provider}`);
+  }
+  if (fields.server) {
+    parts.push(`s:${fields.server}`);
+  }
+  if (fields.tool) {
+    parts.push(`t:${fields.tool}`);
+  }
+
+  const titleMatch = argumentsJson.match(/"title"\s*:\s*"((?:\\.|[^"\\])*)"/u);
+  const rawTitle = titleMatch?.[1];
+  if (rawTitle) {
+    const title = decodePartialJsonString(rawTitle)?.trim();
+    if (title) {
+      parts.push(`title:${title}`);
+    }
+  }
+
+  const hourMatch = argumentsJson.match(/"hour"\s*:\s*(\d+)/u);
+  const minuteMatch = argumentsJson.match(/"minute"\s*:\s*(\d+)/u);
+  if (hourMatch?.[1] && minuteMatch?.[1]) {
+    parts.push(`tr:${hourMatch[1]}:${minuteMatch[1]}`);
+  }
+
+  return parts.length > 0 ? parts.join('|') : undefined;
+}
+
 export function shouldRepeatStreamingToolPreview(
   toolName: string,
   previousArgsLen: number,
@@ -385,6 +421,15 @@ export function shouldRepeatStreamingToolPreview(
   if (toolName === 'web_search') {
     const nextSignature = options?.nextArgumentsJson
       ? webSearchStreamingPreviewSignature(options.nextArgumentsJson)
+      : undefined;
+    if (!nextSignature) {
+      return false;
+    }
+    return options?.previousDetailSignature !== nextSignature;
+  }
+  if (toolName === 'tool_call' || toolName === 'tool_describe') {
+    const nextSignature = options?.nextArgumentsJson
+      ? lazyToolGatewayStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
     if (!nextSignature) {
       return false;
@@ -704,7 +749,9 @@ export function resolveStreamingToolPreviewEmit(
           ? createContentStreamingPreviewSignature(argumentsJson)
           : toolName === 'web_search'
             ? webSearchStreamingPreviewSignature(argumentsJson)
-            : undefined;
+            : toolName === 'tool_call' || toolName === 'tool_describe'
+              ? lazyToolGatewayStreamingPreviewSignature(argumentsJson)
+              : undefined;
 
   const emit =
     !state.readyPreviewEmitted ||

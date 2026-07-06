@@ -621,7 +621,10 @@ export class DesktopRuntimeEventOrchestrator {
         event.toolCallId,
         event.toolName,
         previewRequest,
-        this.toolSummaryOptions(),
+        {
+          ...this.toolSummaryOptions(),
+          streamingArgumentsJson: event.argumentsJson,
+        },
       );
       const responsesBuiltInPhase = isResponsesBuiltIn
         ? resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson)
@@ -652,6 +655,8 @@ export class DesktopRuntimeEventOrchestrator {
             ...(providerUi?.outputExcerpt ? { outputExcerpt: providerUi.outputExcerpt } : {}),
             ...(suppressExpand ? { suppressExpand: true } : {}),
             ...(FILE_DIFF_TOOL_NAMES.has(event.toolName)
+              || event.toolName === 'tool_call'
+              || event.toolName === 'tool_describe'
               ? { streamingArgumentsJson: event.argumentsJson }
               : {}),
             ...(event.toolName === 'todo_write'

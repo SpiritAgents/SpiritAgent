@@ -128,8 +128,16 @@ export interface ToolAgentMcpToolCatalogServerEntry {
   resources: ToolAgentMcpResourceCatalogEntry[];
 }
 
+export interface ToolAgentBuiltInToolCatalogServerEntry {
+  name: string;
+  displayName: string;
+  tools: ToolAgentMcpToolCatalogToolEntry[];
+}
+
 export interface ToolAgentMcpToolCatalogSnapshot {
   servers: ToolAgentMcpToolCatalogServerEntry[];
+  builtInServers?: ToolAgentBuiltInToolCatalogServerEntry[];
+  builtInToolCount?: number;
   truncated: boolean;
   totalToolCount: number;
   resourcesTruncated: boolean;

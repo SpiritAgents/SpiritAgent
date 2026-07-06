@@ -173,3 +173,25 @@ test('resolveStreamingToolPreviewEmit repeats web_search preview when query grow
   const unchanged = resolveStreamingToolPreviewEmit('web_search', longer, second.nextState);
   assert.equal(unchanged.emit, false);
 });
+
+test('resolveStreamingToolPreviewEmit repeats tool_call when lazy gateway fields stream in', () => {
+  const gatewayTool =
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{';
+  const first = resolveStreamingToolPreviewEmit('tool_call', gatewayTool, {
+    readyPreviewEmitted: false,
+  });
+  assert.equal(first.emit, true);
+
+  const withTitle =
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报"';
+  const second = resolveStreamingToolPreviewEmit('tool_call', withTitle, first.nextState);
+  assert.equal(second.emit, true);
+
+  const withTrigger =
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
+  const third = resolveStreamingToolPreviewEmit('tool_call', withTrigger, second.nextState);
+  assert.equal(third.emit, true);
+
+  const unchanged = resolveStreamingToolPreviewEmit('tool_call', withTrigger, third.nextState);
+  assert.equal(unchanged.emit, false);
+});

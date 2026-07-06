@@ -19,13 +19,28 @@ export {
   executeLazyToolGatewayCall,
   isLazyToolGatewayToolRequest,
 } from './mcp-backend.js';
+export {
+  buildBuiltInLazyToolCatalogSnapshot,
+  findBuiltInLazyToolIndexEntry,
+  mergeLazyToolCatalogSnapshots,
+} from './built-in-catalog.js';
+export {
+  createBuiltInLazyToolGatewayBackend,
+  createBuiltInLazyToolGatewayBackendWithCall,
+  parseBuiltInLazyToolCallArguments,
+} from './built-in-backend.js';
+export { createCompositeLazyToolGatewayBackend } from './composite-backend.js';
 export { parseLazyToolGatewayArguments } from './parse.js';
 export {
   authorizeLazyToolGatewayRequest,
   type LazyToolGatewayApprovalLevel,
 } from './authorize.js';
 export {
+  LAZY_BUILT_IN_SERVER_DESKTOP,
+  LAZY_TOOL_PROVIDER_BUILT_IN,
   LAZY_TOOL_PROVIDER_MCP,
+  type BuiltInLazyToolGatewayBackend,
+  type BuiltInLazyToolIndexEntry,
   type LazyToolCallRequest,
   type LazyToolDescribeRequest,
   type LazyToolDescribeResult,
