@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 
+import { buildAgentShellEnvironment } from './bundled-ripgrep-env.js';
 import {
   decodeShellHostOutput,
   defaultShellForPty,
@@ -149,7 +150,7 @@ export function runShell(options: RunShellOptions): RunShellHandle {
       cwd: options.workspaceRoot,
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      env: buildAgentShellEnvironment(process.env),
     });
 
     child.stdout?.on('data', (chunk: Buffer) => {

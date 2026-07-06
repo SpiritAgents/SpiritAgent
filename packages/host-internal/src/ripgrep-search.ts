@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { rgPath } from '@vscode/ripgrep';
+
+import { resolveBundledRipgrepPath } from './bundled-ripgrep-env.js';
 
 const MAX_SEARCH_FILE_SIZE = '1M';
 
@@ -214,8 +215,13 @@ function consumeRipgrepStdoutLines(params: {
 }
 
 export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<RipgrepSearchResult> {
+  const rgExecutable = resolveBundledRipgrepPath();
+  if (!rgExecutable) {
+    throw new Error('Could not resolve bundled ripgrep executable');
+  }
+
   const args = buildRipgrepArgs(options);
-  const child = spawn(rgPath, args, {
+  const child = spawn(rgExecutable, args, {
     cwd: options.workspaceRoot,
     windowsHide: true,
   });
