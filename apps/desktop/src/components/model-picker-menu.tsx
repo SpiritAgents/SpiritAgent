@@ -41,6 +41,7 @@ import {
 } from "@spiritagent/agent-core/model-thinking-controls";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
 import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelProfileSnapshot, PreviewModelCatalogEntry } from "@/types";
+import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 type ModelPickerItem = DesktopSnapshot["config"]["models"][number];
@@ -269,7 +270,8 @@ export function ModelPickerMenu({
                   disabled={disabled}
                   onFocus={handleTriggerFocus}
                   className={cn(
-                    "inline-flex h-7 min-w-0 max-w-full items-center gap-0.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                    "inline-flex h-7 min-w-0 max-w-full items-center gap-0.5 rounded-md border-0 bg-transparent px-1 text-left text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
+                    DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                     instantHoverMotionClass,
                     triggerClassName,
                   )}
