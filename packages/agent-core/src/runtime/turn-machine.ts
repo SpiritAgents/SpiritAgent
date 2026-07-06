@@ -44,6 +44,7 @@ import { buildEarlyExecutableArgumentsJson } from '../tool-streaming-preview-gat
 import {
   applyDeferredUserGuidance,
   appendLoopContinuationGuidance,
+  buildToolContinuationStateFromHistory,
   enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   hasUnansweredAssistantToolCalls,
@@ -1580,9 +1581,15 @@ export async function processToolCallsAsync<
     return;
   }
 
+  const continuationState = buildToolContinuationStateFromHistory(
+    runtime.options,
+    runtime.historyStore,
+    pendingUserInput,
+  );
+
   if (resumeAsStreaming) {
     await runtime.startStreamingRound(
-      currentState,
+      continuationState,
       pendingUserInput,
       turn,
       streamingEmitBeginResponse,
@@ -1590,7 +1597,7 @@ export async function processToolCallsAsync<
     return;
   }
 
-  startToolAgentRoundAsync(runtime, currentState, pendingUserInput, turn);
+  startToolAgentRoundAsync(runtime, continuationState, pendingUserInput, turn);
 }
 
 export interface CommitToolExecutionOutputOptions<ToolRequest> {

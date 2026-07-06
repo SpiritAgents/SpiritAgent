@@ -40,6 +40,24 @@ export function createTurnContext<ToolRequest>(): RuntimeTurnContext<ToolRequest
   };
 }
 
+export function buildToolContinuationStateFromHistory<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  options: Pick<
+    AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+    'createContinuationState' | 'createToolAgentState'
+  >,
+  historyStore: readonly LlmMessage[],
+  pendingUserInput: string,
+): State {
+  return options.createContinuationState
+    ? options.createContinuationState([...historyStore])
+    : options.createToolAgentState([...historyStore], pendingUserInput);
+}
+
 export function resolveFinalAssistantHistoryMessage<
   Config,
   State,

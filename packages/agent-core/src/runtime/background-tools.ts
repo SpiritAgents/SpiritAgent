@@ -2,7 +2,7 @@ import type { LlmMessage, ToolCallRequest, ToolExecutionOutput } from '../ports.
 import type { JsonObject } from '../ports.js';
 import { createToolExecutionTextOutput } from '../ports.js';
 
-import { renderError } from './helpers.js';
+import { renderError, buildToolContinuationStateFromHistory } from './helpers.js';
 import { prepareAndSyncRuntimeToolResultToHistory } from './tool-output-append.js';
 import { toolInputFromArgumentsJson } from '../hooks/integration.js';
 import { runPostToolUseSideEffects } from '../hooks/tool-hooks.js';
@@ -109,9 +109,11 @@ function buildBackgroundToolContinuationState<
   runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   pendingUserInput: string,
 ): State {
-  return runtime.options.createContinuationState
-    ? runtime.options.createContinuationState(runtime.historyStore)
-    : runtime.options.createToolAgentState(runtime.historyStore, pendingUserInput);
+  return buildToolContinuationStateFromHistory(
+    runtime.options,
+    runtime.historyStore,
+    pendingUserInput,
+  );
 }
 
 export function startBackgroundToolExecutionAsync<
