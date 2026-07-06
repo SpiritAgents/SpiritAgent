@@ -1028,7 +1028,11 @@ class DesktopHostService {
     this.clearActiveBundleContextUsage();
     await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
-    await this.persistCurrentSessionIfNeeded();
+    // Syncing pane model on session switch must not bump sidebar list order.
+    await this.persistSessionBundle(bundle, {
+      fromRuntime: this.runtime,
+      bumpListSortAt: false,
+    });
   }
 
   private async syncHostActiveModelToActiveBundle(
