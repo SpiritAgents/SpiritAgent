@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DeleteExtensionRequest, DesktopExtensionListItem } from "@/types";
+import {DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_SECTION_LABEL_COMPACT_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function ExtensionsSettingsPanel({
   snapshot,
@@ -65,7 +66,7 @@ export function ExtensionsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.extensionsTitle')}</h1>
+            <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.extensionsTitle')}</h1>
             {snapshot?.extensionsLoading ? (
               <LoaderCircle className="size-4 animate-spin text-muted-foreground" aria-label={t('common.loading')} />
             ) : null}
@@ -93,7 +94,7 @@ export function ExtensionsSettingsPanel({
             >
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{item.displayName}</span>
+                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.displayName}</span>
                   <Badge variant="secondary" className="text-muted-foreground">
                     {item.version}
                   </Badge>
@@ -120,7 +121,7 @@ export function ExtensionsSettingsPanel({
                 ) : null}
                 {item.desktopCss?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className="text-xs font-medium text-foreground">{t('settings.desktopCss')}</p>
+                    <p className={DESKTOP_SECTION_LABEL_COMPACT_CLASS}>{t('settings.desktopCss')}</p>
                     {item.desktopCss.map((entry) => (
                       <div
                         key={`${item.id}:desktop-css:${entry.path}`}
@@ -143,7 +144,7 @@ export function ExtensionsSettingsPanel({
                 ) : null}
                 {item.cliHooks?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className="text-xs font-medium text-foreground">{t('settings.cliHooks')}</p>
+                    <p className={DESKTOP_SECTION_LABEL_COMPACT_CLASS}>{t('settings.cliHooks')}</p>
                     {item.cliHooks.map((hook, index) => (
                       <div
                         key={`${item.id}:cli-hook:${hook.slot}:${index}`}

@@ -29,6 +29,7 @@ import {
   sameWorkspacePath,
 } from "@/lib/workspace-display-label";
 import type { DesktopSnapshot } from "@/types";
+import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 export type WorkspaceSelectorMenuProps = {
@@ -73,7 +74,8 @@ function WorkspaceSelectorMenuItem({
     <TooltipItem item={tooltipItem}>
       <DropdownMenuItem
         onSelect={onSelect}
-        className={cn("items-start", DESKTOP_OVERLAY_LIST_ITEM, selected && "bg-accent/40")}
+        className={cn("items-start",
+                    DESKTOP_MENU_TRIGGER_TEXT_CLASS, DESKTOP_OVERLAY_LIST_ITEM, selected && "bg-accent/40")}
       >
         <div className="min-w-0 flex-1">
           <div ref={labelRef} className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "truncate")}>
@@ -155,7 +157,8 @@ export function WorkspaceSelectorMenu({
                 disabled={disabled}
                 aria-label={t("app.selectWorkspace")}
                 className={cn(
-                  "inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                  "inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-md border-0 bg-transparent px-1 text-left text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                  DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                   instantHoverMotionClass,
                   triggerClassName,
                 )}

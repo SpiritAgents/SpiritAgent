@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { DesktopExtensionListItem, UpdateExtensionSecretRequest, UpdateExtensionSettingsRequest } from "@/types";
+import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function ExtensionConfigurationPanel({
   item,
@@ -68,7 +69,7 @@ export function ExtensionConfigurationPanel({
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+        <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
           {item.desktopSettingsPage?.title ?? item.displayName}
         </h1>
         <p className="text-sm text-muted-foreground">

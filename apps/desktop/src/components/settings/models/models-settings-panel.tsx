@@ -95,6 +95,7 @@ import {
 } from "@spiritagent/host-internal/bedrock-mantle";
 import { azureApiBaseFromResourceName, isValidAzureResourceName } from "@spiritagent/host-internal/azure-resource";
 import { vertexApiBaseFromProjectAndLocation } from "@spiritagent/host-internal/google-vertex-endpoints";
+import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function ModelsSettingsPanel({
   settings,
@@ -812,7 +813,7 @@ export function ModelsSettingsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('settings.modelsTitle')}</h1>
+        <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.modelsTitle')}</h1>
         <Button
           type="button"
           size="sm"
@@ -841,7 +842,7 @@ export function ModelsSettingsPanel({
                 >
                   <div className="flex items-center justify-between gap-3 border-b border-border/35 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">
+                      <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>
                         {providerLabel(provider)}
                       </span>
                       <Badge variant="secondary" className="text-muted-foreground shrink-0">
@@ -1042,7 +1043,7 @@ export function ModelsSettingsPanel({
                     >
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">
+                          <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>
                             {displayTitle}
                           </span>
                           {isActive ? (
@@ -1141,7 +1142,7 @@ export function ModelsSettingsPanel({
                   }
                 />
                 <div className="grid gap-1.5">
-                  <Label htmlFor="model-default-active" className="text-sm font-medium text-foreground">
+                  <Label htmlFor="model-default-active" className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>
                     {t('settings.activeModelLabel')}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
@@ -1171,7 +1172,7 @@ export function ModelsSettingsPanel({
                 <div className="grid gap-1.5">
                   <Label
                     htmlFor="model-default-image-generation"
-                    className="text-sm font-medium text-foreground"
+                    className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}
                   >
                     {t('settings.imageGenModelLabel')}
                   </Label>
@@ -1200,7 +1201,7 @@ export function ModelsSettingsPanel({
                 <div className="grid gap-1.5">
                   <Label
                     htmlFor="model-default-video-generation"
-                    className="text-sm font-medium text-foreground"
+                    className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}
                   >
                     {t('settings.videoGenModelLabel')}
                   </Label>
@@ -1229,7 +1230,7 @@ export function ModelsSettingsPanel({
                 <div className="grid gap-1.5">
                   <Label
                     htmlFor="model-default-lightweight-chat"
-                    className="text-sm font-medium text-foreground"
+                    className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}
                   >
                     {t('settings.lightweightChatModelLabel')}
                   </Label>
@@ -1580,7 +1581,7 @@ export function ModelsSettingsPanel({
                       role="tab"
                       aria-selected={customConnectMode === value}
                       className={cn(
-                        "rounded-md px-2.5 text-xs font-medium transition-colors",
+                        DESKTOP_EDITOR_TAB_CLASS,
                         customConnectMode === value
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground",
@@ -1671,7 +1672,7 @@ export function ModelsSettingsPanel({
                       role="tab"
                       aria-selected={bedrockConnectMode === value}
                       className={cn(
-                        "rounded-md px-2.5 text-xs font-medium transition-colors",
+                        DESKTOP_EDITOR_TAB_CLASS,
                         bedrockConnectMode === value
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground",
@@ -1822,7 +1823,7 @@ export function ModelsSettingsPanel({
                       role="tab"
                       aria-selected={vertexConnectMode === value}
                       className={cn(
-                        "rounded-md px-2.5 text-xs font-medium transition-colors",
+                        DESKTOP_EDITOR_TAB_CLASS,
                         vertexConnectMode === value
                           ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground",

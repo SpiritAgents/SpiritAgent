@@ -182,7 +182,7 @@ export function PendingQuestionsCard({
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <span
                       className={cn(
-                        "font-medium",
+                        "font-normal",
                         selected ? "text-foreground/90" : questionRowTextClass,
                       )}
                     >

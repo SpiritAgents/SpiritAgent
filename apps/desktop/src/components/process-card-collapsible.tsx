@@ -103,7 +103,7 @@ export function ProcessCardCollapsible({
           interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
         )}
       >
-        <span className="min-w-0 truncate text-xs font-medium tracking-wide text-muted-foreground">
+        <span className="min-w-0 truncate text-xs font-normal tracking-wide text-muted-foreground">
           {summary}
         </span>
         {interactive ? (
