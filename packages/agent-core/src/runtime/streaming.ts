@@ -31,13 +31,30 @@ import type { ToolExecutionResult } from './tool-execution.js';
 import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './turn-machine.js';
 import { prepareStateForContextRetryAsync } from './compaction.js';
 import { isResponsesBuiltInToolName } from '../open-responses/responses-built-in-tools.js';
+import { findLatestProviderBuiltinToolRoundInState } from '../open-responses/sdk-provider-web-search-loop.js';
 import { shouldSkipEarlyExecutionForManagedProviderTool } from '../moonshot/formula/moonshot-formula-turn-handler.js';
-import { startEarlyToolExecution } from './turn-machine.js';
+import type { ToolAgentState } from '../tool-agent.js';
+import { startEarlyToolExecution, persistProviderBuiltinToolRoundToHistoryStore } from './turn-machine.js';
 
 function streamingRoundWillContinueWithToolCalls<State>(
   completion: ToolAgentRoundCompletion<State> | undefined,
 ): boolean {
   return completion?.kind === 'success' && completion.result.step.kind === 'tool-calls';
+}
+
+function resumeStreamingAfterProviderBuiltinSearch<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+  state: State,
+): void {
+  const toolRound = findLatestProviderBuiltinToolRoundInState(state as ToolAgentState);
+  if (toolRound) {
+    persistProviderBuiltinToolRoundToHistoryStore(runtime, state, toolRound);
+  }
 }
 
 export interface StreamingRuntime<
@@ -554,6 +571,7 @@ export async function handlePendingStreamEvent<
     if (pending.completionHandled && pending.completion?.kind === 'success') {
       const round = pending.completion.result;
       if (round.resumeStreamingAfterProviderSearch) {
+        resumeStreamingAfterProviderBuiltinSearch(runtime, round.state);
         clearPendingStreamingState(runtime);
         await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, false);
         return true;
@@ -722,6 +740,7 @@ export async function handlePendingStreamingCompletion<
     if (lastHistoryMessage?.role === 'assistant') {
       runtime.historyStore.pop();
     }
+    resumeStreamingAfterProviderBuiltinSearch(runtime, round.state);
     clearPendingStreamingState(runtime);
     await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, false);
     return;

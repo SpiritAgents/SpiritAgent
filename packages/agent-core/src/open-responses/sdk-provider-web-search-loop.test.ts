@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildSdkProviderWebSearchStopWhen,
   filterPendingHostToolCalls,
+  findLatestProviderBuiltinToolRoundInState,
   formatProviderBuiltinToolResultContent,
   persistProviderBuiltinToolRoundToState,
   resolveAiSdkStreamAssistantText,
@@ -144,6 +145,37 @@ test('persistProviderBuiltinToolRoundToState writes assistant tool_calls and too
     }),
     /Example/,
   );
+});
+
+test('findLatestProviderBuiltinToolRoundInState returns assistant tool_calls and tool results', () => {
+  const round = findLatestProviderBuiltinToolRoundInState({
+    messages: [
+      { role: 'user', content: 'search' },
+      {
+        role: 'assistant',
+        content: 'Searching now.',
+        tool_calls: [{
+          id: 'call_search',
+          type: 'function',
+          function: { name: 'web_search', arguments: '{"query":"latest models"}' },
+        }],
+      },
+      {
+        role: 'tool',
+        tool_call_id: 'call_search',
+        content: '[web_search]\n1. Example',
+      },
+    ],
+    steps: 1,
+  });
+
+  assert.deepEqual(round?.calls, [{
+    id: 'call_search',
+    name: 'web_search',
+    argumentsJson: '{"query":"latest models"}',
+  }]);
+  assert.equal(round?.toolResults.length, 1);
+  assert.match(round?.toolResults[0]?.content ?? '', /Example/);
 });
 
 test('filterPendingHostToolCalls drops executed provider builtins only', () => {

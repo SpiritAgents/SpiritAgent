@@ -15,6 +15,7 @@ import {
   resumePendingQuestions,
   runTurnLoop,
   shouldSkipPersistAssistantToolCalls,
+  persistProviderBuiltinToolRoundToHistoryStore,
   startEarlyToolExecution,
   type TurnMachineRuntime,
 } from './turn-machine.js';
@@ -35,6 +36,55 @@ test('shouldSkipPersistAssistantToolCalls skips subset re-persist after partial 
     shouldSkipPersistAssistantToolCalls(history, [{ id: 'call_02', name: 'read_file', argumentsJson: '{}' }]),
     false,
   );
+});
+
+test('persistProviderBuiltinToolRoundToHistoryStore writes assistant tool_calls and tool results', () => {
+  const historyStore: Array<{
+    role: 'user' | 'assistant' | 'tool';
+    content: string | [];
+    toolCalls?: Array<{ id: string; name: string; argumentsJson: string }>;
+    toolCallId?: string;
+  }> = [{ role: 'user', content: 'search' }];
+  const state = {
+    messages: [
+      { role: 'user', content: 'search' },
+      {
+        role: 'assistant',
+        content: 'Searching now.',
+        tool_calls: [{
+          id: 'call_search',
+          type: 'function',
+          function: { name: 'web_search', arguments: '{"query":"latest models"}' },
+        }],
+      },
+      {
+        role: 'tool',
+        tool_call_id: 'call_search',
+        content: '[web_search]\n1. Example',
+      },
+    ],
+    steps: 1,
+  };
+
+  persistProviderBuiltinToolRoundToHistoryStore(
+    {
+      historyStore: historyStore as never,
+      options: {
+        assistantToolCallMessageFromState: assistantToolCallMessageFromState as never,
+      } as never,
+    },
+    state,
+    {
+      calls: [{ id: 'call_search', name: 'web_search', argumentsJson: '{"query":"latest models"}' }],
+      toolResults: [{ toolCallId: 'call_search', content: '[web_search]\n1. Example' }],
+    },
+  );
+
+  assert.equal(historyStore.length, 3);
+  assert.equal(historyStore[1]?.role, 'assistant');
+  assert.equal(historyStore[1]?.toolCalls?.[0]?.name, 'web_search');
+  assert.equal(historyStore[2]?.role, 'tool');
+  assert.equal(historyStore[2]?.toolCallId, 'call_search');
 });
 
 test('resumePendingApproval deny persists tool result into historyStore', async () => {
