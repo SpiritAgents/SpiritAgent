@@ -31,6 +31,7 @@ import {
   McpStatusSnapshot,
   TOOL_CALL_TOOL_NAME,
   FETCH_MCP_RESOURCE_TOOL_NAME,
+  isLazyToolGatewayToolName,
   authorizeLazyToolGatewayRequest,
   buildLazyToolGatewayDefinitions,
   createBuiltInLazyToolGatewayBackendWithCall,
@@ -96,6 +97,10 @@ const DESKTOP_BUILT_IN_LAZY_TOOL_DEFINITIONS = [CREATE_AUTOMATION_CONTRIBUTED_TO
 
 function isDreamToolRequest(request: DesktopToolRequest): request is Extract<DesktopToolRequest, { name: DreamHostToolName }> {
   return typeof request?.name === 'string' && request.name.startsWith('dream_');
+}
+
+function includesLazyToolGatewayDefinitions(definitions: JsonValue[]): boolean {
+  return toolNamesFromDefinitions(definitions).some((name) => isLazyToolGatewayToolName(name));
 }
 
 export class DesktopToolExecutor
@@ -257,7 +262,7 @@ export class DesktopToolExecutor
     const hostDefinitionItems = Array.isArray(mergedHostDefinitions) ? mergedHostDefinitions : [];
     const mcpDefinitions = this.mcp.toolDefinitionsJson();
     const builtInLazyGatewayDefinitions =
-      this.builtInLazyToolIndex().length > 0 && mcpDefinitions.length === 0
+      this.builtInLazyToolIndex().length > 0 && !includesLazyToolGatewayDefinitions(mcpDefinitions)
         ? buildLazyToolGatewayDefinitions()
         : [];
 
