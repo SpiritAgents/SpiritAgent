@@ -13,6 +13,7 @@ import {
   modelCatalogDisplayTitle,
 } from '@/lib/model-catalog-detail';
 import { parseModelContextLength } from '@/lib/model-context-length';
+import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 import { cn } from '@/lib/utils';
 import type { ModelProfileSnapshot, PreviewModelCatalogEntry } from '@/types';
 
@@ -87,7 +88,7 @@ export function ModelCatalogDetailPanel({
           className={cn(
             isList
               ? DESKTOP_OVERLAY_LIST_ITEM_PRIMARY
-              : 'text-sm font-medium leading-snug text-foreground',
+              : cn(DESKTOP_LIST_ITEM_PRIMARY_CLASS, "leading-snug"),
           )}
         >
           {title}

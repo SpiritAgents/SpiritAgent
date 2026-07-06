@@ -4,6 +4,7 @@ import { ContextMenu as ContextMenuPrimitive } from "radix-ui"
 
 import { radixAnchoredOverlayMotion } from "@/lib/overlay-motion"
 import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale"
+import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils"
 import { ChevronRightIcon, CheckIcon } from "lucide-react"
 
@@ -221,7 +222,8 @@ function ContextMenuLabel({
       data-slot="context-menu-label"
       data-inset={inset}
       className={cn(
-        "px-1.5 py-1 text-xs font-medium text-muted-foreground data-inset:pl-7",
+        "px-1.5 py-1 text-xs text-muted-foreground data-inset:pl-7",
+        FONT_WEIGHT_NORMAL,
         className
       )}
       {...props}

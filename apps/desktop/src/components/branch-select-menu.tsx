@@ -18,6 +18,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTruncatedElement } from "@/hooks/use-truncated-element";
 import { DESKTOP_OVERLAY_LIST_WIDTH, DESKTOP_OVERLAY_SHORT_LIST_PADDING } from "@/lib/desktop-chrome";
+import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 type BranchSelectMenuProps = {
@@ -43,7 +44,8 @@ function BranchSelectMenuItem({
     <TooltipItem item={isTruncated ? branch : null}>
       <DropdownMenuItem
         onSelect={onSelect}
-        className={cn("min-w-0", activeBranch === branch && "bg-accent/40")}
+        className={cn("min-w-0",
+                    DESKTOP_MENU_TRIGGER_TEXT_CLASS, activeBranch === branch && "bg-accent/40")}
       >
         <span ref={labelRef} className="min-w-0 truncate">
           {branch}
@@ -92,7 +94,7 @@ export function BranchSelectMenu({
               aria-label={t('composer.selectBranch')}
               disabled={triggerDisabled}
               className={cn(
-                "inline-flex h-7 min-w-0 max-w-[min(12rem,28vw)] items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+                "inline-flex h-7 min-w-0 max-w-[min(12rem,28vw)] items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
                 "text-muted-foreground",
               )}
             >

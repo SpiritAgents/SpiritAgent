@@ -32,7 +32,7 @@ type PendingInsertAction = 'at' | 'slash' | 'local'
 
 function SlashBadge() {
   return (
-    <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-muted/65 text-[10px] font-semibold text-muted-foreground">
+    <span className={cn("inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-muted/65 text-[10px] text-muted-foreground", FONT_WEIGHT_MEDIUM)}>
       /
     </span>
   )
