@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import type { ChatArchive } from '@spiritagent/agent-core';
+import { isManualCompactionUiStatusText } from '@spiritagent/agent-core';
 import {
   CHAT_SCHEMA_VERSION,
   hydrateTimelineSnapshotFromPersistence,
@@ -291,13 +292,20 @@ export function sanitizeConversationMessagesForPersistence(
 export function buildLlmHistoryFallbackFromDesktopMessages(
   messages: ConversationMessageSnapshot[],
 ): ChatArchive['llmHistory'] {
-  return archiveProjectableConversationMessages(messages)
-    .filter((message) => message.role === 'user' || message.role === 'assistant')
+  const projectable = archiveProjectableConversationMessages(messages);
+  const fallback = projectable
+    .filter(
+      (message) =>
+        (message.role === 'user' || message.role === 'assistant') &&
+        !(message.role === 'assistant' && isManualCompactionUiStatusText(message.content)),
+    )
     .map((message) => ({
       role: message.role,
       content: message.content,
       imagePaths: [],
     }));
+
+  return fallback;
 }
 
 export function buildArchiveMessagesFromConversation(

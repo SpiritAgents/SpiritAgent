@@ -4,6 +4,7 @@ import {
   type LlmMessageContent,
   type LlmToolCall,
 } from './ports.js';
+import { isManualCompactionUiStatusLlmMessage } from './compaction-ui-status.js';
 
 export const PRE_COMPACTION_HISTORY_EXPORT_VERSION = 1;
 
@@ -27,6 +28,9 @@ export function buildPreCompactionHistoryArchive(
 ): PreCompactionHistoryArchive {
   const messages = history.flatMap((message): PreCompactionHistoryArchiveMessage[] => {
     if (message.role !== 'user' && message.role !== 'assistant') {
+      return [];
+    }
+    if (isManualCompactionUiStatusLlmMessage(message)) {
       return [];
     }
 
