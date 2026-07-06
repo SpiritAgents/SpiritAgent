@@ -1166,7 +1166,6 @@
     "delete": "Delete",
     "diffArgsTruncated": "Diff preview unavailable: tool arguments were truncated in the transcript.",
     "diffFileTooLarge": "Diff preview unavailable: file exceeds the size limit.",
-    "regexPrefix": "Regex: ",
     "searchQueryInGlob": "{{query}} in {{glob}}",
     "search": "Search",
     "webSearch": "Web search",
