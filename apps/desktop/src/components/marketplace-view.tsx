@@ -24,6 +24,7 @@ import {
 } from "@/lib/desktop-chrome";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
+import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import type {
   DesktopExtensionListItem,
@@ -435,7 +436,7 @@ export function MarketplaceView({
           >
             <div className="flex flex-col items-center gap-6">
               <div className="flex w-full flex-col items-center gap-2">
-                <p className="text-center text-lg font-medium tracking-tight text-foreground">{t('marketplace.title')}</p>
+                <p className={cn("text-center text-lg tracking-tight text-foreground", FONT_WEIGHT_MEDIUM)}>{t('marketplace.title')}</p>
                 <div className="flex w-full max-w-sm items-center gap-1.5">
                   <div
                     className={cn(

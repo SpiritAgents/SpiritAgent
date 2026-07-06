@@ -26,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
 import type {
-import { DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
+import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
   DeleteMcpServerRequest,
   DesktopMcpScope,
   DesktopMcpServerListItem,
@@ -246,7 +246,7 @@ export function McpsSettingsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">MCPs</h1>
+          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>MCPs</h1>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}

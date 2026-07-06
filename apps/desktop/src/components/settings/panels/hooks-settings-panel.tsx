@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type {
-import { DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
+import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
   DeleteHookEntryRequest,
   DesktopHookEventName,
   DesktopHookListItem,
@@ -156,7 +156,7 @@ export function HooksSettingsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
             {t("settings.hooks")}
           </h1>
           {workspaceBindingDisabled ? (
