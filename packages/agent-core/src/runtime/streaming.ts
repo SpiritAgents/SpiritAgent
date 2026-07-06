@@ -34,6 +34,12 @@ import { isResponsesBuiltInToolName } from '../open-responses/responses-built-in
 import { shouldSkipEarlyExecutionForManagedProviderTool } from '../moonshot/formula/moonshot-formula-turn-handler.js';
 import { startEarlyToolExecution } from './turn-machine.js';
 
+function streamingRoundWillContinueWithToolCalls<State>(
+  completion: ToolAgentRoundCompletion<State> | undefined,
+): boolean {
+  return completion?.kind === 'success' && completion.result.step.kind === 'tool-calls';
+}
+
 export interface StreamingRuntime<
   Config,
   State,
@@ -523,22 +529,24 @@ export async function handlePendingStreamEvent<
     if (!runtime.pendingAssistantTextStore.trim()) {
       runtime.emitEvent({ kind: 'remove-pending-assistant' });
     } else if (!resumeAfterProviderSearch) {
-      const finalState =
-        pending.completion?.kind === 'success' ? pending.completion.result.state : undefined;
-      runtime.historyStore.push(
-        finalState !== undefined
-          ? resolveFinalAssistantHistoryMessage(
-              runtime.options,
-              finalState,
-              runtime.pendingAssistantTextStore,
-            )
-          : {
-              role: 'assistant',
-              content: createLlmMessageContentFromText(runtime.pendingAssistantTextStore),
-            },
-      );
-      runtime.pendingUserTurnStore = undefined;
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
+      if (!streamingRoundWillContinueWithToolCalls(pending.completion)) {
+        const finalState =
+          pending.completion?.kind === 'success' ? pending.completion.result.state : undefined;
+        runtime.historyStore.push(
+          finalState !== undefined
+            ? resolveFinalAssistantHistoryMessage(
+                runtime.options,
+                finalState,
+                runtime.pendingAssistantTextStore,
+              )
+            : {
+                role: 'assistant',
+                content: createLlmMessageContentFromText(runtime.pendingAssistantTextStore),
+              },
+        );
+        runtime.pendingUserTurnStore = undefined;
+        runtime.emitEvent({ kind: 'assistant-response-completed' });
+      }
     }
 
     clearStreamingUiState(runtime);
@@ -722,18 +730,6 @@ export async function handlePendingStreamingCompletion<
   if (round.step.kind === 'tool-calls') {
     if (!pending.streamEnded && !runtime.pendingAssistantTextStore.trim()) {
       runtime.emitEvent({ kind: 'remove-pending-assistant' });
-    } else if (!pending.streamEnded && runtime.pendingAssistantTextStore.trim()) {
-      // 与流式 `done` 分支一致：completion 先于 `done` 事件到达时，须把已输出的正文写入 history，
-      // 否则 `clearPendingStreamingState` 会丢弃例如「OK」等前缀。
-      runtime.historyStore.push(
-        resolveFinalAssistantHistoryMessage(
-          runtime.options,
-          round.state,
-          runtime.pendingAssistantTextStore,
-        ),
-      );
-      runtime.pendingUserTurnStore = undefined;
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
     }
     const earlyToolExecutions = pending.earlyToolExecutions;
     clearPendingStreamingState(runtime);

@@ -28,10 +28,11 @@ export function llmHistoryToOpenAiMessages(
 
 export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonValue {
   if (message.role === 'assistant' && Array.isArray(message.toolCalls) && message.toolCalls.length > 0) {
+    const textContent = llmMessageTextContent(message.content);
     return {
       ...llmMessageProviderState(message),
       role: 'assistant',
-      content: llmMessageTextContent(message.content),
+      content: textContent.length > 0 ? textContent : null,
       tool_calls: message.toolCalls.map((toolCall) => ({
         id: toolCall.id,
         type: 'function',
