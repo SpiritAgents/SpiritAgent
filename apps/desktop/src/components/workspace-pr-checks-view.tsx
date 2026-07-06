@@ -72,7 +72,7 @@ function PrCheckRow({
   const row = (
     <div className="flex min-w-0 items-center gap-2 px-3 py-3">
       <CheckStateIcon state={check.state} label={stateLabel} />
-      <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/80">
+      <span className="min-w-0 flex-1 truncate text-xs font-normal text-foreground/80">
         {check.name}
       </span>
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/75 dark:text-muted-foreground/65">

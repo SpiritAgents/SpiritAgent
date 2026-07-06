@@ -494,7 +494,7 @@ export function ConversationView({
                 <p className="text-xs text-muted-foreground">
                   {longConversationListDemoActive ? (
                     <>
-                      <span className="font-medium text-foreground">
+                      <span className="font-normal text-foreground">
                         {t("app.longConversationListDemo")}
                       </span>
                       <span className="hidden sm:inline">
@@ -507,7 +507,7 @@ export function ConversationView({
                     </>
                   ) : (
                     <>
-                      <span className="font-medium text-foreground">{t('app.compactionDemo')}</span>
+                      <span className="font-normal text-foreground">{t('app.compactionDemo')}</span>
                       <span className="hidden sm:inline">
                         {" "}
                         · {t('app.compactionDemoDescription')}

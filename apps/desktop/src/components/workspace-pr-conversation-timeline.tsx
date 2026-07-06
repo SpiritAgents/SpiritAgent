@@ -75,7 +75,7 @@ function PrConversationCommentHeader({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <PrConversationTimelineAvatar login={login} avatarUrl={avatarUrl} />
-      <span className="truncate text-xs font-medium text-foreground/80">{login}</span>
+      <span className="truncate text-xs font-normal text-foreground/80">{login}</span>
       <time
         className="shrink-0 text-[11px] text-muted-foreground/75 dark:text-muted-foreground/65"
         dateTime={createdAt}
@@ -375,7 +375,7 @@ function MergeTimelineRow({ item }: { item: GitHubPullRequestConversationMerged 
     >
       <div className="flex min-w-0 items-center gap-2">
         <PrConversationTimelineAvatar login={item.authorLogin} avatarUrl={item.avatarUrl} />
-        <span className="truncate text-xs font-medium text-foreground/80">{item.authorLogin}</span>
+        <span className="truncate text-xs font-normal text-foreground/80">{item.authorLogin}</span>
         <span className="truncate text-xs leading-relaxed text-muted-foreground">
           {t("workspace.prMergedThisPullRequest")}
         </span>

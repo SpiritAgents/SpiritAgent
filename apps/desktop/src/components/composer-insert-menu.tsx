@@ -18,6 +18,7 @@ import {
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
   instantHoverMotionClass,
 } from '@/lib/desktop-chrome'
+import { FONT_WEIGHT_MEDIUM } from '@/lib/desktop-typography'
 import { cn } from '@/lib/utils'
 
 type ComposerInsertMenuProps = {

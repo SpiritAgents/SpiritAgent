@@ -414,7 +414,7 @@ export function WorkspaceGitTab({
       />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div ref={historyHeaderRef} className="shrink-0 px-2 py-1.5">
-          <h3 className="text-xs font-medium text-foreground">{t("workspace.git.history")}</h3>
+          <h3 className="text-xs font-normal text-foreground">{t("workspace.git.history")}</h3>
         </div>
         <GitCommitGraph
           className="flex-1"
