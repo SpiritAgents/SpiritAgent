@@ -744,11 +744,12 @@ const SessionListRow = memo(function SessionListRow({
       : hasIndicator
         ? "h-8 pr-2.5 pl-2.5 gap-2"
         : "h-8 px-2.5",
-    !renaming && (
-      selected
-        ? sessionRowSelectedClass(micaStyle)
-        : cn(sidebarItemDefaultTextClass, sessionRowHoverClass(micaStyle))
-    ),
+    selected
+      ? sessionRowSelectedClass(micaStyle)
+      : cn(
+          sidebarItemDefaultTextClass,
+          renaming ? sessionRowRenamingClass(micaStyle) : sessionRowHoverClass(micaStyle),
+        ),
   );
 
   const leading = (nested || hasIndicator) ? (
@@ -1247,6 +1248,14 @@ function sessionRowSelectedClass(_micaStyle?: boolean) {
 
 function sessionRowHoverClass(_micaStyle?: boolean) {
   return sidebarMenuHoverClass;
+}
+
+/** 重命名编辑态：与 hover 同色半透明铺底，常驻显示 */
+function sessionRowRenamingClass(_micaStyle?: boolean) {
+  return cn(
+    "!bg-foreground/[0.06]",
+    "dark:!bg-white/[0.06]",
+  );
 }
 
 function SessionSidebarInner({
