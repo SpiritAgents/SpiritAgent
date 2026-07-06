@@ -25,6 +25,7 @@ import {
   DESKTOP_SESSION_TITLE_HOVER_CLASS,
   SESSION_TITLE_RENAME_INPUT_CLASS,
 } from '@/lib/desktop-chrome';
+import { DESKTOP_SIDEBAR_TEXT_CLASS, FONT_WEIGHT_NORMAL } from '@/lib/desktop-typography';
 import { cn } from '@/lib/utils';
 
 type SessionChromeBreadcrumbProps = {
@@ -42,7 +43,8 @@ type SessionChromeBreadcrumbProps = {
 
 const sessionTitleButtonClass = (interactive: boolean) =>
   cn(
-    "electron-no-drag min-w-0 w-full truncate rounded-sm p-0 text-left text-xs font-medium",
+    "electron-no-drag min-w-0 w-full truncate rounded-sm p-0 text-left",
+    DESKTOP_SIDEBAR_TEXT_CLASS,
     DESKTOP_CHROME_MUTED_TEXT,
     interactive && cn(DESKTOP_SESSION_TITLE_HOVER_CLASS, "cursor-pointer"),
   );
@@ -184,7 +186,7 @@ export function SessionChromeBreadcrumb({
 
   return (
     <Breadcrumb className={cn("min-w-0", renaming && !trimmedSubagentPromptText && "flex-1")}>
-      <BreadcrumbList className="flex-nowrap gap-1.5 text-xs font-medium sm:gap-2">
+      <BreadcrumbList className={cn("flex-nowrap gap-1.5 sm:gap-2", DESKTOP_SIDEBAR_TEXT_CLASS)}>
         <BreadcrumbItem
           className={cn(
             'min-w-0',
@@ -202,7 +204,7 @@ export function SessionChromeBreadcrumb({
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0 max-w-[min(20rem,40vw)] flex-1">
               <BreadcrumbPage
-                className={cn("min-w-0 truncate font-medium", DESKTOP_CHROME_ACTIVE_TEXT)}
+                className={cn("min-w-0 truncate", FONT_WEIGHT_NORMAL, DESKTOP_CHROME_ACTIVE_TEXT)}
               >
                 {trimmedSubagentPromptText}
               </BreadcrumbPage>
