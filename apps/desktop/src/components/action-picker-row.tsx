@@ -16,6 +16,12 @@ function SlashCommandIcon({ kind }: { kind: SkillSlashSuggestionKind }) {
   return <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />
 }
 
+const actionPickerPrimaryTitleClass = cn(
+  "shrink-0 whitespace-nowrap leading-6",
+  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
+  "text-popover-foreground",
+)
+
 export function ActionPickerRow({ item }: ActionPickerRowProps) {
   const { t } = useTranslation()
 
@@ -23,7 +29,7 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
     return (
       <div className="flex min-w-0 items-center gap-2 overflow-hidden">
         <Plus className="size-3.5 shrink-0 opacity-70" aria-hidden />
-        <span className={cn("shrink-0 whitespace-nowrap leading-6", DESKTOP_LIST_ITEM_PRIMARY_CLASS)}>
+        <span className={actionPickerPrimaryTitleClass}>
           {t(item.labelKey)}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
@@ -40,7 +46,7 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   return (
     <div className="flex min-w-0 items-center gap-2 overflow-hidden">
       <SlashCommandIcon kind={item.kind} />
-      <span className={cn("shrink-0 whitespace-nowrap leading-6", DESKTOP_LIST_ITEM_PRIMARY_CLASS)}>
+      <span className={actionPickerPrimaryTitleClass}>
         {item.name}
       </span>
       <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
