@@ -6,6 +6,10 @@ import {
   responsesUsesStoredState,
 } from './responses-incremental-input.js';
 import {
+  patchVolcengineResponsesInputItemStatus,
+  shouldPatchVolcengineResponsesInputItemStatus,
+} from './compat-responses-input-status.js';
+import {
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
 } from './responses-compat.js';
@@ -54,6 +58,9 @@ export function patchResponsesStoredStateRequestInit(
     const previousResponseId = readResponsesStoredStateRequestPreviousResponseId();
     if (previousResponseId) {
       patched.previous_response_id = previousResponseId;
+    }
+    if (shouldPatchVolcengineResponsesInputItemStatus(config)) {
+      patchVolcengineResponsesInputItemStatus(patched);
     }
 
     return {
