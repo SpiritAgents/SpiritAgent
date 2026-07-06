@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { DesktopLspProviderSnapshot, DesktopSnapshot } from "@/types";
 import { isDesktopInstallableProvider } from "@/lib/lsp-provider-install";
+import { DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
 
 /** Agents 面板专用行布局（grid）；与 appearance 等面板的 flex SettingsRow 不同。 */
 export function AgentsSettingsRow({
@@ -35,7 +36,7 @@ export function AgentsSettingsRow({
   return (
     <div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6">
       <div className="min-w-0 space-y-1">
-        <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
+        <label htmlFor={htmlFor} className={DESKTOP_SETTINGS_LABEL_CLASS}>
           {label}
         </label>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
@@ -106,7 +107,7 @@ export function AgentsSettingsPanel({
           >
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-medium text-foreground">{provider.displayName}</p>
+                <p className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{provider.displayName}</p>
                 {providerStatusBadge(provider, t)}
               </div>
               <p className="text-xs text-muted-foreground">{provider.languages.join(" · ")}</p>
