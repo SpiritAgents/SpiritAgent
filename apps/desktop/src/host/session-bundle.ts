@@ -71,6 +71,8 @@ export interface SessionBundle {
   cachedTodoSnapshot?: import('../types.js').ConversationTodoSnapshot;
   /** Bumped on rewind restore; exposed as `conversation.revision` in snapshots. */
   conversationRevision: number;
+  /** busy tick 落盘节流：上次 tick 落盘时间（内存态，不持久化）。 */
+  lastTickPersistAtMs?: number;
   /** Last successful create_plan absolute path for this session. */
   activePlanPath?: string;
   /** Tracks whether the sidebar title is seed-truncated or LLM-generated. */
