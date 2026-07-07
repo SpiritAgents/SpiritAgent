@@ -5,17 +5,20 @@ export const CLICKABLE_POINTER_CURSOR_CLASS = "spirit-clickable-pointer" as cons
 
 export function getStoredClickablePointerCursor(): boolean {
   if (typeof localStorage === "undefined") {
-    return false;
+    return true;
   }
-  return localStorage.getItem(CLICKABLE_POINTER_CURSOR_STORAGE_KEY) === "true";
+  return localStorage.getItem(CLICKABLE_POINTER_CURSOR_STORAGE_KEY) !== "false";
 }
 
 export function setStoredClickablePointerCursor(enabled: boolean): void {
-  if (enabled) {
-    localStorage.setItem(CLICKABLE_POINTER_CURSOR_STORAGE_KEY, "true");
+  if (typeof localStorage === "undefined") {
     return;
   }
-  localStorage.removeItem(CLICKABLE_POINTER_CURSOR_STORAGE_KEY);
+  if (enabled) {
+    localStorage.removeItem(CLICKABLE_POINTER_CURSOR_STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(CLICKABLE_POINTER_CURSOR_STORAGE_KEY, "false");
 }
 
 export function applyClickablePointerCursorToDocument(enabled: boolean): void {
