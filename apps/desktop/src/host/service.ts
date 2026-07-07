@@ -257,6 +257,7 @@ import {
 import {
   LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS,
   LIVE_SNAPSHOT_EMIT_THROTTLE_MS,
+  SESSION_LIST_NOTIFY_INTERVAL_MS,
   SessionPump,
   pumpDebugEnabled,
   sessionBundleNeedsPumpTick,
@@ -627,6 +628,7 @@ class DesktopHostService {
   private lastLiveSnapshotEmitAtMs = 0;
   private debugLiveSnapshotEmitCount = 0;
   private debugLiveSnapshotEmitWindowStartedAtMs = 0;
+  private lastSessionListNotifyAtMs = 0;
   private dreamCollectorStatus: DesktopDreamCollectorSnapshot = emptyDreamCollectorSnapshot('disabled');
   private dreamCollectorRunning = false;
   private dreamCollectorLastTickUnixMs = 0;
@@ -4333,10 +4335,32 @@ class DesktopHostService {
       if (Date.now() - this.lastLiveSnapshotEmitAtMs >= LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS) {
         this.requestThrottledLiveSnapshotEmit();
       }
+      this.maybeNotifySessionListDuringBackgroundActivity();
       return;
     }
     // busy → idle：推送终态快照并刷新会话列表（替代原 renderer poll 循环退出时的 listSessions）。
     this.requestThrottledLiveSnapshotEmit();
+    this.notifySessionListUpdated();
+  }
+
+  /** 前台空闲、其它 bundle busy 时，节流刷新侧边栏 isBusy 状态。 */
+  private maybeNotifySessionListDuringBackgroundActivity(): void {
+    const activeId = this.sessionRegistry.activeSessionId();
+    let backgroundBusy = false;
+    for (const bundle of this.sessionRegistry.all()) {
+      if (bundle.id !== activeId && isSessionBundleBusy(bundle)) {
+        backgroundBusy = true;
+        break;
+      }
+    }
+    if (!backgroundBusy) {
+      return;
+    }
+    const now = Date.now();
+    if (now - this.lastSessionListNotifyAtMs < SESSION_LIST_NOTIFY_INTERVAL_MS) {
+      return;
+    }
+    this.lastSessionListNotifyAtMs = now;
     this.notifySessionListUpdated();
   }
 
