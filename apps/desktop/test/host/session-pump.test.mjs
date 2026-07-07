@@ -183,6 +183,32 @@ test('entering pending approval forces persist', async () => {
   assert.equal(calls.filter((entry) => entry === 'persist').length, 1);
 });
 
+test('long streaming round: pump completes with bounded persist and steady emits', async () => {
+  const totalPolls = 500;
+  const runtime = createFakeRuntime({ pollsUntilIdle: totalPolls, chunkPerPoll: true });
+  const bundle = createFakeBundle(runtime);
+  bundle.lastTickPersistAtMs = Date.now();
+  const calls = [];
+  const ctx = createFakeOrchestratorContext(bundle, calls);
+
+  const pump = new SessionPump({
+    hasPumpWork: () => sessionBundleNeedsPumpTick(bundle),
+    runTick: () => pumpSessionsCommand(ctx),
+    intervalMs: 0,
+  });
+
+  pump.ensureRunning();
+  await waitUntil(() => !pump.isRunning(), { timeoutMs: 30_000 });
+
+  assert.equal(runtime.pollCount, totalPolls);
+  assert.equal(bundle.conversationRevision, totalPolls);
+  // 每 tick 均有事件 → 每 tick 请求一次节流推送（实际 IPC 推送频率由宿主节流器另行约束）。
+  assert.equal(calls.filter((entry) => entry === 'request-emit').length, totalPolls);
+  // 落盘按 1s 时间片 + 终态强制：远小于 tick 数。
+  const persistCount = calls.filter((entry) => entry === 'persist').length;
+  assert.ok(persistCount < 10, `persist ${persistCount} should be time-sliced`);
+});
+
 test('pump stop cancels pending tick', async () => {
   const runtime = createFakeRuntime({ pollsUntilIdle: 1_000 });
   const bundle = createFakeBundle(runtime);
