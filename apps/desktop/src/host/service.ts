@@ -245,6 +245,7 @@ import {
   applyDrainedRuntimeHostEvents,
   continueAssistantCompletionCommand,
   pollCommand,
+  pumpSessionsCommand,
   replyPendingApprovalCommand,
   replyPendingQuestionsCommand,
   sendQueuedUserTurnNowCommand,
@@ -253,6 +254,7 @@ import {
   type SessionTurnOrchestratorContext,
   type SubmitUserTurnAfterInitializedOptions,
 } from './session-turn-orchestrator.js';
+import { SessionPump, sessionBundleNeedsPumpTick } from './session-pump.js';
 import {
   startWorktreeBootstrapTurnCommand,
   type WorktreeBootstrapHostContext,
@@ -607,6 +609,14 @@ class DesktopHostService {
     }
   >();
   private serialized = Promise.resolve();
+  /** busy 会话的回合推进由主进程泵驱动，不依赖 renderer poll。 */
+  private readonly sessionPump = new SessionPump({
+    hasPumpWork: () => this.hasSessionPumpWork(),
+    runTick: () => pumpSessionsCommand(this.sessionTurnContext()),
+    onTickError: (error) => {
+      console.error('[desktop-host][pump] tick failed', error);
+    },
+  });
   private dreamCollectorStatus: DesktopDreamCollectorSnapshot = emptyDreamCollectorSnapshot('disabled');
   private dreamCollectorRunning = false;
   private dreamCollectorLastTickUnixMs = 0;
@@ -4281,7 +4291,19 @@ class DesktopHostService {
       return await work();
     } finally {
       release?.();
+      // 唯一 choke point：任何使会话变 busy 的命令（发消息、审批恢复、队列、automation…）
+      // 都经 runSerialized 收口，此处确保泵启动。
+      this.sessionPump.ensureRunning();
     }
+  }
+
+  private hasSessionPumpWork(): boolean {
+    for (const bundle of this.sessionRegistry.all()) {
+      if (sessionBundleNeedsPumpTick(bundle)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private requireEnabledSkillEntry(skillName: string): HostMetadataSummary['skills']['entries'][number] {

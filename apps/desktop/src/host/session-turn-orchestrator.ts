@@ -314,20 +314,30 @@ export async function drainQueuedUserTurnIfIdle(
   }
 }
 
+/** 单次泵 tick 主体（调用方须已持有 runSerialized 锁）：推进所有 busy 会话并同步宿主状态。 */
+async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise<void> {
+  await ctx.ensureInitialized(undefined, { fastPath: true });
+  for (const bundle of ctx.allBundles()) {
+    if (bundle.runtime?.isBusy() || shouldAdvanceWorktreeBootstrap(bundle)) {
+      await tickSessionCommand(ctx, bundle);
+    }
+  }
+  const active = ctx.getActiveBundle();
+  if (active && !active.runtime?.isBusy()) {
+    await tickSessionCommand(ctx, active, { light: true });
+  }
+  ctx.syncActiveRuntimePointer();
+  ctx.startDreamCollectorIfNeeded();
+}
+
+/** SessionPump 每 tick 调用：与 pollCommand 同体，但不构建快照。 */
+export async function pumpSessionsCommand(ctx: SessionTurnOrchestratorContext): Promise<void> {
+  return ctx.runSerialized(() => runSessionsPumpTick(ctx), 'pump-tick');
+}
+
 export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
-    await ctx.ensureInitialized(undefined, { fastPath: true });
-    for (const bundle of ctx.allBundles()) {
-      if (bundle.runtime?.isBusy() || shouldAdvanceWorktreeBootstrap(bundle)) {
-        await tickSessionCommand(ctx, bundle);
-      }
-    }
-    const active = ctx.getActiveBundle();
-    if (active && !active.runtime?.isBusy()) {
-      await tickSessionCommand(ctx, active, { light: true });
-    }
-    ctx.syncActiveRuntimePointer();
-    ctx.startDreamCollectorIfNeeded();
+    await runSessionsPumpTick(ctx);
     return ctx.buildSnapshot();
   }, 'poll');
 }
