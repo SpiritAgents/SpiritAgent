@@ -20,10 +20,7 @@ import type { DesktopRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import { toolMessageKey } from './message-ordering.js';
 import {
-  runtimeEventsIncludeAppliedFinishTaskPreview,
-  runtimeEventsIncludeAppliedHostToolStreamingUpdate,
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
-  runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
@@ -91,6 +88,8 @@ export interface SessionTurnOrchestratorContext {
   getActiveBundle(): SessionBundle | undefined;
   activeSessionId(): string | undefined;
   emitLiveSnapshotUpdate(): void;
+  /** 节流版 live snapshot 推送（流式变更唯一出口；宿主侧 33ms leading+trailing）。 */
+  requestLiveSnapshotEmit(): void;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;
   syncActiveRuntimePointer(): void;
   clearAssistantContinuationMarkers(): void;
@@ -352,21 +351,25 @@ export async function tickSessionCommand(
   }
 
   const orchestration = ctx.orchestrationFor(bundle);
+  let changed = false;
   if (bundle.runtime) {
     bundle.runtime.tickThinkingSpinner();
-    syncSubagentConversationProjections(bundle, bundle.runtime);
+    changed = syncSubagentConversationProjections(bundle, bundle.runtime) || changed;
     if (!options.light) {
       await bundle.runtime.poll();
-      syncSubagentConversationProjections(bundle, bundle.runtime);
-      applyDrainedRuntimeHostEvents(ctx, bundle, bundle.runtime.drainEvents());
+      changed = syncSubagentConversationProjections(bundle, bundle.runtime) || changed;
+      changed = applyDrainedRuntimeHostEvents(ctx, bundle, bundle.runtime.drainEvents()) || changed;
     } else {
       const drained = bundle.runtime.drainEvents();
       if (drained.length > 0 || bundle.deferredRuntimeHostEvents.length > 0) {
-        applyDrainedRuntimeHostEvents(ctx, bundle, drained);
+        changed = applyDrainedRuntimeHostEvents(ctx, bundle, drained) || changed;
       }
     }
   } else if (options.light && bundle.deferredRuntimeHostEvents.length > 0) {
-    applyDrainedRuntimeHostEvents(ctx, bundle, []);
+    changed = applyDrainedRuntimeHostEvents(ctx, bundle, []) || changed;
+  }
+  if (changed) {
+    ctx.requestLiveSnapshotEmit();
   }
   if (options.light) {
     await drainQueuedUserTurnIfIdle(ctx, bundle);
@@ -548,11 +551,12 @@ export async function replyPendingQuestionsCommand(
   });
 }
 
+/** @returns 是否应用了事件（供 tick 决定是否请求节流推送）。 */
 export function applyDrainedRuntimeHostEvents(
   ctx: SessionTurnOrchestratorContext,
   bundle: SessionBundle,
   drained: RuntimeEvent<DesktopToolRequest>[],
-): void {
+): boolean {
   const orchestration = ctx.orchestrationFor(bundle);
   const queued = [...bundle.deferredRuntimeHostEvents, ...drained];
   bundle.deferredRuntimeHostEvents = [];
@@ -572,18 +576,11 @@ export function applyDrainedRuntimeHostEvents(
     }
   }
   bundle.messages = bundle.messageTimeline.toMessages();
-  if (bundle.id !== ctx.activeSessionId()) {
-    return;
+  if (splitBuiltin.toApply.length === 0) {
+    return false;
   }
-  const shouldEmitLiveUpdate =
-    runtimeEventsIncludeAppliedFinishTaskPreview(splitBuiltin.toApply)
-    || runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(splitBuiltin.toApply)
-    || runtimeEventsIncludeAppliedHostToolStreamingUpdate(splitBuiltin.toApply)
-    || splitBuiltin.toApply.some((event) => event.kind === 'assistant-chunk');
-  if (shouldEmitLiveUpdate) {
-    bundle.conversationRevision += 1;
-    ctx.emitLiveSnapshotUpdate();
-  }
+  bundle.conversationRevision += 1;
+  return true;
 }
 
 function defaultDisplayTextForUserTurn(

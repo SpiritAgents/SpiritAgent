@@ -254,7 +254,12 @@ import {
   type SessionTurnOrchestratorContext,
   type SubmitUserTurnAfterInitializedOptions,
 } from './session-turn-orchestrator.js';
-import { SessionPump, sessionBundleNeedsPumpTick } from './session-pump.js';
+import {
+  LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS,
+  LIVE_SNAPSHOT_EMIT_THROTTLE_MS,
+  SessionPump,
+  sessionBundleNeedsPumpTick,
+} from './session-pump.js';
 import {
   startWorktreeBootstrapTurnCommand,
   type WorktreeBootstrapHostContext,
@@ -612,11 +617,13 @@ class DesktopHostService {
   /** busy 会话的回合推进由主进程泵驱动，不依赖 renderer poll。 */
   private readonly sessionPump = new SessionPump({
     hasPumpWork: () => this.hasSessionPumpWork(),
-    runTick: () => pumpSessionsCommand(this.sessionTurnContext()),
+    runTick: () => this.runSessionPumpTick(),
     onTickError: (error) => {
       console.error('[desktop-host][pump] tick failed', error);
     },
   });
+  private liveSnapshotEmitTimer: ReturnType<typeof setTimeout> | undefined;
+  private lastLiveSnapshotEmitAtMs = 0;
   private dreamCollectorStatus: DesktopDreamCollectorSnapshot = emptyDreamCollectorSnapshot('disabled');
   private dreamCollectorRunning = false;
   private dreamCollectorLastTickUnixMs = 0;
@@ -802,6 +809,7 @@ class DesktopHostService {
       getActiveBundle: () => this.sessionRegistry.getActive(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
+      requestLiveSnapshotEmit: () => this.requestThrottledLiveSnapshotEmit(),
       refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
       clearAssistantContinuationMarkers: () => this.clearAssistantContinuationMarkers(),
@@ -1238,11 +1246,6 @@ class DesktopHostService {
       },
       todoItemsBeforeWrite: () =>
         bundle.cachedTodoSnapshot?.items.map(({ title, status }) => ({ title, status })) ?? [],
-      requestLiveSnapshotUpdate: () => {
-        if (bundle.id === this.sessionRegistry.activeSessionId()) {
-          this.emitLiveSnapshotUpdate();
-        }
-      },
       lineDeltaForDeleteFile: (inputPath) =>
         lineDeltaForDeleteFilePath(
           { workspaceRoot: bundle.workspaceRoot, spiritDataDir: spiritAgentDataDir() },
@@ -3072,6 +3075,7 @@ class DesktopHostService {
   }
 
   private emitLiveSnapshotUpdate(): void {
+    this.lastLiveSnapshotEmitAtMs = Date.now();
     if (!this.state || this.dreamUpdateListeners.size === 0) {
       return;
     }
@@ -4304,6 +4308,35 @@ class DesktopHostService {
       }
     }
     return false;
+  }
+
+  private async runSessionPumpTick(): Promise<void> {
+    await pumpSessionsCommand(this.sessionTurnContext());
+    if (this.hasSessionPumpWork()) {
+      // busy 但事件驱动的推送可能长时间不来（纯网络等待）；心跳保证 spinner 等宿主态动画刷新。
+      if (Date.now() - this.lastLiveSnapshotEmitAtMs >= LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS) {
+        this.requestThrottledLiveSnapshotEmit();
+      }
+      return;
+    }
+    // busy → idle：推送终态快照并刷新会话列表（替代原 renderer poll 循环退出时的 listSessions）。
+    this.requestThrottledLiveSnapshotEmit();
+    this.notifySessionListUpdated();
+  }
+
+  /** 流式期间 live snapshot 的唯一推送出口：leading+trailing 节流。 */
+  private requestThrottledLiveSnapshotEmit(): void {
+    if (this.liveSnapshotEmitTimer !== undefined) {
+      return;
+    }
+    const elapsedMs = Date.now() - this.lastLiveSnapshotEmitAtMs;
+    const delayMs = Math.max(0, LIVE_SNAPSHOT_EMIT_THROTTLE_MS - elapsedMs);
+    const timer = setTimeout(() => {
+      this.liveSnapshotEmitTimer = undefined;
+      this.emitLiveSnapshotUpdate();
+    }, delayMs);
+    timer.unref?.();
+    this.liveSnapshotEmitTimer = timer;
   }
 
   private requireEnabledSkillEntry(skillName: string): HostMetadataSummary['skills']['entries'][number] {

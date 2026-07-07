@@ -125,6 +125,8 @@ type BusyAction =
 
 const DREAM_IDLE_POLL_INTERVAL_MS = 30_000;
 const GIT_STATE_POLL_INTERVAL_MS = 5_000;
+/** 远程 Web 客户端 busy 时的快照 poll 间隔；回合推进由宿主泵驱动，poll 只取快照。 */
+const WEB_BUSY_POLL_INTERVAL_MS = 150;
 const COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS = 400;
 
 type SessionUiState = {
@@ -1306,14 +1308,12 @@ export function useDesktopRuntime() {
     });
   }, [pendingQuestions]);
 
-  const backgroundSessionsBusy = sessions.some((session) => session.isBusy === true);
-
-  /** Active or background session busy: poll until none are busy. */
+  /**
+   * 仅远程 Web 客户端：busy 时以固定间隔 poll 取快照（回合推进由宿主泵驱动，poll 不再驱动运行时）。
+   * Electron 下流式更新全部走宿主节流推送（subscribeDreamUpdates），无 poll 循环。
+   */
   useEffect(() => {
-    const shouldPoll = isRemoteWebHostClient(api?.kind)
-      ? snapshot?.conversation.isBusy === true
-      : snapshot?.conversation.isBusy === true || backgroundSessionsBusy;
-    if (!api || !shouldPoll) {
+    if (!api || !isRemoteWebHostClient(api.kind) || snapshot?.conversation.isBusy !== true) {
       return;
     }
 
@@ -1331,18 +1331,8 @@ export function useDesktopRuntime() {
           if (cancelled) {
             break;
           }
-          const localForegroundBusy = snapshotRef.current?.conversation.isBusy === true;
-          const localPath = snapshotRef.current?.activeSession?.filePath?.trim() ?? '';
-          const nextPath = next.activeSession?.filePath?.trim() ?? '';
-          const blockPollForegroundSwap =
-            api.kind === 'electron'
-            && !localForegroundBusy
-            && backgroundSessionsBusy
-            && localPath.length > 0
-            && nextPath.length > 0
-            && localPath !== nextPath
-            && busyActionRef.current !== 'session';
-          if (blockPollForegroundSwap) {
+          applySnapshot(next);
+          if (next.conversation.isBusy !== true) {
             const sessionItems = await api.listSessions();
             if (cancelled) {
               break;
@@ -1352,21 +1342,8 @@ export function useDesktopRuntime() {
             if (!stillBusy) {
               break;
             }
-            continue;
           }
-          applySnapshot(next);
-          if (next.conversation.isBusy === true) {
-            continue;
-          }
-          const sessionItems = await api.listSessions();
-          if (cancelled) {
-            break;
-          }
-          applySessionList(sessionItems);
-          const stillBusy = sessionItems.some((session) => session.isBusy === true);
-          if (!stillBusy) {
-            break;
-          }
+          await new Promise((resolve) => setTimeout(resolve, WEB_BUSY_POLL_INTERVAL_MS));
         }
       } catch (error) {
         if (!cancelled) {
@@ -1378,7 +1355,7 @@ export function useDesktopRuntime() {
     return () => {
       cancelled = true;
     };
-  }, [api, applySessionList, applySnapshot, backgroundSessionsBusy, snapshot?.conversation.isBusy]);
+  }, [api, applySessionList, applySnapshot, snapshot?.conversation.isBusy]);
 
   useEffect(() => {
     if (!api?.subscribeDreamUpdates) {
