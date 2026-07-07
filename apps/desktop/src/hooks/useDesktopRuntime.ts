@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
 import { resolvePendingApprovalSessionPath, resolvePendingQuestionsSessionPath, resolvePendingQuestionsSnapshot } from "@/lib/pane-pending-turn-routing";
-import i18n from "@/lib/i18n";
+import i18n, { getStoredLanguage } from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -372,7 +372,7 @@ export function useDesktopRuntime() {
     videoGenerationModel: "",
     lightweightChatModel: "",
     apiBase: "",
-    uiLocale: "",
+    uiLocale: getStoredLanguage(),
     apiKey: "",
     windowsMica: true,
     systemNotifications: true,
@@ -717,7 +717,7 @@ export function useDesktopRuntime() {
         videoGenerationModel: next.config.videoGenerationModel ?? "",
         lightweightChatModel: next.config.lightweightChatModel ?? "",
         apiBase: activeModelProfile?.apiBase ?? current.apiBase,
-        uiLocale: next.config.uiLocale ?? "",
+        uiLocale: next.config.uiLocale ?? getStoredLanguage(),
         apiKey: current.apiKey,
         windowsMica,
         systemNotifications: next.config.systemNotifications !== false,
