@@ -20,10 +20,7 @@ import type { DesktopRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import { toolMessageKey } from './message-ordering.js';
 import {
-  runtimeEventsIncludeAppliedFinishTaskPreview,
-  runtimeEventsIncludeAppliedHostToolStreamingUpdate,
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
-  runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
@@ -91,6 +88,9 @@ export interface SessionTurnOrchestratorContext {
   getActiveBundle(): SessionBundle | undefined;
   activeSessionId(): string | undefined;
   emitLiveSnapshotUpdate(): void;
+  /** 节流版 live snapshot 推送（流式变更唯一出口；宿主侧 33ms leading+trailing）。 */
+  requestLiveSnapshotEmit(): void;
+  notifySessionListUpdated(): void;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;
   syncActiveRuntimePointer(): void;
   clearAssistantContinuationMarkers(): void;
@@ -314,22 +314,41 @@ export async function drainQueuedUserTurnIfIdle(
   }
 }
 
+/** 单次泵 tick 主体（调用方须已持有 runSerialized 锁）：推进所有 busy 会话并同步宿主状态。 */
+async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise<void> {
+  await ctx.ensureInitialized(undefined, { fastPath: true });
+  for (const bundle of ctx.allBundles()) {
+    if (bundle.runtime?.isBusy() || shouldAdvanceWorktreeBootstrap(bundle)) {
+      await tickSessionCommand(ctx, bundle);
+    }
+  }
+  const active = ctx.getActiveBundle();
+  if (active && !active.runtime?.isBusy()) {
+    await tickSessionCommand(ctx, active, { light: true });
+  }
+  ctx.syncActiveRuntimePointer();
+  ctx.startDreamCollectorIfNeeded();
+}
+
+/** SessionPump 每 tick 调用：与 pollCommand 同体，但不构建快照。 */
+export async function pumpSessionsCommand(ctx: SessionTurnOrchestratorContext): Promise<void> {
+  return ctx.runSerialized(() => runSessionsPumpTick(ctx), 'pump-tick');
+}
+
 export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
-    await ctx.ensureInitialized(undefined, { fastPath: true });
-    for (const bundle of ctx.allBundles()) {
-      if (bundle.runtime?.isBusy() || shouldAdvanceWorktreeBootstrap(bundle)) {
-        await tickSessionCommand(ctx, bundle);
-      }
-    }
-    const active = ctx.getActiveBundle();
-    if (active && !active.runtime?.isBusy()) {
-      await tickSessionCommand(ctx, active, { light: true });
-    }
-    ctx.syncActiveRuntimePointer();
-    ctx.startDreamCollectorIfNeeded();
+    await runSessionsPumpTick(ctx);
     return ctx.buildSnapshot();
   }, 'poll');
+}
+
+/** busy 期间 tick 落盘的最小间隔；回合终态与进入阻塞时不受此限制。 */
+export const TICK_SESSION_PERSIST_INTERVAL_MS = 1_000;
+
+function isRuntimeBlocked(bundle: SessionBundle): boolean {
+  return Boolean(
+    bundle.runtime?.currentPendingApproval() || bundle.runtime?.currentPendingQuestions(),
+  );
 }
 
 export async function tickSessionCommand(
@@ -342,21 +361,27 @@ export async function tickSessionCommand(
   }
 
   const orchestration = ctx.orchestrationFor(bundle);
+  const wasBusy = bundle.runtime?.isBusy() === true;
+  const wasBlocked = isRuntimeBlocked(bundle);
+  let changed = false;
   if (bundle.runtime) {
     bundle.runtime.tickThinkingSpinner();
-    syncSubagentConversationProjections(bundle, bundle.runtime);
+    changed = syncSubagentConversationProjections(bundle, bundle.runtime) || changed;
     if (!options.light) {
       await bundle.runtime.poll();
-      syncSubagentConversationProjections(bundle, bundle.runtime);
-      applyDrainedRuntimeHostEvents(ctx, bundle, bundle.runtime.drainEvents());
+      changed = syncSubagentConversationProjections(bundle, bundle.runtime) || changed;
+      changed = applyDrainedRuntimeHostEvents(ctx, bundle, bundle.runtime.drainEvents()) || changed;
     } else {
       const drained = bundle.runtime.drainEvents();
       if (drained.length > 0 || bundle.deferredRuntimeHostEvents.length > 0) {
-        applyDrainedRuntimeHostEvents(ctx, bundle, drained);
+        changed = applyDrainedRuntimeHostEvents(ctx, bundle, drained) || changed;
       }
     }
   } else if (options.light && bundle.deferredRuntimeHostEvents.length > 0) {
-    applyDrainedRuntimeHostEvents(ctx, bundle, []);
+    changed = applyDrainedRuntimeHostEvents(ctx, bundle, []) || changed;
+  }
+  if (changed) {
+    ctx.requestLiveSnapshotEmit();
   }
   if (options.light) {
     await drainQueuedUserTurnIfIdle(ctx, bundle);
@@ -366,10 +391,19 @@ export async function tickSessionCommand(
   orchestration.runtimeEvents.syncPendingToolStates();
   ctx.syncSubagentToolStreamingOutput(bundle);
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-  await ctx.persistSessionBundle(bundle, {
-    fromRuntime: bundle.runtime,
-    bumpListSortAt: false,
-  });
+  // busy 期间按时间片落盘；回合终态（busy→idle）与进入审批/提问阻塞时强制落盘，持久化语义不变。
+  const busyAfterTick = bundle.runtime?.isBusy() === true;
+  const blockedAfterTick = isRuntimeBlocked(bundle);
+  const forcePersist = (wasBusy && !busyAfterTick) || (blockedAfterTick && !wasBlocked);
+  const persistDue =
+    Date.now() - (bundle.lastTickPersistAtMs ?? 0) >= TICK_SESSION_PERSIST_INTERVAL_MS;
+  if (forcePersist || persistDue) {
+    await ctx.persistSessionBundle(bundle, {
+      fromRuntime: bundle.runtime,
+      bumpListSortAt: false,
+    });
+    bundle.lastTickPersistAtMs = Date.now();
+  }
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
   await ctx.refreshTodoSnapshotForBundle(bundle);
   await drainQueuedUserTurnIfIdle(ctx, bundle);
@@ -538,11 +572,12 @@ export async function replyPendingQuestionsCommand(
   });
 }
 
+/** @returns 是否应用了事件（供 tick 决定是否请求节流推送）。 */
 export function applyDrainedRuntimeHostEvents(
   ctx: SessionTurnOrchestratorContext,
   bundle: SessionBundle,
   drained: RuntimeEvent<DesktopToolRequest>[],
-): void {
+): boolean {
   const orchestration = ctx.orchestrationFor(bundle);
   const queued = [...bundle.deferredRuntimeHostEvents, ...drained];
   bundle.deferredRuntimeHostEvents = [];
@@ -562,18 +597,11 @@ export function applyDrainedRuntimeHostEvents(
     }
   }
   bundle.messages = bundle.messageTimeline.toMessages();
-  if (bundle.id !== ctx.activeSessionId()) {
-    return;
+  if (splitBuiltin.toApply.length === 0) {
+    return false;
   }
-  const shouldEmitLiveUpdate =
-    runtimeEventsIncludeAppliedFinishTaskPreview(splitBuiltin.toApply)
-    || runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(splitBuiltin.toApply)
-    || runtimeEventsIncludeAppliedHostToolStreamingUpdate(splitBuiltin.toApply)
-    || splitBuiltin.toApply.some((event) => event.kind === 'assistant-chunk');
-  if (shouldEmitLiveUpdate) {
-    bundle.conversationRevision += 1;
-    ctx.emitLiveSnapshotUpdate();
-  }
+  bundle.conversationRevision += 1;
+  return true;
 }
 
 function defaultDisplayTextForUserTurn(

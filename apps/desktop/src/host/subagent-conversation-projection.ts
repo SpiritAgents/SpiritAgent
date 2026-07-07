@@ -183,19 +183,20 @@ export function ensureSubagentConversationProjection(
   return projection;
 }
 
+/** @returns 是否应用了子会话事件（供 tick 决定是否请求节流推送）。 */
 export function syncSubagentConversationProjections(
   bundle: SessionBundle,
   runtime: DesktopRuntime | undefined,
-): void {
+): boolean {
   if (!runtime) {
-    return;
+    return false;
   }
 
   syncSubagentWorktreeBootstrapCards(bundle, runtime);
 
   const childDrains = runtime.drainActiveChildSessionEvents();
   if (childDrains.length === 0) {
-    return;
+    return false;
   }
 
   for (const childDrain of childDrains) {
@@ -212,6 +213,7 @@ export function syncSubagentConversationProjections(
       syncedMessages,
     );
   }
+  return true;
 }
 
 function syncWorktreeBootstrapCardOnProjection(
