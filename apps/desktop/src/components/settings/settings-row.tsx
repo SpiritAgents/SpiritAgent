@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { Label } from "@/components/ui/label";
-import { DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 export function SettingsRow({
@@ -25,7 +24,7 @@ export function SettingsRow({
       )}
     >
       <div className="min-w-0 sm:max-w-[42%]">
-        <Label htmlFor={htmlFor} className={DESKTOP_SETTINGS_LABEL_CLASS}>
+        <Label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
           {label}
         </Label>
         {description ? (

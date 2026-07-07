@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode
 import { LoaderCircle, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -101,7 +100,7 @@ export function AutomationsView({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
-              <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">
                 {t("automations.title")}
               </h1>
               <p className="text-sm text-muted-foreground">{t("automations.subtitle")}</p>
@@ -295,7 +294,7 @@ function AutomationListRow({
       )}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-normal text-foreground">{item.title}</span>
+        <span className="text-sm font-medium text-foreground">{item.title}</span>
         {!item.enabled ? (
           <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
             {t("automations.disabled")}

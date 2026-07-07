@@ -30,7 +30,6 @@ import type {
   GitHubAutomationRepositoriesSnapshot,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
-import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 type CreateAutomationDialogProps = {
@@ -124,7 +123,7 @@ export function CreateAutomationDialog({
             onChange={(event) => setTitle(event.target.value)}
             placeholder={t("automations.dialogTitlePlaceholder")}
             disabled={disabled}
-            className={cn("w-full border-0 bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/70", FONT_WEIGHT_MEDIUM)}
+            className="w-full border-0 bg-transparent text-lg font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
           />
           <textarea
             value={overview}

@@ -37,7 +37,6 @@ import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import { shouldShowComposerChangesCard } from "@/lib/composer-changes-card-visibility";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
-import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import { useComposerSuggestionAnchor } from "@/hooks/use-composer-suggestion-anchor";
 import type {
@@ -232,7 +231,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         {isEmptySession ? (
           <div data-spirit-surface="conversation-empty">
             <p
-              className={cn("mb-6 text-center text-2xl tracking-tight text-foreground sm:text-3xl", FONT_WEIGHT_MEDIUM)}
+              className="mb-6 text-center text-2xl font-medium tracking-tight text-foreground sm:text-3xl"
               data-testid="empty-session-greeting"
             >
               {emptySessionGreeting}

@@ -1,8 +1,6 @@
-import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
-
 // 半透明底色试点：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
 export const DEBUG_CHIP_CLASS =
-  `inline-flex items-center gap-1 rounded-md bg-red-500/10 px-1.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none text-red-700 select-none align-middle mx-0.5 dark:bg-red-500/15 dark:text-red-400`;
+  "inline-flex items-center gap-1 rounded-md bg-red-500/10 px-1.5 py-0.5 text-xs font-medium leading-none text-red-700 select-none align-middle mx-0.5 dark:bg-red-500/15 dark:text-red-400";
 
 export function makeDebugChipNode(doc: Document, label = "Debug"): HTMLElement {
   const span = doc.createElement("span");

@@ -172,7 +172,7 @@ export function MinimalToolSummary({
   statusSuffixTone?: ToolSummaryStatusSuffixTone;
 }) {
   const shimmerClass = shimmerActive
-    ? "spirit-thinking-shimmer-text font-normal tracking-wide"
+    ? "spirit-thinking-shimmer-text font-medium tracking-wide"
     : summaryClass;
   const truncateSummary = detailTone === "shell-command";
 
@@ -224,13 +224,13 @@ function ResponsesBuiltInToolExpandedBody({
     <div className="space-y-3">
       {input ? (
         <div className="space-y-1">
-          <p className="text-[10px] font-normal tracking-wide text-muted-foreground/70">Input</p>
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground/70">Input</p>
           <ToolCallDetailScrollPre>{input}</ToolCallDetailScrollPre>
         </div>
       ) : null}
       {output ? (
         <div className="space-y-1">
-          <p className="text-[10px] font-normal tracking-wide text-muted-foreground/70">Output</p>
+          <p className="text-[10px] font-medium tracking-wide text-muted-foreground/70">Output</p>
           <ToolCallDetailScrollPre>{output}</ToolCallDetailScrollPre>
         </div>
       ) : shimmerActive ? (

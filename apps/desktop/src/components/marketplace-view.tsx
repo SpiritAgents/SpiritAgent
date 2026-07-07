@@ -24,7 +24,6 @@ import {
 } from "@/lib/desktop-chrome";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
-import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import type {
   DesktopExtensionListItem,
@@ -436,7 +435,7 @@ export function MarketplaceView({
           >
             <div className="flex flex-col items-center gap-6">
               <div className="flex w-full flex-col items-center gap-2">
-                <p className={cn("text-center text-lg tracking-tight text-foreground", FONT_WEIGHT_MEDIUM)}>{t('marketplace.title')}</p>
+                <p className="text-center text-lg font-medium tracking-tight text-foreground">{t('marketplace.title')}</p>
                 <div className="flex w-full max-w-sm items-center gap-1.5">
                   <div
                     className={cn(
@@ -505,7 +504,7 @@ export function MarketplaceView({
                         )}
                         <span className="min-w-0 flex-1 space-y-1">
                           <span className="flex flex-wrap items-center gap-1.5">
-                            <span className="truncate font-normal text-foreground">{item.displayName}</span>
+                            <span className="truncate font-medium text-foreground">{item.displayName}</span>
                             {item.featured ? (
                               <Badge variant="secondary" className="text-[10px] font-normal">
                                 {t('marketplace.featured')}
@@ -570,7 +569,7 @@ export function MarketplaceView({
                     )}
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <h2 className="text-base font-normal leading-snug tracking-tight text-foreground">
+                        <h2 className="text-base font-medium leading-snug tracking-tight text-foreground">
                           {selectedCatalog.displayName}
                         </h2>
                         <Badge variant="outline" className="text-[10px] font-normal">
@@ -634,7 +633,7 @@ export function MarketplaceView({
                         className={cn(
                           "rounded-md px-3 py-2 text-sm",
                           activeTab === tabId
-                            ? "font-normal text-foreground underline decoration-foreground/80 underline-offset-[10px]"
+                            ? "font-medium text-foreground underline decoration-foreground/80 underline-offset-[10px]"
                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                         )}
                         onClick={() => setActiveTab(tabId)}

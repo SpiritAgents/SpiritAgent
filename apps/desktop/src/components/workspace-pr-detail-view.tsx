@@ -289,7 +289,7 @@ export function WorkspacePrDetailView({
               <h2 className="m-0">
                 <a
                   href={detail.url}
-                  className="min-w-0 text-sm font-normal text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="min-w-0 text-sm font-medium text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
                   aria-label={t("workspace.prOpenOnGitHub")}
                   onClick={(event) => {
                     event.preventDefault();

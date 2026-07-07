@@ -19,7 +19,6 @@ import { DesktopFormInput, DesktopFormTextarea } from "@/components/ui/desktop-f
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { CreateSkillRequest, DeleteSkillRequest, DesktopSkillListItem, DesktopSkillRootKind } from "@/types";
-import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 function skillLocationLabel(item: DesktopSkillListItem): string {
   return skillRootKindLabel(item.rootKind);
@@ -84,7 +83,7 @@ export function SkillsSettingsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>Skills</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">Skills</h1>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
@@ -130,7 +129,7 @@ export function SkillsSettingsPanel({
             >
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.name}</span>
+                  <span className="text-sm font-medium text-foreground">{item.name}</span>
                   <Badge variant="secondary" className="text-muted-foreground">
                     {skillLocationLabel(item)}
                   </Badge>
@@ -243,7 +242,7 @@ export function SkillsSettingsPanel({
                     role="tab"
                     aria-selected={createRootKind === opt.kind}
                     className={cn(
-                      DESKTOP_EDITOR_TAB_CLASS,
+                      "rounded-md px-2.5 text-xs font-medium transition-colors",
                       createRootKind === opt.kind
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",

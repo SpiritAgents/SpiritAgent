@@ -354,7 +354,7 @@ export function WorkspaceFilesSearchPanel({
                       ) : (
                         <WorkspaceFileIcon name={headerName} className="opacity-80" />
                       )}
-                      <span className="min-w-0 flex-1 truncate font-normal">
+                      <span className="min-w-0 flex-1 truncate font-medium">
                         {pathBasename(row.relativePath)}
                       </span>
                       <span className="shrink-0 text-muted-foreground">{row.matchCount}</span>

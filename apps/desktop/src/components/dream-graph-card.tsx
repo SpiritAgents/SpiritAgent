@@ -184,7 +184,7 @@ function DreamInfoNode({ data }: NodeProps<Node<DreamNodeData>>) {
             position={Position.Right}
             className="!h-2 !w-2 !border-0 !bg-transparent !opacity-0"
           />
-          <p className="line-clamp-2 text-[13px] font-normal leading-5 text-foreground/95">{data.label}</p>
+          <p className="line-clamp-2 text-[13px] font-medium leading-5 text-foreground/95">{data.label}</p>
           <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{data.subtitle}</p>
         </div>
       </PopoverTrigger>
@@ -196,7 +196,7 @@ function DreamInfoNode({ data }: NodeProps<Node<DreamNodeData>>) {
           className="nodrag nopan flex h-[min(36rem,var(--radix-popover-content-available-height))] w-[22rem] flex-col overflow-hidden p-0"
         >
           <div className="border-b border-border/60 px-4 py-3">
-            <p className="line-clamp-2 text-sm font-normal text-foreground">{dream.title}</p>
+            <p className="line-clamp-2 text-sm font-medium text-foreground">{dream.title}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               {formatDreamTimestamp(dream.updatedAtUnixMs)}
             </p>

@@ -1,7 +1,5 @@
-import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
-
 const INLINE_CHIP_LAYOUT =
-  `inline-flex items-center gap-1 px-0.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none select-none align-middle mx-0.5`;
+  "inline-flex items-center gap-1 px-0.5 py-0.5 text-xs font-medium leading-none select-none align-middle mx-0.5";
 
 export const COMPOSER_INLINE_CHIP_TEXT_CLASS =
   "text-blue-500 dark:text-blue-400";

@@ -11,8 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { GitHubDeviceAuthChallenge } from "@/types";
-import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
-import { cn } from "@/lib/utils";
 
 export type GitHubDeviceLoginDialogProps = {
   open: boolean;
@@ -52,7 +50,7 @@ export function GitHubDeviceLoginDialog({
         <div className="flex min-h-[10rem] flex-col items-center justify-center py-2 text-center">
           {challenge ? (
             <div className="space-y-4">
-              <p className={cn("text-3xl tracking-widest text-foreground", FONT_WEIGHT_MEDIUM)}>
+              <p className="text-3xl font-semibold tracking-widest text-foreground">
                 {challenge.userCode}
               </p>
               <p className="text-xs text-muted-foreground">{t("settings.integrationsDeviceWaiting")}</p>
