@@ -8,19 +8,23 @@ import {
 } from '../../dist-electron/src/host/session-pump.js';
 import { pumpSessionsCommand } from '../../dist-electron/src/host/session-turn-orchestrator.js';
 
-function createFakeRuntime({ pollsUntilIdle }) {
+function createFakeRuntime({ pollsUntilIdle, chunkPerPoll = false }) {
   const runtime = {
     pollCount: 0,
     busy: true,
+    pendingEvents: [],
     isBusy: () => runtime.busy,
     poll: async () => {
       runtime.pollCount += 1;
+      if (chunkPerPoll) {
+        runtime.pendingEvents.push({ kind: 'assistant-chunk', text: `chunk-${runtime.pollCount}` });
+      }
       if (runtime.pollCount >= pollsUntilIdle) {
         runtime.busy = false;
       }
     },
     tickThinkingSpinner: () => {},
-    drainEvents: () => [],
+    drainEvents: () => runtime.pendingEvents.splice(0, runtime.pendingEvents.length),
     drainActiveChildSessionEvents: () => [],
     childSessionArchives: () => [],
     currentPendingApproval: () => undefined,
@@ -38,6 +42,7 @@ function createFakeBundle(runtime) {
     messageTimeline: { toMessages: () => [] },
     deferredRuntimeHostEvents: [],
     responsesBuiltInPreviewSeenCallIds: new Set(),
+    conversationRevision: 0,
     queuedUserTurns: [],
     subagentDesktopMessagesBySessionId: new Map(),
     subagentConversationProjections: new Map(),
@@ -69,6 +74,9 @@ function createFakeOrchestratorContext(bundle, calls) {
     syncActiveRuntimePointer: () => {},
     startDreamCollectorIfNeeded: () => {},
     emitLiveSnapshotUpdate: () => {},
+    requestLiveSnapshotEmit: () => {
+      calls.push('request-emit');
+    },
     persistCurrentSessionIfNeeded: async () => {},
   };
 }
@@ -94,7 +102,7 @@ test('sessionBundleNeedsPumpTick tracks runtime busy state', () => {
 });
 
 test('pump drives a busy streaming round to completion without external poll', async () => {
-  const runtime = createFakeRuntime({ pollsUntilIdle: 3 });
+  const runtime = createFakeRuntime({ pollsUntilIdle: 3, chunkPerPoll: true });
   const bundle = createFakeBundle(runtime);
   const calls = [];
   const ctx = createFakeOrchestratorContext(bundle, calls);
@@ -114,6 +122,9 @@ test('pump drives a busy streaming round to completion without external poll', a
   assert.equal(runtime.busy, false);
   assert.equal(runtime.pollCount, 3);
   assert.ok(calls.filter((entry) => entry === 'persist').length >= 3);
+  // 每次 tick 应用了 assistant-chunk 事件 → 应请求节流推送，且 revision 递增。
+  assert.ok(calls.filter((entry) => entry === 'request-emit').length >= 3);
+  assert.equal(bundle.conversationRevision, 3);
 
   // 全部空闲后 ensureRunning 不应重启泵。
   pump.ensureRunning();
