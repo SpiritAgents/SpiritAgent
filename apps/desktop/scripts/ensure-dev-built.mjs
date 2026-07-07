@@ -94,10 +94,22 @@ function runNodeScript(cwd, script) {
   }
 }
 
-function ensure(name, stale, build) {
+function touchOutputs(outputPaths) {
+  const now = new Date();
+  for (const file of outputPaths) {
+    if (fs.existsSync(file)) {
+      fs.utimesSync(file, now, now);
+    }
+  }
+}
+
+function ensure(name, stale, build, outputPaths) {
   if (force || stale) {
     console.log(`[dev] building ${name}...`);
     build();
+    // tsc incremental may emit nothing while sources look newer (mtime-only drift);
+    // refresh output mtimes so the next dev start does not rebuild in a loop.
+    touchOutputs(outputPaths);
     return;
   }
   console.log(`[dev] ${name} up to date, skip build`);
@@ -114,6 +126,7 @@ ensure(
   'agent-core',
   isStale([path.join(agentCoreRoot, 'src'), path.join(agentCoreRoot, 'tsconfig.json')], [agentCoreOut]),
   () => npmRun(agentCoreRoot, 'build'),
+  [agentCoreOut],
 );
 
 ensure(
@@ -124,6 +137,7 @@ ensure(
     [agentCoreOut],
   ),
   () => npmRun(hostInternalRoot, 'build:tsc'),
+  [hostInternalOut],
 );
 
 ensure(
@@ -146,6 +160,7 @@ ensure(
     [hostInternalOut, agentCoreOut],
   ),
   () => npmRun(desktopRoot, 'build:electron'),
+  [electronMainOut, electronPreloadOut],
 );
 
 runNodeScript(desktopRoot, 'scripts/ensure-pty-spawn-helper.mjs');
