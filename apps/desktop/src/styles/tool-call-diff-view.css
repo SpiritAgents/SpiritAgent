@@ -86,7 +86,7 @@
 
 .tool-call-diff .diff-line.review-diff-target-line .diff-gutter {
   color: var(--foreground);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .tool-call-diff .diff-line.review-diff-target-line .diff-code {
@@ -198,5 +198,5 @@
 
 .tool-call-diff .diff-code .token.important {
   color: var(--diff-syntax-important);
-  font-weight: 500;
+  font-weight: 600;
 }

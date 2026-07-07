@@ -51,7 +51,7 @@ function PrCommitRow({
           alt=""
           className="size-5 shrink-0 rounded-full bg-muted object-cover"
         />
-        <span className="truncate text-xs font-normal text-foreground/80">{commit.authorLogin}</span>
+        <span className="truncate text-xs font-medium text-foreground/80">{commit.authorLogin}</span>
         <time
           className="shrink-0 text-[11px] text-muted-foreground/75 dark:text-muted-foreground/65"
           dateTime={commit.createdAt}

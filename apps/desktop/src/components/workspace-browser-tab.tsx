@@ -162,7 +162,7 @@ function BrowserNewTabPage({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-normal text-foreground">{t("workspace.browserNewTabTitle")}</h3>
+        <h3 className="text-sm font-medium text-foreground">{t("workspace.browserNewTabTitle")}</h3>
         <Button
           type="button"
           variant="secondary"
@@ -196,7 +196,7 @@ function BrowserNewTabPage({
                   )}
                   onClick={() => onNavigate(url)}
                 >
-                  <span className="block truncate font-normal text-foreground">{displayTitle}</span>
+                  <span className="block truncate font-medium text-foreground">{displayTitle}</span>
                   {displaySubtitle ? (
                     <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                       {displaySubtitle}

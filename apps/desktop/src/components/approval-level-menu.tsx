@@ -15,7 +15,6 @@ import {
   COMPOSER_INLINE_CHIP_ICON_CLASS,
   COMPOSER_INLINE_CHIP_TEXT_CLASS,
 } from "@/lib/composer-inline-chip-styles";
-import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 
 type ApprovalLevelMenuProps = {
@@ -90,8 +89,7 @@ export function ApprovalLevelMenu({
               aria-label={t('composer.selectApprovalLevel')}
               disabled={disabled}
               className={cn(
-                "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
-                    DESKTOP_MENU_TRIGGER_TEXT_CLASS,
+                "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left text-xs font-medium outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
                 approvalLevelTriggerTextClass(approvalLevel),
               )}
             >

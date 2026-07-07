@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 
-import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils"
 import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale"
 import { Button } from "@/components/ui/button"
@@ -207,7 +206,7 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        `font-heading text-base leading-none ${FONT_WEIGHT_NORMAL}`,
+        "font-heading text-base leading-none font-medium",
         className
       )}
       {...props}

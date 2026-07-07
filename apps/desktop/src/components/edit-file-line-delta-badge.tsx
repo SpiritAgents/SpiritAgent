@@ -61,7 +61,7 @@ export function EditFileLineDeltaBadge({
   }
 
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-1 font-sans text-xs font-normal leading-none", className)}>
+    <span className={cn("inline-flex shrink-0 items-center gap-1 font-sans text-xs font-medium leading-none", className)}>
       {delta.added > 0 ? (
         <span className="inline-flex items-baseline leading-none text-emerald-600 dark:text-emerald-400">
           <span aria-hidden className="leading-none">+</span>

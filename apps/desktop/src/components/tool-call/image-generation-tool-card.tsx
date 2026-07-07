@@ -111,7 +111,7 @@ export function ImageGenerationToolCard({
           <div className="flex size-full items-center justify-center px-4 text-center">
             <span
               className={cn(
-                "text-sm font-normal",
+                "text-sm font-medium",
                 loading ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
               )}
             >

@@ -8,7 +8,6 @@ import {
 } from '@/lib/desktop-chrome'
 import { workspaceFileBasename } from '@/lib/file-picker-path'
 import { WorkspaceFileIcon } from '@/components/workspace-file-icon'
-import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 import { cn } from '@/lib/utils'
 
 type WorkspaceFilePickerRowProps = {
@@ -52,7 +51,7 @@ export function WorkspaceFilePickerRow({
       <WorkspaceFileIcon path={displayPath} kind={iconKind} />
       <span
         className={cn(
-          cn("shrink-0 whitespace-nowrap leading-6", DESKTOP_LIST_ITEM_PRIMARY_CLASS),
+          'shrink-0 whitespace-nowrap text-sm font-medium leading-6',
           tone === 'menu' ? 'text-foreground' : 'text-popover-foreground',
         )}
       >

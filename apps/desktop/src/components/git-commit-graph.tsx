@@ -461,9 +461,9 @@ function CommitGraphRowDetail({ row }: { row: GitCommitGraphRow }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-normal leading-snug">{row.commit.subject}</p>
+      <p className="text-sm font-medium leading-snug">{row.commit.subject}</p>
       <p className="text-[11px]">
-        <span className="font-normal">{row.commit.author}</span>
+        <span className="font-medium">{row.commit.author}</span>
         {" "}
         <span className="text-muted-foreground">{row.commit.authoredAt}</span>
       </p>
@@ -531,7 +531,7 @@ function CommitGraphRowWithHover({
       data-commit-oid={row.commit.oid}
       onPointerEnter={onPointerEnter}
     >
-      <span className="min-w-0 flex-1 truncate text-xs font-normal leading-snug text-foreground/80">
+      <span className="min-w-0 flex-1 truncate text-xs font-medium leading-snug text-foreground/80">
         {row.commit.subject}
       </span>
     </button>

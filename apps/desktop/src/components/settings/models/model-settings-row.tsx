@@ -6,7 +6,6 @@ import { modelSettingsRowAriaLabel } from "@/lib/model-catalog-detail";
 import { modelCapabilityLabel } from "@/lib/model-capability-label";
 import { cn } from "@/lib/utils";
 import type { SettingsModelProfile } from "./model-defaults";
-import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 
 export function ModelSettingsRowButton({
   model,
@@ -52,7 +51,7 @@ export function ModelSettingsRowButton({
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{displayTitle}</span>
+          <span className="text-sm font-medium text-foreground">{displayTitle}</span>
           {isActive ? (
             <Badge variant="secondary" className="text-muted-foreground">
               {t("settings.currentInference")}

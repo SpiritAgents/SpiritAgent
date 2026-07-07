@@ -25,11 +25,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
-import {
-  DESKTOP_EDITOR_TAB_CLASS,
-  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
-  DESKTOP_PAGE_TITLE_CLASS,
-} from "@/lib/desktop-typography";
 import type {
   DeleteMcpServerRequest,
   DesktopMcpScope,
@@ -250,7 +245,7 @@ export function McpsSettingsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>MCPs</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">MCPs</h1>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
           ) : null}
@@ -282,7 +277,7 @@ export function McpsSettingsPanel({
             >
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.displayName}</span>
+                  <span className="text-sm font-medium text-foreground">{item.displayName}</span>
                   <McpRuntimeBadge state={runtimeInfo[runtimeKey]?.state ?? (item.enabled ? "loading" : "disabled")} />
                   <Badge variant="outline" className="text-muted-foreground">
                     {item.scope === "user" ? t('settings.skillUserDirShort') : t('settings.mcpScopeWorkspace')}
@@ -405,7 +400,7 @@ export function McpsSettingsPanel({
                     role="tab"
                     aria-selected={createScope === opt.scope}
                     className={cn(
-                      DESKTOP_EDITOR_TAB_CLASS,
+                      "rounded-md px-2.5 text-xs font-medium transition-colors",
                       createScope === opt.scope
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
@@ -436,7 +431,7 @@ export function McpsSettingsPanel({
                     role="tab"
                     aria-selected={transportType === value}
                     className={cn(
-                      DESKTOP_EDITOR_TAB_CLASS,
+                      "rounded-md px-2.5 text-xs font-medium transition-colors",
                       transportType === value
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
