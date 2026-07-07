@@ -96,7 +96,6 @@ export interface DesktopRuntimeEventOrchestratorOptions {
   onTodoStoreMutated?: () => void;
   /** todo_write 工具卡增量文案：返回执行前的会话 TODO。 */
   todoItemsBeforeWrite?: () => ReadonlyArray<{ title: string; status: 'pending' | 'in_progress' | 'completed' }>;
-  requestLiveSnapshotUpdate?: () => void;
   /** delete_file：删除前按路径读取磁盘并统计行数 */
   lineDeltaForDeleteFile?: (inputPath: string) => EditFileLineDelta | undefined;
   /** delete_file：删除前按路径读取磁盘全文 baseline */
@@ -111,10 +110,6 @@ export interface DesktopRuntimeEventOrchestratorOptions {
   currentWorkspaceRoot?: () => string;
 }
 
-function isMcpLikeToolName(toolName: string): boolean {
-  return toolName === 'tool_call' || toolName === 'tool_describe' || toolName === 'fetch_mcp_resource';
-}
-
 export class DesktopRuntimeEventOrchestrator {
   private lastApplyEventBatchId = 0;
   private messageOrderDebugLastVerboseLogMs = 0;
@@ -125,7 +120,6 @@ export class DesktopRuntimeEventOrchestrator {
    * 同一个 AnimatedCollapse 实例上收起；本段 completed 时再拆成独立思考行。
    */
   private deferredAfterStreamThinking: string | undefined;
-  private shellOutputSnapshotTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly options: DesktopRuntimeEventOrchestratorOptions) {}
 
@@ -200,24 +194,6 @@ export class DesktopRuntimeEventOrchestrator {
     this.activeGenerateImageTools.clear();
     this.activeGenerateVideoTools.clear();
     this.deferredAfterStreamThinking = undefined;
-    if (this.shellOutputSnapshotTimer !== undefined) {
-      clearTimeout(this.shellOutputSnapshotTimer);
-      this.shellOutputSnapshotTimer = undefined;
-    }
-  }
-
-  private scheduleLiveSnapshotUpdateForShellOutput(): void {
-    this.scheduleThrottledLiveSnapshotUpdate();
-  }
-
-  private scheduleThrottledLiveSnapshotUpdate(): void {
-    if (this.shellOutputSnapshotTimer !== undefined) {
-      return;
-    }
-    this.shellOutputSnapshotTimer = setTimeout(() => {
-      this.shellOutputSnapshotTimer = undefined;
-      this.options.requestLiveSnapshotUpdate?.();
-    }, 150);
   }
 
   /** 无工具回合里暂挂的 after-stream 思考：在 completed / 空正文收尾时拆成独立思考行。 */
@@ -422,7 +398,6 @@ export class DesktopRuntimeEventOrchestrator {
         }
         this.options.assistantMessages.appendPendingAssistantChunk(event.text);
         this.options.messageTimeline?.()?.appendAssistantTextChunk(event.text);
-        this.scheduleThrottledLiveSnapshotUpdate();
         continue;
       }
       if (event.kind === 'replace-pending-assistant') {
@@ -536,9 +511,6 @@ export class DesktopRuntimeEventOrchestrator {
             request: event.request as JsonObject,
           },
         });
-        if (event.decisionKind === 'allow') {
-          this.options.requestLiveSnapshotUpdate?.();
-        }
         continue;
       }
       if (event.kind === 'tool-execution-output-chunk') {
@@ -555,7 +527,6 @@ export class DesktopRuntimeEventOrchestrator {
         };
         this.options.assistantMessages.upsertToolMessage(event.toolCallId, updated, batchId);
         this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, updated);
-        this.scheduleLiveSnapshotUpdateForShellOutput();
         continue;
       }
       if (event.kind === 'tool-execution-finished') {
@@ -569,9 +540,6 @@ export class DesktopRuntimeEventOrchestrator {
           this.activeGenerateVideoTools.delete(event.execution.toolCallId);
         }
         this.integrateToolExecutions([event.execution], 'event');
-        if (isMcpLikeToolName(event.execution.toolName)) {
-          this.options.requestLiveSnapshotUpdate?.();
-        }
         this.options.dispatchExtensionEvent({
           type: 'onToolResult',
           detail: {
@@ -677,9 +645,6 @@ export class DesktopRuntimeEventOrchestrator {
         // Gateway resume 且轮次带工具前正文时不发 remove-pending-assistant（正文非空），
         // 占位行不能只挂在该事件上；内建工具终态落地即预置 after-tools Thinking 占位。
         this.options.messageTimeline?.()?.ensureAfterToolsThinkingPlaceholderRow();
-      }
-      if (isResponsesBuiltIn) {
-        this.options.requestLiveSnapshotUpdate?.();
       }
     }
     this.logMessageOrderApplyBatch(
