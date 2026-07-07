@@ -15,8 +15,8 @@ export function sessionBundleNeedsPumpTick(bundle: SessionBundle): boolean {
   return bundle.runtime?.isBusy() === true || shouldAdvanceWorktreeBootstrap(bundle);
 }
 
-/** 环境变量 `SPIRIT_DESKTOP_PUMP_DEBUG`：设为 1/true/on 时输出泵的启停与 tick 频率统计。 */
-function pumpDebugEnabled(): boolean {
+/** 环境变量 `SPIRIT_DESKTOP_PUMP_DEBUG`：设为 1/true/on 时输出泵的启停、tick 频率与推送频率统计。 */
+export function pumpDebugEnabled(): boolean {
   const raw = process.env.SPIRIT_DESKTOP_PUMP_DEBUG?.trim().toLowerCase() ?? '';
   return raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes';
 }

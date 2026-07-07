@@ -258,6 +258,7 @@ import {
   LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS,
   LIVE_SNAPSHOT_EMIT_THROTTLE_MS,
   SessionPump,
+  pumpDebugEnabled,
   sessionBundleNeedsPumpTick,
 } from './session-pump.js';
 import {
@@ -624,6 +625,8 @@ class DesktopHostService {
   });
   private liveSnapshotEmitTimer: ReturnType<typeof setTimeout> | undefined;
   private lastLiveSnapshotEmitAtMs = 0;
+  private debugLiveSnapshotEmitCount = 0;
+  private debugLiveSnapshotEmitWindowStartedAtMs = 0;
   private dreamCollectorStatus: DesktopDreamCollectorSnapshot = emptyDreamCollectorSnapshot('disabled');
   private dreamCollectorRunning = false;
   private dreamCollectorLastTickUnixMs = 0;
@@ -3082,6 +3085,18 @@ class DesktopHostService {
     const snapshot = this.buildSnapshot();
     for (const listener of this.dreamUpdateListeners) {
       listener(snapshot);
+    }
+    if (pumpDebugEnabled()) {
+      this.debugLiveSnapshotEmitCount += 1;
+      const windowMs = Date.now() - this.debugLiveSnapshotEmitWindowStartedAtMs;
+      if (windowMs >= 5_000) {
+        const hz = (this.debugLiveSnapshotEmitCount / Math.max(1, windowMs)) * 1_000;
+        console.log(
+          `[desktop-host][pump] snapshot emits=${this.debugLiveSnapshotEmitCount} rate=${hz.toFixed(1)}/s`,
+        );
+        this.debugLiveSnapshotEmitCount = 0;
+        this.debugLiveSnapshotEmitWindowStartedAtMs = Date.now();
+      }
     }
   }
 
