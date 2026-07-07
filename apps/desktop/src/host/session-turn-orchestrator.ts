@@ -341,6 +341,15 @@ export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<
   }, 'poll');
 }
 
+/** busy 期间 tick 落盘的最小间隔；回合终态与进入阻塞时不受此限制。 */
+export const TICK_SESSION_PERSIST_INTERVAL_MS = 1_000;
+
+function isRuntimeBlocked(bundle: SessionBundle): boolean {
+  return Boolean(
+    bundle.runtime?.currentPendingApproval() || bundle.runtime?.currentPendingQuestions(),
+  );
+}
+
 export async function tickSessionCommand(
   ctx: SessionTurnOrchestratorContext,
   bundle: SessionBundle,
@@ -351,6 +360,8 @@ export async function tickSessionCommand(
   }
 
   const orchestration = ctx.orchestrationFor(bundle);
+  const wasBusy = bundle.runtime?.isBusy() === true;
+  const wasBlocked = isRuntimeBlocked(bundle);
   let changed = false;
   if (bundle.runtime) {
     bundle.runtime.tickThinkingSpinner();
@@ -379,10 +390,19 @@ export async function tickSessionCommand(
   orchestration.runtimeEvents.syncPendingToolStates();
   ctx.syncSubagentToolStreamingOutput(bundle);
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-  await ctx.persistSessionBundle(bundle, {
-    fromRuntime: bundle.runtime,
-    bumpListSortAt: false,
-  });
+  // busy 期间按时间片落盘；回合终态（busy→idle）与进入审批/提问阻塞时强制落盘，持久化语义不变。
+  const busyAfterTick = bundle.runtime?.isBusy() === true;
+  const blockedAfterTick = isRuntimeBlocked(bundle);
+  const forcePersist = (wasBusy && !busyAfterTick) || (blockedAfterTick && !wasBlocked);
+  const persistDue =
+    Date.now() - (bundle.lastTickPersistAtMs ?? 0) >= TICK_SESSION_PERSIST_INTERVAL_MS;
+  if (forcePersist || persistDue) {
+    await ctx.persistSessionBundle(bundle, {
+      fromRuntime: bundle.runtime,
+      bumpListSortAt: false,
+    });
+    bundle.lastTickPersistAtMs = Date.now();
+  }
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
   await ctx.refreshTodoSnapshotForBundle(bundle);
   await drainQueuedUserTurnIfIdle(ctx, bundle);

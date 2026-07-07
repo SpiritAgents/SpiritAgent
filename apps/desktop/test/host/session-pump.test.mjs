@@ -121,7 +121,8 @@ test('pump drives a busy streaming round to completion without external poll', a
   await waitUntil(() => !pump.isRunning());
   assert.equal(runtime.busy, false);
   assert.equal(runtime.pollCount, 3);
-  assert.ok(calls.filter((entry) => entry === 'persist').length >= 3);
+  // 落盘节流：首 tick（超时间片）+ 回合终态强制，共 2 次；中途 tick 不落盘。
+  assert.equal(calls.filter((entry) => entry === 'persist').length, 2);
   // 每次 tick 应用了 assistant-chunk 事件 → 应请求节流推送，且 revision 递增。
   assert.ok(calls.filter((entry) => entry === 'request-emit').length >= 3);
   assert.equal(bundle.conversationRevision, 3);
@@ -130,6 +131,56 @@ test('pump drives a busy streaming round to completion without external poll', a
   pump.ensureRunning();
   assert.equal(pump.isRunning(), false);
   assert.equal(runtime.pollCount, 3);
+});
+
+test('tick persist is throttled while busy and forced at turn end', async () => {
+  const runtime = createFakeRuntime({ pollsUntilIdle: 4 });
+  const bundle = createFakeBundle(runtime);
+  // 模拟回合开始前刚落过盘：1s 时间片内 busy tick 均不应再写盘。
+  bundle.lastTickPersistAtMs = Date.now();
+  const calls = [];
+  const ctx = createFakeOrchestratorContext(bundle, calls);
+
+  const pump = new SessionPump({
+    hasPumpWork: () => sessionBundleNeedsPumpTick(bundle),
+    runTick: () => pumpSessionsCommand(ctx),
+    intervalMs: 5,
+  });
+
+  pump.ensureRunning();
+  await waitUntil(() => !pump.isRunning());
+  assert.equal(runtime.pollCount, 4);
+  // 仅回合终态（busy→idle）那一 tick 强制落盘。
+  assert.equal(calls.filter((entry) => entry === 'persist').length, 1);
+});
+
+test('entering pending approval forces persist', async () => {
+  const runtime = createFakeRuntime({ pollsUntilIdle: 1_000 });
+  let approval;
+  runtime.currentPendingApproval = () => approval;
+  const basePoll = runtime.poll;
+  runtime.poll = async () => {
+    await basePoll();
+    if (runtime.pollCount === 2) {
+      approval = { toolName: 'shell' };
+    }
+  };
+  const bundle = createFakeBundle(runtime);
+  bundle.lastTickPersistAtMs = Date.now();
+  const calls = [];
+  const ctx = createFakeOrchestratorContext(bundle, calls);
+
+  const pump = new SessionPump({
+    hasPumpWork: () => sessionBundleNeedsPumpTick(bundle),
+    runTick: () => pumpSessionsCommand(ctx),
+    intervalMs: 5,
+  });
+
+  pump.ensureRunning();
+  await waitUntil(() => runtime.pollCount >= 4);
+  pump.stop();
+  // 进入 pending approval 的那一 tick 强制落盘；其后阻塞 tick 在时间片内不再写。
+  assert.equal(calls.filter((entry) => entry === 'persist').length, 1);
 });
 
 test('pump stop cancels pending tick', async () => {
