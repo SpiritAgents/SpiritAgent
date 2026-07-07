@@ -813,6 +813,7 @@ class DesktopHostService {
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
       requestLiveSnapshotEmit: () => this.requestThrottledLiveSnapshotEmit(),
+      notifySessionListUpdated: () => this.notifySessionListUpdated(),
       refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
       clearAssistantContinuationMarkers: () => this.clearAssistantContinuationMarkers(),

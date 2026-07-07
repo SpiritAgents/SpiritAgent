@@ -261,6 +261,9 @@ async function finishDirectMediaTurn(
     orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
     await ctx.flushDeferredRuntimeRefreshIfIdle(input.bundle);
     await ctx.refreshTodoSnapshotForBundle(input.bundle);
+    input.bundle.conversationRevision += 1;
+    ctx.requestLiveSnapshotEmit();
+    ctx.notifySessionListUpdated();
   } finally {
     input.bundle.directMediaTurnInFlight = false;
     input.bundle.currentTurnSkills = [];

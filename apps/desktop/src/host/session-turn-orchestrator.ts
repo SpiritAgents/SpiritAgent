@@ -90,6 +90,7 @@ export interface SessionTurnOrchestratorContext {
   emitLiveSnapshotUpdate(): void;
   /** 节流版 live snapshot 推送（流式变更唯一出口；宿主侧 33ms leading+trailing）。 */
   requestLiveSnapshotEmit(): void;
+  notifySessionListUpdated(): void;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;
   syncActiveRuntimePointer(): void;
   clearAssistantContinuationMarkers(): void;
