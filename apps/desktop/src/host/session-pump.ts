@@ -10,6 +10,9 @@ export const LIVE_SNAPSHOT_EMIT_THROTTLE_MS = 33;
 /** busy 但无变更时的心跳推送间隔（spinner / 计时等宿主态动画依赖推送刷新）。 */
 export const LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS = 150;
 
+/** 后台会话 busy 时侧边栏 listSessions 刷新间隔。 */
+export const SESSION_LIST_NOTIFY_INTERVAL_MS = 1_000;
+
 /** 与 pollCommand 的 tick 条件一致：runtime busy 或 worktree bootstrap 待推进。 */
 export function sessionBundleNeedsPumpTick(bundle: SessionBundle): boolean {
   return bundle.runtime?.isBusy() === true || shouldAdvanceWorktreeBootstrap(bundle);
