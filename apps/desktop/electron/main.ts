@@ -153,6 +153,8 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 let desktopWebHost: DesktopHttpHost | undefined;
 let desktopWebHostConfig: DesktopWebHostConfigFile | undefined;
 let desktopWebHostPairingCode = createDesktopWebPairingCode();
+/** 配对失败达上限后为 true；HTTP handler 内失败计数未重置前不得重新生成配对码。 */
+let desktopWebHostPairingLocked = false;
 let quittingAfterDesktopWebHostStop = false;
 let unsubscribeDesktopDreamUpdates: (() => void) | undefined;
 let unsubscribeDesktopAutomationsUpdates: (() => void) | undefined;
@@ -320,7 +322,7 @@ async function syncDesktopWebHostWithConfig(
   desktopWebHostConfig = config;
   if (config.authTokenHash) {
     desktopWebHostPairingCode = '';
-  } else if (!desktopWebHostPairingCode) {
+  } else if (!desktopWebHostPairingCode && !desktopWebHostPairingLocked) {
     desktopWebHostPairingCode = createDesktopWebPairingCode();
   }
 
@@ -359,6 +361,14 @@ async function syncDesktopWebHostWithConfig(
     desktopWebHost = undefined;
   }
 
+  // 重启 HTTP handler 会重置 handler 内配对失败计数；此时才解除锁定并签发新码。
+  if (!config.authTokenHash) {
+    desktopWebHostPairingLocked = false;
+    if (!desktopWebHostPairingCode) {
+      desktopWebHostPairingCode = createDesktopWebPairingCode();
+    }
+  }
+
   setDesktopWebHostRuntimeStatus({
     state: 'starting',
     host: config.host,
@@ -389,6 +399,7 @@ async function syncDesktopWebHostWithConfig(
 /** 配对失败达上限：作废当前配对码并停止对外展示；重启 Web Host 时重新生成。 */
 function handleDesktopWebHostPairingLockout(): void {
   console.warn('[spirit-desktop] web host pairing locked after too many failures');
+  desktopWebHostPairingLocked = true;
   desktopWebHostPairingCode = '';
   if (desktopWebHost?.isRunning() && desktopWebHostConfig) {
     const state = desktopWebHost.getState();
