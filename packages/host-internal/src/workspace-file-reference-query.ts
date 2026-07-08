@@ -104,6 +104,52 @@ export function deriveWorkspaceDirectoryPathsFromFiles(files: readonly string[])
   return Array.from(directories);
 }
 
+interface PreparedReferenceCandidate {
+  path: string;
+  isDirectory: boolean;
+  pathLower: string;
+  basenameLower: string;
+  basenameLength: number;
+  pathLength: number;
+}
+
+interface PreparedReferenceIndex {
+  files: PreparedReferenceCandidate[];
+  directories: PreparedReferenceCandidate[];
+}
+
+/**
+ * 按 files 数组引用缓存预计算候选（小写、basename、目录推导），
+ * 避免每次按键对全量文件重复 toLowerCase / Array.from / 目录推导。
+ */
+const preparedReferenceIndexCache = new WeakMap<readonly string[], PreparedReferenceIndex>();
+
+function prepareReferenceCandidate(path: string): PreparedReferenceCandidate {
+  const normalizedPath = normalizeWorkspaceReferenceDirectoryPath(path);
+  const basename = referencePathBasename(path);
+  return {
+    path,
+    isDirectory: isWorkspaceReferenceDirectoryPath(path),
+    pathLower: normalizedPath.toLowerCase(),
+    basenameLower: basename.toLowerCase(),
+    basenameLength: Array.from(basename).length,
+    pathLength: Array.from(normalizedPath).length,
+  };
+}
+
+function preparedReferenceIndexForFiles(files: readonly string[]): PreparedReferenceIndex {
+  const cached = preparedReferenceIndexCache.get(files);
+  if (cached) {
+    return cached;
+  }
+  const prepared: PreparedReferenceIndex = {
+    files: files.map(prepareReferenceCandidate),
+    directories: deriveWorkspaceDirectoryPathsFromFiles(files).map(prepareReferenceCandidate),
+  };
+  preparedReferenceIndexCache.set(files, prepared);
+  return prepared;
+}
+
 export function computeWorkspaceFileReferenceSuggestions(
   query: string,
   files: readonly string[],
@@ -113,50 +159,34 @@ export function computeWorkspaceFileReferenceSuggestions(
     .replace(/^@/u, '')
     .trim()
     .toLowerCase();
+  const needleChars = Array.from(needle);
 
   const includeDirectories = options?.includeDirectories !== false;
-  const directories = includeDirectories ? deriveWorkspaceDirectoryPathsFromFiles(files) : [];
-  const candidates = [...directories, ...files];
+  const index = preparedReferenceIndexForFiles(files);
+  const candidates = includeDirectories
+    ? [...index.directories, ...index.files]
+    : index.files;
 
-  const scored = candidates
-    .map((path) => {
-      const isDirectory = isWorkspaceReferenceDirectoryPath(path);
-      const score = scoreWorkspaceFileReferenceCandidate(needle, path);
-      if (!score) {
-        return undefined;
-      }
-
-      return {
-        score: score.score,
-        isDirectory,
-        basenameLength: score.basenameLength,
-        pathLength: score.pathLength,
-        path,
-      };
-    })
-    .filter(
-      (
-        item,
-      ): item is {
-        score: number;
-        isDirectory: boolean;
-        basenameLength: number;
-        pathLength: number;
-        path: string;
-      } => item !== undefined,
-    );
+  const scored: { score: number; candidate: PreparedReferenceCandidate }[] = [];
+  for (const candidate of candidates) {
+    const score = scorePreparedReferenceCandidate(needle, needleChars, candidate);
+    if (score === undefined) {
+      continue;
+    }
+    scored.push({ score, candidate });
+  }
 
   scored.sort((left, right) => {
     return (
       right.score - left.score ||
-      Number(right.isDirectory) - Number(left.isDirectory) ||
-      left.basenameLength - right.basenameLength ||
-      left.pathLength - right.pathLength ||
-      left.path.localeCompare(right.path)
+      Number(right.candidate.isDirectory) - Number(left.candidate.isDirectory) ||
+      left.candidate.basenameLength - right.candidate.basenameLength ||
+      left.candidate.pathLength - right.candidate.pathLength ||
+      left.candidate.path.localeCompare(right.candidate.path)
     );
   });
 
-  return scored.slice(0, DEFAULT_SUGGESTION_LIMIT).map((item) => item.path);
+  return scored.slice(0, DEFAULT_SUGGESTION_LIMIT).map((item) => item.candidate.path);
 }
 
 export function charCountToCodeUnitIndex(input: string, cursorChars: number): number {
@@ -246,90 +276,81 @@ function referencePathBasename(path: string): string {
   return normalized.split('/').at(-1) ?? normalized;
 }
 
-function scoreWorkspaceFileReferenceCandidate(
+function scorePreparedReferenceCandidate(
   needle: string,
-  path: string,
-): { score: number; basenameLength: number; pathLength: number } | undefined {
-  const normalizedPath = normalizeWorkspaceReferenceDirectoryPath(path);
-  const pathLower = normalizedPath.toLowerCase();
-  const basename = referencePathBasename(path);
-  const basenameLower = basename.toLowerCase();
-  const basenameLength = Array.from(basename).length;
-  const pathLength = Array.from(normalizedPath).length;
-  const isDirectory = isWorkspaceReferenceDirectoryPath(path);
+  needleChars: readonly string[],
+  candidate: PreparedReferenceCandidate,
+): number | undefined {
+  const { isDirectory, pathLower, basenameLower, basenameLength, pathLength } = candidate;
 
   if (!needle) {
-    return { score: isDirectory ? 1 : 0, basenameLength, pathLength };
+    return isDirectory ? 1 : 0;
   }
   if (basenameLower === needle) {
-    return { score: isDirectory ? 10_100 : 10_000, basenameLength, pathLength };
+    return isDirectory ? 10_100 : 10_000;
   }
   if (pathLower === needle) {
-    return { score: 9_700, basenameLength, pathLength };
+    return 9_700;
   }
   if (basenameLower.startsWith(needle)) {
-    return { score: 9_400 - basenameLength, basenameLength, pathLength };
+    return 9_400 - basenameLength;
   }
   if (pathLower.endsWith(needle)) {
-    return { score: 9_100 - pathLength, basenameLength, pathLength };
+    return 9_100 - pathLength;
   }
 
   const basenamePosition = basenameLower.indexOf(needle);
   if (basenamePosition >= 0) {
-    return { score: 8_600 - basenamePosition * 10, basenameLength, pathLength };
+    return 8_600 - basenamePosition * 10;
   }
 
   const pathPosition = pathLower.indexOf(needle);
   if (pathPosition >= 0) {
-    return { score: 8_100 - pathPosition, basenameLength, pathLength };
+    return 8_100 - pathPosition;
   }
 
-  const basenameSubsequenceScore = subsequenceScore(needle, basenameLower);
+  const basenameSubsequenceScore = subsequenceScore(needleChars, basenameLower);
   if (basenameSubsequenceScore !== undefined) {
-    return { score: 7_000 + basenameSubsequenceScore, basenameLength, pathLength };
+    return 7_000 + basenameSubsequenceScore;
   }
 
-  const pathSubsequenceScore = subsequenceScore(needle, pathLower);
+  const pathSubsequenceScore = subsequenceScore(needleChars, pathLower);
   if (pathSubsequenceScore !== undefined) {
-    return { score: 6_000 + pathSubsequenceScore, basenameLength, pathLength };
+    return 6_000 + pathSubsequenceScore;
   }
 
   return undefined;
 }
 
-function subsequenceScore(needle: string, haystack: string): number | undefined {
-  const needleChars = Array.from(needle);
-  const haystackChars = Array.from(haystack);
+/** haystack 经 for..of 按码点迭代，避免每候选 Array.from 整串物化。 */
+function subsequenceScore(
+  needleChars: readonly string[],
+  haystack: string,
+): number | undefined {
+  let needleIndex = 0;
   let haystackIndex = 0;
   let firstMatch: number | undefined;
   let lastMatch = 0;
   let consecutiveBonus = 0;
   let previousMatch: number | undefined;
 
-  for (const needleChar of needleChars) {
-    let found: number | undefined;
-    while (haystackIndex < haystackChars.length) {
-      if (haystackChars[haystackIndex] === needleChar) {
-        found = haystackIndex;
-        haystackIndex += 1;
-        break;
+  for (const haystackChar of haystack) {
+    if (needleIndex >= needleChars.length) {
+      break;
+    }
+    if (haystackChar === needleChars[needleIndex]) {
+      firstMatch ??= haystackIndex;
+      if (previousMatch !== undefined && haystackIndex === previousMatch + 1) {
+        consecutiveBonus += 12;
       }
-      haystackIndex += 1;
+      previousMatch = haystackIndex;
+      lastMatch = haystackIndex;
+      needleIndex += 1;
     }
-
-    if (found === undefined) {
-      return undefined;
-    }
-
-    firstMatch ??= found;
-    if (previousMatch !== undefined && found === previousMatch + 1) {
-      consecutiveBonus += 12;
-    }
-    previousMatch = found;
-    lastMatch = found;
+    haystackIndex += 1;
   }
 
-  if (firstMatch === undefined) {
+  if (needleIndex < needleChars.length || firstMatch === undefined) {
     return undefined;
   }
 
