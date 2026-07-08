@@ -33,7 +33,7 @@ export function assertRichSegmentsRoundTrip(
   segments: readonly RichSegment[],
 ): boolean {
   const roundTripped = richSegmentsRoundTrip(segments);
-  return segmentsEqual(segments, roundTripped);
+  return segmentsEqual([...segments], roundTripped);
 }
 
 export function assertMessageTextInvariant(segments: readonly RichSegment[]): boolean {
