@@ -4,7 +4,11 @@ import {
 } from '@spiritagent/host-internal/workspace-file-reference-query'
 
 import type { RichSegment } from '@/lib/composer-segment-model'
-import { isComposerPlainEmpty } from '@/lib/composer-segment-model'
+import {
+  isComposerPlainEmpty,
+  mergeAdjacentTextSegments,
+  workspaceFilePlainToken,
+} from '@/lib/composer-segment-model'
 import { skillContextText } from '@/lib/skill-wire-text'
 import type { DesktopSkillListItem } from '@/types'
 
@@ -184,6 +188,61 @@ export function currentSkillSlashQueryAtCursor(
 }
 
 /** Whole-composer slash query when the caret is at the end of trimmed input. */
+function segmentPlainTextCharCount(seg: RichSegment): number {
+  if (seg.kind === 'text') {
+    return Array.from(seg.value).length
+  }
+  if (seg.kind === 'workspaceFile') {
+    return Array.from(workspaceFilePlainToken(seg.path)).length
+  }
+  return 0
+}
+
+/** Slash query from plain text + caret; suppresses when token spans a workspaceFile chip. */
+export function currentSkillSlashQueryFromSegments(
+  segments: readonly RichSegment[],
+  plainText: string,
+  cursorChars: number,
+): ActiveSkillSlashQuery | undefined {
+  const query = currentSkillSlashQueryAtCursor(plainText, cursorChars)
+  if (!query) {
+    return undefined
+  }
+
+  const merged = mergeAdjacentTextSegments([...segments])
+  let pos = 0
+  for (const seg of merged) {
+    const len = segmentPlainTextCharCount(seg)
+    const segStart = pos
+    const segEnd = pos + len
+    if (
+      seg.kind === 'workspaceFile'
+      && query.start >= segStart
+      && query.end <= segEnd
+    ) {
+      return undefined
+    }
+    if (seg.kind !== 'text' && seg.kind !== 'workspaceFile') {
+      if (query.start >= segStart && query.end <= segEnd) {
+        return undefined
+      }
+    }
+    pos = segEnd
+  }
+
+  return query
+}
+
+/** UTF-16 plain-text caret offset from Lexical selection (via `caretToPlainTextOffset`). */
+export function currentSkillSlashQueryFromSegmentsAtOffset(
+  segments: readonly RichSegment[],
+  plainText: string,
+  cursorCodeUnits: number,
+): ActiveSkillSlashQuery | undefined {
+  const cursorChars = codeUnitIndexToCharCount(plainText, cursorCodeUnits)
+  return currentSkillSlashQueryFromSegments(segments, plainText, cursorChars)
+}
+
 export function currentSkillSlashQuery(input: string | undefined): string | undefined {
   if (!input) {
     return undefined

@@ -10,6 +10,18 @@ import {
   type KeyboardEvent,
   type ClipboardEvent,
 } from "react";
+import {
+  INSERT_ATTACHMENT_CHIP_COMMAND,
+  INSERT_PLAIN_TEXT_COMMAND,
+  INSERT_SKILL_CHIP_COMMAND,
+  INSERT_WORKSPACE_FILE_AT_CARET_COMMAND,
+  INSERT_WORKSPACE_FILE_REFERENCE_COMMAND,
+  REMOVE_SKILL_SLASH_COMMAND,
+  REPLACE_SKILL_SLASH_COMMAND,
+} from "@/lib/composer-lexical/commands";
+import { ComposerCommandsPlugin } from "@/lib/composer-lexical/plugins/composer-commands-plugin";
+import { ComposerClipboardPlugin } from "@/lib/composer-lexical/plugins/composer-clipboard-plugin";
+import { SlashSelectionPlugin } from "@/lib/composer-lexical/plugins/slash-selection-plugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -28,9 +40,6 @@ import type { DesktopAgentMode } from "@/lib/agent-mode";
 import {
   caretAtEnd,
   caretToPlainTextOffset,
-  replaceSkillSlashQueryInSegments,
-  replaceWorkspaceFileReferenceInSegments,
-  normalizeWorkspaceFilePath,
   type ActiveSkillSlashQuery,
   type ActiveWorkspaceFileReferenceQuery,
 } from "@/lib/composer-segment-model";
@@ -53,7 +62,6 @@ import {
   hasSkillSegment,
   insertAgentModeSegment,
   insertLoopSegment,
-  insertSegmentAtCaret,
   isAgentModeChipKind,
   isCaretAtAgentModeRemovalPoint,
   isCaretAtInlineChipRemovalPoint,
@@ -103,8 +111,6 @@ const COMPOSER_PLACEHOLDER_CLASS =
 
 const AGENT_MODE_CHIP_SELECTOR =
   "[data-chip-kind='plan'],[data-chip-kind='ask'],[data-chip-kind='debug']";
-
-const ELEMENT_MIME = "application/x-spirit-elements";
 
 type Props = {
   value: string;
@@ -371,33 +377,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     }, [editor]);
 
     useEffect(() => {
-      const root = contentEditableRef.current;
-      if (!root || !onSelectionChange) {
-        return;
-      }
-      const report = () => reportSelectionChange();
-      const onDocumentSelectionChange = () => {
-        const selection = window.getSelection();
-        if (
-          !selection
-          || selection.rangeCount === 0
-          || !root.contains(selection.getRangeAt(0).commonAncestorContainer)
-        ) {
-          return;
-        }
-        report();
-      };
-      root.addEventListener("mouseup", report);
-      root.addEventListener("keyup", report);
-      document.addEventListener("selectionchange", onDocumentSelectionChange);
-      return () => {
-        root.removeEventListener("mouseup", report);
-        root.removeEventListener("keyup", report);
-        document.removeEventListener("selectionchange", onDocumentSelectionChange);
-      };
-    }, [editor, onSelectionChange, reportSelectionChange]);
-
-    useEffect(() => {
       onSelectionChangeRef.current = onSelectionChange;
     }, [onSelectionChange]);
 
@@ -478,127 +457,90 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const getSegments = useCallback((): RichSegment[] => segmentsRef.current, []);
 
-    const caretOrEnd = useCallback((): SegmentCaret => {
-      return lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(segmentsRef.current);
-    }, [editor]);
-
     const insertAttachment = useCallback(
       (a: BrowserElementAttachment) => {
-        editor.focus();
-        const current = segmentsRef.current;
-        const caret = caretOrEnd();
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+        editor.dispatchCommand(INSERT_ATTACHMENT_CHIP_COMMAND, {
           kind: "element",
           attachment: a,
         });
-        commitSegments(next, nextCaret);
       },
-      [caretOrEnd, commitSegments, editor],
+      [editor],
     );
 
     const insertPrDiffAttachment = useCallback(
       (attachment: PrDiffAttachment) => {
-        editor.focus();
-        const current = segmentsRef.current;
-        const caret = caretOrEnd();
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+        editor.dispatchCommand(INSERT_ATTACHMENT_CHIP_COMMAND, {
           kind: "prDiff",
           attachment,
         });
-        commitSegments(next, nextCaret);
       },
-      [caretOrEnd, commitSegments, editor],
+      [editor],
     );
 
     const insertGitCommitAttachment = useCallback(
       (attachment: GitCommitAttachment) => {
-        editor.focus();
-        const current = segmentsRef.current;
-        const caret = caretOrEnd();
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+        editor.dispatchCommand(INSERT_ATTACHMENT_CHIP_COMMAND, {
           kind: "gitCommit",
           attachment,
         });
-        commitSegments(next, nextCaret);
       },
-      [caretOrEnd, commitSegments, editor],
+      [editor],
     );
 
     const insertTerminalSnippet = useCallback(
       (attachment: TerminalSnippetAttachment) => {
-        editor.focus();
-        const current = segmentsRef.current;
-        const caret = caretOrEnd();
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+        editor.dispatchCommand(INSERT_ATTACHMENT_CHIP_COMMAND, {
           kind: "terminalSnippet",
           attachment,
         });
-        commitSegments(next, nextCaret);
       },
-      [caretOrEnd, commitSegments, editor],
+      [editor],
     );
 
     const insertFileSnippet = useCallback(
       (attachment: FileSnippetAttachment) => {
-        editor.focus();
-        const current = segmentsRef.current;
-        const caret = caretOrEnd();
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
+        editor.dispatchCommand(INSERT_ATTACHMENT_CHIP_COMMAND, {
           kind: "fileSnippet",
           attachment,
         });
-        commitSegments(next, nextCaret);
       },
-      [caretOrEnd, commitSegments, editor],
+      [editor],
     );
 
     const insertWorkspaceFileReference = useCallback(
       (path: string, query: ActiveWorkspaceFileReferenceQuery, finalize = true) => {
-        editor.focus();
-        const { segments: next, caret } = replaceWorkspaceFileReferenceInSegments(
-          segmentsRef.current,
-          query,
+        editor.dispatchCommand(INSERT_WORKSPACE_FILE_REFERENCE_COMMAND, {
           path,
+          query,
           finalize,
-        );
-        commitSegments(next, caret);
+        });
       },
-      [commitSegments, editor],
+      [editor],
     );
 
     const insertWorkspaceFileAtCaret = useCallback(
       (path: string) => {
-        editor.focus();
-        const current = segmentsRef.current;
-        const caret = caretOrEnd();
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
-          kind: "workspaceFile",
-          path: normalizeWorkspaceFilePath(path),
-        });
-        commitSegments(next, nextCaret);
+        editor.dispatchCommand(INSERT_WORKSPACE_FILE_AT_CARET_COMMAND, { path });
       },
-      [caretOrEnd, commitSegments, editor],
+      [editor],
     );
 
     const replaceSkillSlashQuery = useCallback(
       (query: ActiveSkillSlashQuery, replacement: string, finalize = false) => {
-        editor.focus();
-        const { segments: next, caret } = replaceSkillSlashQueryInSegments(
-          segmentsRef.current,
+        editor.dispatchCommand(REPLACE_SKILL_SLASH_COMMAND, {
           query,
           replacement,
           finalize,
-        );
-        commitSegments(next, caret);
+        });
       },
-      [commitSegments, editor],
+      [editor],
     );
 
     const removeSkillSlashQuery = useCallback(
       (query: ActiveSkillSlashQuery) => {
-        replaceSkillSlashQuery(query, "", false);
+        editor.dispatchCommand(REMOVE_SKILL_SLASH_COMMAND, { query });
       },
-      [replaceSkillSlashQuery],
+      [editor],
     );
 
     const applySegments = useCallback(
@@ -669,65 +611,20 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const insertPlainTextAtCaret = useCallback(
       (text: string) => {
-        if (!text) {
-          return;
-        }
-        editor.focus();
-        const current = mergeAdjacentTextSegments(segmentsRef.current);
-        const caret = lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(current);
-        const seg = current[caret.segmentIndex];
-        if (seg?.kind === "text") {
-          const before = seg.value.slice(0, caret.offset);
-          const after = seg.value.slice(caret.offset);
-          const next = mergeAdjacentTextSegments([
-            ...current.slice(0, caret.segmentIndex),
-            { kind: "text" as const, value: `${before}${text}${after}` },
-            ...current.slice(caret.segmentIndex + 1),
-          ]);
-          commitSegments(next, {
-            segmentIndex: caret.segmentIndex,
-            offset: caret.offset + text.length,
-          });
-          return;
-        }
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(current, caret, {
-          kind: "text",
-          value: text,
-        });
-        commitSegments(next, nextCaret);
+        editor.dispatchCommand(INSERT_PLAIN_TEXT_COMMAND, { text });
       },
-      [commitSegments, editor],
+      [editor],
     );
 
     const insertSkillChip = useCallback(
       (alias: string, options?: InsertSkillChipOptions) => {
-        editor.focus();
-        const base = options?.clearText
-          ? emptySegments()
-          : mergeAdjacentTextSegments(segmentsRef.current);
-        const caret = options?.clearText
-          ? caretAtEnd(base)
-          : (lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(base));
-        let { segments: next, caret: nextCaret } = insertSegmentAtCaret(base, caret, {
-          kind: "skill",
+        editor.dispatchCommand(INSERT_SKILL_CHIP_COMMAND, {
           alias,
+          clearText: options?.clearText,
+          appendTrailingSpace: options?.appendTrailingSpace,
         });
-        if (options?.appendTrailingSpace) {
-          const trailing = next[nextCaret.segmentIndex];
-          const chipTailAlreadySpaced =
-            trailing?.kind === "text"
-            && isComposerPlainEmpty(trailing.value)
-            && nextCaret.offset > 0;
-          if (!chipTailAlreadySpaced) {
-            ({ segments: next, caret: nextCaret } = insertSegmentAtCaret(next, nextCaret, {
-              kind: "text",
-              value: " ",
-            }));
-          }
-        }
-        commitSegments(next, nextCaret);
       },
-      [commitSegments, editor],
+      [editor],
     );
 
     const removeAgentModeChip = useCallback(() => {
@@ -1041,101 +938,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       handleEditorChange(editor);
     }, [editor, handleEditorChange]);
 
-    const handleCopy = useCallback((e: ClipboardEvent<HTMLDivElement>) => {
-      const sel = window.getSelection();
-      if (!sel || sel.isCollapsed) return;
-      const range = sel.getRangeAt(0);
-      const frag = range.cloneContents();
-      const chips: Record<string, BrowserElementAttachment> = {};
-      frag.querySelectorAll("[data-element-chip]").forEach((el) => {
-        const span = el as HTMLElement;
-        const id = span.dataset.elementId ?? "";
-        chips[id] = {
-          id,
-          tagName: span.dataset.elementTag ?? "",
-          outerHtml: span.dataset.elementHtml ?? "",
-          screenshotDataUrl: "",
-          pageUrl: span.dataset.elementUrl ?? "",
-        };
-      });
-      if (Object.keys(chips).length === 0) return;
-      e.preventDefault();
-      const textDiv = document.createElement("div");
-      textDiv.appendChild(frag.cloneNode(true));
-      e.nativeEvent.clipboardData?.setData("text/plain", textDiv.innerText);
-      e.nativeEvent.clipboardData?.setData(ELEMENT_MIME, JSON.stringify(chips));
-      e.nativeEvent.clipboardData?.setData("text/html", textDiv.innerHTML);
-    }, []);
-
-    const handlePaste = useCallback(
-      (e: ClipboardEvent<HTMLDivElement>) => {
-        onPaste?.(e);
-        if (e.defaultPrevented) return;
-        const raw = e.nativeEvent.clipboardData?.getData(ELEMENT_MIME);
-        if (raw) {
-          e.preventDefault();
-          try {
-            const chips: Record<string, BrowserElementAttachment> = JSON.parse(raw);
-            const html = e.nativeEvent.clipboardData?.getData("text/html") ?? "";
-            const parser = new DOMParser();
-            const parsed = parser.parseFromString(html, "text/html");
-
-            const pasteSegs: RichSegment[] = [];
-            parsed.body.childNodes.forEach((node) => {
-              if (node.nodeType === Node.COMMENT_NODE) return;
-              if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent ?? "";
-                if (text) pasteSegs.push({ kind: "text", value: text });
-                return;
-              }
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const el = node as HTMLElement;
-                if (el.dataset?.elementChip === "true") {
-                  const id = el.dataset.elementId ?? "";
-                  if (chips[id]) {
-                    pasteSegs.push({ kind: "element", attachment: chips[id] });
-                  }
-                } else if (el.tagName === "BR") {
-                  mergeTextIntoPaste(pasteSegs, "\n");
-                } else if (el.tagName === "DIV" || el.tagName === "P") {
-                  el.childNodes.forEach((child) => {
-                    if (child.nodeType === Node.TEXT_NODE && child.textContent) {
-                      pasteSegs.push({ kind: "text", value: child.textContent });
-                    }
-                  });
-                }
-              }
-            });
-
-            const caret = lexicalSelectionToSegmentCaret(editor) ?? { segmentIndex: 0, offset: 0 };
-            let next = segmentsRef.current;
-            let nextCaret = caret;
-            for (const seg of pasteSegs) {
-              const result = insertSegmentAtCaret(next, nextCaret, seg);
-              next = result.segments;
-              nextCaret = result.caret;
-            }
-            commitSegments(next, nextCaret);
-          } catch {
-            // fall through to plain-text paste below
-          }
-          return;
-        }
-
-        const plain = e.nativeEvent.clipboardData?.getData("text/plain");
-        if (!plain) return;
-        e.preventDefault();
-        const caret = lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(segmentsRef.current);
-        const { segments: next, caret: nextCaret } = insertSegmentAtCaret(
-          segmentsRef.current,
-          caret,
-          { kind: "text", value: plain },
-        );
-        commitSegments(next, nextCaret);
-      },
-      [commitSegments, editor, onPaste],
-    );
-
     const isEmpty = composerShowsPlaceholder(segments, {
       composing: isComposing,
       attachmentCount: elementAttachments?.length ?? 0,
@@ -1232,8 +1034,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
               onCompositionEnd={handleCompositionEnd}
               onKeyDown={handleKeyDown}
               onKeyUp={handleKeyUp}
-              onCopy={handleCopy}
-              onPaste={handlePaste}
               className={cn(
                 "spirit-scroll block max-h-[12rem] min-h-[3rem] w-full overflow-y-auto rounded-none border-0 bg-transparent px-3 pt-2.5 pb-1.5 text-sm leading-relaxed outline-none md:min-h-[3.5rem]",
                 "whitespace-pre-wrap break-words",
@@ -1270,6 +1070,21 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
           skipEditorSyncRef={skipEditorSyncRef}
           onSegmentsNormalized={handleSegmentsNormalized}
           onLoopEnabledChange={onLoopEnabledChange}
+        />
+        <ComposerCommandsPlugin
+          segmentsRef={segmentsRef}
+          commitSegments={commitSegments}
+        />
+        <ComposerClipboardPlugin
+          segmentsRef={segmentsRef}
+          commitSegments={commitSegments}
+          contentEditableRef={contentEditableRef}
+          onPaste={onPaste}
+        />
+        <SlashSelectionPlugin
+          contentEditableRef={contentEditableRef}
+          reportSelectionChange={reportSelectionChange}
+          enabled={Boolean(onSelectionChange)}
         />
       </div>
     );
@@ -1322,12 +1137,3 @@ export const ComposerLexicalInput = forwardRef<ComposerRichInputHandle, Props>(
     );
   },
 );
-
-function mergeTextIntoPaste(segs: RichSegment[], chunk: string): void {
-  const last = segs[segs.length - 1];
-  if (last?.kind === "text") {
-    last.value += chunk;
-  } else {
-    segs.push({ kind: "text", value: chunk });
-  }
-}
