@@ -71,6 +71,13 @@ export interface SessionBundle {
   cachedTodoSnapshot?: import('../types.js').ConversationTodoSnapshot;
   /** Bumped on rewind restore; exposed as `conversation.revision` in snapshots. */
   conversationRevision: number;
+  /** refreshArchiveFromRuntime 的投影缓存：timeline 实例 + 修订号未变时跳过重算。 */
+  archiveProjectionCache?: {
+    timeline: DesktopMessageTimeline;
+    revision: number;
+    archiveMessages: ChatArchive['messages'];
+    archiveAssistantAux: ChatArchive['assistantAux'];
+  };
   /** busy tick 落盘节流：上次 tick 落盘时间（内存态，不持久化）。 */
   lastTickPersistAtMs?: number;
   /** Last successful create_plan absolute path for this session. */
