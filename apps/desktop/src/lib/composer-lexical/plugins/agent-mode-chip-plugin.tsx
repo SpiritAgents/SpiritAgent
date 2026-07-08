@@ -21,6 +21,7 @@ import { shouldPinAgentModeChip } from "@/lib/composer-agent-mode-policy";
 type AgentModeChipPluginProps = {
   agentMode: DesktopAgentMode;
   agentModeChipDismissed: boolean;
+  segmentsRef: React.MutableRefObject<RichSegment[]>;
   skipEditorSyncRef: React.MutableRefObject<boolean>;
   onSegmentsNormalized(segments: RichSegment[]): void;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
@@ -30,6 +31,7 @@ type AgentModeChipPluginProps = {
 export function AgentModeChipPlugin({
   agentMode,
   agentModeChipDismissed,
+  segmentsRef,
   skipEditorSyncRef,
   onSegmentsNormalized,
   onAgentModeChipDismissChange,
@@ -109,8 +111,10 @@ export function AgentModeChipPlugin({
     skipEditorSyncRef.current = true;
     richSegmentsToEditorState(next, editor);
     skipEditorSyncRef.current = false;
-    onSegmentsNormalized(next);
-  }, [agentMode, agentModeChipDismissed, editor, onSegmentsNormalized, skipEditorSyncRef]);
+    if (!segmentsEqual(next, segmentsRef.current)) {
+      onSegmentsNormalized(next);
+    }
+  }, [agentMode, agentModeChipDismissed, editor, onSegmentsNormalized, segmentsRef, skipEditorSyncRef]);
 
   return null;
 }

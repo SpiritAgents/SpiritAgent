@@ -35,6 +35,13 @@ export {
 export { normalizeCaretForComposer } from "@/lib/composer-caret-normalize";
 
 export {
+  isCaretOnStructuralChipLeadingSpacer,
+  isStructuralChipInsertedSpacerOnly,
+  structuralChipKindBeforeCaret,
+  trimStructuralChipLeadingSpacerAtCaret,
+} from "@/lib/composer-structural-chip-caret";
+
+export {
   caretAfterAgentModeChip,
   ensureAgentModePinned,
   hasAgentModeSegment,
