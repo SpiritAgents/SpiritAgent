@@ -21,7 +21,6 @@ import { caretToDomRange, selectionToCaret } from "@/lib/composer-segment-select
 import {
   caretAtEnd,
   caretToPlainTextOffset,
-  plainTextOffsetToCaret,
   replaceSkillSlashQueryInSegments,
   replaceWorkspaceFileReferenceInSegments,
   normalizeWorkspaceFilePath,
@@ -340,13 +339,26 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         return;
       }
       const report = () => reportSelectionChange();
+      // document 级 selectionchange 每个 Composer 实例都会挂一份（分屏多 pane）；
+      // 选区不落在本输入框内时直接跳过，避免全局任意选区变化都触发 segments 全量遍历。
+      const onDocumentSelectionChange = () => {
+        const selection = window.getSelection();
+        if (
+          !selection
+          || selection.rangeCount === 0
+          || !div.contains(selection.getRangeAt(0).commonAncestorContainer)
+        ) {
+          return;
+        }
+        report();
+      };
       div.addEventListener("mouseup", report);
       div.addEventListener("keyup", report);
-      document.addEventListener("selectionchange", report);
+      document.addEventListener("selectionchange", onDocumentSelectionChange);
       return () => {
         div.removeEventListener("mouseup", report);
         div.removeEventListener("keyup", report);
-        document.removeEventListener("selectionchange", report);
+        document.removeEventListener("selectionchange", onDocumentSelectionChange);
       };
     }, [onSelectionChange, reportSelectionChange]);
 
@@ -757,35 +769,33 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
       reportSelectionChange();
     }, [reportSelectionChange]);
 
+    /**
+     * 只读测量：请求的 plainTextOffset 来自 onSelectionChange 上报的实时光标，
+     * 因此仅当当前选区确实位于该偏移时读取其 rect；不再用 removeAllRanges/addRange
+     * 真实搬移选区（会触发全局 selectionchange 风暴并干扰其他 pane 的选区）。
+     * 选区不在请求位置时返回 null，由调用方回退到 composer 底部锚点。
+     */
     const getPlainTextCaretClientRect = useCallback((plainTextOffset: number): DOMRect | null => {
       const root = divRef.current;
       if (!root) {
         return null;
       }
 
-      const segments = segmentsRef.current;
-      const caret = plainTextOffsetToCaret(segments, plainTextOffset);
       const selection = window.getSelection();
-      const savedRanges: Range[] = [];
-      if (selection) {
-        for (let index = 0; index < selection.rangeCount; index += 1) {
-          savedRanges.push(selection.getRangeAt(index).cloneRange());
-        }
+      if (!selection || selection.rangeCount === 0) {
+        return null;
+      }
+      const range = selection.getRangeAt(0);
+      if (!root.contains(range.commonAncestorContainer)) {
+        return null;
       }
 
-      caretToDomRange(root, segments, caret);
-
-      let rect: DOMRect | null = null;
-      if (selection && selection.rangeCount > 0) {
-        rect = selection.getRangeAt(0).getBoundingClientRect();
+      const segments = segmentsRef.current;
+      const caret = selectionToCaret(root, segments);
+      if (!caret || caretToPlainTextOffset(segments, caret) !== plainTextOffset) {
+        return null;
       }
-
-      selection?.removeAllRanges();
-      for (const range of savedRanges) {
-        selection?.addRange(range);
-      }
-
-      return rect;
+      return range.cloneRange().getBoundingClientRect();
     }, []);
 
     useImperativeHandle(
@@ -1354,35 +1364,24 @@ export const ComposerRichInput = forwardRef<ComposerRichInputHandle, Props>(
         const editorPaddingLeft = parseFloat(getComputedStyle(editor).paddingLeft) || 0;
         const defaultPlaceholderLeft = editorPaddingLeft + (editorRect.left - shellRect.left);
 
-        const segs = segmentsRef.current;
-        const caret = caretAfterAgentModeChip(segs);
+        // 只读测量：焦点在编辑器内时直接读当前选区 rect；否则以 chip 右缘为锚点，
+        // 不再通过 removeAllRanges/addRange 搬移全局选区来量 caret 位置。
         const selection = window.getSelection();
-        const savedRanges: Range[] = [];
-        if (selection) {
-          for (let index = 0; index < selection.rangeCount; index += 1) {
-            savedRanges.push(selection.getRangeAt(index).cloneRange());
-          }
-        }
-
-        let caretRect: DOMRect | null = null;
+        let caretLeftInShell: number | null = null;
         if (
           selection
           && selection.rangeCount > 0
           && editor.contains(selection.anchorNode)
         ) {
-          caretRect = selection.getRangeAt(0).getBoundingClientRect();
+          const caretRect = selection.getRangeAt(0).cloneRange().getBoundingClientRect();
+          caretLeftInShell = caretRect.left - shellRect.left;
         } else {
-          caretToDomRange(editor, segs, caret);
-          if (selection && selection.rangeCount > 0) {
-            caretRect = selection.getRangeAt(0).getBoundingClientRect();
-          }
-          selection?.removeAllRanges();
-          for (const range of savedRanges) {
-            selection?.addRange(range);
+          const chipRect = chip.getBoundingClientRect();
+          if (chipRect.width > 0 || chipRect.height > 0) {
+            caretLeftInShell = chipRect.right - shellRect.left;
           }
         }
 
-        const caretLeftInShell = caretRect ? caretRect.left - shellRect.left : null;
         setAgentModeChipPlaceholderLeft(caretLeftInShell ?? defaultPlaceholderLeft);
       };
 
