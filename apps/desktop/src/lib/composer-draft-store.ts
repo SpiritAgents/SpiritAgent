@@ -1,4 +1,5 @@
 import type { RichSegment } from "./composer-segment-model.js";
+import { normalizeComposerPlain, segmentsToPlainText } from "./composer-segment-model.js";
 import { normalizeSessionPathKey } from "./session-path-kind.js";
 
 export const COMPOSER_DRAFT_STORAGE_KEY = 'spirit-desktop-composer-drafts';
@@ -86,16 +87,20 @@ function hasMeaningfulDraftSegments(segments: readonly RichSegment[]): boolean {
   });
 }
 
+function draftPlainText(segments: readonly RichSegment[]): string {
+  return normalizeComposerPlain(segmentsToPlainText([...segments]));
+}
+
 function isComposerDraftEmpty(
-  entry: Pick<ComposerDraftEntry, 'text' | 'localFilePaths' | 'segments'>,
+  entry: Pick<ComposerDraftEntry, 'localFilePaths' | 'segments'>,
 ): boolean {
-  return !entry.text.trim()
-    && entry.localFilePaths.length === 0
-    && !hasMeaningfulDraftSegments(entry.segments);
+  return entry.localFilePaths.length === 0
+    && !hasMeaningfulDraftSegments(entry.segments)
+    && !draftPlainText(entry.segments).trim();
 }
 
 function isComposerDraftEntryEmpty(
-  entry: Pick<ComposerDraftEntry, 'text' | 'localFilePaths' | 'segments'> | undefined,
+  entry: Pick<ComposerDraftEntry, 'localFilePaths' | 'segments'> | undefined,
 ): boolean {
   return !entry || isComposerDraftEmpty(entry);
 }
@@ -175,8 +180,9 @@ export function readComposerDraft(
     return undefined;
   }
   const segments = normalizeDraftSegments(entry.segments);
+  const text = draftPlainText(segments) || entry.text;
   return {
-    text: entry.text,
+    text,
     localFilePaths: normalizeLocalFilePaths(entry.localFilePaths),
     segments,
     updatedAt: typeof entry.updatedAt === 'number' ? entry.updatedAt : 0,
@@ -185,7 +191,7 @@ export function readComposerDraft(
 
 export function writeComposerDraft(
   sessionKey: string,
-  payload: Pick<ComposerDraftEntry, 'text' | 'localFilePaths' | 'segments'>,
+  payload: Pick<ComposerDraftEntry, 'localFilePaths' | 'segments'>,
   storage: ComposerDraftStorage | undefined = defaultStorage(),
 ): void {
   const normalizedKey = normalizeComposerSessionKey(sessionKey);
@@ -194,10 +200,11 @@ export function writeComposerDraft(
   }
 
   const file = readStoreFile(storage);
+  const segments = normalizeDraftSegments(payload.segments);
   const nextEntry: ComposerDraftEntry = {
-    text: payload.text,
+    text: draftPlainText(segments),
     localFilePaths: normalizeLocalFilePaths(payload.localFilePaths),
-    segments: normalizeDraftSegments(payload.segments),
+    segments,
     updatedAt: Date.now(),
   };
 

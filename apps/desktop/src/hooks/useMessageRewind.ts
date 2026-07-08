@@ -103,6 +103,7 @@ export function useMessageRewind({
       setRewindDraft({
         messageId: message.id,
         listIndex,
+        segments,
         text: segmentsToPlainText(segments),
         browserElementAttachments: segmentsToAttachments(segments),
         localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
@@ -115,8 +116,7 @@ export function useMessageRewind({
     if (!rewindDraft) {
       return;
     }
-    const segs = rewindRichInputRef.current?.getSegments() ?? [];
-    const wireText = segmentsToMessageText(segs) || rewindDraft.text;
+    const wireText = segmentsToMessageText(rewindDraft.segments);
     void runtime
       .rewindAndSubmitMessage({
         messageId: rewindDraft.messageId,

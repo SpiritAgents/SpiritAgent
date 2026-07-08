@@ -1,4 +1,4 @@
-import { memo, useMemo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { memo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
@@ -22,7 +22,6 @@ import type {
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import { messageContentToRichSegments } from "@/lib/composer-segment-model";
 import {
   shouldShowAssistantCompactionCollapsible,
 } from "@/lib/conversation-compaction-ui";
@@ -48,7 +47,7 @@ function MessageCardImpl({
   showContinueButton,
   continueTarget,
   continueBusy,
-  rewindText,
+  rewindSegments,
   rewindLocalFileAttachments,
   rewindBrowserElementAttachments,
   rewindSelected,
@@ -62,7 +61,7 @@ function MessageCardImpl({
   activeModel,
   agentMode,
   onContinue,
-  onRewindChange,
+  onRewindSegmentsChange,
   onRewindStart,
   onRewindSubmit,
   onRewindRemoveLocalFileAttachment,
@@ -131,7 +130,7 @@ function MessageCardImpl({
   showContinueButton: boolean;
   continueTarget?: ConversationMessageSnapshot;
   continueBusy: boolean;
-  rewindText: string;
+  rewindSegments: readonly import("@/lib/composer-segment-model").RichSegment[];
   rewindLocalFileAttachments: readonly ComposerLocalFileAttachmentView[];
   rewindBrowserElementAttachments: readonly BrowserElementAttachment[];
   rewindSelected: boolean;
@@ -145,7 +144,7 @@ function MessageCardImpl({
   activeModel: string;
   agentMode: DesktopAgentMode;
   onContinue(message: ConversationMessageSnapshot): void;
-  onRewindChange(value: string): void;
+  onRewindSegmentsChange(segments: import("@/lib/composer-segment-model").RichSegment[]): void;
   onRewindStart(message: ConversationMessageSnapshot, listIndex: number): void;
   onRewindSubmit(): void;
   onRewindRemoveLocalFileAttachment(path: string): void;
@@ -195,13 +194,6 @@ function MessageCardImpl({
   const showCompactionCollapsible =
     !hiddenByProcessGroup &&
     shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
-  const rewindInitialSegments = useMemo(
-    () =>
-      rewindSelected
-        ? messageContentToRichSegments(message.content, String(message.id))
-        : null,
-    [rewindSelected, message.content, message.id],
-  );
   const showTurnActions =
     !hiddenByProcessGroup
     && !inActiveStreamingTurn
@@ -268,14 +260,13 @@ function MessageCardImpl({
           <ComposerSurface
             key={`rewind-composer-${message.id}`}
             richInputRef={rewindRichInputRef}
-            value={rewindText}
-            initialSegments={rewindInitialSegments}
+            segments={rewindSegments}
+            onSegmentsChange={onRewindSegmentsChange}
             browserElementAttachments={rewindBrowserElementAttachments}
             onElementAttachmentsChange={(attachments) =>
               onRewindElementAttachmentsChange(listIndex, attachments)
             }
             localFileAttachments={rewindLocalFileAttachments}
-            onChange={onRewindChange}
             onSubmit={onRewindSubmit}
             placeholder={t('app.typeMessage')}
             models={models}
