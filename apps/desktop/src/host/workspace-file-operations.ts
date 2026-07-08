@@ -106,10 +106,30 @@ export async function renameWorkspaceEntry(
     return { relativePath: newRel };
   }
 
-  await assertTargetDoesNotExist(workspaceRoot, newRel);
-
   const absPath = await resolveWorkspaceRelativePath(workspaceRoot, sourceRel);
   const newAbs = await resolveWorkspaceRelativePath(workspaceRoot, newRel);
+
+  if (newRel.toLowerCase() === sourceRel.toLowerCase()) {
+    // 仅大小写变化的重命名：大小写不敏感文件系统上 stat(newAbs) 命中的
+    // 是源文件自身，不能视为「目标已存在」；用 inode 判断是否真为另一文件
+    // （大小写敏感文件系统上可能确实并存两个大小写变体）。
+    const sourceStat = await stat(absPath, { bigint: true });
+    let targetStat;
+    try {
+      targetStat = await stat(newAbs, { bigint: true });
+    } catch {
+      targetStat = undefined;
+    }
+    if (
+      targetStat
+      && !(targetStat.ino === sourceStat.ino && targetStat.dev === sourceStat.dev)
+    ) {
+      throw new Error(i18n.t('error.fileAlreadyExists'));
+    }
+  } else {
+    await assertTargetDoesNotExist(workspaceRoot, newRel);
+  }
+
   await rename(absPath, newAbs);
   return { relativePath: newRel };
 }
