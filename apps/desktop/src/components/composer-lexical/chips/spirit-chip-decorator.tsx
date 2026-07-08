@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { SpiritChipPayload } from "@/lib/composer-lexical/spirit-chip-payload";
+import { useComposerChipLabels } from "@/lib/composer-lexical/chip-labels-context";
 import { AgentModeChip } from "@/components/composer-lexical/chips/agent-mode-chip";
 import {
   ElementChip,
@@ -22,11 +23,13 @@ type SpiritChipDecoratorLabels = {
 
 export function SpiritChipDecorator({
   payload,
-  labels = {},
+  labels: labelsOverride,
 }: {
   payload: SpiritChipPayload;
   labels?: SpiritChipDecoratorLabels;
 }): ReactNode {
+  const contextLabels = useComposerChipLabels();
+  const labels = labelsOverride ?? contextLabels;
   switch (payload.kind) {
     case "plan":
       return <AgentModeChip kind="plan" label={labels.planLabel} />;
