@@ -25,13 +25,15 @@ export function pickRecentSessionsForJumpList(sessions: readonly SessionListItem
 
 export function truncateJumpListTitle(title: string, maxLength = JUMP_LIST_TITLE_MAX): string {
   const trimmed = title.trim();
-  if (trimmed.length <= maxLength) {
+  // 按码点截断，避免把 emoji 等代理对从中间切开产生乱码。
+  const points = [...trimmed];
+  if (points.length <= maxLength) {
     return trimmed;
   }
   if (maxLength <= 1) {
     return '…';
   }
-  return `${trimmed.slice(0, maxLength - 1)}…`;
+  return `${points.slice(0, maxLength - 1).join('')}…`;
 }
 
 export function buildJumpListLaunchArgs(protocolUrl: string, devMainScript?: string): string {
