@@ -10,6 +10,7 @@ import {
 } from './session-bundle.js';
 import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import type { RestoredSessionState } from './sessions.js';
+import { normalizeSessionPathKey } from './session-path.js';
 import { defaultNewSessionPath, provisionalNewSessionPath, splitPaneSessionPath } from './storage.js';
 
 const MAX_LOADED_BUNDLES = 8;
@@ -64,11 +65,15 @@ export class SessionRegistry {
     if (direct) {
       return direct;
     }
+    const normalized = normalizeSessionPathKey(filePath);
     for (const bundle of this.bundles.values()) {
-      if (path.resolve(bundle.id) === resolved) {
+      if (normalizeSessionPathKey(bundle.id) === normalized) {
         return bundle;
       }
-      if (bundle.activeSession && path.resolve(bundle.activeSession.filePath) === resolved) {
+      if (
+        bundle.activeSession
+        && normalizeSessionPathKey(bundle.activeSession.filePath) === normalized
+      ) {
         return bundle;
       }
     }
@@ -104,7 +109,7 @@ export class SessionRegistry {
 
   setProtectedSessionPaths(paths: Iterable<string>): void {
     this.protectedSessionPaths = new Set(
-      [...paths].map((entry) => path.resolve(entry)),
+      [...paths].map((entry) => normalizeSessionPathKey(entry)),
     );
   }
 
@@ -114,7 +119,7 @@ export class SessionRegistry {
       bundle.id,
       bundle.activeSession?.filePath,
     ].filter((entry): entry is string => Boolean(entry?.trim()));
-    return candidates.some((entry) => this.protectedSessionPaths.has(path.resolve(entry)));
+    return candidates.some((entry) => this.protectedSessionPaths.has(normalizeSessionPathKey(entry)));
   }
 
   all(): Iterable<SessionBundle> {
@@ -271,13 +276,13 @@ export class SessionRegistry {
       return undefined;
     }
     const mapKey = this.mapKeyFor(bundle);
-    const resolvedPath = path.resolve(filePath);
+    const normalizedPath = normalizeSessionPathKey(filePath);
     if (mapKey) {
       this.bundles.delete(mapKey);
     }
     if (
       this.activeId !== undefined
-      && (this.activeId === mapKey || path.resolve(this.activeId) === resolvedPath)
+      && (this.activeId === mapKey || normalizeSessionPathKey(this.activeId) === normalizedPath)
     ) {
       this.activeId = undefined;
     }
