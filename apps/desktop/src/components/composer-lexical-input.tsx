@@ -28,7 +28,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import type { LexicalEditor } from "lexical";
+import { KEY_DOWN_COMMAND, COMMAND_PRIORITY_HIGH } from "lexical";
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
@@ -64,9 +64,13 @@ import {
   isCaretAtAgentModeRemovalPoint,
   isCaretAtInlineChipRemovalPoint,
   isCaretAtLoopRemovalPoint,
+  isCaretOnStructuralChipLeadingSpacer,
+  isStructuralChipInsertedSpacerOnly,
   mergeAdjacentTextSegments,
   normalizeCaretForComposer,
   removeInlineChipAtRemovalPoint,
+  structuralChipKindBeforeCaret,
+  trimStructuralChipLeadingSpacerAtCaret,
   removeAgentModeSegment,
   removeLoopSegment,
   segmentsEqual,
@@ -770,34 +774,66 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
-        if (e.key === "Backspace" && !e.defaultPrevented) {
-          const rawCaret = lexicalSelectionToSegmentCaret(editor);
-          const caret = rawCaret
-            ? normalizeCaretForComposer(segmentsRef.current, rawCaret)
-            : null;
-          if (caret && isCaretAtLoopRemovalPoint(segmentsRef.current, caret)) {
-            e.preventDefault();
-            removeLoopChip();
-            return;
-          }
-          if (caret && isCaretAtAgentModeRemovalPoint(segmentsRef.current, caret)) {
-            e.preventDefault();
-            removeAgentModeChip();
-            return;
-          }
-          if (caret && isCaretAtInlineChipRemovalPoint(segmentsRef.current, caret)) {
-            const removed = removeInlineChipAtRemovalPoint(segmentsRef.current, caret);
-            if (removed) {
-              e.preventDefault();
-              commitSegments(removed.segments, removed.caret);
-              return;
-            }
-          }
-        }
         onKeyDown?.(e);
       },
-      [commitSegments, editor, onKeyDown, removeLoopChip, removeAgentModeChip],
+      [onKeyDown],
     );
+
+    useEffect(() => {
+      return editor.registerCommand(
+        KEY_DOWN_COMMAND,
+        (event: KeyboardEvent) => {
+          if (event.key !== "Backspace") {
+            return false;
+          }
+          const segs = segmentsRef.current;
+          const rawCaret = lexicalSelectionToSegmentCaret(editor);
+          if (!rawCaret) {
+            return false;
+          }
+          const caret = normalizeCaretForComposer(segs, rawCaret);
+
+          if (isCaretAtLoopRemovalPoint(segs, caret)) {
+            event.preventDefault();
+            removeLoopChip();
+            return true;
+          }
+          if (isCaretAtAgentModeRemovalPoint(segs, caret)) {
+            event.preventDefault();
+            removeAgentModeChip();
+            return true;
+          }
+          if (isCaretOnStructuralChipLeadingSpacer(segs, caret)) {
+            if (isStructuralChipInsertedSpacerOnly(segs, caret)) {
+              const chipKind = structuralChipKindBeforeCaret(segs, caret);
+              event.preventDefault();
+              if (chipKind === "loop") {
+                removeLoopChip();
+              } else if (chipKind === "plan" || chipKind === "ask" || chipKind === "debug") {
+                removeAgentModeChip();
+              }
+              return true;
+            }
+            const trimmed = trimStructuralChipLeadingSpacerAtCaret(segs, caret);
+            if (trimmed) {
+              event.preventDefault();
+              commitSegments(trimmed.segments, trimmed.caret);
+              return true;
+            }
+          }
+          if (isCaretAtInlineChipRemovalPoint(segs, caret)) {
+            const removed = removeInlineChipAtRemovalPoint(segs, caret);
+            if (removed) {
+              event.preventDefault();
+              commitSegments(removed.segments, removed.caret);
+              return true;
+            }
+          }
+          return false;
+        },
+        COMMAND_PRIORITY_HIGH,
+      );
+    }, [commitSegments, editor, removeAgentModeChip, removeLoopChip]);
 
     const handleKeyUp = useCallback(
       (e: KeyboardEvent<HTMLDivElement>) => {
@@ -939,6 +975,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         <AgentModeChipPlugin
           agentMode={agentMode}
           agentModeChipDismissed={agentModeChipDismissed}
+          segmentsRef={segmentsRef}
           skipEditorSyncRef={skipEditorSyncRef}
           onSegmentsNormalized={handleSegmentsNormalized}
           onAgentModeChipDismissChange={onAgentModeChipDismissChange}
