@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -127,6 +127,35 @@ test('moveWorkspaceEntry rejects moving a directory into itself', async () => {
     await assert.rejects(
       () => moveWorkspaceEntry(workspaceRoot, 'src', 'src/components'),
       /Cannot move a folder into itself|无法将文件夹移动到自身/u,
+    );
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('renameWorkspaceEntry supports case-only renames', async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'spirit-ws-rename-case-'));
+  await writeFile(path.join(workspaceRoot, 'readme.md'), 'hello', 'utf8');
+
+  try {
+    const result = await renameWorkspaceEntry(workspaceRoot, 'readme.md', 'README.md');
+    assert.equal(result.relativePath, 'README.md');
+    const entries = await readdir(workspaceRoot);
+    assert.deepEqual(entries, ['README.md']);
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test('renameWorkspaceEntry still rejects renaming onto a different existing file', async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'spirit-ws-rename-conflict-'));
+  await writeFile(path.join(workspaceRoot, 'a.txt'), 'a', 'utf8');
+  await writeFile(path.join(workspaceRoot, 'b.txt'), 'b', 'utf8');
+
+  try {
+    await assert.rejects(
+      () => renameWorkspaceEntry(workspaceRoot, 'a.txt', 'b.txt'),
+      /already exists|已存在同名/u,
     );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
