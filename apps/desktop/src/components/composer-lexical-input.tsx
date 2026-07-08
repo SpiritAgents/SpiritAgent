@@ -447,7 +447,10 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         : loopEnabled
           ? insertLoopSegment(emptySegments()).segments
           : emptySegments();
-      return applyAgentModeChipPolicy(base, { hostMode: agentMode, dismissed: false });
+      return applyAgentModeChipPolicy(base, {
+        hostMode: agentMode,
+        dismissed: agentModeChipDismissed,
+      });
     });
     const segmentsRef = useRef(segments);
     segmentsRef.current = segments;
