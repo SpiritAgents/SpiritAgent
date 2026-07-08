@@ -152,6 +152,7 @@ export async function resetSessionCommand(ctx: SessionActivationContext): Promis
       });
     }
     const bundle = ctx.sessionRegistry().beginNewActive(state.workspaceRoot);
+    ctx.syncActiveRuntimePointer();
     await ctx.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
     ctx.resetStreamingPlacementState(true, bundle);
     await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'startup' });
