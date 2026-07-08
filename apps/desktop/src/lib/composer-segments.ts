@@ -43,6 +43,7 @@ export {
 
 export {
   caretAfterAgentModeChip,
+  currentAgentModeSegment,
   ensureAgentModePinned,
   hasAgentModeSegment,
   insertAgentModeSegment,

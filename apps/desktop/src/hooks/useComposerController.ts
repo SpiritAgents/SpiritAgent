@@ -19,7 +19,7 @@ import { segmentsToMessageText, segmentsToPlainText } from "@/components/compose
 import { extractComposerChipMetadata, normalizeComposerPlain } from "@/lib/composer-segment-model";
 import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segments";
 import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
-import { currentAgentModeSegment } from "@/lib/composer-agent-mode-segments";
+import { currentAgentModeSegment, isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { cycleAgentMode, type DesktopAgentMode } from "@/lib/agent-mode";
 import { currentWorkspaceFileReferenceQueryFromSegments } from "@/lib/composer-file-reference-query";
 import {
@@ -297,8 +297,10 @@ export function useComposerController({
           : t("composer.placeholderContinueSession");
 
   const composerAgentModeChipPlaceholder = useMemo(() => {
-    const mode = currentAgentModeSegment(composerSegments);
-    if (!mode) {
+    const mode = isAgentModeChipKind(runtime.settings.agentMode)
+      ? runtime.settings.agentMode
+      : currentAgentModeSegment(composerSegments);
+    if (!isAgentModeChipKind(mode)) {
       return undefined;
     }
     if (mode === "plan") {
@@ -308,7 +310,7 @@ export function useComposerController({
       return t("composer.placeholderWithAskChip");
     }
     return t("composer.placeholderWithDebugChip");
-  }, [composerSegments, t]);
+  }, [composerSegments, runtime.settings.agentMode, t]);
 
   const messageRewindComposerEnabled =
     !compactionDemoActive &&

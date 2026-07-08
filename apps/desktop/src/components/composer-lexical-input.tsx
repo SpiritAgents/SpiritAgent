@@ -54,6 +54,7 @@ import type { AgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import {
   emptySegments,
   caretAfterAgentModeChip,
+  currentAgentModeSegment,
   ensureLoopChipTypingTail,
   ensureLoopPinned,
   hasAgentModeSegment,
@@ -110,6 +111,220 @@ const COMPOSER_PLACEHOLDER_CLASS =
 
 const AGENT_MODE_CHIP_SELECTOR =
   "[data-chip-kind='plan'],[data-chip-kind='ask'],[data-chip-kind='debug']";
+
+function isLexicalChipDomNode(node: Node): boolean {
+  return node instanceof HTMLElement && node.querySelector(AGENT_MODE_CHIP_SELECTOR) !== null;
+}
+
+function skipTextSegmentDomInParagraph(
+  paragraph: HTMLElement,
+  startChildIdx: number,
+  segText: string,
+): number {
+  let plain = 0;
+  const children = paragraph.childNodes;
+  for (let index = startChildIdx; index < children.length; index += 1) {
+    const node = children[index];
+    if (node instanceof HTMLElement && isLexicalChipDomNode(node)) {
+      return index;
+    }
+    if (node.nodeType === Node.TEXT_NODE) {
+      plain += node.textContent?.length ?? 0;
+    }
+    if (plain >= segText.length) {
+      return index + 1;
+    }
+  }
+  return children.length;
+}
+
+function placeReadOnlyRangeInTextSegment(
+  paragraph: HTMLElement,
+  startChildIdx: number,
+  segText: string,
+  targetOffset: number,
+  range: Range,
+): boolean {
+  let plain = 0;
+  const target = Math.max(0, Math.min(targetOffset, segText.length));
+  const children = paragraph.childNodes;
+
+  for (let index = startChildIdx; index < children.length; index += 1) {
+    const node = children[index];
+    if (node instanceof HTMLElement && isLexicalChipDomNode(node)) {
+      break;
+    }
+    if (node.nodeType === Node.TEXT_NODE) {
+      const len = node.textContent?.length ?? 0;
+      const segmentRemaining = segText.length - plain;
+      const effectiveLen = Math.min(len, segmentRemaining);
+      if (target <= plain + effectiveLen) {
+        range.setStart(node, target - plain);
+        range.collapse(true);
+        return true;
+      }
+      plain += len;
+    }
+  }
+  return false;
+}
+
+function measureReadOnlyDomCaretLeft(
+  editorEl: HTMLElement,
+  segments: RichSegment[],
+  caret: SegmentCaret,
+  shellRect: DOMRect,
+  chipRightInShell: number,
+): number | null {
+  const paragraph = editorEl.querySelector(":scope > p");
+  if (!(paragraph instanceof HTMLElement)) {
+    return null;
+  }
+
+  const range = document.createRange();
+  const index = Math.min(Math.max(caret.segmentIndex, 0), Math.max(segments.length - 1, 0));
+  let childIdx = 0;
+  let segIdx = 0;
+  let placed = false;
+
+  while (segIdx < segments.length && childIdx < paragraph.childNodes.length) {
+    const seg = segments[segIdx];
+    const node = paragraph.childNodes[childIdx];
+    if (!seg || !node) {
+      break;
+    }
+
+    if (seg.kind === "text") {
+      if (segIdx === index) {
+        placed = placeReadOnlyRangeInTextSegment(
+          paragraph,
+          childIdx,
+          seg.value,
+          caret.offset,
+          range,
+        );
+        break;
+      }
+      childIdx = skipTextSegmentDomInParagraph(paragraph, childIdx, seg.value);
+      segIdx += 1;
+      continue;
+    }
+
+    if (segIdx === index && caret.offset === 0) {
+      range.setStartAfter(node);
+      range.collapse(true);
+      placed = true;
+      break;
+    }
+
+    childIdx += 1;
+    segIdx += 1;
+  }
+
+  if (!placed) {
+    return null;
+  }
+
+  const left = range.getBoundingClientRect().left - shellRect.left;
+  return left >= chipRightInShell - 1 ? left : null;
+}
+
+function measureAgentModeChipPlaceholderLeft(
+  shell: HTMLElement,
+  editorEl: HTMLElement,
+  segments: RichSegment[],
+): {
+  left: number | null;
+  source:
+    | "no-chip"
+    | "selection"
+    | "dom-caret"
+    | "chip-right-fallback"
+    | "default-padding";
+  chipWidth: number | null;
+  selectionLeftInShell: number | null;
+  chipRightInShell: number | null;
+  publishable: boolean;
+} {
+  const chip = editorEl.querySelector(AGENT_MODE_CHIP_SELECTOR);
+  if (!(chip instanceof HTMLElement)) {
+    return {
+      left: null,
+      source: "no-chip",
+      chipWidth: null,
+      selectionLeftInShell: null,
+      chipRightInShell: null,
+      publishable: false,
+    };
+  }
+
+  const shellRect = shell.getBoundingClientRect();
+  const editorRect = editorEl.getBoundingClientRect();
+  const editorPaddingLeft = parseFloat(getComputedStyle(editorEl).paddingLeft) || 0;
+  const defaultPlaceholderLeft = editorPaddingLeft + (editorRect.left - shellRect.left);
+  const chipRect = chip.getBoundingClientRect();
+  const chipRightInShell = chipRect.right - shellRect.left;
+  const chipWidth = chipRect.width;
+
+  const selection = window.getSelection();
+  if (
+    selection
+    && selection.rangeCount > 0
+    && editorEl.contains(selection.anchorNode)
+  ) {
+    const selectionLeftInShell =
+      selection.getRangeAt(0).cloneRange().getBoundingClientRect().left - shellRect.left;
+    if (selectionLeftInShell >= chipRightInShell - 1) {
+      return {
+        left: selectionLeftInShell,
+        source: "selection",
+        chipWidth,
+        selectionLeftInShell,
+        chipRightInShell,
+        publishable: true,
+      };
+    }
+  }
+
+  const caret = caretAfterAgentModeChip(segments);
+  const domCaretLeft = measureReadOnlyDomCaretLeft(
+    editorEl,
+    segments,
+    caret,
+    shellRect,
+    chipRightInShell,
+  );
+  if (domCaretLeft !== null) {
+    return {
+      left: domCaretLeft,
+      source: "dom-caret",
+      chipWidth,
+      selectionLeftInShell: domCaretLeft,
+      chipRightInShell,
+      publishable: true,
+    };
+  }
+
+  if (chipWidth > 0) {
+    return {
+      left: chipRightInShell,
+      source: "chip-right-fallback",
+      chipWidth,
+      selectionLeftInShell: null,
+      chipRightInShell,
+      publishable: false,
+    };
+  }
+
+  return {
+    left: defaultPlaceholderLeft,
+    source: "default-padding",
+    chipWidth,
+    selectionLeftInShell: null,
+    chipRightInShell,
+    publishable: false,
+  };
+}
 
 type Props = {
   /** Controlled rich segments; parent is source of truth. */
@@ -866,6 +1081,41 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         attachmentCount: elementAttachments?.length ?? 0,
       }) && Boolean(agentModeChipPlaceholder);
 
+    const chipPlaceholderLeftCacheRef = useRef<number | null>(null);
+    const chipPlaceholderCacheKindRef = useRef<AgentModeChipKind | null>(null);
+    const pinnedAgentModeChipKind = currentAgentModeSegment(segments);
+
+    const effectiveChipPlaceholderLeft = showAgentModeChipPlaceholder
+      ? (
+        agentModeChipPlaceholderLeft
+        ?? (
+          pinnedAgentModeChipKind
+          && chipPlaceholderCacheKindRef.current === pinnedAgentModeChipKind
+            ? chipPlaceholderLeftCacheRef.current
+            : null
+        )
+      )
+      : null;
+
+    const showDefaultPlaceholder = isEmpty && Boolean(placeholder);
+
+    useEffect(() => {
+      if (!showAgentModeChipPlaceholder) {
+        chipPlaceholderLeftCacheRef.current = null;
+        chipPlaceholderCacheKindRef.current = null;
+      }
+    }, [showAgentModeChipPlaceholder]);
+
+    useEffect(() => {
+      if (
+        showAgentModeChipPlaceholder
+        && pinnedAgentModeChipKind
+        && chipPlaceholderCacheKindRef.current !== pinnedAgentModeChipKind
+      ) {
+        setAgentModeChipPlaceholderLeft(null);
+      }
+    }, [pinnedAgentModeChipKind, showAgentModeChipPlaceholder]);
+
     useLayoutEffect(() => {
       if (!showAgentModeChipPlaceholder) {
         setAgentModeChipPlaceholderLeft(null);
@@ -880,63 +1130,51 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       }
 
       const measure = () => {
-        const chip = editorEl.querySelector(AGENT_MODE_CHIP_SELECTOR);
-        if (!(chip instanceof HTMLElement)) {
-          setAgentModeChipPlaceholderLeft(null);
+        const measured = measureAgentModeChipPlaceholderLeft(
+          shell,
+          editorEl,
+          segmentsRef.current,
+        );
+        const nextLeft = measured.left;
+        if (nextLeft === null || !measured.publishable) {
           return;
         }
-        const shellRect = shell.getBoundingClientRect();
-        const editorRect = editorEl.getBoundingClientRect();
-        const editorPaddingLeft = parseFloat(getComputedStyle(editorEl).paddingLeft) || 0;
-        const defaultPlaceholderLeft = editorPaddingLeft + (editorRect.left - shellRect.left);
-
-        const selection = window.getSelection();
-        let caretLeftInShell: number | null = null;
-        if (
-          selection
-          && selection.rangeCount > 0
-          && editorEl.contains(selection.anchorNode)
-        ) {
-          const caretRect = selection.getRangeAt(0).cloneRange().getBoundingClientRect();
-          caretLeftInShell = caretRect.left - shellRect.left;
-        } else {
-          const chipRect = chip.getBoundingClientRect();
-          if (chipRect.width > 0 || chipRect.height > 0) {
-            caretLeftInShell = chipRect.right - shellRect.left;
-          }
-        }
-
-        setAgentModeChipPlaceholderLeft(caretLeftInShell ?? defaultPlaceholderLeft);
+        const chipKind = currentAgentModeSegment(segmentsRef.current);
+        chipPlaceholderLeftCacheRef.current = nextLeft;
+        chipPlaceholderCacheKindRef.current = chipKind ?? null;
+        setAgentModeChipPlaceholderLeft(nextLeft);
       };
 
       measure();
+      const unregisterUpdateListener = editor.registerUpdateListener(() => {
+        measure();
+      });
       const observer = new ResizeObserver(measure);
       observer.observe(editorEl);
       observer.observe(shell);
       window.addEventListener("resize", measure);
       return () => {
+        unregisterUpdateListener();
         observer.disconnect();
         window.removeEventListener("resize", measure);
       };
-    }, [showAgentModeChipPlaceholder, segments]);
+    }, [editor, showAgentModeChipPlaceholder, segments]);
 
     return (
       <div ref={shellRef} className="relative">
-        {isEmpty && placeholder && (
+        {showDefaultPlaceholder ? (
           <span
             aria-hidden
             className={cn(COMPOSER_PLACEHOLDER_CLASS, "left-3")}
           >
             {placeholder}
           </span>
-        )}
-        {showAgentModeChipPlaceholder
-          && agentModeChipPlaceholderLeft !== null
-          && agentModeChipPlaceholder ? (
+        ) : null}
+        {showAgentModeChipPlaceholder && agentModeChipPlaceholder && effectiveChipPlaceholderLeft !== null ? (
           <span
             aria-hidden
             className={COMPOSER_PLACEHOLDER_CLASS}
-            style={{ left: agentModeChipPlaceholderLeft }}
+            style={{ left: effectiveChipPlaceholderLeft }}
           >
             {agentModeChipPlaceholder}
           </span>
