@@ -131,6 +131,22 @@ test('mergeGitHubPollWatermarkUpdates keeps highest seen number per automation',
   assert.equal(updates.get('a1'), 5);
 });
 
+test('mergeGitHubPollWatermarkUpdates advances by consumed item number not batch max', () => {
+  const updates = mergeGitHubPollWatermarkUpdates([
+    {
+      automationId: 'a1',
+      definition: {
+        ...baseDefinition,
+        id: 'a1',
+        trigger: { kind: 'github', owner: 'o', repo: 'r', event: 'pull_request_created' },
+      },
+      item: { number: 5, htmlUrl: 'u', isPullRequest: true, createdAt: '1' },
+      nextLastSeenNumber: 10,
+    },
+  ]);
+  assert.equal(updates.get('a1'), 5);
+});
+
 test('githubTriggerNeedsBaseline detects missing poll state', () => {
   assert.equal(
     githubTriggerNeedsBaseline({
