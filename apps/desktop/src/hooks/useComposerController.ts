@@ -15,8 +15,8 @@ import {
 } from "@spiritagent/host-internal/workspace-file-reference-query";
 
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
-import { segmentsToMessageText } from "@/components/composer-rich-input";
-import { extractComposerChipMetadata } from "@/lib/composer-segment-model";
+import { segmentsToMessageText, segmentsToPlainText } from "@/components/composer-rich-input";
+import { extractComposerChipMetadata, normalizeComposerPlain } from "@/lib/composer-segment-model";
 import { currentAgentModeSegment } from "@/lib/composer-agent-mode-segments";
 import { cycleAgentMode, type DesktopAgentMode } from "@/lib/agent-mode";
 import { currentWorkspaceFileReferenceQueryFromSegments } from "@/lib/composer-file-reference-query";
@@ -78,6 +78,9 @@ import type {
 import type { RichSegment } from "@/lib/composer-segment-model";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
+
+/** 与非 pane 路径（useDesktopRuntime）一致的草稿落盘防抖间隔。 */
+const PANE_COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS = 400;
 
 export type UseComposerControllerOptions = {
   runtime: DesktopRuntime;
@@ -176,22 +179,6 @@ export function useComposerController({
   } | null>(null);
   const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
 
-  const persistPaneComposerDraft = useCallback(() => {
-    if (!isPaneIsolated || !paneComposerDraftKey) {
-      return;
-    }
-    writeComposerDraft(paneComposerDraftKey, {
-      text: composerText,
-      localFilePaths: composerLocalFileAttachments.map((item) => item.path),
-      segments: composerRichInputRef.current?.getSegments() ?? [],
-    });
-  }, [
-    composerLocalFileAttachments,
-    paneComposerDraftKey,
-    composerText,
-    isPaneIsolated,
-  ]);
-
   const clearPaneComposerDraft = useCallback(() => {
     if (!isPaneIsolated || !paneComposerDraftKey) {
       return;
@@ -223,6 +210,88 @@ export function useComposerController({
     setComposerLocalFileAttachments,
     runtime.readLocalImagePreviewDataUrl,
   );
+
+  const panePendingDraftPersistRef = useRef<(() => void) | null>(null);
+  const paneDraftFlushSnapshotRef = useRef<{
+    key: string;
+    localFilePaths: string[];
+    segments: RichSegment[];
+  } | null>(null);
+
+  // 卸载 ComposerRichInput 后 ref 为空，须用最近一次同步的快照在切 pane/卸载时落盘。
+  useEffect(() => {
+    if (!isPaneIsolated || !paneComposerDraftKey) {
+      paneDraftFlushSnapshotRef.current = null;
+      return;
+    }
+    const richInput = composerRichInputRef.current;
+    if (!richInput) {
+      return;
+    }
+    paneDraftFlushSnapshotRef.current = {
+      key: paneComposerDraftKey,
+      localFilePaths: composerLocalFileAttachments.map((item) => item.path),
+      segments: richInput.getSegments(),
+    };
+  }, [
+    composerLocalFileAttachments,
+    composerSegmentsRevision,
+    composerText,
+    isPaneIsolated,
+    paneComposerDraftKey,
+  ]);
+
+  // pane 草稿防抖落盘：文本经 notifyParents 更新 composerText，chip 变更经 segments commit
+  // 递增 composerSegmentsRevision，两者都会触发本效果。text 由落盘时刻的 segments 派生，
+  // 避免闭包中的 composerText 滞后于 segments 造成 text 与 segments 不一致。
+  useEffect(() => {
+    if (!isPaneIsolated || !paneComposerDraftKey) {
+      panePendingDraftPersistRef.current = null;
+      return;
+    }
+    const persist = () => {
+      panePendingDraftPersistRef.current = null;
+      const richInput = composerRichInputRef.current;
+      if (!richInput) {
+        return;
+      }
+      const segments = richInput.getSegments();
+      writeComposerDraft(paneComposerDraftKey, {
+        text: normalizeComposerPlain(segmentsToPlainText(segments)),
+        localFilePaths: composerLocalFileAttachments.map((item) => item.path),
+        segments,
+      });
+    };
+    panePendingDraftPersistRef.current = persist;
+    const timeout = window.setTimeout(persist, PANE_COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [
+    composerLocalFileAttachments,
+    composerSegmentsRevision,
+    composerText,
+    isPaneIsolated,
+    paneComposerDraftKey,
+  ]);
+
+  // pane 切会话 / 卸载时冲刷未落盘草稿（对应非 pane 路径切会话时的 cacheSessionUi 立即写入）。
+  useEffect(() => {
+    const flushKey = paneComposerDraftKey;
+    return () => {
+      if (!flushKey) {
+        return;
+      }
+      panePendingDraftPersistRef.current?.();
+      const snapshot = paneDraftFlushSnapshotRef.current;
+      if (!snapshot || snapshot.key !== flushKey) {
+        return;
+      }
+      writeComposerDraft(flushKey, {
+        text: normalizeComposerPlain(segmentsToPlainText(snapshot.segments)),
+        localFilePaths: snapshot.localFilePaths,
+        segments: snapshot.segments,
+      });
+    };
+  }, [paneComposerDraftKey]);
 
   const composerDirectMediaMode = useMemo(() => {
     if (!snapshot?.config) {
@@ -1154,14 +1223,12 @@ export function useComposerController({
   }, [slashQuery]);
 
   const handleComposerSegmentsCommit = useCallback(() => {
-    const segments = composerRichInputRef.current?.getSegments() ?? [];
-    if (isPaneIsolated) {
-      persistPaneComposerDraft();
-    } else {
-      runtime.setComposerDraftSegments(segments);
+    if (!isPaneIsolated) {
+      runtime.setComposerDraftSegments(composerRichInputRef.current?.getSegments() ?? []);
     }
+    // pane 路径依赖 revision 触发上方防抖落盘效果，无需在此同步写入。
     setComposerSegmentsRevision((revision) => revision + 1);
-  }, [isPaneIsolated, persistPaneComposerDraft, runtime]);
+  }, [isPaneIsolated, runtime]);
 
   return {
     composerText,

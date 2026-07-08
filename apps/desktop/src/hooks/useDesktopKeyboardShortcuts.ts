@@ -10,6 +10,7 @@ import {
   isModShortcutPressed,
 } from "@/lib/desktop-shell";
 import {
+  isEditableShortcutTarget,
   resolveModCommaSettingsShortcutAction,
   resolveModBackslashSplitShortcutAction,
   resolveModPShortcutAction,
@@ -205,12 +206,8 @@ export function useDesktopKeyboardShortcuts({
       if (!isModShortcutPressed(event) || event.key.toLowerCase() !== "n") {
         return;
       }
-      const target = event.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (tag === "TEXTAREA" || target.isContentEditable) {
-          return;
-        }
+      if (isEditableShortcutTarget(event.target as HTMLElement | null)) {
+        return;
       }
       event.preventDefault();
       handleNewSession();
