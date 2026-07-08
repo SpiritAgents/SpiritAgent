@@ -74,6 +74,8 @@ export interface SubmitUserTurnAfterInitializedOptions {
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
   /** Reuse message id from a queued turn when draining the queue. */
   preallocatedMessageId?: number;
+  /** 目标 bundle；默认前台 active。排队消息 drain 时必须传队列所属 bundle，防止串会话。 */
+  bundle?: SessionBundle;
 }
 
 export interface SessionTurnOrchestratorContext {
@@ -93,23 +95,23 @@ export interface SessionTurnOrchestratorContext {
   notifySessionListUpdated(): void;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;
   syncActiveRuntimePointer(): void;
-  clearAssistantContinuationMarkers(): void;
+  clearAssistantContinuationMarkers(bundle?: SessionBundle): void;
   resolveTodoSessionKeyForBundle(bundle: SessionBundle): string;
-  ensureActiveSession(displayText: string): void;
-  prepareSessionTitleForFirstUserTurn(displayText: string): void;
+  ensureActiveSession(displayText: string, bundle?: SessionBundle): void;
+  prepareSessionTitleForFirstUserTurn(displayText: string, bundle?: SessionBundle): void;
   reconcileTodoScopeAfterSessionPathChange(bundle: SessionBundle, previousSessionKey: string): Promise<void>;
   maybeRefreshRuntimeAfterTodoScopeChange(bundle: SessionBundle, previousSessionKey: string): Promise<void>;
-  buildRewindCheckpointSnapshot(): Promise<unknown>;
-  allocateMessageId(): number;
-  resetStreamingPlacementState(full: boolean): void;
-  persistCurrentSessionIfNeeded(): Promise<void>;
-  scheduleSessionTitleGenerationIfNeeded(seedText: string): void;
+  buildRewindCheckpointSnapshot(bundle?: SessionBundle): Promise<unknown>;
+  allocateMessageId(bundle?: SessionBundle): number;
+  resetStreamingPlacementState(full: boolean, bundle?: SessionBundle): void;
+  persistCurrentSessionIfNeeded(bundle?: SessionBundle): Promise<void>;
+  scheduleSessionTitleGenerationIfNeeded(seedText: string, bundle?: SessionBundle): void;
   dispatchUserMessageExtensionEvent(text: string, displayText: string, messageId: number): Promise<void>;
   ensureToolExecutor(bundle?: SessionBundle): Promise<unknown>;
   refreshArchiveFromRuntime(bundle?: SessionBundle): void;
-  recordRewindCheckpoint(messageId: number, beforeUserCheckpoint?: unknown): Promise<void>;
+  recordRewindCheckpoint(messageId: number, beforeUserCheckpoint?: unknown, bundle?: SessionBundle): Promise<void>;
   orchestrationFor(bundle: SessionBundle): TurnOrchestration;
-  rebuildMessageTimelineFromMessages(): void;
+  rebuildMessageTimelineFromMessages(bundle?: SessionBundle): void;
   flushDeferredRuntimeRefreshIfIdle(bundle?: SessionBundle): Promise<void>;
   refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void>;
   buildSnapshot(): DesktopSnapshot;
@@ -131,7 +133,7 @@ export async function submitUserTurnAfterInitializedCommand(
   text: string,
   options: SubmitUserTurnAfterInitializedOptions = {},
 ): Promise<DesktopSnapshot> {
-  const bundle = ctx.activeBundle();
+  const bundle = options.bundle ?? ctx.activeBundle();
   const trimmed = text.trim();
   const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
   const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)).trim();
@@ -150,39 +152,39 @@ export async function submitUserTurnAfterInitializedCommand(
   }
 
   ctx.requireState();
-  if (ctx.activeBundle().activeSession?.readOnly) {
+  if (bundle.activeSession?.readOnly) {
     throw new Error(i18n.t('error.readonlySessionSend'));
   }
   if (!options.preserveRewindWarnings) {
-    ctx.activeBundle().rewindWarnings = [];
+    bundle.rewindWarnings = [];
   }
-  ctx.clearAssistantContinuationMarkers();
+  ctx.clearAssistantContinuationMarkers(bundle);
   const todoSessionKeyBeforeEnsure = ctx.resolveTodoSessionKeyForBundle(bundle);
-  ctx.ensureActiveSession(displayText);
-  ctx.prepareSessionTitleForFirstUserTurn(displayText);
+  ctx.ensureActiveSession(displayText, bundle);
+  ctx.prepareSessionTitleForFirstUserTurn(displayText, bundle);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforeEnsure);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforeEnsure);
-  const beforeUserCheckpoint = await ctx.buildRewindCheckpointSnapshot();
+  const beforeUserCheckpoint = await ctx.buildRewindCheckpointSnapshot(bundle);
   const localFileAttachments =
     explicitWorkspaceFiles.length > 0
       ? pendingWorkspaceFilesToAttachmentSnapshots(explicitWorkspaceFiles)
       : undefined;
   const userMessage: ConversationMessageSnapshot = {
-    id: options.preallocatedMessageId ?? ctx.allocateMessageId(),
+    id: options.preallocatedMessageId ?? ctx.allocateMessageId(bundle),
     role: 'user',
     content: displayText,
     pending: false,
     ...(localFileAttachments ? { localFileAttachments } : {}),
   };
-  ctx.activeBundle().messages.push(userMessage);
-  ctx.activeBundle().messageTimeline.beginUserTurn(userMessage.content, {
+  bundle.messages.push(userMessage);
+  bundle.messageTimeline.beginUserTurn(userMessage.content, {
     messageId: userMessage.id,
     ...(localFileAttachments ? { localFileAttachments } : {}),
   });
-  ctx.resetStreamingPlacementState(false);
+  ctx.resetStreamingPlacementState(false, bundle);
   const todoSessionKeyBeforePersist = ctx.resolveTodoSessionKeyForBundle(bundle);
-  await ctx.persistCurrentSessionIfNeeded();
-  ctx.scheduleSessionTitleGenerationIfNeeded(displayText);
+  await ctx.persistCurrentSessionIfNeeded(bundle);
+  ctx.scheduleSessionTitleGenerationIfNeeded(displayText, bundle);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforePersist);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforePersist);
   await ctx.dispatchUserMessageExtensionEvent(trimmed, displayText, userMessage.id);
@@ -204,41 +206,44 @@ export async function submitUserTurnAfterInitializedCommand(
         beforeUserCheckpoint,
       });
     } catch (error) {
-      ctx.activeBundle().currentTurnSkills = [];
-      ctx.orchestrationFor(ctx.activeBundle()).assistantMessages.handleMessageRemoved(
-        ctx.activeBundle().messages.length - 1,
+      bundle.currentTurnSkills = [];
+      ctx.orchestrationFor(bundle).assistantMessages.handleMessageRemoved(
+        bundle.messages.length - 1,
         userMessage.id,
         'send-user-rollback',
       );
-      ctx.activeBundle().messages.pop();
-      ctx.rebuildMessageTimelineFromMessages();
+      bundle.messages.pop();
+      ctx.rebuildMessageTimelineFromMessages(bundle);
       throw error;
     }
     return ctx.buildSnapshot();
   }
 
   // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
-  const runtime = ctx.requireRuntime();
+  const runtime = bundle.runtime;
+  if (!runtime) {
+    throw new Error(i18n.t('error.runtimeNotReady'));
+  }
   await ctx.ensureToolExecutor(bundle);
   try {
     await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles, turnSkills);
-    ctx.refreshArchiveFromRuntime();
-    await ctx.recordRewindCheckpoint(userMessage.id, beforeUserCheckpoint);
+    ctx.refreshArchiveFromRuntime(bundle);
+    await ctx.recordRewindCheckpoint(userMessage.id, beforeUserCheckpoint, bundle);
     await runtime.poll();
     applyDrainedRuntimeHostEvents(ctx, bundle, runtime.drainEvents());
   } catch (error) {
-    ctx.activeBundle().currentTurnSkills = [];
-    ctx.orchestrationFor(ctx.activeBundle()).assistantMessages.handleMessageRemoved(
-      ctx.activeBundle().messages.length - 1,
+    bundle.currentTurnSkills = [];
+    ctx.orchestrationFor(bundle).assistantMessages.handleMessageRemoved(
+      bundle.messages.length - 1,
       userMessage.id,
       'send-user-rollback',
     );
-    ctx.activeBundle().messages.pop();
-    ctx.rebuildMessageTimelineFromMessages();
+    bundle.messages.pop();
+    ctx.rebuildMessageTimelineFromMessages(bundle);
     throw error;
   }
 
-  const orchestration = ctx.orchestrationFor(ctx.activeBundle());
+  const orchestration = ctx.orchestrationFor(bundle);
   orchestration.runtimeEvents.consumeCompletedTurnResult();
   orchestration.runtimeEvents.syncPendingToolStates();
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
@@ -281,10 +286,11 @@ export async function sendQueuedUserTurnNowCommand(
       preallocatedMessageId: item.messageId,
       explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(item),
       turnSkills: turnSkillsFromQueuedItem(item),
+      bundle,
     });
   } catch (error) {
     bundle.queuedUserTurns.splice(index, 0, item);
-    await ctx.persistCurrentSessionIfNeeded();
+    await ctx.persistCurrentSessionIfNeeded(bundle);
     throw error;
   }
 }
@@ -306,10 +312,12 @@ export async function drainQueuedUserTurnIfIdle(
       preallocatedMessageId: next.messageId,
       explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(next),
       turnSkills: turnSkillsFromQueuedItem(next),
+      // 后台 bundle busy→idle 时也会 drain：必须提交回队列所属 bundle，而非前台 active
+      bundle,
     });
   } catch (error) {
     bundle.queuedUserTurns.unshift(next);
-    await ctx.persistCurrentSessionIfNeeded();
+    await ctx.persistCurrentSessionIfNeeded(bundle);
     throw error;
   }
 }
