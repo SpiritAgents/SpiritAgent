@@ -9,6 +9,7 @@ import { MessageCard } from "@/components/conversation/message-card";
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
+import { segmentsToAttachments, segmentsToPlainText } from "@/lib/composer-segment-model";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
 import {
   shouldShowContinueToolbarOnProcessGroup,
@@ -225,9 +226,18 @@ export function ConversationList({
     },
     [removeQueuedUserTurn],
   );
-  const handleRewindChange = useCallback(
-    (value: string) => {
-      onRewindDraftChange((current) => (current ? { ...current, text: value } : current));
+  const handleRewindSegmentsChange = useCallback(
+    (segments: import("@/lib/composer-segment-model").RichSegment[]) => {
+      onRewindDraftChange((current) =>
+        current
+          ? {
+              ...current,
+              segments,
+              text: segmentsToPlainText(segments),
+              browserElementAttachments: segmentsToAttachments(segments),
+            }
+          : current,
+      );
     },
     [onRewindDraftChange],
   );
@@ -538,7 +548,7 @@ export function ConversationList({
         continueTarget={turnContinue?.continuableMessage}
         continueBusy={continueBusy}
         rewindSelected={rewindSelected}
-        rewindText={rewindSelected ? rewindDraft.text : ""}
+        rewindSegments={rewindSelected ? rewindDraft.segments : []}
         rewindLocalFileAttachments={
           rewindSelected
             ? rewindDraft.localFileAttachments
@@ -566,7 +576,7 @@ export function ConversationList({
         agentMode={agentMode}
         onContinue={handleContinueMessage}
         onRewindStart={onStartMessageRewind}
-        onRewindChange={handleRewindChange}
+        onRewindSegmentsChange={handleRewindSegmentsChange}
         onRewindSubmit={onSubmitMessageRewind}
         onRewindRemoveLocalFileAttachment={onRewindRemoveLocalFileAttachment}
         onRewindPickLocalFile={onRewindPickLocalFile}

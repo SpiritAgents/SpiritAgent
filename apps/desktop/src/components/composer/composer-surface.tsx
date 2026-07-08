@@ -36,6 +36,7 @@ import {
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
+import { segmentsToPlainText } from "@/lib/composer-segment-model";
 import type { DesktopModelReasoningEffort, DesktopSnapshot } from "@/types";
 
 function isComposerChromeInteractiveTarget(target: EventTarget | null): boolean {
@@ -50,7 +51,8 @@ function isComposerChromeInteractiveTarget(target: EventTarget | null): boolean 
 }
 
 export type ComposerSurfaceProps = {
-  value: string;
+  segments: readonly RichSegment[];
+  onSegmentsChange(segments: RichSegment[]): void;
   localFileAttachments: readonly ComposerLocalFileAttachmentView[];
   placeholder: string;
   agentModeChipPlaceholder?: string;
@@ -64,7 +66,6 @@ export type ComposerSurfaceProps = {
   canAbort?: boolean;
   busy: boolean;
   readOnly?: boolean;
-  onChange(value: string): void;
   onSubmit(): void;
   onAbort?(): void;
   onModelSelect(name: string): void;
@@ -86,8 +87,6 @@ export type ComposerSurfaceProps = {
   onDrop?(event: ReactDragEvent<HTMLElement>): void;
   browserElementAttachments?: readonly BrowserElementAttachment[];
   onElementAttachmentsChange?(attachments: BrowserElementAttachment[]): void;
-  onSegmentsCommit?(): void;
-  initialSegments?: readonly RichSegment[] | null;
   conversationBusy?: boolean;
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
@@ -95,7 +94,8 @@ export type ComposerSurfaceProps = {
 };
 
 export function ComposerSurface({
-  value,
+  segments,
+  onSegmentsChange,
   localFileAttachments,
   placeholder,
   agentModeChipPlaceholder,
@@ -109,7 +109,6 @@ export function ComposerSurface({
   canAbort = false,
   busy,
   readOnly = false,
-  onChange,
   onSubmit,
   onAbort,
   onModelSelect,
@@ -131,8 +130,6 @@ export function ComposerSurface({
   onDrop,
   browserElementAttachments,
   onElementAttachmentsChange,
-  onSegmentsCommit,
-  initialSegments,
   conversationBusy = false,
   agentModeChipDismissed = false,
   onAgentModeChipDismissChange,
@@ -202,9 +199,9 @@ export function ComposerSurface({
       ) : null}
       <ComposerRichInput
         ref={richInputRef}
-        value={value}
+        segments={segments}
+        onSegmentsChange={onSegmentsChange}
         elementAttachments={browserElementAttachments}
-        initialSegments={initialSegments}
         placeholder={placeholder}
         agentModeChipPlaceholder={agentModeChipPlaceholder}
         readOnly={readOnly}
@@ -213,9 +210,7 @@ export function ComposerSurface({
         agentMode={agentMode}
         planChipLabel={t('composer.planChipLabel')}
         askChipLabel={t('composer.askChipLabel')}
-        onTextChange={onChange}
         onElementAttachmentsChange={(atts) => onElementAttachmentsChange?.(atts)}
-        onSegmentsCommit={onSegmentsCommit}
         onLoopEnabledChange={onLoopEnabledChange}
         onAgentModeChange={onAgentModeChange}
         conversationBusy={conversationBusy}
@@ -272,7 +267,7 @@ export function ComposerSurface({
           {(() => {
             const resolvedHasComposerPayload =
               hasComposerPayload
-              ?? (value.trim().length > 0 || localFileAttachments.length > 0);
+              ?? (segmentsToPlainText([...segments]).trim().length > 0 || localFileAttachments.length > 0);
             const showAbortButton = canAbort && Boolean(onAbort) && !resolvedHasComposerPayload;
             const showEnqueueWhileBusy = canAbort && resolvedHasComposerPayload;
             const sendDisabled = showAbortButton ? false : !canSend || (busy && !canAbort);

@@ -262,13 +262,12 @@ export function useConversationPaneController({
 
   const composerDock: ComposerDockSectionProps = {
     composerDockRef: conversation.composerDockRef,
-    composerInitialSegments: composer.composerInitialSegments,
     emptySessionGreeting: conversation.emptySessionGreeting,
     showWorkspaceBindingControls: paneShowWorkspaceBindingControls,
     paneSessionPath: useIsolatedPane ? sessionPath : undefined,
     useIsolatedPaneWorkspace: useIsolatedPane,
-    composerText: composer.composerText,
-    onComposerTextChange: composer.setComposerText,
+    composerSegments: composer.composerSegments,
+    onComposerSegmentsChange: composer.setComposerSegments,
     composerLocalFileAttachments: composer.composerLocalFileAttachments,
     onComposerLocalFileAttachmentsChange: composer.setComposerLocalFileAttachments,
     commitBusy: composer.commitBusy,
@@ -318,7 +317,6 @@ export function useConversationPaneController({
     onComposerPaste: composer.handleComposerPaste,
     onComposerDragOver: composer.handleComposerDragOver,
     onComposerDrop: composer.handleComposerDrop,
-    onComposerSegmentsCommit: composer.handleComposerSegmentsCommit,
     models: conversation.models,
     onOpenGitTab: workspaceTools.openGitTab,
   };

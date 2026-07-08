@@ -31,7 +31,7 @@ import {
   CONVERSATION_MESSAGE_LIST_MAX_W,
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
-import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
+import type { ActiveWorkspaceFileReferenceQuery, RichSegment } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
@@ -53,8 +53,8 @@ export type ComposerDockProps = {
   showWorkspaceBindingControls: boolean;
   paneSessionPath?: string;
   useIsolatedPaneWorkspace?: boolean;
-  composerText: string;
-  onComposerTextChange: (text: string) => void;
+  composerSegments: readonly RichSegment[];
+  onComposerSegmentsChange: (segments: RichSegment[]) => void;
   composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
   onComposerLocalFileAttachmentsChange: (
     attachments: ComposerLocalFileAttachmentView[],
@@ -109,11 +109,9 @@ export type ComposerDockProps = {
   onComposerPaste: (event: ReactClipboardEvent<HTMLTextAreaElement>) => void;
   onComposerDragOver: (event: ReactDragEvent<HTMLElement>) => void;
   onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
-  onComposerSegmentsCommit: () => void;
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
-  composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
 };
 
 export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(function ComposerDock(
@@ -123,8 +121,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     showWorkspaceBindingControls,
     paneSessionPath,
     useIsolatedPaneWorkspace = false,
-    composerText,
-    onComposerTextChange,
+    composerSegments,
+    onComposerSegmentsChange,
     composerLocalFileAttachments,
     onComposerLocalFileAttachmentsChange,
     snapshot,
@@ -174,11 +172,9 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     onComposerPaste,
     onComposerDragOver,
     onComposerDrop,
-    onComposerSegmentsCommit,
     models,
     useMicaBackdrop,
     onOpenGitTab,
-    composerInitialSegments,
   },
   ref,
 ) {
@@ -404,9 +400,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 </div>
               ) : null}
               <ComposerSurface
-                value={composerText}
-                onChange={onComposerTextChange}
-                initialSegments={composerInitialSegments ?? runtime.composerInitialSegments}
+                segments={composerSegments}
+                onSegmentsChange={onComposerSegmentsChange}
                 onSubmit={onSubmitComposerMessage}
                 browserElementAttachments={composerBrowserElementAttachments}
                 onElementAttachmentsChange={onComposerBrowserElementAttachmentsChange}
@@ -462,7 +457,6 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 onPaste={onComposerPaste}
                 onDragOver={onComposerDragOver}
                 onDrop={onComposerDrop}
-                onSegmentsCommit={onComposerSegmentsCommit}
                 saveLocalImageAs={runtime.saveLocalImageAs}
               />
             </div>

@@ -113,7 +113,11 @@ const AGENT_MODE_CHIP_SELECTOR =
   "[data-chip-kind='plan'],[data-chip-kind='ask'],[data-chip-kind='debug']";
 
 type Props = {
-  value: string;
+  /** Controlled rich segments; parent is source of truth when paired with onSegmentsChange. */
+  segments?: readonly RichSegment[];
+  onSegmentsChange?(segments: RichSegment[]): void;
+  /** Derived plain text for legacy/uncontrolled callers. */
+  value?: string;
   elementAttachments?: readonly BrowserElementAttachment[];
   /** One-shot hydrate (e.g. message rewind); ignored after first apply per mount. */
   initialSegments?: readonly RichSegment[] | null;
@@ -126,7 +130,7 @@ type Props = {
   agentMode?: DesktopAgentMode;
   planChipLabel?: string;
   askChipLabel?: string;
-  onTextChange(text: string): void;
+  onTextChange?(text: string): void;
   onElementAttachmentsChange(attachments: BrowserElementAttachment[]): void;
   /** Rich segments committed locally; plain text / cursor may be unchanged. */
   onSegmentsCommit?(): void;
@@ -201,7 +205,9 @@ type ComposerLexicalInputCoreProps = Props & {
 const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLexicalInputCoreProps>(
   function ComposerLexicalInputCore(props, ref) {
     const {
-      value,
+      segments: controlledSegments,
+      onSegmentsChange,
+      value = "",
       elementAttachments,
       initialSegments,
       placeholder,
@@ -233,8 +239,13 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     const contentEditableRef = useRef<HTMLDivElement>(null);
     const shellRef = useRef<HTMLDivElement>(null);
     const [segments, setSegments] = useState<RichSegment[]>(() => {
-      const base = initialSegments?.length
-        ? ensureLoopPinned(mergeAdjacentTextSegments([...initialSegments]))
+      const hydrateFrom = controlledSegments?.length
+        ? controlledSegments
+        : initialSegments?.length
+          ? initialSegments
+          : null;
+      const base = hydrateFrom
+        ? ensureLoopPinned(mergeAdjacentTextSegments([...hydrateFrom]))
         : loopEnabled
           ? insertLoopSegment(emptySegments()).segments
           : emptySegments();
@@ -248,8 +259,13 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       null,
     );
     const pendingCaretRef = useRef<SegmentCaret | null>(null);
-    const skipExternalValueSyncRef = useRef(Boolean(initialSegments?.length));
+    const skipExternalValueSyncRef = useRef(Boolean(controlledSegments?.length || initialSegments?.length));
     const lastSyncedToParentPlainRef = useRef<string | null>(null);
+    const lastSyncedToParentSegmentsRef = useRef<RichSegment[] | null>(
+      controlledSegments?.length ? [...controlledSegments] : null,
+    );
+    const skipExternalSegmentsSyncRef = useRef(Boolean(controlledSegments?.length));
+    const segmentsControlled = Boolean(onSegmentsChange);
     const conversationBusyRef = useRef(conversationBusy);
     const initialSegmentsHydratedRef = useRef(Boolean(initialSegments?.length));
     const onElementAttachmentsChangeRef = useRef(onElementAttachmentsChange);
@@ -386,13 +402,19 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const notifyParents = useCallback(
       (next: RichSegment[]) => {
-        const plain = normalizeComposerPlain(segmentsToPlainText(next));
-        lastSyncedToParentPlainRef.current = plain;
-        skipExternalValueSyncRef.current = true;
-        onTextChange(plain);
+        if (segmentsControlled && onSegmentsChange) {
+          lastSyncedToParentSegmentsRef.current = next;
+          skipExternalSegmentsSyncRef.current = true;
+          onSegmentsChange(next);
+        } else if (onTextChange) {
+          const plain = normalizeComposerPlain(segmentsToPlainText(next));
+          lastSyncedToParentPlainRef.current = plain;
+          skipExternalValueSyncRef.current = true;
+          onTextChange(plain);
+        }
         onElementAttachmentsChange(segmentsToAttachments(next));
       },
-      [onTextChange, onElementAttachmentsChange],
+      [onElementAttachmentsChange, onSegmentsChange, onTextChange, segmentsControlled],
     );
 
     const commitSegments = useCallback(
@@ -743,7 +765,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     );
 
     useLayoutEffect(() => {
-      if (!initialSegments?.length || initialSegmentsHydratedRef.current) {
+      if (segmentsControlled || !initialSegments?.length || initialSegmentsHydratedRef.current) {
         return;
       }
       initialSegmentsHydratedRef.current = true;
@@ -752,9 +774,32 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         skipExternalValueSyncRef.current = true;
         applySegments(merged, caretAtEnd(merged), false);
       }
-    }, [initialSegments, applySegments]);
+    }, [initialSegments, applySegments, segmentsControlled]);
 
     useEffect(() => {
+      if (!segmentsControlled || !controlledSegments) {
+        return;
+      }
+      if (skipExternalSegmentsSyncRef.current) {
+        const expected = lastSyncedToParentSegmentsRef.current;
+        if (expected !== null && segmentsEqual([...controlledSegments], expected)) {
+          skipExternalSegmentsSyncRef.current = false;
+          return;
+        }
+        skipExternalSegmentsSyncRef.current = false;
+      }
+      const merged = mergeAdjacentTextSegments([...controlledSegments]);
+      if (segmentsEqual(merged, segmentsRef.current)) {
+        return;
+      }
+      skipExternalValueSyncRef.current = true;
+      applySegments(merged, caretAtEnd(merged), false);
+    }, [applySegments, controlledSegments, segmentsControlled]);
+
+    useEffect(() => {
+      if (segmentsControlled) {
+        return;
+      }
       const current = segmentsRef.current;
       const plain = segmentsToPlainText(current);
       const localPlain = normalizeComposerPlain(plain);
@@ -858,6 +903,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       agentModeChipDismissed,
       conversationBusy,
       chipPolicy,
+      segmentsControlled,
     ]);
 
     const handleEditorChange = useCallback(
