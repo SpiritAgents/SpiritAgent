@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { ModelReasoningEffort } from './reasoning-effort.js';
@@ -374,7 +374,10 @@ export class HostAutomationStore {
       updatedAtUnixMs: now,
     };
     const file: HostAutomationFile = { version: 1, definition, runs: [] };
-    await this.saveFile(definition.id, file);
+    await enqueueAutomationFileTask(
+      automationFilePath(this.spiritDataDir, definition.id),
+      () => this.saveFile(definition.id, file),
+    );
     return { ...definition };
   }
 
@@ -382,60 +385,62 @@ export class HostAutomationStore {
     automationId: string,
     lastSeenNumber: number,
   ): Promise<HostAutomationDefinition> {
-    const file = await this.requireFile(automationId);
-    if (file.definition.trigger.kind !== 'github') {
-      throw new Error('Automation trigger is not GitHub.');
-    }
-    file.definition.trigger = {
-      ...file.definition.trigger,
-      poll: { lastSeenNumber },
-    };
-    file.definition.updatedAtUnixMs = Date.now();
-    await this.saveFile(automationId, file);
-    return { ...file.definition };
+    return this.mutateFile(automationId, (file) => {
+      if (file.definition.trigger.kind !== 'github') {
+        throw new Error('Automation trigger is not GitHub.');
+      }
+      file.definition.trigger = {
+        ...file.definition.trigger,
+        poll: { lastSeenNumber },
+      };
+      file.definition.updatedAtUnixMs = Date.now();
+      return { ...file.definition };
+    });
   }
 
   async update(automationId: string, patch: HostAutomationUpdateInput): Promise<HostAutomationDefinition> {
-    const file = await this.requireFile(automationId);
-    const now = Date.now();
-    if (patch.title !== undefined) {
-      file.definition.title = normalizeNonEmpty(patch.title, 'title');
-    }
-    if (patch.overview !== undefined) {
-      file.definition.overview = normalizeNonEmpty(patch.overview, 'overview');
-    }
-    if (patch.trigger !== undefined) {
-      const trigger = normalizeAutomationTrigger(patch.trigger);
-      if (!trigger) {
-        throw new Error('Invalid automation trigger.');
+    return this.mutateFile(automationId, (file) => {
+      const now = Date.now();
+      if (patch.title !== undefined) {
+        file.definition.title = normalizeNonEmpty(patch.title, 'title');
       }
-      file.definition.trigger = reconcileGitHubTriggerPollState(file.definition.trigger, trigger);
-    }
-    if (patch.workspaceRoot !== undefined) {
-      file.definition.workspaceRoot = path.resolve(normalizeNonEmpty(patch.workspaceRoot, 'workspaceRoot'));
-    }
-    if (patch.modelName !== undefined) {
-      file.definition.modelName = normalizeNonEmpty(patch.modelName, 'modelName');
-    }
-    if (patch.reasoningEffort !== undefined) {
-      file.definition.reasoningEffort = patch.reasoningEffort;
-    }
-    if (patch.approvalLevel !== undefined) {
-      file.definition.approvalLevel = normalizeApprovalLevel(patch.approvalLevel);
-    }
-    if (patch.enabled !== undefined) {
-      file.definition.enabled = patch.enabled;
-    }
-    file.definition.updatedAtUnixMs = now;
-    await this.saveFile(automationId, file);
-    return { ...file.definition };
+      if (patch.overview !== undefined) {
+        file.definition.overview = normalizeNonEmpty(patch.overview, 'overview');
+      }
+      if (patch.trigger !== undefined) {
+        const trigger = normalizeAutomationTrigger(patch.trigger);
+        if (!trigger) {
+          throw new Error('Invalid automation trigger.');
+        }
+        file.definition.trigger = reconcileGitHubTriggerPollState(file.definition.trigger, trigger);
+      }
+      if (patch.workspaceRoot !== undefined) {
+        file.definition.workspaceRoot = path.resolve(normalizeNonEmpty(patch.workspaceRoot, 'workspaceRoot'));
+      }
+      if (patch.modelName !== undefined) {
+        file.definition.modelName = normalizeNonEmpty(patch.modelName, 'modelName');
+      }
+      if (patch.reasoningEffort !== undefined) {
+        file.definition.reasoningEffort = patch.reasoningEffort;
+      }
+      if (patch.approvalLevel !== undefined) {
+        file.definition.approvalLevel = normalizeApprovalLevel(patch.approvalLevel);
+      }
+      if (patch.enabled !== undefined) {
+        file.definition.enabled = patch.enabled;
+      }
+      file.definition.updatedAtUnixMs = now;
+      return { ...file.definition };
+    });
   }
 
   async delete(automationId: string): Promise<void> {
     const filePath = automationFilePath(this.spiritDataDir, automationId);
-    if (existsSync(filePath)) {
-      await unlink(filePath);
-    }
+    await enqueueAutomationFileTask(filePath, async () => {
+      if (existsSync(filePath)) {
+        await unlink(filePath);
+      }
+    });
   }
 
   async setEnabled(automationId: string, enabled: boolean): Promise<HostAutomationDefinition> {
@@ -458,55 +463,55 @@ export class HostAutomationStore {
     automationId: string,
     lastSeenNumber: number,
   ): Promise<HostAutomationDefinition> {
-    const file = await this.requireFile(automationId);
-    if (file.definition.trigger.kind !== 'github') {
-      throw new Error('Automation trigger is not GitHub.');
-    }
-    file.definition.trigger = {
-      ...file.definition.trigger,
-      poll: { lastSeenNumber },
-    };
-    delete file.definition.githubPollError;
-    file.definition.updatedAtUnixMs = Date.now();
-    await this.saveFile(automationId, file);
-    return { ...file.definition };
+    return this.mutateFile(automationId, (file) => {
+      if (file.definition.trigger.kind !== 'github') {
+        throw new Error('Automation trigger is not GitHub.');
+      }
+      file.definition.trigger = {
+        ...file.definition.trigger,
+        poll: { lastSeenNumber },
+      };
+      delete file.definition.githubPollError;
+      file.definition.updatedAtUnixMs = Date.now();
+      return { ...file.definition };
+    });
   }
 
   async setGitHubPollError(
     automationId: string,
     error: string | undefined,
   ): Promise<HostAutomationDefinition> {
-    const file = await this.requireFile(automationId);
-    if (file.definition.trigger.kind !== 'github') {
-      throw new Error('Automation trigger is not GitHub.');
-    }
-    if (error?.trim()) {
-      file.definition.githubPollError = error.trim();
-    } else {
-      delete file.definition.githubPollError;
-    }
-    file.definition.updatedAtUnixMs = Date.now();
-    await this.saveFile(automationId, file);
-    return { ...file.definition };
+    return this.mutateFile(automationId, (file) => {
+      if (file.definition.trigger.kind !== 'github') {
+        throw new Error('Automation trigger is not GitHub.');
+      }
+      if (error?.trim()) {
+        file.definition.githubPollError = error.trim();
+      } else {
+        delete file.definition.githubPollError;
+      }
+      file.definition.updatedAtUnixMs = Date.now();
+      return { ...file.definition };
+    });
   }
 
   async markFired(automationId: string, firedAtUnixMs: number): Promise<void> {
-    const file = await this.requireFile(automationId);
-    file.definition.lastFiredAtUnixMs = firedAtUnixMs;
-    file.definition.updatedAtUnixMs = firedAtUnixMs;
-    await this.saveFile(automationId, file);
+    await this.mutateFile(automationId, (file) => {
+      file.definition.lastFiredAtUnixMs = firedAtUnixMs;
+      file.definition.updatedAtUnixMs = firedAtUnixMs;
+    });
   }
 
   async addRun(automationId: string, run: HostAutomationRun): Promise<HostAutomationRun> {
-    const file = await this.requireFile(automationId);
-    const normalized = normalizeAutomationRun(run);
-    if (!normalized) {
-      throw new Error('Invalid automation run.');
-    }
-    file.runs.push(normalized);
-    file.definition.updatedAtUnixMs = Date.now();
-    await this.saveFile(automationId, file);
-    return { ...normalized };
+    return this.mutateFile(automationId, (file) => {
+      const normalized = normalizeAutomationRun(run);
+      if (!normalized) {
+        throw new Error('Invalid automation run.');
+      }
+      file.runs.push(normalized);
+      file.definition.updatedAtUnixMs = Date.now();
+      return { ...normalized };
+    });
   }
 
   async updateRun(
@@ -514,23 +519,23 @@ export class HostAutomationStore {
     runId: string,
     patch: Partial<Pick<HostAutomationRun, 'status' | 'completedAtUnixMs' | 'error' | 'sessionPath'>>,
   ): Promise<HostAutomationRun> {
-    const file = await this.requireFile(automationId);
-    const index = file.runs.findIndex((run) => run.id === runId);
-    if (index < 0) {
-      throw new Error(`Automation run not found: ${runId}`);
-    }
-    const current = file.runs[index]!;
-    const next: HostAutomationRun = {
-      ...current,
-      ...(patch.sessionPath !== undefined ? { sessionPath: patch.sessionPath } : {}),
-      ...(patch.status !== undefined ? { status: patch.status } : {}),
-      ...(patch.completedAtUnixMs !== undefined ? { completedAtUnixMs: patch.completedAtUnixMs } : {}),
-      ...(patch.error !== undefined ? { error: patch.error } : {}),
-    };
-    file.runs[index] = next;
-    file.definition.updatedAtUnixMs = Date.now();
-    await this.saveFile(automationId, file);
-    return { ...next };
+    return this.mutateFile(automationId, (file) => {
+      const index = file.runs.findIndex((run) => run.id === runId);
+      if (index < 0) {
+        throw new Error(`Automation run not found: ${runId}`);
+      }
+      const current = file.runs[index]!;
+      const next: HostAutomationRun = {
+        ...current,
+        ...(patch.sessionPath !== undefined ? { sessionPath: patch.sessionPath } : {}),
+        ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.completedAtUnixMs !== undefined ? { completedAtUnixMs: patch.completedAtUnixMs } : {}),
+        ...(patch.error !== undefined ? { error: patch.error } : {}),
+      };
+      file.runs[index] = next;
+      file.definition.updatedAtUnixMs = Date.now();
+      return { ...next };
+    });
   }
 
   async getActiveRun(automationId: string): Promise<HostAutomationRun | undefined> {
@@ -539,6 +544,21 @@ export class HostAutomationStore {
       return undefined;
     }
     return file.runs.find((run) => run.status === 'running');
+  }
+
+  private async mutateFile<T>(
+    automationId: string,
+    mutate: (file: HostAutomationFile) => T,
+  ): Promise<T> {
+    return enqueueAutomationFileTask(
+      automationFilePath(this.spiritDataDir, automationId),
+      async () => {
+        const file = await this.requireFile(automationId);
+        const result = mutate(file);
+        await this.saveFile(automationId, file);
+        return result;
+      },
+    );
   }
 
   private async listAutomationFiles(): Promise<string[]> {
@@ -593,7 +613,11 @@ export class HostAutomationStore {
   private async saveFile(automationId: string, file: HostAutomationFile): Promise<void> {
     const filePath = automationFilePath(this.spiritDataDir, automationId);
     await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, `${JSON.stringify(file, null, 2)}\n`, 'utf8');
+    // tmp+rename 原子落盘，避免崩溃时留下半截 JSON；写已按文件串行化，
+    // 固定 tmp 名不会被并发复用（后缀非 .json，不会被 listAutomationFiles 读到）。
+    const tmpPath = `${filePath}.tmp`;
+    await writeFile(tmpPath, `${JSON.stringify(file, null, 2)}\n`, 'utf8');
+    await rename(tmpPath, filePath);
   }
 }
 
