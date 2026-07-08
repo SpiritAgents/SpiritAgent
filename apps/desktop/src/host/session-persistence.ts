@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import type { ChatArchive } from '@spiritagent/agent-core';
 
+import { normalizeTimelineSnapshotForPersistence } from './chat-schema.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
@@ -37,7 +38,10 @@ export async function persistDesktopSessionBundle(
   }
 
   const desktopMessages = bundle.messageTimeline.toMessages();
-  if (desktopMessages.length === 0) {
+  const normalizedTimelineSnapshot = normalizeTimelineSnapshotForPersistence(
+    bundle.messageTimeline.snapshot(),
+  );
+  if (desktopMessages.length === 0 || normalizedTimelineSnapshot.length === 0) {
     return { rekeyNeeded: false };
   }
   const archiveMessages = buildArchiveMessagesFromConversation(desktopMessages);

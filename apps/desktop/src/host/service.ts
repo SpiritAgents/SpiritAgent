@@ -3511,17 +3511,18 @@ class DesktopHostService {
 
   private buildSnapshot(): DesktopSnapshot {
     const state = this.requireState();
-    const pendingApproval = this.runtime?.currentPendingApproval();
-    const pendingQuestions = this.runtime?.currentPendingQuestions();
-    const pendingAux = this.runtime?.pendingAuxState();
+    const activeBundle = this.activeBundle();
+    const activeRuntime = activeBundle.runtime;
+    const pendingApproval = activeRuntime?.currentPendingApproval();
+    const pendingQuestions = activeRuntime?.currentPendingQuestions();
+    const pendingAux = activeRuntime?.pendingAuxState();
     syncLivePendingAuxSnapshot({
       pendingAux,
-      activeBundle: this.activeBundle(),
+      activeBundle,
       assistantMessages: this.activeOrchestration().assistantMessages,
       conversationSnapshotView: this.activeOrchestration().conversationSnapshotView,
     });
 
-    const activeBundle = this.activeBundle();
     const rawMessages = activeBundle.messages;
     const rawConversationMessages = this.desktopMessages();
 
@@ -3558,7 +3559,7 @@ class DesktopHostService {
       extensionCss: state.extensionCss,
       ...(this.extensionWarmup.extensionsLoading ? { extensionsLoading: true } : {}),
       dreamCollectorStatus: this.dreamCollectorStatus,
-      runtimeReady: this.runtime !== undefined,
+      runtimeReady: activeRuntime !== undefined,
       runtimeError: this.lastRuntimeError,
       modelKeyPresence: this.modelKeyPresence,
       activeApiKeyConfigured: this.activeApiKeyConfigured,
@@ -3574,11 +3575,11 @@ class DesktopHostService {
         messages: conversationMessages,
         loopEnabled: this.activeBundle().loopEnabled,
         approvalLevel: this.activeBundle().approvalLevel,
-        ...(this.runtime?.pendingUserTurn()
-          ? { pendingUserTurn: this.runtime.pendingUserTurn() }
+        ...(activeRuntime?.pendingUserTurn()
+          ? { pendingUserTurn: activeRuntime.pendingUserTurn() }
           : {}),
-        pendingImagePaths: [...(this.runtime?.pendingImagePaths() ?? [])],
-        pendingMcpResources: mapPendingMcpResources(this.runtime?.pendingMcpResources() ?? []),
+        pendingImagePaths: [...(activeRuntime?.pendingImagePaths() ?? [])],
+        pendingMcpResources: mapPendingMcpResources(activeRuntime?.pendingMcpResources() ?? []),
         ...(pendingAux
           ? { pendingAuxState: mapPendingAuxState(pendingAux)! }
           : {}),
