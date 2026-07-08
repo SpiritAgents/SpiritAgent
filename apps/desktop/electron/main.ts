@@ -1,6 +1,6 @@
 import './load-env.js';
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -461,19 +461,39 @@ function electronRootBackgroundForBackdrop(blurEnabled: boolean, darkContent: bo
 }
 
 /** 配置键仍为 `windowsMica`，表示各平台原生窗口模糊（Win Mica / macOS Vibrancy）。 */
+let cachedBackdropBlur: { mtimeMs: number; size: number; value: boolean } | undefined;
+
+/**
+ * 该值经 `desktop:read-native-backdrop-blur` 同步 IPC 暴露给渲染层：index.html 首帧
+ * 内联脚本须在渲染前同步拿到，无法改为异步。为避免每次同步 IPC 都读盘解析整个
+ * 配置文件，这里按 mtime/size 缓存，仅在配置文件变化时重新读取。
+ */
 function readBackdropBlurFromDisk(): boolean {
   const filePath = configFilePath();
-  if (!existsSync(filePath)) {
+  let mtimeMs: number;
+  let size: number;
+  try {
+    const stats = statSync(filePath);
+    mtimeMs = stats.mtimeMs;
+    size = stats.size;
+  } catch {
     return true;
   }
+  if (cachedBackdropBlur && cachedBackdropBlur.mtimeMs === mtimeMs && cachedBackdropBlur.size === size) {
+    return cachedBackdropBlur.value;
+  }
+
+  let value = true;
   try {
     const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as {
       windowsMica?: boolean;
     };
-    return parsed.windowsMica !== false;
+    value = parsed.windowsMica !== false;
   } catch {
-    return true;
+    value = true;
   }
+  cachedBackdropBlur = { mtimeMs, size, value };
+  return value;
 }
 
 const MACOS_WINDOW_VIBRANCY = 'under-window' as const;
