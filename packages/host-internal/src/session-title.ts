@@ -1,4 +1,7 @@
-import type { JsonObject } from '@spiritagent/agent-core';
+import {
+  USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE,
+  type JsonObject,
+} from '@spiritagent/agent-core';
 
 export const SESSION_TITLE_MAX_LENGTH = 40;
 
@@ -21,7 +24,7 @@ export function buildSessionTitlePrompt(firstUserMessage: string): string {
     'Generate a short conversation title for the user message below.',
     'Return JSON only: {"title":"..."}. No Markdown, no explanations, no extra keys.',
     'Rules:',
-    '- Use the same language as the user message.',
+    `- ${USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE}`,
     '- Keep it concise (ideally under 12 words).',
     '- No surrounding quotes, hashtags, or trailing punctuation.',
   ].join('\n')
