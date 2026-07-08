@@ -355,6 +355,9 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
     if (seg.kind === "ask" && other.kind === "ask") {
       return true;
     }
+    if (seg.kind === "debug" && other.kind === "debug") {
+      return true;
+    }
     if (seg.kind === "skill" && other.kind === "skill") {
       return seg.alias === other.alias;
     }
