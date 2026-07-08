@@ -2519,6 +2519,8 @@ class DesktopHostService {
         const bundle = this.sessionRegistry.findBySessionPath(sessionPath);
         return isSessionBundleBusy(bundle);
       },
+      clearSessionTitleGeneration: (sessionPath) =>
+        this.clearSessionTitleGenerationForSession(sessionPath),
     };
   }
 
@@ -3127,8 +3129,10 @@ class DesktopHostService {
     }
   }
 
-  private prepareSessionTitleForFirstUserTurn(displayText: string): void {
-    const bundle = this.activeBundle();
+  private prepareSessionTitleForFirstUserTurn(
+    displayText: string,
+    bundle: SessionBundle = this.activeBundle(),
+  ): void {
     if (!resetSessionTitleForFirstUserTurn(bundle, displayText)) {
       return;
     }
@@ -3147,8 +3151,20 @@ class DesktopHostService {
     this.sessionTitleGenerationInFlight.delete(filePath);
   }
 
-  private scheduleSessionTitleGenerationIfNeeded(seedText: string): void {
-    const bundle = this.activeBundle();
+  /** 会话删除后释放标题生成状态；在途生成时保留递增后的 epoch 条目使其完成后失效。 */
+  private clearSessionTitleGenerationForSession(sessionPath: string): void {
+    const filePath = path.resolve(sessionPath);
+    if (this.sessionTitleGenerationInFlight.has(filePath)) {
+      this.invalidateSessionTitleGeneration(filePath);
+      return;
+    }
+    this.sessionTitleGenerationEpoch.delete(filePath);
+  }
+
+  private scheduleSessionTitleGenerationIfNeeded(
+    seedText: string,
+    bundle: SessionBundle = this.activeBundle(),
+  ): void {
     const activeSession = bundle.activeSession;
     if (!activeSession || activeSession.readOnly === true || activeSession.kind === 'ephemeral') {
       return;
