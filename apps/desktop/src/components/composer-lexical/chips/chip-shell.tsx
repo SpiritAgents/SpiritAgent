@@ -7,6 +7,11 @@ type ChipShellProps = {
   title?: string;
   "aria-label"?: string;
   "data-chip-kind"?: string;
+  "data-element-chip"?: string;
+  "data-element-id"?: string;
+  "data-element-tag"?: string;
+  "data-element-html"?: string;
+  "data-element-url"?: string;
   children: ReactNode;
 };
 
@@ -15,6 +20,11 @@ export function ChipShell({
   title,
   "aria-label": ariaLabel,
   "data-chip-kind": chipKind,
+  "data-element-chip": elementChip,
+  "data-element-id": elementId,
+  "data-element-tag": elementTag,
+  "data-element-html": elementHtml,
+  "data-element-url": elementUrl,
   children,
 }: ChipShellProps) {
   return (
@@ -22,6 +32,11 @@ export function ChipShell({
       contentEditable={false}
       data-spirit-chip="true"
       data-chip-kind={chipKind}
+      data-element-chip={elementChip}
+      data-element-id={elementId}
+      data-element-tag={elementTag}
+      data-element-html={elementHtml}
+      data-element-url={elementUrl}
       className={cn("select-none", className)}
       title={title}
       aria-label={ariaLabel}

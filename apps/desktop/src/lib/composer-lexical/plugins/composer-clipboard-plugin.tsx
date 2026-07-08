@@ -93,31 +93,7 @@ export function ComposerClipboardPlugin({
             const parsed = parser.parseFromString(html, "text/html");
 
             const pasteSegs: RichSegment[] = [];
-            parsed.body.childNodes.forEach((node) => {
-              if (node.nodeType === Node.COMMENT_NODE) return;
-              if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent ?? "";
-                if (text) pasteSegs.push({ kind: "text", value: text });
-                return;
-              }
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const el = node as HTMLElement;
-                if (el.dataset?.elementChip === "true") {
-                  const id = el.dataset.elementId ?? "";
-                  if (chips[id]) {
-                    pasteSegs.push({ kind: "element", attachment: chips[id] });
-                  }
-                } else if (el.tagName === "BR") {
-                  mergeTextIntoPaste(pasteSegs, "\n");
-                } else if (el.tagName === "DIV" || el.tagName === "P") {
-                  el.childNodes.forEach((child) => {
-                    if (child.nodeType === Node.TEXT_NODE && child.textContent) {
-                      pasteSegs.push({ kind: "text", value: child.textContent });
-                    }
-                  });
-                }
-              }
-            });
+            appendPasteSegmentsFromHtml(parsed.body, chips, pasteSegs);
 
             const caret = lexicalSelectionToSegmentCaret(editor) ?? { segmentIndex: 0, offset: 0 };
             let next = segmentsRef.current;
@@ -166,5 +142,40 @@ function mergeTextIntoPaste(segs: RichSegment[], chunk: string): void {
     last.value += chunk;
   } else {
     segs.push({ kind: "text", value: chunk });
+  }
+}
+
+function appendPasteSegmentsFromHtml(
+  root: ParentNode,
+  chips: Record<string, BrowserElementAttachment>,
+  pasteSegs: RichSegment[],
+): void {
+  for (const node of root.childNodes) {
+    if (node.nodeType === Node.COMMENT_NODE) {
+      continue;
+    }
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent ?? "";
+      if (text) {
+        mergeTextIntoPaste(pasteSegs, text);
+      }
+      continue;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      continue;
+    }
+    const el = node as HTMLElement;
+    if (el.dataset?.elementChip === "true") {
+      const id = el.dataset.elementId ?? "";
+      if (chips[id]) {
+        pasteSegs.push({ kind: "element", attachment: chips[id] });
+      }
+      continue;
+    }
+    if (el.tagName === "BR") {
+      mergeTextIntoPaste(pasteSegs, "\n");
+      continue;
+    }
+    appendPasteSegmentsFromHtml(el, chips, pasteSegs);
   }
 }

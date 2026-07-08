@@ -39,6 +39,11 @@ export function ElementChip({ attachment }: { attachment: BrowserElementAttachme
   return (
     <ChipShell
       data-chip-kind="element"
+      data-element-chip="true"
+      data-element-id={attachment.id}
+      data-element-tag={attachment.tagName}
+      data-element-html={attachment.outerHtml}
+      data-element-url={attachment.pageUrl}
       className={BROWSER_ELEMENT_CHIP_CLASS}
       aria-label={`<${attachment.tagName}>`}
     >
