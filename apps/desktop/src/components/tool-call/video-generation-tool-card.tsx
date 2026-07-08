@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { ReadLocalVideoPreview, ReadManagedVideoPreview } from "@/components/tool-call/tool-call-types";
-import { isPreviewableVideoPath } from "@/lib/local-file-attachments";
+import {
+  isPreviewableVideoPath,
+  readCachedLocalFilePreviewDataUrl,
+  rememberLocalFilePreviewDataUrl,
+} from "@/lib/local-file-attachments";
 import { isManagedGeneratedVideoRef } from "@/lib/managed-generated-asset";
 import { cn } from "@/lib/utils";
 import type { ToolBlockSnapshot } from "@/types";
@@ -25,14 +29,26 @@ export function VideoGenerationToolCard({
 
   useEffect(() => {
     let cancelled = false;
-    setPreviewUrl(null);
     if (!previewSourcePath) {
+      setPreviewUrl(null);
       setPreviewState("unavailable");
       return () => {
         cancelled = true;
       };
     }
 
+    // 视频预览解析结果是稳定的协议 URL（非 blob），与图片 data URL 共用模块级
+    // LRU 缓存；虚拟化滚动反复重挂载时命中缓存即跳过 IPC
+    const cached = readCachedLocalFilePreviewDataUrl(previewSourcePath);
+    if (cached) {
+      setPreviewUrl(cached);
+      setPreviewState("ready");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setPreviewUrl(null);
     setPreviewState("loading");
     const resolvePreview = isManagedGeneratedVideoRef(previewSourcePath)
       ? readManagedVideoPreviewUrl(previewSourcePath)
@@ -42,6 +58,9 @@ export function VideoGenerationToolCard({
       .then((url) => {
         if (cancelled) {
           return;
+        }
+        if (url) {
+          rememberLocalFilePreviewDataUrl(previewSourcePath, url);
         }
         setPreviewUrl(url);
         setPreviewState(url ? "ready" : "unavailable");

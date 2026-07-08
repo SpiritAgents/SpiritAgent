@@ -12,9 +12,6 @@ import {
 import type { ReadManagedImagePreview, ReadManagedVideoPreview } from "@/components/tool-call/tool-call-types";
 import { assistantCompactionLive } from "@/lib/conversation-compaction-ui";
 import {
-  isAssistantReasoningLive,
-} from "@/lib/conversation-thinking-ui";
-import {
   isGenericPendingCompactionStatusText,
   isGenericPendingThinkingStatusText,
 } from "@/lib/subagent-display";
@@ -62,31 +59,21 @@ export function CompactionLabelWithShimmer({ active }: { active: boolean }) {
 
 export function AssistantThinkingCollapsible({
   message,
-  pendingAuxState,
-  messages,
-  listIndex,
+  reasoningLive,
   collapseDuringToolPreview,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
 }: {
   message: ConversationMessageSnapshot;
-  pendingAuxState?: PendingAssistantAux;
-  messages: readonly ConversationMessageSnapshot[];
-  listIndex: number;
+  /** 由父级依据 messages/listIndex 计算（isAssistantReasoningLive），本组件不再持有整表引用 */
+  reasoningLive: boolean;
   collapseDuringToolPreview: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
 }) {
   const thinking = message.aux?.thinking?.trim() ?? "";
-  const reasoningLive = isAssistantReasoningLive(message, pendingAuxState, messages, listIndex);
   const showThinkingBody = Boolean(thinking && !isGenericPendingThinkingStatusText(thinking));
   const thinkingActive = reasoningLive && !collapseDuringToolPreview;
-  if (!thinking && !reasoningLive) {
-    return null;
-  }
-  if (!showThinkingBody && !thinkingActive) {
-    return null;
-  }
   const autoExpanded = thinkingActive && showThinkingBody;
   const [manualOpen, setManualOpen] = useState(false);
   const prevAutoExpandedRef = useRef(autoExpanded);
@@ -100,6 +87,13 @@ export function AssistantThinkingCollapsible({
 
   const expanded = autoExpanded || manualOpen;
   const interactive = !autoExpanded;
+
+  if (!thinking && !reasoningLive) {
+    return null;
+  }
+  if (!showThinkingBody && !thinkingActive) {
+    return null;
+  }
 
   return (
     <AnimatedCollapse

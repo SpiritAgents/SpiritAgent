@@ -67,6 +67,49 @@ function wrapStreamingAnimatePlugin(
   };
 }
 
+export type StreamBlockCache = { content: string; blocks: string[] };
+
+const FOOTNOTE_SYNTAX = /\[\^/;
+
+/**
+ * 流式内容只会尾部追加：复用上一次已完成的非尾块，只重解析上次尾块起点之后的
+ * 文本，避免每个 delta 对全文做第二次 marked lexer 解析（Streamdown 内部已为渲染
+ * 解析过一次，此处仅为动画记账）。
+ *
+ * 含脚注语法（[^…]）时 streamdown 的 parseMarkdownIntoBlocks 会把整个文档作为
+ * 单块返回（与前缀无关），此时回退全量解析以保持与其内部分块一致。
+ */
+export function parseStreamBlocksIncrementally(
+  cache: StreamBlockCache | null,
+  content: string,
+): StreamBlockCache {
+  if (cache && cache.content === content) {
+    return cache;
+  }
+  if (
+    cache &&
+    cache.blocks.length > 1 &&
+    content.length > cache.content.length &&
+    content.startsWith(cache.content) &&
+    !FOOTNOTE_SYNTAX.test(content)
+  ) {
+    const tailBlock = cache.blocks[cache.blocks.length - 1]!;
+    const tailStart = cache.content.length - tailBlock.length;
+    // marked 个别结构的 token.raw 覆盖可能不连续（blocks 拼接 ≠ 原文），
+    // 尾块对不上末尾时放弃增量路径，退回全量解析。
+    if (tailStart >= 0 && cache.content.slice(tailStart) === tailBlock) {
+      return {
+        content,
+        blocks: [
+          ...cache.blocks.slice(0, -1),
+          ...parseMarkdownIntoBlocks(content.slice(tailStart)),
+        ],
+      };
+    }
+  }
+  return { content, blocks: parseMarkdownIntoBlocks(content) };
+}
+
 function StreamingAnimateBlock(props: BlockProps) {
   const { index, content, animatePlugin, rehypePlugins, ...rest } = props;
   const { lastBlockIndex, frozenCharCountRef } = useContext(StreamBlockAnimateContext);
@@ -122,9 +165,15 @@ function AgentMarkdownMessageImpl({
   const prefersReducedMotion = usePrefersReducedMotion();
   const motionActive = streaming && !prefersReducedMotion;
 
+  const streamBlocksCacheRef = useRef<StreamBlockCache | null>(null);
   const streamBlocks = useMemo(() => {
-    if (!motionActive) return [];
-    return parseMarkdownIntoBlocks(content);
+    if (!motionActive) {
+      streamBlocksCacheRef.current = null;
+      return [];
+    }
+    const next = parseStreamBlocksIncrementally(streamBlocksCacheRef.current, content);
+    streamBlocksCacheRef.current = next;
+    return next.blocks;
   }, [content, motionActive]);
 
   const lastBlockIndex = Math.max(0, streamBlocks.length - 1);

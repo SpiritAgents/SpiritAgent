@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { ProcessCardCollapsible } from "@/components/process-card-collapsible";
 import { ToolCallDiffHostProvider } from "@/components/tool-call-diff-host-context";
 import { ToolCallCollapsible } from "@/components/tool-call/tool-call-collapsible";
+import type { ComposerLocalFileAttachmentView } from "@/components/composer-local-file-strip";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { MessageCard } from "@/components/conversation/message-card";
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
+import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
 import {
   shouldShowContinueToolbarOnProcessGroup,
@@ -17,10 +19,21 @@ import {
   type ConversationRenderItem,
 } from "@/lib/conversation-process-groups";
 import {
+  isAssistantReasoningLive,
+  shouldCollapseThinkingDuringToolPreview,
+  shouldShowAssistantThinkingCollapsible,
+} from "@/lib/conversation-thinking-ui";
+import {
   assistantTurnStartIndexForRenderItem,
+  isMessageInActiveStreamingTurn,
+  messageShowsAssistantTurnActions,
   resolveTurnActionsToolbarHostIndex,
   shouldClearAssistantTurnHover,
 } from "@/lib/message-turn-actions-ui";
+import {
+  canCopyAssistantTurn,
+  formatAssistantTurnCopyText,
+} from "@/lib/message-turn-copy";
 import { cn } from "@/lib/utils";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import type {
@@ -44,6 +57,11 @@ import {
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
+
+// memo 行的 props 必须引用稳定；空数组用模块级常量而非行内字面量
+const EMPTY_MODELS: DesktopSnapshot["config"]["models"] = [];
+const EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS: readonly ComposerLocalFileAttachmentView[] = [];
+const EMPTY_REWIND_BROWSER_ELEMENT_ATTACHMENTS: readonly BrowserElementAttachment[] = [];
 
 export type ConversationListProps = {
   messages: readonly ConversationMessageSnapshot[];
@@ -163,6 +181,86 @@ export function ConversationList({
     }
     setHoveredAssistantTurnStart(null);
   }, [conversationIsBusy]);
+
+  // 流式 delta 时 MessageCard 靠 memo 短路，传入的回调必须为稳定引用；
+  // runtime 对象每渲染都是新引用，须解构出 useCallback 化的方法再作依赖。
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
+  const {
+    continueAssistantCompletion,
+    abortShell,
+    reorderQueuedUserTurn,
+    sendQueuedUserTurnNow,
+    removeQueuedUserTurn,
+  } = runtime;
+
+  const handleContinueMessage = useCallback(
+    (targetMessage: ConversationMessageSnapshot) => {
+      void continueAssistantCompletion(targetMessage.id);
+    },
+    [continueAssistantCompletion],
+  );
+  const handleAbortShell = useCallback(
+    (toolCallId: string) => {
+      void abortShell(toolCallId);
+    },
+    [abortShell],
+  );
+  const handleQueueMoveUp = useCallback(
+    (queueId: string) => {
+      void reorderQueuedUserTurn(queueId);
+    },
+    [reorderQueuedUserTurn],
+  );
+  const handleQueueSendNow = useCallback(
+    (queueId: string) => {
+      void sendQueuedUserTurnNow(queueId);
+    },
+    [sendQueuedUserTurnNow],
+  );
+  const handleQueueDelete = useCallback(
+    (queueId: string) => {
+      void removeQueuedUserTurn(queueId);
+    },
+    [removeQueuedUserTurn],
+  );
+  const handleRewindChange = useCallback(
+    (value: string) => {
+      onRewindDraftChange((current) => (current ? { ...current, text: value } : current));
+    },
+    [onRewindDraftChange],
+  );
+  const handleRewindElementAttachmentsChange = useCallback(
+    (listIndex: number, attachments: BrowserElementAttachment[]) => {
+      onRewindDraftChange((current) =>
+        current && current.listIndex === listIndex
+          ? { ...current, browserElementAttachments: attachments }
+          : current,
+      );
+    },
+    [onRewindDraftChange],
+  );
+  const handleCopyTurn = useCallback((listIndex: number) => {
+    const text = formatAssistantTurnCopyText(messagesRef.current, listIndex);
+    if (!text.trim()) {
+      return;
+    }
+    void navigator.clipboard.writeText(text);
+  }, []);
+
+  // queued 前缀计数一次算好，避免 renderRow 每行 O(index) 的 slice/filter
+  const queuedBeforeCounts = useMemo(() => {
+    const counts = new Array<number>(messages.length);
+    let queued = 0;
+    for (let index = 0; index < messages.length; index += 1) {
+      counts[index] = queued;
+      if (messages[index]!.queued === true) {
+        queued += 1;
+      }
+    }
+    return counts;
+  }, [messages]);
 
   const toolCallDiffHostValue = useMemo(
     () => ({
@@ -353,9 +451,7 @@ export function ConversationList({
                   onOpenSubagentViewer={onOpenSubagentViewer}
                   onOpenReadFile={onOpenReadFile}
                   onOpenPlan={onOpenPlan}
-                  onAbortShell={(toolCallId) => {
-                    void runtime.abortShell(toolCallId);
-                  }}
+                  onAbortShell={handleAbortShell}
                 />
               )}
               readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
@@ -366,9 +462,7 @@ export function ConversationList({
                 showContinueButton
                 continueTarget={turnContinue.continuableMessage}
                 continueBusy={continueBusy}
-                onContinue={(targetMessage) => {
-                  void runtime.continueAssistantCompletion(targetMessage.id);
-                }}
+                onContinue={handleContinueMessage}
                 canShowActionsMenu={false}
                 canCopy={false}
                 copyEnabled={false}
@@ -390,27 +484,52 @@ export function ConversationList({
     if (!message) {
       return null;
     }
-    const queuedBeforeCount = messages
-      .slice(0, index)
-      .filter((item) => item.queued === true).length;
     const queuedCanMoveUp =
-      message.queued === true && queuedBeforeCount > 0;
+      message.queued === true && (queuedBeforeCounts[index] ?? 0) > 0;
     const hiddenByProcessGroup = isMessageHiddenByProcessGroup(
       conversationRenderItems,
       index,
     );
+    const rewindSelected = rewindDraft?.listIndex === index;
+    // 派生布尔用完整 aux 计算（shouldShow… 会看相邻行的 live 状态）；MessageCard 的
+    // pendingAuxState prop 才按 message.pending 门控——live aux 只与 pending 行自身
+    // 相关，非 pending 行传 undefined 使 memo 在流式期间不被 aux 引用变化击穿。
+    const pendingAuxForRow = message.pending ? conversationPendingAuxState : undefined;
     return (
       <MessageCard
         composerSessionKey={composerSessionKey}
         conversationListScopeKey={conversationListScopeKey}
-        messages={messages}
-        pendingAuxState={conversationPendingAuxState}
+        pendingAuxState={pendingAuxForRow}
         listIndex={index}
         message={message}
         hiddenByProcessGroup={hiddenByProcessGroup}
         externalRowGap
         compactAfterPrevious={false}
         tightenAfterPreviousMeta={false}
+        showThinkingCollapsible={shouldShowAssistantThinkingCollapsible(
+          message,
+          conversationPendingAuxState,
+          messages,
+          index,
+        )}
+        thinkingReasoningLive={isAssistantReasoningLive(
+          message,
+          conversationPendingAuxState,
+          messages,
+          index,
+        )}
+        collapseThinkingDuringToolPreview={shouldCollapseThinkingDuringToolPreview(
+          messages,
+          index,
+        )}
+        turnActionsEligible={messageShowsAssistantTurnActions(message, messages, index)}
+        inActiveStreamingTurn={isMessageInActiveStreamingTurn(
+          messages,
+          index,
+          conversationIsBusy === true,
+        )}
+        canCopyTurn={canCopyAssistantTurn(messages, index)}
+        onCopyTurn={handleCopyTurn}
         showContinueButton={
           turnContinue?.showContinueAtIndex === index &&
           !activeSessionReadOnly &&
@@ -418,50 +537,36 @@ export function ConversationList({
         }
         continueTarget={turnContinue?.continuableMessage}
         continueBusy={continueBusy}
-        rewindSelected={rewindDraft?.listIndex === index}
-        rewindText={
-          rewindDraft?.listIndex === index ? rewindDraft.text : ""
-        }
+        rewindSelected={rewindSelected}
+        rewindText={rewindSelected ? rewindDraft.text : ""}
         rewindLocalFileAttachments={
-          rewindDraft?.listIndex === index
+          rewindSelected
             ? rewindDraft.localFileAttachments
-            : []
+            : EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS
         }
         rewindBrowserElementAttachments={
-          rewindDraft?.listIndex === index
+          rewindSelected
             ? rewindDraft.browserElementAttachments
-            : []
+            : EMPTY_REWIND_BROWSER_ELEMENT_ATTACHMENTS
         }
         rewindRichInputRef={rewindRichInputRef}
-        onRewindElementAttachmentsChange={(attachments) => {
-          onRewindDraftChange((current) =>
-            current && current.listIndex === index
-              ? { ...current, browserElementAttachments: attachments }
-              : current,
-          );
-        }}
+        onRewindElementAttachmentsChange={handleRewindElementAttachmentsChange}
         rewindCanSubmit={
           messageRewindComposerEnabled &&
-          rewindDraft?.listIndex === index &&
+          rewindSelected &&
           (Boolean(rewindDraft.text.trim()) ||
             rewindDraft.browserElementAttachments.length > 0 ||
             rewindDraft.localFileAttachments.length > 0)
         }
         canPickLocalFile={runtime.hostKind === "electron"}
         rewindBusy={runtime.busyAction === "rewind"}
-        models={models}
-        catalogHints={catalogHints}
+        models={rewindSelected ? models : EMPTY_MODELS}
+        catalogHints={rewindSelected ? catalogHints : undefined}
         activeModel={activeModel}
         agentMode={agentMode}
-        onContinue={(targetMessage) => {
-          void runtime.continueAssistantCompletion(targetMessage.id);
-        }}
+        onContinue={handleContinueMessage}
         onRewindStart={onStartMessageRewind}
-        onRewindChange={(value) => {
-          onRewindDraftChange((current) =>
-            current ? { ...current, text: value } : current,
-          );
-        }}
+        onRewindChange={handleRewindChange}
         onRewindSubmit={onSubmitMessageRewind}
         onRewindRemoveLocalFileAttachment={onRewindRemoveLocalFileAttachment}
         onRewindPickLocalFile={onRewindPickLocalFile}
@@ -481,20 +586,12 @@ export function ConversationList({
         onOpenSubagentViewer={onOpenSubagentViewer}
         onOpenReadFile={onOpenReadFile}
         onOpenPlan={onOpenPlan}
-        onAbortShell={(toolCallId) => {
-          void runtime.abortShell(toolCallId);
-        }}
+        onAbortShell={handleAbortShell}
         queuedCanMoveUp={queuedCanMoveUp}
         queueActionBusy={runtime.busyAction === "send"}
-        onQueueMoveUp={(queueId) => {
-          void runtime.reorderQueuedUserTurn(queueId);
-        }}
-        onQueueSendNow={(queueId) => {
-          void runtime.sendQueuedUserTurnNow(queueId);
-        }}
-        onQueueDelete={(queueId) => {
-          void runtime.removeQueuedUserTurn(queueId);
-        }}
+        onQueueMoveUp={handleQueueMoveUp}
+        onQueueSendNow={handleQueueSendNow}
+        onQueueDelete={handleQueueDelete}
         conversationIsBusy={conversationIsBusy}
         activeSessionReadOnly={activeSessionReadOnly}
         forkBusy={runtime.busyAction === "fork"}
