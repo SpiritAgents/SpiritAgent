@@ -80,11 +80,25 @@ export function useWorkspaceToolsController({
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(readWorkspaceToolsWidthPx);
 
   useEffect(() => {
+    // resize 拖动期间事件连发；rAF 合帧后再读 localStorage 中的宽度比例，
+    // 避免每次 resize 都同步读存储（存储值会随分隔条拖拽更新，不能只缓存首值）。
+    let frame = 0;
     const onResize = () => {
-      setWorkspaceToolsWidthPx(readWorkspaceToolsWidthPx());
+      if (frame !== 0) {
+        return;
+      }
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        setWorkspaceToolsWidthPx(readWorkspaceToolsWidthPx());
+      });
     };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      if (frame !== 0) {
+        window.cancelAnimationFrame(frame);
+      }
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
   const [workspacePrRevealNonce, setWorkspacePrRevealNonce] = useState(0);
   const [workspacePrRevealTargetId, setWorkspacePrRevealTargetId] = useState<string | null>(null);
