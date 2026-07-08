@@ -187,38 +187,61 @@ async function tickGitHubAutomationTriggers(
         continue;
       }
 
-      const completedMatches: GitHubAutomationPollMatch[] = [];
-      for (const match of automationMatches) {
-        if (ctx.runningAutomationIds().has(automationId)) {
-          break;
-        }
-        const latestDefinition = refreshed.find((definition) => definition.id === match.automationId);
-        if (!latestDefinition || latestDefinition.trigger.kind !== 'github') {
-          break;
-        }
+      const consumedMatches = await runGitHubMatchesAndCollectConsumed(
+        automationMatches,
+        async (match) => {
+          if (ctx.runningAutomationIds().has(automationId)) {
+            return undefined;
+          }
+          const latestDefinition = refreshed.find((definition) => definition.id === match.automationId);
+          if (!latestDefinition || latestDefinition.trigger.kind !== 'github') {
+            return undefined;
+          }
+          return launchAutomationRun(ctx, store, {
+            definition: latestDefinition,
+            config,
+            context: {
+              kind: 'github',
+              event: latestDefinition.trigger.event,
+              eventUrl: match.item.htmlUrl,
+            },
+          });
+        },
+      );
 
-        const run = await launchAutomationRun(ctx, store, {
-          definition: latestDefinition,
-          config,
-          context: {
-            kind: 'github',
-            event: latestDefinition.trigger.event,
-            eventUrl: match.item.htmlUrl,
-          },
-        });
-        if (run?.status !== 'completed') {
-          break;
-        }
-        completedMatches.push(match);
-      }
-
-      const watermarkUpdates = mergeGitHubPollWatermarkUpdates(completedMatches);
+      const watermarkUpdates = mergeGitHubPollWatermarkUpdates(consumedMatches);
       const nextWatermark = watermarkUpdates.get(automationId);
       if (nextWatermark !== undefined) {
         await store.updateGitHubPollState(automationId, nextWatermark);
       }
     }
   }
+}
+
+/**
+ * 依次为每个匹配事件启动 run，返回已「消费」的匹配（用于推进水位）。
+ * 语义：只要为事件创建出了 run（completed / blocked / failed），该事件即
+ * 视为已消费，不再重试——blocked 等待用户接管、failed 已留下失败记录，
+ * 若不推进水位会每个 tick 无限重建 run 与会话文件。launch 返回 undefined
+ * 表示根本没能创建 run（并发竞争或定义失效），此时停止且不消费。
+ * run 非 completed 时也停止处理后续事件，避免在异常状态下堆积 run。
+ */
+export async function runGitHubMatchesAndCollectConsumed(
+  matches: GitHubAutomationPollMatch[],
+  launch: (match: GitHubAutomationPollMatch) => Promise<HostAutomationRun | undefined>,
+): Promise<GitHubAutomationPollMatch[]> {
+  const consumed: GitHubAutomationPollMatch[] = [];
+  for (const match of matches) {
+    const run = await launch(match);
+    if (!run) {
+      break;
+    }
+    consumed.push(match);
+    if (run.status !== 'completed') {
+      break;
+    }
+  }
+  return consumed;
 }
 
 export function groupGitHubPollMatchesByAutomation(
