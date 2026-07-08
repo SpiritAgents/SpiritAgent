@@ -1,3 +1,4 @@
+import { createElement, type ReactElement } from "react";
 import {
   $applyNodeReplacement,
   DecoratorNode,
@@ -8,6 +9,7 @@ import {
   type Spread,
 } from "lexical";
 
+import { SpiritChipDecorator } from "@/components/composer-lexical/chips/spirit-chip-decorator";
 import type { SpiritChipPayload } from "@/lib/composer-lexical/spirit-chip-payload";
 
 export type SerializedSpiritChipNode = Spread<
@@ -17,7 +19,7 @@ export type SerializedSpiritChipNode = Spread<
   SerializedLexicalNode
 >;
 
-export class SpiritChipNode extends DecoratorNode<null> {
+export class SpiritChipNode extends DecoratorNode<ReactElement> {
   __payload: SpiritChipPayload;
 
   static getType(): string {
@@ -65,8 +67,8 @@ export class SpiritChipNode extends DecoratorNode<null> {
     return true;
   }
 
-  decorate(): null {
-    return null;
+  decorate(): ReactElement {
+    return createElement(SpiritChipDecorator, { payload: this.__payload });
   }
 
   getPayload(): SpiritChipPayload {
