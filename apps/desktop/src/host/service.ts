@@ -663,6 +663,9 @@ class DesktopHostService {
     }
   >();
   private lastToolSnapshotLogSignature: string | undefined;
+  /** buildSnapshot 高频调用；MCP servers / hooks 列表按 workspace+binding 键缓存，配置增删命令处显式失效。 */
+  private mcpServersListCache: { key: string; items: ReturnType<typeof listDesktopMcpServersFromDisk> } | undefined;
+  private hooksListCache: { key: string; items: ReturnType<typeof listDesktopHookListItems> } | undefined;
   /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
   private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spiritagent/host-internal/lsp').LspService>();
@@ -768,6 +771,7 @@ class DesktopHostService {
       setLastRuntimeError: (error) => {
         this.lastRuntimeError = error;
       },
+      invalidateConfigListCaches: () => this.invalidateConfigListCaches(),
       buildSnapshot: () => this.buildSnapshot(),
     };
   }
@@ -3455,6 +3459,40 @@ class DesktopHostService {
     };
   }
 
+  private listMcpServersCached(
+    workspaceRoot: string,
+    workspaceBinding: DesktopWorkspaceBinding,
+  ): ReturnType<typeof listDesktopMcpServersFromDisk> {
+    const key = `${path.resolve(workspaceRoot)}|${workspaceBinding}`;
+    if (this.mcpServersListCache?.key !== key) {
+      this.mcpServersListCache = {
+        key,
+        items: listDesktopMcpServersFromDisk(workspaceRoot, workspaceBinding),
+      };
+    }
+    return this.mcpServersListCache.items;
+  }
+
+  private listHooksCached(
+    workspaceRoot: string,
+    workspaceBinding: DesktopWorkspaceBinding,
+  ): ReturnType<typeof listDesktopHookListItems> {
+    const key = `${path.resolve(workspaceRoot)}|${workspaceBinding}`;
+    if (this.hooksListCache?.key !== key) {
+      this.hooksListCache = {
+        key,
+        items: listDesktopHookListItems(workspaceRoot, workspaceBinding),
+      };
+    }
+    return this.hooksListCache.items;
+  }
+
+  /** MCP / hooks 配置文件被命令写入后调用；workspace 切换靠键变化自然失效。 */
+  private invalidateConfigListCaches(): void {
+    this.mcpServersListCache = undefined;
+    this.hooksListCache = undefined;
+  }
+
   private buildSnapshot(): DesktopSnapshot {
     const state = this.requireState();
     const pendingApproval = this.runtime?.currentPendingApproval();
@@ -3512,8 +3550,8 @@ class DesktopHostService {
         this.activeBundle().toolExecutor?.mcpStatusSnapshot()
         ?? this.toolExecutor?.mcpStatusSnapshot()
         ?? emptyMcpStatusSnapshot(),
-      mcpServers: listDesktopMcpServersFromDisk(state.workspaceRoot, state.workspaceBinding),
-      hooksList: listDesktopHookListItems(state.workspaceRoot, state.workspaceBinding),
+      mcpServers: this.listMcpServersCached(state.workspaceRoot, state.workspaceBinding),
+      hooksList: this.listHooksCached(state.workspaceRoot, state.workspaceBinding),
       lsp: this.lspSnapshot,
       conversation: {
         revision: activeBundle.conversationRevision,
