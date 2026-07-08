@@ -25,8 +25,14 @@ import type { RichSegment } from "@/lib/composer-segment-model";
 import { isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { clearGitHubAutomationRepositoriesCache } from "@/lib/github-automation-repositories-cache";
 import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
-import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
+import { resolveWorkspaceDisplayLabel } from "@/lib/workspace-display-label";
+import {
+  beginEmptySessionGreetingNavigation,
+  cancelEmptySessionGreetingNavigation,
+  commitEmptySessionGreetingNavigation,
+} from "@/lib/empty-session-greeting";
 import { readSessionSplitBinding } from "@/lib/session-split-binding";
+import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
 import { normalizePaneSessionPathKey, resolvePaneDesktopSnapshot } from "@/lib/pane-desktop-snapshot";
 import { getWebClientViewingSessionPath, setWebClientViewingSessionPath } from "@/adapters/web";
@@ -357,6 +363,21 @@ function webPollRequestForSnapshot(
   return sessionPath ? { sessionPath } : undefined;
 }
 
+function snapshotIncludesWorkspaceGreetingVariants(
+  snapshot: Pick<
+    DesktopSnapshot,
+    "workspaceRoot" | "workspaceBinding" | "availableWorkspaces"
+  > | null | undefined,
+): boolean {
+  return (
+    resolveWorkspaceDisplayLabel(
+      snapshot?.workspaceRoot ?? "",
+      snapshot?.workspaceBinding ?? "project",
+      snapshot?.availableWorkspaces ?? [],
+    ) !== null
+  );
+}
+
 export function useDesktopRuntime() {
   const { api, error: hostError, kind, ready: hostReady } = useHostApi();
   const [snapshot, setSnapshot] = useState<DesktopSnapshot | null>(null);
@@ -408,6 +429,9 @@ export function useDesktopRuntime() {
   const appliedConversationRevisionRef = useRef(0);
   const appliedComposerSessionKeyRef = useRef("");
   const sessionNavigationGenerationRef = useRef(0);
+  const [sessionNavigationGeneration, setSessionNavigationGeneration] = useState(0);
+  const [navigationGreetingVariant, setNavigationGreetingVariant] =
+    useState<import("@/lib/empty-session-greeting").EmptySessionGreetingVariantId | null>(null);
   const busyActionRef = useRef<BusyAction>("");
   const paneWorkspaceBusySessionPathRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
@@ -426,6 +450,26 @@ export function useDesktopRuntime() {
   const micaSaveSeqRef = useRef(0);
   const micaInFlightRef = useRef(0);
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
+
+  const advanceSessionNavigationGeneration = useCallback(() => {
+    const next = sessionNavigationGenerationRef.current + 1;
+    sessionNavigationGenerationRef.current = next;
+    setSessionNavigationGeneration(next);
+    return next;
+  }, []);
+
+  const beginNavigationEmptySessionGreeting = useCallback((navGeneration: number) => {
+    const variant = beginEmptySessionGreetingNavigation(navGeneration, {
+      includeWorkspaceVariants: snapshotIncludesWorkspaceGreetingVariants(snapshotRef.current),
+    });
+    setNavigationGreetingVariant(variant);
+    return variant;
+  }, []);
+
+  const finishNavigationEmptySessionGreeting = useCallback((navGeneration: number) => {
+    cancelEmptySessionGreetingNavigation(navGeneration);
+    setNavigationGreetingVariant(null);
+  }, []);
 
   const sessionUiKey = useCallback((sessionKey: string | undefined) => sessionKey?.trim() || "", []);
 
@@ -3457,13 +3501,14 @@ export function useDesktopRuntime() {
       return false;
     }
 
-    const navGeneration = sessionNavigationGenerationRef.current + 1;
-    sessionNavigationGenerationRef.current = navGeneration;
+    const navGeneration = advanceSessionNavigationGeneration();
+    beginNavigationEmptySessionGreeting(navGeneration);
     setBusyAction("reset");
     try {
       stashSessionUi(snapshotRef.current);
       const next = await api.resetSession();
       if (navGeneration !== sessionNavigationGenerationRef.current) {
+        finishNavigationEmptySessionGreeting(navGeneration);
         return false;
       }
       if (isRemoteWebHostClient(api.kind)) {
@@ -3471,6 +3516,8 @@ export function useDesktopRuntime() {
       }
       applySnapshot(next, { navGeneration });
       restoreSessionUi(next);
+      commitEmptySessionGreetingNavigation(navGeneration, next.composerSessionKey);
+      setNavigationGreetingVariant(null);
       if (options?.composerSeed !== undefined) {
         applyComposerSeed(options.composerSeed, next);
       }
@@ -3478,6 +3525,7 @@ export function useDesktopRuntime() {
       void refreshSessions();
       return true;
     } catch (error) {
+      finishNavigationEmptySessionGreeting(navGeneration);
       setRuntimeError(describeError(error));
       return false;
     } finally {
@@ -3485,7 +3533,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
-  }, [api, applyComposerSeed, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi, syncWebViewingSessionPath]);
+  }, [api, advanceSessionNavigationGeneration, applyComposerSeed, applySnapshot, beginNavigationEmptySessionGreeting, finishNavigationEmptySessionGreeting, refreshSessions, restoreSessionUi, stashSessionUi, syncWebViewingSessionPath]);
 
   const summary = useMemo(() => {
     const canEnqueueWhileBusy =
@@ -3663,6 +3711,8 @@ export function useDesktopRuntime() {
     continueAssistantCompletion,
     openSession,
     releaseSessionNavigationBusy,
+    sessionNavigationGeneration,
+    navigationGreetingVariant,
     beginSplitPaneSession,
     setVisiblePaneSessions,
     syncSplitPaneSessions,
