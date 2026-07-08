@@ -80,12 +80,23 @@ export function useConversationStreamScrollTail({
     // 反推：流式期间内容频繁增删（收拢/终版渲染/clamp），scroll 事件送达时读到的
     // scrollTop 与距底都是过期信号——曾两次实测被误判为用户上滚（距底阈值版、
     // scrollTop 上移版），把跟底误关后内容 RO 不再重钉底，即「流式结束后上跳」。
-    // 现规则：wheel 上滚或在 viewport 外按下指针（Radix 滚动条）→ 解除；
+    // 现规则（解除均以用户输入为锚点）：
+    // - wheel 上滚 → 解除；
+    // - viewport 外按下指针（Radix 滚动条拖动）→ 解除；
+    // - viewport 内中键按下（Windows 自动滚动，后续滚动无 wheel 事件）→ 解除；
+    // - viewport 内 pointerdown / touchstart（触屏拖动、拖选文本）期间 scrollTop
+    //   减小 → 解除。触屏须单独用 touch 事件跟踪：Chromium 把触摸拖动判定为滚动
+    //   时会发 pointercancel 并停发 pointer 事件，scroll 事件全部落在其后；而
+    //   touchmove/touchend 在滚动期间持续存在。上滑在手指未离开时 scrollTop 即
+    //   减小，故 touchend 后的惯性滚动无需再判；非手势期间的 scrollTop 减小
+    //   （内容收拢/clamp）不解除，维持原设计意图。
     // scroll 事件仅在「向底部方向滚动且贴近底部」时恢复，永不解除。恢复必须带
     // 方向条件：从底部起步的上滑手势是渐进的，首个 scroll 事件送达时常仍在
     // 48px 阈值内（实测 dist=1），无方向条件会把刚被 wheel 关掉的 stick 立即
     // 误重开，之后侧栏开合等触发内容 RO 即钉底（「上滑一点点后开合侧栏跳底」）。
     // 方向仅用于打开而非关闭：误判最坏只是漏开一次，用户继续向下滚会补上。
+    let pointerHeld = false;
+    let touchActive = false;
     const onWheel = (event: WheelEvent) => {
       if (event.deltaY < 0) {
         stickToBottomRef.current = false;
@@ -94,13 +105,35 @@ export function useConversationStreamScrollTail({
     const onPointerDown = (event: PointerEvent) => {
       if (event.target instanceof Node && !viewport.contains(event.target)) {
         stickToBottomRef.current = false;
+        return;
       }
+      if (event.button === 1) {
+        stickToBottomRef.current = false;
+        return;
+      }
+      if (event.pointerType !== "touch") {
+        pointerHeld = true;
+      }
+    };
+    const onPointerEnd = () => {
+      pointerHeld = false;
+    };
+    const onTouchStart = () => {
+      touchActive = true;
+    };
+    const onTouchEnd = () => {
+      touchActive = false;
     };
     let lastScrollTop = viewport.scrollTop;
     const onScroll = () => {
       const top = viewport.scrollTop;
       const movedTowardBottom = top > lastScrollTop;
+      const movedTowardTop = top < lastScrollTop;
       lastScrollTop = top;
+      if ((pointerHeld || touchActive) && movedTowardTop) {
+        stickToBottomRef.current = false;
+        return;
+      }
       if (
         !stickToBottomRef.current
         && movedTowardBottom
@@ -112,10 +145,21 @@ export function useConversationStreamScrollTail({
 
     viewport.addEventListener("wheel", onWheel, { passive: true });
     root.addEventListener("pointerdown", onPointerDown, { passive: true });
+    viewport.addEventListener("touchstart", onTouchStart, { passive: true });
+    // pointerup / touchend 可能发生在 viewport / 窗口之外（拖动后松手），须挂在 window 上
+    window.addEventListener("pointerup", onPointerEnd, { passive: true });
+    window.addEventListener("pointercancel", onPointerEnd, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
     viewport.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       viewport.removeEventListener("wheel", onWheel);
       root.removeEventListener("pointerdown", onPointerDown);
+      viewport.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("pointerup", onPointerEnd);
+      window.removeEventListener("pointercancel", onPointerEnd);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
       viewport.removeEventListener("scroll", onScroll);
     };
   }, [enabled, scrollAreaRef]);
