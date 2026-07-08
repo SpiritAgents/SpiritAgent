@@ -1001,6 +1001,15 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       return editor.registerCommand(
         KEY_DOWN_COMMAND,
         (event: KeyboardEvent) => {
+          if (
+            event.key === "Enter"
+            && !event.shiftKey
+            && !event.ctrlKey
+            && !event.metaKey
+            && !event.isComposing
+          ) {
+            return true;
+          }
           if (event.key !== "Backspace") {
             return false;
           }
