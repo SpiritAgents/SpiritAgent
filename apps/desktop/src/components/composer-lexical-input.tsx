@@ -85,6 +85,9 @@ import {
 } from "@/lib/composer-lexical/caret";
 import { ComposerOnChangePlugin } from "@/lib/composer-lexical/plugins/composer-on-change-plugin";
 import { ComposerSegmentsHydratePlugin } from "@/lib/composer-lexical/plugins/composer-segments-hydrate-plugin";
+import { AgentModeChipPlugin } from "@/lib/composer-lexical/plugins/agent-mode-chip-plugin";
+import { LoopChipPlugin } from "@/lib/composer-lexical/plugins/loop-chip-plugin";
+import { normalizeComposerSegmentsPolicy } from "@/lib/composer-lexical/composer-lexical-policy";
 import { cn } from "@/lib/utils";
 
 export type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
@@ -332,11 +335,11 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const applyComposerPolicy = useCallback(
       (next: RichSegment[]): RichSegment[] =>
-        applyAgentModeChipPolicy(
-          ensureLoopChipTypingTail(ensureLoopPinned(mergeAdjacentTextSegments(next))),
-          chipPolicy(),
-        ),
-      [chipPolicy],
+        normalizeComposerSegmentsPolicy(next, {
+          agentMode: agentModeRef.current,
+          agentModeChipDismissed: agentModeChipDismissedRef.current,
+        }),
+      [],
     );
 
     const pushSegmentsToEditor = useCallback(
@@ -460,6 +463,17 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         syncAgentModeFromSegments,
         syncLoopEnabledFromSegments,
       ],
+    );
+
+    const handleSegmentsNormalized = useCallback(
+      (next: RichSegment[]) => {
+        commitSegments(next, lexicalSelectionToSegmentCaret(editor), {
+          pushEditor: false,
+          syncLoop: false,
+          syncAgentMode: false,
+        });
+      },
+      [commitSegments, editor],
     );
 
     const getSegments = useCallback((): RichSegment[] => segmentsRef.current, []);
@@ -830,34 +844,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         applySegments,
       ],
     );
-
-    useEffect(() => {
-      const prev = prevLoopEnabledRef.current;
-      prevLoopEnabledRef.current = loopEnabled;
-      if (!loopEnabled) {
-        if (prev && hasLoopSegment(segmentsRef.current)) {
-          removeLoopChip();
-        }
-        return;
-      }
-      if (!prev && !hasLoopSegment(segmentsRef.current)) {
-        insertLoopChip();
-      }
-    }, [loopEnabled, insertLoopChip, removeLoopChip]);
-
-    useEffect(() => {
-      const prev = prevAgentModeRef.current;
-      prevAgentModeRef.current = agentMode;
-      if (!isAgentModeChipKind(agentMode)) {
-        if (isAgentModeChipKind(prev) && hasAgentModeSegment(segmentsRef.current)) {
-          removeAgentModeChip();
-        }
-        return;
-      }
-      if (prev !== agentMode && !agentModeChipDismissedRef.current) {
-        insertAgentModeChip(agentMode, { clearText: false });
-      }
-    }, [agentMode, insertAgentModeChip, removeAgentModeChip]);
 
     useLayoutEffect(() => {
       if (!initialSegments?.length || initialSegmentsHydratedRef.current) {
@@ -1268,6 +1254,22 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
           segmentsRef={segmentsRef}
           skipEditorSyncRef={skipEditorSyncRef}
           mountHydratedRef={mountHydratedRef}
+        />
+        <AgentModeChipPlugin
+          agentMode={agentMode}
+          agentModeChipDismissed={agentModeChipDismissed}
+          skipEditorSyncRef={skipEditorSyncRef}
+          onSegmentsNormalized={handleSegmentsNormalized}
+          onAgentModeChipDismissChange={onAgentModeChipDismissChange}
+          onAgentModeChange={onAgentModeChange}
+        />
+        <LoopChipPlugin
+          loopEnabled={loopEnabled}
+          agentMode={agentMode}
+          agentModeChipDismissed={agentModeChipDismissed}
+          skipEditorSyncRef={skipEditorSyncRef}
+          onSegmentsNormalized={handleSegmentsNormalized}
+          onLoopEnabledChange={onLoopEnabledChange}
         />
       </div>
     );
