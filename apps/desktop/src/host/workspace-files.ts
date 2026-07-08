@@ -50,7 +50,11 @@ export function isBinaryTextFileBuffer(buffer: Buffer): boolean {
     return true;
   }
   try {
-    new TextDecoder('utf-8', { fatal: true }).decode(sample);
+    // 截断前缀可能在多字节 UTF-8 序列中间切断；stream 模式允许末尾
+    // 不完整序列，只有取到整个文件时才要求解码完全终结。
+    new TextDecoder('utf-8', { fatal: true }).decode(sample, {
+      stream: sample.length < buffer.length,
+    });
     return false;
   } catch {
     return true;
