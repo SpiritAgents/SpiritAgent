@@ -486,6 +486,7 @@ import {
 } from './hook-runtime.js';
 import type { HookRunner, SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
 import {
+  disposeMcpServicesExcept,
   sharedMcpServiceForWorkspace,
 } from './service-mcp.js';
 import {
@@ -2767,6 +2768,7 @@ class DesktopHostService {
         && bundle.toolExecutorWorkspaceRoot !== workspaceRoot
       ) {
         await disposeLspServicesExcept(this.lspServiceByWorkspaceRoot, workspaceRoot);
+        disposeMcpServicesExcept(this.mcpServiceByWorkspaceRoot, workspaceRoot);
       }
       bundle.toolExecutor = await this.buildToolExecutorForBundle(bundle, dreamScope, todoScope);
       bundle.toolExecutorWorkspaceRoot = workspaceRoot;

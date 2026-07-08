@@ -31,6 +31,23 @@ export function sharedMcpServiceForWorkspace(
   return service;
 }
 
+/**
+ * 与 LSP 的 disposeLspServicesExcept 对应：workspace 切换时收缩 MCP 目录缓存。
+ * McpService 无持久连接（每次调用 connect→close），删除 Map 条目即可释放内存。
+ */
+export function disposeMcpServicesExcept(
+  cache: Map<string, McpService>,
+  keepWorkspaceRoot?: string,
+): void {
+  const keepPrefix = keepWorkspaceRoot ? `${path.resolve(keepWorkspaceRoot)}|` : undefined;
+  for (const key of [...cache.keys()]) {
+    if (keepPrefix !== undefined && key.startsWith(keepPrefix)) {
+      continue;
+    }
+    cache.delete(key);
+  }
+}
+
 export async function addDesktopMcpServer(input: {
   request: AddMcpServerRequest;
   workspaceRoot: string;
