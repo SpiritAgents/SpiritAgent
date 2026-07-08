@@ -220,18 +220,13 @@ export async function commitWorkspaceChanges(
   workspaceRoot: string,
   message: string,
 ): Promise<void> {
-  const lines = message
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  if (lines.length === 0) {
+  // 单个 -m 传完整 message：逐行 -m 会让 git 在每段之间插空行，
+  // 破坏多行 body（如 subject + 列表 body）的原始格式。
+  const normalized = message.replace(/\r\n/g, '\n').trim();
+  if (!normalized) {
     throw new Error(i18n.t('error.commitMessageRequired'));
   }
 
   await runGit(workspaceRoot, ['add', '-A']);
-  await runGit(workspaceRoot, [
-    'commit',
-    ...lines.flatMap((line) => ['-m', line]),
-  ]);
+  await runGit(workspaceRoot, ['commit', '-m', normalized]);
 }
