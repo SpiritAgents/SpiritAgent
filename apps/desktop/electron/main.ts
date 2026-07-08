@@ -198,6 +198,7 @@ function getDesktopWebHost(config: DesktopWebHostConfigFile): DesktopHttpHost {
         getTokenHash: () => desktopWebHostConfig?.authTokenHash,
         getPairingCode: () => desktopWebHostPairingCode,
         completePairing: completeDesktopWebHostPairing,
+        onPairingLockout: handleDesktopWebHostPairingLockout,
       },
       static: {
         root: rendererDistPath(),
@@ -381,6 +382,21 @@ async function syncDesktopWebHostWithConfig(
       host: config.host,
       port: config.port,
       error: message,
+    });
+  }
+}
+
+/** 配对失败达上限：作废当前配对码并停止对外展示；重启 Web Host 时重新生成。 */
+function handleDesktopWebHostPairingLockout(): void {
+  console.warn('[spirit-desktop] web host pairing locked after too many failures');
+  desktopWebHostPairingCode = '';
+  if (desktopWebHost?.isRunning() && desktopWebHostConfig) {
+    const state = desktopWebHost.getState();
+    setDesktopWebHostRuntimeStatus({
+      state: 'running',
+      host: desktopWebHostConfig.host,
+      port: desktopWebHostConfig.port,
+      ...(state.url ? { url: state.url } : {}),
     });
   }
 }
