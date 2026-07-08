@@ -3,6 +3,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  rename,
   stat,
   unlink,
   writeFile,
@@ -750,7 +751,15 @@ export async function saveStoredSession(
 ): Promise<string> {
   const resolved = resolveSessionPath(filePath);
   await mkdir(path.dirname(resolved), { recursive: true });
-  await writeFile(resolved, `${JSON.stringify(session, null, 2)}\n`, 'utf8');
+  // 原子写：先写同目录 tmp 再 rename，避免写入中途崩溃 / 断电留下截断的会话文件
+  const tmpPath = `${resolved}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    await writeFile(tmpPath, `${JSON.stringify(session, null, 2)}\n`, 'utf8');
+    await rename(tmpPath, resolved);
+  } catch (error) {
+    await unlink(tmpPath).catch(() => {});
+    throw error;
+  }
   return resolved;
 }
 
