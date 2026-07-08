@@ -33,6 +33,19 @@ test('splitKeyringPassword shards Bedrock-scale bearer tokens by UTF-16 bytes', 
   assert.ok(chunks.every((chunk) => utf16LeByteLength(chunk) <= KEYRING_MAX_UTF16_BYTES));
 });
 
+test('splitKeyringPassword never splits surrogate pairs across shards', () => {
+  // 每个 🎉 占 2 个 code unit（4 字节）；上限 10 字节 = 5 unit，
+  // 逐字节切分会在第 5 个 unit 处把代理对切成两半
+  const password = `a${'🎉'.repeat(6)}`;
+  const chunks = splitKeyringPassword(password, 10);
+  assert.ok(chunks.length > 1);
+  assert.equal(chunks.join(''), password);
+  for (const chunk of chunks) {
+    assert.equal(chunk.isWellFormed(), true);
+    assert.ok(utf16LeByteLength(chunk) <= 10);
+  }
+});
+
 test('sharded keyring marker round-trips shard count', () => {
   const primary = buildShardedKeyringPrimary(3);
   assert.equal(primary, `${KEYRING_SHARD_MARKER}3`);
