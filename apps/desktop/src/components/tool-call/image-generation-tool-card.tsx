@@ -9,7 +9,11 @@ import {
   LocalImagePreviewDialog,
 } from "@/components/local-image-preview-dialog";
 import type { ReadLocalImagePreview, SaveLocalImageAs } from "@/components/tool-call/tool-call-types";
-import { isPreviewableImagePath } from "@/lib/local-file-attachments";
+import {
+  isPreviewableImagePath,
+  readCachedLocalFilePreviewDataUrl,
+  rememberLocalFilePreviewDataUrl,
+} from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
 import type { ToolBlockSnapshot } from "@/types";
 
@@ -32,19 +36,33 @@ export function ImageGenerationToolCard({
 
   useEffect(() => {
     let cancelled = false;
-    setPreviewDataUrl(null);
     if (!previewableImagePath) {
+      setPreviewDataUrl(null);
       setPreviewState("unavailable");
       return () => {
         cancelled = true;
       };
     }
 
+    // 虚拟化滚动会反复卸载/重挂载本卡片；命中模块级缓存则跳过 IPC
+    const cached = readCachedLocalFilePreviewDataUrl(previewableImagePath);
+    if (cached) {
+      setPreviewDataUrl(cached);
+      setPreviewState("ready");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setPreviewDataUrl(null);
     setPreviewState("loading");
     void readLocalImagePreviewDataUrl(previewableImagePath)
       .then((dataUrl) => {
         if (cancelled) {
           return;
+        }
+        if (dataUrl) {
+          rememberLocalFilePreviewDataUrl(previewableImagePath, dataUrl);
         }
         setPreviewDataUrl(dataUrl);
         setPreviewState(dataUrl ? "ready" : "unavailable");
