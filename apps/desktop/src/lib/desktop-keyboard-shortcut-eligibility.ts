@@ -67,7 +67,7 @@ export type SettingsShortcutSurfaceContext = {
   activeSurface: ConversationAbortShortcutContext["activeSurface"];
 };
 
-function isEditableShortcutTarget(target: HTMLElement | null): boolean {
+export function isEditableShortcutTarget(target: HTMLElement | null): boolean {
   if (!target) {
     return false;
   }
