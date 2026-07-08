@@ -186,6 +186,7 @@ export function useMonacoCodeCompletion(options: {
       applyDeletePreviewEdit(editor, state.spec);
       clearDeletePreview();
     };
+    acceptDeletePreviewRef.current = acceptDeletePreview;
 
     const executeFetch = async (
       requestPosition: monaco.Position,
@@ -325,14 +326,6 @@ export function useMonacoCodeCompletion(options: {
       freeInlineCompletions: () => {},
     });
 
-    editor.addCommand(
-      monaco.KeyCode.Tab,
-      () => {
-        acceptDeletePreview();
-      },
-      DELETE_PREVIEW_CONTEXT_KEY,
-    );
-
     const contentDisposable = editor.onDidChangeModelContent(() => {
       const position = editor.getPosition();
       const model = editor.getModel();
@@ -359,6 +352,7 @@ export function useMonacoCodeCompletion(options: {
     });
 
     return () => {
+      acceptDeletePreviewRef.current = null;
       contentDisposable.dispose();
       cursorDisposable.dispose();
       if (debounceTimerRef.current !== undefined) {
