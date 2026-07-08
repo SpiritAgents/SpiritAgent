@@ -136,6 +136,18 @@ export function hasSkillSegment(segs: RichSegment[]): boolean {
   return segs.some((s) => s.kind === "skill");
 }
 
+export function hasInlineAttachmentChipSegments(segs: RichSegment[]): boolean {
+  return segs.some(
+    (segment) =>
+      segment.kind === "element"
+      || segment.kind === "prDiff"
+      || segment.kind === "gitCommit"
+      || segment.kind === "terminalSnippet"
+      || segment.kind === "fileSnippet"
+      || segment.kind === "workspaceFile",
+  );
+}
+
 export function extractComposerChipMetadata(segs: RichSegment[]): {
   referencedWorkspaceFilePaths: string[];
   skillChipAliases: string[];
@@ -353,6 +365,9 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
       return true;
     }
     if (seg.kind === "ask" && other.kind === "ask") {
+      return true;
+    }
+    if (seg.kind === "debug" && other.kind === "debug") {
       return true;
     }
     if (seg.kind === "skill" && other.kind === "skill") {

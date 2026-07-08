@@ -41,7 +41,6 @@ test('writeComposerDraft and readComposerDraft round-trip text attachments and s
   writeComposerDraft(
     sessionKey,
     {
-      text: 'fix @src/App.tsx',
       localFilePaths: ['D:\\tmp\\note.png', 'D:/tmp/note.png'],
       segments,
     },
@@ -62,8 +61,8 @@ test('writeComposerDraft deletes empty drafts', () => {
   const storage = createMemoryStorage();
   const sessionKey = 'session-empty';
 
-  writeComposerDraft(sessionKey, { text: 'temp', localFilePaths: [], segments: [] }, storage);
-  writeComposerDraft(sessionKey, { text: '   ', localFilePaths: [], segments: [] }, storage);
+  writeComposerDraft(sessionKey, { localFilePaths: [], segments: [{ kind: 'text', value: 'temp' }] }, storage);
+  writeComposerDraft(sessionKey, { localFilePaths: [], segments: [{ kind: 'text', value: '   ' }] }, storage);
 
   assert.equal(readComposerDraft(sessionKey, storage), undefined);
   const raw = JSON.parse(storage.getItem(COMPOSER_DRAFT_STORAGE_KEY));
@@ -93,7 +92,7 @@ test('clearComposerDraft removes a stored draft', () => {
   const storage = createMemoryStorage();
   const sessionKey = 'session-clear';
 
-  writeComposerDraft(sessionKey, { text: 'keep me briefly', localFilePaths: [], segments: [] }, storage);
+  writeComposerDraft(sessionKey, { localFilePaths: [], segments: [{ kind: 'text', value: 'keep me briefly' }] }, storage);
   clearComposerDraft(sessionKey, storage);
 
   assert.equal(readComposerDraft(sessionKey, storage), undefined);

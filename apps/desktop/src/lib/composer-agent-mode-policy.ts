@@ -1,8 +1,14 @@
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { RichSegment } from "@/lib/composer-segment-model";
-import { emptySegments, hasSkillSegment, isComposerPlainEmpty, mergeAdjacentTextSegments, segmentsToPlainText } from "@/lib/composer-segment-model";
-import { hasInlineAttachmentChipSegments } from "@/lib/composer-inline-chip-dom";
-import { hasLoopSegment } from "@/lib/composer-loop-segments";
+import {
+  emptySegments,
+  hasInlineAttachmentChipSegments,
+  hasSkillSegment,
+  isComposerPlainEmpty,
+  mergeAdjacentTextSegments,
+  segmentsToPlainText,
+} from "@/lib/composer-segment-model";
+import { hasLoopSegment, insertLoopSegment } from "@/lib/composer-loop-segments";
 import {
   currentAgentModeSegment,
   hasAgentModeSegment,
@@ -83,23 +89,13 @@ export function buildSegmentsAfterSend(agentMode: DesktopAgentMode): RichSegment
   });
 }
 
-const STRUCTURAL_KINDS = new Set(["loop", "plan", "ask", "debug"]);
-
-/** DOM 只驱动正文/附件；loop/plan/ask 以 shell（segments state）为准。 */
-export function synchronizeTextFromDom(shell: RichSegment[], domParsed: RichSegment[]): RichSegment[] {
-  const shellStructural = shell.filter((s) => STRUCTURAL_KINDS.has(s.kind));
-  const domBody = domParsed.filter((s) => !STRUCTURAL_KINDS.has(s.kind));
-  return mergeAdjacentTextSegments([...shellStructural, ...domBody]);
-}
-
-export function domParsedMissingRequiredAgentChip(
-  shell: RichSegment[],
-  domParsed: RichSegment[],
-  policy: AgentModeChipPolicy,
-): boolean {
-  return (
-    shouldPinAgentModeChip(policy) &&
-    hasAgentModeSegment(shell) &&
-    !hasAgentModeSegment(domParsed)
-  );
+export function buildPostSendComposerSegments(
+  agentMode: DesktopAgentMode,
+  loopEnabled: boolean,
+): RichSegment[] {
+  let next = buildSegmentsAfterSend(agentMode);
+  if (loopEnabled) {
+    next = insertLoopSegment(next).segments;
+  }
+  return next;
 }

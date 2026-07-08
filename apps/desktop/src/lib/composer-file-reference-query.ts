@@ -1,4 +1,7 @@
-import { currentWorkspaceFileReferenceQuery } from "@spiritagent/host-internal/workspace-file-reference-query";
+import {
+  codeUnitIndexToCharCount,
+  currentWorkspaceFileReferenceQuery,
+} from "@spiritagent/host-internal/workspace-file-reference-query";
 import type { ActiveWorkspaceFileReferenceQuery } from "@spiritagent/host-internal/workspace-file-reference-query";
 
 import {
@@ -45,4 +48,14 @@ export function currentWorkspaceFileReferenceQueryFromSegments(
   }
 
   return query;
+}
+
+/** UTF-16 plain-text caret offset from Lexical selection (via `caretToPlainTextOffset`). */
+export function currentWorkspaceFileReferenceQueryFromSegmentsAtOffset(
+  segments: RichSegment[],
+  plainText: string,
+  cursorCodeUnits: number,
+): ActiveWorkspaceFileReferenceQuery | undefined {
+  const cursorChars = codeUnitIndexToCharCount(plainText, cursorCodeUnits);
+  return currentWorkspaceFileReferenceQueryFromSegments(segments, plainText, cursorChars);
 }

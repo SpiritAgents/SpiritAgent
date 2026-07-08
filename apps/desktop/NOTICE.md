@@ -6,7 +6,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 ## Summary
 
-- MIT: 50 package(s)
+- MIT: 58 package(s)
 - Apache-2.0: 7 package(s)
 - BSD-3-Clause: 2 package(s)
 - ISC: 2 package(s)
@@ -19,6 +19,20 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/electron/rebuild
 - **@fontsource-variable/geist** 5.2.8 — OFL-1.1
   - https://github.com/fontsource/font-files
+- **@lexical/clipboard** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
+- **@lexical/headless** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
+- **@lexical/history** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
+- **@lexical/plain-text** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
+- **@lexical/react** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
+- **@lexical/rich-text** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
+- **@lexical/utils** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
 - **@napi-rs/keyring** 1.2.0 — MIT
   - https://github.com/Brooooooklyn/keyring-node
 - **@radix-ui/react-scroll-area** 1.2.12 — MIT
@@ -85,6 +99,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/KaTeX/KaTeX
 - **koffi** 2.16.1 — MIT
   - https://github.com/Koromix/koffi
+- **lexical** 0.46.0 — MIT
+  - https://github.com/facebook/lexical
 - **license-checker-rseidelsohn** 4.4.2 — BSD-3-Clause
   - https://github.com/RSeidelsohn/license-checker-rseidelsohn
 - **linkedom** 0.18.12 — ISC
@@ -810,6 +826,44 @@ SOFTWARE.
 MIT License
 
 Copyright (c) Contributors to the Electron project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### MIT
+
+**Used by:**
+- @lexical/clipboard 0.46.0
+- @lexical/headless 0.46.0
+- @lexical/history 0.46.0
+- @lexical/plain-text 0.46.0
+- @lexical/react 0.46.0
+- @lexical/rich-text 0.46.0
+- @lexical/utils 0.46.0
+- lexical 0.46.0
+- react 19.2.5
+- react-dom 19.2.5
+
+```
+MIT License
+
+Copyright (c) Meta Platforms, Inc. and affiliates.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1604,36 +1658,6 @@ SOFTWARE.
 MIT License
 
 Copyright (c) 2016 - 2025 Weilin Shi
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-**Used by:**
-- react 19.2.5
-- react-dom 19.2.5
-
-```
-MIT License
-
-Copyright (c) Meta Platforms, Inc. and affiliates.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -17,7 +17,9 @@ import {
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { segmentsToMessageText, segmentsToPlainText } from "@/components/composer-rich-input";
 import { extractComposerChipMetadata, normalizeComposerPlain } from "@/lib/composer-segment-model";
-import { currentAgentModeSegment } from "@/lib/composer-agent-mode-segments";
+import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segments";
+import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
+import { currentAgentModeSegment, isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { cycleAgentMode, type DesktopAgentMode } from "@/lib/agent-mode";
 import { currentWorkspaceFileReferenceQueryFromSegments } from "@/lib/composer-file-reference-query";
 import {
@@ -56,7 +58,6 @@ import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { shouldPromptGitBranchCheckoutBeforeSend } from "@/lib/composer-branch-checkout-gate";
 import {
   buildPaneComposerDraftKey,
-  clearComposerDraft,
   resolvePaneComposerDraft,
   writeComposerDraft,
 } from "@/lib/composer-draft-store";
@@ -121,12 +122,9 @@ export function useComposerController({
   paneSessionPath,
 }: UseComposerControllerOptions) {
   const isPaneIsolated = Boolean(paneSessionPath?.trim());
-  const [paneComposer, setPaneComposer] = useState("");
+  const [paneComposerSegments, setPaneComposerSegments] = useState<RichSegment[]>(() => emptySegments());
   const [paneLocalFileAttachments, setPaneLocalFileAttachments] = useState(
     runtime.composerLocalFileAttachments,
-  );
-  const [paneComposerInitialSegments, setPaneComposerInitialSegments] = useState<RichSegment[] | null>(
-    null,
   );
   const [paneQuestionDrafts, setPaneQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
 
@@ -140,8 +138,7 @@ export function useComposerController({
       return;
     }
     const stored = resolvePaneComposerDraft(paneComposerDraftKey, composerSessionKey);
-    setPaneComposer(stored?.text ?? "");
-    setPaneComposerInitialSegments(stored?.segments ?? null);
+    setPaneComposerSegments(stored?.segments ?? emptySegments());
     setPaneLocalFileAttachments(
       (stored?.localFilePaths ?? []).map((filePath) => composerAttachmentViewFromPath(filePath)),
     );
@@ -161,17 +158,24 @@ export function useComposerController({
     });
   }, [isPaneIsolated, pendingQuestions]);
 
-  const composerText = isPaneIsolated ? paneComposer : runtime.composer;
-  const setComposerText = isPaneIsolated ? setPaneComposer : runtime.setComposer;
+  const composerSegments = isPaneIsolated ? paneComposerSegments : runtime.composerSegments;
+  const setComposerSegments = isPaneIsolated ? setPaneComposerSegments : runtime.setComposerSegments;
+  const composerText = useMemo(
+    () => normalizeComposerPlain(segmentsToPlainText(composerSegments)),
+    [composerSegments],
+  );
+  const setComposerText = useCallback(
+    (text: string) => {
+      setComposerSegments(syncSegmentsFromExternalValue(emptySegments(), text));
+    },
+    [setComposerSegments],
+  );
   const composerLocalFileAttachments = isPaneIsolated
     ? paneLocalFileAttachments
     : runtime.composerLocalFileAttachments;
   const setComposerLocalFileAttachments = isPaneIsolated
     ? setPaneLocalFileAttachments
     : runtime.setComposerLocalFileAttachments;
-  const composerInitialSegments = isPaneIsolated
-    ? paneComposerInitialSegments
-    : runtime.composerInitialSegments;
 
   const pendingComposerSendRef = useRef<{
     text: string;
@@ -179,15 +183,26 @@ export function useComposerController({
   } | null>(null);
   const composerRichInputRef = useRef<ComposerRichInputHandle | null>(null);
 
-  const clearPaneComposerDraft = useCallback(() => {
+  const resetComposerAfterSend = useCallback(() => {
+    setComposerBrowserElementAttachments([]);
     if (!isPaneIsolated || !paneComposerDraftKey) {
       return;
     }
-    setPaneComposer("");
-    setPaneComposerInitialSegments(null);
+    const agentMode = runtime.settings.agentMode;
+    const loopEnabled = snapshot?.conversation.loopEnabled === true;
+    const segments = buildPostSendComposerSegments(agentMode, loopEnabled);
+    setPaneComposerSegments(segments);
     setPaneLocalFileAttachments([]);
-    clearComposerDraft(paneComposerDraftKey);
-  }, [isPaneIsolated, paneComposerDraftKey]);
+    writeComposerDraft(paneComposerDraftKey, {
+      localFilePaths: [],
+      segments,
+    });
+  }, [
+    isPaneIsolated,
+    paneComposerDraftKey,
+    runtime.settings.agentMode,
+    snapshot?.conversation.loopEnabled,
+  ]);
 
   const [composerBrowserElementAttachments, setComposerBrowserElementAttachments] = useState<
     BrowserElementAttachment[]
@@ -199,7 +214,6 @@ export function useComposerController({
   const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
   const [dismissedSlashQueryKey, setDismissedSlashQueryKey] = useState<string | null>(null);
-  const [composerSegmentsRevision, setComposerSegmentsRevision] = useState(0);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const [branchCheckoutDialogOpen, setBranchCheckoutDialogOpen] = useState(false);
@@ -218,32 +232,18 @@ export function useComposerController({
     segments: RichSegment[];
   } | null>(null);
 
-  // 卸载 ComposerRichInput 后 ref 为空，须用最近一次同步的快照在切 pane/卸载时落盘。
   useEffect(() => {
     if (!isPaneIsolated || !paneComposerDraftKey) {
       paneDraftFlushSnapshotRef.current = null;
       return;
     }
-    const richInput = composerRichInputRef.current;
-    if (!richInput) {
-      return;
-    }
     paneDraftFlushSnapshotRef.current = {
       key: paneComposerDraftKey,
       localFilePaths: composerLocalFileAttachments.map((item) => item.path),
-      segments: richInput.getSegments(),
+      segments: composerSegments,
     };
-  }, [
-    composerLocalFileAttachments,
-    composerSegmentsRevision,
-    composerText,
-    isPaneIsolated,
-    paneComposerDraftKey,
-  ]);
+  }, [composerLocalFileAttachments, composerSegments, isPaneIsolated, paneComposerDraftKey]);
 
-  // pane 草稿防抖落盘：文本经 notifyParents 更新 composerText，chip 变更经 segments commit
-  // 递增 composerSegmentsRevision，两者都会触发本效果。text 由落盘时刻的 segments 派生，
-  // 避免闭包中的 composerText 滞后于 segments 造成 text 与 segments 不一致。
   useEffect(() => {
     if (!isPaneIsolated || !paneComposerDraftKey) {
       panePendingDraftPersistRef.current = null;
@@ -251,29 +251,16 @@ export function useComposerController({
     }
     const persist = () => {
       panePendingDraftPersistRef.current = null;
-      const richInput = composerRichInputRef.current;
-      if (!richInput) {
-        return;
-      }
-      const segments = richInput.getSegments();
       writeComposerDraft(paneComposerDraftKey, {
-        text: normalizeComposerPlain(segmentsToPlainText(segments)),
         localFilePaths: composerLocalFileAttachments.map((item) => item.path),
-        segments,
+        segments: composerSegments,
       });
     };
     panePendingDraftPersistRef.current = persist;
     const timeout = window.setTimeout(persist, PANE_COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS);
     return () => window.clearTimeout(timeout);
-  }, [
-    composerLocalFileAttachments,
-    composerSegmentsRevision,
-    composerText,
-    isPaneIsolated,
-    paneComposerDraftKey,
-  ]);
+  }, [composerLocalFileAttachments, composerSegments, isPaneIsolated, paneComposerDraftKey]);
 
-  // pane 切会话 / 卸载时冲刷未落盘草稿（对应非 pane 路径切会话时的 cacheSessionUi 立即写入）。
   useEffect(() => {
     const flushKey = paneComposerDraftKey;
     return () => {
@@ -286,7 +273,6 @@ export function useComposerController({
         return;
       }
       writeComposerDraft(flushKey, {
-        text: normalizeComposerPlain(segmentsToPlainText(snapshot.segments)),
         localFilePaths: snapshot.localFilePaths,
         segments: snapshot.segments,
       });
@@ -311,10 +297,10 @@ export function useComposerController({
           : t("composer.placeholderContinueSession");
 
   const composerAgentModeChipPlaceholder = useMemo(() => {
-    void composerSegmentsRevision;
-    const segments = composerRichInputRef.current?.getSegments() ?? [];
-    const mode = currentAgentModeSegment(segments);
-    if (!mode) {
+    const mode = isAgentModeChipKind(runtime.settings.agentMode)
+      ? runtime.settings.agentMode
+      : currentAgentModeSegment(composerSegments);
+    if (!isAgentModeChipKind(mode)) {
       return undefined;
     }
     if (mode === "plan") {
@@ -324,7 +310,7 @@ export function useComposerController({
       return t("composer.placeholderWithAskChip");
     }
     return t("composer.placeholderWithDebugChip");
-  }, [composerSegmentsRevision, t]);
+  }, [composerSegments, runtime.settings.agentMode, t]);
 
   const messageRewindComposerEnabled =
     !compactionDemoActive &&
@@ -337,18 +323,12 @@ export function useComposerController({
     runtime.busyAction !== "session";
 
   const composerHasPayload = useMemo(() => {
-    void composerSegmentsRevision;
-    const segments = composerRichInputRef.current?.getSegments() ?? [];
     return (
       Boolean(composerText.trim())
       || composerLocalFileAttachments.length > 0
-      || isCompactSlashComposerSegments(segments)
+      || isCompactSlashComposerSegments(composerSegments)
     );
-  }, [
-    composerSegmentsRevision,
-    composerText,
-    composerLocalFileAttachments.length,
-  ]);
+  }, [composerSegments, composerText, composerLocalFileAttachments.length]);
 
   const paneSessionPathKey = isPaneIsolated && paneSessionPath
     ? normalizePaneSessionPathKey(paneSessionPath)
@@ -402,13 +382,12 @@ export function useComposerController({
   );
 
   const fileReferenceQuery = useMemo(() => {
-    const segments = composerRichInputRef.current?.getSegments() ?? [];
     return currentWorkspaceFileReferenceQueryFromSegments(
-      segments,
+      composerSegments,
       composerText,
       composerCursorChars,
     );
-  }, [composerCursorChars, composerSegmentsRevision, composerText]);
+  }, [composerCursorChars, composerSegments, composerText]);
 
   useEffect(() => {
     if (!fileReferenceQuery && dismissedFileReferenceKey !== null) {
@@ -602,10 +581,12 @@ export function useComposerController({
     }
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    setComposerText("");
-    composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-    void runtime.forkSession({ messageId });
-  }, [activeSessionReadOnly, runtime, snapshot?.conversation.isBusy, snapshot?.conversation.messages]);
+    void runtime.forkSession({ messageId }).then((ok) => {
+      if (ok) {
+        resetComposerAfterSend();
+      }
+    });
+  }, [activeSessionReadOnly, resetComposerAfterSend, runtime, snapshot?.conversation.isBusy, snapshot?.conversation.messages]);
 
   const applySlashSuggestionItem = useCallback(
     (suggestion: SkillSlashSuggestion) => {
@@ -655,7 +636,7 @@ export function useComposerController({
   const prefillSkillChip = useCallback(
     (skillName: string) => {
       const alias = skillSlashAlias(skillName);
-      setComposerText("");
+      setComposerSegments(emptySegments());
       setSlashSelectedIndex(-1);
       setDismissedSlashQueryKey(null);
       queueMicrotask(() => {
@@ -750,8 +731,8 @@ export function useComposerController({
       } else {
         const selectionStart = composerCursorCodeUnits;
         const selectionEnd = selectionStart;
-        const nextValue = `${composerText.slice(0, selectionStart)}${text}${composerText.slice(selectionEnd)}`;
-        setComposerText(nextValue);
+        const nextPlain = `${composerText.slice(0, selectionStart)}${text}${composerText.slice(selectionEnd)}`;
+        setComposerSegments(syncSegmentsFromExternalValue(composerSegments, nextPlain));
         setComposerCursorCodeUnits(selectionStart + text.length);
       }
       setSlashSelectedIndex(-1);
@@ -763,7 +744,7 @@ export function useComposerController({
         composerRichInputRef.current?.focus();
       });
     },
-    [composerCursorCodeUnits, runtime],
+    [composerCursorCodeUnits, composerSegments, composerText, setComposerSegments],
   );
 
   const insertFileReferenceTrigger = useCallback(() => {
@@ -933,14 +914,13 @@ export function useComposerController({
   );
 
   const submitComposerMessage = useCallback(() => {
-    const segs = composerRichInputRef.current?.getSegments() ?? [];
-    const fullText = segmentsToMessageText(segs) || composerText;
+    const fullText = segmentsToMessageText(composerSegments);
     const trimmed = fullText.trim();
     if (trimmed === FORK_SLASH_ALIAS) {
       applyForkSlash();
       return;
     }
-    const chipMetadata = extractComposerChipMetadata(segs);
+    const chipMetadata = extractComposerChipMetadata(composerSegments);
     const payload = {
       text: fullText,
       ...(composerLocalFileAttachments.length > 0
@@ -967,14 +947,10 @@ export function useComposerController({
 
     void runtime.sendMessage(withPaneSessionPath(payload)).then((ok) => {
       if (ok) {
-        setComposerBrowserElementAttachments([]);
-        composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-        if (isPaneIsolated) {
-          clearPaneComposerDraft();
-        }
+        resetComposerAfterSend();
       }
     });
-  }, [applyForkSlash, clearPaneComposerDraft, isEmptySession, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [applyForkSlash, composerSegments, isEmptySession, isPaneIsolated, resetComposerAfterSend, runtime, snapshot?.git, withPaneSessionPath]);
 
   const confirmBranchCheckoutAndSend = useCallback(() => {
     void (async () => {
@@ -992,10 +968,7 @@ export function useComposerController({
         setBranchCheckoutDialogOpen(false);
         void runtime.sendMessage(withPaneSessionPath(pending)).then((ok) => {
           if (ok) {
-            composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-            if (isPaneIsolated) {
-              clearPaneComposerDraft();
-            }
+            resetComposerAfterSend();
           }
         });
         return;
@@ -1005,7 +978,7 @@ export function useComposerController({
         setBranchCheckoutBlockedByChanges(true);
       }
     })();
-  }, [checkoutBranchForComposer, clearPaneComposerDraft, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [checkoutBranchForComposer, isPaneIsolated, resetComposerAfterSend, runtime, snapshot?.git, withPaneSessionPath]);
 
   const discardBranchChangesAndCheckoutSend = useCallback(() => {
     void (async () => {
@@ -1026,14 +999,11 @@ export function useComposerController({
       setBranchCheckoutDialogOpen(false);
       void runtime.sendMessage(withPaneSessionPath(pending)).then((ok) => {
         if (ok) {
-          composerRichInputRef.current?.resetAfterSend(runtime.settings.agentMode);
-          if (isPaneIsolated) {
-            clearPaneComposerDraft();
-          }
+          resetComposerAfterSend();
         }
       });
     })();
-  }, [checkoutBranchForComposer, clearPaneComposerDraft, isPaneIsolated, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [checkoutBranchForComposer, isPaneIsolated, resetComposerAfterSend, runtime, snapshot?.git, withPaneSessionPath]);
 
   const handleBranchCheckoutDialogOpenChange = useCallback((open: boolean) => {
     setBranchCheckoutDialogOpen(open);
@@ -1222,20 +1192,13 @@ export function useComposerController({
     setSlashSelectedIndex(-1);
   }, [slashQuery]);
 
-  const handleComposerSegmentsCommit = useCallback(() => {
-    if (!isPaneIsolated) {
-      runtime.setComposerDraftSegments(composerRichInputRef.current?.getSegments() ?? []);
-    }
-    // pane 路径依赖 revision 触发上方防抖落盘效果，无需在此同步写入。
-    setComposerSegmentsRevision((revision) => revision + 1);
-  }, [isPaneIsolated, runtime]);
-
   return {
+    composerSegments,
+    setComposerSegments,
     composerText,
     setComposerText,
     composerLocalFileAttachments,
     setComposerLocalFileAttachments,
-    composerInitialSegments,
     composerBrowserElementAttachments,
     setComposerBrowserElementAttachments,
     composerCursorCodeUnits,
@@ -1294,7 +1257,6 @@ export function useComposerController({
     focusComposer,
     dismissFileReferenceSuggestions,
     dismissSlashSuggestions,
-    handleComposerSegmentsCommit,
     paneQuestionControls: isPaneIsolated && pendingQuestions
       ? {
           questionDrafts: paneQuestionDrafts,
