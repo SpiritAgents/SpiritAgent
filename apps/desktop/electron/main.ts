@@ -1089,19 +1089,19 @@ if (gotSpiritSingleInstanceLock) {
 
   ipcMain.handle(
     'desktop:browser-guest-unregister-f12',
-    (_event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
+    (event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
       const guestWebContentsId = payload?.guestWebContentsId;
       if (typeof guestWebContentsId !== 'number' || !Number.isFinite(guestWebContentsId)) {
         throw new Error('Invalid browser guest webContents id');
       }
-      unregisterBrowserGuestF12(guestWebContentsId);
+      unregisterBrowserGuestF12(event.sender, guestWebContentsId);
     },
   );
 
   ipcMain.handle(
     'desktop:browser-guest-bind-devtools',
     (
-      _event: IpcMainInvokeEvent,
+      event: IpcMainInvokeEvent,
       payload: { pageWebContentsId?: number; devtoolsWebContentsId?: number },
     ) => {
       const pageWebContentsId = payload?.pageWebContentsId;
@@ -1114,29 +1114,29 @@ if (gotSpiritSingleInstanceLock) {
       ) {
         throw new Error('Invalid browser devtools bind payload');
       }
-      bindBrowserGuestDevtools(pageWebContentsId, devtoolsWebContentsId);
+      bindBrowserGuestDevtools(event.sender, pageWebContentsId, devtoolsWebContentsId);
     },
   );
 
   ipcMain.handle(
     'desktop:browser-guest-open-devtools',
-    (_event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+    (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
       const pageWebContentsId = payload?.pageWebContentsId;
       if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
         throw new Error('Invalid browser page webContents id');
       }
-      return openBrowserGuestDevtools(pageWebContentsId);
+      return openBrowserGuestDevtools(event.sender, pageWebContentsId);
     },
   );
 
   ipcMain.handle(
     'desktop:browser-guest-close-devtools',
-    (_event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+    (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
       const pageWebContentsId = payload?.pageWebContentsId;
       if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
         throw new Error('Invalid browser page webContents id');
       }
-      closeBrowserGuestDevtools(pageWebContentsId);
+      closeBrowserGuestDevtools(event.sender, pageWebContentsId);
     },
   );
 
