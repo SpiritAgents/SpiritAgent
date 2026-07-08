@@ -10,6 +10,7 @@ import type { SessionBundle } from './session-bundle.js';
 import {
   bindRewindFileChangesToToolMessage,
   createRewindCheckpointMetadata,
+  deleteRewindSidecarFiles,
   fileChangeMetadata,
   nextDesktopRewindSequence,
   pruneRewindMetadataAfterCheckpoint,
@@ -247,7 +248,13 @@ export function restoreBeforeRewindCheckpoint(
   ctx.activeBundle().archiveHistory = cloneArchiveHistory(archive.llmHistory);
   ctx.activeBundle().archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
   ctx.activeBundle().loopEnabled = archive.loopEnabled === true;
-  pruneRewindMetadataAfterCheckpoint(ctx.activeBundle().rewind, checkpointSequence);
+  const pruned = pruneRewindMetadataAfterCheckpoint(ctx.activeBundle().rewind, checkpointSequence);
+  // 元数据裁剪后同步清理对应 sidecar 文件；失败不影响回退流程（下次会话删除仍会整目录清理）
+  void deleteRewindSidecarFiles(
+    spiritAgentDataDir(),
+    ctx.activeBundle().rewind.sessionId,
+    pruned,
+  );
   ctx.activeBundle().pendingUnboundFileChangeIds = [];
   ctx.activeBundle().messageIdCounter = nextMessageIdFromMessages(ctx.activeBundle().messages);
   ctx.activeBundle().conversationRevision += 1;
