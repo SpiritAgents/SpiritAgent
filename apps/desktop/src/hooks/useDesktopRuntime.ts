@@ -35,6 +35,7 @@ import { readSessionSplitBinding } from "@/lib/session-split-binding";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
 import { normalizePaneSessionPathKey, resolvePaneDesktopSnapshot } from "@/lib/pane-desktop-snapshot";
+import { isProvisionalSessionPromotion } from "@/lib/session-path-kind";
 import { getWebClientViewingSessionPath, setWebClientViewingSessionPath } from "@/adapters/web";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
 import type {
@@ -1415,7 +1416,8 @@ export function useDesktopRuntime() {
         && Boolean(prevPath)
         && Boolean(nextPath)
         && prevPath !== nextPath
-        && busyActionRef.current !== 'session';
+        && busyActionRef.current !== 'session'
+        && !isProvisionalSessionPromotion(prevPath, nextPath);
       if (blockForegroundSwap && previous) {
         applySnapshot({
           ...next,

@@ -18,3 +18,15 @@ export function isStableChatSessionPath(sessionPath: string): boolean {
   const key = normalizeSessionPathKey(sessionPath);
   return key.includes("/chats/chat-") && !key.includes("/__provisional__/");
 }
+
+/** First-send promotion from a provisional draft slot to a persisted chat file. */
+export function isProvisionalSessionPromotion(
+  previousPath: string,
+  nextPath: string,
+): boolean {
+  const prevKey = normalizeSessionPathKey(previousPath);
+  if (!prevKey.includes("/__provisional__/")) {
+    return false;
+  }
+  return isStableChatSessionPath(nextPath);
+}

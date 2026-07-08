@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import {
+  isForegroundProvisionalSessionPath,
+  isProvisionalSessionPromotion,
+  isStableChatSessionPath,
+} from '../../src/lib/session-path-kind.ts';
+
+test('isProvisionalSessionPromotion detects first-send promotion', () => {
+  const provisional =
+    '/Users/me/Library/Application Support/SpiritAgent/chats/__provisional__/abc.json';
+  const stable = '/Users/me/Library/Application Support/SpiritAgent/chats/chat-1783507820.json';
+
+  assert.equal(isForegroundProvisionalSessionPath(provisional), true);
+  assert.equal(isStableChatSessionPath(stable), true);
+  assert.equal(isProvisionalSessionPromotion(provisional, stable), true);
+});
+
+test('isProvisionalSessionPromotion rejects unrelated path swaps', () => {
+  const chatA = '/Users/me/Library/Application Support/SpiritAgent/chats/chat-111.json';
+  const chatB = '/Users/me/Library/Application Support/SpiritAgent/chats/chat-222.json';
+
+  assert.equal(isProvisionalSessionPromotion(chatA, chatB), false);
+});
