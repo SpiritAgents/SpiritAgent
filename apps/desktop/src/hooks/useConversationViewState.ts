@@ -28,7 +28,11 @@ import {
   resolvePaneCanSend,
   resolvePaneComposerBusy,
 } from "@/lib/pane-conversation-controls";
-import type { DesktopSnapshot } from "@/types";
+import type {
+  ConversationMessageSnapshot,
+  DesktopSnapshot,
+  PendingAssistantAux,
+} from "@/types";
 import {
   countVisiblePaneSessions,
   type ConversationAbortShortcutTargetRef,
@@ -38,6 +42,73 @@ type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
 type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
 type LongConversationListDemo = ReturnType<typeof useLongConversationListDemo>;
+
+/** IPC 快照数据均为 JSON 派生（无 function / Date / 循环引用），undefined 字段视作缺省 */
+export function jsonLikeEquals(a: unknown, b: unknown): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) {
+    return false;
+  }
+  const aIsArray = Array.isArray(a);
+  if (aIsArray !== Array.isArray(b)) {
+    return false;
+  }
+  if (aIsArray) {
+    const arrayA = a as readonly unknown[];
+    const arrayB = b as readonly unknown[];
+    if (arrayA.length !== arrayB.length) {
+      return false;
+    }
+    for (let index = 0; index < arrayA.length; index += 1) {
+      if (!jsonLikeEquals(arrayA[index], arrayB[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  const recordA = a as Record<string, unknown>;
+  const recordB = b as Record<string, unknown>;
+  const keysA = Object.keys(recordA).filter((key) => recordA[key] !== undefined);
+  const keysB = Object.keys(recordB).filter((key) => recordB[key] !== undefined);
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+  for (const key of keysA) {
+    if (!jsonLikeEquals(recordA[key], recordB[key])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * 快照经 IPC 到达时所有消息对象都是新引用；按位复用上一次深度相等的消息对象
+ * （全部未变时复用整个数组），使下游按引用比较的 memo（MessageCard 等）在流式
+ * delta 时只重渲实际变化的行。
+ */
+export function stabilizeConversationMessages(
+  previous: readonly ConversationMessageSnapshot[],
+  next: readonly ConversationMessageSnapshot[],
+): readonly ConversationMessageSnapshot[] {
+  if (previous === next) {
+    return next;
+  }
+  let allReused = previous.length === next.length;
+  const merged: ConversationMessageSnapshot[] = new Array(next.length);
+  for (let index = 0; index < next.length; index += 1) {
+    const prevMessage = previous[index];
+    const nextMessage = next[index]!;
+    if (prevMessage && jsonLikeEquals(prevMessage, nextMessage)) {
+      merged[index] = prevMessage;
+    } else {
+      merged[index] = nextMessage;
+      allReused = false;
+    }
+  }
+  return allReused ? previous : merged;
+}
 
 export type UseConversationViewStateOptions = {
   runtime: DesktopRuntime;
@@ -102,13 +173,20 @@ export function useConversationViewState({
   ]);
 
   const sessionMessages = snapshot?.conversation.messages ?? [];
-  const messages = subagentViewActive
+  const rawMessages = subagentViewActive
     ? (snapshot?.subagentViewer?.messages ?? [])
     : longConversationListDemo.active
       ? longConversationListDemo.messages
       : compactionDemo.active
         ? compactionDemo.messages
         : sessionMessages;
+  // 每次 poll 快照全量重建对象；结构共享让「未变消息 / 未变数组」保持引用稳定
+  const stableMessagesRef = useRef<readonly ConversationMessageSnapshot[]>([]);
+  const messages = useMemo(() => {
+    const stabilized = stabilizeConversationMessages(stableMessagesRef.current, rawMessages);
+    stableMessagesRef.current = stabilized;
+    return stabilized;
+  }, [rawMessages]);
   const conversationListScopeKey = resolveConversationListScopeKey({
     subagentViewActive,
     subagentToolCallId: subagentViewer.toolCallId,
@@ -120,12 +198,25 @@ export function useConversationViewState({
     [conversationListScopeKey, messages],
   );
   const conversationViewKey = `${composerSessionKey.trim() || "__no-session__"}:${conversationListScopeKey}`;
-  const processGroupManualOpenKey = (groupId: string) => `${conversationViewKey}:${groupId}`;
-  const conversationPendingAuxState = subagentViewActive
+  const processGroupManualOpenKey = useCallback(
+    (groupId: string) => `${conversationViewKey}:${groupId}`,
+    [conversationViewKey],
+  );
+  const rawPendingAuxState = subagentViewActive
     ? snapshot?.subagentViewer?.pendingAuxState
     : compactionDemo.active
       ? compactionDemo.pendingAuxState
       : snapshot?.conversation.pendingAuxState;
+  const stablePendingAuxRef = useRef<PendingAssistantAux | undefined>(undefined);
+  const conversationPendingAuxState = useMemo(() => {
+    const previous = stablePendingAuxRef.current;
+    const stabilized =
+      previous && rawPendingAuxState && jsonLikeEquals(previous, rawPendingAuxState)
+        ? previous
+        : rawPendingAuxState;
+    stablePendingAuxRef.current = stabilized;
+    return stabilized;
+  }, [rawPendingAuxState]);
 
   const [conversationListRemountEpoch, setConversationListRemountEpoch] = useState(0);
   const prevSessionMessageCountRef = useRef(sessionMessages.length);

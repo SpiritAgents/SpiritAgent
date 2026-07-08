@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES,
   canPreviewComposerLocalFileAttachment,
   isPreviewableImagePath,
+  readCachedLocalFilePreviewDataUrl,
+  rememberLocalFilePreviewDataUrl,
 } from '../../src/lib/local-file-attachments.ts';
 
 test('isPreviewableImagePath accepts common image extensions', () => {
@@ -43,4 +46,36 @@ test('canPreviewComposerLocalFileAttachment requires image flag, extension, and 
     }),
     false,
   );
+});
+
+test('preview data url cache evicts least recently used entry beyond the cap', () => {
+  const cap = LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES;
+  for (let index = 0; index < cap; index += 1) {
+    rememberLocalFilePreviewDataUrl(`/tmp/lru-${index}.png`, `data:image/png;base64,${index}`);
+  }
+  assert.equal(readCachedLocalFilePreviewDataUrl('/tmp/lru-0.png'), 'data:image/png;base64,0');
+
+  // 读取 lru-0 后其变为最近使用；再插入一条应淘汰 lru-1 而非 lru-0
+  rememberLocalFilePreviewDataUrl('/tmp/lru-extra.png', 'data:image/png;base64,extra');
+  assert.equal(readCachedLocalFilePreviewDataUrl('/tmp/lru-0.png'), 'data:image/png;base64,0');
+  assert.equal(readCachedLocalFilePreviewDataUrl('/tmp/lru-1.png'), undefined);
+  assert.equal(
+    readCachedLocalFilePreviewDataUrl('/tmp/lru-extra.png'),
+    'data:image/png;base64,extra',
+  );
+});
+
+test('remembering an existing path refreshes recency instead of duplicating', () => {
+  const cap = LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES;
+  for (let index = 0; index < cap; index += 1) {
+    rememberLocalFilePreviewDataUrl(`/tmp/refresh-${index}.png`, `data:image/png;base64,${index}`);
+  }
+  rememberLocalFilePreviewDataUrl('/tmp/refresh-0.png', 'data:image/png;base64,updated');
+  rememberLocalFilePreviewDataUrl('/tmp/refresh-extra.png', 'data:image/png;base64,extra');
+
+  assert.equal(
+    readCachedLocalFilePreviewDataUrl('/tmp/refresh-0.png'),
+    'data:image/png;base64,updated',
+  );
+  assert.equal(readCachedLocalFilePreviewDataUrl('/tmp/refresh-1.png'), undefined);
 });

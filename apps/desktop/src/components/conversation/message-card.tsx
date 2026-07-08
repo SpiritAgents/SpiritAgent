@@ -1,4 +1,4 @@
-import { useMemo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { memo, useMemo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
@@ -26,23 +26,11 @@ import { messageContentToRichSegments } from "@/lib/composer-segment-model";
 import {
   shouldShowAssistantCompactionCollapsible,
 } from "@/lib/conversation-compaction-ui";
-import {
-  shouldCollapseThinkingDuringToolPreview,
-  shouldShowAssistantThinkingCollapsible,
-} from "@/lib/conversation-thinking-ui";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
 import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
 import { cn } from "@/lib/utils";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { canForkMessage, canShowForkMessage } from "@/lib/fork-eligibility";
-import {
-  canCopyAssistantTurn,
-  formatAssistantTurnCopyText,
-} from "@/lib/message-turn-copy";
-import {
-  isMessageInActiveStreamingTurn,
-  messageShowsAssistantTurnActions,
-} from "@/lib/message-turn-actions-ui";
 import type {
   ConversationMessageSnapshot,
   DesktopModelReasoningEffort,
@@ -50,10 +38,9 @@ import type {
   PendingAssistantAux,
 } from "@/types";
 
-export function MessageCard({
+function MessageCardImpl({
   composerSessionKey,
   conversationListScopeKey,
-  messages,
   message,
   listIndex,
   compactAfterPrevious,
@@ -88,6 +75,13 @@ export function MessageCard({
   onModelThinkingEnabledSelect,
   onAgentModeChange,
   pendingAuxState,
+  showThinkingCollapsible: showThinkingCollapsibleEligible,
+  thinkingReasoningLive,
+  collapseThinkingDuringToolPreview,
+  turnActionsEligible,
+  inActiveStreamingTurn,
+  canCopyTurn,
+  onCopyTurn,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
@@ -117,10 +111,18 @@ export function MessageCard({
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
-  messages: readonly ConversationMessageSnapshot[];
+  /** 仅当本行 message.pending 时传入；live aux 只与 pending 行相关，避免其余行随流式 delta 重渲 */
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
   listIndex: number;
+  /** 以下派生布尔由父级依据整表 messages 计算；本组件不持有整表引用以便 memo 短路 */
+  showThinkingCollapsible: boolean;
+  thinkingReasoningLive: boolean;
+  collapseThinkingDuringToolPreview: boolean;
+  turnActionsEligible: boolean;
+  inActiveStreamingTurn: boolean;
+  canCopyTurn: boolean;
+  onCopyTurn(listIndex: number): void;
   hiddenByProcessGroup?: boolean;
   /** 行间距由虚拟行 paddingTop 承担时去掉 pb-3 / 负 margin 折叠。 */
   externalRowGap?: boolean;
@@ -136,7 +138,7 @@ export function MessageCard({
   rewindCanSubmit: boolean;
   rewindBusy: boolean;
   rewindRichInputRef: RefObject<ComposerRichInputHandle | null>;
-  onRewindElementAttachmentsChange(attachments: BrowserElementAttachment[]): void;
+  onRewindElementAttachmentsChange(listIndex: number, attachments: BrowserElementAttachment[]): void;
   canPickLocalFile: boolean;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
@@ -189,28 +191,16 @@ export function MessageCard({
     "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
   const subagentStatusSurface =
     !isUser && message.content.trim() ? isSubagentStatusSurfaceMessage(message) : false;
-  const showThinkingCollapsible =
-    !hiddenByProcessGroup &&
-    shouldShowAssistantThinkingCollapsible(message, pendingAuxState, messages, listIndex);
+  const showThinkingCollapsible = !hiddenByProcessGroup && showThinkingCollapsibleEligible;
   const showCompactionCollapsible =
     !hiddenByProcessGroup &&
     shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
-  const collapseThinkingDuringToolPreview = shouldCollapseThinkingDuringToolPreview(
-    messages,
-    listIndex,
-  );
   const rewindInitialSegments = useMemo(
     () =>
       rewindSelected
         ? messageContentToRichSegments(message.content, String(message.id))
         : null,
     [rewindSelected, message.content, message.id],
-  );
-  const turnActionsEligible = messageShowsAssistantTurnActions(message, messages, listIndex);
-  const inActiveStreamingTurn = isMessageInActiveStreamingTurn(
-    messages,
-    listIndex,
-    conversationIsBusy === true,
   );
   const showTurnActions =
     !hiddenByProcessGroup
@@ -233,7 +223,7 @@ export function MessageCard({
       activeSessionReadOnly,
       forkBusy,
     });
-  const canCopy = showTurnActions && canCopyAssistantTurn(messages, listIndex);
+  const canCopy = showTurnActions && canCopyTurn;
   const showActionsMenu = canCopy || showForkMenu;
   return (
     <div
@@ -281,7 +271,9 @@ export function MessageCard({
             value={rewindText}
             initialSegments={rewindInitialSegments}
             browserElementAttachments={rewindBrowserElementAttachments}
-            onElementAttachmentsChange={onRewindElementAttachmentsChange}
+            onElementAttachmentsChange={(attachments) =>
+              onRewindElementAttachmentsChange(listIndex, attachments)
+            }
             localFileAttachments={rewindLocalFileAttachments}
             onChange={onRewindChange}
             onSubmit={onRewindSubmit}
@@ -311,9 +303,7 @@ export function MessageCard({
         {showThinkingCollapsible ? (
           <AssistantThinkingCollapsible
             message={message}
-            pendingAuxState={pendingAuxState}
-            messages={messages}
-            listIndex={listIndex}
+            reasoningLive={thinkingReasoningLive}
             collapseDuringToolPreview={collapseThinkingDuringToolPreview}
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
@@ -402,13 +392,7 @@ export function MessageCard({
             canShowActionsMenu={showActionsMenu}
             canCopy={canCopy}
             copyEnabled={canCopy}
-            onCopy={() => {
-              const text = formatAssistantTurnCopyText(messages, listIndex);
-              if (!text.trim()) {
-                return;
-              }
-              void navigator.clipboard.writeText(text);
-            }}
+            onCopy={() => onCopyTurn(listIndex)}
             canFork={showForkMenu && Boolean(onForkMessage)}
             forkEnabled={canFork}
             forkMenuAlwaysVisible={forkMenuAlwaysVisible}
@@ -421,3 +405,10 @@ export function MessageCard({
     </div>
   );
 }
+
+/**
+ * 虚拟列表行级 memo：流式 delta 只应重渲实际变化的行。前提是所有 props 引用稳定——
+ * message/pendingAuxState 由 useConversationViewState 结构共享，回调由 ConversationList
+ * 收敛为稳定引用，整表派生值以布尔 props 传入（本组件不持有 messages 数组引用）。
+ */
+export const MessageCard = memo(MessageCardImpl);
