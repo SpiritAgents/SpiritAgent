@@ -47,6 +47,7 @@ import {
   readModelCatalogCache,
   writeModelCatalogCache,
 } from './model-catalog-cache.js';
+import { invalidateModelCatalogHintsMemo } from './snapshot.js';
 import {
   previewCatalogMapForTransport,
   previewModelCatalogForTransport,
@@ -713,6 +714,8 @@ export async function loadPreviewModelsForTransport(input: {
     input.provider,
     input.transportKind,
   );
+  // 目录缓存文件已更新，失效快照侧的内存 memo，下次 buildSnapshot 重读新目录
+  invalidateModelCatalogHintsMemo();
   return {
     modelIds,
     ...(modelCatalog ? { modelCatalog } : {}),

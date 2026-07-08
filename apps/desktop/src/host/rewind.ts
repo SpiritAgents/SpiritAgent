@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { ChatArchive } from '@spiritagent/agent-core';
@@ -131,16 +131,56 @@ export function upsertRewindCheckpointMetadata(
   metadata.checkpoints.sort((left, right) => left.sequence - right.sequence);
 }
 
+export interface PrunedRewindEntries {
+  checkpointIds: string[];
+  fileChangeIds: string[];
+}
+
 export function pruneRewindMetadataAfterCheckpoint(
   metadata: StoredDesktopRewindMetadata,
   checkpointSequence: number,
-): void {
+): PrunedRewindEntries {
+  const prunedCheckpointIds = metadata.checkpoints
+    .filter((checkpoint) => checkpoint.sequence >= checkpointSequence)
+    .map((checkpoint) => checkpoint.id);
+  const prunedFileChangeIds = metadata.fileChanges
+    .filter((change) => change.sequence > checkpointSequence)
+    .map((change) => change.id);
   metadata.checkpoints = metadata.checkpoints.filter(
     (checkpoint) => checkpoint.sequence < checkpointSequence,
   );
   metadata.fileChanges = metadata.fileChanges.filter(
     (change) => change.sequence <= checkpointSequence,
   );
+  return { checkpointIds: prunedCheckpointIds, fileChangeIds: prunedFileChangeIds };
+}
+
+/** Delete sidecar JSON files for pruned checkpoints / file changes (best-effort). */
+export async function deleteRewindSidecarFiles(
+  spiritDataDir: string,
+  sessionId: string,
+  pruned: PrunedRewindEntries,
+): Promise<void> {
+  await Promise.all([
+    ...pruned.checkpointIds.map((id) =>
+      rm(checkpointPath(spiritDataDir, sessionId, id), { force: true }).catch(() => {}),
+    ),
+    ...pruned.fileChangeIds.map((id) =>
+      rm(fileChangePath(spiritDataDir, sessionId, id), { force: true }).catch(() => {}),
+    ),
+  ]);
+}
+
+/** Delete the whole `<dataDir>/rewind/<sessionId>/` sidecar directory (session deletion). */
+export async function deleteSessionRewindData(
+  spiritDataDir: string,
+  sessionId: string,
+): Promise<void> {
+  const trimmed = sessionId.trim();
+  if (!trimmed) {
+    return;
+  }
+  await rm(sessionRewindDir(spiritDataDir, trimmed), { recursive: true, force: true });
 }
 
 export function canRewindMessage(
