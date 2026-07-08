@@ -444,8 +444,24 @@ function resolveWindowIconPath(): string | undefined {
   return undefined;
 }
 
+const WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS = 1_000;
+let windowsJumpListRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * 会话列表更新可能高频触发（每次都要 listSessions + app.setJumpList）；jump list
+ * 仅需最终一致，这里尾沿合并为一次刷新。此处为 jump list 唯一节流点。
+ */
 function refreshWindowsJumpList(): void {
-  void syncWindowsJumpList(resolveWindowIconPath());
+  if (process.platform !== 'win32') {
+    return;
+  }
+  if (windowsJumpListRefreshTimer !== undefined) {
+    return;
+  }
+  windowsJumpListRefreshTimer = setTimeout(() => {
+    windowsJumpListRefreshTimer = undefined;
+    void syncWindowsJumpList(resolveWindowIconPath());
+  }, WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS);
 }
 
 /** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
