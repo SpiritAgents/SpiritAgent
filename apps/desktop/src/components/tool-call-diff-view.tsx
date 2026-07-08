@@ -21,6 +21,9 @@ function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLE
 
 const TOKENIZE_DEBOUNCE_MS = 32;
 
+// parseDiff 无 hunks 时保持引用稳定，避免 effect 依赖每渲染变化
+const EMPTY_HUNKS: HunkData[] = [];
+
 export type ToolCallDiffViewProps = {
   relativePath: string;
   languageId: string;
@@ -53,21 +56,40 @@ export function ToolCallDiffView({
     return files[0];
   }, [relativePath, original, modified]);
 
-  const hunks = parsedFile?.hunks ?? [];
+  const hunks = parsedFile?.hunks ?? EMPTY_HUNKS;
   const diffType = parsedFile?.type ?? 'modify';
 
-  const [tokens, setTokens] = useState<HunkTokens | null>(() =>
-    tokenizeHunks(hunks, original, languageId),
-  );
+  // 记录已 tokenize 的输入：mount 时 useState 初始化已同步 tokenize 一次，
+  // 首个 effect 输入未变则跳过，避免挂载即双重 tokenize + 多一次渲染。
+  const lastTokenizedRef = useRef<{
+    hunks: HunkData[];
+    original: string;
+    languageId: string;
+  } | null>(null);
+  const [tokens, setTokens] = useState<HunkTokens | null>(() => {
+    lastTokenizedRef.current = { hunks, original, languageId };
+    return tokenizeHunks(hunks, original, languageId);
+  });
 
   useEffect(() => {
+    const last = lastTokenizedRef.current;
+    if (
+      last
+      && last.hunks === hunks
+      && last.original === original
+      && last.languageId === languageId
+    ) {
+      return undefined;
+    }
+    const run = () => {
+      lastTokenizedRef.current = { hunks, original, languageId };
+      setTokens(tokenizeHunks(hunks, original, languageId));
+    };
     if (followTail) {
-      const timer = window.setTimeout(() => {
-        setTokens(tokenizeHunks(hunks, original, languageId));
-      }, TOKENIZE_DEBOUNCE_MS);
+      const timer = window.setTimeout(run, TOKENIZE_DEBOUNCE_MS);
       return () => window.clearTimeout(timer);
     }
-    setTokens(tokenizeHunks(hunks, original, languageId));
+    run();
     return undefined;
   }, [followTail, hunks, original, languageId]);
 
