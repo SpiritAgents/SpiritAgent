@@ -34,10 +34,28 @@ export function splitKeyringPassword(
     ) {
       end += 1;
     }
+    // 不在代理对中间切分：孤立代理写入 keyring 时会被替换成 U+FFFD，
+    // 读回拼接后与原文不符。整个代理对留给下一分片。
+    if (
+      end < password.length
+      && end - offset > 1
+      && isHighSurrogate(password.charCodeAt(end - 1))
+      && isLowSurrogate(password.charCodeAt(end))
+    ) {
+      end -= 1;
+    }
     chunks.push(password.slice(offset, end));
     offset = end;
   }
   return chunks;
+}
+
+function isHighSurrogate(codeUnit: number): boolean {
+  return codeUnit >= 0xd800 && codeUnit <= 0xdbff;
+}
+
+function isLowSurrogate(codeUnit: number): boolean {
+  return codeUnit >= 0xdc00 && codeUnit <= 0xdfff;
 }
 
 export function parseShardedKeyringPrimary(value: string): number | undefined {
