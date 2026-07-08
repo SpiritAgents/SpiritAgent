@@ -290,27 +290,64 @@ export function computeNextRunAt(schedule: HostAutomationTimeSchedule, afterMs: 
   return nextDailyOrWeeklyRun(after, schedule.hour, schedule.minute, schedule.weekday);
 }
 
+/** 最近一次「应触发时间」（≤ nowMs）。基于本地时间计算，DST 由 Date 语义处理。 */
+export function mostRecentDueAt(schedule: HostAutomationTimeSchedule, nowMs: number): number {
+  const candidate = new Date(nowMs);
+  candidate.setSeconds(0, 0);
+  if (schedule.kind === 'hourly') {
+    candidate.setMinutes(0);
+    return candidate.getTime();
+  }
+  candidate.setHours(schedule.hour, schedule.minute, 0, 0);
+  if (schedule.kind === 'daily') {
+    if (candidate.getTime() > nowMs) {
+      candidate.setDate(candidate.getDate() - 1);
+    }
+    return candidate.getTime();
+  }
+  const dayDelta = (candidate.getDay() - schedule.weekday + 7) % 7;
+  candidate.setDate(candidate.getDate() - dayDelta);
+  if (candidate.getTime() > nowMs) {
+    candidate.setDate(candidate.getDate() - 7);
+  }
+  return candidate.getTime();
+}
+
+/**
+ * 上次应触发时间 ≤ now 且晚于 lastFiredMs 即触发（含休眠/时钟跳变后的补跑）。
+ * lastFiredMs 为 undefined 时视为从未触发，直接补跑最近一个应触发时刻；
+ * 调用方应传入创建时间作为基线以避免新建自动化立即补跑历史时刻。
+ */
 export function shouldFireNow(
   schedule: HostAutomationTimeSchedule,
   lastFiredMs: number | undefined,
   nowMs: number,
 ): boolean {
-  const now = new Date(nowMs);
-  const minuteBucket = floorToMinute(nowMs);
-  if (lastFiredMs !== undefined && floorToMinute(lastFiredMs) >= minuteBucket) {
-    return false;
-  }
-
-  if (schedule.kind === 'hourly') {
-    return now.getMinutes() === 0;
-  }
-  if (now.getHours() !== schedule.hour || now.getMinutes() !== schedule.minute) {
-    return false;
-  }
-  if (schedule.kind === 'daily') {
+  const dueAt = mostRecentDueAt(schedule, nowMs);
+  if (lastFiredMs === undefined) {
     return true;
   }
-  return now.getDay() === schedule.weekday;
+  return floorToMinute(lastFiredMs) < dueAt;
+}
+
+// 按文件路径串行化 load-modify-save，避免同进程并发写丢更新。store 实例
+// 在各调用点即建即弃，因此队列必须挂在模块级而非实例上。
+const automationFileTaskQueues = new Map<string, Promise<unknown>>();
+
+function enqueueAutomationFileTask<T>(filePath: string, task: () => Promise<T>): Promise<T> {
+  const previous = automationFileTaskQueues.get(filePath) ?? Promise.resolve();
+  const run = previous.then(task, task);
+  const tail = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  automationFileTaskQueues.set(filePath, tail);
+  void tail.then(() => {
+    if (automationFileTaskQueues.get(filePath) === tail) {
+      automationFileTaskQueues.delete(filePath);
+    }
+  });
+  return run;
 }
 
 export class HostAutomationStore {
