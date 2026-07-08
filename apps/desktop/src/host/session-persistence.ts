@@ -62,6 +62,9 @@ export async function persistDesktopSessionBundle(
     : (bundle.listSortSavedAtUnixMs ?? Date.now());
   const sessionTitleSource = bundle.sessionTitleSource ?? 'seed';
   bundle.sessionTitleSource = sessionTitleSource;
+  const subagentDesktopTimelines = serializeSubagentTimelinesFromMessages(
+    bundle.subagentDesktopMessagesBySessionId,
+  );
   const stored = buildStoredDesktopSession({
     llmHistory: archive.llmHistory,
     subagentSessions: archive.subagentSessions,
@@ -77,13 +80,7 @@ export async function persistDesktopSessionBundle(
     approvalLevel: bundle.approvalLevel,
     ...(bundle.activeModel ? { activeModel: bundle.activeModel } : {}),
     ...(bundle.contextUsage ? { contextUsage: { ...bundle.contextUsage } } : {}),
-    ...(serializeSubagentTimelinesFromMessages(bundle.subagentDesktopMessagesBySessionId)
-      ? {
-          subagentDesktopTimelines: serializeSubagentTimelinesFromMessages(
-            bundle.subagentDesktopMessagesBySessionId,
-          ),
-        }
-      : {}),
+    ...(subagentDesktopTimelines ? { subagentDesktopTimelines } : {}),
     ...(bundle.queuedUserTurns.length > 0
       ? { queuedUserTurns: cloneQueuedUserTurns(bundle.queuedUserTurns) }
       : {}),
