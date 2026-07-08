@@ -276,6 +276,9 @@ function parseDesktopMcpMetadata(
   return result;
 }
 
+// 反斜杠不作通用转义符：Windows 路径（C:\tools\server.exe、\\server\share）
+// 是 stdio command 的常态输入，把 `\x` 吞成 `x` 会破坏路径。唯一保留的转义
+// 是引号内的 `\"` / `\'`（匹配当前引号），用于嵌入字面引号。
 function splitDesktopCommandLine(input: string): string[] {
   const tokens: string[] = [];
   let current = '';
@@ -284,13 +287,13 @@ function splitDesktopCommandLine(input: string): string[] {
   for (let index = 0; index < input.length; index += 1) {
     const ch = input[index]!;
     if (quote) {
-      if (ch === quote) {
-        quote = undefined;
+      if (ch === '\\' && input[index + 1] === quote) {
+        current += quote;
+        index += 1;
         continue;
       }
-      if (ch === '\\' && index + 1 < input.length) {
-        current += input[index + 1]!;
-        index += 1;
+      if (ch === quote) {
+        quote = undefined;
         continue;
       }
       current += ch;
@@ -306,11 +309,6 @@ function splitDesktopCommandLine(input: string): string[] {
         tokens.push(current);
         current = '';
       }
-      continue;
-    }
-    if (ch === '\\' && index + 1 < input.length) {
-      current += input[index + 1]!;
-      index += 1;
       continue;
     }
     current += ch;
