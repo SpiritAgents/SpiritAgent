@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 
 import {
-  pickEmptySessionGreetingVariant,
+  normalizeEmptySessionGreetingSessionKey,
   resolveEmptySessionGreeting,
-  type EmptySessionGreetingVariantId,
+  resolveEmptySessionGreetingVariantForSession,
 } from "@/lib/empty-session-greeting";
 import { resolveWorkspaceDisplayLabel } from "@/lib/workspace-display-label";
 import { resolveConversationListScopeKey } from "@/lib/conversation-list-scope";
@@ -138,7 +138,6 @@ export function useConversationViewState({
 }: UseConversationViewStateOptions) {
   const models = snapshot?.config.models ?? [];
   const composerSessionKey = snapshot?.composerSessionKey ?? "";
-  const emptySessionGreetingCacheRef = useRef(new Map<string, EmptySessionGreetingVariantId>());
   const workspaceDisplayLabel = useMemo(
     () =>
       resolveWorkspaceDisplayLabel(
@@ -155,18 +154,18 @@ export function useConversationViewState({
   );
   const includeWorkspaceGreetingVariants = workspaceDisplayLabel !== null;
   const emptySessionGreeting = useMemo(() => {
-    const sessionKey = composerSessionKey.trim() || "__no-session__";
-    let variantId = emptySessionGreetingCacheRef.current.get(sessionKey);
-    if (!variantId) {
-      variantId = pickEmptySessionGreetingVariant({
+    const sessionKey = normalizeEmptySessionGreetingSessionKey(composerSessionKey);
+    const navigationVariant = runtime.navigationGreetingVariant;
+    const variantId =
+      navigationVariant
+      ?? resolveEmptySessionGreetingVariantForSession(sessionKey, {
         includeWorkspaceVariants: includeWorkspaceGreetingVariants,
       });
-      emptySessionGreetingCacheRef.current.set(sessionKey, variantId);
-    }
     return resolveEmptySessionGreeting(t, variantId, workspaceDisplayLabel);
   }, [
     composerSessionKey,
     includeWorkspaceGreetingVariants,
+    runtime.navigationGreetingVariant,
     workspaceDisplayLabel,
     t,
     language,

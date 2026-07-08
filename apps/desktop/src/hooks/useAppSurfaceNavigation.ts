@@ -116,7 +116,6 @@ export function useAppSurfaceNavigation({
   });
   const showWorkspaceBindingControls = isEmptySession;
 
-
   const handleNewSession = useCallback(() => {
     if (runtime.busyAction === "reset") {
       return;
