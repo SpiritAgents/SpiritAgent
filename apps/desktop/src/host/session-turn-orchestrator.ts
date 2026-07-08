@@ -413,7 +413,7 @@ export async function tickSessionCommand(
     bundle.lastTickPersistAtMs = Date.now();
   }
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
-  await ctx.refreshTodoSnapshotForBundle(bundle);
+  // TODO 快照仅由 onTodoStoreMutated 回调驱动刷新（见 service.ts todoItemsWriter 挂钩），tick 内不再轮询
   await drainQueuedUserTurnIfIdle(ctx, bundle);
 }
 
