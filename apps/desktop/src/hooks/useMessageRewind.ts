@@ -15,8 +15,6 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import {
   messageContentToRichSegments,
-  segmentsToAttachments,
-  segmentsToPlainText,
 } from "@/lib/composer-segment-model";
 import {
   composerAttachmentViewFromPath,
@@ -103,8 +101,7 @@ export function useMessageRewind({
       setRewindDraft({
         messageId: message.id,
         listIndex,
-        text: segmentsToPlainText(segments),
-        browserElementAttachments: segmentsToAttachments(segments),
+        segments,
         localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
       });
     },
@@ -115,8 +112,7 @@ export function useMessageRewind({
     if (!rewindDraft) {
       return;
     }
-    const segs = rewindRichInputRef.current?.getSegments() ?? [];
-    const wireText = segmentsToMessageText(segs) || rewindDraft.text;
+    const wireText = segmentsToMessageText(rewindDraft.segments);
     void runtime
       .rewindAndSubmitMessage({
         messageId: rewindDraft.messageId,

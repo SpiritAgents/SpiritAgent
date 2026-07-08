@@ -11,6 +11,7 @@ import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileRefere
 export type { ApprovalLevel };
 
 import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
+import type { RichSegment } from './lib/composer-segment-model.js';
 import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachments.js';
 
 export type DesktopWorkspaceBinding = 'project' | 'none';
@@ -1380,8 +1381,7 @@ export interface MessageRewindDraftState {
   messageId: number;
   /** List index in the visible conversation; disambiguates duplicate `messageId`s in the timeline. */
   listIndex: number;
-  text: string;
-  browserElementAttachments: BrowserElementAttachment[];
+  segments: RichSegment[];
   localFileAttachments: ComposerLocalFileAttachmentView[];
 }
 

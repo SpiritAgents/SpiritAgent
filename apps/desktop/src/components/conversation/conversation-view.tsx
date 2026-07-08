@@ -86,13 +86,12 @@ export type ConversationListSectionProps = {
 
 export type ComposerDockSectionProps = {
   composerDockRef: Ref<HTMLDivElement | null>;
-  composerInitialSegments?: import("@/lib/composer-segment-model").RichSegment[] | null;
   emptySessionGreeting: string;
   showWorkspaceBindingControls: boolean;
   paneSessionPath?: string;
   useIsolatedPaneWorkspace?: boolean;
-  composerText: string;
-  onComposerTextChange: (text: string) => void;
+  composerSegments: readonly import("@/lib/composer-segment-model").RichSegment[];
+  onComposerSegmentsChange: (segments: import("@/lib/composer-segment-model").RichSegment[]) => void;
   composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
   onComposerLocalFileAttachmentsChange: (
     attachments: ComposerLocalFileAttachmentView[],
@@ -143,7 +142,6 @@ export type ComposerDockSectionProps = {
   onComposerPaste: (event: ReactClipboardEvent<HTMLTextAreaElement>) => void;
   onComposerDragOver: (event: ReactDragEvent<HTMLElement>) => void;
   onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
-  onComposerSegmentsCommit: () => void;
   models: DesktopSnapshot["config"]["models"];
   onOpenGitTab: () => void;
 };
@@ -608,12 +606,11 @@ export function ConversationView({
             ref={composerDock.composerDockRef}
             isEmptySession={isEmptySession}
             emptySessionGreeting={composerDock.emptySessionGreeting}
-            composerInitialSegments={composerDock.composerInitialSegments}
             showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
             paneSessionPath={composerDock.paneSessionPath}
             useIsolatedPaneWorkspace={composerDock.useIsolatedPaneWorkspace}
-            composerText={composerDock.composerText}
-            onComposerTextChange={composerDock.onComposerTextChange}
+            composerSegments={composerDock.composerSegments}
+            onComposerSegmentsChange={composerDock.onComposerSegmentsChange}
             composerLocalFileAttachments={composerDock.composerLocalFileAttachments}
             onComposerLocalFileAttachmentsChange={composerDock.onComposerLocalFileAttachmentsChange}
             snapshot={snapshot}
@@ -663,7 +660,6 @@ export function ConversationView({
             onComposerPaste={composerDock.onComposerPaste}
             onComposerDragOver={composerDock.onComposerDragOver}
             onComposerDrop={composerDock.onComposerDrop}
-            onComposerSegmentsCommit={composerDock.onComposerSegmentsCommit}
             models={composerDock.models}
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}

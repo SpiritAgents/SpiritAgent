@@ -12,6 +12,7 @@ import {
 import { QueuedUserMessageHoverActions } from "@/components/queued-user-message-hover-actions";
 import { ToolCallCollapsible } from "@/components/tool-call/tool-call-collapsible";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
+import { segmentsToAttachments } from "@/lib/composer-segment-model";
 import type {
   ReadLocalImagePreview,
   ReadLocalVideoPreview,
@@ -21,8 +22,6 @@ import type {
 } from "@/components/tool-call/tool-call-types";
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
-import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import { messageContentToRichSegments } from "@/lib/composer-segment-model";
 import {
   shouldShowAssistantCompactionCollapsible,
 } from "@/lib/conversation-compaction-ui";
@@ -48,21 +47,19 @@ function MessageCardImpl({
   showContinueButton,
   continueTarget,
   continueBusy,
-  rewindText,
+  rewindSegments,
   rewindLocalFileAttachments,
-  rewindBrowserElementAttachments,
   rewindSelected,
   rewindCanSubmit,
   rewindBusy,
   rewindRichInputRef,
-  onRewindElementAttachmentsChange,
   canPickLocalFile,
   models,
   catalogHints,
   activeModel,
   agentMode,
   onContinue,
-  onRewindChange,
+  onRewindSegmentsChange,
   onRewindStart,
   onRewindSubmit,
   onRewindRemoveLocalFileAttachment,
@@ -131,21 +128,19 @@ function MessageCardImpl({
   showContinueButton: boolean;
   continueTarget?: ConversationMessageSnapshot;
   continueBusy: boolean;
-  rewindText: string;
+  rewindSegments: readonly import("@/lib/composer-segment-model").RichSegment[];
   rewindLocalFileAttachments: readonly ComposerLocalFileAttachmentView[];
-  rewindBrowserElementAttachments: readonly BrowserElementAttachment[];
   rewindSelected: boolean;
   rewindCanSubmit: boolean;
   rewindBusy: boolean;
   rewindRichInputRef: RefObject<ComposerRichInputHandle | null>;
-  onRewindElementAttachmentsChange(listIndex: number, attachments: BrowserElementAttachment[]): void;
   canPickLocalFile: boolean;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
   activeModel: string;
   agentMode: DesktopAgentMode;
   onContinue(message: ConversationMessageSnapshot): void;
-  onRewindChange(value: string): void;
+  onRewindSegmentsChange(segments: import("@/lib/composer-segment-model").RichSegment[]): void;
   onRewindStart(message: ConversationMessageSnapshot, listIndex: number): void;
   onRewindSubmit(): void;
   onRewindRemoveLocalFileAttachment(path: string): void;
@@ -183,6 +178,10 @@ function MessageCardImpl({
   onAssistantTurnPointerLeave?: (event: ReactPointerEvent, turnStart: number) => void;
 }) {
   const { t } = useTranslation();
+  const rewindBrowserElementAttachments = useMemo(
+    () => (rewindSelected ? segmentsToAttachments([...rewindSegments]) : []),
+    [rewindSegments, rewindSelected],
+  );
   const isUser = message.role === "user";
   const isQueuedUser = isUser && message.queued === true && typeof message.queueId === "string";
   const canStartRewind =
@@ -195,13 +194,6 @@ function MessageCardImpl({
   const showCompactionCollapsible =
     !hiddenByProcessGroup &&
     shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
-  const rewindInitialSegments = useMemo(
-    () =>
-      rewindSelected
-        ? messageContentToRichSegments(message.content, String(message.id))
-        : null,
-    [rewindSelected, message.content, message.id],
-  );
   const showTurnActions =
     !hiddenByProcessGroup
     && !inActiveStreamingTurn
@@ -268,14 +260,11 @@ function MessageCardImpl({
           <ComposerSurface
             key={`rewind-composer-${message.id}`}
             richInputRef={rewindRichInputRef}
-            value={rewindText}
-            initialSegments={rewindInitialSegments}
+            segments={rewindSegments}
+            onSegmentsChange={onRewindSegmentsChange}
             browserElementAttachments={rewindBrowserElementAttachments}
-            onElementAttachmentsChange={(attachments) =>
-              onRewindElementAttachmentsChange(listIndex, attachments)
-            }
+            onElementAttachmentsChange={() => {}}
             localFileAttachments={rewindLocalFileAttachments}
-            onChange={onRewindChange}
             onSubmit={onRewindSubmit}
             placeholder={t('app.typeMessage')}
             models={models}
