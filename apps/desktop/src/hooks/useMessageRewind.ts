@@ -15,8 +15,6 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import {
   messageContentToRichSegments,
-  segmentsToAttachments,
-  segmentsToPlainText,
 } from "@/lib/composer-segment-model";
 import {
   composerAttachmentViewFromPath,
@@ -104,8 +102,6 @@ export function useMessageRewind({
         messageId: message.id,
         listIndex,
         segments,
-        text: segmentsToPlainText(segments),
-        browserElementAttachments: segmentsToAttachments(segments),
         localFileAttachments: snapshotsToComposerAttachmentViews(message.localFileAttachments),
       });
     },

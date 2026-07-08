@@ -1,4 +1,4 @@
-import { memo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { memo, useMemo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
@@ -12,6 +12,7 @@ import {
 import { QueuedUserMessageHoverActions } from "@/components/queued-user-message-hover-actions";
 import { ToolCallCollapsible } from "@/components/tool-call/tool-call-collapsible";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
+import { segmentsToAttachments } from "@/lib/composer-segment-model";
 import type {
   ReadLocalImagePreview,
   ReadLocalVideoPreview,
@@ -21,7 +22,6 @@ import type {
 } from "@/components/tool-call/tool-call-types";
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
-import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import {
   shouldShowAssistantCompactionCollapsible,
 } from "@/lib/conversation-compaction-ui";
@@ -49,12 +49,10 @@ function MessageCardImpl({
   continueBusy,
   rewindSegments,
   rewindLocalFileAttachments,
-  rewindBrowserElementAttachments,
   rewindSelected,
   rewindCanSubmit,
   rewindBusy,
   rewindRichInputRef,
-  onRewindElementAttachmentsChange,
   canPickLocalFile,
   models,
   catalogHints,
@@ -132,12 +130,10 @@ function MessageCardImpl({
   continueBusy: boolean;
   rewindSegments: readonly import("@/lib/composer-segment-model").RichSegment[];
   rewindLocalFileAttachments: readonly ComposerLocalFileAttachmentView[];
-  rewindBrowserElementAttachments: readonly BrowserElementAttachment[];
   rewindSelected: boolean;
   rewindCanSubmit: boolean;
   rewindBusy: boolean;
   rewindRichInputRef: RefObject<ComposerRichInputHandle | null>;
-  onRewindElementAttachmentsChange(listIndex: number, attachments: BrowserElementAttachment[]): void;
   canPickLocalFile: boolean;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
@@ -182,6 +178,10 @@ function MessageCardImpl({
   onAssistantTurnPointerLeave?: (event: ReactPointerEvent, turnStart: number) => void;
 }) {
   const { t } = useTranslation();
+  const rewindBrowserElementAttachments = useMemo(
+    () => (rewindSelected ? segmentsToAttachments([...rewindSegments]) : []),
+    [rewindSegments, rewindSelected],
+  );
   const isUser = message.role === "user";
   const isQueuedUser = isUser && message.queued === true && typeof message.queueId === "string";
   const canStartRewind =
@@ -263,9 +263,7 @@ function MessageCardImpl({
             segments={rewindSegments}
             onSegmentsChange={onRewindSegmentsChange}
             browserElementAttachments={rewindBrowserElementAttachments}
-            onElementAttachmentsChange={(attachments) =>
-              onRewindElementAttachmentsChange(listIndex, attachments)
-            }
+            onElementAttachmentsChange={() => {}}
             localFileAttachments={rewindLocalFileAttachments}
             onSubmit={onRewindSubmit}
             placeholder={t('app.typeMessage')}

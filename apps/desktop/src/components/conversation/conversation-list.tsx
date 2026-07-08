@@ -8,7 +8,6 @@ import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { MessageCard } from "@/components/conversation/message-card";
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
-import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { segmentsToAttachments, segmentsToPlainText } from "@/lib/composer-segment-model";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
 import {
@@ -62,7 +61,6 @@ type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 // memo 行的 props 必须引用稳定；空数组用模块级常量而非行内字面量
 const EMPTY_MODELS: DesktopSnapshot["config"]["models"] = [];
 const EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS: readonly ComposerLocalFileAttachmentView[] = [];
-const EMPTY_REWIND_BROWSER_ELEMENT_ATTACHMENTS: readonly BrowserElementAttachment[] = [];
 
 export type ConversationListProps = {
   messages: readonly ConversationMessageSnapshot[];
@@ -229,24 +227,7 @@ export function ConversationList({
   const handleRewindSegmentsChange = useCallback(
     (segments: import("@/lib/composer-segment-model").RichSegment[]) => {
       onRewindDraftChange((current) =>
-        current
-          ? {
-              ...current,
-              segments,
-              text: segmentsToPlainText(segments),
-              browserElementAttachments: segmentsToAttachments(segments),
-            }
-          : current,
-      );
-    },
-    [onRewindDraftChange],
-  );
-  const handleRewindElementAttachmentsChange = useCallback(
-    (listIndex: number, attachments: BrowserElementAttachment[]) => {
-      onRewindDraftChange((current) =>
-        current && current.listIndex === listIndex
-          ? { ...current, browserElementAttachments: attachments }
-          : current,
+        current ? { ...current, segments } : current,
       );
     },
     [onRewindDraftChange],
@@ -554,18 +535,12 @@ export function ConversationList({
             ? rewindDraft.localFileAttachments
             : EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS
         }
-        rewindBrowserElementAttachments={
-          rewindSelected
-            ? rewindDraft.browserElementAttachments
-            : EMPTY_REWIND_BROWSER_ELEMENT_ATTACHMENTS
-        }
         rewindRichInputRef={rewindRichInputRef}
-        onRewindElementAttachmentsChange={handleRewindElementAttachmentsChange}
         rewindCanSubmit={
           messageRewindComposerEnabled &&
           rewindSelected &&
-          (Boolean(rewindDraft.text.trim()) ||
-            rewindDraft.browserElementAttachments.length > 0 ||
+          (Boolean(segmentsToPlainText(rewindDraft.segments).trim()) ||
+            segmentsToAttachments(rewindDraft.segments).length > 0 ||
             rewindDraft.localFileAttachments.length > 0)
         }
         canPickLocalFile={runtime.hostKind === "electron"}
