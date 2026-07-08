@@ -30,6 +30,27 @@ export function lineChangeCounts(oldText: string, newText: string): EditFileLine
   };
 }
 
+/**
+ * preview（流式参数）阶段每个增量批次都会重算一次 LCS；大编辑下 O(n·m) 会拖垮事件循环。
+ * 超过该单元格数（old 行数 × new 行数）时 preview 跳过统计，工具完成事件再全量计算。
+ */
+const PREVIEW_MAX_LCS_CELLS = 40_000;
+
+function lineChangeCountsForPhase(
+  oldText: string,
+  newText: string,
+  preview: boolean,
+): EditFileLineDelta | undefined {
+  if (preview) {
+    const oldCount = splitLines(oldText).length;
+    const newCount = splitLines(newText).length;
+    if (oldCount * newCount > PREVIEW_MAX_LCS_CELLS) {
+      return undefined;
+    }
+  }
+  return lineChangeCounts(oldText, newText);
+}
+
 function longestCommonSubsequenceLength(a: string[], b: string[]): number {
   if (a.length === 0 || b.length === 0) {
     return 0;
@@ -237,6 +258,8 @@ function extractDeleteFilePath(
 export type AttachEditFileLineDeltaSource = {
   request?: unknown;
   argumentsJson?: string;
+  /** 流式参数预览阶段：大编辑跳过 LCS，完成时再算。 */
+  preview?: boolean;
   resolveDeleteFileLines?: (inputPath: string) => EditFileLineDelta | undefined;
   resolveDeleteFileBaseline?: (inputPath: string) => string | undefined;
 };
@@ -244,6 +267,7 @@ export type AttachEditFileLineDeltaSource = {
 export function toolLineDeltaFromRequest(
   toolName: string,
   request: unknown,
+  options?: { preview?: boolean },
 ): EditFileLineDelta | undefined {
   if (!TOOLS_WITH_LINE_DELTA.has(toolName) || !request || typeof request !== 'object') {
     return undefined;
@@ -266,8 +290,8 @@ export function toolLineDeltaFromRequest(
     return undefined;
   }
 
-  const delta = lineChangeCounts(oldText, newText);
-  if (delta.added === 0 && delta.removed === 0) {
+  const delta = lineChangeCountsForPhase(oldText, newText, options?.preview === true);
+  if (!delta || (delta.added === 0 && delta.removed === 0)) {
     return undefined;
   }
   return delta;
@@ -281,6 +305,7 @@ export function editFileLineDeltaFromRequest(request: unknown): EditFileLineDelt
 export function toolLineDeltaFromArgumentsJson(
   toolName: string,
   argumentsJson: string,
+  options?: { preview?: boolean },
 ): EditFileLineDelta | undefined {
   const trimmed = argumentsJson.trim();
   if (!trimmed || !TOOLS_WITH_LINE_DELTA.has(toolName)) {
@@ -288,7 +313,7 @@ export function toolLineDeltaFromArgumentsJson(
   }
 
   try {
-    return toolLineDeltaFromRequest(toolName, JSON.parse(trimmed) as unknown);
+    return toolLineDeltaFromRequest(toolName, JSON.parse(trimmed) as unknown, options);
   } catch {
     if (toolName === 'create_file' || toolName === 'create_plan') {
       const content = tryExtractPartialJsonStringValue(trimmed, 'content');
@@ -304,8 +329,8 @@ export function toolLineDeltaFromArgumentsJson(
     if (oldText === undefined && newText === undefined) {
       return undefined;
     }
-    const delta = lineChangeCounts(oldText ?? '', newText ?? '');
-    if (delta.added === 0 && delta.removed === 0) {
+    const delta = lineChangeCountsForPhase(oldText ?? '', newText ?? '', options?.preview === true);
+    if (!delta || (delta.added === 0 && delta.removed === 0)) {
       return undefined;
     }
     return delta;
@@ -352,10 +377,11 @@ export function attachEditFileLineDelta(
     return tool;
   }
 
+  const phaseOptions = source.preview === true ? { preview: true } : undefined;
   let delta =
     source.argumentsJson !== undefined
-      ? toolLineDeltaFromArgumentsJson(tool.toolName, source.argumentsJson)
-      : toolLineDeltaFromRequest(tool.toolName, source.request);
+      ? toolLineDeltaFromArgumentsJson(tool.toolName, source.argumentsJson, phaseOptions)
+      : toolLineDeltaFromRequest(tool.toolName, source.request, phaseOptions);
 
   const deleteInputPath =
     tool.toolName === 'delete_file'

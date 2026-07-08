@@ -633,7 +633,8 @@ export class DesktopRuntimeEventOrchestrator {
           },
           summaryCopy,
         ),
-        { argumentsJson: event.argumentsJson },
+        // preview: 每个参数增量批次都会重算行数增删；大编辑跳过 LCS，完成事件再全量算
+        { argumentsJson: event.argumentsJson, preview: true },
       );
       this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
       this.options.messageTimeline?.()?.upsertToolMessage(event.toolCallId, runningTool);
