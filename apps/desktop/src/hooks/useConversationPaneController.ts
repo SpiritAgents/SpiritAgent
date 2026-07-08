@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import type { TFunction } from "i18next";
 
 import type {
@@ -17,7 +17,7 @@ import { resolveEffectiveEmptySession } from "@/lib/conversation-surface-stale";
 import { resolvePaneDesktopSnapshot, lookupPaneSessionSlice } from "@/lib/pane-desktop-snapshot";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
-import type { DesktopSnapshot } from "@/types";
+import type { ConversationMessageSnapshot, DesktopSnapshot } from "@/types";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 type SubagentViewer = ReturnType<typeof useSubagentViewer>;
@@ -197,6 +197,35 @@ export function useConversationPaneController({
   });
 
 
+  // 传入 MessageCard（memo 行）的回调必须引用稳定，不能用每渲染重建的行内闭包
+  const { setProcessGroupManualOpen, processGroupManualOpenKey } = conversation;
+  const onProcessGroupManualOpenChange = useCallback(
+    (groupId: string, open: boolean) => {
+      setProcessGroupManualOpen((current) => ({
+        ...current,
+        [processGroupManualOpenKey(groupId)]: open,
+      }));
+    },
+    [processGroupManualOpenKey, setProcessGroupManualOpen],
+  );
+  const { openEditorFile, openWorkspacePlan } = workspaceTools;
+  const onOpenReadFile = useCallback(
+    (target: EditorFileTarget) => {
+      openEditorFile(target);
+    },
+    [openEditorFile],
+  );
+  const onOpenPlan = useCallback(() => {
+    openWorkspacePlan();
+  }, [openWorkspacePlan]);
+  const { forkSession } = runtime;
+  const onForkMessage = useCallback(
+    (message: ConversationMessageSnapshot, listIndex: number) => {
+      void forkSession({ messageId: message.id, listIndex });
+    },
+    [forkSession],
+  );
+
   const list: ConversationListSectionProps = {
     messages: conversation.messages,
     conversationRenderItems: conversation.conversationRenderItems,
@@ -206,12 +235,7 @@ export function useConversationPaneController({
     conversationPendingAuxState: conversation.conversationPendingAuxState,
     processGroupManualOpen: conversation.processGroupManualOpen,
     processGroupManualOpenKey: conversation.processGroupManualOpenKey,
-    onProcessGroupManualOpenChange: (groupId, open) => {
-      conversation.setProcessGroupManualOpen((current) => ({
-        ...current,
-        [conversation.processGroupManualOpenKey(groupId)]: open,
-      }));
-    },
+    onProcessGroupManualOpenChange,
     shouldPlayProcessSealAnimation: conversation.shouldPlayProcessSealAnimation,
     runtime,
     turnContinue: conversation.turnContinue,
@@ -223,16 +247,10 @@ export function useConversationPaneController({
     rewindRichInputRef: messageRewind.rewindRichInputRef,
     models: conversation.models,
     onOpenSubagentViewer: paneSubagentViewActive ? undefined : conversation.handleOpenSubagentViewer,
-    onOpenReadFile: (target: EditorFileTarget) => {
-      workspaceTools.openEditorFile(target);
-    },
-    onOpenPlan: () => {
-      workspaceTools.openWorkspacePlan();
-    },
+    onOpenReadFile,
+    onOpenPlan,
     onStartMessageRewind: messageRewind.startMessageRewind,
-    onForkMessage: (message, listIndex) => {
-      void runtime.forkSession({ messageId: message.id, listIndex });
-    },
+    onForkMessage,
     onSubmitMessageRewind: messageRewind.submitMessageRewind,
     onRewindRemoveLocalFileAttachment: messageRewind.removeRewindLocalFileAttachment,
     onRewindPickLocalFile: messageRewind.pickRewindLocalFileFromPalette,
