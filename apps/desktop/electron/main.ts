@@ -1,6 +1,6 @@
 import './load-env.js';
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -153,6 +153,8 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 let desktopWebHost: DesktopHttpHost | undefined;
 let desktopWebHostConfig: DesktopWebHostConfigFile | undefined;
 let desktopWebHostPairingCode = createDesktopWebPairingCode();
+/** 配对失败达上限后为 true；HTTP handler 内失败计数未重置前不得重新生成配对码。 */
+let desktopWebHostPairingLocked = false;
 let quittingAfterDesktopWebHostStop = false;
 let unsubscribeDesktopDreamUpdates: (() => void) | undefined;
 let unsubscribeDesktopAutomationsUpdates: (() => void) | undefined;
@@ -198,6 +200,7 @@ function getDesktopWebHost(config: DesktopWebHostConfigFile): DesktopHttpHost {
         getTokenHash: () => desktopWebHostConfig?.authTokenHash,
         getPairingCode: () => desktopWebHostPairingCode,
         completePairing: completeDesktopWebHostPairing,
+        onPairingLockout: handleDesktopWebHostPairingLockout,
       },
       static: {
         root: rendererDistPath(),
@@ -319,7 +322,7 @@ async function syncDesktopWebHostWithConfig(
   desktopWebHostConfig = config;
   if (config.authTokenHash) {
     desktopWebHostPairingCode = '';
-  } else if (!desktopWebHostPairingCode) {
+  } else if (!desktopWebHostPairingCode && !desktopWebHostPairingLocked) {
     desktopWebHostPairingCode = createDesktopWebPairingCode();
   }
 
@@ -358,6 +361,14 @@ async function syncDesktopWebHostWithConfig(
     desktopWebHost = undefined;
   }
 
+  // 重启 HTTP handler 会重置 handler 内配对失败计数；此时才解除锁定并签发新码。
+  if (!config.authTokenHash) {
+    desktopWebHostPairingLocked = false;
+    if (!desktopWebHostPairingCode) {
+      desktopWebHostPairingCode = createDesktopWebPairingCode();
+    }
+  }
+
   setDesktopWebHostRuntimeStatus({
     state: 'starting',
     host: config.host,
@@ -381,6 +392,22 @@ async function syncDesktopWebHostWithConfig(
       host: config.host,
       port: config.port,
       error: message,
+    });
+  }
+}
+
+/** 配对失败达上限：作废当前配对码并停止对外展示；重启 Web Host 时重新生成。 */
+function handleDesktopWebHostPairingLockout(): void {
+  console.warn('[spirit-desktop] web host pairing locked after too many failures');
+  desktopWebHostPairingLocked = true;
+  desktopWebHostPairingCode = '';
+  if (desktopWebHost?.isRunning() && desktopWebHostConfig) {
+    const state = desktopWebHost.getState();
+    setDesktopWebHostRuntimeStatus({
+      state: 'running',
+      host: desktopWebHostConfig.host,
+      port: desktopWebHostConfig.port,
+      ...(state.url ? { url: state.url } : {}),
     });
   }
 }
@@ -428,8 +455,24 @@ function resolveWindowIconPath(): string | undefined {
   return undefined;
 }
 
+const WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS = 1_000;
+let windowsJumpListRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * 会话列表更新可能高频触发（每次都要 listSessions + app.setJumpList）；jump list
+ * 仅需最终一致，这里尾沿合并为一次刷新。此处为 jump list 唯一节流点。
+ */
 function refreshWindowsJumpList(): void {
-  void syncWindowsJumpList(resolveWindowIconPath());
+  if (process.platform !== 'win32') {
+    return;
+  }
+  if (windowsJumpListRefreshTimer !== undefined) {
+    return;
+  }
+  windowsJumpListRefreshTimer = setTimeout(() => {
+    windowsJumpListRefreshTimer = undefined;
+    void syncWindowsJumpList(resolveWindowIconPath());
+  }, WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS);
 }
 
 /** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
@@ -445,19 +488,39 @@ function electronRootBackgroundForBackdrop(blurEnabled: boolean, darkContent: bo
 }
 
 /** 配置键仍为 `windowsMica`，表示各平台原生窗口模糊（Win Mica / macOS Vibrancy）。 */
+let cachedBackdropBlur: { mtimeMs: number; size: number; value: boolean } | undefined;
+
+/**
+ * 该值经 `desktop:read-native-backdrop-blur` 同步 IPC 暴露给渲染层：index.html 首帧
+ * 内联脚本须在渲染前同步拿到，无法改为异步。为避免每次同步 IPC 都读盘解析整个
+ * 配置文件，这里按 mtime/size 缓存，仅在配置文件变化时重新读取。
+ */
 function readBackdropBlurFromDisk(): boolean {
   const filePath = configFilePath();
-  if (!existsSync(filePath)) {
+  let mtimeMs: number;
+  let size: number;
+  try {
+    const stats = statSync(filePath);
+    mtimeMs = stats.mtimeMs;
+    size = stats.size;
+  } catch {
     return true;
   }
+  if (cachedBackdropBlur && cachedBackdropBlur.mtimeMs === mtimeMs && cachedBackdropBlur.size === size) {
+    return cachedBackdropBlur.value;
+  }
+
+  let value = true;
   try {
     const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as {
       windowsMica?: boolean;
     };
-    return parsed.windowsMica !== false;
+    value = parsed.windowsMica !== false;
   } catch {
-    return true;
+    value = true;
   }
+  cachedBackdropBlur = { mtimeMs, size, value };
+  return value;
 }
 
 const MACOS_WINDOW_VIBRANCY = 'under-window' as const;
@@ -651,6 +714,16 @@ async function createMainWindow(): Promise<BrowserWindow> {
   const webContentsId = window.webContents.id;
   window.once('closed', () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
+  });
+  // 渲染进程崩溃或主 frame 重新导航（reload / 加载新页面）后，旧渲染侧的 PTY 会话与
+  // 500ms 轮询定时器无人接管，须在此回收；同文档内导航（SPA 路由）不触发。
+  window.webContents.on('render-process-gone', () => {
+    workspacePtyManager.disposeAllForWebContents(webContentsId);
+  });
+  window.webContents.on('did-start-navigation', (details) => {
+    if (details.isMainFrame && !details.isSameDocument) {
+      workspacePtyManager.disposeAllForWebContents(webContentsId);
+    }
   });
 
   registerDesktopNotifications(window, {
@@ -1063,19 +1136,19 @@ if (gotSpiritSingleInstanceLock) {
 
   ipcMain.handle(
     'desktop:browser-guest-unregister-f12',
-    (_event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
+    (event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
       const guestWebContentsId = payload?.guestWebContentsId;
       if (typeof guestWebContentsId !== 'number' || !Number.isFinite(guestWebContentsId)) {
         throw new Error('Invalid browser guest webContents id');
       }
-      unregisterBrowserGuestF12(guestWebContentsId);
+      unregisterBrowserGuestF12(event.sender, guestWebContentsId);
     },
   );
 
   ipcMain.handle(
     'desktop:browser-guest-bind-devtools',
     (
-      _event: IpcMainInvokeEvent,
+      event: IpcMainInvokeEvent,
       payload: { pageWebContentsId?: number; devtoolsWebContentsId?: number },
     ) => {
       const pageWebContentsId = payload?.pageWebContentsId;
@@ -1088,29 +1161,29 @@ if (gotSpiritSingleInstanceLock) {
       ) {
         throw new Error('Invalid browser devtools bind payload');
       }
-      bindBrowserGuestDevtools(pageWebContentsId, devtoolsWebContentsId);
+      bindBrowserGuestDevtools(event.sender, pageWebContentsId, devtoolsWebContentsId);
     },
   );
 
   ipcMain.handle(
     'desktop:browser-guest-open-devtools',
-    (_event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+    (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
       const pageWebContentsId = payload?.pageWebContentsId;
       if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
         throw new Error('Invalid browser page webContents id');
       }
-      return openBrowserGuestDevtools(pageWebContentsId);
+      return openBrowserGuestDevtools(event.sender, pageWebContentsId);
     },
   );
 
   ipcMain.handle(
     'desktop:browser-guest-close-devtools',
-    (_event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+    (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
       const pageWebContentsId = payload?.pageWebContentsId;
       if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
         throw new Error('Invalid browser page webContents id');
       }
-      closeBrowserGuestDevtools(pageWebContentsId);
+      closeBrowserGuestDevtools(event.sender, pageWebContentsId);
     },
   );
 

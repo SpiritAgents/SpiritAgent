@@ -6,6 +6,7 @@ import {
   type Server,
   type ServerResponse,
 } from 'node:http';
+import { isIP } from 'node:net';
 import path from 'node:path';
 
 import { parseModelProviderId, parsePresetModelProviderId } from '@spiritagent/host-internal/model-provider-presets';
@@ -38,6 +39,8 @@ export interface DesktopHttpAuthOptions {
   getTokenHash(): string | undefined;
   getPairingCode(): string;
   completePairing(authTokenHash: string): Promise<void>;
+  /** 配对失败达到上限时回调；宿主应作废当前配对码，重启 Web Host 后重新生成。 */
+  onPairingLockout?(): void;
 }
 
 export interface DesktopHttpStaticOptions {
@@ -85,6 +88,7 @@ export function createDesktopHttpHost(options: DesktopHttpHostOptions): DesktopH
 
       const nextServer = createServer(
         createDesktopHttpRequestHandler({
+          host: options.host,
           invokeHostCommand: options.invokeHostCommand,
           onHostCommandResult: options.onHostCommandResult,
           auth: options.auth,
@@ -157,17 +161,25 @@ export function createDesktopHttpHost(options: DesktopHttpHostOptions): DesktopH
   };
 }
 
+export const MAX_PAIRING_FAILURES = 5;
+
 export function createDesktopHttpRequestHandler({
+  host,
   invokeHostCommand,
   onHostCommandResult,
   auth,
   static: staticOptions,
 }: {
+  /** 服务监听的 host；用于 Host 头校验（防 DNS rebinding）。 */
+  host: string;
   invokeHostCommand: DesktopHostCommandInvoker;
   onHostCommandResult?: DesktopHostCommandResultHandler;
   auth?: DesktopHttpAuthOptions;
   static?: DesktopHttpStaticOptions;
 }) {
+  // 配对失败计数随 handler（即单次 Web Host 运行周期）存续；重启 Web Host 才重置。
+  let pairingFailureCount = 0;
+
   return async (request: IncomingMessage, response: ServerResponse) => {
     const runHostCommand = async (command: HostCommandName, payload?: unknown) => {
       const result = await invokeHostCommand(command, payload);
@@ -187,6 +199,11 @@ export function createDesktopHttpRequestHandler({
 
       const { pathname } = new URL(request.url, 'http://localhost');
 
+      if (pathname.startsWith('/api/') && !isAllowedRequestHostHeader(request.headers.host, host)) {
+        writeJson(request, response, 403, { error: 'Host header is not allowed.' });
+        return;
+      }
+
       if (request.method === 'OPTIONS') {
         if (!writeCors(request, response)) {
           writeJson(request, response, 403, { error: 'CORS origin is not allowed.' });
@@ -204,6 +221,13 @@ export function createDesktopHttpRequestHandler({
           pathname,
           runHostCommand,
           auth,
+          onPairingFailure: () => {
+            pairingFailureCount += 1;
+            if (pairingFailureCount === MAX_PAIRING_FAILURES) {
+              auth?.onPairingLockout?.();
+            }
+          },
+          isPairingLocked: () => pairingFailureCount >= MAX_PAIRING_FAILURES,
         });
         return;
       }
@@ -246,12 +270,16 @@ async function handleApiRequest({
   pathname,
   runHostCommand,
   auth,
+  onPairingFailure,
+  isPairingLocked,
 }: {
   request: IncomingMessage;
   response: ServerResponse;
   pathname: string;
   runHostCommand: (command: HostCommandName, payload?: unknown) => Promise<unknown>;
   auth?: DesktopHttpAuthOptions;
+  onPairingFailure: () => void;
+  isPairingLocked: () => boolean;
 }): Promise<void> {
   if (request.method === 'GET' && pathname === '/api/pairing/status') {
     writeJson(request, response, 200, {
@@ -267,10 +295,20 @@ async function handleApiRequest({
       return;
     }
 
+    if (isPairingLocked()) {
+      writeJson(request, response, 429, {
+        code: 'PAIRING_LOCKED',
+        error: '配对失败次数过多，请重启 Web Host 生成新的配对码。',
+      });
+      return;
+    }
+
     const body = await readJsonBody(request);
     const jsonBody = isJsonObject(body) ? body : undefined;
     const code = typeof jsonBody?.code === 'string' ? jsonBody.code.trim() : '';
-    if (!code || code !== auth.getPairingCode()) {
+    const expectedCode = auth.getPairingCode();
+    if (!code || !expectedCode || !safePairingCodeEquals(code, expectedCode)) {
+      onPairingFailure();
       writeJson(request, response, 401, {
         code: 'PAIRING_FAILED',
         error: '配对码不正确。',
@@ -1459,6 +1497,51 @@ function safeTokenHashEquals(left: string, right: string): boolean {
   const leftBuffer = Buffer.from(left, 'hex');
   const rightBuffer = Buffer.from(right, 'hex');
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+/** 常数时间比较配对码；长度固定 6 位，长度差异不泄露有效信息。 */
+function safePairingCodeEquals(candidate: string, expected: string): boolean {
+  const candidateBuffer = Buffer.from(candidate, 'utf8');
+  const expectedBuffer = Buffer.from(expected, 'utf8');
+  return (
+    candidateBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(candidateBuffer, expectedBuffer)
+  );
+}
+
+/**
+ * 防 DNS rebinding：API 请求的 Host 头仅允许配置的监听 host 或回环形式。
+ * 绑定 0.0.0.0 / :: 时客户端用本机任意 IP 访问，Host 为 IP 字面量；rebinding 攻击的
+ * Host 必然是攻击者域名（非 IP），故此时放行 IP 字面量不削弱防护。
+ */
+export function isAllowedRequestHostHeader(
+  hostHeader: string | string[] | undefined,
+  configuredHost: string,
+): boolean {
+  const raw = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+  if (!raw) {
+    return false;
+  }
+
+  let hostname: string;
+  try {
+    hostname = new URL(`http://${raw.trim()}`).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  const bareHostname = hostname.replace(/^\[|\]$/gu, '');
+
+  const configured = configuredHost.trim().toLowerCase();
+  if (bareHostname === configured || hostname === configured) {
+    return true;
+  }
+  if (bareHostname === 'localhost' || bareHostname === '127.0.0.1' || bareHostname === '::1') {
+    return true;
+  }
+  if ((configured === '0.0.0.0' || configured === '::') && isIP(bareHostname) !== 0) {
+    return true;
+  }
+  return false;
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
