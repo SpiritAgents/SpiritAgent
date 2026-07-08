@@ -40,6 +40,25 @@ test('editFileLineDeltaFromArgumentsJson updates while new_text streams', () => 
   assert.deepEqual(delta, { removed: 1, added: 2 });
 });
 
+test('preview skips LCS for large edits; final pass still computes', () => {
+  const oldText = Array.from({ length: 300 }, (_, i) => `old ${i}`).join('\n');
+  const newText = Array.from({ length: 300 }, (_, i) => `new ${i}`).join('\n');
+  const json = JSON.stringify({ path: 'x.ts', old_text: oldText, new_text: newText });
+  assert.equal(toolLineDeltaFromArgumentsJson('edit_file', json, { preview: true }), undefined);
+  assert.deepEqual(toolLineDeltaFromArgumentsJson('edit_file', json), {
+    removed: 300,
+    added: 300,
+  });
+});
+
+test('preview keeps LCS for small edits', () => {
+  const json = JSON.stringify({ path: 'x.ts', old_text: 'a\nb', new_text: 'a\nc\nd' });
+  assert.deepEqual(toolLineDeltaFromArgumentsJson('edit_file', json, { preview: true }), {
+    removed: 1,
+    added: 2,
+  });
+});
+
 test('editFileLineDeltaFromArgumentsJson parses complete JSON', () => {
   const json = JSON.stringify({
     path: 'm.ts',
