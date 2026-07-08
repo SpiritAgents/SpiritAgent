@@ -1,8 +1,14 @@
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { RichSegment } from "@/lib/composer-segment-model";
-import { emptySegments, hasSkillSegment, isComposerPlainEmpty, mergeAdjacentTextSegments, segmentsToPlainText } from "@/lib/composer-segment-model";
-import { hasInlineAttachmentChipSegments } from "@/lib/composer-inline-chip-dom";
-import { hasLoopSegment } from "@/lib/composer-loop-segments";
+import {
+  emptySegments,
+  hasInlineAttachmentChipSegments,
+  hasSkillSegment,
+  isComposerPlainEmpty,
+  mergeAdjacentTextSegments,
+  segmentsToPlainText,
+} from "@/lib/composer-segment-model";
+import { hasLoopSegment, insertLoopSegment } from "@/lib/composer-loop-segments";
 import {
   currentAgentModeSegment,
   hasAgentModeSegment,
@@ -83,24 +89,13 @@ export function buildSegmentsAfterSend(agentMode: DesktopAgentMode): RichSegment
   });
 }
 
-const STRUCTURAL_KINDS = new Set(["loop", "plan", "ask", "debug"]);
-
-/** @deprecated Lexical composer uses normalizeComposerSegmentsPolicy; DOM shell merge removed. */
-export function synchronizeTextFromDom(shell: RichSegment[], domParsed: RichSegment[]): RichSegment[] {
-  const shellStructural = shell.filter((s) => STRUCTURAL_KINDS.has(s.kind));
-  const domBody = domParsed.filter((s) => !STRUCTURAL_KINDS.has(s.kind));
-  return mergeAdjacentTextSegments([...shellStructural, ...domBody]);
-}
-
-/** @deprecated Lexical chips live in editor state; DOM loss detection removed. */
-export function domParsedMissingRequiredAgentChip(
-  shell: RichSegment[],
-  domParsed: RichSegment[],
-  policy: AgentModeChipPolicy,
-): boolean {
-  return (
-    shouldPinAgentModeChip(policy) &&
-    hasAgentModeSegment(shell) &&
-    !hasAgentModeSegment(domParsed)
-  );
+export function buildPostSendComposerSegments(
+  agentMode: DesktopAgentMode,
+  loopEnabled: boolean,
+): RichSegment[] {
+  let next = buildSegmentsAfterSend(agentMode);
+  if (loopEnabled) {
+    next = insertLoopSegment(next).segments;
+  }
+  return next;
 }

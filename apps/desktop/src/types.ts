@@ -1382,8 +1382,6 @@ export interface MessageRewindDraftState {
   /** List index in the visible conversation; disambiguates duplicate `messageId`s in the timeline. */
   listIndex: number;
   segments: RichSegment[];
-  text: string;
-  browserElementAttachments: BrowserElementAttachment[];
   localFileAttachments: ComposerLocalFileAttachmentView[];
 }
 

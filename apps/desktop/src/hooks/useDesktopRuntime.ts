@@ -8,7 +8,6 @@ import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
 import {
   buildPaneComposerDraftKey,
-  clearComposerDraft,
   readComposerDraft,
   writeComposerDraft,
 } from "@/lib/composer-draft-store";
@@ -25,6 +24,7 @@ import type { RichSegment } from "@/lib/composer-segment-model";
 import { normalizeComposerPlain, segmentsToPlainText } from "@/lib/composer-segment-model";
 import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segments";
 import { isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
+import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
 import { clearGitHubAutomationRepositoriesCache } from "@/lib/github-automation-repositories-cache";
 import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import { resolveWorkspaceDisplayLabel } from "@/lib/workspace-display-label";
@@ -476,17 +476,34 @@ export function useDesktopRuntime() {
 
   const sessionUiKey = useCallback((sessionKey: string | undefined) => sessionKey?.trim() || "", []);
 
-  const clearActiveComposerDraft = useCallback(() => {
-    const key = sessionUiKey(snapshotRef.current?.composerSessionKey);
-    setComposerSegments(emptySegments());
-    setComposerLocalFileAttachments([]);
-    setAgentModeChipDismissed(false);
-    if (!key) {
-      return;
-    }
-    sessionUiCacheRef.current.delete(key);
-    clearComposerDraft(key);
-  }, [sessionUiKey]);
+  const resetComposerAfterSend = useCallback(
+    (agentMode: DesktopAgentMode, options?: { loopEnabled?: boolean }) => {
+      const loopEnabled = options?.loopEnabled ?? snapshotRef.current?.conversation.loopEnabled === true;
+      const segments = buildPostSendComposerSegments(agentMode, loopEnabled);
+      const key = sessionUiKey(snapshotRef.current?.composerSessionKey);
+
+      setComposerSegments(segments);
+      setComposerLocalFileAttachments([]);
+      setAgentModeChipDismissed(false);
+
+      if (!key) {
+        return;
+      }
+
+      const cached = sessionUiCacheRef.current.get(key);
+      sessionUiCacheRef.current.set(key, {
+        composerSegments: segments,
+        questionDrafts: cached?.questionDrafts ?? {},
+        localFilePaths: [],
+        agentModeChipDismissed: false,
+      });
+      persistSessionUiDraft(key, {
+        localFilePaths: [],
+        composerSegments: segments,
+      });
+    },
+    [sessionUiKey],
+  );
 
   const stashSessionUi = useCallback(
     (targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession"> | null | undefined) => {
@@ -2309,7 +2326,7 @@ export function useDesktopRuntime() {
       try {
         const next = await api.exportSessionLog();
         applySnapshot(next);
-        clearActiveComposerDraft();
+        resetComposerAfterSend(settingsRef.current.agentMode);
         setRuntimeError("");
         void refreshSessions();
         return true;
@@ -2330,7 +2347,7 @@ export function useDesktopRuntime() {
       try {
         const next = await api.compactHistory();
         applySnapshot(next);
-        clearActiveComposerDraft();
+        resetComposerAfterSend(settingsRef.current.agentMode);
         setRuntimeError("");
         void refreshSessions();
         return true;
@@ -2391,7 +2408,11 @@ export function useDesktopRuntime() {
         syncWebViewingSessionPath(next.activeSession?.filePath ?? targetSessionPath);
       }
       applySnapshot(next);
-      clearActiveComposerDraft();
+      if (!targetSessionPath) {
+        resetComposerAfterSend(settingsRef.current.agentMode, {
+          loopEnabled: effectiveSnapshot?.conversation.loopEnabled === true,
+        });
+      }
       setRuntimeError("");
       void refreshSessions();
       return true;
@@ -2405,7 +2426,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     }
-  }, [api, applySnapshot, clearActiveComposerDraft, composer, refreshSessions, snapshot]);
+  }, [api, applySnapshot, resetComposerAfterSend, composer, refreshSessions, snapshot]);
 
   const submitGitChip = useCallback(
     async (request: SubmitGitChipRequest): Promise<boolean> => {
@@ -2447,7 +2468,7 @@ export function useDesktopRuntime() {
       setBusyAction("send");
       const next = await api.submitStartImplementing();
       applySnapshot(next);
-      clearActiveComposerDraft();
+      resetComposerAfterSend("agent");
       setRuntimeError("");
       void refreshSessions();
       return true;
@@ -2457,7 +2478,7 @@ export function useDesktopRuntime() {
     } finally {
       setBusyAction("");
     }
-  }, [api, applySnapshot, clearActiveComposerDraft, refreshSessions]);
+  }, [api, applySnapshot, resetComposerAfterSend, refreshSessions]);
 
   const abortConversation = useCallback(async (request?: AbortConversationRequest): Promise<boolean> => {
     if (!api) {
@@ -2791,7 +2812,7 @@ export function useDesktopRuntime() {
       try {
         const next = await api.rewindAndSubmitMessage(request);
         applySnapshot(next);
-        clearActiveComposerDraft();
+        resetComposerAfterSend(settingsRef.current.agentMode);
         setQuestionError("");
         setRuntimeError("");
         void refreshSessions();
@@ -2803,7 +2824,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     },
-    [api, applySnapshot, clearActiveComposerDraft, refreshSessions],
+    [api, applySnapshot, resetComposerAfterSend, refreshSessions],
   );
 
   const forkSession = useCallback(
@@ -2816,7 +2837,7 @@ export function useDesktopRuntime() {
       try {
         const next = await api.forkSession(request);
         applySnapshot(next);
-        clearActiveComposerDraft();
+        resetComposerAfterSend(settingsRef.current.agentMode);
         setQuestionError("");
         setRuntimeError("");
         void refreshSessions();
@@ -2828,7 +2849,7 @@ export function useDesktopRuntime() {
         setBusyAction("");
       }
     },
-    [api, applySnapshot, clearActiveComposerDraft, refreshSessions],
+    [api, applySnapshot, resetComposerAfterSend, refreshSessions],
   );
 
   const submitApproval = useCallback(async (
@@ -3606,6 +3627,7 @@ export function useDesktopRuntime() {
     composerLocalFileAttachments,
     setComposerSegments,
     setComposerFromPlain,
+    resetComposerAfterSend,
     hostKind: kind,
     viewingSessionPath: isRemoteWebHostClient(kind)
       ? (webViewingSessionPath || snapshot?.activeSession?.filePath || null)

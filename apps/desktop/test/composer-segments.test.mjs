@@ -46,11 +46,10 @@ import {
 } from "../src/lib/composer-agent-mode-segments.ts";
 import {
   applyAgentModeChipPolicy,
+  buildPostSendComposerSegments,
   composerShowsAgentModeChipPlaceholder,
   composerShowsPlaceholder,
-  domParsedMissingRequiredAgentChip,
   shouldPinAgentModeChip,
-  synchronizeTextFromDom,
 } from "../src/lib/composer-agent-mode-policy.ts";
 
 const sampleAttachment = {
@@ -681,51 +680,6 @@ test("isComposerPlainEmpty treats lone newline as empty", () => {
   assert.equal(normalizeComposerPlain("\n"), "");
 });
 
-test("domToSegments keeps trailing newline after real text", async () => {
-  const { parseHTML } = await import("linkedom");
-  const { window, document } = parseHTML("<!doctype html><html><body></body></html>");
-  globalThis.Node = window.Node;
-  globalThis.HTMLElement = window.HTMLElement;
-  const { domToSegments, segmentsToPlainText } = await import("../src/lib/composer-segments.ts");
-  const container = document.createElement("div");
-  container.appendChild(document.createTextNode("你好"));
-  container.appendChild(document.createElement("br"));
-  const parsed = domToSegments(container);
-  assert.equal(segmentsToPlainText(parsed), "你好\n");
-});
-
-test("domToSegments strips lone bogus newline from empty editor br", async () => {
-  const { parseHTML } = await import("linkedom");
-  const { window, document } = parseHTML("<!doctype html><html><body></body></html>");
-  globalThis.Node = window.Node;
-  globalThis.HTMLElement = window.HTMLElement;
-  const { domToSegments, segmentsToPlainText } = await import("../src/lib/composer-segments.ts");
-  const container = document.createElement("div");
-  container.appendChild(document.createElement("br"));
-  const parsed = domToSegments(container);
-  assert.equal(segmentsToPlainText(parsed), "");
-});
-
-test("composerDomStructureMatchesSegments detects phantom br when plain empty", async () => {
-  const { parseHTML } = await import("linkedom");
-  const { window, document } = parseHTML("<!doctype html><html><body></body></html>");
-  globalThis.Node = window.Node;
-  globalThis.HTMLElement = window.HTMLElement;
-  const {
-    composerDomHasPhantomStructure,
-    composerDomStructureMatchesSegments,
-    emptySegments,
-  } = await import("../src/lib/composer-segments.ts");
-  const container = document.createElement("div");
-  container.appendChild(document.createElement("br"));
-  container.appendChild(document.createTextNode(""));
-  container.appendChild(document.createElement("br"));
-  container.appendChild(document.createTextNode(""));
-  const segs = emptySegments();
-  assert.equal(composerDomHasPhantomStructure(container, segs), true);
-  assert.equal(composerDomStructureMatchesSegments(container, segs), false);
-});
-
 test("applyAgentModeChipPolicy inserts ask when not dismissed", () => {
   const segs = applyAgentModeChipPolicy(emptySegments(), { hostMode: "ask", dismissed: false });
   assert.equal(segs.some((s) => s.kind === "ask"), true);
@@ -738,6 +692,16 @@ test("applyAgentModeChipPolicy removes chip when dismissed", () => {
     { hostMode: "ask", dismissed: true },
   );
   assert.equal(hasAgentModeSegment(segs), false);
+});
+
+test("buildPostSendComposerSegments pins ask chip and optional loop", () => {
+  assert.deepEqual(buildPostSendComposerSegments("agent", false), emptySegments());
+  const askOnly = buildPostSendComposerSegments("ask", false);
+  assert.equal(askOnly.some((s) => s.kind === "ask"), true);
+  assert.equal(hasLoopSegment(askOnly), false);
+  const askWithLoop = buildPostSendComposerSegments("ask", true);
+  assert.equal(askWithLoop.some((s) => s.kind === "ask"), true);
+  assert.equal(hasLoopSegment(askWithLoop), true);
 });
 
 test("composerShowsPlaceholder false when ask chip present", () => {
@@ -819,23 +783,6 @@ test("composerShowsAgentModeChipPlaceholder false without agent mode chip", () =
   );
 });
 
-test("synchronizeTextFromDom keeps shell chips and adopts dom text", () => {
-  const shell = [{ kind: "ask" }, { kind: "text", value: " " }];
-  const dom = [{ kind: "text", value: "hello" }];
-  const merged = synchronizeTextFromDom(shell, dom);
-  assert.equal(merged[0]?.kind, "ask");
-  assert.equal(merged[1]?.kind === "text" && merged[1].value, "hello");
-});
-
-test("synchronizeTextFromDom preserves ask then loop shell order", () => {
-  const shell = [{ kind: "ask" }, { kind: "loop" }, { kind: "text", value: " " }];
-  const dom = [{ kind: "text", value: "hello" }];
-  const merged = synchronizeTextFromDom(shell, dom);
-  assert.equal(merged[0]?.kind, "ask");
-  assert.equal(merged[1]?.kind, "loop");
-  assert.equal(merged[2]?.kind === "text" && merged[2].value, "hello");
-});
-
 test("normalizeCaretForPinnedLoopChip snaps caret before loop to after chip", () => {
   const segs = [{ kind: "loop" }, { kind: "text", value: " " }];
   const snapped = normalizeCaretForPinnedLoopChip(segs, { segmentIndex: 0, offset: 0 });
@@ -896,18 +843,6 @@ test("normalizeCaretForComposer chains loop and inline chip fixes", () => {
   const snapped = normalizeCaretForComposer(segs, { segmentIndex: 1, offset: 0 });
   assert.equal(snapped.segmentIndex, 2);
   assert.equal(snapped.offset, 1);
-});
-
-test("domParsedMissingRequiredAgentChip when shell has ask but dom lost it", () => {
-  assert.equal(
-    domParsedMissingRequiredAgentChip(
-      [{ kind: "ask" }, { kind: "text", value: " " }],
-      [{ kind: "text", value: "" }],
-      { hostMode: "ask", dismissed: false },
-    ),
-    true,
-  );
-  assert.equal(shouldPinAgentModeChip({ hostMode: "ask", dismissed: true }), false);
 });
 
 // --- Skill chip tests ---
