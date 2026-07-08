@@ -714,6 +714,23 @@ test("composerShowsPlaceholder false when ask chip present", () => {
   );
 });
 
+test("composerShowsPlaceholder false when user typed whitespace only", () => {
+  assert.equal(
+    composerShowsPlaceholder([{ kind: "text", value: " " }], {
+      composing: false,
+      attachmentCount: 0,
+    }),
+    false,
+  );
+  assert.equal(
+    composerShowsPlaceholder([{ kind: "text", value: "" }], {
+      composing: false,
+      attachmentCount: 0,
+    }),
+    true,
+  );
+});
+
 test("composerShowsAgentModeChipPlaceholder true for pinned ask chip with empty text", () => {
   assert.equal(
     composerShowsAgentModeChipPlaceholder([{ kind: "ask" }, { kind: "text", value: " " }], {

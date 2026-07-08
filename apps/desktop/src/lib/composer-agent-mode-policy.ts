@@ -57,7 +57,7 @@ export function composerShowsPlaceholder(
   ) {
     return false;
   }
-  return isComposerPlainEmpty(segmentsToPlainText(segs));
+  return segmentsToPlainText(segs) === "";
 }
 
 /** Chip 插入时尾部的 lone spacer；用户再输入空白或非空字符即视为已开始编辑。 */
