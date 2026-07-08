@@ -99,6 +99,7 @@ export function useMonacoCodeCompletion(options: {
   const cacheRef = useRef<CompletionCache | null>(null);
   const deletePreviewRef = useRef<DeletePreviewState | null>(null);
   const deletePreviewActiveRef = useRef<monaco.editor.IContextKey<boolean> | null>(null);
+  const acceptDeletePreviewRef = useRef<(() => void) | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fetchTokenRef = useRef(0);
   const fetchInFlightRef = useRef(false);
@@ -109,15 +110,40 @@ export function useMonacoCodeCompletion(options: {
   relativePathRef.current = relativePath;
   baselineRef.current = baselineText;
 
+  // Context key 与 Tab 命令随 editor 实例创建一次：context key 属于该 editor 的
+  // contextKeyService，跨实例缓存会把状态写到已销毁的 editor 上，导致重建后
+  // Tab 接受静默失效；addCommand 不可注销，只能靠随 editor 一起销毁。
+  useEffect(() => {
+    if (!editor) {
+      deletePreviewActiveRef.current = null;
+      return;
+    }
+    deletePreviewActiveRef.current = editor.createContextKey<boolean>(
+      DELETE_PREVIEW_CONTEXT_KEY,
+      false,
+    );
+    editor.addCommand(
+      monaco.KeyCode.Tab,
+      () => {
+        acceptDeletePreviewRef.current?.();
+      },
+      DELETE_PREVIEW_CONTEXT_KEY,
+    );
+    return () => {
+      deletePreviewActiveRef.current = null;
+    };
+  }, [editor]);
+
   useEffect(() => {
     if (!editor || !api || readOnly || !enabled) {
       return;
     }
 
     const languageId = monacoLanguageId(relativePath);
-    const deletePreviewActiveKey =
-      deletePreviewActiveRef.current ?? editor.createContextKey(DELETE_PREVIEW_CONTEXT_KEY, false);
-    deletePreviewActiveRef.current = deletePreviewActiveKey;
+    const deletePreviewActiveKey = deletePreviewActiveRef.current;
+    if (!deletePreviewActiveKey) {
+      return;
+    }
 
     const clearInlineGhostCache = () => {
       cacheRef.current = null;
