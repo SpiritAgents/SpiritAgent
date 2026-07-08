@@ -95,8 +95,13 @@ export function useConversationStreamScrollTail({
     // 48px 阈值内（实测 dist=1），无方向条件会把刚被 wheel 关掉的 stick 立即
     // 误重开，之后侧栏开合等触发内容 RO 即钉底（「上滑一点点后开合侧栏跳底」）。
     // 方向仅用于打开而非关闭：误判最坏只是漏开一次，用户继续向下滚会补上。
+    const UNSTICK_DRAG_THRESHOLD_PX = 4;
     let pointerHeld = false;
     let touchActive = false;
+    let pointerDragTracking = false;
+    let pointerDragStartY = 0;
+    let touchDragTracking = false;
+    let touchDragStartY = 0;
     const onWheel = (event: WheelEvent) => {
       if (event.deltaY < 0) {
         stickToBottomRef.current = false;
@@ -112,17 +117,43 @@ export function useConversationStreamScrollTail({
         return;
       }
       if (event.pointerType !== "touch") {
+        pointerDragTracking = true;
+        pointerDragStartY = event.clientY;
+        pointerHeld = false;
+      }
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (!pointerDragTracking || event.pointerType === "touch") {
+        return;
+      }
+      if (event.clientY - pointerDragStartY >= UNSTICK_DRAG_THRESHOLD_PX) {
         pointerHeld = true;
       }
     };
     const onPointerEnd = () => {
       pointerHeld = false;
+      pointerDragTracking = false;
     };
-    const onTouchStart = () => {
-      touchActive = true;
+    const onTouchStart = (event: TouchEvent) => {
+      touchDragTracking = true;
+      touchActive = false;
+      touchDragStartY = event.touches[0]?.clientY ?? 0;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (!touchDragTracking) {
+        return;
+      }
+      const y = event.touches[0]?.clientY;
+      if (y === undefined) {
+        return;
+      }
+      if (touchDragStartY - y >= UNSTICK_DRAG_THRESHOLD_PX) {
+        touchActive = true;
+      }
     };
     const onTouchEnd = () => {
       touchActive = false;
+      touchDragTracking = false;
     };
     let lastScrollTop = viewport.scrollTop;
     const onScroll = () => {
@@ -145,7 +176,9 @@ export function useConversationStreamScrollTail({
 
     viewport.addEventListener("wheel", onWheel, { passive: true });
     root.addEventListener("pointerdown", onPointerDown, { passive: true });
+    viewport.addEventListener("pointermove", onPointerMove, { passive: true });
     viewport.addEventListener("touchstart", onTouchStart, { passive: true });
+    viewport.addEventListener("touchmove", onTouchMove, { passive: true });
     // pointerup / touchend 可能发生在 viewport / 窗口之外（拖动后松手），须挂在 window 上
     window.addEventListener("pointerup", onPointerEnd, { passive: true });
     window.addEventListener("pointercancel", onPointerEnd, { passive: true });
@@ -155,7 +188,9 @@ export function useConversationStreamScrollTail({
     return () => {
       viewport.removeEventListener("wheel", onWheel);
       root.removeEventListener("pointerdown", onPointerDown);
+      viewport.removeEventListener("pointermove", onPointerMove);
       viewport.removeEventListener("touchstart", onTouchStart);
+      viewport.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("pointerup", onPointerEnd);
       window.removeEventListener("pointercancel", onPointerEnd);
       window.removeEventListener("touchend", onTouchEnd);
