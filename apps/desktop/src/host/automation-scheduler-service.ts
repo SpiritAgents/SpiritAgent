@@ -46,7 +46,52 @@ export function startAutomationSchedulerMonitorIfNeeded(
   }, AUTOMATION_SCHEDULER_MONITOR_INTERVAL_MS);
   timer.unref?.();
   setTimer(timer);
-  void tickAutomationScheduler(ctx);
+  void (async () => {
+    try {
+      const affected = await failDanglingAutomationRuns(
+        createHostAutomationStore(spiritAgentDataDir()),
+        'Run interrupted: application exited before the run completed.',
+      );
+      for (const automationId of affected) {
+        ctx.onAutomationUpdated(automationId);
+      }
+    } catch {
+      /* 清理失败不阻塞首个 tick */
+    }
+    await tickAutomationScheduler(ctx);
+  })();
+}
+
+/**
+ * 将磁盘上残留的 running run 标记为 failed。run 状态只由本进程推进，因此
+ * 调度器启动时磁盘上的 running run 必然是上次崩溃残留；若不清理，
+ * getActiveRun 会永久拦截该自动化的后续触发。返回受影响的 automation id。
+ */
+export async function failDanglingAutomationRuns(
+  store: ReturnType<typeof createHostAutomationStore>,
+  error: string,
+): Promise<string[]> {
+  const summaries = await store.listSummaries();
+  const affected: string[] = [];
+  for (const summary of summaries) {
+    const loaded = await store.get(summary.id);
+    if (!loaded) {
+      continue;
+    }
+    const runningRuns = loaded.runs.filter((run) => run.status === 'running');
+    if (runningRuns.length === 0) {
+      continue;
+    }
+    for (const run of runningRuns) {
+      await store.updateRun(summary.id, run.id, {
+        status: 'failed',
+        completedAtUnixMs: Date.now(),
+        error,
+      });
+    }
+    affected.push(summary.id);
+  }
+  return affected;
 }
 
 export async function tickAutomationScheduler(ctx: AutomationSchedulerServiceContext): Promise<void> {
@@ -90,7 +135,9 @@ async function tickTimeAutomationTriggers(
       continue;
     }
     const schedule = automationTimeScheduleFromTrigger(definition.trigger);
-    if (!schedule || !shouldFireNow(schedule, definition.lastFiredAtUnixMs, now)) {
+    // 以创建时间兜底基线：新建的自动化不补跑创建之前的时刻。
+    const firedBaseline = definition.lastFiredAtUnixMs ?? definition.createdAtUnixMs;
+    if (!schedule || !shouldFireNow(schedule, firedBaseline, now)) {
       continue;
     }
 
