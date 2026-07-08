@@ -154,17 +154,32 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
   };
 }
 
+/** buildSnapshot / 上下文用量高频调用；目录缓存文件只在 writeModelCatalogCache 后变化，按模型键集合做内存缓存。 */
+let modelCatalogHintsMemo: { key: string; hints: DesktopModelCatalogHint[] } | undefined;
+
+export function invalidateModelCatalogHintsMemo(): void {
+  modelCatalogHintsMemo = undefined;
+}
+
 export function buildModelCatalogHints(config: DesktopConfigFile): DesktopModelCatalogHint[] {
   const seen = new Set<string>();
+  for (const model of config.models) {
+    const base = model.apiBase.trim() || DEFAULT_API_BASE;
+    const transportKind = model.transportKind ?? (model.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+    seen.add(`${model.provider ?? 'custom'}::${transportKind}::${base}`);
+  }
+  const memoKey = [...seen].join('\n');
+  if (modelCatalogHintsMemo?.key === memoKey) {
+    return modelCatalogHintsMemo.hints;
+  }
   const hints: DesktopModelCatalogHint[] = [];
   for (const model of config.models) {
     const base = model.apiBase.trim() || DEFAULT_API_BASE;
     const transportKind = model.transportKind ?? (model.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
     const cacheKey = `${model.provider ?? 'custom'}::${transportKind}::${base}`;
-    if (seen.has(cacheKey)) {
+    if (!seen.delete(cacheKey)) {
       continue;
     }
-    seen.add(cacheKey);
     const hit = readModelCatalogCacheSync(base, model.provider, transportKind);
     if (hit && hit.modelIds.length > 0) {
       hints.push({
@@ -177,5 +192,6 @@ export function buildModelCatalogHints(config: DesktopConfigFile): DesktopModelC
       });
     }
   }
+  modelCatalogHintsMemo = { key: memoKey, hints };
   return hints;
 }

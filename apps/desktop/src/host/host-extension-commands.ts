@@ -116,6 +116,8 @@ export interface HostExtensionCommandContext {
   ): Promise<DesktopSnapshot>;
   appendInlineAssistantReply(displayText: string, assistantText: string): Promise<DesktopSnapshot>;
   setLastRuntimeError(error: string): void;
+  /** MCP / hooks 配置写盘后失效快照侧列表缓存。 */
+  invalidateConfigListCaches(): void;
   buildSnapshot(): DesktopSnapshot;
 }
 
@@ -220,6 +222,7 @@ export async function addMcpServerCommand(
       workspaceRoot: state.workspaceRoot,
       workspaceBinding: state.workspaceBinding,
     });
+    ctx.invalidateConfigListCaches();
     if (scope === 'user') {
       invalidateSharedUserMcpToolingCache();
     }
@@ -242,6 +245,7 @@ export async function deleteMcpServerCommand(
       request,
       workspaceRoot: state.workspaceRoot,
     });
+    ctx.invalidateConfigListCaches();
     if (scope === 'user') {
       invalidateSharedUserMcpToolingCache();
     }
@@ -527,6 +531,7 @@ export async function saveHookEntryCommand(
       workspaceRoot: state.workspaceRoot,
       workspaceBinding: state.workspaceBinding,
     });
+    ctx.invalidateConfigListCaches();
     return ctx.buildSnapshot();
   });
 }
@@ -543,6 +548,7 @@ export async function deleteHookEntryCommand(
       workspaceRoot: state.workspaceRoot,
       workspaceBinding: state.workspaceBinding,
     });
+    ctx.invalidateConfigListCaches();
     return ctx.buildSnapshot();
   });
 }

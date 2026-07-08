@@ -109,6 +109,11 @@ export class DesktopMessageTimeline {
   private activeSegmentId: number | undefined;
   private lastSegmentRowsLogSignature: string | undefined;
   private pendingSegmentRowsLogMsByKey = new Map<string, number>();
+  /** 结构修订号：所有公开 mutator 起始处递增；toMessages 投影按修订号缓存。 */
+  private revisionCounter = 1;
+  private toMessagesCache:
+    | { revision: number; messages: ConversationMessageSnapshot[] }
+    | undefined;
 
   constructor(private readonly options: DesktopMessageTimelineOptions) {}
 
@@ -149,7 +154,21 @@ export class DesktopMessageTimeline {
     }));
   }
 
+  /** Current structural revision; bumped by every public mutator. */
+  revision(): number {
+    return this.revisionCounter;
+  }
+
+  /** 新增 mutator 时须在起始处调用，否则 toMessages 缓存会返回陈旧投影。 */
+  private markMutated(): void {
+    this.revisionCounter += 1;
+  }
+
   toMessages(): ConversationMessageSnapshot[] {
+    if (this.toMessagesCache?.revision === this.revisionCounter) {
+      // 返回浅拷贝：调用方对数组做 push/pop 不得污染缓存；消息对象仍共享
+      return [...this.toMessagesCache.messages];
+    }
     const messages: ConversationMessageSnapshot[] = [];
     for (const turn of this.orderedTurns()) {
       if (turn.userRow) {
@@ -161,7 +180,8 @@ export class DesktopMessageTimeline {
         }
       }
     }
-    return messages;
+    this.toMessagesCache = { revision: this.revisionCounter, messages };
+    return [...messages];
   }
 
   beginUserTurn(
@@ -172,6 +192,7 @@ export class DesktopMessageTimeline {
       localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
     } = {},
   ): ConversationMessageSnapshot {
+    this.markMutated();
     this.clearContinuationMarkers();
     const turn: DesktopTimelineTurn = {
       turnId: this.nextTurnId++,
@@ -196,6 +217,7 @@ export class DesktopMessageTimeline {
   }
 
   beginAssistantSegment(kind: DesktopTimelineSegmentKind = 'initial'): ConversationMessageSnapshot {
+    this.markMutated();
     const prior = this.activeSegment();
     if (prior?.status === 'streaming') {
       this.completeActiveAssistantSegment();
@@ -209,6 +231,7 @@ export class DesktopMessageTimeline {
   }
 
   setAssistantTextContent(messageId: number, content: string): boolean {
+    this.markMutated();
     for (const row of this.allRows()) {
       if (row.messageId !== messageId || row.kind !== 'assistant-text') {
         continue;
@@ -221,6 +244,7 @@ export class DesktopMessageTimeline {
   }
 
   clearSubagentStatusLeak(messageId: number): boolean {
+    this.markMutated();
     let cleared = false;
     for (const row of this.allRows()) {
       if (row.messageId !== messageId || row.kind !== 'assistant-text') {
@@ -246,6 +270,7 @@ export class DesktopMessageTimeline {
   }
 
   appendAssistantTextChunk(chunk: string): ConversationMessageSnapshot {
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     const hasTools = segmentHasToolRows(segment);
     if (hasTools) {
@@ -270,6 +295,7 @@ export class DesktopMessageTimeline {
   }
 
   replaceAssistantText(text: string): ConversationMessageSnapshot {
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     const row = segmentHasToolRows(segment)
       ? this.ensureStreamingAssistantTextRowAfterTools(segment)
@@ -280,6 +306,7 @@ export class DesktopMessageTimeline {
   }
 
   updatePendingAssistantAux(kind: 'thinking' | 'compressing', text: string): ConversationMessageSnapshot {
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     const row = this.ensureActiveAssistantTextRow('aux');
     const normalized = text.trim();
@@ -311,6 +338,7 @@ export class DesktopMessageTimeline {
   }
 
   applyFinishTaskNoticeByMessageId(messageId: number, notice: string): boolean {
+    this.markMutated();
     const normalizedNotice = notice.trim();
     if (!normalizedNotice) {
       return false;
@@ -332,6 +360,7 @@ export class DesktopMessageTimeline {
   }
 
   updateFinishTaskNoticePreview(notice: string): ConversationMessageSnapshot | undefined {
+    this.markMutated();
     const normalizedNotice = notice.trim();
     if (!normalizedNotice) {
       return undefined;
@@ -357,6 +386,7 @@ export class DesktopMessageTimeline {
   }
 
   clearFinishTaskNoticePreview(): ConversationMessageSnapshot | undefined {
+    this.markMutated();
     const segment = this.activeSegment() ?? this.lastSegmentOfActiveTurn();
     if (!segment) {
       return undefined;
@@ -410,6 +440,7 @@ export class DesktopMessageTimeline {
     if (!text.trim()) {
       return undefined;
     }
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     if (this.hasFinalizedAuxInActiveSegment('thinking', text)) {
       this.stripSegmentAuxKind(segment, 'thinking', text);
@@ -495,6 +526,7 @@ export class DesktopMessageTimeline {
     if (!text.trim()) {
       return undefined;
     }
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     this.stripSegmentAuxKind(segment, 'compaction', text);
     const row = this.createRow({
@@ -511,6 +543,7 @@ export class DesktopMessageTimeline {
   }
 
   upsertToolMessage(toolCallId: string, tool: ToolBlockSnapshot): ConversationMessageSnapshot {
+    this.markMutated();
     const normalizedTool = cloneTool(tool);
     const existing = this.findToolRow(toolCallId);
     if (existing) {
@@ -558,6 +591,7 @@ export class DesktopMessageTimeline {
   }
 
   removeToolMessage(toolCallId: string): boolean {
+    this.markMutated();
     for (const segment of this.orderedTurns().flatMap((turn) => this.orderedSegments(turn))) {
       const index = segment.rows.findIndex(
         (row) => row.kind === 'tool' && row.tool?.toolCallId === toolCallId,
@@ -580,6 +614,7 @@ export class DesktopMessageTimeline {
     if (!trimmed) {
       return undefined;
     }
+    this.markMutated();
 
     let targetSegment: DesktopTimelineSegment | undefined;
     let insertAfterToolIndex = -1;
@@ -650,6 +685,7 @@ export class DesktopMessageTimeline {
     if (!content.trim()) {
       return undefined;
     }
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     const existing = segment.rows.find(
       (row) =>
@@ -687,6 +723,7 @@ export class DesktopMessageTimeline {
     if (!content.trim() && !normalizeMessageAuxSnapshot(aux)) {
       return undefined;
     }
+    this.markMutated();
     const segment = this.ensureActiveSegment();
     let row = this.activeAssistantTextRow(segment);
     const normalizedContent = content.trim();
@@ -736,6 +773,7 @@ export class DesktopMessageTimeline {
       return undefined;
     }
 
+    this.markMutated();
     const segment = this.activeSegment() ?? this.lastSegmentOfActiveTurn();
     if (!segment) {
       return undefined;
@@ -772,6 +810,7 @@ export class DesktopMessageTimeline {
   }
 
   completeActiveAssistantSegment(): void {
+    this.markMutated();
     const segment = this.activeSegment();
     if (!segment) {
       return;
@@ -791,6 +830,7 @@ export class DesktopMessageTimeline {
   }
 
   abortActiveAssistantSegment(): void {
+    this.markMutated();
     const segment = this.activeSegment();
     if (!segment) {
       return;
@@ -804,6 +844,7 @@ export class DesktopMessageTimeline {
   }
 
   removePendingAssistantText(): void {
+    this.markMutated();
     const segment = this.activeSegment();
     if (!segment) {
       return;
@@ -825,6 +866,7 @@ export class DesktopMessageTimeline {
    * 预置 after-tools pending 行供 Thinking 占位 UI 挂载。
    */
   ensureAfterToolsThinkingPlaceholderRow(): ConversationMessageSnapshot | undefined {
+    this.markMutated();
     const segment = this.activeSegment();
     if (!segment || !segmentHasToolRows(segment) || !segmentAllToolsTerminal(segment)) {
       return undefined;
@@ -844,6 +886,7 @@ export class DesktopMessageTimeline {
   }
 
   clearContinuationMarkers(): void {
+    this.markMutated();
     for (const row of this.allRows()) {
       delete row.canContinue;
     }
@@ -876,6 +919,7 @@ export class DesktopMessageTimeline {
     input: { content?: string } = {},
   ): ConversationMessageSnapshot | undefined {
     this.clearContinuationMarkers();
+    // clearContinuationMarkers 已 markMutated；本方法仅追加 row.canContinue 标记
     const normalized = input.content?.trim() ?? '';
     const candidates = rows.filter((row) => {
       if (!isRenderableAssistantRow(row)) {

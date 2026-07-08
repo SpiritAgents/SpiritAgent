@@ -294,10 +294,26 @@ export function refreshArchiveFromRuntime(
     return;
   }
 
-  const desktopMessages = bundle.messageTimeline.toMessages();
+  // busy 期间高频调用：timeline 未变时复用消息/aux 投影，只向 runtime 取最新 llmHistory/subagentSessions
+  const revision = bundle.messageTimeline.revision();
+  let projection = bundle.archiveProjectionCache;
+  if (
+    !projection
+    || projection.timeline !== bundle.messageTimeline
+    || projection.revision !== revision
+  ) {
+    const desktopMessages = bundle.messageTimeline.toMessages();
+    projection = {
+      timeline: bundle.messageTimeline,
+      revision,
+      archiveMessages: buildArchiveMessagesFromConversation(desktopMessages),
+      archiveAssistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
+    };
+    bundle.archiveProjectionCache = projection;
+  }
   const archive = bundle.runtime.toArchive(
-    buildArchiveMessagesFromConversation(desktopMessages),
-    buildArchiveAssistantAuxFromConversation(desktopMessages),
+    projection.archiveMessages,
+    projection.archiveAssistantAux,
   ) satisfies ChatArchive;
   bundle.archiveHistory = archive.llmHistory;
   bundle.archiveSubagentSessions = archive.subagentSessions ?? [];

@@ -3,6 +3,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  rename,
   stat,
   unlink,
   writeFile,
@@ -711,23 +712,30 @@ export async function listStoredSessions(): Promise<SessionListItem[]> {
     files.map(async (filePath) => {
       try {
         const raw = await readFile(filePath, 'utf8');
-        const parsed = normalizeStoredSession(JSON.parse(raw) as Partial<StoredDesktopSession>);
-        const info = await stat(filePath);
+        // 侧栏列表只需元数据：仅做 schema 版本检查并直取字段，
+        // 跳过 normalizeStoredSession 的全量 timeline 校验与 rewind 归一化
+        const parsed = JSON.parse(raw) as Partial<StoredDesktopSession>;
+        assertChatSchemaVersionV2(parsed.chatSchemaVersion);
+        const timeline = Array.isArray(parsed.desktopMessageTimeline)
+          ? (parsed.desktopMessageTimeline as PersistedDesktopTimelineTurnSnapshot[])
+          : undefined;
         const gitBranch = normalizeGitBranch(parsed.gitBranch);
+        const modifiedAtUnixMs =
+          typeof parsed.savedAtUnixMs === 'number'
+            ? parsed.savedAtUnixMs
+            : Math.round((await stat(filePath)).mtimeMs);
         return {
           path: filePath,
           displayName:
             normalizeDisplayName(parsed.sessionDisplayName) ??
-            deriveDisplayNameFromTimeline(parsed.desktopMessageTimeline),
+            deriveDisplayNameFromTimeline(timeline),
           workspaceRoot:
             resolveStoredWorkspaceRoot(parsed.workspaceRoot) ?? discoverWorkspaceRoot(),
           ...(gitBranch ? { gitBranch } : {}),
-          modifiedAtUnixMs:
-            typeof parsed.savedAtUnixMs === 'number'
-              ? parsed.savedAtUnixMs
-              : Math.round(info.mtimeMs),
+          modifiedAtUnixMs,
         } satisfies SessionListItem;
-      } catch {
+      } catch (error) {
+        console.warn(`[desktop-host] skip unreadable session file: ${filePath}`, error);
         return undefined;
       }
     }),
@@ -750,7 +758,15 @@ export async function saveStoredSession(
 ): Promise<string> {
   const resolved = resolveSessionPath(filePath);
   await mkdir(path.dirname(resolved), { recursive: true });
-  await writeFile(resolved, `${JSON.stringify(session, null, 2)}\n`, 'utf8');
+  // 原子写：先写同目录 tmp 再 rename，避免写入中途崩溃 / 断电留下截断的会话文件
+  const tmpPath = `${resolved}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    await writeFile(tmpPath, `${JSON.stringify(session, null, 2)}\n`, 'utf8');
+    await rename(tmpPath, resolved);
+  } catch (error) {
+    await unlink(tmpPath).catch(() => {});
+    throw error;
+  }
   return resolved;
 }
 
