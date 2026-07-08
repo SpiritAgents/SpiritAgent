@@ -216,18 +216,18 @@ export function ComposerSurface({
         onPaste={(e) => onPaste?.(e as unknown as ReactClipboardEvent<HTMLTextAreaElement>)}
         onKeyDown={(e) => {
           onKeyDown?.(e as unknown as ReactKeyboardEvent<HTMLTextAreaElement>);
-          if (e.defaultPrevented) return;
-          if (
+          const plainEnter =
             e.key === 'Enter' &&
             !e.shiftKey &&
             !e.ctrlKey &&
             !e.metaKey &&
-            // React synthetic event 的 isComposing 不可靠，必须用 nativeEvent 检测 IME 组合态
-            !e.nativeEvent.isComposing
-          ) {
+            !e.nativeEvent.isComposing;
+          if (plainEnter) {
             e.preventDefault();
             if (canSend) onSubmit();
+            return;
           }
+          if (e.defaultPrevented) return;
         }}
         onSelectionChange={onSelectionChange}
       />
