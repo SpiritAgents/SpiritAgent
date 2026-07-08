@@ -4,11 +4,14 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { readdir, readFile } from 'node:fs/promises';
+
 import {
   computeNextRunAt,
   createHostAutomationStore,
   formatScheduleLabel,
   formatTriggerLabel,
+  mostRecentDueAt,
   normalizeAutomationTrigger,
   reconcileGitHubTriggerPollState,
   shouldFireNow,
@@ -103,12 +106,110 @@ test('shouldFireNow respects schedule and last fired bucket', () => {
   const eightThirty = Date.parse('2026-06-08T08:30:00');
   assert.equal(shouldFireNow(dailyAtEight, undefined, eightThirty), true);
   assert.equal(shouldFireNow(dailyAtEight, eightThirty, eightThirty), false);
-  assert.equal(shouldFireNow(dailyAtEight, undefined, eightThirty + 60_000), false);
+  // 已在应触发分钟内触发过：即便 now 已过 1 分钟也不重复触发
+  assert.equal(shouldFireNow(dailyAtEight, eightThirty + 20_000, eightThirty + 60_000), false);
 
   const hourly = { kind: 'hourly' as const };
   const topOfHour = Date.parse('2026-06-08T09:00:00');
   assert.equal(shouldFireNow(hourly, undefined, topOfHour), true);
-  assert.equal(shouldFireNow(hourly, undefined, topOfHour + 5 * 60_000), false);
+  assert.equal(shouldFireNow(hourly, topOfHour, topOfHour + 5 * 60_000), false);
+});
+
+test('shouldFireNow catches up missed slots after sleep or clock jump', () => {
+  const dailyAtEight = { kind: 'daily' as const, hour: 8, minute: 30 };
+  const eightThirty = Date.parse('2026-06-08T08:30:00');
+  const yesterdayFired = Date.parse('2026-06-07T08:30:10');
+  // 08:30 时机器休眠，09:12 醒来：上次应触发时间(08:30) > lastFired，补跑
+  assert.equal(shouldFireNow(dailyAtEight, yesterdayFired, Date.parse('2026-06-08T09:12:00')), true);
+  // 补跑后 lastFired=09:12，同日不再重复
+  assert.equal(
+    shouldFireNow(dailyAtEight, Date.parse('2026-06-08T09:12:00'), Date.parse('2026-06-08T18:00:00')),
+    false,
+  );
+  // 尚未到达当日应触发时间：不触发
+  assert.equal(shouldFireNow(dailyAtEight, yesterdayFired, eightThirty - 60_000), false);
+
+  const hourly = { kind: 'hourly' as const };
+  assert.equal(
+    shouldFireNow(hourly, Date.parse('2026-06-08T09:00:20'), Date.parse('2026-06-08T10:07:00')),
+    true,
+  );
+
+  const weekly = { kind: 'weekly' as const, weekday: 1 as const, hour: 9, minute: 0 };
+  // 周一 09:00 漏触发，周一 11:00 补跑；上周一触发过
+  assert.equal(
+    shouldFireNow(weekly, Date.parse('2026-06-01T09:00:30'), Date.parse('2026-06-08T11:00:00')),
+    true,
+  );
+  // 周二不再重复
+  assert.equal(
+    shouldFireNow(weekly, Date.parse('2026-06-08T11:00:00'), Date.parse('2026-06-09T09:00:00')),
+    false,
+  );
+});
+
+test('mostRecentDueAt returns latest due time at or before now', () => {
+  const dailyAtEight = { kind: 'daily' as const, hour: 8, minute: 30 };
+  assert.equal(
+    mostRecentDueAt(dailyAtEight, Date.parse('2026-06-08T09:12:00')),
+    Date.parse('2026-06-08T08:30:00'),
+  );
+  assert.equal(
+    mostRecentDueAt(dailyAtEight, Date.parse('2026-06-08T08:00:00')),
+    Date.parse('2026-06-07T08:30:00'),
+  );
+  assert.equal(
+    mostRecentDueAt({ kind: 'hourly' }, Date.parse('2026-06-08T10:07:00')),
+    Date.parse('2026-06-08T10:00:00'),
+  );
+  const weekly = { kind: 'weekly' as const, weekday: 1 as const, hour: 9, minute: 0 };
+  assert.equal(
+    mostRecentDueAt(weekly, Date.parse('2026-06-10T12:00:00')),
+    Date.parse('2026-06-08T09:00:00'),
+  );
+  assert.equal(
+    mostRecentDueAt(weekly, Date.parse('2026-06-08T08:00:00')),
+    Date.parse('2026-06-01T09:00:00'),
+  );
+});
+
+test('automation store serializes concurrent mutations and writes atomically', async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-atomic-'));
+
+  try {
+    const store = createHostAutomationStore(spiritDataDir);
+    const created = await store.create({
+      title: 'Concurrent',
+      overview: 'Concurrent writes',
+      trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+      workspaceRoot: spiritDataDir,
+      modelName: 'gpt-test',
+      approvalLevel: 'default',
+    });
+
+    // 并发 load-modify-save：串行化后 10 个 run 一个不丢
+    await Promise.all(
+      Array.from({ length: 10 }, (_, index) =>
+        store.addRun(created.id, {
+          id: `run-${index}`,
+          automationId: created.id,
+          sessionPath: `/tmp/session-${index}.json`,
+          status: 'completed',
+          startedAtUnixMs: Date.now(),
+        }),
+      ),
+    );
+    const loaded = await store.get(created.id);
+    assert.equal(loaded?.runs.length, 10);
+
+    // 原子写：目录内不残留 tmp 文件，正式文件为完整 JSON
+    const entries = await readdir(join(spiritDataDir, 'automations'));
+    assert.deepEqual(entries, [`${created.id}.json`]);
+    const raw = await readFile(join(spiritDataDir, 'automations', `${created.id}.json`), 'utf8');
+    assert.equal(JSON.parse(raw).runs.length, 10);
+  } finally {
+    await rm(spiritDataDir, { recursive: true, force: true });
+  }
 });
 
 test('computeNextRunAt advances schedule', () => {
