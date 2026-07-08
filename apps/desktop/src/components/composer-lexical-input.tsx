@@ -35,14 +35,13 @@ import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
-import { hasInlineAttachmentChipSegments } from "@/lib/composer-inline-chip-dom";
-import type { DesktopAgentMode } from "@/lib/agent-mode";
 import {
   caretAtEnd,
   caretToPlainTextOffset,
   type ActiveSkillSlashQuery,
   type ActiveWorkspaceFileReferenceQuery,
 } from "@/lib/composer-segment-model";
+import type { DesktopAgentMode } from "@/lib/agent-mode";
 import {
   applyAgentModeChipPolicy,
   buildSegmentsAfterSend,
@@ -59,24 +58,20 @@ import {
   ensureLoopPinned,
   hasAgentModeSegment,
   hasLoopSegment,
-  hasSkillSegment,
   insertAgentModeSegment,
   insertLoopSegment,
   isAgentModeChipKind,
   isCaretAtAgentModeRemovalPoint,
   isCaretAtInlineChipRemovalPoint,
   isCaretAtLoopRemovalPoint,
-  isComposerPlainEmpty,
   mergeAdjacentTextSegments,
   normalizeCaretForComposer,
-  normalizeComposerPlain,
   removeInlineChipAtRemovalPoint,
   removeAgentModeSegment,
   removeLoopSegment,
   segmentsEqual,
   segmentsToAttachments,
   segmentsToPlainText,
-  syncSegmentsFromExternalValue,
   type RichSegment,
   type SegmentCaret,
 } from "@/lib/composer-segments";
@@ -113,14 +108,10 @@ const AGENT_MODE_CHIP_SELECTOR =
   "[data-chip-kind='plan'],[data-chip-kind='ask'],[data-chip-kind='debug']";
 
 type Props = {
-  /** Controlled rich segments; parent is source of truth when paired with onSegmentsChange. */
-  segments?: readonly RichSegment[];
-  onSegmentsChange?(segments: RichSegment[]): void;
-  /** Derived plain text for legacy/uncontrolled callers. */
-  value?: string;
+  /** Controlled rich segments; parent is source of truth. */
+  segments: readonly RichSegment[];
+  onSegmentsChange(segments: RichSegment[]): void;
   elementAttachments?: readonly BrowserElementAttachment[];
-  /** One-shot hydrate (e.g. message rewind); ignored after first apply per mount. */
-  initialSegments?: readonly RichSegment[] | null;
   placeholder?: string;
   agentModeChipPlaceholder?: string;
   readOnly?: boolean;
@@ -130,7 +121,6 @@ type Props = {
   agentMode?: DesktopAgentMode;
   planChipLabel?: string;
   askChipLabel?: string;
-  onTextChange?(text: string): void;
   onElementAttachmentsChange(attachments: BrowserElementAttachment[]): void;
   /** Rich segments committed locally; plain text / cursor may be unchanged. */
   onSegmentsCommit?(): void;
@@ -140,8 +130,6 @@ type Props = {
   onPaste?(e: ClipboardEvent<HTMLDivElement>): void;
   /** UTF-16 offset in plain composer text (`segmentsToPlainText`), for @-file suggestions. */
   onSelectionChange?(selectionStart: number | null): void;
-  /** Agent 正在输出时，阻止父级滞后 value 覆盖本地 segments（poll 重渲染）。 */
-  conversationBusy?: boolean;
   /** Session 级：用户 Backspace 去掉 Plan/Ask chip 后，poll 不得再通过 DOM 钉回。 */
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
@@ -207,9 +195,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     const {
       segments: controlledSegments,
       onSegmentsChange,
-      value = "",
       elementAttachments,
-      initialSegments,
       placeholder,
       agentModeChipPlaceholder,
       readOnly,
@@ -219,7 +205,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       agentMode = "agent",
       planChipLabel = "Plan",
       askChipLabel = "Ask",
-      onTextChange,
       onElementAttachmentsChange,
       onSegmentsCommit,
       onLoopEnabledChange,
@@ -227,7 +212,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       onKeyDown,
       onPaste,
       onSelectionChange,
-      conversationBusy = false,
       agentModeChipDismissed = false,
       onAgentModeChipDismissChange,
       editorRef,
@@ -239,13 +223,8 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     const contentEditableRef = useRef<HTMLDivElement>(null);
     const shellRef = useRef<HTMLDivElement>(null);
     const [segments, setSegments] = useState<RichSegment[]>(() => {
-      const hydrateFrom = controlledSegments?.length
-        ? controlledSegments
-        : initialSegments?.length
-          ? initialSegments
-          : null;
-      const base = hydrateFrom
-        ? ensureLoopPinned(mergeAdjacentTextSegments([...hydrateFrom]))
+      const base = controlledSegments.length
+        ? ensureLoopPinned(mergeAdjacentTextSegments([...controlledSegments]))
         : loopEnabled
           ? insertLoopSegment(emptySegments()).segments
           : emptySegments();
@@ -259,15 +238,8 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       null,
     );
     const pendingCaretRef = useRef<SegmentCaret | null>(null);
-    const skipExternalValueSyncRef = useRef(Boolean(controlledSegments?.length || initialSegments?.length));
-    const lastSyncedToParentPlainRef = useRef<string | null>(null);
-    const lastSyncedToParentSegmentsRef = useRef<RichSegment[] | null>(
-      controlledSegments?.length ? [...controlledSegments] : null,
-    );
-    const skipExternalSegmentsSyncRef = useRef(Boolean(controlledSegments?.length));
-    const segmentsControlled = Boolean(onSegmentsChange);
-    const conversationBusyRef = useRef(conversationBusy);
-    const initialSegmentsHydratedRef = useRef(Boolean(initialSegments?.length));
+    const lastSyncedToParentSegmentsRef = useRef<RichSegment[] | null>([...controlledSegments]);
+    const skipExternalSegmentsSyncRef = useRef(false);
     const onElementAttachmentsChangeRef = useRef(onElementAttachmentsChange);
     const onLoopEnabledChangeRef = useRef(onLoopEnabledChange);
     const onAgentModeChangeRef = useRef(onAgentModeChange);
@@ -297,10 +269,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     useEffect(() => {
       agentModeRef.current = agentMode;
     }, [agentMode]);
-
-    useEffect(() => {
-      conversationBusyRef.current = conversationBusy;
-    }, [conversationBusy]);
 
     useEffect(() => {
       onLoopEnabledChangeRef.current = onLoopEnabledChange;
@@ -402,19 +370,12 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const notifyParents = useCallback(
       (next: RichSegment[]) => {
-        if (segmentsControlled && onSegmentsChange) {
-          lastSyncedToParentSegmentsRef.current = next;
-          skipExternalSegmentsSyncRef.current = true;
-          onSegmentsChange(next);
-        } else if (onTextChange) {
-          const plain = normalizeComposerPlain(segmentsToPlainText(next));
-          lastSyncedToParentPlainRef.current = plain;
-          skipExternalValueSyncRef.current = true;
-          onTextChange(plain);
-        }
+        lastSyncedToParentSegmentsRef.current = next;
+        skipExternalSegmentsSyncRef.current = true;
+        onSegmentsChange(next);
         onElementAttachmentsChange(segmentsToAttachments(next));
       },
-      [onElementAttachmentsChange, onSegmentsChange, onTextChange, segmentsControlled],
+      [onElementAttachmentsChange, onSegmentsChange],
     );
 
     const commitSegments = useCallback(
@@ -677,7 +638,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         const caret = hasAgentModeSegment(next)
           ? caretAfterAgentModeChip(next)
           : caretAtEnd(next);
-        skipExternalValueSyncRef.current = true;
+        skipExternalSegmentsSyncRef.current = true;
         commitSegments(next, caret, { syncLoop: false, syncAgentMode: false });
       },
       [commitSegments],
@@ -764,22 +725,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       ],
     );
 
-    useLayoutEffect(() => {
-      if (segmentsControlled || !initialSegments?.length || initialSegmentsHydratedRef.current) {
-        return;
-      }
-      initialSegmentsHydratedRef.current = true;
-      const merged = mergeAdjacentTextSegments([...initialSegments]);
-      if (!segmentsEqual(merged, segmentsRef.current)) {
-        skipExternalValueSyncRef.current = true;
-        applySegments(merged, caretAtEnd(merged), false);
-      }
-    }, [initialSegments, applySegments, segmentsControlled]);
-
     useEffect(() => {
-      if (!segmentsControlled || !controlledSegments) {
-        return;
-      }
       if (skipExternalSegmentsSyncRef.current) {
         const expected = lastSyncedToParentSegmentsRef.current;
         if (expected !== null && segmentsEqual([...controlledSegments], expected)) {
@@ -792,119 +738,8 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       if (segmentsEqual(merged, segmentsRef.current)) {
         return;
       }
-      skipExternalValueSyncRef.current = true;
       applySegments(merged, caretAtEnd(merged), false);
-    }, [applySegments, controlledSegments, segmentsControlled]);
-
-    useEffect(() => {
-      if (segmentsControlled) {
-        return;
-      }
-      const current = segmentsRef.current;
-      const plain = segmentsToPlainText(current);
-      const localPlain = normalizeComposerPlain(plain);
-      const externalPlain = normalizeComposerPlain(value);
-      if (skipExternalValueSyncRef.current) {
-        const expected = lastSyncedToParentPlainRef.current;
-        if (expected !== null && externalPlain !== expected) {
-          skipExternalValueSyncRef.current = true;
-          return;
-        }
-        skipExternalValueSyncRef.current = false;
-        return;
-      }
-
-      const hasElements = current.some((s) => s.kind === "element");
-      const attachmentCount = elementAttachments?.length ?? 0;
-
-      if (
-        attachmentCount > 0
-        && !hasElements
-        && initialSegments?.some((s) => s.kind === "element")
-      ) {
-        skipExternalValueSyncRef.current = true;
-        const merged = mergeAdjacentTextSegments([...initialSegments]);
-        applySegments(merged, caretAtEnd(merged), false);
-        return;
-      }
-
-      if (
-        !value
-        && attachmentCount === 0
-        && (plain || hasElements || hasLoopSegment(current) || hasAgentModeSegment(current))
-      ) {
-        if (hasLoopSegment(current) && isComposerPlainEmpty(plain) && !hasElements) {
-          return;
-        }
-        if ((loopEnabled || loopEnabledRef.current) && !hasLoopSegment(current)) {
-          const { segments: next, caret } = insertLoopSegment(emptySegments());
-          commitSegments(applyComposerPolicy(next), caret, {
-            syncLoop: false,
-            syncAgentMode: false,
-          });
-          return;
-        }
-        const policy = chipPolicy();
-        if (
-          shouldPinAgentModeChip(policy)
-          && hasAgentModeSegment(current)
-          && isComposerPlainEmpty(plain)
-          && !hasElements
-        ) {
-          return;
-        }
-        if (agentModeChipDismissedRef.current && !hasAgentModeSegment(current)) {
-          return;
-        }
-        if (hasSkillSegment(current) && isComposerPlainEmpty(plain)) {
-          return;
-        }
-        if (hasInlineAttachmentChipSegments(current) && isComposerPlainEmpty(plain)) {
-          return;
-        }
-        commitSegments(emptySegments(), { segmentIndex: 0, offset: 0 });
-        return;
-      }
-
-      if (localPlain === externalPlain) {
-        return;
-      }
-
-      if (
-        conversationBusyRef.current
-        && lastSyncedToParentPlainRef.current === localPlain
-        && externalPlain !== localPlain
-      ) {
-        return;
-      }
-
-      let next = syncSegmentsFromExternalValue(current, value);
-      next = applyComposerPolicy(next);
-      if (agentModeChipDismissedRef.current && hasAgentModeSegment(next)) {
-        next = removeAgentModeSegment(next);
-      }
-      if (!segmentsEqual(next, current)) {
-        const nextCaret = normalizeCaretForComposer(next, caretAtEnd(next));
-        commitSegments(next, nextCaret, {
-          notifyParent: false,
-          syncLoop: false,
-          syncAgentMode: false,
-        });
-      }
-    }, [
-      value,
-      elementAttachments?.length,
-      initialSegments,
-      applyComposerPolicy,
-      applySegments,
-      commitSegments,
-      loopEnabled,
-      agentMode,
-      agentModeChipDismissed,
-      conversationBusy,
-      chipPolicy,
-      segmentsControlled,
-    ]);
+    }, [applySegments, controlledSegments]);
 
     const handleEditorChange = useCallback(
       (changedEditor: LexicalEditor) => {

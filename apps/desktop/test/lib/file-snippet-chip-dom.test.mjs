@@ -1,13 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseHTML } from "linkedom";
 
-const { window } = parseHTML("<!doctype html><html><body></body></html>");
-globalThis.Node = window.Node;
-globalThis.HTMLElement = window.HTMLElement;
-globalThis.document = window.document;
-
-const { domToSegments, segmentsToDom, segmentsToPlainText } = await import("../../src/lib/composer-segments.ts");
+const {
+  assertRichSegmentsRoundTrip,
+  richSegmentsRoundTrip,
+} = await import("../../src/lib/composer-lexical/bridge/index.ts");
+const { segmentsToPlainText } = await import("../../src/lib/composer-segment-model.ts");
 
 const sampleAttachment = {
   id: "file-dom-1",
@@ -17,27 +15,23 @@ const sampleAttachment = {
   selectedText: "line one\n```\nline two",
 };
 
-test("file snippet chip round-trips through domToSegments", () => {
-  const { document } = parseHTML("<!doctype html><html><body></body></html>");
-  const frag = segmentsToDom([{ kind: "fileSnippet", attachment: sampleAttachment }], document);
-  const container = document.createElement("div");
-  container.appendChild(frag);
-
-  const parsed = domToSegments(container);
-  assert.equal(parsed.length, 1);
-  assert.equal(parsed[0]?.kind, "fileSnippet");
-  if (parsed[0]?.kind !== "fileSnippet") {
+test("file snippet chip round-trips through lexical bridge", () => {
+  const segments = [{ kind: "fileSnippet", attachment: sampleAttachment }];
+  assert.ok(assertRichSegmentsRoundTrip(segments));
+  const roundTripped = richSegmentsRoundTrip(segments);
+  assert.equal(roundTripped.length, 1);
+  assert.equal(roundTripped[0]?.kind, "fileSnippet");
+  if (roundTripped[0]?.kind !== "fileSnippet") {
     return;
   }
-  assert.equal(parsed[0].attachment.id, sampleAttachment.id);
-  assert.equal(parsed[0].attachment.filePath, sampleAttachment.filePath);
-  assert.equal(parsed[0].attachment.lineStart, sampleAttachment.lineStart);
-  assert.equal(parsed[0].attachment.lineEnd, sampleAttachment.lineEnd);
-  assert.equal(parsed[0].attachment.selectedText, sampleAttachment.selectedText);
+  assert.equal(roundTripped[0].attachment.id, sampleAttachment.id);
+  assert.equal(roundTripped[0].attachment.filePath, sampleAttachment.filePath);
+  assert.equal(roundTripped[0].attachment.lineStart, sampleAttachment.lineStart);
+  assert.equal(roundTripped[0].attachment.lineEnd, sampleAttachment.lineEnd);
+  assert.equal(roundTripped[0].attachment.selectedText, sampleAttachment.selectedText);
 });
 
-test("file snippet chip preserves multiline selectedText in dataset", () => {
-  const { document } = parseHTML("<!doctype html><html><body></body></html>");
+test("file snippet chip preserves multiline selectedText through lexical bridge", () => {
   const attachment = {
     id: "file-dom-2",
     filePath: "README.md",
@@ -45,24 +39,22 @@ test("file snippet chip preserves multiline selectedText in dataset", () => {
     lineEnd: 0,
     selectedText: "alpha\nbeta\ngamma",
   };
-  const frag = segmentsToDom([{ kind: "fileSnippet", attachment }], document);
-  const container = document.createElement("div");
-  container.appendChild(frag);
-  const parsed = domToSegments(container);
-  assert.equal(parsed[0]?.kind, "fileSnippet");
-  if (parsed[0]?.kind !== "fileSnippet") {
+  const roundTripped = richSegmentsRoundTrip([{ kind: "fileSnippet", attachment }]);
+  assert.equal(roundTripped[0]?.kind, "fileSnippet");
+  if (roundTripped[0]?.kind !== "fileSnippet") {
     return;
   }
-  assert.equal(parsed[0].attachment.selectedText, attachment.selectedText);
+  assert.equal(roundTripped[0].attachment.selectedText, attachment.selectedText);
 });
 
-test("domToSegments extracts text from browser-pasted styled span", () => {
-  const { document } = parseHTML("<!doctype html><html><body></body></html>");
-  const container = document.createElement("div");
-  const span = document.createElement("span");
-  span.textContent = "Concurrent";
-  container.appendChild(span);
+test("lexical bridge round-trips plain text segments", () => {
+  const segments = [{ kind: "text", value: "Concurrent" }];
+  const roundTripped = richSegmentsRoundTrip(segments);
+  assert.equal(segmentsToPlainText(roundTripped), "Concurrent");
+});
 
-  const parsed = domToSegments(container);
-  assert.equal(segmentsToPlainText(parsed), "Concurrent");
+test("lexical bridge keeps trailing newline in text segment", () => {
+  const segments = [{ kind: "text", value: "你好\n" }];
+  const roundTripped = richSegmentsRoundTrip(segments);
+  assert.equal(segmentsToPlainText(roundTripped), "你好\n");
 });
