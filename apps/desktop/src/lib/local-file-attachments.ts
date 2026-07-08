@@ -76,6 +76,11 @@ export function snapshotToComposerAttachmentView(
   };
 }
 
+// 预览值可能是 MB 级 data URL；LRU 封顶防止长会话/多附件下无限增长。
+// 生成图片/视频工具卡与 composer 附件共用此缓存（键为规范化路径或 managed 引用），
+// 虚拟化滚动反复挂载卡片时避免重复 IPC 拉取。
+export const LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES = 20;
+
 const localFilePreviewDataUrlCache = new Map<string, string>();
 
 export function rememberLocalFilePreviewDataUrl(path: string, previewDataUrl: string): void {
@@ -83,11 +88,25 @@ export function rememberLocalFilePreviewDataUrl(path: string, previewDataUrl: st
   if (!previewDataUrl) {
     return;
   }
+  // Map 迭代按插入序；delete+set 把命中项挪到队尾实现 LRU
+  localFilePreviewDataUrlCache.delete(normalizedPath);
   localFilePreviewDataUrlCache.set(normalizedPath, previewDataUrl);
+  if (localFilePreviewDataUrlCache.size > LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES) {
+    const oldestKey = localFilePreviewDataUrlCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      localFilePreviewDataUrlCache.delete(oldestKey);
+    }
+  }
 }
 
 export function readCachedLocalFilePreviewDataUrl(path: string): string | undefined {
-  return localFilePreviewDataUrlCache.get(normalizeSlashPath(path));
+  const normalizedPath = normalizeSlashPath(path);
+  const cached = localFilePreviewDataUrlCache.get(normalizedPath);
+  if (cached !== undefined) {
+    localFilePreviewDataUrlCache.delete(normalizedPath);
+    localFilePreviewDataUrlCache.set(normalizedPath, cached);
+  }
+  return cached;
 }
 
 export function localFileAttachmentsSnapshotKey(
