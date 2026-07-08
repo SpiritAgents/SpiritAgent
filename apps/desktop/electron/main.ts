@@ -668,6 +668,16 @@ async function createMainWindow(): Promise<BrowserWindow> {
   window.once('closed', () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
+  // 渲染进程崩溃或主 frame 重新导航（reload / 加载新页面）后，旧渲染侧的 PTY 会话与
+  // 500ms 轮询定时器无人接管，须在此回收；同文档内导航（SPA 路由）不触发。
+  window.webContents.on('render-process-gone', () => {
+    workspacePtyManager.disposeAllForWebContents(webContentsId);
+  });
+  window.webContents.on('did-start-navigation', (details) => {
+    if (details.isMainFrame && !details.isSameDocument) {
+      workspacePtyManager.disposeAllForWebContents(webContentsId);
+    }
+  });
 
   registerDesktopNotifications(window, {
     onApprovalAction: handleApprovalNotificationAction,
