@@ -86,3 +86,9 @@ test('truncateJumpListTitle shortens long display names', () => {
   assert.equal(truncated.length, 20);
   assert.match(truncated, /…$/u);
 });
+
+test('truncateJumpListTitle truncates by code points without splitting surrogate pairs', () => {
+  const truncated = truncateJumpListTitle('🎉'.repeat(30), 10);
+  assert.equal(truncated, `${'🎉'.repeat(9)}…`);
+  assert.equal(truncated.isWellFormed(), true);
+});

@@ -13,10 +13,12 @@ const GIT_COMMIT_ICON_PATH =
 
 export function formatGitCommitChipLabel(subject: string): string {
   const trimmed = subject.trim();
-  if (trimmed.length <= 48) {
+  // 按码点截断，避免把 emoji 等代理对从中间切开产生乱码。
+  const points = [...trimmed];
+  if (points.length <= 48) {
     return trimmed;
   }
-  return `${trimmed.slice(0, 45)}…`;
+  return `${points.slice(0, 45).join("")}…`;
 }
 
 export function formatGitCommitChipTitle(attachment: GitCommitAttachment): string {
