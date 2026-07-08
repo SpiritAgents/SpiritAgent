@@ -1,5 +1,6 @@
 import { APPLY_PATCH_HOST_TOOL_NAME } from './open-responses/apply-patch-eligibility.js';
 import { LLM_CONTEXT_TAGS, wrapLlmContextBlock } from './llm-context-block.js';
+import { USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE } from './user-message-language.js';
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   DEFAULT_VIDEO_GENERATION_DURATION,
@@ -138,7 +139,10 @@ export function buildBuiltinHostToolDefinitions(
         reason: {
           type: 'string',
           description:
-            'Short imperative phrase describing the command action. Must be in imperative mood (e.g., "List directory contents", "Install dependencies"). Do not use user-centric framing like "User requested" or "As per user\'s instruction". Keep it terse — one short phrase, not a sentence.',
+            `Short imperative phrase describing the command action. ${USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE} `
+            + 'Must be in imperative mood (e.g., "List directory contents", "Install dependencies"). '
+            + 'Do not use user-centric framing like "User requested" or "As per user\'s instruction". '
+            + 'Keep it terse — one short phrase, not a sentence.',
         },
         command: {
           type: 'string',
