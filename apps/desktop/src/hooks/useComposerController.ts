@@ -212,6 +212,34 @@ export function useComposerController({
   );
 
   const panePendingDraftPersistRef = useRef<(() => void) | null>(null);
+  const paneDraftFlushSnapshotRef = useRef<{
+    key: string;
+    localFilePaths: string[];
+    segments: RichSegment[];
+  } | null>(null);
+
+  // 卸载 ComposerRichInput 后 ref 为空，须用最近一次同步的快照在切 pane/卸载时落盘。
+  useEffect(() => {
+    if (!isPaneIsolated || !paneComposerDraftKey) {
+      paneDraftFlushSnapshotRef.current = null;
+      return;
+    }
+    const richInput = composerRichInputRef.current;
+    if (!richInput) {
+      return;
+    }
+    paneDraftFlushSnapshotRef.current = {
+      key: paneComposerDraftKey,
+      localFilePaths: composerLocalFileAttachments.map((item) => item.path),
+      segments: richInput.getSegments(),
+    };
+  }, [
+    composerLocalFileAttachments,
+    composerSegmentsRevision,
+    composerText,
+    isPaneIsolated,
+    paneComposerDraftKey,
+  ]);
 
   // pane 草稿防抖落盘：文本经 notifyParents 更新 composerText，chip 变更经 segments commit
   // 递增 composerSegmentsRevision，两者都会触发本效果。text 由落盘时刻的 segments 派生，
@@ -247,8 +275,21 @@ export function useComposerController({
 
   // pane 切会话 / 卸载时冲刷未落盘草稿（对应非 pane 路径切会话时的 cacheSessionUi 立即写入）。
   useEffect(() => {
+    const flushKey = paneComposerDraftKey;
     return () => {
+      if (!flushKey) {
+        return;
+      }
       panePendingDraftPersistRef.current?.();
+      const snapshot = paneDraftFlushSnapshotRef.current;
+      if (!snapshot || snapshot.key !== flushKey) {
+        return;
+      }
+      writeComposerDraft(flushKey, {
+        text: normalizeComposerPlain(segmentsToPlainText(snapshot.segments)),
+        localFilePaths: snapshot.localFilePaths,
+        segments: snapshot.segments,
+      });
     };
   }, [paneComposerDraftKey]);
 
