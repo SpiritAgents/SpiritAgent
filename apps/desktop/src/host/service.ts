@@ -818,21 +818,21 @@ class DesktopHostService {
       notifySessionListUpdated: () => this.notifySessionListUpdated(),
       refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
-      clearAssistantContinuationMarkers: () => this.clearAssistantContinuationMarkers(),
+      clearAssistantContinuationMarkers: (bundle) => this.clearAssistantContinuationMarkers(bundle),
       resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
-      ensureActiveSession: (displayText) => this.ensureActiveSession(displayText),
-      prepareSessionTitleForFirstUserTurn: (displayText) =>
-        this.prepareSessionTitleForFirstUserTurn(displayText),
+      ensureActiveSession: (displayText, bundle) => this.ensureActiveSession(displayText, bundle),
+      prepareSessionTitleForFirstUserTurn: (displayText, bundle) =>
+        this.prepareSessionTitleForFirstUserTurn(displayText, bundle),
       reconcileTodoScopeAfterSessionPathChange: (bundle, previousSessionKey) =>
         this.reconcileTodoScopeAfterSessionPathChange(bundle, previousSessionKey),
       maybeRefreshRuntimeAfterTodoScopeChange: (bundle, previousSessionKey) =>
         this.maybeRefreshRuntimeAfterTodoScopeChange(bundle, previousSessionKey),
-      buildRewindCheckpointSnapshot: () => this.buildRewindCheckpointSnapshot(),
-      allocateMessageId: () => this.allocateMessageId(),
-      resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
-      persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
-      scheduleSessionTitleGenerationIfNeeded: (seedText) =>
-        this.scheduleSessionTitleGenerationIfNeeded(seedText),
+      buildRewindCheckpointSnapshot: (bundle) => this.buildRewindCheckpointSnapshot(bundle),
+      allocateMessageId: (bundle) => this.allocateMessageId(bundle),
+      resetStreamingPlacementState: (full, bundle) => this.resetStreamingPlacementState(full, bundle),
+      persistCurrentSessionIfNeeded: (bundle) => this.persistCurrentSessionIfNeeded(bundle),
+      scheduleSessionTitleGenerationIfNeeded: (seedText, bundle) =>
+        this.scheduleSessionTitleGenerationIfNeeded(seedText, bundle),
       dispatchUserMessageExtensionEvent: (text, displayText, messageId) =>
         this.dispatchExtensionEvent({
           type: 'onUserMessage',
@@ -844,10 +844,14 @@ class DesktopHostService {
         }),
       ensureToolExecutor: (bundle) => this.ensureToolExecutor(bundle),
       refreshArchiveFromRuntime: (bundle) => this.refreshArchiveFromRuntime(bundle),
-      recordRewindCheckpoint: (messageId, beforeUserCheckpoint) =>
-        this.recordRewindCheckpoint(messageId, beforeUserCheckpoint as DesktopRewindCheckpointSnapshot | undefined),
+      recordRewindCheckpoint: (messageId, beforeUserCheckpoint, bundle) =>
+        this.recordRewindCheckpoint(
+          messageId,
+          beforeUserCheckpoint as DesktopRewindCheckpointSnapshot | undefined,
+          bundle,
+        ),
       orchestrationFor: (bundle) => this.orchestrationFor(bundle),
-      rebuildMessageTimelineFromMessages: () => this.rebuildMessageTimelineFromMessages(),
+      rebuildMessageTimelineFromMessages: (bundle) => this.rebuildMessageTimelineFromMessages(bundle),
       flushDeferredRuntimeRefreshIfIdle: (bundle) => this.flushDeferredRuntimeRefreshIfIdle(bundle),
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
       buildSnapshot: () => this.buildSnapshot(),
@@ -1129,9 +1133,10 @@ class DesktopHostService {
     };
   }
 
-  private conversationContinuationContext(): ConversationContinuationContext {
+  /** 传 bundle 时上下文作用于该 bundle（后台队列 drain），否则默认前台 active。 */
+  private conversationContinuationContext(bundle?: SessionBundle): ConversationContinuationContext {
     return {
-      activeBundle: () => this.activeBundle(),
+      activeBundle: () => bundle ?? this.activeBundle(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       orchestrationFor: (bundle) => this.orchestrationFor(bundle),
       lastToolSnapshotLogSignature: () => this.lastToolSnapshotLogSignature,
@@ -1154,17 +1159,21 @@ class DesktopHostService {
     };
   }
 
-  private rewindHostContext(): RewindHostContext {
+  /** 传 bundle 时 rewind 记录作用于该 bundle（后台队列 drain），否则默认前台 active。 */
+  private rewindHostContext(bundle?: SessionBundle): RewindHostContext {
+    const target = () => bundle ?? this.activeBundle();
     return {
       state: () => this.state,
       requireState: () => this.requireState(),
-      activeBundle: () => this.activeBundle(),
+      activeBundle: () => target(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
-      runtime: () => this.runtime,
+      runtime: () => (bundle ? bundle.runtime : this.runtime),
       requireRuntime: () => this.requireRuntime(),
-      desktopMessages: () => this.desktopMessages(),
-      archiveMessages: () => this.archiveMessages(),
-      archiveAssistantAux: () => this.archiveAssistantAux(),
+      desktopMessages: () => target().messageTimeline.toMessages(),
+      archiveMessages: () =>
+        buildArchiveMessagesFromConversation(target().messageTimeline.toMessages()),
+      archiveAssistantAux: () =>
+        buildArchiveAssistantAuxFromConversation(target().messageTimeline.toMessages()),
       resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
       cancelTodoClearing: (sessionKey) => this.cancelTodoClearing(sessionKey),
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
@@ -4012,10 +4021,9 @@ class DesktopHostService {
     }
   }
 
-  private ensureActiveSession(seedText: string): void {
-    const bundle = this.activeBundle();
+  private ensureActiveSession(seedText: string, bundle: SessionBundle = this.activeBundle()): void {
     if (bundle.activeSession) {
-      this.promoteProvisionalSessionIfNeeded(seedText);
+      this.promoteProvisionalSessionIfNeeded(seedText, bundle);
       return;
     }
 
@@ -4026,8 +4034,10 @@ class DesktopHostService {
     };
   }
 
-  private promoteProvisionalSessionIfNeeded(seedText: string): void {
-    const bundle = this.activeBundle();
+  private promoteProvisionalSessionIfNeeded(
+    seedText: string,
+    bundle: SessionBundle = this.activeBundle(),
+  ): void {
     const activeSession = bundle.activeSession;
     if (!activeSession || !isProvisionalSessionPath(activeSession.filePath)) {
       return;
@@ -4085,8 +4095,7 @@ class DesktopHostService {
     });
   }
 
-  private rebuildMessageTimelineFromMessages(): void {
-    const bundle = this.activeBundle();
+  private rebuildMessageTimelineFromMessages(bundle: SessionBundle = this.activeBundle()): void {
     bundle.messageTimeline = this.createMessageTimelineFromMessages(bundle.messages);
   }
 
@@ -4132,8 +4141,8 @@ class DesktopHostService {
     this.activeBundle().messages = this.desktopMessages();
   }
 
-  private clearAssistantContinuationMarkers(): void {
-    clearAssistantContinuationMarkersFromService(this.conversationContinuationContext());
+  private clearAssistantContinuationMarkers(bundle?: SessionBundle): void {
+    clearAssistantContinuationMarkersFromService(this.conversationContinuationContext(bundle));
   }
 
   private markAssistantMessageContinuable(content: string): void {
@@ -4189,16 +4198,19 @@ class DesktopHostService {
   private async recordRewindCheckpoint(
     messageId: number,
     beforeUserCheckpoint?: DesktopRewindCheckpointSnapshot,
+    bundle?: SessionBundle,
   ): Promise<void> {
-    return recordRewindCheckpointFromService(this.rewindHostContext(), messageId, beforeUserCheckpoint);
+    return recordRewindCheckpointFromService(this.rewindHostContext(bundle), messageId, beforeUserCheckpoint);
   }
 
   private async applyTodosAfterRewind(snapshot: DesktopRewindCheckpointSnapshot): Promise<void> {
     return applyTodosAfterRewindFromService(this.rewindHostContext(), snapshot);
   }
 
-  private async buildRewindCheckpointSnapshot(): Promise<DesktopRewindCheckpointSnapshot> {
-    return buildRewindCheckpointSnapshotFromService(this.rewindHostContext());
+  private async buildRewindCheckpointSnapshot(
+    bundle?: SessionBundle,
+  ): Promise<DesktopRewindCheckpointSnapshot> {
+    return buildRewindCheckpointSnapshotFromService(this.rewindHostContext(bundle));
   }
 
   private restoreBeforeRewindCheckpoint(
@@ -4208,13 +4220,14 @@ class DesktopHostService {
     restoreBeforeRewindCheckpointFromService(this.rewindHostContext(), snapshot, checkpointSequence);
   }
 
-  private async persistCurrentSessionIfNeeded(): Promise<void> {
-    const bundle = this.sessionRegistry.getActive();
-    if (!bundle) {
+  private async persistCurrentSessionIfNeeded(bundle?: SessionBundle): Promise<void> {
+    const target = bundle ?? this.sessionRegistry.getActive();
+    if (!target) {
       return;
     }
-    await this.persistSessionBundle(bundle, {
-      fromRuntime: this.runtime,
+    await this.persistSessionBundle(target, {
+      // syncActiveRuntimePointer 维持 this.runtime ≡ active.runtime；显式 bundle 时取其自身 runtime
+      fromRuntime: bundle ? bundle.runtime : this.runtime,
       bumpListSortAt: true,
     });
   }
@@ -4263,8 +4276,7 @@ class DesktopHostService {
     return runtime;
   }
 
-  private allocateMessageId(): number {
-    const bundle = this.activeBundle();
+  private allocateMessageId(bundle: SessionBundle = this.activeBundle()): number {
     const next = bundle.messageIdCounter;
     bundle.messageIdCounter += 1;
     return next;
