@@ -444,7 +444,6 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 hasComposerPayload={composerHasPayload}
                 canAbort={conversationInterruptible}
                 busy={composerBusy}
-                conversationBusy={continueBusy}
                 agentModeChipDismissed={runtime.agentModeChipDismissed}
                 onAgentModeChipDismissChange={runtime.setAgentModeChipDismissed}
                 readOnly={activeSessionReadOnly}

@@ -87,7 +87,6 @@ export type ComposerSurfaceProps = {
   onDrop?(event: ReactDragEvent<HTMLElement>): void;
   browserElementAttachments?: readonly BrowserElementAttachment[];
   onElementAttachmentsChange?(attachments: BrowserElementAttachment[]): void;
-  conversationBusy?: boolean;
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
   saveLocalImageAs?: SaveLocalImageAs;
@@ -130,7 +129,6 @@ export function ComposerSurface({
   onDrop,
   browserElementAttachments,
   onElementAttachmentsChange,
-  conversationBusy = false,
   agentModeChipDismissed = false,
   onAgentModeChipDismissChange,
   saveLocalImageAs,
@@ -213,7 +211,6 @@ export function ComposerSurface({
         onElementAttachmentsChange={(atts) => onElementAttachmentsChange?.(atts)}
         onLoopEnabledChange={onLoopEnabledChange}
         onAgentModeChange={onAgentModeChange}
-        conversationBusy={conversationBusy}
         agentModeChipDismissed={agentModeChipDismissed}
         onAgentModeChipDismissChange={onAgentModeChipDismissChange}
         onPaste={(e) => onPaste?.(e as unknown as ReactClipboardEvent<HTMLTextAreaElement>)}
