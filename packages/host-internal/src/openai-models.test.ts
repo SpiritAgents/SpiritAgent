@@ -207,6 +207,7 @@ test('parseVercelAiGatewayModelEntriesPayload maps language and image types', ()
     {
       id: 'openai/gpt-5',
       contextLength: 128000,
+      supportsImageInput: true,
     },
     {
       id: 'google/imagen-4',
@@ -218,6 +219,42 @@ test('parseVercelAiGatewayModelEntriesPayload maps language and image types', ()
     },
     {
       id: 'legacy/model-without-type',
+    },
+  ]);
+});
+
+test('parseVercelAiGatewayModelEntriesPayload maps vision tag to supportsImageInput for language models', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'openai/gpt-4o',
+        type: 'language',
+        tags: ['tool-use', 'vision', 'file-input'],
+      },
+      {
+        id: 'alibaba/qwen-3-14b',
+        type: 'language',
+        tags: ['reasoning', 'tool-use'],
+      },
+      {
+        id: 'google/gemini-2.5-flash-image',
+        type: 'language',
+        tags: ['image-generation', 'implicit-caching', 'web-search'],
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'openai/gpt-4o',
+      supportsImageInput: true,
+    },
+    {
+      id: 'alibaba/qwen-3-14b',
+    },
+    {
+      id: 'google/gemini-2.5-flash-image',
+      supportedReasoningEfforts: ['none', 'low', 'medium', 'high'],
     },
   ]);
 });
