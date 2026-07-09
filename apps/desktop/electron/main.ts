@@ -525,6 +525,34 @@ function readBackdropBlurFromDisk(): boolean {
 
 const MACOS_WINDOW_VIBRANCY = 'under-window' as const;
 
+/**
+ * macOS 红绿灯位置缓存：UI 缩放存于渲染器 localStorage，窗口构造时主进程读不到，
+ * 若等渲染器启动后回传（实测约 1s）红绿灯会先停在默认位置再跳走。
+ * 故渲染器每次同步位置时落盘，下次启动直接作为 BrowserWindow 构造参数生效。
+ */
+function trafficLightPositionCachePath(): string {
+  return path.join(app.getPath('userData'), 'traffic-light-position.json');
+}
+
+function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefined {
+  try {
+    const parsed = JSON.parse(
+      readFileSync(trafficLightPositionCachePath(), 'utf8'),
+    ) as { x?: unknown; y?: unknown };
+    if (
+      typeof parsed.x === 'number' &&
+      Number.isFinite(parsed.x) &&
+      typeof parsed.y === 'number' &&
+      Number.isFinite(parsed.y)
+    ) {
+      return { x: parsed.x, y: parsed.y };
+    }
+  } catch {
+    // 首次启动或缓存缺失：沿用 hiddenInset 默认位置（等价 scale=1）
+  }
+  return undefined;
+}
+
 function nativeBackdropBlurActive(blurEnabled: boolean): boolean {
   return blurEnabled && (process.platform === 'win32' || process.platform === 'darwin');
 }
@@ -646,6 +674,8 @@ async function createMainWindow(): Promise<BrowserWindow> {
   }
 
   const windowIcon = resolveWindowIconPath();
+  const storedTrafficLightPosition =
+    process.platform === 'darwin' ? readTrafficLightPositionFromDisk() : undefined;
 
   const window = new BrowserWindow({
     width: 1440,
@@ -662,6 +692,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
           visualEffectState: 'followWindow',
         }
       : {}),
+    ...(storedTrafficLightPosition ? { trafficLightPosition: storedTrafficLightPosition } : {}),
     titleBarStyle:
       process.platform === 'darwin' ? 'hiddenInset' : process.platform === 'win32' ? 'hidden' : undefined,
     titleBarOverlay:
@@ -1066,6 +1097,24 @@ if (gotSpiritSingleInstanceLock) {
         return;
       }
       applyNativeWindowBackdrop(window, request.dark, request.nativeBackdropBlur);
+    },
+  );
+
+  ipcMain.handle(
+    'desktop:sync-traffic-light-position',
+    (event, position: { x: number; y: number }) => {
+      if (process.platform !== 'darwin') {
+        return;
+      }
+      if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y)) {
+        return;
+      }
+      const window = BrowserWindow.fromWebContents(event.sender);
+      const rounded = { x: Math.round(position.x), y: Math.round(position.y) };
+      window?.setWindowButtonPosition(rounded);
+      writeFile(trafficLightPositionCachePath(), JSON.stringify(rounded)).catch((err) => {
+        console.error('[spirit-desktop] persist traffic light position failed', err);
+      });
     },
   );
 

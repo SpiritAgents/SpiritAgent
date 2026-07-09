@@ -41,6 +41,51 @@ export function setStoredUiLayoutScale(scale: number): void {
   localStorage.setItem(UI_LAYOUT_SCALE_STORAGE_KEY, String(normalized));
 }
 
+/*
+ * macOS 红绿灯簇几何：hiddenInset 默认 margin (12, 11)（Electron native_window_mac.mm），
+ * 按钮簇 54×14px。scale=1 时簇水平居中于 78px 预留区（--spirit-macos-traffic-lights-inset-left）、
+ * 垂直中线与 28px 侧栏切换按钮中线（18px）重合；缩放后按同一关系重算，s=1 正好还原 (12, 11)。
+ */
+const DARWIN_TRAFFIC_LIGHTS_ZONE_WIDTH = 78;
+const DARWIN_TRAFFIC_LIGHTS_CLUSTER_WIDTH = 54;
+const DARWIN_TRAFFIC_LIGHTS_BUTTON_HEIGHT = 14;
+const DARWIN_PINNED_SIDEBAR_TOGGLE_CENTER_Y = 18;
+
+export function computeDarwinTrafficLightPosition(scale: number): { x: number; y: number } {
+  const s = clampUiLayoutScale(scale);
+  return {
+    x: Math.round((DARWIN_TRAFFIC_LIGHTS_ZONE_WIDTH * s - DARWIN_TRAFFIC_LIGHTS_CLUSTER_WIDTH) / 2),
+    y: Math.round(
+      DARWIN_PINNED_SIDEBAR_TOGGLE_CENTER_Y * s - DARWIN_TRAFFIC_LIGHTS_BUTTON_HEIGHT / 2,
+    ),
+  };
+}
+
+let darwinTrafficLightSyncFrame: number | null = null;
+
+/**
+ * CSS 缩放写入 DOM 后布局要等渲染主线程空闲才真正上屏（React 重渲染约 60–90ms），
+ * 而原生 setWindowButtonPosition 几毫秒内即生效；故延到 CSS 生效后的首个 rAF
+ * （新布局所在帧的起点）再发 IPC，使红绿灯与布局在同一帧切换。
+ * 单个 pending rAF 同时合并同一次按键内 updater/useLayoutEffect 的重复调用。
+ */
+function syncDarwinTrafficLightPosition(scale: number): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const api = window.spiritDesktop;
+  if (!api || api.platform !== "darwin") {
+    return;
+  }
+  if (darwinTrafficLightSyncFrame !== null) {
+    window.cancelAnimationFrame(darwinTrafficLightSyncFrame);
+  }
+  darwinTrafficLightSyncFrame = window.requestAnimationFrame(() => {
+    darwinTrafficLightSyncFrame = null;
+    void api.syncTrafficLightPosition(computeDarwinTrafficLightPosition(scale));
+  });
+}
+
 function shouldApplyWin32TitleBarCounterZoom(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return false;
@@ -152,6 +197,8 @@ export function applyUiLayoutScaleToDocument(scale: number): void {
   if (!scaleRoot) {
     return;
   }
+
+  syncDarwinTrafficLightPosition(normalized);
 
   if (normalized === DEFAULT_UI_LAYOUT_SCALE) {
     root.style.removeProperty(SPIRIT_UI_LAYOUT_SCALE_VAR);

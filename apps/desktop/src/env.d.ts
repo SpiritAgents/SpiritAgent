@@ -258,6 +258,8 @@ declare global {
       nativeBackdropBlur?: boolean;
     }): Promise<void>;
     syncLanguage(lang: string): Promise<void>;
+    /** macOS：UI 缩放后同步原生红绿灯位置，与切换按钮保持对齐。 */
+    syncTrafficLightPosition(position: { x: number; y: number }): Promise<void>;
     popupApplicationMenu(
       section: 'file' | 'edit' | 'view' | 'window' | 'help',
       clientX: number,

@@ -477,6 +477,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   syncLanguage(lang: string) {
     return ipcRenderer.invoke('desktop:sync-language', lang);
   },
+  syncTrafficLightPosition(position: { x: number; y: number }) {
+    return ipcRenderer.invoke('desktop:sync-traffic-light-position', position);
+  },
   popupApplicationMenu(
     section: 'file' | 'edit' | 'view' | 'window' | 'help',
     clientX: number,
