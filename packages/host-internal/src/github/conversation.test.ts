@@ -116,8 +116,8 @@ test('mapTimelineEventToConversationItem maps review event with submitted_at onl
     event: 'reviewed',
     state: 'commented',
     submitted_at: '2026-06-10T04:44:53Z',
-    user: { login: 'cursor[bot]', avatar_url: 'https://avatars.githubusercontent.com/in/1210556?v=4' },
-    body: '✅ Bugbot reviewed your changes and found no new issues!',
+    user: { login: 'github-actions[bot]', avatar_url: 'https://avatars.githubusercontent.com/u/9919?v=4' },
+    body: '✅ Automated review found no new issues.',
     html_url: 'https://github.com/SpiritAgents/SpiritAgent/pull/100#pullrequestreview-4464571196',
   });
 
@@ -126,9 +126,9 @@ test('mapTimelineEventToConversationItem maps review event with submitted_at onl
     return;
   }
   assert.equal(item.createdAt, '2026-06-10T04:44:53Z');
-  assert.equal(item.authorLogin, 'cursor[bot]');
+  assert.equal(item.authorLogin, 'github-actions[bot]');
   assert.equal(item.state, 'COMMENTED');
-  assert.match(item.body ?? '', /Bugbot reviewed your changes/);
+  assert.match(item.body ?? '', /Automated review found no new issues/);
 });
 
 test('mapTimelineEventToConversationItem maps committed event without created_at', () => {
@@ -185,7 +185,7 @@ test('enrichConversationCommitAuthors replaces timeline fallback with pull commi
   const timelineItem = mapTimelineEventToConversationItem({
     sha: 'b40b5d065d1dafe791397c7ed4538a1eb7527a34',
     html_url: 'https://github.com/SpiritAgents/SpiritAgent/commit/b40b5d065d1dafe791397c7ed4538a1eb7527a34',
-    author: { name: 'Cursor Agent', email: 'cursoragent@cursor.com', date: '2026-06-13T10:17:52Z' },
+    author: { name: 'Commit Bot', email: 'bot@example.com', date: '2026-06-13T10:17:52Z' },
     message: 'fix(desktop): 修正接近 100 万 token 的紧凑计数显示',
     event: 'committed',
   });
@@ -194,14 +194,14 @@ test('enrichConversationCommitAuthors replaces timeline fallback with pull commi
   if (timelineItem?.kind !== 'commit') {
     return;
   }
-  assert.equal(timelineItem.authorLogin, 'Cursor Agent');
+  assert.equal(timelineItem.authorLogin, 'Commit Bot');
   assert.equal(timelineItem.avatarUrl, '');
 
   const enriched = enrichConversationCommitAuthors([timelineItem], [
     {
       sha: 'b40b5d065d1dafe791397c7ed4538a1eb7527a34',
       subject: 'fix(desktop): 修正接近 100 万 token 的紧凑计数显示',
-      authorLogin: 'cursoragent',
+      authorLogin: 'commit-bot',
       avatarUrl: 'https://avatars.githubusercontent.com/u/199161495?v=4',
       createdAt: '2026-06-13T10:17:52Z',
     },
@@ -211,7 +211,7 @@ test('enrichConversationCommitAuthors replaces timeline fallback with pull commi
   if (enriched[0]?.kind !== 'commit') {
     return;
   }
-  assert.equal(enriched[0].authorLogin, 'cursoragent');
+  assert.equal(enriched[0].authorLogin, 'commit-bot');
   assert.equal(enriched[0].avatarUrl, 'https://avatars.githubusercontent.com/u/199161495?v=4');
 });
 
