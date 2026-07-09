@@ -1,6 +1,14 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
+/** Appended to every shell `command` parameter description. */
+export const SHELL_COMMAND_HIGH_RISK_CONFIRM_HINT =
+  'Confirm with the user before running high-risk commands.';
+
+export function withShellCommandHighRiskConfirmHint(description: string): string {
+  return `${description.trim()} ${SHELL_COMMAND_HIGH_RISK_CONFIRM_HINT}`;
+}
+
 function firstExistingFile(candidates: string[]): string | undefined {
   for (const candidate of candidates) {
     const trimmed = candidate.trim();
@@ -113,11 +121,17 @@ export function shellHostExecUsesBufferOutput(shellFile: string): boolean {
 export function commandParameterDescriptionForResolvedShell(file: string): string {
   const base = path.basename(file).toLowerCase();
   if (base === 'pwsh.exe' || base === 'powershell.exe') {
-    return 'The command to execute in Windows PowerShell. Prefer PowerShell syntax such as Get-ChildItem, Select-String, Get-Content, Set-Location, and Test-Path. Do not assume Bash-only syntax or cmd.exe %VAR% expansion.';
+    return withShellCommandHighRiskConfirmHint(
+      'The command to execute in Windows PowerShell. Prefer PowerShell syntax such as Get-ChildItem, Select-String, Get-Content, Set-Location, and Test-Path.',
+    );
   }
   if (base === 'cmd.exe') {
-    return 'The command to execute in Command Prompt (cmd.exe). Prefer cmd.exe syntax such as dir, type, where, findstr, and cd. Do not assume Bash commands like find, ls, grep, or cat.';
+    return withShellCommandHighRiskConfirmHint(
+      'The command to execute in Command Prompt (cmd.exe). Prefer cmd.exe syntax such as dir, type, where, findstr, and cd.',
+    );
   }
   const name = path.basename(file);
-  return `The command to execute in ${name}. Prefer syntax native to that shell.`;
+  return withShellCommandHighRiskConfirmHint(
+    `The command to execute in ${name}. Prefer syntax native to that shell.`,
+  );
 }

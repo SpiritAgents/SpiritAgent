@@ -710,7 +710,7 @@ function parseBuiltinHostToolDefinitionEnvironment(
     typeof value.commandParameterDescription === 'string' &&
     value.commandParameterDescription.trim().length > 0
       ? value.commandParameterDescription.trim()
-      : 'The command to execute in the current shell. Do not assume Bash-only syntax unless the shell is POSIX compatible.';
+      : 'The command to execute in the current shell.';
 
   return {
     shellDisplayName,
