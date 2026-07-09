@@ -975,7 +975,7 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
                     id: 'call-subagent',
                     type: 'function',
                     function: {
-                      name: 'run_subagent',
+                      name: 'subagent',
                       arguments: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
                     },
                   },
@@ -989,7 +989,7 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
             calls: [
               {
                 id: 'call-subagent',
-                name: 'run_subagent',
+                name: 'subagent',
                 argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
               },
             ],
@@ -2388,9 +2388,9 @@ export class SubagentExecutor extends HostExecutor {
   executedSubagentCalls = 0;
 
   override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
-    if (request.name === 'run_subagent') {
+    if (request.name === 'subagent') {
       this.executedSubagentCalls += 1;
-      throw new Error('run_subagent 不应落到宿主 execute');
+      throw new Error('subagent 不应落到宿主 execute');
     }
 
     return super.execute(request);

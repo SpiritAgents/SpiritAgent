@@ -17,7 +17,7 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
-import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
+import { isSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import {
   CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX,
   CONVERSATION_SCROLL_BED_EXTRA_PX,
@@ -347,7 +347,7 @@ export function useConversationViewState({
     if (subagentViewer.active && !snapshot?.subagentViewer) {
       const toolCallId = subagentViewer.toolCallId;
       const stillStarting = toolCallId
-        ? isRunSubagentToolCallPending(snapshot?.conversation.messages ?? [], toolCallId)
+        ? isSubagentToolCallPending(snapshot?.conversation.messages ?? [], toolCallId)
         : false;
       if (stillStarting) {
         return;

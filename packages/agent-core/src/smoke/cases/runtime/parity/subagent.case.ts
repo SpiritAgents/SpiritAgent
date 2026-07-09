@@ -29,7 +29,7 @@ export async function runSubagentCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('subagent smoke 错误落到了宿主 execute。');
   }
   const subagentExecution = subagentResult.toolExecutions.find(
-    (execution) => execution.toolName === 'run_subagent',
+    (execution) => execution.toolName === 'subagent',
   );
   if (
     !subagentExecution

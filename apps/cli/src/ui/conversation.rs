@@ -1,6 +1,6 @@
 use super::*;
 use crate::subagent_display::{
-    has_active_run_subagent_tool_in_messages,
+    has_active_subagent_tool_in_messages,
     parse_pending_subagent_status_text as parse_subagent_status_text,
 };
 
@@ -343,7 +343,7 @@ pub(in crate::ui) fn should_render_standalone_pending_aux(
         return false;
     }
 
-    if has_active_run_subagent_tool_in_messages(&app.messages) {
+    if has_active_subagent_tool_in_messages(&app.messages) {
         return false;
     }
 

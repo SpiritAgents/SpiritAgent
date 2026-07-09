@@ -21,7 +21,7 @@ import {
   ensureSubagentConversationProjection,
   syncSubagentConversationProjections,
 } from './subagent-conversation-projection.js';
-import { isRunSubagentToolCallPending } from './subagent-stream-sync.js';
+import { isSubagentToolCallPending } from './subagent-stream-sync.js';
 
 import { WORKTREE_BOOTSTRAP_TOOL_NAME } from './worktree-bootstrap-card.js';
 
@@ -164,7 +164,7 @@ export function resolveSubagentPromptText(
     const message = timelineMessages[index];
     if (
       message?.tool?.toolCallId === trimmed
-      && message.tool.toolName === 'run_subagent'
+      && message.tool.toolName === 'subagent'
     ) {
       const detail = message.tool.headlineDetail?.trim();
       if (detail) {
@@ -316,7 +316,7 @@ export function isSubagentViewerTargetPending(
     return true;
   }
 
-  return isRunSubagentToolCallPending(bundle.messageTimeline.toMessages(), trimmed);
+  return isSubagentToolCallPending(bundle.messageTimeline.toMessages(), trimmed);
 }
 
 export function buildSubagentViewerSnapshot(

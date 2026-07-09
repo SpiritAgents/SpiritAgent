@@ -1,6 +1,6 @@
 import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
 
-/** Parent wrap-up after run_subagent — normal assistant body, not runtime status. */
+/** Parent wrap-up after subagent — normal assistant body, not runtime status. */
 function isParentSubagentCompletionSurfaceText(text: string): boolean {
   return /子智能体已完成|输出如下/u.test(text);
 }
@@ -157,7 +157,7 @@ export function isSubagentStatusSurfaceText(text: string | undefined): boolean {
   return true;
 }
 
-export function hasRunSubagentToolInCurrentTurn(
+export function hasSubagentToolInCurrentTurn(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
 ): boolean {
   let lastUserIndex = -1;
@@ -169,32 +169,32 @@ export function hasRunSubagentToolInCurrentTurn(
   }
   for (let index = lastUserIndex + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (message?.role === 'assistant' && message.tool?.toolName === 'run_subagent') {
+    if (message?.role === 'assistant' && message.tool?.toolName === 'subagent') {
       return true;
     }
   }
   return false;
 }
 
-export function hasActiveRunSubagentToolInMessages(
+export function hasActiveSubagentToolInMessages(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
 ): boolean {
   return messages.some(
     (message) =>
       message.role === 'assistant' &&
-      message.tool?.toolName === 'run_subagent' &&
+      message.tool?.toolName === 'subagent' &&
       (message.tool.phase === 'preview' || message.tool.phase === 'running'),
   );
 }
 
-/** run_subagent 仍在当前回合执行/等待审批时，主 timeline 不应展示子会话工具卡。 */
+/** subagent 仍在当前回合执行/等待审批时，主 timeline 不应展示子会话工具卡。 */
 export function hasInFlightSubagentDelegationInMessages(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
 ): boolean {
   return messages.some(
     (message) =>
       message.role === 'assistant' &&
-      message.tool?.toolName === 'run_subagent' &&
+      message.tool?.toolName === 'subagent' &&
       (message.tool.phase === 'preview' ||
         message.tool.phase === 'running' ||
         message.tool.phase === 'pending-approval'),

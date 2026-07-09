@@ -17,7 +17,7 @@ import {
 } from './message-ordering.js';
 import {
   extractSubagentSessionStreamingText,
-  findRunSubagentToolPhase,
+  findSubagentToolPhase,
 } from './subagent-stream-sync.js';
 
 type ContinuationOrchestration = {
@@ -253,7 +253,7 @@ export function syncSubagentToolStreamingOutput(
     }
 
     const streamingText = extractSubagentSessionStreamingText(session)?.trim();
-    const phase = findRunSubagentToolPhase(timelineMessages, toolCallId) ?? 'running';
+    const phase = findSubagentToolPhase(timelineMessages, toolCallId) ?? 'running';
     const nextPhase = phase === 'preview' || phase === 'running' ? phase : 'running';
     const nextTool = {
       ...existing,
@@ -372,15 +372,15 @@ function purgeSubagentLeakTextInCurrentTurn(bundle: SessionBundle): void {
     }
   }
 
-  let runSubagentIndex = -1;
+  let subagentIndex = -1;
   for (let index = lastUserIndex + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (message?.role === 'assistant' && message.tool?.toolName === 'run_subagent') {
-      runSubagentIndex = index;
+    if (message?.role === 'assistant' && message.tool?.toolName === 'subagent') {
+      subagentIndex = index;
     }
   }
 
-  const startIndex = runSubagentIndex >= 0 ? runSubagentIndex + 1 : lastUserIndex + 1;
+  const startIndex = subagentIndex >= 0 ? subagentIndex + 1 : lastUserIndex + 1;
   for (let index = startIndex; index < messages.length; index += 1) {
     const message = messages[index];
     if (message.role !== 'assistant' || message.tool || !message.content.trim()) {
@@ -413,19 +413,19 @@ function purgeSubagentLeakedToolRowsInCurrentTurn(
     }
   }
 
-  let runSubagentIndex = -1;
+  let subagentIndex = -1;
   for (let index = lastUserIndex + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (message?.role === 'assistant' && message.tool?.toolName === 'run_subagent') {
-      runSubagentIndex = index;
+    if (message?.role === 'assistant' && message.tool?.toolName === 'subagent') {
+      subagentIndex = index;
     }
   }
 
-  const startIndex = runSubagentIndex >= 0 ? runSubagentIndex + 1 : lastUserIndex + 1;
+  const startIndex = subagentIndex >= 0 ? subagentIndex + 1 : lastUserIndex + 1;
   const orchestration = ctx.orchestrationFor(bundle);
   for (let index = messages.length - 1; index >= startIndex; index -= 1) {
     const message = messages[index];
-    if (message?.role !== 'assistant' || !message.tool || message.tool.toolName === 'run_subagent') {
+    if (message?.role !== 'assistant' || !message.tool || message.tool.toolName === 'subagent') {
       continue;
     }
     const toolCallId = message.tool.toolCallId?.trim();

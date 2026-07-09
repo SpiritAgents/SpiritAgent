@@ -79,7 +79,7 @@ test('parsePendingSubagentStatusText only accepts subagent runtime status', () =
   );
 });
 
-test('hasInFlightSubagentDelegationInMessages includes pending-approval run_subagent', () => {
+test('hasInFlightSubagentDelegationInMessages includes pending-approval subagent', () => {
   assert.equal(
     hasInFlightSubagentDelegationInMessages([
       {
@@ -88,7 +88,7 @@ test('hasInFlightSubagentDelegationInMessages includes pending-approval run_suba
         content: '',
         pending: false,
         tool: {
-          toolName: 'run_subagent',
+          toolName: 'subagent',
           phase: 'pending-approval',
           headline: 'SubAgent',
           detailLines: [],
@@ -105,7 +105,7 @@ test('hasInFlightSubagentDelegationInMessages includes pending-approval run_suba
         content: '',
         pending: false,
         tool: {
-          toolName: 'run_subagent',
+          toolName: 'subagent',
           phase: 'succeeded',
           headline: 'SubAgent',
           detailLines: [],

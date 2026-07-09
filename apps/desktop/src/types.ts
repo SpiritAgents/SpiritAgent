@@ -928,7 +928,7 @@ export interface SubagentViewerSnapshot {
   parentToolCallId: string;
   sessionId: string;
   status: SubagentViewerSessionStatus;
-  /** Same text as run_subagent tool card headlineDetail (delegated task). */
+  /** Same text as subagent tool card headlineDetail (delegated task). */
   promptText: string;
   messages: ConversationMessageSnapshot[];
   pendingAuxState?: PendingAssistantAux;

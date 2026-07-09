@@ -538,7 +538,7 @@ export type AskQuestionsResult =
   | { status: 'skipped' }
   | { status: 'answered'; answers: AskQuestionsAnswer[] };
 
-export interface RunSubagentRequest {
+export interface SubagentRequest {
   task: string;
   subagentType?: string;
   successCriteria?: string;

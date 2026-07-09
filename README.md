@@ -47,7 +47,7 @@ Spirit Agent is a **tool-using coding agent** that runs against a real project r
 
 - **Turn machine** — streaming assistant output, tool rounds, compaction, and context usage tracking.
 - **Agent / Plan / Ask modes** — full tool access, planning-only workflows, or read-only Q&A with edit tools stripped at the contract layer.
-- **Subagents** — `run_subagent` delegates focused work to child runs with their own tool surface.
+- **Subagents** — `subagent` delegates focused work to child runs with their own tool surface.
 - **Loop control** — optional `finish_task` when multitask-style looping is enabled.
 - **Rewind-friendly history** — message archive formats designed for host-side rollback and resubmit.
 
@@ -70,7 +70,7 @@ Built-in tools are defined once in Agent Core (name, description, JSON Schema). 
 - **Workspace** — `read_file`, `write_file` / `create_file` / `edit_file` / `delete_file`, `apply_patch` (V4A on supported transports), `glob`, `grep`, `list_directory_files`
 - **Shell** — `shell` with host-controlled approval
 - **Web** — `web_fetch`; search via provider tools or host search where configured
-- **Delegation** — `run_subagent`
+- **Delegation** — `subagent`
 - **Planning** — `create_plan`, session TODO tools (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` for workspace memory summaries

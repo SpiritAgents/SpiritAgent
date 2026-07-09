@@ -1,6 +1,6 @@
 import type { ConversationMessageSnapshot } from '@/types';
 
-export function isRunSubagentToolCallPending(
+export function isSubagentToolCallPending(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
   toolCallId: string,
 ): boolean {

@@ -68,7 +68,7 @@ export function extractSubagentSessionStreamingText(
   return undefined;
 }
 
-export function findRunSubagentToolPhase(
+export function findSubagentToolPhase(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
   toolCallId: string,
 ): ToolBlockSnapshot['phase'] | undefined {
@@ -81,10 +81,10 @@ export function findRunSubagentToolPhase(
   return undefined;
 }
 
-export function isRunSubagentToolCallPending(
+export function isSubagentToolCallPending(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
   toolCallId: string,
 ): boolean {
-  const phase = findRunSubagentToolPhase(messages, toolCallId);
+  const phase = findSubagentToolPhase(messages, toolCallId);
   return phase === 'preview' || phase === 'running' || phase === 'pending-approval';
 }

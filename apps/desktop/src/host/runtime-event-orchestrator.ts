@@ -60,7 +60,7 @@ import {
   finishTaskNoticePreviewFromArguments,
   finishTaskSummaryFromExecution,
   applyToolCallSummaryCopy,
-  hasActiveRunSubagentToolInMessages,
+  hasActiveSubagentToolInMessages,
   hasInFlightSubagentDelegationInMessages,
   isSubagentStatusSurfaceText,
   toolCallSummaryCopyForResponsesBuiltInTool,
@@ -140,7 +140,7 @@ export class DesktopRuntimeEventOrchestrator {
   }
 
   private shouldSuppressMainTimelineChildToolSurface(toolName: string): boolean {
-    if (toolName === 'run_subagent') {
+    if (toolName === 'subagent') {
       return false;
     }
     const timelineMessages =
@@ -378,7 +378,7 @@ export class DesktopRuntimeEventOrchestrator {
       if (event.kind === 'update-pending-assistant-thinking') {
         const timelineMessages =
           this.options.messageTimeline?.()?.toMessages() ?? this.options.messages();
-        if (hasActiveRunSubagentToolInMessages(timelineMessages)) {
+        if (hasActiveSubagentToolInMessages(timelineMessages)) {
           continue;
         }
         this.options.assistantMessages.updatePendingAssistantAux('thinking', event.text);
@@ -393,7 +393,7 @@ export class DesktopRuntimeEventOrchestrator {
       if (event.kind === 'assistant-chunk') {
         const timelineMessagesForChunk =
           this.options.messageTimeline?.()?.toMessages() ?? messages;
-        if (hasActiveRunSubagentToolInMessages(timelineMessagesForChunk)) {
+        if (hasActiveSubagentToolInMessages(timelineMessagesForChunk)) {
           continue;
         }
         this.options.assistantMessages.appendPendingAssistantChunk(event.text);
@@ -661,7 +661,7 @@ export class DesktopRuntimeEventOrchestrator {
       return;
     }
     const messages = this.options.messageTimeline?.()?.toMessages() ?? this.options.messages();
-    if (hasActiveRunSubagentToolInMessages(messages)) {
+    if (hasActiveSubagentToolInMessages(messages)) {
       return;
     }
 
@@ -973,7 +973,7 @@ export class DesktopRuntimeEventOrchestrator {
         execution.toolCallId || `tool:${execution.toolName}`,
         toolBlock,
       );
-      if (execution.toolName === 'run_subagent') {
+      if (execution.toolName === 'subagent') {
         this.options.conversationSnapshotView.clearStandalonePendingAuxState();
       }
       this.options.bindFileChangesToToolMessage(execution, message.id);

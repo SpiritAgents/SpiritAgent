@@ -1534,7 +1534,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
           {
             kind: 'streaming-tool-preview',
             toolCallId: 'call-preview-subagent',
-            toolName: 'run_subagent',
+            toolName: 'subagent',
             argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
           },
         ]),
@@ -1651,7 +1651,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
                   id: 'call-preview-subagent',
                   type: 'function',
                   function: {
-                    name: 'run_subagent',
+                    name: 'subagent',
                     arguments: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
                   },
                 },
@@ -1665,7 +1665,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
           calls: [
             {
               id: 'call-preview-subagent',
-              name: 'run_subagent',
+              name: 'subagent',
               argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
             },
           ],

@@ -70,7 +70,7 @@ test('filterSubagentSessionsForTruncatedMessages keeps sessions tied to visible 
       pending: false,
       tool: {
         toolCallId: 'tool-1',
-        toolName: 'run_subagent',
+        toolName: 'subagent',
         phase: 'succeeded',
         headline: 'Done',
         detailLines: [],
