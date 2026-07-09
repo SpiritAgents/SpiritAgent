@@ -523,44 +523,45 @@ export function useComposerController({
   const applyLoopSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    void runtime.setLoopEnabled(true);
     if (slashQuery) {
       composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
     }
+    void runtime.setLoopEnabled(true);
     composerRichInputRef.current?.insertLoopChip({ clearText: false });
   }, [runtime, slashQuery]);
 
   const applyPlanSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    void runtime.saveSettingsPatch({ agentMode: "plan" });
-    runtime.setAgentModeChipDismissed(false);
-    composerRichInputRef.current?.insertPlanChip({ clearText: false });
+    // 先清 slash 文本再插 chip，避免 remove 用旧偏移改写已含 chip 的 segments
     if (slashQuery) {
       composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
     }
+    void runtime.saveSettingsPatch({ agentMode: "plan" });
+    runtime.setAgentModeChipDismissed(false);
+    composerRichInputRef.current?.insertPlanChip({ clearText: false });
   }, [runtime, slashQuery]);
 
   const applyAskSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    void runtime.saveSettingsPatch({ agentMode: "ask" });
-    runtime.setAgentModeChipDismissed(false);
-    composerRichInputRef.current?.insertAskChip({ clearText: false });
     if (slashQuery) {
       composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
     }
+    void runtime.saveSettingsPatch({ agentMode: "ask" });
+    runtime.setAgentModeChipDismissed(false);
+    composerRichInputRef.current?.insertAskChip({ clearText: false });
   }, [runtime, slashQuery]);
 
   const applyDebugSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    void runtime.saveSettingsPatch({ agentMode: "debug" });
-    runtime.setAgentModeChipDismissed(false);
-    composerRichInputRef.current?.insertDebugChip({ clearText: false });
     if (slashQuery) {
       composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
     }
+    void runtime.saveSettingsPatch({ agentMode: "debug" });
+    runtime.setAgentModeChipDismissed(false);
+    composerRichInputRef.current?.insertDebugChip({ clearText: false });
   }, [runtime, slashQuery]);
 
   const applyForkSlash = useCallback(() => {

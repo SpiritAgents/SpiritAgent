@@ -222,7 +222,11 @@ export function ComposerSurface({
             !e.ctrlKey &&
             !e.metaKey &&
             !e.nativeEvent.isComposing;
+          // slash/file 建议已 preventDefault 时不得再提交
           if (plainEnter) {
+            if (e.defaultPrevented) {
+              return;
+            }
             e.preventDefault();
             if (canSend) onSubmit();
             return;
