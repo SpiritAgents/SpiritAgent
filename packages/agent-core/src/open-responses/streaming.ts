@@ -76,6 +76,8 @@ export async function* responsesEventStreamToRuntimeEvents(
   let responseId: string | undefined;
   /** Open Responses SDK 已发 reasoning-delta；raw SSE 为同内容镜像，再 yield 会 TheThe / says says。 */
   let activeReasoningDeltaId: string | undefined;
+  /** provider builtin tool-result 之后是否又收到过 text-delta（用于避免错误 resume 双答）。 */
+  let hasPostToolAssistantText = false;
 
   try {
     for await (const part of stream) {
@@ -96,6 +98,9 @@ export async function* responsesEventStreamToRuntimeEvents(
         }
         case 'text-delta': {
           sawAnswerOrToolOutput = true;
+          if (executedProviderBuiltinToolCallIds.size > 0 && part.text) {
+            hasPostToolAssistantText = true;
+          }
           assistantContent += part.text;
           yield { kind: 'assistant-chunk', text: part.text };
           break;
@@ -314,6 +319,7 @@ export async function* responsesEventStreamToRuntimeEvents(
       calls.length,
       assistantContent,
       resolvedAssistant,
+      hasPostToolAssistantText,
     );
 
     if (resumeStreamingAfterProviderSearch) {

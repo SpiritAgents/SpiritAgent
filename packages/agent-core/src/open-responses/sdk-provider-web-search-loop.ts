@@ -272,6 +272,11 @@ export function shouldResumeStreamingAfterProviderSearch(
   pendingHostCallCount: number,
   streamedText: string,
   resolved: { text: string; finalStepText: string; sdkStepCount: number },
+  /**
+   * 本轮流里，provider builtin tool-result 之后是否又出现过 text-delta。
+   * 有则说明模型已在同流内合成答案，不得再开 follow-up（否则 UI 会把第二段拼进同一条 pending）。
+   */
+  hasPostToolAssistantText = false,
 ): boolean {
   if (
     !shouldUseGatewaySdkProviderWebSearchStreamPatch(config)
@@ -282,6 +287,12 @@ export function shouldResumeStreamingAfterProviderSearch(
   }
 
   if (resolved.sdkStepCount >= 2 && resolved.finalStepText.trim().length > 0) {
+    return false;
+  }
+
+  // Gateway 有时把完整答案放在同一步的 tool 后 text-delta 里，但 steps 仍报 1；
+  // 此时若仍 resume，第二轮会再答一遍并 append 到同一条助手消息。
+  if (hasPostToolAssistantText) {
     return false;
   }
 
