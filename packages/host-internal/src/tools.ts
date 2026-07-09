@@ -31,6 +31,7 @@ import {
   defaultShellForPty,
   commandParameterDescriptionForResolvedShell,
   shellDisplayNameForResolvedShell,
+  withShellCommandHighRiskConfirmHint,
 } from './default-terminal-shell.js';
 import { runShell } from './shell-execution.js';
 import { resolveToolOutputArchivesDir } from './tool-output-archive.js';
@@ -472,7 +473,9 @@ export function detectShellForTools(): HostBuiltinToolDefinitionEnvironment {
     const name = path.basename(shell);
     return {
       shellDisplayName: `POSIX shell (${name})`,
-      commandParameterDescription: `The command to execute in POSIX shell (${name}). Prefer POSIX shell syntax such as ls, find, grep, cat, pwd, and cd.`,
+      commandParameterDescription: withShellCommandHighRiskConfirmHint(
+        `The command to execute in POSIX shell (${name}). Prefer POSIX shell syntax such as ls, find, grep, cat, pwd, and cd.`,
+      ),
     };
   }
 
