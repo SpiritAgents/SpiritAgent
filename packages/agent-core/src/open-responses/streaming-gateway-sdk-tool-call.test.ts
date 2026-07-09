@@ -181,6 +181,53 @@ test('gateway sdk stream persists provider search results before synthesis follo
   assert.match(String(toolMessage.content), /Example/);
 });
 
+test('gateway sdk stream skips resume when answer text follows web_search in same stream', async () => {
+  async function* stream(): AsyncGenerator<TextStreamPart<any>> {
+    yield { type: 'text-delta', id: 'text-0', text: '好的，让我搜一下。' };
+    yield { type: 'tool-call', toolCallId: 'call_search', toolName: 'web_search', input: { query: 'latest models' } };
+    yield {
+      type: 'tool-result',
+      toolCallId: 'call_search',
+      toolName: 'web_search',
+      input: { query: 'latest models' },
+      output: {
+        results: [{ title: 'Example', url: 'https://example.com', snippet: 'hello' }],
+        id: 'search-1',
+      },
+    };
+    yield { type: 'text-delta', id: 'text-1', text: '\n\n最终答案在这里。' };
+  }
+
+  const state: ToolAgentState = { messages: [{ role: 'user', content: 'search' }], steps: 0 };
+  const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
+  const usageSource = {
+    text: Promise.resolve('好的，让我搜一下。\n\n最终答案在这里。'),
+    steps: Promise.resolve([{ text: '好的，让我搜一下。\n\n最终答案在这里。' }]),
+  } as Parameters<typeof responsesEventStreamToRuntimeEvents>[2];
+
+  for await (const _event of responsesEventStreamToRuntimeEvents(
+    gatewayConfig,
+    stream(),
+    usageSource,
+    state,
+    [],
+    completion,
+  )) {
+    // drain
+  }
+
+  const result = await completion.promise;
+  assert.equal(result.kind, 'success');
+  if (result.kind !== 'success') {
+    throw new Error('expected success completion');
+  }
+  assert.equal(result.result.resumeStreamingAfterProviderSearch, undefined);
+  assert.equal(
+    extractLastAssistantText(result.result.state),
+    '好的，让我搜一下。\n\n最终答案在这里。',
+  );
+});
+
 test('gateway sdk stream omits executed web_search from host tool-calls step', async () => {
   async function* stream(): AsyncGenerator<TextStreamPart<any>> {
     yield { type: 'tool-call', toolCallId: 'call_search', toolName: 'web_search', input: { query: 'latest models' } };

@@ -80,6 +80,24 @@ test('shouldResumeStreamingAfterProviderSearch when only preamble streamed', () 
   );
 });
 
+test('shouldResumeStreamingAfterProviderSearch skips when post-tool text already streamed', () => {
+  assert.equal(
+    shouldResumeStreamingAfterProviderSearch(
+      gatewayConfig,
+      new Set(['call_search']),
+      0,
+      'Searching now.\n\nLatest models include Example.',
+      {
+        text: 'Searching now.\n\nLatest models include Example.',
+        finalStepText: 'Searching now.\n\nLatest models include Example.',
+        sdkStepCount: 1,
+      },
+      true,
+    ),
+    false,
+  );
+});
+
 test('shouldResumeStreamingAfterProviderSearch skips when single-step metadata already has full answer', () => {
   assert.equal(
     shouldResumeStreamingAfterProviderSearch(
