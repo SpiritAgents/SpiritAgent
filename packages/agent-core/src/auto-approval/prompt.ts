@@ -30,7 +30,7 @@ export function buildAutoApprovalReviewPrompt(input: ToolAutoReviewInput): strin
     formatJsonSection('host_approval_context', input.hostApprovalContext),
     '',
     'Examples that are usually safe to allow:',
-    '- Read-only workspace operations (read_file, grep, glob, list_directory_files inside the project)',
+    '- Read-only workspace operations (read_file, grep, glob, ls inside the project)',
     '- git commit or git push to a non-main feature branch',
     '- web_fetch of official documentation or other clearly trusted project URLs',
     '- Read-only MCP queries with a clear, bounded purpose',

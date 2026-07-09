@@ -13,8 +13,8 @@ test('mapToolNameToKind: read_file → read', () => {
   assert.equal(mapToolNameToKind('read_file'), 'read');
 });
 
-test('mapToolNameToKind: list_directory_files → read', () => {
-  assert.equal(mapToolNameToKind('list_directory_files'), 'read');
+test('mapToolNameToKind: ls → read', () => {
+  assert.equal(mapToolNameToKind('ls'), 'read');
 });
 
 test('mapToolNameToKind: glob → search', () => {

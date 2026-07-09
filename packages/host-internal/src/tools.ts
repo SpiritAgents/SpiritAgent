@@ -231,7 +231,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { name: 'finish_task'; summary?: string }
   | { name: 'shell'; command: string; reason: string }
   | { name: 'web_fetch'; url: string }
-  | { name: 'list_directory_files'; path: string }
+  | { name: 'ls'; path: string }
   | { name: 'glob'; pattern: string }
   | {
       name: 'read_file';
@@ -570,7 +570,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     const raw = message.startsWith('/tool') ? message.slice('/tool'.length).trim() : '';
     if (!raw) {
       throw new Error(
-        '用法:\n/tool shell <command>\n/tool web <url>\n/tool list <absolute-dir>\n/tool glob <pattern>\n/tool read <path> [start] [end]\n/tool search <query>',
+        '用法:\n/tool shell <command>\n/tool web <url>\n/tool ls <absolute-dir>\n/tool glob <pattern>\n/tool read <path> [start] [end]\n/tool search <query>',
       );
     }
 
@@ -597,11 +597,11 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           throw new Error('用法: /tool web <url>');
         }
         return { name: 'web_fetch', url: tokens[1]! };
-      case 'list':
+      case 'ls':
         if (tokens.length < 2) {
-          throw new Error('用法: /tool list <absolute-dir>');
+          throw new Error('用法: /tool ls <absolute-dir>');
         }
-        return { name: 'list_directory_files', path: tokens[1]! };
+        return { name: 'ls', path: tokens[1]! };
       case 'glob': {
         const pattern = raw.slice('glob'.length).trim();
         if (!pattern) {
@@ -668,7 +668,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           name,
           url: requiredString(parsed, 'url'),
         };
-      case 'list_directory_files':
+      case 'ls':
         return {
           name,
           path: requiredString(parsed, 'path'),
@@ -912,7 +912,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
           kind: 'need-approval',
           prompt: `高风险工具调用: 抓取网页\nURL: ${request.url}\n\n正文将进入对话；请确认来源可信，恶意页面可能提示词注入。`,
         };
-      case 'list_directory_files': {
+      case 'ls': {
         const canonical = await this.resolveExistingAbsoluteDirectory(request.path);
         return this.authorizeExternalReadPath(canonical, '遍历工作目录外目录');
       }
@@ -1011,8 +1011,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       }
       case 'web_fetch':
         return this.executeWebFetch(request.url);
-      case 'list_directory_files':
-        return this.executeListDirectory(request.path);
+      case 'ls':
+        return this.executeLs(request.path);
       case 'glob':
         return this.executeGlob(request.pattern);
       case 'read_file':
@@ -1316,7 +1316,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       throw new Error('path 不能为空');
     }
     if (!path.isAbsolute(trimmed)) {
-      throw new Error(`list_directory_files 仅接受 absolute path: ${trimmed}`);
+      throw new Error(`ls 仅接受 absolute path: ${trimmed}`);
     }
     const canonical = await realpath(trimmed);
     const st = await lstat(canonical);
@@ -1425,7 +1425,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
     return joined;
   }
 
-  private async executeListDirectory(inputPath: string): Promise<string> {
+  private async executeLs(inputPath: string): Promise<string> {
     const root = await this.resolveExistingAbsoluteDirectory(inputPath);
     const files: string[] = [];
     const directories: string[] = [];

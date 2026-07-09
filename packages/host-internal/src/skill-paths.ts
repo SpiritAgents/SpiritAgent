@@ -169,8 +169,8 @@ function workspaceRelativeDirectoryPath(path: string, workspaceRoot: string): st
   return relative;
 }
 
-/** list_directory_files 工具卡路径：工作区内显示相对路径，区外显示绝对路径。 */
-export function listDirectoryToolDisplayPath(
+/** ls 工具卡路径：工作区内显示相对路径，区外显示绝对路径。 */
+export function lsToolDisplayPath(
   path: string,
   workspaceRoot: string | undefined,
   emptyLabel: string,

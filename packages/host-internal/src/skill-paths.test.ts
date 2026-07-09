@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {
   isSkillMarkdownPath,
-  listDirectoryToolDisplayPath,
+  lsToolDisplayPath,
   parseSkillNameFromMarkdown,
   readFileToolDisplayBase,
 } from './skill-paths.js';
@@ -14,43 +14,43 @@ test('isSkillMarkdownPath matches SKILL_FILE_NAME case-sensitively', () => {
   assert.equal(isSkillMarkdownPath('App.tsx'), false);
 });
 
-test('listDirectoryToolDisplayPath relativizes paths within workspace root', () => {
+test('lsToolDisplayPath relativizes paths within workspace root', () => {
   const root = '/Users/yu/SpiritAgent';
   assert.equal(
-    listDirectoryToolDisplayPath('/Users/yu/SpiritAgent/apps', root, 'Directory'),
+    lsToolDisplayPath('/Users/yu/SpiritAgent/apps', root, 'Directory'),
     'apps',
   );
   assert.equal(
-    listDirectoryToolDisplayPath('/Users/yu/SpiritAgent/apps/', root, 'Directory'),
+    lsToolDisplayPath('/Users/yu/SpiritAgent/apps/', root, 'Directory'),
     'apps/',
   );
   assert.equal(
-    listDirectoryToolDisplayPath('/Users/yu/SpiritAgent/apps/cli/src', root, 'Directory'),
+    lsToolDisplayPath('/Users/yu/SpiritAgent/apps/cli/src', root, 'Directory'),
     'apps/cli/src',
   );
-  assert.equal(listDirectoryToolDisplayPath('/Users/yu/SpiritAgent', root, 'Directory'), '.');
-  assert.equal(listDirectoryToolDisplayPath('/Users/yu/SpiritAgent/', root, 'Directory'), '.');
+  assert.equal(lsToolDisplayPath('/Users/yu/SpiritAgent', root, 'Directory'), '.');
+  assert.equal(lsToolDisplayPath('/Users/yu/SpiritAgent/', root, 'Directory'), '.');
 });
 
-test('listDirectoryToolDisplayPath keeps absolute paths outside workspace', () => {
+test('lsToolDisplayPath keeps absolute paths outside workspace', () => {
   const root = '/Users/yu/SpiritAgent';
   assert.equal(
-    listDirectoryToolDisplayPath('/tmp/foo', root, 'Directory'),
+    lsToolDisplayPath('/tmp/foo', root, 'Directory'),
     '/tmp/foo',
   );
-  assert.equal(listDirectoryToolDisplayPath('', root, 'Directory'), 'Directory');
+  assert.equal(lsToolDisplayPath('', root, 'Directory'), 'Directory');
 });
 
-test('listDirectoryToolDisplayPath without workspace root keeps absolute path', () => {
+test('lsToolDisplayPath without workspace root keeps absolute path', () => {
   assert.equal(
-    listDirectoryToolDisplayPath('/Users/yu/SpiritAgent/apps', undefined, 'Directory'),
+    lsToolDisplayPath('/Users/yu/SpiritAgent/apps', undefined, 'Directory'),
     '/Users/yu/SpiritAgent/apps',
   );
 });
 
-test('listDirectoryToolDisplayPath normalizes Windows-style paths', () => {
+test('lsToolDisplayPath normalizes Windows-style paths', () => {
   assert.equal(
-    listDirectoryToolDisplayPath('D:\\proj\\apps', 'D:\\proj', 'Directory'),
+    lsToolDisplayPath('D:\\proj\\apps', 'D:\\proj', 'Directory'),
     'apps',
   );
 });

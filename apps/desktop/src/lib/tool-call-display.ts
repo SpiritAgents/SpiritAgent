@@ -60,7 +60,7 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
   web_fetch: 'tool.fetch',
   web_search: 'tool.webSearch',
   code_interpreter: 'tool.codeInterpreter',
-  list_directory_files: 'tool.listDirectory',
+  ls: 'tool.ls',
   ask_questions: 'tool.askQuestions',
   subagent: 'tool.subagent',
   dream_list: 'tool.dreamList',

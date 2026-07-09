@@ -13,7 +13,7 @@ test('classifyProcessToolCategory maps known tools', () => {
   assert.equal(classifyProcessToolCategory('read_file'), 'explore');
   assert.equal(classifyProcessToolCategory('grep'), 'explore');
   assert.equal(classifyProcessToolCategory('glob'), 'explore');
-  assert.equal(classifyProcessToolCategory('list_directory_files'), 'explore');
+  assert.equal(classifyProcessToolCategory('ls'), 'explore');
   assert.equal(classifyProcessToolCategory('web_fetch'), 'explore');
   assert.equal(classifyProcessToolCategory('web_search'), 'explore');
   assert.equal(classifyProcessToolCategory('code_interpreter'), 'other');

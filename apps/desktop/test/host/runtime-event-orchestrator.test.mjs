@@ -416,7 +416,7 @@ test('tool previews do not clone the first thinking block when multiple tool pre
     {
       kind: 'streaming-tool-preview',
       toolCallId: 'call-1',
-      toolName: 'list_directory_files',
+      toolName: 'ls',
       argumentsJson: '{}',
     },
     {

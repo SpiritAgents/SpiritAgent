@@ -495,7 +495,7 @@ export async function handlePendingStreamEvent<
       argumentsJson: event.argumentsJson,
     });
     const allowEarlyExecutionDuringStream =
-      event.toolName === 'read_file' || event.toolName === 'list_directory_files';
+      event.toolName === 'read_file' || event.toolName === 'ls';
     if (
       !isResponsesBuiltInToolName(event.toolName)
       && !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config)

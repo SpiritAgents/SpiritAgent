@@ -216,7 +216,7 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
                 .unwrap_or("文件");
             ("读取".to_string(), vec![path.to_string()])
         }
-        "list_directory_files" => (
+        "ls" => (
             "列出目录".to_string(),
             vec![string_arg(request, "path").unwrap_or(".").to_string()],
         ),
@@ -393,7 +393,7 @@ pub(crate) fn build_tool_result_block(
             output_excerpt: Some(truncate_output_for_tool_ui(output, 3600)),
             suppress_expand: None,
         },
-        "list_directory_files" => ToolUiBlock {
+        "ls" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
@@ -635,7 +635,7 @@ pub(crate) fn format_tool_ui_message(
             "[tool] 已抓取网页 {}",
             string_arg(request, "url").unwrap_or("<unknown>")
         ),
-        "list_directory_files" => format!(
+        "ls" => format!(
             "[tool] 已列出目录下文件 {}",
             string_arg(request, "path").unwrap_or("<unknown>")
         ),

@@ -7,7 +7,7 @@ export function mapToolNameToKind(toolName: string): string {
   switch (toolName) {
     // File reading
     case 'read_file':
-    case 'list_directory_files':
+    case 'ls':
       return 'read';
 
     // Search
@@ -54,7 +54,7 @@ export function buildToolCallTitle(toolName: string, argumentsJson: string): str
     switch (toolName) {
       case 'read_file':
         return `Reading ${formatPath(args['path'])}`;
-      case 'list_directory_files':
+      case 'ls':
         return `Listing ${formatPath(args['path'])}`;
       case 'create_file':
         return `Creating ${formatPath(args['path'])}`;

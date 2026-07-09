@@ -2097,7 +2097,7 @@ function earlyToolArgumentsMatchFormal(
 
   if (
     toolName !== 'read_file' &&
-    toolName !== 'list_directory_files' &&
+    toolName !== 'ls' &&
     toolName !== 'delete_file'
   ) {
     return false;

@@ -19,7 +19,7 @@ import {
   hasAssistantToolLaterInTurn,
   isStandaloneThinkingMessage,
 } from '../lib/conversation-thinking-ui.js';
-import { listDirectoryToolDisplayPath } from '@spiritagent/host-internal/skill-paths';
+import { lsToolDisplayPath } from '@spiritagent/host-internal/skill-paths';
 
 import {
   isSkillMarkdownPath,
@@ -397,14 +397,14 @@ export function toolCallSummaryCopyForRequest(
         ...(firstLine ? { headlineDetail: truncateSummaryDetail(firstLine) } : {}),
       };
     }
-    case 'list_directory_files': {
+    case 'ls': {
       const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
       return {
-        headline: i18n.t('tool.listDirectory', tOpts),
+        headline: i18n.t('tool.ls', tOpts),
         ...(rawPath
           ? {
               headlineDetail: truncateSummaryDetail(
-                displayPathForListDirectory(rawPath, options?.workspaceRoot),
+                displayPathForLs(rawPath, options?.workspaceRoot),
               ),
             }
           : {}),
@@ -1355,8 +1355,8 @@ function displayBasename(path: string): string {
   return segments[segments.length - 1] || normalized;
 }
 
-function displayPathForListDirectory(path: string, workspaceRoot?: string): string {
-  const displayed = listDirectoryToolDisplayPath(path, workspaceRoot, i18n.t('tool.directory'));
+function displayPathForLs(path: string, workspaceRoot?: string): string {
+  const displayed = lsToolDisplayPath(path, workspaceRoot, i18n.t('tool.directory'));
   if (displayed.length <= SUMMARY_DETAIL_MAX) {
     return displayed;
   }
