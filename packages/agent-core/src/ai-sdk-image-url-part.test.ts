@@ -16,3 +16,17 @@ test('buildAiSdkUserImageFilePartFromUrl uses AI SDK 7 file part shape', () => {
     },
   );
 });
+
+test('buildAiSdkUserImageFilePartFromUrl inlines data URLs as base64 file data', () => {
+  assert.deepEqual(
+    buildAiSdkUserImageFilePartFromUrl('data:image/png;base64,QUJD'),
+    {
+      type: 'file',
+      mediaType: 'image/png',
+      data: {
+        type: 'data',
+        data: 'QUJD',
+      },
+    },
+  );
+});
