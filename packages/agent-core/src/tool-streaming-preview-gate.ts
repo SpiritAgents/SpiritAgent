@@ -255,7 +255,7 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
     case 'create_plan':
       return tryExtractPartialPlanName(argumentsJson) !== undefined;
     case 'read_file':
-    case 'list_directory_files':
+    case 'ls':
     case 'delete_file':
       return tryExtractPartialToolPath(argumentsJson) !== undefined;
     case 'glob':
@@ -307,7 +307,7 @@ export function hostToolArgumentsReadyForPreview(name: string, argumentsJson: st
       return nonEmpty('command');
     case 'web_fetch':
       return nonEmpty('url');
-    case 'list_directory_files':
+    case 'ls':
       return nonEmpty('path');
     case 'read_file':
       return nonEmpty('path');
@@ -485,7 +485,7 @@ export function buildEarlyExecutableArgumentsJson(
         return undefined;
       }
       break;
-    case 'list_directory_files':
+    case 'ls':
     case 'delete_file':
       break;
     default:
@@ -530,7 +530,7 @@ export function previewRequestFromStreamingArguments(
       return fields.path ? fields : undefined;
     }
     if (
-      toolName === 'list_directory_files'
+      toolName === 'ls'
       || toolName === 'delete_file'
       || toolName === 'create_file'
       || toolName === 'edit_file'

@@ -30,7 +30,7 @@ export const PROCESS_TOOL_CATEGORY_ORDER: readonly ProcessToolCategory[] = [
 /** 过程卡片摘要：读文件 / 搜索 / 匹配 / 列目录 / 抓取网页 / 联网搜索 / 梦境与 TODO 列表等探索类工具统一为「探索」。 */
 const EXPLORE_TOOLS = new Set([
   'read_file',
-  'list_directory_files',
+  'ls',
   'grep',
   'glob',
   'web_fetch',

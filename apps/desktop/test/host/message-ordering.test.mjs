@@ -564,7 +564,7 @@ test('toolCallSummaryCopyForRequest: English verbs use progressive in running ph
       { headline: 'Deleting', headlineDetail: 'c.ts' },
     );
     assert.deepEqual(
-      toolCallSummaryCopyForRequest('list_directory_files', { path: 'src/' }, 'running'),
+      toolCallSummaryCopyForRequest('ls', { path: 'src/' }, 'running'),
       { headline: 'Listing', headlineDetail: 'src/' },
     );
     assert.deepEqual(
@@ -596,7 +596,7 @@ test('toolCallSummaryCopyForRequest: English verbs use past tense in succeeded p
       { headline: 'Edited', headlineDetail: 'b.ts' },
     );
     assert.deepEqual(
-      toolCallSummaryCopyForRequest('list_directory_files', { path: 'src/' }, 'succeeded'),
+      toolCallSummaryCopyForRequest('ls', { path: 'src/' }, 'succeeded'),
       { headline: 'Listed', headlineDetail: 'src/' },
     );
   } finally {
@@ -604,11 +604,11 @@ test('toolCallSummaryCopyForRequest: English verbs use past tense in succeeded p
   }
 });
 
-test('toolCallSummaryCopyForRequest: list_directory_files uses relative path within workspace', () => {
+test('toolCallSummaryCopyForRequest: ls uses relative path within workspace', () => {
   const workspaceRoot = '/Users/yu/proj';
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
-      'list_directory_files',
+      'ls',
       { path: '/Users/yu/proj/apps/cli' },
       'succeeded',
       { workspaceRoot },
@@ -617,7 +617,7 @@ test('toolCallSummaryCopyForRequest: list_directory_files uses relative path wit
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
-      'list_directory_files',
+      'ls',
       { path: '/Users/yu/proj' },
       'running',
       { workspaceRoot },
@@ -626,7 +626,7 @@ test('toolCallSummaryCopyForRequest: list_directory_files uses relative path wit
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
-      'list_directory_files',
+      'ls',
       { path: '/tmp/foo' },
       'succeeded',
       { workspaceRoot },
@@ -635,7 +635,7 @@ test('toolCallSummaryCopyForRequest: list_directory_files uses relative path wit
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
-      'list_directory_files',
+      'ls',
       { path: '/Users/yu/proj/apps/' },
       'succeeded',
       { workspaceRoot },
@@ -644,13 +644,13 @@ test('toolCallSummaryCopyForRequest: list_directory_files uses relative path wit
   );
 });
 
-test('toolCallSummaryForStreamingPreview: list_directory_files uses relative path within workspace', () => {
+test('toolCallSummaryForStreamingPreview: ls uses relative path within workspace', () => {
   const workspaceRoot = '/Users/yu/proj';
   assert.deepEqual(
     toolCallSummaryForStreamingPreview(
       [],
       'tool-1',
-      'list_directory_files',
+      'ls',
       { path: '/Users/yu/proj/apps' },
       { workspaceRoot },
     ),

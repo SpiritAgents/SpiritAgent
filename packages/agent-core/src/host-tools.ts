@@ -169,8 +169,8 @@ export function buildBuiltinHostToolDefinitions(
       },
     ),
     functionTool(
-      'list_directory_files',
-      'List all files and directories under one directory (non-recursive). The input path must be an absolute directory path. Use this instead of shell ls, dir, or find when you only need a directory inventory.',
+      'ls',
+      'List all files and directories under one directory (non-recursive). The input path must be an absolute directory path. Use this instead of shell dir or find when you only need a directory inventory.',
       {
         type: 'object',
         properties: {
@@ -213,7 +213,7 @@ export function buildBuiltinHostToolDefinitions(
     ),
     functionTool(
       'glob',
-      'Match workspace file paths with a glob pattern such as src/**/*.ts or **/*.{json,md}. Returns matching relative file paths only. Respects .gitignore. Use grep to search file contents and list_directory_files for a single directory inventory.',
+      'Match workspace file paths with a glob pattern such as src/**/*.ts or **/*.{json,md}. Returns matching relative file paths only. Respects .gitignore. Use grep to search file contents and ls for a single directory inventory.',
       {
         type: 'object',
         properties: {
@@ -229,7 +229,7 @@ export function buildBuiltinHostToolDefinitions(
     ),
     functionTool(
       'grep',
-      'Search text within workspace file contents. Respects .gitignore. By default query is matched as case-insensitive literal text; set is_regexp to true for a regular expression. Optionally pass glob to limit which files are searched. Use the glob tool to list paths only and list_directory_files for a single directory inventory.',
+      'Search text within workspace file contents. Respects .gitignore. By default query is matched as case-insensitive literal text; set is_regexp to true for a regular expression. Optionally pass glob to limit which files are searched. Use the glob tool to list paths only and ls for a single directory inventory.',
       {
         type: 'object',
         properties: {
