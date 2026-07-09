@@ -601,6 +601,17 @@ export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedMod
 
 const SKIPPED_VERCEL_GATEWAY_MODEL_TYPES = new Set(['embedding', 'reranking']);
 
+function vercelGatewayModelSupportsImageInput(record: Record<string, unknown>): boolean {
+  const tags = record.tags;
+  if (!Array.isArray(tags)) {
+    return false;
+  }
+
+  return tags.some(
+    (tag) => typeof tag === 'string' && tag.trim().toLowerCase() === 'vision',
+  );
+}
+
 function attachGatewayAnthropicReasoningEfforts(
   modelEntry: ProviderListedModelEntry,
 ): ProviderListedModelEntry {
@@ -727,6 +738,9 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
       const contextLength = readPositiveIntegerModelTrait(record, 'context_window');
       if (contextLength !== undefined) {
         modelEntry.contextLength = contextLength;
+      }
+      if (vercelGatewayModelSupportsImageInput(record)) {
+        modelEntry.supportsImageInput = true;
       }
       entries.push(
         attachListedModelMetadata(modelEntry, record, readVercelGatewayPricing(record)),
