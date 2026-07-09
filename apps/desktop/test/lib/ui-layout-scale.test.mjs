@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   clampUiLayoutScale,
+  computeDarwinTrafficLightPosition,
   DEFAULT_UI_LAYOUT_SCALE,
   normalizeUiLayoutScale,
   resolveUiLayoutZoomShortcutAction,
@@ -70,6 +71,18 @@ test("resolveUiLayoutZoomShortcutAction ignores non-mod and defaultPrevented", (
     }),
     null,
   );
+});
+
+test("computeDarwinTrafficLightPosition restores Electron hiddenInset default at scale 1", () => {
+  assert.deepEqual(computeDarwinTrafficLightPosition(1), { x: 12, y: 11 });
+});
+
+test("computeDarwinTrafficLightPosition scales with the UI layout scale", () => {
+  // x = (78s − 54) / 2，y = 18s − 7（与钉位切换按钮中线对齐）
+  assert.deepEqual(computeDarwinTrafficLightPosition(1.25), { x: 22, y: 16 });
+  assert.deepEqual(computeDarwinTrafficLightPosition(0.8), { x: 4, y: 7 });
+  // 超界输入先 clamp 再计算
+  assert.deepEqual(computeDarwinTrafficLightPosition(9), computeDarwinTrafficLightPosition(1.25));
 });
 
 test("viewportRectToScaleRootLocal converts viewport box under layout scale", () => {
