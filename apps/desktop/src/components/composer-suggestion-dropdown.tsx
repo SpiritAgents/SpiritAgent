@@ -44,6 +44,26 @@ function isTargetWithinComposer(
   return Boolean(target instanceof Node && composerRoot?.contains(target));
 }
 
+function focusComposerEditable(composerRoot: HTMLElement | null): void {
+  const editable = composerRoot?.querySelector<HTMLElement>(
+    '[contenteditable="true"], textarea, [role="textbox"]',
+  );
+  if (!editable || document.activeElement === editable) {
+    return;
+  }
+  editable.focus({ preventScroll: true });
+}
+
+function isMenuFocusTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  return Boolean(
+    target.closest('[data-slot="dropdown-menu-content"]')
+    || target.closest('[data-radix-menu-content]'),
+  );
+}
+
 export function ComposerSuggestionDropdown({
   active,
   anchor,
@@ -55,6 +75,8 @@ export function ComposerSuggestionDropdown({
 }: ComposerSuggestionDropdownProps) {
   const [mounted, setMounted] = useState(false);
   const [radixOpen, setRadixOpen] = useState(false);
+  // 打开动画落位前临时压成 text 光标，避免菜单在指针下展开时闪手型；落位后恢复设置页手型/默认规则
+  const [openCursorSettling, setOpenCursorSettling] = useState(false);
   const stickyAnchorRef = useRef<DOMRect | null>(null);
   const frozenChildrenRef = useRef<ReactNode>(null);
 
@@ -76,6 +98,36 @@ export function ComposerSuggestionDropdown({
     }
     setRadixOpen(false);
   }, [active, mounted]);
+
+  useEffect(() => {
+    if (!radixOpen) {
+      setOpenCursorSettling(false);
+      return;
+    }
+    setOpenCursorSettling(true);
+    const timeout = window.setTimeout(() => setOpenCursorSettling(false), RADIX_OVERLAY_CLOSE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [radixOpen]);
+
+  // 若仍被抢到 menu（如 menuitem leave → content.focus），立刻还回 Composer
+  useEffect(() => {
+    if (!active || !radixOpen) {
+      return;
+    }
+    const restoreIfStolen = () => {
+      if (!isMenuFocusTarget(document.activeElement)) {
+        return;
+      }
+      focusComposerEditable(composerRootRef.current);
+    };
+    restoreIfStolen();
+    const frame = window.requestAnimationFrame(restoreIfStolen);
+    document.addEventListener("focusin", restoreIfStolen);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("focusin", restoreIfStolen);
+    };
+  }, [active, composerRootRef, radixOpen]);
 
   useEffect(() => {
     if (active || !mounted) {
@@ -133,11 +185,16 @@ export function ComposerSuggestionDropdown({
         aria-label={ariaLabel}
         onOpenAutoFocus={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => event.preventDefault()}
+        onEntryFocus={(event) => {
+          // 键盘打开时 Radix 默认会把焦点移到首个 menuitem；建议菜单用 Composer 快捷键导航，须阻止
+          event.preventDefault();
+        }}
         onPointerDownOutside={preventComposerOutsideDismiss}
         onInteractOutside={preventComposerOutsideDismiss}
         className={cn(
           DESKTOP_OVERLAY_LIST_CONTENT,
           DESKTOP_OVERLAY_LIST_WIDTH,
+          openCursorSettling && "spirit-composer-suggestion-open-settle",
           contentClassName,
         )}
       >
