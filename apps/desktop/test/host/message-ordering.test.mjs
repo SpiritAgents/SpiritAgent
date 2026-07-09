@@ -346,7 +346,7 @@ test('toolCallSummaryCopyForRequest: ask_questions and subagent', () => {
     }),
     { headline: '询问', headlineDetail: '2 个问题' },
   );
-  assert.deepEqual(toolCallSummaryCopyForRequest('run_subagent', { task: 'Review auth module' }), {
+  assert.deepEqual(toolCallSummaryCopyForRequest('subagent', { task: 'Review auth module' }), {
     headline: '子智能体',
     headlineDetail: 'Review auth module',
   });

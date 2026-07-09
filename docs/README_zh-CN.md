@@ -47,7 +47,7 @@ Spirit Agent 是一款**工具型编程智能体**，以真实项目根目录为
 
 - **回合状态机（Turn machine）** — 流式助手输出、工具轮次、上下文压缩，以及上下文用量追踪。
 - **Agent / Plan / Ask 模式** — 完整工具访问、仅规划工作流，或在契约层剥离编辑工具的只读问答。
-- **子智能体（Subagents）** — `run_subagent` 将聚焦任务委派给子运行，子运行拥有独立工具面。
+- **子智能体（Subagents）** — `subagent` 将聚焦任务委派给子运行，子运行拥有独立工具面。
 - **循环控制** — 启用多任务式循环时，可选 `finish_task`。
 - **可回退的历史** — 消息归档格式便于宿主侧回滚并重新提交。
 
@@ -70,7 +70,7 @@ Agent Core 在统一运行时背后路由多种推理传输层：
 - **工作区** — `read_file`、`write_file` / `create_file` / `edit_file` / `delete_file`、`apply_patch`（在支持的传输层上使用 V4A）、`glob`、`grep`、`list_directory_files`
 - **Shell** — `shell`，由宿主控制审批
 - **Web** — `web_fetch`；搜索通过提供商工具或已配置的宿主搜索实现
-- **委派** — `run_subagent`
+- **委派** — `subagent`
 - **规划** — `create_plan`，会话 TODO 工具（`todo_list`、`todo_create`、`todo_update`、`todo_complete`）
 - **多模态** — `generate_image`、`generate_video`
 - **Dreams** — `dream_list`、`dream_read`、`dream_record`、`dream_update`、`dream_delete`，用于工作区记忆摘要

@@ -262,7 +262,7 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
     case 'grep':
     case 'shell':
     case 'web_fetch':
-    case 'run_subagent':
+    case 'subagent':
       return hostToolArgumentsReadyForPreview(name, argumentsJson);
     case 'web_search':
       return tryExtractPartialWebSearchQuery(argumentsJson) !== undefined;
@@ -315,7 +315,7 @@ export function hostToolArgumentsReadyForPreview(name: string, argumentsJson: st
       return nonEmpty('pattern');
     case 'grep':
       return nonEmpty('query');
-    case 'run_subagent':
+    case 'subagent':
       return nonEmpty('task');
     case 'apply_patch': {
       const operation = parsed.operation;

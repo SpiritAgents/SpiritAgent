@@ -62,7 +62,7 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
   code_interpreter: 'tool.codeInterpreter',
   list_directory_files: 'tool.listDirectory',
   ask_questions: 'tool.askQuestions',
-  run_subagent: 'tool.subagent',
+  subagent: 'tool.subagent',
   dream_list: 'tool.dreamList',
   dream_read: 'tool.dreamRead',
   dream_update: 'tool.dreamUpdate',
@@ -431,7 +431,7 @@ export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
     return shellHasExpandableContent(tool, command);
   }
 
-  if (tool.toolName === 'run_subagent') {
+  if (tool.toolName === 'subagent') {
     return (
       Boolean(tool.outputExcerpt?.trim()) ||
       tool.detailLines.some((line) => line.trim()) ||

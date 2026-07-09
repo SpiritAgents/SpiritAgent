@@ -285,7 +285,7 @@ mod tests {
             content: String::new(),
             tool: Some(ToolBlockSnapshot {
                 tool_call_id: Some("tool-1".to_string()),
-                tool_name: "run_subagent".to_string(),
+                tool_name: "subagent".to_string(),
                 phase: ToolBlockSnapshotPhase::Succeeded,
                 headline: "Done".to_string(),
                 detail_lines: Vec::new(),

@@ -2,7 +2,7 @@ import { setImmediate as waitForImmediate } from 'node:timers/promises';
 
 import type {
   AskQuestionsResult,
-  RunSubagentRequest,
+  SubagentRequest,
   AuthorizationDecision,
   AssistantAuxArchiveEntry,
   ChatArchive,
@@ -200,7 +200,7 @@ interface PendingSubagentWorktreeBootstrap<State, ToolRequest, TrustTarget> {
   parentRemainingCalls: ToolCallRequest[];
   parentTurn: RuntimeTurnContext<ToolRequest>;
   childRecord: RuntimeSubagentSessionArchiveEntry;
-  request: RunSubagentRequest;
+  request: SubagentRequest;
   parentWorkspaceRoot: string;
   resumeAsStreaming: boolean;
   streamingEmitBeginResponse: boolean;
@@ -214,7 +214,7 @@ interface PendingSubagentBatchContinuation<State, ToolRequest> {
   streamingEmitBeginResponse: boolean;
 }
 
-type RunSubagentToolExecutionResult<ToolRequest, TrustTarget> =
+type SubagentToolExecutionResult<ToolRequest, TrustTarget> =
   | { kind: 'not-handled' }
   | { kind: 'started' }
   | { kind: 'completed'; text: string; failed: boolean }
@@ -1717,7 +1717,7 @@ export class AgentRuntime<
       return this.runTurnLoop(videoResult.state, pendingUserInput, turn);
     }
 
-    const outcome = await this.tryExecuteRunSubagentTool(
+    const outcome = await this.tryExecuteSubagentTool(
       request,
       toolCallId,
       pendingUserInput,
@@ -1751,7 +1751,7 @@ export class AgentRuntime<
     }
 
     if (outcome.kind === 'started') {
-      throw new Error('run_subagent 非流式路径不应返回后台启动状态。');
+      throw new Error('subagent 非流式路径不应返回后台启动状态。');
     }
 
     const parentToolResultText = buildParentSubagentToolResultTextFromRequest(
@@ -1762,7 +1762,7 @@ export class AgentRuntime<
 
     turn.toolExecutions.push({
       toolCallId,
-      toolName: 'run_subagent',
+      toolName: 'subagent',
       request,
       output: outcome.text,
       failed: outcome.failed,
@@ -1886,7 +1886,7 @@ export class AgentRuntime<
       return true;
     }
 
-    const outcome = await this.tryExecuteRunSubagentTool(
+    const outcome = await this.tryExecuteSubagentTool(
       request,
       toolCallId,
       pendingUserInput,
@@ -1946,7 +1946,7 @@ export class AgentRuntime<
 
     turn.toolExecutions.push({
       toolCallId,
-      toolName: 'run_subagent',
+      toolName: 'subagent',
       request,
       output: outcome.text,
       failed: outcome.failed,
@@ -2651,7 +2651,7 @@ export class AgentRuntime<
       }
     }
 
-    if (extractRunSubagentRequest(request) !== undefined) {
+    if (extractSubagentRequest(request) !== undefined) {
       return { kind: 'defer-to-formal' };
     }
 
@@ -2670,7 +2670,7 @@ export class AgentRuntime<
     return resources;
   }
 
-  private async tryExecuteRunSubagentTool(
+  private async tryExecuteSubagentTool(
     request: ToolRequest,
     parentToolCallId: string,
     parentPendingUserInput: string,
@@ -2679,13 +2679,13 @@ export class AgentRuntime<
     parentTurn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
-  ): Promise<RunSubagentToolExecutionResult<ToolRequest, TrustTarget>> {
-    const subagent = extractRunSubagentRequest(request);
+  ): Promise<SubagentToolExecutionResult<ToolRequest, TrustTarget>> {
+    const subagent = extractSubagentRequest(request);
     if (!subagent) {
       return { kind: 'not-handled' };
     }
 
-    return this.executeRunSubagentTool(
+    return this.executeSubagentTool(
       subagent,
       parentToolCallId,
       request,
@@ -2885,8 +2885,8 @@ export class AgentRuntime<
     };
   }
 
-  private async executeRunSubagentTool(
-    request: RunSubagentRequest,
+  private async executeSubagentTool(
+    request: SubagentRequest,
     parentToolCallId: string,
     parentRequest: ToolRequest,
     parentPendingUserInput: string,
@@ -2895,7 +2895,7 @@ export class AgentRuntime<
     parentTurn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
-  ): Promise<RunSubagentToolExecutionResult<ToolRequest, TrustTarget>> {
+  ): Promise<SubagentToolExecutionResult<ToolRequest, TrustTarget>> {
     if (this.runtimeDepthStore >= 1) {
       return {
         kind: 'completed',
@@ -2934,7 +2934,7 @@ export class AgentRuntime<
 
       if (resumeAsStreaming) {
         record.summary.status = 'bootstrapping';
-        const childUserTurn = buildRunSubagentUserTurn(request);
+        const childUserTurn = buildSubagentUserTurn(request);
         record.llmHistory = [{
           role: 'user',
           content: createLlmMessageContentFromText(childUserTurn),
@@ -2984,7 +2984,7 @@ export class AgentRuntime<
     );
     this.childSessionsStore.push(record);
 
-    const subagentStartDenied = await this.runSubagentStartHook(
+    const subagentStartDenied = await this.subagentStartHook(
       sessionId,
       request,
       childWorkspaceRoot,
@@ -2998,7 +2998,7 @@ export class AgentRuntime<
       return { kind: 'completed', text: subagentStartDenied, failed: true };
     }
 
-    const childUserTurn = buildRunSubagentUserTurn(request);
+    const childUserTurn = buildSubagentUserTurn(request);
     record.llmHistory = [{
       role: 'user',
       content: createLlmMessageContentFromText(childUserTurn),
@@ -3210,7 +3210,7 @@ export class AgentRuntime<
       boot.workspaceRoot,
     );
 
-    const subagentStartDenied = await this.runSubagentStartHook(
+    const subagentStartDenied = await this.subagentStartHook(
       pending.childRecord.summary.sessionId,
       pending.request,
       boot.workspaceRoot,
@@ -3225,7 +3225,7 @@ export class AgentRuntime<
       return;
     }
 
-    const childUserTurn = buildRunSubagentUserTurn(pending.request);
+    const childUserTurn = buildSubagentUserTurn(pending.request);
     try {
       await childRuntime.startUserTurnStreaming(childUserTurn);
       this.cachePendingSubagentExecution(this.buildPendingSubagentExecution(
@@ -3272,7 +3272,7 @@ export class AgentRuntime<
 
     const finishedExecution = {
       toolCallId: pending.parentToolCallId,
-      toolName: 'run_subagent',
+      toolName: 'subagent',
       request: pending.parentRequest,
       output: failed,
       failed: true,
@@ -3420,7 +3420,7 @@ export class AgentRuntime<
       delete pending.childRecord.summary.error;
     }
 
-    await this.runSubagentEndHook(
+    await this.subagentEndHook(
       pending,
       output,
       pending.childRecord.summary.worktreePath,
@@ -3428,7 +3428,7 @@ export class AgentRuntime<
 
     const finishedExecution = {
       toolCallId: pending.parentToolCallId,
-      toolName: 'run_subagent',
+      toolName: 'subagent',
       request: pending.parentRequest,
       output: output.text,
       failed: output.failed,
@@ -3518,9 +3518,9 @@ export class AgentRuntime<
     return `subagent-${Date.now()}-${this.childSessionCounterStore}`;
   }
 
-  private async runSubagentStartHook(
+  private async subagentStartHook(
     subagentSessionId: string,
-    request: RunSubagentRequest,
+    request: SubagentRequest,
     hookWorkspaceRoot?: string,
   ): Promise<string | undefined> {
     const hookRunner = resolveHookRunner(this.options);
@@ -3551,7 +3551,7 @@ export class AgentRuntime<
     return result.userMessage ?? result.agentMessage ?? 'Subagent start denied by hook.';
   }
 
-  private async runSubagentEndHook<
+  private async subagentEndHook<
     Pending extends PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>,
   >(
     pending: Pending,
@@ -3563,7 +3563,7 @@ export class AgentRuntime<
       return;
     }
 
-    const subagentRequest = extractRunSubagentRequest(pending.parentRequest);
+    const subagentRequest = extractSubagentRequest(pending.parentRequest);
     const context = resolveHookSessionContext(this.options);
     const workspaceRoot = hookWorkspaceRoot?.trim() || context.workspaceRoot;
     const result = await hookRunner.runSubagentEnd({
@@ -3706,13 +3706,13 @@ function extractFinishTaskSummary<ToolRequest>(request: ToolRequest): string | u
   return readOptionalStringField(request, 'summary') ?? '';
 }
 
-function extractRunSubagentRequest<ToolRequest>(request: ToolRequest): RunSubagentRequest | undefined {
+function extractSubagentRequest<ToolRequest>(request: ToolRequest): SubagentRequest | undefined {
   if (!isJsonObject(request)) {
     return undefined;
   }
 
   let value: JsonValue;
-  if (readOptionalStringField(request, 'name') === 'run_subagent') {
+  if (readOptionalStringField(request, 'name') === 'subagent') {
     if (readOptionalStringField(request, 'task') !== undefined) {
       value = request;
     } else {
@@ -3732,11 +3732,11 @@ function extractRunSubagentRequest<ToolRequest>(request: ToolRequest): RunSubage
       }
     }
   } else {
-    if (!('RunSubagent' in request)) {
+    if (!('Subagent' in request)) {
       return undefined;
     }
 
-    const candidate = request.RunSubagent;
+    const candidate = request.Subagent;
     if (!isJsonObject(candidate)) {
       return undefined;
     }
@@ -3766,7 +3766,7 @@ function extractRunSubagentRequest<ToolRequest>(request: ToolRequest): RunSubage
   };
 }
 
-function buildRunSubagentUserTurn(request: RunSubagentRequest): string {
+function buildSubagentUserTurn(request: SubagentRequest): string {
   const sections = [request.task.trim()];
   if (request.contextSummary?.trim()) {
     sections.push(`Context summary:\n${request.contextSummary.trim()}`);
@@ -3813,7 +3813,7 @@ function buildParentSubagentToolResultTextFromRequest<ToolRequest>(
   outputText: string,
   failed: boolean,
 ): string {
-  const subagent = extractRunSubagentRequest(request);
+  const subagent = extractSubagentRequest(request);
   const title = truncateTextForSubagentSummary(subagent?.task?.trim() ?? '', 72) || 'SubAgent';
   return buildParentSubagentToolResultText(title, outputText, failed);
 }
@@ -3908,7 +3908,7 @@ function filterSubagentToolDefinitions(value: JsonValue): JsonValue {
     }
 
     const fn = entry.function;
-    return !isJsonObject(fn) || fn.name !== 'run_subagent';
+    return !isJsonObject(fn) || fn.name !== 'subagent';
   });
 }
 

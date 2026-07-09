@@ -25,7 +25,7 @@ function filterSubagentToolDefinitions(value: unknown): unknown {
       return true;
     }
     const fn = entry.function;
-    return !isJsonObject(fn) || fn.name !== 'run_subagent';
+    return !isJsonObject(fn) || fn.name !== 'subagent';
   });
 }
 
@@ -38,7 +38,7 @@ test('filterHostToolDefinitionsForAgentMode removes edit tools in Ask mode', () 
   const names = toolNames(filtered as ReturnType<typeof buildBuiltinHostToolDefinitions>);
 
   assert.ok(names.includes('read_file'));
-  assert.ok(names.includes('run_subagent'));
+  assert.ok(names.includes('subagent'));
   assert.ok(!names.includes('edit_file'));
   assert.ok(!names.includes('shell'));
   for (const excluded of ASK_MODE_EXCLUDED_HOST_TOOL_NAMES) {
@@ -59,7 +59,7 @@ test('filterHostToolDefinitionsForAgentMode leaves Agent mode builtins unchanged
   assert.deepEqual(toolNames(filterHostToolDefinitionsForAgentMode(builtins, 'agent') as typeof builtins), names);
 });
 
-test('subagent inherits Ask-filtered tools without nested run_subagent', () => {
+test('subagent inherits Ask-filtered tools without nested subagent', () => {
   const parentDefinitions = filterHostToolDefinitionsForAgentMode(
     buildBuiltinHostToolDefinitions({
       shellDisplayName: 'cmd',
@@ -72,7 +72,7 @@ test('subagent inherits Ask-filtered tools without nested run_subagent', () => {
   >;
   const names = toolNames(childDefinitions);
   assert.ok(names.includes('read_file'));
-  assert.ok(!names.includes('run_subagent'));
+  assert.ok(!names.includes('subagent'));
   assert.ok(!names.includes('edit_file'));
 });
 

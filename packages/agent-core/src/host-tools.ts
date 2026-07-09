@@ -254,7 +254,7 @@ export function buildBuiltinHostToolDefinitions(
       },
     ),
     functionTool(
-      'run_subagent',
+      'subagent',
       'Delegate a scoped task to a child agent session. Use this when the task can be isolated from the main conversation and you want the child agent to return only its final result.',
       {
         type: 'object',

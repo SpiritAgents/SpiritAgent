@@ -26,7 +26,7 @@ import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-seg
 import { isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
 import { clearGitHubAutomationRepositoriesCache } from "@/lib/github-automation-repositories-cache";
-import { isRunSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
+import { isSubagentToolCallPending } from "@/lib/subagent-viewer-pending";
 import { resolveWorkspaceDisplayLabel } from "@/lib/workspace-display-label";
 import {
   beginEmptySessionGreetingNavigation,
@@ -2555,7 +2555,7 @@ export function useDesktopRuntime() {
       }
       const trimmed = parentToolCallId.trim();
       return Boolean(next.subagentViewer)
-        || isRunSubagentToolCallPending(next.conversation.messages, trimmed);
+        || isSubagentToolCallPending(next.conversation.messages, trimmed);
     } catch (error) {
       setRuntimeError(describeError(error));
       return false;

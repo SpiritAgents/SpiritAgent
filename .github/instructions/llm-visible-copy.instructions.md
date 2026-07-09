@@ -47,7 +47,7 @@ LLM 上下文段使用小写 XML 标签（如 `<rules>`、`<agent_mode>`、`<com
 ```text
 Help read-only: explain, read and search the repo, and fetch web pages.
 Do not edit files, run shell commands, or generate images.
-You may use run_subagent; delegated agents stay in Ask mode.
+You may use subagent; delegated agents stay in Ask mode.
 ```
 
 **好** — 只约束模式与边界：

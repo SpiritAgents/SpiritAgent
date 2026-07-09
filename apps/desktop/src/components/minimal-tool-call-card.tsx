@@ -510,7 +510,7 @@ export function MinimalToolCallCard({
   const summary = getToolCallSummaryParts(tool);
   const shimmerActive = toolCallPhaseShowsShimmer(tool.phase);
   const isShell = tool.toolName === "shell";
-  const isSubagent = tool.toolName === "run_subagent";
+  const isSubagent = tool.toolName === "subagent";
   const subagentToolCallId = tool.toolCallId?.trim() ?? "";
   const canOpenSubagentViewer = Boolean(isSubagent && onOpenSubagentViewer && subagentToolCallId);
   const readFileTarget = useMemo(

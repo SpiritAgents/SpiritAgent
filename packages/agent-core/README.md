@@ -6,7 +6,7 @@ TypeScript core runtime for [Spirit Agent](https://github.com/SpiritAgents/Spiri
 
 - **Turn machine** — streaming assistant output, tool rounds, compaction, and context usage tracking.
 - **Agent / Plan / Ask modes** — full tool access, planning-only workflows, or read-only Q&A with edit tools stripped at the contract layer.
-- **Subagents** — `run_subagent` delegates focused work to child runs with their own tool surface.
+- **Subagents** — `subagent` delegates focused work to child runs with their own tool surface.
 - **Model transports** — OpenAI-compatible, Open Responses, and Anthropic routes behind one runtime (OpenAI, DeepSeek, Anthropic, Google, Bedrock, Vertex, Gateway, OpenRouter, Alibaba, and others).
 - **Host tool contracts** — built-in tools defined once (name, description, JSON Schema); hosts implement execution for workspace files, shell, web, delegation, planning, multimodal output, Dreams memory, and LSP diagnostics.
 - **System context** — rules, skills, MCP client/registry, and mode prompts assembled for the model without duplicating tool lists in system text.

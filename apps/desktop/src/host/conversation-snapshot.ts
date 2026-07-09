@@ -6,7 +6,7 @@ import {
   buildVisibleMessageSnapshots,
 } from './message-snapshots.js';
 import {
-  hasActiveRunSubagentToolInMessages,
+  hasActiveSubagentToolInMessages,
   isStandaloneSubagentStatusAux,
   messageOrderDebugLevel,
   parsePendingSubagentStatusText,
@@ -52,7 +52,7 @@ export class DesktopConversationSnapshotView {
       rewind: input.rewind,
     });
 
-    // Subagent runtime status is shown on the run_subagent tool card only — never splice a
+    // Subagent runtime status is shown on the subagent tool card only — never splice a
     // standalone assistant row (wrong insertAt can place it above the user message).
     this.lastStandalonePendingAuxSnapshotLogSignature = undefined;
     return snapshots;
@@ -116,7 +116,7 @@ export class DesktopConversationSnapshotView {
       ? parsePendingSubagentStatusText(liveStandalonePendingAux.statusText)
       : undefined;
     if (liveStatusText) {
-      if (hasActiveRunSubagentToolInMessages(snapshots)) {
+      if (hasActiveSubagentToolInMessages(snapshots)) {
         return undefined;
       }
       return {
@@ -152,7 +152,7 @@ export class DesktopConversationSnapshotView {
       insertAt = this.subagentStatusInsertIndex(snapshots);
     }
 
-    if (hasActiveRunSubagentToolInMessages(snapshots)) {
+    if (hasActiveSubagentToolInMessages(snapshots)) {
       return undefined;
     }
 
@@ -170,7 +170,7 @@ export class DesktopConversationSnapshotView {
       const message = snapshots[index];
       if (
         message?.role === 'assistant' &&
-        message.tool?.toolName === 'run_subagent'
+        message.tool?.toolName === 'subagent'
       ) {
         return index + 1;
       }

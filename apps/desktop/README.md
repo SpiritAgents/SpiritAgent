@@ -11,7 +11,7 @@ Spirit Agent Desktop is the graphical host for [Spirit Agent](https://github.com
 - **Agent, Plan, and Ask modes** — full tool access, planning-only workflows, or read-only Q&A.
 - **Multi-session history** — open, switch, and delete saved conversations per workspace.
 - **Tool approval** — review and allow, deny, or always-trust host tool calls before they run.
-- **Subagent viewer** — inspect delegated `run_subagent` runs in a dedicated overlay.
+- **Subagent viewer** — inspect delegated `subagent` runs in a dedicated overlay.
 - **Structured questionnaires** — answer clarifying questions when the host needs input to continue.
 - **Context usage** — see how much of the model context window the current thread consumes.
 - **Rewind** — roll back recent edits and resubmit from an earlier point in the conversation.

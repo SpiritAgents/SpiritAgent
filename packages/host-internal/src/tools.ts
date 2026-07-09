@@ -210,7 +210,7 @@ export interface HostAskQuestionsRequest<QuestionSpec = HostAskQuestionsQuestion
   questions: QuestionSpec[];
 }
 
-export interface RunSubagentRequest {
+export interface SubagentRequest {
   task: string;
   success_criteria?: string;
   context_summary?: string;
@@ -241,7 +241,7 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
     }
   | { name: 'grep'; query: string; is_regexp?: boolean; glob?: string }
   | {
-      name: 'run_subagent';
+      name: 'subagent';
       task: string;
       success_criteria?: string;
       context_summary?: string;
@@ -700,7 +700,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
             ...(glob ? { glob } : {}),
           };
         }
-      case 'run_subagent':
+      case 'subagent':
         {
           const successCriteria = optionalStringStrict(parsed, 'success_criteria');
           const contextSummary = optionalStringStrict(parsed, 'context_summary');
@@ -861,7 +861,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       case 'finish_task':
       case 'glob':
       case 'grep':
-      case 'run_subagent':
+      case 'subagent':
       case 'generate_image':
       case 'generate_video':
         return { kind: 'allowed' };
@@ -1019,8 +1019,8 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
         return this.executeReadFile(request.path, request.offset, request.limit);
       case 'grep':
         return this.executeSearchFiles(request.query, request.is_regexp ?? false, request.glob);
-      case 'run_subagent':
-        throw new Error('run_subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
+      case 'subagent':
+        throw new Error('subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'generate_image':
         throw new Error('generate_image 应由 Agent runtime 接管，不应落到 host-internal 工具执行器');
       case 'generate_video':

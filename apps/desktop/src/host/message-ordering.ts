@@ -45,9 +45,9 @@ import {
   parseLazyToolGatewayFieldsFromJson,
 } from '../lib/lazy-built-in-tool-display.js';
 import {
-  hasActiveRunSubagentToolInMessages,
+  hasActiveSubagentToolInMessages,
   hasInFlightSubagentDelegationInMessages,
-  hasRunSubagentToolInCurrentTurn,
+  hasSubagentToolInCurrentTurn,
   isLivePendingReasoningAux,
   isSubagentStatusSurfaceMessage,
   isSubagentStatusSurfaceText,
@@ -62,9 +62,9 @@ import type {
 import type { DesktopToolRequest } from './contracts.js';
 
 export {
-  hasActiveRunSubagentToolInMessages,
+  hasActiveSubagentToolInMessages,
   hasInFlightSubagentDelegationInMessages,
-  hasRunSubagentToolInCurrentTurn,
+  hasSubagentToolInCurrentTurn,
   isSubagentStatusSurfaceMessage,
   isSubagentStatusSurfaceText,
   parsePendingSubagentStatusText,
@@ -425,7 +425,7 @@ export function toolCallSummaryCopyForRequest(
         headlineDetail: questions.length > 0 ? i18n.t('tool.nQuestions', { count: questions.length }) : i18n.t('tool.question'),
       };
     }
-    case 'run_subagent': {
+    case 'subagent': {
       const task = typeof record.task === 'string' ? record.task.trim() : '';
       const contextSummary =
         typeof record.context_summary === 'string' ? record.context_summary.trim() : '';

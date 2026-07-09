@@ -150,13 +150,13 @@ pub fn parse_pending_subagent_status_text(text: &str) -> Option<String> {
     Some(status)
 }
 
-pub fn has_active_run_subagent_tool_in_messages(messages: &[ChatMessage]) -> bool {
+pub fn has_active_subagent_tool_in_messages(messages: &[ChatMessage]) -> bool {
     messages.iter().any(|message| {
         message
             .tool_block
             .as_ref()
             .is_some_and(|tool| {
-                tool.tool_name == "run_subagent"
+                tool.tool_name == "subagent"
                     && matches!(
                         tool.phase,
                         ToolUiPhase::Preview | ToolUiPhase::Running | ToolUiPhase::PendingApproval
@@ -189,13 +189,13 @@ mod tests {
     }
 
     #[test]
-    fn active_run_subagent_tool_hides_standalone_status_surface() {
+    fn active_subagent_tool_hides_standalone_status_surface() {
         let messages = vec![ChatMessage::with_tool_block(
             MessageRole::Agent,
             String::new(),
             ToolUiBlock {
                 tool_call_id: Some("tc-1".to_string()),
-                tool_name: "run_subagent".to_string(),
+                tool_name: "subagent".to_string(),
                 phase: ToolUiPhase::Running,
                 headline: "SubAgent".to_string(),
                 detail_lines: vec![],
@@ -206,6 +206,6 @@ mod tests {
                 suppress_expand: None,
             },
         )];
-        assert!(has_active_run_subagent_tool_in_messages(&messages));
+        assert!(has_active_subagent_tool_in_messages(&messages));
     }
 }
