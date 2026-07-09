@@ -756,3 +756,9 @@ html:not(.spirit-clickable-pointer)
   ) {
   cursor: default;
 }
+
+/* Composer 建议菜单打开动画落位前：临时 text 光标，避免在指针下展开时闪手型；落位后恢复设置页规则 */
+.spirit-composer-suggestion-open-settle,
+.spirit-composer-suggestion-open-settle * {
+  cursor: text !important;
+}

@@ -10,7 +10,7 @@ type ComposerSuggestionMenuItemProps = {
   onClick?: () => void;
 } & Pick<
   ComponentProps<typeof DropdownMenuItem>,
-  "onMouseDown" | "onMouseEnter" | "onFocus" | "title"
+  "onMouseDown" | "onMouseEnter" | "onFocus" | "title" | "onPointerMove"
 > & {
   "data-skill-slash-index"?: number;
   "data-workspace-file-reference-index"?: number;
@@ -21,6 +21,7 @@ export function ComposerSuggestionMenuItem({
   children,
   className,
   onClick,
+  onPointerMove,
   ...props
 }: ComposerSuggestionMenuItemProps & { className?: string }) {
   return (
@@ -35,6 +36,11 @@ export function ComposerSuggestionMenuItem({
       onSelect={(event) => {
         event.preventDefault();
         onClick?.();
+      }}
+      onPointerMove={(event) => {
+        onPointerMove?.(event);
+        // Radix MenuItem 在 pointermove 未 preventDefault 时会 item.focus()；建议菜单焦点须留在 Composer
+        event.preventDefault();
       }}
       {...props}
     >
