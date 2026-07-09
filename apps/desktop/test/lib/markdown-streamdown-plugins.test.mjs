@@ -92,6 +92,8 @@ test("default github schema strips spirit-agent src", () => {
 });
 
 test("streamdown sanitize schema keeps picture link structure", () => {
+  const actionHref = "https://example.com/action?ref=pr-review";
+  const badgeSrc = "https://example.com/assets/badge-dark.png";
   const tree = {
     type: "root",
     children: [
@@ -99,7 +101,7 @@ test("streamdown sanitize schema keeps picture link structure", () => {
         type: "element",
         tagName: "a",
         properties: {
-          href: "https://cursor.com/open?link=example",
+          href: actionHref,
           target: "_blank",
           rel: "noopener noreferrer",
         },
@@ -114,7 +116,7 @@ test("streamdown sanitize schema keeps picture link structure", () => {
                 tagName: "source",
                 properties: {
                   media: "(prefers-color-scheme: dark)",
-                  srcset: "https://cursor.com/assets/images/fix-in-cursor-dark.png",
+                  srcset: badgeSrc,
                 },
                 children: [],
               },
@@ -122,10 +124,10 @@ test("streamdown sanitize schema keeps picture link structure", () => {
                 type: "element",
                 tagName: "img",
                 properties: {
-                  alt: "Fix All in Cursor",
+                  alt: "Apply fix",
                   width: 115,
                   height: 28,
-                  src: "https://cursor.com/assets/images/fix-in-cursor-dark.png",
+                  src: badgeSrc,
                 },
                 children: [],
               },
@@ -139,27 +141,24 @@ test("streamdown sanitize schema keeps picture link structure", () => {
   const safe = sanitize(tree, streamdownSanitizeSchema);
   const link = safe.children[0];
   assert.equal(link.tagName, "a");
-  assert.equal(link.properties.href, "https://cursor.com/open?link=example");
+  assert.equal(link.properties.href, actionHref);
   const picture = link.children[0];
   assert.equal(picture.tagName, "picture");
   assert.equal(picture.children[0].tagName, "source");
   assert.equal(picture.children[1].tagName, "img");
-  assert.equal(
-    picture.children[1].properties.src,
-    "https://cursor.com/assets/images/fix-in-cursor-dark.png",
-  );
+  assert.equal(picture.children[1].properties.src, badgeSrc);
 });
 
 test("streamdown sanitize schema keeps sup footnotes and drops html comments", () => {
   const tree = {
     type: "root",
     children: [
-      { type: "comment", value: " BUGBOT_REVIEW " },
+      { type: "comment", value: " METADATA_MARKER " },
       {
         type: "element",
         tagName: "sup",
         properties: {},
-        children: [{ type: "text", value: "Reviewed by Cursor Bugbot" }],
+        children: [{ type: "text", value: "1" }],
       },
     ],
   };

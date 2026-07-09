@@ -249,8 +249,9 @@ test("extractComposerChipMetadata collects workspace file and skill chip segment
 });
 
 test("parseMessageContentParts does not treat URL path segments as skill chips", () => {
-  const parts = parseMessageContentParts("https://cursor.com/cn/evals");
-  assert.deepEqual(parts, [{ kind: "text", value: "https://cursor.com/cn/evals" }]);
+  const url = "https://example.com/cn/evals";
+  const parts = parseMessageContentParts(url);
+  assert.deepEqual(parts, [{ kind: "text", value: url }]);
 });
 
 test("messageContentToRichSegments rebuilds element chips from wire text", () => {
