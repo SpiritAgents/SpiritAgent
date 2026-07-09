@@ -1,6 +1,11 @@
 import { useEffect, type ClipboardEvent, type RefObject } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { COPY_COMMAND, PASTE_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
+import {
+  COPY_COMMAND,
+  PASTE_COMMAND,
+  COMMAND_PRIORITY_EDITOR,
+  COMMAND_PRIORITY_HIGH,
+} from "lexical";
 
 import { lexicalSelectionToSegmentCaret } from "@/lib/composer-lexical/caret";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
@@ -124,7 +129,8 @@ export function ComposerClipboardPlugin({
         commitSegments(next, nextCaret);
         return true;
       },
-      COMMAND_PRIORITY_EDITOR,
+      // RichTextPlugin 同为 EDITOR 且先注册；同优先级先返回 true 会短路，宿主贴图 onPaste 永远进不去
+      COMMAND_PRIORITY_HIGH,
     );
 
     return () => {
