@@ -1,0 +1,24 @@
+[
+  {
+    "type": "response.function_call_arguments.delta",
+    "response_id": "resp_tool_fixture",
+    "item_id": "item_tool_fixture",
+    "call_id": "call_tool_fixture",
+    "delta": "{\"query\":"
+  },
+  {
+    "type": "response.function_call_arguments.delta",
+    "response_id": "resp_tool_fixture",
+    "item_id": "item_tool_fixture",
+    "call_id": "call_tool_fixture",
+    "delta": "\"Spirit Agent migration\"}"
+  },
+  {
+    "type": "response.function_call_arguments.done",
+    "response_id": "resp_tool_fixture",
+    "item_id": "item_tool_fixture",
+    "call_id": "call_tool_fixture",
+    "name": "demo_lookup",
+    "arguments": "{\"query\":\"Spirit Agent migration\"}"
+  }
+]
