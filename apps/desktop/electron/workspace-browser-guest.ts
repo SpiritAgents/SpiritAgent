@@ -1,5 +1,7 @@
 import { webContents, type WebContents } from 'electron';
 
+import { toggleBrowserWindowFullScreen } from './window-fullscreen.js';
+
 type GuestF12Registration = {
   host: WebContents;
   tabId: string;
@@ -41,7 +43,17 @@ export function registerBrowserGuestF12(
   const guest = requireOwnedWebviewGuest(host, guestWebContentsId);
 
   const onBeforeInput = (event: Electron.Event, input: Electron.Input) => {
-    if (input.type === 'keyDown' && input.key === 'F12') {
+    if (input.type !== 'keyDown') {
+      return;
+    }
+
+    if (process.platform === 'win32' && input.key === 'F11') {
+      event.preventDefault();
+      toggleBrowserWindowFullScreen(host);
+      return;
+    }
+
+    if (input.key === 'F12') {
       event.preventDefault();
       if (!host.isDestroyed()) {
         host.send('desktop:browser-guest-f12', { tabId });
