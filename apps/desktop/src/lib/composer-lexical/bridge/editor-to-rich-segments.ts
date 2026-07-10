@@ -1,5 +1,6 @@
 import {
   $getRoot,
+  $isLineBreakNode,
   $isParagraphNode,
   $isTextNode,
   type ElementNode,
@@ -25,6 +26,16 @@ function paragraphChildrenToSegments(paragraph: ElementNode): RichSegment[] {
         prev.value += value;
       } else {
         out.push({ kind: "text", value });
+      }
+      continue;
+    }
+
+    if ($isLineBreakNode(child)) {
+      const prev = out[out.length - 1];
+      if (prev?.kind === "text") {
+        prev.value += "\n";
+      } else {
+        out.push({ kind: "text", value: "\n" });
       }
       continue;
     }
