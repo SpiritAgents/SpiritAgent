@@ -2,7 +2,7 @@ import { createGateway, type GatewayRealtimeModelId } from '@ai-sdk/gateway';
 import type { Experimental_RealtimeModelV4 } from '@ai-sdk/provider';
 
 import { RealtimeCapabilityError } from '../errors.js';
-import { mapSdkRealtimeServerEvents, toSdkRealtimeSessionConfig } from '../events.js';
+import { mapSdkRealtimeServerEvents, serializeRealtimeToolResultOutput, toSdkRealtimeSessionConfig } from '../events.js';
 import { normalizeGatewayServerEvent } from './wire-events.js';
 import { getLlmFetch } from '../../llm-fetch.js';
 import type {
@@ -10,6 +10,8 @@ import type {
   RealtimeConnectionKind,
   RealtimeEvent,
   RealtimeSession,
+  RealtimeSessionConfig,
+  RealtimeSubmitToolResultInput,
 } from '../types.js';
 
 function toBase64(data: Uint8Array): string {
@@ -113,6 +115,10 @@ export class GatewayRealtimeSession implements RealtimeSession {
         this.handleClose();
       });
     });
+
+    if (this.config.sessionConfig?.tools && this.config.sessionConfig.tools.length > 0) {
+      await this.updateSessionConfig(this.config.sessionConfig);
+    }
   }
 
   async disconnect(): Promise<void> {
@@ -193,6 +199,31 @@ export class GatewayRealtimeSession implements RealtimeSession {
   async cancelResponse(): Promise<void> {
     this.assertConnected();
     await this.sendClientEvent({ type: 'response-cancel' });
+  }
+
+  async submitToolResult(input: RealtimeSubmitToolResultInput): Promise<void> {
+    this.assertConnected();
+    await this.sendClientEvent({
+      type: 'conversation-item-create',
+      item: {
+        type: 'function-call-output',
+        callId: input.callId,
+        output: serializeRealtimeToolResultOutput(input.output),
+        ...(input.name ? { name: input.name } : {}),
+      },
+    });
+  }
+
+  async updateSessionConfig(config: RealtimeSessionConfig): Promise<void> {
+    this.assertConnected();
+    const sdkConfig = toSdkRealtimeSessionConfig(config);
+    if (!sdkConfig) {
+      throw new Error('Gateway realtime updateSessionConfig requires a non-empty session config.');
+    }
+    await this.sendClientEvent({
+      type: 'session-update',
+      config: sdkConfig as never,
+    });
   }
 
   async *events(): AsyncIterable<RealtimeEvent> {
