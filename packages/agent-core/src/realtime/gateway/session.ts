@@ -81,9 +81,11 @@ export class GatewayRealtimeSession implements RealtimeSession {
       model: this.config.model as GatewayRealtimeModelId,
       ...(sessionConfig ? { sessionConfig: sessionConfig as never } : {}),
     });
+    this.ensureConnectNotAborted();
 
     this.codec = provider.experimental_realtime(this.config.model as GatewayRealtimeModelId);
     const wsConfig = this.codec.getWebSocketConfig({ token, url });
+    this.ensureConnectNotAborted();
 
     await new Promise<void>((resolve, reject) => {
       let settled = false;
@@ -101,6 +103,14 @@ export class GatewayRealtimeSession implements RealtimeSession {
       ws.addEventListener('open', () => {
         if (this.ws !== ws) {
           ws.close();
+          return;
+        }
+        if (this.closed) {
+          ws.close();
+          this.ws = null;
+          settle(() => {
+            reject(new Error('Gateway realtime connect aborted because the session was disconnected.'));
+          });
           return;
         }
         this.connected = true;
@@ -137,6 +147,8 @@ export class GatewayRealtimeSession implements RealtimeSession {
         this.handleClose();
       });
     });
+
+    this.ensureConnectNotAborted();
 
     if (this.config.sessionConfig?.tools && this.config.sessionConfig.tools.length > 0) {
       await this.updateSessionConfig(this.config.sessionConfig);
@@ -269,6 +281,12 @@ export class GatewayRealtimeSession implements RealtimeSession {
   private assertConnected(): void {
     if (!this.connected || !this.codec || !this.ws) {
       throw new Error('Gateway realtime session is not connected.');
+    }
+  }
+
+  private ensureConnectNotAborted(): void {
+    if (this.closed) {
+      throw new Error('Gateway realtime connect aborted because the session was disconnected.');
     }
   }
 
