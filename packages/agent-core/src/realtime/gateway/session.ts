@@ -58,6 +58,9 @@ export class GatewayRealtimeSession implements RealtimeSession {
       return;
     }
 
+    this.closed = false;
+    this.eventQueue.length = 0;
+
     const provider = createGateway({
       apiKey: this.config.apiKey,
       fetch: getLlmFetch(),
