@@ -151,7 +151,14 @@ export class GatewayRealtimeSession implements RealtimeSession {
     this.ensureConnectNotAborted();
 
     if (this.config.sessionConfig?.tools && this.config.sessionConfig.tools.length > 0) {
-      await this.updateSessionConfig(this.config.sessionConfig);
+      try {
+        await this.updateSessionConfig(this.config.sessionConfig);
+      } catch (error) {
+        this.connected = false;
+        this.ws?.close();
+        this.ws = null;
+        throw error;
+      }
     }
   }
 
