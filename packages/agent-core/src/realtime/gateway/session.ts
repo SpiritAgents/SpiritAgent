@@ -75,20 +75,41 @@ export class GatewayRealtimeSession implements RealtimeSession {
     const wsConfig = this.codec.getWebSocketConfig({ token, url });
 
     await new Promise<void>((resolve, reject) => {
+      let settled = false;
       const ws = new WebSocket(wsConfig.url, wsConfig.protocols);
       this.ws = ws;
 
+      const settle = (callback: () => void): void => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        callback();
+      };
+
       ws.addEventListener('open', () => {
         this.connected = true;
-        resolve();
+        settle(resolve);
       });
       ws.addEventListener('error', () => {
-        reject(new Error('Gateway realtime WebSocket connection failed.'));
+        this.connected = false;
+        this.ws = null;
+        settle(() => {
+          reject(new Error('Gateway realtime WebSocket connection failed.'));
+        });
       });
       ws.addEventListener('message', (event) => {
         this.handleMessage(event);
       });
       ws.addEventListener('close', () => {
+        if (!settled) {
+          this.connected = false;
+          this.ws = null;
+          settle(() => {
+            reject(new Error('Gateway realtime WebSocket closed before connection opened.'));
+          });
+          return;
+        }
         this.handleClose();
       });
     });
