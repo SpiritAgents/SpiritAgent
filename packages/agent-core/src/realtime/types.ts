@@ -18,6 +18,8 @@ export interface RealtimeTurnDetectionConfig {
   threshold?: number;
   silenceDurationMs?: number;
   prefixPaddingMs?: number;
+  createResponse?: boolean;
+  interruptResponse?: boolean;
 }
 
 export interface RealtimeSessionConfig {
@@ -101,7 +103,11 @@ export interface RealtimeSession {
   sendText(text: string): Promise<void>;
   sendAudio(audio: Uint8Array, mimeType?: string): Promise<void>;
   sendImage(data: Uint8Array, mimeType: string): Promise<void>;
+  appendInputAudio(chunk: Uint8Array): Promise<void>;
+  commitInputAudio(): Promise<void>;
+  clearInputAudio(): Promise<void>;
   requestResponse(): Promise<void>;
+  cancelResponse(): Promise<void>;
   events(): AsyncIterable<RealtimeEvent>;
 }
 

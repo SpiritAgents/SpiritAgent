@@ -185,6 +185,12 @@ export function toSdkRealtimeSessionConfig(
     return undefined;
   }
 
+  const turnDetection = buildSdkTurnDetection(config.turnDetection);
+  const providerOptions = mergeProviderOptions(
+    config.providerOptions,
+    buildTurnDetectionProviderOptions(config.turnDetection),
+  );
+
   return {
     ...(config.instructions ? { instructions: config.instructions } : {}),
     ...(config.voice ? { voice: config.voice } : {}),
@@ -205,7 +211,104 @@ export function toSdkRealtimeSessionConfig(
           : config.outputAudioTranscription,
       }
       : {}),
-    ...(config.turnDetection !== undefined ? { turnDetection: config.turnDetection } : {}),
-    ...(config.providerOptions ? { providerOptions: config.providerOptions } : {}),
+    ...(turnDetection !== undefined ? { turnDetection } : {}),
+    ...(providerOptions ? { providerOptions } : {}),
   };
+}
+
+function buildSdkTurnDetection(
+  turnDetection: RealtimeSessionConfig['turnDetection'],
+): Record<string, unknown> | null | undefined {
+  if (turnDetection === undefined) {
+    return undefined;
+  }
+  if (turnDetection === null) {
+    return null;
+  }
+
+  return {
+    type: turnDetection.type,
+    ...(turnDetection.threshold !== undefined ? { threshold: turnDetection.threshold } : {}),
+    ...(turnDetection.silenceDurationMs !== undefined
+      ? { silenceDurationMs: turnDetection.silenceDurationMs }
+      : {}),
+    ...(turnDetection.prefixPaddingMs !== undefined
+      ? { prefixPaddingMs: turnDetection.prefixPaddingMs }
+      : {}),
+  };
+}
+
+function buildTurnDetectionProviderOptions(
+  turnDetection: RealtimeSessionConfig['turnDetection'],
+): Record<string, unknown> | undefined {
+  if (!turnDetection || turnDetection.type === 'disabled') {
+    return undefined;
+  }
+
+  const hasConversationFlags = turnDetection.createResponse !== undefined
+    || turnDetection.interruptResponse !== undefined;
+  if (!hasConversationFlags) {
+    return undefined;
+  }
+
+  const turnDetectionWire: Record<string, unknown> = {
+    type: turnDetection.type === 'server-vad' ? 'server_vad' : 'semantic_vad',
+    ...(turnDetection.createResponse !== undefined
+      ? { create_response: turnDetection.createResponse }
+      : {}),
+    ...(turnDetection.interruptResponse !== undefined
+      ? { interrupt_response: turnDetection.interruptResponse }
+      : {}),
+  };
+
+  return {
+    audio: {
+      input: {
+        turn_detection: turnDetectionWire,
+      },
+    },
+  };
+}
+
+function mergeProviderOptions(
+  base: Record<string, unknown> | undefined,
+  extra: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!base && !extra) {
+    return undefined;
+  }
+  if (!base) {
+    return extra;
+  }
+  if (!extra) {
+    return base;
+  }
+
+  return deepMergeRecords(base, extra);
+}
+
+function deepMergeRecords(
+  left: Record<string, unknown>,
+  right: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...left };
+  for (const [key, value] of Object.entries(right)) {
+    const existing = merged[key];
+    if (
+      typeof value === 'object'
+      && value !== null
+      && !Array.isArray(value)
+      && typeof existing === 'object'
+      && existing !== null
+      && !Array.isArray(existing)
+    ) {
+      merged[key] = deepMergeRecords(
+        existing as Record<string, unknown>,
+        value as Record<string, unknown>,
+      );
+      continue;
+    }
+    merged[key] = value;
+  }
+  return merged;
 }

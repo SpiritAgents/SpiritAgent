@@ -19,30 +19,38 @@ class OpenAiRealtimeSessionStub implements RealtimeSession {
   async disconnect(): Promise<void> {}
 
   async sendText(): Promise<void> {
-    throw new RealtimeNotImplementedError(
-      this.config.providerId,
-      this.connectionKind,
-      'OpenAI direct realtime WebRTC backend is not implemented yet.',
-    );
+    this.throwNotImplemented();
   }
 
   async sendAudio(): Promise<void> {
-    throw new RealtimeNotImplementedError(
-      this.config.providerId,
-      this.connectionKind,
-      'OpenAI direct realtime WebRTC backend is not implemented yet.',
-    );
+    this.throwNotImplemented();
   }
 
   async sendImage(): Promise<void> {
-    throw new RealtimeNotImplementedError(
-      this.config.providerId,
-      this.connectionKind,
-      'OpenAI direct realtime WebRTC backend is not implemented yet.',
-    );
+    this.throwNotImplemented();
   }
 
   async requestResponse(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
+  async appendInputAudio(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
+  async commitInputAudio(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
+  async clearInputAudio(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
+  async cancelResponse(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
+  private throwNotImplemented(): never {
     throw new RealtimeNotImplementedError(
       this.config.providerId,
       this.connectionKind,
