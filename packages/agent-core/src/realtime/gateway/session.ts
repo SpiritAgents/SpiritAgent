@@ -144,6 +144,33 @@ export class GatewayRealtimeSession implements RealtimeSession {
     await this.sendClientEvent({ type: 'response-create' });
   }
 
+  async appendInputAudio(chunk: Uint8Array): Promise<void> {
+    this.assertConnected();
+    if (chunk.length === 0) {
+      throw new Error('Gateway realtime appendInputAudio chunk is empty.');
+    }
+
+    await this.sendClientEvent({
+      type: 'input-audio-append',
+      audio: toBase64(chunk),
+    });
+  }
+
+  async commitInputAudio(): Promise<void> {
+    this.assertConnected();
+    await this.sendClientEvent({ type: 'input-audio-commit' });
+  }
+
+  async clearInputAudio(): Promise<void> {
+    this.assertConnected();
+    await this.sendClientEvent({ type: 'input-audio-clear' });
+  }
+
+  async cancelResponse(): Promise<void> {
+    this.assertConnected();
+    await this.sendClientEvent({ type: 'response-cancel' });
+  }
+
   async *events(): AsyncIterable<RealtimeEvent> {
     while (!this.closed || this.eventQueue.length > 0) {
       const next = this.eventQueue.shift();
