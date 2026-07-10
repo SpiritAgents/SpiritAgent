@@ -173,12 +173,12 @@ mod tests {
     #[test]
     fn detects_runtime_subagent_status_lines() {
         assert!(is_subagent_status_surface_text(
-            "输出 \"Spirit 牛逼\" 这句话，不要做任何其他事情。: 运行中"
+            "输出 \"你好\" 这两个字，不要做任何其他事情。: 运行中"
         ));
         assert!(is_subagent_status_surface_text(
-            "请输出\"Spirit 牛逼\"这句话。: The"
+            "请输出\"你好\"这两个字。: The"
         ));
-        assert!(!is_subagent_status_surface_text("Spirit 牛逼"));
+        assert!(!is_subagent_status_surface_text("你好"));
     }
 
     #[test]
