@@ -42,7 +42,7 @@ function streamingRoundWillContinueWithToolCalls<State>(
   return completion?.kind === 'success' && completion.result.step.kind === 'tool-calls';
 }
 
-function resumeStreamingAfterProviderBuiltinSearch<
+function syncProviderBuiltinSearchRoundToHistory<
   Config,
   State,
   ToolRequest,
@@ -543,6 +543,9 @@ export async function handlePendingStreamEvent<
     const resumeAfterProviderSearch =
       pending.completion?.kind === 'success'
       && pending.completion.result.resumeStreamingAfterProviderSearch === true;
+    if (pending.completion?.kind === 'success') {
+      syncProviderBuiltinSearchRoundToHistory(runtime, pending.completion.result.state);
+    }
     if (!runtime.pendingAssistantTextStore.trim()) {
       runtime.emitEvent({ kind: 'remove-pending-assistant' });
     } else if (!resumeAfterProviderSearch) {
@@ -571,7 +574,6 @@ export async function handlePendingStreamEvent<
     if (pending.completionHandled && pending.completion?.kind === 'success') {
       const round = pending.completion.result;
       if (round.resumeStreamingAfterProviderSearch) {
-        resumeStreamingAfterProviderBuiltinSearch(runtime, round.state);
         clearPendingStreamingState(runtime);
         await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, false);
         return true;
@@ -734,13 +736,13 @@ export async function handlePendingStreamingCompletion<
   const round = completion.result;
   runtime.appendTrace(round.requestTrace, pending.turn);
   emitContextUsageUpdated(runtime.emitEvent.bind(runtime), round.usage);
+  syncProviderBuiltinSearchRoundToHistory(runtime, round.state);
 
   if (round.resumeStreamingAfterProviderSearch) {
     const lastHistoryMessage = runtime.historyStore.at(-1);
     if (lastHistoryMessage?.role === 'assistant') {
       runtime.historyStore.pop();
     }
-    resumeStreamingAfterProviderBuiltinSearch(runtime, round.state);
     clearPendingStreamingState(runtime);
     await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, false);
     return;

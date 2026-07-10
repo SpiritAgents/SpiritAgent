@@ -226,6 +226,19 @@ test('gateway sdk stream skips resume when answer text follows web_search in sam
     extractLastAssistantText(result.result.state),
     '好的，让我搜一下。\n\n最终答案在这里。',
   );
+  assert.deepEqual(
+    result.result.state.messages.map((message) => (
+      isJsonObject(message) && typeof message.role === 'string' ? message.role : 'unknown'
+    )),
+    ['user', 'assistant', 'tool', 'assistant'],
+  );
+  const providerCallMessage = result.result.state.messages.at(1);
+  assert.ok(isJsonObject(providerCallMessage));
+  assert.equal(providerCallMessage.content, null);
+  assert.equal(Array.isArray(providerCallMessage.tool_calls), true);
+  const providerResultMessage = result.result.state.messages.at(2);
+  assert.ok(isJsonObject(providerResultMessage));
+  assert.match(String(providerResultMessage.content), /Example/);
 });
 
 test('gateway sdk stream omits executed web_search from host tool-calls step', async () => {
