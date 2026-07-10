@@ -961,6 +961,7 @@
     "contextUsageHoverPercent": "{{percent}}% context used",
     "contextUsageHoverTokens": "{{input}} / {{total}} tokens",
     "enqueueWhileBusy": "Add to message queue",
+    "realtimeVoice": "Voice Chat",
     "sendEnterKey": "Enter",
     "changes": "Changes",
     "changesAria": "Open Git changes"

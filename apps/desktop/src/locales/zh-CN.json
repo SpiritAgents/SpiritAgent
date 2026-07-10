@@ -958,6 +958,7 @@
     "contextUsageHoverPercent": "{{percent}}% 上下文已用",
     "contextUsageHoverTokens": "{{input}} / {{total}} tokens",
     "enqueueWhileBusy": "加入消息队列",
+    "realtimeVoice": "语音对话",
     "sendEnterKey": "回车",
     "changes": "更改",
     "changesAria": "打开 Git 变更"

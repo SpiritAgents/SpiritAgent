@@ -412,6 +412,9 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                       : undefined,
                   );
                 }}
+                onRealtimeVoiceClick={() => {
+                  // TODO(realtime): open voice session — UI shell only for now
+                }}
                 placeholder={composerPlaceholder}
                 agentModeChipPlaceholder={composerAgentModeChipPlaceholder}
                 localFileAttachments={composerLocalFileAttachments}
