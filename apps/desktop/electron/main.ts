@@ -65,6 +65,7 @@ import {
   registerBrowserGuestF12,
   unregisterBrowserGuestF12,
 } from './workspace-browser-guest.js';
+import { toggleBrowserWindowFullScreen } from './window-fullscreen.js';
 
 import type { DesktopSnapshot } from '../src/types.js';
 
@@ -655,13 +656,6 @@ function applyNativeWindowBackdrop(
     });
   } catch {
     // 未启用 overlay 或平台限制时忽略
-  }
-}
-
-function toggleBrowserWindowFullScreen(host: WebContents): void {
-  const window = BrowserWindow.fromWebContents(host);
-  if (window && !window.isDestroyed()) {
-    window.setFullScreen(!window.isFullScreen());
   }
 }
 
