@@ -658,6 +658,13 @@ function applyNativeWindowBackdrop(
   }
 }
 
+function toggleBrowserWindowFullScreen(host: WebContents): void {
+  const window = BrowserWindow.fromWebContents(host);
+  if (window && !window.isDestroyed()) {
+    window.setFullScreen(!window.isFullScreen());
+  }
+}
+
 async function createMainWindow(): Promise<BrowserWindow> {
   const blurOnDisk = readBackdropBlurFromDisk();
   const initialDark = nativeTheme.shouldUseDarkColors;
@@ -776,10 +783,20 @@ async function createMainWindow(): Promise<BrowserWindow> {
     return { action: 'deny' };
   });
 
-  // Windows 无系统菜单且顶栏 MenubarShortcut 不绑定快捷键；主进程监听 F12 以便渲染崩溃时仍可开 DevTools。
+  // Windows 无系统菜单且顶栏 MenubarShortcut 不绑定快捷键；F11/F12 由主进程绑定（macOS 全屏仍走系统菜单 role）。
   const isDevChrome = Boolean(DEV_SERVER_URL) || !app.isPackaged;
   window.webContents.on('before-input-event', (event, input) => {
-    if (isDevChrome && input.type === 'keyDown' && input.key === 'F12') {
+    if (input.type !== 'keyDown') {
+      return;
+    }
+
+    if (process.platform === 'win32' && input.key === 'F11') {
+      event.preventDefault();
+      toggleBrowserWindowFullScreen(window.webContents);
+      return;
+    }
+
+    if (isDevChrome && input.key === 'F12') {
       event.preventDefault();
       window.webContents.toggleDevTools();
     }
@@ -1046,8 +1063,8 @@ if (gotSpiritSingleInstanceLock) {
           break;
         case 'toggleFullscreen': {
           const w = win ?? BrowserWindow.getFocusedWindow();
-          if (w) {
-            w.setFullScreen(!w.isFullScreen());
+          if (w && !w.isDestroyed()) {
+            toggleBrowserWindowFullScreen(w.webContents);
           }
           break;
         }
