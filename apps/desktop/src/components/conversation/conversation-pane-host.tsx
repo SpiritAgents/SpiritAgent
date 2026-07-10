@@ -206,6 +206,9 @@ export function ConversationPaneHost({
       list={pane.list}
       composerDock={pane.composerDock}
       branchCheckout={pane.branchCheckout}
+      voiceSessionOpen={pane.voiceSessionOpen}
+      onVoiceSessionClose={pane.onVoiceSessionClose}
+      voiceChatPhase={pane.voiceChatPhase}
     />
   );
 }

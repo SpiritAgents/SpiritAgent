@@ -966,6 +966,13 @@
     "changes": "Changes",
     "changesAria": "Open Git changes"
   },
+  "voice": {
+    "end": "End Voice Chat",
+    "mute": "Mute",
+    "statusIdle": "Voice Chat is ready",
+    "statusListening": "Listening…",
+    "statusSpeaking": "Speaking…"
+  },
   "queue": {
     "moveUp": "Move up",
     "sendNow": "Send now",

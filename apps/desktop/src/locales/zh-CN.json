@@ -963,6 +963,13 @@
     "changes": "更改",
     "changesAria": "打开 Git 变更"
   },
+  "voice": {
+    "end": "结束语音",
+    "mute": "静音",
+    "statusIdle": "语音对话已就绪",
+    "statusListening": "正在聆听…",
+    "statusSpeaking": "正在回复…"
+  },
   "queue": {
     "moveUp": "上移",
     "sendNow": "发送",
