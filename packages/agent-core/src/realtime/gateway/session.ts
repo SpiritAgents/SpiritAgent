@@ -50,6 +50,7 @@ export class GatewayRealtimeSession implements RealtimeSession {
   private codec: Experimental_RealtimeModelV4 | null = null;
   private connected = false;
   private closed = false;
+  private connectTask: Promise<void> | null = null;
   private readonly eventQueue: RealtimeEvent[] = [];
   private readonly waiters: Array<() => void> = [];
 
@@ -59,7 +60,15 @@ export class GatewayRealtimeSession implements RealtimeSession {
     if (this.connected) {
       return;
     }
+    if (!this.connectTask) {
+      this.connectTask = this.performConnect().finally(() => {
+        this.connectTask = null;
+      });
+    }
+    return this.connectTask;
+  }
 
+  private async performConnect(): Promise<void> {
     this.closed = false;
     this.eventQueue.length = 0;
 
@@ -90,10 +99,17 @@ export class GatewayRealtimeSession implements RealtimeSession {
       };
 
       ws.addEventListener('open', () => {
+        if (this.ws !== ws) {
+          ws.close();
+          return;
+        }
         this.connected = true;
         settle(resolve);
       });
       ws.addEventListener('error', () => {
+        if (this.ws !== ws) {
+          return;
+        }
         this.connected = false;
         this.ws = null;
         settle(() => {
@@ -101,9 +117,15 @@ export class GatewayRealtimeSession implements RealtimeSession {
         });
       });
       ws.addEventListener('message', (event) => {
+        if (this.ws !== ws) {
+          return;
+        }
         this.handleMessage(event);
       });
       ws.addEventListener('close', () => {
+        if (this.ws !== ws) {
+          return;
+        }
         if (!settled) {
           this.connected = false;
           this.ws = null;
