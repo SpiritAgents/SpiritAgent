@@ -33,6 +33,11 @@ export function createApplyPatchAwareFetch(
   };
 }
 
+function isGatewayLanguageModelRequestBody(body: JsonObject): boolean {
+  // Gateway v3/v4 language-model 请求体用 prompt；Open Responses 用 input。
+  return Array.isArray(body.prompt);
+}
+
 function patchRequestInitBody(
   init: RequestInit | undefined,
   config: OpenResponsesTransportConfig,
@@ -44,6 +49,12 @@ function patchRequestInitBody(
   try {
     const body = JSON.parse(init.body) as JsonObject;
     if (!isJsonObject(body as JsonValue)) {
+      return init;
+    }
+
+    // Gateway language-model 的 tools 须为 AI SDK 形态（inputSchema / provider tool）。
+    // 若在此注入 Responses flat apply_patch，压缩等无 tools 请求会变成 tools:[apply_patch] 并被 Gateway 400。
+    if (isGatewayLanguageModelRequestBody(body)) {
       return init;
     }
 
