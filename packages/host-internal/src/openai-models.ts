@@ -47,6 +47,9 @@ export interface ProviderListedModelEntry {
   supportsVideoInput?: boolean;
   supportsVideoGeneration?: boolean;
   supportsImageGeneration?: boolean;
+  supportsRealtime?: boolean;
+  supportsAudioInput?: boolean;
+  supportsAudioOutput?: boolean;
   supportsReasoning?: boolean;
   supportsThinkingType?: KimiCodeSupportsThinkingType;
   contextLength?: number;
@@ -759,6 +762,22 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
       continue;
     }
 
+    if (type === 'realtime') {
+      entries.push(
+        attachListedModelMetadata(
+          {
+            id: id.trim(),
+            supportsRealtime: true,
+            supportsAudioInput: true,
+            supportsAudioOutput: true,
+          },
+          record,
+          readVercelGatewayPricing(record),
+        ),
+      );
+      continue;
+    }
+
     entries.push(
       attachListedModelMetadata({ id: id.trim() }, record, readVercelGatewayPricing(record)),
     );
@@ -1361,6 +1380,13 @@ function dedupeProviderListedModelEntries(
         : {}),
       ...(entry.supportsImageGeneration !== undefined
         ? { supportsImageGeneration: entry.supportsImageGeneration }
+        : {}),
+      ...(entry.supportsRealtime !== undefined ? { supportsRealtime: entry.supportsRealtime } : {}),
+      ...(entry.supportsAudioInput !== undefined
+        ? { supportsAudioInput: entry.supportsAudioInput }
+        : {}),
+      ...(entry.supportsAudioOutput !== undefined
+        ? { supportsAudioOutput: entry.supportsAudioOutput }
         : {}),
       ...(entry.supportsReasoning !== undefined ? { supportsReasoning: entry.supportsReasoning } : {}),
       ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),

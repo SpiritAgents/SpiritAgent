@@ -12,8 +12,6 @@ import type {
   RealtimeSession,
 } from '../types.js';
 
-const AUDIO_CHUNK_BYTES = 4096;
-
 function toBase64(data: Uint8Array): string {
   return Buffer.from(data).toString('base64');
 }
@@ -91,13 +89,6 @@ export class GatewayRealtimeSession implements RealtimeSession {
         this.handleClose();
       });
     });
-
-    if (this.config.sessionConfig) {
-      await this.sendClientEvent({
-        type: 'session-update',
-        config: toSdkRealtimeSessionConfig(this.config.sessionConfig) as never,
-      });
-    }
   }
 
   async disconnect(): Promise<void> {
@@ -126,15 +117,18 @@ export class GatewayRealtimeSession implements RealtimeSession {
   async sendAudio(audio: Uint8Array, mimeType?: string): Promise<void> {
     this.assertConnected();
     const pcm = extractPcmPayload(audio, mimeType);
-    const chunkSize = AUDIO_CHUNK_BYTES;
-    for (let offset = 0; offset < pcm.length; offset += chunkSize) {
-      const chunk = pcm.subarray(offset, offset + chunkSize);
-      await this.sendClientEvent({
-        type: 'input-audio-append',
-        audio: toBase64(chunk),
-      });
+    if (pcm.length === 0) {
+      throw new Error('Gateway realtime audio input is empty after PCM extraction.');
     }
-    await this.sendClientEvent({ type: 'input-audio-commit' });
+
+    await this.sendClientEvent({
+      type: 'conversation-item-create',
+      item: {
+        type: 'audio-message',
+        role: 'user',
+        audio: toBase64(pcm),
+      },
+    });
   }
 
   async sendImage(_data: Uint8Array, _mimeType: string): Promise<void> {
