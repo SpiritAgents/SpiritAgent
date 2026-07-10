@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useEffect, useState } from "react";
 import type { TFunction } from "i18next";
 
 import type {
@@ -14,6 +14,7 @@ import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import type { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import { resolveEffectiveEmptySession } from "@/lib/conversation-surface-stale";
+import { resolveVoiceChatPhase } from "@/lib/voice-chat-phase";
 import { resolvePaneDesktopSnapshot, lookupPaneSessionSlice } from "@/lib/pane-desktop-snapshot";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
@@ -74,6 +75,16 @@ export function useConversationPaneController({
   language,
   conversationAbortShortcutTargetRef,
 }: UseConversationPaneControllerOptions) {
+  const [voiceSessionOpen, setVoiceSessionOpen] = useState(false);
+
+  const openVoiceSession = useCallback(() => {
+    setVoiceSessionOpen(true);
+  }, []);
+
+  const closeVoiceSession = useCallback(() => {
+    setVoiceSessionOpen(false);
+  }, []);
+
   const paneSnapshot = useMemo(
     () => resolvePaneDesktopSnapshot(baseSnapshot, sessionPath),
     [baseSnapshot, sessionPath],
@@ -260,6 +271,14 @@ export function useConversationPaneController({
     onComposerAgentModeChange: composer.handleComposerAgentModeChange,
   };
 
+  const voiceChatPhase = useMemo(
+    () =>
+      resolveVoiceChatPhase({
+        conversationBusy: paneSnapshot?.conversation.isBusy === true,
+      }),
+    [paneSnapshot?.conversation.isBusy],
+  );
+
   const composerDock: ComposerDockSectionProps = {
     composerDockRef: conversation.composerDockRef,
     emptySessionGreeting: conversation.emptySessionGreeting,
@@ -319,6 +338,7 @@ export function useConversationPaneController({
     onComposerDrop: composer.handleComposerDrop,
     models: conversation.models,
     onOpenGitTab: workspaceTools.openGitTab,
+    onRealtimeVoiceClick: openVoiceSession,
   };
 
   const composerInsertHandlers = useMemo(
@@ -383,5 +403,8 @@ export function useConversationPaneController({
     longConversationListDemoActive: paneLongConversationListDemoActive,
     composerInsertHandlers,
     composerControls,
+    voiceSessionOpen,
+    onVoiceSessionClose: closeVoiceSession,
+    voiceChatPhase,
   };
 }

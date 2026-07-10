@@ -112,6 +112,7 @@ export type ComposerDockProps = {
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
+  onRealtimeVoiceClick?: () => void;
 };
 
 export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(function ComposerDock(
@@ -175,6 +176,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     models,
     useMicaBackdrop,
     onOpenGitTab,
+    onRealtimeVoiceClick,
   },
   ref,
 ) {
@@ -412,9 +414,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                       : undefined,
                   );
                 }}
-                onRealtimeVoiceClick={() => {
-                  // TODO(realtime): open voice session — UI shell only for now
-                }}
+                onRealtimeVoiceClick={onRealtimeVoiceClick}
                 placeholder={composerPlaceholder}
                 agentModeChipPlaceholder={composerAgentModeChipPlaceholder}
                 localFileAttachments={composerLocalFileAttachments}
