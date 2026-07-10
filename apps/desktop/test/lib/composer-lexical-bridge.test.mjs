@@ -79,6 +79,7 @@ const sampleFileSnippet = {
 const fixtureCases = [
   { name: "empty", segments: emptySegments() },
   { name: "plain text", segments: [{ kind: "text", value: "hello world" }] },
+  { name: "multiline text", segments: [{ kind: "text", value: "a\nbc\nd\nef\ng" }] },
   {
     name: "element chip",
     segments: [

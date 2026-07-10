@@ -1,4 +1,5 @@
 import {
+  $createLineBreakNode,
   $createTextNode,
   $getRoot,
   $createParagraphNode,
@@ -13,12 +14,33 @@ import {
 import { isSpiritChipPayload } from "@/lib/composer-lexical/spirit-chip-payload";
 import { $createSpiritChipNode } from "@/lib/composer-lexical/nodes/spirit-chip-node";
 
+function appendTextValueToParagraph(
+  paragraph: ReturnType<typeof $createParagraphNode>,
+  value: string,
+): void {
+  if (value.length === 0) {
+    paragraph.append($createTextNode(""));
+    return;
+  }
+
+  const lines = value.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    if (line.length > 0) {
+      paragraph.append($createTextNode(line));
+    }
+    if (index < lines.length - 1) {
+      paragraph.append($createLineBreakNode());
+    }
+  }
+}
+
 function appendSegmentToParagraph(
   paragraph: ReturnType<typeof $createParagraphNode>,
   segment: RichSegment,
 ): void {
   if (segment.kind === "text") {
-    paragraph.append($createTextNode(segment.value));
+    appendTextValueToParagraph(paragraph, segment.value);
     return;
   }
   if (isSpiritChipPayload(segment)) {
