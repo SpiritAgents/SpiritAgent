@@ -281,38 +281,18 @@ export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<R
   return { matches, truncated: false };
 }
 
-export function formatGrepToolOutput(params: {
-  query: string;
-  isRegexp: boolean;
-  globPattern: string | null;
-  matches: RipgrepMatch[];
-}): string {
-  const { query, isRegexp, globPattern, matches } = params;
-  const searchMode = isRegexp ? '正则' : '文本';
-  const files = new Set<string>();
+export function formatGrepToolOutput(matches: readonly RipgrepMatch[]): string {
+  if (matches.length === 0) {
+    return 'No files found';
+  }
 
+  const files = new Set<string>();
+  let out = '';
   for (const match of matches) {
     files.add(match.relativePath);
-  }
-
-  if (files.size === 0) {
-    let out = `[tool] 搜索(${searchMode}): ${query}`;
-    if (globPattern !== null) {
-      out += `\nglob: ${globPattern}`;
-    }
-    out += '\n未搜索到文件';
-    return out;
-  }
-
-  let out = `[tool] 搜索(${searchMode}): ${query}`;
-  if (globPattern !== null) {
-    out += `\nglob: ${globPattern}`;
-  }
-  out += '\n命中片段\n';
-  for (const match of matches) {
     out += `${match.relativePath}:${match.lineNumber} | ${match.lineText}\n`;
   }
-  out += '\n涉及文件\n';
+  out += '\nFiles\n';
   for (const file of [...files].sort((left, right) => left.localeCompare(right))) {
     out += `${file}\n`;
   }

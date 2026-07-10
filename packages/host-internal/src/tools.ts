@@ -1617,12 +1617,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       globPattern,
     });
 
-    return formatGrepToolOutput({
-      query,
-      isRegexp,
-      globPattern,
-      matches,
-    });
+    return formatGrepToolOutput(matches);
   }
 
   private async executeShell(
