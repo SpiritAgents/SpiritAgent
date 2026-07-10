@@ -8,6 +8,15 @@ export const SPIRIT_GLASS_LOGO_PATH =
 
 export const SPIRIT_GLASS_LOGO_VIEWBOX = { width: 142, height: 157 } as const;
 
+/**
+ * 光学居中偏移（相对渲染宽/高的比例）。
+ * 图形尖端朝左上，几何居中在圆里会显得偏左上；Voice Orb 等场景需略向右下推移。
+ */
+export const SPIRIT_GLASS_LOGO_OPTICAL_OFFSET_FRACTION = {
+  x: 0.07,
+  y: 0.1,
+} as const;
+
 const MASK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SPIRIT_GLASS_LOGO_VIEWBOX.width} ${SPIRIT_GLASS_LOGO_VIEWBOX.height}"><path d="${SPIRIT_GLASS_LOGO_PATH}" fill="white"/></svg>`;
 
 /** 供启动层 shimmer 蒙版：与玻璃标轮廓一致 */

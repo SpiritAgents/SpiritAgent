@@ -10,6 +10,7 @@ import type {
 import { useTranslation } from "react-i18next";
 
 import { ComposerDock } from "@/components/conversation/composer-dock";
+import { VoiceChatStage } from "@/components/voice/voice-chat-stage";
 import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationList } from "@/components/conversation/conversation-list";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
@@ -144,6 +145,7 @@ export type ComposerDockSectionProps = {
   onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
   models: DesktopSnapshot["config"]["models"];
   onOpenGitTab: () => void;
+  onRealtimeVoiceClick?: () => void;
 };
 
 export type BranchCheckoutSectionProps = {
@@ -181,6 +183,9 @@ export type ConversationViewProps = {
   composerDock: ComposerDockSectionProps;
   branchCheckout?: BranchCheckoutSectionProps;
   showComposerDock?: boolean;
+  voiceSessionOpen?: boolean;
+  onVoiceSessionClose?: () => void;
+  voiceChatPhase?: import("@/lib/voice-chat-phase").VoiceChatPhase;
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle?: boolean;
   showSplitMenu?: boolean;
@@ -233,6 +238,9 @@ export function ConversationView({
   composerDock,
   branchCheckout,
   showComposerDock = true,
+  voiceSessionOpen = false,
+  onVoiceSessionClose,
+  voiceChatPhase = "idle",
   showSessionSidebarToggle = true,
   showWorkspaceToggle = true,
   showSplitMenu = false,
@@ -271,7 +279,9 @@ export function ConversationView({
     [],
   );
   const conversationMessagesVisible =
-    (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
+    (!isEmptySession || subagentViewActive)
+    && !hideStaleConversationMessages
+    && !voiceSessionOpen;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
   const sessionTooltip =
     sessionTitleVisible && snapshot?.activeSession
@@ -536,6 +546,7 @@ export function ConversationView({
               onClick={onRewindDraftClear}
             />
           ) : null}
+          {!voiceSessionOpen ? (
           <ScrollArea
             ref={conversationScrollAreaRef}
             data-spirit-surface="conversation-scroll"
@@ -600,8 +611,15 @@ export function ConversationView({
               ) : null}
             </div>
           </ScrollArea>
+          ) : null}
 
-          {showComposerDock ? (
+          <VoiceChatStage
+            active={voiceSessionOpen}
+            phase={voiceChatPhase}
+            onEnd={() => onVoiceSessionClose?.()}
+          />
+
+          {showComposerDock && !voiceSessionOpen ? (
           <ComposerDock
             ref={composerDock.composerDockRef}
             isEmptySession={isEmptySession}
@@ -663,6 +681,7 @@ export function ConversationView({
             models={composerDock.models}
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}
+            onRealtimeVoiceClick={composerDock.onRealtimeVoiceClick}
           />
           ) : null}
           {showComposerDock && branchCheckout ? (
