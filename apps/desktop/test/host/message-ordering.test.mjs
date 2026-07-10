@@ -285,30 +285,30 @@ test('displayTitleForTool: built-in create_automation approval uses automation h
 
 test('isSubagentStatusSurfaceText detects runtime status lines', () => {
   assert.equal(
-    isSubagentStatusSurfaceText('输出 "Spirit 牛逼" 这句话，不要做任何其他事情。: 运行中'),
+    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: 运行中'),
     true,
   );
   assert.equal(
-    isSubagentStatusSurfaceText('请输出"Spirit 牛逼"这句话。: The'),
+    isSubagentStatusSurfaceText('请输出"你好"这两个字。: The'),
     true,
   );
   assert.equal(
-    isSubagentStatusSurfaceText('请输出"Spirit 牛逼"这句话。: Sp'),
+    isSubagentStatusSurfaceText('请输出"你好"这两个字。: Sp'),
     true,
   );
   assert.equal(
     isSubagentStatusSurfaceText(
-      '输出 "Spirit 牛逼" 这句话。: The user wants me to output "Spirit 牛逼" — that\'s all.',
+      '输出 "你好" 这两个字。: The user wants me to output "你好" — that\'s all.',
     ),
     true,
   );
-  assert.equal(isSubagentStatusSurfaceText('Spirit 牛逼'), false);
+  assert.equal(isSubagentStatusSurfaceText('你好'), false);
   assert.equal(
-    isSubagentStatusSurfaceText('子智能体已完成，输出如下：**Spirit 牛逼**'),
+    isSubagentStatusSurfaceText('子智能体已完成，输出如下：**你好**'),
     false,
   );
   assert.equal(
-    isSubagentStatusSurfaceText('子智能体已完成，输出如下：\n\n**Spirit 牛逼**'),
+    isSubagentStatusSurfaceText('子智能体已完成，输出如下：\n\n**你好**'),
     false,
   );
   assert.equal(
