@@ -50,6 +50,14 @@ class OpenAiRealtimeSessionStub implements RealtimeSession {
     this.throwNotImplemented();
   }
 
+  async submitToolResult(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
+  async updateSessionConfig(): Promise<void> {
+    this.throwNotImplemented();
+  }
+
   private throwNotImplemented(): never {
     throw new RealtimeNotImplementedError(
       this.config.providerId,

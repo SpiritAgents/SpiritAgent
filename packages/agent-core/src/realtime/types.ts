@@ -22,6 +22,19 @@ export interface RealtimeTurnDetectionConfig {
   interruptResponse?: boolean;
 }
 
+export interface RealtimeToolDefinition {
+  type: 'function';
+  name: string;
+  description?: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface RealtimeSubmitToolResultInput {
+  callId: string;
+  output: string | Record<string, unknown> | unknown[];
+  name?: string;
+}
+
 export interface RealtimeSessionConfig {
   instructions?: string;
   voice?: string;
@@ -31,6 +44,7 @@ export interface RealtimeSessionConfig {
   inputAudioTranscription?: boolean | RealtimeTranscriptionConfig;
   outputAudioTranscription?: boolean | RealtimeTranscriptionConfig;
   turnDetection?: RealtimeTurnDetectionConfig | null;
+  tools?: RealtimeToolDefinition[];
   providerOptions?: Record<string, unknown>;
 }
 
@@ -108,6 +122,8 @@ export interface RealtimeSession {
   clearInputAudio(): Promise<void>;
   requestResponse(): Promise<void>;
   cancelResponse(): Promise<void>;
+  submitToolResult(input: RealtimeSubmitToolResultInput): Promise<void>;
+  updateSessionConfig(config: RealtimeSessionConfig): Promise<void>;
   events(): AsyncIterable<RealtimeEvent>;
 }
 

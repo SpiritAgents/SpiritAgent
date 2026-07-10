@@ -1,6 +1,6 @@
 import type { Experimental_RealtimeModelV4ServerEvent } from '@ai-sdk/provider';
 
-import type { RealtimeEvent, RealtimeSessionConfig } from './types.js';
+import type { RealtimeEvent, RealtimeSessionConfig, RealtimeSubmitToolResultInput } from './types.js';
 
 function decodeBase64Audio(delta: string): Uint8Array {
   return Uint8Array.from(Buffer.from(delta, 'base64'));
@@ -212,8 +212,18 @@ export function toSdkRealtimeSessionConfig(
       }
       : {}),
     ...(turnDetection !== undefined ? { turnDetection } : {}),
+    ...(config.tools && config.tools.length > 0 ? { tools: config.tools } : {}),
     ...(providerOptions ? { providerOptions } : {}),
   };
+}
+
+export function serializeRealtimeToolResultOutput(
+  output: RealtimeSubmitToolResultInput['output'],
+): string {
+  if (typeof output === 'string') {
+    return output;
+  }
+  return JSON.stringify(output);
 }
 
 function buildSdkTurnDetection(
