@@ -322,23 +322,25 @@ export async function* responsesEventStreamToRuntimeEvents(
       hasPostToolAssistantText,
     );
 
-    if (resumeStreamingAfterProviderSearch) {
+    if (executedProviderBuiltinToolCallIds.size > 0) {
+      const pendingHostToolCallIds = new Set(calls.map((call) => call.id));
       persistProviderBuiltinToolRoundToState(
         nextState,
         attachResponseIdToAssistantMessage(
           config,
           buildStreamingAssistantMessage(
-            resolvedAssistantContent,
-            reasoningContent,
+            resumeStreamingAfterProviderSearch ? resolvedAssistantContent : '',
+            resumeStreamingAfterProviderSearch ? reasoningContent : '',
             toolCalls,
-            new Set(),
+            pendingHostToolCallIds,
           ),
           responseId,
         ),
         providerBuiltinToolResults,
         executedProviderBuiltinToolCallIds,
       );
-    } else {
+    }
+    if (!resumeStreamingAfterProviderSearch) {
       const assistantMessage = attachResponseIdToAssistantMessage(
         config,
         buildStreamingAssistantMessage(
