@@ -252,24 +252,25 @@ test('runRipgrepSearch excludes .git directory at any path', async () => {
 });
 
 test('formatGrepToolOutput preserves grep tool summary shape', () => {
-  const output = formatGrepToolOutput({
-    query: 'needle',
-    isRegexp: false,
-    globPattern: 'src/**/*.ts',
-    matches: [
-      {
-        relativePath: 'src/app.ts',
-        lineNumber: 1,
-        lineText: 'needle here',
-        submatches: [{ start: 0, end: 6 }],
-      },
-    ],
-  });
+  const output = formatGrepToolOutput([
+    {
+      relativePath: 'src/app.ts',
+      lineNumber: 1,
+      lineText: 'needle here',
+      submatches: [{ start: 0, end: 6 }],
+    },
+  ]);
 
-  assert.match(output, /^\[tool\] 搜索\(文本\): needle\n/u);
-  assert.match(output, /glob: src\/\*\*\/\*\.ts/u);
-  assert.match(output, /命中片段\nsrc\/app\.ts:1 \| needle here\n/u);
-  assert.match(output, /涉及文件\nsrc\/app\.ts\n/u);
+  assert.equal(
+    output,
+    [
+      'src/app.ts:1 | needle here',
+      '',
+      'Files',
+      'src/app.ts',
+      '',
+    ].join('\n'),
+  );
 });
 
 test('normalizeSearchLine strips trailing newline but keeps leading indent', () => {
@@ -333,12 +334,5 @@ test('runRipgrepSearch stops at maxMatches and reports truncated', async () => {
 });
 
 test('formatGrepToolOutput reports empty results', () => {
-  const output = formatGrepToolOutput({
-    query: 'needle',
-    isRegexp: true,
-    globPattern: null,
-    matches: [],
-  });
-
-  assert.equal(output, '[tool] 搜索(正则): needle\n未搜索到文件');
+  assert.equal(formatGrepToolOutput([]), 'No files found');
 });
