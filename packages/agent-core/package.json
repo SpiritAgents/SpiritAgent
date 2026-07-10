@@ -67,6 +67,7 @@
     "smoke:offline": "npm run smoke:contract && npm run smoke:runtime && npm run smoke:host-config",
     "smoke:live": "npm run smoke:live:openai-compatible",
     "smoke:live:realtime-gateway": "npm run build && node dist/smoke/live/realtime-gateway-live-smoke.js",
+    "smoke:live:realtime-gateway-interrupt": "npm run build && node dist/smoke/live/realtime-gateway-interrupt-live-smoke.js",
     "smoke:live:anthropic": "npm run build && node dist/smoke/live/ai-sdk-anthropic-live-smoke.js",
     "smoke:live:bedrock": "npm run build && node dist/smoke/live/ai-sdk-bedrock-live-smoke.js",
     "smoke:live:openai-compatible": "npm run build && node dist/smoke/live/ai-sdk-openai-compatible-live-smoke.js",
