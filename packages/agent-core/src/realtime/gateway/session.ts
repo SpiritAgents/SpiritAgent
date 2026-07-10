@@ -3,6 +3,7 @@ import type { Experimental_RealtimeModelV4 } from '@ai-sdk/provider';
 
 import { RealtimeCapabilityError } from '../errors.js';
 import { mapSdkRealtimeServerEvents, toSdkRealtimeSessionConfig } from '../events.js';
+import { normalizeGatewayServerEvent } from './wire-events.js';
 import { getLlmFetch } from '../../llm-fetch.js';
 import type {
   RealtimeConfig,
@@ -192,7 +193,7 @@ export class GatewayRealtimeSession implements RealtimeSession {
       if (healthCheck) {
         this.ws?.send(JSON.stringify(healthCheck));
       }
-      const parsed = this.codec.parseServerEvent(raw);
+      const parsed = normalizeGatewayServerEvent(this.codec.parseServerEvent(raw));
       const mapped = mapSdkRealtimeServerEvents(parsed);
       for (const item of mapped) {
         this.enqueue(item);

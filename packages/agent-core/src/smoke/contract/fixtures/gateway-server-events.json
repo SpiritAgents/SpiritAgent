@@ -1,0 +1,45 @@
+[
+  {
+    "type": "session.created",
+    "session": {
+      "id": "sess_smoke_fixture"
+    }
+  },
+  {
+    "type": "response.created",
+    "response": {
+      "id": "resp_smoke_fixture",
+      "status": "in_progress"
+    }
+  },
+  {
+    "type": "response.output_text.delta",
+    "response_id": "resp_smoke_fixture",
+    "item_id": "item_text_fixture",
+    "delta": "Hello"
+  },
+  {
+    "type": "response.output_text.done",
+    "response_id": "resp_smoke_fixture",
+    "item_id": "item_text_fixture",
+    "text": "Hello from fixture"
+  },
+  {
+    "type": "response.output_audio.delta",
+    "response_id": "resp_smoke_fixture",
+    "item_id": "item_audio_fixture",
+    "delta": "AQID"
+  },
+  {
+    "type": "response.output_audio.done",
+    "response_id": "resp_smoke_fixture",
+    "item_id": "item_audio_fixture"
+  },
+  {
+    "type": "response.done",
+    "response": {
+      "id": "resp_smoke_fixture",
+      "status": "completed"
+    }
+  }
+]
