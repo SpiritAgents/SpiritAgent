@@ -943,10 +943,36 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
 }
 
 function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
+  const reasoningEffort = openAiReasoningEffort(config);
+  const fetchWrapper = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const body = tryParseRequestBody(init?.body);
+    if (!isJsonObject(body)) {
+      return getLlmFetch()(input, init);
+    }
+
+    const requestUrl =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : 'request';
+    if (!requestUrl.includes('/chat/completions')) {
+      return getLlmFetch()(input, init);
+    }
+
+    return getLlmFetch()(input, {
+      ...init,
+      body: JSON.stringify({
+        ...body,
+        ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
+      }),
+    });
+  };
+
   return createFireworks({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
-    fetch: getLlmFetch(),
+    fetch: fetchWrapper,
   });
 }
 
@@ -1179,6 +1205,10 @@ function buildAiSdkProviderOptions(
     return {
       openai: openaiOptions as JsonObject,
     };
+  }
+
+  if (isFireworksOfficialAiSdkProvider(config)) {
+    return {};
   }
 
   const reasoningEffort = openAiReasoningEffort(config) as

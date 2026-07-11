@@ -1011,7 +1011,6 @@ test('parseFireworksAiGatewayModelsPayload maps chat models and filters non-chat
     {
       id: 'accounts/fireworks/models/kimi-k2-thinking',
       displayName: 'Kimi K2 Thinking',
-      supportsReasoning: true,
     },
   ]);
 });
