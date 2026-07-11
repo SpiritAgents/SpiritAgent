@@ -5,7 +5,7 @@ use crate::model_registry::ModelProvider;
 
 pub(crate) fn open_responses_sdk_provider(provider: Option<ModelProvider>) -> Option<&'static str> {
     match provider {
-        Some(ModelProvider::Openai) => Some("openai"),
+        Some(ModelProvider::Openai) | Some(ModelProvider::FireworksAi) => Some("openai"),
         Some(ModelProvider::Xai) => Some("xai"),
         Some(ModelProvider::Azure) => Some("azure"),
         Some(ModelProvider::VercelAiGateway) | Some(ModelProvider::Openrouter) => None,
@@ -69,6 +69,7 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         }
         ModelProvider::VercelAiGateway => "vercel-ai-gateway",
         ModelProvider::Openrouter => "openrouter",
+        ModelProvider::FireworksAi => "fireworks-ai",
         ModelProvider::Openai => "openai",
         ModelProvider::Google => "google",
         ModelProvider::GoogleVertexAi => "google-vertex-ai",
