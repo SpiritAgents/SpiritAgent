@@ -14,6 +14,9 @@ import {
   parseVolcengineModelEntriesPayload,
   parseXiaomiModelEntriesPayload,
   parseMinimaxModelEntriesPayload,
+  mergeFireworksAiGatewayModelPages,
+  parseFireworksAiGatewayModelsPayload,
+  fireworksAiGatewayModelsListUrl,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -942,5 +945,108 @@ test('parseOpenAiCompatibleModelEntriesPayload routes google provider to native 
       displayName: 'Gemini 2.5 Flash',
       contextLength: 150,
     },
+  ]);
+});
+
+test('fireworksAiGatewayModelsListUrl builds serverless filter and pagination', () => {
+  assert.equal(
+    fireworksAiGatewayModelsListUrl(),
+    'https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200',
+  );
+  assert.equal(
+    fireworksAiGatewayModelsListUrl('page-2'),
+    'https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200&pageToken=page-2',
+  );
+});
+
+test('parseFireworksAiGatewayModelsPayload maps chat models and filters non-chat entries', () => {
+  const entries = parseFireworksAiGatewayModelsPayload({
+    models: [
+      {
+        name: 'accounts/fireworks/models/deepseek-v3p1',
+        displayName: 'DeepSeek V3.1',
+        description: 'Chat model',
+        contextLength: 128000,
+        supportsImageInput: false,
+        kind: 'HF_BASE_MODEL',
+        conversationConfig: {},
+      },
+      {
+        name: 'accounts/fireworks/models/qwen2-vl-72b-instruct',
+        displayName: 'Qwen2 VL',
+        supportsImageInput: true,
+        kind: 'HF_BASE_MODEL',
+        conversationConfig: {},
+      },
+      {
+        name: 'accounts/fireworks/models/kimi-k2-thinking',
+        displayName: 'Kimi K2 Thinking',
+        kind: 'HF_BASE_MODEL',
+        conversationConfig: {},
+      },
+      {
+        name: 'accounts/fireworks/models/nomic-embed-text',
+        kind: 'EMBEDDING_MODEL',
+        conversationConfig: {},
+      },
+      {
+        name: 'accounts/fireworks/models/no-chat-config',
+        kind: 'HF_BASE_MODEL',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'accounts/fireworks/models/deepseek-v3p1',
+      displayName: 'DeepSeek V3.1',
+      description: 'Chat model',
+      contextLength: 128000,
+    },
+    {
+      id: 'accounts/fireworks/models/qwen2-vl-72b-instruct',
+      displayName: 'Qwen2 VL',
+      supportsImageInput: true,
+    },
+    {
+      id: 'accounts/fireworks/models/kimi-k2-thinking',
+      displayName: 'Kimi K2 Thinking',
+      supportsReasoning: true,
+    },
+  ]);
+});
+
+test('mergeFireworksAiGatewayModelPages dedupes across pages', () => {
+  const entries = mergeFireworksAiGatewayModelPages([
+    {
+      models: [
+        {
+          name: 'accounts/fireworks/models/deepseek-v3p1',
+          kind: 'HF_BASE_MODEL',
+          conversationConfig: {},
+        },
+      ],
+      nextPageToken: 'page-2',
+    },
+    {
+      models: [
+        {
+          name: 'accounts/fireworks/models/deepseek-v3p1',
+          displayName: 'DeepSeek V3.1',
+          kind: 'HF_BASE_MODEL',
+          conversationConfig: {},
+        },
+        {
+          name: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
+          kind: 'HF_BASE_MODEL',
+          conversationConfig: {},
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(entries.map((entry) => entry.id), [
+    'accounts/fireworks/models/deepseek-v3p1',
+    'accounts/fireworks/models/llama-v3p1-8b-instruct',
   ]);
 });
