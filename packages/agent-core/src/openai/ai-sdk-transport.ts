@@ -77,6 +77,7 @@ import {
   isJsonObject,
   type ToolAgentState,
 } from '../tool-agent.js';
+import { renderAiSdkProviderError } from './ai-sdk-provider-error.js';
 import { readAiSdkUsage } from '../ai-sdk-usage.js';
 import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
 import {
@@ -2125,11 +2126,7 @@ function singleLine(text: string): string {
 }
 
 function renderAiSdkOpenAiError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
+  return renderAiSdkProviderError(error);
 }
 
 function tryParseRequestBody(body: BodyInit | null | undefined): JsonValue | undefined {
