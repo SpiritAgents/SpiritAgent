@@ -380,6 +380,153 @@ export async function listSiliconFlowModels(
   return mergeSiliconFlowListedModelEntries(allEntries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/** Fireworks Gateway API root（模型目录与 inference base 不同）。 */
+export const FIREWORKS_AI_GATEWAY_API_ROOT = 'https://api.fireworks.ai';
+
+const FIREWORKS_AI_SERVERLESS_MODELS_FILTER = 'supports_serverless=true';
+
+const FIREWORKS_AI_NON_CHAT_MODEL_KINDS = new Set(['EMBEDDING_MODEL']);
+
+export function fireworksAiGatewayModelsListUrl(pageToken?: string): string {
+  const url = new URL(`${FIREWORKS_AI_GATEWAY_API_ROOT}/v1/accounts/fireworks/models`);
+  url.searchParams.set('filter', FIREWORKS_AI_SERVERLESS_MODELS_FILTER);
+  url.searchParams.set('pageSize', '200');
+  if (pageToken?.trim()) {
+    url.searchParams.set('pageToken', pageToken.trim());
+  }
+  return url.toString();
+}
+
+function readFireworksAiGatewayModelString(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return undefined;
+  }
+  return value.trim();
+}
+
+function readFireworksAiGatewayModelNumber(record: Record<string, unknown>, key: string): number | undefined {
+  const value = record[key];
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  return undefined;
+}
+
+function readFireworksAiGatewayModelBoolean(record: Record<string, unknown>, key: string): boolean | undefined {
+  const value = record[key];
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return undefined;
+}
+
+function isFireworksAiGatewayChatModel(record: Record<string, unknown>): boolean {
+  const kind = readFireworksAiGatewayModelString(record, 'kind');
+  if (kind && FIREWORKS_AI_NON_CHAT_MODEL_KINDS.has(kind)) {
+    return false;
+  }
+  if (!isJsonObject(record.conversationConfig)) {
+    return false;
+  }
+  return true;
+}
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function parseFireworksAiGatewayModelsPayload(body: unknown): ProviderListedModelEntry[] {
+  if (!isJsonObject(body) || !Array.isArray(body.models)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const item of body.models) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+
+    if (!isFireworksAiGatewayChatModel(item)) {
+      continue;
+    }
+
+    const id = readFireworksAiGatewayModelString(item, 'name');
+    if (!id) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id };
+    const displayName = readFireworksAiGatewayModelString(item, 'displayName');
+    if (displayName) {
+      modelEntry.displayName = displayName;
+    }
+    const description = readFireworksAiGatewayModelString(item, 'description');
+    if (description) {
+      modelEntry.description = description;
+    }
+    const contextLength = readFireworksAiGatewayModelNumber(item, 'contextLength');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+    const supportsImageInput = readFireworksAiGatewayModelBoolean(item, 'supportsImageInput');
+    if (supportsImageInput) {
+      modelEntry.supportsImageInput = true;
+    }
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export function mergeFireworksAiGatewayModelPages(
+  pages: readonly unknown[],
+): ProviderListedModelEntry[] {
+  const allEntries: ProviderListedModelEntry[] = [];
+  for (const page of pages) {
+    allEntries.push(...parseFireworksAiGatewayModelsPayload(page));
+  }
+  return dedupeProviderListedModelEntries(allEntries).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+async function fetchFireworksAiGatewayModelsPage(
+  options: ListOpenAiCompatibleModelIdsOptions,
+  pageToken?: string,
+): Promise<unknown> {
+  const url = fireworksAiGatewayModelsListUrl(pageToken);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const init: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${key}`,
+    },
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  return fetchModelsListJson(url, init);
+}
+
+export async function listFireworksAiModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const pages: unknown[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const json = await fetchFireworksAiGatewayModelsPage(options, pageToken);
+    pages.push(json);
+    pageToken =
+      isJsonObject(json) && typeof json.nextPageToken === 'string' && json.nextPageToken.trim().length > 0
+        ? json.nextPageToken.trim()
+        : undefined;
+  } while (pageToken);
+
+  return mergeFireworksAiGatewayModelPages(pages);
+}
+
 /** Xiaomi Mimo：上游 /models 不返回能力字段，多模态模型需维护 allowlist。 */
 const XIAOMI_MULTIMODAL_MODEL_IDS = new Set(['mimo-v2.5', 'mimo-v2-omni']);
 
@@ -1086,6 +1233,10 @@ export async function listProviderModels(
 
   if (options.provider === 'siliconflow') {
     return listSiliconFlowModels(options);
+  }
+
+  if (options.provider === 'fireworks-ai') {
+    return listFireworksAiModels(options);
   }
 
   if (

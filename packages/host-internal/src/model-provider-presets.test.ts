@@ -27,6 +27,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('zhipu-ai'), 'zhipu-ai');
   assert.equal(parseModelProviderId('xiaomi'), 'xiaomi');
   assert.equal(parseModelProviderId('siliconflow'), 'siliconflow');
+  assert.equal(parseModelProviderId('fireworks-ai'), 'fireworks-ai');
   assert.equal(parseModelProviderId('azure'), 'azure');
   assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
@@ -120,6 +121,21 @@ test('resolveProviderConnectApiBase returns OpenRouter preset base', () => {
   assert.equal(
     resolveProviderConnectApiBase('openrouter', 'anthropic'),
     'https://openrouter.ai/api/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Fireworks transport-specific preset bases', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('fireworks-ai', 'openai-compatible'),
+    'https://api.fireworks.ai/inference/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('fireworks-ai', 'open-responses'),
+    'https://api.fireworks.ai/inference/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('fireworks-ai', 'anthropic'),
+    'https://api.fireworks.ai/inference',
   );
 });
 

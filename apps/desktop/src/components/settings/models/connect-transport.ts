@@ -62,6 +62,12 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
         connectTransportOptionCatalog.openResponsesApi,
         connectTransportOptionCatalog.messagesApi,
       ];
+    case "fireworks-ai":
+      return [
+        connectTransportOptionCatalog.chatCompletions,
+        connectTransportOptionCatalog.messagesApi,
+        connectTransportOptionCatalog.openResponsesApi,
+      ];
     case "volcengine":
       return [
         connectTransportOptionCatalog.chatCompletions,
@@ -104,6 +110,7 @@ export function providerSupportsConnectTransportPicker(
     provider === "alibaba" ||
     provider === "custom" ||
     provider === "openrouter" ||
+    provider === "fireworks-ai" ||
     provider === "volcengine"
   );
 }

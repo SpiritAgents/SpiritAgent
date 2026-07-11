@@ -4,6 +4,9 @@ import {
   createAlibaba,
 } from '@ai-sdk/alibaba';
 import {
+  createFireworks,
+} from '@ai-sdk/fireworks';
+import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
@@ -74,6 +77,7 @@ import {
   isJsonObject,
   type ToolAgentState,
 } from '../tool-agent.js';
+import { renderAiSdkProviderError } from './ai-sdk-provider-error.js';
 import { readAiSdkUsage } from '../ai-sdk-usage.js';
 import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
 import {
@@ -758,6 +762,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkMoonshotProvider(config).chatModel(config.model);
   }
 
+  if (isFireworksOfficialAiSdkProvider(config)) {
+    return createAiSdkFireworksProvider(config)(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
@@ -932,6 +940,40 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: fetchWrapper ?? getLlmFetch(),
+  });
+}
+
+function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
+  const reasoningEffort = openAiReasoningEffort(config);
+  const fetchWrapper = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const body = tryParseRequestBody(init?.body);
+    if (!isJsonObject(body)) {
+      return getLlmFetch()(input, init);
+    }
+
+    const requestUrl =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : 'request';
+    if (!requestUrl.includes('/chat/completions')) {
+      return getLlmFetch()(input, init);
+    }
+
+    return getLlmFetch()(input, {
+      ...init,
+      body: JSON.stringify({
+        ...body,
+        ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
+      }),
+    });
+  };
+
+  return createFireworks({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    fetch: fetchWrapper,
   });
 }
 
@@ -1164,6 +1206,10 @@ function buildAiSdkProviderOptions(
     return {
       openai: openaiOptions as JsonObject,
     };
+  }
+
+  if (isFireworksOfficialAiSdkProvider(config)) {
+    return {};
   }
 
   const reasoningEffort = openAiReasoningEffort(config) as
@@ -1912,6 +1958,10 @@ function isMoonshotOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean
   return config.llmVendor === 'moonshot-ai';
 }
 
+function isFireworksOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'fireworks-ai';
+}
+
 function usesStructuredReasoningStreamEvents(config: OpenAiTransportConfig): boolean {
   return isDeepSeekOfficialAiSdkProvider(config) || isMoonshotOfficialAiSdkProvider(config);
 }
@@ -2076,11 +2126,7 @@ function singleLine(text: string): string {
 }
 
 function renderAiSdkOpenAiError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
+  return renderAiSdkProviderError(error);
 }
 
 function tryParseRequestBody(body: BodyInit | null | undefined): JsonValue | undefined {

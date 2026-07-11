@@ -585,7 +585,7 @@ fn parse_model_transport_kind(
         (Some(ModelProvider::Azure), transport_kind) if transport_kind != ModelTransportKind::OpenResponses => {
             Err(anyhow!("provider=azure 仅支持 open-responses transport-kind"))
         }
-        (Some(ModelProvider::Anthropic | ModelProvider::Openai | ModelProvider::Google | ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::ZAi | ModelProvider::ZhipuAi | ModelProvider::Minimax | ModelProvider::Xiaomi | ModelProvider::Alibaba | ModelProvider::Xai | ModelProvider::VercelAiGateway | ModelProvider::Openrouter | ModelProvider::Volcengine | ModelProvider::Custom), ModelTransportKind::Bedrock) => {
+        (Some(ModelProvider::Anthropic | ModelProvider::Openai | ModelProvider::Google | ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::ZAi | ModelProvider::ZhipuAi | ModelProvider::Minimax | ModelProvider::Xiaomi | ModelProvider::Alibaba | ModelProvider::Xai | ModelProvider::VercelAiGateway | ModelProvider::Openrouter | ModelProvider::FireworksAi | ModelProvider::Volcengine | ModelProvider::Custom), ModelTransportKind::Bedrock) => {
             Err(anyhow!("只有 provider=amazon-bedrock 时可以选择 bedrock transport-kind"))
         }
         (None, ModelTransportKind::Anthropic) => {
