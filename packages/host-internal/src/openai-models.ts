@@ -397,16 +397,6 @@ export function fireworksAiGatewayModelsListUrl(pageToken?: string): string {
   return url.toString();
 }
 
-function inferFireworksReasoningFromModelId(modelId: string): boolean {
-  const normalized = modelId.trim().toLowerCase();
-  return (
-    normalized.includes('thinking')
-    || normalized.includes('deepseek-r1')
-    || normalized.includes('qwq')
-    || normalized.includes('kimi-k2')
-  );
-}
-
 function readFireworksAiGatewayModelString(record: Record<string, unknown>, key: string): string | undefined {
   const value = record[key];
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -482,9 +472,6 @@ export function parseFireworksAiGatewayModelsPayload(body: unknown): ProviderLis
     const supportsImageInput = readFireworksAiGatewayModelBoolean(item, 'supportsImageInput');
     if (supportsImageInput) {
       modelEntry.supportsImageInput = true;
-    }
-    if (inferFireworksReasoningFromModelId(id)) {
-      modelEntry.supportsReasoning = true;
     }
     entries.push(modelEntry);
   }
