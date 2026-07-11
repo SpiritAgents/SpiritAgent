@@ -45,6 +45,14 @@ test('resolveOpenResponsesSdkProvider honors explicit openai provider override',
     }),
     'openai',
   );
+  assert.equal(
+    resolveOpenResponsesSdkProvider({
+      llmVendor: 'fireworks-ai',
+      model: 'accounts/fireworks/models/deepseek-v3p1',
+      responsesProvider: 'openai',
+    }),
+    'openai',
+  );
 });
 
 test('resolveOpenResponsesSdkProvider gateway non-openai route stays compatible', () => {

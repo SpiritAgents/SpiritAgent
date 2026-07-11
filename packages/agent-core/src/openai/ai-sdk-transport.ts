@@ -4,6 +4,9 @@ import {
   createAlibaba,
 } from '@ai-sdk/alibaba';
 import {
+  createFireworks,
+} from '@ai-sdk/fireworks';
+import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
@@ -758,6 +761,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkMoonshotProvider(config).chatModel(config.model);
   }
 
+  if (isFireworksOfficialAiSdkProvider(config)) {
+    return createAiSdkFireworksProvider(config)(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
@@ -932,6 +939,14 @@ function createAiSdkDeepSeekProvider(config: OpenAiTransportConfig) {
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: fetchWrapper ?? getLlmFetch(),
+  });
+}
+
+function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
+  return createFireworks({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    fetch: getLlmFetch(),
   });
 }
 
@@ -1910,6 +1925,10 @@ function isXaiOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
 
 function isMoonshotOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'moonshot-ai';
+}
+
+function isFireworksOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'fireworks-ai';
 }
 
 function usesStructuredReasoningStreamEvents(config: OpenAiTransportConfig): boolean {

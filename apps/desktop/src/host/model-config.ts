@@ -376,7 +376,7 @@ export function buildPrimaryTransportConfig(input: {
       'open-responses',
     );
     const responsesProvider: OpenResponsesSdkProvider | undefined =
-      input.profile?.provider === 'openai'
+      input.profile?.provider === 'openai' || input.profile?.provider === 'fireworks-ai'
         ? 'openai'
         : input.profile?.provider === 'xai'
           ? 'xai'
