@@ -15,6 +15,7 @@ export type ModelProviderId =
   | 'anthropic'
   | 'vercel-ai-gateway'
   | 'openrouter'
+  | 'fireworks-ai'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'
@@ -46,6 +47,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'vercel-ai-gateway',
   'deepseek',
   'openrouter',
+  'fireworks-ai',
   'moonshot-ai',
   'kimi-code',
   'z-ai',
@@ -76,7 +78,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","deepseek","openrouter","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -151,6 +153,7 @@ interface ParsedModelProviderPresets {
     | 'anthropic'
     | 'vercel-ai-gateway'
     | 'openrouter'
+    | 'fireworks-ai'
     | 'openai'
     | 'google'
     | 'google-vertex-ai'
@@ -330,6 +333,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     anthropic: requireStringField(presetRaw, 'anthropic'),
     'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
     openrouter: requireStringField(presetRaw, 'openrouter'),
+    'fireworks-ai': requireStringField(presetRaw, 'fireworks-ai'),
     openai: requireStringField(presetRaw, 'openai'),
     google: requireStringField(presetRaw, 'google'),
     'google-vertex-ai': requireStringField(presetRaw, 'google-vertex-ai'),
@@ -390,6 +394,7 @@ const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
 const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
 const openrouterBase = raw.presetApiBaseByProvider.openrouter;
+const fireworksAiBase = raw.presetApiBaseByProvider['fireworks-ai'];
 const openaiBase = raw.presetApiBaseByProvider.openai;
 const googleBase = raw.presetApiBaseByProvider.google;
 const googleVertexAiBase = raw.presetApiBaseByProvider['google-vertex-ai'];
@@ -411,6 +416,7 @@ export const PROVIDER_PRESET_API_BASE = {
   anthropic: anthropicBase,
   'vercel-ai-gateway': vercelAiGatewayBase,
   openrouter: openrouterBase,
+  'fireworks-ai': fireworksAiBase,
   openai: openaiBase,
   google: googleBase,
   'google-vertex-ai': googleVertexAiBase,
@@ -643,6 +649,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE['vercel-ai-gateway'];
     case 'openrouter':
       return PROVIDER_PRESET_API_BASE.openrouter;
+    case 'fireworks-ai':
+      return PROVIDER_PRESET_API_BASE['fireworks-ai'];
     case 'openai':
       return PROVIDER_PRESET_API_BASE.openai;
     case 'google':

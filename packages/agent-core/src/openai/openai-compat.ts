@@ -22,6 +22,7 @@ export type OpenAiLlmVendor =
   | 'alibaba'
   | 'vercel-ai-gateway'
   | 'openrouter'
+  | 'fireworks-ai'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'

@@ -13,6 +13,7 @@ test('modelsDevProviderLogoId maps Spirit ids to models.dev provider folders', (
   assert.equal(modelsDevProviderLogoId('zhipu-ai'), 'zhipuai');
   assert.equal(modelsDevProviderLogoId('openai'), 'openai');
   assert.equal(modelsDevProviderLogoId('google-vertex-ai'), 'google-vertex');
+  assert.equal(modelsDevProviderLogoId('fireworks-ai'), 'fireworks-ai');
 });
 
 test('modelsDevProviderLogoUrl uses aliased provider id', () => {
@@ -27,5 +28,9 @@ test('modelsDevProviderLogoUrl uses aliased provider id', () => {
   assert.equal(
     modelsDevProviderLogoUrl('zhipu-ai'),
     'https://models.dev/logos/zhipuai.svg',
+  );
+  assert.equal(
+    modelsDevProviderLogoUrl('fireworks-ai'),
+    'https://models.dev/logos/fireworks-ai.svg',
   );
 });

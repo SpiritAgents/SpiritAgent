@@ -1,5 +1,5 @@
 import type { AnthropicThinkingConfig } from './anthropic/anthropic-compat.js';
-import type { ModelReasoningEffortContext } from './reasoning-effort.js';
+import type { ModelReasoningEffortContext, ModelReasoningProvider } from './reasoning-effort.js';
 import {
   isDeepSeekV4ReasoningEffortModel,
   isGoogleReasoningEffortModel,
@@ -35,6 +35,12 @@ const GATEWAY_REASONING_EFFORT_SLUGS = new Set([
   'google',
   'anthropic',
   'xai',
+]);
+
+/** 聚合商：目录能力字段不全，推理强度 UI 与 OpenAI 兼容档位全开。 */
+const AGGREGATED_REASONING_EFFORT_PRIMARY_PROVIDERS = new Set<ModelReasoningProvider>([
+  'fireworks-ai',
+  'openrouter',
 ]);
 
 export type ModelEffortControlLabelKind = 'effort' | 'reasoningEffort';
@@ -213,6 +219,9 @@ export function modelUsesReasoningEffortPrimaryControl(
     return true;
   }
   if (isXiaomiResponsesReasoningEffortContext(context)) {
+    return true;
+  }
+  if (provider !== undefined && AGGREGATED_REASONING_EFFORT_PRIMARY_PROVIDERS.has(provider)) {
     return true;
   }
 

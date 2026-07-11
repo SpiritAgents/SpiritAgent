@@ -241,6 +241,17 @@ test('OpenAI uses reasoning effort primary control only', () => {
   assert.equal(modelSupportsThinkingSwitch(context), false);
 });
 
+test('Fireworks aggregated provider exposes reasoning effort for all models', () => {
+  const context = {
+    provider: 'fireworks-ai' as const,
+    model: 'accounts/fireworks/models/deepseek-v4-flash',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
+  assert.equal(modelSupportsThinkingSwitch(context), false);
+  assert.equal(modelShowsReasoningEffortControl(context, false), true);
+});
+
 test('Gateway OpenAI slug uses reasoning effort primary control', () => {
   const context = {
     provider: 'vercel-ai-gateway' as const,
