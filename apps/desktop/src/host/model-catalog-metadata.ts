@@ -71,6 +71,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'minimax'
     || input.provider === 'vercel-ai-gateway'
     || input.provider === 'openrouter'
+    || input.provider === 'fireworks-ai'
     || input.provider === 'volcengine'
     || input.provider === 'google'
     || input.provider === 'google-vertex-ai'
