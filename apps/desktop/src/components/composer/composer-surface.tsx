@@ -15,7 +15,6 @@ import {
   ComposerAbortShortcutKbd,
   ComposerSendEnterKbd,
 } from "@/components/composer/composer-shortcut-kbds";
-import { ComposerRealtimeVoiceButton } from "@/components/composer/composer-realtime-voice-button";
 import {
   ComposerLocalFileStrip,
   type ComposerLocalFileAttachmentView,
@@ -38,7 +37,6 @@ import {
 } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
-import { resolveComposerRealtimeVoiceLayout } from "@/lib/composer-realtime-voice-layout";
 import type { DesktopModelReasoningEffort, DesktopSnapshot } from "@/types";
 
 function isComposerChromeInteractiveTarget(target: EventTarget | null): boolean {
@@ -70,7 +68,6 @@ export type ComposerSurfaceProps = {
   readOnly?: boolean;
   onSubmit(): void;
   onAbort?(): void;
-  onRealtimeVoiceClick?(): void;
   onModelSelect(name: string): void;
   onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
   onModelThinkingEnabledSelect?(name: string, enabled: boolean): void | Promise<boolean>;
@@ -113,7 +110,6 @@ export function ComposerSurface({
   readOnly = false,
   onSubmit,
   onAbort,
-  onRealtimeVoiceClick,
   onModelSelect,
   onModelReasoningEffortSelect,
   onModelThinkingEnabledSelect,
@@ -276,12 +272,6 @@ export function ComposerSurface({
             const showAbortButton = canAbort && Boolean(onAbort) && !resolvedHasComposerPayload;
             const showEnqueueWhileBusy = canAbort && resolvedHasComposerPayload;
             const sendDisabled = showAbortButton ? false : !canSend || (busy && !canAbort);
-            const realtimeVoiceLayout = resolveComposerRealtimeVoiceLayout({
-              readOnly,
-              hasComposerPayload: resolvedHasComposerPayload,
-              showAbortButton,
-              busy,
-            });
             const actionAriaLabel = showAbortButton
               ? t("app.abort")
               : showEnqueueWhileBusy
@@ -309,9 +299,12 @@ export function ComposerSurface({
                 )}
               </Button>
             );
-            const wrappedActionButton = sendDisabled ? (
-              actionButton
-            ) : (
+
+            if (sendDisabled) {
+              return actionButton;
+            }
+
+            return (
               <Tooltip delayDuration={300} disableHoverableContent>
                 <TooltipTrigger asChild>{actionButton}</TooltipTrigger>
                 <TooltipContent side="top" sideOffset={4}>
@@ -328,25 +321,6 @@ export function ComposerSurface({
                   )}
                 </TooltipContent>
               </Tooltip>
-            );
-
-            return (
-              <div className="flex shrink-0 items-center gap-1">
-                {realtimeVoiceLayout.mode === "ghost" ? (
-                  <ComposerRealtimeVoiceButton
-                    variant="ghost"
-                    onClick={onRealtimeVoiceClick}
-                  />
-                ) : null}
-                {realtimeVoiceLayout.mode === "primary" ? (
-                  <ComposerRealtimeVoiceButton
-                    variant="primary"
-                    onClick={onRealtimeVoiceClick}
-                  />
-                ) : (
-                  wrappedActionButton
-                )}
-              </div>
             );
           })()}
         </div>

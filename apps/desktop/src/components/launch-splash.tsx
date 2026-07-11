@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 
-import { SpiritGlassLogoShimmer } from "@/components/spirit-glass-logo-shimmer";
+import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
 import { syncLaunchSplashChromeToDocument } from "@/lib/desktop-shell";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +84,14 @@ export function LaunchSplash({ active, useMicaBackdrop = false }: LaunchSplashPr
         )}
         style={{ width: LAUNCH_LOGO_WIDTH_PX }}
       >
-        <SpiritGlassLogoShimmer width={LAUNCH_LOGO_WIDTH_PX} shimmer className="relative z-0" />
+        <SpiritGlassLogo width={LAUNCH_LOGO_WIDTH_PX} className="relative z-0" />
+        <div
+          className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
+          style={spiritGlassLogoMaskStyle()}
+          aria-hidden
+        >
+          <div className="spirit-launch-shimmer-sweep" />
+        </div>
       </div>
     </div>
   );
