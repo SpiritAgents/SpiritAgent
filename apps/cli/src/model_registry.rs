@@ -35,6 +35,8 @@ pub enum ModelProvider {
     #[serde(rename = "vercel-ai-gateway", alias = "vercelaigateway")]
     VercelAiGateway,
     Openrouter,
+    #[serde(rename = "fireworks-ai")]
+    FireworksAi,
     Openai,
     Google,
     #[serde(rename = "google-vertex-ai")]
@@ -62,6 +64,7 @@ impl ModelProvider {
             Self::Anthropic => "anthropic",
             Self::VercelAiGateway => "vercel-ai-gateway",
             Self::Openrouter => "openrouter",
+            Self::FireworksAi => "fireworks-ai",
             Self::Openai => "openai",
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
@@ -91,6 +94,7 @@ impl FromStr for ModelProvider {
             "anthropic" => Ok(Self::Anthropic),
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
             "openrouter" => Ok(Self::Openrouter),
+            "fireworks-ai" => Ok(Self::FireworksAi),
             "openai" => Ok(Self::Openai),
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
@@ -196,6 +200,7 @@ impl ModelProfile {
             | Some(ModelProvider::Anthropic)
             | Some(ModelProvider::VercelAiGateway)
             | Some(ModelProvider::Openrouter)
+            | Some(ModelProvider::FireworksAi)
             | Some(ModelProvider::Openai)
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)
