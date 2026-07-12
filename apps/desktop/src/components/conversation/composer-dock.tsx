@@ -422,7 +422,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 loopEnabled={snapshot?.conversation.loopEnabled === true}
                 onModelSelect={(ref) => {
                   if (useIsolatedPaneWorkspace && paneSessionPath) {
-                    void runtime.switchPaneModel(paneSessionPath, ref.name);
+                    void runtime.switchPaneModel(paneSessionPath, ref);
                     return;
                   }
                   runtime.setActiveModel(ref);

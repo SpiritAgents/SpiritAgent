@@ -272,7 +272,7 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   }) {
     return ipcRenderer.invoke('desktop:invoke', 'switchPaneWorkspace', { request });
   },
-  switchPaneModel(request: { sessionPath: string; modelName: string }) {
+  switchPaneModel(request: { sessionPath: string; modelRef: { groupId: string; name: string } }) {
     return ipcRenderer.invoke('desktop:invoke', 'switchPaneModel', { request });
   },
   setPanePendingGitBranch(request: { sessionPath: string; branch: string }) {

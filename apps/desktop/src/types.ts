@@ -709,7 +709,7 @@ export interface SwitchPaneWorkspaceRequest {
 
 export interface SwitchPaneModelRequest {
   sessionPath: string;
-  modelName: string;
+  modelRef: ModelRef;
 }
 
 export interface SetPanePendingGitBranchRequest {

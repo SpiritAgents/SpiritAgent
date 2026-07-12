@@ -4,8 +4,7 @@ import type { DesktopSnapshot, SwitchPaneModelRequest } from '../types.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionSplitHostContext } from './session-split.js';
 import { freezePaneActiveModelIfNeeded } from './active-model-sync.js';
-import { findModelRefByName } from './model-config-access.js';
-import { saveConfig } from './storage.js';
+import { modelExistsInGroup } from './model-config-access.js';
 
 export interface PaneModelHostContext extends SessionSplitHostContext {
   adoptActiveModelForForeground(modelRef: import('../types.js').ModelRef): Promise<void>;
@@ -27,9 +26,9 @@ export async function switchPaneModelCommand(
       throw new Error('Split pane session path is required.');
     }
 
-    const modelName = request.modelName.trim();
-    if (!modelName) {
-      throw new Error('Model name is required.');
+    const modelRef = request.modelRef;
+    if (!modelRef.groupId.trim() || !modelRef.name.trim()) {
+      throw new Error('Model ref is required.');
     }
 
     const registry = ctx.sessionRegistry();
@@ -39,9 +38,8 @@ export async function switchPaneModelCommand(
     }
 
     const state = ctx.requireState();
-    const modelRef = findModelRefByName(state.config, modelName);
-    if (!modelRef) {
-      throw new Error(`Model not found: ${modelName}`);
+    if (!modelExistsInGroup(state.config, modelRef.groupId, modelRef.name)) {
+      throw new Error(`Model not found: ${modelRef.groupId}::${modelRef.name}`);
     }
 
     const isForeground = registry.getActive() === bundle;
