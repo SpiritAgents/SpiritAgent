@@ -940,22 +940,33 @@ impl AppConfig {
         self.provider_groups.push(group);
     }
 
-    pub fn remove_model_by_name(&mut self, name: &str) -> bool {
-        let normalized = name.trim();
-        if normalized.is_empty() {
+    pub fn remove_model(&mut self, model_ref: &ModelRef) -> bool {
+        let Some(group) = self
+            .provider_groups
+            .iter_mut()
+            .find(|group| group.id == model_ref.group_id)
+        else {
+            return false;
+        };
+        let before = group.models.len();
+        group
+            .models
+            .retain(|model| model.name != model_ref.name);
+        if group.models.len() == before {
             return false;
         }
-        let mut removed = false;
-        for group in &mut self.provider_groups {
-            let before = group.models.len();
-            group.models.retain(|model| model.name != normalized);
-            if group.models.len() != before {
-                removed = true;
-            }
+        if group.models.is_empty() {
+            let group_id = model_ref.group_id.clone();
+            self.provider_groups.retain(|group| group.id != group_id);
         }
-        self.provider_groups
-            .retain(|group| !group.models.is_empty());
-        removed
+        true
+    }
+
+    pub fn remove_model_by_name(&mut self, name: &str) -> bool {
+        let Ok(model_ref) = self.parse_model_ref_selector(name) else {
+            return false;
+        };
+        self.remove_model(&model_ref)
     }
 }
 
