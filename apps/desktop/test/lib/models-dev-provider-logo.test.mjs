@@ -8,6 +8,7 @@ import {
 
 test('modelsDevProviderLogoId maps Spirit ids to models.dev provider folders', () => {
   assert.equal(modelsDevProviderLogoId('vercel-ai-gateway'), 'vercel');
+  assert.equal(modelsDevProviderLogoId('cloudflare-ai-gateway'), 'cloudflare-ai-gateway');
   assert.equal(modelsDevProviderLogoId('moonshot-ai'), 'moonshotai');
   assert.equal(modelsDevProviderLogoId('z-ai'), 'zai');
   assert.equal(modelsDevProviderLogoId('zhipu-ai'), 'zhipuai');

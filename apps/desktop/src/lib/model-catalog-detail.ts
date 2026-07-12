@@ -15,6 +15,7 @@ import type {
 
 const METADATA_PROVIDERS = new Set<DesktopModelProvider>([
   'vercel-ai-gateway',
+  'cloudflare-ai-gateway',
   'openrouter',
   'fireworks-ai',
   'moonshot-ai',

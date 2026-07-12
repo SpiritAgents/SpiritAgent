@@ -15,6 +15,7 @@ import {
   googleNativeModelsListUrl,
 } from './google-gemini-endpoints.js';
 import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
+import { extractCloudflareAccountIdFromApiBase } from './cloudflare-ai-gateway-resource.js';
 import { extractVertexProjectAndLocationFromApiBase } from './google-vertex-endpoints.js';
 import { normalizeOpenAiApiBase } from './openai-api-base.js';
 
@@ -95,6 +96,10 @@ export function parseOpenAiCompatibleModelEntriesPayload(
   }
 
   if (provider === 'openrouter') {
+    return parseOpenRouterModelEntriesPayload(body);
+  }
+
+  if (provider === 'cloudflare-ai-gateway') {
     return parseOpenRouterModelEntriesPayload(body);
   }
 
@@ -1057,6 +1062,7 @@ export interface ListProviderModelIdsOptions {
   vertexLocation?: string;
   vertexClientEmail?: string;
   vertexPrivateKey?: string;
+  cloudflareAccountId?: string;
   signal?: AbortSignal;
 }
 
@@ -1274,6 +1280,10 @@ export async function listProviderModels(
     return listOpenRouterModels(options);
   }
 
+  if (options.provider === 'cloudflare-ai-gateway') {
+    return listCloudflareAiGatewayModels(options);
+  }
+
   if (options.provider === 'volcengine') {
     return listVolcengineModels(options);
   }
@@ -1397,6 +1407,33 @@ export async function listOpenRouterModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   return listOpenAiCompatibleModelsForProvider(options, 'openrouter');
+}
+
+export async function listCloudflareAiGatewayModels(
+  options: ListProviderModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const accountId = options.cloudflareAccountId?.trim()
+    ?? extractCloudflareAccountIdFromApiBase(options.baseUrl);
+  if (!accountId) {
+    throw new Error('Cloudflare Account ID 不能为空。');
+  }
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Token 不能为空。');
+  }
+
+  const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/models/search?format=openrouter`;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key}`,
+  };
+  const init: RequestInit = { method: 'GET', headers };
+  if (options.signal !== undefined) {
+    init.signal = options.signal;
+  }
+
+  const json = await fetchModelsListJson(url, init);
+  const entries = parseOpenRouterModelEntriesPayload(json);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function listVolcengineModels(
