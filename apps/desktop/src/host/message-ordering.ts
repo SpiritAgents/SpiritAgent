@@ -16,6 +16,7 @@ import {
 } from '@spiritagent/agent-core';
 
 import {
+  hasAssistantNonTerminalToolInCurrentTurn,
   hasAssistantToolLaterInTurn,
   isStandaloneThinkingMessage,
 } from '../lib/conversation-thinking-ui.js';
@@ -1098,7 +1099,8 @@ export function shouldHideEmptyPendingAssistantSnapshot(
     if (
       messages !== undefined &&
       messageIndex !== undefined &&
-      hasAssistantToolLaterInTurn(messages, messageIndex)
+      (hasAssistantToolLaterInTurn(messages, messageIndex)
+        || hasAssistantNonTerminalToolInCurrentTurn(messages, messageIndex))
     ) {
       return true;
     }

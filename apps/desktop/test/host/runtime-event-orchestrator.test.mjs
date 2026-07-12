@@ -13,6 +13,7 @@ import {
   runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate,
   runtimeEventsIncludeAppliedHostToolStreamingUpdate,
 } from '../../dist-electron/src/host/runtime-event-orchestrator.js';
+import { shouldShowAssistantThinkingCollapsible } from '../../dist-electron/src/lib/conversation-thinking-ui.js';
 
 function createHarness() {
   let messages = [];
@@ -618,6 +619,7 @@ test('inter-tool thinking finalizes before the next provider builtin tool card',
       'tool:web_search',
       'thinking:Need to run a quick computation next.',
       'tool:code_interpreter',
+      'assistant-text',
     ],
   );
 });
@@ -1088,4 +1090,99 @@ test('context-usage-updated updates usage when context length is already known',
     contextLength: 128000,
     percent: 50,
   });
+});
+
+test('sequential web_search clears Thinking placeholder during next preview and restores it after terminal', () => {
+  const harness = createHarness();
+  harness.pushUser('search twice');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro', status: 'in_progress' }),
+    },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_1',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro', status: 'completed' }),
+    },
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_2',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro architecture', status: 'in_progress' }),
+    },
+  ]);
+
+  const timelineMessages = harness.timeline.toMessages();
+  const ws2Index = timelineMessages.findIndex((message) => message.tool?.toolCallId === 'ws_2');
+  const pendingAfterWs2 = timelineMessages.find(
+    (message, index) =>
+      index > ws2Index &&
+      ws2Index >= 0 &&
+      message.role === 'assistant' &&
+      message.pending &&
+      !message.tool,
+  );
+
+  const showThinking = pendingAfterWs2
+    ? shouldShowAssistantThinkingCollapsible(
+        pendingAfterWs2,
+        { kind: 'thinking', statusText: '| Thinking...' },
+        timelineMessages,
+        timelineMessages.indexOf(pendingAfterWs2),
+      )
+    : false;
+
+  assert.ok(ws2Index >= 0, 'expected second web_search tool row');
+  assert.equal(
+    pendingAfterWs2,
+    undefined,
+    'premature after-tools placeholder should be cleared once the next search preview arrives',
+  );
+  assert.equal(
+    timelineMessages[ws2Index]?.tool?.phase,
+    'preview',
+    'second search should still be in preview',
+  );
+  assert.equal(showThinking, false, 'Thinking placeholder must not show while a search tool is shimmering');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    {
+      kind: 'streaming-tool-preview',
+      toolCallId: 'ws_2',
+      toolName: 'web_search',
+      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro architecture', status: 'completed' }),
+    },
+  ]);
+
+  const afterTerminalMessages = harness.timeline.toMessages();
+  const lastToolIndex = afterTerminalMessages.findLastIndex((message) => message.tool);
+  const pendingAfterAllTools = afterTerminalMessages.find(
+    (message, index) =>
+      index > lastToolIndex &&
+      message.role === 'assistant' &&
+      message.pending &&
+      !message.tool &&
+      !message.aux?.thinking?.trim(),
+  );
+  const showThinkingAfterTerminal = pendingAfterAllTools
+    ? shouldShowAssistantThinkingCollapsible(
+        pendingAfterAllTools,
+        { kind: 'thinking', statusText: '| Thinking...' },
+        afterTerminalMessages,
+        afterTerminalMessages.indexOf(pendingAfterAllTools),
+      )
+    : false;
+
+  assert.ok(pendingAfterAllTools, 'expected after-tools placeholder once all searches complete');
+  assert.equal(
+    showThinkingAfterTerminal,
+    true,
+    'Thinking placeholder should show after the last search completes',
+  );
 });
