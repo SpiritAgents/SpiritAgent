@@ -971,6 +971,9 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
   if (provider === 'azure' && !azureResourceName) {
     return null;
   }
+  if (provider === 'cloudflare-ai-gateway' && (!cloudflareAccountId || !cloudflareGatewayId)) {
+    return null;
+  }
 
   const models = Array.isArray(record.models)
     ? record.models
