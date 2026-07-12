@@ -24,7 +24,10 @@ import {
   defaultCustomModelCapabilities,
   getSupportedModelDefaultRoles,
   modelDefaultActionLabel,
+  modelRefKey,
   normalizeModelCapabilitySelection,
+  resolveEffectiveModelRef,
+  settingsModelRef,
 } from "@/components/settings/models/model-defaults";
 import { ModelSettingsRowButton, ModelSettingsRowWithHover } from "@/components/settings/models/model-settings-row";
 import type { SettingsFormState, SettingsViewProps } from "@/components/settings/types";
@@ -87,8 +90,14 @@ import type {
   PreviewModelCatalogEntry,
   PreviewModelsRequest,
   PreviewModelsResponse,
+  ProviderGroupV2,
 } from "@/types";
 import { bedrockApiBaseFromRegion } from "@spiritagent/host-internal/bedrock-region";
+import {
+  defaultPresetProviderGroupId,
+  modelRefsEqual,
+  slugifyProviderGroupLabel,
+} from "@spiritagent/host-internal";
 import {
   bedrockMantleApiBaseFromRegion,
   isBedrockMantleOpenAiModel,
@@ -155,6 +164,7 @@ export function ModelsSettingsPanel({
   );
   const [bedrockConnectMode, setBedrockConnectMode] = useState<"bearer" | "iam">("bearer");
   const [vertexConnectMode, setVertexConnectMode] = useState<"adc" | "service-account" | "express">("adc");
+  const [connectCustomGroupLabel, setConnectCustomGroupLabel] = useState("");
   const [modelDefaultsDialogTarget, setModelDefaultsDialogTarget] = useState<string | null>(null);
   const [modelDefaultsDialogOpen, setModelDefaultsDialogOpen] = useState(false);
   const [modelDefaultAssignments, setModelDefaultAssignments] = useState<ModelDefaultAssignments>({
@@ -164,51 +174,70 @@ export function ModelsSettingsPanel({
     lightweightChatModel: false,
   });
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [deleteGroupTarget, setDeleteGroupTarget] = useState<DesktopModelProvider | null>(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<string | null>(null);
 
   const models = snapshot?.config.models ?? [];
-  const activeModel = settings.activeModel.trim() || (snapshot?.config.activeModel ?? "");
+  const configProviderGroups = snapshot?.config.providerGroups ?? [];
+  const activeModel = resolveEffectiveModelRef(settings.activeModel, snapshot?.config.activeModel);
   const imageGenerationModel =
-    settings.imageGenerationModel.trim() || (snapshot?.config.imageGenerationModel ?? "");
+    settings.imageGenerationModel ?? snapshot?.config.imageGenerationModel;
   const videoGenerationModel =
-    settings.videoGenerationModel.trim() || (snapshot?.config.videoGenerationModel ?? "");
+    settings.videoGenerationModel ?? snapshot?.config.videoGenerationModel;
   const lightweightChatModel =
-    settings.lightweightChatModel.trim() || (snapshot?.config.lightweightChatModel ?? "");
+    settings.lightweightChatModel ?? snapshot?.config.lightweightChatModel;
   const modelDefaultsDialogModel =
     modelDefaultsDialogTarget === null
       ? null
-      : models.find((model) => model.name === modelDefaultsDialogTarget) ?? null;
+      : models.find((model) => modelRefKey(settingsModelRef(model)) === modelDefaultsDialogTarget) ?? null;
+  const modelDefaultsDialogRef =
+    modelDefaultsDialogModel === null ? null : settingsModelRef(modelDefaultsDialogModel);
   const canAssignActiveRole =
     modelDefaultsDialogModel !== null &&
-    canAssignAsActiveModel(modelDefaultsDialogModel, modelDefaultsDialogModel.name === activeModel);
+    canAssignAsActiveModel(
+      modelDefaultsDialogModel,
+      modelDefaultsDialogRef !== null && modelRefsEqual(modelDefaultsDialogRef, activeModel),
+    );
   const canAssignImageGenerationRole =
     modelDefaultsDialogModel !== null &&
     canAssignAsImageGenerationModel(
       modelDefaultsDialogModel,
-      modelDefaultsDialogModel.name === imageGenerationModel,
+      imageGenerationModel !== undefined
+        && modelDefaultsDialogRef !== null
+        && modelRefsEqual(modelDefaultsDialogRef, imageGenerationModel),
     );
   const canAssignVideoGenerationRole =
     modelDefaultsDialogModel !== null &&
     canAssignAsVideoGenerationModel(
       modelDefaultsDialogModel,
-      modelDefaultsDialogModel.name === videoGenerationModel,
+      videoGenerationModel !== undefined
+        && modelDefaultsDialogRef !== null
+        && modelRefsEqual(modelDefaultsDialogRef, videoGenerationModel),
     );
   const canAssignLightweightChatRole =
     modelDefaultsDialogModel !== null &&
     canAssignAsLightweightChatModel(
       modelDefaultsDialogModel,
-      modelDefaultsDialogModel.name === lightweightChatModel,
+      lightweightChatModel !== undefined
+        && modelDefaultsDialogRef !== null
+        && modelRefsEqual(modelDefaultsDialogRef, lightweightChatModel),
     );
-  const isModelDefaultsDialogModelActive = modelDefaultsDialogModel?.name === activeModel;
+  const isModelDefaultsDialogModelActive =
+    modelDefaultsDialogRef !== null && modelRefsEqual(modelDefaultsDialogRef, activeModel);
   const isModelDefaultsDialogModelLightweight =
-    modelDefaultsDialogModel?.name === lightweightChatModel;
+    lightweightChatModel !== undefined
+    && modelDefaultsDialogRef !== null
+    && modelRefsEqual(modelDefaultsDialogRef, lightweightChatModel);
   const hasModelDefaultAssignmentChanges =
     modelDefaultsDialogModel !== null &&
     (modelDefaultAssignments.activeModel !== isModelDefaultsDialogModelActive ||
       modelDefaultAssignments.imageGenerationModel !==
-        (modelDefaultsDialogModel.name === imageGenerationModel) ||
+        (modelDefaultsDialogRef !== null
+          && imageGenerationModel !== undefined
+          && modelRefsEqual(modelDefaultsDialogRef, imageGenerationModel)) ||
       modelDefaultAssignments.videoGenerationModel !==
-        (modelDefaultsDialogModel.name === videoGenerationModel) ||
+        (modelDefaultsDialogRef !== null
+          && videoGenerationModel !== undefined
+          && modelRefsEqual(modelDefaultsDialogRef, videoGenerationModel)) ||
       modelDefaultAssignments.lightweightChatModel !== isModelDefaultsDialogModelLightweight);
 
   const catalogDetailByModelName = useMemo(
@@ -220,18 +249,29 @@ export function ModelsSettingsPanel({
     [models, snapshot?.config.modelCatalogHints],
   );
 
-  const providerGroups = new Map<DesktopModelProvider, typeof models>();
-  const standaloneModels: typeof models = [];
-  for (const model of models) {
-    if (model.provider && model.provider !== "custom") {
-      const group = providerGroups.get(model.provider) ?? [];
-      group.push(model);
-      providerGroups.set(model.provider, group);
-    } else {
-      standaloneModels.push(model);
+  function groupDisplayLabel(group: ProviderGroupV2): string {
+    const custom = group.label?.trim();
+    if (custom) {
+      return custom;
     }
+    return providerLabel(group.provider);
   }
 
+  function modelsForGroup(group: ProviderGroupV2): SettingsModelProfile[] {
+    return group.models
+      .map((entry) =>
+        models.find((model) => model.groupId === group.id && model.name === entry.name),
+      )
+      .filter((model): model is SettingsModelProfile => model !== undefined);
+  }
+
+  function resolveConnectGroupId(provider: DesktopModelProvider): string {
+    if (provider === "custom") {
+      const label = connectCustomGroupLabel.trim();
+      return label ? slugifyProviderGroupLabel(label) : defaultPresetProviderGroupId("custom");
+    }
+    return defaultPresetProviderGroupId(provider);
+  }
   function providerLabel(provider: DesktopModelProvider): string {
     const row = PROVIDER_PICKER_ROWS.find((item) => item.id === provider);
     return row ? String(t(row.labelKey, { defaultValue: row.fallbackLabel })) : provider;
@@ -255,6 +295,7 @@ export function ModelsSettingsPanel({
     setConnectProviderSite("");
     setConnectAlibabaBillingMode("standard");
     setConnectAlibabaWorkspaceId("");
+    setConnectCustomGroupLabel("");
     setCustomConnectMode("single");
     setBedrockConnectMode("bearer");
     setVertexConnectMode("adc");
@@ -289,6 +330,7 @@ export function ModelsSettingsPanel({
     setConnectCapabilities(defaultCustomModelCapabilities);
     resetConnectTransportKindForProvider(id);
     setConnectAlibabaBillingMode("standard");
+    setConnectCustomGroupLabel("");
     setCustomConnectMode("single");
     setBedrockConnectMode("bearer");
     setVertexConnectMode("adc");
@@ -359,12 +401,16 @@ export function ModelsSettingsPanel({
       : providerLabel(selectedProvider);
 
   const openModelDefaultsDialog = (model: SettingsModelProfile) => {
-    setModelDefaultsDialogTarget(model.name);
+    const modelRef = settingsModelRef(model);
+    setModelDefaultsDialogTarget(modelRefKey(modelRef));
     setModelDefaultAssignments({
-      activeModel: model.name === activeModel,
-      imageGenerationModel: model.name === imageGenerationModel,
-      videoGenerationModel: model.name === videoGenerationModel,
-      lightweightChatModel: model.name === lightweightChatModel,
+      activeModel: modelRefsEqual(modelRef, activeModel),
+      imageGenerationModel:
+        imageGenerationModel !== undefined && modelRefsEqual(modelRef, imageGenerationModel),
+      videoGenerationModel:
+        videoGenerationModel !== undefined && modelRefsEqual(modelRef, videoGenerationModel),
+      lightweightChatModel:
+        lightweightChatModel !== undefined && modelRefsEqual(modelRef, lightweightChatModel),
     });
     setModelDefaultsDialogOpen(true);
   };
@@ -389,49 +435,52 @@ export function ModelsSettingsPanel({
 
     const patch: Partial<SettingsFormState> = {};
 
-    if (modelDefaultAssignments.activeModel && modelDefaultsDialogModel.name !== activeModel) {
-      patch.activeModel = modelDefaultsDialogModel.name;
+    if (modelDefaultAssignments.activeModel && !modelRefsEqual(modelDefaultsDialogRef!, activeModel)) {
+      patch.activeModel = modelDefaultsDialogRef!;
     }
 
     if (canAssignImageGenerationRole) {
       if (
-        modelDefaultAssignments.imageGenerationModel &&
-        modelDefaultsDialogModel.name !== imageGenerationModel
+        modelDefaultAssignments.imageGenerationModel
+        && (imageGenerationModel === undefined || !modelRefsEqual(modelDefaultsDialogRef!, imageGenerationModel))
       ) {
-        patch.imageGenerationModel = modelDefaultsDialogModel.name;
+        patch.imageGenerationModel = modelDefaultsDialogRef!;
       } else if (
-        !modelDefaultAssignments.imageGenerationModel &&
-        modelDefaultsDialogModel.name === imageGenerationModel
+        !modelDefaultAssignments.imageGenerationModel
+        && imageGenerationModel !== undefined
+        && modelRefsEqual(modelDefaultsDialogRef!, imageGenerationModel)
       ) {
-        patch.imageGenerationModel = "";
+        patch.imageGenerationModel = undefined;
       }
     }
 
     if (canAssignVideoGenerationRole) {
       if (
-        modelDefaultAssignments.videoGenerationModel &&
-        modelDefaultsDialogModel.name !== videoGenerationModel
+        modelDefaultAssignments.videoGenerationModel
+        && (videoGenerationModel === undefined || !modelRefsEqual(modelDefaultsDialogRef!, videoGenerationModel))
       ) {
-        patch.videoGenerationModel = modelDefaultsDialogModel.name;
+        patch.videoGenerationModel = modelDefaultsDialogRef!;
       } else if (
-        !modelDefaultAssignments.videoGenerationModel &&
-        modelDefaultsDialogModel.name === videoGenerationModel
+        !modelDefaultAssignments.videoGenerationModel
+        && videoGenerationModel !== undefined
+        && modelRefsEqual(modelDefaultsDialogRef!, videoGenerationModel)
       ) {
-        patch.videoGenerationModel = "";
+        patch.videoGenerationModel = undefined;
       }
     }
 
     if (canAssignLightweightChatRole) {
       if (
-        modelDefaultAssignments.lightweightChatModel &&
-        modelDefaultsDialogModel.name !== lightweightChatModel
+        modelDefaultAssignments.lightweightChatModel
+        && (lightweightChatModel === undefined || !modelRefsEqual(modelDefaultsDialogRef!, lightweightChatModel))
       ) {
-        patch.lightweightChatModel = modelDefaultsDialogModel.name;
+        patch.lightweightChatModel = modelDefaultsDialogRef!;
       } else if (
-        !modelDefaultAssignments.lightweightChatModel &&
-        modelDefaultsDialogModel.name === lightweightChatModel
+        !modelDefaultAssignments.lightweightChatModel
+        && lightweightChatModel !== undefined
+        && modelRefsEqual(modelDefaultsDialogRef!, lightweightChatModel)
       ) {
-        patch.lightweightChatModel = "";
+        patch.lightweightChatModel = undefined;
       }
     }
 
@@ -450,20 +499,22 @@ export function ModelsSettingsPanel({
   ) => {
     const patch: Partial<SettingsFormState> = {};
 
+    const modelRef = settingsModelRef(model);
+
     if (role === "activeModel") {
-      if (model.name !== activeModel) {
-        patch.activeModel = model.name;
+      if (!modelRefsEqual(modelRef, activeModel)) {
+        patch.activeModel = modelRef;
       }
     } else if (role === "imageGenerationModel") {
-      if (model.name !== imageGenerationModel) {
-        patch.imageGenerationModel = model.name;
+      if (imageGenerationModel === undefined || !modelRefsEqual(modelRef, imageGenerationModel)) {
+        patch.imageGenerationModel = modelRef;
       }
     } else if (role === "videoGenerationModel") {
-      if (model.name !== videoGenerationModel) {
-        patch.videoGenerationModel = model.name;
+      if (videoGenerationModel === undefined || !modelRefsEqual(modelRef, videoGenerationModel)) {
+        patch.videoGenerationModel = modelRef;
       }
-    } else if (model.name !== lightweightChatModel) {
-      patch.lightweightChatModel = model.name;
+    } else if (lightweightChatModel === undefined || !modelRefsEqual(modelRef, lightweightChatModel)) {
+      patch.lightweightChatModel = modelRef;
     }
 
     if (Object.keys(patch).length === 0) {
@@ -629,6 +680,7 @@ export function ModelsSettingsPanel({
       throw new Error(t('settings.noModelsReturned'));
     }
     const bulk: AddProviderModelsRequest = {
+      groupId: resolveConnectGroupId(selectedProvider),
       apiBase: effectiveApiBase,
       apiKey: connectApiKey,
       modelIds: res.modelIds,
@@ -683,12 +735,16 @@ export function ModelsSettingsPanel({
       contextLength = parsed;
     }
     await onAddModel({
+      groupId: resolveConnectGroupId("custom"),
       name,
       apiBase,
       apiKey: connectApiKey,
       provider: "custom",
       transportKind: connectTransportKind,
       capabilities: normalizeModelCapabilitySelection(connectCapabilities),
+      ...(connectCustomGroupLabel.trim()
+        ? { customGroupLabel: connectCustomGroupLabel.trim() }
+        : {}),
       ...(contextLength !== undefined ? { contextLength } : {}),
     });
     setConnectDialogOpen(false);
@@ -720,6 +776,7 @@ export function ModelsSettingsPanel({
       contextLength = parsed;
     }
     await onAddModel({
+      groupId: defaultPresetProviderGroupId("amazon-bedrock"),
       name,
       apiBase: isBedrockMantleOpenAiModel(name)
         ? bedrockMantleApiBaseFromRegion(awsRegion)
@@ -765,6 +822,7 @@ export function ModelsSettingsPanel({
       contextLength = parsed;
     }
     await onAddModel({
+      groupId: defaultPresetProviderGroupId("azure"),
       name,
       apiBase: azureApiBaseFromResourceName(azureResourceName),
       apiKey: connectApiKey,
@@ -798,6 +856,7 @@ export function ModelsSettingsPanel({
       contextLength = parsed;
     }
     await onAddModel({
+      groupId: defaultPresetProviderGroupId("google-vertex-ai"),
       name,
       apiBase: "",
       apiKey: connectApiKey,
@@ -832,17 +891,22 @@ export function ModelsSettingsPanel({
           </div>
         ) : (
           <>
-            {Array.from(providerGroups.entries()).map(([provider, groupModels]) => {
+            {configProviderGroups.map((group) => {
+              const groupModels = modelsForGroup(group);
+              if (groupModels.length === 0) {
+                return null;
+              }
               const groupHasKey = groupModels.some((m) => m.keyConfigured);
+              const groupLabel = groupDisplayLabel(group);
               return (
                 <div
-                  key={provider}
+                  key={group.id}
                   className="rounded-lg border border-border/40 bg-background/80"
                 >
                   <div className="flex items-center justify-between gap-3 border-b border-border/35 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">
-                        {providerLabel(provider)}
+                        {groupLabel}
                       </span>
                       <Badge variant="secondary" className="text-muted-foreground shrink-0">
                         {groupModels.length} {t('settings.modelsCount')}
@@ -859,22 +923,27 @@ export function ModelsSettingsPanel({
                       size="sm"
                       className="shrink-0"
                       disabled={modelsBusy || modelsPreviewBusy}
-                      onClick={() => setDeleteGroupTarget(provider)}
+                      onClick={() => setDeleteGroupTarget(group.id)}
                     >
                       {t('settings.deleteGroup')}
                     </Button>
                   </div>
-                  {providerSupportsModelCatalogDetail(provider)
+                  {providerSupportsModelCatalogDetail(group.provider)
                   && groupModels.some((model) => catalogDetailByModelName.has(model.name)) ? (
                     <Tooltip<SettingsModelProfile>
-                      getItemId={(model) => model.name}
+                      getItemId={(model) => modelRefKey(settingsModelRef(model))}
                       delayDuration={300}
                     >
                       <Tooltip.Zone className="divide-y divide-border/35">
                         {groupModels.map((model) => {
-                          const isActive = model.name === activeModel;
-                          const isImageDefault = model.name === imageGenerationModel;
-                          const isLightweightDefault = model.name === lightweightChatModel;
+                          const modelRef = settingsModelRef(model);
+                          const isActive = modelRefsEqual(modelRef, activeModel);
+                          const isImageDefault =
+                            imageGenerationModel !== undefined
+                            && modelRefsEqual(modelRef, imageGenerationModel);
+                          const isLightweightDefault =
+                            lightweightChatModel !== undefined
+                            && modelRefsEqual(modelRef, lightweightChatModel);
                           const supportedDefaultRoles = getSupportedModelDefaultRoles(
                             model,
                             activeModel,
@@ -893,7 +962,7 @@ export function ModelsSettingsPanel({
                           if (!hasDetail) {
                             return (
                               <ModelSettingsRowButton
-                                key={model.name}
+                                key={modelRefKey(modelRef)}
                                 model={model}
                                 displayTitle={displayTitle}
                                 isActive={isActive}
@@ -942,7 +1011,7 @@ export function ModelsSettingsPanel({
                             <ModelCatalogDetailPanel
                               model={row}
                               catalogEntry={catalogEntry}
-                              providerLabel={providerLabel(provider)}
+                              providerLabel={groupLabel}
                             />
                           );
                         }}
@@ -951,9 +1020,14 @@ export function ModelsSettingsPanel({
                   ) : (
                     <div className="divide-y divide-border/35">
                       {groupModels.map((model) => {
-                        const isActive = model.name === activeModel;
-                        const isImageDefault = model.name === imageGenerationModel;
-                        const isLightweightDefault = model.name === lightweightChatModel;
+                        const modelRef = settingsModelRef(model);
+                        const isActive = modelRefsEqual(modelRef, activeModel);
+                        const isImageDefault =
+                          imageGenerationModel !== undefined
+                          && modelRefsEqual(modelRef, imageGenerationModel);
+                        const isLightweightDefault =
+                          lightweightChatModel !== undefined
+                          && modelRefsEqual(modelRef, lightweightChatModel);
                         const supportedDefaultRoles = getSupportedModelDefaultRoles(
                           model,
                           activeModel,
@@ -968,7 +1042,7 @@ export function ModelsSettingsPanel({
                         );
                         return (
                           <ModelSettingsRowButton
-                            key={model.name}
+                            key={modelRefKey(modelRef)}
                             model={model}
                             displayTitle={displayTitle}
                             isActive={isActive}
@@ -985,119 +1059,6 @@ export function ModelsSettingsPanel({
                 </div>
               );
             })}
-            {standaloneModels.length > 0 && (
-              <div className="overflow-hidden divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
-                {standaloneModels.map((model) => {
-                  const isActive = model.name === activeModel;
-                  const isImageDefault = model.name === imageGenerationModel;
-                  const isLightweightDefault = model.name === lightweightChatModel;
-                  const supportedDefaultRoles = getSupportedModelDefaultRoles(
-                    model,
-                    activeModel,
-                    imageGenerationModel,
-                    videoGenerationModel,
-                    lightweightChatModel,
-                  );
-                  const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
-                  const isStandaloneModelDisabled = modelsBusy || modelsPreviewBusy;
-                  const displayTitle = modelDisplayTitleFromMap(
-                    model.name,
-                    displayTitleByModelName,
-                  );
-                  const rowAriaLabel = modelSettingsRowAriaLabel(
-                    defaultActionLabel,
-                    model.name,
-                    displayTitle,
-                  );
-                  return (
-                    <div
-                      key={model.name}
-                      role="button"
-                      tabIndex={isStandaloneModelDisabled ? -1 : 0}
-                      aria-disabled={isStandaloneModelDisabled}
-                      title={rowAriaLabel}
-                      aria-label={rowAriaLabel}
-                      className={cn(
-                        "flex flex-col gap-3 px-4 py-4 outline-none sm:flex-row sm:items-center sm:justify-between sm:gap-4",
-                        !isStandaloneModelDisabled &&
-                          "cursor-pointer hover:bg-foreground/[0.06] dark:hover:bg-foreground/10 focus-visible:ring-2 focus-visible:ring-ring/50",
-                      )}
-                      onClick={() => {
-                        if (isStandaloneModelDisabled) {
-                          return;
-                        }
-                        handleModelDefaultAction(model);
-                      }}
-                      onKeyDown={(event) => {
-                        if (
-                          isStandaloneModelDisabled ||
-                          event.target !== event.currentTarget ||
-                          (event.key !== "Enter" && event.key !== " ")
-                        ) {
-                          return;
-                        }
-                        event.preventDefault();
-                        handleModelDefaultAction(model);
-                      }}
-                    >
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">
-                            {displayTitle}
-                          </span>
-                          {isActive ? (
-                            <Badge variant="secondary" className="text-muted-foreground">
-                              {t('settings.currentInference')}
-                            </Badge>
-                          ) : null}
-                          {isImageDefault ? (
-                            <Badge variant="secondary" className="text-muted-foreground">
-                              {t('settings.currentImageGen')}
-                            </Badge>
-                          ) : null}
-                          {isLightweightDefault ? (
-                            <Badge variant="secondary" className="text-muted-foreground">
-                              {t('settings.currentLightweightChat')}
-                            </Badge>
-                          ) : null}
-                          {model.keyConfigured ? (
-                            <Badge variant="secondary" className="text-muted-foreground">
-                              {t('settings.keySaved')}
-                            </Badge>
-                          ) : null}
-                          {model.capabilities?.map((capability) => (
-                            <Badge key={capability} variant="outline" className="text-muted-foreground">
-                              {modelCapabilityLabel(capability)}
-                            </Badge>
-                          ))}
-                        </div>
-                        <p
-                          className="truncate text-xs text-muted-foreground"
-                          title={model.apiBase}
-                        >
-                          {model.apiBase}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="shrink-0"
-                          disabled={modelsBusy || modelsPreviewBusy}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDeleteTarget(model.name);
-                          }}
-                        >
-                          {t('common.delete')}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </>
         )}
       </div>
@@ -1347,7 +1308,15 @@ export function ModelsSettingsPanel({
           <DialogHeader>
             <DialogTitle>{t('settings.deleteProviderGroup')}</DialogTitle>
             <DialogDescription>
-              {t('settings.deleteProviderGroupConfirm', { provider: deleteGroupTarget ? providerLabel(deleteGroupTarget) : '' })}
+              {t('settings.deleteProviderGroupConfirm', {
+                provider: deleteGroupTarget
+                  ? (configProviderGroups.find((group) => group.id === deleteGroupTarget)
+                      ? groupDisplayLabel(
+                          configProviderGroups.find((group) => group.id === deleteGroupTarget)!,
+                        )
+                      : deleteGroupTarget)
+                  : '',
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1367,13 +1336,13 @@ export function ModelsSettingsPanel({
               size="sm"
               disabled={modelsBusy || !deleteGroupTarget}
               onClick={() => {
-                const provider = deleteGroupTarget;
-                if (!provider) {
+                const groupId = deleteGroupTarget;
+                if (!groupId) {
                   return;
                 }
                 void (async () => {
                   try {
-                    await onRemoveProviderModels(provider);
+                    await onRemoveProviderModels(groupId);
                     setDeleteGroupTarget(null);
                   } catch {
                     /* runtimeError */
@@ -1563,6 +1532,18 @@ export function ModelsSettingsPanel({
                     <p className="text-xs leading-5 text-muted-foreground">{transportSummary}</p>
                   ) : null;
                 })()}
+              </div>
+            ) : null}
+            {selectedProvider === "custom" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-custom-group-label">{t('settings.customGroupLabel')}</Label>
+                <DesktopFormInput
+                  id="connect-custom-group-label"
+                  value={connectCustomGroupLabel}
+                  onChange={(e) => setConnectCustomGroupLabel(e.target.value)}
+                  placeholder={t('settings.customGroupLabelPlaceholder')}
+                  autoComplete="off"
+                />
               </div>
             ) : null}
             {selectedProvider === "custom" ? (

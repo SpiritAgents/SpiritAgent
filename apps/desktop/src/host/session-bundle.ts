@@ -7,6 +7,8 @@ import type {
 import type { DesktopToolRequest, SessionTitleSource } from './contracts.js';
 import type { ApprovalLevel, WorkLocationKind } from '@spiritagent/host-internal';
 
+import type { ModelRef } from '../types.js';
+
 import type { DesktopRuntime } from './runtime.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 
@@ -41,7 +43,7 @@ export interface SessionBundle {
   archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
-  activeModel?: string;
+  activeModel?: ModelRef;
   pendingGitBranch?: string;
   workLocation: WorkLocationKind;
   rewind: StoredDesktopRewindMetadata;

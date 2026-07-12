@@ -75,7 +75,7 @@ export async function requestCodeCompletionCommand(
       return { operations: [] };
     }
 
-    const apiKey = await resolveApiKeyForConfigModel(context.config, resolved.name);
+    const apiKey = await resolveApiKeyForConfigModel(context.config, resolved.profile.ref);
     if (!apiKey) {
       return { operations: [] };
     }

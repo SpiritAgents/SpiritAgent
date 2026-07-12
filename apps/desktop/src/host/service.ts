@@ -120,6 +120,7 @@ import type {
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
   RemoveModelRequest,
+  RemoveProviderGroupRequest,
   RemoveProviderModelsRequest,
   QueryWorkspaceFileReferenceSuggestionsRequest,
   RecordCodeCompletionFileStateRequest,
@@ -160,6 +161,7 @@ import {
   addProviderModelsCommand,
   previewModelsCommand,
   removeModelCommand,
+  removeProviderGroupCommand,
   removeProviderModelsCommand,
   updateConfigCommand,
   type HostModelCommandContext,
@@ -314,7 +316,13 @@ import {
   freezePaneActiveModelIfNeeded,
   ensureVisiblePaneActiveModels,
 } from './active-model-sync.js';
+import {
+  findModelRefByName,
+  resolveModelProfile,
+} from './model-config-access.js';
 import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
+import { modelRefKey, modelRefsEqual } from '@spiritagent/host-internal';
+import type { ModelRef } from '../types.js';
 import { renameSessionCommand, type SessionRenameContext } from './session-rename.js';
 import {
   finishSessionActivationCommand,
@@ -915,7 +923,7 @@ class DesktopHostService {
     const state = this.state;
     const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
     const hookRunner = this.getHookRunner(workspaceRoot);
-    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel);
+    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
     await runDesktopSessionEndHook(hookRunner, context, reason);
   }
 
@@ -926,7 +934,7 @@ class DesktopHostService {
     const state = this.state;
     const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
     const hookRunner = this.getHookRunner(workspaceRoot);
-    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel);
+    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
     await runDesktopSessionStartHook(bundle.runtime, hookRunner, context, source);
   }
 
@@ -1025,7 +1033,7 @@ class DesktopHostService {
   private paneModelContext(): PaneModelHostContext {
     return {
       ...this.sessionSplitContext(),
-      adoptActiveModelForForeground: (modelName) => this.adoptActiveModelForForeground(modelName),
+      adoptActiveModelForForeground: (modelRef) => this.adoptActiveModelForForeground(modelRef),
       refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
       invalidatePaneSessionSliceCache: (sessionPath) => {
         this.paneSessionSliceCache.delete(path.resolve(sessionPath));
@@ -1037,19 +1045,17 @@ class DesktopHostService {
     };
   }
 
-  private async adoptActiveModelForForeground(modelName: string): Promise<void> {
+  private async adoptActiveModelForForeground(modelRef: ModelRef): Promise<void> {
     const state = this.requireState();
     const bundle = this.activeBundle();
-    const normalized = modelName.trim();
-    if (!normalized) {
-      throw new Error(i18n.t('error.modelNameRequired'));
+    const activeProfile = resolveModelProfile(state.config, modelRef);
+    if (!activeProfile) {
+      throw new Error(i18n.t('error.modelNotFound', { model: modelRef.name }));
     }
-    if (!state.config.models.some((model) => model.name === normalized)) {
-      throw new Error(i18n.t('error.modelNotFound', { model: normalized }));
-    }
+    const resolvedRef = activeProfile.ref;
 
-    const modelChanged = state.config.activeModel !== normalized;
-    bundle.activeModel = normalized;
+    const modelChanged = !modelRefsEqual(state.config.activeModel, resolvedRef);
+    bundle.activeModel = resolvedRef;
     const runtimeBusy = bundle.runtime?.isBusy() === true;
     if (!modelChanged) {
       if (!runtimeBusy) {
@@ -1059,7 +1065,7 @@ class DesktopHostService {
       return;
     }
 
-    state.config.activeModel = normalized;
+    state.config.activeModel = resolvedRef;
     await saveConfig(state.config);
     this.clearActiveBundleContextUsage();
     if (runtimeBusy) {
@@ -1288,8 +1294,8 @@ class DesktopHostService {
         if (!state) {
           return undefined;
         }
-        const activeModelName = resolveEffectivePaneActiveModel(bundle, state).trim();
-        return state.config.models.find((model) => model.name === activeModelName);
+        const activeModelRef = resolveEffectivePaneActiveModel(bundle, state);
+        return resolveModelProfile(state.config, activeModelRef) ?? undefined;
       },
       resolveCatalogHints: () => buildModelCatalogHints(this.requireState().config),
       setContextUsage: (usage) => {
@@ -1446,6 +1452,10 @@ class DesktopHostService {
 
   async removeProviderModels(request: RemoveProviderModelsRequest): Promise<DesktopSnapshot> {
     return removeProviderModelsCommand(this.modelCommandContext(), request);
+  }
+
+  async removeProviderGroup(request: RemoveProviderGroupRequest): Promise<DesktopSnapshot> {
+    return removeProviderGroupCommand(this.modelCommandContext(), request);
   }
 
   async createSkill(request: CreateSkillRequest): Promise<DesktopSnapshot> {
@@ -1643,12 +1653,12 @@ class DesktopHostService {
       const exportPayload = {
         export_version: 2,
         exported_at_unix_secs: exportedAtUnixSecs,
-        active_model: state.config.activeModel,
+        active_model: modelRefKey(state.config.activeModel),
         api_base: currentApiBase(state.config),
         working_directory: state.workspaceRoot,
         system_prompts: {
           ...(this.runtimeTransport.llmSystemPromptsForExport() as Record<string, unknown>),
-          tool_agent: buildToolAgentHostPrompt(state.config.activeModel),
+          tool_agent: buildToolAgentHostPrompt(state.config.activeModel.name),
           ...(rulesSystemPrompt === undefined ? {} : { rules: rulesSystemPrompt }),
           ...(skillsCatalogSystemPrompt === undefined
             ? {}
@@ -2621,8 +2631,8 @@ class DesktopHostService {
     }
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
     const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
-    const activeProfile = state.config.models.find((m) => m.name === effectiveActiveModel);
-    const activeTransportKind = resolveDesktopTransportKind(activeProfile);
+    const activeProfile = resolveModelProfile(state.config, effectiveActiveModel);
+    const activeTransportKind = resolveDesktopTransportKind(activeProfile ?? undefined);
     const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
       ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(activeProfile.provider))
       : undefined;
@@ -2653,16 +2663,16 @@ class DesktopHostService {
     this.activeApiKeyConfigured = runtimeAuthReady;
     const extensionSystemPrompts = this.extensionWarmup.systemPromptsCache;
     const imageGenerationProfile = state.config.imageGenerationModel
-      ? state.config.models.find((model) => model.name === state.config.imageGenerationModel)
+      ? resolveModelProfile(state.config, state.config.imageGenerationModel) ?? undefined
       : undefined;
     const videoGenerationProfile = state.config.videoGenerationModel
-      ? state.config.models.find((model) => model.name === state.config.videoGenerationModel)
+      ? resolveModelProfile(state.config, state.config.videoGenerationModel) ?? undefined
       : undefined;
     const imageGenerationApiKey = imageGenerationProfile
-      ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.name)
+      ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.ref)
       : undefined;
     const videoGenerationApiKey = videoGenerationProfile
-      ? await resolveApiKeyForConfigModel(state.config, videoGenerationProfile.name)
+      ? await resolveApiKeyForConfigModel(state.config, videoGenerationProfile.ref)
       : undefined;
     bundle.runtimeTransport = createLlmTransport();
     if (!runtimeAuthReady) {
@@ -2679,10 +2689,10 @@ class DesktopHostService {
 
     let runtimeTransportConfig = buildPrimaryTransportConfig({
       apiKey: apiKey ?? bedrockCredentials?.apiKey ?? '',
-      model: effectiveActiveModel,
+      model: activeProfile?.name ?? effectiveActiveModel.name,
       baseUrl: currentApiBase(state.config),
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-      profile: activeProfile,
+      profile: activeProfile ?? undefined,
       agentMode: resolveDesktopAgentMode(state.config),
       ...(activeTransportKind === 'bedrock' && bedrockCredentials
         ? { bedrockCredentials: { ...bedrockCredentials, apiKey: apiKey ?? bedrockCredentials.apiKey } }
@@ -3266,7 +3276,7 @@ class DesktopHostService {
       this.modelKeyPresence = {};
       return;
     }
-    this.modelKeyPresence = await modelSecretKeyPresence(state.config.models);
+    this.modelKeyPresence = await modelSecretKeyPresence(state.config);
   }
 
   private clearActiveBundleContextUsage(): void {
@@ -3321,7 +3331,8 @@ class DesktopHostService {
     if (!state || !activeModel.provider) {
       return;
     }
-    const profile = state.config.models.find((model) => model.name === activeModel.name);
+    const activeRef = findModelRefByName(state.config, activeModel.name);
+    const profile = activeRef ? resolveModelProfile(state.config, activeRef) : undefined;
     if (!profile) {
       return;
     }
@@ -3694,7 +3705,9 @@ class DesktopHostService {
         paneWorkspace?.git?.revision ?? 0,
         paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? '',
         bundle.approvalLevel,
-        paneModel?.activeModel ?? resolveEffectivePaneActiveModel(bundle, this.requireState()),
+        paneModel?.activeModel
+          ? modelRefKey(paneModel.activeModel)
+          : modelRefKey(resolveEffectivePaneActiveModel(bundle, this.requireState())),
       ].join('\0');
       const cached = this.paneSessionSliceCache.get(resolved);
       // 流式回合中 messageTimeline 内容会变但 revision/msgCount 签名常不变；忙碌时禁用缓存（19a224c6 回归）。
@@ -3934,7 +3947,7 @@ class DesktopHostService {
     if (!lightweightModel) {
       throw new Error(i18n.t('error.lightweightChatModelNotConfigured'));
     }
-    const apiKey = await resolveApiKeyForConfigModel(state.config, lightweightModel.name);
+    const apiKey = await resolveApiKeyForConfigModel(state.config, lightweightModel.profile.ref);
     if (!apiKey) {
       throw new Error(i18n.t('error.autoWorktreeNameFailedNoKey'));
     }

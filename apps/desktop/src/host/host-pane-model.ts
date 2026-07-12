@@ -4,10 +4,11 @@ import type { DesktopSnapshot, SwitchPaneModelRequest } from '../types.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionSplitHostContext } from './session-split.js';
 import { freezePaneActiveModelIfNeeded } from './active-model-sync.js';
+import { findModelRefByName } from './model-config-access.js';
 import { saveConfig } from './storage.js';
 
 export interface PaneModelHostContext extends SessionSplitHostContext {
-  adoptActiveModelForForeground(modelName: string): Promise<void>;
+  adoptActiveModelForForeground(modelRef: import('../types.js').ModelRef): Promise<void>;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;
   invalidatePaneSessionSliceCache(sessionPath: string): void;
   invalidateAllPaneSessionSliceCache(): void;
@@ -38,7 +39,8 @@ export async function switchPaneModelCommand(
     }
 
     const state = ctx.requireState();
-    if (!state.config.models.some((model) => model.name === modelName)) {
+    const modelRef = findModelRefByName(state.config, modelName);
+    if (!modelRef) {
       throw new Error(`Model not found: ${modelName}`);
     }
 
@@ -50,10 +52,10 @@ export async function switchPaneModelCommand(
       }
       freezePaneActiveModelIfNeeded(bundle, state);
     }
-    bundle.activeModel = modelName;
+    bundle.activeModel = modelRef;
 
     if (isForeground) {
-      await ctx.adoptActiveModelForForeground(modelName);
+      await ctx.adoptActiveModelForForeground(modelRef);
     } else if (bundle.runtime && !bundle.runtime.isBusy()) {
       await ctx.refreshRuntimeForBundle(bundle);
       await ctx.persistCurrentSessionIfNeeded();

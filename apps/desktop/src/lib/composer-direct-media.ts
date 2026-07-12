@@ -1,3 +1,6 @@
+import type { ModelRef } from '@/types';
+import { isEmptyModelRef, modelRefsEqual } from '@spiritagent/host-internal';
+
 export type DirectMediaTool = 'generate_image' | 'generate_video';
 
 type ModelWithCapabilities = {
@@ -7,8 +10,8 @@ type ModelWithCapabilities = {
 
 type ComposerDirectMediaConfig = {
   models: readonly ModelWithCapabilities[];
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
 };
 
 function supportsImageGeneration(model: ModelWithCapabilities): boolean {
@@ -24,39 +27,42 @@ function supportsChat(model: ModelWithCapabilities): boolean {
 }
 
 export function resolveComposerDirectMediaTool(
-  activeModel: string,
+  activeModel: ModelRef,
   config: ComposerDirectMediaConfig,
 ): DirectMediaTool | null {
-  const trimmedActive = activeModel.trim();
-  if (!trimmedActive) {
+  if (isEmptyModelRef(activeModel)) {
     return null;
   }
 
-  const matchesVideoSlot = config.videoGenerationModel?.trim() === trimmedActive;
-  const matchesImageSlot = config.imageGenerationModel?.trim() === trimmedActive;
+  const matchesVideoSlot =
+    config.videoGenerationModel !== undefined
+    && modelRefsEqual(config.videoGenerationModel, activeModel);
+  const matchesImageSlot =
+    config.imageGenerationModel !== undefined
+    && modelRefsEqual(config.imageGenerationModel, activeModel);
 
   if (matchesVideoSlot && matchesImageSlot) {
     console.debug(
       '[desktop][composer-direct-media] active model matches both image and video default slots; preferring generate_video',
-      { activeModel: trimmedActive },
+      { activeModel },
     );
   }
 
   if (matchesVideoSlot) {
-    const profile = config.models.find((model) => model.name === trimmedActive);
+    const profile = config.models.find((model) => model.name === activeModel.name);
     if (profile && supportsVideoGeneration(profile)) {
       return 'generate_video';
     }
   }
 
   if (matchesImageSlot) {
-    const profile = config.models.find((model) => model.name === trimmedActive);
+    const profile = config.models.find((model) => model.name === activeModel.name);
     if (profile && supportsImageGeneration(profile)) {
       return 'generate_image';
     }
   }
 
-  const profile = config.models.find((model) => model.name === trimmedActive);
+  const profile = config.models.find((model) => model.name === activeModel.name);
   if (profile && !supportsChat(profile)) {
     if (supportsVideoGeneration(profile)) {
       return 'generate_video';

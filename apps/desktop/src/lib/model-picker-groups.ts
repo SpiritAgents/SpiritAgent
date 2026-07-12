@@ -1,13 +1,15 @@
 import {
   MODEL_PROVIDER_PICKER_ORDER,
   PROVIDER_PICKER_ROWS,
-} from "@spiritagent/host-internal/model-provider-presets";
+  defaultPresetProviderGroupId,
+} from "@spiritagent/host-internal";
 import { normalizeOpenAiApiBase } from "@spiritagent/host-internal/openai-api-base";
 import type {
   DesktopModelCatalogHint,
   DesktopModelProvider,
   DesktopTransportKind,
   ModelProfileSnapshot,
+  ProviderGroupV2,
 } from "@/types";
 
 const PROVIDER_ORDER: DesktopModelProvider[] = [...MODEL_PROVIDER_PICKER_ORDER];
@@ -47,60 +49,71 @@ function catalogOrderIndex(
 }
 
 export type ModelPickerGroup = {
+  groupId: string;
   provider: DesktopModelProvider;
   labelKey: string;
   fallbackLabel: string;
+  customLabel?: string;
   items: ModelProfileSnapshot[];
 };
 
 /**
- * 主界面模型下拉：按提供商分组；组内顺序优先对齐 `modelCatalogHints` 中的上游列表顺序。
+ * 主界面模型下拉：按 provider group（groupId）分组；组内顺序优先对齐 `modelCatalogHints` 中的上游列表顺序。
  */
 export function groupModelsForPicker(
   models: ModelProfileSnapshot[],
   catalogHints: DesktopModelCatalogHint[] | undefined,
+  providerGroups?: readonly ProviderGroupV2[],
 ): ModelPickerGroup[] {
-  const buckets = new Map<DesktopModelProvider, ModelProfileSnapshot[]>();
-  for (const m of models) {
-    const p: DesktopModelProvider = m.provider ?? "custom";
-    const list = buckets.get(p) ?? [];
-    list.push(m);
-    buckets.set(p, list);
+  const groupMeta = new Map(
+    (providerGroups ?? []).map((group) => [group.id, group] as const),
+  );
+  const buckets = new Map<string, ModelProfileSnapshot[]>();
+  for (const model of models) {
+    const groupId =
+      model.groupId
+      ?? model.ref?.groupId
+      ?? defaultPresetProviderGroupId(model.provider ?? "custom");
+    const list = buckets.get(groupId) ?? [];
+    list.push(model);
+    buckets.set(groupId, list);
   }
 
-  const keys = [...buckets.keys()].sort((a, b) => {
-    const ia = PROVIDER_ORDER.indexOf(a);
-    const ib = PROVIDER_ORDER.indexOf(b);
-    if (ia !== ib) {
-      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  const keys = [...buckets.keys()].sort((leftId, rightId) => {
+    const leftGroup = groupMeta.get(leftId);
+    const rightGroup = groupMeta.get(rightId);
+    const leftProvider = leftGroup?.provider ?? buckets.get(leftId)?.[0]?.provider ?? "custom";
+    const rightProvider = rightGroup?.provider ?? buckets.get(rightId)?.[0]?.provider ?? "custom";
+    const leftIndex = PROVIDER_ORDER.indexOf(leftProvider);
+    const rightIndex = PROVIDER_ORDER.indexOf(rightProvider);
+    if (leftIndex !== rightIndex) {
+      return (leftIndex === -1 ? 99 : leftIndex) - (rightIndex === -1 ? 99 : rightIndex);
     }
-    return a.localeCompare(b);
+    const leftLabel = leftGroup?.label?.trim() ?? leftId;
+    const rightLabel = rightGroup?.label?.trim() ?? rightId;
+    return leftLabel.localeCompare(rightLabel);
   });
 
-  return keys.map((provider) => {
-    const items = (buckets.get(provider) ?? []).slice().sort((a, b) => {
-      const filteredHints = catalogHints?.filter((hint) => (hint.provider ?? 'custom') === provider);
+  return keys.map((groupId) => {
+    const meta = groupMeta.get(groupId);
+    const provider = meta?.provider ?? buckets.get(groupId)?.[0]?.provider ?? "custom";
+    const items = (buckets.get(groupId) ?? []).slice().sort((a, b) => {
+      const filteredHints = catalogHints?.filter(
+        (hint) => (hint.provider ?? "custom") === provider,
+      );
       const aTransportKind = normalizeTransportKind(a.transportKind, a.provider);
       const bTransportKind = normalizeTransportKind(b.transportKind, b.provider);
-      const oa = catalogOrderIndex(
-        a.name,
-        a.apiBase,
-        aTransportKind,
-        filteredHints,
-      );
-      const ob = catalogOrderIndex(
-        b.name,
-        b.apiBase,
-        bTransportKind,
-        filteredHints,
-      );
-      if (oa !== ob) {
-        return oa - ob;
+      const orderA = catalogOrderIndex(a.name, a.apiBase, aTransportKind, filteredHints);
+      const orderB = catalogOrderIndex(b.name, b.apiBase, bTransportKind, filteredHints);
+      if (orderA !== orderB) {
+        return orderA - orderB;
       }
       return a.name.localeCompare(b.name);
     });
     return {
+      groupId,
       provider,
+      customLabel: meta?.label?.trim() || undefined,
       ...providerLabelMetadata(provider),
       items,
     };

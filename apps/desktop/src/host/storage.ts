@@ -32,7 +32,6 @@ import {
 import {
   assertSpiritConfigSchemaVersion,
   createFileExtensionStateStore,
-  defaultPresetProviderGroupId,
   emptyModelRef,
   findModelByRef,
   listAllModelRefs,
@@ -53,6 +52,7 @@ import {
 } from '@spiritagent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
+import { flattenProviderGroups, resolveModelProfile } from './model-config-access.js';
 import { normalizeContextUsageSnapshot } from '../lib/context-usage.js';
 import { parseModelContextLength } from '../lib/model-context-length.js';
 
@@ -76,14 +76,13 @@ import {
 } from './chat-schema.js';
 import {
   buildModelSecretKeyPresence,
+  groupAccessKeyIdAccount,
+  groupKeyAccount,
+  groupSecretAccessKeyAccount,
+  groupVertexClientEmailAccount,
+  groupVertexPrivateKeyAccount,
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
-  modelProviderKeyScope,
-  providerAccessKeyIdAccount,
-  providerKeyAccount,
-  providerSecretAccessKeyAccount,
-  providerVertexClientEmailAccount,
-  providerVertexPrivateKeyAccount,
   type BedrockProviderCredentials,
   type GoogleVertexProviderCredentials,
   type ModelKeyPresenceProfile,
@@ -93,10 +92,9 @@ import { normalizeDesktopRewindMetadata } from './rewind.js';
 export { SpiritConfigSchemaError as ConfigSchemaError } from '@spiritagent/host-internal';
 export {
   buildModelSecretKeyPresence,
+  groupKeyAccount,
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
-  modelProviderKeyScope,
-  providerKeyAccount,
 } from './provider-api-key.js';
 
 export const DEFAULT_API_BASE = 'https://api.openai.com/v1';
@@ -269,118 +267,118 @@ function readGlobalKeyFromKeyring(): string | undefined {
   return trimmed || undefined;
 }
 
-export function readProviderAccessKeyIdFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+export function readProviderAccessKeyIdFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
-export function readProviderSecretAccessKeyFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+export function readProviderSecretAccessKeyFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
-export function readProviderVertexClientEmailFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId));
+export function readProviderVertexClientEmailFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
-export function readProviderVertexPrivateKeyFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId));
+export function readProviderVertexPrivateKeyFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
 export function readBedrockProviderCredentialsFromKeyring(
-  providerId: DesktopModelProvider,
+  groupId: string,
 ): BedrockProviderCredentials {
   return {
-    apiKey: readProviderKeyFromKeyring(providerId),
-    accessKeyId: readProviderAccessKeyIdFromKeyring(providerId),
-    secretAccessKey: readProviderSecretAccessKeyFromKeyring(providerId),
+    apiKey: readProviderKeyFromKeyring(groupId),
+    accessKeyId: readProviderAccessKeyIdFromKeyring(groupId),
+    secretAccessKey: readProviderSecretAccessKeyFromKeyring(groupId),
   };
 }
 
 export async function saveBedrockProviderCredentialsForProvider(
-  providerId: DesktopModelProvider,
+  groupId: string,
   credentials: BedrockProviderCredentials,
 ): Promise<void> {
   const apiKey = credentials.apiKey?.trim();
   if (apiKey) {
-    await saveApiKeyForProvider(providerId, apiKey);
+    await saveApiKeyForProvider(groupId, apiKey);
   } else {
-    await removeProviderApiKey(providerId);
+    await removeProviderApiKey(groupId);
   }
 
   const accessKeyId = credentials.accessKeyId?.trim();
   if (accessKeyId) {
-    setKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId), accessKeyId);
+    setKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId), accessKeyId);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId));
   }
 
   const secretAccessKey = credentials.secretAccessKey?.trim();
   if (secretAccessKey) {
-    setKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId), secretAccessKey);
+    setKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId), secretAccessKey);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId));
   }
 }
 
-export async function removeBedrockProviderCredentials(providerId: DesktopModelProvider): Promise<void> {
-  await removeProviderApiKey(providerId);
-  deleteKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
-  deleteKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+export async function removeBedrockProviderCredentials(groupId: string): Promise<void> {
+  await removeProviderApiKey(groupId);
+  deleteKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId));
+  deleteKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId));
 }
 
 export function readGoogleVertexProviderCredentialsFromKeyring(
-  providerId: DesktopModelProvider,
+  groupId: string,
 ): GoogleVertexProviderCredentials {
   return {
-    apiKey: readProviderKeyFromKeyring(providerId),
-    clientEmail: readProviderVertexClientEmailFromKeyring(providerId),
-    privateKey: readProviderVertexPrivateKeyFromKeyring(providerId),
+    apiKey: readProviderKeyFromKeyring(groupId),
+    clientEmail: readProviderVertexClientEmailFromKeyring(groupId),
+    privateKey: readProviderVertexPrivateKeyFromKeyring(groupId),
   };
 }
 
 export async function saveGoogleVertexProviderCredentialsForProvider(
-  providerId: DesktopModelProvider,
+  groupId: string,
   credentials: GoogleVertexProviderCredentials,
 ): Promise<void> {
   const apiKey = credentials.apiKey?.trim();
   if (apiKey) {
-    await saveApiKeyForProvider(providerId, apiKey);
+    await saveApiKeyForProvider(groupId, apiKey);
   } else {
-    await removeProviderApiKey(providerId);
+    await removeProviderApiKey(groupId);
   }
 
   const clientEmail = credentials.clientEmail?.trim();
   if (clientEmail) {
-    setKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId), clientEmail);
+    setKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId), clientEmail);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId));
   }
 
   const privateKey = credentials.privateKey?.trim();
   if (privateKey) {
-    setKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId), privateKey);
+    setKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId), privateKey);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId));
   }
 }
 
 export async function removeGoogleVertexProviderCredentials(
-  providerId: DesktopModelProvider,
+  groupId: string,
 ): Promise<void> {
-  await removeProviderApiKey(providerId);
-  deleteKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId));
-  deleteKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId));
+  await removeProviderApiKey(groupId);
+  deleteKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId));
+  deleteKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId));
 }
 
-export function readProviderKeyFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
+export function readProviderKeyFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
@@ -486,67 +484,69 @@ export async function saveConfig(config: DesktopConfigFile): Promise<void> {
 }
 
 export async function resolveApiKeyForModel(
-  modelName: string,
-  provider?: DesktopModelProvider,
+  groupId: string,
+  modelName?: string,
 ): Promise<string | undefined> {
   const envKey = process.env.SPIRIT_API_KEY?.trim();
   if (envKey) {
     return envKey;
   }
 
-  const providerKey = readProviderKeyFromKeyring(modelProviderKeyScope(provider));
-  if (providerKey) {
-    return providerKey;
+  const groupKey = readProviderKeyFromKeyring(groupId);
+  if (groupKey) {
+    return groupKey;
   }
 
-  const modelKey = readModelKeyFromKeyring(modelName);
-  if (modelKey) {
-    return modelKey;
+  if (modelName) {
+    const modelKey = readModelKeyFromKeyring(modelName);
+    if (modelKey) {
+      return modelKey;
+    }
   }
 
   return readGlobalKeyFromKeyring();
 }
 
 export async function hasApiKeyForModel(
-  modelName: string,
-  provider?: DesktopModelProvider,
+  groupId: string,
+  modelName?: string,
 ): Promise<boolean> {
-  return Boolean(await resolveApiKeyForModel(modelName, provider));
+  return Boolean(await resolveApiKeyForModel(groupId, modelName));
 }
 
 export async function resolveApiKeyForConfigModel(
-  config: Pick<DesktopConfigFile, 'models'>,
-  modelName: string,
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  ref: ModelRef,
 ): Promise<string | undefined> {
-  const profile = config.models.find((model) => model.name === modelName);
-  return resolveApiKeyForModel(modelName, profile?.provider);
+  const profile = resolveModelProfile(config, ref);
+  if (!profile) {
+    return undefined;
+  }
+  return resolveApiKeyForModel(profile.groupId, profile.name);
 }
 
 function normalizePresenceProfiles(
-  profilesOrNames: string[] | ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
+  profiles: ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
 ): ModelKeyPresenceProfile[] {
-  if (profilesOrNames.length === 0) {
+  if (profiles.length === 0) {
     return [];
   }
-  const first = profilesOrNames[0];
-  if (typeof first === 'string') {
-    return (profilesOrNames as string[]).map((name) => ({ name }));
-  }
+  const first = profiles[0];
   if ('apiBase' in first && typeof first === 'object' && first !== null) {
-    return (profilesOrNames as ModelProfileSnapshot[]).map(toModelKeyPresenceProfile);
+    return (profiles as ModelProfileSnapshot[]).map(toModelKeyPresenceProfile);
   }
-  return profilesOrNames as ModelKeyPresenceProfile[];
+  return profiles as ModelKeyPresenceProfile[];
 }
 
-function hasProviderSecretInKeyring(providerId: string, profile: ModelKeyPresenceProfile): boolean {
-  if (readProviderKeyFromKeyring(providerId)) {
+function hasGroupSecretInKeyring(groupId: string, profile: ModelKeyPresenceProfile): boolean {
+  if (readProviderKeyFromKeyring(groupId)) {
     return true;
   }
-  if (providerId === 'amazon-bedrock') {
-    return hasBedrockRuntimeCredentials(readBedrockProviderCredentialsFromKeyring('amazon-bedrock'));
+  if (profile.provider === 'amazon-bedrock') {
+    return hasBedrockRuntimeCredentials(readBedrockProviderCredentialsFromKeyring(groupId));
   }
-  if (providerId === 'google-vertex-ai') {
-    const credentials = readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai');
+  if (profile.provider === 'google-vertex-ai') {
+    const credentials = readGoogleVertexProviderCredentialsFromKeyring(groupId);
     return hasGoogleVertexRuntimeCredentials({
       apiKey: credentials.apiKey,
       clientEmail: credentials.clientEmail,
@@ -559,7 +559,12 @@ function hasProviderSecretInKeyring(providerId: string, profile: ModelKeyPresenc
 }
 
 function toModelKeyPresenceProfile(model: ModelProfileSnapshot): ModelKeyPresenceProfile {
+  const groupId = model.groupId?.trim() ?? model.ref?.groupId?.trim() ?? '';
+  if (!groupId) {
+    throw new Error(`model profile "${model.name}" is missing groupId`);
+  }
   return {
+    groupId,
     name: model.name,
     provider: model.provider,
     ...(model.vertexProject ? { vertexProject: model.vertexProject } : {}),
@@ -567,15 +572,23 @@ function toModelKeyPresenceProfile(model: ModelProfileSnapshot): ModelKeyPresenc
   };
 }
 
-/** 各模型是否在钥匙串中有提供商级或遗留模型级条目（不含环境变量与全局回退）。 */
+function legacyModelKeyPresent(refKey: string): boolean {
+  const separatorIndex = refKey.lastIndexOf('::');
+  const modelName = separatorIndex >= 0 ? refKey.slice(separatorIndex + 2) : refKey;
+  return Boolean(readModelKeyFromKeyring(modelName));
+}
+
+/** 各模型是否在钥匙串中有提供商组级或遗留模型级条目（不含环境变量与全局回退）。 */
 export async function modelSecretKeyPresence(
-  profilesOrNames: string[] | ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
+  input: Pick<DesktopConfigFile, 'providerGroups'> | ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
 ): Promise<Record<string, boolean>> {
-  const profiles = normalizePresenceProfiles(profilesOrNames);
+  const profiles = 'providerGroups' in input
+    ? flattenProviderGroups(input).map(toModelKeyPresenceProfile)
+    : normalizePresenceProfiles(input);
   return buildModelSecretKeyPresence(
     profiles,
-    hasProviderSecretInKeyring,
-    (modelName) => Boolean(readModelKeyFromKeyring(modelName)),
+    hasGroupSecretInKeyring,
+    legacyModelKeyPresent,
   );
 }
 
@@ -584,15 +597,15 @@ export async function saveApiKeyForModel(modelName: string, apiKey: string): Pro
 }
 
 export async function saveApiKeyForProvider(
-  providerId: DesktopModelProvider,
+  groupId: string,
   apiKey: string,
 ): Promise<void> {
-  setKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId), apiKey.trim());
+  setKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId), apiKey.trim());
 }
 
-/** 删除提供商在钥匙串中的共享 API Key 条目。 */
-export async function removeProviderApiKey(providerId: DesktopModelProvider): Promise<void> {
-  deleteKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
+/** 删除提供商组在钥匙串中的共享 API Key 条目。 */
+export async function removeProviderApiKey(groupId: string): Promise<void> {
+  deleteKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId));
 }
 
 /** 与 CLI `remove_model_api_key` 一致：删除该模型在钥匙串中的专属条目。 */
@@ -1018,8 +1031,10 @@ function normalizeModelEntry(
       ...(transportKind ? { transportKind } : {}),
       ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
       ...(supportsThinkingType ? { supportsThinkingType } : {}),
-    }),
-    ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
+    }) as ModelEntryV2['reasoningEffort'],
+    ...(supportedReasoningEfforts !== undefined
+      ? { supportedReasoningEfforts: supportedReasoningEfforts as ModelEntryV2['supportedReasoningEfforts'] }
+      : {}),
     ...(capabilities ? { capabilities } : {}),
     ...(contextLength !== undefined ? { contextLength } : {}),
     ...(supportsThinkingType ? { supportsThinkingType } : {}),

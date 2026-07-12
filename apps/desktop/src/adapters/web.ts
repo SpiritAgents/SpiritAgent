@@ -141,6 +141,9 @@ export function createWebHostApi(): HostApi {
     removeProviderModels(provider: DesktopModelProvider) {
       return post<DesktopSnapshot>(baseUrl, '/api/models/remove-provider', { provider });
     },
+    removeProviderGroup(request: import('../types').RemoveProviderGroupRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/models/remove-provider-group', request);
+    },
     addMcpServer(request: AddMcpServerRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/mcps', request);
     },

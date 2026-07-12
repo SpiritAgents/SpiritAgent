@@ -64,6 +64,7 @@ declare global {
     previewModels(request: PreviewModelsRequest): Promise<PreviewModelsResponse>;
     removeModel(name: string): Promise<DesktopSnapshot>;
     removeProviderModels(provider: DesktopModelProvider): Promise<DesktopSnapshot>;
+    removeProviderGroup(request: import('./types').RemoveProviderGroupRequest): Promise<DesktopSnapshot>;
     addMcpServer(request: AddMcpServerRequest): Promise<DesktopSnapshot>;
     deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot>;
     saveHookEntry(request: SaveHookEntryRequest): Promise<DesktopSnapshot>;

@@ -29,8 +29,13 @@ import {
 import type {
   DesktopModelReasoningEffort,
   ModelProfileSnapshot,
+  ModelRef,
   PreviewModelCatalogEntry,
 } from '@/types';
+
+function modelInspectorRef(model: ModelProfileSnapshot): ModelRef {
+  return model.ref ?? { groupId: model.groupId ?? '', name: model.name };
+}
 
 export function modelPickerInspectorNeedsWideLayout(
   model: ModelProfileSnapshot,
@@ -65,8 +70,8 @@ type ModelPickerInspectorPanelProps = {
   catalogEntry?: PreviewModelCatalogEntry;
   providerLabel: string;
   density?: 'default' | 'list';
-  onReasoningEffortChange: (modelName: string, effort: DesktopModelReasoningEffort) => void;
-  onThinkingEnabledChange?: (modelName: string, enabled: boolean) => void | Promise<boolean>;
+  onReasoningEffortChange: (modelRef: ModelRef, effort: DesktopModelReasoningEffort) => void;
+  onThinkingEnabledChange?: (modelRef: ModelRef, enabled: boolean) => void | Promise<boolean>;
 };
 
 export function ModelPickerInspectorPanel({
@@ -79,6 +84,7 @@ export function ModelPickerInspectorPanel({
 }: ModelPickerInspectorPanelProps) {
   const { t } = useTranslation();
   const isList = density === 'list';
+  const modelRef = modelInspectorRef(model);
   const modelContext = {
     ...(model.provider ? { provider: model.provider } : {}),
     model: model.name,
@@ -121,7 +127,7 @@ export function ModelPickerInspectorPanel({
               checked={thinkingEnabled}
               onCheckedChange={(checked) => {
                 setPendingThinkingEnabled(checked);
-                void Promise.resolve(onThinkingEnabledChange?.(model.name, checked)).then(
+                void Promise.resolve(onThinkingEnabledChange?.(modelRef, checked)).then(
                   (ok) => {
                     if (ok === false) {
                       setPendingThinkingEnabled(null);
@@ -138,7 +144,7 @@ export function ModelPickerInspectorPanel({
             <Select
               value={model.reasoningEffort}
               onValueChange={(value) => {
-                onReasoningEffortChange(model.name, value as DesktopModelReasoningEffort);
+                onReasoningEffortChange(modelRef, value as DesktopModelReasoningEffort);
               }}
             >
               <SelectTrigger className={selectTriggerClass}>
