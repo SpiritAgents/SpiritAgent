@@ -21,7 +21,7 @@ export function usesAnthropicModelCatalogMetadata(input: {
 }
 
 function providerUsesUpstreamModelDisplayName(provider: DesktopModelProvider | undefined): boolean {
-  return provider === 'vercel-ai-gateway' || provider === 'cloudflare-ai-gateway' || provider === 'openrouter';
+  return provider === 'vercel-ai-gateway' || provider === 'openrouter';
 }
 
 /** 是否可调用上游 `GET /models`（或等价）列模型；Azure 无目录端点，custom 视 transport 而定。 */
@@ -32,7 +32,7 @@ export function providerSupportsModelCatalogListing(input: {
   if (!input.provider) {
     return false;
   }
-  if (input.provider === 'azure') {
+  if (input.provider === 'azure' || input.provider === 'cloudflare-ai-gateway') {
     return false;
   }
   if (input.provider === 'custom') {
@@ -70,7 +70,6 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'alibaba'
     || input.provider === 'minimax'
     || input.provider === 'vercel-ai-gateway'
-    || input.provider === 'cloudflare-ai-gateway'
     || input.provider === 'openrouter'
     || input.provider === 'fireworks-ai'
     || input.provider === 'volcengine'
@@ -191,7 +190,7 @@ function resolvePreviewSupportedReasoningEffortsForEntry(
     };
   }
 
-  if (provider !== 'vercel-ai-gateway' && provider !== 'cloudflare-ai-gateway' && provider !== 'openrouter') {
+  if (provider !== 'vercel-ai-gateway' && provider !== 'openrouter') {
     return {};
   }
 

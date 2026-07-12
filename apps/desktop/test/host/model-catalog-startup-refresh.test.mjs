@@ -71,6 +71,10 @@ test('providerSupportsModelCatalogListing includes OpenAI and excludes Azure', (
     providerSupportsModelCatalogListing({ provider: 'azure', transportKind: 'open-responses' }),
     false,
   );
+  assert.equal(
+    providerSupportsModelCatalogListing({ provider: 'cloudflare-ai-gateway', transportKind: 'openai-compatible' }),
+    false,
+  );
 });
 
 test('collectModelCatalogRefreshTargets skips Azure and includes OpenAI', () => {

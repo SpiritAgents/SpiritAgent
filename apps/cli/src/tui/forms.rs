@@ -328,11 +328,6 @@ impl TuiShell {
                             private_key: parsed.vertex_private_key.clone(),
                         },
                     )
-                } else if parsed.provider == crate::model_registry::ModelProvider::CloudflareAiGateway {
-                    crate::openai_models_list::list_cloudflare_ai_gateway_model_ids(
-                        parsed.cloudflare_account_id.as_deref().unwrap_or(""),
-                        parsed.api_key.as_str(),
-                    )
                 } else {
                     openai_models_list::list_model_ids(
                         parsed.api_base.as_str(),

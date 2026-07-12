@@ -114,7 +114,7 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
 
 /** Gateway/OpenRouter 圆环依赖 contextLength；旧版写入漏字段时视为未命中以触发重拉。 */
 function isContextUsageCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
-  if (entry.provider !== 'vercel-ai-gateway' && entry.provider !== 'cloudflare-ai-gateway' && entry.provider !== 'openrouter') {
+  if (entry.provider !== 'vercel-ai-gateway' && entry.provider !== 'openrouter') {
     return false;
   }
   if (!entry.modelCatalog || entry.modelCatalog.length === 0) {

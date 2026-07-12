@@ -672,6 +672,22 @@ fn model_add_model_name_field(value: &str) -> BottomFormFieldView {
     }
 }
 
+fn model_add_cloudflare_model_name_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.cloudflare_model_name.label").into_owned(),
+        help: t!("form.model.field.cloudflare_model_name.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.cloudflare_model_name.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
 fn model_add_api_base_field(value: &str) -> BottomFormFieldView {
     let value = value.to_string();
     let cursor = value.chars().count();
@@ -926,14 +942,26 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         _ => 0,
     };
     let cloudflare_account_raw =
-        if old_len == 5 && provider_idx == model_add_cloudflare_provider_index() {
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
             bottom_form_text_value(form, 1)
         } else {
             ""
         };
     let cloudflare_gateway_raw =
-        if old_len == 5 && provider_idx == model_add_cloudflare_provider_index() {
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
             bottom_form_text_value(form, 2)
+        } else {
+            ""
+        };
+    let cloudflare_name_raw =
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
+            bottom_form_text_value(form, 4)
+        } else {
+            ""
+        };
+    let cloudflare_context_length_raw =
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
+            bottom_form_text_value(form, 5)
         } else {
             ""
         };
@@ -1057,6 +1085,8 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_cloudflare_account_id_field(cloudflare_account_raw),
             model_add_cloudflare_gateway_id_field(cloudflare_gateway_raw),
             model_add_cloudflare_transport_field(cloudflare_transport_selected),
+            model_add_cloudflare_model_name_field(cloudflare_name_raw),
+            model_add_context_length_field(cloudflare_context_length_raw),
             model_add_cloudflare_api_token_field(api_key_raw),
         ]
     } else if model_add_provider_id_at_choice_index(provider_idx) == Some("azure") {
@@ -1797,7 +1827,7 @@ pub(crate) fn parse_model_add_connection(
     }
 
     if provider == ModelProvider::CloudflareAiGateway {
-        if form.fields.len() != 5 {
+        if form.fields.len() != 7 {
             return Err(t!("form.model.validation.invalid_form_kind").into_owned());
         }
         let cloudflare_account_id = bottom_form_text_value(form, 1).trim().to_string();
@@ -1814,17 +1844,22 @@ pub(crate) fn parse_model_add_connection(
         if !is_valid_cloudflare_gateway_id(&cloudflare_gateway_id) {
             return Err(t!("form.model.validation.cloudflare_gateway_id_invalid").into_owned());
         }
+        let model_name = bottom_form_text_value(form, 4).trim().to_string();
+        if model_name.is_empty() {
+            return Err(t!("form.model.validation.name_empty").into_owned());
+        }
+        let context_length = parse_model_context_length_field(&bottom_form_text_value(form, 5))?;
         if api_key.is_empty() {
             return Err(t!("form.model.validation.cloudflare_api_token_empty").into_owned());
         }
         return Ok(ParsedModelAddForm {
             provider,
             transport_kind,
-            bulk: true,
-            model_name: None,
+            bulk: false,
+            model_name: Some(model_name),
             api_base: cloudflare_ai_gateway_api_base_from_account_id(&cloudflare_account_id),
             api_key,
-            context_length: None,
+            context_length,
             azure_resource_name: None,
             cloudflare_account_id: Some(cloudflare_account_id),
             cloudflare_gateway_id: Some(cloudflare_gateway_id),
@@ -3094,7 +3129,7 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 5);
+        assert_eq!(form.fields.len(), 7);
         form.selected_field = 1;
         insert_text(&mut form, "0123456789abcdef0123456789abcdef");
         form.selected_field = 2;
@@ -3106,12 +3141,14 @@ mod tests {
         }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 4;
+        insert_text(&mut form, "openai/gpt-4.1-mini");
+        form.selected_field = 6;
         insert_text(&mut form, "cf-token");
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::CloudflareAiGateway);
         assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
-        assert!(parsed.bulk);
-        assert!(parsed.model_name.is_none());
+        assert!(!parsed.bulk);
+        assert_eq!(parsed.model_name.as_deref(), Some("openai/gpt-4.1-mini"));
         assert_eq!(
             parsed.api_base,
             "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1"

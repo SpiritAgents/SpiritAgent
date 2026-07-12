@@ -659,24 +659,6 @@ export function ModelsSettingsPanel({
       if (!connectApiBase.trim()) {
         throw new Error(t('settings.endpointRequired'));
       }
-    } else if (selectedProvider === "cloudflare-ai-gateway") {
-      const accountId = connectCloudflareAccountId.trim();
-      const gatewayId = connectCloudflareGatewayId.trim();
-      if (!accountId) {
-        throw new Error(t('settings.cloudflareAccountIdRequired'));
-      }
-      if (!isValidCloudflareAccountId(accountId)) {
-        throw new Error(t('settings.cloudflareAccountIdInvalid'));
-      }
-      if (!gatewayId) {
-        throw new Error(t('settings.cloudflareGatewayIdRequired'));
-      }
-      if (!isValidCloudflareGatewayId(gatewayId)) {
-        throw new Error(t('settings.cloudflareGatewayIdInvalid'));
-      }
-      if (!connectApiKey.trim()) {
-        throw new Error(t('settings.cloudflareAiGatewayApiTokenRequired'));
-      }
     } else if (!connectApiKey.trim()) {
       throw new Error(t('settings.apiKeyRequired'));
     }
@@ -704,12 +686,6 @@ export function ModelsSettingsPanel({
         : {}),
       ...(connectAlibabaBillingModeForRequest
         ? { alibabaBillingMode: connectAlibabaBillingModeForRequest }
-        : {}),
-      ...(selectedProvider === "cloudflare-ai-gateway"
-        ? {
-            cloudflareAccountId: connectCloudflareAccountId.trim(),
-            cloudflareGatewayId: connectCloudflareGatewayId.trim(),
-          }
         : {}),
       forceRefresh,
     });
@@ -740,12 +716,6 @@ export function ModelsSettingsPanel({
         : {}),
       ...(connectAlibabaBillingModeForRequest
         ? { alibabaBillingMode: connectAlibabaBillingModeForRequest }
-        : {}),
-      ...(selectedProvider === "cloudflare-ai-gateway"
-        ? {
-            cloudflareAccountId: connectCloudflareAccountId.trim(),
-            cloudflareGatewayId: connectCloudflareGatewayId.trim(),
-          }
         : {}),
     };
     await onAddProviderModels(bulk);
@@ -872,6 +842,54 @@ export function ModelsSettingsPanel({
       provider: "azure",
       transportKind: "open-responses",
       azureResourceName,
+      ...(contextLength !== undefined ? { contextLength } : {}),
+    });
+    setConnectDialogOpen(false);
+    runAfterRadixOverlayClose(resetConnectWizard);
+  };
+
+  const saveCloudflareSingle = async () => {
+    if (selectedProvider !== "cloudflare-ai-gateway") {
+      return;
+    }
+    const accountId = connectCloudflareAccountId.trim();
+    const gatewayId = connectCloudflareGatewayId.trim();
+    const name = connectName.trim();
+    if (!accountId) {
+      throw new Error(t('settings.cloudflareAccountIdRequired'));
+    }
+    if (!isValidCloudflareAccountId(accountId)) {
+      throw new Error(t('settings.cloudflareAccountIdInvalid'));
+    }
+    if (!gatewayId) {
+      throw new Error(t('settings.cloudflareGatewayIdRequired'));
+    }
+    if (!isValidCloudflareGatewayId(gatewayId)) {
+      throw new Error(t('settings.cloudflareGatewayIdInvalid'));
+    }
+    if (!name) {
+      throw new Error(t('settings.modelNameRequired'));
+    }
+    if (!connectApiKey.trim()) {
+      throw new Error(t('settings.cloudflareAiGatewayApiTokenRequired'));
+    }
+    const contextLengthRaw = connectContextLength.trim();
+    let contextLength: number | undefined;
+    if (contextLengthRaw) {
+      const parsed = parseModelContextLength(Number(contextLengthRaw));
+      if (parsed === undefined) {
+        throw new Error(t('settings.contextLengthInvalid'));
+      }
+      contextLength = parsed;
+    }
+    await onAddModel({
+      name,
+      apiBase: cloudflareAiGatewayApiBaseFromAccountId(accountId),
+      apiKey: connectApiKey,
+      provider: "cloudflare-ai-gateway",
+      transportKind: connectTransportKindForRequest ?? defaultConnectTransportKind("cloudflare-ai-gateway"),
+      cloudflareAccountId: accountId,
+      cloudflareGatewayId: gatewayId,
       ...(contextLength !== undefined ? { contextLength } : {}),
     });
     setConnectDialogOpen(false);
@@ -1804,6 +1822,36 @@ export function ModelsSettingsPanel({
                 </div>
               </>
             ) : null}
+            {selectedProvider === "cloudflare-ai-gateway" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-cloudflare-model-name">{t('settings.modelName')}</Label>
+                <DesktopFormInput
+                  id="connect-cloudflare-model-name"
+                  value={connectName}
+                  onChange={(e) => setConnectName(e.target.value)}
+                  placeholder={t('settings.cloudflareModelNamePlaceholder')}
+                  autoComplete="off"
+                />
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {t('settings.cloudflareAiGatewayManualHint')}
+                </p>
+              </div>
+            ) : null}
+            {selectedProvider === "cloudflare-ai-gateway" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-context-length-cloudflare">{t('settings.contextLength')}</Label>
+                <DesktopFormInput
+                  id="connect-context-length-cloudflare"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={connectContextLength}
+                  onChange={(e) => setConnectContextLength(e.target.value)}
+                  placeholder={t('settings.optional')}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
             {(selectedProvider !== "amazon-bedrock" || bedrockConnectMode === "bearer")
             && selectedProvider !== "google-vertex-ai" ? (
             <div className="grid gap-2">
@@ -2183,7 +2231,33 @@ export function ModelsSettingsPanel({
                     {t('settings.addThisModel')}
                   </Button>
                 ) : null}
-                {selectedProvider !== null && selectedProvider !== "custom" && selectedProvider !== "amazon-bedrock" && selectedProvider !== "azure" && selectedProvider !== "google-vertex-ai" ? (
+                {selectedProvider === "cloudflare-ai-gateway" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={
+                      modelsBusy
+                      || modelsPreviewBusy
+                      || !connectCloudflareAccountId.trim()
+                      || !connectCloudflareGatewayId.trim()
+                      || !connectName.trim()
+                      || !connectApiKey.trim()
+                    }
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await saveCloudflareSingle();
+                        } catch {
+                          /* runtimeError */
+                        }
+                      })();
+                    }}
+                  >
+                    {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                    {t('settings.addThisModel')}
+                  </Button>
+                ) : null}
+                {selectedProvider !== null && selectedProvider !== "custom" && selectedProvider !== "amazon-bedrock" && selectedProvider !== "azure" && selectedProvider !== "google-vertex-ai" && selectedProvider !== "cloudflare-ai-gateway" ? (
                   <Button
                     type="button"
                     size="sm"
@@ -2191,8 +2265,6 @@ export function ModelsSettingsPanel({
                       modelsBusy
                       || modelsPreviewBusy
                       || !connectApiKey.trim()
-                      || (selectedProvider === "cloudflare-ai-gateway"
-                        && (!connectCloudflareAccountId.trim() || !connectCloudflareGatewayId.trim()))
                     }
                     onClick={() => {
                       void (async () => {
