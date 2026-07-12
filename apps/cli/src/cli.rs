@@ -170,7 +170,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             provider_site,
             alibaba_workspace_id,
         } => {
-            if cfg.find_model_ref_by_name(&name).is_some() {
+            if cfg.has_model_name(&name) {
                 println!("模型已存在: {}", name);
             } else {
                 let provider = parse_model_provider(provider)?;
@@ -419,9 +419,9 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             }
         }
         ModelCommand::Use { name } => {
-            let Some(model_ref) = cfg.find_model_ref_by_name(&name) else {
-                return Err(anyhow!("模型不存在，请先添加: {}", name));
-            };
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
             cfg.active_model = model_ref;
             config_store.save(&cfg)?;
             println!("已切换当前模型为: {}", name);
@@ -510,9 +510,9 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             println!("已更新当前模型 API Base: {}", url);
         }
         ConfigCommand::SetImageModel { name } => {
-            let Some(model_ref) = cfg.find_model_ref_by_name(&name) else {
-                return Err(anyhow!("模型不存在，请先添加: {}", name));
-            };
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
             let Some(profile) = cfg.resolve_model_profile(&model_ref) else {
                 return Err(anyhow!("模型不存在，请先添加: {}", name));
             };
@@ -532,9 +532,9 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             println!("已清除图片生成模型。CLI 当前仅在配置图片模型后暴露 generate_image 工具。");
         }
         ConfigCommand::SetVideoModel { name } => {
-            let Some(model_ref) = cfg.find_model_ref_by_name(&name) else {
-                return Err(anyhow!("模型不存在，请先添加: {}", name));
-            };
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
             let Some(profile) = cfg.resolve_model_profile(&model_ref) else {
                 return Err(anyhow!("模型不存在，请先添加: {}", name));
             };

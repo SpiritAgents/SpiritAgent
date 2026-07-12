@@ -36,16 +36,16 @@ impl TuiShell {
             }
             ["use", model] => {
                 let mut config = self.runtime.config().clone();
-                let Some(model_ref) = config.find_model_ref_by_name(model) else {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: format!(
-                            "模型不存在: {}，先用 `/model add` 打开表单添加，或 `/model add {} <api_base> <api_key>`",
-                            model, model
-                        ),
-                        tool_block: None,
-                    });
-                    return;
+                let model_ref = match config.parse_model_ref_selector(model) {
+                    Ok(model_ref) => model_ref,
+                    Err(message) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: message,
+                            tool_block: None,
+                        });
+                        return;
+                    }
                 };
                 config.active_model = model_ref;
                 if let Err(err) = self.runtime.validate_config_change(&config) {

@@ -165,6 +165,10 @@ pub fn model_refs_equal(a: &ModelRef, b: &ModelRef) -> bool {
     a.group_id == b.group_id && a.name == b.name
 }
 
+pub fn model_ref_key(model_ref: &ModelRef) -> String {
+    format!("{}::{}", model_ref.group_id, model_ref.name)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelEntry {
     pub name: String,
@@ -784,20 +788,75 @@ impl AppConfig {
         }
     }
 
-    pub fn find_model_ref_by_name(&self, name: &str) -> Option<ModelRef> {
+    pub fn find_model_refs_by_name(&self, name: &str) -> Vec<ModelRef> {
         let normalized = name.trim();
         if normalized.is_empty() {
-            return None;
+            return Vec::new();
         }
+        let mut refs = Vec::new();
         for group in &self.provider_groups {
-            if group.models.iter().any(|model| model.name == normalized) {
-                return Some(ModelRef {
-                    group_id: group.id.clone(),
-                    name: normalized.to_string(),
-                });
+            for model in &group.models {
+                if model.name == normalized {
+                    refs.push(ModelRef {
+                        group_id: group.id.clone(),
+                        name: model.name.clone(),
+                    });
+                }
             }
         }
-        None
+        refs
+    }
+
+    pub fn has_model_name(&self, name: &str) -> bool {
+        !self.find_model_refs_by_name(name).is_empty()
+    }
+
+    pub fn parse_model_ref_selector(&self, selector: &str) -> Result<ModelRef, String> {
+        let trimmed = selector.trim();
+        if trimmed.is_empty() {
+            return Err("模型标识不能为空".to_string());
+        }
+        if let Some((group_id, name)) = trimmed.split_once("::") {
+            let group_id = group_id.trim();
+            let name = name.trim();
+            if group_id.is_empty() || name.is_empty() {
+                return Err(format!("无效的模型标识: {}", trimmed));
+            }
+            let model_ref = ModelRef {
+                group_id: group_id.to_string(),
+                name: name.to_string(),
+            };
+            if !self.model_ref_exists(&model_ref) {
+                return Err(format!("模型不存在: {}", trimmed));
+            }
+            return Ok(model_ref);
+        }
+        let matches = self.find_model_refs_by_name(trimmed);
+        match matches.len() {
+            0 => Err(format!("模型不存在，请先添加: {}", trimmed)),
+            1 => Ok(matches[0].clone()),
+            _ => {
+                let examples = matches
+                    .iter()
+                    .take(3)
+                    .map(model_ref_key)
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                Err(format!(
+                    "存在多个同名模型，请使用 groupId::name 指定，例如: {}",
+                    examples
+                ))
+            }
+        }
+    }
+
+    pub fn find_model_ref_by_name(&self, name: &str) -> Option<ModelRef> {
+        let matches = self.find_model_refs_by_name(name);
+        if matches.len() == 1 {
+            Some(matches[0].clone())
+        } else {
+            None
+        }
     }
 
     pub fn has_model_in_group(&self, group_id: &str, name: &str) -> bool {
