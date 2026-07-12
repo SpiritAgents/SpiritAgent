@@ -9,6 +9,7 @@ import {
   FileToolLspDiagnosticsHover,
   FileToolLspDiagnosticsHoverTrigger,
 } from "@/components/file-tool-lsp-diagnostics-hover";
+import { ShellToolCommandHighlight } from "@/components/shell-tool-command-highlight";
 import { ToolCallDiffView } from "@/components/tool-call-diff-view";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
@@ -31,7 +32,10 @@ import {
   toolHasExpandableContent,
   type ShellToolSummaryParts,
 } from "@/lib/tool-call-display";
-import { parseShellToolCommand, parseShellToolResult } from "@/lib/shell-tool-display";
+import {
+  parseShellToolResult,
+  resolveShellToolExpandedCommand,
+} from "@/lib/shell-tool-display";
 import {
   clickableToolCardTriggerClass,
   shouldShowLspDiagnosticsOnToolCard,
@@ -428,11 +432,8 @@ function ShellToolExpandedBody({
         <div className="space-y-1">
           <div className="overflow-hidden rounded-md border border-border/20 bg-muted/15 p-2 text-xs leading-relaxed text-muted-foreground">
             {commandLine ? (
-              <div className="flex items-center gap-2">
-                <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono">
-                  <span className="select-none text-muted-foreground/75">$ </span>
-                  {commandLine}
-                </pre>
+              <div className="flex items-start gap-2">
+                <ShellToolCommandHighlight command={commandLine} />
                 {showTerminateButton ? (
                   <Button
                     type="button"
@@ -542,7 +543,7 @@ export function MinimalToolCallCard({
   const isFileDiff = isFileDiffTool(tool.toolName);
   const isResponsesBuiltIn = isResponsesBuiltInToolCard(tool.toolName);
   const shellCommand = useMemo(
-    () => (isShell ? tool.headlineDetail?.trim() || parseShellToolCommand(tool) : undefined),
+    () => (isShell ? resolveShellToolExpandedCommand(tool) : undefined),
     [isShell, tool.argsExcerpt, tool.detailLines, tool.headlineDetail],
   );
   const expandable = toolHasExpandableContent(tool);
