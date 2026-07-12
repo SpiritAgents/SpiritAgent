@@ -65,6 +65,8 @@ export interface OpenResponsesTransportConfig {
   };
   /** Azure 资源名；与 `@ai-sdk/azure` 的 `resourceName` 对齐。 */
   azureResourceName?: string;
+  /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
+  cloudflareGatewayId?: string;
   /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
   transportRequestProfile?: TransportRequestProfile;
   /** 厂商 extended thinking；false 关闭 Claude / DeepSeek 等 thinking 开关。 */
@@ -115,8 +117,10 @@ export function isGatewayOpenAiRoutedModel(model: string): boolean {
  */
 export function isAggregatedOpenAiRoutedVendor(
   llmVendor: OpenAiLlmVendor | undefined,
-): llmVendor is 'vercel-ai-gateway' | 'openrouter' {
-  return llmVendor === 'vercel-ai-gateway' || llmVendor === 'openrouter';
+): llmVendor is 'vercel-ai-gateway' | 'cloudflare-ai-gateway' | 'openrouter' {
+  return llmVendor === 'vercel-ai-gateway'
+    || llmVendor === 'cloudflare-ai-gateway'
+    || llmVendor === 'openrouter';
 }
 
 /**
