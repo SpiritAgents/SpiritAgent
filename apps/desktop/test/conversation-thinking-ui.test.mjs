@@ -168,6 +168,52 @@ test('shouldShowAssistantThinkingCollapsible hides placeholder when tool follows
   );
 });
 
+test('shouldShowAssistantThinkingCollapsible hides placeholder while a tool is still shimmering', () => {
+  const messages = [
+    { id: 1, role: 'user', content: 'hi', pending: false },
+    {
+      id: 2,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: {
+        toolCallId: 'ws_1',
+        toolName: 'web_search',
+        phase: 'succeeded',
+        headline: 'Searched',
+        detailLines: [],
+      },
+    },
+    {
+      id: 3,
+      role: 'assistant',
+      content: '',
+      pending: false,
+      tool: {
+        toolCallId: 'ws_2',
+        toolName: 'web_search',
+        phase: 'preview',
+        headline: 'Searching',
+        detailLines: [],
+      },
+    },
+    {
+      id: 4,
+      role: 'assistant',
+      content: '',
+      pending: true,
+    },
+  ];
+
+  assert.equal(
+    shouldShowAssistantThinkingCollapsible(messages[3], {
+      kind: 'thinking',
+      statusText: '| Thinking...',
+    }, messages, 3),
+    false,
+  );
+});
+
 test('shouldShowAssistantThinkingCollapsible keeps placeholder between tool batches', () => {
   const messages = [
     { id: 1, role: 'user', content: 'hi', pending: false },

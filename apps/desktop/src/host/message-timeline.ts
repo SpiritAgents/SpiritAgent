@@ -564,6 +564,9 @@ export class DesktopMessageTimeline {
     if (activeText?.content.trim()) {
       activeText.pending = false;
     }
+    if (normalizedTool.phase === 'preview' || normalizedTool.phase === 'running') {
+      this.clearPrematureAfterToolsThinkingPlaceholder(segment);
+    }
     const row = this.createRow({
       turnId: segment.turnId,
       segmentId: segment.segmentId,
@@ -871,6 +874,7 @@ export class DesktopMessageTimeline {
     if (!segment || !segmentHasToolRows(segment) || !segmentAllToolsTerminal(segment)) {
       return undefined;
     }
+    this.removeStaleBeforeToolsEmptyPendingRows(segment);
     const existing = this.findAfterToolsAssistantTextRow(segment);
     if (existing) {
       if (!existing.content.trim() && !hasRowAux(existing)) {
@@ -1302,6 +1306,31 @@ export class DesktopMessageTimeline {
     const row = this.createAssistantTextRow(segment, 'after-tools', true);
     segment.activeAssistantTextRowId = row.rowId;
     return row;
+  }
+
+  private removeStaleBeforeToolsEmptyPendingRows(segment: DesktopTimelineSegment): void {
+    segment.rows = segment.rows.filter((row) => {
+      if (row.kind !== 'assistant-text' || row.section !== 'before-tools') {
+        return true;
+      }
+      return Boolean(row.content.trim() || hasRowAux(row));
+    });
+  }
+
+  /** Gateway multi-search: drop empty after-tools placeholder seeded before the next tool preview. */
+  private clearPrematureAfterToolsThinkingPlaceholder(segment: DesktopTimelineSegment): void {
+    const afterToolsRow = this.findAfterToolsAssistantTextRow(segment);
+    if (
+      !afterToolsRow?.pending
+      || afterToolsRow.content.trim()
+      || hasRowAux(afterToolsRow)
+    ) {
+      return;
+    }
+    segment.rows = segment.rows.filter((row) => row.rowId !== afterToolsRow.rowId);
+    if (segment.activeAssistantTextRowId === afterToolsRow.rowId) {
+      segment.activeAssistantTextRowId = undefined;
+    }
   }
 
   private findAfterToolsAssistantTextRow(

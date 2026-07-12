@@ -2,6 +2,7 @@ import {
   isGenericPendingThinkingStatusText,
   isLivePendingReasoningAux,
 } from './subagent-display.js';
+import { toolCallPhaseShowsShimmer } from './tool-call-shimmer.js';
 import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
 
 export function isStandaloneThinkingMessage(
@@ -70,6 +71,14 @@ export function isAssistantReasoningLive(
   if (thinking && !isGenericPendingThinkingStatusText(thinking)) {
     return true;
   }
+  if (
+    isLiveReasoningPlaceholderMessage(message, pendingAuxState)
+    && messages !== undefined
+    && messageIndex !== undefined
+    && hasAssistantNonTerminalToolInCurrentTurn(messages, messageIndex)
+  ) {
+    return false;
+  }
   return isLiveReasoningPlaceholderMessage(message, pendingAuxState);
 }
 
@@ -114,6 +123,28 @@ export function hasAssistantToolLaterInTurn(
       break;
     }
     if (candidate.role === 'assistant' && candidate.tool) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Any in-flight tool card in the same user turn (preview / running / pending approval). */
+export function hasAssistantNonTerminalToolInCurrentTurn(
+  messages: readonly ConversationMessageSnapshot[],
+  messageIndex: number,
+): boolean {
+  const lastUser = lastUserMessageIndex(messages);
+  if (messageIndex <= lastUser) {
+    return false;
+  }
+  for (let index = lastUser + 1; index < messages.length; index += 1) {
+    const candidate = messages[index];
+    if (
+      candidate?.role === 'assistant'
+      && candidate.tool
+      && toolCallPhaseShowsShimmer(candidate.tool.phase)
+    ) {
       return true;
     }
   }
@@ -219,6 +250,13 @@ export function shouldShowAssistantThinkingCollapsible(
     if (isStandaloneThinkingMessage(message) && !hasAssistantToolInCurrentTurn(messages, listIndex)) {
       return true;
     }
+    return false;
+  }
+
+  if (
+    isLiveReasoningPlaceholderMessage(message, pendingAuxState)
+    && hasAssistantNonTerminalToolInCurrentTurn(messages, listIndex)
+  ) {
     return false;
   }
 
