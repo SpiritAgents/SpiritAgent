@@ -1050,8 +1050,11 @@ class DesktopHostService {
 
     const modelChanged = state.config.activeModel !== normalized;
     bundle.activeModel = normalized;
+    const runtimeBusy = bundle.runtime?.isBusy() === true;
     if (!modelChanged) {
-      await this.refreshRuntimeForBundle(bundle);
+      if (!runtimeBusy) {
+        await this.refreshRuntimeForBundle(bundle);
+      }
       this.syncActiveRuntimePointer();
       return;
     }
@@ -1059,7 +1062,11 @@ class DesktopHostService {
     state.config.activeModel = normalized;
     await saveConfig(state.config);
     this.clearActiveBundleContextUsage();
-    await this.refreshRuntimeForBundle(bundle);
+    if (runtimeBusy) {
+      bundle.deferredRuntimeRefreshWhileBusy = true;
+    } else {
+      await this.refreshRuntimeForBundle(bundle);
+    }
     this.syncActiveRuntimePointer();
     // Syncing pane model on session switch must not bump sidebar list order.
     await this.persistSessionBundle(bundle, {
