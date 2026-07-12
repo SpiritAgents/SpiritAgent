@@ -57,7 +57,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   hasBedrockIamCredentials,
   hasGoogleVertexServiceAccountCredentials,
-} from "@/host/provider-api-key";
+} from "@/lib/provider-runtime-credentials";
 import {
   PROVIDER_PICKER_ROWS,
   defaultProviderConnectSite,
@@ -65,7 +65,7 @@ import {
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
   resolveProviderConnectApiBase,
-} from "@/host/provider-presets";
+} from "@spiritagent/host-internal/model-provider-presets";
 import {
   buildModelCatalogDetailMap,
   buildModelCatalogDisplayTitleMap,
@@ -97,7 +97,7 @@ import {
   defaultPresetProviderGroupId,
   modelRefsEqual,
   slugifyProviderGroupLabel,
-} from "@spiritagent/host-internal";
+} from "@spiritagent/host-internal/config-v2";
 import {
   bedrockMantleApiBaseFromRegion,
   isBedrockMantleOpenAiModel,

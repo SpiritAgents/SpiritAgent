@@ -5,7 +5,7 @@ import {
   isEmptyModelRef,
   modelRefKey,
   modelRefsEqual,
-} from "@spiritagent/host-internal";
+} from "@spiritagent/host-internal/config-v2";
 
 export const defaultCustomModelCapabilities: DesktopModelCapability[] = ["chat", "image"];
 

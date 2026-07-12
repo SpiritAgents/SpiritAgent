@@ -31,7 +31,7 @@ import type {
   ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
-import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal";
+import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
 type CreateAutomationDialogProps = {

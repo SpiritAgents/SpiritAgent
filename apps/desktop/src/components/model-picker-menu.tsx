@@ -47,7 +47,7 @@ import type {
   ModelRef,
   PreviewModelCatalogEntry,
 } from "@/types";
-import { modelRefKey, modelRefsEqual } from "@spiritagent/host-internal";
+import { modelRefKey, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
 type ModelPickerItem = DesktopSnapshot["config"]["models"][number];
