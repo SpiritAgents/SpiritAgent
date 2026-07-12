@@ -1028,13 +1028,13 @@ export function useDesktopRuntime() {
   );
 
   const switchPaneModel = useCallback(
-    async (sessionPath: string, modelName: string): Promise<boolean> => {
+    async (sessionPath: string, modelRef: ModelRef): Promise<boolean> => {
       if (!api?.switchPaneModel) {
         return false;
       }
 
       try {
-        const next = await api.switchPaneModel({ sessionPath, modelName });
+        const next = await api.switchPaneModel({ sessionPath, modelRef });
         applySnapshot(next);
         setQuestionError("");
         setRuntimeError("");
