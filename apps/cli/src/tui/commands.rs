@@ -117,7 +117,18 @@ impl TuiShell {
             }
             ["remove", model] => {
                 let mut config = self.runtime.config().clone();
-                if !config.remove_model_by_name(model) {
+                let model_ref = match config.parse_model_ref_selector(model) {
+                    Ok(model_ref) => model_ref,
+                    Err(message) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: message,
+                            tool_block: None,
+                        });
+                        return;
+                    }
+                };
+                if !config.remove_model(&model_ref) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
                         content: format!("模型不存在: {}", model),
@@ -125,20 +136,20 @@ impl TuiShell {
                     });
                     return;
                 }
-                if config.active_model.name == *model {
+                if crate::model_registry::model_refs_equal(&config.active_model, &model_ref) {
                     config.active_model = config.first_model_ref();
                 }
                 if config
                     .image_generation_model
                     .as_ref()
-                    .is_some_and(|model_ref| model_ref.name == *model)
+                    .is_some_and(|slot| crate::model_registry::model_refs_equal(slot, &model_ref))
                 {
                     config.image_generation_model = None;
                 }
                 if config
                     .video_generation_model
                     .as_ref()
-                    .is_some_and(|model_ref| model_ref.name == *model)
+                    .is_some_and(|slot| crate::model_registry::model_refs_equal(slot, &model_ref))
                 {
                     config.video_generation_model = None;
                 }
@@ -149,7 +160,7 @@ impl TuiShell {
                         tool_block: None,
                     });
                 } else {
-                    let _ = self.secret_store.remove_model_api_key(model);
+                    let _ = self.secret_store.remove_model_api_key(&model_ref.name);
                     self.runtime.replace_config(config);
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,

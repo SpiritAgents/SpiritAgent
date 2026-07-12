@@ -12,7 +12,7 @@ use crate::{
     model_registry::{
         AppConfig, DEFAULT_API_BASE, ModelEntry, ModelProfile, ModelProvider, ModelRef,
         ModelTransportKind, ProviderGroupConnectDraft, default_preset_provider_group_id,
-        save_group_api_key,
+        model_refs_equal, save_group_api_key,
     },
     ports::{AppPaths, ConfigStore, SecretStore},
     ts_bridge::TsBridgeRuntime,
@@ -393,28 +393,31 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             }
         }
         ModelCommand::Remove { name } => {
-            if !cfg.remove_model_by_name(&name) {
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
+            if !cfg.remove_model(&model_ref) {
                 println!("模型不存在: {}", name);
             } else {
-                if cfg.active_model.name == name {
+                if model_refs_equal(&cfg.active_model, &model_ref) {
                     cfg.active_model = cfg.first_model_ref();
                 }
                 if cfg
                     .image_generation_model
                     .as_ref()
-                    .is_some_and(|model_ref| model_ref.name == name)
+                    .is_some_and(|slot| model_refs_equal(slot, &model_ref))
                 {
                     cfg.image_generation_model = None;
                 }
                 if cfg
                     .video_generation_model
                     .as_ref()
-                    .is_some_and(|model_ref| model_ref.name == name)
+                    .is_some_and(|slot| model_refs_equal(slot, &model_ref))
                 {
                     cfg.video_generation_model = None;
                 }
                 config_store.save(&cfg)?;
-                let _ = secret_store.remove_model_api_key(&name);
+                let _ = secret_store.remove_model_api_key(&model_ref.name);
                 println!("已删除模型: {}", name);
             }
         }
