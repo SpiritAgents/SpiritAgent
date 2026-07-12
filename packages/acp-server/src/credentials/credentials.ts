@@ -1,4 +1,7 @@
-import type { ModelProviderId } from '@spiritagent/host-internal';
+import {
+  SPIRIT_CONFIG_SCHEMA_VERSION,
+  type ModelProviderId,
+} from '@spiritagent/host-internal';
 
 import { keyringStore } from './keyring-store.js';
 import {
@@ -238,13 +241,33 @@ export async function saveProviderSetup(
   }
 
   const existing = loadSpiritConfig(spiritDataDir);
-  const models = existing?.models.filter((model) => model.name !== setup.profile.name) ?? [];
-  models.push(setup.profile);
+  const providerGroups = [...(existing?.providerGroups ?? [])];
+  const groupIndex = providerGroups.findIndex((group) => group.id === setup.groupId);
+  const activeModel = { groupId: setup.groupId, name: setup.model.name };
+
+  if (groupIndex >= 0) {
+    const currentGroup = providerGroups[groupIndex]!;
+    const models = currentGroup.models.filter((model) => model.name !== setup.model.name);
+    models.push(setup.model);
+    providerGroups[groupIndex] = {
+      ...currentGroup,
+      ...setup.group,
+      id: setup.groupId,
+      models,
+    };
+  } else {
+    providerGroups.push({
+      ...setup.group,
+      id: setup.groupId,
+      models: [setup.model],
+    });
+  }
 
   const config: SpiritConfigFile = {
-    ...(existing ?? { models: [], activeModel: '' }),
-    models,
-    activeModel: setup.profile.name,
+    ...(existing ?? {}),
+    schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
+    providerGroups,
+    activeModel,
   };
   await saveSpiritConfig(spiritDataDir, config);
 }
