@@ -2642,6 +2642,11 @@ class DesktopHostService {
     const apiKey = await resolveApiKeyForConfigModel(state.config, effectiveActiveModel);
     const azureResourceNameReady = activeProfile?.provider !== 'azure'
       || Boolean(activeProfile.azureResourceName?.trim());
+    const cloudflareConnectReady = activeProfile?.provider !== 'cloudflare-ai-gateway'
+      || (
+        Boolean(activeProfile.cloudflareAccountId?.trim())
+        && Boolean(activeProfile.cloudflareGatewayId?.trim())
+      );
     const runtimeAuthReady = activeTransportKind === 'bedrock'
       ? Boolean(activeProfile?.awsRegion?.trim())
         && hasBedrockRuntimeCredentials({
@@ -2659,6 +2664,8 @@ class DesktopHostService {
           })
       : activeProfile?.provider === 'azure'
         ? azureResourceNameReady && Boolean(apiKey)
+        : activeProfile?.provider === 'cloudflare-ai-gateway'
+          ? cloudflareConnectReady && Boolean(apiKey)
         : Boolean(apiKey);
     this.activeApiKeyConfigured = runtimeAuthReady;
     const extensionSystemPrompts = this.extensionWarmup.systemPromptsCache;
@@ -2682,6 +2689,8 @@ class DesktopHostService {
       }
       this.lastRuntimeError = activeProfile?.provider === 'azure' && !azureResourceNameReady
         ? i18n.t('error.azureResourceNameRequired')
+        : activeProfile?.provider === 'cloudflare-ai-gateway' && !cloudflareConnectReady
+          ? i18n.t('settings.cloudflareAccountIdRequired')
         : i18n.t('error.apiKeyNotConfigured');
       await this.refreshModelKeyPresence();
       return;

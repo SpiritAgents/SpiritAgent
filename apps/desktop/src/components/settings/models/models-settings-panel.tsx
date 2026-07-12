@@ -103,6 +103,11 @@ import {
   isBedrockMantleOpenAiModel,
 } from "@spiritagent/host-internal/bedrock-mantle";
 import { azureApiBaseFromResourceName, isValidAzureResourceName } from "@spiritagent/host-internal/azure-resource";
+import {
+  cloudflareAiGatewayApiBaseFromAccountId,
+  isValidCloudflareAccountId,
+  isValidCloudflareGatewayId,
+} from "@spiritagent/host-internal/cloudflare-ai-gateway-resource";
 import { vertexApiBaseFromProjectAndLocation } from "@spiritagent/host-internal/google-vertex-endpoints";
 
 export function ModelsSettingsPanel({
@@ -139,6 +144,8 @@ export function ModelsSettingsPanel({
   const [connectApiKey, setConnectApiKey] = useState("");
   const [connectAwsRegion, setConnectAwsRegion] = useState("");
   const [connectAzureResourceName, setConnectAzureResourceName] = useState("");
+  const [connectCloudflareAccountId, setConnectCloudflareAccountId] = useState("");
+  const [connectCloudflareGatewayId, setConnectCloudflareGatewayId] = useState("");
   const [connectAccessKeyId, setConnectAccessKeyId] = useState("");
   const [connectSecretAccessKey, setConnectSecretAccessKey] = useState("");
   const [connectVertexProject, setConnectVertexProject] = useState("");
@@ -281,6 +288,8 @@ export function ModelsSettingsPanel({
     setConnectApiKey("");
     setConnectAwsRegion("");
     setConnectAzureResourceName("");
+    setConnectCloudflareAccountId("");
+    setConnectCloudflareGatewayId("");
     setConnectAccessKeyId("");
     setConnectSecretAccessKey("");
     setConnectVertexProject("");
@@ -319,6 +328,8 @@ export function ModelsSettingsPanel({
     setConnectApiKey("");
     setConnectAwsRegion("");
     setConnectAzureResourceName("");
+    setConnectCloudflareAccountId("");
+    setConnectCloudflareGatewayId("");
     setConnectAccessKeyId("");
     setConnectSecretAccessKey("");
     setConnectVertexProject("");
@@ -588,6 +599,8 @@ export function ModelsSettingsPanel({
         ? bedrockApiBaseFromRegion(connectAwsRegion)
         : selectedProvider === "azure"
           ? azureApiBaseFromResourceName(connectAzureResourceName)
+        : selectedProvider === "cloudflare-ai-gateway"
+          ? cloudflareAiGatewayApiBaseFromAccountId(connectCloudflareAccountId)
         : selectedProvider === "google-vertex-ai" && vertexConnectMode !== "express"
           ? vertexApiBaseFromProjectAndLocation(connectVertexProject, connectVertexLocation)
         : selectedProvider === "custom"
@@ -646,6 +659,24 @@ export function ModelsSettingsPanel({
       if (!connectApiBase.trim()) {
         throw new Error(t('settings.endpointRequired'));
       }
+    } else if (selectedProvider === "cloudflare-ai-gateway") {
+      const accountId = connectCloudflareAccountId.trim();
+      const gatewayId = connectCloudflareGatewayId.trim();
+      if (!accountId) {
+        throw new Error(t('settings.cloudflareAccountIdRequired'));
+      }
+      if (!isValidCloudflareAccountId(accountId)) {
+        throw new Error(t('settings.cloudflareAccountIdInvalid'));
+      }
+      if (!gatewayId) {
+        throw new Error(t('settings.cloudflareGatewayIdRequired'));
+      }
+      if (!isValidCloudflareGatewayId(gatewayId)) {
+        throw new Error(t('settings.cloudflareGatewayIdInvalid'));
+      }
+      if (!connectApiKey.trim()) {
+        throw new Error(t('settings.cloudflareAiGatewayApiTokenRequired'));
+      }
     } else if (!connectApiKey.trim()) {
       throw new Error(t('settings.apiKeyRequired'));
     }
@@ -673,6 +704,12 @@ export function ModelsSettingsPanel({
         : {}),
       ...(connectAlibabaBillingModeForRequest
         ? { alibabaBillingMode: connectAlibabaBillingModeForRequest }
+        : {}),
+      ...(selectedProvider === "cloudflare-ai-gateway"
+        ? {
+            cloudflareAccountId: connectCloudflareAccountId.trim(),
+            cloudflareGatewayId: connectCloudflareGatewayId.trim(),
+          }
         : {}),
       forceRefresh,
     });
@@ -703,6 +740,12 @@ export function ModelsSettingsPanel({
         : {}),
       ...(connectAlibabaBillingModeForRequest
         ? { alibabaBillingMode: connectAlibabaBillingModeForRequest }
+        : {}),
+      ...(selectedProvider === "cloudflare-ai-gateway"
+        ? {
+            cloudflareAccountId: connectCloudflareAccountId.trim(),
+            cloudflareGatewayId: connectCloudflareGatewayId.trim(),
+          }
         : {}),
     };
     await onAddProviderModels(bulk);
@@ -1737,12 +1780,38 @@ export function ModelsSettingsPanel({
                 />
               </div>
             ) : null}
+            {selectedProvider === "cloudflare-ai-gateway" ? (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="connect-cloudflare-account-id">{t('settings.cloudflareAccountId')}</Label>
+                  <DesktopFormInput
+                    id="connect-cloudflare-account-id"
+                    value={connectCloudflareAccountId}
+                    onChange={(e) => setConnectCloudflareAccountId(e.target.value)}
+                    placeholder={t('settings.cloudflareAccountIdPlaceholder')}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="connect-cloudflare-gateway-id">{t('settings.cloudflareGatewayId')}</Label>
+                  <DesktopFormInput
+                    id="connect-cloudflare-gateway-id"
+                    value={connectCloudflareGatewayId}
+                    onChange={(e) => setConnectCloudflareGatewayId(e.target.value)}
+                    placeholder={t('settings.cloudflareGatewayIdPlaceholder')}
+                    autoComplete="off"
+                  />
+                </div>
+              </>
+            ) : null}
             {(selectedProvider !== "amazon-bedrock" || bedrockConnectMode === "bearer")
             && selectedProvider !== "google-vertex-ai" ? (
             <div className="grid gap-2">
               <Label htmlFor="connect-api-key">
                 {selectedProvider === "amazon-bedrock"
                   ? t('settings.bedrockApiKeyLabel')
+                  : selectedProvider === "cloudflare-ai-gateway"
+                    ? t('settings.cloudflareAiGatewayApiToken')
                   : "API Key"}
               </Label>
               <DesktopFormInput
@@ -1750,7 +1819,11 @@ export function ModelsSettingsPanel({
                 type="password"
                 value={connectApiKey}
                 onChange={(e) => setConnectApiKey(e.target.value)}
-                placeholder={t('settings.enterApiKey')}
+                placeholder={
+                  selectedProvider === "cloudflare-ai-gateway"
+                    ? t('settings.cloudflareAiGatewayApiTokenPlaceholder')
+                    : t('settings.enterApiKey')
+                }
                 autoComplete="off"
               />
               {selectedProvider === "amazon-bedrock" ? (
@@ -2114,7 +2187,13 @@ export function ModelsSettingsPanel({
                   <Button
                     type="button"
                     size="sm"
-                    disabled={modelsBusy || modelsPreviewBusy || !connectApiKey.trim()}
+                    disabled={
+                      modelsBusy
+                      || modelsPreviewBusy
+                      || !connectApiKey.trim()
+                      || (selectedProvider === "cloudflare-ai-gateway"
+                        && (!connectCloudflareAccountId.trim() || !connectCloudflareGatewayId.trim()))
+                    }
                     onClick={() => {
                       void (async () => {
                         try {
