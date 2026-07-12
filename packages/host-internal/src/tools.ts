@@ -63,6 +63,7 @@ import {
   type HostAutomationTrigger,
 } from './automations.js';
 import type { ModelReasoningEffort } from './reasoning-effort.js';
+import type { ModelRef } from './config-v2.js';
 import { resolveInstructionPaths, type InstructionDiscoveryContext } from './storage.js';
 import { isPathUnderPlansDir, resolvePlanFilePath } from './plans.js';
 import {
@@ -403,7 +404,7 @@ export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
 
 export interface HostAutomationCreateDefaults {
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: ModelReasoningEffort;
 }
 
@@ -1853,7 +1854,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       overview: request.overview,
       trigger: request.trigger,
       workspaceRoot: defaults.workspaceRoot,
-      modelName: defaults.modelName,
+      modelRef: defaults.modelRef,
       ...(defaults.reasoningEffort ? { reasoningEffort: defaults.reasoningEffort } : {}),
       approvalLevel: request.approval_level,
       enabled: true,

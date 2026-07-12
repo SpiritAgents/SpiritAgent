@@ -25,7 +25,7 @@ import type {
   ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
-import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
+import { emptyModelRef, isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import {
   resolveWorkspaceBindingForStoredRoot,
 } from "@/lib/workspace-display-label";
@@ -97,12 +97,7 @@ export function AutomationSettingsPanel({
       resolveWorkspaceBindingForStoredRoot(definition.workspaceRoot, homeDirectory),
     );
     setWorkspaceRoot(definition.workspaceRoot);
-    const matchedModel = snapshot.config.models.find((model) => model.name === definition.modelName);
-    setModelRef(
-      matchedModel
-        ? (matchedModel.ref ?? { groupId: matchedModel.groupId ?? "", name: matchedModel.name })
-        : { groupId: "", name: definition.modelName },
-    );
+    setModelRef(definition.modelRef ?? emptyModelRef());
     setReasoningEffort(definition.reasoningEffort);
     setApprovalLevel(definition.approvalLevel);
   }, [automationId, definition, snapshot?.userHomeDirectory]);
@@ -131,8 +126,8 @@ export function AutomationSettingsPanel({
     if (resolvedWorkspaceRoot !== definition.workspaceRoot) {
       next.workspaceRoot = resolvedWorkspaceRoot;
     }
-    if (modelRef.name !== definition.modelName) {
-      next.modelName = modelRef.name;
+    if (!modelRefsEqual(modelRef, definition.modelRef)) {
+      next.modelRef = modelRef;
     }
     if (reasoningEffort !== definition.reasoningEffort) {
       next.reasoningEffort = reasoningEffort;
@@ -149,7 +144,7 @@ export function AutomationSettingsPanel({
     && overview.trim().length > 0
     && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
     && resolvedWorkspaceRoot.trim().length > 0
-    && modelRef.name.trim().length > 0
+    && !isEmptyModelRef(modelRef)
     && isValidDesktopAutomationTrigger(trigger)
     && (trigger.kind !== "github" || githubConnected)
     && patch !== null;

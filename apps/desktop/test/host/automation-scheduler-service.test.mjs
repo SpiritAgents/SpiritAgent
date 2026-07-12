@@ -19,7 +19,7 @@ test('groupGitHubPollMatchesByAutomation groups matches by automation id', () =>
     overview: 'A',
     trigger: { kind: 'github', owner: 'o', repo: 'r', event: 'issue_created' },
     workspaceRoot: '/tmp',
-    modelName: 'm',
+    modelRef: { groupId: 'openai', name: 'm' },
     approvalLevel: 'default',
     enabled: true,
     createdAtUnixMs: 1,
@@ -105,7 +105,7 @@ test('failDanglingAutomationRuns marks crash-leftover running runs as failed', a
       overview: 'Crash recovery',
       trigger: { kind: 'time', schedule: { kind: 'hourly' } },
       workspaceRoot: spiritDataDir,
-      modelName: 'gpt-test',
+      modelRef: { groupId: 'openai', name: 'gpt-test' },
       approvalLevel: 'default',
     });
     await store.addRun(created.id, {

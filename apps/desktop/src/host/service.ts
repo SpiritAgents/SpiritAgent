@@ -2901,7 +2901,7 @@ class DesktopHostService {
         }
         return {
           workspaceRoot,
-          modelName: lightweightModel.name,
+          modelRef: lightweightModel.profile.ref,
           ...(lightweightModel.profile.reasoningEffort
             ? { reasoningEffort: lightweightModel.profile.reasoningEffort }
             : {}),

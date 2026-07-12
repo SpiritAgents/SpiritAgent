@@ -31,7 +31,7 @@ import type {
   ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
-import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
+import { emptyModelRef, isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
 type CreateAutomationDialogProps = {
@@ -114,7 +114,7 @@ export function CreateAutomationDialog({
     && overview.trim().length > 0
     && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
     && resolvedWorkspaceRoot.trim().length > 0
-    && modelRef.name.trim().length > 0
+    && !isEmptyModelRef(modelRef)
     && isValidDesktopAutomationTrigger(trigger)
     && (trigger.kind !== "github" || githubConnected);
 
@@ -215,7 +215,7 @@ export function CreateAutomationDialog({
                   overview: overview.trim(),
                   trigger,
                   workspaceRoot: resolvedWorkspaceRoot,
-                  modelName: modelRef.name,
+                  modelRef,
                   ...(reasoningEffort ? { reasoningEffort } : {}),
                   approvalLevel,
                 });
