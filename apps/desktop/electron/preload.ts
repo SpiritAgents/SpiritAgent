@@ -55,6 +55,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   removeProviderModels(provider: string) {
     return ipcRenderer.invoke('desktop:invoke', 'removeProviderModels', { request: { provider } });
   },
+  removeProviderGroup(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'removeProviderGroup', { request });
+  },
   addMcpServer(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'addMcpServer', { request });
   },
