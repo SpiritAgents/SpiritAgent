@@ -7,95 +7,117 @@ import {
   resolveLightweightChatModelProfile,
 } from '../../dist-electron/src/host/lightweight-chat-model.js';
 
+const openAiGroupId = 'openai';
+const exampleGroupId = 'example';
+
 const chatModel = {
   name: 'gpt-4o-mini',
-  apiBase: 'https://api.openai.com/v1',
-  reasoningEffort: 'default',
+  reasoningEffort: 'medium',
   capabilities: ['chat'],
 };
 
 const flashModel = {
   name: 'deepseek/deepseek-v4-flash',
-  apiBase: 'https://api.example.com/v1',
-  reasoningEffort: 'default',
+  reasoningEffort: 'medium',
   capabilities: ['chat'],
 };
 
 const imageOnlyModel = {
   name: 'dall-e-3',
-  apiBase: 'https://api.openai.com/v1',
-  reasoningEffort: 'default',
+  reasoningEffort: 'medium',
   capabilities: ['imageGeneration'],
+};
+
+const config = {
+  providerGroups: [
+    {
+      id: openAiGroupId,
+      provider: 'openai',
+      apiBase: 'https://api.openai.com/v1',
+      models: [chatModel, imageOnlyModel],
+    },
+    {
+      id: exampleGroupId,
+      provider: 'custom',
+      apiBase: 'https://api.example.com/v1',
+      models: [flashModel],
+    },
+  ],
+  activeModel: { groupId: openAiGroupId, name: 'gpt-4o-mini' },
 };
 
 test('resolveLightweightChatModelName prefers explicit lightweightChatModel', () => {
   const name = resolveLightweightChatModelName({
-    activeModel: 'gpt-4o-mini',
-    lightweightChatModel: 'deepseek/deepseek-v4-flash',
-    models: [chatModel, flashModel],
+    ...config,
+    lightweightChatModel: { groupId: exampleGroupId, name: 'deepseek/deepseek-v4-flash' },
   });
 
-  assert.equal(name, 'deepseek/deepseek-v4-flash');
+  assert.deepEqual(name, { groupId: exampleGroupId, name: 'deepseek/deepseek-v4-flash' });
 });
 
 test('resolveLightweightChatModelName ignores invalid explicit config', () => {
   const name = resolveLightweightChatModelName({
-    activeModel: 'gpt-4o-mini',
-    lightweightChatModel: 'missing-model',
-    models: [chatModel, flashModel],
+    ...config,
+    lightweightChatModel: { groupId: openAiGroupId, name: 'missing-model' },
   });
 
-  assert.equal(name, 'deepseek/deepseek-v4-flash');
+  assert.deepEqual(name, { groupId: exampleGroupId, name: 'deepseek/deepseek-v4-flash' });
 });
 
 test('resolveLightweightChatModelName ignores non-chat explicit config', () => {
   const name = resolveLightweightChatModelName({
-    activeModel: 'gpt-4o-mini',
-    lightweightChatModel: 'dall-e-3',
-    models: [chatModel, imageOnlyModel],
+    providerGroups: [{
+      id: openAiGroupId,
+      provider: 'openai',
+      apiBase: 'https://api.openai.com/v1',
+      models: [chatModel, imageOnlyModel],
+    }],
+    activeModel: { groupId: openAiGroupId, name: 'gpt-4o-mini' },
+    lightweightChatModel: { groupId: openAiGroupId, name: 'dall-e-3' },
   });
 
-  assert.equal(name, 'gpt-4o-mini');
+  assert.deepEqual(name, { groupId: openAiGroupId, name: 'gpt-4o-mini' });
 });
 
 test('resolveLightweightChatModelName falls back to pattern match before activeModel', () => {
-  const name = resolveLightweightChatModelName({
-    activeModel: 'gpt-4o-mini',
-    models: [chatModel, flashModel],
-  });
+  const name = resolveLightweightChatModelName(config);
 
-  assert.equal(name, 'deepseek/deepseek-v4-flash');
+  assert.deepEqual(name, { groupId: exampleGroupId, name: 'deepseek/deepseek-v4-flash' });
 });
 
 test('resolveLightweightChatModelName falls back to activeModel when no pattern matches', () => {
   const name = resolveLightweightChatModelName({
-    activeModel: 'gpt-4o-mini',
-    models: [chatModel],
+    providerGroups: [config.providerGroups[0]],
+    activeModel: { groupId: openAiGroupId, name: 'gpt-4o-mini' },
   });
 
-  assert.equal(name, 'gpt-4o-mini');
+  assert.deepEqual(name, { groupId: openAiGroupId, name: 'gpt-4o-mini' });
 });
 
 test('normalizeLightweightChatModel only keeps chat-capable models', () => {
   assert.equal(
-    normalizeLightweightChatModel('dall-e-3', [imageOnlyModel]),
+    normalizeLightweightChatModel(
+      { groupId: openAiGroupId, name: 'dall-e-3' },
+      { providerGroups: [config.providerGroups[0]] },
+    ),
     undefined,
   );
-  assert.equal(
-    normalizeLightweightChatModel('gpt-4o-mini', [chatModel]),
-    'gpt-4o-mini',
+  assert.deepEqual(
+    normalizeLightweightChatModel(
+      { groupId: openAiGroupId, name: 'gpt-4o-mini' },
+      { providerGroups: [config.providerGroups[0]] },
+    ),
+    { groupId: openAiGroupId, name: 'gpt-4o-mini' },
   );
 });
 
 test('resolveLightweightChatModelProfile returns profile for resolved model', () => {
   const resolved = resolveLightweightChatModelProfile({
-    activeModel: 'gpt-4o-mini',
-    lightweightChatModel: 'deepseek/deepseek-v4-flash',
-    models: [chatModel, flashModel],
+    ...config,
+    lightweightChatModel: { groupId: exampleGroupId, name: 'deepseek/deepseek-v4-flash' },
   });
 
-  assert.deepEqual(resolved, {
-    name: 'deepseek/deepseek-v4-flash',
-    profile: flashModel,
-  });
+  assert.equal(resolved?.name, 'deepseek/deepseek-v4-flash');
+  assert.equal(resolved?.profile.groupId, exampleGroupId);
+  assert.equal(resolved?.profile.name, 'deepseek/deepseek-v4-flash');
 });

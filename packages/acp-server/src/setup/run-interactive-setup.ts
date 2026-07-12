@@ -10,6 +10,7 @@ import {
 import type { ProviderSetupResult } from '../credentials/types.js';
 import {
   buildSetupProfile,
+  buildProviderSetupResult,
   listSiteOptions,
   providerNeedsSiteSelection,
   resolveProfileApiBase,
@@ -346,7 +347,7 @@ export async function runProviderWizard(): Promise<ProviderSetupResult> {
     }
   }
 
-  const profile = buildSetupProfile({
+  const setupParts = buildProviderSetupResult({
     provider,
     modelName,
     ...(providerSite ? { providerSite } : {}),
@@ -359,7 +360,7 @@ export async function runProviderWizard(): Promise<ProviderSetupResult> {
   });
 
   const confirmed = await confirm({
-    message: `Save ${profile.name} (${provider}) as the active model?`,
+    message: `Save ${setupParts.model.name} (${provider}) as the active model?`,
     default: true,
   });
   if (!confirmed) {
@@ -367,8 +368,7 @@ export async function runProviderWizard(): Promise<ProviderSetupResult> {
   }
 
   const result: ProviderSetupResult = {
-    profile,
-    providerScope: provider,
+    ...setupParts,
   };
   if (apiKey.trim()) {
     result.apiKey = apiKey.trim();

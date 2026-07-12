@@ -27,6 +27,26 @@
       "types": "./dist/discovery.d.ts",
       "default": "./dist/discovery.js"
     },
+    "./approval-level": {
+      "types": "./dist/approval-level.d.ts",
+      "default": "./dist/approval-level.js"
+    },
+    "./work-location": {
+      "types": "./dist/work-location.d.ts",
+      "default": "./dist/work-location.js"
+    },
+    "./local-file-composer-route": {
+      "types": "./dist/local-file-composer-route.d.ts",
+      "default": "./dist/local-file-composer-route.js"
+    },
+    "./github/types": {
+      "types": "./dist/github/types.d.ts",
+      "default": "./dist/github/types.js"
+    },
+    "./config-v2": {
+      "types": "./dist/config-v2.d.ts",
+      "default": "./dist/config-v2.js"
+    },
     "./model-provider-presets": {
       "types": "./dist/model-provider-presets.d.ts",
       "default": "./dist/model-provider-presets.js"

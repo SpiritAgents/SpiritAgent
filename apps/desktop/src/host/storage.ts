@@ -19,7 +19,6 @@ import {
   getKeyringPassword,
   setKeyringPassword,
 } from './keyring-secret.js';
-import { normalizeLightweightChatModel } from './lightweight-chat-model.js';
 import {
   configureLlmClientVersion,
   configureLlmHttpVersion,
@@ -31,18 +30,29 @@ import {
   resolveModelReasoningEffortForContext,
 } from '@spiritagent/agent-core/reasoning-effort';
 import {
+  assertSpiritConfigSchemaVersion,
   createFileExtensionStateStore,
+  emptyModelRef,
+  findModelByRef,
+  listAllModelRefs,
+  parseModelProviderId,
+  parseModelRef,
+  SPIRIT_CONFIG_SCHEMA_VERSION,
+  SpiritConfigSchemaError,
   type ExtensionManagementContext,
   type ExtensionSettingValue,
   type ExtensionStateStore,
   loadHostInstructionMetadata,
-  parseModelProviderId,
   type HostInstructionMetadataSummary,
   type HostRuleDiscoveryResult,
   type HostSkillDiscoveryResult,
+  type ModelEntryV2,
+  type ModelRef,
+  type ProviderGroupV2,
 } from '@spiritagent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
+import { flattenProviderGroups, resolveModelProfile } from './model-config-access.js';
 import { normalizeContextUsageSnapshot } from '../lib/context-usage.js';
 import { parseModelContextLength } from '../lib/model-context-length.js';
 
@@ -66,27 +76,25 @@ import {
 } from './chat-schema.js';
 import {
   buildModelSecretKeyPresence,
+  groupAccessKeyIdAccount,
+  groupKeyAccount,
+  groupSecretAccessKeyAccount,
+  groupVertexClientEmailAccount,
+  groupVertexPrivateKeyAccount,
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
-  modelProviderKeyScope,
-  providerAccessKeyIdAccount,
-  providerKeyAccount,
-  providerSecretAccessKeyAccount,
-  providerVertexClientEmailAccount,
-  providerVertexPrivateKeyAccount,
   type BedrockProviderCredentials,
   type GoogleVertexProviderCredentials,
   type ModelKeyPresenceProfile,
 } from './provider-api-key.js';
 import { normalizeDesktopRewindMetadata } from './rewind.js';
 
-export type { ModelKeyPresenceProfile } from './provider-api-key.js';
+export { SpiritConfigSchemaError as ConfigSchemaError } from '@spiritagent/host-internal';
 export {
   buildModelSecretKeyPresence,
+  groupKeyAccount,
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
-  modelProviderKeyScope,
-  providerKeyAccount,
 } from './provider-api-key.js';
 
 export const DEFAULT_API_BASE = 'https://api.openai.com/v1';
@@ -104,7 +112,7 @@ export type DesktopWorkspaceBinding = 'project' | 'none';
 
 export interface DesktopDreamConfigFile {
   enabled: boolean;
-  collectorModel?: string;
+  collectorModel?: ModelRef;
   debugMode: boolean;
 }
 
@@ -126,11 +134,12 @@ export interface DesktopNetworksConfigFile {
 }
 
 export interface DesktopConfigFile {
-  models: ModelProfileSnapshot[];
-  activeModel: string;
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
-  lightweightChatModel?: string;
+  schemaVersion: typeof SPIRIT_CONFIG_SCHEMA_VERSION;
+  providerGroups: ProviderGroupV2[];
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   recentWorkspaces?: string[];
   /** When `none`, cwd is the user home directory and workspace-scoped instructions/MCP are skipped. */
   workspaceBinding?: DesktopWorkspaceBinding;
@@ -258,118 +267,118 @@ function readGlobalKeyFromKeyring(): string | undefined {
   return trimmed || undefined;
 }
 
-export function readProviderAccessKeyIdFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+export function readProviderAccessKeyIdFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
-export function readProviderSecretAccessKeyFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+export function readProviderSecretAccessKeyFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
-export function readProviderVertexClientEmailFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId));
+export function readProviderVertexClientEmailFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
-export function readProviderVertexPrivateKeyFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId));
+export function readProviderVertexPrivateKeyFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
 
 export function readBedrockProviderCredentialsFromKeyring(
-  providerId: DesktopModelProvider,
+  groupId: string,
 ): BedrockProviderCredentials {
   return {
-    apiKey: readProviderKeyFromKeyring(providerId),
-    accessKeyId: readProviderAccessKeyIdFromKeyring(providerId),
-    secretAccessKey: readProviderSecretAccessKeyFromKeyring(providerId),
+    apiKey: readProviderKeyFromKeyring(groupId),
+    accessKeyId: readProviderAccessKeyIdFromKeyring(groupId),
+    secretAccessKey: readProviderSecretAccessKeyFromKeyring(groupId),
   };
 }
 
 export async function saveBedrockProviderCredentialsForProvider(
-  providerId: DesktopModelProvider,
+  groupId: string,
   credentials: BedrockProviderCredentials,
 ): Promise<void> {
   const apiKey = credentials.apiKey?.trim();
   if (apiKey) {
-    await saveApiKeyForProvider(providerId, apiKey);
+    await saveApiKeyForProvider(groupId, apiKey);
   } else {
-    await removeProviderApiKey(providerId);
+    await removeProviderApiKey(groupId);
   }
 
   const accessKeyId = credentials.accessKeyId?.trim();
   if (accessKeyId) {
-    setKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId), accessKeyId);
+    setKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId), accessKeyId);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId));
   }
 
   const secretAccessKey = credentials.secretAccessKey?.trim();
   if (secretAccessKey) {
-    setKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId), secretAccessKey);
+    setKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId), secretAccessKey);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId));
   }
 }
 
-export async function removeBedrockProviderCredentials(providerId: DesktopModelProvider): Promise<void> {
-  await removeProviderApiKey(providerId);
-  deleteKeyringPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId));
-  deleteKeyringPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId));
+export async function removeBedrockProviderCredentials(groupId: string): Promise<void> {
+  await removeProviderApiKey(groupId);
+  deleteKeyringPassword(KEYRING_SERVICE, groupAccessKeyIdAccount(groupId));
+  deleteKeyringPassword(KEYRING_SERVICE, groupSecretAccessKeyAccount(groupId));
 }
 
 export function readGoogleVertexProviderCredentialsFromKeyring(
-  providerId: DesktopModelProvider,
+  groupId: string,
 ): GoogleVertexProviderCredentials {
   return {
-    apiKey: readProviderKeyFromKeyring(providerId),
-    clientEmail: readProviderVertexClientEmailFromKeyring(providerId),
-    privateKey: readProviderVertexPrivateKeyFromKeyring(providerId),
+    apiKey: readProviderKeyFromKeyring(groupId),
+    clientEmail: readProviderVertexClientEmailFromKeyring(groupId),
+    privateKey: readProviderVertexPrivateKeyFromKeyring(groupId),
   };
 }
 
 export async function saveGoogleVertexProviderCredentialsForProvider(
-  providerId: DesktopModelProvider,
+  groupId: string,
   credentials: GoogleVertexProviderCredentials,
 ): Promise<void> {
   const apiKey = credentials.apiKey?.trim();
   if (apiKey) {
-    await saveApiKeyForProvider(providerId, apiKey);
+    await saveApiKeyForProvider(groupId, apiKey);
   } else {
-    await removeProviderApiKey(providerId);
+    await removeProviderApiKey(groupId);
   }
 
   const clientEmail = credentials.clientEmail?.trim();
   if (clientEmail) {
-    setKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId), clientEmail);
+    setKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId), clientEmail);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId));
   }
 
   const privateKey = credentials.privateKey?.trim();
   if (privateKey) {
-    setKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId), privateKey);
+    setKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId), privateKey);
   } else {
-    deleteKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId));
+    deleteKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId));
   }
 }
 
 export async function removeGoogleVertexProviderCredentials(
-  providerId: DesktopModelProvider,
+  groupId: string,
 ): Promise<void> {
-  await removeProviderApiKey(providerId);
-  deleteKeyringPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId));
-  deleteKeyringPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId));
+  await removeProviderApiKey(groupId);
+  deleteKeyringPassword(KEYRING_SERVICE, groupVertexClientEmailAccount(groupId));
+  deleteKeyringPassword(KEYRING_SERVICE, groupVertexPrivateKeyAccount(groupId));
 }
 
-export function readProviderKeyFromKeyring(providerId: string): string | undefined {
-  const value = getKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
+export function readProviderKeyFromKeyring(groupId: string): string | undefined {
+  const value = getKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId));
   const trimmed = value?.trim();
   return trimmed || undefined;
 }
@@ -463,9 +472,9 @@ export async function loadConfig(): Promise<DesktopConfigFile> {
     return initial;
   }
 
-  const raw = await readFile(filePath, 'utf8');
-  const parsed = JSON.parse(raw) as Partial<DesktopConfigFile>;
-  return normalizeConfig(parsed);
+  const raw = JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
+  assertSpiritConfigSchemaVersion(raw);
+  return normalizeConfig(raw as Partial<DesktopConfigFile>);
 }
 
 export async function saveConfig(config: DesktopConfigFile): Promise<void> {
@@ -475,67 +484,69 @@ export async function saveConfig(config: DesktopConfigFile): Promise<void> {
 }
 
 export async function resolveApiKeyForModel(
-  modelName: string,
-  provider?: DesktopModelProvider,
+  groupId: string,
+  modelName?: string,
 ): Promise<string | undefined> {
   const envKey = process.env.SPIRIT_API_KEY?.trim();
   if (envKey) {
     return envKey;
   }
 
-  const providerKey = readProviderKeyFromKeyring(modelProviderKeyScope(provider));
-  if (providerKey) {
-    return providerKey;
+  const groupKey = readProviderKeyFromKeyring(groupId);
+  if (groupKey) {
+    return groupKey;
   }
 
-  const modelKey = readModelKeyFromKeyring(modelName);
-  if (modelKey) {
-    return modelKey;
+  if (modelName) {
+    const modelKey = readModelKeyFromKeyring(modelName);
+    if (modelKey) {
+      return modelKey;
+    }
   }
 
   return readGlobalKeyFromKeyring();
 }
 
 export async function hasApiKeyForModel(
-  modelName: string,
-  provider?: DesktopModelProvider,
+  groupId: string,
+  modelName?: string,
 ): Promise<boolean> {
-  return Boolean(await resolveApiKeyForModel(modelName, provider));
+  return Boolean(await resolveApiKeyForModel(groupId, modelName));
 }
 
 export async function resolveApiKeyForConfigModel(
-  config: Pick<DesktopConfigFile, 'models'>,
-  modelName: string,
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  ref: ModelRef,
 ): Promise<string | undefined> {
-  const profile = config.models.find((model) => model.name === modelName);
-  return resolveApiKeyForModel(modelName, profile?.provider);
+  const profile = resolveModelProfile(config, ref);
+  if (!profile) {
+    return undefined;
+  }
+  return resolveApiKeyForModel(profile.groupId, profile.name);
 }
 
 function normalizePresenceProfiles(
-  profilesOrNames: string[] | ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
+  profiles: ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
 ): ModelKeyPresenceProfile[] {
-  if (profilesOrNames.length === 0) {
+  if (profiles.length === 0) {
     return [];
   }
-  const first = profilesOrNames[0];
-  if (typeof first === 'string') {
-    return (profilesOrNames as string[]).map((name) => ({ name }));
-  }
+  const first = profiles[0];
   if ('apiBase' in first && typeof first === 'object' && first !== null) {
-    return (profilesOrNames as ModelProfileSnapshot[]).map(toModelKeyPresenceProfile);
+    return (profiles as ModelProfileSnapshot[]).map(toModelKeyPresenceProfile);
   }
-  return profilesOrNames as ModelKeyPresenceProfile[];
+  return profiles as ModelKeyPresenceProfile[];
 }
 
-function hasProviderSecretInKeyring(providerId: string, profile: ModelKeyPresenceProfile): boolean {
-  if (readProviderKeyFromKeyring(providerId)) {
+function hasGroupSecretInKeyring(groupId: string, profile: ModelKeyPresenceProfile): boolean {
+  if (readProviderKeyFromKeyring(groupId)) {
     return true;
   }
-  if (providerId === 'amazon-bedrock') {
-    return hasBedrockRuntimeCredentials(readBedrockProviderCredentialsFromKeyring('amazon-bedrock'));
+  if (profile.provider === 'amazon-bedrock') {
+    return hasBedrockRuntimeCredentials(readBedrockProviderCredentialsFromKeyring(groupId));
   }
-  if (providerId === 'google-vertex-ai') {
-    const credentials = readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai');
+  if (profile.provider === 'google-vertex-ai') {
+    const credentials = readGoogleVertexProviderCredentialsFromKeyring(groupId);
     return hasGoogleVertexRuntimeCredentials({
       apiKey: credentials.apiKey,
       clientEmail: credentials.clientEmail,
@@ -548,7 +559,12 @@ function hasProviderSecretInKeyring(providerId: string, profile: ModelKeyPresenc
 }
 
 function toModelKeyPresenceProfile(model: ModelProfileSnapshot): ModelKeyPresenceProfile {
+  const groupId = model.groupId?.trim() ?? model.ref?.groupId?.trim() ?? '';
+  if (!groupId) {
+    throw new Error(`model profile "${model.name}" is missing groupId`);
+  }
   return {
+    groupId,
     name: model.name,
     provider: model.provider,
     ...(model.vertexProject ? { vertexProject: model.vertexProject } : {}),
@@ -556,15 +572,23 @@ function toModelKeyPresenceProfile(model: ModelProfileSnapshot): ModelKeyPresenc
   };
 }
 
-/** 各模型是否在钥匙串中有提供商级或遗留模型级条目（不含环境变量与全局回退）。 */
+function legacyModelKeyPresent(refKey: string): boolean {
+  const separatorIndex = refKey.lastIndexOf('::');
+  const modelName = separatorIndex >= 0 ? refKey.slice(separatorIndex + 2) : refKey;
+  return Boolean(readModelKeyFromKeyring(modelName));
+}
+
+/** 各模型是否在钥匙串中有提供商组级或遗留模型级条目（不含环境变量与全局回退）。 */
 export async function modelSecretKeyPresence(
-  profilesOrNames: string[] | ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
+  input: Pick<DesktopConfigFile, 'providerGroups'> | ModelKeyPresenceProfile[] | ModelProfileSnapshot[],
 ): Promise<Record<string, boolean>> {
-  const profiles = normalizePresenceProfiles(profilesOrNames);
+  const profiles = 'providerGroups' in input
+    ? flattenProviderGroups(input).map(toModelKeyPresenceProfile)
+    : normalizePresenceProfiles(input);
   return buildModelSecretKeyPresence(
     profiles,
-    hasProviderSecretInKeyring,
-    (modelName) => Boolean(readModelKeyFromKeyring(modelName)),
+    hasGroupSecretInKeyring,
+    legacyModelKeyPresent,
   );
 }
 
@@ -573,15 +597,15 @@ export async function saveApiKeyForModel(modelName: string, apiKey: string): Pro
 }
 
 export async function saveApiKeyForProvider(
-  providerId: DesktopModelProvider,
+  groupId: string,
   apiKey: string,
 ): Promise<void> {
-  setKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId), apiKey.trim());
+  setKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId), apiKey.trim());
 }
 
-/** 删除提供商在钥匙串中的共享 API Key 条目。 */
-export async function removeProviderApiKey(providerId: DesktopModelProvider): Promise<void> {
-  deleteKeyringPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
+/** 删除提供商组在钥匙串中的共享 API Key 条目。 */
+export async function removeProviderApiKey(groupId: string): Promise<void> {
+  deleteKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId));
 }
 
 /** 与 CLI `remove_model_api_key` 一致：删除该模型在钥匙串中的专属条目。 */
@@ -784,8 +808,9 @@ export async function deleteStoredSession(filePath: string): Promise<void> {
 
 function defaultConfig(): DesktopConfigFile {
   return {
-    models: [],
-    activeModel: '',
+    schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
+    providerGroups: [],
+    activeModel: emptyModelRef(),
     recentWorkspaces: [],
     windowsMica: true,
     systemNotifications: true,
@@ -891,96 +916,167 @@ export function normalizeAgentsConfig(raw: unknown): DesktopAgentsConfigFile {
   };
 }
 
-function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
-  const models = Array.isArray(raw.models)
-    ? raw.models
-        .filter(
-          (model): model is ModelProfileSnapshot =>
-            typeof model?.name === 'string' && model.name.trim().length > 0,
-        )
-        .map((model) => {
-          const provider = parseModelProviderId(model.provider);
-          const transportKind = normalizeDesktopTransportKind(model.transportKind, provider);
-          const capabilities = normalizeModelCapabilities(model.capabilities);
-          const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(model.supportedReasoningEfforts);
-          const contextLength = parseModelContextLength(model.contextLength);
-          const supportsThinkingType = model.supportsThinkingType === 'only' ? 'only' as const : undefined;
-          const awsRegion =
-            typeof model.awsRegion === 'string' && model.awsRegion.trim().length > 0
-              ? model.awsRegion.trim()
-              : undefined;
-          const providerSite =
-            typeof model.providerSite === 'string' && model.providerSite.trim().length > 0
-              ? model.providerSite.trim()
-              : undefined;
-          const alibabaWorkspaceId =
-            typeof model.alibabaWorkspaceId === 'string' && model.alibabaWorkspaceId.trim().length > 0
-              ? model.alibabaWorkspaceId.trim()
-              : undefined;
-          const alibabaBillingMode =
-            model.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
-          const vertexProject =
-            typeof model.vertexProject === 'string' && model.vertexProject.trim().length > 0
-              ? model.vertexProject.trim()
-              : undefined;
-          const vertexLocation =
-            typeof model.vertexLocation === 'string' && model.vertexLocation.trim().length > 0
-              ? model.vertexLocation.trim()
-              : undefined;
-          const azureResourceName =
-            typeof model.azureResourceName === 'string' && model.azureResourceName.trim().length > 0
-              ? model.azureResourceName.trim()
-              : undefined;
-          if (provider === 'azure' && !azureResourceName) {
-            return null;
-          }
-          return {
-            name: model.name.trim(),
-            apiBase: model.apiBase?.trim() || DEFAULT_API_BASE,
-            reasoningEffort: resolveModelReasoningEffortForContext(model.reasoningEffort, {
-              ...(provider ? { provider } : {}),
-              model: model.name,
-              ...(transportKind ? { transportKind } : {}),
-              ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
-              ...(supportsThinkingType ? { supportsThinkingType } : {}),
-            }),
-            ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
-            ...(capabilities ? { capabilities } : {}),
-            ...(provider ? { provider } : {}),
-            ...(transportKind ? { transportKind } : {}),
-            ...(providerSite ? { providerSite } : {}),
-            ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
-            ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
-            ...(awsRegion ? { awsRegion } : {}),
-            ...(vertexProject ? { vertexProject } : {}),
-            ...(vertexLocation ? { vertexLocation } : {}),
-            ...(azureResourceName ? { azureResourceName } : {}),
-            ...(contextLength !== undefined ? { contextLength } : {}),
-            ...(supportsThinkingType ? { supportsThinkingType } : {}),
-            ...(model.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
-          };
-        })
-        .filter((model): model is ModelProfileSnapshot => model !== null)
+function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
+  if (typeof raw !== 'object' || raw === null) {
+    return null;
+  }
+  const record = raw as Partial<ProviderGroupV2>;
+  const id = typeof record.id === 'string' ? record.id.trim() : '';
+  const provider = parseModelProviderId(record.provider);
+  if (!id || !provider) {
+    return null;
+  }
+  const label = typeof record.label === 'string' && record.label.trim() ? record.label.trim() : undefined;
+  if (provider === 'custom' && !label) {
+    return null;
+  }
+  const apiBase = typeof record.apiBase === 'string' && record.apiBase.trim()
+    ? record.apiBase.trim()
+    : DEFAULT_API_BASE;
+  const transportKind = normalizeDesktopTransportKind(record.transportKind, provider);
+  const providerSite =
+    typeof record.providerSite === 'string' && record.providerSite.trim().length > 0
+      ? record.providerSite.trim()
+      : undefined;
+  const alibabaWorkspaceId =
+    typeof record.alibabaWorkspaceId === 'string' && record.alibabaWorkspaceId.trim().length > 0
+      ? record.alibabaWorkspaceId.trim()
+      : undefined;
+  const alibabaBillingMode =
+    record.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
+  const awsRegion =
+    typeof record.awsRegion === 'string' && record.awsRegion.trim().length > 0
+      ? record.awsRegion.trim()
+      : undefined;
+  const vertexProject =
+    typeof record.vertexProject === 'string' && record.vertexProject.trim().length > 0
+      ? record.vertexProject.trim()
+      : undefined;
+  const vertexLocation =
+    typeof record.vertexLocation === 'string' && record.vertexLocation.trim().length > 0
+      ? record.vertexLocation.trim()
+      : undefined;
+  const azureResourceName =
+    typeof record.azureResourceName === 'string' && record.azureResourceName.trim().length > 0
+      ? record.azureResourceName.trim()
+      : undefined;
+  const cloudflareAccountId =
+    typeof record.cloudflareAccountId === 'string' && record.cloudflareAccountId.trim().length > 0
+      ? record.cloudflareAccountId.trim()
+      : undefined;
+  const cloudflareGatewayId =
+    typeof record.cloudflareGatewayId === 'string' && record.cloudflareGatewayId.trim().length > 0
+      ? record.cloudflareGatewayId.trim()
+      : undefined;
+  if (provider === 'azure' && !azureResourceName) {
+    return null;
+  }
+
+  const models = Array.isArray(record.models)
+    ? record.models
+        .map((model) => normalizeModelEntry(model, provider, transportKind))
+        .filter((model): model is ModelEntryV2 => model !== null)
     : [];
 
-  const normalizedModels = models;
-  const activeModel =
-    normalizedModels.length === 0
-      ? (typeof raw.activeModel === 'string' ? raw.activeModel.trim() : '')
-      : normalizedModels.some((model) => model.name === raw.activeModel?.trim())
-        ? raw.activeModel!.trim()
-        : normalizedModels[0]!.name;
-  const imageGenerationModel = normalizeImageGenerationModel(raw.imageGenerationModel, normalizedModels);
-  const videoGenerationModel = normalizeVideoGenerationModel(raw.videoGenerationModel, normalizedModels);
-  const dreams = normalizeDreamConfig(raw.dreams);
-  const lightweightChatModel = normalizeLightweightChatModel(
+  const seenNames = new Set<string>();
+  const dedupedModels = models.filter((model) => {
+    if (seenNames.has(model.name)) {
+      return false;
+    }
+    seenNames.add(model.name);
+    return true;
+  });
+
+  return {
+    id,
+    provider,
+    ...(label ? { label } : {}),
+    apiBase,
+    ...(transportKind ? { transportKind } : {}),
+    ...(providerSite ? { providerSite } : {}),
+    ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
+    ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+    ...(awsRegion ? { awsRegion } : {}),
+    ...(vertexProject ? { vertexProject } : {}),
+    ...(vertexLocation ? { vertexLocation } : {}),
+    ...(azureResourceName ? { azureResourceName } : {}),
+    ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
+    ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
+    models: dedupedModels,
+  };
+}
+
+function normalizeModelEntry(
+  raw: unknown,
+  provider: DesktopModelProvider,
+  transportKind: DesktopTransportKind | undefined,
+): ModelEntryV2 | null {
+  if (typeof raw !== 'object' || raw === null) {
+    return null;
+  }
+  const record = raw as Partial<ModelEntryV2>;
+  const name = typeof record.name === 'string' ? record.name.trim() : '';
+  if (!name) {
+    return null;
+  }
+  const capabilities = normalizeModelCapabilities(record.capabilities);
+  const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(record.supportedReasoningEfforts);
+  const contextLength = parseModelContextLength(record.contextLength);
+  const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
+  return {
+    name,
+    reasoningEffort: resolveModelReasoningEffortForContext(record.reasoningEffort, {
+      provider,
+      model: name,
+      ...(transportKind ? { transportKind } : {}),
+      ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
+      ...(supportsThinkingType ? { supportsThinkingType } : {}),
+    }) as ModelEntryV2['reasoningEffort'],
+    ...(supportedReasoningEfforts !== undefined
+      ? { supportedReasoningEfforts: supportedReasoningEfforts as ModelEntryV2['supportedReasoningEfforts'] }
+      : {}),
+    ...(capabilities ? { capabilities } : {}),
+    ...(contextLength !== undefined ? { contextLength } : {}),
+    ...(supportsThinkingType ? { supportsThinkingType } : {}),
+    ...(record.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
+  };
+}
+
+function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
+  const providerGroups = Array.isArray(raw.providerGroups)
+    ? raw.providerGroups
+        .map((group) => normalizeProviderGroup(group))
+        .filter((group): group is ProviderGroupV2 => group !== null)
+    : [];
+
+  const seenGroupIds = new Set<string>();
+  const normalizedGroups = providerGroups.filter((group) => {
+    if (seenGroupIds.has(group.id)) {
+      return false;
+    }
+    seenGroupIds.add(group.id);
+    return true;
+  });
+
+  const allRefs = listAllModelRefs(normalizedGroups);
+  const activeModel = parseModelRef(raw.activeModel)
+    ?? (allRefs[0] ? { ...allRefs[0] } : emptyModelRef());
+  const resolvedActive = findModelByRef(normalizedGroups, activeModel)
+    ? activeModel
+    : (allRefs[0] ? { ...allRefs[0] } : emptyModelRef());
+
+  const imageGenerationModel = normalizeImageGenerationModelRef(raw.imageGenerationModel, normalizedGroups);
+  const videoGenerationModel = normalizeVideoGenerationModelRef(raw.videoGenerationModel, normalizedGroups);
+  const dreams = normalizeDreamConfig(raw.dreams, normalizedGroups);
+  const lightweightChatModel = normalizeLightweightChatModelRef(
     raw.lightweightChatModel ?? dreams.collectorModel,
-    normalizedModels,
+    normalizedGroups,
   );
 
   return {
-    models: normalizedModels,
-    activeModel,
+    schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
+    providerGroups: normalizedGroups,
+    activeModel: resolvedActive,
     ...(imageGenerationModel ? { imageGenerationModel } : {}),
     ...(videoGenerationModel ? { videoGenerationModel } : {}),
     ...(lightweightChatModel ? { lightweightChatModel } : {}),
@@ -1002,38 +1098,55 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
   };
 }
 
-function normalizeImageGenerationModel(
+function normalizeImageGenerationModelRef(
   value: unknown,
-  models: readonly ModelProfileSnapshot[],
-): string | undefined {
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  groups: readonly ProviderGroupV2[],
+): ModelRef | undefined {
+  const ref = parseModelRef(value);
+  if (!ref) {
     return undefined;
   }
-
-  const modelName = value.trim();
-  const profile = models.find((model) => model.name === modelName);
-  return profile && modelSupportsImageGeneration(profile) ? profile.name : undefined;
-}
-
-function modelSupportsImageGeneration(model: ModelProfileSnapshot): boolean {
-  return model.capabilities?.includes('imageGeneration') === true;
-}
-
-function normalizeVideoGenerationModel(
-  value: unknown,
-  models: readonly ModelProfileSnapshot[],
-): string | undefined {
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  const resolved = findModelByRef(groups, ref);
+  if (!resolved) {
     return undefined;
   }
-
-  const modelName = value.trim();
-  const profile = models.find((model) => model.name === modelName);
-  return profile && modelSupportsVideoGeneration(profile) ? profile.name : undefined;
+  const capabilities = normalizeModelCapabilities(resolved.model.capabilities);
+  return capabilities?.includes('imageGeneration') ? ref : undefined;
 }
 
-function modelSupportsVideoGeneration(model: ModelProfileSnapshot): boolean {
-  return model.capabilities?.includes('videoGeneration') === true;
+function normalizeVideoGenerationModelRef(
+  value: unknown,
+  groups: readonly ProviderGroupV2[],
+): ModelRef | undefined {
+  const ref = parseModelRef(value);
+  if (!ref) {
+    return undefined;
+  }
+  const resolved = findModelByRef(groups, ref);
+  if (!resolved) {
+    return undefined;
+  }
+  const capabilities = normalizeModelCapabilities(resolved.model.capabilities);
+  return capabilities?.includes('videoGeneration') ? ref : undefined;
+}
+
+function normalizeLightweightChatModelRef(
+  value: unknown,
+  groups: readonly ProviderGroupV2[],
+): ModelRef | undefined {
+  const ref = parseModelRef(value);
+  if (!ref) {
+    return undefined;
+  }
+  const resolved = findModelByRef(groups, ref);
+  if (!resolved) {
+    return undefined;
+  }
+  const capabilities = normalizeModelCapabilities(resolved.model.capabilities);
+  if (capabilities && !capabilities.includes('chat')) {
+    return undefined;
+  }
+  return ref;
 }
 
 function normalizeDesktopTransportKind(
@@ -1119,10 +1232,9 @@ export function normalizeSupportedReasoningEfforts(
 
 export function normalizeDreamConfig(
   raw?: Partial<DesktopDreamConfigFile>,
+  groups: readonly ProviderGroupV2[] = [],
 ): DesktopDreamConfigFile {
-  const collectorModel = typeof raw?.collectorModel === 'string' && raw.collectorModel.trim()
-    ? raw.collectorModel.trim()
-    : undefined;
+  const collectorModel = normalizeLightweightChatModelRef(raw?.collectorModel, groups);
   return {
     enabled: raw?.enabled === true,
     ...(collectorModel ? { collectorModel } : {}),

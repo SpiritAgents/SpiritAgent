@@ -15,11 +15,11 @@ import type {
   DeleteSkillRequest,
   DesktopDreamOverviewItem,
   DesktopMcpServerInspection,
-  DesktopModelProvider,
   DesktopSnapshot,
   GitHubAuthStatus,
   GitHubDeviceAuthChallenge,
   ImportExtensionRequest,
+  ModelRef,
   PreviewModelsRequest,
   PreviewModelsResponse,
   SaveHookEntryRequest,
@@ -28,10 +28,10 @@ import type {
 } from "@/types";
 
 export type SettingsFormState = {
-  activeModel: string;
-  imageGenerationModel: string;
-  videoGenerationModel: string;
-  lightweightChatModel: string;
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   apiBase: string;
   uiLocale: string;
   apiKey: string;
@@ -77,7 +77,7 @@ export type SettingsViewProps = {
   onAddProviderModels: (request: AddProviderModelsRequest) => Promise<void>;
   onPreviewModels: (request: PreviewModelsRequest) => Promise<PreviewModelsResponse>;
   onRemoveModel: (name: string) => Promise<void>;
-  onRemoveProviderModels: (provider: DesktopModelProvider) => Promise<void>;
+  onRemoveProviderModels: (groupId: string) => Promise<void>;
   onAddMcpServer: (request: AddMcpServerRequest) => Promise<void>;
   onImportExtension: (request: ImportExtensionRequest) => Promise<void>;
   onDeleteExtension: (request: DeleteExtensionRequest) => Promise<void>;

@@ -10,7 +10,9 @@ use crate::{
     },
     model_provider_presets::{azure_api_base_from_resource_name, model_add_alibaba_site_api_base, model_add_alibaba_site_requires_workspace_id, model_add_default_custom_api_base, model_add_kimi_code_api_base, model_add_minimax_site_api_base, model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base, validate_azure_resource_name},
     model_registry::{
-        AppConfig, DEFAULT_API_BASE, ModelProfile, ModelProvider, ModelTransportKind,
+        AppConfig, DEFAULT_API_BASE, ModelEntry, ModelProfile, ModelProvider, ModelRef,
+        ModelTransportKind, ProviderGroupConnectDraft, default_preset_provider_group_id,
+        model_refs_equal, save_group_api_key,
     },
     ports::{AppPaths, ConfigStore, SecretStore},
     ts_bridge::TsBridgeRuntime,
@@ -135,17 +137,22 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
 
     match action {
         ModelCommand::List => {
-            println!("当前模型: {}", cfg.active_model);
+            println!("当前模型: {}", cfg.active_model_name());
             println!("模型列表:");
-            for model in &cfg.models {
-                let key_saved = secret_store.has_model_api_key(&model.name).unwrap_or(false);
+            for model in cfg.flatten_models() {
+                let key_saved = crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
+                    .map(|value| !value.trim().is_empty())
+                    .unwrap_or_else(|_| {
+                        secret_store.has_model_api_key(&model.name).unwrap_or(false)
+                    });
                 println!(
-                    "  - {}\n    api_base: {}\n    provider: {}\n    reasoning_effort: {}\n    capabilities: {}\n    key: {}",
+                    "  - {} ({})\n    api_base: {}\n    provider: {}\n    reasoning_effort: {}\n    capabilities: {}\n    key: {}",
                     model.name,
+                    model.group_id,
                     model.api_base,
                     format_model_provider(model.provider),
                     model.reasoning_effort.as_deref().unwrap_or("未设置"),
-                    format_model_capabilities(model),
+                    format_model_capabilities(&model),
                     if key_saved { "已保存" } else { "未保存" }
                 );
             }
@@ -163,7 +170,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             provider_site,
             alibaba_workspace_id,
         } => {
-            if cfg.has_model(&name) {
+            if cfg.has_model_name(&name) {
                 println!("模型已存在: {}", name);
             } else {
                 let provider = parse_model_provider(provider)?;
@@ -306,116 +313,124 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     Some(value) => Some(value),
                 };
 
-                let mut extra = serde_json::Map::new();
-                if !capabilities.is_empty() {
-                    extra.insert("capabilities".to_string(), serde_json::json!(capabilities));
-                }
-                if transport_kind == ModelTransportKind::Anthropic
-                    || transport_kind == ModelTransportKind::OpenResponses
-                    || transport_kind == ModelTransportKind::Bedrock
-                {
-                    extra.insert(
-                        "transportKind".to_string(),
-                        serde_json::json!(transport_kind.as_str()),
-                    );
-                }
-                if let Some(resource_name) = azure_resource_name {
-                    extra.insert(
-                        "azureResourceName".to_string(),
-                        serde_json::json!(resource_name),
-                    );
-                }
-                if let Some(site) = provider_site
-                    .as_deref()
-                    .map(str::trim)
-                    .filter(|value| !value.is_empty())
-                {
-                    extra.insert("providerSite".to_string(), serde_json::json!(site));
-                }
-                if let Some(workspace_id) = alibaba_workspace_id
-                    .as_deref()
-                    .map(str::trim)
-                    .filter(|value| !value.is_empty())
-                {
-                    extra.insert("alibabaWorkspaceId".to_string(), serde_json::json!(workspace_id));
-                }
-
-                cfg.add_model(ModelProfile {
+                let resolved_provider = provider.unwrap_or(ModelProvider::Custom);
+                let group_id = default_preset_provider_group_id(resolved_provider);
+                let connect = ProviderGroupConnectDraft {
+                    transport_kind: (transport_kind == ModelTransportKind::Anthropic
+                        || transport_kind == ModelTransportKind::OpenResponses
+                        || transport_kind == ModelTransportKind::Bedrock)
+                        .then(|| transport_kind.as_str().to_string()),
+                    provider_site: provider_site
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .map(ToOwned::to_owned),
+                    alibaba_workspace_id: alibaba_workspace_id
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .map(ToOwned::to_owned),
+                    azure_resource_name,
+                    ..ProviderGroupConnectDraft::default()
+                };
+                let entry = ModelEntry {
                     name: name.clone(),
-                    api_base: api_base.clone(),
-                    provider,
                     reasoning_effort: reasoning_effort.clone(),
+                    thinking_enabled: None,
+                    supported_reasoning_efforts: None,
+                    capabilities: if capabilities.is_empty() {
+                        None
+                    } else {
+                        Some(capabilities.clone())
+                    },
                     context_length,
-                    extra,
-                });
+                    supports_thinking_type: None,
+                };
+                cfg.add_model_to_group(
+                    &group_id,
+                    resolved_provider,
+                    api_base.clone(),
+                    connect,
+                    entry,
+                );
+                let model_ref = ModelRef {
+                    group_id: group_id.clone(),
+                    name: name.clone(),
+                };
                 if cfg.image_generation_model.is_none()
                     && cfg
-                        .models
-                        .iter()
-                        .find(|model| model.name == name)
-                        .is_some_and(ModelProfile::supports_image_generation)
+                        .resolve_model_profile(&model_ref)
+                        .is_some_and(|profile| profile.supports_image_generation())
                 {
-                    cfg.image_generation_model = Some(name.clone());
+                    cfg.image_generation_model = Some(model_ref.clone());
                 }
                 if cfg.video_generation_model.is_none()
                     && cfg
-                        .models
-                        .iter()
-                        .find(|model| model.name == name)
-                        .is_some_and(ModelProfile::supports_video_generation)
+                        .resolve_model_profile(&model_ref)
+                        .is_some_and(|profile| profile.supports_video_generation())
                 {
-                    cfg.video_generation_model = Some(name.clone());
+                    cfg.video_generation_model = Some(model_ref.clone());
                 }
-                cfg.active_model = name.clone();
-                secret_store.save_model_api_key(&name, &key_value)?;
+                cfg.active_model = model_ref;
+                save_group_api_key(&group_id, &key_value)?;
                 config_store.save(&cfg)?;
                 println!("已添加模型: {}，并已设为当前模型", name);
                 println!("api_base: {}", api_base);
-                println!("provider: {}", format_model_provider(provider));
+                println!("provider: {}", format_model_provider(Some(resolved_provider)));
                 println!(
                     "reasoning_effort: {}",
                     reasoning_effort.as_deref().unwrap_or("未设置")
                 );
                 println!(
                     "capabilities: {}",
-                    cfg.models
-                        .iter()
-                        .find(|model| model.name == name)
-                        .map(format_model_capabilities)
-                        .unwrap_or_else(|| "未设置".to_string())
+                    cfg.resolve_model_profile(&ModelRef {
+                        group_id,
+                        name: name.clone(),
+                    })
+                    .map(|profile| format_model_capabilities(&profile))
+                    .unwrap_or_else(|| "未设置".to_string())
                 );
             }
         }
         ModelCommand::Remove { name } => {
-            let before = cfg.models.len();
-            cfg.models.retain(|m| m.name != name);
-            if cfg.models.len() == before {
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
+            if !cfg.remove_model(&model_ref) {
                 println!("模型不存在: {}", name);
             } else {
-                if cfg.active_model == name {
-                    cfg.active_model = cfg.models.first().map(|m| m.name.clone()).unwrap_or_default();
+                if model_refs_equal(&cfg.active_model, &model_ref) {
+                    cfg.active_model = cfg.first_model_ref();
                 }
-                if cfg.image_generation_model.as_deref() == Some(name.as_str()) {
+                if cfg
+                    .image_generation_model
+                    .as_ref()
+                    .is_some_and(|slot| model_refs_equal(slot, &model_ref))
+                {
                     cfg.image_generation_model = None;
                 }
-                if cfg.video_generation_model.as_deref() == Some(name.as_str()) {
+                if cfg
+                    .video_generation_model
+                    .as_ref()
+                    .is_some_and(|slot| model_refs_equal(slot, &model_ref))
+                {
                     cfg.video_generation_model = None;
                 }
                 config_store.save(&cfg)?;
-                let _ = secret_store.remove_model_api_key(&name);
+                let _ = secret_store.remove_model_api_key(&model_ref.name);
                 println!("已删除模型: {}", name);
             }
         }
         ModelCommand::Use { name } => {
-            if !cfg.has_model(&name) {
-                return Err(anyhow!("模型不存在，请先添加: {}", name));
-            }
-            cfg.active_model = name.clone();
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
+            cfg.active_model = model_ref;
             config_store.save(&cfg)?;
             println!("已切换当前模型为: {}", name);
         }
         ModelCommand::Current => {
-            println!("当前模型: {}", cfg.active_model);
+            println!("当前模型: {}", cfg.active_model_name());
         }
     }
 
@@ -431,25 +446,36 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
     match action {
         ConfigCommand::Show => {
             println!("配置文件: {}", app_paths.config_file().display());
-            println!("active_model: {}", cfg.active_model);
+            println!("active_model: {}", cfg.active_model_name());
             println!(
                 "image_generation_model: {}",
-                cfg.image_generation_model.as_deref().unwrap_or("未设置")
+                cfg.image_generation_model
+                    .as_ref()
+                    .map(|model_ref| model_ref.name.as_str())
+                    .unwrap_or("未设置")
             );
             println!(
                 "video_generation_model: {}",
-                cfg.video_generation_model.as_deref().unwrap_or("未设置")
+                cfg.video_generation_model
+                    .as_ref()
+                    .map(|model_ref| model_ref.name.as_str())
+                    .unwrap_or("未设置")
             );
             println!("models:");
-            for model in &cfg.models {
-                let key_saved = secret_store.has_model_api_key(&model.name).unwrap_or(false);
+            for model in cfg.flatten_models() {
+                let key_saved = crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
+                    .map(|value| !value.trim().is_empty())
+                    .unwrap_or_else(|_| {
+                        secret_store.has_model_api_key(&model.name).unwrap_or(false)
+                    });
                 println!(
-                    "  - {}\n    api_base: {}\n    provider: {}\n    reasoning_effort: {}\n    capabilities: {}\n    key: {}",
+                    "  - {} ({})\n    api_base: {}\n    provider: {}\n    reasoning_effort: {}\n    capabilities: {}\n    key: {}",
                     model.name,
+                    model.group_id,
                     model.api_base,
                     format_model_provider(model.provider),
                     model.reasoning_effort.as_deref().unwrap_or("未设置"),
-                    format_model_capabilities(model),
+                    format_model_capabilities(&model),
                     if key_saved { "已保存" } else { "未保存" }
                 );
             }
@@ -480,25 +506,26 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             );
         }
         ConfigCommand::SetBase { url } => {
-            if let Some(active) = cfg.active_model_profile_mut() {
-                active.api_base = url.clone();
+            if let Some(group) = cfg.active_provider_group_mut() {
+                group.api_base = url.clone();
             }
             config_store.save(&cfg)?;
             println!("已更新当前模型 API Base: {}", url);
         }
         ConfigCommand::SetImageModel { name } => {
-            let profile = cfg
-                .models
-                .iter()
-                .find(|model| model.name == name)
-                .ok_or_else(|| anyhow!("模型不存在，请先添加: {}", name))?;
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
+            let Some(profile) = cfg.resolve_model_profile(&model_ref) else {
+                return Err(anyhow!("模型不存在，请先添加: {}", name));
+            };
             if !profile.supports_image_generation() {
                 return Err(anyhow!(
                     "模型 {} 未声明 imageGeneration capability，不能作为图片生成模型",
                     name
                 ));
             }
-            cfg.image_generation_model = Some(name.clone());
+            cfg.image_generation_model = Some(model_ref);
             config_store.save(&cfg)?;
             println!("已设置图片生成模型: {}", name);
         }
@@ -508,18 +535,19 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             println!("已清除图片生成模型。CLI 当前仅在配置图片模型后暴露 generate_image 工具。");
         }
         ConfigCommand::SetVideoModel { name } => {
-            let profile = cfg
-                .models
-                .iter()
-                .find(|model| model.name == name)
-                .ok_or_else(|| anyhow!("模型不存在，请先添加: {}", name))?;
+            let model_ref = cfg
+                .parse_model_ref_selector(&name)
+                .map_err(|err| anyhow!(err))?;
+            let Some(profile) = cfg.resolve_model_profile(&model_ref) else {
+                return Err(anyhow!("模型不存在，请先添加: {}", name));
+            };
             if !profile.supports_video_generation() {
                 return Err(anyhow!(
                     "模型 {} 未声明 videoGeneration capability，不能作为视频生成模型",
                     name
                 ));
             }
-            cfg.video_generation_model = Some(name.clone());
+            cfg.video_generation_model = Some(model_ref);
             config_store.save(&cfg)?;
             println!("已设置视频生成模型: {}", name);
         }

@@ -2,11 +2,13 @@ import { appendQueuedUserTurnSnapshots } from './message-queue.js';
 import { isSessionBundleBusy } from './direct-media-turn.js';
 import type { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import type { SessionBundle } from './session-bundle.js';
+
 import type {
   ActiveSessionSnapshot,
   ConversationSnapshot,
   DesktopGitSnapshot,
   DesktopWorkspaceBinding,
+  ModelRef,
   PaneSessionSlice,
   PendingAssistantAux,
 } from '../types.js';
@@ -41,7 +43,7 @@ export function buildPaneSessionSlice(input: {
     git: DesktopGitSnapshot;
   };
   paneModel?: {
-    activeModel: string;
+    activeModel: ModelRef;
   };
 }): PaneSessionSlice {
   const { bundle } = input;

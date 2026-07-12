@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import type { SaveLocalImageAs } from "@/components/tool-call/tool-call-types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
+import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import {
   DESKTOP_COMPOSER_SURFACE_BACKDROP,
@@ -37,7 +38,7 @@ import {
 } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
-import type { DesktopModelReasoningEffort, DesktopSnapshot } from "@/types";
+import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelRef } from "@/types";
 
 function isComposerChromeInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -58,7 +59,8 @@ export type ComposerSurfaceProps = {
   agentModeChipPlaceholder?: string;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
-  activeModel: string;
+  providerGroups?: DesktopSnapshot["config"]["providerGroups"];
+  activeModel: ModelRef;
   agentMode: DesktopAgentMode;
   loopEnabled: boolean;
   canSend: boolean;
@@ -68,9 +70,9 @@ export type ComposerSurfaceProps = {
   readOnly?: boolean;
   onSubmit(): void;
   onAbort?(): void;
-  onModelSelect(name: string): void;
-  onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void | Promise<boolean>;
+  onModelSelect(ref: ModelRef): void;
+  onModelReasoningEffortSelect(ref: ModelRef, reasoningEffort: DesktopModelReasoningEffort): void;
+  onModelThinkingEnabledSelect?(ref: ModelRef, enabled: boolean): void | Promise<boolean>;
   onAgentModeChange(mode: DesktopAgentMode): void;
   onLoopEnabledChange?(enabled: boolean): void;
   richInputRef?: RefObject<ComposerRichInputHandle | null>;
@@ -100,6 +102,7 @@ export function ComposerSurface({
   agentModeChipPlaceholder,
   models,
   catalogHints,
+  providerGroups,
   activeModel,
   agentMode,
   loopEnabled = false,
@@ -136,7 +139,13 @@ export function ComposerSurface({
   const { t } = useTranslation();
   const [fileDragOver, setFileDragOver] = useState(false);
   const activeModelProfile = useMemo(
-    () => models.find((model) => model.name === activeModel),
+    () =>
+      models.find((model) =>
+        modelRefsEqual(
+          model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+          activeModel,
+        ),
+      ),
     [activeModel, models],
   );
 
@@ -255,7 +264,8 @@ export function ComposerSurface({
             <ModelPickerMenu
               models={models}
               catalogHints={catalogHints}
-              activeModelName={activeModel}
+              providerGroups={providerGroups}
+              activeModelRef={activeModel}
               activeReasoningEffort={activeModelProfile?.reasoningEffort}
               disabled={readOnly}
               onModelSelect={onModelSelect}

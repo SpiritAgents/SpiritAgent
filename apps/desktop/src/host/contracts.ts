@@ -22,6 +22,7 @@ export type HostCommandName =
   | 'previewModels'
   | 'removeModel'
   | 'removeProviderModels'
+  | 'removeProviderGroup'
   | 'addMcpServer'
   | 'deleteMcpServer'
   | 'saveHookEntry'

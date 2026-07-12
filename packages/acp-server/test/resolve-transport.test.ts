@@ -13,21 +13,28 @@ import {
 } from '../src/credentials/provider-accounts.js';
 import { setKeyringStoreForTests } from '../src/credentials/index.js';
 import { resolveTransportConfig } from '../src/transport/resolve-transport.js';
+import { v2ConfigFixture } from './fixtures/v2-config.js';
 
 test('resolveTransportConfig builds bedrock transport from IAM credentials', () => {
+  const modelName = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-bedrock-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-        apiBase: 'https://bedrock-runtime.us-east-1.amazonaws.com',
+    JSON.stringify(v2ConfigFixture({
+      groups: [{
+        id: 'amazon-bedrock',
         provider: 'amazon-bedrock',
+        apiBase: 'https://bedrock-runtime.us-east-1.amazonaws.com',
         transportKind: 'bedrock',
         awsRegion: 'us-east-1',
+        models: [{
+          name: modelName,
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        }],
       }],
-      activeModel: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-    }),
+      activeModel: { groupId: 'amazon-bedrock', name: modelName },
+    })),
     'utf8',
   );
 
@@ -60,19 +67,25 @@ test('resolveTransportConfig builds bedrock transport from IAM credentials', () 
 });
 
 test('resolveTransportConfig builds vertex transport from service account credentials', () => {
+  const modelName = 'gemini-2.0-flash';
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-vertex-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'gemini-2.0-flash',
-        apiBase: 'https://us-central1-aiplatform.googleapis.com/v1',
+    JSON.stringify(v2ConfigFixture({
+      groups: [{
+        id: 'google-vertex-ai',
         provider: 'google-vertex-ai',
+        apiBase: 'https://us-central1-aiplatform.googleapis.com/v1',
         vertexProject: 'my-project',
         vertexLocation: 'us-central1',
+        models: [{
+          name: modelName,
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        }],
       }],
-      activeModel: 'gemini-2.0-flash',
-    }),
+      activeModel: { groupId: 'google-vertex-ai', name: modelName },
+    })),
     'utf8',
   );
 

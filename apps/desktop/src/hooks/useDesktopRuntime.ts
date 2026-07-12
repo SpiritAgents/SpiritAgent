@@ -6,6 +6,8 @@ import i18n, { getStoredLanguage } from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
+import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
+import type { ModelRef } from "@/types";
 import {
   buildPaneComposerDraftKey,
   readComposerDraft,
@@ -107,6 +109,9 @@ import type {
   ListGitHubPullRequestsRequest,
   SearchGitHubAutomationRepositoriesRequest,
   MergeGitHubPullRequestRequest,
+  ApprovalLevel,
+  LocalFileComposerRoute,
+  WorkLocationKind,
 } from "@/types";
 
 type BusyAction =
@@ -393,10 +398,10 @@ export function useDesktopRuntime() {
   const [approvalGuidance, setApprovalGuidance] = useState("");
   const [questionError, setQuestionError] = useState("");
   const [settings, setSettings] = useState<SettingsFormState>({
-    activeModel: "",
-    imageGenerationModel: "",
-    videoGenerationModel: "",
-    lightweightChatModel: "",
+    activeModel: emptyModelRef(),
+    imageGenerationModel: undefined,
+    videoGenerationModel: undefined,
+    lightweightChatModel: undefined,
     apiBase: "",
     uiLocale: getStoredLanguage(),
     apiKey: "",
@@ -728,8 +733,11 @@ export function useDesktopRuntime() {
     });
     setRuntimeError(effectiveNext.runtimeError ?? "");
     setSettings((current) => {
-      const activeModelProfile = effectiveNext.config.models.find(
-        (model) => model.name === effectiveNext.config.activeModel,
+      const activeModelProfile = effectiveNext.config.models.find((model) =>
+        modelRefsEqual(
+          model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+          effectiveNext.config.activeModel,
+        ),
       );
       const configAgentMode = (effectiveNext.config.agentMode ?? "agent") as DesktopAgentMode;
       // 回合进行中 poll 可能仍带旧 config.agentMode；勿覆盖用户 dismiss Chip 后 saveSettingsPatch 的乐观 agentMode。
@@ -760,10 +768,10 @@ export function useDesktopRuntime() {
           : snapshotWindowsMica;
 
       return {
-        activeModel: next.config.activeModel,
-        imageGenerationModel: next.config.imageGenerationModel ?? "",
-        videoGenerationModel: next.config.videoGenerationModel ?? "",
-        lightweightChatModel: next.config.lightweightChatModel ?? "",
+        activeModel: effectiveNext.config.activeModel,
+        imageGenerationModel: effectiveNext.config.imageGenerationModel,
+        videoGenerationModel: effectiveNext.config.videoGenerationModel,
+        lightweightChatModel: effectiveNext.config.lightweightChatModel,
         apiBase: activeModelProfile?.apiBase ?? current.apiBase,
         uiLocale: next.config.uiLocale ?? getStoredLanguage(),
         apiKey: current.apiKey,
@@ -1020,13 +1028,13 @@ export function useDesktopRuntime() {
   );
 
   const switchPaneModel = useCallback(
-    async (sessionPath: string, modelName: string): Promise<boolean> => {
+    async (sessionPath: string, modelRef: ModelRef): Promise<boolean> => {
       if (!api?.switchPaneModel) {
         return false;
       }
 
       try {
-        const next = await api.switchPaneModel({ sessionPath, modelName });
+        const next = await api.switchPaneModel({ sessionPath, modelRef });
         applySnapshot(next);
         setQuestionError("");
         setRuntimeError("");
@@ -1059,7 +1067,7 @@ export function useDesktopRuntime() {
   );
 
   const setPaneWorkLocation = useCallback(
-    async (sessionPath: string, workLocation: import('@spiritagent/host-internal').WorkLocationKind): Promise<boolean> => {
+    async (sessionPath: string, workLocation: WorkLocationKind): Promise<boolean> => {
       if (!api?.setPaneWorkLocation) {
         return false;
       }
@@ -1155,7 +1163,7 @@ export function useDesktopRuntime() {
   }, [api]);
 
   const classifyLocalFileComposerRoute = useCallback(
-    async (absolutePath: string): Promise<import('@spiritagent/host-internal').LocalFileComposerRoute> => {
+    async (absolutePath: string): Promise<LocalFileComposerRoute> => {
       if (!api) {
         return 'reference';
       }
@@ -1418,6 +1426,8 @@ export function useDesktopRuntime() {
         && Boolean(nextPath)
         && prevPath !== nextPath
         && busyActionRef.current !== 'session'
+        && prevPath
+        && nextPath
         && !isProvisionalSessionPromotion(prevPath, nextPath);
       if (blockForegroundSwap && previous) {
         applySnapshot({
@@ -1574,16 +1584,21 @@ export function useDesktopRuntime() {
   );
 
   const setActiveModel = useCallback(
-    (name: string) => {
+    (modelRef: ModelRef) => {
       if (!snapshot) {
         return;
       }
 
-      const model = snapshot.config.models.find((item) => item.name === name);
+      const model = snapshot.config.models.find((item) =>
+        modelRefsEqual(
+          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
+          modelRef,
+        ),
+      );
       const current = settingsRef.current;
       const next: typeof settings = {
         ...current,
-        activeModel: name,
+        activeModel: modelRef,
         apiBase: model?.apiBase ?? current.apiBase,
       };
       settingsRef.current = next;
@@ -1701,14 +1716,14 @@ export function useDesktopRuntime() {
   );
 
   const removeProviderModels = useCallback(
-    async (provider: DesktopModelProvider) => {
+    async (groupId: string) => {
       if (!api) {
         return;
       }
 
       setBusyAction("models");
       try {
-        const next = await api.removeProviderModels(provider);
+        const next = await api.removeProviderGroup({ groupId });
         applySnapshot(next);
         setRuntimeError("");
       } catch (error) {
@@ -2149,8 +2164,12 @@ export function useDesktopRuntime() {
       const resolvedApiBase =
         patch.apiBase ??
         (patch.activeModel !== undefined
-          ? snapshotRef.current?.config.models.find((model) => model.name === nextActiveModel)?.apiBase ??
-            prev.apiBase
+          ? snapshotRef.current?.config.models.find((model) =>
+              modelRefsEqual(
+                model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+                nextActiveModel,
+              ),
+            )?.apiBase ?? prev.apiBase
           : prev.apiBase);
       const s = {
         ...prev,
@@ -2192,19 +2211,24 @@ export function useDesktopRuntime() {
   );
 
   const setModelReasoningEffort = useCallback(
-    async (name: string, reasoningEffort: DesktopModelReasoningEffort) => {
+    async (modelRef: ModelRef, reasoningEffort: DesktopModelReasoningEffort) => {
       if (!api || !snapshot) {
         return;
       }
 
-      const model = snapshot.config.models.find((item) => item.name === name);
+      const model = snapshot.config.models.find((item) =>
+        modelRefsEqual(
+          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
+          modelRef,
+        ),
+      );
       if (!model) {
         return;
       }
 
       const next = {
         ...settingsRef.current,
-        activeModel: model.name,
+        activeModel: modelRef,
         apiBase: model.apiBase,
       };
       settingsRef.current = next;
@@ -2230,12 +2254,17 @@ export function useDesktopRuntime() {
   );
 
   const setModelThinkingEnabled = useCallback(
-    async (name: string, enabled: boolean): Promise<boolean> => {
+    async (modelRef: ModelRef, enabled: boolean): Promise<boolean> => {
       if (!api || !snapshot) {
         return false;
       }
 
-      const model = snapshot.config.models.find((item) => item.name === name);
+      const model = snapshot.config.models.find((item) =>
+        modelRefsEqual(
+          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
+          modelRef,
+        ),
+      );
       if (!model) {
         return false;
       }
@@ -2243,7 +2272,7 @@ export function useDesktopRuntime() {
       const previousSettings = settingsRef.current;
       const next = {
         ...previousSettings,
-        activeModel: model.name,
+        activeModel: modelRef,
         apiBase: model.apiBase,
       };
       settingsRef.current = next;
@@ -2562,7 +2591,7 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot]);
 
-  const setApprovalLevel = useCallback(async (approvalLevel: import('@spiritagent/host-internal').ApprovalLevel): Promise<boolean> => {
+  const setApprovalLevel = useCallback(async (approvalLevel: ApprovalLevel): Promise<boolean> => {
     if (!api) {
       return false;
     }
@@ -2596,7 +2625,7 @@ export function useDesktopRuntime() {
   }, [api, applySnapshot]);
 
   const setWorkLocation = useCallback(async (
-    workLocation: import('@spiritagent/host-internal').WorkLocationKind,
+    workLocation: WorkLocationKind,
   ): Promise<boolean> => {
     if (!api) {
       return false;

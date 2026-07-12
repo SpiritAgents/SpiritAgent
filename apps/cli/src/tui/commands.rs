@@ -12,8 +12,8 @@ impl TuiShell {
                 let list = self
                     .runtime
                     .config()
-                    .models
-                    .iter()
+                    .flatten_models()
+                    .into_iter()
                     .map(|m| format!("{} ({})", m.name, m.api_base))
                     .collect::<Vec<_>>()
                     .join(", ");
@@ -21,7 +21,7 @@ impl TuiShell {
                     role: MessageRole::Agent,
                     content: format!(
                         "当前模型: {}\n模型列表: {}",
-                        self.runtime.config().active_model,
+                        self.runtime.config().active_model_name(),
                         list
                     ),
                     tool_block: None,
@@ -36,18 +36,18 @@ impl TuiShell {
             }
             ["use", model] => {
                 let mut config = self.runtime.config().clone();
-                if !config.has_model(model) {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: format!(
-                            "模型不存在: {}，先用 `/model add` 打开表单添加，或 `/model add {} <api_base> <api_key>`",
-                            model, model
-                        ),
-                        tool_block: None,
-                    });
-                    return;
-                }
-                config.active_model = (*model).to_string();
+                let model_ref = match config.parse_model_ref_selector(model) {
+                    Ok(model_ref) => model_ref,
+                    Err(message) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: message,
+                            tool_block: None,
+                        });
+                        return;
+                    }
+                };
+                config.active_model = model_ref;
                 if let Err(err) = self.runtime.validate_config_change(&config) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
@@ -117,9 +117,18 @@ impl TuiShell {
             }
             ["remove", model] => {
                 let mut config = self.runtime.config().clone();
-                let before = config.models.len();
-                config.models.retain(|m| m.name != *model);
-                if config.models.len() == before {
+                let model_ref = match config.parse_model_ref_selector(model) {
+                    Ok(model_ref) => model_ref,
+                    Err(message) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: message,
+                            tool_block: None,
+                        });
+                        return;
+                    }
+                };
+                if !config.remove_model(&model_ref) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
                         content: format!("模型不存在: {}", model),
@@ -127,17 +136,21 @@ impl TuiShell {
                     });
                     return;
                 }
-                if config.active_model == *model {
-                    config.active_model = config
-                        .models
-                        .first()
-                        .map(|m| m.name.clone())
-                        .unwrap_or_default();
+                if crate::model_registry::model_refs_equal(&config.active_model, &model_ref) {
+                    config.active_model = config.first_model_ref();
                 }
-                if config.image_generation_model.as_deref() == Some(model) {
+                if config
+                    .image_generation_model
+                    .as_ref()
+                    .is_some_and(|slot| crate::model_registry::model_refs_equal(slot, &model_ref))
+                {
                     config.image_generation_model = None;
                 }
-                if config.video_generation_model.as_deref() == Some(model) {
+                if config
+                    .video_generation_model
+                    .as_ref()
+                    .is_some_and(|slot| crate::model_registry::model_refs_equal(slot, &model_ref))
+                {
                     config.video_generation_model = None;
                 }
                 if let Err(err) = self.config_store.save(&config) {
@@ -147,7 +160,7 @@ impl TuiShell {
                         tool_block: None,
                     });
                 } else {
-                    let _ = self.secret_store.remove_model_api_key(model);
+                    let _ = self.secret_store.remove_model_api_key(&model_ref.name);
                     self.runtime.replace_config(config);
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,

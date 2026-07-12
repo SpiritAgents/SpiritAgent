@@ -28,8 +28,10 @@ import type {
   DesktopSnapshot,
   DesktopWorkspaceBinding,
   GitHubAutomationRepositoriesSnapshot,
+  ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
+import { emptyModelRef, isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
 type CreateAutomationDialogProps = {
@@ -68,7 +70,7 @@ export function CreateAutomationDialog({
   const [trigger, setTrigger] = useState<DesktopAutomationTrigger>(defaultDesktopTimeTrigger());
   const [workspaceRoot, setWorkspaceRoot] = useState("");
   const [workspaceBinding, setWorkspaceBinding] = useState<DesktopWorkspaceBinding>("project");
-  const [modelName, setModelName] = useState("");
+  const [modelRef, setModelRef] = useState<ModelRef>(emptyModelRef());
   const [reasoningEffort, setReasoningEffort] = useState<DesktopModelReasoningEffort | undefined>();
   const [approvalLevel, setApprovalLevel] = useState<ApprovalLevel>("default");
 
@@ -93,8 +95,13 @@ export function CreateAutomationDialog({
         ? snapshot.userHomeDirectory
         : snapshot.workspaceRoot,
     );
-    setModelName(snapshot.config.activeModel);
-    const activeModel = snapshot.config.models.find((model) => model.name === snapshot.config.activeModel);
+    setModelRef(snapshot.config.activeModel);
+    const activeModel = snapshot.config.models.find((model) =>
+      modelRefsEqual(
+        model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+        snapshot.config.activeModel,
+      ),
+    );
     setReasoningEffort(activeModel?.reasoningEffort);
     setApprovalLevel(snapshot.conversation.approvalLevel);
   }, [open, snapshot]);
@@ -107,7 +114,7 @@ export function CreateAutomationDialog({
     && overview.trim().length > 0
     && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
     && resolvedWorkspaceRoot.trim().length > 0
-    && modelName.trim().length > 0
+    && !isEmptyModelRef(modelRef)
     && isValidDesktopAutomationTrigger(trigger)
     && (trigger.kind !== "github" || githubConnected);
 
@@ -168,16 +175,22 @@ export function CreateAutomationDialog({
                 <ModelPickerMenu
                   models={snapshot.config.models}
                   catalogHints={snapshot.config.modelCatalogHints}
-                  activeModelName={modelName}
+                  providerGroups={snapshot.config.providerGroups}
+                  activeModelRef={modelRef}
                   activeReasoningEffort={reasoningEffort}
                   disabled={disabled}
-                  onModelSelect={(name) => {
-                    setModelName(name);
-                    const profile = snapshot.config.models.find((model) => model.name === name);
+                  onModelSelect={(ref) => {
+                    setModelRef(ref);
+                    const profile = snapshot.config.models.find((model) =>
+                      modelRefsEqual(
+                        model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+                        ref,
+                      ),
+                    );
                     setReasoningEffort(profile?.reasoningEffort);
                   }}
-                  onModelReasoningEffortSelect={(name, effort) => {
-                    setModelName(name);
+                  onModelReasoningEffortSelect={(ref, effort) => {
+                    setModelRef(ref);
                     setReasoningEffort(effort);
                   }}
                 />
@@ -202,7 +215,7 @@ export function CreateAutomationDialog({
                   overview: overview.trim(),
                   trigger,
                   workspaceRoot: resolvedWorkspaceRoot,
-                  modelName,
+                  modelRef,
                   ...(reasoningEffort ? { reasoningEffort } : {}),
                   approvalLevel,
                 });

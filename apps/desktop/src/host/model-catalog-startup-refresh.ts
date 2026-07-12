@@ -23,11 +23,17 @@ import {
   type LoadedPreviewModelsResult,
 } from './model-config.js';
 import {
+  findProviderGroup,
+  flattenProviderGroups,
+  modelExistsInGroup,
+  resolveModelProfileFromParts,
+} from './model-config-access.js';
+import {
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
-  modelExistsInProviderScope,
   modelProviderKeyScope,
   applyModelsRemovalToConfig,
+  type ModelRemovalTarget,
 } from './provider-api-key.js';
 import {
   DEFAULT_API_BASE,
@@ -65,7 +71,7 @@ export function collectModelCatalogRefreshTargets(
 }
 
 export async function loadModelCatalogForProfile(
-  config: Pick<DesktopConfigFile, 'models'>,
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
   profile: ModelProfileSnapshot,
   options?: { forceRefresh?: boolean },
 ): Promise<LoadedPreviewModelsResult | undefined> {
@@ -77,7 +83,10 @@ export async function loadModelCatalogForProfile(
 
   const transportKind = resolveDesktopTransportKind(profile);
   const apiBase = profile.apiBase.trim() || DEFAULT_API_BASE;
-  const apiKey = await resolveApiKeyForConfigModel(config, profile.name);
+  const modelRef = profile.ref ?? (profile.groupId
+    ? { groupId: profile.groupId, name: profile.name }
+    : undefined);
+  const apiKey = modelRef ? await resolveApiKeyForConfigModel(config, modelRef) : undefined;
 
   if (transportKind === 'bedrock') {
     const bedrockCredentials = readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(provider));
@@ -143,7 +152,7 @@ export async function loadModelCatalogForProfile(
 }
 
 export async function forceRefreshModelCatalogForProfile(
-  config: Pick<DesktopConfigFile, 'models'>,
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
   profile: ModelProfileSnapshot,
 ): Promise<LoadedPreviewModelsResult | undefined> {
   return loadModelCatalogForProfile(config, profile, { forceRefresh: true });
@@ -171,7 +180,12 @@ export function mergeNewCatalogModelsIntoConfig(
   result: LoadedPreviewModelsResult,
 ): number {
   const provider = profile.provider;
-  if (!provider) {
+  const groupId = profile.groupId?.trim();
+  if (!provider || !groupId) {
+    return 0;
+  }
+  const group = findProviderGroup(config, groupId);
+  if (!group) {
     return 0;
   }
 
@@ -186,7 +200,7 @@ export function mergeNewCatalogModelsIntoConfig(
   const toAdd: StartupMergedProfile[] = [];
   for (const name of result.modelIds) {
     const trimmed = name.trim();
-    if (!trimmed || modelExistsInProviderScope(config.models, trimmed, provider)) {
+    if (!trimmed || modelExistsInGroup(config, groupId, trimmed)) {
       continue;
     }
     const catalogEntry = catalogEntries.get(trimmed);
@@ -241,19 +255,26 @@ export function mergeNewCatalogModelsIntoConfig(
   }
 
   for (const merged of toAdd) {
-    config.models.push(merged);
+    group.models.push({
+      name: merged.name,
+      reasoningEffort: merged.reasoningEffort as import('@spiritagent/host-internal').ModelEntryV2['reasoningEffort'],
+      ...(merged.supportedReasoningEfforts !== undefined
+        ? { supportedReasoningEfforts: merged.supportedReasoningEfforts as import('@spiritagent/host-internal').ModelEntryV2['supportedReasoningEfforts'] }
+        : {}),
+      ...(merged.capabilities !== undefined ? { capabilities: merged.capabilities } : {}),
+    });
   }
 
   if (!config.imageGenerationModel) {
     const imageGenerationProfile = toAdd.find((entry) => supportsImageGeneration(entry));
     if (imageGenerationProfile) {
-      config.imageGenerationModel = imageGenerationProfile.name;
+      config.imageGenerationModel = { groupId, name: imageGenerationProfile.name };
     }
   }
   if (!config.videoGenerationModel) {
     const videoGenerationProfile = toAdd.find((entry) => supportsVideoGeneration(entry));
     if (videoGenerationProfile) {
-      config.videoGenerationModel = videoGenerationProfile.name;
+      config.videoGenerationModel = { groupId, name: videoGenerationProfile.name };
     }
   }
 
@@ -380,16 +401,33 @@ export function syncExistingModelsFromCatalog(
   }
 
   let updated = 0;
-  for (const model of config.models) {
-    if (!modelMatchesCatalogRefreshScope(model, provider, transportKind, apiBase)) {
-      continue;
-    }
-    const catalogEntry = catalogEntries.get(model.name);
-    if (!catalogEntry) {
-      continue;
-    }
-    if (applyCatalogEntryToStoredModel(model, catalogEntry)) {
-      updated += 1;
+  for (const group of config.providerGroups) {
+    for (const model of group.models) {
+      const resolved = resolveModelProfileFromParts(group, model);
+      if (!resolved || !modelMatchesCatalogRefreshScope(resolved, provider, transportKind, apiBase)) {
+        continue;
+      }
+      const catalogEntry = catalogEntries.get(model.name);
+      if (!catalogEntry) {
+        continue;
+      }
+      if (applyCatalogEntryToStoredModel(resolved, catalogEntry)) {
+        if (resolved.capabilities !== undefined) {
+          model.capabilities = resolved.capabilities;
+        }
+        if (resolved.supportedReasoningEfforts !== undefined) {
+          model.supportedReasoningEfforts = resolved.supportedReasoningEfforts as import('@spiritagent/host-internal').ModelEntryV2['supportedReasoningEfforts'];
+        } else {
+          delete model.supportedReasoningEfforts;
+        }
+        if (resolved.contextLength !== undefined) {
+          model.contextLength = resolved.contextLength;
+        }
+        if (resolved.supportsThinkingType !== undefined) {
+          model.supportsThinkingType = resolved.supportsThinkingType;
+        }
+        updated += 1;
+      }
     }
   }
   return updated;
@@ -414,20 +452,23 @@ export function removeDelistedModelsFromCatalog(
 
   const transportKind = resolveDesktopTransportKind(profile);
   const apiBase = profile.apiBase.trim() || DEFAULT_API_BASE;
-  const targetsToRemove: Array<{ name: string; provider?: typeof provider }> = [];
-  for (const model of config.models) {
-    if (!modelMatchesCatalogRefreshScope(model, provider, transportKind, apiBase)) {
-      continue;
-    }
-    if (!catalogIds.has(model.name)) {
-      targetsToRemove.push({ name: model.name, provider: model.provider });
+  const targetsToRemove: ModelRemovalTarget[] = [];
+  for (const group of config.providerGroups) {
+    for (const model of group.models) {
+      const resolved = resolveModelProfileFromParts(group, model);
+      if (!resolved || !modelMatchesCatalogRefreshScope(resolved, provider, transportKind, apiBase)) {
+        continue;
+      }
+      if (!catalogIds.has(model.name)) {
+        targetsToRemove.push({ ref: { groupId: group.id, name: model.name } });
+      }
     }
   }
   if (targetsToRemove.length === 0) {
     return [];
   }
   applyModelsRemovalToConfig(config, targetsToRemove);
-  return targetsToRemove.map((target) => target.name);
+  return targetsToRemove.map((target) => target.ref.name);
 }
 
 export type ModelCatalogRefreshFetchResult = {
@@ -456,7 +497,7 @@ export async function fetchConfiguredModelCatalogsOnStartup(
   config: DesktopConfigFile,
   options?: { forceRefresh?: boolean },
 ): Promise<ModelCatalogStartupFetchSummary> {
-  const targets = collectModelCatalogRefreshTargets(config.models);
+  const targets = collectModelCatalogRefreshTargets(flattenProviderGroups(config));
   const forceRefresh = options?.forceRefresh === true;
   const fetched: ModelCatalogRefreshFetchResult[] = [];
   let skipped = 0;

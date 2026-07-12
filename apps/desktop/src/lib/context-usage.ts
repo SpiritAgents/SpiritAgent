@@ -1,13 +1,15 @@
 import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
 
 import { parseModelContextLength } from './model-context-length.js';
-import { DEFAULT_API_BASE } from '../host/storage.js';
 import type {
   ConversationContextUsageSnapshot,
   DesktopModelCatalogHint,
   DesktopModelProvider,
   DesktopTransportKind,
 } from '../types.js';
+
+/** 与 `apps/desktop/src/host/storage.ts` 中 `DEFAULT_API_BASE` 保持一致。 */
+const DEFAULT_API_BASE = 'https://api.openai.com/v1';
 
 export interface ContextUsageModelProfile {
   name: string;

@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-
-import { readdir, readFile } from 'node:fs/promises';
 
 import {
   computeNextRunAt,
@@ -27,7 +25,7 @@ test('automation store create list get update delete', async () => {
       overview: '收集 GitHub 新闻',
       trigger: { kind: 'time', schedule: { kind: 'daily', hour: 20, minute: 0 } },
       workspaceRoot: spiritDataDir,
-      modelName: 'gpt-test',
+      modelRef: { groupId: 'openai', name: 'gpt-test' },
       approvalLevel: 'default',
     });
     assert.equal(created.enabled, true);
@@ -63,7 +61,7 @@ test('automation store tracks runs and active run', async () => {
       overview: 'Do work',
       trigger: { kind: 'time', schedule: { kind: 'hourly' } },
       workspaceRoot: spiritDataDir,
-      modelName: 'gpt-test',
+      modelRef: { groupId: 'openai', name: 'gpt-test' },
       approvalLevel: 'full-approval',
     });
 
@@ -183,7 +181,7 @@ test('automation store serializes concurrent mutations and writes atomically', a
       overview: 'Concurrent writes',
       trigger: { kind: 'time', schedule: { kind: 'hourly' } },
       workspaceRoot: spiritDataDir,
-      modelName: 'gpt-test',
+      modelRef: { groupId: 'openai', name: 'gpt-test' },
       approvalLevel: 'default',
     });
 
@@ -273,4 +271,52 @@ test('reconcileGitHubTriggerPollState clears poll when repo identity changes', (
     repo: 'd',
     event: 'issue_created',
   });
+});
+
+test('automation store persists modelRef and rejects legacy modelName-only files', async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-modelref-'));
+
+  try {
+    const store = createHostAutomationStore(spiritDataDir);
+    const created = await store.create({
+      title: 'Model ref task',
+      overview: 'Uses group-scoped model',
+      trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+      workspaceRoot: spiritDataDir,
+      modelRef: { groupId: 'custom-openai', name: 'gpt-test' },
+      approvalLevel: 'default',
+    });
+    assert.deepEqual(created.modelRef, { groupId: 'custom-openai', name: 'gpt-test' });
+
+    const raw = await readFile(join(spiritDataDir, 'automations', `${created.id}.json`), 'utf8');
+    const parsed = JSON.parse(raw) as { definition: { modelRef?: { groupId: string; name: string }; modelName?: string } };
+    assert.deepEqual(parsed.definition.modelRef, { groupId: 'custom-openai', name: 'gpt-test' });
+    assert.equal(parsed.definition.modelName, undefined);
+
+    const legacyId = 'legacy-automation-id';
+    await mkdir(join(spiritDataDir, 'automations'), { recursive: true });
+    await writeFile(
+      join(spiritDataDir, 'automations', `${legacyId}.json`),
+      `${JSON.stringify({
+        version: 1,
+        definition: {
+          id: legacyId,
+          title: 'Legacy',
+          overview: 'Old format',
+          trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+          workspaceRoot: spiritDataDir,
+          modelName: 'gpt-test',
+          approvalLevel: 'default',
+          enabled: true,
+          createdAtUnixMs: 1,
+          updatedAtUnixMs: 1,
+        },
+        runs: [],
+      }, null, 2)}\n`,
+      'utf8',
+    );
+    assert.equal(await store.get(legacyId), undefined);
+  } finally {
+    await rm(spiritDataDir, { recursive: true, force: true });
+  }
 });

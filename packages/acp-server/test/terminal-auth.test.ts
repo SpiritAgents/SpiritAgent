@@ -22,6 +22,7 @@ import {
   buildSetupProfile,
 } from '../src/setup/provider-wizard.js';
 import { resolveTransportConfig } from '../src/transport/resolve-transport.js';
+import { openAiGroup, v2ConfigFixture } from './fixtures/v2-config.js';
 
 test('buildTerminalAuthMethod declares terminal setup args', () => {
   const method = buildTerminalAuthMethod();
@@ -47,14 +48,10 @@ test('buildAuthMethods returns terminal auth even when shared credentials exist'
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'gpt-4o-mini',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-      }],
-      activeModel: 'gpt-4o-mini',
-    }),
+    JSON.stringify(v2ConfigFixture({
+      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
+      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
+    })),
     'utf8',
   );
 
@@ -81,14 +78,10 @@ test('logout allows authenticate to restore session creation', () => {
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'gpt-4o-mini',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-      }],
-      activeModel: 'gpt-4o-mini',
-    }),
+    JSON.stringify(v2ConfigFixture({
+      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
+      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
+    })),
     'utf8',
   );
 
@@ -124,14 +117,10 @@ test('createInitialAuthState pre-authenticates when shared credentials exist', (
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'gpt-4o-mini',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-      }],
-      activeModel: 'gpt-4o-mini',
-    }),
+    JSON.stringify(v2ConfigFixture({
+      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
+      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
+    })),
     'utf8',
   );
 
@@ -162,14 +151,10 @@ test('canCreateSession requires authenticate when using shared credentials witho
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'gpt-4o-mini',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-      }],
-      activeModel: 'gpt-4o-mini',
-    }),
+    JSON.stringify(v2ConfigFixture({
+      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
+      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
+    })),
     'utf8',
   );
 
@@ -210,14 +195,10 @@ test('resolveTransportConfig reads shared config and keyring', () => {
   const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-transport-'));
   writeFileSync(
     join(dir, 'config.json'),
-    JSON.stringify({
-      models: [{
-        name: 'gpt-4o-mini',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-      }],
-      activeModel: 'gpt-4o-mini',
-    }),
+    JSON.stringify(v2ConfigFixture({
+      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
+      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
+    })),
     'utf8',
   );
 
@@ -262,6 +243,8 @@ test('buildSetupProfile resolves preset provider api base', () => {
     provider: 'openai',
     modelName: 'gpt-4o-mini',
   });
+  assert.equal(profile.groupId, 'openai');
+  assert.deepEqual(profile.ref, { groupId: 'openai', name: 'gpt-4o-mini' });
   assert.equal(profile.provider, 'openai');
   assert.ok(profile.apiBase.includes('openai.com'));
 });

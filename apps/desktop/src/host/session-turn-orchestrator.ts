@@ -84,7 +84,7 @@ export interface SessionTurnOrchestratorContext {
   requireRuntime(): DesktopRuntime;
   requireState(): { workspaceRoot: string };
   requireConfig(): import('./storage.js').DesktopConfigFile;
-  resolveApiKeyForConfigModel(model: string): Promise<string | undefined>;
+  resolveApiKeyForConfigModel(model: import('../types.js').ModelRef): Promise<string | undefined>;
   activeBundle(): SessionBundle;
   allBundles(): Iterable<SessionBundle>;
   getActiveBundle(): SessionBundle | undefined;

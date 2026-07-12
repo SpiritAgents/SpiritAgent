@@ -24,6 +24,14 @@ import {
 import { createDesktopRewindMetadata } from './rewind.js';
 import { buildStoredDesktopSession } from './sessions.js';
 import { buildPrimaryTransportConfig, resolveDesktopTransportKind } from './model-config.js';
+import {
+  findProviderGroup,
+  flattenProviderGroups,
+  modelExistsInGroup,
+  resolveModelProfile,
+  type ResolvedModelProfile,
+} from './model-config-access.js';
+import { modelRefKey } from '@spiritagent/host-internal/config-v2';
 import { modelProviderKeyScope } from './provider-api-key.js';
 import {
   chatsDirPath,
@@ -80,12 +88,16 @@ export async function runDesktopAutomationOnce(
   deps.onRunUpdated?.(input.definition.id);
 
   try {
-    const apiKey = await resolveApiKeyForConfigModel(input.config, input.definition.modelName);
+    const modelRef = input.definition.modelRef;
+    if (!modelExistsInGroup(input.config, modelRef.groupId, modelRef.name)) {
+      throw new Error(`Model not found: ${modelRefKey(modelRef)}`);
+    }
+    const apiKey = await resolveApiKeyForConfigModel(input.config, modelRef);
     if (!apiKey) {
-      throw new Error(`Missing API key for model: ${input.definition.modelName}`);
+      throw new Error(`Missing API key for model: ${modelRefKey(modelRef)}`);
     }
 
-    const profile = input.config.models.find((model) => model.name === input.definition.modelName);
+    const profile = resolveModelProfile(input.config, modelRef);
     const workspaceBinding = isNoWorkspaceSessionRoot(input.definition.workspaceRoot)
       ? 'none'
       : 'project';
@@ -101,10 +113,10 @@ export async function runDesktopAutomationOnce(
 
     const transportConfig = buildAutomationTransportConfig({
       apiKey,
-      model: input.definition.modelName,
+      model: modelRef.name,
       baseUrl: profile?.apiBase ?? currentApiBase(input.config),
       workspaceRoot: input.definition.workspaceRoot,
-      profile,
+      profile: profile ?? undefined,
       reasoningEffort: input.definition.reasoningEffort ?? profile?.reasoningEffort,
     });
 
@@ -310,8 +322,8 @@ function buildAutomationTransportConfig(input: {
   model: string;
   baseUrl: string;
   workspaceRoot: string;
-  profile?: DesktopConfigFile['models'][number];
-  reasoningEffort?: DesktopConfigFile['models'][number]['reasoningEffort'];
+  profile?: ResolvedModelProfile;
+  reasoningEffort?: ResolvedModelProfile['reasoningEffort'];
 }): LlmTransportConfig {
   const transportKind = resolveDesktopTransportKind(input.profile);
   const bedrockCredentials = transportKind === 'bedrock' && input.profile?.provider

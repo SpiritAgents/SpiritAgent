@@ -1,43 +1,45 @@
-import type { ModelProfileSnapshot } from '../types.js';
+import type { ModelRef } from '../types.js';
+import type { DesktopConfigFile } from './storage.js';
+import {
+  flattenProviderGroups,
+  modelSupportsChat,
+  resolveModelProfile,
+  type ResolvedModelProfile,
+} from './model-config-access.js';
 
-export type LightweightChatModelResolveInput = {
-  activeModel: string;
-  lightweightChatModel?: string;
-  models: ModelProfileSnapshot[];
-};
+export type LightweightChatModelResolveInput = Pick<
+  DesktopConfigFile,
+  'activeModel' | 'lightweightChatModel' | 'providerGroups'
+>;
+
+export { modelSupportsChat };
 
 export const LIGHTWEIGHT_CHAT_MODEL_FALLBACK_PATTERNS = ['deepseek-v4-flash'] as const;
 
-export function modelSupportsChat(model: ModelProfileSnapshot): boolean {
-  return model.capabilities === undefined || model.capabilities.includes('chat');
-}
-
 export function normalizeLightweightChatModel(
-  value: unknown,
-  models: readonly ModelProfileSnapshot[],
-): string | undefined {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    return undefined;
-  }
-
-  const modelName = value.trim();
-  const profile = models.find((model) => model.name === modelName);
-  return profile && modelSupportsChat(profile) ? profile.name : undefined;
+  value: ModelRef | undefined,
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
+): ModelRef | undefined {
+  const profile = resolveModelProfile(config, value);
+  return profile && modelSupportsChat(profile) ? profile.ref : undefined;
 }
 
-export function resolveLightweightChatModelName(config: LightweightChatModelResolveInput): string {
-  const explicit = normalizeLightweightChatModel(config.lightweightChatModel, config.models);
+export function resolveLightweightChatModelName(
+  config: LightweightChatModelResolveInput,
+): ModelRef {
+  const explicit = normalizeLightweightChatModel(config.lightweightChatModel, config);
   if (explicit) {
     return explicit;
   }
 
+  const models = flattenProviderGroups(config);
   for (const pattern of LIGHTWEIGHT_CHAT_MODEL_FALLBACK_PATTERNS) {
     const lowerPattern = pattern.toLowerCase();
-    const match = config.models.find(
+    const match = models.find(
       (model) => modelSupportsChat(model) && model.name.toLowerCase().includes(lowerPattern),
     );
     if (match) {
-      return match.name;
+      return match.ref;
     }
   }
 
@@ -46,16 +48,12 @@ export function resolveLightweightChatModelName(config: LightweightChatModelReso
 
 export function resolveLightweightChatModelProfile(
   config: LightweightChatModelResolveInput,
-): { name: string; profile: ModelProfileSnapshot } | null {
-  const name = resolveLightweightChatModelName(config).trim();
-  if (!name) {
-    return null;
-  }
-
-  const profile = config.models.find((model) => model.name === name);
+): { name: string; profile: ResolvedModelProfile } | null {
+  const ref = resolveLightweightChatModelName(config);
+  const profile = resolveModelProfile(config, ref);
   if (!profile || !modelSupportsChat(profile)) {
     return null;
   }
 
-  return { name, profile };
+  return { name: profile.name, profile };
 }

@@ -1,5 +1,10 @@
 import type { HostApi } from '../host-api';
 import type {
+  ApprovalLevel,
+  LocalFileComposerRoute,
+  WorkLocationKind,
+} from '../types.js';
+import type {
   AddModelRequest,
   AddMcpServerRequest,
   AddProviderModelsRequest,
@@ -141,6 +146,9 @@ export function createWebHostApi(): HostApi {
     removeProviderModels(provider: DesktopModelProvider) {
       return post<DesktopSnapshot>(baseUrl, '/api/models/remove-provider', { provider });
     },
+    removeProviderGroup(request: import('../types').RemoveProviderGroupRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/models/remove-provider-group', request);
+    },
     addMcpServer(request: AddMcpServerRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/mcps', request);
     },
@@ -223,13 +231,13 @@ export function createWebHostApi(): HostApi {
     setLoopEnabled(enabled: boolean) {
       return post<DesktopSnapshot>(baseUrl, '/api/loop', { enabled });
     },
-    setApprovalLevel(approvalLevel: import('@spiritagent/host-internal').ApprovalLevel) {
+    setApprovalLevel(approvalLevel: ApprovalLevel) {
       return post<DesktopSnapshot>(baseUrl, '/api/approval', { approvalLevel });
     },
     setPendingGitBranch(branch: string) {
       return post<DesktopSnapshot>(baseUrl, '/api/git/pending-branch', { branch });
     },
-    setWorkLocation(workLocation: import('@spiritagent/host-internal').WorkLocationKind) {
+    setWorkLocation(workLocation: WorkLocationKind) {
       return post<DesktopSnapshot>(baseUrl, '/api/git/work-location', { workLocation });
     },
     checkoutGitBranch(request: import('../types.js').CheckoutGitBranchRequest) {
@@ -512,7 +520,7 @@ export function createWebHostApi(): HostApi {
       return post<HostTextFileStatResult>(baseUrl, '/api/host/file/stat', { absolutePath });
     },
     classifyLocalFileComposerRoute(absolutePath: string) {
-      return post<import('@spiritagent/host-internal').LocalFileComposerRoute>(
+      return post<LocalFileComposerRoute>(
         baseUrl,
         '/api/host/file/classify-composer-route',
         { absolutePath },
