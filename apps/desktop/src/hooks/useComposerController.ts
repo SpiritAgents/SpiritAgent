@@ -300,7 +300,7 @@ export function useComposerController({
     const mode = isAgentModeChipKind(runtime.settings.agentMode)
       ? runtime.settings.agentMode
       : currentAgentModeSegment(composerSegments);
-    if (!isAgentModeChipKind(mode)) {
+    if (mode === undefined || !isAgentModeChipKind(mode)) {
       return undefined;
     }
     if (mode === "plan") {

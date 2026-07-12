@@ -22,8 +22,10 @@ import type {
   DesktopUpdateAutomationRequest,
   DesktopWorkspaceBinding,
   GitHubAutomationRepositoriesSnapshot,
+  ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
+import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal";
 import {
   resolveWorkspaceBindingForStoredRoot,
 } from "@/lib/workspace-display-label";
@@ -73,7 +75,7 @@ export function AutomationSettingsPanel({
   const [trigger, setTrigger] = useState<DesktopAutomationTrigger>(defaultDesktopTimeTrigger());
   const [workspaceRoot, setWorkspaceRoot] = useState("");
   const [workspaceBinding, setWorkspaceBinding] = useState<DesktopWorkspaceBinding>("project");
-  const [modelName, setModelName] = useState("");
+  const [modelRef, setModelRef] = useState<ModelRef>(emptyModelRef());
   const [reasoningEffort, setReasoningEffort] = useState<DesktopModelReasoningEffort | undefined>();
   const [approvalLevel, setApprovalLevel] = useState<ApprovalLevel>("default");
 
@@ -95,7 +97,12 @@ export function AutomationSettingsPanel({
       resolveWorkspaceBindingForStoredRoot(definition.workspaceRoot, homeDirectory),
     );
     setWorkspaceRoot(definition.workspaceRoot);
-    setModelName(definition.modelName);
+    const matchedModel = snapshot.config.models.find((model) => model.name === definition.modelName);
+    setModelRef(
+      matchedModel
+        ? (matchedModel.ref ?? { groupId: matchedModel.groupId ?? "", name: matchedModel.name })
+        : { groupId: "", name: definition.modelName },
+    );
     setReasoningEffort(definition.reasoningEffort);
     setApprovalLevel(definition.approvalLevel);
   }, [automationId, definition, snapshot?.userHomeDirectory]);
@@ -124,8 +131,8 @@ export function AutomationSettingsPanel({
     if (resolvedWorkspaceRoot !== definition.workspaceRoot) {
       next.workspaceRoot = resolvedWorkspaceRoot;
     }
-    if (modelName !== definition.modelName) {
-      next.modelName = modelName;
+    if (modelRef.name !== definition.modelName) {
+      next.modelName = modelRef.name;
     }
     if (reasoningEffort !== definition.reasoningEffort) {
       next.reasoningEffort = reasoningEffort;
@@ -135,14 +142,14 @@ export function AutomationSettingsPanel({
     }
 
     return Object.keys(next).length > 0 ? next : null;
-  }, [approvalLevel, definition, modelName, overview, reasoningEffort, resolvedWorkspaceRoot, trigger, title]);
+  }, [approvalLevel, definition, modelRef, overview, reasoningEffort, resolvedWorkspaceRoot, trigger, title]);
 
   const canSave =
     title.trim().length > 0
     && overview.trim().length > 0
     && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
     && resolvedWorkspaceRoot.trim().length > 0
-    && modelName.trim().length > 0
+    && modelRef.name.trim().length > 0
     && isValidDesktopAutomationTrigger(trigger)
     && (trigger.kind !== "github" || githubConnected)
     && patch !== null;
@@ -210,16 +217,22 @@ export function AutomationSettingsPanel({
                 <ModelPickerMenu
                   models={snapshot.config.models}
                   catalogHints={snapshot.config.modelCatalogHints}
-                  activeModelName={modelName}
+                  providerGroups={snapshot.config.providerGroups}
+                  activeModelRef={modelRef}
                   activeReasoningEffort={reasoningEffort}
                   disabled={disabled}
-                  onModelSelect={(name) => {
-                    setModelName(name);
-                    const profile = snapshot.config.models.find((model) => model.name === name);
+                  onModelSelect={(ref) => {
+                    setModelRef(ref);
+                    const profile = snapshot.config.models.find((model) =>
+                      modelRefsEqual(
+                        model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+                        ref,
+                      ),
+                    );
                     setReasoningEffort(profile?.reasoningEffort);
                   }}
-                  onModelReasoningEffortSelect={(name, effort) => {
-                    setModelName(name);
+                  onModelReasoningEffortSelect={(ref, effort) => {
+                    setModelRef(ref);
                     setReasoningEffort(effort);
                   }}
                 />

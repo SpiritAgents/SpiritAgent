@@ -24,10 +24,12 @@ import {
 import type {
   ConversationMessageSnapshot,
   DesktopDreamCollectorSnapshot,
+  ModelRef,
   SessionListItem,
 } from '../types.js';
 import type { DesktopToolRequest, StoredDesktopSession } from './contracts.js';
 import { buildPrimaryTransportConfig, resolveDesktopTransportKind } from './model-config.js';
+import { resolveModelProfile, type ResolvedModelProfile } from './model-config-access.js';
 import { modelProviderKeyScope } from './provider-api-key.js';
 import {
   chatsDirPath,
@@ -144,7 +146,7 @@ export function buildDreamCollectorPlanMetadata(
 export interface RunDesktopDreamCollectorOnceInput {
   workspaceRoot: string;
   gitBranch: string;
-  collectorModel: string;
+  collectorModel: ModelRef;
   config: DesktopConfigFile;
   planMetadata: LlmPlanMetadata;
 }
@@ -210,12 +212,14 @@ export async function runDesktopDreamCollectorOnce(
       pendingCount: pendingSessions.length,
     }));
 
+    const activeProfile = resolveModelProfile(input.config, input.collectorModel);
+    if (!activeProfile) {
+      throw new Error(i18n.t('error.dreamCollectorApiKeyMissing'));
+    }
     const apiKey = await resolveApiKeyForConfigModel(input.config, input.collectorModel);
     if (!apiKey) {
       throw new Error(i18n.t('error.dreamCollectorApiKeyMissing'));
     }
-
-    const activeProfile = input.config.models.find((model) => model.name === input.collectorModel);
     const archive = await loadStoredSession(sourceSession.path);
     const sessionProgress = sessionProgressMap.get(sourceSession.path);
     const sourceContext = buildDreamCollectorSourceContext(archive, sessionProgress);
@@ -252,7 +256,7 @@ export async function runDesktopDreamCollectorOnce(
     const runtime = deps.createRuntime(
       buildDreamCollectorTransportConfig({
         apiKey,
-        model: input.collectorModel,
+        model: activeProfile.name,
         baseUrl: activeProfile?.apiBase ?? currentApiBase(input.config),
         workspaceRoot: input.workspaceRoot,
         profile: activeProfile,
@@ -298,7 +302,7 @@ export async function runDesktopDreamCollectorOnce(
         runId,
         workspaceRoot: input.workspaceRoot,
         gitBranch: input.gitBranch,
-        collectorModel: input.collectorModel,
+        collectorModel: input.collectorModel.name,
         sourceSession,
         prompt: promptForDebug,
         assistantText: result.assistantText,
@@ -329,7 +333,7 @@ export async function runDesktopDreamCollectorOnce(
       finishedAtUnixMs: Date.now(),
       workspaceRoot: input.workspaceRoot,
       gitBranch: input.gitBranch,
-      collectorModel: input.collectorModel,
+      collectorModel: input.collectorModel.name,
       sourceSessionPath: sourceSession.path,
       decision: 'processed',
       ...(sourceContextMode ? { sourceContextMode } : {}),
@@ -344,7 +348,7 @@ export async function runDesktopDreamCollectorOnce(
         runId,
         workspaceRoot: input.workspaceRoot,
         gitBranch: input.gitBranch,
-        collectorModel: input.collectorModel,
+        collectorModel: input.collectorModel.name,
         sourceSession,
         prompt: promptForDebug,
         assistantText: error instanceof Error ? error.message : String(error),
@@ -357,7 +361,7 @@ export async function runDesktopDreamCollectorOnce(
       finishedAtUnixMs: Date.now(),
       workspaceRoot: input.workspaceRoot,
       gitBranch: input.gitBranch,
-      collectorModel: input.collectorModel,
+      collectorModel: input.collectorModel.name,
       ...(sourceSession ? { sourceSessionPath: sourceSession.path } : {}),
       decision: 'failed',
       ...(sourceContextMode ? { sourceContextMode } : {}),
@@ -657,7 +661,7 @@ function buildDreamCollectorTransportConfig(input: {
   model: string;
   baseUrl: string;
   workspaceRoot: string;
-  profile?: DesktopConfigFile['models'][number];
+  profile?: ResolvedModelProfile;
 }): LlmTransportConfig {
   const transportKind = resolveDesktopTransportKind(input.profile);
   const bedrockCredentials = transportKind === 'bedrock' && input.profile?.provider

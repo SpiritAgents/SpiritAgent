@@ -22,6 +22,8 @@ import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachmen
 
 export type { ModelRef, ModelEntryV2, ProviderGroupV2, SpiritConfigSchemaVersion };
 
+export type DesktopWorkspaceBinding = 'project' | 'none';
+
 export interface BootstrapRequest {
   workspaceRoot?: string;
   workspaceBinding?: DesktopWorkspaceBinding;
@@ -253,6 +255,8 @@ export interface AddModelRequest {
   vertexProject?: string;
   /** Google Vertex 区域（如 `us-central1`）。 */
   vertexLocation?: string;
+  /** 自定义提供商连接显示名；`custom` 时用于生成 groupId（`slugifyProviderGroupLabel`）。 */
+  customGroupLabel?: string;
 }
 
 export interface RemoveModelRequest {
@@ -728,7 +732,7 @@ export interface PaneSessionSlice {
   workspaceRoot?: string;
   workspaceBinding?: DesktopWorkspaceBinding;
   git?: DesktopGitSnapshot;
-  activeModel?: string;
+  activeModel?: ModelRef;
 }
 
 export interface QueuedUserTurnRequest {

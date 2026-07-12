@@ -26,6 +26,7 @@ import type {
   InstallMarketplaceExtensionRequest,
   PrepareMarketplaceExtensionInstallRequest,
   PreviewModelsRequest,
+  RemoveProviderGroupRequest,
   QueryWorkspaceFileReferenceSuggestionsRequest,
   RecordCodeCompletionFileStateRequest,
   RequestCodeCompletionRequest,
@@ -109,6 +110,7 @@ export type CommandPayloads = {
   previewModels: { request: PreviewModelsRequest };
   removeModel: { request: RemoveModelRequest };
   removeProviderModels: { request: RemoveProviderModelsRequest };
+  removeProviderGroup: { request: RemoveProviderGroupRequest };
   addMcpServer: { request: AddMcpServerRequest };
   deleteMcpServer: { request: DeleteMcpServerRequest };
   saveHookEntry: { request: SaveHookEntryRequest };

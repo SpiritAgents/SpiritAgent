@@ -13,6 +13,7 @@ import type {
   McpStatusSnapshot,
 } from '../types.js';
 import { readModelCatalogCacheSync } from './model-catalog-cache.js';
+import { flattenProviderGroups } from './model-config-access.js';
 import {
   DEFAULT_API_BASE,
   normalizeAgentsConfig,
@@ -53,7 +54,16 @@ export interface BuildDesktopSnapshotInput {
   paneSessions?: DesktopSnapshot['paneSessions'];
 }
 
+function snapshotProviderGroups(config: DesktopConfigFile): DesktopConfigFile['providerGroups'] {
+  return config.providerGroups.map((group) => ({
+    ...group,
+    models: group.models.map((model) => ({ ...model })),
+  }));
+}
+
 export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopSnapshot {
+  const flattenedModels = flattenProviderGroups(input.config);
+
   return {
     workspaceRoot: input.workspaceRoot,
     userHomeDirectory: resolveDesktopHomeDirectory(),
@@ -74,17 +84,9 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
     runtimeReady: input.runtimeReady,
     ...(input.runtimeError ? { runtimeError: input.runtimeError } : {}),
     config: {
-      models: input.config.models.map((model) => ({
-        name: model.name,
-        apiBase: model.apiBase,
-        reasoningEffort: model.reasoningEffort,
-        ...(model.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
-        ...(model.supportedReasoningEfforts !== undefined
-          ? { supportedReasoningEfforts: [...model.supportedReasoningEfforts] }
-          : {}),
-        ...(model.capabilities ? { capabilities: [...model.capabilities] } : {}),
-        ...(model.provider ? { provider: model.provider } : {}),
-        ...(model.transportKind ? { transportKind: model.transportKind } : {}),
+      providerGroups: snapshotProviderGroups(input.config),
+      models: flattenedModels.map((model) => ({
+        ...model,
         keyConfigured: input.modelKeyPresence[model.name] ?? false,
       })),
       activeModel: input.config.activeModel,
@@ -163,24 +165,24 @@ export function invalidateModelCatalogHintsMemo(): void {
 
 export function buildModelCatalogHints(config: DesktopConfigFile): DesktopModelCatalogHint[] {
   const seen = new Set<string>();
-  for (const model of config.models) {
-    const base = model.apiBase.trim() || DEFAULT_API_BASE;
-    const transportKind = model.transportKind ?? (model.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
-    seen.add(`${model.provider ?? 'custom'}::${transportKind}::${base}`);
+  for (const group of config.providerGroups) {
+    const base = group.apiBase.trim() || DEFAULT_API_BASE;
+    const transportKind = group.transportKind ?? (group.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+    seen.add(`${group.provider ?? 'custom'}::${transportKind}::${base}`);
   }
   const memoKey = [...seen].join('\n');
   if (modelCatalogHintsMemo?.key === memoKey) {
     return modelCatalogHintsMemo.hints;
   }
   const hints: DesktopModelCatalogHint[] = [];
-  for (const model of config.models) {
-    const base = model.apiBase.trim() || DEFAULT_API_BASE;
-    const transportKind = model.transportKind ?? (model.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
-    const cacheKey = `${model.provider ?? 'custom'}::${transportKind}::${base}`;
+  for (const group of config.providerGroups) {
+    const base = group.apiBase.trim() || DEFAULT_API_BASE;
+    const transportKind = group.transportKind ?? (group.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+    const cacheKey = `${group.provider ?? 'custom'}::${transportKind}::${base}`;
     if (!seen.delete(cacheKey)) {
       continue;
     }
-    const hit = readModelCatalogCacheSync(base, model.provider, transportKind);
+    const hit = readModelCatalogCacheSync(base, group.provider, transportKind);
     if (hit && hit.modelIds.length > 0) {
       hints.push({
         ...(hit.provider ? { provider: hit.provider } : {}),

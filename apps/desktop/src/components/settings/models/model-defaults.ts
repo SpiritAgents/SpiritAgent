@@ -1,5 +1,11 @@
 import i18n from "@/lib/i18n";
-import type { DesktopModelCapability, DesktopSnapshot } from "@/types";
+import type { DesktopModelCapability, DesktopSnapshot, ModelRef } from "@/types";
+import {
+  emptyModelRef,
+  isEmptyModelRef,
+  modelRefKey,
+  modelRefsEqual,
+} from "@spiritagent/host-internal";
 
 export const defaultCustomModelCapabilities: DesktopModelCapability[] = ["chat", "image"];
 
@@ -13,6 +19,23 @@ export type ModelDefaultAssignments = {
 };
 
 export type ModelDefaultRole = keyof ModelDefaultAssignments;
+
+export function settingsModelRef(model: SettingsModelProfile): ModelRef {
+  return model.ref ?? { groupId: model.groupId ?? "", name: model.name };
+}
+
+export function resolveEffectiveModelRef(
+  settingsRef: ModelRef | undefined,
+  snapshotRef: ModelRef | undefined,
+): ModelRef {
+  if (settingsRef && !isEmptyModelRef(settingsRef)) {
+    return settingsRef;
+  }
+  if (snapshotRef && !isEmptyModelRef(snapshotRef)) {
+    return snapshotRef;
+  }
+  return emptyModelRef();
+}
 
 export const modelCapabilityOptions: Array<{
   value: DesktopModelCapability;
@@ -73,26 +96,42 @@ export function canAssignAsLightweightChatModel(
 
 export function getSupportedModelDefaultRoles(
   model: SettingsModelProfile,
-  activeModel: string,
-  imageGenerationModel: string,
-  videoGenerationModel: string,
-  lightweightChatModel: string,
+  activeModel: ModelRef,
+  imageGenerationModel: ModelRef | undefined,
+  videoGenerationModel: ModelRef | undefined,
+  lightweightChatModel: ModelRef | undefined,
 ): ModelDefaultRole[] {
+  const modelRef = settingsModelRef(model);
   const roles: ModelDefaultRole[] = [];
 
-  if (canAssignAsActiveModel(model, model.name === activeModel)) {
+  if (canAssignAsActiveModel(model, modelRefsEqual(modelRef, activeModel))) {
     roles.push("activeModel");
   }
 
-  if (canAssignAsImageGenerationModel(model, model.name === imageGenerationModel)) {
+  if (
+    canAssignAsImageGenerationModel(
+      model,
+      imageGenerationModel !== undefined && modelRefsEqual(modelRef, imageGenerationModel),
+    )
+  ) {
     roles.push("imageGenerationModel");
   }
 
-  if (canAssignAsVideoGenerationModel(model, model.name === videoGenerationModel)) {
+  if (
+    canAssignAsVideoGenerationModel(
+      model,
+      videoGenerationModel !== undefined && modelRefsEqual(modelRef, videoGenerationModel),
+    )
+  ) {
     roles.push("videoGenerationModel");
   }
 
-  if (canAssignAsLightweightChatModel(model, model.name === lightweightChatModel)) {
+  if (
+    canAssignAsLightweightChatModel(
+      model,
+      lightweightChatModel !== undefined && modelRefsEqual(modelRef, lightweightChatModel),
+    )
+  ) {
     roles.push("lightweightChatModel");
   }
 
@@ -119,3 +158,5 @@ export function modelDefaultActionLabel(roles: readonly ModelDefaultRole[]): str
 
   return i18n.t('settings.selectDefaultRole');
 }
+
+export { modelRefKey };

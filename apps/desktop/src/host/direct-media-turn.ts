@@ -27,6 +27,11 @@ import { isWorktreeBootstrapInFlight } from './worktree-bootstrap-card.js';
 import { syncRuntimeHistoryFromBundleArchive } from './conversation-continuation.js';
 import type { SessionTurnOrchestratorContext } from './session-turn-orchestrator.js';
 import type { DesktopConfigFile } from './storage.js';
+import type { ModelRef } from '../types.js';
+import {
+  flattenProviderGroups,
+  resolveModelProfile,
+} from './model-config-access.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 
 export interface DirectMediaTurnInput {
@@ -148,12 +153,12 @@ async function validateDirectMediaTurnSetup(
   input: DirectMediaTurnInput,
 ): Promise<void> {
   const config = ctx.requireConfig();
-  const profile = config.models.find((model) => model.name === config.activeModel);
+  const profile = resolveModelProfile(config, config.activeModel);
   if (!profile) {
-    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel }));
+    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel.name }));
   }
 
-  const apiKey = await ctx.resolveApiKeyForConfigModel(profile.name);
+  const apiKey = await ctx.resolveApiKeyForConfigModel(profile.ref);
   if (!apiKey) {
     throw new Error(i18n.t('error.apiKeyNotConfigured'));
   }
@@ -168,12 +173,12 @@ async function runDirectMediaGeneration(
   request: DesktopToolRequest,
 ): Promise<void> {
   const config = ctx.requireConfig();
-  const profile = config.models.find((model) => model.name === config.activeModel);
+  const profile = resolveModelProfile(config, config.activeModel);
   if (!profile) {
-    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel }));
+    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel.name }));
   }
 
-  const apiKey = await ctx.resolveApiKeyForConfigModel(profile.name);
+  const apiKey = await ctx.resolveApiKeyForConfigModel(profile.ref);
   if (!apiKey) {
     throw new Error(i18n.t('error.apiKeyNotConfigured'));
   }
@@ -298,17 +303,28 @@ export async function startComposerDirectMediaTurn(
 
 export function shouldUseComposerDirectMediaTurn(
   config: DesktopConfigFile,
-  activeModel: string,
+  activeModel: ModelRef,
   explicitWorkspaceFileCount: number,
 ): DirectMediaTool | null {
-  const directMediaTool = resolveComposerDirectMediaTool(activeModel, config);
+  const activeProfile = resolveModelProfile(config, activeModel);
+  if (!activeProfile) {
+    return null;
+  }
+  const directMediaTool = resolveComposerDirectMediaTool(activeModel, {
+    models: flattenProviderGroups(config).map((model) => ({
+      name: model.name,
+      capabilities: model.capabilities,
+    })),
+    imageGenerationModel: config.imageGenerationModel,
+    videoGenerationModel: config.videoGenerationModel,
+  });
   if (!directMediaTool) {
     return null;
   }
   if (explicitWorkspaceFileCount > 0) {
     console.debug(
       '[desktop][composer-direct-media] attachments present; falling back to chat',
-      { activeModel, tool: directMediaTool },
+      { activeModel: activeProfile.name, tool: directMediaTool },
     );
     return null;
   }

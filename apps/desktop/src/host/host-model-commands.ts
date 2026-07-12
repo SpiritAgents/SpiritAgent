@@ -1,7 +1,14 @@
 import {
+  defaultPresetProviderGroupId,
+  isEmptyModelRef,
+  modelRefKey,
+  modelRefsEqual,
   parseModelProviderId,
   parsePresetModelProviderId,
-  partitionModelsByProvider,
+  slugifyProviderGroupLabel,
+  type ModelEntryV2,
+  type ModelRef,
+  type ProviderGroupV2,
 } from '@spiritagent/host-internal';
 import {
   defaultModelReasoningEffort,
@@ -27,6 +34,7 @@ import type {
   PreviewModelsRequest,
   PreviewModelsResponse,
   RemoveModelRequest,
+  RemoveProviderGroupRequest,
   RemoveProviderModelsRequest,
   UpdateConfigRequest,
 } from '../types.js';
@@ -40,8 +48,6 @@ import {
   resolveAddedModelCapabilities,
   resolveDesktopTransportKind,
   resolveProfileApiBase,
-  supportsImageGeneration,
-  supportsVideoGeneration,
 } from './model-config.js';
 import {
   bedrockApiBaseFromRegion,
@@ -56,13 +62,21 @@ import {
 import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spiritagent/host-internal/bedrock-mantle';
 import { modelSupportsChat } from './lightweight-chat-model.js';
 import {
-  modelExistsInProviderScope,
   applyModelsRemovalToConfig,
+  filterNewGroupModelIds,
   type ModelRemovalTarget,
 } from './provider-api-key.js';
 import {
+  flattenProviderGroups,
+  findProviderGroup,
+  modelExistsInGroup,
+  modelSupportsImageGeneration,
+  modelSupportsVideoGeneration,
+  normalizeSlotModelRef,
+  resolveModelProfile,
+} from './model-config-access.js';
+import {
   loadHostMetadata,
-  modelProviderKeyScope,
   normalizeDreamConfig,
   normalizeAgentsConfig,
   normalizeNetworksConfig,
@@ -70,6 +84,8 @@ import {
   applyLlmHttpVersionFromConfig,
   normalizeModelCapabilities,
   normalizeWebHostConfig,
+  removeBedrockProviderCredentials,
+  removeGoogleVertexProviderCredentials,
   removeModelApiKey,
   removeProviderApiKey,
   saveApiKeyForModel,
@@ -77,7 +93,6 @@ import {
   saveBedrockProviderCredentialsForProvider,
   saveGoogleVertexProviderCredentialsForProvider,
   saveConfig,
-  readBedrockProviderCredentialsFromKeyring,
   type DesktopConfigFile,
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
@@ -99,7 +114,7 @@ interface HostModelState {
 
 interface HostModelBundle {
   activePlanPath?: string;
-  activeModel?: string;
+  activeModel?: ModelRef;
   deferredRuntimeRefreshWhileBusy: boolean;
 }
 
@@ -122,6 +137,214 @@ export interface HostModelCommandContext {
   refreshLspSnapshot(): Promise<void>;
 }
 
+interface ConnectRequestFields {
+  groupId: string;
+  provider?: DesktopModelProvider;
+  customGroupLabel?: string;
+  transportKind?: DesktopTransportKind;
+  apiBase: string;
+  awsRegion?: string;
+  providerSite?: DesktopProviderConnectSiteId;
+  alibabaWorkspaceId?: string;
+  alibabaBillingMode?: DesktopAlibabaBillingMode;
+  vertexProject?: string;
+  vertexLocation?: string;
+  azureResourceName?: string;
+}
+
+interface ModelEntryLocation {
+  group: ProviderGroupV2;
+  model: ModelEntryV2;
+}
+
+function asModelEntryReasoningEffort(
+  value: ModelReasoningEffort,
+): ModelEntryV2['reasoningEffort'] {
+  return value as ModelEntryV2['reasoningEffort'];
+}
+
+function asModelEntrySupportedReasoningEfforts(
+  value: DesktopModelReasoningEffort[],
+): NonNullable<ModelEntryV2['supportedReasoningEfforts']> {
+  return value as NonNullable<ModelEntryV2['supportedReasoningEfforts']>;
+}
+
+function resolveConnectGroupId(input: ConnectRequestFields): string {
+  const provider = input.provider;
+  if (provider === 'custom') {
+    const label = input.customGroupLabel?.trim();
+    if (label) {
+      return slugifyProviderGroupLabel(label);
+    }
+    const groupId = input.groupId.trim();
+    if (groupId) {
+      return groupId;
+    }
+    throw new Error(i18n.t('error.modelNameRequired'));
+  }
+  const explicitGroupId = input.groupId.trim();
+  if (explicitGroupId) {
+    return explicitGroupId;
+  }
+  if (provider) {
+    return defaultPresetProviderGroupId(provider);
+  }
+  throw new Error(i18n.t('error.modelNameRequired'));
+}
+
+function findModelEntryInConfig(
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  ref: ModelRef,
+): ModelEntryLocation | null {
+  const group = findProviderGroup(config, ref.groupId);
+  if (!group) {
+    return null;
+  }
+  const model = group.models.find((entry) => entry.name === ref.name.trim());
+  if (!model) {
+    return null;
+  }
+  return { group, model };
+}
+
+function buildProviderGroupConnect(
+  input: ConnectRequestFields & { modelName?: string },
+): Omit<ProviderGroupV2, 'id' | 'models'> {
+  const provider = input.provider ?? 'custom';
+  const transportKind = resolveDesktopTransportKind({
+    provider,
+    transportKind: input.transportKind,
+  });
+  const apiBase = resolveManagedConnectApiBase(
+    provider,
+    transportKind,
+    input.apiBase,
+    input.awsRegion,
+    input.modelName,
+    input.vertexProject,
+    input.vertexLocation,
+    input.azureResourceName,
+    input.providerSite,
+    input.alibabaWorkspaceId,
+    input.alibabaBillingMode,
+  );
+  const group: Omit<ProviderGroupV2, 'id' | 'models'> = {
+    provider,
+    apiBase,
+  };
+  const label = input.customGroupLabel?.trim();
+  if (provider === 'custom' && label) {
+    group.label = label;
+  }
+  if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
+    group.transportKind = transportKind;
+  }
+  if (provider === 'amazon-bedrock' && input.awsRegion?.trim()) {
+    group.awsRegion = input.awsRegion.trim();
+  }
+  if (provider === 'azure' && input.azureResourceName?.trim()) {
+    group.azureResourceName = input.azureResourceName.trim();
+  }
+  if (provider === 'google-vertex-ai') {
+    if (input.vertexProject?.trim()) {
+      group.vertexProject = input.vertexProject.trim();
+    }
+    if (input.vertexLocation?.trim()) {
+      group.vertexLocation = input.vertexLocation.trim();
+    }
+  }
+  applyManagedProviderConnectFields(group, {
+    provider,
+    providerSite: input.providerSite,
+    alibabaWorkspaceId: input.alibabaWorkspaceId,
+    alibabaBillingMode: input.alibabaBillingMode,
+  });
+  return group;
+}
+
+function findOrCreateProviderGroup(
+  config: DesktopConfigFile,
+  groupId: string,
+  connect: Omit<ProviderGroupV2, 'id' | 'models'>,
+): ProviderGroupV2 {
+  const existing = findProviderGroup(config, groupId);
+  if (existing) {
+    Object.assign(existing, connect);
+    return existing;
+  }
+  const created: ProviderGroupV2 = {
+    id: groupId,
+    ...connect,
+    models: [],
+  };
+  config.providerGroups.push(created);
+  return created;
+}
+
+function existingModelsForGroupAdd(config: DesktopConfigFile) {
+  return flattenProviderGroups(config).map((profile) => ({
+    groupId: profile.groupId,
+    name: profile.name,
+    provider: profile.provider,
+    ...(profile.vertexProject ? { vertexProject: profile.vertexProject } : {}),
+    ...(profile.vertexLocation ? { vertexLocation: profile.vertexLocation } : {}),
+  }));
+}
+
+async function saveGroupCredentials(
+  groupId: string,
+  provider: DesktopModelProvider,
+  input: {
+    apiKey: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    vertexClientEmail?: string;
+    vertexPrivateKey?: string;
+  },
+): Promise<void> {
+  if (provider === 'amazon-bedrock') {
+    await saveBedrockProviderCredentialsForProvider(groupId, {
+      apiKey: input.apiKey,
+      accessKeyId: input.accessKeyId,
+      secretAccessKey: input.secretAccessKey,
+    });
+    return;
+  }
+  if (provider === 'google-vertex-ai') {
+    await saveGoogleVertexProviderCredentialsForProvider(groupId, {
+      apiKey: input.apiKey,
+      clientEmail: input.vertexClientEmail,
+      privateKey: input.vertexPrivateKey,
+    });
+    return;
+  }
+  await saveApiKeyForProvider(groupId, input.apiKey);
+}
+
+async function clearGroupCredentials(groupId: string, provider: DesktopModelProvider): Promise<void> {
+  if (provider === 'amazon-bedrock') {
+    await saveBedrockProviderCredentialsForProvider(groupId, {});
+    return;
+  }
+  if (provider === 'google-vertex-ai') {
+    await saveGoogleVertexProviderCredentialsForProvider(groupId, {});
+    return;
+  }
+  await removeProviderApiKey(groupId);
+}
+
+async function removeGroupKeyring(groupId: string, provider: DesktopModelProvider): Promise<void> {
+  if (provider === 'amazon-bedrock') {
+    await removeBedrockProviderCredentials(groupId);
+    return;
+  }
+  if (provider === 'google-vertex-ai') {
+    await removeGoogleVertexProviderCredentials(groupId);
+    return;
+  }
+  await removeProviderApiKey(groupId);
+}
+
 export async function updateConfigCommand(
   ctx: HostModelCommandContext,
   request: UpdateConfigRequest,
@@ -136,9 +359,7 @@ export async function updateConfigCommand(
     const prevApiBase = currentApiBase(state.config);
     const prevAgentMode = resolveDesktopAgentMode(state.config);
     const prevLspEnabled = state.config.agents.lsp.enabled;
-    const prevActiveModelProfile = state.config.models.find(
-      (model) => model.name === state.config.activeModel,
-    );
+    const prevActiveModelProfile = resolveModelProfile(state.config, state.config.activeModel);
     const prevActiveModelInference = prevActiveModelProfile
       ? {
           thinkingEnabled: prevActiveModelProfile.thinkingEnabled,
@@ -150,112 +371,119 @@ export async function updateConfigCommand(
       throw new Error(i18n.t('error.runtimeBusy'));
     }
 
-    const activeModel = request.activeModel.trim();
+    const activeRef = request.activeModel;
     const apiBase = request.apiBase.trim();
     const reasoningEffort = request.reasoningEffort;
     const thinkingEnabled = request.thinkingEnabled;
-    let existing = activeModel
-      ? state.config.models.find((model) => model.name === activeModel)
-      : undefined;
-    if (activeModel) {
-      if (existing) {
-        if (existing.provider && existing.provider !== 'custom') {
-          // 仅切换 activeModel 时归一化 apiBase；agentMode 等无关 patch 不得把已存 endpoint 打回 provider 默认站点
-          if (state.config.activeModel !== activeModel) {
-            existing.apiBase = resolveProfileApiBase(existing);
-          }
-        } else {
-          existing.apiBase = apiBase;
-        }
-        if (reasoningEffort !== undefined) {
-          existing.reasoningEffort = resolveModelReasoningEffortForContext(reasoningEffort, {
-            ...(existing.provider ? { provider: existing.provider } : {}),
-            model: existing.name,
-            ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
-            ...(existing.supportedReasoningEfforts !== undefined
-              ? { supportedEfforts: existing.supportedReasoningEfforts }
-              : {}),
-          });
-        }
-        if (thinkingEnabled !== undefined) {
-          const modelContext = {
-            ...(existing.provider ? { provider: existing.provider } : {}),
-            model: existing.name,
-            ...(existing.transportKind ? { transportKind: existing.transportKind } : {}),
-            ...(existing.supportedReasoningEfforts !== undefined
-              ? { supportedEfforts: existing.supportedReasoningEfforts }
-              : {}),
-            ...(existing.supportsThinkingType
-              ? { supportsThinkingType: existing.supportsThinkingType }
-              : {}),
-          };
-          if (thinkingEnabled) {
-            delete existing.thinkingEnabled;
-          } else {
-            existing.thinkingEnabled = false;
-          }
-          if (shouldPinReasoningEffortToDefault(thinkingEnabled, modelContext)) {
-            existing.reasoningEffort = resolveModelReasoningEffortForContext('default', modelContext);
-          }
+    let activeEntry: ModelEntryLocation | null = null;
+    if (!isEmptyModelRef(activeRef)) {
+      activeEntry = findModelEntryInConfig(state.config, activeRef);
+      if (!activeEntry) {
+        throw new Error(i18n.t('error.modelNotFound', { name: activeRef.name }));
+      }
+      const { group, model } = activeEntry;
+      const resolved = resolveModelProfile(state.config, activeRef);
+      if (!resolved) {
+        throw new Error(i18n.t('error.modelNotFound', { name: activeRef.name }));
+      }
+      if (resolved.provider && resolved.provider !== 'custom') {
+        if (!modelRefsEqual(state.config.activeModel, activeRef)) {
+          group.apiBase = resolveProfileApiBase(resolved);
         }
       } else {
-        state.config.models.push({
-          name: activeModel,
-          apiBase,
-          reasoningEffort: resolveModelReasoningEffortForContext(reasoningEffort, {
-            model: activeModel,
-          }),
-        });
+        group.apiBase = apiBase;
       }
-      state.config.activeModel = activeModel;
+      if (reasoningEffort !== undefined) {
+        model.reasoningEffort = asModelEntryReasoningEffort(resolveModelReasoningEffortForContext(reasoningEffort, {
+          ...(resolved.provider ? { provider: resolved.provider } : {}),
+          model: model.name,
+          ...(resolved.transportKind ? { transportKind: resolved.transportKind } : {}),
+          ...(resolved.supportedReasoningEfforts !== undefined
+            ? { supportedEfforts: resolved.supportedReasoningEfforts }
+            : {}),
+        }));
+      }
+      if (thinkingEnabled !== undefined) {
+        const modelContext = {
+          ...(resolved.provider ? { provider: resolved.provider } : {}),
+          model: model.name,
+          ...(resolved.transportKind ? { transportKind: resolved.transportKind } : {}),
+          ...(resolved.supportedReasoningEfforts !== undefined
+            ? { supportedEfforts: resolved.supportedReasoningEfforts }
+            : {}),
+          ...(resolved.supportsThinkingType
+            ? { supportsThinkingType: resolved.supportsThinkingType }
+            : {}),
+        };
+        if (thinkingEnabled) {
+          delete model.thinkingEnabled;
+        } else {
+          model.thinkingEnabled = false;
+        }
+        if (shouldPinReasoningEffortToDefault(thinkingEnabled, modelContext)) {
+          model.reasoningEffort = asModelEntryReasoningEffort(
+            resolveModelReasoningEffortForContext('default', modelContext),
+          );
+        }
+      }
+      state.config.activeModel = {
+        groupId: activeRef.groupId.trim(),
+        name: activeRef.name.trim(),
+      };
     } else {
-      state.config.activeModel = '';
-      existing = undefined;
+      state.config.activeModel = { groupId: '', name: '' };
+      activeEntry = null;
     }
     state.config.uiLocale = request.uiLocale?.trim() || undefined;
     if (request.imageGenerationModel !== undefined) {
-      const imageGenerationModel = request.imageGenerationModel.trim();
-      if (!imageGenerationModel) {
+      if (isEmptyModelRef(request.imageGenerationModel)) {
         delete state.config.imageGenerationModel;
       } else {
-        const imageProfile = state.config.models.find((model) => model.name === imageGenerationModel);
-        if (!imageProfile) {
-          throw new Error(i18n.t('error.imageGenModelNotFound', { model: imageGenerationModel }));
+        const imageRef = normalizeSlotModelRef(
+          request.imageGenerationModel,
+          state.config,
+          modelSupportsImageGeneration,
+        );
+        if (!imageRef) {
+          throw new Error(i18n.t('error.imageGenModelNotFound', {
+            model: request.imageGenerationModel.name,
+          }));
         }
-        if (!supportsImageGeneration(imageProfile)) {
-          throw new Error(i18n.t('error.modelNoImageGenCapability', { model: imageGenerationModel }));
-        }
-        state.config.imageGenerationModel = imageProfile.name;
+        state.config.imageGenerationModel = imageRef;
       }
     }
     if (request.videoGenerationModel !== undefined) {
-      const videoGenerationModel = request.videoGenerationModel.trim();
-      if (!videoGenerationModel) {
+      if (isEmptyModelRef(request.videoGenerationModel)) {
         delete state.config.videoGenerationModel;
       } else {
-        const videoProfile = state.config.models.find((model) => model.name === videoGenerationModel);
-        if (!videoProfile) {
-          throw new Error(i18n.t('error.videoGenModelNotFound', { model: videoGenerationModel }));
+        const videoRef = normalizeSlotModelRef(
+          request.videoGenerationModel,
+          state.config,
+          modelSupportsVideoGeneration,
+        );
+        if (!videoRef) {
+          throw new Error(i18n.t('error.videoGenModelNotFound', {
+            model: request.videoGenerationModel.name,
+          }));
         }
-        if (!supportsVideoGeneration(videoProfile)) {
-          throw new Error(i18n.t('error.modelNoVideoGenCapability', { model: videoGenerationModel }));
-        }
-        state.config.videoGenerationModel = videoProfile.name;
+        state.config.videoGenerationModel = videoRef;
       }
     }
     if (request.lightweightChatModel !== undefined) {
-      const lightweightChatModel = request.lightweightChatModel.trim();
-      if (!lightweightChatModel) {
+      if (isEmptyModelRef(request.lightweightChatModel)) {
         delete state.config.lightweightChatModel;
       } else {
-        const chatProfile = state.config.models.find((model) => model.name === lightweightChatModel);
-        if (!chatProfile) {
-          throw new Error(i18n.t('error.lightweightChatModelNotFound', { model: lightweightChatModel }));
+        const chatRef = normalizeSlotModelRef(
+          request.lightweightChatModel,
+          state.config,
+          modelSupportsChat,
+        );
+        if (!chatRef) {
+          throw new Error(i18n.t('error.lightweightChatModelNotFound', {
+            model: request.lightweightChatModel.name,
+          }));
         }
-        if (!modelSupportsChat(chatProfile)) {
-          throw new Error(i18n.t('error.modelNoChatCapability', { model: lightweightChatModel }));
-        }
-        state.config.lightweightChatModel = chatProfile.name;
+        state.config.lightweightChatModel = chatRef;
       }
     }
     state.config.windowsMica = request.windowsMica !== false;
@@ -314,18 +542,23 @@ export async function updateConfigCommand(
       applyLlmClientVersionFromApp();
     }
     await saveConfig(state.config);
-    if (request.apiKey?.trim()) {
-      const keyScope = modelProviderKeyScope(existing?.provider);
-      await saveApiKeyForProvider(keyScope, request.apiKey);
+    if (request.apiKey?.trim() && activeEntry) {
+      await saveApiKeyForProvider(activeEntry.group.id, request.apiKey);
     }
 
     const agentModeNow = resolveDesktopAgentMode(state.config);
     const lspEnabledChanged = state.config.agents.lsp.enabled !== prevLspEnabled;
     const modelOrEndpointChanged =
-      state.config.activeModel !== prevActiveModel ||
-      currentApiBase(state.config) !== prevApiBase;
-    const imageGenerationModelChanged = state.config.imageGenerationModel !== prevImageGenerationModel;
-    const videoGenerationModelChanged = state.config.videoGenerationModel !== prevVideoGenerationModel;
+      !modelRefsEqual(state.config.activeModel, prevActiveModel)
+      || currentApiBase(state.config) !== prevApiBase;
+    const imageGenerationModelChanged = !modelRefsEqual(
+      state.config.imageGenerationModel,
+      prevImageGenerationModel,
+    );
+    const videoGenerationModelChanged = !modelRefsEqual(
+      state.config.videoGenerationModel,
+      prevVideoGenerationModel,
+    );
 
     if (agentModeNow !== prevAgentMode) {
       state.metadata = await loadHostMetadata(state.workspaceRoot, agentModeNow, {
@@ -339,7 +572,7 @@ export async function updateConfigCommand(
       ctx.invalidateToolExecutors();
     }
 
-    if (state.config.activeModel !== prevActiveModel) {
+    if (!modelRefsEqual(state.config.activeModel, prevActiveModel)) {
       ctx.clearActiveContextUsage();
       ctx.activeBundle().activeModel = state.config.activeModel;
     }
@@ -349,25 +582,23 @@ export async function updateConfigCommand(
       || modelOrEndpointChanged
       || imageGenerationModelChanged
       || videoGenerationModelChanged;
-    const activeModelProfile = state.config.models.find(
-      (model) => model.name === state.config.activeModel,
-    );
+    const activeModelProfile = resolveModelProfile(state.config, state.config.activeModel);
     const inferencePreferenceOnlyUpdate =
       !transportOrPlanChanged
       && !lspEnabledChanged
       && agentModeNow === prevAgentMode
       && !Boolean(request.apiKey?.trim())
-      && activeModelProfile !== undefined
+      && activeModelProfile !== null
       && prevActiveModelInference !== undefined
-      && state.config.activeModel === prevActiveModel
+      && modelRefsEqual(state.config.activeModel, prevActiveModel)
       && (
         activeModelProfile.thinkingEnabled !== prevActiveModelInference.thinkingEnabled
         || activeModelProfile.reasoningEffort !== prevActiveModelInference.reasoningEffort
       );
     const deferRuntimeRefresh =
-      wasBusy &&
-      transportOrPlanChanged &&
-      !Boolean(request.apiKey?.trim());
+      wasBusy
+      && transportOrPlanChanged
+      && !Boolean(request.apiKey?.trim());
 
     if (deferRuntimeRefresh) {
       ctx.activeBundle().deferredRuntimeRefreshWhileBusy = true;
@@ -384,7 +615,6 @@ export async function updateConfigCommand(
     }
 
     ctx.setLastRuntimeError('');
-    // 勿在此处 persist：仅改 config（如 agentMode）不应刷新 savedAtUnixMs，否则会话在侧栏会误排到首位
     await ctx.flushDeferredRuntimeRefreshIfIdle();
     return ctx.buildSnapshot();
   });
@@ -662,19 +892,21 @@ export async function addProviderModelsCommand(
       throw new Error(i18n.t('error.bedrockRegionRequired'));
     }
     assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
-    const apiBase = resolveManagedConnectApiBase(
-      provider,
+    const connectInput: ConnectRequestFields = {
+      groupId: request.groupId,
+      ...(provider !== undefined ? { provider } : {}),
       transportKind,
-      request.apiBase,
-      awsRegion,
-      undefined,
-      vertexProject,
-      vertexLocation,
-      undefined,
-      providerSite,
-      alibabaWorkspaceId,
-      alibabaBillingMode,
-    );
+      apiBase: request.apiBase,
+      ...(awsRegion ? { awsRegion } : {}),
+      ...(providerSite ? { providerSite } : {}),
+      ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
+      ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+      ...(vertexProject ? { vertexProject } : {}),
+      ...(vertexLocation ? { vertexLocation } : {}),
+    };
+    const groupId = resolveConnectGroupId(connectInput);
+    const groupConnect = buildProviderGroupConnect(connectInput);
+    const apiBase = groupConnect.apiBase;
     const apiKey = request.apiKey.trim();
     const accessKeyId = request.accessKeyId?.trim();
     const secretAccessKey = request.secretAccessKey?.trim();
@@ -700,34 +932,15 @@ export async function addProviderModelsCommand(
       throw new Error(i18n.t('error.emptyModelList'));
     }
 
-    type NewProfile = {
-      name: string;
-      apiBase: string;
-      reasoningEffort: ModelReasoningEffort;
-      supportedReasoningEfforts?: DesktopModelReasoningEffort[];
-      capabilities?: DesktopModelCapability[];
-      contextLength?: number;
-      supportsThinkingType?: 'only';
-      provider?: DesktopModelProvider;
-      transportKind?: DesktopTransportKind;
-      awsRegion?: string;
-      providerSite?: DesktopProviderConnectSiteId;
-      alibabaWorkspaceId?: string;
-      alibabaBillingMode?: DesktopAlibabaBillingMode;
-      vertexProject?: string;
-      vertexLocation?: string;
-    };
+    const existingModels = existingModelsForGroupAdd(state.config);
+    const newIds = filterNewGroupModelIds(existingModels, uniqueIds, groupId);
     const catalogEntries = previewCatalogMapForAddProviderRequest(request, provider, transportKind);
-    const toAdd: NewProfile[] = [];
-    for (const name of uniqueIds) {
-      if (modelExistsInProviderScope(state.config.models, name, provider)) {
-        continue;
-      }
+    const toAdd: ModelEntryV2[] = [];
+    for (const name of newIds) {
       const catalogEntry = catalogEntries.get(name);
-      const profile: NewProfile = {
+      const entry: ModelEntryV2 = {
         name,
-        apiBase,
-        reasoningEffort: defaultModelReasoningEffort({
+        reasoningEffort: asModelEntryReasoningEffort(defaultModelReasoningEffort({
           ...(reasoningProviderForTransport(provider, transportKind)
             ? { provider: reasoningProviderForTransport(provider, transportKind) }
             : {}),
@@ -738,50 +951,30 @@ export async function addProviderModelsCommand(
           ...(catalogEntry?.supportsThinkingType
             ? { supportsThinkingType: catalogEntry.supportsThinkingType }
             : {}),
-        }),
+        })),
       };
       if (catalogEntry?.supportedReasoningEfforts !== undefined) {
-        profile.supportedReasoningEfforts = catalogEntry.supportedReasoningEfforts;
+        entry.supportedReasoningEfforts = asModelEntrySupportedReasoningEfforts(
+          catalogEntry.supportedReasoningEfforts,
+        );
       }
       if (catalogEntry?.capabilities) {
-        profile.capabilities = catalogEntry.capabilities;
+        entry.capabilities = catalogEntry.capabilities;
       }
       if (catalogEntry?.contextLength !== undefined) {
         const contextLength = parseModelContextLength(catalogEntry.contextLength);
         if (contextLength !== undefined) {
-          profile.contextLength = contextLength;
+          entry.contextLength = contextLength;
         }
       }
       if (catalogEntry?.supportsThinkingType !== undefined) {
-        profile.supportsThinkingType = catalogEntry.supportsThinkingType;
+        entry.supportsThinkingType = catalogEntry.supportsThinkingType;
       }
-      if (provider !== undefined) {
-        profile.provider = provider;
-        if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
-          profile.transportKind = transportKind;
-        }
-        if (provider === 'amazon-bedrock' && awsRegion) {
-          profile.awsRegion = awsRegion;
-        }
-        applyManagedProviderConnectFields(profile, {
-          provider,
-          providerSite,
-          alibabaWorkspaceId,
-          alibabaBillingMode,
-        });
-        if (provider === 'google-vertex-ai') {
-          if (vertexProject) {
-            profile.vertexProject = vertexProject;
-          }
-          if (vertexLocation) {
-            profile.vertexLocation = vertexLocation;
-          }
-        }
-      }
-      toAdd.push(profile);
+      toAdd.push(entry);
     }
 
     const scopeProfile: ModelProfileSnapshot = {
+      groupId,
       name: uniqueIds[0] ?? '',
       apiBase,
       provider,
@@ -823,59 +1016,50 @@ export async function addProviderModelsCommand(
       throw new Error(i18n.t('error.modelsAlreadyExist'));
     }
 
-    const providerKeyScope = modelProviderKeyScope(provider);
+    const resolvedProvider = provider ?? 'custom';
     try {
-      if (provider === 'amazon-bedrock') {
-        await saveBedrockProviderCredentialsForProvider(providerKeyScope, {
-          apiKey,
-          accessKeyId,
-          secretAccessKey,
-        });
-      } else if (provider === 'google-vertex-ai') {
-        await saveGoogleVertexProviderCredentialsForProvider(providerKeyScope, {
-          apiKey,
-          clientEmail: vertexClientEmail,
-          privateKey: vertexPrivateKey,
-        });
-      } else {
-        await saveApiKeyForProvider(providerKeyScope, apiKey);
-      }
+      await saveGroupCredentials(groupId, resolvedProvider, {
+        apiKey,
+        accessKeyId,
+        secretAccessKey,
+        vertexClientEmail,
+        vertexPrivateKey,
+      });
     } catch (err) {
-      if (provider === 'amazon-bedrock') {
-        await saveBedrockProviderCredentialsForProvider(providerKeyScope, {});
-      } else if (provider === 'google-vertex-ai') {
-        await saveGoogleVertexProviderCredentialsForProvider(providerKeyScope, {});
-      } else {
-        await removeProviderApiKey(providerKeyScope);
-      }
+      await clearGroupCredentials(groupId, resolvedProvider);
       throw err;
     }
 
+    const group = findOrCreateProviderGroup(state.config, groupId, groupConnect);
     const pruned = removeDelistedModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
     if (request.modelCatalog?.length) {
       syncExistingModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
     }
 
-    const firstNew = toAdd[0]?.name;
-    for (const profile of toAdd) {
-      state.config.models.push(profile);
+    for (const entry of toAdd) {
+      group.models.push(entry);
     }
 
-    state.config.activeModel = firstNew ?? state.config.activeModel;
+    const firstNewRef: ModelRef = toAdd[0]
+      ? { groupId, name: toAdd[0].name }
+      : state.config.activeModel;
+    if (toAdd.length > 0) {
+      state.config.activeModel = firstNewRef;
+    }
     if (!state.config.imageGenerationModel) {
-      const imageGenerationProfile = toAdd.find((profile) => supportsImageGeneration(profile));
-      if (imageGenerationProfile) {
-        state.config.imageGenerationModel = imageGenerationProfile.name;
+      const imageEntry = toAdd.find((entry) => modelSupportsImageGeneration(entry));
+      if (imageEntry) {
+        state.config.imageGenerationModel = { groupId, name: imageEntry.name };
       }
     }
     if (!state.config.videoGenerationModel) {
-      const videoGenerationProfile = toAdd.find((profile) => supportsVideoGeneration(profile));
-      if (videoGenerationProfile) {
-        state.config.videoGenerationModel = videoGenerationProfile.name;
+      const videoEntry = toAdd.find((entry) => modelSupportsVideoGeneration(entry));
+      if (videoEntry) {
+        state.config.videoGenerationModel = { groupId, name: videoEntry.name };
       }
     }
     for (const name of pruned) {
-      await removeModelApiKey(name);
+      await removeModelApiKey(modelRefKey({ groupId, name }));
     }
     await saveConfig(state.config);
     await ctx.refreshRuntime();
@@ -898,7 +1082,7 @@ export async function addModelCommand(
     }
 
     const name = request.name.trim();
-    const provider = parseModelProviderId(request.provider);
+    const provider = parseModelProviderId(request.provider) ?? 'custom';
     if (
       provider === 'azure'
       && request.transportKind !== undefined
@@ -927,19 +1111,23 @@ export async function addModelCommand(
       throw new Error(i18n.t('error.azureResourceNameInvalid'));
     }
     assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
-    const apiBase = resolveManagedConnectApiBase(
+    const connectInput: ConnectRequestFields = {
+      groupId: request.groupId,
       provider,
+      customGroupLabel: request.customGroupLabel,
       transportKind,
-      request.apiBase,
-      awsRegion,
-      name,
-      vertexProject,
-      vertexLocation,
-      azureResourceName,
-      providerSite,
-      alibabaWorkspaceId,
-      alibabaBillingMode,
-    );
+      apiBase: request.apiBase,
+      ...(awsRegion ? { awsRegion } : {}),
+      ...(providerSite ? { providerSite } : {}),
+      ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
+      ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+      ...(vertexProject ? { vertexProject } : {}),
+      ...(vertexLocation ? { vertexLocation } : {}),
+      ...(azureResourceName ? { azureResourceName } : {}),
+    };
+    const groupId = resolveConnectGroupId(connectInput);
+    const groupConnect = buildProviderGroupConnect({ ...connectInput, modelName: name });
+    const apiBase = groupConnect.apiBase;
     const apiKey = request.apiKey.trim();
 
     if (!name) {
@@ -956,7 +1144,7 @@ export async function addModelCommand(
     } else if (!apiKey) {
       throw new Error(i18n.t('error.apiKeyRequired'));
     }
-    if (state.config.models.some((model) => model.name === name)) {
+    if (modelExistsInGroup(state.config, groupId, name)) {
       throw new Error(i18n.t('error.modelExists', { name }));
     }
 
@@ -969,27 +1157,9 @@ export async function addModelCommand(
     });
     const requestedCapabilities = normalizeModelCapabilities(request.capabilities);
 
-    const profile: {
-      name: string;
-      apiBase: string;
-      reasoningEffort: ModelReasoningEffort;
-      supportedReasoningEfforts?: DesktopModelReasoningEffort[];
-      provider?: DesktopModelProvider;
-      transportKind?: DesktopTransportKind;
-      capabilities?: DesktopModelCapability[];
-      contextLength?: number;
-      supportsThinkingType?: 'only';
-      awsRegion?: string;
-      providerSite?: DesktopProviderConnectSiteId;
-      alibabaWorkspaceId?: string;
-      alibabaBillingMode?: DesktopAlibabaBillingMode;
-      vertexProject?: string;
-      vertexLocation?: string;
-      azureResourceName?: string;
-    } = {
+    const modelEntry: ModelEntryV2 = {
       name,
-      apiBase,
-      reasoningEffort: defaultModelReasoningEffort({
+      reasoningEffort: asModelEntryReasoningEffort(defaultModelReasoningEffort({
         ...(reasoningProviderForTransport(provider, transportKind)
           ? { provider: reasoningProviderForTransport(provider, transportKind) }
           : {}),
@@ -1000,36 +1170,12 @@ export async function addModelCommand(
         ...(catalogEntry?.supportsThinkingType
           ? { supportsThinkingType: catalogEntry.supportsThinkingType }
           : {}),
-      }),
+      })),
     };
     if (catalogEntry?.supportedReasoningEfforts !== undefined) {
-      profile.supportedReasoningEfforts = catalogEntry.supportedReasoningEfforts;
-    }
-    if (provider !== undefined) {
-      profile.provider = provider;
-      if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
-        profile.transportKind = transportKind;
-      }
-      if (provider === 'amazon-bedrock' && awsRegion) {
-        profile.awsRegion = awsRegion;
-      }
-      applyManagedProviderConnectFields(profile, {
-        provider,
-        providerSite,
-        alibabaWorkspaceId,
-        alibabaBillingMode,
-      });
-      if (provider === 'google-vertex-ai') {
-        if (vertexProject) {
-          profile.vertexProject = vertexProject;
-        }
-        if (vertexLocation) {
-          profile.vertexLocation = vertexLocation;
-        }
-      }
-      if (provider === 'azure' && azureResourceName) {
-        profile.azureResourceName = azureResourceName;
-      }
+      modelEntry.supportedReasoningEfforts = asModelEntrySupportedReasoningEfforts(
+        catalogEntry.supportedReasoningEfforts,
+      );
     }
     const capabilities = resolveAddedModelCapabilities({
       provider,
@@ -1037,42 +1183,41 @@ export async function addModelCommand(
       catalogEntry,
     });
     if (capabilities) {
-      profile.capabilities = capabilities;
+      modelEntry.capabilities = capabilities;
     }
     if (catalogEntry?.contextLength !== undefined && request.contextLength === undefined) {
       const contextLength = parseModelContextLength(catalogEntry.contextLength);
       if (contextLength !== undefined) {
-        profile.contextLength = contextLength;
+        modelEntry.contextLength = contextLength;
       }
     }
     if (catalogEntry?.supportsThinkingType !== undefined) {
-      profile.supportsThinkingType = catalogEntry.supportsThinkingType;
+      modelEntry.supportsThinkingType = catalogEntry.supportsThinkingType;
     }
     if (request.contextLength !== undefined) {
       const contextLength = parseModelContextLength(request.contextLength);
       if (contextLength === undefined) {
         throw new Error(i18n.t('error.contextLengthInvalid'));
       }
-      profile.contextLength = contextLength;
+      modelEntry.contextLength = contextLength;
     }
-    state.config.models.push(profile);
-    state.config.activeModel = name;
+
+    const group = findOrCreateProviderGroup(state.config, groupId, groupConnect);
+    group.models.push(modelEntry);
+    const modelRef: ModelRef = { groupId, name };
+    state.config.activeModel = modelRef;
     ctx.clearActiveContextUsage();
-    if (!state.config.imageGenerationModel && supportsImageGeneration(profile)) {
-      state.config.imageGenerationModel = name;
+    if (!state.config.imageGenerationModel && modelSupportsImageGeneration(modelEntry)) {
+      state.config.imageGenerationModel = modelRef;
     }
-    if (!state.config.videoGenerationModel && supportsVideoGeneration(profile)) {
-      state.config.videoGenerationModel = name;
+    if (!state.config.videoGenerationModel && modelSupportsVideoGeneration(modelEntry)) {
+      state.config.videoGenerationModel = modelRef;
     }
     await saveConfig(state.config);
-    if (provider === 'amazon-bedrock') {
-      await saveBedrockProviderCredentialsForProvider(modelProviderKeyScope(provider), { apiKey });
-    } else if (provider === 'google-vertex-ai') {
-      await saveGoogleVertexProviderCredentialsForProvider(modelProviderKeyScope(provider), { apiKey });
-    } else if (provider !== undefined) {
-      await saveApiKeyForProvider(modelProviderKeyScope(provider), apiKey);
+    if (provider === 'custom' && !request.provider) {
+      await saveApiKeyForModel(modelRefKey(modelRef), apiKey);
     } else {
-      await saveApiKeyForModel(name, apiKey);
+      await saveGroupCredentials(groupId, provider, { apiKey });
     }
 
     await ctx.refreshRuntime();
@@ -1090,44 +1235,62 @@ export async function removeModelCommand(
     await ctx.ensureInitialized();
     const state = ctx.requireState();
 
-    const name = request.name.trim();
-    if (!name) {
+    const ref = request.ref;
+    if (isEmptyModelRef(ref)) {
       throw new Error(i18n.t('error.modelNameRequired'));
     }
-    const targetsToRemove: ModelRemovalTarget[] = state.config.models
-      .filter((model) => model.name === name)
-      .map((model) => ({ name: model.name, provider: model.provider }));
-    if (targetsToRemove.length === 0) {
-      throw new Error(i18n.t('error.modelNotFound', { name }));
+    if (!resolveModelProfile(state.config, ref)) {
+      throw new Error(i18n.t('error.modelNotFound', { name: ref.name }));
     }
-
+    const targetsToRemove: ModelRemovalTarget[] = [{ ref: { groupId: ref.groupId.trim(), name: ref.name.trim() } }];
     return finalizeModelRemoval(ctx, state, targetsToRemove, { removeLegacyModelKeys: true });
   });
 }
 
-export async function removeProviderModelsCommand(
+export async function removeProviderGroupCommand(
   ctx: HostModelCommandContext,
-  request: RemoveProviderModelsRequest,
+  request: RemoveProviderGroupRequest,
 ): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
     const state = ctx.requireState();
 
-    const provider = parsePresetModelProviderId(request.provider);
-    if (!provider) {
-      throw new Error(i18n.t('error.providerDeleteOnly'));
+    const groupId = request.groupId.trim();
+    if (!groupId) {
+      throw new Error(i18n.t('error.modelNameRequired'));
     }
-
-    const { matched: targets } = partitionModelsByProvider(state.config.models, provider);
-    if (targets.length === 0) {
+    const group = findProviderGroup(state.config, groupId);
+    if (!group || group.models.length === 0) {
       throw new Error(i18n.t('error.noModelsInProvider'));
     }
 
-    const targetsToRemove: ModelRemovalTarget[] = targets.map((model) => ({
-      name: model.name,
-      provider: model.provider,
+    const targetsToRemove: ModelRemovalTarget[] = group.models.map((model) => ({
+      ref: { groupId, name: model.name },
     }));
-    return finalizeModelRemoval(ctx, state, targetsToRemove, { removeProviderKey: provider });
+    const provider = group.provider as DesktopModelProvider;
+    applyModelsRemovalToConfig(state.config, targetsToRemove);
+    state.config.providerGroups = state.config.providerGroups.filter((entry) => entry.id !== groupId);
+    await saveConfig(state.config);
+    await removeGroupKeyring(groupId, provider);
+    await ctx.refreshModelKeyPresence();
+    await ctx.refreshRuntime();
+    ctx.setLastRuntimeError('');
+    await ctx.persistCurrentSessionIfNeeded();
+    return ctx.buildSnapshot();
+  });
+}
+
+/** @deprecated 使用 {@link removeProviderGroupCommand} */
+export async function removeProviderModelsCommand(
+  ctx: HostModelCommandContext,
+  request: RemoveProviderModelsRequest,
+): Promise<DesktopSnapshot> {
+  const provider = parsePresetModelProviderId(request.provider);
+  if (!provider) {
+    throw new Error(i18n.t('error.providerDeleteOnly'));
+  }
+  return removeProviderGroupCommand(ctx, {
+    groupId: defaultPresetProviderGroupId(provider),
   });
 }
 
@@ -1136,18 +1299,15 @@ async function finalizeModelRemoval(
   state: HostModelState,
   targetsToRemove: readonly ModelRemovalTarget[],
   options?: {
-    removeProviderKey?: DesktopModelProvider;
     removeLegacyModelKeys?: boolean;
   },
 ): Promise<DesktopSnapshot> {
   applyModelsRemovalToConfig(state.config, targetsToRemove);
+  state.config.providerGroups = state.config.providerGroups.filter((group) => group.models.length > 0);
   await saveConfig(state.config);
-  if (options?.removeProviderKey) {
-    await removeProviderApiKey(options.removeProviderKey);
-  }
   if (options?.removeLegacyModelKeys) {
     for (const target of targetsToRemove) {
-      await removeModelApiKey(target.name);
+      await removeModelApiKey(modelRefKey(target.ref));
     }
   }
   await ctx.refreshModelKeyPresence();

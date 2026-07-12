@@ -1,18 +1,19 @@
-import type {
-  ModelEntryV2,
-  ModelRef,
-  ProviderGroupV2,
+import {
+  modelRefsEqual,
+  type ModelEntryV2,
+  type ModelRef,
+  type ProviderGroupV2,
 } from '@spiritagent/host-internal';
 
 import type {
   DesktopAlibabaBillingMode,
-  DesktopConfigFile,
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
   DesktopTransportKind,
   ModelProfileSnapshot,
 } from '../types.js';
+import type { DesktopConfigFile } from './storage.js';
 
 export interface ResolvedModelProfile extends ModelProfileSnapshot {
   groupId: string;
@@ -156,6 +157,40 @@ export function modelSupportsVideoGeneration(model: Pick<ModelProfileSnapshot, '
 
 export function modelSupportsChat(model: Pick<ModelProfileSnapshot, 'capabilities'>): boolean {
   return model.capabilities === undefined || model.capabilities.includes('chat');
+}
+
+export function findModelRefByName(
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  name: string,
+): ModelRef | undefined {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  for (const group of config.providerGroups) {
+    const model = group.models.find((entry) => entry.name === trimmed);
+    if (model) {
+      return { groupId: group.id, name: model.name };
+    }
+  }
+  return undefined;
+}
+
+export function resolvePaneModelRef(
+  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  ref: ModelRef | undefined,
+): ModelRef | undefined {
+  if (!ref?.name?.trim()) {
+    return undefined;
+  }
+  const profile = resolveModelProfile(config, ref);
+  if (profile) {
+    return profile.ref;
+  }
+  if (!ref.groupId?.trim()) {
+    return findModelRefByName(config, ref.name);
+  }
+  return undefined;
 }
 
 export function normalizeSlotModelRef(
