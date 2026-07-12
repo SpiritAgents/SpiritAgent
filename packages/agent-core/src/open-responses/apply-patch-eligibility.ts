@@ -105,7 +105,9 @@ function isEligibleResponsesProvider(
   }
 
   // Gateway：function apply_patch；OpenRouter：built-in apply_patch（均走 open-responses-compatible）。
-  return config.llmVendor === 'vercel-ai-gateway' || config.llmVendor === 'openrouter';
+  return config.llmVendor === 'vercel-ai-gateway'
+    || config.llmVendor === 'cloudflare-ai-gateway'
+    || config.llmVendor === 'openrouter';
 }
 
 function isEligibleOpenRouterBuiltInApplyPatchModel(
@@ -127,7 +129,7 @@ export function shouldUseBuiltInApplyPatchRequestItems(
     return true;
   }
 
-  if (config.llmVendor === 'openrouter') {
+  if (config.llmVendor === 'openrouter' || config.llmVendor === 'cloudflare-ai-gateway') {
     return isEligibleOpenRouterBuiltInApplyPatchModel(config);
   }
 

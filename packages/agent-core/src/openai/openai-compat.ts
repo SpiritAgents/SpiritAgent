@@ -21,6 +21,7 @@ export type OpenAiLlmVendor =
   | 'siliconflow'
   | 'alibaba'
   | 'vercel-ai-gateway'
+  | 'cloudflare-ai-gateway'
   | 'openrouter'
   | 'fireworks-ai'
   | 'openai'
@@ -120,6 +121,8 @@ export interface OpenAiTransportConfig {
    * 若已设置 `vertexClientEmail` / `vertexPrivateKey`，宿主构建的 credentials 优先于此字段。
    */
   vertexGoogleAuthOptions?: Record<string, unknown>;
+  /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
+  cloudflareGatewayId?: string;
 }
 
 export interface OpenAiRequestTrace extends JsonObject {

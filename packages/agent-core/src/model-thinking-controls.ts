@@ -41,6 +41,7 @@ const GATEWAY_REASONING_EFFORT_SLUGS = new Set([
 const AGGREGATED_REASONING_EFFORT_PRIMARY_PROVIDERS = new Set<ModelReasoningProvider>([
   'fireworks-ai',
   'openrouter',
+  'cloudflare-ai-gateway',
 ]);
 
 export type ModelEffortControlLabelKind = 'effort' | 'reasoningEffort';

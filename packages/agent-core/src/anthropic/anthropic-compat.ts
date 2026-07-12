@@ -30,6 +30,8 @@ export interface AnthropicTransportConfig {
   structuredOutputMode?: AnthropicStructuredOutputMode;
   /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
   transportRequestProfile?: TransportRequestProfile;
+  /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
+  cloudflareGatewayId?: string;
 }
 
 export interface AnthropicRequestTrace extends JsonObject {

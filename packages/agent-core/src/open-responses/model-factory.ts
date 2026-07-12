@@ -8,6 +8,7 @@ import {
 } from '@ai-sdk/xai';
 
 import { getLlmFetch } from '../llm-fetch.js';
+import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import type { JsonObject } from '../ports.js';
 import { createAlibabaResponsesAwareFetch } from './alibaba-responses-fetch.js';
 import { createResponsesStoredStateAwareFetch, shouldUseResponsesStoredStateFetch } from './responses-stored-state-fetch.js';
@@ -118,6 +119,7 @@ function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof f
   if (shouldUseApplyPatchFileTools(config)) {
     fetchFn = createApplyPatchAwareFetch(config, fetchFn);
   }
+  fetchFn = wrapFetchForCloudflareAiGateway(config.cloudflareGatewayId, fetchFn);
   return wrapFetchForBedrockMantleIamAuth(config, fetchFn);
 }
 

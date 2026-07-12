@@ -4,6 +4,7 @@ import { basename, extname, isAbsolute, resolve } from 'node:path';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
 import { getLlmFetch } from '../llm-fetch.js';
+import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import {
   generateObject,
   generateText,
@@ -452,7 +453,7 @@ function createAnthropicLanguageModel(config: AnthropicTransportConfig): any {
   return createAnthropic({
     apiKey: config.apiKey,
     baseURL: config.baseUrl ?? DEFAULT_ANTHROPIC_BASE_URL,
-    fetch: getLlmFetch(),
+    fetch: wrapFetchForCloudflareAiGateway(config.cloudflareGatewayId, getLlmFetch()),
   }).chat(config.model);
 }
 

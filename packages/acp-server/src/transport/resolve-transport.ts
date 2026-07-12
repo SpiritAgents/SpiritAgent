@@ -140,7 +140,9 @@ function buildTransportFromProfile(
         ? 'openai'
         : profile.provider === 'xai'
           ? 'xai'
-          : profile.provider === 'vercel-ai-gateway' || profile.provider === 'openrouter'
+          : profile.provider === 'vercel-ai-gateway'
+            || profile.provider === 'cloudflare-ai-gateway'
+            || profile.provider === 'openrouter'
             ? undefined
             : 'open-responses-compatible';
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
@@ -148,6 +150,7 @@ function buildTransportFromProfile(
       model,
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     });
+    const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
 
     return {
       transportKind: 'open-responses',
@@ -158,6 +161,7 @@ function buildTransportFromProfile(
       spiritAgentMode: 'agent',
       ...(responsesProvider ? { responsesProvider } : {}),
       ...(llmVendor ? { llmVendor } : {}),
+      ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
       ...(profile.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(profile.capabilities) }
         : {}),
@@ -176,12 +180,14 @@ function buildTransportFromProfile(
         model,
       },
     );
+    const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
     return {
       transportKind: 'anthropic',
       apiKey,
       model,
       baseUrl,
       workspaceRoot,
+      ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
       ...(profile.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(profile.capabilities) }
         : {}),
@@ -240,6 +246,7 @@ function buildTransportFromProfile(
   const vertexLocation = profile.vertexLocation?.trim();
   const vertexClientEmail = vertexCredentials?.clientEmail?.trim();
   const vertexPrivateKey = vertexCredentials?.privateKey?.trim();
+  const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
 
   return {
     transportKind: 'openai-compatible',
@@ -248,6 +255,7 @@ function buildTransportFromProfile(
     baseUrl,
     workspaceRoot,
     ...(llmVendor ? { llmVendor } : {}),
+    ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
     ...(vertexProject ? { vertexProject } : {}),
     ...(vertexLocation ? { vertexLocation } : {}),
     ...(vertexClientEmail ? { vertexClientEmail } : {}),
