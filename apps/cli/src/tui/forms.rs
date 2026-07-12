@@ -328,6 +328,11 @@ impl TuiShell {
                             private_key: parsed.vertex_private_key.clone(),
                         },
                     )
+                } else if parsed.provider == crate::model_registry::ModelProvider::CloudflareAiGateway {
+                    crate::openai_models_list::list_cloudflare_ai_gateway_model_ids(
+                        parsed.cloudflare_account_id.as_deref().unwrap_or(""),
+                        parsed.api_key.as_str(),
+                    )
                 } else {
                     openai_models_list::list_model_ids(
                         parsed.api_base.as_str(),
@@ -373,6 +378,8 @@ impl TuiShell {
                     parsed.transport_kind,
                     parsed.context_length,
                     parsed.azure_resource_name.as_deref(),
+                    parsed.cloudflare_account_id.as_deref(),
+                    parsed.cloudflare_gateway_id.as_deref(),
                     parsed.provider_site.as_deref(),
                     parsed.alibaba_workspace_id.as_deref(),
                 ) {
@@ -537,6 +544,8 @@ impl TuiShell {
                 alibaba_billing_mode: parsed.alibaba_billing_mode.clone(),
                 vertex_project: parsed.vertex_project.clone(),
                 vertex_location: parsed.vertex_location.clone(),
+                cloudflare_account_id: parsed.cloudflare_account_id.clone(),
+                cloudflare_gateway_id: parsed.cloudflare_gateway_id.clone(),
                 ..Default::default()
             };
             config.add_model_to_group(

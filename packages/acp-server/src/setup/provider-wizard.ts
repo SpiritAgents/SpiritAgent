@@ -5,7 +5,10 @@ import type {
   ProviderModelTransportKind,
 } from '@spiritagent/host-internal';
 import {
+  cloudflareAiGatewayApiBaseFromAccountId,
   defaultPresetProviderGroupId,
+  isValidCloudflareAccountId,
+  isValidCloudflareGatewayId,
   listProviderConnectSiteOptions,
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
@@ -53,6 +56,8 @@ export function resolveProfileApiBase(profile: {
   alibabaWorkspaceId?: string;
   awsRegion?: string;
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   vertexProject?: string;
   vertexLocation?: string;
 }): string {
@@ -86,6 +91,18 @@ export function resolveProfileApiBase(profile: {
       return trimmed;
     }
     throw new Error('Azure model is missing azureResourceName.');
+  }
+
+  if (profile.provider === 'cloudflare-ai-gateway') {
+    const accountId = profile.cloudflareAccountId?.trim();
+    if (accountId) {
+      return cloudflareAiGatewayApiBaseFromAccountId(accountId);
+    }
+    const trimmed = profile.apiBase?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+    throw new Error('Cloudflare AI Gateway model is missing cloudflareAccountId.');
   }
 
   if (profile.provider && profile.provider !== 'custom') {
@@ -172,6 +189,31 @@ export function validateAzureSetup(input: {
   return undefined;
 }
 
+export function validateCloudflareSetup(input: {
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
+  apiKey?: string;
+}): string | undefined {
+  const accountId = input.cloudflareAccountId?.trim();
+  if (!accountId) {
+    return 'Cloudflare Account ID is required.';
+  }
+  if (!isValidCloudflareAccountId(accountId)) {
+    return 'Cloudflare Account ID must be a 32-character hexadecimal string.';
+  }
+  const gatewayId = input.cloudflareGatewayId?.trim();
+  if (!gatewayId) {
+    return 'Cloudflare Gateway ID is required.';
+  }
+  if (!isValidCloudflareGatewayId(gatewayId)) {
+    return 'Cloudflare Gateway ID is invalid.';
+  }
+  if (!input.apiKey?.trim()) {
+    return 'Cloudflare API token is required.';
+  }
+  return undefined;
+}
+
 export function validateCustomSetup(input: { apiBase?: string; apiKey?: string; modelName?: string }): string | undefined {
   if (!input.apiBase?.trim()) {
     return 'API base URL is required for custom providers.';
@@ -194,6 +236,8 @@ export function buildSetupProfile(input: {
   alibabaWorkspaceId?: string;
   awsRegion?: string;
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   vertexProject?: string;
   vertexLocation?: string;
   apiBaseOverride?: string;
@@ -223,6 +267,12 @@ export function buildSetupProfile(input: {
   }
   if (input.azureResourceName?.trim()) {
     profile.azureResourceName = input.azureResourceName.trim();
+  }
+  if (input.cloudflareAccountId?.trim()) {
+    profile.cloudflareAccountId = input.cloudflareAccountId.trim();
+  }
+  if (input.cloudflareGatewayId?.trim()) {
+    profile.cloudflareGatewayId = input.cloudflareGatewayId.trim();
   }
   if (input.vertexProject?.trim()) {
     profile.vertexProject = input.vertexProject.trim();
