@@ -387,7 +387,9 @@ export interface HostExtensionRuntimeBinding<THostApi> {
   logger?: Pick<Console, 'error' | 'log'>;
 }
 
-export type ApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
+import type { ApprovalLevel } from './approval-level.js';
+
+export type { ApprovalLevel } from './approval-level.js';
 
 export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
   if (value === 'full-approval' || value === 'full-access') {

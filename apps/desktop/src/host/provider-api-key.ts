@@ -1,4 +1,14 @@
 import {
+  hasBedrockIamCredentials,
+  hasGoogleVertexServiceAccountCredentials,
+} from '../lib/provider-runtime-credentials.js';
+
+export {
+  hasBedrockIamCredentials,
+  hasGoogleVertexServiceAccountCredentials,
+} from '../lib/provider-runtime-credentials.js';
+
+import {
   emptyModelRef,
   findModelByRef,
   listAllModelRefs,
@@ -60,22 +70,10 @@ export function hasBedrockRuntimeCredentials(credentials: BedrockProviderCredent
   return hasBedrockIamCredentials(credentials);
 }
 
-export function hasBedrockIamCredentials(
-  credentials: Pick<BedrockProviderCredentials, 'accessKeyId' | 'secretAccessKey'>,
-): boolean {
-  return Boolean(credentials.accessKeyId?.trim() && credentials.secretAccessKey?.trim());
-}
-
 export interface GoogleVertexProviderCredentials {
   apiKey?: string;
   clientEmail?: string;
   privateKey?: string;
-}
-
-export function hasGoogleVertexServiceAccountCredentials(
-  credentials: Pick<GoogleVertexProviderCredentials, 'clientEmail' | 'privateKey'>,
-): boolean {
-  return Boolean(credentials.clientEmail?.trim() && credentials.privateKey?.trim());
 }
 
 export function hasGoogleVertexRuntimeCredentials(input: {

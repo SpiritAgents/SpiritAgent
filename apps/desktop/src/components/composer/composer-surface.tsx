@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import type { SaveLocalImageAs } from "@/components/tool-call/tool-call-types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
-import { modelRefsEqual } from "@spiritagent/host-internal";
+import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import {
   DESKTOP_COMPOSER_SURFACE_BACKDROP,

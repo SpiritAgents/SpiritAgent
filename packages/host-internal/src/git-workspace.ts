@@ -6,7 +6,8 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
 
-export type WorkLocationKind = 'local' | 'worktree';
+export type { WorkLocationKind } from './work-location.js';
+import type { WorkLocationKind } from './work-location.js';
 
 export interface GitCheckoutOptions {
   discardLocalChanges?: boolean;

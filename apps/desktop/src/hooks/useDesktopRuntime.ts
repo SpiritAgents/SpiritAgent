@@ -6,7 +6,7 @@ import i18n, { getStoredLanguage } from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
-import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal";
+import { emptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { ModelRef } from "@/types";
 import {
   buildPaneComposerDraftKey,
@@ -109,6 +109,9 @@ import type {
   ListGitHubPullRequestsRequest,
   SearchGitHubAutomationRepositoriesRequest,
   MergeGitHubPullRequestRequest,
+  ApprovalLevel,
+  LocalFileComposerRoute,
+  WorkLocationKind,
 } from "@/types";
 
 type BusyAction =
@@ -1064,7 +1067,7 @@ export function useDesktopRuntime() {
   );
 
   const setPaneWorkLocation = useCallback(
-    async (sessionPath: string, workLocation: import('@spiritagent/host-internal').WorkLocationKind): Promise<boolean> => {
+    async (sessionPath: string, workLocation: WorkLocationKind): Promise<boolean> => {
       if (!api?.setPaneWorkLocation) {
         return false;
       }
@@ -1160,7 +1163,7 @@ export function useDesktopRuntime() {
   }, [api]);
 
   const classifyLocalFileComposerRoute = useCallback(
-    async (absolutePath: string): Promise<import('@spiritagent/host-internal').LocalFileComposerRoute> => {
+    async (absolutePath: string): Promise<LocalFileComposerRoute> => {
       if (!api) {
         return 'reference';
       }
@@ -2588,7 +2591,7 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot]);
 
-  const setApprovalLevel = useCallback(async (approvalLevel: import('@spiritagent/host-internal').ApprovalLevel): Promise<boolean> => {
+  const setApprovalLevel = useCallback(async (approvalLevel: ApprovalLevel): Promise<boolean> => {
     if (!api) {
       return false;
     }
@@ -2622,7 +2625,7 @@ export function useDesktopRuntime() {
   }, [api, applySnapshot]);
 
   const setWorkLocation = useCallback(async (
-    workLocation: import('@spiritagent/host-internal').WorkLocationKind,
+    workLocation: WorkLocationKind,
   ): Promise<boolean> => {
     if (!api) {
       return false;
