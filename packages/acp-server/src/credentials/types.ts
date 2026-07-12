@@ -1,11 +1,21 @@
-import type { ModelProviderId, ProviderModelTransportKind } from '@spiritagent/host-internal';
+import type {
+  ModelEntryV2,
+  ModelProviderId,
+  ModelRef,
+  ProviderGroupV2,
+  ProviderModelTransportKind,
+  SpiritConfigSchemaVersion,
+  SpiritModelCapabilityV2,
+  SpiritModelReasoningEffortV2,
+} from '@spiritagent/host-internal';
 
-export type SpiritModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration' | 'videoGeneration';
+export type SpiritModelCapability = SpiritModelCapabilityV2;
+export type SpiritModelReasoningEffort = SpiritModelReasoningEffortV2;
 
-export type SpiritModelReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
-
-/** Subset of Desktop `ModelProfileSnapshot` used by ACP setup and transport resolution. */
+/** Resolved profile for ACP transport (group connect fields + model entry). */
 export interface SpiritModelProfile {
+  groupId: string;
+  ref: ModelRef;
   name: string;
   apiBase: string;
   reasoningEffort?: SpiritModelReasoningEffort;
@@ -17,6 +27,8 @@ export interface SpiritModelProfile {
   alibabaWorkspaceId?: string;
   awsRegion?: string;
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   vertexProject?: string;
   vertexLocation?: string;
   contextLength?: number;
@@ -24,10 +36,16 @@ export interface SpiritModelProfile {
 
 /** Minimal `config.json` fields read/written by ACP; other Desktop fields are preserved on merge. */
 export interface SpiritConfigFile {
-  models: SpiritModelProfile[];
-  activeModel: string;
+  schemaVersion: SpiritConfigSchemaVersion;
+  providerGroups: ProviderGroupV2[];
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   [key: string]: unknown;
 }
+
+export type { ModelEntryV2, ModelRef, ProviderGroupV2 };
 
 export interface BedrockSetupCredentials {
   apiKey?: string;
@@ -43,8 +61,10 @@ export interface GoogleVertexSetupCredentials {
 
 /** Result collected by the setup wizard before persistence. */
 export interface ProviderSetupResult {
-  profile: SpiritModelProfile;
+  groupId: string;
+  model: ModelEntryV2;
   providerScope: ModelProviderId;
+  group: Omit<ProviderGroupV2, 'models'>;
   apiKey?: string;
   bedrock?: BedrockSetupCredentials;
   vertex?: GoogleVertexSetupCredentials;
