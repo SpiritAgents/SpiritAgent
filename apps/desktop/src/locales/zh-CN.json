@@ -374,7 +374,6 @@
     "cloudflareAiGatewayApiToken": "API Token",
     "cloudflareAiGatewayApiTokenPlaceholder": "输入 API Token",
     "cloudflareAiGatewayApiTokenRequired": "API Token 不能为空。",
-    "cloudflareAiGatewayManualHint": "填写 Account ID、Gateway ID、模型 ID 与 API Token；此模式下不会自动拉取模型列表。",
     "cloudflareModelNamePlaceholder": "例如 openai/gpt-4.1-mini 或 @cf/meta/llama-3.1-8b-instruct",
     "vertexAuthMode": "认证方式",
     "vertexAuthAdc": "ADC",

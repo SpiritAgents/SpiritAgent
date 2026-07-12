@@ -1833,9 +1833,6 @@ export function ModelsSettingsPanel({
                   placeholder={t('settings.cloudflareModelNamePlaceholder')}
                   autoComplete="off"
                 />
-                <p className="text-xs leading-5 text-muted-foreground">
-                  {t('settings.cloudflareAiGatewayManualHint')}
-                </p>
               </div>
             ) : null}
             {selectedProvider === "cloudflare-ai-gateway" ? (
