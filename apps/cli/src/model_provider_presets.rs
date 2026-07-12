@@ -141,6 +141,55 @@ pub(crate) fn resolve_azure_resource_name(
     explicit.or_else(|| extract_azure_resource_name_from_api_base(api_base))
 }
 
+pub(crate) fn is_valid_cloudflare_account_id(account_id: &str) -> bool {
+    let trimmed = account_id.trim();
+    trimmed.len() == 32 && trimmed.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+pub(crate) fn is_valid_cloudflare_gateway_id(gateway_id: &str) -> bool {
+    let trimmed = gateway_id.trim();
+    if trimmed.len() < 1 || trimmed.len() > 64 {
+        return false;
+    }
+    let bytes = trimmed.as_bytes();
+    if !bytes[0].is_ascii_alphanumeric() || !bytes[bytes.len() - 1].is_ascii_alphanumeric() {
+        return false;
+    }
+    trimmed
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+}
+
+pub(crate) fn cloudflare_ai_gateway_api_base_from_account_id(account_id: &str) -> String {
+    let trimmed = account_id.trim();
+    if trimmed.is_empty() || !is_valid_cloudflare_account_id(trimmed) {
+        return format!(
+            "https://api.cloudflare.com/client/v4/accounts/{}/ai/v1",
+            "YOUR_ACCOUNT_ID"
+        );
+    }
+    format!(
+        "https://api.cloudflare.com/client/v4/accounts/{trimmed}/ai/v1"
+    )
+}
+
+pub(crate) fn extract_cloudflare_account_id_from_api_base(base_url: &str) -> Option<String> {
+    let normalized = base_url.trim().trim_end_matches('/');
+    let lower = normalized.to_ascii_lowercase();
+    let prefix = "https://api.cloudflare.com/client/v4/accounts/";
+    if !lower.starts_with(prefix) {
+        return None;
+    }
+    let rest = &normalized[prefix.len()..];
+    let account_end = rest.find('/').unwrap_or(rest.len());
+    let account_id = rest[..account_end].trim();
+    if is_valid_cloudflare_account_id(account_id) {
+        Some(account_id.to_string())
+    } else {
+        None
+    }
+}
+
 pub(crate) fn model_add_picker_order_ids() -> &'static [String] {
     &presets().picker_order
 }
@@ -310,6 +359,7 @@ pub(crate) fn model_add_requires_manual_single_provider(
     matches!(
         provider,
         crate::model_registry::ModelProvider::Azure
+            | crate::model_registry::ModelProvider::CloudflareAiGateway
     )
 }
 
@@ -352,6 +402,17 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
             return trimmed.to_string();
         }
         return azure_api_base_from_resource_name("");
+    }
+
+    if profile.provider == Some(ModelProvider::CloudflareAiGateway) {
+        if let Some(account_id) = profile.cloudflare_account_id() {
+            return cloudflare_ai_gateway_api_base_from_account_id(&account_id);
+        }
+        let trimmed = profile.api_base.trim();
+        if !trimmed.is_empty() {
+            return trimmed.to_string();
+        }
+        return cloudflare_ai_gateway_api_base_from_account_id("");
     }
 
     if profile.provider == Some(ModelProvider::Alibaba) {
@@ -710,5 +771,30 @@ mod tests {
         assert!(super::is_valid_azure_resource_name("my-openai-resource"));
         assert!(!super::is_valid_azure_resource_name("-bad"));
         assert!(!super::is_valid_azure_resource_name("bad@host"));
+    }
+
+    #[test]
+    fn cloudflare_ai_gateway_api_base_from_account_id_builds_rest_base() {
+        assert_eq!(
+            super::cloudflare_ai_gateway_api_base_from_account_id(
+                "0123456789abcdef0123456789abcdef"
+            ),
+            "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1"
+        );
+    }
+
+    #[test]
+    fn cloudflare_ai_gateway_api_base_from_account_id_uses_placeholder_for_invalid_account() {
+        assert_eq!(
+            super::cloudflare_ai_gateway_api_base_from_account_id("not-valid"),
+            "https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1"
+        );
+    }
+
+    #[test]
+    fn is_valid_cloudflare_gateway_id_rejects_invalid_values() {
+        assert!(super::is_valid_cloudflare_gateway_id("my-gateway"));
+        assert!(!super::is_valid_cloudflare_gateway_id("-bad"));
+        assert!(!super::is_valid_cloudflare_gateway_id("bad@host"));
     }
 }

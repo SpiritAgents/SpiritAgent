@@ -91,6 +91,8 @@ impl TuiShell {
                     None,
                     None,
                     None,
+                    None,
+                    None,
                 ) {
                     Ok(()) => {
                         self.messages.push(ChatMessage {

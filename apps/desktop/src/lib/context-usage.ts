@@ -26,6 +26,7 @@ export {
 const CONTEXT_USAGE_PROVIDERS = new Set<DesktopModelProvider>([
   'openrouter',
   'vercel-ai-gateway',
+  'cloudflare-ai-gateway',
   'moonshot-ai',
   'kimi-code',
 ]);

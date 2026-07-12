@@ -137,6 +137,7 @@ import { generateSiliconFlowImage } from '../image-generation/siliconflow-backen
 import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { generateVideoWithRouter } from '../video-generation/router.js';
 import { getLlmFetch } from '../llm-fetch.js';
+import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
@@ -827,7 +828,10 @@ function createAiSdkOpenAiCompatibleProvider(
     baseURL: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     supportsStructuredOutputs: true,
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
-    fetch: fetchWrapper ?? getLlmFetch(),
+    fetch: wrapFetchForCloudflareAiGateway(
+      transportConfig.cloudflareGatewayId,
+      fetchWrapper ?? getLlmFetch(),
+    ),
   });
 }
 

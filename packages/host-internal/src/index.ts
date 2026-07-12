@@ -23,6 +23,7 @@ export * from './google-vertex-models.js';
 export * from './bedrock-models.js';
 export * from './bedrock-region.js';
 export * from './azure-resource.js';
+export * from './cloudflare-ai-gateway-resource.js';
 export * from './bedrock-mantle.js';
 export * from './model-provider-presets.js';
 export * from './config-v2.js';

@@ -52,7 +52,10 @@ import {
 import {
   bedrockApiBaseFromRegion,
   azureApiBaseFromResourceName,
+  cloudflareAiGatewayApiBaseFromAccountId,
   isValidAzureResourceName,
+  isValidCloudflareAccountId,
+  isValidCloudflareGatewayId,
   vertexApiBaseFromProjectAndLocation,
 } from '@spiritagent/host-internal';
 import {
@@ -150,6 +153,8 @@ interface ConnectRequestFields {
   vertexProject?: string;
   vertexLocation?: string;
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
 }
 
 interface ModelEntryLocation {
@@ -176,13 +181,13 @@ function resolveConnectGroupId(input: ConnectRequestFields): string {
     if (label) {
       return slugifyProviderGroupLabel(label);
     }
-    const groupId = input.groupId.trim();
+    const groupId = input.groupId?.trim() ?? '';
     if (groupId) {
       return groupId;
     }
     throw new Error(i18n.t('error.modelNameRequired'));
   }
-  const explicitGroupId = input.groupId.trim();
+  const explicitGroupId = input.groupId?.trim() ?? '';
   if (explicitGroupId) {
     return explicitGroupId;
   }
@@ -227,6 +232,7 @@ function buildProviderGroupConnect(
     input.providerSite,
     input.alibabaWorkspaceId,
     input.alibabaBillingMode,
+    input.cloudflareAccountId,
   );
   const group: Omit<ProviderGroupV2, 'id' | 'models'> = {
     provider,
@@ -251,6 +257,14 @@ function buildProviderGroupConnect(
     }
     if (input.vertexLocation?.trim()) {
       group.vertexLocation = input.vertexLocation.trim();
+    }
+  }
+  if (provider === 'cloudflare-ai-gateway') {
+    if (input.cloudflareAccountId?.trim()) {
+      group.cloudflareAccountId = input.cloudflareAccountId.trim();
+    }
+    if (input.cloudflareGatewayId?.trim()) {
+      group.cloudflareGatewayId = input.cloudflareGatewayId.trim();
     }
   }
   applyManagedProviderConnectFields(group, {
@@ -677,6 +691,30 @@ function applyManagedProviderConnectFields<
   }
 }
 
+function assertCloudflareConnectFields(input: {
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
+  apiKey?: string;
+}): void {
+  const accountId = input.cloudflareAccountId?.trim();
+  const gatewayId = input.cloudflareGatewayId?.trim();
+  if (!accountId) {
+    throw new Error(i18n.t('settings.cloudflareAccountIdRequired'));
+  }
+  if (!isValidCloudflareAccountId(accountId)) {
+    throw new Error(i18n.t('settings.cloudflareAccountIdInvalid'));
+  }
+  if (!gatewayId) {
+    throw new Error(i18n.t('settings.cloudflareGatewayIdRequired'));
+  }
+  if (!isValidCloudflareGatewayId(gatewayId)) {
+    throw new Error(i18n.t('settings.cloudflareGatewayIdInvalid'));
+  }
+  if (!input.apiKey?.trim()) {
+    throw new Error(i18n.t('settings.cloudflareAiGatewayApiTokenRequired'));
+  }
+}
+
 function resolveManagedConnectApiBase(
   provider: DesktopModelProvider | undefined,
   transportKind: DesktopTransportKind,
@@ -689,6 +727,7 @@ function resolveManagedConnectApiBase(
   providerSite?: DesktopProviderConnectSiteId,
   alibabaWorkspaceId?: string,
   alibabaBillingMode?: DesktopAlibabaBillingMode,
+  cloudflareAccountId?: string,
 ): string {
   if (provider === 'amazon-bedrock') {
     const region = awsRegion?.trim();
@@ -710,6 +749,12 @@ function resolveManagedConnectApiBase(
     const resourceName = azureResourceName?.trim();
     if (resourceName) {
       return azureApiBaseFromResourceName(resourceName);
+    }
+  }
+  if (provider === 'cloudflare-ai-gateway') {
+    const accountId = cloudflareAccountId?.trim();
+    if (accountId) {
+      return cloudflareAiGatewayApiBaseFromAccountId(accountId);
     }
   }
   if (provider === 'custom') {
@@ -809,8 +854,17 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const alibabaBillingMode = request.alibabaBillingMode;
   const vertexProject = request.vertexProject?.trim();
   const vertexLocation = request.vertexLocation?.trim();
+  const cloudflareAccountId = request.cloudflareAccountId?.trim();
+  const cloudflareGatewayId = request.cloudflareGatewayId?.trim();
   if (provider === 'amazon-bedrock' && !awsRegion) {
     throw new Error(i18n.t('error.bedrockRegionRequired'));
+  }
+  if (provider === 'cloudflare-ai-gateway') {
+    assertCloudflareConnectFields({
+      cloudflareAccountId,
+      cloudflareGatewayId,
+      apiKey: request.apiKey,
+    });
   }
   assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
   const apiBase = resolveManagedConnectApiBase(
@@ -825,6 +879,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
     providerSite,
     alibabaWorkspaceId,
     alibabaBillingMode,
+    cloudflareAccountId,
   );
   const apiKey = request.apiKey.trim();
   const accessKeyId = request.accessKeyId?.trim();
@@ -841,7 +896,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
       vertexProject,
       vertexLocation,
     });
-  } else if (!apiKey) {
+  } else if (provider !== 'cloudflare-ai-gateway' && !apiKey) {
     throw new Error(i18n.t('error.apiKeyRequired'));
   }
   const result = await loadPreviewModelsForTransport({
@@ -856,6 +911,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
     ...(vertexLocation ? { vertexLocation } : {}),
     ...(vertexClientEmail ? { vertexClientEmail } : {}),
     ...(vertexPrivateKey ? { vertexPrivateKey } : {}),
+    ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
     forceRefresh: request.forceRefresh === true,
   });
   return {
@@ -888,8 +944,17 @@ export async function addProviderModelsCommand(
     const alibabaBillingMode = request.alibabaBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
+    const cloudflareAccountId = request.cloudflareAccountId?.trim();
+    const cloudflareGatewayId = request.cloudflareGatewayId?.trim();
     if (provider === 'amazon-bedrock' && !awsRegion) {
       throw new Error(i18n.t('error.bedrockRegionRequired'));
+    }
+    if (provider === 'cloudflare-ai-gateway') {
+      assertCloudflareConnectFields({
+        cloudflareAccountId,
+        cloudflareGatewayId,
+        apiKey: request.apiKey,
+      });
     }
     assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
     const connectInput: ConnectRequestFields = {
@@ -903,6 +968,8 @@ export async function addProviderModelsCommand(
       ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
       ...(vertexProject ? { vertexProject } : {}),
       ...(vertexLocation ? { vertexLocation } : {}),
+      ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
+      ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
     };
     const groupId = resolveConnectGroupId(connectInput);
     const groupConnect = buildProviderGroupConnect(connectInput);
@@ -922,7 +989,7 @@ export async function addProviderModelsCommand(
         vertexProject,
         vertexLocation,
       });
-    } else if (!apiKey) {
+    } else if (provider !== 'cloudflare-ai-gateway' && !apiKey) {
       throw new Error(i18n.t('error.apiKeyRequired'));
     }
 
@@ -990,6 +1057,8 @@ export async function addProviderModelsCommand(
       ...(provider === 'amazon-bedrock' && awsRegion ? { awsRegion } : {}),
       ...(provider === 'google-vertex-ai' && vertexProject ? { vertexProject } : {}),
       ...(provider === 'google-vertex-ai' && vertexLocation ? { vertexLocation } : {}),
+      ...(provider === 'cloudflare-ai-gateway' && cloudflareAccountId ? { cloudflareAccountId } : {}),
+      ...(provider === 'cloudflare-ai-gateway' && cloudflareGatewayId ? { cloudflareGatewayId } : {}),
     };
     applyManagedProviderConnectFields(scopeProfile, {
       provider,
@@ -1101,6 +1170,8 @@ export async function addModelCommand(
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     const azureResourceName = request.azureResourceName?.trim();
+    const cloudflareAccountId = request.cloudflareAccountId?.trim();
+    const cloudflareGatewayId = request.cloudflareGatewayId?.trim();
     if (provider === 'amazon-bedrock' && !awsRegion) {
       throw new Error(i18n.t('error.bedrockRegionRequired'));
     }
@@ -1109,6 +1180,13 @@ export async function addModelCommand(
     }
     if (provider === 'azure' && azureResourceName && !isValidAzureResourceName(azureResourceName)) {
       throw new Error(i18n.t('error.azureResourceNameInvalid'));
+    }
+    if (provider === 'cloudflare-ai-gateway') {
+      assertCloudflareConnectFields({
+        cloudflareAccountId,
+        cloudflareGatewayId,
+        apiKey: request.apiKey,
+      });
     }
     assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
     const connectInput: ConnectRequestFields = {
@@ -1124,6 +1202,8 @@ export async function addModelCommand(
       ...(vertexProject ? { vertexProject } : {}),
       ...(vertexLocation ? { vertexLocation } : {}),
       ...(azureResourceName ? { azureResourceName } : {}),
+      ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
+      ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
     };
     const groupId = resolveConnectGroupId(connectInput);
     const groupConnect = buildProviderGroupConnect({ ...connectInput, modelName: name });
@@ -1141,7 +1221,7 @@ export async function addModelCommand(
       });
     } else if (provider === 'azure' && /\s/u.test(name)) {
       throw new Error(i18n.t('error.azureDeploymentNameWhitespace'));
-    } else if (!apiKey) {
+    } else if (provider !== 'cloudflare-ai-gateway' && !apiKey) {
       throw new Error(i18n.t('error.apiKeyRequired'));
     }
     if (modelExistsInGroup(state.config, groupId, name)) {

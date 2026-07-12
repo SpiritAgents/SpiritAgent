@@ -516,6 +516,8 @@ impl TuiShell {
         transport_kind: crate::model_registry::ModelTransportKind,
         context_length: Option<u64>,
         azure_resource_name: Option<&str>,
+        cloudflare_account_id: Option<&str>,
+        cloudflare_gateway_id: Option<&str>,
         provider_site: Option<&str>,
         alibaba_workspace_id: Option<&str>,
     ) -> Result<(), String> {
@@ -539,6 +541,14 @@ impl TuiShell {
                 .filter(|value| !value.is_empty())
                 .map(ToOwned::to_owned),
             azure_resource_name: azure_resource_name
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned),
+            cloudflare_account_id: cloudflare_account_id
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned),
+            cloudflare_gateway_id: cloudflare_gateway_id
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
                 .map(ToOwned::to_owned),

@@ -11,6 +11,7 @@
     "alibaba": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "anthropic": "https://api.anthropic.com/v1",
     "vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1",
+    "cloudflare-ai-gateway": "https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1",
     "openrouter": "https://openrouter.ai/api/v1",
     "fireworks-ai": "https://api.fireworks.ai/inference/v1",
     "openai": "https://api.openai.com/v1",
@@ -136,7 +137,7 @@
     "compatibleApiBase": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
     "docUrl": "https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020"
   },
-  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
+  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "cloudflare-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
   "pickerLabels": {
     "deepseek": {
       "labelKey": "providers.deepseek",
@@ -185,6 +186,10 @@
     "vercel-ai-gateway": {
       "labelKey": "providers.vercelAiGateway",
       "fallbackLabel": "Vercel AI Gateway"
+    },
+    "cloudflare-ai-gateway": {
+      "labelKey": "providers.cloudflareAiGateway",
+      "fallbackLabel": "Cloudflare AI Gateway"
     },
     "openrouter": {
       "labelKey": "providers.openrouter",
