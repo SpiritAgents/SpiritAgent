@@ -521,7 +521,7 @@ impl TuiShell {
         let mut added: usize = 0;
 
         for id in ids {
-            if config.find_model_ref_by_name(id).is_some() {
+            if config.has_model_name(id) {
                 continue;
             }
             let group_id =

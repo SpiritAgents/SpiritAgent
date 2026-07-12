@@ -520,7 +520,7 @@ impl TuiShell {
         alibaba_workspace_id: Option<&str>,
     ) -> Result<(), String> {
         let mut config = self.runtime.config().clone();
-        if config.find_model_ref_by_name(name).is_some() {
+        if config.has_model_name(name) {
             return Err(t!("tui.model_add.duplicate", name = name).into_owned());
         }
 
