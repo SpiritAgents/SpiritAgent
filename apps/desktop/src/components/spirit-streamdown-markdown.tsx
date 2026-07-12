@@ -1,5 +1,4 @@
 import { useMemo, type ComponentProps, type ComponentType } from "react";
-import { createCodePlugin } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { Streamdown, type BlockProps } from "streamdown";
 
@@ -21,11 +20,9 @@ import { createSpiritStreamdownCodeComponent } from "@/lib/spirit-streamdown-cod
 
 const streamdownMathPlugin = math;
 
-import { SPIRIT_SHIKI_PLUS_THEMES } from "@/lib/spirit-shiki-themes";
+import { spiritShikiCodePlugin } from "@/lib/spirit-shiki-code-plugin";
 
-const spiritStreamdownCodePlugin = createCodePlugin({
-  themes: [...SPIRIT_SHIKI_PLUS_THEMES],
-});
+const spiritStreamdownCodePlugin = spiritShikiCodePlugin;
 
 export const spiritStreamdownControls = {
   code: { copy: false, download: false },
