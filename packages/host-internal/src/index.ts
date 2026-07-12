@@ -25,6 +25,7 @@ export * from './bedrock-region.js';
 export * from './azure-resource.js';
 export * from './bedrock-mantle.js';
 export * from './model-provider-presets.js';
+export * from './config-v2.js';
 export * from './model-display-name.js';
 export * from './openai-api-base.js';
 export * from './openai-models.js';

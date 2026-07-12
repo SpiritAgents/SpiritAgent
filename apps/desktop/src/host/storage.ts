@@ -19,7 +19,6 @@ import {
   getKeyringPassword,
   setKeyringPassword,
 } from './keyring-secret.js';
-import { normalizeLightweightChatModel } from './lightweight-chat-model.js';
 import {
   configureLlmClientVersion,
   configureLlmHttpVersion,
@@ -31,15 +30,26 @@ import {
   resolveModelReasoningEffortForContext,
 } from '@spiritagent/agent-core/reasoning-effort';
 import {
+  assertSpiritConfigSchemaVersion,
   createFileExtensionStateStore,
+  defaultPresetProviderGroupId,
+  emptyModelRef,
+  findModelByRef,
+  listAllModelRefs,
+  parseModelProviderId,
+  parseModelRef,
+  SPIRIT_CONFIG_SCHEMA_VERSION,
+  SpiritConfigSchemaError,
   type ExtensionManagementContext,
   type ExtensionSettingValue,
   type ExtensionStateStore,
   loadHostInstructionMetadata,
-  parseModelProviderId,
   type HostInstructionMetadataSummary,
   type HostRuleDiscoveryResult,
   type HostSkillDiscoveryResult,
+  type ModelEntryV2,
+  type ModelRef,
+  type ProviderGroupV2,
 } from '@spiritagent/host-internal';
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from '../lib/agent-mode.js';
@@ -80,7 +90,7 @@ import {
 } from './provider-api-key.js';
 import { normalizeDesktopRewindMetadata } from './rewind.js';
 
-export type { ModelKeyPresenceProfile } from './provider-api-key.js';
+export { SpiritConfigSchemaError as ConfigSchemaError } from '@spiritagent/host-internal';
 export {
   buildModelSecretKeyPresence,
   hasBedrockRuntimeCredentials,
@@ -104,7 +114,7 @@ export type DesktopWorkspaceBinding = 'project' | 'none';
 
 export interface DesktopDreamConfigFile {
   enabled: boolean;
-  collectorModel?: string;
+  collectorModel?: ModelRef;
   debugMode: boolean;
 }
 
@@ -126,11 +136,12 @@ export interface DesktopNetworksConfigFile {
 }
 
 export interface DesktopConfigFile {
-  models: ModelProfileSnapshot[];
-  activeModel: string;
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
-  lightweightChatModel?: string;
+  schemaVersion: typeof SPIRIT_CONFIG_SCHEMA_VERSION;
+  providerGroups: ProviderGroupV2[];
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   recentWorkspaces?: string[];
   /** When `none`, cwd is the user home directory and workspace-scoped instructions/MCP are skipped. */
   workspaceBinding?: DesktopWorkspaceBinding;
@@ -463,9 +474,9 @@ export async function loadConfig(): Promise<DesktopConfigFile> {
     return initial;
   }
 
-  const raw = await readFile(filePath, 'utf8');
-  const parsed = JSON.parse(raw) as Partial<DesktopConfigFile>;
-  return normalizeConfig(parsed);
+  const raw = JSON.parse(await readFile(filePath, 'utf8')) as Record<string, unknown>;
+  assertSpiritConfigSchemaVersion(raw);
+  return normalizeConfig(raw as Partial<DesktopConfigFile>);
 }
 
 export async function saveConfig(config: DesktopConfigFile): Promise<void> {
@@ -784,8 +795,9 @@ export async function deleteStoredSession(filePath: string): Promise<void> {
 
 function defaultConfig(): DesktopConfigFile {
   return {
-    models: [],
-    activeModel: '',
+    schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
+    providerGroups: [],
+    activeModel: emptyModelRef(),
     recentWorkspaces: [],
     windowsMica: true,
     systemNotifications: true,
@@ -891,96 +903,165 @@ export function normalizeAgentsConfig(raw: unknown): DesktopAgentsConfigFile {
   };
 }
 
-function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
-  const models = Array.isArray(raw.models)
-    ? raw.models
-        .filter(
-          (model): model is ModelProfileSnapshot =>
-            typeof model?.name === 'string' && model.name.trim().length > 0,
-        )
-        .map((model) => {
-          const provider = parseModelProviderId(model.provider);
-          const transportKind = normalizeDesktopTransportKind(model.transportKind, provider);
-          const capabilities = normalizeModelCapabilities(model.capabilities);
-          const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(model.supportedReasoningEfforts);
-          const contextLength = parseModelContextLength(model.contextLength);
-          const supportsThinkingType = model.supportsThinkingType === 'only' ? 'only' as const : undefined;
-          const awsRegion =
-            typeof model.awsRegion === 'string' && model.awsRegion.trim().length > 0
-              ? model.awsRegion.trim()
-              : undefined;
-          const providerSite =
-            typeof model.providerSite === 'string' && model.providerSite.trim().length > 0
-              ? model.providerSite.trim()
-              : undefined;
-          const alibabaWorkspaceId =
-            typeof model.alibabaWorkspaceId === 'string' && model.alibabaWorkspaceId.trim().length > 0
-              ? model.alibabaWorkspaceId.trim()
-              : undefined;
-          const alibabaBillingMode =
-            model.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
-          const vertexProject =
-            typeof model.vertexProject === 'string' && model.vertexProject.trim().length > 0
-              ? model.vertexProject.trim()
-              : undefined;
-          const vertexLocation =
-            typeof model.vertexLocation === 'string' && model.vertexLocation.trim().length > 0
-              ? model.vertexLocation.trim()
-              : undefined;
-          const azureResourceName =
-            typeof model.azureResourceName === 'string' && model.azureResourceName.trim().length > 0
-              ? model.azureResourceName.trim()
-              : undefined;
-          if (provider === 'azure' && !azureResourceName) {
-            return null;
-          }
-          return {
-            name: model.name.trim(),
-            apiBase: model.apiBase?.trim() || DEFAULT_API_BASE,
-            reasoningEffort: resolveModelReasoningEffortForContext(model.reasoningEffort, {
-              ...(provider ? { provider } : {}),
-              model: model.name,
-              ...(transportKind ? { transportKind } : {}),
-              ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
-              ...(supportsThinkingType ? { supportsThinkingType } : {}),
-            }),
-            ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
-            ...(capabilities ? { capabilities } : {}),
-            ...(provider ? { provider } : {}),
-            ...(transportKind ? { transportKind } : {}),
-            ...(providerSite ? { providerSite } : {}),
-            ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
-            ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
-            ...(awsRegion ? { awsRegion } : {}),
-            ...(vertexProject ? { vertexProject } : {}),
-            ...(vertexLocation ? { vertexLocation } : {}),
-            ...(azureResourceName ? { azureResourceName } : {}),
-            ...(contextLength !== undefined ? { contextLength } : {}),
-            ...(supportsThinkingType ? { supportsThinkingType } : {}),
-            ...(model.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
-          };
-        })
-        .filter((model): model is ModelProfileSnapshot => model !== null)
+function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
+  if (typeof raw !== 'object' || raw === null) {
+    return null;
+  }
+  const record = raw as Partial<ProviderGroupV2>;
+  const id = typeof record.id === 'string' ? record.id.trim() : '';
+  const provider = parseModelProviderId(record.provider);
+  if (!id || !provider) {
+    return null;
+  }
+  const label = typeof record.label === 'string' && record.label.trim() ? record.label.trim() : undefined;
+  if (provider === 'custom' && !label) {
+    return null;
+  }
+  const apiBase = typeof record.apiBase === 'string' && record.apiBase.trim()
+    ? record.apiBase.trim()
+    : DEFAULT_API_BASE;
+  const transportKind = normalizeDesktopTransportKind(record.transportKind, provider);
+  const providerSite =
+    typeof record.providerSite === 'string' && record.providerSite.trim().length > 0
+      ? record.providerSite.trim()
+      : undefined;
+  const alibabaWorkspaceId =
+    typeof record.alibabaWorkspaceId === 'string' && record.alibabaWorkspaceId.trim().length > 0
+      ? record.alibabaWorkspaceId.trim()
+      : undefined;
+  const alibabaBillingMode =
+    record.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
+  const awsRegion =
+    typeof record.awsRegion === 'string' && record.awsRegion.trim().length > 0
+      ? record.awsRegion.trim()
+      : undefined;
+  const vertexProject =
+    typeof record.vertexProject === 'string' && record.vertexProject.trim().length > 0
+      ? record.vertexProject.trim()
+      : undefined;
+  const vertexLocation =
+    typeof record.vertexLocation === 'string' && record.vertexLocation.trim().length > 0
+      ? record.vertexLocation.trim()
+      : undefined;
+  const azureResourceName =
+    typeof record.azureResourceName === 'string' && record.azureResourceName.trim().length > 0
+      ? record.azureResourceName.trim()
+      : undefined;
+  const cloudflareAccountId =
+    typeof record.cloudflareAccountId === 'string' && record.cloudflareAccountId.trim().length > 0
+      ? record.cloudflareAccountId.trim()
+      : undefined;
+  const cloudflareGatewayId =
+    typeof record.cloudflareGatewayId === 'string' && record.cloudflareGatewayId.trim().length > 0
+      ? record.cloudflareGatewayId.trim()
+      : undefined;
+  if (provider === 'azure' && !azureResourceName) {
+    return null;
+  }
+
+  const models = Array.isArray(record.models)
+    ? record.models
+        .map((model) => normalizeModelEntry(model, provider, transportKind))
+        .filter((model): model is ModelEntryV2 => model !== null)
     : [];
 
-  const normalizedModels = models;
-  const activeModel =
-    normalizedModels.length === 0
-      ? (typeof raw.activeModel === 'string' ? raw.activeModel.trim() : '')
-      : normalizedModels.some((model) => model.name === raw.activeModel?.trim())
-        ? raw.activeModel!.trim()
-        : normalizedModels[0]!.name;
-  const imageGenerationModel = normalizeImageGenerationModel(raw.imageGenerationModel, normalizedModels);
-  const videoGenerationModel = normalizeVideoGenerationModel(raw.videoGenerationModel, normalizedModels);
-  const dreams = normalizeDreamConfig(raw.dreams);
-  const lightweightChatModel = normalizeLightweightChatModel(
+  const seenNames = new Set<string>();
+  const dedupedModels = models.filter((model) => {
+    if (seenNames.has(model.name)) {
+      return false;
+    }
+    seenNames.add(model.name);
+    return true;
+  });
+
+  return {
+    id,
+    provider,
+    ...(label ? { label } : {}),
+    apiBase,
+    ...(transportKind ? { transportKind } : {}),
+    ...(providerSite ? { providerSite } : {}),
+    ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
+    ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+    ...(awsRegion ? { awsRegion } : {}),
+    ...(vertexProject ? { vertexProject } : {}),
+    ...(vertexLocation ? { vertexLocation } : {}),
+    ...(azureResourceName ? { azureResourceName } : {}),
+    ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
+    ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
+    models: dedupedModels,
+  };
+}
+
+function normalizeModelEntry(
+  raw: unknown,
+  provider: DesktopModelProvider,
+  transportKind: DesktopTransportKind | undefined,
+): ModelEntryV2 | null {
+  if (typeof raw !== 'object' || raw === null) {
+    return null;
+  }
+  const record = raw as Partial<ModelEntryV2>;
+  const name = typeof record.name === 'string' ? record.name.trim() : '';
+  if (!name) {
+    return null;
+  }
+  const capabilities = normalizeModelCapabilities(record.capabilities);
+  const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(record.supportedReasoningEfforts);
+  const contextLength = parseModelContextLength(record.contextLength);
+  const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
+  return {
+    name,
+    reasoningEffort: resolveModelReasoningEffortForContext(record.reasoningEffort, {
+      provider,
+      model: name,
+      ...(transportKind ? { transportKind } : {}),
+      ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
+      ...(supportsThinkingType ? { supportsThinkingType } : {}),
+    }),
+    ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
+    ...(capabilities ? { capabilities } : {}),
+    ...(contextLength !== undefined ? { contextLength } : {}),
+    ...(supportsThinkingType ? { supportsThinkingType } : {}),
+    ...(record.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
+  };
+}
+
+function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
+  const providerGroups = Array.isArray(raw.providerGroups)
+    ? raw.providerGroups
+        .map((group) => normalizeProviderGroup(group))
+        .filter((group): group is ProviderGroupV2 => group !== null)
+    : [];
+
+  const seenGroupIds = new Set<string>();
+  const normalizedGroups = providerGroups.filter((group) => {
+    if (seenGroupIds.has(group.id)) {
+      return false;
+    }
+    seenGroupIds.add(group.id);
+    return true;
+  });
+
+  const allRefs = listAllModelRefs(normalizedGroups);
+  const activeModel = parseModelRef(raw.activeModel)
+    ?? (allRefs[0] ? { ...allRefs[0] } : emptyModelRef());
+  const resolvedActive = findModelByRef(normalizedGroups, activeModel)
+    ? activeModel
+    : (allRefs[0] ? { ...allRefs[0] } : emptyModelRef());
+
+  const imageGenerationModel = normalizeImageGenerationModelRef(raw.imageGenerationModel, normalizedGroups);
+  const videoGenerationModel = normalizeVideoGenerationModelRef(raw.videoGenerationModel, normalizedGroups);
+  const dreams = normalizeDreamConfig(raw.dreams, normalizedGroups);
+  const lightweightChatModel = normalizeLightweightChatModelRef(
     raw.lightweightChatModel ?? dreams.collectorModel,
-    normalizedModels,
+    normalizedGroups,
   );
 
   return {
-    models: normalizedModels,
-    activeModel,
+    schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
+    providerGroups: normalizedGroups,
+    activeModel: resolvedActive,
     ...(imageGenerationModel ? { imageGenerationModel } : {}),
     ...(videoGenerationModel ? { videoGenerationModel } : {}),
     ...(lightweightChatModel ? { lightweightChatModel } : {}),
@@ -1002,38 +1083,55 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
   };
 }
 
-function normalizeImageGenerationModel(
+function normalizeImageGenerationModelRef(
   value: unknown,
-  models: readonly ModelProfileSnapshot[],
-): string | undefined {
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  groups: readonly ProviderGroupV2[],
+): ModelRef | undefined {
+  const ref = parseModelRef(value);
+  if (!ref) {
     return undefined;
   }
-
-  const modelName = value.trim();
-  const profile = models.find((model) => model.name === modelName);
-  return profile && modelSupportsImageGeneration(profile) ? profile.name : undefined;
-}
-
-function modelSupportsImageGeneration(model: ModelProfileSnapshot): boolean {
-  return model.capabilities?.includes('imageGeneration') === true;
-}
-
-function normalizeVideoGenerationModel(
-  value: unknown,
-  models: readonly ModelProfileSnapshot[],
-): string | undefined {
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  const resolved = findModelByRef(groups, ref);
+  if (!resolved) {
     return undefined;
   }
-
-  const modelName = value.trim();
-  const profile = models.find((model) => model.name === modelName);
-  return profile && modelSupportsVideoGeneration(profile) ? profile.name : undefined;
+  const capabilities = normalizeModelCapabilities(resolved.model.capabilities);
+  return capabilities?.includes('imageGeneration') ? ref : undefined;
 }
 
-function modelSupportsVideoGeneration(model: ModelProfileSnapshot): boolean {
-  return model.capabilities?.includes('videoGeneration') === true;
+function normalizeVideoGenerationModelRef(
+  value: unknown,
+  groups: readonly ProviderGroupV2[],
+): ModelRef | undefined {
+  const ref = parseModelRef(value);
+  if (!ref) {
+    return undefined;
+  }
+  const resolved = findModelByRef(groups, ref);
+  if (!resolved) {
+    return undefined;
+  }
+  const capabilities = normalizeModelCapabilities(resolved.model.capabilities);
+  return capabilities?.includes('videoGeneration') ? ref : undefined;
+}
+
+function normalizeLightweightChatModelRef(
+  value: unknown,
+  groups: readonly ProviderGroupV2[],
+): ModelRef | undefined {
+  const ref = parseModelRef(value);
+  if (!ref) {
+    return undefined;
+  }
+  const resolved = findModelByRef(groups, ref);
+  if (!resolved) {
+    return undefined;
+  }
+  const capabilities = normalizeModelCapabilities(resolved.model.capabilities);
+  if (capabilities && !capabilities.includes('chat')) {
+    return undefined;
+  }
+  return ref;
 }
 
 function normalizeDesktopTransportKind(
@@ -1119,10 +1217,9 @@ export function normalizeSupportedReasoningEfforts(
 
 export function normalizeDreamConfig(
   raw?: Partial<DesktopDreamConfigFile>,
+  groups: readonly ProviderGroupV2[] = [],
 ): DesktopDreamConfigFile {
-  const collectorModel = typeof raw?.collectorModel === 'string' && raw.collectorModel.trim()
-    ? raw.collectorModel.trim()
-    : undefined;
+  const collectorModel = normalizeLightweightChatModelRef(raw?.collectorModel, groups);
   return {
     enabled: raw?.enabled === true,
     ...(collectorModel ? { collectorModel } : {}),

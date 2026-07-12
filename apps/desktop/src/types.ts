@@ -1,4 +1,10 @@
 import type { ModelProviderId, ProviderConnectSiteId } from '@spiritagent/host-internal/model-provider-presets';
+import type {
+  ModelEntryV2,
+  ModelRef,
+  ProviderGroupV2,
+  SpiritConfigSchemaVersion,
+} from '@spiritagent/host-internal';
 import type { ModelReasoningEffort } from '@spiritagent/agent-core/reasoning-effort';
 import type { LspWriteDiagnosticsUi } from '@spiritagent/agent-core';
 
@@ -14,7 +20,7 @@ import type { BrowserElementAttachment } from './lib/browser-element-attachment.
 import type { RichSegment } from './lib/composer-segment-model.js';
 import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachments.js';
 
-export type DesktopWorkspaceBinding = 'project' | 'none';
+export type { ModelRef, ModelEntryV2, ProviderGroupV2, SpiritConfigSchemaVersion };
 
 export interface BootstrapRequest {
   workspaceRoot?: string;
@@ -41,10 +47,10 @@ export interface CheckoutGitBranchRequest {
 }
 
 export interface UpdateConfigRequest {
-  activeModel: string;
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
-  lightweightChatModel?: string;
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   apiBase: string;
   reasoningEffort?: DesktopModelReasoningEffort;
   /** 厂商 extended thinking；false 关闭。缺省不修改。 */
@@ -117,7 +123,7 @@ export interface DesktopWebHostConfigUpdate {
 
 export interface DesktopDreamConfigUpdate {
   enabled?: boolean;
-  collectorModel?: string;
+  collectorModel?: ModelRef;
   clearCollectorModel?: boolean;
   debugMode?: boolean;
 }
@@ -191,6 +197,7 @@ export interface PreviewModelsResponse {
 
 /** 批量写入同一端点下的多个模型 id（共享 API Key），用于提供商连接批量导入。 */
 export interface AddProviderModelsRequest {
+  groupId: string;
   apiBase: string;
   apiKey: string;
   modelIds: string[];
@@ -224,6 +231,7 @@ export interface DesktopModelCatalogHint {
 
 /** 与 CLI `model add` 一致：新增模型、写入密钥，并将当前模型切到新模型。 */
 export interface AddModelRequest {
+  groupId: string;
   name: string;
   apiBase: string;
   apiKey: string;
@@ -248,9 +256,14 @@ export interface AddModelRequest {
 }
 
 export interface RemoveModelRequest {
-  name: string;
+  ref: ModelRef;
 }
 
+export interface RemoveProviderGroupRequest {
+  groupId: string;
+}
+
+/** @deprecated 使用 RemoveProviderGroupRequest */
 export interface RemoveProviderModelsRequest {
   provider: DesktopModelProvider;
 }
@@ -943,11 +956,12 @@ export interface DesktopExtensionCssLayer {
 }
 
 export interface DesktopConfigSnapshot {
+  providerGroups: ProviderGroupV2[];
   models: ModelProfileSnapshot[];
-  activeModel: string;
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
-  lightweightChatModel?: string;
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   uiLocale?: string;
   activeApiKeyConfigured: boolean;
   /** 桌面宿主在 Windows 上是否使用 Mica 风格；无字段时按 true 处理。 */
@@ -965,7 +979,7 @@ export interface DesktopConfigSnapshot {
 
 export interface DesktopDreamSettingsSnapshot {
   enabled: boolean;
-  collectorModel?: string;
+  collectorModel?: ModelRef;
   debugMode: boolean;
 }
 
@@ -1262,6 +1276,8 @@ export type {
 } from '@spiritagent/host-internal';
 
 export interface ModelProfileSnapshot {
+  groupId?: string;
+  ref?: ModelRef;
   name: string;
   apiBase: string;
   reasoningEffort: DesktopModelReasoningEffort;
