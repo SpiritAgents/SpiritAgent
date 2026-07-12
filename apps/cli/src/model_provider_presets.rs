@@ -162,15 +162,10 @@ pub(crate) fn is_valid_cloudflare_gateway_id(gateway_id: &str) -> bool {
 
 pub(crate) fn cloudflare_ai_gateway_api_base_from_account_id(account_id: &str) -> String {
     let trimmed = account_id.trim();
-    if trimmed.is_empty() {
+    if trimmed.is_empty() || !is_valid_cloudflare_account_id(trimmed) {
         return format!(
             "https://api.cloudflare.com/client/v4/accounts/{}/ai/v1",
             "YOUR_ACCOUNT_ID"
-        );
-    }
-    if is_valid_cloudflare_account_id(trimmed) {
-        return format!(
-            "https://api.cloudflare.com/client/v4/accounts/{trimmed}/ai/v1"
         );
     }
     format!(
@@ -785,6 +780,14 @@ mod tests {
                 "0123456789abcdef0123456789abcdef"
             ),
             "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1"
+        );
+    }
+
+    #[test]
+    fn cloudflare_ai_gateway_api_base_from_account_id_uses_placeholder_for_invalid_account() {
+        assert_eq!(
+            super::cloudflare_ai_gateway_api_base_from_account_id("not-valid"),
+            "https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1"
         );
     }
 
