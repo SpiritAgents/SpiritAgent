@@ -6,7 +6,8 @@ use crate::{
     mcp::spirit_agent_data_dir,
     model_registry::{
         AppConfig, config_file_path, has_model_api_key, keyring_entry, load_config,
-        remove_model_api_key, save_config, save_model_api_key,
+        load_group_api_key_from_keyring, remove_model_api_key, save_config, save_group_api_key,
+        save_model_api_key,
     },
     ports::{AppPaths, ChatArchive, ChatRepository, ConfigStore, SecretStore},
 };
@@ -60,6 +61,19 @@ impl ConfigStore for JsonConfigStore {
 }
 
 pub struct KeyringSecretStore;
+
+impl KeyringSecretStore {
+    pub fn load_group_api_key(&self, group_id: &str) -> Result<Option<String>> {
+        match load_group_api_key_from_keyring(group_id) {
+            Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
+            Ok(_) | Err(_) => Ok(None),
+        }
+    }
+
+    pub fn save_group_api_key(&self, group_id: &str, api_key: &str) -> Result<()> {
+        save_group_api_key(group_id, api_key)
+    }
+}
 
 impl SecretStore for KeyringSecretStore {
     fn load_global_api_key(&self) -> Result<Option<String>> {

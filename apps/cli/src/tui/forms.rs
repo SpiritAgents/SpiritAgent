@@ -521,66 +521,58 @@ impl TuiShell {
         let mut added: usize = 0;
 
         for id in ids {
-            if config.has_model(id) {
+            if config.find_model_ref_by_name(id).is_some() {
                 continue;
             }
-            let mut extra = serde_json::Map::new();
-            if parsed.transport_kind == crate::model_registry::ModelTransportKind::Anthropic
-                || parsed.transport_kind == crate::model_registry::ModelTransportKind::OpenResponses
-            {
-                extra.insert(
-                    "transportKind".to_string(),
-                    serde_json::json!(parsed.transport_kind.as_str()),
-                );
-            }
-            if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
-                if let Some(project) = parsed.vertex_project.as_deref() {
-                    extra.insert("vertexProject".to_string(), serde_json::json!(project));
-                }
-                if let Some(location) = parsed.vertex_location.as_deref() {
-                    extra.insert("vertexLocation".to_string(), serde_json::json!(location));
-                }
-            }
-            if let Some(site) = parsed.provider_site.as_deref() {
-                extra.insert("providerSite".to_string(), serde_json::json!(site));
-            }
-            if let Some(workspace_id) = parsed.alibaba_workspace_id.as_deref() {
-                extra.insert("alibabaWorkspaceId".to_string(), serde_json::json!(workspace_id));
-            }
-            if parsed.alibaba_billing_mode.as_deref() == Some("token-plan") {
-                extra.insert(
-                    "alibabaBillingMode".to_string(),
-                    serde_json::json!("token-plan"),
-                );
-            }
-            config.add_model(ModelProfile {
-                name: id.clone(),
-                api_base: parsed.api_base.clone(),
-                provider: Some(parsed.provider),
-                reasoning_effort: None,
-                context_length: None,
-                extra,
-            });
+            let group_id =
+                crate::model_registry::default_preset_provider_group_id(parsed.provider);
+            let connect = crate::model_registry::ProviderGroupConnectDraft {
+                transport_kind: (parsed.transport_kind
+                    == crate::model_registry::ModelTransportKind::Anthropic
+                    || parsed.transport_kind
+                        == crate::model_registry::ModelTransportKind::OpenResponses)
+                    .then(|| parsed.transport_kind.as_str().to_string()),
+                provider_site: parsed.provider_site.clone(),
+                alibaba_workspace_id: parsed.alibaba_workspace_id.clone(),
+                alibaba_billing_mode: parsed.alibaba_billing_mode.clone(),
+                vertex_project: parsed.vertex_project.clone(),
+                vertex_location: parsed.vertex_location.clone(),
+                ..Default::default()
+            };
+            config.add_model_to_group(
+                &group_id,
+                parsed.provider,
+                parsed.api_base.clone(),
+                connect,
+                crate::model_registry::ModelEntry {
+                    name: id.clone(),
+                    reasoning_effort: None,
+                    thinking_enabled: None,
+                    supported_reasoning_efforts: None,
+                    capabilities: None,
+                    context_length: None,
+                    supports_thinking_type: None,
+                },
+            );
             if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
                 if !parsed.api_key.trim().is_empty() {
-                    if let Err(err) = crate::model_registry::save_provider_api_key(
-                        crate::model_registry::ModelProvider::GoogleVertexAi.as_str(),
+                    if let Err(err) = crate::model_registry::save_group_api_key(
+                        &group_id,
                         parsed.api_key.as_str(),
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
                 } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some() {
-                    if let Err(err) = crate::model_registry::save_provider_vertex_credentials(
-                        crate::model_registry::ModelProvider::GoogleVertexAi.as_str(),
+                    if let Err(err) = crate::model_registry::save_group_vertex_credentials(
+                        &group_id,
                         parsed.vertex_client_email.as_deref().unwrap_or(""),
                         parsed.vertex_private_key.as_deref().unwrap_or(""),
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
                 }
-            } else if let Err(err) = self
-                .secret_store
-                .save_model_api_key(id, parsed.api_key.as_str())
+            } else if let Err(err) =
+                crate::model_registry::save_group_api_key(&group_id, parsed.api_key.as_str())
             {
                 return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
             }
@@ -595,7 +587,11 @@ impl TuiShell {
         }
 
         let active = first_new.expect("added > 0");
-        config.active_model = active.clone();
+        let group_id = crate::model_registry::default_preset_provider_group_id(parsed.provider);
+        config.active_model = crate::model_registry::ModelRef {
+            group_id,
+            name: active.clone(),
+        };
 
         if let Err(err) = self.runtime.validate_config_change(&config) {
             return Err(err.to_string());

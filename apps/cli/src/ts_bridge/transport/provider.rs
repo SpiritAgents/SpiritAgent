@@ -32,17 +32,17 @@ pub(crate) fn attach_google_vertex_transport_fields(
         obj.insert("vertexLocation".to_string(), json!(location));
     }
 
-    if let Ok(client_email) = crate::model_registry::load_provider_vertex_client_email_from_keyring(
-        ModelProvider::GoogleVertexAi.as_str(),
-    ) {
+    if let Ok(client_email) =
+        crate::model_registry::load_group_vertex_client_email_from_keyring(&profile.group_id)
+    {
         let trimmed = client_email.trim();
         if !trimmed.is_empty() {
             obj.insert("vertexClientEmail".to_string(), json!(trimmed));
         }
     }
-    if let Ok(private_key) = crate::model_registry::load_provider_vertex_private_key_from_keyring(
-        ModelProvider::GoogleVertexAi.as_str(),
-    ) {
+    if let Ok(private_key) =
+        crate::model_registry::load_group_vertex_private_key_from_keyring(&profile.group_id)
+    {
         let trimmed = private_key.trim();
         if !trimmed.is_empty() {
             obj.insert("vertexPrivateKey".to_string(), json!(trimmed));

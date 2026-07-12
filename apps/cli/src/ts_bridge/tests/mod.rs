@@ -12,7 +12,10 @@ use crate::ts_bridge::{
 };
 use crate::{
     host_runtime::RuntimeEvent,
-    model_registry::{AppConfig, DEFAULT_API_BASE, ModelProfile, ModelProvider, NetworksConfig},
+    model_registry::{
+        DEFAULT_API_BASE, ModelEntry, ModelProvider, ModelRef,
+        ProviderGroupConnectDraft, make_test_app_config_with_models,
+    },
     ports::SecretStore,
 };
 use anyhow::{Result, anyhow};
@@ -67,32 +70,13 @@ fn make_test_runtime() -> Option<TsBridgeRuntime> {
         return None;
     }
 
-    let config = AppConfig {
-        models: vec![
-            ModelProfile {
-                name: "gpt-4o-mini".to_string(),
-                api_base: DEFAULT_API_BASE.to_string(),
-                provider: None,
-                reasoning_effort: None,
-                context_length: None,
-                extra: Default::default(),
-            },
-            ModelProfile {
-                name: "gpt-4.1-mini".to_string(),
-                api_base: DEFAULT_API_BASE.to_string(),
-                provider: None,
-                reasoning_effort: None,
-                context_length: None,
-                extra: Default::default(),
-            },
-        ],
-        active_model: "gpt-4o-mini".to_string(),
-        image_generation_model: None,
-        video_generation_model: None,
-        ui_locale: None,
-        networks: NetworksConfig::default(),
-        extra: Default::default(),
-    };
+    let config = make_test_app_config_with_models(
+        "openai",
+        ModelProvider::Openai,
+        DEFAULT_API_BASE,
+        &["gpt-4o-mini", "gpt-4.1-mini"],
+        "gpt-4o-mini",
+    );
 
     TsBridgeRuntime::new(config, Arc::new(StubSecretStore), workspace_root).ok()
 }
@@ -144,7 +128,10 @@ fn validate_config_change_allows_transport_switch_while_busy() {
     runtime.apply_snapshot(busy_snapshot());
 
     let mut next = runtime.config().clone();
-    next.active_model = "gpt-4.1-mini".to_string();
+    next.active_model = ModelRef {
+        group_id: "openai".to_string(),
+        name: "gpt-4.1-mini".to_string(),
+    };
 
     assert!(
         runtime.validate_config_change(&next).is_ok(),
@@ -162,11 +149,14 @@ fn replace_config_defers_bridge_transport_while_busy_and_flushes_when_idle() {
     assert!(!runtime.deferred_transport_replace_for_test());
 
     let mut next = runtime.config().clone();
-    next.active_model = "gpt-4.1-mini".to_string();
+    next.active_model = ModelRef {
+        group_id: "openai".to_string(),
+        name: "gpt-4.1-mini".to_string(),
+    };
     runtime.replace_config(next);
 
     assert!(runtime.deferred_transport_replace_for_test());
-    assert_eq!(runtime.config().active_model, "gpt-4.1-mini");
+    assert_eq!(runtime.config().active_model.name, "gpt-4.1-mini");
 
     runtime.apply_snapshot(idle_snapshot());
     assert!(
@@ -185,14 +175,21 @@ fn validate_config_change_allows_non_transport_updates_while_busy() {
 
     let mut next = runtime.config().clone();
     next.ui_locale = Some("zh-CN".to_string());
-    next.models.push(ModelProfile {
-        name: "gpt-4.1".to_string(),
-        api_base: DEFAULT_API_BASE.to_string(),
-        provider: None,
-        reasoning_effort: None,
-        context_length: None,
-        extra: Default::default(),
-    });
+    next.add_model_to_group(
+        "openai",
+        ModelProvider::Openai,
+        DEFAULT_API_BASE.to_string(),
+        ProviderGroupConnectDraft::default(),
+        ModelEntry {
+            name: "gpt-4.1".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: None,
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
 
     assert!(runtime.validate_config_change(&next).is_ok());
 }
@@ -204,11 +201,12 @@ fn resolve_transport_config_json_includes_model_knobs() {
     };
 
     let mut next = runtime.config().clone();
-    let active = next
-        .active_model_profile_mut()
-        .expect("active model should exist");
-    active.provider = Some(ModelProvider::Custom);
-    active.reasoning_effort = Some("minimal".to_string());
+    if let Some(entry) = next.active_model_entry_mut() {
+        entry.reasoning_effort = Some("minimal".to_string());
+    }
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::Custom;
+    }
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -232,25 +230,32 @@ fn resolve_transport_config_json_includes_video_generation_model_for_open_respon
     };
 
     let mut next = runtime.config().clone();
-    let active = next
-        .active_model_profile_mut()
-        .expect("active model should exist");
-    active.provider = Some(ModelProvider::Volcengine);
-    active
-        .extra
-        .insert("transportKind".to_string(), json!("open-responses"));
-    next.models.push(ModelProfile {
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::Volcengine;
+        group.transport_kind = Some("open-responses".to_string());
+    }
+    next.add_model_to_group(
+        "volcengine",
+        ModelProvider::Volcengine,
+        "https://ark.cn-beijing.volces.com/api/v3".to_string(),
+        ProviderGroupConnectDraft {
+            transport_kind: Some("open-responses".to_string()),
+            ..Default::default()
+        },
+        ModelEntry {
+            name: "seedance-video".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: Some(vec!["videoGeneration".to_string()]),
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
+    next.video_generation_model = Some(ModelRef {
+        group_id: "volcengine".to_string(),
         name: "seedance-video".to_string(),
-        api_base: "https://ark.cn-beijing.volces.com/api/v3".to_string(),
-        provider: Some(ModelProvider::Volcengine),
-        reasoning_effort: None,
-        context_length: None,
-        extra: serde_json::Map::from_iter([(
-            "capabilities".to_string(),
-            json!(["videoGeneration"]),
-        )]),
     });
-    next.video_generation_model = Some("seedance-video".to_string());
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -280,22 +285,28 @@ fn resolve_transport_config_json_includes_image_generation_model() {
     };
 
     let mut next = runtime.config().clone();
-    next.active_model_profile_mut()
-        .expect("active model should exist")
-        .extra
-        .insert("capabilities".to_string(), json!(["chat"]));
-    next.models.push(ModelProfile {
+    if let Some(entry) = next.active_model_entry_mut() {
+        entry.capabilities = Some(vec!["chat".to_string()]);
+    }
+    next.add_model_to_group(
+        "custom",
+        ModelProvider::Custom,
+        "https://images.example.invalid/v1".to_string(),
+        ProviderGroupConnectDraft::default(),
+        ModelEntry {
+            name: "image-model".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: Some(vec!["imageGeneration".to_string()]),
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
+    next.image_generation_model = Some(ModelRef {
+        group_id: "custom".to_string(),
         name: "image-model".to_string(),
-        api_base: "https://images.example.invalid/v1".to_string(),
-        provider: Some(ModelProvider::Custom),
-        reasoning_effort: None,
-        context_length: None,
-        extra: serde_json::Map::from_iter([(
-            "capabilities".to_string(),
-            json!(["imageGeneration"]),
-        )]),
     });
-    next.image_generation_model = Some("image-model".to_string());
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -339,13 +350,10 @@ fn resolve_transport_config_json_uses_xai_official_responses_provider() {
     };
 
     let mut next = runtime.config().clone();
-    let active = next
-        .active_model_profile_mut()
-        .expect("active model should exist");
-    active.provider = Some(ModelProvider::Xai);
-    active
-        .extra
-        .insert("transportKind".to_string(), json!("open-responses"));
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::Xai;
+        group.transport_kind = Some("open-responses".to_string());
+    }
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -378,18 +386,29 @@ fn resolve_transport_config_json_uses_azure_official_responses_provider() {
     }
 
     let mut next = runtime.config().clone();
-    next.models.push(ModelProfile {
+    next.add_model_to_group(
+        "azure",
+        ModelProvider::Azure,
+        "https://my-openai-resource.openai.azure.com/openai/v1".to_string(),
+        ProviderGroupConnectDraft {
+            transport_kind: Some("open-responses".to_string()),
+            azure_resource_name: Some("my-openai-resource".to_string()),
+            ..Default::default()
+        },
+        ModelEntry {
+            name: "my-gpt4o-deploy".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: None,
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
+    next.active_model = ModelRef {
+        group_id: "azure".to_string(),
         name: "my-gpt4o-deploy".to_string(),
-        api_base: "https://my-openai-resource.openai.azure.com/openai/v1".to_string(),
-        provider: Some(ModelProvider::Azure),
-        reasoning_effort: None,
-        context_length: None,
-        extra: serde_json::Map::from_iter([
-            ("transportKind".to_string(), json!("open-responses")),
-            ("azureResourceName".to_string(), json!("my-openai-resource")),
-        ]),
-    });
-    next.active_model = "my-gpt4o-deploy".to_string();
+    };
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -443,18 +462,29 @@ fn resolve_transport_config_json_recomputes_azure_base_url_from_resource_name() 
     }
 
     let mut next = runtime.config().clone();
-    next.models.push(ModelProfile {
+    next.add_model_to_group(
+        "azure",
+        ModelProvider::Azure,
+        "https://stale-host.example/openai/v1".to_string(),
+        ProviderGroupConnectDraft {
+            transport_kind: Some("open-responses".to_string()),
+            azure_resource_name: Some("my-openai-resource".to_string()),
+            ..Default::default()
+        },
+        ModelEntry {
+            name: "my-gpt4o-deploy".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: None,
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
+    next.active_model = ModelRef {
+        group_id: "azure".to_string(),
         name: "my-gpt4o-deploy".to_string(),
-        api_base: "https://stale-host.example/openai/v1".to_string(),
-        provider: Some(ModelProvider::Azure),
-        reasoning_effort: None,
-        context_length: None,
-        extra: serde_json::Map::from_iter([
-            ("transportKind".to_string(), json!("open-responses")),
-            ("azureResourceName".to_string(), json!("my-openai-resource")),
-        ]),
-    });
-    next.active_model = "my-gpt4o-deploy".to_string();
+    };
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -486,15 +516,28 @@ fn resolve_transport_config_json_routes_bedrock_mantle_openai_to_open_responses(
     }
 
     let mut next = runtime.config().clone();
-    next.models.push(ModelProfile {
+    next.add_model_to_group(
+        "amazon-bedrock",
+        ModelProvider::AmazonBedrock,
+        "https://bedrock-runtime.us-east-2.amazonaws.com".to_string(),
+        ProviderGroupConnectDraft {
+            aws_region: Some("us-east-2".to_string()),
+            ..Default::default()
+        },
+        ModelEntry {
+            name: "openai.gpt-5.5".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: None,
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
+    next.active_model = ModelRef {
+        group_id: "amazon-bedrock".to_string(),
         name: "openai.gpt-5.5".to_string(),
-        api_base: "https://bedrock-runtime.us-east-2.amazonaws.com".to_string(),
-        provider: Some(ModelProvider::AmazonBedrock),
-        reasoning_effort: None,
-        context_length: None,
-        extra: serde_json::Map::from_iter([("awsRegion".to_string(), json!("us-east-2"))]),
-    });
-    next.active_model = "openai.gpt-5.5".to_string();
+    };
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -532,14 +575,13 @@ fn resolve_transport_config_json_uses_anthropic_union_shape() {
     };
 
     let mut next = runtime.config().clone();
-    let active = next
-        .active_model_profile_mut()
-        .expect("active model should exist");
-    active.provider = Some(ModelProvider::Anthropic);
-    active.reasoning_effort = Some("max".to_string());
-    active
-        .extra
-        .insert("transportKind".to_string(), json!("anthropic"));
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::Anthropic;
+        group.transport_kind = Some("anthropic".to_string());
+    }
+    if let Some(entry) = next.active_model_entry_mut() {
+        entry.reasoning_effort = Some("max".to_string());
+    }
 
     let transport = runtime
         .resolve_transport_config_json_for(&next)
@@ -561,37 +603,43 @@ fn transport_config_change_detects_model_knobs() {
     };
 
     let mut next = runtime.config().clone();
-    next.active_model_profile_mut()
-        .expect("active model should exist")
-        .provider = Some(ModelProvider::Custom);
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::Custom;
+    }
     assert!(runtime.transport_config_will_change(&next));
 
     let mut next = runtime.config().clone();
-    next.active_model_profile_mut()
-        .expect("active model should exist")
-        .extra
-        .insert("transportKind".to_string(), json!("anthropic"));
+    if let Some(group) = next.active_provider_group_mut() {
+        group.transport_kind = Some("anthropic".to_string());
+    }
     assert!(runtime.transport_config_will_change(&next));
 
     let mut next = runtime.config().clone();
-    next.active_model_profile_mut()
-        .expect("active model should exist")
-        .reasoning_effort = Some("low".to_string());
+    if let Some(entry) = next.active_model_entry_mut() {
+        entry.reasoning_effort = Some("low".to_string());
+    }
     assert!(runtime.transport_config_will_change(&next));
 
     let mut next = runtime.config().clone();
-    next.models.push(ModelProfile {
+    next.add_model_to_group(
+        "openai",
+        ModelProvider::Openai,
+        DEFAULT_API_BASE.to_string(),
+        ProviderGroupConnectDraft::default(),
+        ModelEntry {
+            name: "image-model".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: Some(vec!["imageGeneration".to_string()]),
+            context_length: None,
+            supports_thinking_type: None,
+        },
+    );
+    next.image_generation_model = Some(ModelRef {
+        group_id: "openai".to_string(),
         name: "image-model".to_string(),
-        api_base: DEFAULT_API_BASE.to_string(),
-        provider: None,
-        reasoning_effort: None,
-        context_length: None,
-        extra: serde_json::Map::from_iter([(
-            "capabilities".to_string(),
-            json!(["imageGeneration"]),
-        )]),
     });
-    next.image_generation_model = Some("image-model".to_string());
     assert!(runtime.transport_config_will_change(&next));
 }
 

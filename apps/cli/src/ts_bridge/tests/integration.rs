@@ -1,7 +1,9 @@
 use super::{ENV_RUNTIME_BACKEND_NODE_PATH, TsBridgeRuntime};
 use crate::ts_bridge::json_rpc::resolve_bridge_script;
 use crate::{
-    model_registry::{AppConfig, DEFAULT_API_BASE, ModelProfile, NetworksConfig},
+    model_registry::{
+        DEFAULT_API_BASE, ModelProvider, make_test_app_config_with_models,
+    },
     ports::SecretStore,
 };
 use anyhow::Result;
@@ -54,22 +56,13 @@ fn make_test_runtime() -> Option<TsBridgeRuntime> {
         return None;
     }
 
-    let config = AppConfig {
-        models: vec![ModelProfile {
-            name: "gpt-4o-mini".to_string(),
-            api_base: DEFAULT_API_BASE.to_string(),
-            provider: None,
-            reasoning_effort: None,
-            context_length: None,
-            extra: Default::default(),
-        }],
-        active_model: "gpt-4o-mini".to_string(),
-        image_generation_model: None,
-        video_generation_model: None,
-        ui_locale: None,
-        networks: NetworksConfig::default(),
-        extra: Default::default(),
-    };
+    let config = make_test_app_config_with_models(
+        "openai",
+        ModelProvider::Openai,
+        DEFAULT_API_BASE,
+        &["gpt-4o-mini"],
+        "gpt-4o-mini",
+    );
 
     TsBridgeRuntime::new(config, Arc::new(StubSecretStore), workspace_root).ok()
 }
