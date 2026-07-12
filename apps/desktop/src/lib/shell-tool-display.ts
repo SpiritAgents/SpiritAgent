@@ -17,6 +17,13 @@ export function parseShellToolResult(
 
 const COMMAND_LINE_PREFIX = i18n.t('tool.commandPrefix');
 
+/** 展开区优先用完整 command（argsExcerpt / detailLines），摘要 headlineDetail 仅作回退。 */
+export function resolveShellToolExpandedCommand(
+  tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines" | "headlineDetail">,
+): string | undefined {
+  return parseShellToolCommand(tool) || tool.headlineDetail?.trim() || undefined;
+}
+
 export function parseShellToolCommand(
   tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines">,
 ): string | undefined {

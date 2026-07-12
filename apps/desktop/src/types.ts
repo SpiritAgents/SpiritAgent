@@ -1,4 +1,10 @@
 import type { ModelProviderId, ProviderConnectSiteId } from '@spiritagent/host-internal/model-provider-presets';
+import type {
+  ModelEntryV2,
+  ModelRef,
+  ProviderGroupV2,
+  SpiritConfigSchemaVersion,
+} from '@spiritagent/host-internal/config-v2';
 import type { ModelReasoningEffort } from '@spiritagent/agent-core/reasoning-effort';
 import type { LspWriteDiagnosticsUi } from '@spiritagent/agent-core';
 
@@ -6,13 +12,19 @@ import type { DesktopAgentMode } from './lib/agent-mode.js';
 import type { DesktopAutomationTrigger } from './lib/automation-trigger.js';
 
 export type { DesktopAgentMode };
-import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult, ApprovalLevel, GitHubPullRequestCommit } from '@spiritagent/host-internal';
+import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult } from '@spiritagent/host-internal/workspace-file-reference-query';
+import type { ApprovalLevel } from '@spiritagent/host-internal/approval-level';
+import type { WorkLocationKind } from '@spiritagent/host-internal/work-location';
+import type { LocalFileComposerRoute } from '@spiritagent/host-internal/local-file-composer-route';
+import type { GitHubPullRequestCommit, GitHubPullRequestMergeMethod } from '@spiritagent/host-internal/github/types';
 
-export type { ApprovalLevel };
+export type { ApprovalLevel, WorkLocationKind, LocalFileComposerRoute };
 
 import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
 import type { RichSegment } from './lib/composer-segment-model.js';
 import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachments.js';
+
+export type { ModelRef, ModelEntryV2, ProviderGroupV2, SpiritConfigSchemaVersion };
 
 export type DesktopWorkspaceBinding = 'project' | 'none';
 
@@ -41,10 +53,10 @@ export interface CheckoutGitBranchRequest {
 }
 
 export interface UpdateConfigRequest {
-  activeModel: string;
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
-  lightweightChatModel?: string;
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   apiBase: string;
   reasoningEffort?: DesktopModelReasoningEffort;
   /** 厂商 extended thinking；false 关闭。缺省不修改。 */
@@ -117,7 +129,7 @@ export interface DesktopWebHostConfigUpdate {
 
 export interface DesktopDreamConfigUpdate {
   enabled?: boolean;
-  collectorModel?: string;
+  collectorModel?: ModelRef;
   clearCollectorModel?: boolean;
   debugMode?: boolean;
 }
@@ -191,6 +203,7 @@ export interface PreviewModelsResponse {
 
 /** 批量写入同一端点下的多个模型 id（共享 API Key），用于提供商连接批量导入。 */
 export interface AddProviderModelsRequest {
+  groupId: string;
   apiBase: string;
   apiKey: string;
   modelIds: string[];
@@ -224,6 +237,7 @@ export interface DesktopModelCatalogHint {
 
 /** 与 CLI `model add` 一致：新增模型、写入密钥，并将当前模型切到新模型。 */
 export interface AddModelRequest {
+  groupId: string;
   name: string;
   apiBase: string;
   apiKey: string;
@@ -245,12 +259,19 @@ export interface AddModelRequest {
   vertexProject?: string;
   /** Google Vertex 区域（如 `us-central1`）。 */
   vertexLocation?: string;
+  /** 自定义提供商连接显示名；`custom` 时用于生成 groupId（`slugifyProviderGroupLabel`）。 */
+  customGroupLabel?: string;
 }
 
 export interface RemoveModelRequest {
-  name: string;
+  ref: ModelRef;
 }
 
+export interface RemoveProviderGroupRequest {
+  groupId: string;
+}
+
+/** @deprecated 使用 RemoveProviderGroupRequest */
 export interface RemoveProviderModelsRequest {
   provider: DesktopModelProvider;
 }
@@ -688,7 +709,7 @@ export interface SwitchPaneWorkspaceRequest {
 
 export interface SwitchPaneModelRequest {
   sessionPath: string;
-  modelName: string;
+  modelRef: ModelRef;
 }
 
 export interface SetPanePendingGitBranchRequest {
@@ -698,7 +719,7 @@ export interface SetPanePendingGitBranchRequest {
 
 export interface SetPaneWorkLocationRequest {
   sessionPath: string;
-  workLocation: import('@spiritagent/host-internal').WorkLocationKind;
+  workLocation: WorkLocationKind;
 }
 
 export interface CheckoutPaneGitBranchRequest {
@@ -715,7 +736,7 @@ export interface PaneSessionSlice {
   workspaceRoot?: string;
   workspaceBinding?: DesktopWorkspaceBinding;
   git?: DesktopGitSnapshot;
-  activeModel?: string;
+  activeModel?: ModelRef;
 }
 
 export interface QueuedUserTurnRequest {
@@ -943,11 +964,12 @@ export interface DesktopExtensionCssLayer {
 }
 
 export interface DesktopConfigSnapshot {
+  providerGroups: ProviderGroupV2[];
   models: ModelProfileSnapshot[];
-  activeModel: string;
-  imageGenerationModel?: string;
-  videoGenerationModel?: string;
-  lightweightChatModel?: string;
+  activeModel: ModelRef;
+  imageGenerationModel?: ModelRef;
+  videoGenerationModel?: ModelRef;
+  lightweightChatModel?: ModelRef;
   uiLocale?: string;
   activeApiKeyConfigured: boolean;
   /** 桌面宿主在 Windows 上是否使用 Mica 风格；无字段时按 true 处理。 */
@@ -965,7 +987,7 @@ export interface DesktopConfigSnapshot {
 
 export interface DesktopDreamSettingsSnapshot {
   enabled: boolean;
-  collectorModel?: string;
+  collectorModel?: ModelRef;
   debugMode: boolean;
 }
 
@@ -1069,7 +1091,7 @@ export interface DesktopAutomationDefinition {
   overview: string;
   trigger: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel: ApprovalLevel;
   enabled: boolean;
@@ -1088,7 +1110,7 @@ export interface DesktopCreateAutomationRequest {
   overview: string;
   trigger: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel: ApprovalLevel;
   enabled?: boolean;
@@ -1099,7 +1121,7 @@ export interface DesktopUpdateAutomationRequest {
   overview?: string;
   trigger?: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
   workspaceRoot?: string;
-  modelName?: string;
+  modelRef?: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel?: ApprovalLevel;
   enabled?: boolean;
@@ -1122,7 +1144,7 @@ export interface DesktopGitSnapshot {
   /** User-selected branch for the next send; defaults to `branch` when unset. */
   selectedBranch?: string;
   /** Session work-location preference; populated on client snapshots. */
-  workLocation?: import('@spiritagent/host-internal').WorkLocationKind;
+  workLocation?: WorkLocationKind;
   /** True when the active workspace path is a linked Git worktree. */
   isWorktreeSession?: boolean;
   /** Primary repository root for the active worktree session. */
@@ -1222,7 +1244,7 @@ export type {
   GitHubPullRequestTabCounts,
   GitHubPullRequestTaskListProgress,
   GitHubRepositoryRef,
-} from '@spiritagent/host-internal';
+} from '@spiritagent/host-internal/github/types';
 
 export interface ListGitHubPullRequestsRequest {
   owner: string;
@@ -1253,15 +1275,17 @@ export interface GetGitHubPullRequestDetailRequest {
 }
 
 export interface MergeGitHubPullRequestRequest extends GetGitHubPullRequestDetailRequest {
-  mergeMethod: import('@spiritagent/host-internal').GitHubPullRequestMergeMethod;
+  mergeMethod: GitHubPullRequestMergeMethod;
 }
 
 export type {
   GitHubPullRequestMergeMethod,
   GitHubPullRequestMergeResult,
-} from '@spiritagent/host-internal';
+} from '@spiritagent/host-internal/github/types';
 
 export interface ModelProfileSnapshot {
+  groupId?: string;
+  ref?: ModelRef;
   name: string;
   apiBase: string;
   reasoningEffort: DesktopModelReasoningEffort;

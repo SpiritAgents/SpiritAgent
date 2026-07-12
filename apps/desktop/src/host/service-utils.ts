@@ -29,7 +29,12 @@ import {
   mergeRecentWorkspaceRoots,
   resolveDesktopHomeDirectory,
 } from './storage.js';
+import type { DesktopModelReasoningEffort } from '../types.js';
 import { resolveProfileApiBase } from './model-config.js';
+import {
+  flattenProviderGroups,
+  resolveActiveModelProfile,
+} from './model-config-access.js';
 import {
   DESKTOP_WEB_HOST_POLICY,
   getDesktopWebHostRuntimeStatus,
@@ -205,8 +210,7 @@ export function buildWebHostSnapshot(config: DesktopWebHostConfigFile): DesktopW
 }
 
 export function currentApiBase(config: DesktopConfigFile): string {
-  const profile =
-    config.models.find((model) => model.name === config.activeModel) ?? config.models[0];
+  const profile = resolveActiveModelProfile(config) ?? flattenProviderGroups(config)[0];
   if (!profile) {
     return '';
   }

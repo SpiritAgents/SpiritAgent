@@ -55,6 +55,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   removeProviderModels(provider: string) {
     return ipcRenderer.invoke('desktop:invoke', 'removeProviderModels', { request: { provider } });
   },
+  removeProviderGroup(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'removeProviderGroup', { request });
+  },
   addMcpServer(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'addMcpServer', { request });
   },
@@ -269,7 +272,7 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   }) {
     return ipcRenderer.invoke('desktop:invoke', 'switchPaneWorkspace', { request });
   },
-  switchPaneModel(request: { sessionPath: string; modelName: string }) {
+  switchPaneModel(request: { sessionPath: string; modelRef: { groupId: string; name: string } }) {
     return ipcRenderer.invoke('desktop:invoke', 'switchPaneModel', { request });
   },
   setPanePendingGitBranch(request: { sessionPath: string; branch: string }) {

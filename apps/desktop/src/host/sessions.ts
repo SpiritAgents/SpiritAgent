@@ -19,8 +19,14 @@ import type {
   ConversationMessageSnapshot,
   SessionListItem,
 } from '../types.js';
-import { extractActivePlanPathFromLlmHistory, normalizeApprovalLevel } from '@spiritagent/host-internal';
-import type { ApprovalLevel } from '@spiritagent/host-internal';
+import {
+  extractActivePlanPathFromLlmHistory,
+  modelRefKey,
+  normalizeApprovalLevel,
+  parseModelRef,
+  type ApprovalLevel,
+  type ModelRef,
+} from '@spiritagent/host-internal';
 import type { QueuedUserTurn } from './message-queue.js';
 import type { SessionTitleSource } from './contracts.js';
 import type { DesktopTimelineTurnSnapshot } from './message-timeline.js';
@@ -41,6 +47,33 @@ export const EPHEMERAL_WORKTREE_SESSION_PREFIX = 'ephemeral://worktree-naming/';
 export const EPHEMERAL_SESSION_TITLE_PREFIX = 'ephemeral://session-title/';
 const MAX_EPHEMERAL_COMMIT_SESSIONS = 8;
 
+function parseStoredSessionActiveModel(value: unknown): ModelRef | undefined {
+  const asRef = parseModelRef(value);
+  if (asRef) {
+    return asRef;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const separatorIndex = trimmed.lastIndexOf('::');
+    if (separatorIndex > 0) {
+      const groupId = trimmed.slice(0, separatorIndex).trim();
+      const name = trimmed.slice(separatorIndex + 2).trim();
+      if (groupId && name) {
+        return { groupId, name };
+      }
+    }
+    return { groupId: '', name: trimmed };
+  }
+  return undefined;
+}
+
+export function serializeSessionActiveModel(ref: ModelRef): string {
+  return modelRefKey(ref);
+}
+
 export interface EphemeralSessionRecord {
   path: string;
   displayName: string;
@@ -60,7 +93,7 @@ export interface RestoredSessionState {
   rewind: StoredDesktopRewindMetadata;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
-  activeModel?: string;
+  activeModel?: ModelRef;
   activePlanPath?: string;
   sessionTitleSource?: SessionTitleSource;
   contextUsage?: ConversationContextUsageSnapshot;
@@ -175,9 +208,10 @@ export function restoreStoredSessionState(input: {
     rewind: input.loaded.rewind ?? createDesktopRewindMetadata(),
     loopEnabled: input.loaded.loopEnabled === true,
     approvalLevel: normalizeApprovalLevel(input.loaded.approvalLevel),
-    ...(typeof input.loaded.activeModel === 'string' && input.loaded.activeModel.trim()
-      ? { activeModel: input.loaded.activeModel.trim() }
-      : {}),
+    ...((): { activeModel?: ModelRef } => {
+      const activeModel = parseStoredSessionActiveModel(input.loaded.activeModel);
+      return activeModel ? { activeModel } : {};
+    })(),
     ...(activePlanPath ? { activePlanPath } : {}),
     ...(input.loaded.sessionTitleSource === 'seed'
       || input.loaded.sessionTitleSource === 'llm'
@@ -211,7 +245,7 @@ export function buildStoredDesktopSession(input: {
   rewind: StoredDesktopRewindMetadata;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
-  activeModel?: string;
+  activeModel?: ModelRef;
   contextUsage?: ConversationContextUsageSnapshot;
   subagentDesktopTimelines?: Record<string, PersistedDesktopTimelineTurnSnapshot[]>;
   queuedUserTurns?: QueuedUserTurn[];
@@ -226,7 +260,7 @@ export function buildStoredDesktopSession(input: {
     ...(input.subagentSessions?.length ? { subagentSessions: input.subagentSessions } : {}),
     loopEnabled: input.loopEnabled,
     approvalLevel: input.approvalLevel,
-    ...(input.activeModel ? { activeModel: input.activeModel } : {}),
+    ...(input.activeModel ? { activeModel: serializeSessionActiveModel(input.activeModel) } : {}),
     desktopMessageTimeline,
     savedAtUnixMs: input.savedAtUnixMs ?? Date.now(),
     sessionDisplayName: input.sessionDisplayName,

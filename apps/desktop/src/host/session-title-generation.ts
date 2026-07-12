@@ -32,7 +32,7 @@ export async function generateSessionTitleFromModelTask(
     throw new Error('Lightweight chat model is not available.');
   }
 
-  const apiKey = await resolveApiKeyForConfigModel(context.config, resolved.name);
+  const apiKey = await resolveApiKeyForConfigModel(context.config, resolved.profile.ref);
   if (!apiKey) {
     throw new Error(`API key is not configured for lightweight chat model: ${resolved.name}`);
   }

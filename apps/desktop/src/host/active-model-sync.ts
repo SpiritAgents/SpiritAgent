@@ -1,18 +1,20 @@
+import { modelRefsEqual } from '@spiritagent/host-internal';
+
+import type { ModelRef } from '../types.js';
+import type { DesktopConfigFile } from './storage.js';
+import { resolvePaneModelRef } from './model-config-access.js';
 import type { SessionBundle } from './session-bundle.js';
 
 export interface HostActiveModelState {
-  config: {
-    activeModel: string;
-    models: Array<{ name: string }>;
-  };
+  config: Pick<DesktopConfigFile, 'activeModel' | 'providerGroups'>;
 }
 
 export function resolveEffectivePaneActiveModel(
   bundle: Pick<SessionBundle, 'activeModel'>,
   state: HostActiveModelState,
-): string {
-  const fromBundle = bundle.activeModel?.trim();
-  if (fromBundle && state.config.models.some((model) => model.name === fromBundle)) {
+): ModelRef {
+  const fromBundle = resolvePaneModelRef(state.config, bundle.activeModel);
+  if (fromBundle) {
     return fromBundle;
   }
   return state.config.activeModel;
@@ -23,14 +25,14 @@ export function needsHostActiveModelSync(
   state: HostActiveModelState,
 ): boolean {
   const effective = resolveEffectivePaneActiveModel(bundle, state);
-  return effective !== state.config.activeModel;
+  return !modelRefsEqual(effective, state.config.activeModel);
 }
 
 export function resolvePaneModelProjection(input: {
   bundle: SessionBundle;
   state: HostActiveModelState;
   isForegroundActive: boolean;
-}): { activeModel: string } | undefined {
+}): { activeModel: ModelRef } | undefined {
   if (input.isForegroundActive) {
     return undefined;
   }
@@ -45,8 +47,8 @@ export function freezePaneActiveModelIfNeeded(
   bundle: SessionBundle,
   state: HostActiveModelState,
 ): void {
-  if (!bundle.activeModel?.trim()) {
-    bundle.activeModel = state.config.activeModel;
+  if (!resolvePaneModelRef(state.config, bundle.activeModel)) {
+    bundle.activeModel = { ...state.config.activeModel };
   }
 }
 

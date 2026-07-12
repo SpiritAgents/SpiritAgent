@@ -22,7 +22,7 @@ export function createDesktopAutoApprovalReviewer(input: {
       return undefined;
     }
 
-    const apiKey = await resolveApiKeyForConfigModel(input.config, resolved.name);
+    const apiKey = await resolveApiKeyForConfigModel(input.config, resolved.profile.ref);
     if (!apiKey) {
       return undefined;
     }

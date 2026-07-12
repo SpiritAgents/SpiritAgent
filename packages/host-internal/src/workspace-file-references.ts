@@ -210,7 +210,9 @@ export async function workspaceFileReferenceAttachmentFromPath(
   return localFileAttachmentFromAbsolutePath(absolutePath, relativePath, options);
 }
 
-export type LocalFileComposerRoute = 'media' | 'reference';
+import type { LocalFileComposerRoute } from './local-file-composer-route.js';
+
+export type { LocalFileComposerRoute } from './local-file-composer-route.js';
 
 export async function classifyLocalFileComposerRoute(
   absolutePath: string,

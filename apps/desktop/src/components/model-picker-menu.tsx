@@ -40,10 +40,21 @@ import {
   resolveModelThinkingEnabled,
 } from "@spiritagent/agent-core/model-thinking-controls";
 import { groupModelsForPicker } from "@/lib/model-picker-groups";
-import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelProfileSnapshot, PreviewModelCatalogEntry } from "@/types";
+import type {
+  DesktopModelReasoningEffort,
+  DesktopSnapshot,
+  ModelProfileSnapshot,
+  ModelRef,
+  PreviewModelCatalogEntry,
+} from "@/types";
+import { modelRefKey, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
 type ModelPickerItem = DesktopSnapshot["config"]["models"][number];
+
+function modelPickerItemRef(model: ModelPickerItem): ModelRef {
+  return model.ref ?? { groupId: model.groupId ?? "", name: model.name };
+}
 
 function resolveModelPickerDetailTooltipWidthClass(
   activeItem: unknown,
@@ -88,14 +99,15 @@ const ModelPickerRow = memo(function ModelPickerRow({
   model: ModelPickerItem;
   displayTitle: string;
   isActive: boolean;
-  onSelectModel: (modelName: string) => void;
+  onSelectModel: (ref: ModelRef) => void;
 }) {
+  const modelRef = modelPickerItemRef(model);
   return (
     <TooltipItem item={model}>
       <DropdownMenuItem
         className={cn(isActive && "bg-accent/40")}
         onSelect={() => {
-          onSelectModel(model.name);
+          onSelectModel(modelRef);
         }}
       >
         <span className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "min-w-0 truncate")}>
@@ -109,14 +121,15 @@ const ModelPickerRow = memo(function ModelPickerRow({
 export type ModelPickerMenuProps = {
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
-  activeModelName: string;
+  providerGroups?: DesktopSnapshot["config"]["providerGroups"];
+  activeModelRef: ModelRef;
   activeReasoningEffort?: DesktopModelReasoningEffort;
   disabled?: boolean;
   open?: boolean;
   onOpenChange?(open: boolean): void;
-  onModelSelect(name: string): void;
-  onModelReasoningEffortSelect?(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void | Promise<boolean>;
+  onModelSelect(ref: ModelRef): void;
+  onModelReasoningEffortSelect?(ref: ModelRef, reasoningEffort: DesktopModelReasoningEffort): void;
+  onModelThinkingEnabledSelect?(ref: ModelRef, enabled: boolean): void | Promise<boolean>;
   triggerClassName?: string;
   menuContentClassName?: string;
 };
@@ -124,7 +137,8 @@ export type ModelPickerMenuProps = {
 export function ModelPickerMenu({
   models,
   catalogHints,
-  activeModelName,
+  providerGroups,
+  activeModelRef,
   activeReasoningEffort,
   disabled,
   open: openProp,
@@ -156,7 +170,9 @@ export function ModelPickerMenu({
     [isControlled, onOpenChange],
   );
 
-  const activeModelProfile = models.find((model) => model.name === activeModelName);
+  const activeModelProfile = models.find((model) =>
+    modelRefsEqual(modelPickerItemRef(model), activeModelRef),
+  );
   const displayTitleByModelName = useMemo(
     () => buildModelCatalogDisplayTitleMap(models, catalogHints),
     [catalogHints, models],
@@ -166,8 +182,8 @@ export function ModelPickerMenu({
     [catalogHints, models],
   );
   const modelGroups = useMemo(
-    () => groupModelsForPicker(models, catalogHints),
-    [catalogHints, models],
+    () => groupModelsForPicker(models, catalogHints, providerGroups),
+    [catalogHints, models, providerGroups],
   );
   const filteredModelGroups = useMemo(() => {
     const query = modelFilter.trim().toLowerCase();
@@ -200,9 +216,9 @@ export function ModelPickerMenu({
     });
   }, [tooltipActions]);
 
-  const handleSelectModel = useCallback((name: string) => {
+  const handleSelectModel = useCallback((ref: ModelRef) => {
     dismissOpenListTooltip();
-    onModelSelect(name);
+    onModelSelect(ref);
     setModelFilter("");
     setModelMenuOpen(false);
   }, [dismissOpenListTooltip, onModelSelect, setModelMenuOpen]);
@@ -286,7 +302,7 @@ export function ModelPickerMenu({
                       model={activeModelProfile}
                     />
                   ) : (
-                    <span className="min-w-0 truncate">{activeModelName}</span>
+                    <span className="min-w-0 truncate">{modelRefKey(activeModelRef)}</span>
                   )}
                   <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
                 </button>
@@ -306,18 +322,20 @@ export function ModelPickerMenu({
             {filteredModelGroups.length === 0
               ? null
               : filteredModelGroups.map((group) => (
-                  <div key={group.provider} className="mb-2 last:mb-0">
+                  <div key={group.groupId} className="mb-2 last:mb-0">
                     <div className={DESKTOP_OVERLAY_LIST_GROUP_LABEL}>
-                      {t(group.labelKey, { defaultValue: group.fallbackLabel })}
+                      {group.customLabel
+                        ?? t(group.labelKey, { defaultValue: group.fallbackLabel })}
                     </div>
                     {group.items.map((model) => {
                       const displayTitle = modelDisplayTitleFromMap(model.name, displayTitleByModelName);
+                      const modelRef = modelPickerItemRef(model);
                       return (
                         <ModelPickerRow
-                          key={`${group.provider}:${model.name}`}
+                          key={`${group.groupId}:${modelRefKey(modelRef)}`}
                           model={model}
                           displayTitle={displayTitle}
-                          isActive={activeModelProfile?.name === model.name}
+                          isActive={modelRefsEqual(activeModelProfile ? modelPickerItemRef(activeModelProfile) : undefined, modelRef)}
                           onSelectModel={handleSelectModel}
                         />
                       );
@@ -348,13 +366,14 @@ export function ModelPickerMenu({
               if (!hoveredModel) {
                 return null;
               }
-              const model = models.find((entry) => entry.name === hoveredModel.name) ?? hoveredModel;
+              const model = models.find((entry) => modelRefsEqual(modelPickerItemRef(entry), modelPickerItemRef(hoveredModel))) ?? hoveredModel;
               const group = filteredModelGroups.find((entry) =>
-                entry.items.some((item) => item.name === model.name),
+                entry.items.some((item) => modelRefsEqual(modelPickerItemRef(item), modelPickerItemRef(model))),
               );
-              const providerLabel = group
-                ? t(group.labelKey, { defaultValue: group.fallbackLabel })
-                : model.provider ?? model.name;
+              const providerLabel = group?.customLabel
+                ?? (group
+                  ? t(group.labelKey, { defaultValue: group.fallbackLabel })
+                  : model.provider ?? model.name);
               const catalogEntry = catalogDetailByModelName.get(model.name);
 
               return (
@@ -362,15 +381,15 @@ export function ModelPickerMenu({
                   model={model}
                   catalogEntry={catalogEntry}
                   providerLabel={providerLabel}
-                  onReasoningEffortChange={(modelName, effort) => {
-                    onModelReasoningEffortSelect?.(modelName, effort);
+                  onReasoningEffortChange={(modelRef, effort) => {
+                    onModelReasoningEffortSelect?.(modelRef, effort);
                     dismissOpenListTooltip();
-                    onModelSelect(modelName);
+                    onModelSelect(modelRef);
                     setModelFilter("");
                     setModelMenuOpen(false);
                   }}
-                  onThinkingEnabledChange={(modelName, enabled) => {
-                    onModelThinkingEnabledSelect?.(modelName, enabled);
+                  onThinkingEnabledChange={(modelRef, enabled) => {
+                    onModelThinkingEnabledSelect?.(modelRef, enabled);
                   }}
                 />
               );

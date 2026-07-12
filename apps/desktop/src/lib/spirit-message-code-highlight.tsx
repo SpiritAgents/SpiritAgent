@@ -88,25 +88,45 @@ export function renderHighlightToken(token: HighlightToken, key: string | number
   );
 }
 
-export function renderHighlightedCodeBody(result: HighlightResult) {
-  const preStyle =
-    typeof result.rootStyle === "string"
-      ? (Object.fromEntries(
-          result.rootStyle
-            .split(";")
-            .filter(Boolean)
-            .map((rule) => {
-              const colon = rule.indexOf(":");
-              if (colon === -1) {
-                return null;
-              }
-              return [rule.slice(0, colon).trim(), rule.slice(colon + 1).trim()] as const;
-            })
-            .filter((entry): entry is readonly [string, string] => entry !== null),
-        ) as CSSProperties)
-      : undefined;
+function parseRootStyle(rootStyle: HighlightResult["rootStyle"]): CSSProperties | undefined {
+  if (typeof rootStyle !== "string") {
+    return undefined;
+  }
+  return Object.fromEntries(
+    rootStyle
+      .split(";")
+      .filter(Boolean)
+      .map((rule) => {
+        const colon = rule.indexOf(":");
+        if (colon === -1) {
+          return null;
+        }
+        return [rule.slice(0, colon).trim(), rule.slice(colon + 1).trim()] as const;
+      })
+      .filter((entry): entry is readonly [string, string] => entry !== null),
+  ) as CSSProperties;
+}
 
+export function renderHighlightedCodeLines(
+  result: HighlightResult,
+  options?: { firstLineInline?: boolean },
+) {
   const lines = dropTrailingEmptyTokenLines(result.tokens);
+
+  return lines.map((line, lineIndex) => (
+    <span
+      key={lineIndex}
+      className={options?.firstLineInline && lineIndex === 0 ? undefined : "block"}
+    >
+      {isEmptyTokenLine(line)
+        ? null
+        : line.map((token, tokenIndex) => renderHighlightToken(token, tokenIndex))}
+    </span>
+  ));
+}
+
+export function renderHighlightedCodeBody(result: HighlightResult) {
+  const preStyle = parseRootStyle(result.rootStyle);
 
   return (
     <div data-language="" data-streamdown="code-block-body">
@@ -114,15 +134,7 @@ export function renderHighlightedCodeBody(result: HighlightResult) {
         className="bg-[var(--sdm-bg,inherit)] dark:bg-[var(--shiki-dark-bg,var(--sdm-bg,inherit))]"
         style={preStyle}
       >
-        <code>
-          {lines.map((line, lineIndex) => (
-            <span key={lineIndex} className="block">
-              {isEmptyTokenLine(line)
-                ? null
-                : line.map((token, tokenIndex) => renderHighlightToken(token, tokenIndex))}
-            </span>
-          ))}
-        </code>
+        <code>{renderHighlightedCodeLines(result)}</code>
       </pre>
     </div>
   );

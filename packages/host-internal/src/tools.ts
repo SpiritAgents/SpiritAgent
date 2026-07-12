@@ -63,6 +63,7 @@ import {
   type HostAutomationTrigger,
 } from './automations.js';
 import type { ModelReasoningEffort } from './reasoning-effort.js';
+import type { ModelRef } from './config-v2.js';
 import { resolveInstructionPaths, type InstructionDiscoveryContext } from './storage.js';
 import { isPathUnderPlansDir, resolvePlanFilePath } from './plans.js';
 import {
@@ -387,7 +388,9 @@ export interface HostExtensionRuntimeBinding<THostApi> {
   logger?: Pick<Console, 'error' | 'log'>;
 }
 
-export type ApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
+import type { ApprovalLevel } from './approval-level.js';
+
+export type { ApprovalLevel } from './approval-level.js';
 
 export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
   if (value === 'full-approval' || value === 'full-access') {
@@ -401,7 +404,7 @@ export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
 
 export interface HostAutomationCreateDefaults {
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: ModelReasoningEffort;
 }
 
@@ -1851,7 +1854,7 @@ export class NodeHostToolService<QuestionSpec = HostAskQuestionsQuestionSpec>
       overview: request.overview,
       trigger: request.trigger,
       workspaceRoot: defaults.workspaceRoot,
-      modelName: defaults.modelName,
+      modelRef: defaults.modelRef,
       ...(defaults.reasoningEffort ? { reasoningEffort: defaults.reasoningEffort } : {}),
       approvalLevel: request.approval_level,
       enabled: true,

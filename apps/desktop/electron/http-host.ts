@@ -1171,7 +1171,19 @@ async function handleApiRequest({
       await runHostCommand('switchPaneModel', {
         request: {
           sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
-          modelName: typeof jsonBody?.modelName === 'string' ? jsonBody.modelName : '',
+          modelRef:
+            typeof jsonBody?.modelRef === 'object' && jsonBody.modelRef !== null
+              ? {
+                  groupId:
+                    typeof (jsonBody.modelRef as { groupId?: unknown }).groupId === 'string'
+                      ? (jsonBody.modelRef as { groupId: string }).groupId
+                      : '',
+                  name:
+                    typeof (jsonBody.modelRef as { name?: unknown }).name === 'string'
+                      ? (jsonBody.modelRef as { name: string }).name
+                      : '',
+                }
+              : { groupId: '', name: '' },
         },
       }),
     );

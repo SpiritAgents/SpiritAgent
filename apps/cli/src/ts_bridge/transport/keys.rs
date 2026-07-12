@@ -8,25 +8,22 @@ use super::TransportHost;
 
 pub(crate) fn resolve_key_from_store(
     host: &TransportHost<'_>,
+    group_id: &str,
     model_name: &str,
     provider: Option<ModelProvider>,
 ) -> Result<String> {
     if provider == Some(ModelProvider::AmazonBedrock) {
-        if let Ok(value) =
-            crate::model_registry::load_provider_api_key_from_keyring(ModelProvider::AmazonBedrock.as_str())
-        {
+        if let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(trimmed.to_string());
             }
         }
-        if crate::model_registry::has_bedrock_runtime_credentials_in_keyring()? {
+        if crate::model_registry::has_bedrock_runtime_credentials_in_keyring(group_id)? {
             return Ok(String::new());
         }
     } else if provider == Some(ModelProvider::GoogleVertexAi) {
-        if let Ok(value) = crate::model_registry::load_provider_api_key_from_keyring(
-            ModelProvider::GoogleVertexAi.as_str(),
-        ) {
+        if let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(trimmed.to_string());
@@ -37,14 +34,13 @@ pub(crate) fn resolve_key_from_store(
                 "",
                 profile.vertex_project().as_deref(),
                 profile.vertex_location().as_deref(),
+                group_id,
             ) {
                 return Ok(String::new());
             }
         }
-    } else if let Some(provider) = provider {
-        if let Ok(value) =
-            crate::model_registry::load_provider_api_key_from_keyring(provider.as_str())
-        {
+    } else if !group_id.trim().is_empty() {
+        if let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(trimmed.to_string());
@@ -82,8 +78,9 @@ pub(crate) fn resolve_key_from_store(
 
 pub(crate) fn resolve_optional_key_from_store(
     host: &TransportHost<'_>,
+    group_id: &str,
     model_name: &str,
-    provider: Option<ModelProvider>,
+    _provider: Option<ModelProvider>,
 ) -> Result<Option<String>> {
     if let Ok(value) = env::var(ENV_API_KEY) {
         let trimmed = value.trim();
@@ -91,10 +88,8 @@ pub(crate) fn resolve_optional_key_from_store(
             return Ok(Some(trimmed.to_string()));
         }
     }
-    if let Some(provider) = provider {
-        if let Ok(value) =
-            crate::model_registry::load_provider_api_key_from_keyring(provider.as_str())
-        {
+    if !group_id.trim().is_empty() {
+        if let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(Some(trimmed.to_string()));

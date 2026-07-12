@@ -40,6 +40,7 @@ import type {
   ConversationMessageSnapshot,
   DesktopSnapshot,
   MessageRewindDraftState,
+  ModelRef,
   PendingAssistantAux,
 } from "@/types";
 import type { PointerEvent, ReactNode, RefObject } from "react";
@@ -92,7 +93,7 @@ export type ConversationListProps = {
   rewindRichInputRef: RefObject<ComposerRichInputHandle | null>;
   models: DesktopSnapshot["config"]["models"];
   catalogHints: DesktopSnapshot["config"]["modelCatalogHints"] | undefined;
-  activeModel: string;
+  activeModel: ModelRef;
   agentMode: DesktopAgentMode;
   onOpenSubagentViewer: ((toolCallId: string) => void) | undefined;
   onOpenReadFile: ((target: EditorFileTarget) => void) | undefined;

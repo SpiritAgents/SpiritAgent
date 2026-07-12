@@ -11,13 +11,56 @@ import {
   syncExistingModelsFromCatalog,
 } from '../../dist-electron/src/host/model-catalog-startup-refresh.js';
 
+const gatewayGroupId = 'vercel-ai-gateway';
+const openAiGroupId = 'openai';
+const customGroupId = 'custom-local';
+const minimaxGroupId = 'minimax';
+
 const gatewayScopeProfile = {
+  groupId: gatewayGroupId,
   name: 'anthropic/claude-sonnet-4',
   apiBase: 'https://ai-gateway.vercel.sh/v1',
   provider: 'vercel-ai-gateway',
   transportKind: 'open-responses',
   reasoningEffort: 'default',
 };
+
+function gatewayGroup(models) {
+  return {
+    id: gatewayGroupId,
+    provider: 'vercel-ai-gateway',
+    apiBase: 'https://ai-gateway.vercel.sh/v1',
+    transportKind: 'open-responses',
+    models,
+  };
+}
+
+function openAiGroup(models) {
+  return {
+    id: openAiGroupId,
+    provider: 'openai',
+    apiBase: 'https://api.openai.com/v1',
+    models,
+  };
+}
+
+function customGroup(models) {
+  return {
+    id: customGroupId,
+    provider: 'custom',
+    apiBase: 'http://127.0.0.1:8080/v1',
+    models,
+  };
+}
+
+function minimaxGroup(models) {
+  return {
+    id: minimaxGroupId,
+    provider: 'minimax',
+    apiBase: 'https://api.minimaxi.com/v1',
+    models,
+  };
+}
 
 test('providerSupportsModelCatalogListing includes OpenAI and excludes Azure', () => {
   assert.equal(
@@ -76,21 +119,21 @@ test('modelCatalogScopeKey normalizes api base', () => {
 
 test('mergeNewCatalogModelsIntoConfig appends only new provider-scoped models', () => {
   const config = {
-    models: [
-      {
-        name: 'zai/glm-5.1',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'zai/glm-5.1',
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        },
+      ]),
     ],
-    activeModel: 'zai/glm-5.1',
+    activeModel: { groupId: gatewayGroupId, name: 'zai/glm-5.1' },
   };
 
   const merged = mergeNewCatalogModelsIntoConfig(
     config,
-    config.models[0],
+    { ...gatewayScopeProfile, name: 'zai/glm-5.1' },
     {
       modelIds: ['zai/glm-5.1', 'zai/glm-5.2'],
       fromCache: false,
@@ -103,36 +146,41 @@ test('mergeNewCatalogModelsIntoConfig appends only new provider-scoped models', 
 
   assert.equal(merged, 1);
   assert.deepEqual(
-    config.models.map((model) => model.name),
+    config.providerGroups[0].models.map((model) => model.name),
     ['zai/glm-5.1', 'zai/glm-5.2'],
   );
-  assert.equal(config.activeModel, 'zai/glm-5.1');
+  assert.deepEqual(config.activeModel, { groupId: gatewayGroupId, name: 'zai/glm-5.1' });
 });
 
 test('syncExistingModelsFromCatalog upgrades chat-only profiles from catalog', () => {
   const config = {
-    models: [
-      {
-        name: 'MiniMax-M3',
-        apiBase: 'https://api.minimaxi.com/v1',
-        provider: 'minimax',
-        capabilities: ['chat'],
-        reasoningEffort: 'medium',
-      },
-      {
-        name: 'MiniMax-M2.5',
-        apiBase: 'https://api.minimaxi.com/v1',
-        provider: 'minimax',
-        capabilities: ['chat'],
-        reasoningEffort: 'medium',
-      },
+    providerGroups: [
+      minimaxGroup([
+        {
+          name: 'MiniMax-M3',
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        },
+        {
+          name: 'MiniMax-M2.5',
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        },
+      ]),
     ],
-    activeModel: 'MiniMax-M3',
+    activeModel: { groupId: minimaxGroupId, name: 'MiniMax-M3' },
   };
 
   const synced = syncExistingModelsFromCatalog(
     config,
-    config.models[0],
+    {
+      groupId: minimaxGroupId,
+      name: 'MiniMax-M3',
+      apiBase: 'https://api.minimaxi.com/v1',
+      provider: 'minimax',
+      capabilities: ['chat'],
+      reasoningEffort: 'medium',
+    },
     {
       modelIds: ['MiniMax-M3', 'MiniMax-M2.5'],
       fromCache: false,
@@ -144,20 +192,19 @@ test('syncExistingModelsFromCatalog upgrades chat-only profiles from catalog', (
   );
 
   assert.equal(synced, 1);
-  assert.deepEqual(config.models[0].capabilities, ['chat', 'image', 'video']);
-  assert.deepEqual(config.models[1].capabilities, ['chat']);
+  assert.deepEqual(config.providerGroups[0].models[0].capabilities, ['chat', 'image', 'video']);
+  assert.deepEqual(config.providerGroups[0].models[1].capabilities, ['chat']);
 });
 
 test('syncExistingModelsFromCatalog writes videoGeneration when capabilities are missing', () => {
   const config = {
-    models: [
-      {
-        name: 'alibaba/wan-v2.6-t2v',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'alibaba/wan-v2.6-t2v',
+          reasoningEffort: 'medium',
+        },
+      ]),
     ],
   };
 
@@ -168,20 +215,19 @@ test('syncExistingModelsFromCatalog writes videoGeneration when capabilities are
   });
 
   assert.equal(synced, 1);
-  assert.deepEqual(config.models[0].capabilities, ['videoGeneration']);
+  assert.deepEqual(config.providerGroups[0].models[0].capabilities, ['videoGeneration']);
 });
 
 test('syncExistingModelsFromCatalog corrects stale video input to videoGeneration', () => {
   const config = {
-    models: [
-      {
-        name: 'alibaba/wan-v2.6-t2v',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-        capabilities: ['chat', 'video'],
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'alibaba/wan-v2.6-t2v',
+          reasoningEffort: 'medium',
+          capabilities: ['chat', 'video'],
+        },
+      ]),
     ],
   };
 
@@ -192,20 +238,19 @@ test('syncExistingModelsFromCatalog corrects stale video input to videoGeneratio
   });
 
   assert.equal(synced, 1);
-  assert.deepEqual(config.models[0].capabilities, ['videoGeneration']);
+  assert.deepEqual(config.providerGroups[0].models[0].capabilities, ['videoGeneration']);
 });
 
 test('syncExistingModelsFromCatalog syncs supportedReasoningEfforts from catalog', () => {
   const config = {
-    models: [
-      {
-        name: 'anthropic/claude-sonnet-4',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-        capabilities: ['chat'],
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'anthropic/claude-sonnet-4',
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        },
+      ]),
     ],
   };
 
@@ -222,22 +267,21 @@ test('syncExistingModelsFromCatalog syncs supportedReasoningEfforts from catalog
   });
 
   assert.equal(synced, 1);
-  assert.deepEqual(config.models[0].supportedReasoningEfforts, ['low', 'high']);
+  assert.deepEqual(config.providerGroups[0].models[0].supportedReasoningEfforts, ['low', 'high']);
 });
 
 test('syncExistingModelsFromCatalog returns zero when catalog matches stored profile', () => {
   const config = {
-    models: [
-      {
-        name: 'openai/gpt-4.1',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-        capabilities: ['chat'],
-        supportedReasoningEfforts: ['low', 'high'],
-        contextLength: 128000,
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'openai/gpt-4.1',
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+          supportedReasoningEfforts: ['low', 'high'],
+          contextLength: 128000,
+        },
+      ]),
     ],
   };
 
@@ -255,7 +299,7 @@ test('syncExistingModelsFromCatalog returns zero when catalog matches stored pro
   });
 
   assert.equal(synced, 0);
-  assert.equal(config.models[0].contextLength, 128000);
+  assert.equal(config.providerGroups[0].models[0].contextLength, 128000);
 });
 
 test('applyCatalogEntryToStoredModel backfills contextLength only when unset', () => {
@@ -304,32 +348,28 @@ test('applyCatalogEntryToStoredModel syncs supportsThinkingType', () => {
 
 test('removeDelistedModelsFromCatalog drops scope models missing from upstream ids', () => {
   const config = {
-    models: [
-      {
-        name: 'alibaba/wan-v2.6-t2v',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-        capabilities: ['videoGeneration'],
-      },
-      {
-        name: 'openai/gpt-4.1',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-        capabilities: ['chat'],
-      },
-      {
-        name: 'legacy-local',
-        apiBase: 'http://127.0.0.1:8080/v1',
-        provider: 'custom',
-        reasoningEffort: 'default',
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'alibaba/wan-v2.6-t2v',
+          reasoningEffort: 'medium',
+          capabilities: ['videoGeneration'],
+        },
+        {
+          name: 'openai/gpt-4.1',
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        },
+      ]),
+      customGroup([
+        {
+          name: 'legacy-local',
+          reasoningEffort: 'medium',
+        },
+      ]),
     ],
-    activeModel: 'alibaba/wan-v2.6-t2v',
-    videoGenerationModel: 'alibaba/wan-v2.6-t2v',
+    activeModel: { groupId: gatewayGroupId, name: 'alibaba/wan-v2.6-t2v' },
+    videoGenerationModel: { groupId: gatewayGroupId, name: 'alibaba/wan-v2.6-t2v' },
   };
 
   const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
@@ -340,56 +380,25 @@ test('removeDelistedModelsFromCatalog drops scope models missing from upstream i
 
   assert.deepEqual(pruned, ['alibaba/wan-v2.6-t2v']);
   assert.deepEqual(
-    config.models.map((model) => model.name),
-    ['openai/gpt-4.1', 'legacy-local'],
+    config.providerGroups[0].models.map((model) => model.name),
+    ['openai/gpt-4.1'],
   );
-  assert.equal(config.activeModel, 'openai/gpt-4.1');
+  assert.deepEqual(config.providerGroups[1].models.map((model) => model.name), ['legacy-local']);
+  assert.deepEqual(config.activeModel, { groupId: gatewayGroupId, name: 'openai/gpt-4.1' });
   assert.equal(config.videoGenerationModel, undefined);
 });
 
 test('removeDelistedModelsFromCatalog clears activeModel when last scope model is removed', () => {
   const config = {
-    models: [
-      {
-        name: 'alibaba/wan-v2.6-t2v',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'alibaba/wan-v2.6-t2v',
+          reasoningEffort: 'medium',
+        },
+      ]),
     ],
-    activeModel: 'alibaba/wan-v2.6-t2v',
-  };
-
-  const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
-    modelIds: [],
-    fromCache: false,
-    modelCatalog: [],
-  });
-
-  assert.deepEqual(pruned, []);
-  assert.deepEqual(config.models.map((model) => model.name), ['alibaba/wan-v2.6-t2v']);
-  assert.equal(config.activeModel, 'alibaba/wan-v2.6-t2v');
-});
-
-test('removeDelistedModelsFromCatalog keeps same-named models in other provider scopes', () => {
-  const config = {
-    models: [
-      {
-        name: 'shared-id',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-      },
-      {
-        name: 'shared-id',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-        reasoningEffort: 'default',
-      },
-    ],
-    activeModel: 'shared-id',
+    activeModel: { groupId: gatewayGroupId, name: 'alibaba/wan-v2.6-t2v' },
   };
 
   const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
@@ -400,29 +409,61 @@ test('removeDelistedModelsFromCatalog keeps same-named models in other provider 
 
   assert.deepEqual(pruned, []);
   assert.deepEqual(
-    config.models.map((model) => model.provider),
+    config.providerGroups[0].models.map((model) => model.name),
+    ['alibaba/wan-v2.6-t2v'],
+  );
+  assert.deepEqual(config.activeModel, { groupId: gatewayGroupId, name: 'alibaba/wan-v2.6-t2v' });
+});
+
+test('removeDelistedModelsFromCatalog keeps same-named models in other provider scopes', () => {
+  const config = {
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'shared-id',
+          reasoningEffort: 'medium',
+        },
+      ]),
+      openAiGroup([
+        {
+          name: 'shared-id',
+          reasoningEffort: 'medium',
+        },
+      ]),
+    ],
+    activeModel: { groupId: gatewayGroupId, name: 'shared-id' },
+  };
+
+  const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
+    modelIds: [],
+    fromCache: false,
+    modelCatalog: [],
+  });
+
+  assert.deepEqual(pruned, []);
+  assert.deepEqual(
+    config.providerGroups.map((group) => group.provider),
     ['vercel-ai-gateway', 'openai'],
   );
 });
 
 test('removeDelistedModelsFromCatalog prunes delisted gateway model but keeps openai same name', () => {
   const config = {
-    models: [
-      {
-        name: 'shared-id',
-        apiBase: 'https://ai-gateway.vercel.sh/v1',
-        provider: 'vercel-ai-gateway',
-        transportKind: 'open-responses',
-        reasoningEffort: 'default',
-      },
-      {
-        name: 'shared-id',
-        apiBase: 'https://api.openai.com/v1',
-        provider: 'openai',
-        reasoningEffort: 'default',
-      },
+    providerGroups: [
+      gatewayGroup([
+        {
+          name: 'shared-id',
+          reasoningEffort: 'medium',
+        },
+      ]),
+      openAiGroup([
+        {
+          name: 'shared-id',
+          reasoningEffort: 'medium',
+        },
+      ]),
     ],
-    activeModel: 'shared-id',
+    activeModel: { groupId: gatewayGroupId, name: 'shared-id' },
   };
 
   const pruned = removeDelistedModelsFromCatalog(config, gatewayScopeProfile, {
@@ -433,8 +474,8 @@ test('removeDelistedModelsFromCatalog prunes delisted gateway model but keeps op
 
   assert.deepEqual(pruned, ['shared-id']);
   assert.deepEqual(
-    config.models.map((model) => model.provider),
+    config.providerGroups.flatMap((group) => group.models.map(() => group.provider)),
     ['openai'],
   );
-  assert.equal(config.activeModel, 'shared-id');
+  assert.deepEqual(config.activeModel, { groupId: openAiGroupId, name: 'shared-id' });
 });

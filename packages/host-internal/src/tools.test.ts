@@ -911,7 +911,7 @@ test('create_automation writes automation file when defaults are provided', asyn
       {
         getAutomationCreateDefaults: () => ({
           workspaceRoot,
-          modelName: 'test-model',
+          modelRef: { groupId: 'openai', name: 'test-model' },
         }),
         onAutomationCreated: (definition) => {
           createdId = definition.id;

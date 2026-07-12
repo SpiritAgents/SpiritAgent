@@ -14,6 +14,7 @@ export interface HostCommandDelegate {
   previewModels(request: CommandPayloads['previewModels']['request']): Promise<unknown>;
   removeModel(request: CommandPayloads['removeModel']['request']): Promise<unknown>;
   removeProviderModels(request: CommandPayloads['removeProviderModels']['request']): Promise<unknown>;
+  removeProviderGroup(request: CommandPayloads['removeProviderGroup']['request']): Promise<unknown>;
   addMcpServer(request: CommandPayloads['addMcpServer']['request']): Promise<unknown>;
   deleteMcpServer(request: CommandPayloads['deleteMcpServer']['request']): Promise<unknown>;
   saveHookEntry(request: CommandPayloads['saveHookEntry']['request']): Promise<unknown>;
@@ -191,6 +192,7 @@ const hostCommandDispatch = {
   previewModels: (host, payload) => host.previewModels(payload.request),
   removeModel: (host, payload) => host.removeModel(payload.request),
   removeProviderModels: (host, payload) => host.removeProviderModels(payload.request),
+  removeProviderGroup: (host, payload) => host.removeProviderGroup(payload.request),
   addMcpServer: (host, payload) => host.addMcpServer(payload.request),
   deleteMcpServer: (host, payload) => host.deleteMcpServer(payload.request),
   saveHookEntry: (host, payload) => host.saveHookEntry(payload.request),

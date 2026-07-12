@@ -1,5 +1,6 @@
 use super::image_paths::list_local_image_files;
 use super::*;
+use crate::model_registry::ModelRef;
 
 pub(crate) const APPROVAL_LEVEL_OPTIONS: [&str; 3] = ["default", "auto-approval", "full-approval"];
 pub(crate) const LLM_HTTP_VERSION_OPTIONS: [&str; 2] = ["http1.1", "http2"];
@@ -38,11 +39,11 @@ impl TuiShell {
     }
 
     pub fn select_next_model(&mut self) {
-        if self.runtime.config().models.is_empty() {
+        let total = self.runtime.config().flatten_models().len();
+        if total == 0 {
             return;
         }
-        self.model_picker_index =
-            (self.model_picker_index + 1) % self.runtime.config().models.len();
+        self.model_picker_index = (self.model_picker_index + 1) % total;
     }
 
     pub fn select_next_language(&mut self) {
@@ -64,11 +65,12 @@ impl TuiShell {
     }
 
     pub fn select_prev_model(&mut self) {
-        if self.runtime.config().models.is_empty() {
+        let total = self.runtime.config().flatten_models().len();
+        if total == 0 {
             return;
         }
         if self.model_picker_index == 0 {
-            self.model_picker_index = self.runtime.config().models.len() - 1;
+            self.model_picker_index = total - 1;
         } else {
             self.model_picker_index -= 1;
         }
@@ -103,15 +105,19 @@ impl TuiShell {
     }
 
     pub fn confirm_model_picker(&mut self) {
-        let Some(selected) = self
+        let Some(profile) = self
             .runtime
             .config()
-            .models
+            .flatten_models()
             .get(self.model_picker_index)
-            .map(|m| m.name.clone())
+            .cloned()
         else {
             self.model_picker_active = false;
             return;
+        };
+        let selected = ModelRef {
+            group_id: profile.group_id.clone(),
+            name: profile.name.clone(),
         };
 
         let mut config = self.runtime.config().clone();
@@ -136,7 +142,7 @@ impl TuiShell {
             self.apply_runtime_events();
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: t!("tui.model_picker.switch_success", model = selected).into_owned(),
+                content: t!("tui.model_picker.switch_success", model = selected.name).into_owned(),
                 tool_block: None,
             });
         }
@@ -334,7 +340,7 @@ impl TuiShell {
     }
 
     pub(super) fn open_model_picker(&mut self) {
-        if self.runtime.config().models.is_empty() {
+        if self.runtime.config().flatten_models().is_empty() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
                 content: "当前没有可选模型，请先 `/model add` 添加（或一行 `/model add <name> <api_base> <api_key>`）。"
@@ -347,12 +353,15 @@ impl TuiShell {
         self.model_picker_index = self
             .runtime
             .config()
-            .models
+            .flatten_models()
             .iter()
-            .position(|m| m.name == self.runtime.config().active_model)
+            .position(|profile| {
+                profile.group_id == self.runtime.config().active_model.group_id
+                    && profile.name == self.runtime.config().active_model.name
+            })
             .unwrap_or(0);
         self.model_display_titles = crate::model_catalog_display::build_model_display_titles(
-            &self.runtime.config().models,
+            &self.runtime.config().flatten_models(),
         );
         self.reset_primary_picker_overlay();
         self.model_picker_active = true;

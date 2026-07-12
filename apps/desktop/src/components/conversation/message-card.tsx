@@ -34,6 +34,7 @@ import type {
   ConversationMessageSnapshot,
   DesktopModelReasoningEffort,
   DesktopSnapshot,
+  ModelRef,
   PendingAssistantAux,
 } from "@/types";
 
@@ -137,7 +138,7 @@ function MessageCardImpl({
   canPickLocalFile: boolean;
   models: DesktopSnapshot["config"]["models"];
   catalogHints?: DesktopSnapshot["config"]["modelCatalogHints"];
-  activeModel: string;
+  activeModel: ModelRef;
   agentMode: DesktopAgentMode;
   onContinue(message: ConversationMessageSnapshot): void;
   onRewindSegmentsChange(segments: import("@/lib/composer-segment-model").RichSegment[]): void;
@@ -148,9 +149,9 @@ function MessageCardImpl({
   onRewindPaste(event: ReactClipboardEvent<HTMLTextAreaElement>): void;
   onRewindDragOver(event: ReactDragEvent<HTMLElement>): void;
   onRewindDrop(event: ReactDragEvent<HTMLElement>): void;
-  onModelSelect(name: string): void;
-  onModelReasoningEffortSelect(name: string, reasoningEffort: DesktopModelReasoningEffort): void;
-  onModelThinkingEnabledSelect?(name: string, enabled: boolean): void | Promise<boolean>;
+  onModelSelect(ref: ModelRef): void;
+  onModelReasoningEffortSelect(ref: ModelRef, reasoningEffort: DesktopModelReasoningEffort): void;
+  onModelThinkingEnabledSelect?(ref: ModelRef, enabled: boolean): void | Promise<boolean>;
   onAgentModeChange(mode: DesktopAgentMode): void;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;

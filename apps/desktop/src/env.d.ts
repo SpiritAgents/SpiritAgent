@@ -46,6 +46,9 @@ import type {
   HostTextFileStatResult,
   WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
+  ApprovalLevel,
+  LocalFileComposerRoute,
+  WorkLocationKind,
 } from './types';
 
 declare global {
@@ -64,6 +67,7 @@ declare global {
     previewModels(request: PreviewModelsRequest): Promise<PreviewModelsResponse>;
     removeModel(name: string): Promise<DesktopSnapshot>;
     removeProviderModels(provider: DesktopModelProvider): Promise<DesktopSnapshot>;
+    removeProviderGroup(request: import('./types').RemoveProviderGroupRequest): Promise<DesktopSnapshot>;
     addMcpServer(request: AddMcpServerRequest): Promise<DesktopSnapshot>;
     deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot>;
     saveHookEntry(request: SaveHookEntryRequest): Promise<DesktopSnapshot>;
@@ -92,9 +96,9 @@ declare global {
     compactHistory(): Promise<DesktopSnapshot>;
     submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot>;
     setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot>;
-    setApprovalLevel(approvalLevel: import('@spiritagent/host-internal').ApprovalLevel): Promise<DesktopSnapshot>;
+    setApprovalLevel(approvalLevel: ApprovalLevel): Promise<DesktopSnapshot>;
     setPendingGitBranch(branch: string): Promise<DesktopSnapshot>;
-    setWorkLocation(workLocation: import('@spiritagent/host-internal').WorkLocationKind): Promise<DesktopSnapshot>;
+    setWorkLocation(workLocation: WorkLocationKind): Promise<DesktopSnapshot>;
     checkoutGitBranch(request: import('./types.js').CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
     mergeWorktreeToMain(): Promise<DesktopSnapshot>;
     pushGitBranch(): Promise<DesktopSnapshot>;
@@ -241,7 +245,7 @@ declare global {
     statHostTextFile(absolutePath: string): Promise<HostTextFileStatResult>;
     classifyLocalFileComposerRoute(
       absolutePath: string,
-    ): Promise<import('@spiritagent/host-internal').LocalFileComposerRoute>;
+    ): Promise<LocalFileComposerRoute>;
     pickWorkspaceDirectory(): Promise<string | null>;
     pickLocalFile(): Promise<string | null>;
     getPathForDroppedFile(file: File): string;

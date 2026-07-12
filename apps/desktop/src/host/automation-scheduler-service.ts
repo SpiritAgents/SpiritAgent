@@ -16,6 +16,7 @@ import {
 } from '@spiritagent/host-internal';
 
 import { cloneDesktopConfig } from './service-utils.js';
+import { modelExistsInGroup } from './model-config-access.js';
 import { loadGitHubAccessToken } from './github-auth-storage.js';
 import { spiritAgentDataDir, type DesktopConfigFile } from './storage.js';
 import { runDesktopAutomationOnce } from './automation-runner.js';
@@ -346,5 +347,9 @@ export function automationDefinitionNeedsApiKey(
   definition: HostAutomationDefinition,
   config: DesktopConfigFile,
 ): boolean {
-  return config.models.some((model) => model.name === definition.modelName);
+  return modelExistsInGroup(
+    config,
+    definition.modelRef.groupId,
+    definition.modelRef.name,
+  );
 }

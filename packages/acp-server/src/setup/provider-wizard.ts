@@ -1,12 +1,18 @@
-import type { ModelProviderId, ProviderModelTransportKind } from '@spiritagent/host-internal';
+import type {
+  ModelEntryV2,
+  ModelProviderId,
+  ProviderGroupV2,
+  ProviderModelTransportKind,
+} from '@spiritagent/host-internal';
 import {
+  defaultPresetProviderGroupId,
   listProviderConnectSiteOptions,
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
   resolveProviderConnectApiBase,
 } from '@spiritagent/host-internal';
 
-import type { SpiritModelProfile } from '../credentials/types.js';
+import type { ProviderSetupResult, SpiritModelProfile } from '../credentials/types.js';
 
 const DEFAULT_API_BASE = 'https://api.openai.com/v1';
 
@@ -182,6 +188,7 @@ export function validateCustomSetup(input: { apiBase?: string; apiKey?: string; 
 export function buildSetupProfile(input: {
   provider: ModelProviderId;
   modelName: string;
+  groupId?: string;
   transportKind?: ProviderModelTransportKind;
   providerSite?: string;
   alibabaWorkspaceId?: string;
@@ -191,9 +198,14 @@ export function buildSetupProfile(input: {
   vertexLocation?: string;
   apiBaseOverride?: string;
 }): SpiritModelProfile {
+  const groupId = input.groupId?.trim() || defaultPresetProviderGroupId(input.provider);
+  const name = input.modelName.trim();
+  const ref = { groupId, name };
   const transportKind = resolveSetupTransportKind(input.provider, input.transportKind);
   const profile: SpiritModelProfile = {
-    name: input.modelName.trim(),
+    groupId,
+    ref,
+    name,
     apiBase: input.apiBaseOverride?.trim() || '',
     reasoningEffort: 'medium',
     capabilities: ['chat', 'image'],
@@ -224,6 +236,49 @@ export function buildSetupProfile(input: {
     profile.apiBase = resolveProfileApiBase(profile);
   }
   return profile;
+}
+
+export function buildProviderSetupResult(input: {
+  provider: ModelProviderId;
+  modelName: string;
+  groupId?: string;
+  transportKind?: ProviderModelTransportKind;
+  providerSite?: string;
+  alibabaWorkspaceId?: string;
+  awsRegion?: string;
+  azureResourceName?: string;
+  vertexProject?: string;
+  vertexLocation?: string;
+  apiBaseOverride?: string;
+}): Pick<ProviderSetupResult, 'groupId' | 'group' | 'model' | 'providerScope'> {
+  const profile = buildSetupProfile(input);
+  const group: Omit<ProviderGroupV2, 'models'> = {
+    id: profile.groupId,
+    provider: profile.provider ?? 'custom',
+    apiBase: profile.apiBase,
+    ...(profile.transportKind ? { transportKind: profile.transportKind } : {}),
+    ...(profile.providerSite ? { providerSite: profile.providerSite } : {}),
+    ...(profile.alibabaWorkspaceId ? { alibabaWorkspaceId: profile.alibabaWorkspaceId } : {}),
+    ...(profile.awsRegion ? { awsRegion: profile.awsRegion } : {}),
+    ...(profile.azureResourceName ? { azureResourceName: profile.azureResourceName } : {}),
+    ...(profile.vertexProject ? { vertexProject: profile.vertexProject } : {}),
+    ...(profile.vertexLocation ? { vertexLocation: profile.vertexLocation } : {}),
+  };
+  const model: ModelEntryV2 = {
+    name: profile.name,
+    reasoningEffort: profile.reasoningEffort ?? 'medium',
+    ...(profile.supportedReasoningEfforts !== undefined
+      ? { supportedReasoningEfforts: profile.supportedReasoningEfforts }
+      : {}),
+    ...(profile.capabilities !== undefined ? { capabilities: profile.capabilities } : {}),
+    ...(profile.contextLength !== undefined ? { contextLength: profile.contextLength } : {}),
+  };
+  return {
+    groupId: profile.groupId,
+    group,
+    model,
+    providerScope: input.provider,
+  };
 }
 
 export function providerNeedsSiteSelection(provider: ModelProviderId): boolean {

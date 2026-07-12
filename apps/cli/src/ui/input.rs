@@ -109,7 +109,7 @@ pub(in crate::ui) fn build_footer_line(app: &TuiViewModel, width: usize) -> Line
         "{}{}{}{}",
         left_prefix, approval_label, left_after_approval, left_suffix_plain
     );
-    let right_label = app.config.active_model.as_str();
+    let right_label = app.config.active_model_name();
     let side_padding = if width >= 12 {
         2
     } else if width >= 6 {

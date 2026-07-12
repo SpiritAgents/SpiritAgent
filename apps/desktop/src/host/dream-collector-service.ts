@@ -103,7 +103,7 @@ export function startDreamCollectorIfNeeded(ctx: DreamCollectorServiceContext): 
   const collectorInput = {
     workspaceRoot: state.workspaceRoot,
     gitBranch: state.git.branch,
-    collectorModel: lightweightModel.name,
+    collectorModel: lightweightModel.profile.ref,
     config: cloneDesktopConfig(state.config),
     planMetadata: buildDreamCollectorPlanMetadata(state.metadata.planMetadata),
   };
