@@ -1091,7 +1091,7 @@ export interface DesktopAutomationDefinition {
   overview: string;
   trigger: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel: ApprovalLevel;
   enabled: boolean;
@@ -1110,7 +1110,7 @@ export interface DesktopCreateAutomationRequest {
   overview: string;
   trigger: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel: ApprovalLevel;
   enabled?: boolean;
@@ -1121,7 +1121,7 @@ export interface DesktopUpdateAutomationRequest {
   overview?: string;
   trigger?: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
   workspaceRoot?: string;
-  modelName?: string;
+  modelRef?: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
   approvalLevel?: ApprovalLevel;
   enabled?: boolean;

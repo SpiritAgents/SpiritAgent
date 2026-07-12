@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { parseModelRef, type ModelRef } from './config-v2.js';
 import type { ModelReasoningEffort } from './reasoning-effort.js';
 import { normalizeApprovalLevel, type ApprovalLevel } from './tools.js';
 
@@ -34,7 +35,7 @@ export interface HostAutomationDefinition {
   overview: string;
   trigger: HostAutomationTrigger;
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: ModelReasoningEffort;
   approvalLevel: ApprovalLevel;
   enabled: boolean;
@@ -73,7 +74,7 @@ export interface HostAutomationCreateInput {
   overview: string;
   trigger: HostAutomationTrigger;
   workspaceRoot: string;
-  modelName: string;
+  modelRef: ModelRef;
   reasoningEffort?: ModelReasoningEffort;
   approvalLevel: ApprovalLevel;
   enabled?: boolean;
@@ -84,7 +85,7 @@ export interface HostAutomationUpdateInput {
   overview?: string;
   trigger?: HostAutomationTrigger;
   workspaceRoot?: string;
-  modelName?: string;
+  modelRef?: ModelRef;
   reasoningEffort?: ModelReasoningEffort;
   approvalLevel?: ApprovalLevel;
   enabled?: boolean;
@@ -403,7 +404,7 @@ export class HostAutomationStore {
       overview: normalizeNonEmpty(input.overview, 'overview'),
       trigger,
       workspaceRoot: path.resolve(normalizeNonEmpty(input.workspaceRoot, 'workspaceRoot')),
-      modelName: normalizeNonEmpty(input.modelName, 'modelName'),
+      modelRef: normalizeAutomationModelRef(input.modelRef, 'modelRef'),
       ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}),
       approvalLevel: normalizeApprovalLevel(input.approvalLevel),
       enabled: input.enabled !== false,
@@ -454,8 +455,8 @@ export class HostAutomationStore {
       if (patch.workspaceRoot !== undefined) {
         file.definition.workspaceRoot = path.resolve(normalizeNonEmpty(patch.workspaceRoot, 'workspaceRoot'));
       }
-      if (patch.modelName !== undefined) {
-        file.definition.modelName = normalizeNonEmpty(patch.modelName, 'modelName');
+      if (patch.modelRef !== undefined) {
+        file.definition.modelRef = normalizeAutomationModelRef(patch.modelRef, 'modelRef');
       }
       if (patch.reasoningEffort !== undefined) {
         file.definition.reasoningEffort = patch.reasoningEffort;
@@ -679,7 +680,8 @@ function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition
   if (typeof record.workspaceRoot !== 'string' || !record.workspaceRoot.trim()) {
     return undefined;
   }
-  if (typeof record.modelName !== 'string' || !record.modelName.trim()) {
+  const modelRef = parseModelRef(record.modelRef);
+  if (!modelRef) {
     return undefined;
   }
   const createdAtUnixMs =
@@ -692,7 +694,7 @@ function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition
     overview: record.overview.trim(),
     trigger,
     workspaceRoot: path.resolve(record.workspaceRoot.trim()),
-    modelName: record.modelName.trim(),
+    modelRef,
     ...(record.reasoningEffort ? { reasoningEffort: record.reasoningEffort } : {}),
     approvalLevel: normalizeApprovalLevel(record.approvalLevel),
     enabled: record.enabled !== false,
@@ -747,6 +749,14 @@ function normalizeAutomationRun(value: unknown): HostAutomationRun | undefined {
       ? { error: record.error.trim() }
       : {}),
   };
+}
+
+function normalizeAutomationModelRef(value: ModelRef, field: string): ModelRef {
+  const modelRef = parseModelRef(value);
+  if (!modelRef) {
+    throw new Error(`${field} must be a valid modelRef.`);
+  }
+  return modelRef;
 }
 
 function normalizeNonEmpty(value: string, field: string): string {

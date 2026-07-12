@@ -31,8 +31,8 @@ import {
   resolveModelProfile,
   type ResolvedModelProfile,
 } from './model-config-access.js';
+import { modelRefKey } from '@spiritagent/host-internal/config-v2';
 import { modelProviderKeyScope } from './provider-api-key.js';
-import { findModelRefByName } from './model-config-access.js';
 import {
   chatsDirPath,
   loadHostMetadata,
@@ -88,13 +88,13 @@ export async function runDesktopAutomationOnce(
   deps.onRunUpdated?.(input.definition.id);
 
   try {
-    const modelRef = findModelRefByName(input.config, input.definition.modelName);
-    if (!modelRef) {
-      throw new Error(`Model not found: ${input.definition.modelName}`);
+    const modelRef = input.definition.modelRef;
+    if (!modelExistsInGroup(input.config, modelRef.groupId, modelRef.name)) {
+      throw new Error(`Model not found: ${modelRefKey(modelRef)}`);
     }
     const apiKey = await resolveApiKeyForConfigModel(input.config, modelRef);
     if (!apiKey) {
-      throw new Error(`Missing API key for model: ${input.definition.modelName}`);
+      throw new Error(`Missing API key for model: ${modelRefKey(modelRef)}`);
     }
 
     const profile = resolveModelProfile(input.config, modelRef);
@@ -113,7 +113,7 @@ export async function runDesktopAutomationOnce(
 
     const transportConfig = buildAutomationTransportConfig({
       apiKey,
-      model: input.definition.modelName,
+      model: modelRef.name,
       baseUrl: profile?.apiBase ?? currentApiBase(input.config),
       workspaceRoot: input.definition.workspaceRoot,
       profile: profile ?? undefined,
