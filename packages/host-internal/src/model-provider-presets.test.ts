@@ -12,10 +12,12 @@ import {
   resolveProviderConnectApiBase,
   resolveProviderConnectSiteApiBase,
 } from './model-provider-presets.js';
+import { cloudflareAiGatewayApiBaseFromAccountId } from './cloudflare-ai-gateway-resource.js';
 
 test('parse model provider helpers accept canonical ids and reject invalid values', () => {
   assert.equal(parseModelProviderId('alibaba'), 'alibaba');
   assert.equal(parseModelProviderId('vercel-ai-gateway'), 'vercel-ai-gateway');
+  assert.equal(parseModelProviderId('cloudflare-ai-gateway'), 'cloudflare-ai-gateway');
   assert.equal(parseModelProviderId('openrouter'), 'openrouter');
   assert.equal(parseModelProviderId('openai'), 'openai');
   assert.equal(parseModelProviderId('google'), 'google');
@@ -121,6 +123,25 @@ test('resolveProviderConnectApiBase returns OpenRouter preset base', () => {
   assert.equal(
     resolveProviderConnectApiBase('openrouter', 'anthropic'),
     'https://openrouter.ai/api/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Cloudflare AI Gateway preset base for all transports', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('cloudflare-ai-gateway', 'openai-compatible'),
+    'https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('cloudflare-ai-gateway', 'open-responses'),
+    'https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('cloudflare-ai-gateway', 'anthropic'),
+    'https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/v1',
+  );
+  assert.equal(
+    cloudflareAiGatewayApiBaseFromAccountId('0123456789abcdef0123456789abcdef'),
+    'https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1',
   );
 });
 

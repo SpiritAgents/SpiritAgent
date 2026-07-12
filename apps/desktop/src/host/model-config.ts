@@ -27,6 +27,7 @@ import {
   bedrockMantleApiBaseFromRegion,
   isBedrockMantleOpenAiModel,
   azureApiBaseFromResourceName,
+  cloudflareAiGatewayApiBaseFromAccountId,
   vertexApiBaseFromProjectAndLocation,
   type ProviderListedModelEntry,
 } from '@spiritagent/host-internal';
@@ -89,7 +90,7 @@ function inferProviderSiteFromStoredApiBase(
 export function resolveProfileApiBase(
   profile: Pick<
     ModelProfileSnapshot,
-    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode'
+    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'cloudflareAccountId' | 'cloudflareGatewayId' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode'
   >,
 ): string {
   if (profile.provider === 'amazon-bedrock') {
@@ -121,6 +122,18 @@ export function resolveProfileApiBase(
       return trimmed;
     }
     throw new Error('Azure 模型缺少 azureResourceName 配置。');
+  }
+
+  if (profile.provider === 'cloudflare-ai-gateway') {
+    const accountId = profile.cloudflareAccountId?.trim();
+    if (accountId) {
+      return cloudflareAiGatewayApiBaseFromAccountId(accountId);
+    }
+    const trimmed = profile.apiBase?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+    throw new Error('Cloudflare AI Gateway 模型缺少 cloudflareAccountId 配置。');
   }
 
   if (profile.provider && profile.provider !== 'custom') {
@@ -299,6 +312,9 @@ export function buildPrimaryTransportConfig(input: {
     | 'supportedReasoningEfforts'
     | 'thinkingEnabled'
     | 'awsRegion'
+    | 'azureResourceName'
+    | 'cloudflareAccountId'
+    | 'cloudflareGatewayId'
     | 'vertexProject'
     | 'vertexLocation'
   >;
@@ -381,6 +397,7 @@ export function buildPrimaryTransportConfig(input: {
         : input.profile?.provider === 'xai'
           ? 'xai'
           : input.profile?.provider === 'vercel-ai-gateway' ||
+              input.profile?.provider === 'cloudflare-ai-gateway' ||
               input.profile?.provider === 'openrouter'
             ? undefined
             : 'open-responses-compatible';
@@ -390,6 +407,7 @@ export function buildPrimaryTransportConfig(input: {
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     });
     const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
+    const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
 
     return {
       transportKind: 'open-responses',
@@ -400,6 +418,7 @@ export function buildPrimaryTransportConfig(input: {
       spiritAgentMode,
       ...(responsesProvider ? { responsesProvider } : {}),
       ...(llmVendor ? { llmVendor } : {}),
+      ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
       ...(input.profile?.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
         : {}),
@@ -425,12 +444,14 @@ export function buildPrimaryTransportConfig(input: {
       },
     );
     const explicitThinking = resolveAgentAnthropicExplicitThinking(input.profile, input.model);
+    const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
     return {
       transportKind: 'anthropic',
       apiKey: input.apiKey,
       model: input.model,
       baseUrl: input.baseUrl,
       workspaceRoot: input.workspaceRoot,
+      ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
       ...(input.profile?.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
         : {}),
@@ -489,12 +510,14 @@ export function buildPrimaryTransportConfig(input: {
   const vertexLocation = input.profile?.vertexLocation?.trim();
   const vertexClientEmail = vertexCredentials?.clientEmail?.trim();
   const vertexPrivateKey = vertexCredentials?.privateKey?.trim();
+  const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
   return {
     apiKey: input.apiKey,
     model: input.model,
     baseUrl: input.baseUrl,
     workspaceRoot: input.workspaceRoot,
     ...(llmVendor ? { llmVendor } : {}),
+    ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
     ...(vertexProject ? { vertexProject } : {}),
     ...(vertexLocation ? { vertexLocation } : {}),
     ...(vertexClientEmail ? { vertexClientEmail } : {}),
@@ -674,6 +697,7 @@ export async function loadPreviewModelsForTransport(input: {
   vertexLocation?: string;
   vertexClientEmail?: string;
   vertexPrivateKey?: string;
+  cloudflareAccountId?: string;
   forceRefresh: boolean;
 }): Promise<LoadedPreviewModelsResult> {
   const cached = await readModelCatalogCache(
@@ -703,6 +727,7 @@ export async function loadPreviewModelsForTransport(input: {
     ...(input.vertexLocation ? { vertexLocation: input.vertexLocation } : {}),
     ...(input.vertexClientEmail ? { vertexClientEmail: input.vertexClientEmail } : {}),
     ...(input.vertexPrivateKey ? { vertexPrivateKey: input.vertexPrivateKey } : {}),
+    ...(input.cloudflareAccountId ? { cloudflareAccountId: input.cloudflareAccountId } : {}),
   });
   const modelCatalog = previewModelCatalogForProvider(input.provider, input.transportKind, listedModels);
   const modelIds = listedModels.map((entry) => entry.id);

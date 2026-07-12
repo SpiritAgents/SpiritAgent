@@ -20,7 +20,10 @@ use crate::{
         model_add_alibaba_site_ids, model_add_alibaba_site_requires_workspace_id,
         model_add_alibaba_token_plan_api_base,
         azure_api_base_from_resource_name,
+        cloudflare_ai_gateway_api_base_from_account_id,
         is_valid_azure_resource_name,
+        is_valid_cloudflare_account_id,
+        is_valid_cloudflare_gateway_id,
     },
     model_registry::{ModelProvider, ModelTransportKind},
     rules::{RuleEntry, RuleScope},
@@ -67,6 +70,13 @@ fn model_add_volcengine_provider_index() -> usize {
         .iter()
         .position(|id| id == "volcengine")
         .unwrap_or(14)
+}
+
+fn model_add_cloudflare_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "cloudflare-ai-gateway")
+        .unwrap_or(10)
 }
 
 fn model_add_siliconflow_provider_index() -> usize {
@@ -279,7 +289,8 @@ fn model_add_provider_label(id: &str) -> String {
         "xai" => t!("form.model.provider.xai"),
         "anthropic" => t!("form.model.provider.anthropic"),
         "deepseek" => t!("form.model.provider.deepseek"),
-        "vercel-ai-gateway" => t!("form.model.provider.vercel_ai_gateway"),
+    "vercel-ai-gateway" => t!("form.model.provider.vercel_ai_gateway"),
+        "cloudflare-ai-gateway" => t!("form.model.provider.cloudflare_ai_gateway"),
         "openrouter" => t!("form.model.provider.openrouter"),
         "fireworks-ai" => t!("form.model.provider.fireworks-ai"),
         "moonshot-ai" => t!("form.model.provider.moonshot-ai"),
@@ -463,6 +474,58 @@ fn model_add_volcengine_transport_field(selected: usize) -> BottomFormFieldView 
     }
 }
 
+fn model_add_cloudflare_transport_field(selected: usize) -> BottomFormFieldView {
+    model_add_transport_field(selected)
+}
+
+fn model_add_cloudflare_account_id_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.cloudflare_account_id.label").into_owned(),
+        help: t!("form.model.field.cloudflare_account_id.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.cloudflare_account_id.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
+fn model_add_cloudflare_gateway_id_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.cloudflare_gateway_id.label").into_owned(),
+        help: t!("form.model.field.cloudflare_gateway_id.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.cloudflare_gateway_id.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
+fn model_add_cloudflare_api_token_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.cloudflare_api_token.label").into_owned(),
+        help: t!("form.model.field.cloudflare_api_token.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.cloudflare_api_token.placeholder").into_owned(),
+            cursor,
+            mask: true,
+            disabled: false,
+        },
+    }
+}
+
 fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> ModelTransportKind {
     match provider {
         ModelProvider::Anthropic => ModelTransportKind::Anthropic,
@@ -472,6 +535,16 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
                     ModelTransportKind::OpenResponses
                 } else {
                     ModelTransportKind::OpenAiCompatible
+                }
+            }
+            _ => ModelTransportKind::OpenAiCompatible,
+        },
+        ModelProvider::CloudflareAiGateway => match form.fields.get(3).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
+                match *selected {
+                    1 => ModelTransportKind::OpenResponses,
+                    2 => ModelTransportKind::Anthropic,
+                    _ => ModelTransportKind::OpenAiCompatible,
                 }
             }
             _ => ModelTransportKind::OpenAiCompatible,
@@ -592,6 +665,22 @@ fn model_add_model_name_field(value: &str) -> BottomFormFieldView {
         editor: BottomFormFieldEditorView::Text {
             value,
             placeholder: t!("form.model.field.model_name.placeholder").into_owned(),
+            cursor,
+            mask: false,
+            disabled: false,
+        },
+    }
+}
+
+fn model_add_cloudflare_model_name_field(value: &str) -> BottomFormFieldView {
+    let value = value.to_string();
+    let cursor = value.chars().count();
+    BottomFormFieldView {
+        label: t!("form.model.field.cloudflare_model_name.label").into_owned(),
+        help: t!("form.model.field.cloudflare_model_name.help").into_owned(),
+        editor: BottomFormFieldEditorView::Text {
+            value,
+            placeholder: t!("form.model.field.cloudflare_model_name.placeholder").into_owned(),
             cursor,
             mask: false,
             disabled: false,
@@ -846,6 +935,37 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
     };
 
+    let cloudflare_transport_selected = match form.fields.get(3).map(|f| &f.editor) {
+        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
+            (*selected).min(2)
+        }
+        _ => 0,
+    };
+    let cloudflare_account_raw =
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
+            bottom_form_text_value(form, 1)
+        } else {
+            ""
+        };
+    let cloudflare_gateway_raw =
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
+            bottom_form_text_value(form, 2)
+        } else {
+            ""
+        };
+    let cloudflare_name_raw =
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
+            bottom_form_text_value(form, 4)
+        } else {
+            ""
+        };
+    let cloudflare_context_length_raw =
+        if old_len == 7 && provider_idx == model_add_cloudflare_provider_index() {
+            bottom_form_text_value(form, 5)
+        } else {
+            ""
+        };
+
     let name_raw = if old_len == 7 || old_len == 5 {
         bottom_form_text_value(form, if old_len == 5 { 2 } else { 3 })
     } else {
@@ -959,6 +1079,16 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_volcengine_transport_field(volcengine_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
+    } else if provider_idx == model_add_cloudflare_provider_index() {
+        vec![
+            model_add_provider_field(provider_idx),
+            model_add_cloudflare_account_id_field(cloudflare_account_raw),
+            model_add_cloudflare_gateway_id_field(cloudflare_gateway_raw),
+            model_add_cloudflare_transport_field(cloudflare_transport_selected),
+            model_add_cloudflare_model_name_field(cloudflare_name_raw),
+            model_add_context_length_field(cloudflare_context_length_raw),
+            model_add_cloudflare_api_token_field(api_key_raw),
+        ]
     } else if model_add_provider_id_at_choice_index(provider_idx) == Some("azure") {
         vec![
             model_add_provider_field(provider_idx),
@@ -1032,6 +1162,8 @@ pub(crate) struct ParsedModelAddForm {
     pub api_key: String,
     pub context_length: Option<u64>,
     pub azure_resource_name: Option<String>,
+    pub cloudflare_account_id: Option<String>,
+    pub cloudflare_gateway_id: Option<String>,
     pub vertex_project: Option<String>,
     pub vertex_location: Option<String>,
     pub vertex_client_email: Option<String>,
@@ -1682,6 +1814,55 @@ pub(crate) fn parse_model_add_connection(
             api_key,
             context_length,
             azure_resource_name: Some(azure_resource_name),
+            cloudflare_account_id: None,
+            cloudflare_gateway_id: None,
+            vertex_project: None,
+            vertex_location: None,
+            vertex_client_email: None,
+            vertex_private_key: None,
+            provider_site: None,
+            alibaba_workspace_id: None,
+            alibaba_billing_mode: None,
+        });
+    }
+
+    if provider == ModelProvider::CloudflareAiGateway {
+        if form.fields.len() != 7 {
+            return Err(t!("form.model.validation.invalid_form_kind").into_owned());
+        }
+        let cloudflare_account_id = bottom_form_text_value(form, 1).trim().to_string();
+        if cloudflare_account_id.is_empty() {
+            return Err(t!("form.model.validation.cloudflare_account_id_empty").into_owned());
+        }
+        if !is_valid_cloudflare_account_id(&cloudflare_account_id) {
+            return Err(t!("form.model.validation.cloudflare_account_id_invalid").into_owned());
+        }
+        let cloudflare_gateway_id = bottom_form_text_value(form, 2).trim().to_string();
+        if cloudflare_gateway_id.is_empty() {
+            return Err(t!("form.model.validation.cloudflare_gateway_id_empty").into_owned());
+        }
+        if !is_valid_cloudflare_gateway_id(&cloudflare_gateway_id) {
+            return Err(t!("form.model.validation.cloudflare_gateway_id_invalid").into_owned());
+        }
+        let model_name = bottom_form_text_value(form, 4).trim().to_string();
+        if model_name.is_empty() {
+            return Err(t!("form.model.validation.name_empty").into_owned());
+        }
+        let context_length = parse_model_context_length_field(&bottom_form_text_value(form, 5))?;
+        if api_key.is_empty() {
+            return Err(t!("form.model.validation.cloudflare_api_token_empty").into_owned());
+        }
+        return Ok(ParsedModelAddForm {
+            provider,
+            transport_kind,
+            bulk: false,
+            model_name: Some(model_name),
+            api_base: cloudflare_ai_gateway_api_base_from_account_id(&cloudflare_account_id),
+            api_key,
+            context_length,
+            azure_resource_name: None,
+            cloudflare_account_id: Some(cloudflare_account_id),
+            cloudflare_gateway_id: Some(cloudflare_gateway_id),
             vertex_project: None,
             vertex_location: None,
             vertex_client_email: None,
@@ -1850,6 +2031,8 @@ pub(crate) fn parse_model_add_connection(
         api_key,
         context_length,
         azure_resource_name: None,
+        cloudflare_account_id: None,
+        cloudflare_gateway_id: None,
         vertex_project,
         vertex_location,
         vertex_client_email,
@@ -2935,6 +3118,47 @@ mod tests {
             parsed.azure_resource_name.as_deref(),
             Some("my-openai-resource")
         );
+    }
+
+    #[test]
+    fn model_add_form_parses_cloudflare_ai_gateway_connection() {
+        let mut form = new_model_add_form();
+        if let Some(f) = form.fields.get_mut(0) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 5;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        assert_eq!(form.fields.len(), 7);
+        form.selected_field = 1;
+        insert_text(&mut form, "0123456789abcdef0123456789abcdef");
+        form.selected_field = 2;
+        insert_text(&mut form, "my-gateway");
+        if let Some(f) = form.fields.get_mut(3) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 2;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 4;
+        insert_text(&mut form, "openai/gpt-4.1-mini");
+        form.selected_field = 6;
+        insert_text(&mut form, "cf-token");
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::CloudflareAiGateway);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
+        assert!(!parsed.bulk);
+        assert_eq!(parsed.model_name.as_deref(), Some("openai/gpt-4.1-mini"));
+        assert_eq!(
+            parsed.api_base,
+            "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1"
+        );
+        assert_eq!(parsed.api_key, "cf-token");
+        assert_eq!(
+            parsed.cloudflare_account_id.as_deref(),
+            Some("0123456789abcdef0123456789abcdef")
+        );
+        assert_eq!(parsed.cloudflare_gateway_id.as_deref(), Some("my-gateway"));
     }
 
     fn sample_rule_entry(scope: RuleScope, exists: bool, enabled: bool) -> RuleEntry {

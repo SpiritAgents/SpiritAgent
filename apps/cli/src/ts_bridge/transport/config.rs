@@ -17,8 +17,9 @@ use super::{
     TransportHost,
     keys::{resolve_optional_key_from_store},
     provider::{
-        anthropic_effort_value, attach_google_vertex_transport_fields, model_capabilities_json,
-        model_provider_vendor, open_responses_sdk_provider,
+        anthropic_effort_value, attach_cloudflare_ai_gateway_transport_fields,
+        attach_google_vertex_transport_fields, model_capabilities_json, model_provider_vendor,
+        open_responses_sdk_provider,
     },
 };
 
@@ -420,6 +421,7 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
         }
     }
     attach_google_vertex_transport_fields(&mut transport, &active)?;
+    attach_cloudflare_ai_gateway_transport_fields(&mut transport, &active)?;
     attach_video_generation_config(host, &mut transport, config)?;
     Ok(transport)
 }

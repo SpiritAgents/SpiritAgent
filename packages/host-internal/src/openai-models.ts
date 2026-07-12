@@ -1057,6 +1057,7 @@ export interface ListProviderModelIdsOptions {
   vertexLocation?: string;
   vertexClientEmail?: string;
   vertexPrivateKey?: string;
+  cloudflareAccountId?: string;
   signal?: AbortSignal;
 }
 
@@ -1272,6 +1273,12 @@ export async function listProviderModels(
 
   if (options.provider === 'openrouter') {
     return listOpenRouterModels(options);
+  }
+
+  if (options.provider === 'cloudflare-ai-gateway') {
+    throw new Error(
+      'Cloudflare AI Gateway 无模型目录 API，请手动填写模型 ID（如 openai/gpt-4.1-mini 或 @cf/meta/llama-3.1-8b-instruct）。',
+    );
   }
 
   if (options.provider === 'volcengine') {

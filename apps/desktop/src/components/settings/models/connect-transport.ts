@@ -56,6 +56,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
         connectTransportOptionCatalog.openResponsesApi,
       ];
     case "openrouter":
+    case "cloudflare-ai-gateway":
     case "custom":
       return [
         connectTransportOptionCatalog.chatCompletions,
@@ -110,6 +111,7 @@ export function providerSupportsConnectTransportPicker(
     provider === "alibaba" ||
     provider === "custom" ||
     provider === "openrouter" ||
+    provider === "cloudflare-ai-gateway" ||
     provider === "fireworks-ai" ||
     provider === "volcengine"
   );

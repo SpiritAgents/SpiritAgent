@@ -32,7 +32,7 @@ export function providerSupportsModelCatalogListing(input: {
   if (!input.provider) {
     return false;
   }
-  if (input.provider === 'azure') {
+  if (input.provider === 'azure' || input.provider === 'cloudflare-ai-gateway') {
     return false;
   }
   if (input.provider === 'custom') {

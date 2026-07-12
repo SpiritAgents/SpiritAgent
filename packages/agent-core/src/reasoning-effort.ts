@@ -29,6 +29,7 @@ export type ModelReasoningProvider =
   | 'alibaba'
   | 'anthropic'
   | 'vercel-ai-gateway'
+  | 'cloudflare-ai-gateway'
   | 'openrouter'
   | 'fireworks-ai'
   | 'openai'
