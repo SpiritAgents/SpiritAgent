@@ -9,6 +9,7 @@ use std::{
 };
 
 pub const DEFAULT_API_BASE: &str = "https://api.openai.com/v1";
+pub const SPIRIT_CONFIG_SCHEMA_VERSION: u64 = 2;
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
 const KEYRING_SERVICE: &str = "SpiritAgent";
 const KEYRING_ACCOUNT_API_KEY: &str = "openai_api_key";
@@ -140,8 +141,154 @@ impl FromStr for ModelTransportKind {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ModelRef {
+    #[serde(rename = "groupId", alias = "group_id")]
+    pub group_id: String,
+    pub name: String,
+}
+
+impl ModelRef {
+    pub fn empty() -> Self {
+        Self {
+            group_id: String::new(),
+            name: String::new(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.group_id.trim().is_empty() || self.name.trim().is_empty()
+    }
+}
+
+pub fn model_refs_equal(a: &ModelRef, b: &ModelRef) -> bool {
+    a.group_id == b.group_id && a.name == b.name
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelEntry {
+    pub name: String,
+    #[serde(
+        rename = "reasoningEffort",
+        alias = "reasoning_effort",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub reasoning_effort: Option<String>,
+    #[serde(
+        rename = "thinkingEnabled",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub thinking_enabled: Option<bool>,
+    #[serde(
+        rename = "supportedReasoningEfforts",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub supported_reasoning_efforts: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<Vec<String>>,
+    #[serde(
+        rename = "contextLength",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub context_length: Option<u64>,
+    #[serde(
+        rename = "supportsThinkingType",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub supports_thinking_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderGroup {
+    pub id: String,
+    pub provider: ModelProvider,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(rename = "apiBase", alias = "api_base")]
+    pub api_base: String,
+    #[serde(
+        rename = "transportKind",
+        alias = "transport_kind",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub transport_kind: Option<String>,
+    #[serde(
+        rename = "providerSite",
+        alias = "provider_site",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub provider_site: Option<String>,
+    #[serde(
+        rename = "alibabaWorkspaceId",
+        alias = "alibaba_workspace_id",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub alibaba_workspace_id: Option<String>,
+    #[serde(
+        rename = "alibabaBillingMode",
+        alias = "alibaba_billing_mode",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub alibaba_billing_mode: Option<String>,
+    #[serde(
+        rename = "awsRegion",
+        alias = "aws_region",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub aws_region: Option<String>,
+    #[serde(
+        rename = "azureResourceName",
+        alias = "azure_resource_name",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub azure_resource_name: Option<String>,
+    #[serde(
+        rename = "cloudflareAccountId",
+        alias = "cloudflare_account_id",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub cloudflare_account_id: Option<String>,
+    #[serde(
+        rename = "cloudflareGatewayId",
+        alias = "cloudflare_gateway_id",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub cloudflare_gateway_id: Option<String>,
+    #[serde(
+        rename = "vertexProject",
+        alias = "vertex_project",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub vertex_project: Option<String>,
+    #[serde(
+        rename = "vertexLocation",
+        alias = "vertex_location",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub vertex_location: Option<String>,
+    pub models: Vec<ModelEntry>,
+}
+
+/// Resolved model profile: provider group connect fields merged with a model entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelProfile {
+    #[serde(rename = "groupId", alias = "group_id", default, skip_serializing_if = "String::is_empty")]
+    pub group_id: String,
     pub name: String,
     #[serde(rename = "apiBase", alias = "api_base")]
     pub api_base: String,
@@ -226,6 +373,11 @@ impl ModelProfile {
                 .iter()
                 .any(|capability| capability == "videoGeneration")
         })
+    }
+
+    pub fn supports_chat(&self) -> bool {
+        self.explicit_capabilities()
+            .is_none_or(|capabilities| capabilities.iter().any(|capability| capability == "chat"))
     }
 
     pub fn explicit_capabilities(&self) -> Option<Vec<String>> {
@@ -335,23 +487,33 @@ impl Default for NetworksConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
-    pub models: Vec<ModelProfile>,
+    #[serde(rename = "schemaVersion", alias = "schema_version", default = "default_schema_version")]
+    pub schema_version: u64,
+    #[serde(rename = "providerGroups", alias = "provider_groups", default)]
+    pub provider_groups: Vec<ProviderGroup>,
     #[serde(rename = "activeModel", alias = "active_model")]
-    pub active_model: String,
+    pub active_model: ModelRef,
     #[serde(
         rename = "imageGenerationModel",
         alias = "image_generation_model",
         default,
         skip_serializing_if = "Option::is_none"
     )]
-    pub image_generation_model: Option<String>,
+    pub image_generation_model: Option<ModelRef>,
     #[serde(
         rename = "videoGenerationModel",
         alias = "video_generation_model",
         default,
         skip_serializing_if = "Option::is_none"
     )]
-    pub video_generation_model: Option<String>,
+    pub video_generation_model: Option<ModelRef>,
+    #[serde(
+        rename = "lightweightChatModel",
+        alias = "lightweight_chat_model",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub lightweight_chat_model: Option<ModelRef>,
     #[serde(
         rename = "uiLocale",
         alias = "ui_locale",
@@ -365,20 +527,19 @@ pub struct AppConfig {
     pub extra: Map<String, Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct LegacyAppConfig {
-    api_base: String,
-    models: Vec<String>,
-    active_model: String,
+fn default_schema_version() -> u64 {
+    SPIRIT_CONFIG_SCHEMA_VERSION
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            models: vec![],
-            active_model: String::new(),
+            schema_version: SPIRIT_CONFIG_SCHEMA_VERSION,
+            provider_groups: vec![],
+            active_model: ModelRef::empty(),
             image_generation_model: None,
             video_generation_model: None,
+            lightweight_chat_model: None,
             ui_locale: None,
             networks: NetworksConfig::default(),
             extra: Map::new(),
@@ -386,32 +547,438 @@ impl Default for AppConfig {
     }
 }
 
+pub fn default_preset_provider_group_id(provider: ModelProvider) -> String {
+    provider.as_str().to_string()
+}
+
+pub fn resolve_model_profile_from_parts(
+    group: &ProviderGroup,
+    model: &ModelEntry,
+) -> Option<ModelProfile> {
+    if group.id.trim().is_empty() || model.name.trim().is_empty() {
+        return None;
+    }
+
+    let mut extra = Map::new();
+    if let Some(transport_kind) = group.transport_kind.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+        extra.insert(
+            "transportKind".to_string(),
+            Value::String(transport_kind.to_string()),
+        );
+    }
+    if let Some(site) = group.provider_site.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+        extra.insert("providerSite".to_string(), Value::String(site.to_string()));
+    }
+    if let Some(workspace_id) = group
+        .alibaba_workspace_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "alibabaWorkspaceId".to_string(),
+            Value::String(workspace_id.to_string()),
+        );
+    }
+    if let Some(billing_mode) = group
+        .alibaba_billing_mode
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "alibabaBillingMode".to_string(),
+            Value::String(billing_mode.to_string()),
+        );
+    }
+    if let Some(region) = group.aws_region.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+        extra.insert("awsRegion".to_string(), Value::String(region.to_string()));
+    }
+    if let Some(resource_name) = group
+        .azure_resource_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "azureResourceName".to_string(),
+            Value::String(resource_name.to_string()),
+        );
+    }
+    if let Some(account_id) = group
+        .cloudflare_account_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "cloudflareAccountId".to_string(),
+            Value::String(account_id.to_string()),
+        );
+    }
+    if let Some(gateway_id) = group
+        .cloudflare_gateway_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "cloudflareGatewayId".to_string(),
+            Value::String(gateway_id.to_string()),
+        );
+    }
+    if let Some(project) = group
+        .vertex_project
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert("vertexProject".to_string(), Value::String(project.to_string()));
+    }
+    if let Some(location) = group
+        .vertex_location
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "vertexLocation".to_string(),
+            Value::String(location.to_string()),
+        );
+    }
+    if let Some(capabilities) = model.capabilities.as_ref().filter(|caps| !caps.is_empty()) {
+        extra.insert("capabilities".to_string(), Value::Array(
+            capabilities.iter().map(|cap| Value::String(cap.clone())).collect(),
+        ));
+    }
+    if let Some(efforts) = model
+        .supported_reasoning_efforts
+        .as_ref()
+        .filter(|efforts| !efforts.is_empty())
+    {
+        extra.insert(
+            "supportedReasoningEfforts".to_string(),
+            Value::Array(
+                efforts
+                    .iter()
+                    .map(|effort| Value::String(effort.clone()))
+                    .collect(),
+            ),
+        );
+    }
+    if model.thinking_enabled == Some(false) {
+        extra.insert("thinkingEnabled".to_string(), Value::Bool(false));
+    }
+    if let Some(thinking_type) = model
+        .supports_thinking_type
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "supportsThinkingType".to_string(),
+            Value::String(thinking_type.to_string()),
+        );
+    }
+
+    Some(ModelProfile {
+        group_id: group.id.clone(),
+        name: model.name.clone(),
+        api_base: group.api_base.clone(),
+        provider: Some(group.provider),
+        reasoning_effort: model.reasoning_effort.clone(),
+        context_length: model.context_length,
+        extra,
+    })
+}
+
 impl AppConfig {
-    pub fn active_model_profile(&self) -> Option<&ModelProfile> {
-        self.models.iter().find(|m| m.name == self.active_model)
+    pub fn active_model_name(&self) -> &str {
+        self.active_model.name.as_str()
     }
 
-    pub fn active_model_profile_mut(&mut self) -> Option<&mut ModelProfile> {
-        self.models.iter_mut().find(|m| m.name == self.active_model)
+    pub fn find_provider_group(&self, group_id: &str) -> Option<&ProviderGroup> {
+        let normalized = group_id.trim();
+        if normalized.is_empty() {
+            return None;
+        }
+        self.provider_groups.iter().find(|group| group.id == normalized)
     }
 
-    pub fn image_generation_model_profile(&self) -> Option<&ModelProfile> {
-        let name = self.image_generation_model.as_deref()?;
-        self.models.iter().find(|m| m.name == name)
+    pub fn find_provider_group_mut(&mut self, group_id: &str) -> Option<&mut ProviderGroup> {
+        let normalized = group_id.trim();
+        if normalized.is_empty() {
+            return None;
+        }
+        self.provider_groups
+            .iter_mut()
+            .find(|group| group.id == normalized)
     }
 
-    pub fn video_generation_model_profile(&self) -> Option<&ModelProfile> {
-        let name = self.video_generation_model.as_deref()?;
-        self.models.iter().find(|m| m.name == name)
+    pub fn find_model_entry_in_group<'a>(
+        group: &'a ProviderGroup,
+        name: &str,
+    ) -> Option<&'a ModelEntry> {
+        let normalized = name.trim();
+        if normalized.is_empty() {
+            return None;
+        }
+        group.models.iter().find(|model| model.name == normalized)
     }
 
-    pub fn has_model(&self, name: &str) -> bool {
-        self.models.iter().any(|m| m.name == name)
+    pub fn find_model_entry_in_group_mut<'a>(
+        group: &'a mut ProviderGroup,
+        name: &str,
+    ) -> Option<&'a mut ModelEntry> {
+        let normalized = name.trim();
+        if normalized.is_empty() {
+            return None;
+        }
+        group.models.iter_mut().find(|model| model.name == normalized)
     }
 
-    pub fn add_model(&mut self, profile: ModelProfile) {
-        self.models.push(profile);
+    pub fn resolve_model_profile(&self, model_ref: &ModelRef) -> Option<ModelProfile> {
+        if model_ref.is_empty() {
+            return None;
+        }
+        let group = self.find_provider_group(&model_ref.group_id)?;
+        let model = Self::find_model_entry_in_group(group, &model_ref.name)?;
+        resolve_model_profile_from_parts(group, model)
     }
+
+    pub fn flatten_models(&self) -> Vec<ModelProfile> {
+        let mut resolved = Vec::new();
+        for group in &self.provider_groups {
+            for model in &group.models {
+                if let Some(profile) = resolve_model_profile_from_parts(group, model) {
+                    resolved.push(profile);
+                }
+            }
+        }
+        resolved
+    }
+
+    pub fn list_all_model_refs(&self) -> Vec<ModelRef> {
+        let mut refs = Vec::new();
+        for group in &self.provider_groups {
+            for model in &group.models {
+                refs.push(ModelRef {
+                    group_id: group.id.clone(),
+                    name: model.name.clone(),
+                });
+            }
+        }
+        refs
+    }
+
+    pub fn first_model_ref(&self) -> ModelRef {
+        let Some(group) = self.provider_groups.first() else {
+            return ModelRef::empty();
+        };
+        let Some(model) = group.models.first() else {
+            return ModelRef::empty();
+        };
+        ModelRef {
+            group_id: group.id.clone(),
+            name: model.name.clone(),
+        }
+    }
+
+    pub fn find_model_ref_by_name(&self, name: &str) -> Option<ModelRef> {
+        let normalized = name.trim();
+        if normalized.is_empty() {
+            return None;
+        }
+        for group in &self.provider_groups {
+            if group.models.iter().any(|model| model.name == normalized) {
+                return Some(ModelRef {
+                    group_id: group.id.clone(),
+                    name: normalized.to_string(),
+                });
+            }
+        }
+        None
+    }
+
+    pub fn has_model_in_group(&self, group_id: &str, name: &str) -> bool {
+        let Some(group) = self.find_provider_group(group_id) else {
+            return false;
+        };
+        Self::find_model_entry_in_group(group, name).is_some()
+    }
+
+    pub fn model_ref_exists(&self, model_ref: &ModelRef) -> bool {
+        self.resolve_model_profile(model_ref).is_some()
+    }
+
+    pub fn active_model_profile(&self) -> Option<ModelProfile> {
+        self.resolve_model_profile(&self.active_model)
+    }
+
+    pub fn active_provider_group_mut(&mut self) -> Option<&mut ProviderGroup> {
+        let group_id = self.active_model.group_id.clone();
+        self.find_provider_group_mut(&group_id)
+    }
+
+    pub fn active_model_entry_mut(&mut self) -> Option<&mut ModelEntry> {
+        let group_id = self.active_model.group_id.clone();
+        let name = self.active_model.name.clone();
+        let group = self.find_provider_group_mut(&group_id)?;
+        Self::find_model_entry_in_group_mut(group, &name)
+    }
+
+    pub fn image_generation_model_profile(&self) -> Option<ModelProfile> {
+        let model_ref = self.image_generation_model.as_ref()?;
+        self.resolve_model_profile(model_ref)
+    }
+
+    pub fn video_generation_model_profile(&self) -> Option<ModelProfile> {
+        let model_ref = self.video_generation_model.as_ref()?;
+        self.resolve_model_profile(model_ref)
+    }
+
+    pub fn lightweight_chat_model_profile(&self) -> Option<ModelProfile> {
+        let model_ref = self.lightweight_chat_model.as_ref()?;
+        self.resolve_model_profile(model_ref)
+    }
+
+    pub fn add_model_to_group(
+        &mut self,
+        group_id: &str,
+        provider: ModelProvider,
+        api_base: String,
+        connect: ProviderGroupConnectDraft,
+        entry: ModelEntry,
+    ) {
+        let normalized_group_id = group_id.trim().to_string();
+        if let Some(group) = self.find_provider_group_mut(&normalized_group_id) {
+            group.api_base = api_base;
+            connect.apply_to_group(group);
+            if !group.models.iter().any(|model| model.name == entry.name) {
+                group.models.push(entry);
+            }
+            return;
+        }
+
+        let mut group = ProviderGroup {
+            id: normalized_group_id,
+            provider,
+            label: None,
+            api_base,
+            transport_kind: None,
+            provider_site: None,
+            alibaba_workspace_id: None,
+            alibaba_billing_mode: None,
+            aws_region: None,
+            azure_resource_name: None,
+            cloudflare_account_id: None,
+            cloudflare_gateway_id: None,
+            vertex_project: None,
+            vertex_location: None,
+            models: vec![entry],
+        };
+        connect.apply_to_group(&mut group);
+        self.provider_groups.push(group);
+    }
+
+    pub fn remove_model_by_name(&mut self, name: &str) -> bool {
+        let normalized = name.trim();
+        if normalized.is_empty() {
+            return false;
+        }
+        let mut removed = false;
+        for group in &mut self.provider_groups {
+            let before = group.models.len();
+            group.models.retain(|model| model.name != normalized);
+            if group.models.len() != before {
+                removed = true;
+            }
+        }
+        self.provider_groups
+            .retain(|group| !group.models.is_empty());
+        removed
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ProviderGroupConnectDraft {
+    pub transport_kind: Option<String>,
+    pub provider_site: Option<String>,
+    pub alibaba_workspace_id: Option<String>,
+    pub alibaba_billing_mode: Option<String>,
+    pub aws_region: Option<String>,
+    pub azure_resource_name: Option<String>,
+    pub cloudflare_account_id: Option<String>,
+    pub cloudflare_gateway_id: Option<String>,
+    pub vertex_project: Option<String>,
+    pub vertex_location: Option<String>,
+}
+
+impl ProviderGroupConnectDraft {
+    fn apply_to_group(&self, group: &mut ProviderGroup) {
+        if let Some(value) = normalize_optional_string(self.transport_kind.clone()) {
+            group.transport_kind = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.provider_site.clone()) {
+            group.provider_site = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.alibaba_workspace_id.clone()) {
+            group.alibaba_workspace_id = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.alibaba_billing_mode.clone()) {
+            group.alibaba_billing_mode = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.aws_region.clone()) {
+            group.aws_region = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.azure_resource_name.clone()) {
+            group.azure_resource_name = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.cloudflare_account_id.clone()) {
+            group.cloudflare_account_id = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.cloudflare_gateway_id.clone()) {
+            group.cloudflare_gateway_id = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.vertex_project.clone()) {
+            group.vertex_project = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.vertex_location.clone()) {
+            group.vertex_location = Some(value);
+        }
+    }
+}
+
+pub fn make_test_app_config_with_models(
+    group_id: &str,
+    provider: ModelProvider,
+    api_base: &str,
+    model_names: &[&str],
+    active_name: &str,
+) -> AppConfig {
+    let mut cfg = AppConfig::default();
+    for name in model_names {
+        cfg.add_model_to_group(
+            group_id,
+            provider,
+            api_base.to_string(),
+            ProviderGroupConnectDraft::default(),
+            ModelEntry {
+                name: (*name).to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
+    }
+    cfg.active_model = ModelRef {
+        group_id: group_id.to_string(),
+        name: active_name.to_string(),
+    };
+    cfg
 }
 
 pub fn config_file_path() -> PathBuf {
@@ -433,36 +1000,24 @@ pub fn load_config() -> Result<AppConfig> {
 }
 
 fn deserialize_config(content: &str, path: &Path) -> Result<AppConfig> {
-    if let Ok(mut cfg) = serde_json::from_str::<AppConfig>(content) {
-        normalize_config(&mut cfg);
-        return Ok(cfg);
+    let raw: Value = serde_json::from_str(content)
+        .with_context(|| format!("解析配置失败: {}", path.display()))?;
+
+    let version = raw
+        .get("schemaVersion")
+        .or_else(|| raw.get("schema_version"))
+        .and_then(Value::as_u64);
+    if version != Some(SPIRIT_CONFIG_SCHEMA_VERSION) {
+        return Err(anyhow::anyhow!(
+            "config.json 须为 schemaVersion {}；请删除旧版配置后重新连接提供商。",
+            SPIRIT_CONFIG_SCHEMA_VERSION
+        ));
     }
 
-    let legacy: LegacyAppConfig = serde_json::from_str(content)
+    let mut cfg: AppConfig = serde_json::from_value(raw)
         .with_context(|| format!("解析配置失败: {}", path.display()))?;
-    let mut migrated = AppConfig {
-        models: legacy
-            .models
-            .into_iter()
-            .map(|name| ModelProfile {
-                name,
-                api_base: legacy.api_base.clone(),
-                provider: None,
-                reasoning_effort: None,
-                context_length: None,
-                extra: Map::new(),
-            })
-            .collect(),
-        active_model: legacy.active_model,
-        image_generation_model: None,
-        video_generation_model: None,
-        ui_locale: None,
-        networks: NetworksConfig::default(),
-        extra: Map::new(),
-    };
-    normalize_config(&mut migrated);
-    save_config(&migrated)?;
-    Ok(migrated)
+    normalize_config(&mut cfg);
+    Ok(cfg)
 }
 
 pub fn save_config(cfg: &AppConfig) -> Result<()> {
@@ -482,68 +1037,132 @@ fn serialize_config(cfg: &AppConfig) -> Result<String> {
 }
 
 fn normalize_config(cfg: &mut AppConfig) {
+    cfg.schema_version = SPIRIT_CONFIG_SCHEMA_VERSION;
     cfg.networks.llm_http_version =
         crate::ports::normalize_llm_http_version(&cfg.networks.llm_http_version);
 
-    if cfg.models.is_empty() {
-        cfg.active_model.clear();
+    if cfg.provider_groups.is_empty()
+        || cfg
+            .provider_groups
+            .iter()
+            .all(|group| group.models.is_empty())
+    {
+        cfg.active_model = ModelRef::empty();
         cfg.image_generation_model = None;
         cfg.video_generation_model = None;
+        cfg.lightweight_chat_model = None;
         return;
     }
 
-    if !cfg.models.iter().any(|m| m.name == cfg.active_model) {
-        cfg.active_model = cfg.models[0].name.clone();
+    if !cfg.model_ref_exists(&cfg.active_model) {
+        cfg.active_model = cfg.first_model_ref();
     }
 
-    cfg.image_generation_model =
-        normalize_image_generation_model(cfg.image_generation_model.take(), cfg.models.as_slice());
-    cfg.video_generation_model =
-        normalize_video_generation_model(cfg.video_generation_model.take(), cfg.models.as_slice());
+    let flattened = cfg.flatten_models();
+    cfg.image_generation_model = normalize_slot_model_ref(
+        cfg.image_generation_model.take(),
+        &flattened,
+        ModelProfile::supports_image_generation,
+    );
+    cfg.video_generation_model = normalize_slot_model_ref(
+        cfg.video_generation_model.take(),
+        &flattened,
+        ModelProfile::supports_video_generation,
+    );
+    cfg.lightweight_chat_model = normalize_lightweight_chat_model_ref(
+        cfg.lightweight_chat_model.take(),
+        &flattened,
+    );
 
-    for model in &mut cfg.models {
-        if model.api_base.trim().is_empty() {
-            model.api_base = DEFAULT_API_BASE.to_string();
+    for group in &mut cfg.provider_groups {
+        if group.api_base.trim().is_empty() {
+            group.api_base = DEFAULT_API_BASE.to_string();
         }
-        model.reasoning_effort = normalize_reasoning_effort_value(
-            normalize_optional_string(model.reasoning_effort.take()),
-            model.provider,
-            model.transport_kind(),
-            &model.name,
-        );
-        model.extra.remove("transportImplementation");
-        model.extra.remove("transport_implementation");
-        normalize_transport_kind(model);
+        let provider = group.provider;
+        let transport_kind = group
+            .transport_kind
+            .as_deref()
+            .and_then(|value| value.parse().ok())
+            .unwrap_or_else(|| match provider {
+                ModelProvider::Anthropic => ModelTransportKind::Anthropic,
+                ModelProvider::AmazonBedrock => ModelTransportKind::Bedrock,
+                ModelProvider::Azure => ModelTransportKind::OpenResponses,
+                _ => ModelTransportKind::OpenAiCompatible,
+            });
+        let normalized_transport = normalize_group_transport_kind(provider, transport_kind);
+        group.transport_kind = match normalized_transport {
+            ModelTransportKind::Anthropic
+            | ModelTransportKind::OpenResponses
+            | ModelTransportKind::Bedrock => Some(normalized_transport.as_str().to_string()),
+            ModelTransportKind::OpenAiCompatible => None,
+        };
+
+        for model in &mut group.models {
+            model.reasoning_effort = normalize_reasoning_effort_value(
+                normalize_optional_string(model.reasoning_effort.take()),
+                Some(provider),
+                normalized_transport,
+                &model.name,
+            );
+        }
     }
 }
 
-fn normalize_transport_kind(model: &mut ModelProfile) {
-    let mut transport_kind = model.transport_kind();
+fn normalize_group_transport_kind(
+    provider: ModelProvider,
+    transport_kind: ModelTransportKind,
+) -> ModelTransportKind {
+    let mut transport_kind = transport_kind;
     if matches!(
-        model.provider,
-        Some(ModelProvider::Google) | Some(ModelProvider::GoogleVertexAi)
+        provider,
+        ModelProvider::Google | ModelProvider::GoogleVertexAi
     ) && matches!(
         transport_kind,
         ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic
     ) {
         transport_kind = ModelTransportKind::OpenAiCompatible;
     }
-    if matches!(model.provider, Some(ModelProvider::GoogleVertexAi))
-        && transport_kind == ModelTransportKind::Bedrock
+    if provider == ModelProvider::GoogleVertexAi && transport_kind == ModelTransportKind::Bedrock
     {
         transport_kind = ModelTransportKind::OpenAiCompatible;
     }
-    model.extra.remove("transportKind");
-    model.extra.remove("transport_kind");
+    transport_kind
+}
 
-    if transport_kind == ModelTransportKind::Anthropic
-        || transport_kind == ModelTransportKind::OpenResponses
-        || transport_kind == ModelTransportKind::Bedrock
-    {
-        model.extra.insert(
-            "transportKind".to_string(),
-            Value::String(transport_kind.as_str().to_string()),
-        );
+fn normalize_slot_model_ref(
+    value: Option<ModelRef>,
+    models: &[ModelProfile],
+    predicate: impl Fn(&ModelProfile) -> bool,
+) -> Option<ModelRef> {
+    let model_ref = value?;
+    if model_ref.is_empty() {
+        return None;
+    }
+    let profile = models
+        .iter()
+        .find(|model| model.group_id == model_ref.group_id && model.name == model_ref.name)?;
+    if predicate(profile) {
+        Some(model_ref)
+    } else {
+        None
+    }
+}
+
+fn normalize_lightweight_chat_model_ref(
+    value: Option<ModelRef>,
+    models: &[ModelProfile],
+) -> Option<ModelRef> {
+    let model_ref = value?;
+    if model_ref.is_empty() {
+        return None;
+    }
+    let profile = models
+        .iter()
+        .find(|model| model.group_id == model_ref.group_id && model.name == model_ref.name)?;
+    if profile.supports_chat() {
+        Some(model_ref)
+    } else {
+        None
     }
 }
 
@@ -603,32 +1222,6 @@ pub(crate) fn normalize_reasoning_effort_value(
     })
 }
 
-fn normalize_image_generation_model(
-    value: Option<String>,
-    models: &[ModelProfile],
-) -> Option<String> {
-    let name = normalize_optional_string(value)?;
-    let profile = models.iter().find(|model| model.name == name)?;
-    if profile.supports_image_generation() {
-        Some(name)
-    } else {
-        None
-    }
-}
-
-fn normalize_video_generation_model(
-    value: Option<String>,
-    models: &[ModelProfile],
-) -> Option<String> {
-    let name = normalize_optional_string(value)?;
-    let profile = models.iter().find(|model| model.name == name)?;
-    if profile.supports_video_generation() {
-        Some(name)
-    } else {
-        None
-    }
-}
-
 fn normalize_optional_string(value: Option<String>) -> Option<String> {
     let trimmed = value?.trim().to_string();
     if trimmed.is_empty() {
@@ -645,9 +1238,39 @@ fn is_deepseek_v4_reasoning_model(model: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{deserialize_config, normalize_reasoning_effort_value, serialize_config, ModelProvider, ModelTransportKind};
+    use super::{
+        deserialize_config, normalize_reasoning_effort_value, serialize_config, AppConfig,
+        ModelEntry, ModelProvider, ModelRef, ModelTransportKind,
+        ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION,
+    };
     use serde_json::Value;
     use std::path::Path;
+
+    fn test_profile(
+        group_id: &str,
+        name: &str,
+        api_base: &str,
+        provider: ModelProvider,
+    ) -> super::ModelProfile {
+        super::ModelProfile {
+            group_id: group_id.to_string(),
+            name: name.to_string(),
+            api_base: api_base.to_string(),
+            provider: Some(provider),
+            reasoning_effort: None,
+            context_length: None,
+            extra: serde_json::Map::new(),
+        }
+    }
+
+    #[test]
+    fn rejects_non_v2_schema_version() {
+        let config = r#"{"schemaVersion":1,"models":[],"activeModel":""}"#;
+        let err = deserialize_config(config, Path::new("config.json")).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains(&format!("schemaVersion {SPIRIT_CONFIG_SCHEMA_VERSION}")));
+    }
 
     #[test]
     fn normalize_reasoning_effort_preserves_moonshot_style_for_kimi_code() {
@@ -675,23 +1298,28 @@ mod tests {
     fn preserves_unknown_top_level_and_model_fields() {
         let config = r#"
 {
-  "models": [
+  "schemaVersion": 2,
+  "providerGroups": [
     {
-            "name": "agent-test-model",
-            "apiBase": "https://example.invalid/v1",
-            "provider": "custom",
-            "transportImplementation": "ai-sdk",
-      "reasoningEffort": "minimal"
+      "id": "custom",
+      "provider": "custom",
+      "apiBase": "https://example.invalid/v1",
+      "models": [
+        {
+          "name": "agent-test-model",
+          "reasoningEffort": "minimal"
+        }
+      ]
     }
   ],
-    "activeModel": "agent-test-model",
-    "imageGenerationModel": "agent-test-model",
+  "activeModel": { "groupId": "custom", "name": "agent-test-model" },
+  "imageGenerationModel": { "groupId": "custom", "name": "agent-test-model" },
   "uiLocale": "zh-CN",
   "windowsMica": true,
   "recentWorkspaces": ["D:/SpiritAgent", "D:/Other"],
   "dreams": {
     "enabled": true,
-        "collectorModel": "collector-test-model",
+    "collectorModel": "collector-test-model",
     "debugMode": true
   }
 }
@@ -715,33 +1343,26 @@ mod tests {
             Some("collector-test-model")
         );
         assert_eq!(
-            json.get("models")
+            json.get("providerGroups")
                 .and_then(Value::as_array)
-                .and_then(|models| models.first())
-                .and_then(|model| model.get("transportImplementation"))
-                .and_then(Value::as_str),
-            None
-        );
-        assert_eq!(
-            json.get("models")
+                .and_then(|groups| groups.first())
+                .and_then(|group| group.get("models"))
                 .and_then(Value::as_array)
                 .and_then(|models| models.first())
                 .and_then(|model| model.get("reasoningEffort"))
                 .and_then(Value::as_str),
             Some("default")
         );
-        assert_eq!(
-            json.get("imageGenerationModel").and_then(Value::as_str),
-            None
-        );
+        assert_eq!(parsed.image_generation_model, None);
     }
 
     #[test]
     fn normalizing_empty_models_keeps_unknown_desktop_fields() {
         let config = r#"
 {
-  "models": [],
-  "activeModel": "",
+  "schemaVersion": 2,
+  "providerGroups": [],
+  "activeModel": { "groupId": "", "name": "" },
   "windowsMica": false,
   "dreams": {
     "enabled": true,
@@ -765,46 +1386,40 @@ mod tests {
             Some(true)
         );
         assert_eq!(
-            json.get("models").and_then(Value::as_array).map(Vec::len),
+            json.get("providerGroups")
+                .and_then(Value::as_array)
+                .map(Vec::len),
             Some(0)
         );
         assert_eq!(
-            json.get("activeModel").and_then(Value::as_str),
+            json.get("activeModel")
+                .and_then(|active| active.get("name"))
+                .and_then(Value::as_str),
             Some("")
         );
     }
 
     #[test]
     fn model_profile_supports_image_input_uses_explicit_capabilities_for_moonshot() {
-        let kimi_without_capabilities = super::ModelProfile {
-            name: "kimi-k2.6".to_string(),
-            api_base: "https://api.moonshot.cn/v1".to_string(),
-            provider: Some(super::ModelProvider::Moonshot),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
+        let kimi_without_capabilities =
+            test_profile("moonshot-ai", "kimi-k2.6", "https://api.moonshot.cn/v1", ModelProvider::Moonshot);
         let mut kimi_with_image = kimi_without_capabilities.clone();
         kimi_with_image.extra.insert(
             "capabilities".to_string(),
             serde_json::json!(["chat", "image"]),
         );
-        let deepseek = super::ModelProfile {
-            name: "deepseek-v4-pro".to_string(),
-            api_base: "https://api.deepseek.com/v1".to_string(),
-            provider: Some(super::ModelProvider::Deepseek),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
-        let custom = super::ModelProfile {
-            name: "my-custom-model".to_string(),
-            api_base: "https://example.invalid/v1".to_string(),
-            provider: Some(super::ModelProvider::Custom),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
+        let deepseek = test_profile(
+            "deepseek",
+            "deepseek-v4-pro",
+            "https://api.deepseek.com/v1",
+            ModelProvider::Deepseek,
+        );
+        let custom = test_profile(
+            "custom",
+            "my-custom-model",
+            "https://example.invalid/v1",
+            ModelProvider::Custom,
+        );
 
         assert!(!kimi_without_capabilities.supports_image_input());
         assert!(kimi_with_image.supports_image_input());
@@ -814,14 +1429,12 @@ mod tests {
 
     #[test]
     fn model_profile_supports_image_input_uses_explicit_capabilities_for_xiaomi() {
-        let mimo_without_capabilities = super::ModelProfile {
-            name: "mimo-v2-flash".to_string(),
-            api_base: "https://api.xiaomimimo.com/v1".to_string(),
-            provider: Some(super::ModelProvider::Xiaomi),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
+        let mimo_without_capabilities = test_profile(
+            "xiaomi",
+            "mimo-v2-flash",
+            "https://api.xiaomimimo.com/v1",
+            ModelProvider::Xiaomi,
+        );
         let mut mimo_with_image = mimo_without_capabilities.clone();
         mimo_with_image.extra.insert(
             "capabilities".to_string(),
@@ -834,27 +1447,23 @@ mod tests {
 
     #[test]
     fn explicit_capabilities_override_provider_image_input_inference() {
-        let mut deepseek = super::ModelProfile {
-            name: "deepseek-v4-pro".to_string(),
-            api_base: "https://api.deepseek.com/v1".to_string(),
-            provider: Some(super::ModelProvider::Deepseek),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
+        let mut deepseek = test_profile(
+            "deepseek",
+            "deepseek-v4-pro",
+            "https://api.deepseek.com/v1",
+            ModelProvider::Deepseek,
+        );
         deepseek.extra.insert(
             "capabilities".to_string(),
             serde_json::json!(["chat", "image"]),
         );
 
-        let mut custom = super::ModelProfile {
-            name: "my-custom-model".to_string(),
-            api_base: "https://example.invalid/v1".to_string(),
-            provider: Some(super::ModelProvider::Custom),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
+        let mut custom = test_profile(
+            "custom",
+            "my-custom-model",
+            "https://example.invalid/v1",
+            ModelProvider::Custom,
+        );
         custom
             .extra
             .insert("capabilities".to_string(), serde_json::json!(["chat"]));
@@ -867,27 +1476,30 @@ mod tests {
     fn image_generation_model_requires_explicit_capability() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "chat-model",
+            "id": "custom",
+            "provider": "custom",
             "apiBase": "https://example.invalid/v1",
-            "capabilities": ["chat"]
-        },
-        {
-            "name": "image-model",
-            "apiBase": "https://example.invalid/v1",
-            "capabilities": ["imageGeneration"]
+            "models": [
+                { "name": "chat-model", "capabilities": ["chat"] },
+                { "name": "image-model", "capabilities": ["imageGeneration"] }
+            ]
         }
     ],
-    "activeModel": "chat-model",
-    "imageGenerationModel": "image-model"
+    "activeModel": { "groupId": "custom", "name": "chat-model" },
+    "imageGenerationModel": { "groupId": "custom", "name": "image-model" }
 }
 "#;
 
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         assert_eq!(
-            parsed.image_generation_model.as_deref(),
-            Some("image-model")
+            parsed.image_generation_model,
+            Some(ModelRef {
+                group_id: "custom".to_string(),
+                name: "image-model".to_string(),
+            })
         );
 
         let invalid = config.replace("image-model\"", "chat-model\"");
@@ -899,27 +1511,30 @@ mod tests {
     fn video_generation_model_requires_explicit_capability() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "chat-model",
+            "id": "custom",
+            "provider": "custom",
             "apiBase": "https://example.invalid/v1",
-            "capabilities": ["chat"]
-        },
-        {
-            "name": "video-model",
-            "apiBase": "https://example.invalid/v1",
-            "capabilities": ["videoGeneration"]
+            "models": [
+                { "name": "chat-model", "capabilities": ["chat"] },
+                { "name": "video-model", "capabilities": ["videoGeneration"] }
+            ]
         }
     ],
-    "activeModel": "chat-model",
-    "videoGenerationModel": "video-model"
+    "activeModel": { "groupId": "custom", "name": "chat-model" },
+    "videoGenerationModel": { "groupId": "custom", "name": "video-model" }
 }
 "#;
 
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         assert_eq!(
-            parsed.video_generation_model.as_deref(),
-            Some("video-model")
+            parsed.video_generation_model,
+            Some(ModelRef {
+                group_id: "custom".to_string(),
+                name: "video-model".to_string(),
+            })
         );
 
         let invalid = config.replace("video-model\"", "chat-model\"");
@@ -931,22 +1546,25 @@ mod tests {
     fn deserializes_alibaba_provider_from_desktop_config() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "qwen3.6-plus",
-            "apiBase": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "id": "alibaba",
             "provider": "alibaba",
-            "reasoningEffort": "medium"
+            "apiBase": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "models": [
+                { "name": "qwen3.6-plus", "reasoningEffort": "medium" }
+            ]
         }
     ],
-    "activeModel": "qwen3.6-plus"
+    "activeModel": { "groupId": "alibaba", "name": "qwen3.6-plus" }
 }
 "#;
 
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         let active = parsed.active_model_profile().expect("active model");
 
-        assert_eq!(active.provider, Some(super::ModelProvider::Alibaba));
+        assert_eq!(active.provider, Some(ModelProvider::Alibaba));
         assert_eq!(active.reasoning_effort.as_deref(), Some("medium"));
     }
 
@@ -954,27 +1572,27 @@ mod tests {
     fn deserializes_anthropic_transport_kind_from_desktop_config() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "claude-sonnet-4-5",
-            "apiBase": "https://api.anthropic.com/v1",
+            "id": "anthropic",
             "provider": "anthropic",
+            "apiBase": "https://api.anthropic.com/v1",
             "transportKind": "anthropic",
-            "reasoningEffort": "high"
+            "models": [
+                { "name": "claude-sonnet-4-5", "reasoningEffort": "high" }
+            ]
         }
     ],
-    "activeModel": "claude-sonnet-4-5"
+    "activeModel": { "groupId": "anthropic", "name": "claude-sonnet-4-5" }
 }
 "#;
 
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         let active = parsed.active_model_profile().expect("active model");
 
-        assert_eq!(active.provider, Some(super::ModelProvider::Anthropic));
-        assert_eq!(
-            active.transport_kind(),
-            super::ModelTransportKind::Anthropic
-        );
+        assert_eq!(active.provider, Some(ModelProvider::Anthropic));
+        assert_eq!(active.transport_kind(), ModelTransportKind::Anthropic);
         assert_eq!(active.reasoning_effort.as_deref(), Some("high"));
     }
 
@@ -982,16 +1600,19 @@ mod tests {
     fn deserializes_vercel_ai_gateway_provider_from_desktop_config() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "gateway-model",
-            "apiBase": "https://ai-gateway.vercel.sh/v1",
+            "id": "vercel-ai-gateway",
             "provider": "vercel-ai-gateway",
+            "apiBase": "https://ai-gateway.vercel.sh/v1",
             "transportKind": "open-responses",
-            "reasoningEffort": "medium"
+            "models": [
+                { "name": "gateway-model", "reasoningEffort": "medium" }
+            ]
         }
     ],
-    "activeModel": "gateway-model"
+    "activeModel": { "groupId": "vercel-ai-gateway", "name": "gateway-model" }
 }
 "#;
 
@@ -1000,15 +1621,12 @@ mod tests {
         let json: Value = serde_json::from_str(&serialized).expect("json value");
         let active = parsed.active_model_profile().expect("active model");
 
+        assert_eq!(active.provider, Some(ModelProvider::VercelAiGateway));
         assert_eq!(
-            active.provider,
-            Some(super::ModelProvider::VercelAiGateway)
-        );
-        assert_eq!(
-            json.get("models")
+            json.get("providerGroups")
                 .and_then(Value::as_array)
-                .and_then(|models| models.first())
-                .and_then(|model| model.get("provider"))
+                .and_then(|groups| groups.first())
+                .and_then(|group| group.get("provider"))
                 .and_then(Value::as_str),
             Some("vercel-ai-gateway")
         );
@@ -1018,15 +1636,18 @@ mod tests {
     fn normalizes_custom_openai_reasoning_effort_to_generic_values() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "custom-openai-model",
-            "apiBase": "https://example.invalid/v1",
+            "id": "custom",
             "provider": "custom",
-            "reasoningEffort": "minimal"
+            "apiBase": "https://example.invalid/v1",
+            "models": [
+                { "name": "custom-openai-model", "reasoningEffort": "minimal" }
+            ]
         }
     ],
-    "activeModel": "custom-openai-model"
+    "activeModel": { "groupId": "custom", "name": "custom-openai-model" }
 }
 "#;
 
@@ -1040,23 +1661,26 @@ mod tests {
     fn normalizes_custom_anthropic_reasoning_effort_to_anthropic_values() {
         let config = r#"
 {
-    "models": [
+    "schemaVersion": 2,
+    "providerGroups": [
         {
-            "name": "claude-custom",
-            "apiBase": "https://api.anthropic.com/v1",
+            "id": "custom",
             "provider": "custom",
+            "apiBase": "https://api.anthropic.com/v1",
             "transportKind": "anthropic",
-            "reasoningEffort": "max"
+            "models": [
+                { "name": "claude-custom", "reasoningEffort": "max" }
+            ]
         }
     ],
-    "activeModel": "claude-custom"
+    "activeModel": { "groupId": "custom", "name": "claude-custom" }
 }
 "#;
 
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         let active = parsed.active_model_profile().expect("active model");
 
-        assert_eq!(active.transport_kind(), super::ModelTransportKind::Anthropic);
+        assert_eq!(active.transport_kind(), ModelTransportKind::Anthropic);
         assert_eq!(active.reasoning_effort.as_deref(), Some("max"));
     }
 
@@ -1064,15 +1688,18 @@ mod tests {
     fn roundtrips_model_context_length_field() {
         let config = r#"
 {
-  "models": [
+  "schemaVersion": 2,
+  "providerGroups": [
     {
-      "name": "custom-model",
-      "apiBase": "https://example.invalid/v1",
+      "id": "custom",
       "provider": "custom",
-      "contextLength": 128000
+      "apiBase": "https://example.invalid/v1",
+      "models": [
+        { "name": "custom-model", "contextLength": 128000 }
+      ]
     }
   ],
-  "activeModel": "custom-model"
+  "activeModel": { "groupId": "custom", "name": "custom-model" }
 }
 "#;
 
@@ -1083,7 +1710,10 @@ mod tests {
         let serialized = serialize_config(&parsed).expect("serialize config");
         let json: Value = serde_json::from_str(&serialized).expect("json value");
         assert_eq!(
-            json.get("models")
+            json.get("providerGroups")
+                .and_then(Value::as_array)
+                .and_then(|groups| groups.first())
+                .and_then(|group| group.get("models"))
                 .and_then(Value::as_array)
                 .and_then(|models| models.first())
                 .and_then(|model| model.get("contextLength"))
@@ -1091,21 +1721,30 @@ mod tests {
             Some(128_000)
         );
 
-        let without_context = super::ModelProfile {
-            name: "plain".to_string(),
-            api_base: "https://example.invalid/v1".to_string(),
-            provider: Some(super::ModelProvider::Custom),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::new(),
-        };
-        let mut cfg = super::AppConfig::default();
-        cfg.models = vec![without_context];
+        let mut cfg = AppConfig::default();
+        cfg.add_model_to_group(
+            "custom",
+            ModelProvider::Custom,
+            "https://example.invalid/v1".to_string(),
+            ProviderGroupConnectDraft::default(),
+            ModelEntry {
+                name: "plain".to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
         let serialized_without = serialize_config(&cfg).expect("serialize config");
         let json_without: Value = serde_json::from_str(&serialized_without).expect("json value");
         assert_eq!(
             json_without
-                .get("models")
+                .get("providerGroups")
+                .and_then(Value::as_array)
+                .and_then(|groups| groups.first())
+                .and_then(|group| group.get("models"))
                 .and_then(Value::as_array)
                 .and_then(|models| models.first())
                 .and_then(|model| model.get("contextLength")),
@@ -1115,93 +1754,105 @@ mod tests {
 
     #[test]
     fn normalize_transport_kind_downgrades_google_open_responses() {
-        let mut model = super::ModelProfile {
-            name: "gemini-flash".to_string(),
-            api_base: "https://generativelanguage.googleapis.com/v1beta".to_string(),
-            provider: Some(super::ModelProvider::Google),
-            reasoning_effort: None,
-            context_length: None,
-            extra: serde_json::Map::from_iter([(
-                "transportKind".to_string(),
-                serde_json::json!("open-responses"),
-            )]),
-        };
-        super::normalize_transport_kind(&mut model);
-        assert_eq!(model.transport_kind(), super::ModelTransportKind::OpenAiCompatible);
-        assert!(model.extra.get("transportKind").is_none());
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [
+    {
+      "id": "google",
+      "provider": "google",
+      "apiBase": "https://generativelanguage.googleapis.com/v1beta",
+      "transportKind": "open-responses",
+      "models": [{ "name": "gemini-flash" }]
+    }
+  ],
+  "activeModel": { "groupId": "google", "name": "gemini-flash" }
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        let active = parsed.active_model_profile().expect("active model");
+        assert_eq!(active.transport_kind(), ModelTransportKind::OpenAiCompatible);
     }
 
     #[test]
     fn deserializes_siliconflow_provider_site_from_desktop_config() {
         let raw = r#"{
-          "models": [{
-            "name": "deepseek-ai/DeepSeek-V3",
-            "apiBase": "https://api.siliconflow.cn/v1",
+          "schemaVersion": 2,
+          "providerGroups": [{
+            "id": "siliconflow",
             "provider": "siliconflow",
+            "apiBase": "https://api.siliconflow.cn/v1",
             "providerSite": "cn",
-            "transportKind": "anthropic"
+            "transportKind": "anthropic",
+            "models": [{ "name": "deepseek-ai/DeepSeek-V3" }]
           }],
-          "activeModel": "deepseek-ai/DeepSeek-V3"
+          "activeModel": { "groupId": "siliconflow", "name": "deepseek-ai/DeepSeek-V3" }
         }"#;
-        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
-        let model = cfg.models.first().expect("model");
-        assert_eq!(model.provider, Some(super::ModelProvider::Siliconflow));
+        let parsed = deserialize_config(raw, Path::new("config.json")).expect("parse config");
+        let model = parsed.active_model_profile().expect("model");
+        assert_eq!(model.provider, Some(ModelProvider::Siliconflow));
         assert_eq!(model.provider_site().as_deref(), Some("cn"));
-        assert_eq!(model.transport_kind(), super::ModelTransportKind::Anthropic);
+        assert_eq!(model.transport_kind(), ModelTransportKind::Anthropic);
     }
 
     #[test]
     fn deserializes_moonshot_provider_site_from_desktop_config() {
         let raw = r#"{
-          "models": [{
-            "name": "kimi-k2",
-            "apiBase": "https://api.moonshot.ai/v1",
+          "schemaVersion": 2,
+          "providerGroups": [{
+            "id": "moonshot-ai",
             "provider": "moonshot-ai",
-            "providerSite": "intl"
+            "apiBase": "https://api.moonshot.ai/v1",
+            "providerSite": "intl",
+            "models": [{ "name": "kimi-k2" }]
           }],
-          "activeModel": "kimi-k2"
+          "activeModel": { "groupId": "moonshot-ai", "name": "kimi-k2" }
         }"#;
-        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
-        let model = cfg.models.first().expect("model");
-        assert_eq!(model.provider, Some(super::ModelProvider::Moonshot));
+        let parsed = deserialize_config(raw, Path::new("config.json")).expect("parse config");
+        let model = parsed.active_model_profile().expect("model");
+        assert_eq!(model.provider, Some(ModelProvider::Moonshot));
         assert_eq!(model.provider_site().as_deref(), Some("intl"));
     }
 
     #[test]
     fn deserializes_minimax_provider_site_from_desktop_config() {
         let raw = r#"{
-          "models": [{
-            "name": "MiniMax-M2.5",
-            "apiBase": "https://api.minimax.io/anthropic/v1",
+          "schemaVersion": 2,
+          "providerGroups": [{
+            "id": "minimax",
             "provider": "minimax",
+            "apiBase": "https://api.minimax.io/anthropic/v1",
             "providerSite": "intl",
-            "transportKind": "anthropic"
+            "transportKind": "anthropic",
+            "models": [{ "name": "MiniMax-M2.5" }]
           }],
-          "activeModel": "MiniMax-M2.5"
+          "activeModel": { "groupId": "minimax", "name": "MiniMax-M2.5" }
         }"#;
-        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
-        let model = cfg.models.first().expect("model");
-        assert_eq!(model.provider, Some(super::ModelProvider::Minimax));
+        let parsed = deserialize_config(raw, Path::new("config.json")).expect("parse config");
+        let model = parsed.active_model_profile().expect("model");
+        assert_eq!(model.provider, Some(ModelProvider::Minimax));
         assert_eq!(model.provider_site().as_deref(), Some("intl"));
-        assert_eq!(model.transport_kind(), super::ModelTransportKind::Anthropic);
+        assert_eq!(model.transport_kind(), ModelTransportKind::Anthropic);
     }
 
     #[test]
     fn deserializes_alibaba_provider_site_and_workspace_from_desktop_config() {
         let raw = r#"{
-          "models": [{
-            "name": "qwen3.6-plus",
-            "apiBase": "https://ws123.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+          "schemaVersion": 2,
+          "providerGroups": [{
+            "id": "alibaba",
             "provider": "alibaba",
+            "apiBase": "https://ws123.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
             "providerSite": "ap-southeast-1",
             "alibabaWorkspaceId": "ws123",
-            "transportKind": "openai-compatible"
+            "transportKind": "openai-compatible",
+            "models": [{ "name": "qwen3.6-plus" }]
           }],
-          "activeModel": "qwen3.6-plus"
+          "activeModel": { "groupId": "alibaba", "name": "qwen3.6-plus" }
         }"#;
-        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
-        let model = cfg.models.first().expect("model");
-        assert_eq!(model.provider, Some(super::ModelProvider::Alibaba));
+        let parsed = deserialize_config(raw, Path::new("config.json")).expect("parse config");
+        let model = parsed.active_model_profile().expect("model");
+        assert_eq!(model.provider, Some(ModelProvider::Alibaba));
         assert_eq!(model.provider_site().as_deref(), Some("ap-southeast-1"));
         assert_eq!(model.alibaba_workspace_id().as_deref(), Some("ws123"));
     }
@@ -1209,21 +1860,52 @@ mod tests {
     #[test]
     fn deserializes_alibaba_token_plan_billing_mode_from_desktop_config() {
         let raw = r#"{
-          "models": [{
-            "name": "qwen3.6-plus",
-            "apiBase": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+          "schemaVersion": 2,
+          "providerGroups": [{
+            "id": "alibaba",
             "provider": "alibaba",
+            "apiBase": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
             "alibabaBillingMode": "token-plan",
-            "transportKind": "openai-compatible"
+            "transportKind": "openai-compatible",
+            "models": [{ "name": "qwen3.6-plus" }]
           }],
-          "activeModel": "qwen3.6-plus"
+          "activeModel": { "groupId": "alibaba", "name": "qwen3.6-plus" }
         }"#;
-        let cfg: super::AppConfig = serde_json::from_str(raw).expect("parse config");
-        let model = cfg.models.first().expect("model");
-        assert_eq!(model.provider, Some(super::ModelProvider::Alibaba));
+        let parsed = deserialize_config(raw, Path::new("config.json")).expect("parse config");
+        let model = parsed.active_model_profile().expect("model");
+        assert_eq!(model.provider, Some(ModelProvider::Alibaba));
         assert_eq!(model.alibaba_billing_mode().as_deref(), Some("token-plan"));
         assert!(model.provider_site().is_none());
         assert!(model.alibaba_workspace_id().is_none());
+    }
+
+    #[test]
+    fn active_model_profile_merges_group_and_model_entry() {
+        let mut cfg = AppConfig::default();
+        cfg.add_model_to_group(
+            "openai",
+            ModelProvider::Openai,
+            "https://api.openai.com/v1".to_string(),
+            ProviderGroupConnectDraft::default(),
+            ModelEntry {
+                name: "gpt-4o-mini".to_string(),
+                reasoning_effort: Some("medium".to_string()),
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: Some(vec!["chat".to_string()]),
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
+        cfg.active_model = ModelRef {
+            group_id: "openai".to_string(),
+            name: "gpt-4o-mini".to_string(),
+        };
+        let active = cfg.active_model_profile().expect("active model");
+        assert_eq!(active.group_id, "openai");
+        assert_eq!(active.name, "gpt-4o-mini");
+        assert_eq!(active.api_base, "https://api.openai.com/v1");
+        assert_eq!(active.provider, Some(ModelProvider::Openai));
     }
 }
 
@@ -1240,90 +1922,85 @@ fn model_key_account(model_name: &str) -> String {
     format!("model::{}", model_name)
 }
 
-fn provider_key_account(provider_id: &str) -> String {
-    format!("provider::{}", provider_id)
+fn group_key_account(group_id: &str) -> String {
+    format!("group::{}", group_id)
 }
 
-pub fn load_provider_api_key_from_keyring(provider_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&provider_key_account(provider_id))?;
+fn group_access_key_id_account(group_id: &str) -> String {
+    format!("group::{group_id}::access-key-id")
+}
+
+fn group_secret_access_key_account(group_id: &str) -> String {
+    format!("group::{group_id}::secret-access-key")
+}
+
+fn group_vertex_client_email_account(group_id: &str) -> String {
+    format!("group::{group_id}::client-email")
+}
+
+fn group_vertex_private_key_account(group_id: &str) -> String {
+    format!("group::{group_id}::private-key")
+}
+
+pub fn load_group_api_key_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_key_account(group_id))?;
     entry
         .get_password()
-        .with_context(|| format!("读取 provider {} 的 API Key 失败", provider_id))
+        .with_context(|| format!("读取 provider group {} 的 API Key 失败", group_id))
 }
 
-fn provider_access_key_id_account(provider_id: &str) -> String {
-    format!("provider::{provider_id}::access-key-id")
-}
-
-fn provider_secret_access_key_account(provider_id: &str) -> String {
-    format!("provider::{provider_id}::secret-access-key")
-}
-
-pub fn load_provider_access_key_id_from_keyring(provider_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&provider_access_key_id_account(provider_id))?;
+pub fn load_group_access_key_id_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_access_key_id_account(group_id))?;
     entry.get_password().with_context(|| {
-        format!("读取 provider {provider_id} 的 IAM Access Key ID 失败")
+        format!("读取 provider group {group_id} 的 IAM Access Key ID 失败")
     })
 }
 
-pub fn load_provider_secret_access_key_from_keyring(provider_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&provider_secret_access_key_account(provider_id))?;
+pub fn load_group_secret_access_key_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_secret_access_key_account(group_id))?;
     entry.get_password().with_context(|| {
-        format!("读取 provider {provider_id} 的 IAM Secret Access Key 失败")
+        format!("读取 provider group {group_id} 的 IAM Secret Access Key 失败")
     })
 }
 
-pub fn has_bedrock_runtime_credentials_in_keyring() -> Result<bool> {
-    if load_provider_api_key_from_keyring(ModelProvider::AmazonBedrock.as_str())
+pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool> {
+    if load_group_api_key_from_keyring(group_id)
         .map(|value| !value.trim().is_empty())
         .unwrap_or(false)
     {
         return Ok(true);
     }
 
-    let access_key_id = load_provider_access_key_id_from_keyring(ModelProvider::AmazonBedrock.as_str())
+    let access_key_id = load_group_access_key_id_from_keyring(group_id)
         .map(|value| !value.trim().is_empty())
         .unwrap_or(false);
-    let secret_access_key =
-        load_provider_secret_access_key_from_keyring(ModelProvider::AmazonBedrock.as_str())
-            .map(|value| !value.trim().is_empty())
-            .unwrap_or(false);
+    let secret_access_key = load_group_secret_access_key_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
     Ok(access_key_id && secret_access_key)
 }
 
-fn provider_vertex_client_email_account(provider_id: &str) -> String {
-    format!("provider::{provider_id}::client-email")
-}
-
-fn provider_vertex_private_key_account(provider_id: &str) -> String {
-    format!("provider::{provider_id}::private-key")
-}
-
-pub fn load_provider_vertex_client_email_from_keyring(provider_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&provider_vertex_client_email_account(provider_id))?;
+pub fn load_group_vertex_client_email_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
     entry.get_password().with_context(|| {
-        format!("读取 provider {provider_id} 的 Vertex client email 失败")
+        format!("读取 provider group {group_id} 的 Vertex client email 失败")
     })
 }
 
-pub fn load_provider_vertex_private_key_from_keyring(provider_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&provider_vertex_private_key_account(provider_id))?;
+pub fn load_group_vertex_private_key_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
     entry.get_password().with_context(|| {
-        format!("读取 provider {provider_id} 的 Vertex private key 失败")
+        format!("读取 provider group {group_id} 的 Vertex private key 失败")
     })
 }
 
-pub fn has_google_vertex_service_account_in_keyring() -> Result<bool> {
-    let client_email = load_provider_vertex_client_email_from_keyring(
-        ModelProvider::GoogleVertexAi.as_str(),
-    )
-    .map(|value| !value.trim().is_empty())
-    .unwrap_or(false);
-    let private_key = load_provider_vertex_private_key_from_keyring(
-        ModelProvider::GoogleVertexAi.as_str(),
-    )
-    .map(|value| !value.trim().is_empty())
-    .unwrap_or(false);
+pub fn has_google_vertex_service_account_in_keyring(group_id: &str) -> Result<bool> {
+    let client_email = load_group_vertex_client_email_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+    let private_key = load_group_vertex_private_key_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
     Ok(client_email && private_key)
 }
 
@@ -1331,6 +2008,7 @@ pub fn has_google_vertex_runtime_credentials(
     api_key: &str,
     vertex_project: Option<&str>,
     vertex_location: Option<&str>,
+    group_id: &str,
 ) -> bool {
     if !api_key.trim().is_empty() {
         return true;
@@ -1340,34 +2018,34 @@ pub fn has_google_vertex_runtime_credentials(
     if !has_project_location {
         return false;
     }
-    if has_google_vertex_service_account_in_keyring().unwrap_or(false) {
+    if has_google_vertex_service_account_in_keyring(group_id).unwrap_or(false) {
         return true;
     }
     true
 }
 
-pub fn save_provider_api_key(provider_id: &str, api_key: &str) -> Result<()> {
-    let entry = keyring_entry_for_account(&provider_key_account(provider_id))?;
+pub fn save_group_api_key(group_id: &str, api_key: &str) -> Result<()> {
+    let entry = keyring_entry_for_account(&group_key_account(group_id))?;
     entry
         .set_password(api_key.trim())
-        .with_context(|| format!("保存 provider {provider_id} 的 API Key 失败"))
+        .with_context(|| format!("保存 provider group {group_id} 的 API Key 失败"))
 }
 
-pub fn save_provider_vertex_credentials(
-    provider_id: &str,
+pub fn save_group_vertex_credentials(
+    group_id: &str,
     client_email: &str,
     private_key: &str,
 ) -> Result<()> {
     let client_email = client_email.trim();
     let private_key = private_key.trim();
-    let email_entry = keyring_entry_for_account(&provider_vertex_client_email_account(provider_id))?;
+    let email_entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
     email_entry
         .set_password(client_email)
-        .with_context(|| format!("保存 provider {provider_id} 的 Vertex client email 失败"))?;
-    let key_entry = keyring_entry_for_account(&provider_vertex_private_key_account(provider_id))?;
+        .with_context(|| format!("保存 provider group {group_id} 的 Vertex client email 失败"))?;
+    let key_entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
     key_entry
         .set_password(private_key)
-        .with_context(|| format!("保存 provider {provider_id} 的 Vertex private key 失败"))
+        .with_context(|| format!("保存 provider group {group_id} 的 Vertex private key 失败"))
 }
 
 pub fn save_model_api_key(model_name: &str, api_key: &str) -> Result<()> {
@@ -1402,8 +2080,15 @@ pub fn has_model_api_key(model_name: &str) -> Result<bool> {
     }
 }
 
-pub fn resolve_api_key_for_model(model_name: &str) -> Result<String> {
+pub fn resolve_api_key_for_model(group_id: &str, model_name: &str) -> Result<String> {
     if let Ok(value) = env::var(ENV_API_KEY) {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return Ok(trimmed.to_string());
+        }
+    }
+
+    if let Ok(value) = load_group_api_key_from_keyring(group_id) {
         let trimmed = value.trim();
         if !trimmed.is_empty() {
             return Ok(trimmed.to_string());

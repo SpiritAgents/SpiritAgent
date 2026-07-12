@@ -278,6 +278,7 @@ mod tests {
     #[test]
     fn build_model_display_titles_formats_non_gateway_providers() {
         let models = vec![ModelProfile {
+            group_id: "openai".to_string(),
             name: "gpt-4o-mini".to_string(),
             api_base: "https://api.openai.com/v1".to_string(),
             provider: Some(ModelProvider::Openai),

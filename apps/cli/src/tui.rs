@@ -17,7 +17,7 @@ use crate::{
     host_runtime::{RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message},
     locale, logging,
     mcp_types::{ManagedMcpServer, McpDiscoveredPrompt},
-    model_registry::{DEFAULT_API_BASE, ModelProfile, ModelProvider},
+    model_registry::{DEFAULT_API_BASE, ModelProvider},
     openai_models_list,
     plan::{self, PlanMetadata},
     ports::{
@@ -160,7 +160,7 @@ impl TuiShell {
         let initial_mcp_status = runtime.mcp_status_snapshot();
 
         let messages = vec![welcome_message(
-            &config.active_model,
+            config.active_model_name(),
             &initial_mcp_status.welcome_line(),
         )];
 
@@ -416,7 +416,7 @@ impl TuiShell {
         self.last_turn_can_continue = false;
         let mcp_status = self.runtime.mcp_status_snapshot();
         self.messages.push(welcome_message(
-            &self.runtime.config().active_model,
+            self.runtime.config().active_model_name(),
             &mcp_status.welcome_line(),
         ));
         self.last_mcp_status_revision = mcp_status.revision;
@@ -520,41 +520,49 @@ impl TuiShell {
         alibaba_workspace_id: Option<&str>,
     ) -> Result<(), String> {
         let mut config = self.runtime.config().clone();
-        if config.has_model(name) {
+        if config.find_model_ref_by_name(name).is_some() {
             return Err(t!("tui.model_add.duplicate", name = name).into_owned());
         }
 
-        let mut extra = serde_json::Map::new();
-        if transport_kind == crate::model_registry::ModelTransportKind::Anthropic
-            || transport_kind == crate::model_registry::ModelTransportKind::OpenResponses
-        {
-            extra.insert(
-                "transportKind".to_string(),
-                serde_json::json!(transport_kind.as_str()),
-            );
-        }
-        if let Some(resource_name) = azure_resource_name.map(str::trim).filter(|v| !v.is_empty()) {
-            extra.insert(
-                "azureResourceName".to_string(),
-                serde_json::json!(resource_name),
-            );
-        }
-        if let Some(site) = provider_site.map(str::trim).filter(|v| !v.is_empty()) {
-            extra.insert("providerSite".to_string(), serde_json::json!(site));
-        }
-        if let Some(workspace_id) = alibaba_workspace_id.map(str::trim).filter(|v| !v.is_empty()) {
-            extra.insert("alibabaWorkspaceId".to_string(), serde_json::json!(workspace_id));
-        }
-
-        config.add_model(ModelProfile {
-            name: name.to_string(),
-            api_base: api_base.to_string(),
+        let provider = provider.unwrap_or(ModelProvider::Custom);
+        let group_id = crate::model_registry::default_preset_provider_group_id(provider);
+        let connect = crate::model_registry::ProviderGroupConnectDraft {
+            transport_kind: (transport_kind == crate::model_registry::ModelTransportKind::Anthropic
+                || transport_kind == crate::model_registry::ModelTransportKind::OpenResponses)
+                .then(|| transport_kind.as_str().to_string()),
+            provider_site: provider_site
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned),
+            alibaba_workspace_id: alibaba_workspace_id
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned),
+            azure_resource_name: azure_resource_name
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned),
+            ..Default::default()
+        };
+        config.add_model_to_group(
+            &group_id,
             provider,
-            reasoning_effort: None,
-            context_length,
-            extra,
-        });
-        config.active_model = name.to_string();
+            api_base.to_string(),
+            connect,
+            crate::model_registry::ModelEntry {
+                name: name.to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length,
+                supports_thinking_type: None,
+            },
+        );
+        config.active_model = crate::model_registry::ModelRef {
+            group_id,
+            name: name.to_string(),
+        };
 
         if let Err(err) = self.runtime.validate_config_change(&config) {
             return Err(err.to_string());
@@ -623,7 +631,7 @@ impl TuiShell {
             ));
             return;
         }
-        let active_model = self.runtime.config().active_model.clone();
+        let active_model = self.runtime.config().active_model_name().to_string();
         let mcp_welcome_line = snapshot.welcome_line();
         let previous_status_line = first_message
             .content

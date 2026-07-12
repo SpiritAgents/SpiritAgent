@@ -423,21 +423,23 @@ pub(in crate::ui) fn build_model_picker_lines(
     app: &TuiViewModel,
     max_items: usize,
 ) -> Vec<Line<'static>> {
-    if app.config.models.is_empty() {
+    let models = app.config.flatten_models();
+    if models.is_empty() {
         return vec![Line::from(t!("ui.picker.models.empty").into_owned())];
     }
 
     let selected = app
         .model_picker_index
-        .min(app.config.models.len().saturating_sub(1));
-    let total = app.config.models.len();
+        .min(models.len().saturating_sub(1));
+    let total = models.len();
     let (start, end) = inline_picker_bounds(total, selected, max_items);
 
     let mut lines = Vec::new();
     for idx in start..end {
-        let model = &app.config.models[idx];
+        let model = &models[idx];
         let is_selected = idx == selected;
-        let is_active = model.name == app.config.active_model;
+        let is_active = model.group_id == app.config.active_model.group_id
+            && model.name == app.config.active_model.name;
         let display_title =
             crate::model_catalog_display::model_display_title(&model.name, &app.model_display_titles);
 
