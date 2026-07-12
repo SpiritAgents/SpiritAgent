@@ -187,6 +187,8 @@ export interface PreviewModelsRequest {
   accessKeyId?: string;
   secretAccessKey?: string;
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   vertexProject?: string;
   vertexLocation?: string;
   vertexClientEmail?: string;
@@ -219,6 +221,8 @@ export interface AddProviderModelsRequest {
   accessKeyId?: string;
   secretAccessKey?: string;
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   vertexProject?: string;
   vertexLocation?: string;
   vertexClientEmail?: string;
@@ -255,6 +259,8 @@ export interface AddModelRequest {
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   /** Azure 资源名；`azure` 必填。 */
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   /** Google Vertex GCP 项目 ID。 */
   vertexProject?: string;
   /** Google Vertex 区域（如 `us-central1`）。 */
@@ -1307,6 +1313,8 @@ export interface ModelProfileSnapshot {
   awsRegion?: string;
   /** Azure 资源名；仅 `azure` 使用。 */
   azureResourceName?: string;
+  cloudflareAccountId?: string;
+  cloudflareGatewayId?: string;
   /** Google Vertex GCP 项目 ID；仅 `google-vertex-ai` 使用。 */
   vertexProject?: string;
   /** Google Vertex 区域；仅 `google-vertex-ai` 使用。 */

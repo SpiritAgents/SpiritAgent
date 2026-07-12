@@ -35,6 +35,8 @@ pub enum ModelProvider {
     Anthropic,
     #[serde(rename = "vercel-ai-gateway", alias = "vercelaigateway")]
     VercelAiGateway,
+    #[serde(rename = "cloudflare-ai-gateway", alias = "cloudflareaigateway")]
+    CloudflareAiGateway,
     Openrouter,
     #[serde(rename = "fireworks-ai")]
     FireworksAi,
@@ -64,6 +66,7 @@ impl ModelProvider {
             Self::Alibaba => "alibaba",
             Self::Anthropic => "anthropic",
             Self::VercelAiGateway => "vercel-ai-gateway",
+            Self::CloudflareAiGateway => "cloudflare-ai-gateway",
             Self::Openrouter => "openrouter",
             Self::FireworksAi => "fireworks-ai",
             Self::Openai => "openai",
@@ -94,6 +97,7 @@ impl FromStr for ModelProvider {
             "alibaba" => Ok(Self::Alibaba),
             "anthropic" => Ok(Self::Anthropic),
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
+            "cloudflare-ai-gateway" => Ok(Self::CloudflareAiGateway),
             "openrouter" => Ok(Self::Openrouter),
             "fireworks-ai" => Ok(Self::FireworksAi),
             "openai" => Ok(Self::Openai),
@@ -350,6 +354,7 @@ impl ModelProfile {
             | Some(ModelProvider::Alibaba)
             | Some(ModelProvider::Anthropic)
             | Some(ModelProvider::VercelAiGateway)
+            | Some(ModelProvider::CloudflareAiGateway)
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::FireworksAi)
             | Some(ModelProvider::Openai)
@@ -464,6 +469,26 @@ impl ModelProfile {
         self.extra
             .get("azureResourceName")
             .or_else(|| self.extra.get("azure_resource_name"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
+    pub fn cloudflare_account_id(&self) -> Option<String> {
+        self.extra
+            .get("cloudflareAccountId")
+            .or_else(|| self.extra.get("cloudflare_account_id"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
+    pub fn cloudflare_gateway_id(&self) -> Option<String> {
+        self.extra
+            .get("cloudflareGatewayId")
+            .or_else(|| self.extra.get("cloudflare_gateway_id"))
             .and_then(Value::as_str)
             .map(str::trim)
             .filter(|value| !value.is_empty())

@@ -43,6 +43,10 @@
       "types": "./dist/azure-resource.d.ts",
       "default": "./dist/azure-resource.js"
     },
+    "./cloudflare-ai-gateway-resource": {
+      "types": "./dist/cloudflare-ai-gateway-resource.d.ts",
+      "default": "./dist/cloudflare-ai-gateway-resource.js"
+    },
     "./host-bridge": {
       "types": "./dist/host-bridge-public.d.ts",
       "default": "./dist/host-bridge-public.js"

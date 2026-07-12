@@ -14,6 +14,7 @@ export type ModelProviderId =
   | 'alibaba'
   | 'anthropic'
   | 'vercel-ai-gateway'
+  | 'cloudflare-ai-gateway'
   | 'openrouter'
   | 'fireworks-ai'
   | 'openai'
@@ -45,6 +46,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'google',
   'xai',
   'vercel-ai-gateway',
+  'cloudflare-ai-gateway',
   'deepseek',
   'openrouter',
   'fireworks-ai',
@@ -78,7 +80,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -152,6 +154,7 @@ interface ParsedModelProviderPresets {
     | 'alibaba'
     | 'anthropic'
     | 'vercel-ai-gateway'
+    | 'cloudflare-ai-gateway'
     | 'openrouter'
     | 'fireworks-ai'
     | 'openai'
@@ -332,6 +335,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     alibaba: requireStringField(presetRaw, 'alibaba'),
     anthropic: requireStringField(presetRaw, 'anthropic'),
     'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
+    'cloudflare-ai-gateway': requireStringField(presetRaw, 'cloudflare-ai-gateway'),
     openrouter: requireStringField(presetRaw, 'openrouter'),
     'fireworks-ai': requireStringField(presetRaw, 'fireworks-ai'),
     openai: requireStringField(presetRaw, 'openai'),
@@ -393,6 +397,7 @@ const siliconflowBase = raw.presetApiBaseByProvider.siliconflow;
 const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
 const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
+const cloudflareAiGatewayBase = raw.presetApiBaseByProvider['cloudflare-ai-gateway'];
 const openrouterBase = raw.presetApiBaseByProvider.openrouter;
 const fireworksAiBase = raw.presetApiBaseByProvider['fireworks-ai'];
 const openaiBase = raw.presetApiBaseByProvider.openai;
@@ -415,6 +420,7 @@ export const PROVIDER_PRESET_API_BASE = {
   alibaba: alibabaBase,
   anthropic: anthropicBase,
   'vercel-ai-gateway': vercelAiGatewayBase,
+  'cloudflare-ai-gateway': cloudflareAiGatewayBase,
   openrouter: openrouterBase,
   'fireworks-ai': fireworksAiBase,
   openai: openaiBase,
@@ -647,6 +653,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.anthropic;
     case 'vercel-ai-gateway':
       return PROVIDER_PRESET_API_BASE['vercel-ai-gateway'];
+    case 'cloudflare-ai-gateway':
+      return PROVIDER_PRESET_API_BASE['cloudflare-ai-gateway'];
     case 'openrouter':
       return PROVIDER_PRESET_API_BASE.openrouter;
     case 'fireworks-ai':
