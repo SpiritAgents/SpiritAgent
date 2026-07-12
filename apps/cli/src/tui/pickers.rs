@@ -1,5 +1,6 @@
 use super::image_paths::list_local_image_files;
 use super::*;
+use crate::model_registry::ModelRef;
 
 pub(crate) const APPROVAL_LEVEL_OPTIONS: [&str; 3] = ["default", "auto-approval", "full-approval"];
 pub(crate) const LLM_HTTP_VERSION_OPTIONS: [&str; 2] = ["http1.1", "http2"];
@@ -104,15 +105,19 @@ impl TuiShell {
     }
 
     pub fn confirm_model_picker(&mut self) {
-        let Some(selected) = self
+        let Some(profile) = self
             .runtime
             .config()
-            .list_all_model_refs()
+            .flatten_models()
             .get(self.model_picker_index)
             .cloned()
         else {
             self.model_picker_active = false;
             return;
+        };
+        let selected = ModelRef {
+            group_id: profile.group_id.clone(),
+            name: profile.name.clone(),
         };
 
         let mut config = self.runtime.config().clone();
@@ -348,11 +353,11 @@ impl TuiShell {
         self.model_picker_index = self
             .runtime
             .config()
-            .list_all_model_refs()
+            .flatten_models()
             .iter()
-            .position(|model_ref| {
-                model_ref.group_id == self.runtime.config().active_model.group_id
-                    && model_ref.name == self.runtime.config().active_model.name
+            .position(|profile| {
+                profile.group_id == self.runtime.config().active_model.group_id
+                    && profile.name == self.runtime.config().active_model.name
             })
             .unwrap_or(0);
         self.model_display_titles = crate::model_catalog_display::build_model_display_titles(
