@@ -374,6 +374,8 @@
     "cloudflareAiGatewayApiToken": "API Token",
     "cloudflareAiGatewayApiTokenPlaceholder": "Enter API Token",
     "cloudflareAiGatewayApiTokenRequired": "API Token is required.",
+    "cloudflareAiGatewayManualHint": "Enter Account ID, Gateway ID, model ID, and API Token. Models are not fetched automatically in this mode.",
+    "cloudflareModelNamePlaceholder": "e.g. openai/gpt-4.1-mini or @cf/meta/llama-3.1-8b-instruct",
     "vertexAuthMode": "Authentication",
     "vertexAuthAdc": "ADC",
     "vertexAuthServiceAccount": "Service Account",

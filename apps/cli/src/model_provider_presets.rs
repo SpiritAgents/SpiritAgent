@@ -364,6 +364,7 @@ pub(crate) fn model_add_requires_manual_single_provider(
     matches!(
         provider,
         crate::model_registry::ModelProvider::Azure
+            | crate::model_registry::ModelProvider::CloudflareAiGateway
     )
 }
 
