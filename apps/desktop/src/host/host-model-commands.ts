@@ -181,13 +181,13 @@ function resolveConnectGroupId(input: ConnectRequestFields): string {
     if (label) {
       return slugifyProviderGroupLabel(label);
     }
-    const groupId = input.groupId.trim();
+    const groupId = input.groupId?.trim() ?? '';
     if (groupId) {
       return groupId;
     }
     throw new Error(i18n.t('error.modelNameRequired'));
   }
-  const explicitGroupId = input.groupId.trim();
+  const explicitGroupId = input.groupId?.trim() ?? '';
   if (explicitGroupId) {
     return explicitGroupId;
   }

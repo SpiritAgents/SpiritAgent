@@ -883,6 +883,7 @@ export function ModelsSettingsPanel({
       contextLength = parsed;
     }
     await onAddModel({
+      groupId: defaultPresetProviderGroupId("cloudflare-ai-gateway"),
       name,
       apiBase: cloudflareAiGatewayApiBaseFromAccountId(accountId),
       apiKey: connectApiKey,
