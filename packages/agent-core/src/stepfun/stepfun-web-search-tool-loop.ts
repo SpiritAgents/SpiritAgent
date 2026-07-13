@@ -1,3 +1,4 @@
+import { getLlmFetch } from '../llm-fetch.js';
 import type { JsonObject } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
 import type { LlmTransportConfig } from '../provider-config.js';
@@ -47,7 +48,7 @@ export type StepfunWebSearchToolExecutionResult =
 export async function executeStepfunWebSearchToolCall(
   config: LlmTransportConfig,
   call: Pick<ToolCallRequest, 'name' | 'argumentsJson'>,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch = getLlmFetch(),
 ): Promise<StepfunWebSearchToolExecutionResult> {
   const query = readStepfunWebSearchQuery(call.argumentsJson);
   const n = readStepfunWebSearchResultCount(call.argumentsJson);

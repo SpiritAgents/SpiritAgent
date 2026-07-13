@@ -1,3 +1,5 @@
+import { getLlmFetch } from '../llm-fetch.js';
+
 export const STEPFUN_SEARCH_URL = 'https://api.stepfun.com/v1/search';
 
 type StepfunSearchResult = {
@@ -45,7 +47,7 @@ export function formatStepfunSearchResults(results: readonly StepfunSearchResult
 export async function invokeStepfunSearch(
   apiKey: string,
   body: { query: string; n?: number },
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch = getLlmFetch(),
 ): Promise<StepfunSearchInvokeResult> {
   const query = body.query.trim();
   if (!query) {
