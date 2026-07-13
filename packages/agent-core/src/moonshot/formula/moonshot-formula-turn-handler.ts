@@ -88,6 +88,8 @@ async function executeAndCommitManagedProviderToolCall<
     }),
   });
 
+  await Promise.resolve(runtime.options.flushPendingHostEvents?.());
+
   const execution = isStepfunManagedWebSearchToolCall(call.name, config)
     ? await executeStepfunWebSearchToolCall(config, call)
     : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);

@@ -3408,7 +3408,23 @@ class DesktopHostService {
       hookRunner,
       hookSessionContext,
       bootstrapSubagentWorkspace: this.createSubagentWorkspaceBootstrap(toolExecutor, transportConfig),
+      flushPendingHostEvents: () => this.flushRuntimeHostEventsForBundle(bundle),
     });
+  }
+
+  private flushRuntimeHostEventsForBundle(bundle: SessionBundle): void {
+    const runtime = bundle.runtime;
+    if (!runtime) {
+      return;
+    }
+    const changed = applyDrainedRuntimeHostEvents(
+      this.sessionTurnContext(),
+      bundle,
+      runtime.drainEvents(),
+    );
+    if (changed) {
+      this.emitLiveSnapshotUpdate();
+    }
   }
 
   private resolveTodoSessionKeyForBundle(bundle: SessionBundle): string {
