@@ -1253,6 +1253,7 @@ export function ConversationSplitProvider({
         messageId,
       });
       if (!forked) {
+        await runtime.deleteSession(response.sessionPath);
         return;
       }
 
