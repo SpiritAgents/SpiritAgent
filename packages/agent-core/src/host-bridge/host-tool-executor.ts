@@ -28,6 +28,8 @@ import {
   type BuiltinHostToolDefinitionEnvironment,
 } from '../host-tools.js';
 import { enrichUnknownToolError, toolNamesFromDefinitions } from '../unknown-tool-error.js';
+import { shouldUseStepfunWebSearch } from '../stepfun/stepfun-eligibility.js';
+import { buildStepfunWebSearchToolDefinition } from '../stepfun/stepfun-web-search-tool.js';
 import { buildLspHostToolDefinitions } from '../lsp/tool-definitions.js';
 import { executeGetDiagnostics } from '../lsp/execute-diagnostics.js';
 import {
@@ -567,8 +569,18 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
             ...this.loopToolDefinitionsCache,
             ...this.planToolDefinitionsCache,
             ...this.todoToolDefinitionsCache,
+            ...(shouldUseStepfunWebSearch(this.transportConfigForToolDefinitions)
+              ? [buildStepfunWebSearchToolDefinition()]
+              : []),
           ]
-        : [...this.loopToolDefinitionsCache, ...this.planToolDefinitionsCache, ...this.todoToolDefinitionsCache],
+        : [
+            ...this.loopToolDefinitionsCache,
+            ...this.planToolDefinitionsCache,
+            ...this.todoToolDefinitionsCache,
+            ...(shouldUseStepfunWebSearch(this.transportConfigForToolDefinitions)
+              ? [buildStepfunWebSearchToolDefinition()]
+              : []),
+          ],
       this.agentMode,
     );
     this.toolDefinitionsCache = mergeToolDefinitions(

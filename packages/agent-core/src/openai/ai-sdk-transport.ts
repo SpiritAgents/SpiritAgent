@@ -134,6 +134,7 @@ import {
 } from './gateway-google-thinking.js';
 import { isOpenRouterAnthropicClaudeModel } from './openrouter-anthropic-reasoning.js';
 import { generateSiliconFlowImage } from '../image-generation/siliconflow-backend.js';
+import { generateStepfunImage } from '../image-generation/stepfun-backend.js';
 import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { generateVideoWithRouter } from '../video-generation/router.js';
 import { getLlmFetch } from '../llm-fetch.js';
@@ -163,6 +164,7 @@ import {
 } from '../moonshot/formula/moonshot-chat-completions-fetch.js';
 import { shouldUseMoonshotFormulaWebSearch } from '../moonshot/formula/formula-eligibility.js';
 import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from '../moonshot/formula/moonshot-formula-tool-loop.js';
+import { buildStepfunWebSearchStreamingPreviewArgumentsJson } from '../stepfun/stepfun-web-search-tool-loop.js';
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
@@ -270,6 +272,10 @@ export class AiSdkOpenAiCompatibleTransport
 
     if (imageConfig.llmVendor === 'siliconflow') {
       return generateSiliconFlowImage(imageConfig, request, saveGeneratedImage);
+    }
+
+    if (imageConfig.llmVendor === 'stepfun') {
+      return generateStepfunImage(imageConfig, request, saveGeneratedImage);
     }
 
     const requestUrl = buildAiSdkImageGenerationUrl(imageConfig);
@@ -1636,6 +1642,7 @@ function resolveStreamingToolPreviewArgumentsJson(
   argumentsJson: string,
 ): string {
   return buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson)
+    ?? buildStepfunWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson)
     ?? argumentsJson;
 }
 

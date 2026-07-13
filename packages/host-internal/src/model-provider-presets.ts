@@ -11,6 +11,7 @@ export type ModelProviderId =
   | 'minimax'
   | 'xiaomi'
   | 'siliconflow'
+  | 'stepfun'
   | 'alibaba'
   | 'anthropic'
   | 'vercel-ai-gateway'
@@ -58,6 +59,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'minimax',
   'xiaomi',
   'siliconflow',
+  'stepfun',
   'volcengine',
   'azure',
   'amazon-bedrock',
@@ -80,7 +82,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -117,7 +119,14 @@ type ProviderSiteSelectionByProvider = Partial<
 
 export type AlibabaBillingMode = 'token-plan';
 
+export type StepfunBillingMode = 'step-plan';
+
 export interface AlibabaTokenPlanConfig {
+  compatibleApiBase: string;
+  docUrl: string;
+}
+
+export interface StepfunStepPlanConfig {
   compatibleApiBase: string;
   docUrl: string;
 }
@@ -128,6 +137,8 @@ export interface ResolveProviderConnectApiBaseOptions {
   customApiBaseTrimmed?: string;
   /** Alibaba Token Plan：固定 cn-beijing 端点，忽略 site/workspace。 */
   billingMode?: AlibabaBillingMode;
+  /** StepFun Step Plan：固定 step_plan 端点。 */
+  stepfunBillingMode?: StepfunBillingMode;
 }
 
 export interface ProviderPickerLabel {
@@ -151,6 +162,7 @@ interface ParsedModelProviderPresets {
     | 'minimax'
     | 'xiaomi'
     | 'siliconflow'
+    | 'stepfun'
     | 'alibaba'
     | 'anthropic'
     | 'vercel-ai-gateway'
@@ -168,6 +180,7 @@ interface ParsedModelProviderPresets {
   presetApiBaseByTransport: PresetApiBaseByTransport;
   providerSiteSelection: ProviderSiteSelectionByProvider;
   alibabaTokenPlan: AlibabaTokenPlanConfig;
+  stepfunStepPlan: StepfunStepPlanConfig;
   pickerOrder: readonly ModelProviderId[];
   pickerLabels: Record<ModelProviderId, ProviderPickerLabel>;
 }
@@ -294,6 +307,16 @@ function parseAlibabaTokenPlanConfig(data: unknown): AlibabaTokenPlanConfig {
   };
 }
 
+function parseStepfunStepPlanConfig(data: unknown): StepfunStepPlanConfig {
+  if (!isJsonRecord(data)) {
+    throw new Error('model-provider-presets.json: stepfunStepPlan must be an object');
+  }
+  return {
+    compatibleApiBase: requireStringField(data, 'compatibleApiBase'),
+    docUrl: requireStringField(data, 'docUrl'),
+  };
+}
+
 function parsePickerLabel(data: unknown, id: ModelProviderId): ProviderPickerLabel {
   if (!isJsonRecord(data)) {
     throw new Error(`model-provider-presets.json: pickerLabels.${id} must be an object`);
@@ -332,6 +355,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     minimax: requireStringField(presetRaw, 'minimax'),
     xiaomi: requireStringField(presetRaw, 'xiaomi'),
     siliconflow: requireStringField(presetRaw, 'siliconflow'),
+    stepfun: requireStringField(presetRaw, 'stepfun'),
     alibaba: requireStringField(presetRaw, 'alibaba'),
     anthropic: requireStringField(presetRaw, 'anthropic'),
     'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
@@ -366,6 +390,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
 
   const providerSiteSelection = parseProviderSiteSelection(data.providerSiteSelection);
   const alibabaTokenPlan = parseAlibabaTokenPlanConfig(data.alibabaTokenPlan);
+  const stepfunStepPlan = parseStepfunStepPlanConfig(data.stepfunStepPlan);
 
   return {
     defaultCustomApiBase,
@@ -373,6 +398,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     presetApiBaseByTransport,
     providerSiteSelection,
     alibabaTokenPlan,
+    stepfunStepPlan,
     pickerOrder,
     pickerLabels: pickerLabels as Record<ModelProviderId, ProviderPickerLabel>,
   };
@@ -382,6 +408,8 @@ const raw = parseModelProviderPresetsJson(rawImport as unknown);
 
 export const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: string = raw.alibabaTokenPlan.compatibleApiBase;
 export const ALIBABA_TOKEN_PLAN_DOC_URL: string = raw.alibabaTokenPlan.docUrl;
+export const STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE: string = raw.stepfunStepPlan.compatibleApiBase;
+export const STEPFUN_STEP_PLAN_DOC_URL: string = raw.stepfunStepPlan.docUrl;
 
 export const DEFAULT_CUSTOM_API_BASE: string = raw.defaultCustomApiBase;
 
@@ -394,6 +422,7 @@ const zhipuAiBase = raw.presetApiBaseByProvider['zhipu-ai'];
 const minimaxBase = raw.presetApiBaseByProvider.minimax;
 const xiaomiBase = raw.presetApiBaseByProvider.xiaomi;
 const siliconflowBase = raw.presetApiBaseByProvider.siliconflow;
+const stepfunBase = raw.presetApiBaseByProvider.stepfun;
 const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
 const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
@@ -417,6 +446,7 @@ export const PROVIDER_PRESET_API_BASE = {
   minimax: minimaxBase,
   xiaomi: xiaomiBase,
   siliconflow: siliconflowBase,
+  stepfun: stepfunBase,
   alibaba: alibabaBase,
   anthropic: anthropicBase,
   'vercel-ai-gateway': vercelAiGatewayBase,
@@ -615,6 +645,16 @@ function resolveTransportApiBaseForProviderSite(
   }
 }
 
+/** StepFun Step Plan：固定 step_plan compatible base，按 transport 推导 Anthropic / Open Responses。 */
+export function resolveStepfunStepPlanConnectApiBase(
+  transportKind: ProviderModelTransportKind,
+): string {
+  if (transportKind === 'anthropic') {
+    return 'https://api.stepfun.com/step_plan';
+  }
+  return STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE;
+}
+
 /** Alibaba Token Plan：固定 cn-beijing compatible base，按 transport 推导 Anthropic / Open Responses。 */
 export function resolveAlibabaTokenPlanConnectApiBase(
   transportKind: ProviderModelTransportKind,
@@ -647,6 +687,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.xiaomi;
     case 'siliconflow':
       return PROVIDER_PRESET_API_BASE.siliconflow;
+    case 'stepfun':
+      return PROVIDER_PRESET_API_BASE.stepfun;
     case 'alibaba':
       return PROVIDER_PRESET_API_BASE.alibaba;
     case 'anthropic':
@@ -685,7 +727,7 @@ export function resolveProviderConnectApiBase(
   transportKind: ProviderModelTransportKind,
   options?: ResolveProviderConnectApiBaseOptions | string,
 ): string {
-  const { site, workspaceId, customApiBaseTrimmed = '', billingMode } =
+  const { site, workspaceId, customApiBaseTrimmed = '', billingMode, stepfunBillingMode } =
     normalizeResolveProviderConnectApiBaseOptions(options);
 
   if (provider === 'custom') {
@@ -694,6 +736,10 @@ export function resolveProviderConnectApiBase(
 
   if (provider === 'alibaba' && billingMode === 'token-plan') {
     return resolveAlibabaTokenPlanConnectApiBase(transportKind);
+  }
+
+  if (provider === 'stepfun' && stepfunBillingMode === 'step-plan') {
+    return resolveStepfunStepPlanConnectApiBase(transportKind);
   }
 
   const siteBase = site ? resolveProviderConnectSiteApiBase(provider, site, workspaceId) : undefined;

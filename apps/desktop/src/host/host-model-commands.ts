@@ -24,6 +24,7 @@ import type {
   AddModelRequest,
   AddProviderModelsRequest,
   DesktopAlibabaBillingMode,
+  DesktopStepfunBillingMode,
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
@@ -150,6 +151,7 @@ interface ConnectRequestFields {
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
+  stepfunBillingMode?: DesktopStepfunBillingMode;
   vertexProject?: string;
   vertexLocation?: string;
   azureResourceName?: string;
@@ -232,6 +234,7 @@ function buildProviderGroupConnect(
     input.providerSite,
     input.alibabaWorkspaceId,
     input.alibabaBillingMode,
+    input.stepfunBillingMode,
     input.cloudflareAccountId,
   );
   const group: Omit<ProviderGroupV2, 'id' | 'models'> = {
@@ -272,6 +275,7 @@ function buildProviderGroupConnect(
     providerSite: input.providerSite,
     alibabaWorkspaceId: input.alibabaWorkspaceId,
     alibabaBillingMode: input.alibabaBillingMode,
+    stepfunBillingMode: input.stepfunBillingMode,
   });
   return group;
 }
@@ -654,13 +658,24 @@ function applyManagedProviderConnectFields<
     providerSite?: DesktopProviderConnectSiteId;
     alibabaWorkspaceId?: string;
     alibabaBillingMode?: DesktopAlibabaBillingMode;
+    stepfunBillingMode?: DesktopStepfunBillingMode;
   },
 >(profile: T, input: {
   provider?: DesktopModelProvider;
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
+  stepfunBillingMode?: DesktopStepfunBillingMode;
 }): void {
+  if (input.provider === 'stepfun') {
+    if (input.stepfunBillingMode === 'step-plan') {
+      profile.stepfunBillingMode = 'step-plan';
+    } else {
+      delete profile.stepfunBillingMode;
+    }
+    return;
+  }
+
   if (input.provider === 'alibaba') {
     if (input.alibabaBillingMode === 'token-plan') {
       profile.alibabaBillingMode = 'token-plan';
@@ -727,6 +742,7 @@ function resolveManagedConnectApiBase(
   providerSite?: DesktopProviderConnectSiteId,
   alibabaWorkspaceId?: string,
   alibabaBillingMode?: DesktopAlibabaBillingMode,
+  stepfunBillingMode?: DesktopStepfunBillingMode,
   cloudflareAccountId?: string,
 ): string {
   if (provider === 'amazon-bedrock') {
@@ -774,6 +790,7 @@ function resolveManagedConnectApiBase(
     providerSite,
     alibabaWorkspaceId,
     alibabaBillingMode,
+    stepfunBillingMode,
   );
 }
 
@@ -852,6 +869,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const providerSite = request.providerSite?.trim() as DesktopProviderConnectSiteId | undefined;
   const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
   const alibabaBillingMode = request.alibabaBillingMode;
+  const stepfunBillingMode = request.stepfunBillingMode;
   const vertexProject = request.vertexProject?.trim();
   const vertexLocation = request.vertexLocation?.trim();
   const cloudflareAccountId = request.cloudflareAccountId?.trim();
@@ -879,6 +897,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
     providerSite,
     alibabaWorkspaceId,
     alibabaBillingMode,
+    stepfunBillingMode,
     cloudflareAccountId,
   );
   const apiKey = request.apiKey.trim();
@@ -942,6 +961,7 @@ export async function addProviderModelsCommand(
     const providerSite = request.providerSite?.trim() as DesktopProviderConnectSiteId | undefined;
     const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
     const alibabaBillingMode = request.alibabaBillingMode;
+    const stepfunBillingMode = request.stepfunBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     const cloudflareAccountId = request.cloudflareAccountId?.trim();
@@ -966,6 +986,7 @@ export async function addProviderModelsCommand(
       ...(providerSite ? { providerSite } : {}),
       ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
       ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+      ...(stepfunBillingMode ? { stepfunBillingMode } : {}),
       ...(vertexProject ? { vertexProject } : {}),
       ...(vertexLocation ? { vertexLocation } : {}),
       ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
@@ -1065,6 +1086,7 @@ export async function addProviderModelsCommand(
       providerSite,
       alibabaWorkspaceId,
       alibabaBillingMode,
+      stepfunBillingMode,
     });
     const catalogRefreshResult = {
       modelIds: uniqueIds,
@@ -1167,6 +1189,7 @@ export async function addModelCommand(
     const providerSite = request.providerSite?.trim() as DesktopProviderConnectSiteId | undefined;
     const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
     const alibabaBillingMode = request.alibabaBillingMode;
+    const stepfunBillingMode = request.stepfunBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     const azureResourceName = request.azureResourceName?.trim();
@@ -1199,6 +1222,7 @@ export async function addModelCommand(
       ...(providerSite ? { providerSite } : {}),
       ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
       ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+      ...(stepfunBillingMode ? { stepfunBillingMode } : {}),
       ...(vertexProject ? { vertexProject } : {}),
       ...(vertexLocation ? { vertexLocation } : {}),
       ...(azureResourceName ? { azureResourceName } : {}),

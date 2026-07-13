@@ -19,6 +19,7 @@ export type OpenAiLlmVendor =
   | 'minimax'
   | 'xiaomi'
   | 'siliconflow'
+  | 'stepfun'
   | 'alibaba'
   | 'vercel-ai-gateway'
   | 'cloudflare-ai-gateway'
