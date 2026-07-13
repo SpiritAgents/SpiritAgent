@@ -695,6 +695,21 @@ export interface BeginSplitPaneSessionResponse {
   snapshot?: DesktopSnapshot;
 }
 
+export interface BeginSideChatPaneSessionRequest {
+  paneId: string;
+}
+
+export interface BeginSideChatPaneSessionResponse {
+  sessionPath: string;
+}
+
+export interface ForkSessionIntoSideChatRequest {
+  sourceSessionPath: string;
+  targetPaneId: string;
+  messageId: number;
+  listIndex?: number;
+}
+
 export interface SetVisiblePaneSessionsRequest {
   sessionPaths: string[];
 }

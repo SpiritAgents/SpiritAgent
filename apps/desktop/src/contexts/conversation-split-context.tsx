@@ -75,7 +75,9 @@ import {
 
 import { clearConversationSplitLayoutJson } from "@/lib/layout-prefs";
 
-import { lookupPaneSessionSlice } from "@/lib/pane-desktop-snapshot";
+import { lookupPaneSessionSlice, resolvePaneDesktopSnapshot } from "@/lib/pane-desktop-snapshot";
+import { canBeginSideChat } from "@/lib/fork-eligibility";
+import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 
 import {
 
@@ -133,6 +135,8 @@ type ConversationSplitContextValue = {
   focusPane: (paneId: string, sessionPath: string) => void;
 
   splitPane: (paneId: string, direction?: SplitDirection) => Promise<void>;
+
+  beginSideChat: (paneId: string) => Promise<void>;
 
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
@@ -527,6 +531,8 @@ export function ConversationSplitProvider({
 
   onEnsureConversationSurface,
 
+  registerBeginSideChat,
+
   children,
 
 }: {
@@ -538,6 +544,8 @@ export function ConversationSplitProvider({
   conversationAbortShortcutTargetRef?: ConversationAbortShortcutTargetRef | null;
 
   onEnsureConversationSurface?: () => void;
+
+  registerBeginSideChat?: (handler: (() => void) | null) => void;
 
   children: ReactNode;
 
@@ -1206,6 +1214,82 @@ export function ConversationSplitProvider({
 
   );
 
+  const beginSideChat = useCallback(
+    async (paneId: string) => {
+      if (!layout || !runtime.apiReady) {
+        return;
+      }
+
+      const sourceLeaf = findLeafByPaneId(layout, paneId);
+      if (!sourceLeaf) {
+        return;
+      }
+
+      const paneSnapshot = resolvePaneDesktopSnapshot(snapshot, sourceLeaf.sessionPath);
+      const messages = paneSnapshot?.conversation.messages ?? [];
+      const messageId = findLastForkableAssistantMessageId(messages);
+      const conversationBusy = paneSnapshot?.conversation.isBusy === true;
+      const activeSessionReadOnly = paneSnapshot?.activeSession?.readOnly === true;
+      const sideChatBusy = runtime.busyAction === "side-chat";
+      const forkBusy = runtime.busyAction === "fork";
+      if (
+        !messageId
+        || !canBeginSideChat({
+          conversationBusy,
+          activeSessionReadOnly,
+          forkBusy,
+          sideChatBusy,
+          hasForkableAssistantMessage: true,
+        })
+      ) {
+        return;
+      }
+
+      const newPaneId = createPaneId();
+      const response = await runtime.beginSideChatPaneSession(newPaneId);
+      const forked = await runtime.forkSessionIntoSideChat({
+        sourceSessionPath: sourceLeaf.sessionPath,
+        targetPaneId: newPaneId,
+        messageId,
+      });
+      if (!forked) {
+        await runtime.deleteSession(response.sessionPath);
+        return;
+      }
+
+      const newLeaf = createLeafNode(newPaneId, response.sessionPath);
+      const nextLayout = splitPaneAt(layout, paneId, "horizontal", newLeaf);
+      const paths = collectPaneSessionPaths(nextLayout);
+      visiblePathsSyncedRef.current = paths.join("\0");
+      await runtime.syncSplitPaneSessions(paths, response.sessionPath);
+      setLayout(nextLayout);
+      setFocusedPaneId(newPaneId);
+      persistSessionSplitBinding(nextLayout);
+    },
+    [layout, runtime, snapshot],
+  );
+
+  useEffect(() => {
+    if (!registerBeginSideChat) {
+      return;
+    }
+    registerBeginSideChat(() => {
+      const currentLayout = layoutRef.current;
+      if (!currentLayout) {
+        return;
+      }
+      const focused = focusedPaneIdRef.current;
+      const paneId =
+        focused && findLeafByPaneId(currentLayout, focused)
+          ? focused
+          : findWorkspaceToolsAnchorPaneId(currentLayout);
+      void beginSideChat(paneId);
+    });
+    return () => {
+      registerBeginSideChat(null);
+    };
+  }, [beginSideChat, registerBeginSideChat]);
+
   useEffect(() => {
     registerSplitPaneShortcut({
       splitFocusedPane(direction) {
@@ -1694,6 +1778,8 @@ export function ConversationSplitProvider({
 
       splitPane,
 
+      beginSideChat,
+
       closePaneById,
 
       collapsePaneLayoutById,
@@ -1789,6 +1875,8 @@ export function ConversationSplitProvider({
       setPaneDropTarget,
 
       splitPane,
+
+      beginSideChat,
 
       startPaneDrag,
 

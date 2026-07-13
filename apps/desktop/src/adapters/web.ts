@@ -46,6 +46,9 @@ import type {
   AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
+  BeginSideChatPaneSessionRequest,
+  BeginSideChatPaneSessionResponse,
+  ForkSessionIntoSideChatRequest,
   SetVisiblePaneSessionsRequest,
   CloseSplitPaneSessionRequest,
   FocusPaneSessionRequest,
@@ -390,6 +393,12 @@ export function createWebHostApi(): HostApi {
     },
     beginSplitPaneSession(request: BeginSplitPaneSessionRequest) {
       return post<BeginSplitPaneSessionResponse>(baseUrl, '/api/sessions/split/begin', request);
+    },
+    beginSideChatPaneSession(request: BeginSideChatPaneSessionRequest) {
+      return post<BeginSideChatPaneSessionResponse>(baseUrl, '/api/sessions/side-chat/begin', request);
+    },
+    forkSessionIntoSideChat(request: ForkSessionIntoSideChatRequest) {
+      return post<DesktopSnapshot>(baseUrl, '/api/sessions/side-chat/fork', request);
     },
     setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/sessions/split/visible', request);

@@ -24,6 +24,7 @@ type ActionPickerDialogProps = {
   onOpenChange(open: boolean): void
   onSelect(item: ActionPaletteItem): void
   isItemDisabled?(item: ActionPaletteItem): boolean
+  shouldIncludeItem?(item: ActionPaletteItem): boolean
 }
 
 function actionPaletteItemValue(item: ActionPaletteItem): string {
@@ -35,6 +36,7 @@ export function ActionPickerDialog({
   onOpenChange,
   onSelect,
   isItemDisabled,
+  shouldIncludeItem,
 }: ActionPickerDialogProps) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
@@ -50,8 +52,8 @@ export function ActionPickerDialog({
   }, [open])
 
   const items = useMemo(
-    () => buildActionPaletteItems(query, t),
-    [query, t],
+    () => buildActionPaletteItems(query, t).filter((item) => shouldIncludeItem?.(item) ?? true),
+    [query, shouldIncludeItem, t],
   )
 
   const closeAndSelect = (item: ActionPaletteItem) => {

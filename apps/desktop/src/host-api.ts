@@ -75,6 +75,9 @@ import type {
   ReplyPendingQuestionsRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
+  BeginSideChatPaneSessionRequest,
+  BeginSideChatPaneSessionResponse,
+  ForkSessionIntoSideChatRequest,
   SetVisiblePaneSessionsRequest,
   SyncSplitPaneSessionsRequest,
   CloseSplitPaneSessionRequest,
@@ -224,6 +227,10 @@ export interface HostApi {
   beginSplitPaneSession(
     request: BeginSplitPaneSessionRequest,
   ): Promise<BeginSplitPaneSessionResponse>;
+  beginSideChatPaneSession(
+    request: BeginSideChatPaneSessionRequest,
+  ): Promise<BeginSideChatPaneSessionResponse>;
+  forkSessionIntoSideChat(request: ForkSessionIntoSideChatRequest): Promise<DesktopSnapshot>;
   setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest): Promise<DesktopSnapshot>;
   syncSplitPaneSessions(request: SyncSplitPaneSessionsRequest): Promise<DesktopSnapshot>;
   focusPaneSession(request: FocusPaneSessionRequest): Promise<DesktopSnapshot>;
