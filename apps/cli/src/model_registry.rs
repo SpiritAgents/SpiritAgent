@@ -371,6 +371,7 @@ impl ModelProfile {
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)
             | Some(ModelProvider::Volcengine)
+            | Some(ModelProvider::Stepfun)
             | Some(ModelProvider::AmazonBedrock)
             | Some(ModelProvider::Azure)
             | Some(ModelProvider::Custom)
@@ -984,6 +985,7 @@ impl AppConfig {
             provider_site: None,
             alibaba_workspace_id: None,
             alibaba_billing_mode: None,
+            stepfun_billing_mode: None,
             aws_region: None,
             azure_resource_name: None,
             cloudflare_account_id: None,
