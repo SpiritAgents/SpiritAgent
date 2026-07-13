@@ -32,6 +32,8 @@ export type SpiritTransportKindV2 =
 
 export type SpiritAlibabaBillingModeV2 = 'token-plan';
 
+export type SpiritStepfunBillingModeV2 = 'step-plan';
+
 export interface ModelEntryV2 {
   name: string;
   reasoningEffort: SpiritModelReasoningEffortV2;
@@ -51,6 +53,7 @@ export interface ProviderGroupV2 {
   providerSite?: string;
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: SpiritAlibabaBillingModeV2;
+  stepfunBillingMode?: SpiritStepfunBillingModeV2;
   awsRegion?: string;
   azureResourceName?: string;
   cloudflareAccountId?: string;

@@ -537,6 +537,7 @@ impl TuiShell {
                 provider_site: parsed.provider_site.clone(),
                 alibaba_workspace_id: parsed.alibaba_workspace_id.clone(),
                 alibaba_billing_mode: parsed.alibaba_billing_mode.clone(),
+                stepfun_billing_mode: parsed.stepfun_billing_mode.clone(),
                 vertex_project: parsed.vertex_project.clone(),
                 vertex_location: parsed.vertex_location.clone(),
                 cloudflare_account_id: parsed.cloudflare_account_id.clone(),

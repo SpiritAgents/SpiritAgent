@@ -165,6 +165,9 @@ export function ModelsSettingsPanel({
   const [connectAlibabaBillingMode, setConnectAlibabaBillingMode] = useState<
     "standard" | "token-plan"
   >("standard");
+  const [connectStepfunBillingMode, setConnectStepfunBillingMode] = useState<
+    "standard" | "step-plan"
+  >("standard");
   const [connectAlibabaWorkspaceId, setConnectAlibabaWorkspaceId] = useState("");
   const [customConnectMode, setCustomConnectMode] = useState<"single" | "bulk">(
     "single",
@@ -303,6 +306,7 @@ export function ModelsSettingsPanel({
     setConnectTransportKind("openai-compatible");
     setConnectProviderSite("");
     setConnectAlibabaBillingMode("standard");
+    setConnectStepfunBillingMode("standard");
     setConnectAlibabaWorkspaceId("");
     setConnectCustomGroupLabel("");
     setCustomConnectMode("single");
@@ -341,6 +345,7 @@ export function ModelsSettingsPanel({
     setConnectCapabilities(defaultCustomModelCapabilities);
     resetConnectTransportKindForProvider(id);
     setConnectAlibabaBillingMode("standard");
+    setConnectStepfunBillingMode("standard");
     setConnectCustomGroupLabel("");
     setCustomConnectMode("single");
     setBedrockConnectMode("bearer");
@@ -573,6 +578,11 @@ export function ModelsSettingsPanel({
   const connectAlibabaBillingModeForRequest = connectAlibabaIsTokenPlan
     ? ("token-plan" as const)
     : undefined;
+  const connectStepfunIsStepPlan =
+    selectedProvider === "stepfun" && connectStepfunBillingMode === "step-plan";
+  const connectStepfunBillingModeForRequest = connectStepfunIsStepPlan
+    ? ("step-plan" as const)
+    : undefined;
   const connectProviderSiteForRequest = connectAlibabaIsTokenPlan
     ? undefined
     : connectProviderSite.trim() || undefined;
@@ -611,6 +621,9 @@ export function ModelsSettingsPanel({
             {
               ...(connectAlibabaBillingModeForRequest
                 ? { billingMode: connectAlibabaBillingModeForRequest }
+                : {}),
+              ...(connectStepfunBillingModeForRequest
+                ? { stepfunBillingMode: connectStepfunBillingModeForRequest }
                 : {}),
               ...(connectProviderSiteForApiBase ? { site: connectProviderSiteForApiBase } : {}),
               ...(connectAlibabaWorkspaceIdForRequest
@@ -687,6 +700,9 @@ export function ModelsSettingsPanel({
       ...(connectAlibabaBillingModeForRequest
         ? { alibabaBillingMode: connectAlibabaBillingModeForRequest }
         : {}),
+      ...(connectStepfunBillingModeForRequest
+        ? { stepfunBillingMode: connectStepfunBillingModeForRequest }
+        : {}),
       forceRefresh,
     });
     if (res.modelIds.length === 0) {
@@ -716,6 +732,9 @@ export function ModelsSettingsPanel({
         : {}),
       ...(connectAlibabaBillingModeForRequest
         ? { alibabaBillingMode: connectAlibabaBillingModeForRequest }
+        : {}),
+      ...(connectStepfunBillingModeForRequest
+        ? { stepfunBillingMode: connectStepfunBillingModeForRequest }
         : {}),
     };
     await onAddProviderModels(bulk);
@@ -1519,6 +1538,34 @@ export function ModelsSettingsPanel({
                       </SelectItem>
                       <SelectItem value="token-plan">
                         {t('settings.alibabaBillingModeTokenPlan')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : null}
+            {selectedProvider === "stepfun" ? (
+              <div className="grid gap-2">
+                <Label htmlFor="connect-stepfun-billing-mode">{t('settings.stepfunBillingMode')}</Label>
+                <div className={DESKTOP_FORM_INPUT_SHELL}>
+                  <Select
+                    value={connectStepfunBillingMode}
+                    onValueChange={(value) =>
+                      setConnectStepfunBillingMode(value as "standard" | "step-plan")
+                    }
+                  >
+                    <SelectTrigger
+                      id="connect-stepfun-billing-mode"
+                      className={DESKTOP_FORM_FIELD_TRIGGER_INNER}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">
+                        {t('settings.stepfunBillingModeStandard')}
+                      </SelectItem>
+                      <SelectItem value="step-plan">
+                        {t('settings.stepfunBillingModeStepPlan')}
                       </SelectItem>
                     </SelectContent>
                   </Select>

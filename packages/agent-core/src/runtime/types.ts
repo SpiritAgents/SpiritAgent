@@ -413,6 +413,8 @@ export interface AgentRuntimeOptions<
   ) => State;
   maxAutoCompactRetries?: number;
   onEvent?: (event: RuntimeEvent<ToolRequest>) => void;
+  /** Host hook to apply queued runtime events before long-running managed provider work (e.g. web_search). */
+  flushPendingHostEvents?: () => void | Promise<void>;
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
   persistPreCompactionHistory?: (input: {

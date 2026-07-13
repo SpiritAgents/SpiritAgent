@@ -32,6 +32,8 @@ export interface AnthropicTransportConfig {
   transportRequestProfile?: TransportRequestProfile;
   /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
   cloudflareGatewayId?: string;
+  /** 与宿主 ModelProfile.provider 对齐，用于 Messages API 厂商扩展。 */
+  llmVendor?: import('../openai/openai-compat.js').OpenAiLlmVendor;
 }
 
 export interface AnthropicRequestTrace extends JsonObject {
