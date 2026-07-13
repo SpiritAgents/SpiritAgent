@@ -1258,12 +1258,12 @@ export function ConversationSplitProvider({
 
       const newLeaf = createLeafNode(newPaneId, response.sessionPath);
       const nextLayout = splitPaneAt(layout, paneId, "horizontal", newLeaf);
-      setLayout(nextLayout);
-      setFocusedPaneId(newPaneId);
-      persistSessionSplitBinding(nextLayout);
       const paths = collectPaneSessionPaths(nextLayout);
       visiblePathsSyncedRef.current = paths.join("\0");
       await runtime.syncSplitPaneSessions(paths, response.sessionPath);
+      setLayout(nextLayout);
+      setFocusedPaneId(newPaneId);
+      persistSessionSplitBinding(nextLayout);
     },
     [layout, runtime, snapshot],
   );
