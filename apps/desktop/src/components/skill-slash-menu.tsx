@@ -38,22 +38,21 @@ export function SkillSlashMenu({
         const description = suggestion.descriptionKey
           ? t(suggestion.descriptionKey)
           : suggestion.description ?? ''
-        const label = suggestion.nameKey ? t(suggestion.nameKey) : suggestion.name
 
         return (
           <ComposerSuggestionMenuItem
             key={suggestion.id}
             data-skill-slash-index={index}
             selected={index === selectedIndex}
-            title={`${label} — ${description}`}
+            title={`${suggestion.name} — ${description}`}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => onApplySuggestion(suggestion)}
           >
             <div className="flex min-w-0 flex-1 items-start gap-2">
               <SlashSuggestionIcon kind={suggestion.kind} />
               <div className="min-w-0 flex-1">
-                <div className={DESKTOP_OVERLAY_LIST_ITEM_PRIMARY} title={label}>
-                  {label}
+                <div className={DESKTOP_OVERLAY_LIST_ITEM_PRIMARY} title={suggestion.name}>
+                  {suggestion.name}
                 </div>
                 <div className={DESKTOP_OVERLAY_LIST_ITEM_SECONDARY} title={description}>
                   {description}
