@@ -54,6 +54,8 @@ import {
   isLspDiagnosticsToolRequest,
   requestFromGetDiagnosticsFunctionCall,
   executeGetDiagnostics,
+  shouldUseStepfunWebSearch,
+  buildStepfunWebSearchToolDefinition,
 } from '@spiritagent/agent-core';
 import {
   LspService,
@@ -256,6 +258,10 @@ export class DesktopToolExecutor
         ...this.planToolDefinitions,
         ...this.dreamToolDefinitions,
         ...this.todoToolDefinitions,
+        ...(this.activeTransportConfig !== undefined
+          && shouldUseStepfunWebSearch(this.activeTransportConfig)
+          ? [buildStepfunWebSearchToolDefinition()]
+          : []),
       ],
       this.agentMode,
     );

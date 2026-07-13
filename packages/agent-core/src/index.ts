@@ -27,3 +27,5 @@ export * from './code-completion/index.js';
 export * from './eval/index.js';
 export * from './hooks/index.js';
 export * from './auto-approval/index.js';
+export { shouldUseStepfunWebSearch } from './stepfun/stepfun-eligibility.js';
+export { buildStepfunWebSearchToolDefinition } from './stepfun/stepfun-web-search-tool.js';
