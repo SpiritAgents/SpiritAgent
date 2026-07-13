@@ -134,6 +134,7 @@ import {
 } from './gateway-google-thinking.js';
 import { isOpenRouterAnthropicClaudeModel } from './openrouter-anthropic-reasoning.js';
 import { generateSiliconFlowImage } from '../image-generation/siliconflow-backend.js';
+import { generateStepfunImage } from '../image-generation/stepfun-backend.js';
 import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { generateVideoWithRouter } from '../video-generation/router.js';
 import { getLlmFetch } from '../llm-fetch.js';
@@ -271,6 +272,10 @@ export class AiSdkOpenAiCompatibleTransport
 
     if (imageConfig.llmVendor === 'siliconflow') {
       return generateSiliconFlowImage(imageConfig, request, saveGeneratedImage);
+    }
+
+    if (imageConfig.llmVendor === 'stepfun') {
+      return generateStepfunImage(imageConfig, request, saveGeneratedImage);
     }
 
     const requestUrl = buildAiSdkImageGenerationUrl(imageConfig);
