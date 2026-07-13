@@ -4,23 +4,18 @@ import { test } from 'node:test';
 
 import {
   isProvisionalSessionPath,
+  isSideChatProvisionalSessionPath,
+  parseSideChatPaneIdFromSessionPath,
   provisionalNewSessionPath,
-  workspaceSessionKey,
+  sideChatPaneSessionPath,
 } from '../../dist-electron/src/host/storage.js';
 
-test('provisionalNewSessionPath is stable for the same workspace', () => {
-  const workspaceRoot = 'D:/SpiritAgent/repo';
-  assert.equal(
-    provisionalNewSessionPath(workspaceRoot),
-    provisionalNewSessionPath(workspaceRoot),
-  );
-});
-
-test('provisionalNewSessionPath differs across workspaces', () => {
-  assert.notEqual(
-    provisionalNewSessionPath('D:/SpiritAgent/repo-a'),
-    provisionalNewSessionPath('D:/SpiritAgent/repo-b'),
-  );
+test('sideChatPaneSessionPath normalizes pane id', () => {
+  const sessionPath = sideChatPaneSessionPath('pane/a');
+  assert.match(path.basename(sessionPath), /^side-chat-pane-a\.json$/u);
+  assert.equal(isSideChatProvisionalSessionPath(sessionPath), true);
+  assert.equal(isProvisionalSessionPath(sessionPath), true);
+  assert.equal(parseSideChatPaneIdFromSessionPath(sessionPath), 'pane-a');
 });
 
 test('isProvisionalSessionPath detects provisional chat paths only', () => {
@@ -29,12 +24,5 @@ test('isProvisionalSessionPath detects provisional chat paths only', () => {
   assert.equal(
     isProvisionalSessionPath(path.join(path.dirname(provisionalPath), '..', 'chat-1.json')),
     false,
-  );
-});
-
-test('workspaceSessionKey normalizes workspace roots consistently', () => {
-  assert.equal(
-    workspaceSessionKey('D:/SpiritAgent/repo'),
-    workspaceSessionKey('D:\\SpiritAgent\\repo'),
   );
 });

@@ -135,6 +135,9 @@ import type {
   AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
+  BeginSideChatPaneSessionRequest,
+  BeginSideChatPaneSessionResponse,
+  ForkSessionIntoSideChatRequest,
   SetVisiblePaneSessionsRequest,
   CloseSplitPaneSessionRequest,
   FocusPaneSessionRequest,
@@ -285,6 +288,11 @@ import {
 } from './session-activation.js';
 import { forkSessionCommand, type ForkSessionHostContext } from './fork-session-host.js';
 import {
+  beginSideChatPaneSessionCommand,
+  forkSessionIntoSideChatCommand,
+  type SideChatSessionHostContext,
+} from './side-chat-session-host.js';
+import {
   beginSplitPaneSessionCommand,
   closeSplitPaneSessionCommand,
   focusPaneSessionCommand,
@@ -423,6 +431,7 @@ import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
   isProvisionalSessionPath,
+  isSideChatProvisionalSessionPath,
   provisionalNewSessionPath,
   loadHostMetadata,
   loadStoredSession,
@@ -1090,6 +1099,27 @@ class DesktopHostService {
     }
     await this.adoptActiveModelForForeground(resolveEffectivePaneActiveModel(bundle, state));
     return true;
+  }
+
+  private sideChatSessionContext(): SideChatSessionHostContext {
+    const split = this.sessionSplitContext();
+    return {
+      ...split,
+      requireRuntime: () => this.requireRuntime(),
+      currentRuntime: () => this.runtime,
+      isBundleConversationBusy: (bundle) => this.isBundleConversationBusy(bundle),
+      isBundleReadOnly: (bundle) => bundle.activeSession?.readOnly === true,
+    };
+  }
+
+  private isBundleConversationBusy(bundle: SessionBundle): boolean {
+    if (this.sessionRegistry.isBundleBusy(bundle)) {
+      return true;
+    }
+    if (isSessionBundleBusy(bundle)) {
+      return true;
+    }
+    return bundle.queuedUserTurns.length > 0;
   }
 
   private forkSessionContext(): ForkSessionHostContext {
@@ -2460,6 +2490,18 @@ class DesktopHostService {
     request: BeginSplitPaneSessionRequest,
   ): Promise<BeginSplitPaneSessionResponse> {
     return beginSplitPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async beginSideChatPaneSession(
+    request: BeginSideChatPaneSessionRequest,
+  ): Promise<BeginSideChatPaneSessionResponse> {
+    return beginSideChatPaneSessionCommand(this.sessionSplitContext(), request);
+  }
+
+  async forkSessionIntoSideChat(
+    request: ForkSessionIntoSideChatRequest,
+  ): Promise<DesktopSnapshot> {
+    return forkSessionIntoSideChatCommand(this.sideChatSessionContext(), request);
   }
 
   async setVisiblePaneSessions(
@@ -4142,6 +4184,9 @@ class DesktopHostService {
   ): void {
     const activeSession = bundle.activeSession;
     if (!activeSession || !isProvisionalSessionPath(activeSession.filePath)) {
+      return;
+    }
+    if (isSideChatProvisionalSessionPath(activeSession.filePath)) {
       return;
     }
 

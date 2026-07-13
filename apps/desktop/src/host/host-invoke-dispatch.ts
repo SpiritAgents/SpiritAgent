@@ -69,6 +69,12 @@ export interface HostCommandDelegate {
   beginSplitPaneSession(
     request: CommandPayloads['beginSplitPaneSession']['request'],
   ): Promise<unknown>;
+  beginSideChatPaneSession(
+    request: CommandPayloads['beginSideChatPaneSession']['request'],
+  ): Promise<unknown>;
+  forkSessionIntoSideChat(
+    request: CommandPayloads['forkSessionIntoSideChat']['request'],
+  ): Promise<unknown>;
   setVisiblePaneSessions(
     request: CommandPayloads['setVisiblePaneSessions']['request'],
   ): Promise<unknown>;
@@ -247,6 +253,8 @@ const hostCommandDispatch = {
   listSessions: (host) => host.listSessions(),
   openSession: (host, payload) => host.openSession(payload.path, { activate: payload.activate }),
   beginSplitPaneSession: (host, payload) => host.beginSplitPaneSession(payload.request),
+  beginSideChatPaneSession: (host, payload) => host.beginSideChatPaneSession(payload.request),
+  forkSessionIntoSideChat: (host, payload) => host.forkSessionIntoSideChat(payload.request),
   setVisiblePaneSessions: (host, payload) => host.setVisiblePaneSessions(payload.request),
   syncSplitPaneSessions: (host, payload) => host.syncSplitPaneSessions(payload.request),
   focusPaneSession: (host, payload) => host.focusPaneSession(payload.request),

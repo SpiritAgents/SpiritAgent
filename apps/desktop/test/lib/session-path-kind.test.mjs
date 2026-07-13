@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   isForegroundProvisionalSessionPath,
   isProvisionalSessionPromotion,
+  isSideChatPaneProvisionalSessionPath,
   isStableChatSessionPath,
 } from '../../src/lib/session-path-kind.ts';
 
@@ -22,4 +23,12 @@ test('isProvisionalSessionPromotion rejects unrelated path swaps', () => {
   const chatB = '/Users/me/Library/Application Support/SpiritAgent/chats/chat-222.json';
 
   assert.equal(isProvisionalSessionPromotion(chatA, chatB), false);
+});
+
+test('side-chat provisional paths are not foreground draft slots', () => {
+  const sideChat =
+    '/Users/me/Library/Application Support/SpiritAgent/chats/__provisional__/side-chat-pane-1.json';
+
+  assert.equal(isSideChatPaneProvisionalSessionPath(sideChat), true);
+  assert.equal(isForegroundProvisionalSessionPath(sideChat), false);
 });

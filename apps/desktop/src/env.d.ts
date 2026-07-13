@@ -134,6 +134,12 @@ declare global {
     beginSplitPaneSession(
       request: import('./types').BeginSplitPaneSessionRequest,
     ): Promise<import('./types').BeginSplitPaneSessionResponse>;
+    beginSideChatPaneSession(
+      request: import('./types').BeginSideChatPaneSessionRequest,
+    ): Promise<import('./types').BeginSideChatPaneSessionResponse>;
+    forkSessionIntoSideChat(
+      request: import('./types').ForkSessionIntoSideChatRequest,
+    ): Promise<DesktopSnapshot>;
     setVisiblePaneSessions(
       request: import('./types').SetVisiblePaneSessionsRequest,
     ): Promise<DesktopSnapshot>;
