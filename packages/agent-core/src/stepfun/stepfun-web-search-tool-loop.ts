@@ -3,7 +3,7 @@ import { isJsonObject } from '../tool-agent.js';
 import type { LlmTransportConfig } from '../provider-config.js';
 import type { ToolCallRequest } from '../ports.js';
 import { tryExtractPartialWebSearchQuery } from '../tool-streaming-preview-gate.js';
-import { buildMoonshotFormulaToolPreviewArgumentsJson } from '../moonshot/formula/formula-spirit-ui.js';
+import { buildStepfunWebSearchToolPreviewArgumentsJson } from './stepfun-spirit-ui.js';
 import { isStepfunManagedWebSearchToolCall } from './stepfun-eligibility.js';
 import { invokeStepfunSearch } from './stepfun-search-client.js';
 
@@ -63,7 +63,7 @@ export async function executeStepfunWebSearchToolCall(
     return {
       kind: 'failed',
       error: searchResult.error,
-      previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
+      previewArgumentsJson: buildStepfunWebSearchToolPreviewArgumentsJson({
         query,
         failed: true,
         status: 'failed',
@@ -74,9 +74,10 @@ export async function executeStepfunWebSearchToolCall(
   return {
     kind: 'succeeded',
     content: searchResult.content,
-    previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
+    previewArgumentsJson: buildStepfunWebSearchToolPreviewArgumentsJson({
       query,
       status: 'completed',
+      outputExcerpt: searchResult.content,
     }),
   };
 }
@@ -90,7 +91,7 @@ export function buildStepfunWebSearchStreamingPreviewArgumentsJson(
     return undefined;
   }
 
-  return buildMoonshotFormulaToolPreviewArgumentsJson({
+  return buildStepfunWebSearchToolPreviewArgumentsJson({
     query: readStepfunWebSearchQuery(argumentsJson),
     status: 'in_progress',
   });

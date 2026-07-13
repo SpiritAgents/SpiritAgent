@@ -18,6 +18,7 @@ import type {
 } from '../../runtime/types.js';
 import { executeMoonshotFormulaToolCall, isMoonshotFormulaManagedToolCall } from './moonshot-formula-tool-loop.js';
 import { buildMoonshotFormulaToolPreviewArgumentsJson } from './formula-spirit-ui.js';
+import { buildStepfunWebSearchToolPreviewArgumentsJson } from '../../stepfun/stepfun-spirit-ui.js';
 import { readMoonshotFormulaWebSearchQuery } from './moonshot-formula-tool-loop.js';
 import {
   executeStepfunWebSearchToolCall,
@@ -32,9 +33,32 @@ function readPreviewQuery(argumentsJson: string, toolName: string, config: unkno
   return readMoonshotFormulaWebSearchQuery(argumentsJson);
 }
 
-function managedProviderToolSummaryText(toolName: string, failed: boolean): string {
+function buildManagedProviderWebSearchPreviewArgumentsJson(
+  config: LlmTransportConfig,
+  input: {
+    query: string;
+    status?: string;
+    failed?: boolean;
+    outputExcerpt?: string;
+  },
+): string {
+  if (isStepfunManagedWebSearchToolCall('web_search', config)) {
+    return buildStepfunWebSearchToolPreviewArgumentsJson(input);
+  }
+  return buildMoonshotFormulaToolPreviewArgumentsJson(input);
+}
+
+function managedProviderToolSummaryText(
+  toolName: string,
+  config: LlmTransportConfig,
+  failed: boolean,
+  content?: string,
+): string {
   if (failed) {
     return `[provider tool ${toolName}] failed`;
+  }
+  if (isStepfunManagedWebSearchToolCall(toolName, config) && content?.trim()) {
+    return content;
   }
   return `[provider tool ${toolName}] completed`;
 }
@@ -58,7 +82,7 @@ async function executeAndCommitManagedProviderToolCall<
     kind: 'streaming-tool-preview',
     toolCallId: call.id,
     toolName: call.name,
-    argumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
+    argumentsJson: buildManagedProviderWebSearchPreviewArgumentsJson(config, {
       query: previewQuery,
       status: 'in_progress',
     }),
@@ -92,7 +116,12 @@ async function executeAndCommitManagedProviderToolCall<
     return { state: resumedState, failed: true, modelContent: execution.error };
   }
 
-  const summaryText = managedProviderToolSummaryText(call.name, false);
+  const summaryText = managedProviderToolSummaryText(
+    call.name,
+    config,
+    false,
+    execution.kind === 'succeeded' ? execution.content : undefined,
+  );
   const content = createLlmMessageContentFromText(summaryText);
   commitToolExecutionOutput(runtime, turn, {
     toolCallId: call.id,
