@@ -20,7 +20,6 @@ import {
 import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from './todos.js';
 import {
   buildTruncatedChatArchiveForFork,
-  deriveForkedSessionDisplayName,
   resolveForkAnchorIndex,
   truncateMessagesThroughIndex,
 } from './fork-session.js';
@@ -148,7 +147,7 @@ export async function forkSessionIntoSideChatCommand(
 
     const sourceArchive = buildSourceArchiveForFork(sourceBundle, ctx);
     const archive = buildTruncatedChatArchiveForFork(sourceArchive, sourceMessages, anchorIndex);
-    const forkDisplayName = deriveForkedSessionDisplayName(sourceBundle.activeSession.displayName);
+    const sideChatDisplayName = sourceBundle.activeSession.displayName.trim();
     const state = ctx.requireState();
 
     populateForkedBundleFromSource(
@@ -156,7 +155,7 @@ export async function forkSessionIntoSideChatCommand(
       {
         workspaceRoot: state.workspaceRoot,
         filePath: targetSessionPath,
-        displayName: forkDisplayName,
+        displayName: sideChatDisplayName,
         truncatedMessages: sanitizeConversationMessagesForPersistence(truncatedMessages).map(
           (message) => ({ ...message }),
         ),

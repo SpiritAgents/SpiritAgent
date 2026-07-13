@@ -63,6 +63,7 @@ export function DesktopLayoutChromeBar({
   showSideChat = false,
   showClosePane = false,
   sessionTitle,
+  sessionTitleSuffix,
   sessionTooltip,
   subagentPromptText,
   onExitSubagentViewer,
@@ -97,6 +98,7 @@ export function DesktopLayoutChromeBar({
   showSideChat?: boolean;
   showClosePane?: boolean;
   sessionTitle?: string | null;
+  sessionTitleSuffix?: string | null;
   sessionTooltip?: SessionGitTooltipItem | null;
   subagentPromptText?: string | null;
   onExitSubagentViewer?: () => void;
@@ -300,6 +302,7 @@ export function DesktopLayoutChromeBar({
         {trimmedSessionTitle || renamingTitle ? (
           <SessionChromeBreadcrumb
             sessionTitle={trimmedSessionTitle || trimmedRenameSessionDisplayName}
+            sessionTitleSuffix={sessionTitleSuffix}
             sessionTooltip={sessionTooltip}
             subagentPromptText={subagentPromptText}
             onExitSubagentViewer={onExitSubagentViewer}
