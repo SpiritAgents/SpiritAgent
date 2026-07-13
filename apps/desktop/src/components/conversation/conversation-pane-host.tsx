@@ -2,6 +2,9 @@ import { useCallback, useEffect } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
+import { isSideChatPaneProvisionalSessionPath } from "@/lib/session-path-kind";
+import { canBeginSideChat } from "@/lib/fork-eligibility";
+import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { useConversationPaneController } from "@/hooks/useConversationPaneController";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
@@ -29,6 +32,7 @@ export type ConversationPaneHostProps = {
   useIsolatedPane: boolean;
   splitPaneCount: number;
   onFocusPane: () => void;
+  onSideChat: () => void;
   onSplit: () => void;
   onSplitVertical: () => void;
   onClosePane: () => void;
@@ -63,6 +67,10 @@ export type ConversationPaneHostProps = {
   language: string;
 };
 
+function isSideChatPaneSessionPath(sessionPath: string): boolean {
+  return isSideChatPaneProvisionalSessionPath(sessionPath);
+}
+
 export function ConversationPaneHost({
   sessionPath,
   paneId,
@@ -72,6 +80,7 @@ export function ConversationPaneHost({
   useIsolatedPane,
   splitPaneCount,
   onFocusPane,
+  onSideChat,
   onSplit,
   onSplitVertical,
   onClosePane,
@@ -90,6 +99,7 @@ export function ConversationPaneHost({
   const split = useConversationSplit();
   const pane = useConversationPaneController({
     ...controllerInput,
+    onBeginSideChat: onSideChat,
     sessionPath,
     isFocused,
     isAnchorPane,
@@ -152,6 +162,20 @@ export function ConversationPaneHost({
     [controllerInput.onRenameSession],
   );
 
+  const showSideChat =
+    !pane.paneIsEmptySession
+    && Boolean(
+      findLastForkableAssistantMessageId(pane.paneSnapshot?.conversation.messages ?? []),
+    )
+    && canBeginSideChat({
+      conversationBusy: pane.paneSnapshot?.conversation.isBusy === true,
+      activeSessionReadOnly: pane.paneSnapshot?.activeSession?.readOnly === true,
+      forkBusy: controllerInput.runtime.busyAction === "fork",
+      sideChatBusy: controllerInput.runtime.busyAction === "side-chat",
+      hasForkableAssistantMessage: true,
+    });
+  const isSideChatPane = isSideChatPaneSessionPath(sessionPath);
+
   return (
     <ConversationView
       useMicaBackdrop={useMicaBackdrop}
@@ -162,7 +186,10 @@ export function ConversationPaneHost({
       showSessionSidebarToggle={splitPaneCount <= 1 || isSessionSidebarAnchorPane}
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
+      showSideChat={showSideChat}
+      sessionTitleSuffix={isSideChatPane ? controllerInput.t("app.sideChat") : null}
       showClosePane={showClosePane}
+      onSideChat={onSideChat}
       onSplit={onSplit}
       onSplitVertical={onSplitVertical}
       onClosePane={onClosePane}
@@ -189,7 +216,9 @@ export function ConversationPaneHost({
       onDeleteSession={handleDeleteSession}
       onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
       showRenameSession={
-        !pane.paneIsEmptySession && Boolean(controllerInput.onRenameSession)
+        !isSideChatPane
+        && !pane.paneIsEmptySession
+        && Boolean(controllerInput.onRenameSession)
       }
       renameSessionPath={sessionPath}
       renameSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}

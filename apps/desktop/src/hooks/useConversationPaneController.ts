@@ -43,6 +43,7 @@ export type UseConversationPaneControllerOptions = {
   splitPaneCount: number;
   layoutNavigationPending: boolean;
   onNewSession?: () => void;
+  onBeginSideChat?: () => void;
   workspaceTools: WorkspaceTools;
   onOpenIntegrationsSettings: () => void;
   t: TFunction;
@@ -68,6 +69,7 @@ export function useConversationPaneController({
   splitPaneCount,
   layoutNavigationPending,
   onNewSession,
+  onBeginSideChat,
   workspaceTools,
   onOpenIntegrationsSettings,
   t,
@@ -186,6 +188,7 @@ export function useConversationPaneController({
     setActiveSurface: () => {},
     setLastNonSettingsSurface: () => {},
     paneSessionPath: useIsolatedPane ? sessionPath : undefined,
+    onBeginSideChat,
   });
 
   const messageRewind = useMessageRewind({

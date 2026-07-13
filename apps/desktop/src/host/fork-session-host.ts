@@ -31,7 +31,7 @@ export interface ForkSessionHostContext extends SessionActivationContext {
   notifySessionListUpdated?(): void;
 }
 
-function applyForkStateToBundle(
+export function populateForkedBundleFromSource(
   forkBundle: SessionBundle,
   input: {
     workspaceRoot: string;
@@ -41,7 +41,7 @@ function applyForkStateToBundle(
     archive: ReturnType<typeof buildTruncatedChatArchiveForFork>;
     sourceBundle: SessionBundle;
   },
-  ctx: ForkSessionHostContext,
+  ctx: Pick<ForkSessionHostContext, 'createMessageTimelineFromMessages'>,
 ): void {
   const timeline = ctx.createMessageTimelineFromMessages(input.truncatedMessages);
   forkBundle.workspaceRoot = input.workspaceRoot;
@@ -145,7 +145,7 @@ export async function forkSessionCommand(
     const sessionPath = defaultNewSessionPath();
     const forkBundle = ctx.sessionRegistry().activateProvisional(state.workspaceRoot, sessionPath);
 
-    applyForkStateToBundle(
+    populateForkedBundleFromSource(
       forkBundle,
       {
         workspaceRoot: state.workspaceRoot,

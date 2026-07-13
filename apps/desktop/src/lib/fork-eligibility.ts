@@ -50,6 +50,10 @@ export function canForkMessage({
   return true;
 }
 
+export type SideChatEligibilityInput = ForkSessionEligibilityInput & {
+  sideChatBusy: boolean;
+};
+
 export function canForkSession({
   conversationBusy,
   activeSessionReadOnly,
@@ -60,4 +64,14 @@ export function canForkSession({
     return false;
   }
   return hasForkableAssistantMessage;
+}
+
+export function canBeginSideChat({
+  sideChatBusy,
+  ...forkInput
+}: SideChatEligibilityInput): boolean {
+  if (sideChatBusy) {
+    return false;
+  }
+  return canForkSession(forkInput);
 }

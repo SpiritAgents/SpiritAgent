@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { LoaderCircle, PanelRightClose, PanelRightOpen, Pencil, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
+import { LoaderCircle, MessageSquare, PanelRightClose, PanelRightOpen, Pencil, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
 
 import {
   NewSessionShortcutKbd,
@@ -60,14 +60,17 @@ export function DesktopLayoutChromeBar({
   showSessionSidebarToggle = true,
   showWorkspaceToggle,
   showSplitMenu = false,
+  showSideChat = false,
   showClosePane = false,
   sessionTitle,
+  sessionTitleSuffix,
   sessionTooltip,
   subagentPromptText,
   onExitSubagentViewer,
   onNewSession,
   newSessionBusy = false,
   onSplit,
+  onSideChat,
   onSplitVertical,
   onClosePane,
   paneId,
@@ -92,14 +95,17 @@ export function DesktopLayoutChromeBar({
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle: boolean;
   showSplitMenu?: boolean;
+  showSideChat?: boolean;
   showClosePane?: boolean;
   sessionTitle?: string | null;
+  sessionTitleSuffix?: string | null;
   sessionTooltip?: SessionGitTooltipItem | null;
   subagentPromptText?: string | null;
   onExitSubagentViewer?: () => void;
   onNewSession?: () => void;
   newSessionBusy?: boolean;
   onSplit?: () => void;
+  onSideChat?: () => void;
   onSplitVertical?: () => void;
   onClosePane?: () => void;
   paneId?: string;
@@ -214,6 +220,7 @@ export function DesktopLayoutChromeBar({
       aria-label={t('app.sidebarAndTools')}
       data-spirit-surface="layout-chrome"
       data-session-sidebar-open={sessionSidebarOpen ? "true" : "false"}
+      data-macos-leading-inset={showSessionSidebarToggle ? "true" : "false"}
       data-pane-id={paneId}
       draggable={paneDragEnabled}
       onDragStart={(event) => {
@@ -241,6 +248,9 @@ export function DesktopLayoutChromeBar({
       }}
     >
       <div className="flex min-w-0 flex-1 items-center">
+        {!showSessionSidebarToggle && pinSidebarToggleOnDarwin ? (
+          <div className="h-7 w-0 shrink-0" aria-hidden />
+        ) : null}
         {showSessionSidebarToggle ? (
           pinSidebarToggleOnDarwin ? (
             <div data-darwin-pinned-sidebar-toggle>
@@ -296,6 +306,7 @@ export function DesktopLayoutChromeBar({
         {trimmedSessionTitle || renamingTitle ? (
           <SessionChromeBreadcrumb
             sessionTitle={trimmedSessionTitle || trimmedRenameSessionDisplayName}
+            sessionTitleSuffix={sessionTitleSuffix}
             sessionTooltip={sessionTooltip}
             subagentPromptText={subagentPromptText}
             onExitSubagentViewer={onExitSubagentViewer}
@@ -335,6 +346,15 @@ export function DesktopLayoutChromeBar({
                 }}
               >
                 <div className="p-1">
+                  {showSideChat ? (
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onSelect={() => onSideChat?.()}
+                    >
+                      <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      <span>{t("app.sideChat")}</span>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem
                     className="gap-2"
                     onSelect={() => onSplit?.()}

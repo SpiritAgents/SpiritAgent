@@ -18,6 +18,7 @@ export type SkillSlashSuggestionKind =
   | 'log-session'
   | 'compact'
   | 'fork'
+  | 'side-chat'
   | 'loop'
   | 'plan'
   | 'ask'
@@ -45,6 +46,7 @@ export function skillSlashAlias(skillName: string): string {
 export const LOG_SESSION_SLASH_ALIAS = '/log-session'
 export const COMPACT_SLASH_ALIAS = '/compact'
 export const FORK_SLASH_ALIAS = '/fork'
+export const SIDE_CHAT_SLASH_ALIAS = '/side'
 export const LOOP_SLASH_ALIAS = '/loop'
 export const PLAN_SLASH_ALIAS = '/plan'
 export const ASK_SLASH_ALIAS = '/ask'
@@ -71,6 +73,13 @@ export const STATIC_SLASH_COMMANDS: readonly SkillSlashSuggestion[] = [
     name: 'fork',
     descriptionKey: 'slash.fork',
     kind: 'fork',
+  },
+  {
+    id: 'command:side-chat',
+    alias: SIDE_CHAT_SLASH_ALIAS,
+    name: 'side',
+    descriptionKey: 'slash.sideChat',
+    kind: 'side-chat',
   },
   {
     id: 'command:loop',

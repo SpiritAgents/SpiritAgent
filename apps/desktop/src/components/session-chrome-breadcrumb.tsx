@@ -25,10 +25,12 @@ import {
   DESKTOP_SESSION_TITLE_HOVER_CLASS,
   SESSION_TITLE_RENAME_INPUT_CLASS,
 } from '@/lib/desktop-chrome';
+import { toolCardSecondaryTextClass } from '@/lib/file-tool-lsp-diagnostics-display';
 import { cn } from '@/lib/utils';
 
 type SessionChromeBreadcrumbProps = {
   sessionTitle: string;
+  sessionTitleSuffix?: string | null;
   sessionTooltip?: SessionGitTooltipItem | null;
   subagentPromptText?: string | null;
   onExitSubagentViewer?: () => void;
@@ -80,6 +82,7 @@ function SessionChromeTitleTooltip({
 
 export function SessionChromeBreadcrumb({
   sessionTitle,
+  sessionTitleSuffix,
   sessionTooltip,
   subagentPromptText,
   onExitSubagentViewer,
@@ -94,6 +97,7 @@ export function SessionChromeBreadcrumb({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
   const trimmedSessionTitle = sessionTitle.trim();
+  const trimmedSessionTitleSuffix = sessionTitleSuffix?.trim() ?? '';
   const trimmedSubagentPromptText = subagentPromptText?.trim() ?? '';
   const titleInteractive = Boolean(onRenameStart);
 
@@ -178,7 +182,16 @@ export function SessionChromeBreadcrumb({
         onRenameStart();
       }}
     >
-      {trimmedSessionTitle}
+      {trimmedSessionTitleSuffix ? (
+        <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
+          <span className="min-w-0 truncate">{trimmedSessionTitle}</span>
+          <span className={cn("shrink-0", toolCardSecondaryTextClass)}>
+            {trimmedSessionTitleSuffix}
+          </span>
+        </span>
+      ) : (
+        trimmedSessionTitle
+      )}
     </button>,
   );
 

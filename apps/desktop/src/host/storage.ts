@@ -410,6 +410,35 @@ export function splitPaneSessionPath(paneId: string): string {
   return path.join(provisionalChatsDirPath(), `split-${normalizedPaneId}.json`);
 }
 
+/** Side-chat pane slot: fork copy persisted here, never listed or promoted to stable chat. */
+export function sideChatPaneSessionPath(paneId: string): string {
+  const normalizedPaneId = paneId.trim().replace(/[^a-zA-Z0-9_-]+/gu, '-');
+  return path.join(provisionalChatsDirPath(), `side-chat-${normalizedPaneId}.json`);
+}
+
+export function isSideChatProvisionalSessionPath(filePath: string): boolean {
+  const resolved = path.resolve(filePath);
+  const provisionalDir = path.resolve(provisionalChatsDirPath());
+  const relative = path.relative(provisionalDir, resolved);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+  return path.basename(resolved).startsWith('side-chat-');
+}
+
+/** Inverse of sideChatPaneSessionPath for rehydrating in-memory side-chat bundles. */
+export function parseSideChatPaneIdFromSessionPath(filePath: string): string | null {
+  if (!isSideChatProvisionalSessionPath(filePath)) {
+    return null;
+  }
+  const base = path.basename(filePath, '.json');
+  if (!base.startsWith('side-chat-')) {
+    return null;
+  }
+  const paneId = base.slice('side-chat-'.length).trim();
+  return paneId.length > 0 ? paneId : null;
+}
+
 export function isSplitProvisionalSessionPath(filePath: string): boolean {
   const resolved = path.resolve(filePath);
   const provisionalDir = path.resolve(provisionalChatsDirPath());

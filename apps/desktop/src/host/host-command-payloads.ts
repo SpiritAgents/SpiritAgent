@@ -53,6 +53,8 @@ import type {
   SubmitSkillSlashRequest,
   SubmitUserTurnRequest,
   BeginSplitPaneSessionRequest,
+  ForkSessionIntoSideChatRequest,
+  BeginSideChatPaneSessionRequest,
   SetVisiblePaneSessionsRequest,
   SyncSplitPaneSessionsRequest,
   CloseSplitPaneSessionRequest,
@@ -153,6 +155,8 @@ export type CommandPayloads = {
   listSessions: undefined;
   openSession: { path: string; activate?: boolean };
   beginSplitPaneSession: { request: BeginSplitPaneSessionRequest };
+  beginSideChatPaneSession: { request: BeginSideChatPaneSessionRequest };
+  forkSessionIntoSideChat: { request: ForkSessionIntoSideChatRequest };
   setVisiblePaneSessions: { request: SetVisiblePaneSessionsRequest };
   syncSplitPaneSessions: { request: SyncSplitPaneSessionsRequest };
   focusPaneSession: { request: FocusPaneSessionRequest };

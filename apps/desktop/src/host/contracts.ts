@@ -93,6 +93,8 @@ export type HostCommandName =
   | 'listSessions'
   | 'openSession'
   | 'beginSplitPaneSession'
+  | 'beginSideChatPaneSession'
+  | 'forkSessionIntoSideChat'
   | 'setVisiblePaneSessions'
   | 'syncSplitPaneSessions'
   | 'focusPaneSession'

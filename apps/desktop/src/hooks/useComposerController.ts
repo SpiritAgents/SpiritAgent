@@ -53,7 +53,7 @@ import {
   skillSlashQueryKey,
   type SkillSlashSuggestion,
 } from "@/lib/skill-slash";
-import { canForkSession } from "@/lib/fork-eligibility";
+import { canBeginSideChat, canForkSession } from "@/lib/fork-eligibility";
 import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { shouldPromptGitBranchCheckoutBeforeSend } from "@/lib/composer-branch-checkout-gate";
 import {
@@ -102,6 +102,7 @@ export type UseComposerControllerOptions = {
   setLastNonSettingsSurface: (surface: "conversation" | "marketplace" | "automations") => void;
   /** When set, composer state is isolated per pane and sends target this session path. */
   paneSessionPath?: string;
+  onBeginSideChat?: () => void;
 };
 
 export function useComposerController({
@@ -120,6 +121,7 @@ export function useComposerController({
   setActiveSurface,
   setLastNonSettingsSurface,
   paneSessionPath,
+  onBeginSideChat,
 }: UseComposerControllerOptions) {
   const isPaneIsolated = Boolean(paneSessionPath?.trim());
   const [paneComposerSegments, setPaneComposerSegments] = useState<RichSegment[]>(() => emptySegments());
@@ -376,10 +378,28 @@ export function useComposerController({
     return query;
   }, [composerCursorChars, dismissedSlashQueryKey, composerText]);
 
-  const slashSuggestions = useMemo(
-    () => buildSkillSlashSuggestions(slashQuery?.raw, snapshot?.skillsList ?? []),
-    [slashQuery, snapshot?.skillsList],
-  );
+  const slashSuggestions = useMemo(() => {
+    const suggestions = buildSkillSlashSuggestions(slashQuery?.raw, snapshot?.skillsList ?? []);
+    const messageId = findLastForkableAssistantMessageId(snapshot?.conversation.messages ?? []);
+    const showSideChat = canBeginSideChat({
+      conversationBusy: snapshot?.conversation.isBusy === true,
+      activeSessionReadOnly,
+      forkBusy: runtime.busyAction === "fork",
+      sideChatBusy: runtime.busyAction === "side-chat",
+      hasForkableAssistantMessage: Boolean(messageId),
+    });
+    if (showSideChat) {
+      return suggestions;
+    }
+    return suggestions.filter((item) => item.kind !== "side-chat");
+  }, [
+    activeSessionReadOnly,
+    runtime.busyAction,
+    slashQuery,
+    snapshot?.conversation.isBusy,
+    snapshot?.conversation.messages,
+    snapshot?.skillsList,
+  ]);
 
   const fileReferenceQuery = useMemo(() => {
     return currentWorkspaceFileReferenceQueryFromSegments(
@@ -589,6 +609,15 @@ export function useComposerController({
     });
   }, [activeSessionReadOnly, resetComposerAfterSend, runtime, snapshot?.conversation.isBusy, snapshot?.conversation.messages]);
 
+  const applySideChatSlash = useCallback(() => {
+    setSlashSelectedIndex(-1);
+    setDismissedSlashQueryKey(null);
+    if (slashQuery) {
+      composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
+    }
+    onBeginSideChat?.();
+  }, [onBeginSideChat, slashQuery]);
+
   const applySlashSuggestionItem = useCallback(
     (suggestion: SkillSlashSuggestion) => {
       if (suggestion.kind === "loop") {
@@ -611,6 +640,10 @@ export function useComposerController({
         applyForkSlash();
         return;
       }
+      if (suggestion.kind === "side-chat") {
+        applySideChatSlash();
+        return;
+      }
       if (suggestion.kind === "skill" || suggestion.kind === "compact") {
         setSlashSelectedIndex(-1);
         setDismissedSlashQueryKey(null);
@@ -626,7 +659,7 @@ export function useComposerController({
       }
       applySlashSuggestion(`${suggestion.alias} `);
     },
-    [applyAskSlash, applyDebugSlash, applyForkSlash, applyLoopSlash, applyPlanSlash, applySlashSuggestion, slashQuery],
+    [applyAskSlash, applyDebugSlash, applyForkSlash, applyLoopSlash, applyPlanSlash, applySideChatSlash, applySlashSuggestion, slashQuery],
   );
 
   const ensureConversationSurface = useCallback(() => {
@@ -651,6 +684,28 @@ export function useComposerController({
     [setComposerText],
   );
 
+  const filterActionPaletteItem = useCallback(
+    (item: ActionPaletteItem) => {
+      if (item.kind !== "side-chat") {
+        return true;
+      }
+      const messageId = findLastForkableAssistantMessageId(snapshot?.conversation.messages ?? []);
+      return canBeginSideChat({
+        conversationBusy: snapshot?.conversation.isBusy === true,
+        activeSessionReadOnly,
+        forkBusy: runtime.busyAction === "fork",
+        sideChatBusy: runtime.busyAction === "side-chat",
+        hasForkableAssistantMessage: Boolean(messageId),
+      });
+    },
+    [
+      activeSessionReadOnly,
+      runtime.busyAction,
+      snapshot?.conversation.isBusy,
+      snapshot?.conversation.messages,
+    ],
+  );
+
   const isActionPaletteItemDisabled = useCallback(
     (item: ActionPaletteItem) => {
       if (!runtime.busyAction) {
@@ -659,7 +714,7 @@ export function useComposerController({
       if (isNewSessionAction(item)) {
         return true;
       }
-      return item.kind === "log-session" || item.kind === "compact" || item.kind === "fork";
+      return item.kind === "log-session" || item.kind === "compact" || item.kind === "fork" || item.kind === "side-chat";
     },
     [runtime.busyAction],
   );
@@ -691,6 +746,10 @@ export function useComposerController({
         applyForkSlash();
         return;
       }
+      if (item.kind === "side-chat") {
+        applySideChatSlash();
+        return;
+      }
       if (item.kind === "log-session" || item.kind === "compact") {
         void runtime.sendMessage({ text: item.alias });
         return;
@@ -703,6 +762,7 @@ export function useComposerController({
       applyForkSlash,
       applyLoopSlash,
       applyPlanSlash,
+      applySideChatSlash,
       applySlashSuggestion,
       ensureConversationSurface,
       handleNewSession,
@@ -1226,6 +1286,7 @@ export function useComposerController({
     prefillSkillChip,
     runActionPaletteItem,
     isActionPaletteItemDisabled,
+    filterActionPaletteItem,
     applyFileReferenceSuggestion,
     insertComposerText,
     insertFileReferenceTrigger,

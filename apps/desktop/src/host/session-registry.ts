@@ -11,7 +11,12 @@ import {
 import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import type { RestoredSessionState } from './sessions.js';
 import { normalizeSessionPathKey } from './session-path.js';
-import { defaultNewSessionPath, provisionalNewSessionPath, splitPaneSessionPath } from './storage.js';
+import {
+  defaultNewSessionPath,
+  provisionalNewSessionPath,
+  sideChatPaneSessionPath,
+  splitPaneSessionPath,
+} from './storage.js';
 
 const MAX_LOADED_BUNDLES = 8;
 
@@ -248,6 +253,17 @@ export class SessionRegistry {
     bundle.workspaceRoot = workspaceRoot;
     assignProvisionalActiveSession(bundle, splitPath);
     this.rekeyBundle(bundle, path.resolve(splitPath));
+    return bundle;
+  }
+
+  /** Load or create a side-chat pane session without changing the foreground active bundle. */
+  beginSideChatPaneSession(workspaceRoot: string, paneId: string): SessionBundle {
+    const sideChatPath = sideChatPaneSessionPath(paneId);
+    const bundle = this.activateProvisionalBackground(workspaceRoot, sideChatPath);
+    resetSessionBundleInPlace(bundle);
+    bundle.workspaceRoot = workspaceRoot;
+    assignProvisionalActiveSession(bundle, sideChatPath);
+    this.rekeyBundle(bundle, path.resolve(sideChatPath));
     return bundle;
   }
 
