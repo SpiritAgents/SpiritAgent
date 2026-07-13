@@ -110,6 +110,10 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     return parseMinimaxModelEntriesPayload(body);
   }
 
+  if (provider === 'stepfun') {
+    return parseStepfunModelEntriesPayload(body);
+  }
+
   if (provider === 'siliconflow') {
     return parseSiliconFlowModelEntriesPayload(body, 'chat');
   }
@@ -134,6 +138,41 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     if (typeof id === 'string' && id.trim().length > 0) {
       entries.push({ id: id.trim() });
     }
+  }
+  return entries;
+}
+
+const STEPFUN_IMAGE_GENERATION_MODEL_IDS = new Set([
+  'step-image-edit-2',
+  'step-2x-large',
+  'step-1x-medium',
+]);
+
+export function parseStepfunModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  if (typeof body !== 'object' || body === null || !('data' in body)) {
+    return [];
+  }
+  const raw = (body as { data?: unknown }).data;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+      continue;
+    }
+    const id = (entry as { id?: unknown }).id;
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      continue;
+    }
+    const trimmedId = id.trim();
+    entries.push({
+      id: trimmedId,
+      ...(STEPFUN_IMAGE_GENERATION_MODEL_IDS.has(trimmedId)
+        ? { supportsImageGeneration: true }
+        : {}),
+    });
   }
   return entries;
 }
@@ -1249,6 +1288,10 @@ export async function listProviderModels(
 
   if (options.provider === 'moonshot-ai') {
     return listMoonshotModels(options);
+  }
+
+  if (options.provider === 'stepfun') {
+    return listOpenAiCompatibleModelsForProvider(options, 'stepfun');
   }
 
   if (options.provider === 'kimi-code') {

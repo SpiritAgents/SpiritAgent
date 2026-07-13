@@ -19,6 +19,7 @@
     "google-vertex-ai": "https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1",
     "xiaomi": "https://api.xiaomimimo.com/v1",
     "siliconflow": "https://api.siliconflow.com/v1",
+    "stepfun": "https://api.stepfun.com/v1",
     "volcengine": "https://ark.cn-beijing.volces.com/api/v3",
     "azure": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1",
     "amazon-bedrock": "https://bedrock.us-east-1.amazonaws.com"
@@ -56,6 +57,11 @@
       "openai-compatible": "https://api.fireworks.ai/inference/v1",
       "open-responses": "https://api.fireworks.ai/inference/v1",
       "anthropic": "https://api.fireworks.ai/inference"
+    },
+    "stepfun": {
+      "openai-compatible": "https://api.stepfun.com/v1",
+      "open-responses": "https://api.stepfun.com/v1",
+      "anthropic": "https://api.stepfun.com"
     }
   },
   "providerSiteSelection": {
@@ -137,7 +143,11 @@
     "compatibleApiBase": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
     "docUrl": "https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020"
   },
-  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "cloudflare-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
+  "stepfunStepPlan": {
+    "compatibleApiBase": "https://api.stepfun.com/step_plan/v1",
+    "docUrl": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api"
+  },
+  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "cloudflare-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "stepfun", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
   "pickerLabels": {
     "deepseek": {
       "labelKey": "providers.deepseek",
@@ -174,6 +184,10 @@
     "siliconflow": {
       "labelKey": "providers.siliconflow",
       "fallbackLabel": "SiliconFlow"
+    },
+    "stepfun": {
+      "labelKey": "providers.stepfun",
+      "fallbackLabel": "StepFun"
     },
     "alibaba": {
       "labelKey": "providers.alibaba",

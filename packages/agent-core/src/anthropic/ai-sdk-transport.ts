@@ -5,6 +5,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 
 import { getLlmFetch } from '../llm-fetch.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
+import { createStepfunAnthropicAwareFetch } from '../stepfun/stepfun-anthropic-fetch.js';
 import {
   generateObject,
   generateText,
@@ -450,11 +451,27 @@ export class AiSdkAnthropicTransport
 }
 
 function createAnthropicLanguageModel(config: AnthropicTransportConfig): any {
+  const baseFetch = wrapFetchForCloudflareAiGateway(config.cloudflareGatewayId, getLlmFetch());
+  const fetch = isStepfunAnthropicBaseUrl(config.baseUrl)
+    ? createStepfunAnthropicAwareFetch(baseFetch)
+    : baseFetch;
+
   return createAnthropic({
     apiKey: config.apiKey,
     baseURL: config.baseUrl ?? DEFAULT_ANTHROPIC_BASE_URL,
-    fetch: wrapFetchForCloudflareAiGateway(config.cloudflareGatewayId, getLlmFetch()),
+    fetch,
   }).chat(config.model);
+}
+
+function isStepfunAnthropicBaseUrl(baseUrl: string | undefined): boolean {
+  if (!baseUrl) {
+    return false;
+  }
+  try {
+    return new URL(baseUrl).hostname === 'api.stepfun.com';
+  } catch {
+    return false;
+  }
 }
 
 function normalizeToolDefinitions(tools: JsonValue): OpenAiStyleFunctionToolDefinition[] {
