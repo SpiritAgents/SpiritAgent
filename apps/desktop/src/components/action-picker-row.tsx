@@ -34,12 +34,13 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   const description = item.descriptionKey
     ? t(item.descriptionKey)
     : item.description ?? ''
+  const label = item.nameKey ? t(item.nameKey) : item.name
 
   return (
     <div className="flex min-w-0 items-center gap-2 overflow-hidden">
       <SlashCommandIcon kind={item.kind} />
       <span className="shrink-0 whitespace-nowrap text-sm font-medium leading-6 text-popover-foreground">
-        {item.name}
+        {label}
       </span>
       <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
         {description}
