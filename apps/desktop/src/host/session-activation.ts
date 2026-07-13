@@ -17,7 +17,7 @@ import type {
 import type { DesktopRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionRegistry } from './session-registry.js';
-import { loadStoredSession, isProvisionalSessionPath, isSplitProvisionalSessionPath, parseSplitPaneIdFromSessionPath, type DesktopConfigFile, type DesktopWorkspaceBinding } from './storage.js';
+import { loadStoredSession, isProvisionalSessionPath, isSideChatProvisionalSessionPath, isSplitProvisionalSessionPath, parseSideChatPaneIdFromSessionPath, parseSplitPaneIdFromSessionPath, type DesktopConfigFile, type DesktopWorkspaceBinding } from './storage.js';
 import {
   isEphemeralDebugSessionPath,
   restoreEphemeralSessionState,
@@ -99,11 +99,13 @@ export async function ensureStoredSessionBundleRegistered(
     return existing;
   }
 
-  if (
-    isProvisionalSessionPath(resolvedPath)
-    || isSplitProvisionalSessionPath(resolvedPath)
-    || isEphemeralDebugSessionPath(filePath)
-  ) {
+  if (isEphemeralDebugSessionPath(filePath)) {
+    return null;
+  }
+  if (isSplitProvisionalSessionPath(resolvedPath)) {
+    return null;
+  }
+  if (isProvisionalSessionPath(resolvedPath) && !isSideChatProvisionalSessionPath(resolvedPath)) {
     return null;
   }
 
@@ -238,6 +240,7 @@ export async function openSessionCommand(
     if (
       warmBundle?.activeSession
       && (isProvisionalSessionPath(resolvedPath) || isSplitProvisionalSessionPath(resolvedPath))
+      && !isSideChatProvisionalSessionPath(resolvedPath)
     ) {
       await ctx.ensureInitialized(warmBundle.workspaceRoot, { fastPath: true });
       ctx.sessionRegistry().activateExisting(warmBundle);
@@ -252,6 +255,29 @@ export async function openSessionCommand(
         await ctx.ensureInitialized(undefined, { fastPath: true });
         const state = ctx.requireState();
         const bundle = ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
+        ctx.sessionRegistry().activateExisting(bundle);
+        await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'open' });
+        ctx.setLastRuntimeError('');
+        return ctx.buildSnapshot();
+      }
+    }
+
+    if (isSideChatProvisionalSessionPath(resolvedPath)) {
+      const paneId = parseSideChatPaneIdFromSessionPath(resolvedPath);
+      if (paneId) {
+        await ctx.ensureInitialized(undefined, { fastPath: true });
+        const state = ctx.requireState();
+        let bundle = ctx.sessionRegistry().findBySessionPath(resolvedPath);
+        if (!bundle) {
+          try {
+            bundle = (await ensureStoredSessionBundleRegistered(ctx, resolvedPath)) ?? undefined;
+          } catch {
+            bundle = undefined;
+          }
+        }
+        if (!bundle) {
+          bundle = ctx.sessionRegistry().beginSideChatPaneSession(state.workspaceRoot, paneId);
+        }
         ctx.sessionRegistry().activateExisting(bundle);
         await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'open' });
         ctx.setLastRuntimeError('');
@@ -339,6 +365,27 @@ async function registerSessionBundleForOpen(
       await ctx.ensureInitialized(undefined, { fastPath: true });
       const state = ctx.requireState();
       return ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
+    }
+  }
+
+  if (isSideChatProvisionalSessionPath(resolvedPath)) {
+    const paneId = parseSideChatPaneIdFromSessionPath(resolvedPath);
+    if (paneId) {
+      await ctx.ensureInitialized(undefined, { fastPath: true });
+      const state = ctx.requireState();
+      const existing = ctx.sessionRegistry().findBySessionPath(resolvedPath);
+      if (existing) {
+        return existing;
+      }
+      try {
+        const loaded = await ensureStoredSessionBundleRegistered(ctx, resolvedPath);
+        if (loaded) {
+          return loaded;
+        }
+      } catch {
+        // Fall through to empty side-chat slot.
+      }
+      return ctx.sessionRegistry().beginSideChatPaneSession(state.workspaceRoot, paneId);
     }
   }
 

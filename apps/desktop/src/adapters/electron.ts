@@ -223,6 +223,12 @@ export async function createElectronHostApi(): Promise<HostApi> {
     beginSplitPaneSession(request) {
       return bridge.beginSplitPaneSession(request);
     },
+    beginSideChatPaneSession(request) {
+      return bridge.beginSideChatPaneSession(request);
+    },
+    forkSessionIntoSideChat(request) {
+      return bridge.forkSessionIntoSideChat(request);
+    },
     setVisiblePaneSessions(request) {
       return bridge.setVisiblePaneSessions(request);
     },

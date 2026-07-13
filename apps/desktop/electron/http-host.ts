@@ -1081,6 +1081,38 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/sessions/side-chat/begin') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('beginSideChatPaneSession', {
+        request: {
+          paneId: typeof jsonBody?.paneId === 'string' ? jsonBody.paneId : '',
+        },
+      }),
+    );
+    return;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/sessions/side-chat/fork') {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('forkSessionIntoSideChat', {
+        request: {
+          sourceSessionPath:
+            typeof jsonBody?.sourceSessionPath === 'string' ? jsonBody.sourceSessionPath : '',
+          targetPaneId: typeof jsonBody?.targetPaneId === 'string' ? jsonBody.targetPaneId : '',
+          messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : Number.NaN,
+          listIndex: typeof jsonBody?.listIndex === 'number' ? jsonBody.listIndex : undefined,
+        },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/sessions/split/visible') {
     writeJson(
       request,

@@ -13,7 +13,7 @@ import {
   finishSessionActivationCommand,
   type SessionActivationContext,
 } from './session-activation.js';
-import { isProvisionalSessionPath, isSplitProvisionalSessionPath, parseSplitPaneIdFromSessionPath, splitPaneSessionPath } from './storage.js';
+import { isProvisionalSessionPath, isSideChatProvisionalSessionPath, isSplitProvisionalSessionPath, parseSideChatPaneIdFromSessionPath, parseSplitPaneIdFromSessionPath, splitPaneSessionPath } from './storage.js';
 import type { SessionBundle } from './session-bundle.js';
 import {
   ensureVisiblePaneActiveModels,
@@ -38,7 +38,7 @@ export async function ensureActiveFromVisiblePanePaths(
 
   for (const sessionPath of visiblePaths) {
     let bundle = registry.findBySessionPath(sessionPath);
-    if (!bundle && !isSplitProvisionalSessionPath(sessionPath)) {
+    if (!bundle && !isSplitProvisionalSessionPath(sessionPath) && !isSideChatProvisionalSessionPath(sessionPath)) {
       try {
         const registered = await ensureStoredSessionBundleRegistered(ctx, sessionPath);
         if (registered) {
@@ -114,6 +114,28 @@ export async function beginSplitPaneSessionCommand(
   });
 }
 
+async function registerEmptyProvisionalPaneIfNeeded(
+  ctx: SessionSplitHostContext,
+  sessionPath: string,
+  workspaceRoot: string,
+): Promise<void> {
+  const registry = ctx.sessionRegistry();
+  if (registry.findBySessionPath(sessionPath)) {
+    return;
+  }
+
+  const splitPaneId = parseSplitPaneIdFromSessionPath(sessionPath);
+  if (splitPaneId) {
+    registry.beginSplitPaneSession(workspaceRoot, splitPaneId);
+    return;
+  }
+
+  const sideChatPaneId = parseSideChatPaneIdFromSessionPath(sessionPath);
+  if (sideChatPaneId) {
+    registry.beginSideChatPaneSession(workspaceRoot, sideChatPaneId);
+  }
+}
+
 async function registerVisiblePaneSessions(
   ctx: SessionSplitHostContext,
   normalized: readonly string[],
@@ -124,17 +146,10 @@ async function registerVisiblePaneSessions(
   ctx.setVisiblePaneSessionPaths(normalized);
 
   for (const sessionPath of normalized) {
-    if (!isSplitProvisionalSessionPath(sessionPath)) {
+    if (!isSplitProvisionalSessionPath(sessionPath) && !isSideChatProvisionalSessionPath(sessionPath)) {
       continue;
     }
-    if (registry.findBySessionPath(sessionPath)) {
-      continue;
-    }
-    const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
-    if (!paneId) {
-      continue;
-    }
-    registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+    await registerEmptyProvisionalPaneIfNeeded(ctx, sessionPath, state.workspaceRoot);
   }
 
   for (const sessionPath of normalized) {
@@ -146,17 +161,10 @@ async function registerVisiblePaneSessions(
   }
 
   for (const sessionPath of normalized) {
-    if (!isSplitProvisionalSessionPath(sessionPath)) {
+    if (!isSplitProvisionalSessionPath(sessionPath) && !isSideChatProvisionalSessionPath(sessionPath)) {
       continue;
     }
-    if (registry.findBySessionPath(sessionPath)) {
-      continue;
-    }
-    const paneId = parseSplitPaneIdFromSessionPath(sessionPath);
-    if (!paneId) {
-      continue;
-    }
-    registry.beginSplitPaneSession(state.workspaceRoot, paneId);
+    await registerEmptyProvisionalPaneIfNeeded(ctx, sessionPath, state.workspaceRoot);
   }
 }
 
@@ -269,8 +277,16 @@ export async function closeSplitPaneSessionCommand(
       messageCount === 0
       && bundle.activeSession
       && isSplitProvisionalSessionPath(bundle.activeSession.filePath);
+    const isEmptySideChatProvisional =
+      messageCount === 0
+      && bundle.activeSession
+      && isSideChatProvisionalSessionPath(bundle.activeSession.filePath);
 
-    if (isEmptySplitProvisional || (messageCount === 0 && isProvisionalSessionPath(sessionPath))) {
+    if (
+      isEmptySplitProvisional
+      || isEmptySideChatProvisional
+      || (messageCount === 0 && isProvisionalSessionPath(sessionPath))
+    ) {
       ctx.sessionRegistry().removeBySessionPath(sessionPath);
     }
 
