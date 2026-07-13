@@ -268,6 +268,32 @@ pub(crate) fn model_add_alibaba_site_requires_workspace_id(site: &str) -> bool {
 const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: &str =
     "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
 
+/// 与 `model-provider-presets.json` 中 `stepfunStepPlan.compatibleApiBase` 对齐。
+const STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE: &str = "https://api.stepfun.com/step_plan/v1";
+
+pub(crate) fn model_add_stepfun_api_base(
+    transport_kind: ModelTransportKind,
+    step_plan: bool,
+) -> Option<String> {
+    if step_plan {
+        return match transport_kind {
+            ModelTransportKind::Anthropic => Some("https://api.stepfun.com/step_plan".to_string()),
+            ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses => {
+                Some(STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE.to_string())
+            }
+            _ => None,
+        };
+    }
+
+    match transport_kind {
+        ModelTransportKind::Anthropic => Some("https://api.stepfun.com".to_string()),
+        ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses => {
+            Some("https://api.stepfun.com/v1".to_string())
+        }
+        _ => None,
+    }
+}
+
 pub(crate) fn model_add_alibaba_token_plan_api_base(
     transport_kind: ModelTransportKind,
 ) -> Option<String> {
@@ -420,6 +446,13 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
             if let Some(base) = model_add_alibaba_token_plan_api_base(profile.transport_kind()) {
                 return base;
             }
+        }
+    }
+
+    if profile.provider == Some(ModelProvider::Stepfun) {
+        let step_plan = profile.stepfun_billing_mode().as_deref() == Some("step-plan");
+        if let Some(base) = model_add_stepfun_api_base(profile.transport_kind(), step_plan) {
+            return base;
         }
     }
 

@@ -368,3 +368,30 @@ test('resolveProviderConnectApiBase resolves alibaba token plan without site or 
     'https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
   );
 });
+
+test('resolveProviderConnectApiBase resolves stepfun standard and step plan endpoints', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('stepfun', 'openai-compatible'),
+    'https://api.stepfun.com/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('stepfun', 'open-responses'),
+    'https://api.stepfun.com/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('stepfun', 'anthropic'),
+    'https://api.stepfun.com',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('stepfun', 'openai-compatible', { stepfunBillingMode: 'step-plan' }),
+    'https://api.stepfun.com/step_plan/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('stepfun', 'open-responses', { stepfunBillingMode: 'step-plan' }),
+    'https://api.stepfun.com/step_plan/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('stepfun', 'anthropic', { stepfunBillingMode: 'step-plan' }),
+    'https://api.stepfun.com/step_plan',
+  );
+});

@@ -26,6 +26,7 @@ export type ModelReasoningProvider =
   | 'minimax'
   | 'xiaomi'
   | 'siliconflow'
+  | 'stepfun'
   | 'alibaba'
   | 'anthropic'
   | 'vercel-ai-gateway'

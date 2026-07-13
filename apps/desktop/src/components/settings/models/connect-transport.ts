@@ -55,6 +55,12 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
         connectTransportOptionCatalog.messagesApi,
         connectTransportOptionCatalog.openResponsesApi,
       ];
+    case "stepfun":
+      return [
+        connectTransportOptionCatalog.chatCompletions,
+        connectTransportOptionCatalog.messagesApi,
+        connectTransportOptionCatalog.openResponsesApi,
+      ];
     case "openrouter":
     case "cloudflare-ai-gateway":
     case "custom":
@@ -109,6 +115,7 @@ export function providerSupportsConnectTransportPicker(
     provider === "xiaomi" ||
     provider === "siliconflow" ||
     provider === "alibaba" ||
+    provider === "stepfun" ||
     provider === "custom" ||
     provider === "openrouter" ||
     provider === "cloudflare-ai-gateway" ||

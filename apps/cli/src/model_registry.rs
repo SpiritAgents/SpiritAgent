@@ -31,6 +31,7 @@ pub enum ModelProvider {
     Minimax,
     Xiaomi,
     Siliconflow,
+    Stepfun,
     Alibaba,
     Anthropic,
     #[serde(rename = "vercel-ai-gateway", alias = "vercelaigateway")]
@@ -63,6 +64,7 @@ impl ModelProvider {
             Self::Minimax => "minimax",
             Self::Xiaomi => "xiaomi",
             Self::Siliconflow => "siliconflow",
+            Self::Stepfun => "stepfun",
             Self::Alibaba => "alibaba",
             Self::Anthropic => "anthropic",
             Self::VercelAiGateway => "vercel-ai-gateway",
@@ -94,6 +96,7 @@ impl FromStr for ModelProvider {
             "minimax" => Ok(Self::Minimax),
             "xiaomi" => Ok(Self::Xiaomi),
             "siliconflow" => Ok(Self::Siliconflow),
+            "stepfun" => Ok(Self::Stepfun),
             "alibaba" => Ok(Self::Alibaba),
             "anthropic" => Ok(Self::Anthropic),
             "vercel-ai-gateway" => Ok(Self::VercelAiGateway),
@@ -247,6 +250,13 @@ pub struct ProviderGroup {
         skip_serializing_if = "Option::is_none"
     )]
     pub alibaba_billing_mode: Option<String>,
+    #[serde(
+        rename = "stepfunBillingMode",
+        alias = "stepfun_billing_mode",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub stepfun_billing_mode: Option<String>,
     #[serde(
         rename = "awsRegion",
         alias = "aws_region",
@@ -435,6 +445,16 @@ impl ModelProfile {
             .map(ToOwned::to_owned)
     }
 
+    pub fn stepfun_billing_mode(&self) -> Option<String> {
+        self.extra
+            .get("stepfunBillingMode")
+            .or_else(|| self.extra.get("stepfun_billing_mode"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
     pub fn aws_region(&self) -> Option<String> {
         self.extra
             .get("awsRegion")
@@ -617,6 +637,17 @@ pub fn resolve_model_profile_from_parts(
     {
         extra.insert(
             "alibabaBillingMode".to_string(),
+            Value::String(billing_mode.to_string()),
+        );
+    }
+    if let Some(billing_mode) = group
+        .stepfun_billing_mode
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "stepfunBillingMode".to_string(),
             Value::String(billing_mode.to_string()),
         );
     }
@@ -1001,6 +1032,7 @@ pub struct ProviderGroupConnectDraft {
     pub provider_site: Option<String>,
     pub alibaba_workspace_id: Option<String>,
     pub alibaba_billing_mode: Option<String>,
+    pub stepfun_billing_mode: Option<String>,
     pub aws_region: Option<String>,
     pub azure_resource_name: Option<String>,
     pub cloudflare_account_id: Option<String>,
@@ -1022,6 +1054,9 @@ impl ProviderGroupConnectDraft {
         }
         if let Some(value) = normalize_optional_string(self.alibaba_billing_mode.clone()) {
             group.alibaba_billing_mode = Some(value);
+        }
+        if let Some(value) = normalize_optional_string(self.stepfun_billing_mode.clone()) {
+            group.stepfun_billing_mode = Some(value);
         }
         if let Some(value) = normalize_optional_string(self.aws_region.clone()) {
             group.aws_region = Some(value);
