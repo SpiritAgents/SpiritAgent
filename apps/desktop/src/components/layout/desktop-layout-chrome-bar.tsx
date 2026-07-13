@@ -220,6 +220,7 @@ export function DesktopLayoutChromeBar({
       aria-label={t('app.sidebarAndTools')}
       data-spirit-surface="layout-chrome"
       data-session-sidebar-open={sessionSidebarOpen ? "true" : "false"}
+      data-macos-leading-inset={showSessionSidebarToggle ? "true" : "false"}
       data-pane-id={paneId}
       draggable={paneDragEnabled}
       onDragStart={(event) => {

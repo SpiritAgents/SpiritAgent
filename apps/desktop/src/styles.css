@@ -283,15 +283,21 @@ html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split [data-spirit
   -webkit-app-region: no-drag;
 }
 
-/* 侧栏收起时主区顶栏从窗口左缘开始，需右移避让红绿灯 */
+/* 侧栏收起时主区顶栏从窗口左缘开始，需右移避让红绿灯（仅最左 anchor pane） */
 html.spirit-desktop-darwin
-  [data-spirit-surface="layout-chrome"][data-session-sidebar-open="false"] {
+  [data-spirit-surface="layout-chrome"][data-session-sidebar-open="false"][data-macos-leading-inset="true"] {
   padding-left: var(--spirit-macos-traffic-lights-inset-left);
 }
 
-/* 侧栏展开时顶栏标题左缘留白与 flex-end 上缘留白对齐（titlebar 高度 − text-xs 行高 1rem） */
+/* 侧栏展开时顶栏标题左缘留白与 flex-end 上缘留白对齐（titlebar 高度 − text-xs 行高 1rem；仅最左 anchor pane） */
 html.spirit-desktop-darwin:not(.spirit-desktop-darwin-fullscreen)
-  [data-spirit-surface="layout-chrome"][data-session-sidebar-open="true"] {
+  [data-spirit-surface="layout-chrome"][data-session-sidebar-open="true"][data-macos-leading-inset="true"] {
+  padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
+}
+
+/* Split 非 anchor pane：不避让红绿灯，但与 anchor 侧栏展开时保持相同标题行左留白 */
+html.spirit-desktop-darwin:not(.spirit-desktop-darwin-fullscreen).spirit-desktop-darwin-conversation-split
+  [data-spirit-surface="layout-chrome"][data-macos-leading-inset="false"] {
   padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
 }
 
