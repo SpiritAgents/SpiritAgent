@@ -68,6 +68,7 @@ export function createDesktopRuntime(input: {
   bootstrapSubagentWorkspace?: SubagentWorkspaceBootstrap<DesktopToolRequest, string>;
   getApprovalLevel?: () => SessionApprovalLevel;
   reviewToolApproval?: ToolAutoReviewer;
+  flushPendingHostEvents?: () => void | Promise<void>;
 }): DesktopRuntime {
   const resolveLoopEnabled = () => input.getLoopEnabled?.() === true;
   const applyPatchFileToolsPromptSection = resolveApplyPatchFileToolsPromptSection(
@@ -166,6 +167,7 @@ export function createDesktopRuntime(input: {
       : {}),
     ...(input.getApprovalLevel ? { getApprovalLevel: input.getApprovalLevel } : {}),
     ...(input.reviewToolApproval ? { reviewToolApproval: input.reviewToolApproval } : {}),
+    ...(input.flushPendingHostEvents ? { flushPendingHostEvents: input.flushPendingHostEvents } : {}),
     persistPreCompactionHistory: async ({ archive, sessionId }) =>
       persistPreCompactionHistoryArchive(spiritAgentDataDir(), archive, {
         ...(sessionId !== undefined ? { sessionId } : {}),
