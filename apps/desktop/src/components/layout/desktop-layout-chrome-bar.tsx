@@ -247,6 +247,9 @@ export function DesktopLayoutChromeBar({
       }}
     >
       <div className="flex min-w-0 flex-1 items-center">
+        {!showSessionSidebarToggle && pinSidebarToggleOnDarwin ? (
+          <div className="h-7 w-0 shrink-0" aria-hidden />
+        ) : null}
         {showSessionSidebarToggle ? (
           pinSidebarToggleOnDarwin ? (
             <div data-darwin-pinned-sidebar-toggle>
