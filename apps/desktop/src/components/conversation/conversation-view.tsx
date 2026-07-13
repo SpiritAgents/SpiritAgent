@@ -184,7 +184,9 @@ export type ConversationViewProps = {
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle?: boolean;
   showSplitMenu?: boolean;
+  showSideChat?: boolean;
   showClosePane?: boolean;
+  onSideChat?: () => void;
   onSplit?: () => void;
   onSplitVertical?: () => void;
   onClosePane?: () => void;
@@ -236,7 +238,9 @@ export function ConversationView({
   showSessionSidebarToggle = true,
   showWorkspaceToggle = true,
   showSplitMenu = false,
+  showSideChat = false,
   showClosePane = false,
+  onSideChat,
   onSplit,
   onSplitVertical,
   onClosePane,
@@ -385,7 +389,9 @@ export function ConversationView({
           showSessionSidebarToggle={showSessionSidebarToggle}
           showWorkspaceToggle={showWorkspaceToggle}
           showSplitMenu={showSplitMenu}
+          showSideChat={showSideChat}
           showClosePane={showClosePane}
+          onSideChat={onSideChat}
           onSplit={onSplit}
           onSplitVertical={onSplitVertical}
           onClosePane={onClosePane}

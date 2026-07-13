@@ -2,6 +2,8 @@ import { useCallback, useEffect } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
+import { canBeginSideChat } from "@/lib/fork-eligibility";
+import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { useConversationPaneController } from "@/hooks/useConversationPaneController";
 import type { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import type { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
@@ -29,6 +31,7 @@ export type ConversationPaneHostProps = {
   useIsolatedPane: boolean;
   splitPaneCount: number;
   onFocusPane: () => void;
+  onSideChat: () => void;
   onSplit: () => void;
   onSplitVertical: () => void;
   onClosePane: () => void;
@@ -72,6 +75,7 @@ export function ConversationPaneHost({
   useIsolatedPane,
   splitPaneCount,
   onFocusPane,
+  onSideChat,
   onSplit,
   onSplitVertical,
   onClosePane,
@@ -152,6 +156,19 @@ export function ConversationPaneHost({
     [controllerInput.onRenameSession],
   );
 
+  const showSideChat =
+    !pane.paneIsEmptySession
+    && Boolean(
+      findLastForkableAssistantMessageId(pane.paneSnapshot?.conversation.messages ?? []),
+    )
+    && canBeginSideChat({
+      conversationBusy: pane.paneSnapshot?.conversation.isBusy === true,
+      activeSessionReadOnly: pane.paneSnapshot?.activeSession?.readOnly === true,
+      forkBusy: controllerInput.runtime.busyAction === "fork",
+      sideChatBusy: controllerInput.runtime.busyAction === "side-chat",
+      hasForkableAssistantMessage: true,
+    });
+
   return (
     <ConversationView
       useMicaBackdrop={useMicaBackdrop}
@@ -162,7 +179,9 @@ export function ConversationPaneHost({
       showSessionSidebarToggle={splitPaneCount <= 1 || isSessionSidebarAnchorPane}
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
+      showSideChat={showSideChat}
       showClosePane={showClosePane}
+      onSideChat={onSideChat}
       onSplit={onSplit}
       onSplitVertical={onSplitVertical}
       onClosePane={onClosePane}

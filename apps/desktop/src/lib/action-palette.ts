@@ -29,6 +29,9 @@ function actionPaletteSearchText(item: ActionPaletteItem, t: ActionPaletteTransl
   }
 
   const parts = [item.name, item.alias.slice(1)]
+  if (item.nameKey) {
+    parts.push(t(item.nameKey))
+  }
   if (item.descriptionKey) {
     parts.push(t(item.descriptionKey))
   }

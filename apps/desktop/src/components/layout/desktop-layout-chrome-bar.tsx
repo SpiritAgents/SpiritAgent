@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { LoaderCircle, PanelRightClose, PanelRightOpen, Pencil, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
+import { LoaderCircle, MessageSquare, PanelRightClose, PanelRightOpen, Pencil, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
 
 import {
   NewSessionShortcutKbd,
@@ -60,6 +60,7 @@ export function DesktopLayoutChromeBar({
   showSessionSidebarToggle = true,
   showWorkspaceToggle,
   showSplitMenu = false,
+  showSideChat = false,
   showClosePane = false,
   sessionTitle,
   sessionTooltip,
@@ -68,6 +69,7 @@ export function DesktopLayoutChromeBar({
   onNewSession,
   newSessionBusy = false,
   onSplit,
+  onSideChat,
   onSplitVertical,
   onClosePane,
   paneId,
@@ -92,6 +94,7 @@ export function DesktopLayoutChromeBar({
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle: boolean;
   showSplitMenu?: boolean;
+  showSideChat?: boolean;
   showClosePane?: boolean;
   sessionTitle?: string | null;
   sessionTooltip?: SessionGitTooltipItem | null;
@@ -100,6 +103,7 @@ export function DesktopLayoutChromeBar({
   onNewSession?: () => void;
   newSessionBusy?: boolean;
   onSplit?: () => void;
+  onSideChat?: () => void;
   onSplitVertical?: () => void;
   onClosePane?: () => void;
   paneId?: string;
@@ -335,6 +339,15 @@ export function DesktopLayoutChromeBar({
                 }}
               >
                 <div className="p-1">
+                  {showSideChat ? (
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onSelect={() => onSideChat?.()}
+                    >
+                      <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      <span>{t("app.sideChat")}</span>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem
                     className="gap-2"
                     onSelect={() => onSplit?.()}
