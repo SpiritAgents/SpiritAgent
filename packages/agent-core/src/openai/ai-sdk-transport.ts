@@ -163,6 +163,7 @@ import {
 } from '../moonshot/formula/moonshot-chat-completions-fetch.js';
 import { shouldUseMoonshotFormulaWebSearch } from '../moonshot/formula/formula-eligibility.js';
 import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from '../moonshot/formula/moonshot-formula-tool-loop.js';
+import { buildStepfunWebSearchStreamingPreviewArgumentsJson } from '../stepfun/stepfun-web-search-tool-loop.js';
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
@@ -1636,6 +1637,7 @@ function resolveStreamingToolPreviewArgumentsJson(
   argumentsJson: string,
 ): string {
   return buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson)
+    ?? buildStepfunWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson)
     ?? argumentsJson;
 }
 

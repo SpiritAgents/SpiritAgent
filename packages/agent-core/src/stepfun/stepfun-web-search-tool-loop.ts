@@ -1,0 +1,97 @@
+import type { JsonObject } from '../ports.js';
+import { isJsonObject } from '../tool-agent.js';
+import type { LlmTransportConfig } from '../provider-config.js';
+import type { ToolCallRequest } from '../ports.js';
+import { tryExtractPartialWebSearchQuery } from '../tool-streaming-preview-gate.js';
+import { buildMoonshotFormulaToolPreviewArgumentsJson } from '../moonshot/formula/formula-spirit-ui.js';
+import { isStepfunManagedWebSearchToolCall } from './stepfun-eligibility.js';
+import { invokeStepfunSearch } from './stepfun-search-client.js';
+
+export function readStepfunWebSearchQuery(argumentsJson: string): string {
+  try {
+    const parsed = JSON.parse(argumentsJson) as JsonObject;
+    if (!isJsonObject(parsed)) {
+      return '';
+    }
+    const query = parsed.query;
+    return typeof query === 'string' ? query.trim() : '';
+  } catch {
+    return tryExtractPartialWebSearchQuery(argumentsJson) ?? '';
+  }
+}
+
+function readStepfunWebSearchResultCount(argumentsJson: string): number | undefined {
+  try {
+    const parsed = JSON.parse(argumentsJson) as JsonObject;
+    if (!isJsonObject(parsed)) {
+      return undefined;
+    }
+    const n = parsed.n;
+    if (typeof n !== 'number' || !Number.isFinite(n)) {
+      return undefined;
+    }
+    const truncated = Math.trunc(n);
+    if (truncated < 1 || truncated > 20) {
+      return undefined;
+    }
+    return truncated;
+  } catch {
+    return undefined;
+  }
+}
+
+export type StepfunWebSearchToolExecutionResult =
+  | { kind: 'succeeded'; content: string; previewArgumentsJson: string }
+  | { kind: 'failed'; error: string; previewArgumentsJson: string };
+
+export async function executeStepfunWebSearchToolCall(
+  config: LlmTransportConfig,
+  call: Pick<ToolCallRequest, 'name' | 'argumentsJson'>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<StepfunWebSearchToolExecutionResult> {
+  const query = readStepfunWebSearchQuery(call.argumentsJson);
+  const n = readStepfunWebSearchResultCount(call.argumentsJson);
+  const apiKey = (config as { apiKey?: string }).apiKey ?? '';
+
+  const searchResult = await invokeStepfunSearch(
+    apiKey,
+    { query, ...(n !== undefined ? { n } : {}) },
+    fetchImpl,
+  );
+
+  if (searchResult.kind === 'failed') {
+    return {
+      kind: 'failed',
+      error: searchResult.error,
+      previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
+        query,
+        failed: true,
+        status: 'failed',
+      }),
+    };
+  }
+
+  return {
+    kind: 'succeeded',
+    content: searchResult.content,
+    previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
+      query,
+      status: 'completed',
+    }),
+  };
+}
+
+export function buildStepfunWebSearchStreamingPreviewArgumentsJson(
+  config: LlmTransportConfig,
+  toolName: string,
+  argumentsJson: string,
+): string | undefined {
+  if (!isStepfunManagedWebSearchToolCall(toolName, config)) {
+    return undefined;
+  }
+
+  return buildMoonshotFormulaToolPreviewArgumentsJson({
+    query: readStepfunWebSearchQuery(argumentsJson),
+    status: 'in_progress',
+  });
+}
