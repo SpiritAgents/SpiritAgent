@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 type ConversationSplitRootProps = {
   useMicaBackdrop: boolean;
-  renderPane: (input: {
+    renderPane: (input: {
     paneId: string;
     sessionPath: string;
     isFocused: boolean;
@@ -23,6 +23,7 @@ type ConversationSplitRootProps = {
     useIsolatedPane: boolean;
     splitPaneCount: number;
     onFocusPane: () => void;
+    onSideChat: () => void;
     onSplit: () => void;
     onSplitVertical: () => void;
     onClosePane: () => void;
@@ -270,6 +271,9 @@ function SplitLayoutRenderer({
           useIsolatedPane: true,
           splitPaneCount: split.paneCount,
           onFocusPane: () => split.focusPane(node.paneId, node.sessionPath),
+          onSideChat: () => {
+            void split.beginSideChat(node.paneId);
+          },
           onSplit: () => {
             void split.splitPane(node.paneId, "horizontal");
           },
