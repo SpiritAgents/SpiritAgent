@@ -146,13 +146,6 @@ async function registerVisiblePaneSessions(
   ctx.setVisiblePaneSessionPaths(normalized);
 
   for (const sessionPath of normalized) {
-    if (!isSplitProvisionalSessionPath(sessionPath) && !isSideChatProvisionalSessionPath(sessionPath)) {
-      continue;
-    }
-    await registerEmptyProvisionalPaneIfNeeded(ctx, sessionPath, state.workspaceRoot);
-  }
-
-  for (const sessionPath of normalized) {
     try {
       await ensureStoredSessionBundleRegistered(ctx, sessionPath);
     } catch {
