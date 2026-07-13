@@ -99,6 +99,7 @@ export function ConversationPaneHost({
   const split = useConversationSplit();
   const pane = useConversationPaneController({
     ...controllerInput,
+    onBeginSideChat: onSideChat,
     sessionPath,
     isFocused,
     isAnchorPane,
