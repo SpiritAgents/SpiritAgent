@@ -170,6 +170,7 @@ type StartupMergedProfile = {
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: import('../types.js').DesktopAlibabaBillingMode;
+  stepfunBillingMode?: import('../types.js').DesktopStepfunBillingMode;
   vertexProject?: string;
   vertexLocation?: string;
 };
@@ -238,6 +239,9 @@ export function mergeNewCatalogModelsIntoConfig(
     }
     if (provider === 'alibaba' && profile.alibabaBillingMode === 'token-plan') {
       merged.alibabaBillingMode = 'token-plan';
+    }
+    if (provider === 'stepfun' && profile.stepfunBillingMode === 'step-plan') {
+      merged.stepfunBillingMode = 'step-plan';
     }
     if (provider === 'google-vertex-ai') {
       if (profile.vertexProject?.trim()) {

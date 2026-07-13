@@ -10,6 +10,7 @@ import type {
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
+  DesktopStepfunBillingMode,
   DesktopTransportKind,
   ModelProfileSnapshot,
 } from '../types.js';
@@ -62,6 +63,9 @@ export function resolveModelProfileFromParts(
     ...(group.alibabaWorkspaceId ? { alibabaWorkspaceId: group.alibabaWorkspaceId } : {}),
     ...(group.alibabaBillingMode
       ? { alibabaBillingMode: group.alibabaBillingMode as DesktopAlibabaBillingMode }
+      : {}),
+    ...(group.stepfunBillingMode
+      ? { stepfunBillingMode: group.stepfunBillingMode as DesktopStepfunBillingMode }
       : {}),
     ...(group.awsRegion ? { awsRegion: group.awsRegion } : {}),
     ...(group.azureResourceName ? { azureResourceName: group.azureResourceName } : {}),

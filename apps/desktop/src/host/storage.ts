@@ -944,6 +944,8 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
       : undefined;
   const alibabaBillingMode =
     record.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
+  const stepfunBillingMode =
+    record.stepfunBillingMode === 'step-plan' ? 'step-plan' as const : undefined;
   const awsRegion =
     typeof record.awsRegion === 'string' && record.awsRegion.trim().length > 0
       ? record.awsRegion.trim()
@@ -999,6 +1001,7 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
     ...(providerSite ? { providerSite } : {}),
     ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
     ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
+    ...(stepfunBillingMode ? { stepfunBillingMode } : {}),
     ...(awsRegion ? { awsRegion } : {}),
     ...(vertexProject ? { vertexProject } : {}),
     ...(vertexLocation ? { vertexLocation } : {}),

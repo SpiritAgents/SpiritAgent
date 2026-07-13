@@ -62,6 +62,7 @@
     "zAi": "Z.ai",
     "zhipuAi": "Zhipu AI",
     "alibaba": "Alibaba",
+    "stepfun": "StepFun",
     "minimax": "MiniMax",
     "minimaxSite": {
       "cn": "China",
@@ -323,6 +324,9 @@
     "alibabaBillingMode": "Billing mode",
     "alibabaBillingModeStandard": "Standard",
     "alibabaBillingModeTokenPlan": "Token Plan",
+    "stepfunBillingMode": "Service type",
+    "stepfunBillingModeStandard": "Standard",
+    "stepfunBillingModeStepPlan": "Step Plan",
     "alibabaWorkspaceId": "Workspace ID",
     "alibabaWorkspaceIdPlaceholder": "Business space ID",
     "alibabaWorkspaceIdRequired": "Workspace ID is required for the selected region.",

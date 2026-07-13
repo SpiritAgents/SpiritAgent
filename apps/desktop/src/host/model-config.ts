@@ -90,7 +90,7 @@ function inferProviderSiteFromStoredApiBase(
 export function resolveProfileApiBase(
   profile: Pick<
     ModelProfileSnapshot,
-    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'cloudflareAccountId' | 'cloudflareGatewayId' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode'
+    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'cloudflareAccountId' | 'cloudflareGatewayId' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode' | 'stepfunBillingMode'
   >,
 ): string {
   if (profile.provider === 'amazon-bedrock') {
@@ -144,6 +144,7 @@ export function resolveProfileApiBase(
       providerSite,
       profile.alibabaWorkspaceId,
       profile.alibabaBillingMode,
+      profile.stepfunBillingMode,
     );
   }
 
@@ -183,6 +184,7 @@ export function defaultApiBaseForTransport(
   providerSite?: ModelProfileSnapshot['providerSite'],
   alibabaWorkspaceId?: string,
   alibabaBillingMode?: ModelProfileSnapshot['alibabaBillingMode'],
+  stepfunBillingMode?: ModelProfileSnapshot['stepfunBillingMode'],
 ): string {
   if (!provider) {
     return DEFAULT_API_BASE;
@@ -193,6 +195,7 @@ export function defaultApiBaseForTransport(
     transportKind ?? resolveDesktopTransportKind({ provider }),
     {
       ...(alibabaBillingMode === 'token-plan' ? { billingMode: 'token-plan' } : {}),
+      ...(stepfunBillingMode === 'step-plan' ? { stepfunBillingMode: 'step-plan' } : {}),
       ...(alibabaBillingMode === 'token-plan'
         ? {}
         : {

@@ -161,6 +161,8 @@ export interface PreviewModelCatalogPricing {
 
 export type DesktopAlibabaBillingMode = 'token-plan';
 
+export type DesktopStepfunBillingMode = 'step-plan';
+
 export interface PreviewModelCatalogEntry {
   id: string;
   displayName?: string;
@@ -183,6 +185,7 @@ export interface PreviewModelsRequest {
   alibabaWorkspaceId?: string;
   /** Alibaba Token Plan；缺省为标准按量模式。 */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
+  stepfunBillingMode?: DesktopStepfunBillingMode;
   awsRegion?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -217,6 +220,7 @@ export interface AddProviderModelsRequest {
   alibabaWorkspaceId?: string;
   /** Alibaba Token Plan；缺省为标准按量模式。 */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
+  stepfunBillingMode?: DesktopStepfunBillingMode;
   awsRegion?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -257,6 +261,7 @@ export interface AddModelRequest {
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
+  stepfunBillingMode?: DesktopStepfunBillingMode;
   /** Azure 资源名；`azure` 必填。 */
   azureResourceName?: string;
   cloudflareAccountId?: string;
@@ -1309,6 +1314,8 @@ export interface ModelProfileSnapshot {
   alibabaWorkspaceId?: string;
   /** Alibaba Token Plan；缺省为标准按量模式。 */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
+  /** StepFun Step Plan；缺省为标准 API。 */
+  stepfunBillingMode?: DesktopStepfunBillingMode;
   /** Amazon Bedrock AWS 区域（如 `us-east-1`）；仅 `amazon-bedrock` 使用。 */
   awsRegion?: string;
   /** Azure 资源名；仅 `azure` 使用。 */
