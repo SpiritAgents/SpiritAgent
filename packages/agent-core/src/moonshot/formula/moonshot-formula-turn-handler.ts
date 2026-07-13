@@ -1,4 +1,5 @@
 import type { OpenAiTransportConfig } from '../../openai/openai-compat.js';
+import type { LlmTransportConfig } from '../../provider-config.js';
 import type { ToolCallRequest } from '../../ports.js';
 import { createLlmMessageContentFromText } from '../../ports.js';
 import {
@@ -18,37 +19,27 @@ import type {
 import { executeMoonshotFormulaToolCall, isMoonshotFormulaManagedToolCall } from './moonshot-formula-tool-loop.js';
 import { buildMoonshotFormulaToolPreviewArgumentsJson } from './formula-spirit-ui.js';
 import { readMoonshotFormulaWebSearchQuery } from './moonshot-formula-tool-loop.js';
+import {
+  executeStepfunWebSearchToolCall,
+  readStepfunWebSearchQuery,
+} from '../../stepfun/stepfun-web-search-tool-loop.js';
+import { isStepfunManagedWebSearchToolCall } from '../../stepfun/stepfun-eligibility.js';
 
-function readPreviewQuery(argumentsJson: string): string {
+function readPreviewQuery(argumentsJson: string, toolName: string, config: unknown): string {
+  if (isStepfunManagedWebSearchToolCall(toolName, config)) {
+    return readStepfunWebSearchQuery(argumentsJson);
+  }
   return readMoonshotFormulaWebSearchQuery(argumentsJson);
 }
 
-export type ManagedProviderToolCallOutcome<
-  State,
-  ToolRequest,
-  TrustTarget,
-> =
-  | { kind: 'not-handled' }
-  | { kind: 'advance'; state: State }
-  | { kind: 'turn-result'; result: RuntimeTurnResult<State, ToolRequest, TrustTarget> };
-
-function providerFormulaToolRequestStub<ToolRequest>(
-  call: ToolCallRequest,
-): ToolRequest {
-  return {
-    name: call.name,
-    argumentsJson: call.argumentsJson,
-  } as ToolRequest;
-}
-
-function moonshotFormulaToolSummaryText(toolName: string, failed: boolean): string {
+function managedProviderToolSummaryText(toolName: string, failed: boolean): string {
   if (failed) {
-    return `[moonshot formula ${toolName}] failed`;
+    return `[provider tool ${toolName}] failed`;
   }
-  return `[moonshot formula ${toolName}] completed`;
+  return `[provider tool ${toolName}] completed`;
 }
 
-async function executeAndCommitMoonshotFormulaToolCall<
+async function executeAndCommitManagedProviderToolCall<
   Config,
   State,
   ToolRequest,
@@ -59,20 +50,24 @@ async function executeAndCommitMoonshotFormulaToolCall<
   call: ToolCallRequest,
   turn: RuntimeTurnContext<ToolRequest>,
 ): Promise<{ state: State; failed: boolean; modelContent: string }> {
-  const config = runtime.options.config as OpenAiTransportConfig;
+  const config = runtime.options.config as LlmTransportConfig;
   const request = providerFormulaToolRequestStub<ToolRequest>(call);
+  const previewQuery = readPreviewQuery(call.argumentsJson, call.name, config);
 
   runtime.emitEvent({
     kind: 'streaming-tool-preview',
     toolCallId: call.id,
     toolName: call.name,
     argumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
-      query: readPreviewQuery(call.argumentsJson),
+      query: previewQuery,
       status: 'in_progress',
     }),
   });
 
-  const execution = await executeMoonshotFormulaToolCall(config, call);
+  const execution = isStepfunManagedWebSearchToolCall(call.name, config)
+    ? await executeStepfunWebSearchToolCall(config, call)
+    : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);
+
   runtime.emitEvent({
     kind: 'streaming-tool-preview',
     toolCallId: call.id,
@@ -97,7 +92,7 @@ async function executeAndCommitMoonshotFormulaToolCall<
     return { state: resumedState, failed: true, modelContent: execution.error };
   }
 
-  const summaryText = moonshotFormulaToolSummaryText(call.name, false);
+  const summaryText = managedProviderToolSummaryText(call.name, false);
   const content = createLlmMessageContentFromText(summaryText);
   commitToolExecutionOutput(runtime, turn, {
     toolCallId: call.id,
@@ -123,6 +118,29 @@ async function executeAndCommitMoonshotFormulaToolCall<
   return { state: resumedState, failed: false, modelContent: preparedContent };
 }
 
+function isManagedProviderToolCall(toolName: string, config: unknown): boolean {
+  return isMoonshotFormulaManagedToolCall(toolName, config)
+    || isStepfunManagedWebSearchToolCall(toolName, config);
+}
+
+export type ManagedProviderToolCallOutcome<
+  State,
+  ToolRequest,
+  TrustTarget,
+> =
+  | { kind: 'not-handled' }
+  | { kind: 'advance'; state: State }
+  | { kind: 'turn-result'; result: RuntimeTurnResult<State, ToolRequest, TrustTarget> };
+
+function providerFormulaToolRequestStub<ToolRequest>(
+  call: ToolCallRequest,
+): ToolRequest {
+  return {
+    name: call.name,
+    argumentsJson: call.argumentsJson,
+  } as ToolRequest;
+}
+
 export async function handleManagedProviderToolCallInTurn<
   Config,
   State,
@@ -136,11 +154,11 @@ export async function handleManagedProviderToolCallInTurn<
   remainingCalls: ToolCallRequest[],
   turn: RuntimeTurnContext<ToolRequest>,
 ): Promise<ManagedProviderToolCallOutcome<State, ToolRequest, TrustTarget>> {
-  if (!isMoonshotFormulaManagedToolCall(call.name, runtime.options.config)) {
+  if (!isManagedProviderToolCall(call.name, runtime.options.config)) {
     return { kind: 'not-handled' };
   }
 
-  const { state: resumedState } = await executeAndCommitMoonshotFormulaToolCall(
+  const { state: resumedState } = await executeAndCommitManagedProviderToolCall(
     runtime,
     state,
     call,
@@ -181,11 +199,11 @@ export async function handleManagedProviderToolCallInTurnAsync<
   resumeAsStreaming = false,
   streamingEmitBeginResponse = true,
 ): Promise<boolean> {
-  if (!isMoonshotFormulaManagedToolCall(call.name, runtime.options.config)) {
+  if (!isManagedProviderToolCall(call.name, runtime.options.config)) {
     return false;
   }
 
-  const { state: resumedState } = await executeAndCommitMoonshotFormulaToolCall(
+  const { state: resumedState } = await executeAndCommitManagedProviderToolCall(
     runtime,
     state,
     call,
@@ -223,5 +241,5 @@ export function shouldSkipEarlyExecutionForManagedProviderTool(
   toolName: string,
   config: unknown,
 ): boolean {
-  return isMoonshotFormulaManagedToolCall(toolName, config);
+  return isManagedProviderToolCall(toolName, config);
 }

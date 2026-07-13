@@ -448,12 +448,14 @@ export function buildPrimaryTransportConfig(input: {
     );
     const explicitThinking = resolveAgentAnthropicExplicitThinking(input.profile, input.model);
     const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
+    const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
     return {
       transportKind: 'anthropic',
       apiKey: input.apiKey,
       model: input.model,
       baseUrl: input.baseUrl,
       workspaceRoot: input.workspaceRoot,
+      ...(llmVendor ? { llmVendor } : {}),
       ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
       ...(input.profile?.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
