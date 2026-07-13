@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 
 import { ConversationView } from "@/components/conversation/conversation-view";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
+import { isSideChatPaneProvisionalSessionPath } from "@/lib/session-path-kind";
 import { canBeginSideChat } from "@/lib/fork-eligibility";
 import { findLastForkableAssistantMessageId } from "@/lib/fork-session-utils";
 import { useConversationPaneController } from "@/hooks/useConversationPaneController";
@@ -65,6 +66,10 @@ export type ConversationPaneHostProps = {
   t: TFunction;
   language: string;
 };
+
+function isSideChatPaneSessionPath(sessionPath: string): boolean {
+  return isSideChatPaneProvisionalSessionPath(sessionPath);
+}
 
 export function ConversationPaneHost({
   sessionPath,
@@ -168,6 +173,7 @@ export function ConversationPaneHost({
       sideChatBusy: controllerInput.runtime.busyAction === "side-chat",
       hasForkableAssistantMessage: true,
     });
+  const isSideChatPane = isSideChatPaneSessionPath(sessionPath);
 
   return (
     <ConversationView
@@ -180,6 +186,7 @@ export function ConversationPaneHost({
       showWorkspaceToggle={isAnchorPane}
       showSplitMenu
       showSideChat={showSideChat}
+      sessionTitleSuffix={isSideChatPane ? controllerInput.t("app.sideChat") : null}
       showClosePane={showClosePane}
       onSideChat={onSideChat}
       onSplit={onSplit}
@@ -208,7 +215,9 @@ export function ConversationPaneHost({
       onDeleteSession={handleDeleteSession}
       onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
       showRenameSession={
-        !pane.paneIsEmptySession && Boolean(controllerInput.onRenameSession)
+        !isSideChatPane
+        && !pane.paneIsEmptySession
+        && Boolean(controllerInput.onRenameSession)
       }
       renameSessionPath={sessionPath}
       renameSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}

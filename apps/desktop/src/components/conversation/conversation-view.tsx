@@ -185,6 +185,7 @@ export type ConversationViewProps = {
   showWorkspaceToggle?: boolean;
   showSplitMenu?: boolean;
   showSideChat?: boolean;
+  sessionTitleSuffix?: string | null;
   showClosePane?: boolean;
   onSideChat?: () => void;
   onSplit?: () => void;
@@ -239,6 +240,7 @@ export function ConversationView({
   showWorkspaceToggle = true,
   showSplitMenu = false,
   showSideChat = false,
+  sessionTitleSuffix,
   showClosePane = false,
   onSideChat,
   onSplit,
@@ -405,6 +407,7 @@ export function ConversationView({
               ? snapshot?.activeSession?.displayName
               : null
           }
+          sessionTitleSuffix={sessionTitleSuffix}
           sessionTooltip={sessionTooltip}
           subagentPromptText={
             subagentViewActive ? snapshot?.subagentViewer?.promptText : null
