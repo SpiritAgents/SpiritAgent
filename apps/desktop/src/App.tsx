@@ -104,6 +104,10 @@ export default function App() {
     conversationNavigationPending,
   );
   const composerAutomationApiRef = useRef<FocusedPaneComposerControls | null>(null);
+  const beginSideChatRef = useRef<(() => void) | null>(null);
+  const registerBeginSideChat = useCallback((handler: (() => void) | null) => {
+    beginSideChatRef.current = handler;
+  }, []);
   const conversationAbortShortcutTargetRef = useRef<ConversationAbortShortcutTarget>({
     eligible: false,
   });
@@ -174,6 +178,9 @@ export default function App() {
     handleNewSession: surfaceNav.handleNewSession,
     setActiveSurface: surfaceNav.setActiveSurface,
     setLastNonSettingsSurface: surfaceNav.setLastNonSettingsSurface,
+    onBeginSideChat: () => {
+      beginSideChatRef.current?.();
+    },
   });
 
 
@@ -288,6 +295,7 @@ export default function App() {
           runtime={runtime}
           snapshot={snapshot}
           conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
+          registerBeginSideChat={registerBeginSideChat}
           onEnsureConversationSurface={() => {
             surfaceNav.setLastNonSettingsSurface("conversation");
             surfaceNav.setActiveSurface("conversation");
@@ -554,6 +562,7 @@ export default function App() {
                 useIsolatedPane={pane.useIsolatedPane}
                 splitPaneCount={pane.splitPaneCount}
                 onFocusPane={pane.onFocusPane}
+                onSideChat={pane.onSideChat}
                 onSplit={pane.onSplit}
                 onSplitVertical={pane.onSplitVertical}
                 onClosePane={pane.onClosePane}
@@ -611,6 +620,7 @@ export default function App() {
         onOpenChange={composer.setActionPickerOpen}
         onSelect={composer.runActionPaletteItem}
         isItemDisabled={composer.isActionPaletteItemDisabled}
+        shouldIncludeItem={composer.filterActionPaletteItem}
       />
 
       <WorkspaceFilePickerDialog

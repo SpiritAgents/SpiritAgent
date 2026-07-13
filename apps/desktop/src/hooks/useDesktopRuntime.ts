@@ -89,6 +89,8 @@ import type {
   AbortConversationRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
+  BeginSideChatPaneSessionResponse,
+  ForkSessionIntoSideChatRequest,
   SetVisiblePaneSessionsRequest,
   CloseSplitPaneSessionRequest,
   UpdateConfigRequest,
@@ -121,6 +123,7 @@ type BusyAction =
   | "continue"
   | "rewind"
   | "fork"
+  | "side-chat"
   | "approve"
   | "questions"
   | "reset"
@@ -2881,6 +2884,40 @@ export function useDesktopRuntime() {
     [api, applySnapshot, resetComposerAfterSend, refreshSessions],
   );
 
+  const beginSideChatPaneSession = useCallback(
+    async (paneId: string): Promise<BeginSideChatPaneSessionResponse> => {
+      if (!api?.beginSideChatPaneSession) {
+        throw new Error("Host does not support side-chat pane sessions.");
+      }
+      const response = await api.beginSideChatPaneSession({ paneId });
+      setRuntimeError("");
+      return response;
+    },
+    [api],
+  );
+
+  const forkSessionIntoSideChat = useCallback(
+    async (request: ForkSessionIntoSideChatRequest): Promise<boolean> => {
+      if (!api?.forkSessionIntoSideChat) {
+        return false;
+      }
+
+      setBusyAction("side-chat");
+      try {
+        const next = await api.forkSessionIntoSideChat(request);
+        applySnapshot(next);
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
   const submitApproval = useCallback(async (
     decision: DesktopApprovalDecision,
     sessionPath?: string,
@@ -3751,6 +3788,8 @@ export function useDesktopRuntime() {
     sessionNavigationGeneration,
     navigationGreetingVariant,
     beginSplitPaneSession,
+    beginSideChatPaneSession,
+    forkSessionIntoSideChat,
     setVisiblePaneSessions,
     syncSplitPaneSessions,
     focusPaneSession,
