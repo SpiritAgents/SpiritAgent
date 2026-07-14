@@ -1,3 +1,5 @@
+import { formatChipWireBlock, scanChipWireBlocks } from "./chip-wire-block.js";
+
 export const WORKSPACE_FILE_WIRE_PREFIX = "Referenced workspace file ";
 
 export type ParsedWorkspaceFileWireBlock = {
@@ -9,7 +11,7 @@ export type ParsedWorkspaceFileWireBlock = {
 /** Wire-format workspace file chip (inline, explicit composer insertion only). */
 export function workspaceFileContextText(path: string): string {
   const normalized = path.replace(/\\/gu, "/");
-  return `${WORKSPACE_FILE_WIRE_PREFIX}\`${normalized}\``;
+  return formatChipWireBlock(`file:${normalized}`);
 }
 
 function parseWorkspaceFileWireValue(value: string): string | null {
@@ -17,21 +19,19 @@ function parseWorkspaceFileWireValue(value: string): string | null {
   return parsedPath ? parsedPath.replace(/\\/gu, "/") : null;
 }
 
-function scanBacktickDelimitedWireBlocks(
+function scanLegacyWorkspaceFileWireBlocks(
   content: string,
-  prefix: string,
-  parseValue: (value: string) => string | null,
-): Array<{ index: number; length: number; value: string }> {
-  const blocks: Array<{ index: number; length: number; value: string }> = [];
+): ParsedWorkspaceFileWireBlock[] {
+  const blocks: ParsedWorkspaceFileWireBlock[] = [];
   let searchFrom = 0;
 
   while (searchFrom < content.length) {
-    const headerIndex = content.indexOf(prefix, searchFrom);
+    const headerIndex = content.indexOf(WORKSPACE_FILE_WIRE_PREFIX, searchFrom);
     if (headerIndex === -1) {
       break;
     }
 
-    const valueStart = headerIndex + prefix.length;
+    const valueStart = headerIndex + WORKSPACE_FILE_WIRE_PREFIX.length;
     if (content[valueStart] !== "`") {
       searchFrom = headerIndex + 1;
       continue;
@@ -43,29 +43,34 @@ function scanBacktickDelimitedWireBlocks(
     }
 
     const rawValue = content.slice(valueStart + 1, valueEnd);
-    const parsed = parseValue(rawValue);
+    const parsed = parseWorkspaceFileWireValue(rawValue);
     if (!parsed) {
       searchFrom = headerIndex + 1;
       continue;
     }
 
     const length = valueEnd + 1 - headerIndex;
-    blocks.push({ index: headerIndex, length, value: parsed });
+    blocks.push({ index: headerIndex, length, path: parsed });
     searchFrom = headerIndex + length;
   }
 
   return blocks;
 }
 
+function scanNewWorkspaceFileWireBlocks(content: string): ParsedWorkspaceFileWireBlock[] {
+  return scanChipWireBlocks(content)
+    .filter((block) => block.infoLine.startsWith("file:"))
+    .map((block) => ({
+      index: block.index,
+      length: block.length,
+      path: block.infoLine.slice("file:".length).replace(/\\/gu, "/"),
+    }))
+    .filter((block) => block.path.length > 0);
+}
+
 /** Scan wire text for explicit workspace file chip blocks. */
 export function scanWorkspaceFileWireBlocks(content: string): ParsedWorkspaceFileWireBlock[] {
-  return scanBacktickDelimitedWireBlocks(
-    content,
-    WORKSPACE_FILE_WIRE_PREFIX,
-    parseWorkspaceFileWireValue,
-  ).map((block) => ({
-    index: block.index,
-    length: block.length,
-    path: block.value,
-  }));
+  const blocks = [...scanNewWorkspaceFileWireBlocks(content), ...scanLegacyWorkspaceFileWireBlocks(content)];
+  blocks.sort((left, right) => left.index - right.index);
+  return blocks;
 }
