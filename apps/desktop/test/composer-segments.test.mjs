@@ -229,7 +229,7 @@ test("parseMessageContentParts parses explicit workspace file and skill wire blo
   const parts = parseMessageContentParts(wire);
   assert.deepEqual(parts, [
     { kind: "skill", alias: "/git-commit" },
-    { kind: "text", value: " " },
+    { kind: "text", value: " \n" },
     { kind: "workspaceFile", path: "README.md" },
     { kind: "text", value: " done" },
   ]);
@@ -577,7 +577,7 @@ test("segmentsToMessageText serializes workspace file chip as wire block", () =>
     { kind: "text", value: "fix " },
     { kind: "workspaceFile", path: "src/App.tsx" },
   ]);
-  assert.equal(message, "fix Referenced workspace file `src/App.tsx`");
+  assert.match(message, /^fix \n```file:src\/App\.tsx\n\n```$/);
 });
 
 test("plainTextOffsetToCaret roundtrips with workspace file chip", () => {
@@ -870,7 +870,7 @@ test("segmentsToMessageText serializes skill chip as wire block", () => {
     { kind: "skill", alias: "/git-commit" },
     { kind: "text", value: " fix typo" },
   ]);
-  assert.equal(message, "Referenced skill `/git-commit` fix typo");
+  assert.match(message, /^```skill:\/git-commit\n\n```\n fix typo$/);
 });
 
 test("segmentsToPlainText returns empty for skill chip", () => {

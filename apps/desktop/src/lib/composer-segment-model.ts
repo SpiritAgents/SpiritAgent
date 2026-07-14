@@ -275,8 +275,45 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
-  if (prev.kind === "workspaceFile" || next.kind === "workspaceFile" || prev.kind === "skill" || next.kind === "skill") {
-    return "";
+  if (prev.kind === "text" && next.kind === "workspaceFile") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "text" && next.kind === "skill") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "workspaceFile" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "skill" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (
+    (prev.kind === "workspaceFile" && (next.kind === "workspaceFile" || next.kind === "skill" || next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
+    || (next.kind === "workspaceFile" && (prev.kind === "workspaceFile" || prev.kind === "skill" || prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
+    || (prev.kind === "skill" && (next.kind === "workspaceFile" || next.kind === "skill" || next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
+    || (next.kind === "skill" && (prev.kind === "workspaceFile" || prev.kind === "skill" || prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
+  ) {
+    return "\n";
   }
 
   return "\n\n";

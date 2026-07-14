@@ -1,3 +1,5 @@
+import { formatChipWireBlock, scanChipWireBlocks } from "./chip-wire-block.js";
+
 export const SKILL_WIRE_PREFIX = "Referenced skill ";
 
 export type ParsedSkillWireBlock = {
@@ -8,7 +10,8 @@ export type ParsedSkillWireBlock = {
 
 /** Wire-format skill chip (inline, explicit composer insertion only). */
 export function skillContextText(alias: string): string {
-  return `${SKILL_WIRE_PREFIX}\`${alias}\``;
+  const normalized = alias.trim();
+  return formatChipWireBlock(`skill:${normalized}`);
 }
 
 function parseSkillWireValue(value: string): string | null {
@@ -19,21 +22,17 @@ function parseSkillWireValue(value: string): string | null {
   return parsedAlias;
 }
 
-function scanBacktickDelimitedWireBlocks(
-  content: string,
-  prefix: string,
-  parseValue: (value: string) => string | null,
-): Array<{ index: number; length: number; value: string }> {
-  const blocks: Array<{ index: number; length: number; value: string }> = [];
+function scanLegacySkillWireBlocks(content: string): ParsedSkillWireBlock[] {
+  const blocks: ParsedSkillWireBlock[] = [];
   let searchFrom = 0;
 
   while (searchFrom < content.length) {
-    const headerIndex = content.indexOf(prefix, searchFrom);
+    const headerIndex = content.indexOf(SKILL_WIRE_PREFIX, searchFrom);
     if (headerIndex === -1) {
       break;
     }
 
-    const valueStart = headerIndex + prefix.length;
+    const valueStart = headerIndex + SKILL_WIRE_PREFIX.length;
     if (content[valueStart] !== "`") {
       searchFrom = headerIndex + 1;
       continue;
@@ -45,29 +44,37 @@ function scanBacktickDelimitedWireBlocks(
     }
 
     const rawValue = content.slice(valueStart + 1, valueEnd);
-    const parsed = parseValue(rawValue);
+    const parsed = parseSkillWireValue(rawValue);
     if (!parsed) {
       searchFrom = headerIndex + 1;
       continue;
     }
 
     const length = valueEnd + 1 - headerIndex;
-    blocks.push({ index: headerIndex, length, value: parsed });
+    blocks.push({ index: headerIndex, length, alias: parsed });
     searchFrom = headerIndex + length;
   }
 
   return blocks;
 }
 
+function scanNewSkillWireBlocks(content: string): ParsedSkillWireBlock[] {
+  return scanChipWireBlocks(content)
+    .filter((block) => block.infoLine.startsWith("skill:"))
+    .map((block) => {
+      const alias = block.infoLine.slice("skill:".length).trim();
+      return {
+        index: block.index,
+        length: block.length,
+        alias,
+      };
+    })
+    .filter((block) => parseSkillWireValue(block.alias) !== null);
+}
+
 /** Scan wire text for explicit skill chip blocks. */
 export function scanSkillWireBlocks(content: string): ParsedSkillWireBlock[] {
-  return scanBacktickDelimitedWireBlocks(
-    content,
-    SKILL_WIRE_PREFIX,
-    parseSkillWireValue,
-  ).map((block) => ({
-    index: block.index,
-    length: block.length,
-    alias: block.value,
-  }));
+  const blocks = [...scanNewSkillWireBlocks(content), ...scanLegacySkillWireBlocks(content)];
+  blocks.sort((left, right) => left.index - right.index);
+  return blocks;
 }
