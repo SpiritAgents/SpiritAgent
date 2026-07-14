@@ -144,7 +144,7 @@ test("segmentsToMessageText does not double-newline terminal chip after element"
     { kind: "element", attachment: sampleAttachment },
     { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
   ]);
-  assert.ok(!message.includes("```\n\nSelected terminal"));
+  assert.ok(!message.includes("```\n\n```terminal"));
 });
 
 test("trimMessageTextAroundElements removes one structural newline after element", () => {

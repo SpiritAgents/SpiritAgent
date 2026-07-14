@@ -21,10 +21,9 @@ test("terminalSnippetContextText serializes terminal name, line range, and selec
     selectedText: "error: build failed\nexit code 1",
   });
 
-  assert.match(wire, /Selected terminal output from Terminal/);
-  assert.match(wire, /\(L10-15\):/);
-  assert.match(wire, /```text\n/);
+  assert.match(wire, /```terminal:Terminal:10-15\n/);
   assert.match(wire, /error: build failed/);
+  assert.match(wire, /\n```$/);
 });
 
 test("parseTerminalSnippetLinePart parses line range suffix", () => {
@@ -109,6 +108,13 @@ test("segmentsToMessageText and parseMessageContentParts round-trip terminal chi
   assert.equal(segments[0]?.kind, "terminalSnippet");
 });
 
+test("scanTerminalSnippetWireBlocks still parses legacy header format", () => {
+  const wire = "Selected terminal output from zsh (L1-5):\n```text\nSpiritAgent %\n```";
+  const blocks = scanTerminalSnippetWireBlocks(wire);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0]?.terminalName, "zsh");
+  assert.equal(blocks[0]?.selectedText, "SpiritAgent %");
+});
 test("scanTerminalSnippetWireBlocks parses body containing standalone fence lines", () => {
   const body = ["before", "```", "after"].join("\n");
   const wire = terminalSnippetContextText({
