@@ -88,10 +88,10 @@ test("segmentsToMessageText keeps document order", () => {
   ];
   const message = segmentsToMessageText(segs);
   assert.match(message, /^before/);
-  assert.match(message, /Selected element from https:\/\/example\.com/);
+  assert.match(message, /```element:https:\/\/example\.com\n<img src="x">\n```/);
   assert.match(message, /after$/);
-  assert.ok(message.indexOf("before") < message.indexOf("Selected element"));
-  assert.ok(message.indexOf("Selected element") < message.indexOf("after"));
+  assert.ok(message.indexOf("before") < message.indexOf("```element:"));
+  assert.ok(message.indexOf("```element:") < message.indexOf("after"));
 });
 
 test("segmentsToMessageText does not double-newline inline text after element", () => {

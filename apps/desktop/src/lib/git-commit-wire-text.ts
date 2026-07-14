@@ -1,29 +1,15 @@
 import type { GitCommitAttachment } from "./git-commit-attachment.js";
-
-function formatGitCommitWireMeta(
-  attachment: Pick<GitCommitAttachment, "subject" | "author" | "authoredAt">,
-): string {
-  return `${attachment.subject}\t${attachment.author}\t${attachment.authoredAt}`;
-}
+import { formatChipWireBlock, scanChipWireBlocks } from "./chip-wire-block.js";
 
 const GIT_COMMIT_HEADER_PREFIX = "Selected git commit ";
 /** Meta 在括号内且 subject 可含 `)`；用贪婪匹配到行末 `):`。 */
 const GIT_COMMIT_HEADER_RE = /^Selected git commit (\S+) \((.*)\):$/u;
 
-function chooseTextFence(text: string): { open: string; close: string } {
-  if (!/^\s*```/m.test(text)) {
-    return { open: "```text\n", close: "\n```" };
-  }
-  return { open: "````text\n", close: "\n````" };
-}
-
 /** Wire-format git commit block (shared by attachment + composer segment model). */
 export function gitCommitContextText(
   attachment: Pick<GitCommitAttachment, "oid" | "subject" | "author" | "authoredAt" | "fullMessage">,
 ): string {
-  const meta = formatGitCommitWireMeta(attachment);
-  const fence = chooseTextFence(attachment.fullMessage);
-  return `Selected git commit ${attachment.oid} (${meta}):\n${fence.open}${attachment.fullMessage}${fence.close}`;
+  return formatChipWireBlock(`git:${attachment.oid}`, attachment.fullMessage);
 }
 
 export type ParsedGitCommitWireBlock = {
@@ -36,8 +22,7 @@ export type ParsedGitCommitWireBlock = {
 
 const GIT_COMMIT_OPEN_FENCE_RE = /^(`{3,})text\n/;
 
-/** Scan wire text for git commit blocks; closing fence must be a standalone line. */
-export function scanGitCommitWireBlocks(content: string): ParsedGitCommitWireBlock[] {
+function scanLegacyGitCommitWireBlocks(content: string): ParsedGitCommitWireBlock[] {
   const blocks: ParsedGitCommitWireBlock[] = [];
   let searchFrom = 0;
 
@@ -104,6 +89,26 @@ export function scanGitCommitWireBlocks(content: string): ParsedGitCommitWireBlo
   return blocks;
 }
 
+function scanNewGitCommitWireBlocks(content: string): ParsedGitCommitWireBlock[] {
+  return scanChipWireBlocks(content)
+    .filter((block) => block.infoLine.startsWith("git:"))
+    .map((block) => ({
+      index: block.index,
+      length: block.length,
+      oid: block.infoLine.slice("git:".length).trim(),
+      meta: "",
+      fullMessage: block.body,
+    }))
+    .filter((block) => block.oid.length > 0);
+}
+
+/** Scan wire text for git commit blocks; closing fence must be a standalone line. */
+export function scanGitCommitWireBlocks(content: string): ParsedGitCommitWireBlock[] {
+  const blocks = [...scanNewGitCommitWireBlocks(content), ...scanLegacyGitCommitWireBlocks(content)];
+  blocks.sort((left, right) => left.index - right.index);
+  return blocks;
+}
+
 export function parseGitCommitWireMeta(meta: string): {
   subject: string;
   author: string;
@@ -120,4 +125,9 @@ export function parseGitCommitWireMeta(meta: string): {
     return null;
   }
   return { subject, author, authoredAt };
+}
+
+export function deriveGitCommitSubject(fullMessage: string): string {
+  const firstLine = fullMessage.split("\n")[0]?.trim() ?? "";
+  return firstLine;
 }

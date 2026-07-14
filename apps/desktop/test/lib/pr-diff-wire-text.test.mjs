@@ -23,10 +23,9 @@ test("prDiffContextText serializes PR URL, filename, line range, status, and dif
     diffText: buildPrDiffSnippetText("src/foo.ts", "@@ -1 +1 @@\n+hello"),
   });
 
-  assert.match(wire, /Selected diff from https:\/\/github\.com\/o\/r\/pull\/42/);
-  assert.match(wire, /src\/foo\.ts\tL12-20\topen/);
-  assert.match(wire, /```diff\n/);
+  assert.match(wire, /^```diff:https:\/\/github\.com\/o\/r\/pull\/42\tsrc\/foo\.ts\t12-20\topen\n/);
   assert.match(wire, /diff --git a\/src\/foo\.ts b\/src\/foo\.ts/);
+  assert.match(wire, /\n```$/);
 });
 
 test("parsePrDiffWireMeta round-trips tab-separated meta", () => {

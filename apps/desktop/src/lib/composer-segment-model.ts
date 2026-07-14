@@ -1,9 +1,10 @@
 import type { BrowserElementAttachment } from "./browser-element-attachment.js";
-import { browserElementContextText } from "./browser-element-wire-text.js";
+import { browserElementContextText, scanBrowserElementWireBlocks } from "./browser-element-wire-text.js";
 import type { PrDiffAttachment } from "./pr-diff-attachment.js";
 import { parsePrDiffWireMeta, prDiffContextText, scanPrDiffWireBlocks } from "./pr-diff-wire-text.js";
 import type { GitCommitAttachment } from "./git-commit-attachment.js";
 import {
+  deriveGitCommitSubject,
   gitCommitContextText,
   parseGitCommitWireMeta,
   scanGitCommitWireBlocks,
@@ -848,8 +849,6 @@ export type MessageContentPart =
   | { kind: "workspaceFile"; path: string }
   | { kind: "skill"; alias: string };
 
-const ELEMENT_BLOCK_RE = /Selected element from ([^\n]*):\n```html\n[\s\S]*?\n```/g;
-
 type ParsedWireBlock = {
   index: number;
   length: number;
@@ -859,17 +858,13 @@ type ParsedWireBlock = {
 function findWireBlocks(content: string): ParsedWireBlock[] {
   const blocks: ParsedWireBlock[] = [];
 
-  let match: RegExpExecArray | null;
-  const elementRe = new RegExp(ELEMENT_BLOCK_RE.source, "g");
-  while ((match = elementRe.exec(content)) !== null) {
-    const url = match[1]?.trim() ?? "";
-    const htmlMatch = /```html\n([\s\S]*?)\n```/.exec(match[0]);
-    const outerHtml = htmlMatch?.[1] ?? "";
+  for (const block of scanBrowserElementWireBlocks(content)) {
+    const outerHtml = block.outerHtml;
     const firstTag = outerHtml ? (/<(\w[\w-]*)/.exec(outerHtml)?.[1] ?? "element") : "element";
     blocks.push({
-      index: match.index,
-      length: match[0].length,
-      part: { kind: "element", tagName: firstTag, url, outerHtml },
+      index: block.index,
+      length: block.length,
+      part: { kind: "element", tagName: firstTag, url: block.pageUrl, outerHtml },
     });
   }
 
@@ -895,18 +890,15 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
 
   for (const block of scanGitCommitWireBlocks(content)) {
     const parsed = parseGitCommitWireMeta(block.meta);
-    if (!parsed) {
-      continue;
-    }
     blocks.push({
       index: block.index,
       length: block.length,
       part: {
         kind: "gitCommit",
         oid: block.oid,
-        subject: parsed.subject,
-        author: parsed.author,
-        authoredAt: parsed.authoredAt,
+        subject: parsed?.subject ?? deriveGitCommitSubject(block.fullMessage),
+        author: parsed?.author ?? "",
+        authoredAt: parsed?.authoredAt ?? "",
         fullMessage: block.fullMessage,
       },
     });
