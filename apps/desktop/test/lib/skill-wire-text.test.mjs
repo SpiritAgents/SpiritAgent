@@ -9,7 +9,6 @@ import {
 import {
   scanSkillWireBlocks,
   skillContextText,
-  SKILL_WIRE_PREFIX,
 } from "../../src/lib/skill-wire-text.ts";
 
 test("skillContextText serializes typed fence block", () => {
@@ -17,16 +16,11 @@ test("skillContextText serializes typed fence block", () => {
   assert.equal(wire, "```skill:/git-commit\n\n```");
 });
 
-test("scanSkillWireBlocks parses new and legacy formats", () => {
+test("scanSkillWireBlocks parses fence format", () => {
   const wire = skillContextText("/git-push");
-  const newBlocks = scanSkillWireBlocks(wire);
-  assert.equal(newBlocks.length, 1);
-  assert.equal(newBlocks[0]?.alias, "/git-push");
-
-  const legacy = `${SKILL_WIRE_PREFIX}\`/git-commit\``;
-  const legacyBlocks = scanSkillWireBlocks(legacy);
-  assert.equal(legacyBlocks.length, 1);
-  assert.equal(legacyBlocks[0]?.alias, "/git-commit");
+  const blocks = scanSkillWireBlocks(wire);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0]?.alias, "/git-push");
 });
 
 test("segmentsToMessageText round-trips skill chips", () => {

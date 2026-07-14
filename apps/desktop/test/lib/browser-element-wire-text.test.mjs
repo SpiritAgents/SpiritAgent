@@ -27,21 +27,15 @@ test("browserElementContextText serializes typed fence block", () => {
   assert.equal(wire, '```element:https://example.com\n<img src="x">\n```');
 });
 
-test("scanBrowserElementWireBlocks parses new and legacy formats", () => {
+test("scanBrowserElementWireBlocks parses fence format", () => {
   const wire = browserElementContextText({
     pageUrl: "http://127.0.0.1:1420/",
     outerHtml: "<svg></svg>",
   });
-  const newBlocks = scanBrowserElementWireBlocks(wire);
-  assert.equal(newBlocks.length, 1);
-  assert.equal(newBlocks[0]?.pageUrl, "http://127.0.0.1:1420/");
-  assert.equal(newBlocks[0]?.outerHtml, "<svg></svg>");
-
-  const legacy =
-    'Selected element from https://example.com:\n```html\n<div>legacy</div>\n```';
-  const legacyBlocks = scanBrowserElementWireBlocks(legacy);
-  assert.equal(legacyBlocks.length, 1);
-  assert.equal(legacyBlocks[0]?.outerHtml, "<div>legacy</div>");
+  const blocks = scanBrowserElementWireBlocks(wire);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0]?.pageUrl, "http://127.0.0.1:1420/");
+  assert.equal(blocks[0]?.outerHtml, "<svg></svg>");
 });
 
 test("segmentsToMessageText round-trips browser element chips", () => {

@@ -99,12 +99,9 @@ test("parseFileSnippetLinePart parses preview placeholder dash suffix", () => {
   assert.deepEqual(parseFileSnippetLinePart("-"), { lineStart: 0, lineEnd: 0 });
 });
 
-test("scanFileSnippetWireBlocks still parses legacy header format", () => {
-  const wire = "Selected text from apps/foo.ts (L1-2):\n```text\nbody\n```";
-  const blocks = scanFileSnippetWireBlocks(wire);
-  assert.equal(blocks.length, 1);
-  assert.equal(blocks[0]?.filePath, "apps/foo.ts");
-  assert.equal(blocks[0]?.selectedText, "body");
+test("scanFileSnippetWireBlocks ignores invalid plain text shaped like old headers", () => {
+  const wire = "Selected text from apps/foo\nbar.ts (L1-2):\n```text\nbody\n```";
+  assert.equal(scanFileSnippetWireBlocks(wire).length, 0);
 });
 
 test("wire round-trips paths containing line-range-like parentheses", () => {
