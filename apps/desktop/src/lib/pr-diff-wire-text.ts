@@ -1,4 +1,5 @@
 import type { PrDiffAttachment } from "./pr-diff-attachment.js";
+import { formatChipWireBlock, formatLineRange, scanChipWireBlocks } from "./chip-wire-block.js";
 
 function formatPrDiffWireMeta(attachment: Pick<PrDiffAttachment, "filename" | "lineStart" | "lineEnd" | "status">): string {
   const normalized = attachment.filename.replace(/\\/gu, "/").trim() || "file";
@@ -7,21 +8,20 @@ function formatPrDiffWireMeta(attachment: Pick<PrDiffAttachment, "filename" | "l
   return `${normalized}\t${linePart}\t${attachment.status}`;
 }
 
+function formatPrDiffInfoLine(
+  attachment: Pick<PrDiffAttachment, "prUrl" | "filename" | "lineStart" | "lineEnd" | "status">,
+): string {
+  const filename = attachment.filename.replace(/\\/gu, "/").trim() || "file";
+  const lineSuffix = formatLineRange(attachment.lineStart, attachment.lineEnd).replace(/^:/u, "");
+  return `diff:${attachment.prUrl}\t${filename}\t${lineSuffix}\t${attachment.status}`;
+}
+
 const PR_DIFF_HEADER_PREFIX = "Selected diff from ";
 const PR_DIFF_HEADER_RE = /^Selected diff from ([^\n]+?) \(([^)]*)\):$/u;
 
-function chooseDiffFence(diffText: string): { open: string; close: string } {
-  if (!/^\s*```/m.test(diffText)) {
-    return { open: "```diff\n", close: "\n```" };
-  }
-  return { open: "````diff\n", close: "\n````" };
-}
-
 /** Wire-format PR diff block (shared by attachment + composer segment model). */
 export function prDiffContextText(attachment: Pick<PrDiffAttachment, "prUrl" | "filename" | "lineStart" | "lineEnd" | "status" | "diffText">): string {
-  const meta = formatPrDiffWireMeta(attachment);
-  const fence = chooseDiffFence(attachment.diffText);
-  return `Selected diff from ${attachment.prUrl} (${meta}):\n${fence.open}${attachment.diffText}${fence.close}`;
+  return formatChipWireBlock(formatPrDiffInfoLine(attachment), attachment.diffText);
 }
 
 export type ParsedPrDiffWireBlock = {
@@ -34,8 +34,7 @@ export type ParsedPrDiffWireBlock = {
 
 const PR_DIFF_OPEN_FENCE_RE = /^(`{3,})diff\n/;
 
-/** Scan wire text for PR diff blocks; closing fence must be a standalone line. */
-export function scanPrDiffWireBlocks(content: string): ParsedPrDiffWireBlock[] {
+function scanLegacyPrDiffWireBlocks(content: string): ParsedPrDiffWireBlock[] {
   const blocks: ParsedPrDiffWireBlock[] = [];
   let searchFrom = 0;
 
@@ -102,6 +101,79 @@ export function scanPrDiffWireBlocks(content: string): ParsedPrDiffWireBlock[] {
   return blocks;
 }
 
+function parsePrDiffInfoLine(infoLine: string): {
+  prUrl: string;
+  filename: string;
+  lineStart: number;
+  lineEnd: number;
+  status: PrDiffAttachment["status"];
+} | null {
+  if (!infoLine.startsWith("diff:")) {
+    return null;
+  }
+  const parts = infoLine.slice("diff:".length).split("\t");
+  if (parts.length !== 4) {
+    return null;
+  }
+  const prUrl = parts[0]?.trim() ?? "";
+  const filename = parts[1]?.trim() ?? "";
+  const linePart = parts[2]?.trim() ?? "";
+  const statusRaw = parts[3]?.trim() ?? "";
+  if (
+    !prUrl
+    || !filename
+    || (statusRaw !== "open" && statusRaw !== "merged" && statusRaw !== "closed" && statusRaw !== "draft")
+  ) {
+    return null;
+  }
+  if (!linePart) {
+    return { prUrl, filename, lineStart: 0, lineEnd: 0, status: statusRaw };
+  }
+  const singleMatch = /^(\d+)$/u.exec(linePart);
+  if (singleMatch) {
+    const line = Number(singleMatch[1]);
+    return { prUrl, filename, lineStart: line, lineEnd: line, status: statusRaw };
+  }
+  const rangeMatch = /^(\d+)-(\d+)$/u.exec(linePart);
+  if (!rangeMatch) {
+    return null;
+  }
+  return {
+    prUrl,
+    filename,
+    lineStart: Number(rangeMatch[1]),
+    lineEnd: Number(rangeMatch[2]),
+    status: statusRaw,
+  };
+}
+
+function scanNewPrDiffWireBlocks(content: string): ParsedPrDiffWireBlock[] {
+  return scanChipWireBlocks(content)
+    .filter((block) => block.infoLine.startsWith("diff:"))
+    .map((block) => {
+      const parsed = parsePrDiffInfoLine(block.infoLine);
+      if (!parsed) {
+        return null;
+      }
+      const meta = formatPrDiffWireMeta(parsed);
+      return {
+        index: block.index,
+        length: block.length,
+        prUrl: parsed.prUrl,
+        meta,
+        diffText: block.body,
+      };
+    })
+    .filter((block): block is ParsedPrDiffWireBlock => block !== null);
+}
+
+/** Scan wire text for PR diff blocks; closing fence must be a standalone line. */
+export function scanPrDiffWireBlocks(content: string): ParsedPrDiffWireBlock[] {
+  const blocks = [...scanNewPrDiffWireBlocks(content), ...scanLegacyPrDiffWireBlocks(content)];
+  blocks.sort((left, right) => left.index - right.index);
+  return blocks;
+}
+
 /** @deprecated Prefer scanPrDiffWireBlocks for parsing; kept for tests referencing the pattern. */
 export const PR_DIFF_BLOCK_RE =
   /Selected diff from ([^\n]+) \(([^)]*)\):\n```diff\n[\s\S]*?\n```/g;
@@ -125,12 +197,14 @@ export function parsePrDiffWireMeta(meta: string): {
       if (linePart === "-") {
         return { filename, lineStart: 0, lineEnd: 0, status: statusRaw };
       }
-      const lineMatch = /^L(\d+)-(\d+)$/u.exec(linePart);
+      const lineMatch = /^L(\d+)(?:-(\d+))?$/u.exec(linePart);
       if (lineMatch) {
+        const lineStart = Number(lineMatch[1]);
+        const lineEnd = lineMatch[2] !== undefined ? Number(lineMatch[2]) : lineStart;
         return {
           filename,
-          lineStart: Number(lineMatch[1]),
-          lineEnd: Number(lineMatch[2]),
+          lineStart,
+          lineEnd,
           status: statusRaw,
         };
       }
