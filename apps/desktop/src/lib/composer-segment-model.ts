@@ -895,8 +895,8 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
         kind: "gitCommit",
         oid: block.oid,
         subject: deriveGitCommitSubject(block.fullMessage),
-        author: "",
-        authoredAt: "",
+        author: block.author,
+        authoredAt: block.authoredAt,
         fullMessage: block.fullMessage,
       },
     });
