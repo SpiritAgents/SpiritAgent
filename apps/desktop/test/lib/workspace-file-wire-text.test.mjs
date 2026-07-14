@@ -9,7 +9,6 @@ import {
 import {
   scanWorkspaceFileWireBlocks,
   workspaceFileContextText,
-  WORKSPACE_FILE_WIRE_PREFIX,
 } from "../../src/lib/workspace-file-wire-text.ts";
 
 test("workspaceFileContextText serializes typed fence block", () => {
@@ -17,16 +16,11 @@ test("workspaceFileContextText serializes typed fence block", () => {
   assert.equal(wire, "```file:src/App.tsx\n\n```");
 });
 
-test("scanWorkspaceFileWireBlocks parses new and legacy formats", () => {
+test("scanWorkspaceFileWireBlocks parses fence format", () => {
   const wire = workspaceFileContextText("README.md");
-  const newBlocks = scanWorkspaceFileWireBlocks(wire);
-  assert.equal(newBlocks.length, 1);
-  assert.equal(newBlocks[0]?.path, "README.md");
-
-  const legacy = `${WORKSPACE_FILE_WIRE_PREFIX}\`apps/cli/main.rs\``;
-  const legacyBlocks = scanWorkspaceFileWireBlocks(legacy);
-  assert.equal(legacyBlocks.length, 1);
-  assert.equal(legacyBlocks[0]?.path, "apps/cli/main.rs");
+  const blocks = scanWorkspaceFileWireBlocks(wire);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0]?.path, "README.md");
 });
 
 test("segmentsToMessageText round-trips workspace file chips", () => {

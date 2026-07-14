@@ -4,11 +4,10 @@ import test from "node:test";
 import {
   deriveGitCommitSubject,
   gitCommitContextText,
-  parseGitCommitWireMeta,
   scanGitCommitWireBlocks,
 } from "../../src/lib/git-commit-wire-text.ts";
 
-test("gitCommitContextText serializes oid, meta, and full message body", () => {
+test("gitCommitContextText serializes oid and full message body", () => {
   const wire = gitCommitContextText({
     oid: "abc123def456",
     subject: "feat: add chip",
@@ -21,13 +20,11 @@ test("gitCommitContextText serializes oid, meta, and full message body", () => {
   assert.match(wire, /Body paragraph\.\n```$/);
 });
 
-test("parseGitCommitWireMeta parses tab-separated meta with subject tabs", () => {
-  const parsed = parseGitCommitWireMeta("feat:\tpart two\tAlice\t2024-01-02 10:00:00 +0000");
-  assert.deepEqual(parsed, {
-    subject: "feat:\tpart two",
-    author: "Alice",
-    authoredAt: "2024-01-02 10:00:00 +0000",
-  });
+test("deriveGitCommitSubject reads first line from full message", () => {
+  assert.equal(
+    deriveGitCommitSubject("fix(desktop): example\n\n- bullet"),
+    "fix(desktop): example",
+  );
 });
 
 test("scanGitCommitWireBlocks parses subject containing parentheses", () => {
@@ -47,19 +44,6 @@ test("scanGitCommitWireBlocks parses subject containing parentheses", () => {
     deriveGitCommitSubject(blocks[0]?.fullMessage ?? ""),
     "fix(desktop): tool-execution-finished 继承预览 suppressExpand 与 argsExcerpt",
   );
-});
-
-test("scanGitCommitWireBlocks still parses legacy tab-separated meta", () => {
-  const wire =
-    "Selected git commit deadbeef (feat: bug\tBob\t2025-06-01 12:00:00 +0000):\n```text\nfix: bug\n\nDetails here.\n```";
-  const blocks = scanGitCommitWireBlocks(wire);
-  assert.equal(blocks.length, 1);
-  const parsed = parseGitCommitWireMeta(blocks[0]?.meta ?? "");
-  assert.deepEqual(parsed, {
-    subject: "feat: bug",
-    author: "Bob",
-    authoredAt: "2025-06-01 12:00:00 +0000",
-  });
 });
 
 test("scanGitCommitWireBlocks and message round-trip", () => {

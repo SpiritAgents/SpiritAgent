@@ -8,7 +8,6 @@ import {
 } from "../../src/lib/composer-segment-model.ts";
 import {
   parseTerminalSnippetLinePart,
-  parseTerminalSnippetWireMeta,
   scanTerminalSnippetWireBlocks,
   terminalSnippetContextText,
 } from "../../src/lib/terminal-snippet-wire-text.ts";
@@ -74,15 +73,6 @@ test("wire round-trips terminal names containing tab characters", () => {
   assert.equal(parts[0].lineEnd, 4);
 });
 
-test("parseTerminalSnippetWireMeta still parses legacy tab-separated meta", () => {
-  const parsed = parseTerminalSnippetWireMeta("npm run dev\tL3-7");
-  assert.deepEqual(parsed, {
-    terminalName: "npm run dev",
-    lineStart: 3,
-    lineEnd: 7,
-  });
-});
-
 test("segmentsToMessageText and parseMessageContentParts round-trip terminal chips", () => {
   const attachment = {
     id: "term-1",
@@ -108,13 +98,6 @@ test("segmentsToMessageText and parseMessageContentParts round-trip terminal chi
   assert.equal(segments[0]?.kind, "terminalSnippet");
 });
 
-test("scanTerminalSnippetWireBlocks still parses legacy header format", () => {
-  const wire = "Selected terminal output from zsh (L1-5):\n```text\nSpiritAgent %\n```";
-  const blocks = scanTerminalSnippetWireBlocks(wire);
-  assert.equal(blocks.length, 1);
-  assert.equal(blocks[0]?.terminalName, "zsh");
-  assert.equal(blocks[0]?.selectedText, "SpiritAgent %");
-});
 test("scanTerminalSnippetWireBlocks parses body containing standalone fence lines", () => {
   const body = ["before", "```", "after"].join("\n");
   const wire = terminalSnippetContextText({

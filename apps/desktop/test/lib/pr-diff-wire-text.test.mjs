@@ -38,16 +38,6 @@ test("parsePrDiffWireMeta round-trips tab-separated meta", () => {
   });
 });
 
-test("parsePrDiffWireMeta still parses legacy comma meta", () => {
-  const parsed = parsePrDiffWireMeta("src/foo.ts, L12-20, status:merged");
-  assert.deepEqual(parsed, {
-    filename: "src/foo.ts",
-    lineStart: 12,
-    lineEnd: 20,
-    status: "merged",
-  });
-});
-
 test("parsePrDiffWireMeta parses filename containing comma-like segments via tabs", () => {
   const parsed = parsePrDiffWireMeta("weird, L1-2, status:open.txt\tL3-4\topen");
   assert.deepEqual(parsed, {

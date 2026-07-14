@@ -6,7 +6,6 @@ import type { GitCommitAttachment } from "./git-commit-attachment.js";
 import {
   deriveGitCommitSubject,
   gitCommitContextText,
-  parseGitCommitWireMeta,
   scanGitCommitWireBlocks,
 } from "./git-commit-wire-text.js";
 import type { FileSnippetAttachment } from "./file-snippet-attachment.js";
@@ -889,16 +888,15 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
   }
 
   for (const block of scanGitCommitWireBlocks(content)) {
-    const parsed = parseGitCommitWireMeta(block.meta);
     blocks.push({
       index: block.index,
       length: block.length,
       part: {
         kind: "gitCommit",
         oid: block.oid,
-        subject: parsed?.subject ?? deriveGitCommitSubject(block.fullMessage),
-        author: parsed?.author ?? "",
-        authoredAt: parsed?.authoredAt ?? "",
+        subject: deriveGitCommitSubject(block.fullMessage),
+        author: "",
+        authoredAt: "",
         fullMessage: block.fullMessage,
       },
     });
