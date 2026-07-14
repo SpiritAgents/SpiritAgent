@@ -8,7 +8,6 @@ import {
 } from "../../src/lib/composer-segment-model.ts";
 import {
   parseTerminalSnippetLinePart,
-  parseTerminalSnippetWireMeta,
   scanTerminalSnippetWireBlocks,
   terminalSnippetContextText,
 } from "../../src/lib/terminal-snippet-wire-text.ts";
@@ -21,10 +20,9 @@ test("terminalSnippetContextText serializes terminal name, line range, and selec
     selectedText: "error: build failed\nexit code 1",
   });
 
-  assert.match(wire, /Selected terminal output from Terminal/);
-  assert.match(wire, /\(L10-15\):/);
-  assert.match(wire, /```text\n/);
+  assert.match(wire, /```terminal:Terminal:10-15\n/);
   assert.match(wire, /error: build failed/);
+  assert.match(wire, /\n```$/);
 });
 
 test("parseTerminalSnippetLinePart parses line range suffix", () => {
@@ -73,15 +71,6 @@ test("wire round-trips terminal names containing tab characters", () => {
   assert.equal(parts[0].terminalName, "shell\t1");
   assert.equal(parts[0].lineStart, 2);
   assert.equal(parts[0].lineEnd, 4);
-});
-
-test("parseTerminalSnippetWireMeta still parses legacy tab-separated meta", () => {
-  const parsed = parseTerminalSnippetWireMeta("npm run dev\tL3-7");
-  assert.deepEqual(parsed, {
-    terminalName: "npm run dev",
-    lineStart: 3,
-    lineEnd: 7,
-  });
 });
 
 test("segmentsToMessageText and parseMessageContentParts round-trip terminal chips", () => {

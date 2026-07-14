@@ -1,11 +1,11 @@
 import type { BrowserElementAttachment } from "./browser-element-attachment.js";
-import { browserElementContextText } from "./browser-element-wire-text.js";
+import { browserElementContextText, scanBrowserElementWireBlocks } from "./browser-element-wire-text.js";
 import type { PrDiffAttachment } from "./pr-diff-attachment.js";
 import { parsePrDiffWireMeta, prDiffContextText, scanPrDiffWireBlocks } from "./pr-diff-wire-text.js";
 import type { GitCommitAttachment } from "./git-commit-attachment.js";
 import {
+  deriveGitCommitSubject,
   gitCommitContextText,
-  parseGitCommitWireMeta,
   scanGitCommitWireBlocks,
 } from "./git-commit-wire-text.js";
 import type { FileSnippetAttachment } from "./file-snippet-attachment.js";
@@ -275,8 +275,45 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
-  if (prev.kind === "workspaceFile" || next.kind === "workspaceFile" || prev.kind === "skill" || next.kind === "skill") {
-    return "";
+  if (prev.kind === "text" && next.kind === "workspaceFile") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "text" && next.kind === "skill") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "workspaceFile" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "skill" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (
+    (prev.kind === "workspaceFile" && (next.kind === "workspaceFile" || next.kind === "skill" || next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
+    || (next.kind === "workspaceFile" && (prev.kind === "workspaceFile" || prev.kind === "skill" || prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
+    || (prev.kind === "skill" && (next.kind === "workspaceFile" || next.kind === "skill" || next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
+    || (next.kind === "skill" && (prev.kind === "workspaceFile" || prev.kind === "skill" || prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
+  ) {
+    return "\n";
   }
 
   return "\n\n";
@@ -811,8 +848,6 @@ export type MessageContentPart =
   | { kind: "workspaceFile"; path: string }
   | { kind: "skill"; alias: string };
 
-const ELEMENT_BLOCK_RE = /Selected element from ([^\n]*):\n```html\n[\s\S]*?\n```/g;
-
 type ParsedWireBlock = {
   index: number;
   length: number;
@@ -822,17 +857,13 @@ type ParsedWireBlock = {
 function findWireBlocks(content: string): ParsedWireBlock[] {
   const blocks: ParsedWireBlock[] = [];
 
-  let match: RegExpExecArray | null;
-  const elementRe = new RegExp(ELEMENT_BLOCK_RE.source, "g");
-  while ((match = elementRe.exec(content)) !== null) {
-    const url = match[1]?.trim() ?? "";
-    const htmlMatch = /```html\n([\s\S]*?)\n```/.exec(match[0]);
-    const outerHtml = htmlMatch?.[1] ?? "";
+  for (const block of scanBrowserElementWireBlocks(content)) {
+    const outerHtml = block.outerHtml;
     const firstTag = outerHtml ? (/<(\w[\w-]*)/.exec(outerHtml)?.[1] ?? "element") : "element";
     blocks.push({
-      index: match.index,
-      length: match[0].length,
-      part: { kind: "element", tagName: firstTag, url, outerHtml },
+      index: block.index,
+      length: block.length,
+      part: { kind: "element", tagName: firstTag, url: block.pageUrl, outerHtml },
     });
   }
 
@@ -857,19 +888,15 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
   }
 
   for (const block of scanGitCommitWireBlocks(content)) {
-    const parsed = parseGitCommitWireMeta(block.meta);
-    if (!parsed) {
-      continue;
-    }
     blocks.push({
       index: block.index,
       length: block.length,
       part: {
         kind: "gitCommit",
         oid: block.oid,
-        subject: parsed.subject,
-        author: parsed.author,
-        authoredAt: parsed.authoredAt,
+        subject: deriveGitCommitSubject(block.fullMessage),
+        author: block.author,
+        authoredAt: block.authoredAt,
         fullMessage: block.fullMessage,
       },
     });
