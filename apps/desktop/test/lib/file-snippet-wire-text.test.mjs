@@ -20,10 +20,9 @@ test("fileSnippetContextText serializes file path, line range, and selected text
     selectedText: "const x = 1;\nconst y = 2;",
   });
 
-  assert.match(wire, /Selected text from apps\/desktop\/src\/foo\.ts/);
-  assert.match(wire, /\(L10-15\):/);
-  assert.match(wire, /```text\n/);
+  assert.match(wire, /```file:apps\/desktop\/src\/foo\.ts:10-15\n/);
   assert.match(wire, /const x = 1;/);
+  assert.match(wire, /\n```$/);
 });
 
 test("parseFileSnippetLinePart parses line range suffix", () => {
@@ -34,8 +33,8 @@ test("parseFileSnippetLinePart parses line range suffix", () => {
   });
 });
 
-test("parseFileSnippetLinePart parses preview placeholder dash suffix", () => {
-  assert.deepEqual(parseFileSnippetLinePart("-"), { lineStart: 0, lineEnd: 0 });
+test("parseFileSnippetLinePart parses single-line suffix", () => {
+  assert.deepEqual(parseFileSnippetLinePart("L42"), { lineStart: 42, lineEnd: 42 });
 });
 
 test("wire round-trips file paths containing parentheses", () => {
@@ -96,9 +95,16 @@ test("scanFileSnippetWireBlocks parses body containing standalone fence lines", 
   assert.equal(blocks[0]?.selectedText, body);
 });
 
-test("scanFileSnippetWireBlocks ignores header with embedded newline in path", () => {
-  const wire = "Selected text from apps/foo\nbar.ts (L1-2):\n```text\nbody\n```";
-  assert.equal(scanFileSnippetWireBlocks(wire).length, 0);
+test("parseFileSnippetLinePart parses preview placeholder dash suffix", () => {
+  assert.deepEqual(parseFileSnippetLinePart("-"), { lineStart: 0, lineEnd: 0 });
+});
+
+test("scanFileSnippetWireBlocks still parses legacy header format", () => {
+  const wire = "Selected text from apps/foo.ts (L1-2):\n```text\nbody\n```";
+  const blocks = scanFileSnippetWireBlocks(wire);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0]?.filePath, "apps/foo.ts");
+  assert.equal(blocks[0]?.selectedText, "body");
 });
 
 test("wire round-trips paths containing line-range-like parentheses", () => {

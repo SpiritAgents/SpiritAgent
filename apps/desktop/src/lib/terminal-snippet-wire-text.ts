@@ -1,11 +1,10 @@
 import type { TerminalSnippetAttachment } from "./terminal-snippet-attachment.js";
-
-function formatTerminalSnippetLinePart(
-  attachment: Pick<TerminalSnippetAttachment, "lineStart" | "lineEnd">,
-): string {
-  const hasLines = attachment.lineStart > 0 && attachment.lineEnd > 0;
-  return hasLines ? `L${attachment.lineStart}-${attachment.lineEnd}` : "-";
-}
+import {
+  formatChipWireBlock,
+  formatLineRange,
+  scanChipWireBlocks,
+  splitInfoPayloadAndLineRange,
+} from "./chip-wire-block.js";
 
 const TERMINAL_SNIPPET_HEADER_PREFIX = "Selected terminal output from ";
 /** Match line-range suffix from the end so terminal names may contain ')'. */
@@ -30,21 +29,13 @@ function parseTerminalSnippetHeaderLine(
   return { terminalName, linePart: suffixMatch[1] ?? "-" };
 }
 
-function chooseTextFence(text: string): { open: string; close: string } {
-  if (!/^\s*```/m.test(text)) {
-    return { open: "```text\n", close: "\n```" };
-  }
-  return { open: "````text\n", close: "\n````" };
-}
-
 /** Wire-format terminal snippet block (shared by attachment + composer segment model). */
 export function terminalSnippetContextText(
   attachment: Pick<TerminalSnippetAttachment, "terminalName" | "lineStart" | "lineEnd" | "selectedText">,
 ): string {
   const name = attachment.terminalName.trim() || "Terminal";
-  const linePart = formatTerminalSnippetLinePart(attachment);
-  const fence = chooseTextFence(attachment.selectedText);
-  return `Selected terminal output from ${name} (${linePart}):\n${fence.open}${attachment.selectedText}${fence.close}`;
+  const lineSuffix = formatLineRange(attachment.lineStart, attachment.lineEnd);
+  return formatChipWireBlock(`terminal:${name}${lineSuffix}`, attachment.selectedText);
 }
 
 export type ParsedTerminalSnippetWireBlock = {
@@ -57,8 +48,7 @@ export type ParsedTerminalSnippetWireBlock = {
 
 const TERMINAL_SNIPPET_OPEN_FENCE_RE = /^(`{3,})text\n/;
 
-/** Scan wire text for terminal snippet blocks; closing fence must be a standalone line. */
-export function scanTerminalSnippetWireBlocks(content: string): ParsedTerminalSnippetWireBlock[] {
+function scanLegacyTerminalSnippetWireBlocks(content: string): ParsedTerminalSnippetWireBlock[] {
   const blocks: ParsedTerminalSnippetWireBlock[] = [];
   let searchFrom = 0;
 
@@ -125,6 +115,38 @@ export function scanTerminalSnippetWireBlocks(content: string): ParsedTerminalSn
   return blocks;
 }
 
+function scanNewTerminalSnippetWireBlocks(content: string): ParsedTerminalSnippetWireBlock[] {
+  return scanChipWireBlocks(content)
+    .filter((block) => block.infoLine.startsWith("terminal:"))
+    .map((block) => {
+      const split = splitInfoPayloadAndLineRange(block.infoLine.slice("terminal:".length));
+      if (!split) {
+        return null;
+      }
+      const meta =
+        split.lineStart > 0 && split.lineEnd > 0
+          ? split.lineStart === split.lineEnd
+            ? `L${split.lineStart}`
+            : `L${split.lineStart}-${split.lineEnd}`
+          : "-";
+      return {
+        index: block.index,
+        length: block.length,
+        terminalName: split.payload,
+        meta,
+        selectedText: block.body,
+      };
+    })
+    .filter((block): block is ParsedTerminalSnippetWireBlock => block !== null);
+}
+
+/** Scan wire text for terminal snippet blocks; closing fence must be a standalone line. */
+export function scanTerminalSnippetWireBlocks(content: string): ParsedTerminalSnippetWireBlock[] {
+  const blocks = [...scanNewTerminalSnippetWireBlocks(content), ...scanLegacyTerminalSnippetWireBlocks(content)];
+  blocks.sort((left, right) => left.index - right.index);
+  return blocks;
+}
+
 export function parseTerminalSnippetLinePart(linePart: string): {
   lineStart: number;
   lineEnd: number;
@@ -133,14 +155,13 @@ export function parseTerminalSnippetLinePart(linePart: string): {
   if (trimmed === "-") {
     return { lineStart: 0, lineEnd: 0 };
   }
-  const lineMatch = /^L(\d+)-(\d+)$/u.exec(trimmed);
+  const lineMatch = /^L(\d+)(?:-(\d+))?$/u.exec(trimmed);
   if (!lineMatch) {
     return null;
   }
-  return {
-    lineStart: Number(lineMatch[1]),
-    lineEnd: Number(lineMatch[2]),
-  };
+  const lineStart = Number(lineMatch[1]);
+  const lineEnd = lineMatch[2] !== undefined ? Number(lineMatch[2]) : lineStart;
+  return { lineStart, lineEnd };
 }
 
 /** @deprecated Prefer parseTerminalSnippetLinePart; kept for legacy tab-separated meta in tests. */

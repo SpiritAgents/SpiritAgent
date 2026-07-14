@@ -1,11 +1,10 @@
 import type { FileSnippetAttachment } from "./file-snippet-attachment.js";
-
-function formatFileSnippetLinePart(
-  attachment: Pick<FileSnippetAttachment, "lineStart" | "lineEnd">,
-): string {
-  const hasLines = attachment.lineStart > 0 && attachment.lineEnd > 0;
-  return hasLines ? `L${attachment.lineStart}-${attachment.lineEnd}` : "-";
-}
+import {
+  formatChipWireBlock,
+  formatLineRange,
+  scanChipWireBlocks,
+  splitInfoPayloadAndLineRange,
+} from "./chip-wire-block.js";
 
 const FILE_SNIPPET_HEADER_PREFIX = "Selected text from ";
 /** Match line-range suffix from the end so file paths may contain ')'. */
@@ -30,21 +29,13 @@ function parseFileSnippetHeaderLine(
   return { filePath, linePart: suffixMatch[1] ?? "-" };
 }
 
-function chooseTextFence(text: string): { open: string; close: string } {
-  if (!/^\s*```/m.test(text)) {
-    return { open: "```text\n", close: "\n```" };
-  }
-  return { open: "````text\n", close: "\n````" };
-}
-
 /** Wire-format file snippet block (shared by attachment + composer segment model). */
 export function fileSnippetContextText(
   attachment: Pick<FileSnippetAttachment, "filePath" | "lineStart" | "lineEnd" | "selectedText">,
 ): string {
   const path = attachment.filePath.trim();
-  const linePart = formatFileSnippetLinePart(attachment);
-  const fence = chooseTextFence(attachment.selectedText);
-  return `Selected text from ${path} (${linePart}):\n${fence.open}${attachment.selectedText}${fence.close}`;
+  const lineSuffix = formatLineRange(attachment.lineStart, attachment.lineEnd);
+  return formatChipWireBlock(`file:${path}${lineSuffix}`, attachment.selectedText);
 }
 
 export type ParsedFileSnippetWireBlock = {
@@ -57,8 +48,7 @@ export type ParsedFileSnippetWireBlock = {
 
 const FILE_SNIPPET_OPEN_FENCE_RE = /^(`{3,})text\n/;
 
-/** Scan wire text for file snippet blocks; closing fence must be a standalone line. */
-export function scanFileSnippetWireBlocks(content: string): ParsedFileSnippetWireBlock[] {
+function scanLegacyFileSnippetWireBlocks(content: string): ParsedFileSnippetWireBlock[] {
   const blocks: ParsedFileSnippetWireBlock[] = [];
   let searchFrom = 0;
 
@@ -125,6 +115,38 @@ export function scanFileSnippetWireBlocks(content: string): ParsedFileSnippetWir
   return blocks;
 }
 
+function scanNewFileSnippetWireBlocks(content: string): ParsedFileSnippetWireBlock[] {
+  return scanChipWireBlocks(content)
+    .filter((block) => block.infoLine.startsWith("file:") && block.body.length > 0)
+    .map((block) => {
+      const split = splitInfoPayloadAndLineRange(block.infoLine.slice("file:".length));
+      if (!split) {
+        return null;
+      }
+      const meta =
+        split.lineStart > 0 && split.lineEnd > 0
+          ? split.lineStart === split.lineEnd
+            ? `L${split.lineStart}`
+            : `L${split.lineStart}-${split.lineEnd}`
+          : "-";
+      return {
+        index: block.index,
+        length: block.length,
+        filePath: split.payload,
+        meta,
+        selectedText: block.body,
+      };
+    })
+    .filter((block): block is ParsedFileSnippetWireBlock => block !== null);
+}
+
+/** Scan wire text for file snippet blocks; closing fence must be a standalone line. */
+export function scanFileSnippetWireBlocks(content: string): ParsedFileSnippetWireBlock[] {
+  const blocks = [...scanNewFileSnippetWireBlocks(content), ...scanLegacyFileSnippetWireBlocks(content)];
+  blocks.sort((left, right) => left.index - right.index);
+  return blocks;
+}
+
 export function parseFileSnippetLinePart(linePart: string): {
   lineStart: number;
   lineEnd: number;
@@ -133,12 +155,11 @@ export function parseFileSnippetLinePart(linePart: string): {
   if (trimmed === "-") {
     return { lineStart: 0, lineEnd: 0 };
   }
-  const lineMatch = /^L(\d+)-(\d+)$/u.exec(trimmed);
+  const lineMatch = /^L(\d+)(?:-(\d+))?$/u.exec(trimmed);
   if (!lineMatch) {
     return null;
   }
-  return {
-    lineStart: Number(lineMatch[1]),
-    lineEnd: Number(lineMatch[2]),
-  };
+  const lineStart = Number(lineMatch[1]);
+  const lineEnd = lineMatch[2] !== undefined ? Number(lineMatch[2]) : lineStart;
+  return { lineStart, lineEnd };
 }

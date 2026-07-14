@@ -59,7 +59,7 @@ function scanLegacyWorkspaceFileWireBlocks(
 
 function scanNewWorkspaceFileWireBlocks(content: string): ParsedWorkspaceFileWireBlock[] {
   return scanChipWireBlocks(content)
-    .filter((block) => block.infoLine.startsWith("file:"))
+    .filter((block) => block.infoLine.startsWith("file:") && block.body.length === 0)
     .map((block) => ({
       index: block.index,
       length: block.length,
