@@ -88,10 +88,10 @@ test("segmentsToMessageText keeps document order", () => {
   ];
   const message = segmentsToMessageText(segs);
   assert.match(message, /^before/);
-  assert.match(message, /Selected element from https:\/\/example\.com/);
+  assert.match(message, /```element:https:\/\/example\.com\n<img src="x">\n```/);
   assert.match(message, /after$/);
-  assert.ok(message.indexOf("before") < message.indexOf("Selected element"));
-  assert.ok(message.indexOf("Selected element") < message.indexOf("after"));
+  assert.ok(message.indexOf("before") < message.indexOf("```element:"));
+  assert.ok(message.indexOf("```element:") < message.indexOf("after"));
 });
 
 test("segmentsToMessageText does not double-newline inline text after element", () => {
@@ -144,7 +144,7 @@ test("segmentsToMessageText does not double-newline terminal chip after element"
     { kind: "element", attachment: sampleAttachment },
     { kind: "terminalSnippet", attachment: sampleTerminalAttachment },
   ]);
-  assert.ok(!message.includes("```\n\nSelected terminal"));
+  assert.ok(!message.includes("```\n\n```terminal"));
 });
 
 test("trimMessageTextAroundElements removes one structural newline after element", () => {
@@ -229,7 +229,7 @@ test("parseMessageContentParts parses explicit workspace file and skill wire blo
   const parts = parseMessageContentParts(wire);
   assert.deepEqual(parts, [
     { kind: "skill", alias: "/git-commit" },
-    { kind: "text", value: " " },
+    { kind: "text", value: " \n" },
     { kind: "workspaceFile", path: "README.md" },
     { kind: "text", value: " done" },
   ]);
@@ -577,7 +577,7 @@ test("segmentsToMessageText serializes workspace file chip as wire block", () =>
     { kind: "text", value: "fix " },
     { kind: "workspaceFile", path: "src/App.tsx" },
   ]);
-  assert.equal(message, "fix Referenced workspace file `src/App.tsx`");
+  assert.match(message, /^fix \n```file:src\/App\.tsx\n\n```$/);
 });
 
 test("plainTextOffsetToCaret roundtrips with workspace file chip", () => {
@@ -870,7 +870,7 @@ test("segmentsToMessageText serializes skill chip as wire block", () => {
     { kind: "skill", alias: "/git-commit" },
     { kind: "text", value: " fix typo" },
   ]);
-  assert.equal(message, "Referenced skill `/git-commit` fix typo");
+  assert.match(message, /^```skill:\/git-commit\n\n```\n fix typo$/);
 });
 
 test("segmentsToPlainText returns empty for skill chip", () => {
