@@ -438,6 +438,41 @@ test('volcengine provider maps domain-derived traits to catalog capabilities', (
   ]);
 });
 
+test('meituan provider maps LongCat catalog metadata to preview entries', () => {
+  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'meituan' }), true);
+
+  const preview = previewModelCatalogForTransport({
+    provider: 'meituan',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'LongCat-2.0',
+        displayName: 'LongCat-2.0',
+        contextLength: 1048576,
+        supportsThinkingSwitch: true,
+        pricing: {
+          inputPerTokenUsd: '0.000002',
+          outputPerTokenUsd: '0.000008',
+        },
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'LongCat-2.0',
+      displayName: 'LongCat-2.0',
+      capabilities: ['chat'],
+      contextLength: 1048576,
+      supportsThinkingSwitch: true,
+      pricing: {
+        inputPerTokenUsd: '0.000002',
+        outputPerTokenUsd: '0.000008',
+      },
+    },
+  ]);
+});
+
 test('google provider uses upstream display metadata from native models catalog', () => {
   assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'google' }), true);
 

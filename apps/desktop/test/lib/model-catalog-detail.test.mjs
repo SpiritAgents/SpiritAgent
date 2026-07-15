@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  buildModelCatalogDisplayTitleMap,
+  buildModelCatalogDetailMap,
   buildModelCatalogDetailFields,
+  buildModelCatalogDisplayTitleMap,
   findModelCatalogEntry,
   modelCatalogDisplayTitle,
   modelCatalogHasDetailBody,
@@ -177,6 +178,49 @@ test('findModelCatalogEntry resolves moonshot-ai catalog with contextLength', ()
   };
   const entry = findModelCatalogEntry(model, hints);
   assert.equal(entry?.contextLength, 256000);
+});
+
+test('findModelCatalogEntry resolves meituan catalog with pricing', () => {
+  const hints = [
+    {
+      provider: 'meituan',
+      transportKind: 'openai-compatible',
+      apiBase: 'https://api.longcat.chat/openai/v1',
+      modelIds: ['LongCat-2.0'],
+      modelCatalog: [{
+        id: 'LongCat-2.0',
+        displayName: 'LongCat-2.0',
+        contextLength: 1048576,
+        pricing: {
+          inputPerTokenUsd: '0.000002',
+          outputPerTokenUsd: '0.000008',
+        },
+      }],
+      fetchedAtUnixMs: 1,
+    },
+  ];
+  const model = {
+    name: 'LongCat-2.0',
+    apiBase: 'https://api.longcat.chat/openai/v1',
+    provider: 'meituan',
+    transportKind: 'openai-compatible',
+    reasoningEffort: 'default',
+    keyConfigured: true,
+  };
+  const entry = findModelCatalogEntry(model, hints);
+  assert.equal(entry?.displayName, 'LongCat-2.0');
+  assert.equal(entry?.pricing?.inputPerTokenUsd, '0.000002');
+  assert.equal(entry?.pricing?.outputPerTokenUsd, '0.000008');
+
+  const detailMap = buildModelCatalogDetailMap([model], hints);
+  assert.equal(detailMap.get('LongCat-2.0')?.pricing?.inputPerTokenUsd, '0.000002');
+  const fields = buildModelCatalogDetailFields({
+    contextLength: entry?.contextLength,
+    pricing: entry?.pricing,
+    t: (key) => key,
+  });
+  assert.ok(fields.some((field) => field.id === 'input'));
+  assert.ok(fields.some((field) => field.id === 'output'));
 });
 
 test('modelCatalogHasDetailBody is false when only displayName is present', () => {

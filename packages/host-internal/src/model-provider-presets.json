@@ -21,6 +21,7 @@
     "siliconflow": "https://api.siliconflow.com/v1",
     "stepfun": "https://api.stepfun.com/v1",
     "volcengine": "https://ark.cn-beijing.volces.com/api/v3",
+    "meituan": "https://api.longcat.chat/openai/v1",
     "azure": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1",
     "amazon-bedrock": "https://bedrock.us-east-1.amazonaws.com"
   },
@@ -62,6 +63,10 @@
       "openai-compatible": "https://api.stepfun.com/v1",
       "open-responses": "https://api.stepfun.com/v1",
       "anthropic": "https://api.stepfun.com"
+    },
+    "meituan": {
+      "openai-compatible": "https://api.longcat.chat/openai/v1",
+      "anthropic": "https://api.longcat.chat/anthropic/v1"
     }
   },
   "providerSiteSelection": {
@@ -147,7 +152,7 @@
     "compatibleApiBase": "https://api.stepfun.com/step_plan/v1",
     "docUrl": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api"
   },
-  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "cloudflare-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "stepfun", "volcengine", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
+  "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "cloudflare-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "stepfun", "volcengine", "meituan", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
   "pickerLabels": {
     "deepseek": {
       "labelKey": "providers.deepseek",
@@ -228,6 +233,10 @@
     "volcengine": {
       "labelKey": "providers.volcengine",
       "fallbackLabel": "Volcengine"
+    },
+    "meituan": {
+      "labelKey": "providers.meituan",
+      "fallbackLabel": "Meituan"
     },
     "azure": {
       "labelKey": "providers.azure",

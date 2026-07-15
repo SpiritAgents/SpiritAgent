@@ -54,6 +54,9 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (input.provider === 'moonshot-ai') {
     return true;
   }
+  if (input.provider === 'meituan') {
+    return true;
+  }
   if (input.provider === 'xiaomi') {
     return true;
   }
@@ -103,6 +106,7 @@ export function previewModelCatalogForTransport(input: {
     ...(entry.supportsThinkingType !== undefined
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
+    ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   }));
 }
 
@@ -139,6 +143,7 @@ export function previewCatalogMapForTransport(input: {
         ...(entry.supportsThinkingType !== undefined
           ? { supportsThinkingType: entry.supportsThinkingType }
           : {}),
+        ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
       },
     ]);
   }

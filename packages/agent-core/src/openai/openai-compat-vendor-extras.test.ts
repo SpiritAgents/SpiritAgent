@@ -104,3 +104,54 @@ test('Xiaomi code-completion profile disables thinking via request body extras',
     },
   );
 });
+
+test('Meituan LongCat agent profile sends thinking.type when supportsThinkingSwitch', () => {
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'meituan',
+      model: 'LongCat-2.0',
+      supportsThinkingSwitch: true,
+    }),
+    {
+      thinking: { type: 'enabled' },
+    },
+  );
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'meituan',
+      model: 'LongCat-2.0',
+      supportsThinkingSwitch: true,
+      vendorExtendedThinking: false,
+    }),
+    {
+      thinking: { type: 'disabled' },
+    },
+  );
+});
+
+test('Meituan models without supportsThinkingSwitch omit thinking.type', () => {
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'meituan',
+      model: 'LongCat-Vision',
+    }),
+    {},
+  );
+});
+
+test('Meituan code-completion profile disables thinking when supportsThinkingSwitch', () => {
+  const config = applyCodeCompletionTransportProfile({
+    apiKey: 'k',
+    model: 'LongCat-2.0',
+    llmVendor: 'meituan',
+    supportsThinkingSwitch: true,
+  });
+
+  assert.equal((config as import('./openai-compat.js').OpenAiTransportConfig).vendorExtendedThinking, false);
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras(config as import('./openai-compat.js').OpenAiTransportConfig),
+    {
+      thinking: { type: 'disabled' },
+    },
+  );
+});
