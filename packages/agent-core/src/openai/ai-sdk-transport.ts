@@ -140,7 +140,6 @@ import { generateVideoWithRouter } from '../video-generation/router.js';
 import { getLlmFetch } from '../llm-fetch.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
-import { createTokenHubChatCompletionsAwareFetch } from '../tencent-tokenhub/tokenhub-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
   shouldPatchAlibabaChatCompletionsExtraBody,
@@ -833,7 +832,8 @@ function createAiSdkOpenAiCompatibleProvider(
     transportConfig.cloudflareGatewayId,
     fetchWrapper ?? getLlmFetch(),
   );
-  resolvedFetch = createTokenHubChatCompletionsAwareFetch(transportConfig, resolvedFetch);
+  // TokenHub Chat `web_search_options` 与 Responses `/v1/responses` 联网搜索均未接入：
+  // 前者实测注入后上游仍无有效实时检索；后者仅少数模型支持且与现有 Chat Completions 矩阵不匹配，维护成本不划算。
 
   return createOpenAICompatible({
     apiKey: config.apiKey,
