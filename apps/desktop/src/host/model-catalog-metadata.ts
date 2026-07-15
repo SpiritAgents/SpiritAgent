@@ -106,6 +106,7 @@ export function previewModelCatalogForTransport(input: {
     ...(entry.supportsThinkingType !== undefined
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
+    ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   }));
 }
 
@@ -142,6 +143,7 @@ export function previewCatalogMapForTransport(input: {
         ...(entry.supportsThinkingType !== undefined
           ? { supportsThinkingType: entry.supportsThinkingType }
           : {}),
+        ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
       },
     ]);
   }

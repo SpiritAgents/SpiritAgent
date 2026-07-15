@@ -109,7 +109,22 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   if (isContextUsageCatalogCacheStale(entry)) {
     return undefined;
   }
+  if (isMeituanThinkingCatalogCacheStale(entry)) {
+    return undefined;
+  }
   return entry;
+}
+
+/** Meituan LongCat 旧缓存缺 supportsThinkingSwitch 时需重拉详情。 */
+function isMeituanThinkingCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
+  if (entry.provider !== 'meituan' || !entry.modelCatalog?.length) {
+    return false;
+  }
+  const longCat = entry.modelCatalog.find((item) => item.id === 'LongCat-2.0');
+  if (!longCat) {
+    return false;
+  }
+  return longCat.supportsThinkingSwitch !== true;
 }
 
 /** Gateway/OpenRouter 圆环依赖 contextLength；旧版写入漏字段时视为未命中以触发重拉。 */
@@ -236,6 +251,8 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
       && record.contextLength > 0
         ? Math.trunc(record.contextLength)
         : undefined;
+    const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
+    const supportsThinkingSwitch = record.supportsThinkingSwitch === true ? true as const : undefined;
     normalized.push({
       id,
       ...(displayName !== undefined ? { displayName } : {}),
@@ -244,6 +261,8 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
       ...(capabilities !== undefined ? { capabilities } : {}),
       ...(supportedReasoningEfforts !== undefined ? { supportedReasoningEfforts } : {}),
       ...(contextLength !== undefined ? { contextLength } : {}),
+      ...(supportsThinkingType !== undefined ? { supportsThinkingType } : {}),
+      ...(supportsThinkingSwitch !== undefined ? { supportsThinkingSwitch } : {}),
     });
   }
 
@@ -386,5 +405,6 @@ function clonePreviewModelCatalog(
     ...(entry.supportsThinkingType !== undefined
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
+    ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   }));
 }

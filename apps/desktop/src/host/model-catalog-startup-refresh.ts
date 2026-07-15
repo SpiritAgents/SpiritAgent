@@ -379,6 +379,11 @@ export function applyCatalogEntryToStoredModel(
     changed = true;
   }
 
+  if (catalogEntry.supportsThinkingSwitch === true && model.supportsThinkingSwitch !== true) {
+    model.supportsThinkingSwitch = true;
+    changed = true;
+  }
+
   return changed;
 }
 
@@ -429,6 +434,9 @@ export function syncExistingModelsFromCatalog(
         }
         if (resolved.supportsThinkingType !== undefined) {
           model.supportsThinkingType = resolved.supportsThinkingType;
+        }
+        if (resolved.supportsThinkingSwitch === true) {
+          model.supportsThinkingSwitch = true;
         }
         updated += 1;
       }

@@ -215,6 +215,12 @@ pub struct ModelEntry {
         skip_serializing_if = "Option::is_none"
     )]
     pub supports_thinking_type: Option<String>,
+    #[serde(
+        rename = "supportsThinkingSwitch",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub supports_thinking_switch: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -743,6 +749,9 @@ pub fn resolve_model_profile_from_parts(
             "supportsThinkingType".to_string(),
             Value::String(thinking_type.to_string()),
         );
+    }
+    if model.supports_thinking_switch == Some(true) {
+        extra.insert("supportsThinkingSwitch".to_string(), Value::Bool(true));
     }
 
     Some(ModelProfile {

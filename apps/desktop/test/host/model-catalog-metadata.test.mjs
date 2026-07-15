@@ -449,7 +449,7 @@ test('meituan provider maps LongCat catalog metadata to preview entries', () => 
         id: 'LongCat-2.0',
         displayName: 'LongCat-2.0',
         contextLength: 1048576,
-        supportsReasoning: true,
+        supportsThinkingSwitch: true,
         pricing: {
           inputPerTokenUsd: '0.000002',
           outputPerTokenUsd: '0.000008',
@@ -464,6 +464,7 @@ test('meituan provider maps LongCat catalog metadata to preview entries', () => 
       displayName: 'LongCat-2.0',
       capabilities: ['chat'],
       contextLength: 1048576,
+      supportsThinkingSwitch: true,
       pricing: {
         inputPerTokenUsd: '0.000002',
         outputPerTokenUsd: '0.000008',

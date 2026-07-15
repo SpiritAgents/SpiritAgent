@@ -1088,7 +1088,7 @@ test('parseMeituanModelDetailPayload maps modalities context pricing and thinkin
     id: 'LongCat-2.0',
     displayName: 'LongCat-2.0',
     contextLength: 1048576,
-    supportsReasoning: true,
+    supportsThinkingSwitch: true,
     pricing: {
       inputPerTokenUsd: '0.000002',
       outputPerTokenUsd: '0.000008',
