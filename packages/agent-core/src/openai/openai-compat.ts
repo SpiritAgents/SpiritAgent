@@ -30,6 +30,7 @@ export type OpenAiLlmVendor =
   | 'google-vertex-ai'
   | 'volcengine'
   | 'meituan'
+  | 'tencent-tokenhub'
   | 'azure'
   | 'custom';
 
