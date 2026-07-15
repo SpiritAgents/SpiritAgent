@@ -1,4 +1,5 @@
 import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
+import { isMeituanAnthropicThinkingSwitchConfig } from '../meituan/meituan-anthropic-fetch.js';
 import type { JsonObject, JsonValue } from '../ports.js';
 import { cloneJsonValue } from '../tool-agent.js';
 import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
@@ -34,6 +35,13 @@ export interface AnthropicTransportConfig {
   cloudflareGatewayId?: string;
   /** 与宿主 ModelProfile.provider 对齐，用于 Messages API 厂商扩展。 */
   llmVendor?: import('../openai/openai-compat.js').OpenAiLlmVendor;
+  /**
+   * 目录标记：Meituan LongCat 等经 Messages API 发送 `thinking.type`。
+   * 仅在为 true 时对 `meituan` 注入 enabled/disabled。
+   */
+  supportsThinkingSwitch?: boolean;
+  /** 缺省为 enabled；false 时发送 `thinking.type: disabled`。 */
+  vendorExtendedThinking?: boolean;
 }
 
 export interface AnthropicRequestTrace extends JsonObject {
@@ -104,9 +112,13 @@ export function buildAnthropicProviderOptions(
     | 'disableParallelToolUse'
     | 'structuredOutputMode'
     | 'transportRequestProfile'
+    | 'llmVendor'
+    | 'supportsThinkingSwitch'
   >,
 ): Record<string, JsonObject> {
-  const thinking = resolveAnthropicThinkingConfig(config);
+  const thinking = isMeituanAnthropicThinkingSwitchConfig(config)
+    ? undefined
+    : resolveAnthropicThinkingConfig(config);
   const options: JsonObject = {
     toolStreaming: true,
     ...(thinking !== undefined ? { thinking: thinking as unknown as JsonValue } : {}),

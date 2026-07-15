@@ -1058,6 +1058,7 @@ function normalizeModelEntry(
   const supportedReasoningEfforts = normalizeSupportedReasoningEfforts(record.supportedReasoningEfforts);
   const contextLength = parseModelContextLength(record.contextLength);
   const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
+  const supportsThinkingSwitch = record.supportsThinkingSwitch === true ? true as const : undefined;
   return {
     name,
     reasoningEffort: resolveModelReasoningEffortForContext(record.reasoningEffort, {
@@ -1066,6 +1067,7 @@ function normalizeModelEntry(
       ...(transportKind ? { transportKind } : {}),
       ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
       ...(supportsThinkingType ? { supportsThinkingType } : {}),
+      ...(supportsThinkingSwitch ? { supportsThinkingSwitch } : {}),
     }) as ModelEntryV2['reasoningEffort'],
     ...(supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: supportedReasoningEfforts as ModelEntryV2['supportedReasoningEfforts'] }
@@ -1073,6 +1075,7 @@ function normalizeModelEntry(
     ...(capabilities ? { capabilities } : {}),
     ...(contextLength !== undefined ? { contextLength } : {}),
     ...(supportsThinkingType ? { supportsThinkingType } : {}),
+    ...(supportsThinkingSwitch ? { supportsThinkingSwitch } : {}),
     ...(record.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
   };
 }

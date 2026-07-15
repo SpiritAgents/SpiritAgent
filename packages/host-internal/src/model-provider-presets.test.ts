@@ -28,6 +28,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('z-ai'), 'z-ai');
   assert.equal(parseModelProviderId('zhipu-ai'), 'zhipu-ai');
   assert.equal(parseModelProviderId('xiaomi'), 'xiaomi');
+  assert.equal(parseModelProviderId('meituan'), 'meituan');
   assert.equal(parseModelProviderId('siliconflow'), 'siliconflow');
   assert.equal(parseModelProviderId('fireworks-ai'), 'fireworks-ai');
   assert.equal(parseModelProviderId('azure'), 'azure');
@@ -72,6 +73,14 @@ test('resolveProviderConnectApiBase uses transport-specific preset bases', () =>
   assert.equal(
     resolveProviderConnectApiBase('deepseek', 'anthropic'),
     'https://api.deepseek.com/anthropic',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('meituan', 'openai-compatible'),
+    'https://api.longcat.chat/openai/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('meituan', 'anthropic'),
+    'https://api.longcat.chat/anthropic/v1',
   );
   assert.equal(
     resolveProviderConnectApiBase('xiaomi', 'openai-compatible'),

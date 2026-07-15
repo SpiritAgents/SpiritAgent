@@ -350,6 +350,24 @@ test('applyCatalogEntryToStoredModel syncs supportsThinkingType', () => {
   assert.equal(model.supportsThinkingType, 'only');
 });
 
+test('applyCatalogEntryToStoredModel syncs supportsThinkingSwitch', () => {
+  const model = {
+    name: 'LongCat-2.0',
+    apiBase: 'https://api.longcat.chat/openai/v1',
+    reasoningEffort: 'default',
+    provider: 'meituan',
+  };
+
+  assert.equal(
+    applyCatalogEntryToStoredModel(model, {
+      id: 'LongCat-2.0',
+      supportsThinkingSwitch: true,
+    }),
+    true,
+  );
+  assert.equal(model.supportsThinkingSwitch, true);
+});
+
 test('removeDelistedModelsFromCatalog drops scope models missing from upstream ids', () => {
   const config = {
     providerGroups: [

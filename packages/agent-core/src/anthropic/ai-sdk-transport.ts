@@ -6,6 +6,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { getLlmFetch } from '../llm-fetch.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import { createStepfunAnthropicAwareFetch } from '../stepfun/stepfun-anthropic-fetch.js';
+import { createMeituanAnthropicAwareFetch } from '../meituan/meituan-anthropic-fetch.js';
 import {
   generateObject,
   generateText,
@@ -452,9 +453,12 @@ export class AiSdkAnthropicTransport
 
 function createAnthropicLanguageModel(config: AnthropicTransportConfig): any {
   const baseFetch = wrapFetchForCloudflareAiGateway(config.cloudflareGatewayId, getLlmFetch());
-  const fetch = isStepfunAnthropicBaseUrl(config.baseUrl)
+  let fetch = isStepfunAnthropicBaseUrl(config.baseUrl)
     ? createStepfunAnthropicAwareFetch(baseFetch)
     : baseFetch;
+  if (config.llmVendor === 'meituan' && config.supportsThinkingSwitch === true) {
+    fetch = createMeituanAnthropicAwareFetch(fetch, config);
+  }
 
   return createAnthropic({
     apiKey: config.apiKey,

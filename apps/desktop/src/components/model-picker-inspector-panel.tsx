@@ -54,6 +54,9 @@ export function modelPickerInspectorNeedsWideLayout(
     ...((model.supportsThinkingType ?? catalogEntry?.supportsThinkingType)
       ? { supportsThinkingType: model.supportsThinkingType ?? catalogEntry?.supportsThinkingType }
       : {}),
+    ...((model.supportsThinkingSwitch ?? catalogEntry?.supportsThinkingSwitch) === true
+      ? { supportsThinkingSwitch: true as const }
+      : {}),
   };
   if (modelSupportsThinkingSwitch(modelContext)) {
     return true;
@@ -94,6 +97,9 @@ export function ModelPickerInspectorPanel({
     ...(model.transportKind ? { transportKind: model.transportKind } : {}),
     ...((model.supportsThinkingType ?? catalogEntry?.supportsThinkingType)
       ? { supportsThinkingType: model.supportsThinkingType ?? catalogEntry?.supportsThinkingType }
+      : {}),
+    ...((model.supportsThinkingSwitch ?? catalogEntry?.supportsThinkingSwitch) === true
+      ? { supportsThinkingSwitch: true as const }
       : {}),
   };
   const supportsThinkingSwitch = modelSupportsThinkingSwitch(modelContext);

@@ -46,6 +46,7 @@ pub enum ModelProvider {
     #[serde(rename = "google-vertex-ai")]
     GoogleVertexAi,
     Volcengine,
+    Meituan,
     #[serde(rename = "amazon-bedrock")]
     AmazonBedrock,
     Azure,
@@ -75,6 +76,7 @@ impl ModelProvider {
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
             Self::Volcengine => "volcengine",
+            Self::Meituan => "meituan",
             Self::AmazonBedrock => "amazon-bedrock",
             Self::Azure => "azure",
             Self::Custom => "custom",
@@ -107,6 +109,7 @@ impl FromStr for ModelProvider {
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
             "volcengine" => Ok(Self::Volcengine),
+            "meituan" => Ok(Self::Meituan),
             "amazon-bedrock" => Ok(Self::AmazonBedrock),
             "azure" => Ok(Self::Azure),
             "custom" => Ok(Self::Custom),
@@ -212,6 +215,12 @@ pub struct ModelEntry {
         skip_serializing_if = "Option::is_none"
     )]
     pub supports_thinking_type: Option<String>,
+    #[serde(
+        rename = "supportsThinkingSwitch",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub supports_thinking_switch: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -740,6 +749,9 @@ pub fn resolve_model_profile_from_parts(
             "supportsThinkingType".to_string(),
             Value::String(thinking_type.to_string()),
         );
+    }
+    if model.supports_thinking_switch == Some(true) {
+        extra.insert("supportsThinkingSwitch".to_string(), Value::Bool(true));
     }
 
     Some(ModelProfile {

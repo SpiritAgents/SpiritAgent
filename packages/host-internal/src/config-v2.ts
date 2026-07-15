@@ -42,6 +42,7 @@ export interface ModelEntryV2 {
   capabilities?: SpiritModelCapabilityV2[];
   contextLength?: number;
   supportsThinkingType?: 'only';
+  supportsThinkingSwitch?: boolean;
 }
 
 export interface ProviderGroupV2 {

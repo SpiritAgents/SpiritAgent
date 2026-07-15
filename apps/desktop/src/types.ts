@@ -172,6 +172,7 @@ export interface PreviewModelCatalogEntry {
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];
   contextLength?: number;
   supportsThinkingType?: 'only';
+  supportsThinkingSwitch?: boolean;
 }
 
 /** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */
@@ -1345,6 +1346,8 @@ export interface ModelProfileSnapshot {
   contextLength?: number;
   /** Kimi Code `supports_thinking_type`；`only` 表示思考常开。 */
   supportsThinkingType?: 'only';
+  /** 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。 */
+  supportsThinkingSwitch?: boolean;
   /** 宿主快照：该模型是否在系统钥匙串中有专属 API Key 条目（与 CLI 一致；不含环境变量与全局回退）。 */
   keyConfigured?: boolean;
 }

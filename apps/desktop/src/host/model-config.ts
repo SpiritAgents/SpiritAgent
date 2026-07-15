@@ -237,6 +237,7 @@ type AgentModelProfileFields = Pick<
   | 'supportedReasoningEfforts'
   | 'thinkingEnabled'
   | 'supportsThinkingType'
+  | 'supportsThinkingSwitch'
 >;
 
 function buildAgentModelReasoningContext(
@@ -250,6 +251,7 @@ function buildAgentModelReasoningContext(
       ? { supportedEfforts: profile.supportedReasoningEfforts }
       : {}),
     ...(profile?.supportsThinkingType ? { supportsThinkingType: profile.supportsThinkingType } : {}),
+    ...(profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
     model,
   };
 }
@@ -320,6 +322,8 @@ export function buildPrimaryTransportConfig(input: {
     | 'cloudflareGatewayId'
     | 'vertexProject'
     | 'vertexLocation'
+    | 'supportsThinkingType'
+    | 'supportsThinkingSwitch'
   >;
 }): LlmTransportConfig {
   const spiritAgentMode = input.agentMode ?? 'agent';
@@ -447,8 +451,11 @@ export function buildPrimaryTransportConfig(input: {
       },
     );
     const explicitThinking = resolveAgentAnthropicExplicitThinking(input.profile, input.model);
+    const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
     const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
     const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
+    const meituanThinkingSwitch = llmVendor === 'meituan'
+      && input.profile?.supportsThinkingSwitch === true;
     return {
       transportKind: 'anthropic',
       apiKey: input.apiKey,
@@ -464,7 +471,9 @@ export function buildPrimaryTransportConfig(input: {
         ? { supportedEfforts: supportedAnthropicEfforts }
         : {}),
       ...(anthropicEffort ? { effort: anthropicEffort } : {}),
-      ...(explicitThinking ? { thinking: explicitThinking } : {}),
+      ...(!meituanThinkingSwitch && explicitThinking ? { thinking: explicitThinking } : {}),
+      ...(input.profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
+      ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
     };
   }
 
@@ -532,6 +541,7 @@ export function buildPrimaryTransportConfig(input: {
       : {}),
     ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
+    ...(input.profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   };
 }
 

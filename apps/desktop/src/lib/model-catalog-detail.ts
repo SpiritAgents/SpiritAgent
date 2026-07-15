@@ -13,7 +13,7 @@ import type {
   PreviewModelCatalogVideoDurationPricing,
 } from '@/types';
 
-const METADATA_PROVIDERS = new Set<DesktopModelProvider>([
+const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProvider>([
   'vercel-ai-gateway',
   'openrouter',
   'fireworks-ai',
@@ -21,10 +21,11 @@ const METADATA_PROVIDERS = new Set<DesktopModelProvider>([
   'kimi-code',
 ]);
 
+/** 无 catalog displayName 时是否保留原始 model id（如 openai/gpt-5），而非格式化。 */
 export function providerSupportsModelCatalogDetail(
   provider: DesktopModelProvider | undefined,
 ): boolean {
-  return provider !== undefined && METADATA_PROVIDERS.has(provider);
+  return provider !== undefined && PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG.has(provider);
 }
 
 export function modelCatalogHintKey(input: {
@@ -66,9 +67,6 @@ export function findModelCatalogEntry(
   hints: readonly DesktopModelCatalogHint[] | undefined,
   entryIndex?: Map<string, PreviewModelCatalogEntry>,
 ): PreviewModelCatalogEntry | undefined {
-  if (!providerSupportsModelCatalogDetail(model.provider)) {
-    return undefined;
-  }
   const index = entryIndex ?? buildModelCatalogEntryIndex(hints);
   const hintKey = modelCatalogHintKey({
     provider: model.provider,
@@ -127,9 +125,7 @@ export function buildModelCatalogDisplayTitleMap(
   const entryIndex = buildModelCatalogEntryIndex(hints);
   const titles = new Map<string, string>();
   for (const model of models) {
-    const catalogEntry = providerSupportsModelCatalogDetail(model.provider)
-      ? findModelCatalogEntry(model, hints, entryIndex)
-      : undefined;
+    const catalogEntry = findModelCatalogEntry(model, hints, entryIndex);
     titles.set(model.name, modelCatalogDisplayTitle(model, catalogEntry));
   }
   return titles;
