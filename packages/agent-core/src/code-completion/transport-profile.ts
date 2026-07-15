@@ -20,6 +20,7 @@ const OPENAI_COMPAT_THINKING_TYPE_VENDORS = new Set<OpenAiLlmVendor>([
   'minimax',
   'xiaomi',
   'volcengine',
+  'tencent-tokenhub',
 ]);
 
 export function isCodeCompletionTransportProfile(

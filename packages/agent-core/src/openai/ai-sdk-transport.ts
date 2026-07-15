@@ -828,16 +828,20 @@ function createAiSdkOpenAiCompatibleProvider(
     ...(config.project ? { 'OpenAI-Project': config.project } : {}),
   };
 
+  let resolvedFetch = wrapFetchForCloudflareAiGateway(
+    transportConfig.cloudflareGatewayId,
+    fetchWrapper ?? getLlmFetch(),
+  );
+  // TokenHub Chat `web_search_options` 与 Responses `/v1/responses` 联网搜索均未接入：
+  // 前者实测注入后上游仍无有效实时检索；后者仅少数模型支持且与现有 Chat Completions 矩阵不匹配，维护成本不划算。
+
   return createOpenAICompatible({
     apiKey: config.apiKey,
     name: 'openai',
     baseURL: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     supportsStructuredOutputs: true,
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
-    fetch: wrapFetchForCloudflareAiGateway(
-      transportConfig.cloudflareGatewayId,
-      fetchWrapper ?? getLlmFetch(),
-    ),
+    fetch: resolvedFetch,
   });
 }
 

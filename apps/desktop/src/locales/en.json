@@ -76,6 +76,11 @@
     },
     "volcengine": "Volcengine",
     "meituan": "Meituan",
+    "tencentTokenhub": "Tencent TokenHub",
+    "tencentTokenhubSite": {
+      "cn": "Guangzhou",
+      "intl": "Singapore"
+    },
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "Custom"

@@ -15,6 +15,7 @@ import {
   parseXiaomiModelEntriesPayload,
   parseMinimaxModelEntriesPayload,
   parseMeituanModelDetailPayload,
+  parseTencentTokenHubModelEntriesPayload,
   openAiCompatibleModelDetailUrl,
   mergeFireworksAiGatewayModelPages,
   parseFireworksAiGatewayModelsPayload,
@@ -1113,4 +1114,49 @@ test('parseMeituanModelDetailPayload maps image input and image-only output', ()
     supportsImageInput: true,
     supportsImageGeneration: true,
   });
+});
+
+test('parseTencentTokenHubModelEntriesPayload maps name to displayName and skips pre-offline', () => {
+  const entries = parseTencentTokenHubModelEntriesPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'hy3',
+        object: 'model',
+        name: 'Hy3',
+        created: 1783267200,
+        status: 'online',
+      },
+      {
+        id: 'deepseek-v4-pro',
+        object: 'model',
+        name: 'DeepSeek-V4-Pro',
+        created: 1776960000,
+        status: 'online',
+      },
+      {
+        id: 'deepseek-v3.1-terminus',
+        object: 'model',
+        name: 'Deepseek-v3.1',
+        created: 1776960000,
+        status: 'pre-offline',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    { id: 'hy3', displayName: 'Hy3' },
+    { id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro' },
+  ]);
+});
+
+test('parseOpenAiCompatibleModelEntriesPayload routes tencent-tokenhub to dedicated parser', () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload(
+    {
+      data: [{ id: 'glm-5', name: 'GLM-5', status: 'online' }],
+    },
+    'tencent-tokenhub',
+  );
+
+  assert.deepEqual(entries, [{ id: 'glm-5', displayName: 'GLM-5' }]);
 });

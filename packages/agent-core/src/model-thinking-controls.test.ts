@@ -250,6 +250,44 @@ test('Gateway MiniMax M2.5 has no thinking switch', () => {
   assert.equal(modelSupportsThinkingSwitch(context), false);
 });
 
+test('TokenHub hy3 supports thinking switch', () => {
+  const context = {
+    provider: 'tencent-tokenhub' as const,
+    model: 'hy3',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelSupportsThinkingSwitch(context), true);
+});
+
+test('TokenHub minimax-m2.5 has no thinking switch via global model match', () => {
+  const context = {
+    provider: 'tencent-tokenhub' as const,
+    model: 'minimax-m2.5',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelSupportsThinkingSwitch(context), false);
+});
+
+test('TokenHub glm-5 has thinking switch but no reasoning effort control', () => {
+  const context = {
+    provider: 'tencent-tokenhub' as const,
+    model: 'glm-5',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelSupportsThinkingSwitch(context), true);
+  assert.equal(modelShowsReasoningEffortControl(context, true), false);
+});
+
+test('TokenHub hy3 shows reasoning effort when thinking enabled', () => {
+  const context = {
+    provider: 'tencent-tokenhub' as const,
+    model: 'hy3',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelShowsReasoningEffortControl(context, true), true);
+  assert.equal(modelShowsReasoningEffortControl(context, false), false);
+});
+
 test('OpenAI uses reasoning effort primary control only', () => {
   const context = {
     provider: 'openai' as const,
