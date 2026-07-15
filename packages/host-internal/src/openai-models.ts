@@ -62,6 +62,12 @@ export function openAiCompatibleModelsListUrl(baseUrl: string): string {
   return `${normalizeOpenAiApiBase(baseUrl)}${OPENAI_MODELS_PATH}`;
 }
 
+/** Full URL for a single OpenAI-compatible model detail request. */
+export function openAiCompatibleModelDetailUrl(baseUrl: string, modelId: string): string {
+  const trimmedId = modelId.trim();
+  return `${normalizeOpenAiApiBase(baseUrl)}${OPENAI_MODELS_PATH}/${encodeURIComponent(trimmedId)}`;
+}
+
 export function anthropicModelsListUrl(baseUrl: string): string {
   return `${normalizeOpenAiApiBase(baseUrl)}${ANTHROPIC_MODELS_PATH}`;
 }
@@ -1271,6 +1277,14 @@ export async function listProviderModels(
     });
   }
 
+  if (options.provider === 'meituan' && options.transportKind === 'anthropic') {
+    return listMeituanModels({
+      baseUrl: resolveProviderConnectApiBase('meituan', 'openai-compatible'),
+      apiKey: options.apiKey,
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    });
+  }
+
   if (options.provider === 'siliconflow') {
     return listSiliconFlowModels(options);
   }
@@ -1326,6 +1340,10 @@ export async function listProviderModels(
 
   if (options.provider === 'volcengine') {
     return listVolcengineModels(options);
+  }
+
+  if (options.provider === 'meituan') {
+    return listMeituanModels(options);
   }
 
   if (options.provider === 'google') {
@@ -1453,6 +1471,49 @@ export async function listVolcengineModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   return listOpenAiCompatibleModelsForProvider(options, 'volcengine');
+}
+
+/**
+ * Meituan LongCat：`GET /models` 列表仅含 id，元数据需逐模型 `GET /models/{id}`。
+ * 当前模型数量少可并行拉取；若日后模型增多需考虑批量化或上游改进。
+ */
+export async function listMeituanModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const url = openAiCompatibleModelsListUrl(options.baseUrl);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key}`,
+  };
+  const init: RequestInit = { method: 'GET', headers };
+  if (options.signal !== undefined) {
+    init.signal = options.signal;
+  }
+
+  const listJson = await fetchModelsListJson(url, init);
+  const listedIds = parseOpenAiModelsPayload(listJson);
+  if (listedIds.length === 0) {
+    return [];
+  }
+
+  const entries = await Promise.all(
+    listedIds.map(async (modelId): Promise<ProviderListedModelEntry> => {
+      try {
+        const detailUrl = openAiCompatibleModelDetailUrl(options.baseUrl, modelId);
+        const detailJson = await fetchModelsListJson(detailUrl, init);
+        const parsed = parseMeituanModelDetailPayload(detailJson);
+        return parsed ?? { id: modelId };
+      } catch {
+        return { id: modelId };
+      }
+    }),
+  );
+
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
@@ -1698,6 +1759,101 @@ function attachListedModelMetadata(
     ...(pricing ? { pricing } : {}),
     ...(contextLength !== undefined ? { contextLength } : {}),
   };
+}
+
+function readMeituanModalities(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
+}
+
+function readMeituanSupportedParameters(record: Record<string, unknown>): string[] {
+  const raw = record.supported_parameters;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+/** LongCat 定价字段为 USD/M tokens；转为内部 per-token USD 字符串供 UI 统一展示。 */
+function convertMeituanPerMillionUsdToPerToken(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const perMillion = Number(value);
+  if (!Number.isFinite(perMillion)) {
+    return undefined;
+  }
+  return String(perMillion / 1_000_000);
+}
+
+function readMeituanPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(record.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+  const inputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(readPricingField(pricing, 'prompt'));
+  const outputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(readPricingField(pricing, 'completion'));
+  // pricing.cached_tokens 暂无内部字段，不持久化
+  return buildProviderListedModelPricing({
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+  });
+}
+
+export function parseMeituanModelDetailPayload(body: unknown): ProviderListedModelEntry | undefined {
+  if (typeof body !== 'object' || body === null) {
+    return undefined;
+  }
+  const record = body as Record<string, unknown>;
+  const id = readOptionalTrimmedString(record.id);
+  if (!id) {
+    return undefined;
+  }
+
+  const modelEntry: ProviderListedModelEntry = { id };
+  const displayName = readOptionalTrimmedString(record.name);
+  if (displayName) {
+    modelEntry.displayName = displayName;
+  }
+
+  const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
+  if (contextLength !== undefined) {
+    modelEntry.contextLength = contextLength;
+  }
+
+  const architecture = asRecord(record.architecture);
+  const inputModalities = readMeituanModalities(architecture?.input_modalities);
+  if (inputModalities.includes('image')) {
+    modelEntry.supportsImageInput = true;
+  }
+  if (inputModalities.includes('video')) {
+    modelEntry.supportsVideoInput = true;
+  }
+
+  const outputModalities = readMeituanModalities(architecture?.output_modalities);
+  if (outputModalities.includes('image') && !outputModalities.includes('text')) {
+    modelEntry.supportsImageGeneration = true;
+  }
+
+  const supportedParameters = readMeituanSupportedParameters(record);
+  if (supportedParameters.includes('thinking')) {
+    modelEntry.supportsReasoning = true;
+  }
+
+  const pricing = readMeituanPricing(record);
+  if (pricing) {
+    modelEntry.pricing = pricing;
+  }
+
+  return modelEntry;
 }
 
 export function moonshotSupportedReasoningEfforts(supportsReasoning: boolean): string[] {

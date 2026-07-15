@@ -14,6 +14,8 @@ import {
   parseVolcengineModelEntriesPayload,
   parseXiaomiModelEntriesPayload,
   parseMinimaxModelEntriesPayload,
+  parseMeituanModelDetailPayload,
+  openAiCompatibleModelDetailUrl,
   mergeFireworksAiGatewayModelPages,
   parseFireworksAiGatewayModelsPayload,
   fireworksAiGatewayModelsListUrl,
@@ -1048,4 +1050,67 @@ test('mergeFireworksAiGatewayModelPages dedupes across pages', () => {
     'accounts/fireworks/models/deepseek-v3p1',
     'accounts/fireworks/models/llama-v3p1-8b-instruct',
   ]);
+});
+
+test('openAiCompatibleModelDetailUrl encodes model id', () => {
+  assert.equal(
+    openAiCompatibleModelDetailUrl('https://api.longcat.chat/openai/v1', 'LongCat-2.0'),
+    'https://api.longcat.chat/openai/v1/models/LongCat-2.0',
+  );
+});
+
+test('parseMeituanModelDetailPayload maps modalities context pricing and thinking', () => {
+  const entry = parseMeituanModelDetailPayload({
+    id: 'LongCat-2.0',
+    name: 'LongCat-2.0',
+    created: 1773331200,
+    context_length: 1048576,
+    architecture: {
+      input_modalities: ['text'],
+      output_modalities: ['text'],
+      modality: 'text->text',
+      tokenizer: 'Other',
+      instruct_type: null,
+    },
+    supported_parameters: [
+      'max_tokens',
+      'temperature',
+      'top_p',
+      'stream',
+      'tools',
+      'tool_choice',
+      'thinking',
+    ],
+    pricing: { prompt: '2', completion: '8', cached_tokens: '0.04' },
+  });
+
+  assert.deepEqual(entry, {
+    id: 'LongCat-2.0',
+    displayName: 'LongCat-2.0',
+    contextLength: 1048576,
+    supportsReasoning: true,
+    pricing: {
+      inputPerTokenUsd: '0.000002',
+      outputPerTokenUsd: '0.000008',
+    },
+  });
+});
+
+test('parseMeituanModelDetailPayload maps image input and image-only output', () => {
+  const entry = parseMeituanModelDetailPayload({
+    id: 'LongCat-Vision',
+    name: 'LongCat Vision',
+    architecture: {
+      input_modalities: ['text', 'image'],
+      output_modalities: ['image'],
+    },
+    supported_parameters: [],
+  });
+
+  assert.deepEqual(entry, {
+    id: 'LongCat-Vision',
+    displayName: 'LongCat Vision',
+    supportsImageInput: true,
+    supportsImageGeneration: true,
+  });
 });
