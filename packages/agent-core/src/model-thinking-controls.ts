@@ -236,6 +236,9 @@ export function modelSupportsThinkingSwitch(context?: ModelReasoningEffortContex
   if (context?.supportsThinkingType === 'only') {
     return false;
   }
+  if (context?.supportsThinkingSwitch === true) {
+    return true;
+  }
   if (modelUsesReasoningEffortPrimaryControl(context)) {
     return false;
   }

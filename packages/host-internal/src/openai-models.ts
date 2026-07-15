@@ -48,6 +48,8 @@ export interface ProviderListedModelEntry {
   supportsVideoGeneration?: boolean;
   supportsImageGeneration?: boolean;
   supportsReasoning?: boolean;
+  /** LongCat 等：`supported_parameters` 含 `thinking` 时可开关 extended thinking。 */
+  supportsThinkingSwitch?: boolean;
   supportsThinkingType?: KimiCodeSupportsThinkingType;
   contextLength?: number;
   supportedReasoningEfforts?: string[];
@@ -1625,6 +1627,10 @@ function dedupeProviderListedModelEntries(
         ? { supportsImageGeneration: entry.supportsImageGeneration }
         : {}),
       ...(entry.supportsReasoning !== undefined ? { supportsReasoning: entry.supportsReasoning } : {}),
+      ...(entry.supportsThinkingType !== undefined
+        ? { supportsThinkingType: entry.supportsThinkingType }
+        : {}),
+      ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
       ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
       ...(entry.supportedReasoningEfforts !== undefined
         ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }
@@ -1845,7 +1851,7 @@ export function parseMeituanModelDetailPayload(body: unknown): ProviderListedMod
 
   const supportedParameters = readMeituanSupportedParameters(record);
   if (supportedParameters.includes('thinking')) {
-    modelEntry.supportsReasoning = true;
+    modelEntry.supportsThinkingSwitch = true;
   }
 
   const pricing = readMeituanPricing(record);

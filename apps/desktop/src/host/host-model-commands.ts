@@ -432,6 +432,9 @@ export async function updateConfigCommand(
           ...(resolved.supportsThinkingType
             ? { supportsThinkingType: resolved.supportsThinkingType }
             : {}),
+          ...(resolved.supportsThinkingSwitch === true
+            ? { supportsThinkingSwitch: true }
+            : {}),
         };
         if (thinkingEnabled) {
           delete model.thinkingEnabled;
@@ -1039,6 +1042,9 @@ export async function addProviderModelsCommand(
           ...(catalogEntry?.supportsThinkingType
             ? { supportsThinkingType: catalogEntry.supportsThinkingType }
             : {}),
+          ...(catalogEntry?.supportsThinkingSwitch === true
+            ? { supportsThinkingSwitch: true }
+            : {}),
         })),
       };
       if (catalogEntry?.supportedReasoningEfforts !== undefined) {
@@ -1057,6 +1063,9 @@ export async function addProviderModelsCommand(
       }
       if (catalogEntry?.supportsThinkingType !== undefined) {
         entry.supportsThinkingType = catalogEntry.supportsThinkingType;
+      }
+      if (catalogEntry?.supportsThinkingSwitch === true) {
+        entry.supportsThinkingSwitch = true;
       }
       toAdd.push(entry);
     }
@@ -1274,6 +1283,9 @@ export async function addModelCommand(
         ...(catalogEntry?.supportsThinkingType
           ? { supportsThinkingType: catalogEntry.supportsThinkingType }
           : {}),
+        ...(catalogEntry?.supportsThinkingSwitch === true
+          ? { supportsThinkingSwitch: true }
+          : {}),
       })),
     };
     if (catalogEntry?.supportedReasoningEfforts !== undefined) {
@@ -1297,6 +1309,9 @@ export async function addModelCommand(
     }
     if (catalogEntry?.supportsThinkingType !== undefined) {
       modelEntry.supportsThinkingType = catalogEntry.supportsThinkingType;
+    }
+    if (catalogEntry?.supportsThinkingSwitch === true) {
+      modelEntry.supportsThinkingSwitch = true;
     }
     if (request.contextLength !== undefined) {
       const contextLength = parseModelContextLength(request.contextLength);

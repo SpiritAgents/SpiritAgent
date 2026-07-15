@@ -419,6 +419,7 @@ function ModelPickerTriggerLabel({
       : {}),
     ...(model.transportKind ? { transportKind: model.transportKind } : {}),
     ...(model.supportsThinkingType ? { supportsThinkingType: model.supportsThinkingType } : {}),
+    ...(model.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true as const } : {}),
   };
   const supportsThinkingSwitch = modelSupportsThinkingSwitch(modelContext);
   const thinkingEnabled = resolveModelThinkingEnabled(model.thinkingEnabled);

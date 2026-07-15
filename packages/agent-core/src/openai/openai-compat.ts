@@ -108,6 +108,11 @@ export interface OpenAiTransportConfig {
    * 缺省为 `true`（enabled）；设为 `false` 时发送 `disabled`。
    */
   vendorExtendedThinking?: boolean;
+  /**
+   * 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。
+   * 仅在为 true 时对 `meituan` 发送 thinking 参数。
+   */
+  supportsThinkingSwitch?: boolean;
   /** Google Vertex AI 项目 ID（Express 模式可省略）。 */
   vertexProject?: string;
   /** Google Vertex AI 区域，如 `us-central1`（Express 模式可省略）。 */
@@ -213,12 +218,26 @@ export function openAiReasoningEffort(
 }
 
 export function openAiVendorChatCompletionBodyExtras(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking' | 'transportRequestProfile'>,
+  config: Pick<
+    OpenAiTransportConfig,
+    | 'llmVendor'
+    | 'model'
+    | 'reasoningEffort'
+    | 'vendorExtendedThinking'
+    | 'transportRequestProfile'
+    | 'supportsThinkingSwitch'
+  >,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
   if (config.llmVendor === 'minimax' && isMinimaxM3ThinkingSwitchModel(config.model)) {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'adaptive' : 'disabled' };
+  } else if (
+    config.llmVendor === 'meituan'
+    && config.supportsThinkingSwitch === true
+  ) {
+    const enabled = config.vendorExtendedThinking !== false;
+    extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
   } else if (
     config.llmVendor === 'deepseek'
     || config.llmVendor === 'z-ai'

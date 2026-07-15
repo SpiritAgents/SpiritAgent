@@ -99,6 +99,25 @@ test('Moonshot kimi-k2.5 supports thinking switch and effort when thinking enabl
   assert.equal(shouldPinReasoningEffortToDefault(false, context), true);
 });
 
+test('Meituan LongCat supports thinking switch only when catalog marks supportsThinkingSwitch', () => {
+  const withSwitch = {
+    provider: 'meituan' as const,
+    model: 'LongCat-2.0',
+    transportKind: 'openai-compatible' as const,
+    supportsThinkingSwitch: true as const,
+  };
+  assert.equal(modelSupportsThinkingSwitch(withSwitch), true);
+  assert.equal(modelShowsReasoningEffortControl(withSwitch, true), true);
+  assert.equal(modelShowsReasoningEffortControl(withSwitch, false), false);
+
+  const withoutSwitch = {
+    provider: 'meituan' as const,
+    model: 'LongCat-Vision',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelSupportsThinkingSwitch(withoutSwitch), false);
+});
+
 test('Moonshot kimi-k2.7-code uses reasoning effort primary control only', () => {
   const context = {
     provider: 'moonshot-ai' as const,

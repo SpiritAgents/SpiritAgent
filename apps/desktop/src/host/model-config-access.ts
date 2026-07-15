@@ -75,6 +75,7 @@ export function resolveModelProfileFromParts(
     ...(group.vertexLocation ? { vertexLocation: group.vertexLocation } : {}),
     ...(model.contextLength !== undefined ? { contextLength: model.contextLength } : {}),
     ...(model.supportsThinkingType ? { supportsThinkingType: model.supportsThinkingType } : {}),
+    ...(model.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   };
 }
 

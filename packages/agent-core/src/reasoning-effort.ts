@@ -78,6 +78,8 @@ export interface ModelReasoningEffortContext {
   supportedEfforts?: readonly ModelReasoningEffort[];
   /** Kimi Code `supports_thinking_type`；`only` 表示思考常开且隐藏 Thinking 开关。 */
   supportsThinkingType?: ModelSupportsThinkingType;
+  /** 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。 */
+  supportsThinkingSwitch?: boolean;
 }
 
 export const DEFAULT_MODEL_REASONING_EFFORT: OpenAiCompatibleReasoningEffort = 'medium';

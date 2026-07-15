@@ -237,6 +237,7 @@ type AgentModelProfileFields = Pick<
   | 'supportedReasoningEfforts'
   | 'thinkingEnabled'
   | 'supportsThinkingType'
+  | 'supportsThinkingSwitch'
 >;
 
 function buildAgentModelReasoningContext(
@@ -250,6 +251,7 @@ function buildAgentModelReasoningContext(
       ? { supportedEfforts: profile.supportedReasoningEfforts }
       : {}),
     ...(profile?.supportsThinkingType ? { supportsThinkingType: profile.supportsThinkingType } : {}),
+    ...(profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
     model,
   };
 }
@@ -320,6 +322,8 @@ export function buildPrimaryTransportConfig(input: {
     | 'cloudflareGatewayId'
     | 'vertexProject'
     | 'vertexLocation'
+    | 'supportsThinkingType'
+    | 'supportsThinkingSwitch'
   >;
 }): LlmTransportConfig {
   const spiritAgentMode = input.agentMode ?? 'agent';
@@ -532,6 +536,7 @@ export function buildPrimaryTransportConfig(input: {
       : {}),
     ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
+    ...(input.profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   };
 }
 

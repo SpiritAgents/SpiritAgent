@@ -44,6 +44,33 @@ test('applyCodeCompletionTransportProfile disables Moonshot thinking', () => {
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
 });
 
+test('applyCodeCompletionTransportProfile disables Meituan thinking when supportsThinkingSwitch', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'LongCat-2.0',
+    llmVendor: 'meituan',
+    supportsThinkingSwitch: true,
+    reasoningEffort: 'medium',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'default');
+  assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
+});
+
+test('applyCodeCompletionTransportProfile leaves Meituan without supportsThinkingSwitch unchanged', () => {
+  const input: OpenAiTransportConfig = {
+    apiKey: 'k',
+    model: 'LongCat-Vision',
+    llmVendor: 'meituan',
+    reasoningEffort: 'medium',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'medium');
+  assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, undefined);
+});
+
 test('applyCodeCompletionTransportProfile disables OpenAI reasoning on openai-compatible transport', () => {
   const input: OpenAiTransportConfig = {
     apiKey: 'k',
