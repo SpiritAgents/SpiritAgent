@@ -42,6 +42,8 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "deepseek":
     case "kimi-code":
     case "meituan":
+    case "tencent-tokenhub":
+      return [connectTransportOptionCatalog.chatCompletions];
     case "siliconflow":
       return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
     case "xiaomi":
