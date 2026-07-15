@@ -46,6 +46,7 @@ pub enum ModelProvider {
     #[serde(rename = "google-vertex-ai")]
     GoogleVertexAi,
     Volcengine,
+    Meituan,
     #[serde(rename = "amazon-bedrock")]
     AmazonBedrock,
     Azure,
@@ -75,6 +76,7 @@ impl ModelProvider {
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
             Self::Volcengine => "volcengine",
+            Self::Meituan => "meituan",
             Self::AmazonBedrock => "amazon-bedrock",
             Self::Azure => "azure",
             Self::Custom => "custom",
@@ -107,6 +109,7 @@ impl FromStr for ModelProvider {
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
             "volcengine" => Ok(Self::Volcengine),
+            "meituan" => Ok(Self::Meituan),
             "amazon-bedrock" => Ok(Self::AmazonBedrock),
             "azure" => Ok(Self::Azure),
             "custom" => Ok(Self::Custom),

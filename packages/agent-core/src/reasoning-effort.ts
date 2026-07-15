@@ -37,6 +37,7 @@ export type ModelReasoningProvider =
   | 'google'
   | 'google-vertex-ai'
   | 'volcengine'
+  | 'meituan'
   | 'azure'
   | 'amazon-bedrock'
   | 'custom';
