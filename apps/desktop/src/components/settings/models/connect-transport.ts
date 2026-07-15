@@ -41,6 +41,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "minimax":
     case "deepseek":
     case "kimi-code":
+    case "meituan":
     case "siliconflow":
       return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
     case "xiaomi":
@@ -112,6 +113,7 @@ export function providerSupportsConnectTransportPicker(
     provider === "minimax" ||
     provider === "deepseek" ||
     provider === "kimi-code" ||
+    provider === "meituan" ||
     provider === "xiaomi" ||
     provider === "siliconflow" ||
     provider === "alibaba" ||

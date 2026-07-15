@@ -75,6 +75,7 @@
       "intl": "国际站"
     },
     "volcengine": "火山引擎",
+    "meituan": "美团",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "自定义"
