@@ -31,6 +31,7 @@ import {
 import {
   buildModelCatalogDetailMap,
   buildModelCatalogDisplayTitleMap,
+  modelCatalogScopeEntryKey,
   modelDisplayTitleFromMap,
 } from "@/lib/model-catalog-detail";
 import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
@@ -65,8 +66,8 @@ function resolveModelPickerDetailTooltipWidthClass(
   if (!hoveredModel) {
     return "w-max";
   }
-  const model = models.find((entry) => entry.name === hoveredModel.name) ?? hoveredModel;
-  const catalogEntry = catalogDetailByModelName.get(model.name);
+  const model = models.find((entry) => modelRefsEqual(modelPickerItemRef(entry), modelPickerItemRef(hoveredModel))) ?? hoveredModel;
+  const catalogEntry = catalogDetailByModelName.get(modelCatalogScopeEntryKey(model));
   return modelPickerInspectorNeedsWideLayout(model, catalogEntry) ? "w-80" : "w-max";
 }
 
@@ -194,7 +195,7 @@ export function ModelPickerMenu({
       .map((group) => ({
         ...group,
         items: group.items.filter((model) => {
-          const title = modelDisplayTitleFromMap(model.name, displayTitleByModelName).toLowerCase();
+          const title = modelDisplayTitleFromMap(model, displayTitleByModelName).toLowerCase();
           return title.includes(query) || model.name.toLowerCase().includes(query);
         }),
       }))
@@ -293,14 +294,16 @@ export function ModelPickerMenu({
                   {activeModelProfile ? (
                     <ModelPickerTriggerLabel
                       name={modelDisplayTitleFromMap(
-                        activeModelProfile.name,
+                        activeModelProfile,
                         displayTitleByModelName,
                       )}
                       reasoningEffort={
                         activeReasoningEffort ?? activeModelProfile.reasoningEffort
                       }
                       model={activeModelProfile}
-                      catalogEntry={catalogDetailByModelName.get(activeModelProfile.name)}
+                      catalogEntry={catalogDetailByModelName.get(
+                        modelCatalogScopeEntryKey(activeModelProfile),
+                      )}
                     />
                   ) : (
                     <span className="min-w-0 truncate">{modelRefKey(activeModelRef)}</span>
@@ -329,7 +332,7 @@ export function ModelPickerMenu({
                         ?? t(group.labelKey, { defaultValue: group.fallbackLabel })}
                     </div>
                     {group.items.map((model) => {
-                      const displayTitle = modelDisplayTitleFromMap(model.name, displayTitleByModelName);
+                      const displayTitle = modelDisplayTitleFromMap(model, displayTitleByModelName);
                       const modelRef = modelPickerItemRef(model);
                       return (
                         <ModelPickerRow
@@ -375,7 +378,7 @@ export function ModelPickerMenu({
                 ?? (group
                   ? t(group.labelKey, { defaultValue: group.fallbackLabel })
                   : model.provider ?? model.name);
-              const catalogEntry = catalogDetailByModelName.get(model.name);
+              const catalogEntry = catalogDetailByModelName.get(modelCatalogScopeEntryKey(model));
 
               return (
                 <ModelPickerInspectorPanel

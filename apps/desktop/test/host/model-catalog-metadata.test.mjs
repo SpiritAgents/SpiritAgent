@@ -473,6 +473,29 @@ test('meituan provider maps LongCat catalog metadata to preview entries', () => 
   ]);
 });
 
+test('tencent-tokenhub provider preserves upstream displayName from models catalog', () => {
+  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'tencent-tokenhub' }), true);
+
+  const preview = previewModelCatalogForTransport({
+    provider: 'tencent-tokenhub',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'deepseek-v4-pro',
+        displayName: 'DeepSeek-V4-Pro',
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'deepseek-v4-pro',
+      displayName: 'DeepSeek-V4-Pro',
+      capabilities: ['chat'],
+    },
+  ]);
+});
+
 test('google provider uses upstream display metadata from native models catalog', () => {
   assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'google' }), true);
 

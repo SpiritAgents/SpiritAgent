@@ -69,6 +69,7 @@ import {
 import {
   buildModelCatalogDetailMap,
   buildModelCatalogDisplayTitleMap,
+  modelCatalogScopeEntryKey,
   modelDisplayTitleFromMap,
   modelSettingsRowAriaLabel,
 } from "@/lib/model-catalog-detail";
@@ -1008,7 +1009,7 @@ export function ModelsSettingsPanel({
                       {t('settings.deleteGroup')}
                     </Button>
                   </div>
-                  {groupModels.some((model) => catalogDetailByModelName.has(model.name)) ? (
+                  {groupModels.some((model) => catalogDetailByModelName.has(modelCatalogScopeEntryKey(model))) ? (
                     <Tooltip<SettingsModelProfile>
                       getItemId={(model) => modelRefKey(settingsModelRef(model))}
                       delayDuration={300}
@@ -1032,9 +1033,9 @@ export function ModelsSettingsPanel({
                           );
                           const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
                           const rowDisabled = modelsBusy || modelsPreviewBusy;
-                          const hasDetail = catalogDetailByModelName.has(model.name);
+                          const hasDetail = catalogDetailByModelName.has(modelCatalogScopeEntryKey(model));
                           const displayTitle = modelDisplayTitleFromMap(
-                            model.name,
+                            model,
                             displayTitleByModelName,
                           );
 
@@ -1082,7 +1083,7 @@ export function ModelsSettingsPanel({
                           if (!row) {
                             return null;
                           }
-                          const catalogEntry = catalogDetailByModelName.get(row.name);
+                          const catalogEntry = catalogDetailByModelName.get(modelCatalogScopeEntryKey(row));
                           if (!catalogEntry) {
                             return null;
                           }
@@ -1116,7 +1117,7 @@ export function ModelsSettingsPanel({
                         );
                         const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
                         const displayTitle = modelDisplayTitleFromMap(
-                          model.name,
+                          model,
                           displayTitleByModelName,
                         );
                         return (
@@ -1157,8 +1158,8 @@ export function ModelsSettingsPanel({
             <DialogTitle>{t('settings.setAsDefault')}</DialogTitle>
             <DialogDescription>
               {t('settings.setAsDefaultDescription', {
-                name: modelDefaultsDialogTarget
-                  ? modelDisplayTitleFromMap(modelDefaultsDialogTarget, displayTitleByModelName)
+                name: modelDefaultsDialogModel
+                  ? modelDisplayTitleFromMap(modelDefaultsDialogModel, displayTitleByModelName)
                   : '',
               })}
             </DialogDescription>

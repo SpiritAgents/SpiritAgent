@@ -57,6 +57,9 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (input.provider === 'meituan') {
     return true;
   }
+  if (input.provider === 'tencent-tokenhub') {
+    return true;
+  }
   if (input.provider === 'xiaomi') {
     return true;
   }

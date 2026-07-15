@@ -1389,6 +1389,10 @@ export async function listProviderModels(
     return listMeituanModels(options);
   }
 
+  if (options.provider === 'tencent-tokenhub') {
+    return listOpenAiCompatibleModelsForProvider(options, 'tencent-tokenhub');
+  }
+
   if (options.provider === 'google') {
     return listGoogleModels(options);
   }
