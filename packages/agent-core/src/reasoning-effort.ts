@@ -6,6 +6,7 @@ import {
 } from './openai/gateway-anthropic-thinking.js';
 import { parseGatewayUpstreamSlug } from './openai/gateway-code-completion-thinking.js';
 import { isXiaomiResponsesReasoningEffortContext } from './openai/gateway-xiaomi-thinking.js';
+import { isTokenHubReasoningEffortModel } from './openai/tokenhub-reasoning-effort.js';
 
 export { isXiaomiResponsesReasoningEffortContext } from './openai/gateway-xiaomi-thinking.js';
 import { isGatewayGoogleGeminiModel, isGoogleGeminiMinimalThinkingLevelModel, isGoogleGeminiThinkingLevelModel } from './openai/gateway-google-thinking.js';
@@ -259,6 +260,10 @@ export function defaultModelReasoningEffort(
     return 'default';
   }
 
+  if (isTokenHubReasoningEffortModel(context)) {
+    return 'default';
+  }
+
   return DEFAULT_MODEL_REASONING_EFFORT;
 }
 
@@ -317,6 +322,14 @@ export function modelReasoningEffortOptions(
   }
 
   if (isXiaomiResponsesReasoningEffortContext(context)) {
+    return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
+  }
+
+  if (context?.provider === 'tencent-tokenhub' && !isTokenHubReasoningEffortModel(context)) {
+    return [{ value: 'default', label: 'Default' }];
+  }
+
+  if (isTokenHubReasoningEffortModel(context)) {
     return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
   }
 

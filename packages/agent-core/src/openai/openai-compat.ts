@@ -3,6 +3,7 @@ import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provi
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import { cloneJsonValue } from '../tool-agent.js';
 import { isMinimaxM3ThinkingSwitchModel } from './gateway-minimax-thinking.js';
+import { isThinkingSwitchDisabledModel } from './thinking-switch-disabled-models.js';
 import {
   buildOpenRouterClaudeReasoningBody,
   isOpenRouterAnthropicClaudeModel,
@@ -245,6 +246,12 @@ export function openAiVendorChatCompletionBodyExtras(
     || config.llmVendor === 'zhipu-ai'
     || config.llmVendor === 'xiaomi'
     || config.llmVendor === 'volcengine'
+  ) {
+    const enabled = config.vendorExtendedThinking !== false;
+    extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
+  } else if (
+    config.llmVendor === 'tencent-tokenhub'
+    && !isThinkingSwitchDisabledModel(config.model)
   ) {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
