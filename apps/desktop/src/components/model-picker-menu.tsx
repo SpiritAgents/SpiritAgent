@@ -300,6 +300,7 @@ export function ModelPickerMenu({
                         activeReasoningEffort ?? activeModelProfile.reasoningEffort
                       }
                       model={activeModelProfile}
+                      catalogEntry={catalogDetailByModelName.get(activeModelProfile.name)}
                     />
                   ) : (
                     <span className="min-w-0 truncate">{modelRefKey(activeModelRef)}</span>
@@ -405,10 +406,12 @@ function ModelPickerTriggerLabel({
   name,
   reasoningEffort,
   model,
+  catalogEntry,
 }: {
   name: string;
   reasoningEffort: DesktopModelReasoningEffort;
   model: ModelProfileSnapshot;
+  catalogEntry?: PreviewModelCatalogEntry;
 }) {
   const { t } = useTranslation();
   const modelContext = {
@@ -418,8 +421,12 @@ function ModelPickerTriggerLabel({
       ? { supportedEfforts: model.supportedReasoningEfforts }
       : {}),
     ...(model.transportKind ? { transportKind: model.transportKind } : {}),
-    ...(model.supportsThinkingType ? { supportsThinkingType: model.supportsThinkingType } : {}),
-    ...(model.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true as const } : {}),
+    ...((model.supportsThinkingType ?? catalogEntry?.supportsThinkingType)
+      ? { supportsThinkingType: model.supportsThinkingType ?? catalogEntry?.supportsThinkingType }
+      : {}),
+    ...((model.supportsThinkingSwitch ?? catalogEntry?.supportsThinkingSwitch) === true
+      ? { supportsThinkingSwitch: true as const }
+      : {}),
   };
   const supportsThinkingSwitch = modelSupportsThinkingSwitch(modelContext);
   const thinkingEnabled = resolveModelThinkingEnabled(model.thinkingEnabled);
