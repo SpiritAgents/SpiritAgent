@@ -451,8 +451,11 @@ export function buildPrimaryTransportConfig(input: {
       },
     );
     const explicitThinking = resolveAgentAnthropicExplicitThinking(input.profile, input.model);
+    const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
     const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
     const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
+    const meituanThinkingSwitch = llmVendor === 'meituan'
+      && input.profile?.supportsThinkingSwitch === true;
     return {
       transportKind: 'anthropic',
       apiKey: input.apiKey,
@@ -468,7 +471,9 @@ export function buildPrimaryTransportConfig(input: {
         ? { supportedEfforts: supportedAnthropicEfforts }
         : {}),
       ...(anthropicEffort ? { effort: anthropicEffort } : {}),
-      ...(explicitThinking ? { thinking: explicitThinking } : {}),
+      ...(!meituanThinkingSwitch && explicitThinking ? { thinking: explicitThinking } : {}),
+      ...(input.profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
+      ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
     };
   }
 
