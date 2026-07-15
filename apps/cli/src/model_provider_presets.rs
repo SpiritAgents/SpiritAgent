@@ -220,6 +220,19 @@ pub(crate) fn model_add_moonshot_site_id_from_choice(selected: usize) -> &'stati
     if selected == 0 { "cn" } else { "intl" }
 }
 
+/// 与 `model-provider-presets.json` 中 `providerSiteSelection.tencent-tokenhub` 对齐。
+pub(crate) fn model_add_tencent_tokenhub_site_api_base(site: &str) -> Option<String> {
+    match site.trim().to_ascii_lowercase().as_str() {
+        "cn" => Some("https://tokenhub.tencentmaas.com/v1".to_string()),
+        "intl" => Some("https://tokenhub-intl.tencentmaas.com/v1".to_string()),
+        _ => None,
+    }
+}
+
+pub(crate) fn model_add_tencent_tokenhub_site_id_from_choice(selected: usize) -> &'static str {
+    if selected == 0 { "cn" } else { "intl" }
+}
+
 /// 与 `model-provider-presets.json` 中 `providerSiteSelection.minimax` 对齐。
 pub(crate) fn model_add_minimax_site_api_base(
     site: &str,
@@ -518,6 +531,9 @@ fn resolve_site_api_base(
             workspace_id,
             transport_kind,
         ),
+        crate::model_registry::ModelProvider::TencentTokenhub => {
+            model_add_tencent_tokenhub_site_api_base(site)
+        }
         _ => None,
     }
 }
@@ -645,6 +661,18 @@ mod tests {
         assert_eq!(
             super::model_add_moonshot_site_api_base("intl").as_deref(),
             Some("https://api.moonshot.ai/v1")
+        );
+    }
+
+    #[test]
+    fn tencent_tokenhub_site_api_base_resolves_cn_and_intl() {
+        assert_eq!(
+            super::model_add_tencent_tokenhub_site_api_base("cn").as_deref(),
+            Some("https://tokenhub.tencentmaas.com/v1")
+        );
+        assert_eq!(
+            super::model_add_tencent_tokenhub_site_api_base("intl").as_deref(),
+            Some("https://tokenhub-intl.tencentmaas.com/v1")
         );
     }
 

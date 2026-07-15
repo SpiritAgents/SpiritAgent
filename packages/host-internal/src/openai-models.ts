@@ -130,6 +130,10 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     return parseGoogleModelEntriesPayload(body);
   }
 
+  if (provider === 'tencent-tokenhub') {
+    return parseTencentTokenHubModelEntriesPayload(body);
+  }
+
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
   }
@@ -146,6 +150,43 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     if (typeof id === 'string' && id.trim().length > 0) {
       entries.push({ id: id.trim() });
     }
+  }
+  return entries;
+}
+
+const SKIPPED_TENCENT_TOKENHUB_MODEL_STATUSES = new Set(['pre-offline']);
+
+export function parseTencentTokenHubModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  if (typeof body !== 'object' || body === null || !('data' in body)) {
+    return [];
+  }
+  const raw = (body as { data?: unknown }).data;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const id = record.id;
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      continue;
+    }
+
+    const status = typeof record.status === 'string' ? record.status.trim().toLowerCase() : '';
+    if (status && SKIPPED_TENCENT_TOKENHUB_MODEL_STATUSES.has(status)) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id: id.trim() };
+    const displayName = readOptionalTrimmedString(record.name);
+    if (displayName) {
+      modelEntry.displayName = displayName;
+    }
+    entries.push(modelEntry);
   }
   return entries;
 }
@@ -1346,6 +1387,10 @@ export async function listProviderModels(
 
   if (options.provider === 'meituan') {
     return listMeituanModels(options);
+  }
+
+  if (options.provider === 'tencent-tokenhub') {
+    return listOpenAiCompatibleModelsForProvider(options, 'tencent-tokenhub');
   }
 
   if (options.provider === 'google') {

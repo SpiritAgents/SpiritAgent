@@ -41,6 +41,18 @@ function catalogEntryIndexKey(hintKey: string, modelId: string): string {
   return `${hintKey}::${modelId}`;
 }
 
+/** 展示名 / catalog 详情映射键：同一 model id 在不同 provider 下可各自独立。 */
+export function modelCatalogScopeEntryKey(
+  model: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase' | 'name'>,
+): string {
+  const hintKey = modelCatalogHintKey({
+    provider: model.provider,
+    transportKind: model.transportKind,
+    apiBase: model.apiBase,
+  });
+  return catalogEntryIndexKey(hintKey, model.name);
+}
+
 export function buildModelCatalogEntryIndex(
   hints: readonly DesktopModelCatalogHint[] | undefined,
 ): Map<string, PreviewModelCatalogEntry> {
@@ -110,7 +122,7 @@ export function buildModelCatalogDetailMap(
   for (const model of models) {
     const catalogEntry = findModelCatalogEntry(model, hints, entryIndex);
     if (modelHasCatalogDetail(catalogEntry)) {
-      detailByModelName.set(model.name, catalogEntry as PreviewModelCatalogEntry);
+      detailByModelName.set(modelCatalogScopeEntryKey(model), catalogEntry as PreviewModelCatalogEntry);
     }
   }
 
@@ -126,16 +138,16 @@ export function buildModelCatalogDisplayTitleMap(
   const titles = new Map<string, string>();
   for (const model of models) {
     const catalogEntry = findModelCatalogEntry(model, hints, entryIndex);
-    titles.set(model.name, modelCatalogDisplayTitle(model, catalogEntry));
+    titles.set(modelCatalogScopeEntryKey(model), modelCatalogDisplayTitle(model, catalogEntry));
   }
   return titles;
 }
 
 export function modelDisplayTitleFromMap(
-  modelName: string,
+  model: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase' | 'name'>,
   displayTitleByModelName: Map<string, string>,
 ): string {
-  return displayTitleByModelName.get(modelName) ?? modelName;
+  return displayTitleByModelName.get(modelCatalogScopeEntryKey(model)) ?? model.name;
 }
 
 export function modelCatalogDisplayTitle(

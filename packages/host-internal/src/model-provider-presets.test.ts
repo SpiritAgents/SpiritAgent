@@ -318,6 +318,23 @@ test('resolveProviderConnectApiBase prefers site apiBase for minimax', () => {
   );
 });
 
+test('resolveProviderConnectApiBase prefers site apiBase for tencent-tokenhub', () => {
+  assert.equal(providerSupportsSiteSelection('tencent-tokenhub'), true);
+  assert.equal(defaultProviderConnectSite('tencent-tokenhub'), 'cn');
+  assert.equal(
+    resolveProviderConnectApiBase('tencent-tokenhub', 'openai-compatible', { site: 'cn' }),
+    'https://tokenhub.tencentmaas.com/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('tencent-tokenhub', 'openai-compatible', { site: 'intl' }),
+    'https://tokenhub-intl.tencentmaas.com/v1',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('tencent-tokenhub', 'openai-compatible'),
+    'https://tokenhub.tencentmaas.com/v1',
+  );
+});
+
 test('resolveProviderConnectApiBase prefers site apiBase for alibaba', () => {
   assert.equal(providerSupportsSiteSelection('alibaba'), true);
   assert.equal(defaultProviderConnectSite('alibaba'), 'cn-beijing');

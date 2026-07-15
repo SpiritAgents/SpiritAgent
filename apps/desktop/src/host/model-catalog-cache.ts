@@ -112,7 +112,20 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   if (isMeituanThinkingCatalogCacheStale(entry)) {
     return undefined;
   }
+  if (isTencentTokenHubCatalogCacheStale(entry)) {
+    return undefined;
+  }
   return entry;
+}
+
+/** TokenHub 旧缓存仅含 modelIds、缺 catalog displayName 时需重拉。 */
+function isTencentTokenHubCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
+  if (entry.provider !== 'tencent-tokenhub') {
+    return false;
+  }
+  return !entry.modelCatalog?.some(
+    (item) => typeof item.displayName === 'string' && item.displayName.trim().length > 0,
+  );
 }
 
 /** Meituan LongCat 旧缓存缺 supportsThinkingSwitch 时需重拉详情。 */

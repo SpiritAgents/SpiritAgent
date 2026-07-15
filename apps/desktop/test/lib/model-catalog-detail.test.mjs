@@ -35,9 +35,20 @@ test('buildModelCatalogDisplayTitleMap uses catalog displayName for gateway mode
   ];
 
   const titles = buildModelCatalogDisplayTitleMap(models, hints);
-  assert.equal(titles.get('openai/gpt-5'), 'GPT-5');
-  assert.equal(modelDisplayTitleFromMap('openai/gpt-5', titles), 'GPT-5');
-  assert.equal(modelDisplayTitleFromMap('missing', titles), 'missing');
+  assert.equal(titles.get('vercel-ai-gateway::openai-compatible::https://gateway.example/v1::openai/gpt-5'), 'GPT-5');
+  assert.equal(modelDisplayTitleFromMap(models[0], titles), 'GPT-5');
+  assert.equal(
+    modelDisplayTitleFromMap(
+      {
+        name: 'missing',
+        apiBase: 'https://gateway.example/v1',
+        provider: 'vercel-ai-gateway',
+        transportKind: 'openai-compatible',
+      },
+      titles,
+    ),
+    'missing',
+  );
 });
 
 test('modelHasCatalogDetail is true when only displayName is present', () => {
@@ -118,7 +129,45 @@ test('buildModelCatalogDisplayTitleMap formats non-gateway model ids', () => {
   ];
 
   const titles = buildModelCatalogDisplayTitleMap(models, []);
-  assert.equal(titles.get('gpt-4o-mini'), 'Gpt 4o Mini');
+  assert.equal(
+    titles.get('openai::openai-compatible::https://api.openai.com/v1::gpt-4o-mini'),
+    'Gpt 4o Mini',
+  );
+});
+
+test('buildModelCatalogDisplayTitleMap scopes titles by provider for shared model ids', () => {
+  const hints = [
+    {
+      provider: 'tencent-tokenhub',
+      transportKind: 'openai-compatible',
+      apiBase: 'https://tokenhub.tencentmaas.com/v1',
+      modelIds: ['deepseek-v4-pro'],
+      modelCatalog: [{ id: 'deepseek-v4-pro', displayName: 'DeepSeek-V4-Pro' }],
+      fetchedAtUnixMs: 1,
+    },
+  ];
+  const models = [
+    {
+      name: 'deepseek-v4-pro',
+      apiBase: 'https://api.deepseek.com/v1',
+      provider: 'deepseek',
+      transportKind: 'openai-compatible',
+      reasoningEffort: 'default',
+      keyConfigured: true,
+    },
+    {
+      name: 'deepseek-v4-pro',
+      apiBase: 'https://tokenhub.tencentmaas.com/v1',
+      provider: 'tencent-tokenhub',
+      transportKind: 'openai-compatible',
+      reasoningEffort: 'default',
+      keyConfigured: true,
+    },
+  ];
+
+  const titles = buildModelCatalogDisplayTitleMap(models, hints);
+  assert.equal(modelDisplayTitleFromMap(models[0], titles), 'Deepseek V4 Pro');
+  assert.equal(modelDisplayTitleFromMap(models[1], titles), 'DeepSeek-V4-Pro');
 });
 
 test('modelCatalogDisplayTitle keeps raw id for gateway without catalog entry', () => {
@@ -213,7 +262,10 @@ test('findModelCatalogEntry resolves meituan catalog with pricing', () => {
   assert.equal(entry?.pricing?.outputPerTokenUsd, '0.000008');
 
   const detailMap = buildModelCatalogDetailMap([model], hints);
-  assert.equal(detailMap.get('LongCat-2.0')?.pricing?.inputPerTokenUsd, '0.000002');
+  assert.equal(
+    detailMap.get('meituan::openai-compatible::https://api.longcat.chat/openai/v1::LongCat-2.0')?.pricing?.inputPerTokenUsd,
+    '0.000002',
+  );
   const fields = buildModelCatalogDetailFields({
     contextLength: entry?.contextLength,
     pricing: entry?.pricing,

@@ -155,3 +155,53 @@ test('Meituan code-completion profile disables thinking when supportsThinkingSwi
     },
   );
 });
+
+test('TokenHub hy3 agent profile sends enabled/disabled thinking.type', () => {
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'tencent-tokenhub',
+      model: 'hy3',
+      vendorExtendedThinking: true,
+    }),
+    {
+      thinking: { type: 'enabled' },
+    },
+  );
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'tencent-tokenhub',
+      model: 'hy3',
+      vendorExtendedThinking: false,
+    }),
+    {
+      thinking: { type: 'disabled' },
+    },
+  );
+});
+
+test('TokenHub minimax-m2.5 omits thinking.type', () => {
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras({
+      llmVendor: 'tencent-tokenhub',
+      model: 'minimax-m2.5',
+      vendorExtendedThinking: false,
+    }),
+    {},
+  );
+});
+
+test('TokenHub code-completion profile disables thinking via vendorExtendedThinking', () => {
+  const config = applyCodeCompletionTransportProfile({
+    apiKey: 'k',
+    model: 'hy3',
+    llmVendor: 'tencent-tokenhub',
+  });
+
+  assert.equal((config as import('./openai-compat.js').OpenAiTransportConfig).vendorExtendedThinking, false);
+  assert.deepEqual(
+    openAiVendorChatCompletionBodyExtras(config as import('./openai-compat.js').OpenAiTransportConfig),
+    {
+      thinking: { type: 'disabled' },
+    },
+  );
+});

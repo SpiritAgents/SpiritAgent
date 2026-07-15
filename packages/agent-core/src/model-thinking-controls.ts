@@ -11,9 +11,11 @@ import {
 } from './reasoning-effort.js';
 import { parseGatewayUpstreamSlug } from './openai/gateway-code-completion-thinking.js';
 import { isMinimaxM3ThinkingSwitchModel } from './openai/gateway-minimax-thinking.js';
+import { isThinkingSwitchDisabledModel } from './openai/thinking-switch-disabled-models.js';
 import { isMoonshotThinkingSwitchModel } from './openai/moonshot-thinking-switch.js';
 import { isXiaomiResponsesReasoningEffortContext, isXiaomiThinkingSwitchEligibleModel } from './openai/gateway-xiaomi-thinking.js';
 import { isZaiThinkingSwitchEligibleModel } from './openai/gateway-zai-thinking.js';
+import { isTokenHubReasoningEffortModel } from './openai/tokenhub-reasoning-effort.js';
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
@@ -28,6 +30,7 @@ const DIRECT_THINKING_SWITCH_PROVIDERS = new Set([
   'volcengine',
   'alibaba',
   'siliconflow',
+  'tencent-tokenhub',
 ]);
 
 const GATEWAY_REASONING_EFFORT_SLUGS = new Set([
@@ -230,6 +233,9 @@ export function modelUsesReasoningEffortPrimaryControl(
 }
 
 export function modelSupportsThinkingSwitch(context?: ModelReasoningEffortContext): boolean {
+  if (isThinkingSwitchDisabledModel(context?.model ?? '')) {
+    return false;
+  }
   if (isAnthropicClaudeSwitchableThinkingModel(context)) {
     return true;
   }
@@ -293,6 +299,9 @@ export function modelShowsReasoningEffortControl(
   }
   if (modelUsesReasoningEffortPrimaryControl(context)) {
     return true;
+  }
+  if (context?.provider === 'tencent-tokenhub' && !isTokenHubReasoningEffortModel(context)) {
+    return false;
   }
   if (!modelSupportsThinkingSwitch(context)) {
     return false;

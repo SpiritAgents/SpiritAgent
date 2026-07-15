@@ -23,6 +23,7 @@ export type ModelProviderId =
   | 'google-vertex-ai'
   | 'volcengine'
   | 'meituan'
+  | 'tencent-tokenhub'
   | 'azure'
   | 'amazon-bedrock'
   | 'custom';
@@ -63,6 +64,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'stepfun',
   'volcengine',
   'meituan',
+  'tencent-tokenhub',
   'azure',
   'amazon-bedrock',
   'google-vertex-ai',
@@ -84,7 +86,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -176,6 +178,7 @@ interface ParsedModelProviderPresets {
     | 'google-vertex-ai'
     | 'volcengine'
     | 'meituan'
+    | 'tencent-tokenhub'
     | 'azure'
     | 'amazon-bedrock',
     string
@@ -370,6 +373,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     'google-vertex-ai': requireStringField(presetRaw, 'google-vertex-ai'),
     volcengine: requireStringField(presetRaw, 'volcengine'),
     meituan: requireStringField(presetRaw, 'meituan'),
+    'tencent-tokenhub': requireStringField(presetRaw, 'tencent-tokenhub'),
     azure: requireStringField(presetRaw, 'azure'),
     'amazon-bedrock': requireStringField(presetRaw, 'amazon-bedrock'),
   };
@@ -438,6 +442,7 @@ const googleBase = raw.presetApiBaseByProvider.google;
 const googleVertexAiBase = raw.presetApiBaseByProvider['google-vertex-ai'];
 const volcengineBase = raw.presetApiBaseByProvider.volcengine;
 const meituanBase = raw.presetApiBaseByProvider.meituan;
+const tencentTokenhubBase = raw.presetApiBaseByProvider['tencent-tokenhub'];
 const azureBase = raw.presetApiBaseByProvider.azure;
 const amazonBedrockBase = raw.presetApiBaseByProvider['amazon-bedrock'];
 
@@ -463,6 +468,7 @@ export const PROVIDER_PRESET_API_BASE = {
   'google-vertex-ai': googleVertexAiBase,
   volcengine: volcengineBase,
   meituan: meituanBase,
+  'tencent-tokenhub': tencentTokenhubBase,
   azure: azureBase,
   'amazon-bedrock': amazonBedrockBase,
 } as const satisfies Record<Exclude<ModelProviderId, 'custom'>, string>;
@@ -717,6 +723,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.volcengine;
     case 'meituan':
       return PROVIDER_PRESET_API_BASE.meituan;
+    case 'tencent-tokenhub':
+      return PROVIDER_PRESET_API_BASE['tencent-tokenhub'];
     case 'azure':
       return PROVIDER_PRESET_API_BASE.azure;
     case 'amazon-bedrock':
