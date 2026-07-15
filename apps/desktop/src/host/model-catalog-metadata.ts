@@ -54,6 +54,9 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (input.provider === 'moonshot-ai') {
     return true;
   }
+  if (input.provider === 'meituan') {
+    return true;
+  }
   if (input.provider === 'xiaomi') {
     return true;
   }

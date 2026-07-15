@@ -75,6 +75,7 @@
       "intl": "International"
     },
     "volcengine": "Volcengine",
+    "meituan": "Meituan",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "Custom"
