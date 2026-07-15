@@ -140,6 +140,7 @@ import { generateVideoWithRouter } from '../video-generation/router.js';
 import { getLlmFetch } from '../llm-fetch.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
+import { createTokenHubChatCompletionsAwareFetch } from '../tencent-tokenhub/tokenhub-chat-completions-fetch.js';
 import {
   buildAlibabaChatCompletionsExtraBody,
   shouldPatchAlibabaChatCompletionsExtraBody,
@@ -828,16 +829,19 @@ function createAiSdkOpenAiCompatibleProvider(
     ...(config.project ? { 'OpenAI-Project': config.project } : {}),
   };
 
+  let resolvedFetch = wrapFetchForCloudflareAiGateway(
+    transportConfig.cloudflareGatewayId,
+    fetchWrapper ?? getLlmFetch(),
+  );
+  resolvedFetch = createTokenHubChatCompletionsAwareFetch(transportConfig, resolvedFetch);
+
   return createOpenAICompatible({
     apiKey: config.apiKey,
     name: 'openai',
     baseURL: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     supportsStructuredOutputs: true,
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
-    fetch: wrapFetchForCloudflareAiGateway(
-      transportConfig.cloudflareGatewayId,
-      fetchWrapper ?? getLlmFetch(),
-    ),
+    fetch: resolvedFetch,
   });
 }
 
