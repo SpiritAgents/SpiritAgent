@@ -122,3 +122,20 @@ test('buildAnthropicProviderOptions omits thinking for unknown models', () => {
     },
   );
 });
+
+test('buildAnthropicProviderOptions omits anthropic thinking for meituan switch models', () => {
+  assert.deepEqual(
+    buildAnthropicProviderOptions({
+      model: 'LongCat-2.0',
+      llmVendor: 'meituan',
+      supportsThinkingSwitch: true,
+      effort: 'high',
+    }),
+    {
+      anthropic: {
+        effort: 'high',
+        toolStreaming: true,
+      },
+    },
+  );
+});

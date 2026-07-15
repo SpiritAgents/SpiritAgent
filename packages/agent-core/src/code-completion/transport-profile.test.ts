@@ -241,6 +241,20 @@ test('applyCodeCompletionTransportProfile disables Anthropic extended thinking',
   assert.deepEqual((result as AnthropicTransportConfig).thinking, { type: 'disabled' });
 });
 
+test('applyCodeCompletionTransportProfile disables Meituan anthropic thinking via vendorExtendedThinking', () => {
+  const input: AnthropicTransportConfig = {
+    transportKind: 'anthropic',
+    apiKey: 'k',
+    model: 'LongCat-2.0',
+    llmVendor: 'meituan',
+    supportsThinkingSwitch: true,
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as AnthropicTransportConfig).vendorExtendedThinking, false);
+  assert.equal((result as AnthropicTransportConfig).thinking, undefined);
+});
+
 test('applyCodeCompletionTransportProfile disables Bedrock reasoning on code completion', () => {
   const input: BedrockTransportConfig = {
     transportKind: 'bedrock',

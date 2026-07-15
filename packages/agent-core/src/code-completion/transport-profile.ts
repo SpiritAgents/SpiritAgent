@@ -86,6 +86,12 @@ function applyOpenAiCompatibleCodeCompletionProfile(
 function applyAnthropicCodeCompletionProfile(
   config: AnthropicTransportConfig,
 ): AnthropicTransportConfig {
+  if (config.llmVendor === 'meituan' && config.supportsThinkingSwitch === true) {
+    return {
+      ...withCodeCompletionProfile(config),
+      vendorExtendedThinking: false,
+    };
+  }
   return {
     ...withCodeCompletionProfile(config),
     thinking: { type: 'disabled' },
