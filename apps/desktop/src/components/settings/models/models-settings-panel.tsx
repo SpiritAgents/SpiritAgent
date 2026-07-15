@@ -71,7 +71,6 @@ import {
   buildModelCatalogDisplayTitleMap,
   modelDisplayTitleFromMap,
   modelSettingsRowAriaLabel,
-  providerSupportsModelCatalogDetail,
 } from "@/lib/model-catalog-detail";
 import { modelCapabilityLabel } from "@/lib/model-capability-label";
 import {
@@ -1009,8 +1008,7 @@ export function ModelsSettingsPanel({
                       {t('settings.deleteGroup')}
                     </Button>
                   </div>
-                  {providerSupportsModelCatalogDetail(group.provider)
-                  && groupModels.some((model) => catalogDetailByModelName.has(model.name)) ? (
+                  {groupModels.some((model) => catalogDetailByModelName.has(model.name)) ? (
                     <Tooltip<SettingsModelProfile>
                       getItemId={(model) => modelRefKey(settingsModelRef(model))}
                       delayDuration={300}
