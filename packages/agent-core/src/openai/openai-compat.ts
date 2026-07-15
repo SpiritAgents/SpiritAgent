@@ -29,6 +29,7 @@ export type OpenAiLlmVendor =
   | 'google'
   | 'google-vertex-ai'
   | 'volcengine'
+  | 'meituan'
   | 'azure'
   | 'custom';
 
