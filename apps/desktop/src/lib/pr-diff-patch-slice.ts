@@ -1,6 +1,8 @@
 import {
-  parseDiff,
-} from "react-diff-view";
+  displayLineNumberForChange,
+  parseUnifiedDiffFiles,
+  wrapPatchAsUnifiedDiff,
+} from "@/lib/diff-display-lines";
 
 import type { PrDiffLineRange } from "./pr-diff-selection.js";
 
@@ -8,40 +10,6 @@ type ParsedDiffChange = {
   type: "normal" | "insert" | "delete";
   content: string;
 };
-
-type DiffChangeLike = ParsedDiffChange & { lineNumber?: number; newLineNumber?: number };
-
-function asDiffChangeLike(change: unknown): DiffChangeLike {
-  return change as DiffChangeLike;
-}
-
-function normalizeDiffPath(filename: string): string {
-  return filename.replace(/\\/gu, "/").trim() || "file";
-}
-
-function wrapPatchAsUnifiedDiff(filename: string, patch: string): string {
-  const normalizedPath = normalizeDiffPath(filename);
-  const hunk = patch.trim();
-  if (!hunk) {
-    return "";
-  }
-  return [
-    `diff --git a/${normalizedPath} b/${normalizedPath}`,
-    `--- a/${normalizedPath}`,
-    `+++ b/${normalizedPath}`,
-    hunk,
-  ].join("\n");
-}
-
-function displayLineNumber(change: DiffChangeLike): number {
-  if (change.type === "delete") {
-    return typeof change.lineNumber === "number" ? change.lineNumber : -1;
-  }
-  if (change.type === "insert") {
-    return typeof change.lineNumber === "number" ? change.lineNumber : -1;
-  }
-  return typeof change.newLineNumber === "number" ? change.newLineNumber : -1;
-}
 
 function formatUnifiedChangeLine(change: ParsedDiffChange): string {
   if (change.type === "insert") {
@@ -69,17 +37,12 @@ export function extractPatchBodyForLineRange(
     return "";
   }
 
-  let hunks;
-  try {
-    hunks = parseDiff(diffText, { nearbySequences: "zip" })[0]?.hunks ?? [];
-  } catch {
-    return "";
-  }
-
+  const hunks = parseUnifiedDiffFiles(diffText)[0]?.hunks ?? [];
   const bodyLines: string[] = [];
+
   for (const hunk of hunks) {
     const selectedChanges = hunk.changes.filter((change) => {
-      const line = displayLineNumber(asDiffChangeLike(change));
+      const line = displayLineNumberForChange(change);
       return line >= lineStart && line <= lineEnd;
     });
     if (selectedChanges.length === 0) {
@@ -87,7 +50,7 @@ export function extractPatchBodyForLineRange(
     }
     bodyLines.push(hunk.content);
     for (const change of selectedChanges) {
-      bodyLines.push(formatUnifiedChangeLine(asDiffChangeLike(change)));
+      bodyLines.push(formatUnifiedChangeLine(change));
     }
   }
 
@@ -110,20 +73,15 @@ export function inferLineRangeFromPatch(
     return null;
   }
 
-  let hunks;
-  try {
-    hunks = parseDiff(diffText, { nearbySequences: "zip" })[0]?.hunks ?? [];
-  } catch {
-    return null;
-  }
-
+  const hunks = parseUnifiedDiffFiles(diffText)[0]?.hunks ?? [];
   const matchedLines: number[] = [];
   const selectedLines = needle.split("\n");
+
   for (const hunk of hunks) {
     for (const change of hunk.changes) {
-      const content = asDiffChangeLike(change).content;
+      const content = change.content;
       if (selectedLines.some((line) => line === content || line.trim() === content.trim())) {
-        matchedLines.push(displayLineNumber(asDiffChangeLike(change)));
+        matchedLines.push(displayLineNumberForChange(change));
       }
     }
   }
