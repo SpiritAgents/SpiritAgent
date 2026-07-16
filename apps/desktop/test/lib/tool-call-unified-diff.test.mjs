@@ -1,43 +1,47 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseDiff } from 'react-diff-view';
+import { buildToolCallDiffLines } from '../../src/lib/diff-display-lines.ts';
 
-import { buildToolCallUnifiedDiff } from '../../src/lib/tool-call-unified-diff.ts';
-import { refractorLanguageForPath } from '../../src/lib/refractor-tool-diff.ts';
-
-test('buildToolCallUnifiedDiff marks new file lines as insertions', () => {
-  const patch = buildToolCallUnifiedDiff('a.ts', '', 'line1\nline2\n');
-  assert.match(patch, /^diff --git a\/a.ts b\/a.ts/m);
-  assert.match(patch, /^---/m);
-  assert.match(patch, /^\+\+\+/m);
-  assert.match(patch, /^\+line1$/m);
-  assert.match(patch, /^\+line2$/m);
+test('buildToolCallDiffLines marks new file lines as insertions', () => {
+  const lines = buildToolCallDiffLines('', 'line1\nline2\n');
+  assert.deepEqual(
+    lines.map((line) => ({ kind: line.kind, content: line.content })),
+    [
+      { kind: 'insert', content: 'line1' },
+      { kind: 'insert', content: 'line2' },
+    ],
+  );
 });
 
-test('buildToolCallUnifiedDiff marks delete file lines as deletions', () => {
-  const patch = buildToolCallUnifiedDiff('x.txt', 'alpha\nbeta\n', '');
-  assert.match(patch, /^-alpha$/m);
-  assert.match(patch, /^-beta$/m);
+test('buildToolCallDiffLines marks delete file lines as deletions', () => {
+  const lines = buildToolCallDiffLines('alpha\nbeta\n', '');
+  assert.deepEqual(
+    lines.map((line) => ({ kind: line.kind, content: line.content })),
+    [
+      { kind: 'delete', content: 'alpha' },
+      { kind: 'delete', content: 'beta' },
+    ],
+  );
 });
 
-test('buildToolCallUnifiedDiff shows edit replacements', () => {
-  const patch = buildToolCallUnifiedDiff('m.ts', 'a\nb\n', 'a\nc\n');
-  assert.match(patch, /^-b$/m);
-  assert.match(patch, /^\+c$/m);
+test('buildToolCallDiffLines shows edit replacements', () => {
+  const lines = buildToolCallDiffLines('a\nb\n', 'a\nc\n');
+  assert.deepEqual(
+    lines.map((line) => ({ kind: line.kind, content: line.content })),
+    [
+      { kind: 'normal', content: 'a' },
+      { kind: 'delete', content: 'b' },
+      { kind: 'insert', content: 'c' },
+    ],
+  );
 });
 
-test('buildToolCallUnifiedDiff parses with react-diff-view', () => {
-  const patch = buildToolCallUnifiedDiff('a.ts', 'old\n', 'new\n');
-  const file = parseDiff(patch)[0];
-  assert.equal(file.type, 'modify');
-  assert.ok(file.hunks.length > 0);
-});
-
-test('refractorLanguageForPath maps aliases and plaintext', () => {
-  assert.equal(refractorLanguageForPath('typescript'), 'typescript');
-  assert.equal(refractorLanguageForPath('jsonc'), 'json');
-  assert.equal(refractorLanguageForPath('shell'), 'bash');
-  assert.equal(refractorLanguageForPath('plaintext'), undefined);
-  assert.equal(refractorLanguageForPath('unknown-lang-xyz'), undefined);
+test('buildToolCallDiffLines assigns line numbers for edits', () => {
+  const lines = buildToolCallDiffLines('old\n', 'new\n');
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0]?.kind, 'delete');
+  assert.equal(lines[0]?.oldLineNumber, 1);
+  assert.equal(lines[1]?.kind, 'insert');
+  assert.equal(lines[1]?.newLineNumber, 1);
 });
