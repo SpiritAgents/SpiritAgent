@@ -93,7 +93,7 @@ Shared logic lives in monorepo packages:
 - `packages/agent-core` — agent runtime, tool definitions, prompts
 - `packages/host-internal` — host contracts, workspace/git helpers, shared authoring builtin skills
 
-Desktop-only Git builtin skills are seeded from `apps/desktop/built-in-skills/`.
+Git sidebar actions (Commit / Push / Merge) send inline prompt text from `src/host/git-chip-prompts.ts` as a normal user turn; they do not activate skills.
 
 ## License
 
