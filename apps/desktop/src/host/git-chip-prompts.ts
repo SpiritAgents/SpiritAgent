@@ -53,3 +53,10 @@ export function buildGitChipUserTurn(action: GitChipAction, extraNote?: string):
   const note = extraNote?.trim();
   return note ? `${body}\n\n${note}` : body;
 }
+
+/** i18n keys aligned with git-changes-actions button labels. */
+export const GIT_CHIP_DISPLAY_I18N_KEYS: Record<GitChipAction, string> = {
+  commit: 'app.commit',
+  push: 'workspace.git.push',
+  merge: 'app.merge',
+};

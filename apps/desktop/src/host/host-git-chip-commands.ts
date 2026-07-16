@@ -1,7 +1,14 @@
 import i18n from '../lib/i18n-host.js';
-import { buildGitChipUserTurn } from './git-chip-prompts.js';
+import { buildGitChipUserTurn, GIT_CHIP_DISPLAY_I18N_KEYS } from './git-chip-prompts.js';
 import type { HostExtensionCommandContext } from './host-extension-commands.js';
-import type { DesktopGitSnapshot, DesktopSnapshot, SubmitGitChipRequest } from '../types.js';
+import type { DesktopGitSnapshot, DesktopSnapshot, GitChipAction, SubmitGitChipRequest } from '../types.js';
+
+/** UI bubble label; matches git-changes-actions button copy. */
+export function buildGitChipDisplayText(action: GitChipAction, extraNote?: string): string {
+  const label = i18n.t(GIT_CHIP_DISPLAY_I18N_KEYS[action]);
+  const note = extraNote?.trim();
+  return note ? `${label} ${note}` : label;
+}
 
 function assertMergeAllowed(git: DesktopGitSnapshot): void {
   if (git.isWorktreeSession !== true || !git.worktreeBranch?.trim() || !git.primaryRepoRoot?.trim()) {
@@ -43,6 +50,7 @@ export async function submitGitChipCommand(
     }
 
     const text = buildGitChipUserTurn(action, request.extraNote);
-    return ctx.submitUserTurnAfterInitialized(text, { displayText: text });
+    const displayText = buildGitChipDisplayText(action, request.extraNote);
+    return ctx.submitUserTurnAfterInitialized(text, { displayText });
   });
 }
