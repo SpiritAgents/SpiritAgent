@@ -22,7 +22,7 @@ import type { SessionRegistry } from './session-registry.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 import type { DesktopGitSnapshot, DesktopExtensionCssLayer, DesktopExtensionListItem } from '../types.js';
 import type { EphemeralSessionRecord } from './sessions.js';
-import { ensureBuiltinUserSkills } from './built-in-skills.js';
+import { ensureBuiltinAuthoringSkills } from '@spiritagent/host-internal';
 import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from './service-utils.js';
 import { spiritAgentDataDir } from './storage.js';
 import type { ExtensionWarmupTrigger } from './extension-warmup.js';
@@ -77,7 +77,7 @@ export async function ensureInitializedCommand(
   const loadedConfig = await loadConfig();
   applyLlmHttpVersionFromConfig(loadedConfig);
   applyLlmClientVersionFromApp();
-  await ensureBuiltinUserSkills(spiritAgentDataDir());
+  await ensureBuiltinAuthoringSkills(spiritAgentDataDir());
   const previousState = ctx.state();
   const previousBinding = normalizeWorkspaceBinding(
     previousState?.workspaceBinding ?? loadedConfig.workspaceBinding,

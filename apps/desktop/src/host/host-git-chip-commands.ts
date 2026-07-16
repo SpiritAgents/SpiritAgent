@@ -1,14 +1,13 @@
 import i18n from '../lib/i18n-host.js';
-import { gitChipActionToSkillName } from './built-in-skills.js';
-import { buildActiveSkillPayload, buildActivateSkillUserTurn } from './skills.js';
+import { buildGitChipUserTurn, GIT_CHIP_DISPLAY_I18N_KEYS } from './git-chip-prompts.js';
 import type { HostExtensionCommandContext } from './host-extension-commands.js';
-import type { DesktopGitSnapshot, DesktopSnapshot, SubmitGitChipRequest } from '../types.js';
+import type { DesktopGitSnapshot, DesktopSnapshot, GitChipAction, SubmitGitChipRequest } from '../types.js';
 
-/** Same visible line as composer skill slash (e.g. `/git-commit`). */
-function buildGitSkillSlashRawText(skillName: string, extraNote: string): string {
-  const base = `/${skillName}`;
-  const note = extraNote.trim();
-  return note ? `${base} ${note}` : base;
+/** UI bubble label; matches git-changes-actions button copy. */
+export function buildGitChipDisplayText(action: GitChipAction, extraNote?: string): string {
+  const label = i18n.t(GIT_CHIP_DISPLAY_I18N_KEYS[action]);
+  const note = extraNote?.trim();
+  return note ? `${label} ${note}` : label;
 }
 
 function assertMergeAllowed(git: DesktopGitSnapshot): void {
@@ -50,15 +49,8 @@ export async function submitGitChipCommand(
       }
     }
 
-    const skillName = gitChipActionToSkillName(action);
-    const skill = ctx.requireEnabledSkillEntry(skillName);
-    const payload = await buildActiveSkillPayload(skill);
-    const extraNote = request.extraNote?.trim() ?? '';
-    const rawText = buildGitSkillSlashRawText(skillName, extraNote);
-
-    return ctx.submitUserTurnAfterInitialized(buildActivateSkillUserTurn(skillName, extraNote), {
-      displayText: rawText,
-      turnSkills: [payload],
-    });
+    const text = buildGitChipUserTurn(action, request.extraNote);
+    const displayText = buildGitChipDisplayText(action, request.extraNote);
+    return ctx.submitUserTurnAfterInitialized(text, { displayText });
   });
 }
