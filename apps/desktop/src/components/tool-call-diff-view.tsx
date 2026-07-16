@@ -1,17 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 
-import {
-  Diff,
-  Hunk,
-  parseDiff,
-  type HunkTokens,
-} from 'react-diff-view';
-import type { HunkData } from 'react-diff-view';
-import 'react-diff-view/style/index.css';
-
+import { UnifiedDiffCodeView } from '@/components/unified-diff-code-view';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { tokenizeDiffHunks } from '@/lib/diff-view-tokens';
-import { buildToolCallUnifiedDiff } from '@/lib/tool-call-unified-diff';
+import { buildToolCallDiffLines } from '@/lib/diff-display-lines';
+import { useDiffLineHighlight } from '@/lib/diff-line-highlight';
 
 import '@/styles/tool-call-diff-view.css';
 
@@ -19,10 +11,7 @@ function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLE
   return root?.querySelector('[data-radix-scroll-area-viewport]') ?? null;
 }
 
-const TOKENIZE_DEBOUNCE_MS = 32;
-
-// parseDiff 无 hunks 时保持引用稳定，避免 effect 依赖每渲染变化
-const EMPTY_HUNKS: HunkData[] = [];
+const HIGHLIGHT_DEBOUNCE_MS = 32;
 
 export type ToolCallDiffViewProps = {
   relativePath: string;
@@ -33,14 +22,6 @@ export type ToolCallDiffViewProps = {
   followTail?: boolean;
 };
 
-function tokenizeHunks(
-  hunks: HunkData[],
-  original: string,
-  languageId: string,
-): HunkTokens | null {
-  return tokenizeDiffHunks(hunks, languageId, original);
-}
-
 export function ToolCallDiffView({
   relativePath,
   languageId,
@@ -50,48 +31,23 @@ export function ToolCallDiffView({
 }: ToolCallDiffViewProps) {
   const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
 
-  const parsedFile = useMemo(() => {
-    const diffText = buildToolCallUnifiedDiff(relativePath, original, modified);
-    const files = parseDiff(diffText, { nearbySequences: 'zip' });
-    return files[0];
-  }, [relativePath, original, modified]);
+  const lines = useMemo(
+    () => buildToolCallDiffLines(original, modified),
+    [original, modified],
+  );
 
-  const hunks = parsedFile?.hunks ?? EMPTY_HUNKS;
-  const diffType = parsedFile?.type ?? 'modify';
-
-  // 记录已 tokenize 的输入：mount 时 useState 初始化已同步 tokenize 一次，
-  // 首个 effect 输入未变则跳过，避免挂载即双重 tokenize + 多一次渲染。
-  const lastTokenizedRef = useRef<{
-    hunks: HunkData[];
-    original: string;
-    languageId: string;
-  } | null>(null);
-  const [tokens, setTokens] = useState<HunkTokens | null>(() => {
-    lastTokenizedRef.current = { hunks, original, languageId };
-    return tokenizeHunks(hunks, original, languageId);
-  });
+  const [displayLines, setDisplayLines] = useState(lines);
 
   useEffect(() => {
-    const last = lastTokenizedRef.current;
-    if (
-      last
-      && last.hunks === hunks
-      && last.original === original
-      && last.languageId === languageId
-    ) {
+    if (!followTail) {
+      setDisplayLines(lines);
       return undefined;
     }
-    const run = () => {
-      lastTokenizedRef.current = { hunks, original, languageId };
-      setTokens(tokenizeHunks(hunks, original, languageId));
-    };
-    if (followTail) {
-      const timer = window.setTimeout(run, TOKENIZE_DEBOUNCE_MS);
-      return () => window.clearTimeout(timer);
-    }
-    run();
-    return undefined;
-  }, [followTail, hunks, original, languageId]);
+    const timer = window.setTimeout(() => setDisplayLines(lines), HIGHLIGHT_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [followTail, lines]);
+
+  const highlightedLines = useDiffLineHighlight(displayLines, languageId);
 
   useEffect(() => {
     if (!followTail) {
@@ -102,9 +58,9 @@ export function ToolCallDiffView({
       return;
     }
     viewport.scrollTop = viewport.scrollHeight;
-  }, [followTail, modified, tokens]);
+  }, [followTail, modified, highlightedLines]);
 
-  if (hunks.length === 0) {
+  if (lines.length === 0) {
     return (
       <pre className="overflow-x-auto whitespace-pre rounded-md border border-border/20 bg-background p-2 font-mono text-xs leading-relaxed text-muted-foreground">
         {modified || original}
@@ -117,7 +73,7 @@ export function ToolCallDiffView({
       ref={scrollAreaRef}
       type="always"
       scrollbars="both"
-      className="tool-call-diff h-[min(420px,50vh)] min-h-[120px] w-full min-w-0 rounded-md border border-border/20 bg-background pr-2 [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
+      className="h-[min(420px,50vh)] min-h-[120px] w-full min-w-0 rounded-md border border-border/20 bg-background pr-2 [&>[data-radix-scroll-area-viewport]]:h-full [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
       data-tool-diff-path={relativePath}
       onWheel={(event) => {
         event.stopPropagation();
@@ -126,17 +82,11 @@ export function ToolCallDiffView({
         event.stopPropagation();
       }}
     >
-      <Diff
-        viewType="unified"
-        diffType={diffType}
-        hunks={hunks}
-        tokens={tokens}
-        gutterType="none"
-      >
-        {(renderedHunks) =>
-          renderedHunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)
-        }
-      </Diff>
+      <UnifiedDiffCodeView
+        lines={displayLines}
+        highlightedLines={highlightedLines}
+        gutter="none"
+      />
     </ScrollArea>
   );
 }
