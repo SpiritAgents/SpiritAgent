@@ -4,9 +4,11 @@ import type { DiffDisplayLine } from '@/lib/diff-display-lines';
 import { renderHighlightedCodeLines } from '@/lib/spirit-message-code-highlight';
 import { cn } from '@/lib/utils';
 
+import type { DiffLineHighlightTokens } from '@/lib/diff-line-highlight';
+
 export type UnifiedDiffCodeViewProps = {
   lines: DiffDisplayLine[];
-  highlightedLines: TokensResult['tokens'][];
+  highlightedLines: DiffLineHighlightTokens[];
   gutter?: 'none' | 'unified';
   highlightNewLine?: number | null;
   surface?: 'default' | 'card';

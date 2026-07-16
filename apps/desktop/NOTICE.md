@@ -6,7 +6,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 ## Summary
 
-- MIT: 58 package(s)
+- MIT: 57 package(s)
 - Apache-2.0: 7 package(s)
 - BSD-3-Clause: 2 package(s)
 - ISC: 2 package(s)
@@ -91,6 +91,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/electron/electron
 - **electron-builder** 26.12.1 — MIT
   - https://github.com/electron-userland/electron-builder
+- **gitdiff-parser** 0.3.1 — MIT
+  - https://github.com/ecomfe/gitdiff-parser
 - **hast-util-sanitize** 5.0.2 — MIT
   - https://github.com/syntax-tree/hast-util-sanitize
 - **i18next** 26.3.0 — MIT
@@ -117,14 +119,10 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/radix-ui/primitives
 - **react** 19.2.5 — MIT
   - https://github.com/facebook/react
-- **react-diff-view** 3.3.3 — MIT
-  - https://github.com/otakustay/react-diff-view
 - **react-dom** 19.2.5 — MIT
   - https://github.com/facebook/react
 - **react-i18next** 17.0.8 — MIT
   - https://github.com/i18next/react-i18next
-- **refractor** 3.6.0 — MIT
-  - https://github.com/wooorm/refractor
 - **rehype-raw** 7.0.0 — MIT
   - https://github.com/rehypejs/rehype-raw
 - **rehype-sanitize** 6.0.0 — MIT
@@ -1427,6 +1425,35 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+- gitdiff-parser 0.3.1
+
+```
+MIT License
+
+Copyright (c) 2020 Baidu EFE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### MIT
+
+**Used by:**
 - hast-util-sanitize 5.0.2
 - remark-gfm 4.0.1
 
@@ -1681,35 +1708,6 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- react-diff-view 3.3.3
-
-```
-MIT License
-
-Copyright (c) 2017 Gray Zhang
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### MIT
-
-**Used by:**
 - react-i18next 17.0.8
 
 ```
@@ -1739,13 +1737,13 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- refractor 3.6.0
-- remark-breaks 4.0.0
+- rehype-raw 7.0.0
+- rehype-sanitize 6.0.0
 
 ```
 (The MIT License)
 
-Copyright (c) 2017 Titus Wormer <tituswormer@gmail.com>
+Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -1770,13 +1768,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 **Used by:**
-- rehype-raw 7.0.0
-- rehype-sanitize 6.0.0
+- remark-breaks 4.0.0
 
 ```
 (The MIT License)
 
-Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>
+Copyright (c) 2017 Titus Wormer <tituswormer@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
