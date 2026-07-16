@@ -4,6 +4,7 @@ import { UnifiedDiffCodeView } from '@/components/unified-diff-code-view';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { buildToolCallDiffLines } from '@/lib/diff-display-lines';
 import { useDiffLineHighlight } from '@/lib/diff-line-highlight';
+import { resolveToolCallDisplayLines } from '@/lib/tool-call-diff-display-lines';
 
 import '@/styles/tool-call-diff-view.css';
 
@@ -36,17 +37,21 @@ export function ToolCallDiffView({
     [original, modified],
   );
 
-  const [displayLines, setDisplayLines] = useState(lines);
+  const [debouncedLines, setDebouncedLines] = useState(lines);
 
   useEffect(() => {
-    if (!followTail) {
-      setDisplayLines(lines);
+    if (lines.length === 0) {
+      setDebouncedLines([]);
       return undefined;
     }
-    const timer = window.setTimeout(() => setDisplayLines(lines), HIGHLIGHT_DEBOUNCE_MS);
+    if (!followTail) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setDebouncedLines(lines), HIGHLIGHT_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [followTail, lines]);
 
+  const displayLines = resolveToolCallDisplayLines(lines, debouncedLines, followTail);
   const highlightedLines = useDiffLineHighlight(displayLines, languageId);
 
   useEffect(() => {
