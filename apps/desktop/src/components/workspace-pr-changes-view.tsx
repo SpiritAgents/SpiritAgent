@@ -18,7 +18,7 @@ import { installContainedSelectAll } from "@/lib/contained-text-selection";
 import type { PrDiffAttachment, PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { buildPrDiffSnippetFromPatch, buildPrDiffSnippetText } from "@/lib/pr-diff-text";
 import { inferLineRangeFromPatch } from "@/lib/pr-diff-patch-slice";
-import { readDiffSelectionText, resolveChangedFileFromSelection, resolveDiffSelectionLineRange } from "@/lib/pr-diff-selection";
+import { isNodeInUnifiedDiffCode, readDiffSelectionText, resolveChangedFileFromSelection, resolveDiffSelectionLineRange } from "@/lib/pr-diff-selection";
 import {
   PR_CHANGES_TREE_MIN_WIDTH_PX,
   computePrChangesTreeMaxWidthPx,
@@ -59,16 +59,8 @@ function isDiffCodeSelection(selection: Selection, root: HTMLElement): boolean {
   if (!diffRoot) {
     return false;
   }
-  const isInDiffCode = (node: Node | null): boolean => {
-    let current: Node | null = node;
-    while (current && current !== diffRoot) {
-      if (current instanceof HTMLElement && current.classList.contains("diff-code")) {
-        return true;
-      }
-      current = current.parentNode;
-    }
-    return false;
-  };
+  const isInDiffCode = (node: Node | null): boolean =>
+    isNodeInUnifiedDiffCode(node, diffRoot);
   return isInDiffCode(anchor) && isInDiffCode(focus)
     && resolveChangedFileFromSelection(selection, root) != null;
 }
