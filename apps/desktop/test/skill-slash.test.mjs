@@ -38,6 +38,20 @@ test("buildSkillSlashSuggestions filters plan by prefix", () => {
   assert.equal(buildSkillSlashSuggestions("/ask", []).some((item) => item.kind === "plan"), false);
 });
 
+test("buildSkillSlashSuggestions matches side via btw search alias", () => {
+  const suggestions = buildSkillSlashSuggestions("/btw", []);
+  const side = suggestions.find((item) => item.kind === "side-chat");
+  assert.ok(side);
+  assert.equal(side.name, "side");
+  assert.equal(side.alias, "/side");
+});
+
+test("buildSkillSlashSuggestions filters side by btw alias prefix", () => {
+  const suggestions = buildSkillSlashSuggestions("/bt", []);
+  assert.ok(suggestions.some((item) => item.kind === "side-chat"));
+  assert.equal(buildSkillSlashSuggestions("/compact", []).some((item) => item.kind === "side-chat"), false);
+});
+
 test("currentSkillSlashQueryAtCursor matches slash token in middle of text", () => {
   const input = "hello /git";
   const query = currentSkillSlashQueryAtCursor(input, Array.from(input).length);

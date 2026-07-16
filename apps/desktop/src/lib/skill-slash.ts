@@ -32,6 +32,8 @@ export interface SkillSlashSuggestion {
   description?: string
   descriptionKey?: string
   kind: SkillSlashSuggestionKind
+  /** Extra slash prefixes for suggestion search only; not shown in menu UI. */
+  searchAliases?: readonly string[]
 }
 
 export interface SkillSlashMatch {
@@ -47,6 +49,7 @@ export const LOG_SESSION_SLASH_ALIAS = '/log-session'
 export const COMPACT_SLASH_ALIAS = '/compact'
 export const FORK_SLASH_ALIAS = '/fork'
 export const SIDE_CHAT_SLASH_ALIAS = '/side'
+export const SIDE_CHAT_SLASH_SEARCH_ALIASES = ['/btw'] as const
 export const LOOP_SLASH_ALIAS = '/loop'
 export const PLAN_SLASH_ALIAS = '/plan'
 export const ASK_SLASH_ALIAS = '/ask'
@@ -80,6 +83,7 @@ export const STATIC_SLASH_COMMANDS: readonly SkillSlashSuggestion[] = [
     name: 'side',
     descriptionKey: 'slash.sideChat',
     kind: 'side-chat',
+    searchAliases: SIDE_CHAT_SLASH_SEARCH_ALIASES,
   },
   {
     id: 'command:loop',
@@ -265,6 +269,13 @@ export function currentSkillSlashQuery(input: string | undefined): string | unde
   return currentSkillSlashQueryAtCursor(input, Array.from(trimmedRight).length)?.raw
 }
 
+function slashSuggestionMatchesQuery(suggestion: SkillSlashSuggestion, query: string): boolean {
+  if (suggestion.alias.startsWith(query)) {
+    return true
+  }
+  return suggestion.searchAliases?.some((alias) => alias.startsWith(query)) ?? false
+}
+
 export function buildSkillSlashSuggestions(
   query: string | undefined,
   skills: readonly DesktopSkillListItem[] = [],
@@ -274,7 +285,7 @@ export function buildSkillSlashSuggestions(
   }
 
   return [
-    ...STATIC_SLASH_COMMANDS.filter((suggestion) => suggestion.alias.startsWith(query)),
+    ...STATIC_SLASH_COMMANDS.filter((suggestion) => slashSuggestionMatchesQuery(suggestion, query)),
     ...skills
       .filter((skill) => skill.enabled)
       .filter((skill) => skillSlashAlias(skill.name).startsWith(query))
