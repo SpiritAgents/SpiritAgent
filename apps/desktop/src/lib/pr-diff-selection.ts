@@ -3,10 +3,26 @@ export type PrDiffLineRange = {
   lineEnd: number;
 };
 
+export const UNIFIED_DIFF_LINE_CLASS = "unified-diff-line";
+export const UNIFIED_DIFF_GUTTER_CLASS = "unified-diff-gutter";
+export const UNIFIED_DIFF_CODE_CLASS = "unified-diff-code";
+
+const ELEMENT_NODE = 1;
+
+function isHtmlElement(node: unknown): node is HTMLElement {
+  return (
+    typeof node === "object"
+    && node !== null
+    && "nodeType" in node
+    && (node as { nodeType: number }).nodeType === ELEMENT_NODE
+    && "classList" in node
+  );
+}
+
 export function findChangedFileFromNode(node: Node | null, root: HTMLElement): string | null {
   let current: Node | null = node;
   while (current && current !== root) {
-    if (current instanceof HTMLElement) {
+    if (isHtmlElement(current)) {
       const filename = current.dataset.prChangedFile;
       if (filename) {
         return filename;
@@ -26,6 +42,17 @@ export function resolveChangedFileFromSelection(selection: Selection, root: HTML
   return anchorFile;
 }
 
+export function isNodeInUnifiedDiffCode(node: Node | null, diffRoot: HTMLElement): boolean {
+  let current: Node | null = node;
+  while (current && current !== diffRoot) {
+    if (isHtmlElement(current) && current.classList.contains(UNIFIED_DIFF_CODE_CLASS)) {
+      return true;
+    }
+    current = current.parentNode;
+  }
+  return false;
+}
+
 function parseGutterLineNumber(gutter: Element): number | null {
   const text = gutter.textContent?.trim() ?? "";
   if (!text || !/^\d+$/u.test(text)) {
@@ -34,10 +61,10 @@ function parseGutterLineNumber(gutter: Element): number | null {
   return Number(text);
 }
 
-function diffLineFromNode(node: Node | null): HTMLTableRowElement | null {
+function diffLineFromNode(node: Node | null): HTMLElement | null {
   let current: Node | null = node;
   while (current) {
-    if (current instanceof HTMLTableRowElement && current.classList.contains("diff-line")) {
+    if (isHtmlElement(current) && current.classList.contains(UNIFIED_DIFF_LINE_CLASS)) {
       return current;
     }
     current = current.parentNode;
@@ -45,9 +72,9 @@ function diffLineFromNode(node: Node | null): HTMLTableRowElement | null {
   return null;
 }
 
-function collectDiffLinesForSelection(root: HTMLElement, selection: Selection): HTMLTableRowElement[] {
+function collectDiffLinesForSelection(root: HTMLElement, selection: Selection): HTMLElement[] {
   const range = selection.getRangeAt(0);
-  const rows = new Set<HTMLTableRowElement>();
+  const rows = new Set<HTMLElement>();
   for (const row of collectDiffLinesInRange(range, root)) {
     rows.add(row);
   }
@@ -62,21 +89,16 @@ function collectDiffLinesForSelection(root: HTMLElement, selection: Selection): 
   return [...rows];
 }
 
-function lineNumberFromDiffRow(row: HTMLTableRowElement): number | null {
-  const gutters = row.querySelectorAll(".diff-gutter");
-  for (const gutter of gutters) {
-    const parsed = parseGutterLineNumber(gutter);
-    if (parsed != null) {
-      return parsed;
-    }
+function lineNumberFromDiffRow(row: HTMLElement): number | null {
+  const gutter = row.querySelector(`.${UNIFIED_DIFF_GUTTER_CLASS}`);
+  if (!gutter) {
+    return null;
   }
-  return null;
+  return parseGutterLineNumber(gutter);
 }
 
-function collectDiffLinesInRange(range: Range, root: HTMLElement): HTMLTableRowElement[] {
-  const rows = Array.from(root.querySelectorAll("tr.diff-line")).filter(
-    (row): row is HTMLTableRowElement => row instanceof HTMLTableRowElement,
-  );
+function collectDiffLinesInRange(range: Range, root: HTMLElement): HTMLElement[] {
+  const rows = Array.from(root.querySelectorAll(`div.${UNIFIED_DIFF_LINE_CLASS}`)).filter(isHtmlElement);
   return rows.filter((row) => {
     try {
       return range.intersectsNode(row);
@@ -111,7 +133,7 @@ export function resolveDiffSelectionLineRange(root: HTMLElement, selection: Sele
   const startRow = diffLineFromNode(range.startContainer);
   const endRow = diffLineFromNode(range.endContainer);
   const fallback = [startRow, endRow]
-    .filter((row): row is HTMLTableRowElement => row != null)
+    .filter((row): row is HTMLElement => row != null)
     .map((row) => lineNumberFromDiffRow(row))
     .filter((value): value is number => value != null);
 
