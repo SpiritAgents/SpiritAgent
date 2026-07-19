@@ -106,9 +106,6 @@ import type {
   WriteWorkspaceTextFileRequest,
 } from "@/types";
 
-/** @deprecated Use WorkspaceToolTabKind */
-export type WorkspaceToolsTab = WorkspaceToolTabKind;
-
 export type { WorkspaceToolTab, WorkspaceToolTabKind };
 
 const TAB_KIND_META: Record<

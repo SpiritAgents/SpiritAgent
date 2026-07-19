@@ -10,12 +10,6 @@ import {
 } from "@/lib/spirit-shiki-themes";
 import { isMonacoShikiReady } from "@/lib/monaco-shiki-state";
 
-/** @deprecated 使用 SPIRIT_MONACO_SHIKI_DARK；保留别名减少调用方改动。 */
-export const SPIRIT_MONACO_DARK = SPIRIT_MONACO_SHIKI_DARK;
-
-/** @deprecated 使用 SPIRIT_MONACO_SHIKI_LIGHT；保留别名减少调用方改动。 */
-export const SPIRIT_MONACO_LIGHT = SPIRIT_MONACO_SHIKI_LIGHT;
-
 const FALLBACK_DARK_BG = "#000000";
 const FALLBACK_DARK_FG = "#fafafa";
 const FALLBACK_MUTED_FG = "#a0a0a0";
@@ -194,16 +188,6 @@ export function registerSpiritShikiPlusMonacoThemes(): void {
       ...buildSpiritLightChromeColors(lightSurface),
     },
   });
-}
-
-/** @deprecated 使用 registerSpiritShikiPlusMonacoThemes */
-export function registerSpiritDesktopDarkMonacoTheme(): void {
-  registerSpiritShikiPlusMonacoThemes();
-}
-
-/** @deprecated 使用 registerSpiritShikiPlusMonacoThemes */
-export function registerSpiritDesktopLightMonacoTheme(): void {
-  registerSpiritShikiPlusMonacoThemes();
 }
 
 export function applySpiritMonacoEditorTheme(): void {

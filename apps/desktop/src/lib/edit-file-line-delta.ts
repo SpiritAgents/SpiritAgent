@@ -297,11 +297,6 @@ export function toolLineDeltaFromRequest(
   return delta;
 }
 
-/** @deprecated Use {@link toolLineDeltaFromRequest} with `edit_file`. */
-export function editFileLineDeltaFromRequest(request: unknown): EditFileLineDelta | undefined {
-  return toolLineDeltaFromRequest('edit_file', request);
-}
-
 export function toolLineDeltaFromArgumentsJson(
   toolName: string,
   argumentsJson: string,
@@ -361,11 +356,6 @@ export function resolveToolLineDeltaForDisplay(tool: ToolBlockSnapshot): EditFil
   if (tool.phase === 'failed') {
     return undefined;
   }
-  return resolveToolLineDelta(tool);
-}
-
-/** @deprecated Use {@link resolveToolLineDelta}. */
-export function resolveEditFileLineDelta(tool: ToolBlockSnapshot): EditFileLineDelta | undefined {
   return resolveToolLineDelta(tool);
 }
 

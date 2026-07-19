@@ -21,9 +21,6 @@ export const toolCardFailedStatusClass =
 export const clickableToolCardTriggerClass =
   'transition-[filter] duration-150 hover:brightness-[1.12] focus-visible:brightness-[1.12] motion-reduce:transition-none';
 
-/** @deprecated 与 {@link toolCardFileNameDetailClass} 相同。 */
-export const toolCardMutedDetailClass = toolCardFileNameDetailClass;
-
 export function lspDiagnosticsCounts(diagnostics: LspWriteDiagnosticsUi): {
   errorCount: number;
   warningCount: number;
