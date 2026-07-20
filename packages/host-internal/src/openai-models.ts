@@ -258,7 +258,7 @@ export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedM
     const supportsReasoning = readBooleanModelTrait(record, 'supports_reasoning');
     if (supportsReasoning !== undefined) {
       modelEntry.supportsReasoning = supportsReasoning;
-      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning);
+      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning, id.trim());
     }
     const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
     if (contextLength !== undefined) {
@@ -306,7 +306,7 @@ export function parseKimiCodeModelEntriesPayload(body: unknown): ProviderListedM
     const supportsReasoning = readBooleanModelTrait(record, 'supports_reasoning');
     if (supportsReasoning !== undefined) {
       modelEntry.supportsReasoning = supportsReasoning;
-      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning);
+      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning, id.trim());
     }
     const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
     if (contextLength !== undefined) {
@@ -875,11 +875,30 @@ function attachGatewayGeminiReasoningEfforts(
   };
 }
 
+function attachGatewayMoonshotReasoningEfforts(
+  modelEntry: ProviderListedModelEntry,
+): ProviderListedModelEntry {
+  const normalizedId = modelEntry.id.trim().toLowerCase();
+  const bareId = normalizedId.includes('/')
+    ? normalizedId.slice(normalizedId.lastIndexOf('/') + 1)
+    : normalizedId;
+  if (!/^kimi-k3(?:-|$)/.test(bareId)) {
+    return modelEntry;
+  }
+
+  return {
+    ...modelEntry,
+    supportedReasoningEfforts: moonshotK3SupportedReasoningEfforts(),
+  };
+}
+
 function attachGatewayModelReasoningEfforts(
   modelEntry: ProviderListedModelEntry,
 ): ProviderListedModelEntry {
-  return attachGatewayGeminiReasoningEfforts(
-    attachGatewayAnthropicReasoningEfforts(modelEntry),
+  return attachGatewayMoonshotReasoningEfforts(
+    attachGatewayGeminiReasoningEfforts(
+      attachGatewayAnthropicReasoningEfforts(modelEntry),
+    ),
   );
 }
 
@@ -1907,8 +1926,25 @@ export function parseMeituanModelDetailPayload(body: unknown): ProviderListedMod
   return modelEntry;
 }
 
-export function moonshotSupportedReasoningEfforts(supportsReasoning: boolean): string[] {
-  return supportsReasoning ? ['minimal', 'low', 'medium', 'high'] : [];
+export function moonshotSupportedReasoningEfforts(
+  supportsReasoning: boolean,
+  modelId?: string,
+): string[] {
+  if (!supportsReasoning) {
+    return [];
+  }
+  const normalizedId = modelId?.trim().toLowerCase() ?? '';
+  const bareId = normalizedId.includes('/')
+    ? normalizedId.slice(normalizedId.lastIndexOf('/') + 1)
+    : normalizedId;
+  if (/^kimi-k3(?:-|$)/.test(bareId)) {
+    return moonshotK3SupportedReasoningEfforts();
+  }
+  return ['minimal', 'low', 'medium', 'high'];
+}
+
+export function moonshotK3SupportedReasoningEfforts(): string[] {
+  return ['low', 'high', 'max'];
 }
 
 const ANTHROPIC_REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;

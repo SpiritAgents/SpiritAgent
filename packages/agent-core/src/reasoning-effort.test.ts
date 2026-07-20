@@ -86,6 +86,56 @@ test('moonshot-ai supported efforts restrict unavailable levels', () => {
   );
 });
 
+test('moonshot kimi-k3 exposes low/high/max reasoning effort options', () => {
+  const options = modelReasoningEffortOptions({
+    provider: 'moonshot-ai',
+    model: 'kimi-k3',
+    transportKind: 'openai-compatible',
+  });
+  assert.deepEqual(
+    options.map((option) => option.value),
+    ['default', 'low', 'high', 'max'],
+  );
+  assert.deepEqual(
+    modelReasoningEffortOptions({
+      provider: 'moonshot-ai',
+      model: 'kimi-k3',
+      transportKind: 'openai-compatible',
+      supportedEfforts: ['minimal', 'low', 'medium', 'high'],
+    }).map((option) => option.value),
+    ['default', 'low', 'high', 'max'],
+  );
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext('max', {
+      provider: 'moonshot-ai',
+      model: 'kimi-k3',
+      transportKind: 'openai-compatible',
+      supportedEfforts: ['minimal', 'low', 'medium', 'high'],
+    }),
+    'max',
+  );
+  assert.equal(
+    resolveModelReasoningEffortForContext('medium', {
+      provider: 'moonshot-ai',
+      model: 'kimi-k3',
+      transportKind: 'openai-compatible',
+    }),
+    'default',
+  );
+});
+
+test('gateway moonshot kimi-k3 exposes k3 reasoning effort options', () => {
+  const options = modelReasoningEffortOptions({
+    provider: 'vercel-ai-gateway',
+    model: 'moonshotai/kimi-k3',
+    transportKind: 'openai-compatible',
+  });
+  assert.deepEqual(
+    options.map((option) => option.value),
+    ['default', 'low', 'high', 'max'],
+  );
+});
+
 test('xAI models normalize reasoning efforts to supported values', () => {
   assert.equal(
     resolveModelReasoningEffortForContext('minimal', {

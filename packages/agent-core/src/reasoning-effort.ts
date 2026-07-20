@@ -7,6 +7,7 @@ import {
 import { parseGatewayUpstreamSlug } from './openai/gateway-code-completion-thinking.js';
 import { isXiaomiResponsesReasoningEffortContext } from './openai/gateway-xiaomi-thinking.js';
 import { isTokenHubReasoningEffortModel } from './openai/tokenhub-reasoning-effort.js';
+import { isMoonshotKimiK3Model } from './openai/moonshot-thinking-switch.js';
 
 export { isXiaomiResponsesReasoningEffortContext } from './openai/gateway-xiaomi-thinking.js';
 import { isGatewayGoogleGeminiModel, isGoogleGeminiMinimalThinkingLevelModel, isGoogleGeminiThinkingLevelModel } from './openai/gateway-google-thinking.js';
@@ -59,6 +60,8 @@ export type OpenAiCompatibleReasoningEffort =
 export type DeepSeekV4ReasoningEffort = 'default' | 'high' | 'max';
 
 export type MoonshotReasoningEffort = 'default' | 'minimal' | 'low' | 'medium' | 'high';
+
+export type MoonshotK3ReasoningEffort = 'default' | 'low' | 'high' | 'max';
 
 export type XaiReasoningEffort = 'default' | 'none' | 'low' | 'medium' | 'high';
 
@@ -113,6 +116,15 @@ export const MOONSHOT_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
+];
+
+export const MOONSHOT_K3_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<MoonshotK3ReasoningEffort>
+> = [
+  { value: 'default', label: 'Default' },
+  { value: 'low', label: 'Low' },
+  { value: 'high', label: 'High' },
+  { value: 'max', label: 'Max' },
 ];
 
 export const XAI_REASONING_EFFORT_OPTIONS: ReadonlyArray<
@@ -173,6 +185,7 @@ const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
   ...OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS,
   ...DEEPSEEK_V4_REASONING_EFFORT_OPTIONS,
   ...MOONSHOT_REASONING_EFFORT_OPTIONS,
+  ...MOONSHOT_K3_REASONING_EFFORT_OPTIONS,
   ...XAI_REASONING_EFFORT_OPTIONS,
   ...GOOGLE_GEMINI_MINIMAL_REASONING_EFFORT_OPTIONS,
   ...GOOGLE_GEMINI_LEVEL_REASONING_EFFORT_OPTIONS,
@@ -194,6 +207,10 @@ const DEEPSEEK_V4_REASONING_EFFORT_VALUES = new Set<string>(
 
 const MOONSHOT_REASONING_EFFORT_VALUES = new Set<string>(
   MOONSHOT_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+);
+
+const MOONSHOT_K3_REASONING_EFFORT_VALUES = new Set<string>(
+  MOONSHOT_K3_REASONING_EFFORT_OPTIONS.map((option) => option.value),
 );
 
 const XAI_REASONING_EFFORT_VALUES = new Set<string>(
@@ -277,6 +294,11 @@ export function modelReasoningEffortOptions(
 
   if (isDeepSeekV4ReasoningEffortModel(context)) {
     return DEEPSEEK_V4_REASONING_EFFORT_OPTIONS;
+  }
+
+  if (isMoonshotK3ReasoningEffortModel(context)) {
+    // K3 档位由模型文档固定为 low/high/max；不信任目录残留的 K2.x efforts。
+    return MOONSHOT_K3_REASONING_EFFORT_OPTIONS;
   }
 
   if (isMoonshotReasoningEffortModel(context)) {
@@ -412,6 +434,20 @@ export function isMoonshotReasoningEffortModel(
   return context?.provider === 'moonshot-ai';
 }
 
+/** Moonshot kimi-k3 与 Gateway moonshotai/kimi-k3：顶层 reasoning_effort，无 thinking.type。 */
+export function isMoonshotK3ReasoningEffortModel(
+  context?: ModelReasoningEffortContext,
+): boolean {
+  if (!isMoonshotKimiK3Model(context?.model ?? '')) {
+    return false;
+  }
+  if (context?.provider === 'moonshot-ai') {
+    return true;
+  }
+  return context?.provider === 'vercel-ai-gateway'
+    && parseGatewayUpstreamSlug(context.model ?? '') === 'moonshotai';
+}
+
 export function isKimiCodeReasoningEffortModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
@@ -524,6 +560,19 @@ function resolveCompatibleModelReasoningEffort(
         return DEEPSEEK_V4_REASONING_EFFORT_VALUES.has(normalized)
           ? normalized
           : 'default';
+    }
+  }
+
+  if (isMoonshotK3ReasoningEffortModel(context)) {
+    switch (normalized) {
+      case 'none':
+      case 'minimal':
+      case 'medium':
+        return 'default';
+      case 'xhigh':
+        return 'max';
+      default:
+        return MOONSHOT_K3_REASONING_EFFORT_VALUES.has(normalized) ? normalized : 'default';
     }
   }
 

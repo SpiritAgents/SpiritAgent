@@ -28,13 +28,21 @@ function parseKimiKModelVersion(model: string): { major: number; minor: number }
   return { major, minor };
 }
 
-/** moonshot-v1-* 与 kimi-k2.7-code-*（含 highspeed）不支持 thinking.type 开关。 */
+/** 文档：https://platform.kimi.com/docs/guide/use-thinking-effort — K3 常开思考，仅用顶层 reasoning_effort。 */
+export function isMoonshotKimiK3Model(model: string): boolean {
+  return /^kimi-k3(?:-|$)/.test(normalizeMoonshotModelId(model));
+}
+
+/** moonshot-v1-*、kimi-k2.7-code-*（含 highspeed）与 kimi-k3 不支持 thinking.type 开关。 */
 export function isMoonshotThinkingSwitchExcludedModel(model: string): boolean {
   const id = normalizeMoonshotModelId(model);
   if (id.startsWith('moonshot-v1-') || id === 'moonshot-v1') {
     return true;
   }
   if (/^kimi-k2\.7-code(?:-|$)/.test(id)) {
+    return true;
+  }
+  if (isMoonshotKimiK3Model(model)) {
     return true;
   }
   return false;

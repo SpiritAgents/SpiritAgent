@@ -11,6 +11,42 @@ import {
 } from './moonshot-chat-completion-messages.js';
 import { AiSdkOpenAiCompatibleTransport } from './ai-sdk-transport.js';
 
+test('Moonshot official provider fetch sends kimi-k3 reasoning_effort without thinking', async () => {
+  const capturedBodies: Record<string, unknown>[] = [];
+  setLlmFetchTransportOverrideForTests(async (_input, init) => {
+    const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    capturedBodies.push(body);
+    return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'ok' } }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+
+  const transport = new AiSdkOpenAiCompatibleTransport();
+  try {
+    const result = await transport.startToolAgentRound(
+      {
+        apiKey: 'test-key',
+        model: 'kimi-k3',
+        baseUrl: 'https://api.moonshot.cn/v1',
+        llmVendor: 'moonshot-ai',
+        reasoningEffort: 'max',
+        workspaceRoot: process.cwd(),
+      },
+      { messages: [{ role: 'user', content: 'hi' }], steps: 0 },
+      [],
+    );
+
+    assert.equal(result.kind, 'success');
+    const chatCompletionBody = capturedBodies.at(-1);
+    assert.ok(chatCompletionBody);
+    assert.equal(chatCompletionBody.reasoning_effort, 'max');
+    assert.equal(chatCompletionBody.thinking, undefined);
+  } finally {
+    setLlmFetchTransportOverrideForTests(undefined);
+  }
+});
+
 test('Moonshot official provider fetch restores stashed video messages and reasoning_effort', async () => {
   const requestMessages = [
     {

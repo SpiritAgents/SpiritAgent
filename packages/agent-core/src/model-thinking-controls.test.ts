@@ -129,6 +129,17 @@ test('Moonshot kimi-k2.7-code uses reasoning effort primary control only', () =>
   assert.equal(modelShowsReasoningEffortControl(context, false), true);
 });
 
+test('Moonshot kimi-k3 uses reasoning effort primary control only', () => {
+  const context = {
+    provider: 'moonshot-ai' as const,
+    model: 'kimi-k3',
+    transportKind: 'openai-compatible' as const,
+  };
+  assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
+  assert.equal(modelSupportsThinkingSwitch(context), false);
+  assert.equal(modelShowsReasoningEffortControl(context, false), true);
+});
+
 test('Moonshot moonshot-v1 uses reasoning effort primary control only', () => {
   const context = {
     provider: 'moonshot-ai' as const,

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  moonshotK3SupportedReasoningEfforts,
   moonshotSupportedReasoningEfforts,
   parseAnthropicModelEntriesPayload,
   parseGoogleModelEntriesPayload,
@@ -109,6 +110,33 @@ test('parseMoonshotModelEntriesPayload maps Moonshot model trait fields', () => 
       supportsVideoInput: false,
       supportsReasoning: false,
       supportedReasoningEfforts: [],
+    },
+  ]);
+});
+
+test('moonshotSupportedReasoningEfforts uses k3 low/high/max efforts for kimi-k3', () => {
+  assert.deepEqual(moonshotSupportedReasoningEfforts(true, 'kimi-k3'), moonshotK3SupportedReasoningEfforts());
+  assert.deepEqual(
+    moonshotSupportedReasoningEfforts(true, 'moonshotai/kimi-k3'),
+    moonshotK3SupportedReasoningEfforts(),
+  );
+  assert.deepEqual(moonshotSupportedReasoningEfforts(true, 'kimi-k2.5'), ['minimal', 'low', 'medium', 'high']);
+});
+
+test('parseVercelAiGatewayModelEntriesPayload infers kimi-k3 reasoning efforts', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'moonshotai/kimi-k3',
+        type: 'language',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'moonshotai/kimi-k3',
+      supportedReasoningEfforts: moonshotK3SupportedReasoningEfforts(),
     },
   ]);
 });

@@ -4,6 +4,7 @@ import {
   routedAnthropicClaudeSupportedEfforts,
 } from '@spiritagent/agent-core';
 import type { ProviderListedModelEntry } from '@spiritagent/host-internal';
+import { moonshotK3SupportedReasoningEfforts } from '@spiritagent/host-internal/openai-models';
 
 import type {
   DesktopModelCapability,
@@ -189,10 +190,27 @@ function previewCapabilitiesFromListedEntry(
   return capabilities;
 }
 
+function isMoonshotKimiK3CatalogModelId(modelId: string): boolean {
+  const normalized = modelId.trim().toLowerCase();
+  const bareId = normalized.includes('/')
+    ? normalized.slice(normalized.lastIndexOf('/') + 1)
+    : normalized;
+  return /^kimi-k3(?:-|$)/.test(bareId);
+}
+
 function resolvePreviewSupportedReasoningEffortsForEntry(
   provider: DesktopModelProvider | undefined,
   entry: ProviderListedModelEntry,
 ): { supportedReasoningEfforts?: DesktopModelReasoningEffort[] } {
+  // 目录缓存可能仍是 K2.x 的 minimal/low/medium/high；K3 固定文档档位。
+  if (isMoonshotKimiK3CatalogModelId(entry.id)) {
+    return {
+      supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(
+        moonshotK3SupportedReasoningEfforts(),
+      ),
+    };
+  }
+
   if (entry.supportedReasoningEfforts !== undefined) {
     return {
       supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts),
