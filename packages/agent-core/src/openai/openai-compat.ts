@@ -141,12 +141,11 @@ export interface OpenAiRequestTrace extends JsonObject {
     | 'xai_sdk_chat_completions'
     | 'moonshot_sdk_chat_completions'
     | 'alibaba_sdk_chat_completions'
-    | 'gateway_sdk_chat_completions'
-    | 'openai_official_sdk_chat_completions';
+    | 'gateway_sdk_chat_completions';
   stepIndex: number;
   model: string;
   stream: boolean;
-  /** OpenAI 官方 chat.completions 请求字段。 */
+  /** OpenAI 兼容 chat.completions 请求字段。 */
   reasoning_effort?: JsonValue;
   toolChoice?: 'auto';
   messages: JsonValue[];
