@@ -666,7 +666,7 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
             }
             _ => ModelTransportKind::OpenAiCompatible,
         },
-        ModelProvider::Azure => ModelTransportKind::OpenResponses,
+        ModelProvider::Azure | ModelProvider::Openai => ModelTransportKind::OpenResponses,
         _ => ModelTransportKind::OpenAiCompatible,
     }
 }

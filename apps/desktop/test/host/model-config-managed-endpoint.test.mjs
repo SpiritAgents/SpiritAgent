@@ -39,6 +39,22 @@ test('resolveDesktopTransportKind downgrades google open-responses to openai-com
   );
 });
 
+test('resolveDesktopTransportKind forces openai to open-responses', () => {
+  assert.equal(
+    resolveDesktopTransportKind({
+      provider: 'openai',
+    }),
+    'open-responses',
+  );
+  assert.equal(
+    resolveDesktopTransportKind({
+      provider: 'openai',
+      transportKind: 'openai-compatible',
+    }),
+    'open-responses',
+  );
+});
+
 test('resolveProfileApiBase routes Bedrock mantle OpenAI models to bedrock-mantle endpoint', () => {
   assert.equal(
     resolveProfileApiBase({

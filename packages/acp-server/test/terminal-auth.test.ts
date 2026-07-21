@@ -218,8 +218,8 @@ test('resolveTransportConfig reads shared config and keyring', () => {
     const config = loadBaseConfig();
     config.spiritDataDir = dir;
     const transport = resolveTransportConfig(config);
-    assert.equal(transport.transportKind, 'openai-compatible');
-    if (transport.transportKind === 'openai-compatible') {
+    assert.equal(transport.transportKind, 'open-responses');
+    if (transport.transportKind === 'open-responses') {
       assert.equal(transport.apiKey, 'stored-key');
       assert.equal(transport.model, 'gpt-4o-mini');
     }

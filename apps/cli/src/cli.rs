@@ -594,7 +594,7 @@ fn parse_model_transport_kind(
         None => match provider {
             Some(ModelProvider::Anthropic) => ModelTransportKind::Anthropic,
             Some(ModelProvider::AmazonBedrock) => ModelTransportKind::Bedrock,
-            Some(ModelProvider::Azure) => ModelTransportKind::OpenResponses,
+            Some(ModelProvider::Azure | ModelProvider::Openai) => ModelTransportKind::OpenResponses,
             _ => ModelTransportKind::OpenAiCompatible,
         },
     };
@@ -614,6 +614,9 @@ fn parse_model_transport_kind(
         }
         (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
             Err(anyhow!("provider=openai 时 transport-kind 不能是 anthropic"))
+        }
+        (Some(ModelProvider::Openai), ModelTransportKind::OpenAiCompatible) => {
+            Err(anyhow!("provider=openai 仅支持 open-responses transport-kind"))
         }
         (Some(ModelProvider::Google), ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic) => {
             Err(anyhow!("provider=google 仅支持 openai-compatible transport-kind"))
