@@ -6,6 +6,11 @@ import { LoaderCircle } from "lucide-react";
 
 import { GitChangesActions } from "@/components/git-changes-actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  formatGitChangeStatusLabel,
+  gitChangeStatusClassName,
+  gitChangeStatusTitle,
+} from "@/lib/git-change-status-display";
 import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
 import { GIT_CHANGES_HEADER_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
@@ -34,19 +39,6 @@ export type GitChangesSectionProps = {
   style?: CSSProperties;
 };
 
-function statusCodeClass(code: string): string {
-  if (code.includes("?")) {
-    return "text-muted-foreground";
-  }
-  if (code.includes("D")) {
-    return "text-destructive";
-  }
-  if (code.includes("A")) {
-    return "text-emerald-600 dark:text-emerald-400";
-  }
-  return "text-amber-600 dark:text-amber-400";
-}
-
 function splitChangePath(path: string): { fileName: string; dirLabel: string } {
   const normalized = path.replace(/\\/g, "/");
   const slash = normalized.lastIndexOf("/");
@@ -67,7 +59,7 @@ function ChangeRow({
   onOpen?: (relativePath: string) => void;
 }) {
   const { fileName, dirLabel } = splitChangePath(change.path);
-  const statusLabel = change.code.trim() || "·";
+  const statusLabel = formatGitChangeStatusLabel(change.code);
   const clickable = Boolean(onOpen);
 
   return (
@@ -92,9 +84,9 @@ function ChangeRow({
         <span
           className={cn(
             "ml-1 shrink-0 text-[10px] font-medium tabular-nums",
-            statusCodeClass(change.code),
+            gitChangeStatusClassName(change.code),
           )}
-          title={change.code}
+          title={gitChangeStatusTitle(change.code)}
         >
           {statusLabel}
         </span>
