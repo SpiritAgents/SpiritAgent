@@ -344,17 +344,23 @@ pub struct ModelProfile {
 
 impl ModelProfile {
     pub fn transport_kind(&self) -> ModelTransportKind {
-        self.extra
+        let parsed = self
+            .extra
             .get("transportKind")
             .and_then(Value::as_str)
             .or_else(|| self.extra.get("transport_kind").and_then(Value::as_str))
-            .and_then(|value| value.parse().ok())
-            .unwrap_or_else(|| match self.provider {
-                Some(ModelProvider::Anthropic) => ModelTransportKind::Anthropic,
-                Some(ModelProvider::AmazonBedrock) => ModelTransportKind::Bedrock,
-                Some(ModelProvider::Azure) => ModelTransportKind::OpenResponses,
-                _ => ModelTransportKind::OpenAiCompatible,
-            })
+            .and_then(|value| value.parse().ok());
+        match self.provider {
+            Some(ModelProvider::Openai) => ModelTransportKind::OpenResponses,
+            Some(ModelProvider::Azure) => ModelTransportKind::OpenResponses,
+            Some(ModelProvider::Anthropic) => {
+                parsed.unwrap_or(ModelTransportKind::Anthropic)
+            }
+            Some(ModelProvider::AmazonBedrock) => {
+                parsed.unwrap_or(ModelTransportKind::Bedrock)
+            }
+            _ => parsed.unwrap_or(ModelTransportKind::OpenAiCompatible),
+        }
     }
 
     pub fn supports_image_input(&self) -> bool {
@@ -1234,7 +1240,7 @@ fn normalize_config(cfg: &mut AppConfig) {
             .unwrap_or_else(|| match provider {
                 ModelProvider::Anthropic => ModelTransportKind::Anthropic,
                 ModelProvider::AmazonBedrock => ModelTransportKind::Bedrock,
-                ModelProvider::Azure => ModelTransportKind::OpenResponses,
+                ModelProvider::Azure | ModelProvider::Openai => ModelTransportKind::OpenResponses,
                 _ => ModelTransportKind::OpenAiCompatible,
             });
         let normalized_transport = normalize_group_transport_kind(provider, transport_kind);
@@ -1260,6 +1266,9 @@ fn normalize_group_transport_kind(
     provider: ModelProvider,
     transport_kind: ModelTransportKind,
 ) -> ModelTransportKind {
+    if matches!(provider, ModelProvider::Openai | ModelProvider::Azure) {
+        return ModelTransportKind::OpenResponses;
+    }
     let mut transport_kind = transport_kind;
     if matches!(
         provider,
@@ -1920,6 +1929,50 @@ mod tests {
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         let active = parsed.active_model_profile().expect("active model");
         assert_eq!(active.transport_kind(), ModelTransportKind::OpenAiCompatible);
+    }
+
+    #[test]
+    fn openai_transport_kind_forces_open_responses() {
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [
+    {
+      "id": "openai",
+      "provider": "openai",
+      "apiBase": "https://api.openai.com/v1",
+      "models": [{ "name": "gpt-4o-mini" }]
+    }
+  ],
+  "activeModel": { "groupId": "openai", "name": "gpt-4o-mini" }
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        let active = parsed.active_model_profile().expect("active model");
+        assert_eq!(active.transport_kind(), ModelTransportKind::OpenResponses);
+
+        let legacy = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [
+    {
+      "id": "openai",
+      "provider": "openai",
+      "apiBase": "https://api.openai.com/v1",
+      "transportKind": "openai-compatible",
+      "models": [{ "name": "gpt-4o-mini" }]
+    }
+  ],
+  "activeModel": { "groupId": "openai", "name": "gpt-4o-mini" }
+}
+"#;
+        let legacy_parsed =
+            deserialize_config(legacy, Path::new("config.json")).expect("parse legacy config");
+        let legacy_active = legacy_parsed.active_model_profile().expect("active model");
+        assert_eq!(
+            legacy_active.transport_kind(),
+            ModelTransportKind::OpenResponses
+        );
     }
 
     #[test]

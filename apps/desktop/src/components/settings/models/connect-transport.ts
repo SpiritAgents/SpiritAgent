@@ -33,6 +33,7 @@ export const connectTransportOptionCatalog = {
 export function connectTransportOptionsForProvider(provider: DesktopModelProvider): ConnectTransportOption[] {
   switch (provider) {
     case "openai":
+      return [];
     case "xai":
       return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.responsesApi];
     case "google":
@@ -102,7 +103,7 @@ export function defaultConnectTransportKind(provider: DesktopModelProvider): Des
   if (provider === "amazon-bedrock") {
     return "bedrock";
   }
-  if (provider === "azure") {
+  if (provider === "azure" || provider === "openai") {
     return "open-responses";
   }
 
@@ -113,7 +114,6 @@ export function providerSupportsConnectTransportPicker(
   provider: DesktopModelProvider | null,
 ): provider is DesktopModelProvider {
   return (
-    provider === "openai" ||
     provider === "xai" ||
     provider === "minimax" ||
     provider === "deepseek" ||
@@ -147,7 +147,7 @@ export function resolveConnectTransportKindForProvider(
   if (provider === "amazon-bedrock") {
     return "bedrock";
   }
-  if (provider === "azure") {
+  if (provider === "azure" || provider === "openai") {
     return "open-responses";
   }
 

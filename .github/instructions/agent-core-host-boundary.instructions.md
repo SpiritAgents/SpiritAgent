@@ -192,7 +192,7 @@ apps 必须尽量薄，避免 CLI 与 Desktop 再次分叉。
 | `open-responses` | Responses / Open Responses | OpenAI 官方：`@ai-sdk/openai` 的 `responses`；xAI：`@ai-sdk/xai` 的 `responses`；Azure：`@ai-sdk/azure` 默认 Responses callable（`provider=azure` 固定此 transport，须 `azureResourceName` + 部署名，本版仅 API Key）；其它兼容 endpoint：`@ai-sdk/open-responses` |
 | `anthropic` | Anthropic Messages | `@ai-sdk/anthropic` |
 
-- 现有 `provider=openai` 配置默认仍为 `openai-compatible`；切换到 Responses 须由用户显式选择 `open-responses`。
+- `provider=openai` **固定** `open-responses`（存量缺省或显式 `openai-compatible` 静默升级），不提供 Chat Completions transport 选择。
 - `provider=azure` **固定** `open-responses`，不提供 transport 选择；Azure 无 `/models` 端点，部署名写入 `ModelProfile.name`。
 - OpenAI / Azure 官方 Responses 默认 `store: true`，并通过 `previous_response_id` 做增量续聊；`agent-core` 在支持远端存储的 provider 上仅发送 delta input
 - Open Responses 兼容 endpoint 是否支持服务端存储取决于用户配置的上游；未支持时 transport 回退为全量 input

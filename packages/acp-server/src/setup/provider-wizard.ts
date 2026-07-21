@@ -30,7 +30,7 @@ export function resolveSetupTransportKind(
     ) {
       return 'openai-compatible';
     }
-    if (provider === 'azure') {
+    if (provider === 'azure' || provider === 'openai') {
       return 'open-responses';
     }
     return requested;
@@ -42,7 +42,7 @@ export function resolveSetupTransportKind(
   if (provider === 'amazon-bedrock') {
     return 'bedrock';
   }
-  if (provider === 'azure') {
+  if (provider === 'azure' || provider === 'openai') {
     return 'open-responses';
   }
   return 'openai-compatible';

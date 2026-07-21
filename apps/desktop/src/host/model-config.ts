@@ -163,7 +163,7 @@ export function resolveDesktopTransportKind(
     ) {
       return 'openai-compatible';
     }
-    if (profile?.provider === 'azure') {
+    if (profile?.provider === 'azure' || profile?.provider === 'openai') {
       return 'open-responses';
     }
     return requested;
@@ -173,7 +173,7 @@ export function resolveDesktopTransportKind(
     ? 'anthropic'
     : profile?.provider === 'amazon-bedrock'
       ? 'bedrock'
-      : profile?.provider === 'azure'
+      : profile?.provider === 'azure' || profile?.provider === 'openai'
         ? 'open-responses'
         : 'openai-compatible';
 }

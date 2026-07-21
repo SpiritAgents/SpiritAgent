@@ -23,7 +23,6 @@ import {
   createXai,
 } from '@ai-sdk/xai';
 import { createGateway } from '@ai-sdk/gateway';
-import { createOpenAI } from '@ai-sdk/openai';
 import {
   createOpenAICompatible,
   type OpenAICompatibleLanguageModelChatOptions,
@@ -676,14 +675,13 @@ function buildAiSdkRequestTrace(
 ): JsonValue[] {
   const requestTrace = buildOpenAiRequestTrace(config, stepIndex, messages, tools, stream);
   if (
-    !isDeepSeekOfficialAiSdkProvider(config) &&
-    !isXaiOfficialAiSdkProvider(config) &&
-    !isMoonshotOfficialAiSdkProvider(config) &&
-    !isAlibabaOfficialAiSdkProvider(config) &&
-    !isVercelAiGatewayProvider(config) &&
-    !isOpenAiOfficialAiSdkProvider(config) &&
-    !isGoogleOfficialAiSdkProvider(config) &&
-    !isGoogleVertexOfficialAiSdkProvider(config)
+    !isDeepSeekOfficialAiSdkProvider(config)
+    && !isXaiOfficialAiSdkProvider(config)
+    && !isMoonshotOfficialAiSdkProvider(config)
+    && !isAlibabaOfficialAiSdkProvider(config)
+    && !isVercelAiGatewayProvider(config)
+    && !isGoogleOfficialAiSdkProvider(config)
+    && !isGoogleVertexOfficialAiSdkProvider(config)
   ) {
     return requestTrace;
   }
@@ -705,9 +703,7 @@ function buildAiSdkRequestTrace(
             ? 'gateway_sdk_chat_completions'
             : isGoogleVertexOfficialAiSdkProvider(config)
               ? 'google_vertex_sdk_generate_content'
-              : isGoogleOfficialAiSdkProvider(config)
-                ? 'google_sdk_generate_content'
-                : 'openai_official_sdk_chat_completions';
+              : 'google_sdk_generate_content';
 
   const alibabaExtraBody = isAlibabaOfficialAiSdkProvider(config)
     && shouldUseAlibabaChatCompletionsBuiltInTools(config)
@@ -753,8 +749,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkGatewayProvider(config)(config.model);
   }
 
-  if (isOpenAiOfficialAiSdkProvider(config)) {
-    return createAiSdkOpenAiProvider(config).chat(config.model);
+  if (config.llmVendor === 'openai') {
+    throw new Error(
+      'OpenAI official Chat Completions is no longer supported; use transportKind open-responses.',
+    );
   }
 
   if (isGoogleOfficialAiSdkProvider(config)) {
@@ -1011,16 +1009,6 @@ function createAiSdkGatewayProvider(config: OpenAiTransportConfig) {
   });
 }
 
-function createAiSdkOpenAiProvider(config: OpenAiTransportConfig) {
-  return createOpenAI({
-    apiKey: config.apiKey,
-    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
-    ...(config.organization ? { organization: config.organization } : {}),
-    ...(config.project ? { project: config.project } : {}),
-    fetch: getLlmFetch(),
-  });
-}
-
 function buildAiSdkProviderOptions(
   config: OpenAiTransportConfig,
 ): Record<string, JsonObject> {
@@ -1200,25 +1188,6 @@ function buildAiSdkProviderOptions(
 
     return {
       vertex: vertexOptions as JsonObject,
-    };
-  }
-
-  if (isOpenAiOfficialAiSdkProvider(config)) {
-    const reasoningEffort = openAiReasoningEffort(config) as
-      | OpenAICompatibleLanguageModelChatOptions['reasoningEffort']
-      | undefined;
-    const openaiOptions: JsonObject = {};
-    if (reasoningEffort !== undefined) {
-      openaiOptions.reasoningEffort = reasoningEffort;
-    }
-    if (isCodeCompletionTransportProfile(config) && reasoningEffort === 'none') {
-      openaiOptions.reasoningSummary = 'off';
-    }
-    if (Object.keys(openaiOptions).length === 0) {
-      return {};
-    }
-    return {
-      openai: openaiOptions as JsonObject,
     };
   }
 
@@ -1993,10 +1962,6 @@ function isVercelAiGatewayImageConfig(
   config: OpenAiImageGenerationConfig,
 ): boolean {
   return config.llmVendor === 'vercel-ai-gateway';
-}
-
-function isOpenAiOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'openai';
 }
 
 function isGoogleOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
