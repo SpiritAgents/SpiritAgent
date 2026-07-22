@@ -13,6 +13,7 @@ import {
   desktopMicaTintClass,
   desktopMicaTintInnerClass,
   desktopMicaWorkspaceTabSelectedClass,
+  desktopFullscreenOverlayTintClass,
 } from '../../src/lib/desktop-mica-surface.ts';
 
 test('desktopMicaTintClass returns solid background when Mica is off', () => {
@@ -29,6 +30,13 @@ test('desktopMicaTintClass returns semi-transparent tint without backdrop-blur w
 test('desktopMicaTintInnerClass is transparent under Mica', () => {
   assert.equal(desktopMicaTintInnerClass(false), 'bg-background');
   assert.equal(desktopMicaTintInnerClass(true), 'bg-transparent');
+});
+
+test('desktopFullscreenOverlayTintClass drops tint while exiting to avoid double stacking', () => {
+  assert.equal(desktopFullscreenOverlayTintClass(false, false), 'bg-background');
+  assert.equal(desktopFullscreenOverlayTintClass(true, false), DESKTOP_MICA_CONTENT_TINT_CLASS);
+  assert.equal(desktopFullscreenOverlayTintClass(false, true), 'bg-transparent');
+  assert.equal(desktopFullscreenOverlayTintClass(true, true), 'bg-transparent');
 });
 
 test('desktopMicaBrowserTintClass uses higher opacity than main content tint', () => {

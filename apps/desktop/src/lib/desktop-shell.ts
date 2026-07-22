@@ -60,10 +60,10 @@ export function applyDesktopNativeChromeToDocument(): void {
   root.classList.toggle("spirit-launch-splash-active", native);
 }
 
+export type ShellOverlayPhase = "running" | "leaving" | "gone";
+
 /** LaunchSplash 挂载/卸载时同步 html 上的启动层 class（须与 styles.css 规则一致）。 */
-export function syncLaunchSplashChromeToDocument(
-  phase: "running" | "leaving" | "gone",
-): void {
+export function syncLaunchSplashChromeToDocument(phase: ShellOverlayPhase): void {
   if (typeof document === "undefined") {
     return;
   }

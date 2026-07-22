@@ -7,8 +7,8 @@ import type { SettingsFormState } from "@/components/settings/types";
 import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
 import { Button } from "@/components/ui/button";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
-import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
-import { syncLaunchSplashChromeToDocument } from "@/lib/desktop-shell";
+import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-mica-surface";
+import { syncLaunchSplashChromeToDocument, type ShellOverlayPhase } from "@/lib/desktop-shell";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import type {
@@ -74,6 +74,8 @@ type OnboardingWizardProps = {
   onPreviewModels: (request: PreviewModelsRequest) => Promise<PreviewModelsResponse>;
   /** 点击 Done：由宿主持久化 onboardingCompleted 并关闭向导。 */
   onDone: () => void;
+  /** 挂载周期内 phase 变化（供宿主在 leaving 前勿提前露出 app-body）。 */
+  onPhaseChange?: (phase: ShellOverlayPhase) => void;
 };
 
 /** 入场 stagger 用内容块标记：index 越大出场越晚（40ms 递进）。 */
@@ -102,6 +104,7 @@ export function OnboardingWizard({
   onAddProviderModels,
   onPreviewModels,
   onDone,
+  onPhaseChange,
 }: OnboardingWizardProps) {
   const [phase, setPhase] = useState<WizardPhase>(() => (active ? "running" : "gone"));
   const [step, setStep] = useState<OnboardingStep>(1);
@@ -158,6 +161,10 @@ export function OnboardingWizard({
       syncLaunchSplashChromeToDocument("gone");
     };
   }, [phase]);
+
+  useLayoutEffect(() => {
+    onPhaseChange?.(phase);
+  }, [onPhaseChange, phase]);
 
   if (phase === "gone") {
     return null;
@@ -224,7 +231,7 @@ export function OnboardingWizard({
         // z-40：低于 Radix 浮层（Dialog/Select 等 z-50），向导内弹窗才能置顶；
         // 仍高于主 UI，保证淡出期间盖住已恢复可见的 app-body。
         "fixed inset-0 z-40 flex flex-col",
-        desktopMicaTintClass(useMicaBackdrop),
+        desktopFullscreenOverlayTintClass(useMicaBackdrop, exiting),
         "transition-opacity duration-[360ms] ease-out motion-reduce:duration-150",
         exiting ? "pointer-events-none opacity-0" : "opacity-100",
       )}

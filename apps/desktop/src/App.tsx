@@ -49,6 +49,7 @@ import {
   isElectronChrome,
   isWin32ElectronShell,
   resolveUseMicaBackdrop,
+  type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
 import { isWorkspaceReferenceDirectoryPath, normalizeWorkspaceReferenceDirectoryPath } from "@spiritagent/host-internal/workspace-file-reference-query";
@@ -208,15 +209,33 @@ export default function App() {
   });
 
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [launchSplashPhase, setLaunchSplashPhase] = useState<ShellOverlayPhase>("gone");
+  const [onboardingPhase, setOnboardingPhase] = useState<ShellOverlayPhase>("gone");
   const onboardingExpected = resolveOnboardingExpected({
     onboardingCompleted: runtime.settings.onboardingCompleted,
     dismissedThisSession: onboardingDismissed,
   });
+  const onboardingVisible = onboardingExpected;
   const launchSplashActive =
     snapshot === null &&
     !runtime.hostConnectionError.trim() &&
     !runtime.runtimeError.trim() &&
     !onboardingExpected;
+  const launchSplashOverlayUp =
+    launchSplashPhase === "running" || launchSplashPhase === "leaving";
+  const onboardingOverlayUp =
+    onboardingPhase === "running" || onboardingPhase === "leaving";
+  /** 全屏 overlay 挂载期间隐藏 app-body；Mica leaving 时改由 CSS opacity 交叉淡入。 */
+  const shellUnderlayHidden =
+    launchSplashActive ||
+    onboardingVisible ||
+    launchSplashOverlayUp ||
+    onboardingOverlayUp;
+  const appBodyMicaCrossfade =
+    useMicaBackdrop &&
+    (launchSplashPhase === "leaving" || onboardingPhase === "leaving");
+  const appBodyInvisible = shellUnderlayHidden && !appBodyMicaCrossfade;
+
   const handleOnboardingDone = useCallback(() => {
     setOnboardingDismissed(true);
     void runtime.saveSettingsPatch({ onboardingCompleted: true });
@@ -285,9 +304,13 @@ export default function App() {
         useMicaBackdrop ? "bg-transparent" : "bg-background",
       )}
     >
-      <LaunchSplash active={launchSplashActive} useMicaBackdrop={useMicaBackdrop} />
+      <LaunchSplash
+        active={launchSplashActive}
+        useMicaBackdrop={useMicaBackdrop}
+        onPhaseChange={setLaunchSplashPhase}
+      />
       <OnboardingWizard
-        active={onboardingExpected}
+        active={onboardingVisible}
         useMicaBackdrop={useMicaBackdrop}
         settings={runtime.settings}
         onSavePatch={runtime.saveSettingsPatch}
@@ -297,13 +320,13 @@ export default function App() {
         onAddProviderModels={runtime.addProviderModels}
         onPreviewModels={runtime.previewModels}
         onDone={handleOnboardingDone}
+        onPhaseChange={setOnboardingPhase}
       />
-      {/* 临时策略：Blur 开启时向导虽已有主区 tint，仍隐藏 app-body 以免下层会话/侧栏内容干扰；全局「Blur 下层不渲染」需大改，暂不做。 */}
       <div
         data-spirit-surface="app-body"
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-          onboardingExpected && "invisible",
+          appBodyInvisible && "invisible",
         )}
       >
         {!desktopTitleBarChrome ? (

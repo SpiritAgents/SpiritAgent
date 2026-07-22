@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 
 import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
-import { syncLaunchSplashChromeToDocument } from "@/lib/desktop-shell";
+import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-mica-surface";
+import { syncLaunchSplashChromeToDocument, type ShellOverlayPhase } from "@/lib/desktop-shell";
 import { cn } from "@/lib/utils";
 
 const LAUNCH_LOGO_WIDTH_PX = 72;
@@ -16,15 +17,21 @@ type Phase = "running" | "leaving" | "gone";
 type LaunchSplashProps = {
   /** 为 true 时显示加载态；变为 false 时播放退场后卸载 */
   active: boolean;
-  /** Windows Mica / macOS Vibrancy：与 app-shell 一致透出原生模糊 */
+  /** Windows Mica / macOS Vibrancy：与 app-shell / 会话主区一致，开启时用主区半透明 tint。 */
   useMicaBackdrop?: boolean;
+  /** 挂载周期内 phase 变化（供宿主在 leaving 前勿提前露出 app-body）。 */
+  onPhaseChange?: (phase: ShellOverlayPhase) => void;
 };
 
 /**
  * 首屏启动：居中品牌图标 + 骨架屏式线性闪光，宿主就绪后淡出。
- * Blur 开启时背景透明以透出系统材质；关闭时使用实色底。
+ * Blur 开启时使用与会话页相同的主区半透明 tint（`bg-background/70`）；退场时背景透明，由下方主 UI 单层 tint 与 styles.css 交叉淡入衔接。
  */
-export function LaunchSplash({ active, useMicaBackdrop = false }: LaunchSplashProps) {
+export function LaunchSplash({
+  active,
+  useMicaBackdrop = false,
+  onPhaseChange,
+}: LaunchSplashProps) {
   const [phase, setPhase] = useState<Phase>(() => (active ? "running" : "gone"));
 
   useEffect(() => {
@@ -60,6 +67,10 @@ export function LaunchSplash({ active, useMicaBackdrop = false }: LaunchSplashPr
     };
   }, [phase]);
 
+  useLayoutEffect(() => {
+    onPhaseChange?.(phase);
+  }, [onPhaseChange, phase]);
+
   if (phase === "gone") {
     return null;
   }
@@ -72,7 +83,7 @@ export function LaunchSplash({ active, useMicaBackdrop = false }: LaunchSplashPr
       aria-hidden={exiting}
       className={cn(
         "fixed inset-0 z-[200] flex items-center justify-center",
-        useMicaBackdrop ? "bg-transparent" : "bg-background",
+        desktopFullscreenOverlayTintClass(useMicaBackdrop, exiting),
         "transition-opacity duration-500 ease-out motion-reduce:duration-200",
         exiting ? "pointer-events-none opacity-0" : "opacity-100",
       )}

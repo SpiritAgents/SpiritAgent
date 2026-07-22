@@ -347,14 +347,14 @@ html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
  */
 html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-active
   [data-spirit-surface="app-shell"]
-  > :not([data-spirit-surface="launch-splash"]) {
+  > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
   opacity: 0;
   pointer-events: none;
 }
 
 html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
   [data-spirit-surface="app-shell"]
-  > :not([data-spirit-surface="launch-splash"]) {
+  > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
   opacity: 1;
   pointer-events: auto;
   transition: opacity 500ms ease-out;
@@ -363,7 +363,7 @@ html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
 @media (prefers-reduced-motion: reduce) {
   html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
     [data-spirit-surface="app-shell"]
-    > :not([data-spirit-surface="launch-splash"]) {
+    > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
     transition-duration: 200ms;
   }
 }
