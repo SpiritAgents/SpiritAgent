@@ -702,6 +702,101 @@ html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
     animation: spirit-edit-delta-enter-down 180ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  /* OOBE 步进：方向性非线性淡入淡出（出场快于入场），无模糊 */
+  @keyframes spirit-oobe-step-exit-forward {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+  }
+
+  @keyframes spirit-oobe-step-exit-backward {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+  }
+
+  @keyframes spirit-oobe-step-enter-forward {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes spirit-oobe-step-enter-backward {
+    from {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes spirit-oobe-step-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes spirit-oobe-step-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .spirit-oobe-step-exit-forward {
+    animation: spirit-oobe-step-exit-forward 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  .spirit-oobe-step-exit-backward {
+    animation: spirit-oobe-step-exit-backward 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  /* 入场按内容块（标题 → 内容 → 导航）40ms 递进 stagger；容器本身不动画避免透明度叠乘 */
+  .spirit-oobe-step-enter-forward [data-oobe-block] {
+    animation: spirit-oobe-step-enter-forward 360ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation-delay: calc(var(--spirit-oobe-block, 0) * 40ms);
+  }
+
+  .spirit-oobe-step-enter-backward [data-oobe-block] {
+    animation: spirit-oobe-step-enter-backward 360ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation-delay: calc(var(--spirit-oobe-block, 0) * 40ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spirit-oobe-step-exit-forward,
+    .spirit-oobe-step-exit-backward {
+      animation: spirit-oobe-step-fade-out 120ms ease-out both;
+    }
+
+    .spirit-oobe-step-enter-forward [data-oobe-block],
+    .spirit-oobe-step-enter-backward [data-oobe-block] {
+      animation: spirit-oobe-step-fade-in 120ms ease-out both;
+      animation-delay: 0ms;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .spirit-edit-delta-slide-up,
     .spirit-edit-delta-slide-down {
