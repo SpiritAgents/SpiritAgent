@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { OnboardingAppearanceControls } from "@/components/onboarding/onboarding-appearance-step";
@@ -18,13 +18,15 @@ import type {
   PreviewModelsResponse,
 } from "@/types";
 
-const ONBOARDING_LOGO_WIDTH_PX = 72;
+const ONBOARDING_LOGO_WIDTH_PX = 104;
 
 /** 与 styles.css `spirit-oobe-step-exit-*` 时长一致 */
 const STEP_EXIT_MS = 200;
 /** 点击 Done 后整层淡出时长 */
 const WIZARD_EXIT_MS = 360;
-/** 欢迎页 logo 停留多久后允许结束 shimmer 并显示 Continue 按钮 */
+/** 欢迎步进入后多久淡入产品名（自 Step 1 进入起算，与 snapshot 无关） */
+const WELCOME_TITLE_DELAY_MS = 500;
+/** 欢迎步进入后多久淡入 Continue（自 Step 1 进入起算，与 snapshot 无关） */
 const WELCOME_CONTINUE_DELAY_MS = 1000;
 /** 与 styles.css `.spirit-launch-shimmer-sweep` 单次 sweep 时长一致 */
 const LAUNCH_SHIMMER_CYCLE_MS = 2900;
@@ -51,11 +53,16 @@ type WizardPhase = "running" | "leaving" | "gone";
 type OnboardingStep = 1 | 2 | 3;
 type StepDirection = "forward" | "backward";
 
+type LeavingStepState = {
+  step: OnboardingStep;
+  direction: StepDirection;
+  /** Step 3 离场动画期间冻结列表底缘渐隐，避免 remount 后遮罩闪没。 */
+  connectBottomFade?: boolean;
+};
+
 type OnboardingWizardProps = {
   /** 为 true 时显示向导；变为 false 时播放淡出后卸载。 */
   active: boolean;
-  /** 宿主快照就绪；欢迎步 Continue 需等待此标志后再延迟淡入。 */
-  snapshotReady: boolean;
   /** Windows Mica / macOS Vibrancy：与 launch-splash / 会话主区一致，开启时用主区半透明 tint。 */
   useMicaBackdrop?: boolean;
   settings: SettingsFormState;
@@ -86,7 +93,6 @@ function oobeBlockProps(index: number): {
  */
 export function OnboardingWizard({
   active,
-  snapshotReady,
   useMicaBackdrop = false,
   settings,
   onSavePatch,
@@ -107,10 +113,12 @@ export function OnboardingWizard({
   /** 首次进入 Step 1 不播放入场动画；用户手动继续/返回后才启用。 */
   const [hasManualNavigation, setHasManualNavigation] = useState(false);
   /** 出场中的旧步骤；动画播完后清除。 */
-  const [leavingStep, setLeavingStep] = useState<{
-    step: OnboardingStep;
-    direction: StepDirection;
-  } | null>(null);
+  const [leavingStep, setLeavingStep] = useState<LeavingStepState | null>(null);
+  /** Step 3 列表底缘渐隐快照，供离场 remount 冻结遮罩。 */
+  const connectBottomFadeRef = useRef(false);
+  const handleConnectBottomFadeChange = useCallback((hasMoreBelow: boolean) => {
+    connectBottomFadeRef.current = hasMoreBelow;
+  }, []);
 
   useEffect(() => {
     if (active) {
@@ -162,20 +170,24 @@ export function OnboardingWizard({
     const nextDirection: StepDirection = next > step ? "forward" : "backward";
     setHasManualNavigation(true);
     setDirection(nextDirection);
-    setLeavingStep({ step, direction: nextDirection });
+    setLeavingStep({
+      step,
+      direction: nextDirection,
+      ...(step === 3 ? { connectBottomFade: connectBottomFadeRef.current } : {}),
+    });
     setStep(next);
   };
 
   const exiting = phase === "leaving";
 
-  const renderStep = (target: OnboardingStep): ReactNode => {
+  const renderStep = (
+    target: OnboardingStep,
+    options?: Pick<LeavingStepState, "connectBottomFade"> & { leaving?: boolean },
+  ): ReactNode => {
     switch (target) {
       case 1:
         return (
-          <OnboardingWelcomeStep
-            snapshotReady={snapshotReady}
-            onContinue={() => goToStep(2)}
-          />
+          <OnboardingWelcomeStep onContinue={() => goToStep(2)} />
         );
       case 2:
         return (
@@ -196,6 +208,9 @@ export function OnboardingWizard({
             onPreviewModels={onPreviewModels}
             onBack={() => goToStep(2)}
             onDone={onDone}
+            onBottomFadeChange={options?.leaving ? undefined : handleConnectBottomFadeChange}
+            pinnedBottomFade={options?.leaving ? options.connectBottomFade : undefined}
+            freezeBottomFade={options?.leaving === true}
           />
         );
     }
@@ -226,7 +241,10 @@ export function OnboardingWizard({
                 : "spirit-oobe-step-exit-backward",
             )}
           >
-            {renderStep(leavingStep.step)}
+            {renderStep(leavingStep.step, {
+              leaving: true,
+              connectBottomFade: leavingStep.connectBottomFade,
+            })}
           </div>
         ) : null}
         <div
@@ -298,54 +316,62 @@ function OnboardingStepShell({
   );
 }
 
-/** Step 1：居中品牌图标；快照就绪后再延迟 1s，待当前 sweep 自然结束后再淡入 Continue。 */
+/** Step 1：居中品牌图标与产品名；自进入 0.5s / 1s 固定时序淡入标题与 Continue；Shimmer 独立播完当前轮。 */
 function OnboardingWelcomeStep({
-  snapshotReady,
   onContinue,
 }: {
-  snapshotReady: boolean;
   onContinue: () => void;
 }) {
   const { t } = useTranslation();
+  const [titleVisible, setTitleVisible] = useState(false);
   const [continueVisible, setContinueVisible] = useState(false);
-  const [awaitingShimmerFinish, setAwaitingShimmerFinish] = useState(false);
+  const [shimmerActive, setShimmerActive] = useState(true);
   const shimmerSweepRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!snapshotReady) {
-      setContinueVisible(false);
-      setAwaitingShimmerFinish(false);
-      return;
-    }
-    const id = window.setTimeout(() => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        setContinueVisible(true);
-        return;
-      }
-      setAwaitingShimmerFinish(true);
-    }, WELCOME_CONTINUE_DELAY_MS);
-    return () => window.clearTimeout(id);
-  }, [snapshotReady]);
-
+  // Shimmer 与 Continue 解耦：挂载时按当前 sweep 相位预约自然结束，不阻塞按钮
   useLayoutEffect(() => {
-    if (!awaitingShimmerFinish) {
-      return;
-    }
     const el = shimmerSweepRef.current;
     if (!el) {
-      setAwaitingShimmerFinish(false);
-      setContinueVisible(true);
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShimmerActive(false);
       return;
     }
     const remainingMs = readShimmerRemainingMs(el);
     const id = window.setTimeout(() => {
-      setAwaitingShimmerFinish(false);
-      setContinueVisible(true);
+      setShimmerActive(false);
     }, remainingMs);
     return () => window.clearTimeout(id);
-  }, [awaitingShimmerFinish]);
+  }, []);
 
-  const shimmerActive = !continueVisible;
+  // 自 Step 1 进入起固定计时，与 snapshot 就绪无关（首次进入与 Step 2 返回体感一致）
+  useEffect(() => {
+    setTitleVisible(false);
+    setContinueVisible(false);
+
+    let titleFrame = 0;
+    let titleTimeout = 0;
+    if (WELCOME_TITLE_DELAY_MS === 0) {
+      titleFrame = requestAnimationFrame(() => setTitleVisible(true));
+    } else {
+      titleTimeout = window.setTimeout(() => setTitleVisible(true), WELCOME_TITLE_DELAY_MS);
+    }
+
+    const continueId = window.setTimeout(() => {
+      setContinueVisible(true);
+    }, WELCOME_CONTINUE_DELAY_MS);
+
+    return () => {
+      if (titleFrame !== 0) {
+        cancelAnimationFrame(titleFrame);
+      }
+      if (titleTimeout !== 0) {
+        window.clearTimeout(titleTimeout);
+      }
+      window.clearTimeout(continueId);
+    };
+  }, []);
 
   return (
     <div
@@ -372,12 +398,21 @@ function OnboardingWelcomeStep({
           />
         </div>
       </div>
+      <p
+        className={cn(
+          "mt-7 text-2xl font-normal tracking-tight text-foreground",
+          "transition-opacity duration-200 ease-out",
+          titleVisible ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        aria-hidden={!titleVisible}
+      >
+        {t("onboarding.welcomeTitle")}
+      </p>
       <Button
         type="button"
-        size="lg"
         onClick={onContinue}
         className={cn(
-          "mt-12 min-w-56",
+          "mt-8 min-w-36",
           "transition-opacity duration-200 ease-out",
           continueVisible ? "opacity-100" : "pointer-events-none opacity-0",
         )}
@@ -438,6 +473,9 @@ function OnboardingConnectStep({
   onPreviewModels,
   onBack,
   onDone,
+  onBottomFadeChange,
+  pinnedBottomFade,
+  freezeBottomFade = false,
 }: {
   modelsBusy: boolean;
   modelsPreviewBusy: boolean;
@@ -446,6 +484,11 @@ function OnboardingConnectStep({
   onPreviewModels: (request: PreviewModelsRequest) => Promise<PreviewModelsResponse>;
   onBack: () => void;
   onDone: () => void;
+  onBottomFadeChange?: (hasMoreBelow: boolean) => void;
+  /** 离场 remount 时恢复离开前的底缘渐隐可见性。 */
+  pinnedBottomFade?: boolean;
+  /** 离场动画期间冻结底缘渐隐，禁止 scroll 监听改写。 */
+  freezeBottomFade?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -468,6 +511,9 @@ function OnboardingConnectStep({
         onAddModel={onAddModel}
         onAddProviderModels={onAddProviderModels}
         onPreviewModels={onPreviewModels}
+        onBottomFadeChange={onBottomFadeChange}
+        pinnedBottomFade={pinnedBottomFade}
+        freezeBottomFade={freezeBottomFade}
       />
     </OnboardingStepShell>
   );

@@ -288,7 +288,6 @@ export default function App() {
       <LaunchSplash active={launchSplashActive} useMicaBackdrop={useMicaBackdrop} />
       <OnboardingWizard
         active={onboardingExpected}
-        snapshotReady={snapshot != null}
         useMicaBackdrop={useMicaBackdrop}
         settings={runtime.settings}
         onSavePatch={runtime.saveSettingsPatch}
