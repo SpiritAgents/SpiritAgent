@@ -91,7 +91,7 @@ export function ComposerTodoCard({ todos, sessionKey }: ComposerTodoCardProps) {
                 : "pending"
           }
         />
-        <span className="min-w-0 flex-1 truncate font-medium">{summaryTitle}</span>
+        <span className="min-w-0 flex-1 truncate font-normal">{summaryTitle}</span>
         {!expanded && todos.items.length > 1 ? (
           <span className="shrink-0 text-xs text-muted-foreground">
             {completedCount}/{todos.items.length}

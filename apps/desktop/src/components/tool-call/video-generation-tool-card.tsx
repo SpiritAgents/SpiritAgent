@@ -97,7 +97,7 @@ export function VideoGenerationToolCard({
           <div className="flex size-full items-center justify-center px-4 text-center">
             <span
               className={cn(
-                "text-sm font-medium",
+                "text-sm font-normal",
                 loading ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
               )}
             >

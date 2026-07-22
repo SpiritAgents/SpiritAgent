@@ -1,3 +1,4 @@
+import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils"
 
 function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
@@ -5,7 +6,7 @@ function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
     <kbd
       data-slot="kbd"
       className={cn(
-        "pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm bg-muted px-1 font-sans text-xs font-medium text-muted-foreground select-none in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-popover-foreground [&_svg:not([class*='size-'])]:size-3",
+        `pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm bg-muted px-1 font-sans text-xs ${FONT_WEIGHT_NORMAL} text-muted-foreground select-none in-data-[slot=tooltip-content]:bg-muted in-data-[slot=tooltip-content]:text-popover-foreground [&_svg:not([class*='size-'])]:size-3`,
         className
       )}
       {...props}

@@ -88,9 +88,10 @@
 
 .unified-diff-line.review-diff-target-line .unified-diff-gutter {
   color: var(--foreground);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .unified-diff-line.review-diff-target-line .unified-diff-code {
   box-shadow: inset 2px 0 0 color-mix(in oklab, var(--foreground) 28%, transparent);
 }
+

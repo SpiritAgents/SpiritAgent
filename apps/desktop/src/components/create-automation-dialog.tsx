@@ -31,6 +31,7 @@ import type {
   ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
+import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { emptyModelRef, isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
@@ -130,7 +131,7 @@ export function CreateAutomationDialog({
             onChange={(event) => setTitle(event.target.value)}
             placeholder={t("automations.dialogTitlePlaceholder")}
             disabled={disabled}
-            className="w-full border-0 bg-transparent text-lg font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+            className={cn("w-full border-0 bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/70", FONT_WEIGHT_MEDIUM)}
           />
           <textarea
             value={overview}

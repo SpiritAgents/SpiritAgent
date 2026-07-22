@@ -735,7 +735,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     aria-controls={`workspace-tool-panel-${item.id}`}
                     tabIndex={selected ? 0 : -1}
                     aria-label={displayTitle ? undefined : label}
-                    className="flex min-w-0 flex-1 items-center gap-1 rounded-t-md bg-transparent py-2 pl-2 pr-2 text-xs font-medium outline-none"
+                    className="flex min-w-0 flex-1 items-center gap-1 rounded-t-md bg-transparent py-2 pl-2 pr-2 text-xs font-normal outline-none"
                     onClick={() => onActiveTabIdChange(item.id)}
                   >
                     {showFilesSetiIcon ? (

@@ -83,7 +83,7 @@ function ChangeRow({
         </div>
         <span
           className={cn(
-            "ml-1 shrink-0 text-[10px] font-medium tabular-nums",
+            "ml-1 shrink-0 text-[10px] font-normal tabular-nums",
             gitChangeStatusClassName(change.code),
           )}
           title={gitChangeStatusTitle(change.code)}
@@ -134,7 +134,7 @@ export function GitChangesSection({
         className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
       >
         <div className="flex min-w-0 items-center gap-1">
-          <h3 className="m-0 shrink-0 text-xs font-medium leading-none text-foreground">
+          <h3 className="m-0 shrink-0 text-xs font-normal leading-none text-foreground">
             {t("workspace.git.changes")}
           </h3>
           {branchLabel ? (

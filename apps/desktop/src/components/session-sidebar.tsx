@@ -84,6 +84,7 @@ import { isViteDev } from "@/lib/vite-dev";
 import { cn } from "@/lib/utils";
 import { SettingsShortcutKbd } from "@/components/layout/desktop-shortcut-kbds";
 import { SESSION_TITLE_RENAME_INPUT_CLASS } from "@/lib/desktop-chrome";
+import { DESKTOP_SIDEBAR_TEXT_CLASS } from "@/lib/desktop-typography";
 import { useOptionalConversationSplit } from "@/contexts/conversation-split-context";
 import { isSidebarSessionDragBlockedTarget, setSidebarSessionDragData } from "@/lib/sidebar-session-drag";
 import { shortcutLabel, settingsShortcutLabel } from "@/lib/desktop-shell";
@@ -514,7 +515,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
               aria-hidden
             />
           </span>
-          <span className="truncate text-xs font-medium">{group.label}</span>
+          <span className={cn("truncate", DESKTOP_SIDEBAR_TEXT_CLASS)}>{group.label}</span>
         </AnimatedCollapseTrigger>
         {onNewSessionInWorkspace && workspaceRoot ? (
           <Tooltip
@@ -837,7 +838,7 @@ const SessionListRow = memo(function SessionListRow({
     >
       {leading}
       <span
-        className="min-w-0 flex-1 basis-0 truncate text-xs font-medium"
+        className={cn("min-w-0 flex-1 basis-0 truncate", DESKTOP_SIDEBAR_TEXT_CLASS)}
         title={showGitTooltip ? undefined : displayName}
       >
         {displayName}

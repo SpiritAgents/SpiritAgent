@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 function LspDiagnosticsDetailPanel({ diagnostics }: { diagnostics: LspWriteDiagnosticsUi }) {
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-medium text-muted-foreground/70">
+      <p className="text-[10px] font-normal text-muted-foreground/70">
         {diagnostics.relativePath}
       </p>
       <ul className="max-h-64 space-y-1.5 overflow-y-auto text-xs leading-relaxed">
