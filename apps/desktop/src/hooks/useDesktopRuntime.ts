@@ -462,6 +462,8 @@ export function useDesktopRuntime() {
   }, []);
   const micaSaveSeqRef = useRef(0);
   const micaInFlightRef = useRef(0);
+  /** Host API 尚未就绪时累积的设置 patch，api 可用后一次性落盘。 */
+  const pendingSettingsPatchRef = useRef<Partial<SettingsFormState>>({});
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
 
   const advanceSessionNavigationGeneration = useCallback(() => {
@@ -1341,14 +1343,6 @@ export function useDesktopRuntime() {
     }
   }, [api, hostReady, refreshSessions]);
 
-  useEffect(() => {
-    if (!api || snapshot) {
-      return;
-    }
-
-    void bootstrap();
-  }, [api, bootstrap, snapshot]);
-
   const pendingQuestions = snapshot?.conversation.pendingQuestions ?? null;
 
   useEffect(() => {
@@ -2153,10 +2147,6 @@ export function useDesktopRuntime() {
 
   const saveSettingsPatch = useCallback(
     async (patch: Partial<SettingsFormState>) => {
-      if (!api) {
-        return;
-      }
-
       const micaPatch = patch.windowsMica !== undefined;
       let micaSeq = 0;
       if (micaPatch) {
@@ -2183,10 +2173,19 @@ export function useDesktopRuntime() {
         activeModel: nextActiveModel,
         apiBase: resolvedApiBase,
       };
-      const webHostEndpointChanged =
-        s.webHostHost !== prev.webHostHost || s.webHostPort !== prev.webHostPort;
       settingsRef.current = s;
       setSettings(s);
+
+      if (!api) {
+        pendingSettingsPatchRef.current = { ...pendingSettingsPatchRef.current, ...patch };
+        if (micaPatch) {
+          micaInFlightRef.current -= 1;
+        }
+        return;
+      }
+
+      const webHostEndpointChanged =
+        s.webHostHost !== prev.webHostHost || s.webHostPort !== prev.webHostPort;
       try {
         const next = await api.updateConfig(
           updateConfigFromSettingsForm(s, {
@@ -2215,6 +2214,22 @@ export function useDesktopRuntime() {
     },
     [api, applySnapshot],
   );
+
+  useEffect(() => {
+    if (!api || snapshot) {
+      return;
+    }
+
+    void (async () => {
+      await bootstrap();
+      const pending = pendingSettingsPatchRef.current;
+      if (Object.keys(pending).length === 0) {
+        return;
+      }
+      pendingSettingsPatchRef.current = {};
+      await saveSettingsPatch(pending);
+    })();
+  }, [api, bootstrap, saveSettingsPatch, snapshot]);
 
   const setModelReasoningEffort = useCallback(
     async (modelRef: ModelRef, reasoningEffort: DesktopModelReasoningEffort) => {

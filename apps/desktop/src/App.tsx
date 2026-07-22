@@ -237,8 +237,10 @@ export default function App() {
   const appBodyInvisible = shellUnderlayHidden && !appBodyMicaCrossfade;
 
   const handleOnboardingDone = useCallback(() => {
-    setOnboardingDismissed(true);
-    void runtime.saveSettingsPatch({ onboardingCompleted: true });
+    void (async () => {
+      await runtime.saveSettingsPatch({ onboardingCompleted: true });
+      setOnboardingDismissed(true);
+    })();
   }, [runtime.saveSettingsPatch]);
 
   useLayoutEffect(() => {
