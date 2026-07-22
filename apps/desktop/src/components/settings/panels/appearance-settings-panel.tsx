@@ -29,15 +29,16 @@ export function AppearanceSettingsPanel({
   onSavePatch,
 }: Pick<
   SettingsViewProps,
-  | "theme"
-  | "onThemeChange"
   | "font"
   | "onFontChange"
   | "clickablePointerCursor"
   | "onClickablePointerCursorChange"
   | "settings"
   | "onSavePatch"
->) {
+> & {
+  theme: ThemePreference;
+  onThemeChange: (value: ThemePreference) => void;
+}) {
   const { t } = useTranslation();
   return (
     <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">

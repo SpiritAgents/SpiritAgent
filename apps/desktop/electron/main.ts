@@ -1089,6 +1089,22 @@ if (gotSpiritSingleInstanceLock) {
     event.returnValue = readBackdropBlurFromDisk();
   });
 
+  // OS 层深色偏好的追踪值。themeSource 被覆盖为 light/dark 期间，主/渲染两侧的
+  // shouldUseDarkColors / prefers-color-scheme 均跟随覆盖值而非 OS，读不到真值；
+  // 此处在覆盖发生前（themeSource 尚为 'system'）取初值，之后仅在未覆盖期间随
+  // updated 事件更新。覆盖期间 OS 变化不保证触发 updated，该场景由
+  // desktop:sync-window-frame 切回 system 后的回传校正兜底（唯一防线）。
+  let osPrefersDark = nativeTheme.shouldUseDarkColors;
+  nativeTheme.on('updated', () => {
+    if (nativeTheme.themeSource === 'system') {
+      osPrefersDark = nativeTheme.shouldUseDarkColors;
+    }
+  });
+
+  ipcMain.on('desktop:read-os-prefers-dark', (event) => {
+    event.returnValue = osPrefersDark;
+  });
+
   ipcMain.handle('desktop:get-window-fullscreen', (event) => {
     const window = BrowserWindow.fromWebContents(event.sender);
     return window?.isFullScreen() ?? false;
@@ -1102,12 +1118,17 @@ if (gotSpiritSingleInstanceLock) {
       nativeBackdropBlur?: boolean;
     }) => {
       nativeTheme.themeSource = request.nativeTheme;
+      // themeSource 被覆盖为 light/dark 期间，渲染进程的 prefers-color-scheme 跟随覆盖值而非 OS；
+      // 切回 system 时渲染端算出的 dark 是旧值。此处在 themeSource 生效后以主进程为准，并回传给渲染端校正。
+      const dark =
+        request.nativeTheme === 'system' ? nativeTheme.shouldUseDarkColors : request.dark;
       const window = BrowserWindow.fromWebContents(event.sender);
       if (!window) {
         console.warn('[spirit-desktop] desktop:sync-window-frame: no BrowserWindow for sender');
-        return;
+        return dark;
       }
-      applyNativeWindowBackdrop(window, request.dark, request.nativeBackdropBlur);
+      applyNativeWindowBackdrop(window, dark, request.nativeBackdropBlur);
+      return dark;
     },
   );
 

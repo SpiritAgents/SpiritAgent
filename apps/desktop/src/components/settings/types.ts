@@ -53,8 +53,6 @@ export type SettingsFormState = {
 export type SettingsViewProps = {
   tab: SettingsSidebarTab;
   extensionSettingsId?: string | null;
-  theme: ThemePreference;
-  onThemeChange: (value: ThemePreference) => void;
   font: FontPreference;
   onFontChange: (value: FontPreference) => void;
   clickablePointerCursor: boolean;

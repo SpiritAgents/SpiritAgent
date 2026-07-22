@@ -56,6 +56,8 @@ declare global {
     platform: NodeJS.Platform;
     /** 同步读取磁盘 `windowsMica`；首屏 snapshot 未就绪时与 Electron 窗口材质对齐。 */
     readNativeBackdropBlur(): boolean;
+    /** 同步读取主进程追踪的 OS 深色偏好；themeSource 被覆盖期间 matchMedia 会谎报，须以此为准。 */
+    readOsPrefersDark(): boolean;
     bootstrap(request?: BootstrapRequest): Promise<DesktopSnapshot>;
     rememberWorkspaceRoot(request: RememberWorkspaceRequest): Promise<DesktopSnapshot>;
     forgetWorkspace(request: ForgetWorkspaceRequest): Promise<DesktopSnapshot>;
@@ -262,11 +264,12 @@ declare global {
     readLocalVideoPreviewUrl(filePath: string): Promise<string | null>;
     readManagedVideoPreviewUrl(reference: string): Promise<string | null>;
     saveLocalImageAs(filePath: string): Promise<boolean>;
+    /** resolve 为 themeSource 生效后主进程视角的真实 dark（system 时可能与请求值不同）。 */
     syncWindowFrame(request: {
       dark: boolean;
       nativeTheme: 'system' | 'light' | 'dark';
       nativeBackdropBlur?: boolean;
-    }): Promise<void>;
+    }): Promise<boolean>;
     syncLanguage(lang: string): Promise<void>;
     /** macOS：UI 缩放后同步原生红绿灯位置，与切换按钮保持对齐。 */
     syncTrafficLightPosition(position: { x: number; y: number }): Promise<void>;

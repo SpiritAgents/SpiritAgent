@@ -7,6 +7,7 @@ import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import i18n from "@/lib/i18n";
+import type { ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import type { DesktopDreamOverviewItem, DesktopSnapshot } from "@/types";
 import { DESKTOP_LIST_ITEM_PRIMARY_CLASS, FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
@@ -34,7 +35,9 @@ export function DreamSettingsPanel({
   snapshot,
   onSavePatch,
   onListDreamsOverview,
-}: Pick<SettingsViewProps, "theme" | "settings" | "snapshot" | "onSavePatch" | "onListDreamsOverview">) {
+}: Pick<SettingsViewProps, "settings" | "snapshot" | "onSavePatch" | "onListDreamsOverview"> & {
+  theme: ThemePreference;
+}) {
   const { t } = useTranslation();
   const collector = snapshot?.dreams.collector;
   const disabled = !settings.dreamEnabled;

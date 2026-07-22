@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   readNativeBackdropBlur() {
     return ipcRenderer.sendSync('desktop:read-native-backdrop-blur') as boolean;
   },
+  readOsPrefersDark() {
+    return ipcRenderer.sendSync('desktop:read-os-prefers-dark') as boolean;
+  },
   bootstrap(request?: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'bootstrap', { request });
   },
@@ -486,7 +489,7 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
     nativeTheme: 'system' | 'light' | 'dark';
     nativeBackdropBlur?: boolean;
   }) {
-    return ipcRenderer.invoke('desktop:sync-window-frame', request);
+    return ipcRenderer.invoke('desktop:sync-window-frame', request) as Promise<boolean>;
   },
   syncLanguage(lang: string) {
     return ipcRenderer.invoke('desktop:sync-language', lang);

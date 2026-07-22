@@ -18,15 +18,13 @@ import type {
   PreviewModelsResponse,
 } from "@/types";
 
-const ONBOARDING_LOGO_WIDTH_PX = 104;
+const ONBOARDING_LOGO_WIDTH_PX = 72;
 
 /** 与 styles.css `spirit-oobe-step-exit-*` 时长一致 */
 const STEP_EXIT_MS = 200;
 /** 点击 Done 后整层淡出时长 */
 const WIZARD_EXIT_MS = 360;
-/** 欢迎步进入后多久淡入产品名（自 Step 1 进入起算，与 snapshot 无关） */
-const WELCOME_TITLE_DELAY_MS = 500;
-/** 欢迎步进入后多久淡入 Continue（自 Step 1 进入起算，与 snapshot 无关） */
+/** 欢迎页 logo 停留多久后允许结束 shimmer 并显示 Continue 按钮 */
 const WELCOME_CONTINUE_DELAY_MS = 1000;
 /** 与 styles.css `.spirit-launch-shimmer-sweep` 单次 sweep 时长一致 */
 const LAUNCH_SHIMMER_CYCLE_MS = 2900;
@@ -56,6 +54,8 @@ type StepDirection = "forward" | "backward";
 type OnboardingWizardProps = {
   /** 为 true 时显示向导；变为 false 时播放淡出后卸载。 */
   active: boolean;
+  /** 宿主快照就绪；欢迎步 Continue 需等待此标志后再延迟淡入。 */
+  snapshotReady: boolean;
   /** Windows Mica / macOS Vibrancy：与 launch-splash / 会话主区一致，开启时用主区半透明 tint。 */
   useMicaBackdrop?: boolean;
   settings: SettingsFormState;
@@ -86,6 +86,7 @@ function oobeBlockProps(index: number): {
  */
 export function OnboardingWizard({
   active,
+  snapshotReady,
   useMicaBackdrop = false,
   settings,
   onSavePatch,
@@ -171,7 +172,10 @@ export function OnboardingWizard({
     switch (target) {
       case 1:
         return (
-          <OnboardingWelcomeStep onContinue={() => goToStep(2)} />
+          <OnboardingWelcomeStep
+            snapshotReady={snapshotReady}
+            onContinue={() => goToStep(2)}
+          />
         );
       case 2:
         return (
@@ -294,62 +298,54 @@ function OnboardingStepShell({
   );
 }
 
-/** Step 1：居中品牌图标与产品名；自进入 0.5s / 1s 固定时序淡入标题与 Continue；Shimmer 独立播完当前轮。 */
+/** Step 1：居中品牌图标；快照就绪后再延迟 1s，待当前 sweep 自然结束后再淡入 Continue。 */
 function OnboardingWelcomeStep({
+  snapshotReady,
   onContinue,
 }: {
+  snapshotReady: boolean;
   onContinue: () => void;
 }) {
   const { t } = useTranslation();
-  const [titleVisible, setTitleVisible] = useState(false);
   const [continueVisible, setContinueVisible] = useState(false);
-  const [shimmerActive, setShimmerActive] = useState(true);
+  const [awaitingShimmerFinish, setAwaitingShimmerFinish] = useState(false);
   const shimmerSweepRef = useRef<HTMLDivElement>(null);
 
-  // Shimmer 与 Continue 解耦：挂载时按当前 sweep 相位预约自然结束，不阻塞按钮
-  useLayoutEffect(() => {
-    const el = shimmerSweepRef.current;
-    if (!el) {
+  useEffect(() => {
+    if (!snapshotReady) {
+      setContinueVisible(false);
+      setAwaitingShimmerFinish(false);
       return;
     }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShimmerActive(false);
+    const id = window.setTimeout(() => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        setContinueVisible(true);
+        return;
+      }
+      setAwaitingShimmerFinish(true);
+    }, WELCOME_CONTINUE_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [snapshotReady]);
+
+  useLayoutEffect(() => {
+    if (!awaitingShimmerFinish) {
+      return;
+    }
+    const el = shimmerSweepRef.current;
+    if (!el) {
+      setAwaitingShimmerFinish(false);
+      setContinueVisible(true);
       return;
     }
     const remainingMs = readShimmerRemainingMs(el);
     const id = window.setTimeout(() => {
-      setShimmerActive(false);
+      setAwaitingShimmerFinish(false);
+      setContinueVisible(true);
     }, remainingMs);
     return () => window.clearTimeout(id);
-  }, []);
+  }, [awaitingShimmerFinish]);
 
-  // 自 Step 1 进入起固定计时，与 snapshot 就绪无关（首次进入与 Step 2 返回体感一致）
-  useEffect(() => {
-    setTitleVisible(false);
-    setContinueVisible(false);
-
-    let titleFrame = 0;
-    let titleTimeout = 0;
-    if (WELCOME_TITLE_DELAY_MS === 0) {
-      titleFrame = requestAnimationFrame(() => setTitleVisible(true));
-    } else {
-      titleTimeout = window.setTimeout(() => setTitleVisible(true), WELCOME_TITLE_DELAY_MS);
-    }
-
-    const continueId = window.setTimeout(() => {
-      setContinueVisible(true);
-    }, WELCOME_CONTINUE_DELAY_MS);
-
-    return () => {
-      if (titleFrame !== 0) {
-        cancelAnimationFrame(titleFrame);
-      }
-      if (titleTimeout !== 0) {
-        window.clearTimeout(titleTimeout);
-      }
-      window.clearTimeout(continueId);
-    };
-  }, []);
+  const shimmerActive = !continueVisible;
 
   return (
     <div
@@ -376,21 +372,12 @@ function OnboardingWelcomeStep({
           />
         </div>
       </div>
-      <p
-        className={cn(
-          "mt-7 text-2xl font-normal tracking-tight text-foreground",
-          "transition-opacity duration-200 ease-out",
-          titleVisible ? "opacity-100" : "pointer-events-none opacity-0",
-        )}
-        aria-hidden={!titleVisible}
-      >
-        {t("onboarding.welcomeTitle")}
-      </p>
       <Button
         type="button"
+        size="lg"
         onClick={onContinue}
         className={cn(
-          "mt-8 min-w-36",
+          "mt-12 min-w-56",
           "transition-opacity duration-200 ease-out",
           continueVisible ? "opacity-100" : "pointer-events-none opacity-0",
         )}

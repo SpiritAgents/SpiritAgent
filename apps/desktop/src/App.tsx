@@ -40,7 +40,7 @@ import { useSettledSidebarActivePath } from "@/hooks/use-settled-sidebar-active-
 import { useFont } from "@/hooks/useFont";
 import { useMessageRewind } from "@/hooks/useMessageRewind";
 import { useSubagentViewer } from "@/hooks/useSubagentViewer";
-import { useTheme } from "@/hooks/useTheme";
+import { useThemeSetter } from "@/hooks/useTheme";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
@@ -58,12 +58,12 @@ import {
   UI_LAYOUT_SCALE_ROOT_ID,
 } from "@/lib/ui-layout-scale";
 import { resolveOnboardingExpected } from "@/lib/onboarding";
-import { resolveDark } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  // 只订阅恒定引用的 setter：App 不因 theme 值变化重渲染（隐形 app-body 全量重渲染实测 40–55ms）
+  const setTheme = useThemeSetter();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
   const uiLayoutScale = useUiLayoutScale();
@@ -85,7 +85,6 @@ export default function App() {
     isElectronShell,
     darwinElectronChrome,
     useMicaBackdrop,
-    theme,
     extensionCss: snapshot?.extensionCss,
   });
 
@@ -208,17 +207,16 @@ export default function App() {
     uiLayoutScaleApi: uiLayoutScale,
   });
 
-  const launchSplashActive =
-    snapshot === null &&
-    !runtime.hostConnectionError.trim() &&
-    !runtime.runtimeError.trim();
-
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const onboardingExpected = resolveOnboardingExpected({
     onboardingCompleted: runtime.settings.onboardingCompleted,
     dismissedThisSession: onboardingDismissed,
   });
-  const onboardingVisible = onboardingExpected && snapshot != null;
+  const launchSplashActive =
+    snapshot === null &&
+    !runtime.hostConnectionError.trim() &&
+    !runtime.runtimeError.trim() &&
+    !onboardingExpected;
   const handleOnboardingDone = useCallback(() => {
     setOnboardingDismissed(true);
     void runtime.saveSettingsPatch({ onboardingCompleted: true });
@@ -281,7 +279,6 @@ export default function App() {
     <div
       data-spirit-surface="app-shell"
       data-spirit-shell-kind={isElectronShell ? "electron" : "web"}
-      data-spirit-theme={resolveDark(theme) ? "dark" : "light"}
       data-spirit-mica={useMicaBackdrop ? "true" : "false"}
       className={cn(
         "flex h-full min-h-0 flex-col",
@@ -290,11 +287,26 @@ export default function App() {
     >
       <LaunchSplash active={launchSplashActive} useMicaBackdrop={useMicaBackdrop} />
       <OnboardingWizard
-        active={onboardingVisible}
+        active={onboardingExpected}
+        snapshotReady={snapshot != null}
         useMicaBackdrop={useMicaBackdrop}
+        settings={runtime.settings}
+        onSavePatch={runtime.saveSettingsPatch}
+        modelsBusy={runtime.busyAction === "models"}
+        modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
+        onAddModel={runtime.addModel}
+        onAddProviderModels={runtime.addProviderModels}
+        onPreviewModels={runtime.previewModels}
         onDone={handleOnboardingDone}
       />
-      <div data-spirit-surface="app-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      {/* 临时策略：Blur 开启时向导虽已有主区 tint，仍隐藏 app-body 以免下层会话/侧栏内容干扰；全局「Blur 下层不渲染」需大改，暂不做。 */}
+      <div
+        data-spirit-surface="app-body"
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          onboardingExpected && "invisible",
+        )}
+      >
         {!desktopTitleBarChrome ? (
           <div
             className={cn(
@@ -393,8 +405,6 @@ export default function App() {
               useMicaBackdrop={useMicaBackdrop}
               tab={surfaceNav.settingsTab}
               extensionSettingsId={surfaceNav.extensionSettingsId}
-              theme={theme}
-              onThemeChange={setTheme}
               font={font}
               onFontChange={setFont}
               clickablePointerCursor={clickablePointerCursor}
