@@ -1122,6 +1122,10 @@ if (gotSpiritSingleInstanceLock) {
       // 切回 system 时渲染端算出的 dark 是旧值。此处在 themeSource 生效后以主进程为准，并回传给渲染端校正。
       const dark =
         request.nativeTheme === 'system' ? nativeTheme.shouldUseDarkColors : request.dark;
+      if (request.nativeTheme === 'system') {
+        // 覆盖期间 osPrefersDark 可能滞后；切回 system 当帧刷新，供 readOsPrefersDark 与 IPC 回传一致。
+        osPrefersDark = dark;
+      }
       const window = BrowserWindow.fromWebContents(event.sender);
       if (!window) {
         console.warn('[spirit-desktop] desktop:sync-window-frame: no BrowserWindow for sender');

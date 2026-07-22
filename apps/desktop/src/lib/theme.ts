@@ -64,8 +64,16 @@ function setDocumentDark(dark: boolean): void {
   document.documentElement.dataset.spiritTheme = dark ? "dark" : "light";
 }
 
+export type ApplyThemeToDocumentOptions = {
+  /** system 主题下 IPC 回传 OS 真值后同步 resolvedDark 等 React 订阅方。 */
+  onSystemDarkResolved?: (dark: boolean) => void;
+};
+
 /** 在 `document.documentElement` 上切换 `dark` 类，与 shadcn / tw-animate 的 `.dark` 变体一致。 */
-export function applyThemeToDocument(pref: ThemePreference): void {
+export function applyThemeToDocument(
+  pref: ThemePreference,
+  options?: ApplyThemeToDocumentOptions,
+): void {
   if (typeof document === "undefined") {
     return;
   }
@@ -82,6 +90,8 @@ export function applyThemeToDocument(pref: ThemePreference): void {
       }
       setDocumentDark(realDark);
     },
+    onSystemDarkResolved:
+      pref === "system" ? options?.onSystemDarkResolved : undefined,
   });
 }
 
@@ -93,6 +103,8 @@ export function syncDesktopWindowFrame(
     nativeBackdropBlur?: boolean;
     /** 主进程在 themeSource 生效后回传真实 dark；与本地推算不一致时调用。 */
     onDarkCorrected?: (realDark: boolean) => void;
+    /** nativeTheme 为 system 时 IPC resolve 后调用，同步 resolvedDark 等。 */
+    onSystemDarkResolved?: (realDark: boolean) => void;
   },
 ): void {
   if (typeof window === "undefined" || !window.spiritDesktop) {
@@ -110,6 +122,9 @@ export function syncDesktopWindowFrame(
   void window.spiritDesktop
     .syncWindowFrame({ dark, nativeTheme, nativeBackdropBlur: options?.nativeBackdropBlur })
     .then((realDark) => {
+      if (nativeTheme === "system") {
+        options?.onSystemDarkResolved?.(realDark);
+      }
       if (realDark !== dark) {
         options?.onDarkCorrected?.(realDark);
       }

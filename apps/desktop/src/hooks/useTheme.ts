@@ -36,11 +36,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemePreference>(() => getStoredTheme());
   const [systemDark, setSystemDark] = useState(() => systemPrefersDark());
 
-  const setTheme = useCallback((next: ThemePreference) => {
-    setStoredTheme(next);
-    setThemeState(next);
-    applyThemeToDocument(next);
+  const syncSystemDarkFromMain = useCallback((dark: boolean) => {
+    setSystemDark(dark);
   }, []);
+
+  const applySystemTheme = useCallback(() => {
+    applyThemeToDocument("system", {
+      onSystemDarkResolved: syncSystemDarkFromMain,
+    });
+  }, [syncSystemDarkFromMain]);
+
+  const setTheme = useCallback(
+    (next: ThemePreference) => {
+      setStoredTheme(next);
+      setThemeState(next);
+      applyThemeToDocument(next, {
+        onSystemDarkResolved: next === "system" ? syncSystemDarkFromMain : undefined,
+      });
+    },
+    [syncSystemDarkFromMain],
+  );
 
   useEffect(() => {
     if (theme !== "system") {
@@ -49,16 +64,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onSystemChange = () => {
       setSystemDark(mq.matches);
-      applyThemeToDocument("system");
+      applySystemTheme();
     };
-    // 刚切到 system 时 themeSource 覆盖尚未撤销，mq.matches 仍是旧覆盖值；
-    // systemPrefersDark 走主进程追踪的 OS 真值。
+    // 同步读可能仍滞后于 themeSource 切换；IPC resolve 会通过 onSystemDarkResolved 校正 resolvedDark。
     setSystemDark(systemPrefersDark());
+    applySystemTheme();
     mq.addEventListener("change", onSystemChange);
     return () => {
       mq.removeEventListener("change", onSystemChange);
     };
-  }, [theme]);
+  }, [applySystemTheme, theme]);
 
   const resolvedDark =
     theme === "dark" ? true : theme === "light" ? false : systemDark;
