@@ -97,6 +97,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
       activeApiKeyConfigured: input.activeApiKeyConfigured,
       windowsMica: input.config.windowsMica !== false,
       systemNotifications: input.config.systemNotifications !== false,
+      onboardingCompleted: input.config.onboardingCompleted === true,
       agentMode: input.config.agentMode ?? 'agent',
       modelCatalogHints: buildModelCatalogHints(input.config),
       networks: {

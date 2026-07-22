@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SessionSidebarChromeProvider } from "@/contexts/session-sidebar-chrome-context";
@@ -13,6 +13,7 @@ import { CreateAutomationDialog } from "@/components/create-automation-dialog";
 import { DesktopTitleBar } from "@/components/desktop-title-bar";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
 import { LaunchSplash } from "@/components/launch-splash";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { MarketplaceView } from "@/components/marketplace-view";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { SessionSidebarShell } from "@/components/session-sidebar-shell";
@@ -56,6 +57,7 @@ import {
   applyUiLayoutScaleToDocument,
   UI_LAYOUT_SCALE_ROOT_ID,
 } from "@/lib/ui-layout-scale";
+import { resolveOnboardingExpected } from "@/lib/onboarding";
 import { resolveDark } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -211,6 +213,17 @@ export default function App() {
     !runtime.hostConnectionError.trim() &&
     !runtime.runtimeError.trim();
 
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const onboardingExpected = resolveOnboardingExpected({
+    onboardingCompleted: runtime.settings.onboardingCompleted,
+    dismissedThisSession: onboardingDismissed,
+  });
+  const onboardingVisible = onboardingExpected && snapshot != null;
+  const handleOnboardingDone = useCallback(() => {
+    setOnboardingDismissed(true);
+    void runtime.saveSettingsPatch({ onboardingCompleted: true });
+  }, [runtime.saveSettingsPatch]);
+
   useLayoutEffect(() => {
     applyUiLayoutScaleToDocument(uiLayoutScale.scale);
   }, [uiLayoutScale.scale]);
@@ -276,6 +289,11 @@ export default function App() {
       )}
     >
       <LaunchSplash active={launchSplashActive} useMicaBackdrop={useMicaBackdrop} />
+      <OnboardingWizard
+        active={onboardingVisible}
+        useMicaBackdrop={useMicaBackdrop}
+        onDone={handleOnboardingDone}
+      />
       <div data-spirit-surface="app-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {!desktopTitleBarChrome ? (
           <div

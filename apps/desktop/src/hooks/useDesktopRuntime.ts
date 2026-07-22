@@ -231,6 +231,7 @@ function updateConfigFromSettingsForm(
     apiBase: s.apiBase,
     windowsMica: s.windowsMica,
     systemNotifications: s.systemNotifications,
+    onboardingCompleted: s.onboardingCompleted,
     agentMode: s.agentMode,
     webHost,
     dreams: {
@@ -410,6 +411,7 @@ export function useDesktopRuntime() {
     apiKey: "",
     windowsMica: true,
     systemNotifications: true,
+    onboardingCompleted: false,
     agentMode: "agent",
     webHostEnabled: false,
     webHostHost: "127.0.0.1",
@@ -780,6 +782,7 @@ export function useDesktopRuntime() {
         apiKey: current.apiKey,
         windowsMica,
         systemNotifications: next.config.systemNotifications !== false,
+        onboardingCompleted: next.config.onboardingCompleted === true,
         agentMode,
         webHostEnabled: next.webHost.config.enabled,
         webHostHost: next.webHost.config.host,
