@@ -603,14 +603,26 @@ fn parse_model_transport_kind(
         (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses) => {
             Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible 或 open-responses"))
         }
-        (Some(ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::ZAi | ModelProvider::ZhipuAi | ModelProvider::Minimax | ModelProvider::Xiaomi | ModelProvider::Alibaba), ModelTransportKind::Anthropic) => {
-            Err(anyhow!("只有 provider=custom、siliconflow、kimi-code 或 anthropic 时可以选择 anthropic transport-kind"))
-        }
-        (Some(ModelProvider::Siliconflow | ModelProvider::KimiCode), ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock) => {
-            Err(anyhow!("provider=siliconflow 与 provider=kimi-code 仅支持 openai-compatible 或 anthropic transport-kind"))
-        }
-        (Some(ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::ZAi | ModelProvider::ZhipuAi | ModelProvider::Minimax | ModelProvider::Xiaomi | ModelProvider::Alibaba), ModelTransportKind::OpenResponses) => {
-            Err(anyhow!("只有 provider=openai 或 custom 时可以选择 open-responses transport-kind"))
+        (
+            Some(
+                ModelProvider::Deepseek
+                | ModelProvider::Xai
+                | ModelProvider::Minimax
+                | ModelProvider::KimiCode
+                | ModelProvider::Meituan
+                | ModelProvider::Xiaomi
+                | ModelProvider::Alibaba
+                | ModelProvider::Stepfun
+                | ModelProvider::Moonshot
+                | ModelProvider::ZAi
+                | ModelProvider::ZhipuAi,
+            ),
+            ModelTransportKind::Anthropic | ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock,
+        ) => Err(anyhow!(
+            "该 provider 仅支持 openai-compatible transport-kind"
+        )),
+        (Some(ModelProvider::Siliconflow), ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock) => {
+            Err(anyhow!("provider=siliconflow 仅支持 openai-compatible 或 anthropic transport-kind"))
         }
         (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
             Err(anyhow!("provider=openai 时 transport-kind 不能是 anthropic"))
@@ -627,9 +639,22 @@ fn parse_model_transport_kind(
         (Some(ModelProvider::Azure), transport_kind) if transport_kind != ModelTransportKind::OpenResponses => {
             Err(anyhow!("provider=azure 仅支持 open-responses transport-kind"))
         }
-        (Some(ModelProvider::Anthropic | ModelProvider::Openai | ModelProvider::Google | ModelProvider::Deepseek | ModelProvider::Moonshot | ModelProvider::ZAi | ModelProvider::ZhipuAi | ModelProvider::Minimax | ModelProvider::Xiaomi | ModelProvider::Alibaba | ModelProvider::Stepfun | ModelProvider::Xai | ModelProvider::VercelAiGateway | ModelProvider::Openrouter | ModelProvider::FireworksAi | ModelProvider::Volcengine | ModelProvider::Custom), ModelTransportKind::Bedrock) => {
-            Err(anyhow!("只有 provider=amazon-bedrock 时可以选择 bedrock transport-kind"))
-        }
+        (
+            Some(
+                ModelProvider::Anthropic
+                | ModelProvider::Openai
+                | ModelProvider::Google
+                | ModelProvider::VercelAiGateway
+                | ModelProvider::Openrouter
+                | ModelProvider::FireworksAi
+                | ModelProvider::Volcengine
+                | ModelProvider::Custom
+                | ModelProvider::Siliconflow
+                | ModelProvider::CloudflareAiGateway
+                | ModelProvider::TencentTokenhub,
+            ),
+            ModelTransportKind::Bedrock,
+        ) => Err(anyhow!("只有 provider=amazon-bedrock 时可以选择 bedrock transport-kind")),
         (None, ModelTransportKind::Anthropic) => {
             Err(anyhow!("transport-kind=anthropic 需要同时指定 --provider custom 或 --provider anthropic"))
         }
