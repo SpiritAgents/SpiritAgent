@@ -164,6 +164,7 @@ import {
 import { shouldUseMoonshotFormulaWebSearch } from '../moonshot/formula/formula-eligibility.js';
 import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from '../moonshot/formula/moonshot-formula-tool-loop.js';
 import { buildStepfunWebSearchStreamingPreviewArgumentsJson } from '../stepfun/stepfun-web-search-tool-loop.js';
+import { buildKimiCodeWebSearchStreamingPreviewArgumentsJson } from '../kimi-code/kimi-code-web-search-tool-loop.js';
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
@@ -1616,6 +1617,7 @@ function resolveStreamingToolPreviewArgumentsJson(
 ): string {
   return buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson)
     ?? buildStepfunWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson)
+    ?? buildKimiCodeWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson)
     ?? argumentsJson;
 }
 

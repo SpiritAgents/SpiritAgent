@@ -29,6 +29,13 @@ applyTo: "**/*"
 - **不在** `host-internal` 注册可执行 `web_search`；Formula 执行留在 `agent-core` `moonshot/formula/`。
 - UI：`encrypted_output` 不可展示；Moonshot Formula `web_search` 卡片经 `_spiritUi.suppressExpand` 禁止展开。
 
+## Kimi Code / StepFun 托管 `web_search`（非 Formula）
+
+- **Kimi Code**（`llmVendor: kimi-code` 或 `api.kimi.com`）：`agent-core` 注入本地 `web_search` function schema，执行时 `POST https://api.kimi.com/coding/v1/search`（body `text_query`），结果写回 tool message。
+- **StepFun**（`llmVendor: stepfun` 或 `api.stepfun.com`）：同类托管工具，执行时打固定 `https://api.stepfun.com/v1/search`（可选 `n`）。
+- **不在** `host-internal` 注册可执行 `web_search`；执行留在 `agent-core`（`kimi-code/`、`stepfun/`），经 managed provider turn handler。
+- UI：可展开 preview（与 StepFun 共用 `_spiritUi`，无 `suppressExpand`）。
+
 ## 术语
 
 ### 工具定义

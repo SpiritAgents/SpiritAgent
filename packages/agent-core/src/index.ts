@@ -29,3 +29,5 @@ export * from './hooks/index.js';
 export * from './auto-approval/index.js';
 export { shouldUseStepfunWebSearch } from './stepfun/stepfun-eligibility.js';
 export { buildStepfunWebSearchToolDefinition } from './stepfun/stepfun-web-search-tool.js';
+export { shouldUseKimiCodeWebSearch } from './kimi-code/kimi-code-eligibility.js';
+export { buildKimiCodeWebSearchToolDefinition } from './kimi-code/kimi-code-web-search-tool.js';

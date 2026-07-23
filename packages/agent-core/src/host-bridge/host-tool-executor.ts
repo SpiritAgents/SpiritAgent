@@ -30,6 +30,8 @@ import {
 import { enrichUnknownToolError, toolNamesFromDefinitions } from '../unknown-tool-error.js';
 import { shouldUseStepfunWebSearch } from '../stepfun/stepfun-eligibility.js';
 import { buildStepfunWebSearchToolDefinition } from '../stepfun/stepfun-web-search-tool.js';
+import { shouldUseKimiCodeWebSearch } from '../kimi-code/kimi-code-eligibility.js';
+import { buildKimiCodeWebSearchToolDefinition } from '../kimi-code/kimi-code-web-search-tool.js';
 import { buildLspHostToolDefinitions } from '../lsp/tool-definitions.js';
 import { executeGetDiagnostics } from '../lsp/execute-diagnostics.js';
 import {
@@ -572,6 +574,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
             ...(shouldUseStepfunWebSearch(this.transportConfigForToolDefinitions)
               ? [buildStepfunWebSearchToolDefinition()]
               : []),
+            ...(shouldUseKimiCodeWebSearch(this.transportConfigForToolDefinitions)
+              ? [buildKimiCodeWebSearchToolDefinition()]
+              : []),
           ]
         : [
             ...this.loopToolDefinitionsCache,
@@ -579,6 +584,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
             ...this.todoToolDefinitionsCache,
             ...(shouldUseStepfunWebSearch(this.transportConfigForToolDefinitions)
               ? [buildStepfunWebSearchToolDefinition()]
+              : []),
+            ...(shouldUseKimiCodeWebSearch(this.transportConfigForToolDefinitions)
+              ? [buildKimiCodeWebSearchToolDefinition()]
               : []),
           ],
       this.agentMode,
