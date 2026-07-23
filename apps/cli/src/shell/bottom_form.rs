@@ -20,6 +20,7 @@ use crate::{
         model_add_alibaba_site_api_base, model_add_alibaba_site_id_from_choice,
         model_add_alibaba_site_ids, model_add_alibaba_site_requires_workspace_id,
         model_add_alibaba_token_plan_api_base, model_add_stepfun_api_base,
+        model_add_z_ai_api_base, model_add_zhipu_ai_api_base,
         azure_api_base_from_resource_name,
         cloudflare_ai_gateway_api_base_from_account_id,
         is_valid_azure_resource_name,
@@ -127,6 +128,20 @@ fn model_add_stepfun_provider_index() -> usize {
         .iter()
         .position(|id| id == "stepfun")
         .unwrap_or(17)
+}
+
+fn model_add_z_ai_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "z-ai")
+        .unwrap_or(11)
+}
+
+fn model_add_zhipu_ai_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "zhipu-ai")
+        .unwrap_or(12)
 }
 
 fn model_add_vertex_provider_index() -> usize {
@@ -470,6 +485,20 @@ fn model_add_stepfun_billing_mode_field(selected: usize) -> BottomFormFieldView 
             options: vec![
                 t!("form.model.stepfun_billing_mode.standard").into_owned(),
                 t!("form.model.stepfun_billing_mode.step_plan").into_owned(),
+            ],
+            selected: selected.min(1),
+        },
+    }
+}
+
+fn model_add_glm_coding_plan_billing_mode_field(selected: usize) -> BottomFormFieldView {
+    BottomFormFieldView {
+        label: t!("form.model.field.glm_coding_plan_billing_mode.label").into_owned(),
+        help: t!("form.model.field.glm_coding_plan_billing_mode.help").into_owned(),
+        editor: BottomFormFieldEditorView::Choice {
+            options: vec![
+                t!("form.model.glm_coding_plan_billing_mode.standard").into_owned(),
+                t!("form.model.glm_coding_plan_billing_mode.glm_coding_plan").into_owned(),
             ],
             selected: selected.min(1),
         },
@@ -993,6 +1022,21 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         } else {
             0
         };
+    let glm_coding_plan_billing_selected =
+        if provider_idx == model_add_z_ai_provider_index()
+            || provider_idx == model_add_zhipu_ai_provider_index()
+        {
+            match form.fields.get(2).map(|f| &f.editor) {
+                Some(BottomFormFieldEditorView::Choice { selected, options })
+                    if options.len() == 2 =>
+                {
+                    (*selected).min(1)
+                }
+                _ => 0,
+            }
+        } else {
+            0
+        };
     let alibaba_is_token_plan =
         provider_idx == model_add_alibaba_provider_index() && alibaba_billing_selected == 1;
     let alibaba_site_selected = if alibaba_is_token_plan {
@@ -1173,6 +1217,15 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_transport_field(stepfun_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
+    } else if provider_idx == model_add_z_ai_provider_index()
+        || provider_idx == model_add_zhipu_ai_provider_index()
+    {
+        vec![
+            model_add_provider_field(provider_idx),
+            model_add_mode_field_preset(),
+            model_add_glm_coding_plan_billing_mode_field(glm_coding_plan_billing_selected),
+            model_add_api_key_field(api_key_raw),
+        ]
     } else if provider_idx == model_add_volcengine_provider_index() {
         vec![
             model_add_provider_field(provider_idx),
@@ -1273,6 +1326,8 @@ pub(crate) struct ParsedModelAddForm {
     pub alibaba_workspace_id: Option<String>,
     pub alibaba_billing_mode: Option<String>,
     pub stepfun_billing_mode: Option<String>,
+    pub z_ai_billing_mode: Option<String>,
+    pub zhipu_billing_mode: Option<String>,
 }
 
 pub(crate) fn new_rules_form(entries: &[RuleEntry]) -> BottomFormView {
@@ -1926,6 +1981,8 @@ pub(crate) fn parse_model_add_connection(
             alibaba_workspace_id: None,
             alibaba_billing_mode: None,
             stepfun_billing_mode: None,
+            z_ai_billing_mode: None,
+            zhipu_billing_mode: None,
         });
     }
 
@@ -1974,6 +2031,8 @@ pub(crate) fn parse_model_add_connection(
             alibaba_workspace_id: None,
             alibaba_billing_mode: None,
             stepfun_billing_mode: None,
+            z_ai_billing_mode: None,
+            zhipu_billing_mode: None,
         });
     }
 
@@ -2013,6 +2072,8 @@ pub(crate) fn parse_model_add_connection(
     let mut alibaba_workspace_id = None;
     let mut alibaba_billing_mode = None;
     let mut stepfun_billing_mode = None;
+    let mut z_ai_billing_mode = None;
+    let mut zhipu_billing_mode = None;
     let api_base = if provider == ModelProvider::Siliconflow {
         let site_selected = match form.fields.get(2).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
@@ -2107,6 +2168,32 @@ pub(crate) fn parse_model_add_connection(
         }
         model_add_stepfun_api_base(transport_kind, step_plan)
             .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
+    } else if provider == ModelProvider::ZAi {
+        let billing_selected = match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                (*selected).min(1)
+            }
+            _ => 0,
+        };
+        let glm_coding_plan = billing_selected == 1;
+        if glm_coding_plan {
+            z_ai_billing_mode = Some("glm-coding-plan".to_string());
+        }
+        model_add_z_ai_api_base(glm_coding_plan)
+            .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
+    } else if provider == ModelProvider::ZhipuAi {
+        let billing_selected = match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                (*selected).min(1)
+            }
+            _ => 0,
+        };
+        let glm_coding_plan = billing_selected == 1;
+        if glm_coding_plan {
+            zhipu_billing_mode = Some("glm-coding-plan".to_string());
+        }
+        model_add_zhipu_ai_api_base(glm_coding_plan)
+            .ok_or_else(|| t!("form.model.validation.site_invalid").into_owned())?
     } else if provider == ModelProvider::GoogleVertexAi {
         vertex_api_base_from_project_and_location(
             vertex_project.as_deref().unwrap_or(""),
@@ -2170,6 +2257,8 @@ pub(crate) fn parse_model_add_connection(
         alibaba_workspace_id,
         alibaba_billing_mode,
         stepfun_billing_mode,
+        z_ai_billing_mode,
+        zhipu_billing_mode,
     })
 }
 
@@ -2629,6 +2718,7 @@ mod tests {
         sync_model_add_form_fields, to_hook_save_request, to_prompt_args_json,
         hook_add_form_enter_toggles_checkbox,
         model_add_stepfun_provider_index, model_add_volcengine_provider_index,
+        model_add_z_ai_provider_index, model_add_zhipu_ai_provider_index,
         HOOK_ADD_FIELD_COMMAND, HOOK_ADD_FIELD_FAIL_CLOSED, HOOK_ADD_FIELD_TIMEOUT,
     };
     use crate::model_registry::{ModelProvider, ModelTransportKind};
@@ -3105,6 +3195,67 @@ mod tests {
         assert_eq!(parsed.api_base, "https://api.stepfun.com/step_plan");
         assert_eq!(parsed.api_key, "sk-stepfun");
         assert_eq!(parsed.stepfun_billing_mode.as_deref(), Some("step-plan"));
+    }
+
+    #[test]
+    fn model_add_form_parses_z_ai_glm_coding_plan_connection() {
+        let mut form = new_model_add_form();
+        let z_ai_idx = model_add_z_ai_provider_index();
+        if let Some(f) = form.fields.get_mut(0) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = z_ai_idx;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 1;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 3;
+        insert_text(&mut form, "sk-zai");
+
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::ZAi);
+        assert!(parsed.bulk);
+        assert_eq!(parsed.api_base, "https://api.z.ai/api/coding/paas/v4");
+        assert_eq!(parsed.api_key, "sk-zai");
+        assert_eq!(parsed.z_ai_billing_mode.as_deref(), Some("glm-coding-plan"));
+        assert!(parsed.zhipu_billing_mode.is_none());
+    }
+
+    #[test]
+    fn model_add_form_parses_zhipu_glm_coding_plan_connection() {
+        let mut form = new_model_add_form();
+        let zhipu_idx = model_add_zhipu_ai_provider_index();
+        if let Some(f) = form.fields.get_mut(0) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = zhipu_idx;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2) {
+            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 1;
+            }
+        }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 3;
+        insert_text(&mut form, "sk-zhipu");
+
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::ZhipuAi);
+        assert!(parsed.bulk);
+        assert_eq!(
+            parsed.api_base,
+            "https://open.bigmodel.cn/api/coding/paas/v4"
+        );
+        assert_eq!(parsed.api_key, "sk-zhipu");
+        assert_eq!(parsed.zhipu_billing_mode.as_deref(), Some("glm-coding-plan"));
+        assert!(parsed.z_ai_billing_mode.is_none());
     }
 
     #[test]
