@@ -3,22 +3,13 @@ import type { JsonObject } from '../ports.js';
 import { isJsonObject } from '../tool-agent.js';
 import type { LlmTransportConfig } from '../provider-config.js';
 import type { ToolCallRequest } from '../ports.js';
-import { tryExtractPartialWebSearchQuery } from '../tool-streaming-preview-gate.js';
+import { readWebSearchQuery } from '../web-search/read-web-search-query.js';
 import { buildStepfunWebSearchToolPreviewArgumentsJson } from './stepfun-spirit-ui.js';
 import { isStepfunManagedWebSearchToolCall } from './stepfun-eligibility.js';
 import { invokeStepfunSearch } from './stepfun-search-client.js';
 
 export function readStepfunWebSearchQuery(argumentsJson: string): string {
-  try {
-    const parsed = JSON.parse(argumentsJson) as JsonObject;
-    if (!isJsonObject(parsed)) {
-      return '';
-    }
-    const query = parsed.query;
-    return typeof query === 'string' ? query.trim() : '';
-  } catch {
-    return tryExtractPartialWebSearchQuery(argumentsJson) ?? '';
-  }
+  return readWebSearchQuery(argumentsJson);
 }
 
 function readStepfunWebSearchResultCount(argumentsJson: string): number | undefined {
