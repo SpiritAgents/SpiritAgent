@@ -3266,22 +3266,16 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 4);
-        if let Some(f) = form.fields.get_mut(2) {
-            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
-        }
-        sync_model_add_form_fields(&mut form);
-        form.selected_field = 3;
+        assert_eq!(form.fields.len(), 3);
+        form.selected_field = 2;
         insert_text(&mut form, "sk-kimi-code");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::KimiCode);
-        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
-        assert_eq!(parsed.api_base, "https://api.kimi.com/coding");
+        assert_eq!(parsed.api_base, "https://api.kimi.com/coding/v1");
         assert_eq!(parsed.api_key, "sk-kimi-code");
     }
 
@@ -3294,22 +3288,22 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 5);
-        if let Some(f) = form.fields.get_mut(3) {
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
                 *selected = 1;
             }
         }
         sync_model_add_form_fields(&mut form);
-        form.selected_field = 4;
+        form.selected_field = 3;
         insert_text(&mut form, "sk-mm");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::Minimax);
-        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
-        assert_eq!(parsed.api_base, "https://api.minimax.io/anthropic/v1");
+        assert_eq!(parsed.api_base, "https://api.minimax.io/v1");
         assert_eq!(parsed.provider_site.as_deref(), Some("intl"));
         assert_eq!(parsed.api_key, "sk-mm");
     }
