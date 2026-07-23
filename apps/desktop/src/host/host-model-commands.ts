@@ -24,6 +24,7 @@ import type {
   AddModelRequest,
   AddProviderModelsRequest,
   DesktopAlibabaBillingMode,
+  DesktopGlmCodingPlanBillingMode,
   DesktopStepfunBillingMode,
   DesktopModelCapability,
   DesktopModelProvider,
@@ -152,6 +153,8 @@ interface ConnectRequestFields {
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   vertexProject?: string;
   vertexLocation?: string;
   azureResourceName?: string;
@@ -235,6 +238,8 @@ function buildProviderGroupConnect(
     input.alibabaWorkspaceId,
     input.alibabaBillingMode,
     input.stepfunBillingMode,
+    input.zAiBillingMode,
+    input.zhipuBillingMode,
     input.cloudflareAccountId,
   );
   const group: Omit<ProviderGroupV2, 'id' | 'models'> = {
@@ -276,6 +281,8 @@ function buildProviderGroupConnect(
     alibabaWorkspaceId: input.alibabaWorkspaceId,
     alibabaBillingMode: input.alibabaBillingMode,
     stepfunBillingMode: input.stepfunBillingMode,
+    zAiBillingMode: input.zAiBillingMode,
+    zhipuBillingMode: input.zhipuBillingMode,
   });
   return group;
 }
@@ -665,6 +672,8 @@ function applyManagedProviderConnectFields<
     alibabaWorkspaceId?: string;
     alibabaBillingMode?: DesktopAlibabaBillingMode;
     stepfunBillingMode?: DesktopStepfunBillingMode;
+    zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+    zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   },
 >(profile: T, input: {
   provider?: DesktopModelProvider;
@@ -672,12 +681,32 @@ function applyManagedProviderConnectFields<
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
 }): void {
   if (input.provider === 'stepfun') {
     if (input.stepfunBillingMode === 'step-plan') {
       profile.stepfunBillingMode = 'step-plan';
     } else {
       delete profile.stepfunBillingMode;
+    }
+    return;
+  }
+
+  if (input.provider === 'z-ai') {
+    if (input.zAiBillingMode === 'glm-coding-plan') {
+      profile.zAiBillingMode = 'glm-coding-plan';
+    } else {
+      delete profile.zAiBillingMode;
+    }
+    return;
+  }
+
+  if (input.provider === 'zhipu-ai') {
+    if (input.zhipuBillingMode === 'glm-coding-plan') {
+      profile.zhipuBillingMode = 'glm-coding-plan';
+    } else {
+      delete profile.zhipuBillingMode;
     }
     return;
   }
@@ -749,6 +778,8 @@ function resolveManagedConnectApiBase(
   alibabaWorkspaceId?: string,
   alibabaBillingMode?: DesktopAlibabaBillingMode,
   stepfunBillingMode?: DesktopStepfunBillingMode,
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode,
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode,
   cloudflareAccountId?: string,
 ): string {
   if (provider === 'amazon-bedrock') {
@@ -797,6 +828,8 @@ function resolveManagedConnectApiBase(
     alibabaWorkspaceId,
     alibabaBillingMode,
     stepfunBillingMode,
+    zAiBillingMode,
+    zhipuBillingMode,
   );
 }
 
@@ -876,6 +909,8 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
   const alibabaBillingMode = request.alibabaBillingMode;
   const stepfunBillingMode = request.stepfunBillingMode;
+  const zAiBillingMode = request.zAiBillingMode;
+  const zhipuBillingMode = request.zhipuBillingMode;
   const vertexProject = request.vertexProject?.trim();
   const vertexLocation = request.vertexLocation?.trim();
   const cloudflareAccountId = request.cloudflareAccountId?.trim();
@@ -904,6 +939,8 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
     alibabaWorkspaceId,
     alibabaBillingMode,
     stepfunBillingMode,
+    zAiBillingMode,
+    zhipuBillingMode,
     cloudflareAccountId,
   );
   const apiKey = request.apiKey.trim();
@@ -968,6 +1005,8 @@ export async function addProviderModelsCommand(
     const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
     const alibabaBillingMode = request.alibabaBillingMode;
     const stepfunBillingMode = request.stepfunBillingMode;
+    const zAiBillingMode = request.zAiBillingMode;
+    const zhipuBillingMode = request.zhipuBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     const cloudflareAccountId = request.cloudflareAccountId?.trim();
@@ -993,6 +1032,8 @@ export async function addProviderModelsCommand(
       ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
       ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
       ...(stepfunBillingMode ? { stepfunBillingMode } : {}),
+      ...(zAiBillingMode ? { zAiBillingMode } : {}),
+      ...(zhipuBillingMode ? { zhipuBillingMode } : {}),
       ...(vertexProject ? { vertexProject } : {}),
       ...(vertexLocation ? { vertexLocation } : {}),
       ...(cloudflareAccountId ? { cloudflareAccountId } : {}),
@@ -1099,6 +1140,8 @@ export async function addProviderModelsCommand(
       alibabaWorkspaceId,
       alibabaBillingMode,
       stepfunBillingMode,
+      zAiBillingMode,
+      zhipuBillingMode,
     });
     const catalogRefreshResult = {
       modelIds: uniqueIds,
@@ -1202,6 +1245,8 @@ export async function addModelCommand(
     const alibabaWorkspaceId = request.alibabaWorkspaceId?.trim();
     const alibabaBillingMode = request.alibabaBillingMode;
     const stepfunBillingMode = request.stepfunBillingMode;
+    const zAiBillingMode = request.zAiBillingMode;
+    const zhipuBillingMode = request.zhipuBillingMode;
     const vertexProject = request.vertexProject?.trim();
     const vertexLocation = request.vertexLocation?.trim();
     const azureResourceName = request.azureResourceName?.trim();
@@ -1235,6 +1280,8 @@ export async function addModelCommand(
       ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
       ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
       ...(stepfunBillingMode ? { stepfunBillingMode } : {}),
+      ...(zAiBillingMode ? { zAiBillingMode } : {}),
+      ...(zhipuBillingMode ? { zhipuBillingMode } : {}),
       ...(vertexProject ? { vertexProject } : {}),
       ...(vertexLocation ? { vertexLocation } : {}),
       ...(azureResourceName ? { azureResourceName } : {}),

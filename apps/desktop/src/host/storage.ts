@@ -978,6 +978,10 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
     record.alibabaBillingMode === 'token-plan' ? 'token-plan' as const : undefined;
   const stepfunBillingMode =
     record.stepfunBillingMode === 'step-plan' ? 'step-plan' as const : undefined;
+  const zAiBillingMode =
+    record.zAiBillingMode === 'glm-coding-plan' ? 'glm-coding-plan' as const : undefined;
+  const zhipuBillingMode =
+    record.zhipuBillingMode === 'glm-coding-plan' ? 'glm-coding-plan' as const : undefined;
   const awsRegion =
     typeof record.awsRegion === 'string' && record.awsRegion.trim().length > 0
       ? record.awsRegion.trim()
@@ -1034,6 +1038,8 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
     ...(alibabaWorkspaceId ? { alibabaWorkspaceId } : {}),
     ...(alibabaBillingMode ? { alibabaBillingMode } : {}),
     ...(stepfunBillingMode ? { stepfunBillingMode } : {}),
+    ...(zAiBillingMode ? { zAiBillingMode } : {}),
+    ...(zhipuBillingMode ? { zhipuBillingMode } : {}),
     ...(awsRegion ? { awsRegion } : {}),
     ...(vertexProject ? { vertexProject } : {}),
     ...(vertexLocation ? { vertexLocation } : {}),
