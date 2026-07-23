@@ -174,12 +174,24 @@ test('resolveProviderConnectApiBase returns Z.ai preset base', () => {
     resolveProviderConnectApiBase('z-ai', 'openai-compatible'),
     'https://api.z.ai/api/paas/v4',
   );
+  assert.equal(
+    resolveProviderConnectApiBase('z-ai', 'openai-compatible', {
+      zAiBillingMode: 'glm-coding-plan',
+    }),
+    'https://api.z.ai/api/coding/paas/v4',
+  );
 });
 
 test('resolveProviderConnectApiBase returns Zhipu AI preset base', () => {
   assert.equal(
     resolveProviderConnectApiBase('zhipu-ai', 'openai-compatible'),
     'https://open.bigmodel.cn/api/paas/v4',
+  );
+  assert.equal(
+    resolveProviderConnectApiBase('zhipu-ai', 'openai-compatible', {
+      zhipuBillingMode: 'glm-coding-plan',
+    }),
+    'https://open.bigmodel.cn/api/coding/paas/v4',
   );
 });
 

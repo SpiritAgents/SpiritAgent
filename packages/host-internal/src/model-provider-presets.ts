@@ -125,12 +125,19 @@ export type AlibabaBillingMode = 'token-plan';
 
 export type StepfunBillingMode = 'step-plan';
 
+export type GlmCodingPlanBillingMode = 'glm-coding-plan';
+
 export interface AlibabaTokenPlanConfig {
   compatibleApiBase: string;
   docUrl: string;
 }
 
 export interface StepfunStepPlanConfig {
+  compatibleApiBase: string;
+  docUrl: string;
+}
+
+export interface GlmCodingPlanConfig {
   compatibleApiBase: string;
   docUrl: string;
 }
@@ -143,6 +150,10 @@ export interface ResolveProviderConnectApiBaseOptions {
   billingMode?: AlibabaBillingMode;
   /** StepFun Step Plan：固定 step_plan 端点。 */
   stepfunBillingMode?: StepfunBillingMode;
+  /** Z.ai GLM Coding Plan：固定 coding/paas 端点。 */
+  zAiBillingMode?: GlmCodingPlanBillingMode;
+  /** 智谱 AI GLM Coding Plan：固定 coding/paas 端点。 */
+  zhipuBillingMode?: GlmCodingPlanBillingMode;
 }
 
 export interface ProviderPickerLabel {
@@ -187,6 +198,8 @@ interface ParsedModelProviderPresets {
   providerSiteSelection: ProviderSiteSelectionByProvider;
   alibabaTokenPlan: AlibabaTokenPlanConfig;
   stepfunStepPlan: StepfunStepPlanConfig;
+  zAiGlmCodingPlan: GlmCodingPlanConfig;
+  zhipuAiGlmCodingPlan: GlmCodingPlanConfig;
   pickerOrder: readonly ModelProviderId[];
   pickerLabels: Record<ModelProviderId, ProviderPickerLabel>;
 }
@@ -323,6 +336,16 @@ function parseStepfunStepPlanConfig(data: unknown): StepfunStepPlanConfig {
   };
 }
 
+function parseGlmCodingPlanConfig(data: unknown, fieldName: string): GlmCodingPlanConfig {
+  if (!isJsonRecord(data)) {
+    throw new Error(`model-provider-presets.json: ${fieldName} must be an object`);
+  }
+  return {
+    compatibleApiBase: requireStringField(data, 'compatibleApiBase'),
+    docUrl: requireStringField(data, 'docUrl'),
+  };
+}
+
 function parsePickerLabel(data: unknown, id: ModelProviderId): ProviderPickerLabel {
   if (!isJsonRecord(data)) {
     throw new Error(`model-provider-presets.json: pickerLabels.${id} must be an object`);
@@ -399,6 +422,11 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
   const providerSiteSelection = parseProviderSiteSelection(data.providerSiteSelection);
   const alibabaTokenPlan = parseAlibabaTokenPlanConfig(data.alibabaTokenPlan);
   const stepfunStepPlan = parseStepfunStepPlanConfig(data.stepfunStepPlan);
+  const zAiGlmCodingPlan = parseGlmCodingPlanConfig(data.zAiGlmCodingPlan, 'zAiGlmCodingPlan');
+  const zhipuAiGlmCodingPlan = parseGlmCodingPlanConfig(
+    data.zhipuAiGlmCodingPlan,
+    'zhipuAiGlmCodingPlan',
+  );
 
   return {
     defaultCustomApiBase,
@@ -407,6 +435,8 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     providerSiteSelection,
     alibabaTokenPlan,
     stepfunStepPlan,
+    zAiGlmCodingPlan,
+    zhipuAiGlmCodingPlan,
     pickerOrder,
     pickerLabels: pickerLabels as Record<ModelProviderId, ProviderPickerLabel>,
   };
@@ -418,6 +448,12 @@ export const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: string = raw.alibabaTokenPl
 export const ALIBABA_TOKEN_PLAN_DOC_URL: string = raw.alibabaTokenPlan.docUrl;
 export const STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE: string = raw.stepfunStepPlan.compatibleApiBase;
 export const STEPFUN_STEP_PLAN_DOC_URL: string = raw.stepfunStepPlan.docUrl;
+export const Z_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE: string =
+  raw.zAiGlmCodingPlan.compatibleApiBase;
+export const Z_AI_GLM_CODING_PLAN_DOC_URL: string = raw.zAiGlmCodingPlan.docUrl;
+export const ZHIPU_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE: string =
+  raw.zhipuAiGlmCodingPlan.compatibleApiBase;
+export const ZHIPU_AI_GLM_CODING_PLAN_DOC_URL: string = raw.zhipuAiGlmCodingPlan.docUrl;
 
 export const DEFAULT_CUSTOM_API_BASE: string = raw.defaultCustomApiBase;
 
@@ -667,6 +703,16 @@ export function resolveStepfunStepPlanConnectApiBase(
   return STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE;
 }
 
+/** Z.ai GLM Coding Plan：固定 coding/paas OpenAI 兼容端点。 */
+export function resolveZAiGlmCodingPlanConnectApiBase(): string {
+  return Z_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE;
+}
+
+/** 智谱 AI GLM Coding Plan：固定 coding/paas OpenAI 兼容端点。 */
+export function resolveZhipuAiGlmCodingPlanConnectApiBase(): string {
+  return ZHIPU_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE;
+}
+
 /** Alibaba Token Plan：固定 cn-beijing compatible base，按 transport 推导 Anthropic / Open Responses。 */
 export function resolveAlibabaTokenPlanConnectApiBase(
   transportKind: ProviderModelTransportKind,
@@ -743,8 +789,15 @@ export function resolveProviderConnectApiBase(
   transportKind: ProviderModelTransportKind,
   options?: ResolveProviderConnectApiBaseOptions | string,
 ): string {
-  const { site, workspaceId, customApiBaseTrimmed = '', billingMode, stepfunBillingMode } =
-    normalizeResolveProviderConnectApiBaseOptions(options);
+  const {
+    site,
+    workspaceId,
+    customApiBaseTrimmed = '',
+    billingMode,
+    stepfunBillingMode,
+    zAiBillingMode,
+    zhipuBillingMode,
+  } = normalizeResolveProviderConnectApiBaseOptions(options);
 
   if (provider === 'custom') {
     return customApiBaseTrimmed.trim();
@@ -756,6 +809,14 @@ export function resolveProviderConnectApiBase(
 
   if (provider === 'stepfun' && stepfunBillingMode === 'step-plan') {
     return resolveStepfunStepPlanConnectApiBase(transportKind);
+  }
+
+  if (provider === 'z-ai' && zAiBillingMode === 'glm-coding-plan') {
+    return resolveZAiGlmCodingPlanConnectApiBase();
+  }
+
+  if (provider === 'zhipu-ai' && zhipuBillingMode === 'glm-coding-plan') {
+    return resolveZhipuAiGlmCodingPlanConnectApiBase();
   }
 
   const siteBase = site ? resolveProviderConnectSiteApiBase(provider, site, workspaceId) : undefined;
