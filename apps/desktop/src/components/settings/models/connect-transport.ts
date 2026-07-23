@@ -43,7 +43,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "deepseek":
     case "kimi-code":
     case "meituan":
-      return [connectTransportOptionCatalog.chatCompletions];
+      return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
     // TokenHub 文档有 Chat web_search_options / Responses web_search 两套联网能力，实测 Chat 注入无效；
     // Responses 仅 hy3-preview 等少数模型支持，与 TokenHub 以 Chat Completions 为主的模型矩阵不匹配，故仅保留 Chat Completions。
     case "tencent-tokenhub":
