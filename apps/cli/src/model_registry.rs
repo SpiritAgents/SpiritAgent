@@ -1142,11 +1142,23 @@ impl ProviderGroupConnectDraft {
         if let Some(value) = normalize_optional_string(self.stepfun_billing_mode.clone()) {
             group.stepfun_billing_mode = Some(value);
         }
-        if let Some(value) = normalize_optional_string(self.z_ai_billing_mode.clone()) {
-            group.z_ai_billing_mode = Some(value);
-        }
-        if let Some(value) = normalize_optional_string(self.zhipu_billing_mode.clone()) {
-            group.zhipu_billing_mode = Some(value);
+        // Z.ai / 智谱：标准模式以字段缺失表示；重连时须用 None 清掉既有 glm-coding-plan。
+        match group.provider {
+            ModelProvider::ZAi => {
+                group.z_ai_billing_mode = normalize_optional_string(self.z_ai_billing_mode.clone());
+            }
+            ModelProvider::ZhipuAi => {
+                group.zhipu_billing_mode =
+                    normalize_optional_string(self.zhipu_billing_mode.clone());
+            }
+            _ => {
+                if let Some(value) = normalize_optional_string(self.z_ai_billing_mode.clone()) {
+                    group.z_ai_billing_mode = Some(value);
+                }
+                if let Some(value) = normalize_optional_string(self.zhipu_billing_mode.clone()) {
+                    group.zhipu_billing_mode = Some(value);
+                }
+            }
         }
         if let Some(value) = normalize_optional_string(self.aws_region.clone()) {
             group.aws_region = Some(value);
@@ -2144,6 +2156,54 @@ mod tests {
         assert_eq!(model.alibaba_billing_mode().as_deref(), Some("token-plan"));
         assert!(model.provider_site().is_none());
         assert!(model.alibaba_workspace_id().is_none());
+    }
+
+    #[test]
+    fn reconnect_z_ai_standard_clears_glm_coding_plan_billing_mode() {
+        let mut cfg = AppConfig::default();
+        cfg.add_model_to_group(
+            "z-ai",
+            ModelProvider::ZAi,
+            "https://api.z.ai/api/coding/paas/v4".to_string(),
+            ProviderGroupConnectDraft {
+                z_ai_billing_mode: Some("glm-coding-plan".to_string()),
+                ..ProviderGroupConnectDraft::default()
+            },
+            ModelEntry {
+                name: "glm-4.7".to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
+        assert_eq!(
+            cfg.provider_groups[0].z_ai_billing_mode.as_deref(),
+            Some("glm-coding-plan")
+        );
+
+        cfg.add_model_to_group(
+            "z-ai",
+            ModelProvider::ZAi,
+            "https://api.z.ai/api/paas/v4".to_string(),
+            ProviderGroupConnectDraft::default(),
+            ModelEntry {
+                name: "glm-4.7".to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
+        assert!(cfg.provider_groups[0].z_ai_billing_mode.is_none());
+        assert_eq!(
+            cfg.provider_groups[0].api_base,
+            "https://api.z.ai/api/paas/v4"
+        );
     }
 
     #[test]

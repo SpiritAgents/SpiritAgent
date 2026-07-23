@@ -295,6 +295,16 @@ function findOrCreateProviderGroup(
   const existing = findProviderGroup(config, groupId);
   if (existing) {
     Object.assign(existing, connect);
+    // Object.assign 不会删除 connect 上缺省的键；标准计费依赖字段缺失，须再同步一次。
+    applyManagedProviderConnectFields(existing, {
+      provider: connect.provider,
+      providerSite: connect.providerSite,
+      alibabaWorkspaceId: connect.alibabaWorkspaceId,
+      alibabaBillingMode: connect.alibabaBillingMode,
+      stepfunBillingMode: connect.stepfunBillingMode,
+      zAiBillingMode: connect.zAiBillingMode,
+      zhipuBillingMode: connect.zhipuBillingMode,
+    });
     return existing;
   }
   const created: ProviderGroupV2 = {
