@@ -34,6 +34,16 @@ test('shouldUseKimiCodeWebSearch matches kimi-code vendor and api base', () => {
     }),
     false,
   );
+  assert.equal(
+    shouldUseKimiCodeWebSearch({
+      transportKind: 'openai-compatible',
+      apiKey: 'k',
+      model: 'kimi-k2.5',
+      llmVendor: 'moonshot-ai',
+      baseUrl: 'https://api.kimi.com/coding/v1',
+    }),
+    false,
+  );
 });
 
 test('isKimiCodeManagedWebSearchToolCall matches web_search only when eligible', () => {

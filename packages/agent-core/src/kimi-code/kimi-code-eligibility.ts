@@ -22,6 +22,10 @@ export function shouldUseKimiCodeWebSearch(config: LlmTransportConfig | undefine
   if (vendor === 'kimi-code') {
     return true;
   }
+  // 与 Formula 排除 kimi-code 对称：moonshot-ai 即使 baseUrl 落在 api.kimi.com 也不走托管 search
+  if (vendor === 'moonshot-ai') {
+    return false;
+  }
 
   return isKimiCodeApiBase((config as { baseUrl?: string }).baseUrl);
 }
