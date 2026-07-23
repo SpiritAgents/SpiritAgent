@@ -25,10 +25,23 @@ import {
   readStepfunWebSearchQuery,
 } from '../../stepfun/stepfun-web-search-tool-loop.js';
 import { isStepfunManagedWebSearchToolCall } from '../../stepfun/stepfun-eligibility.js';
+import {
+  executeKimiCodeWebSearchToolCall,
+  readKimiCodeWebSearchQuery,
+} from '../../kimi-code/kimi-code-web-search-tool-loop.js';
+import { isKimiCodeManagedWebSearchToolCall } from '../../kimi-code/kimi-code-eligibility.js';
+
+function isLocalManagedWebSearchToolCall(toolName: string, config: unknown): boolean {
+  return isStepfunManagedWebSearchToolCall(toolName, config)
+    || isKimiCodeManagedWebSearchToolCall(toolName, config);
+}
 
 function readPreviewQuery(argumentsJson: string, toolName: string, config: unknown): string {
   if (isStepfunManagedWebSearchToolCall(toolName, config)) {
     return readStepfunWebSearchQuery(argumentsJson);
+  }
+  if (isKimiCodeManagedWebSearchToolCall(toolName, config)) {
+    return readKimiCodeWebSearchQuery(argumentsJson);
   }
   return readMoonshotFormulaWebSearchQuery(argumentsJson);
 }
@@ -42,7 +55,7 @@ function buildManagedProviderWebSearchPreviewArgumentsJson(
     outputExcerpt?: string;
   },
 ): string {
-  if (isStepfunManagedWebSearchToolCall('web_search', config)) {
+  if (isLocalManagedWebSearchToolCall('web_search', config)) {
     return buildStepfunWebSearchToolPreviewArgumentsJson(input);
   }
   return buildMoonshotFormulaToolPreviewArgumentsJson(input);
@@ -57,7 +70,7 @@ function managedProviderToolSummaryText(
   if (failed) {
     return `[provider tool ${toolName}] failed`;
   }
-  if (isStepfunManagedWebSearchToolCall(toolName, config) && content?.trim()) {
+  if (isLocalManagedWebSearchToolCall(toolName, config) && content?.trim()) {
     return content;
   }
   return `[provider tool ${toolName}] completed`;
@@ -92,7 +105,9 @@ async function executeAndCommitManagedProviderToolCall<
 
   const execution = isStepfunManagedWebSearchToolCall(call.name, config)
     ? await executeStepfunWebSearchToolCall(config, call)
-    : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);
+    : isKimiCodeManagedWebSearchToolCall(call.name, config)
+      ? await executeKimiCodeWebSearchToolCall(config, call)
+      : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);
 
   runtime.emitEvent({
     kind: 'streaming-tool-preview',
@@ -151,7 +166,8 @@ async function executeAndCommitManagedProviderToolCall<
 
 function isManagedProviderToolCall(toolName: string, config: unknown): boolean {
   return isMoonshotFormulaManagedToolCall(toolName, config)
-    || isStepfunManagedWebSearchToolCall(toolName, config);
+    || isStepfunManagedWebSearchToolCall(toolName, config)
+    || isKimiCodeManagedWebSearchToolCall(toolName, config);
 }
 
 export type ManagedProviderToolCallOutcome<

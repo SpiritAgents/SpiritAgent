@@ -56,6 +56,8 @@ import {
   executeGetDiagnostics,
   shouldUseStepfunWebSearch,
   buildStepfunWebSearchToolDefinition,
+  shouldUseKimiCodeWebSearch,
+  buildKimiCodeWebSearchToolDefinition,
 } from '@spiritagent/agent-core';
 import {
   LspService,
@@ -261,6 +263,10 @@ export class DesktopToolExecutor
         ...(this.activeTransportConfig !== undefined
           && shouldUseStepfunWebSearch(this.activeTransportConfig)
           ? [buildStepfunWebSearchToolDefinition()]
+          : []),
+        ...(this.activeTransportConfig !== undefined
+          && shouldUseKimiCodeWebSearch(this.activeTransportConfig)
+          ? [buildKimiCodeWebSearchToolDefinition()]
           : []),
       ],
       this.agentMode,
