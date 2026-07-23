@@ -85,6 +85,14 @@
     "amazonBedrock": "Amazon Bedrock",
     "custom": "Custom"
   },
+  "onboarding": {
+    "welcomeTitle": "Spirit Agent",
+    "continue": "Continue",
+    "back": "Back",
+    "done": "Done",
+    "appearanceTitle": "Appearance",
+    "connectTitle": "Connect a Provider"
+  },
   "settings": {
     "title": "Settings",
     "models": "Models",

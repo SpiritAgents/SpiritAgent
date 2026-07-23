@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SessionSidebarChromeProvider } from "@/contexts/session-sidebar-chrome-context";
@@ -13,6 +13,7 @@ import { CreateAutomationDialog } from "@/components/create-automation-dialog";
 import { DesktopTitleBar } from "@/components/desktop-title-bar";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
 import { LaunchSplash } from "@/components/launch-splash";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { MarketplaceView } from "@/components/marketplace-view";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { SessionSidebarShell } from "@/components/session-sidebar-shell";
@@ -39,7 +40,7 @@ import { useSettledSidebarActivePath } from "@/hooks/use-settled-sidebar-active-
 import { useFont } from "@/hooks/useFont";
 import { useMessageRewind } from "@/hooks/useMessageRewind";
 import { useSubagentViewer } from "@/hooks/useSubagentViewer";
-import { useTheme } from "@/hooks/useTheme";
+import { useThemeSetter } from "@/hooks/useTheme";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
@@ -48,6 +49,7 @@ import {
   isElectronChrome,
   isWin32ElectronShell,
   resolveUseMicaBackdrop,
+  type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
 import { isWorkspaceReferenceDirectoryPath, normalizeWorkspaceReferenceDirectoryPath } from "@spiritagent/host-internal/workspace-file-reference-query";
@@ -56,12 +58,13 @@ import {
   applyUiLayoutScaleToDocument,
   UI_LAYOUT_SCALE_ROOT_ID,
 } from "@/lib/ui-layout-scale";
-import { resolveDark } from "@/lib/theme";
+import { resolveOnboardingExpected } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  // 只订阅恒定引用的 setter：App 不因 theme 值变化重渲染（隐形 app-body 全量重渲染实测 40–55ms）
+  const setTheme = useThemeSetter();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
   const uiLayoutScale = useUiLayoutScale();
@@ -83,7 +86,6 @@ export default function App() {
     isElectronShell,
     darwinElectronChrome,
     useMicaBackdrop,
-    theme,
     extensionCss: snapshot?.extensionCss,
   });
 
@@ -206,10 +208,40 @@ export default function App() {
     uiLayoutScaleApi: uiLayoutScale,
   });
 
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [launchSplashPhase, setLaunchSplashPhase] = useState<ShellOverlayPhase>("gone");
+  const [onboardingPhase, setOnboardingPhase] = useState<ShellOverlayPhase>("gone");
+  const onboardingExpected = resolveOnboardingExpected({
+    onboardingCompleted: runtime.settings.onboardingCompleted,
+    dismissedThisSession: onboardingDismissed,
+  });
+  const onboardingVisible = onboardingExpected;
   const launchSplashActive =
     snapshot === null &&
     !runtime.hostConnectionError.trim() &&
-    !runtime.runtimeError.trim();
+    !runtime.runtimeError.trim() &&
+    !onboardingExpected;
+  const launchSplashOverlayUp =
+    launchSplashPhase === "running" || launchSplashPhase === "leaving";
+  const onboardingOverlayUp =
+    onboardingPhase === "running" || onboardingPhase === "leaving";
+  /** 全屏 overlay 挂载期间隐藏 app-body；Mica leaving 时改由 CSS opacity 交叉淡入。 */
+  const shellUnderlayHidden =
+    launchSplashActive ||
+    onboardingVisible ||
+    launchSplashOverlayUp ||
+    onboardingOverlayUp;
+  const appBodyMicaCrossfade =
+    useMicaBackdrop &&
+    (launchSplashPhase === "leaving" || onboardingPhase === "leaving");
+  const appBodyInvisible = shellUnderlayHidden && !appBodyMicaCrossfade;
+
+  const handleOnboardingDone = useCallback(() => {
+    void (async () => {
+      await runtime.saveSettingsPatch({ onboardingCompleted: true });
+      setOnboardingDismissed(true);
+    })();
+  }, [runtime.saveSettingsPatch]);
 
   useLayoutEffect(() => {
     applyUiLayoutScaleToDocument(uiLayoutScale.scale);
@@ -268,15 +300,37 @@ export default function App() {
     <div
       data-spirit-surface="app-shell"
       data-spirit-shell-kind={isElectronShell ? "electron" : "web"}
-      data-spirit-theme={resolveDark(theme) ? "dark" : "light"}
       data-spirit-mica={useMicaBackdrop ? "true" : "false"}
       className={cn(
         "flex h-full min-h-0 flex-col",
         useMicaBackdrop ? "bg-transparent" : "bg-background",
       )}
     >
-      <LaunchSplash active={launchSplashActive} useMicaBackdrop={useMicaBackdrop} />
-      <div data-spirit-surface="app-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <LaunchSplash
+        active={launchSplashActive}
+        useMicaBackdrop={useMicaBackdrop}
+        onPhaseChange={setLaunchSplashPhase}
+      />
+      <OnboardingWizard
+        active={onboardingVisible}
+        useMicaBackdrop={useMicaBackdrop}
+        settings={runtime.settings}
+        onSavePatch={runtime.saveSettingsPatch}
+        modelsBusy={runtime.busyAction === "models"}
+        modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
+        onAddModel={runtime.addModel}
+        onAddProviderModels={runtime.addProviderModels}
+        onPreviewModels={runtime.previewModels}
+        onDone={handleOnboardingDone}
+        onPhaseChange={setOnboardingPhase}
+      />
+      <div
+        data-spirit-surface="app-body"
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          appBodyInvisible && "invisible",
+        )}
+      >
         {!desktopTitleBarChrome ? (
           <div
             className={cn(
@@ -375,8 +429,6 @@ export default function App() {
               useMicaBackdrop={useMicaBackdrop}
               tab={surfaceNav.settingsTab}
               extensionSettingsId={surfaceNav.extensionSettingsId}
-              theme={theme}
-              onThemeChange={setTheme}
               font={font}
               onFontChange={setFont}
               clickablePointerCursor={clickablePointerCursor}

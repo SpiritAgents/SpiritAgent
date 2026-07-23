@@ -37,6 +37,8 @@ export type SettingsFormState = {
   apiKey: string;
   windowsMica: boolean;
   systemNotifications: boolean;
+  /** 首启引导（OOBE）是否已完成。 */
+  onboardingCompleted: boolean;
   agentMode: DesktopAgentMode;
   webHostEnabled: boolean;
   webHostHost: string;
@@ -51,8 +53,6 @@ export type SettingsFormState = {
 export type SettingsViewProps = {
   tab: SettingsSidebarTab;
   extensionSettingsId?: string | null;
-  theme: ThemePreference;
-  onThemeChange: (value: ThemePreference) => void;
   font: FontPreference;
   onFontChange: (value: FontPreference) => void;
   clickablePointerCursor: boolean;

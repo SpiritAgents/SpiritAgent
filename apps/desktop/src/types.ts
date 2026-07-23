@@ -67,6 +67,8 @@ export interface UpdateConfigRequest {
   windowsMica?: boolean;
   /** 关闭时不发送桌面系统通知（含 Windows 任务栏需要关注）。缺省为 true。 */
   systemNotifications?: boolean;
+  /** 首启引导（OOBE）是否已完成；缺省不修改已保存的值。 */
+  onboardingCompleted?: boolean;
   /** 缺省时不修改运行方式（Agent / Plan / Ask）。 */
   agentMode?: DesktopAgentMode;
   /** @deprecated 使用 agentMode。 */
@@ -1003,6 +1005,8 @@ export interface DesktopConfigSnapshot {
   windowsMica?: boolean;
   /** 是否发送系统通知；无字段时按 true 处理。 */
   systemNotifications?: boolean;
+  /** 首启引导（OOBE）是否已完成；无字段时按 false 处理。 */
+  onboardingCompleted?: boolean;
   /** 运行方式：影响宿主指令元数据、工具暴露与 SPIRIT_AGENT_MODE。 */
   agentMode: DesktopAgentMode;
   /** 与 `spiritAgentDataDir()/model-catalog-cache` 对齐；无缓存时为空数组。 */

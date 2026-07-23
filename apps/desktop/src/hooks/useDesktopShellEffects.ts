@@ -4,9 +4,9 @@ import { isWin32ElectronShell } from "@/lib/desktop-shell";
 import i18n from "@/lib/i18n";
 import {
   desktopNativeThemeForPreference,
+  getStoredTheme,
   resolveDark,
   syncDesktopWindowFrame,
-  type ThemePreference,
 } from "@/lib/theme";
 import type { DesktopExtensionCssLayer } from "@/types";
 
@@ -14,7 +14,6 @@ export type UseDesktopShellEffectsOptions = {
   isElectronShell: boolean;
   darwinElectronChrome: boolean;
   useMicaBackdrop: boolean;
-  theme: ThemePreference;
   extensionCss: DesktopExtensionCssLayer[] | undefined;
 };
 
@@ -22,7 +21,6 @@ export function useDesktopShellEffects({
   isElectronShell,
   darwinElectronChrome,
   useMicaBackdrop,
-  theme,
   extensionCss,
 }: UseDesktopShellEffectsOptions) {
   useEffect(() => {
@@ -81,11 +79,14 @@ export function useDesktopShellEffects({
       document.documentElement.classList.remove("spirit-desktop-mica");
     }
     if (isElectronShell) {
+      // theme 变化时的窗口同步由 applyThemeToDocument 负责（避免双 IPC）；
+      // 此处仅在 mica 开关变化时按当前存储主题刷新窗口材质
+      const theme = getStoredTheme();
       syncDesktopWindowFrame(resolveDark(theme), desktopNativeThemeForPreference(theme), {
         nativeBackdropBlur: useMicaBackdrop,
       });
     }
-  }, [useMicaBackdrop, isElectronShell, theme]);
+  }, [useMicaBackdrop, isElectronShell]);
 
   useEffect(() => {
     if (typeof document === "undefined") {

@@ -19,6 +19,7 @@ import { SkillsSettingsPanel } from "@/components/settings/panels/skills-setting
 import { ModelsSettingsPanel } from "@/components/settings/models/models-settings-panel";
 import { settingsPageTitleKey } from "@/components/settings/constants";
 import type { SettingsViewProps } from "@/components/settings/types";
+import { useTheme } from "@/hooks/useTheme";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
@@ -28,8 +29,6 @@ import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 export function SettingsView({
   tab,
   extensionSettingsId = null,
-  theme,
-  onThemeChange,
   font,
   onFontChange,
   clickablePointerCursor,
@@ -98,6 +97,8 @@ export function SettingsView({
   );
 
   const { t } = useTranslation();
+  // theme 就地订阅：切主题只重渲染设置面板子树，App 无需下传（避免全树重渲染）
+  const { theme, setTheme: onThemeChange } = useTheme();
   const extensionSettingsItem = extensionSettingsId
     ? snapshot?.extensionsList.find((item) => item.id === extensionSettingsId)
     : undefined;

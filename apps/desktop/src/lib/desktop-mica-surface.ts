@@ -27,6 +27,20 @@ export function desktopMicaTintClass(useMicaBackdrop: boolean): string {
   return useMicaBackdrop ? DESKTOP_MICA_CONTENT_TINT_CLASS : SOLID_BACKGROUND_CLASS;
 }
 
+/**
+ * LaunchSplash / OOBE 全屏覆盖层 tint。
+ * 退场时背景须透明：与 styles.css 中 app-body 交叉淡入同步，避免两层 `bg-background/70` 叠加深色。
+ */
+export function desktopFullscreenOverlayTintClass(
+  useMicaBackdrop: boolean,
+  exiting: boolean,
+): string {
+  if (exiting) {
+    return TRANSPARENT_BACKGROUND_CLASS;
+  }
+  return desktopMicaTintClass(useMicaBackdrop);
+}
+
 /** 主内容区内层：Mica 下透明以避免多层 alpha 叠深，否则实心背景。 */
 export function desktopMicaTintInnerClass(useMicaBackdrop: boolean): string {
   return useMicaBackdrop ? TRANSPARENT_BACKGROUND_CLASS : SOLID_BACKGROUND_CLASS;

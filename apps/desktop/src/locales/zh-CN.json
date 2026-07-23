@@ -85,6 +85,14 @@
     "amazonBedrock": "Amazon Bedrock",
     "custom": "自定义"
   },
+  "onboarding": {
+    "welcomeTitle": "Spirit Agent",
+    "continue": "继续",
+    "back": "返回",
+    "done": "完成",
+    "appearanceTitle": "外观",
+    "connectTitle": "连接提供商"
+  },
   "settings": {
     "title": "设置",
     "models": "模型",

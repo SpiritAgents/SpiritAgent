@@ -20,6 +20,7 @@ const RENDERER_SAFE_HOST_INTERNAL_SUBPATHS = new Set([
   'azure-resource',
   'bedrock-region',
   'bedrock-mantle',
+  'cloudflare-ai-gateway-resource',
   'google-vertex-endpoints',
   'skill-paths',
   'tool-output-archive-path',

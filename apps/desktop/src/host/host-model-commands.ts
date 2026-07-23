@@ -511,6 +511,9 @@ export async function updateConfigCommand(
     if (request.systemNotifications !== undefined) {
       state.config.systemNotifications = request.systemNotifications !== false;
     }
+    if (request.onboardingCompleted !== undefined) {
+      state.config.onboardingCompleted = request.onboardingCompleted === true;
+    }
     if (request.agentMode !== undefined) {
       state.config.agentMode = request.agentMode;
     } else if (request.planMode !== undefined) {
