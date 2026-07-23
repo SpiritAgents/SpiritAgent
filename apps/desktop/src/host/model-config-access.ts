@@ -7,6 +7,7 @@ import {
 
 import type {
   DesktopAlibabaBillingMode,
+  DesktopGlmCodingPlanBillingMode,
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
@@ -66,6 +67,12 @@ export function resolveModelProfileFromParts(
       : {}),
     ...(group.stepfunBillingMode
       ? { stepfunBillingMode: group.stepfunBillingMode as DesktopStepfunBillingMode }
+      : {}),
+    ...(group.zAiBillingMode
+      ? { zAiBillingMode: group.zAiBillingMode as DesktopGlmCodingPlanBillingMode }
+      : {}),
+    ...(group.zhipuBillingMode
+      ? { zhipuBillingMode: group.zhipuBillingMode as DesktopGlmCodingPlanBillingMode }
       : {}),
     ...(group.awsRegion ? { awsRegion: group.awsRegion } : {}),
     ...(group.azureResourceName ? { azureResourceName: group.azureResourceName } : {}),

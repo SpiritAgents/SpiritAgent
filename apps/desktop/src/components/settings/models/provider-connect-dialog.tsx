@@ -135,6 +135,9 @@ export function ProviderConnectDialog({
   const [connectStepfunBillingMode, setConnectStepfunBillingMode] = useState<
     "standard" | "step-plan"
   >("standard");
+  const [connectGlmCodingPlanBillingMode, setConnectGlmCodingPlanBillingMode] = useState<
+    "standard" | "glm-coding-plan"
+  >("standard");
   const [connectAlibabaWorkspaceId, setConnectAlibabaWorkspaceId] = useState("");
   const [customConnectMode, setCustomConnectMode] = useState<"single" | "bulk">(
     "single",
@@ -171,6 +174,17 @@ export function ProviderConnectDialog({
   const connectStepfunBillingModeForRequest = connectStepfunIsStepPlan
     ? ("step-plan" as const)
     : undefined;
+  const connectGlmCodingPlanIsActive =
+    (provider === "z-ai" || provider === "zhipu-ai")
+    && connectGlmCodingPlanBillingMode === "glm-coding-plan";
+  const connectZAiBillingModeForRequest =
+    provider === "z-ai" && connectGlmCodingPlanIsActive
+      ? ("glm-coding-plan" as const)
+      : undefined;
+  const connectZhipuBillingModeForRequest =
+    provider === "zhipu-ai" && connectGlmCodingPlanIsActive
+      ? ("glm-coding-plan" as const)
+      : undefined;
   const connectProviderSiteForRequest = connectAlibabaIsTokenPlan
     ? undefined
     : connectProviderSite.trim() || undefined;
@@ -209,6 +223,12 @@ export function ProviderConnectDialog({
               : {}),
             ...(connectStepfunBillingModeForRequest
               ? { stepfunBillingMode: connectStepfunBillingModeForRequest }
+              : {}),
+            ...(connectZAiBillingModeForRequest
+              ? { zAiBillingMode: connectZAiBillingModeForRequest }
+              : {}),
+            ...(connectZhipuBillingModeForRequest
+              ? { zhipuBillingMode: connectZhipuBillingModeForRequest }
               : {}),
             ...(connectProviderSiteForApiBase ? { site: connectProviderSiteForApiBase } : {}),
             ...(connectAlibabaWorkspaceIdForRequest
@@ -285,6 +305,12 @@ export function ProviderConnectDialog({
       ...(connectStepfunBillingModeForRequest
         ? { stepfunBillingMode: connectStepfunBillingModeForRequest }
         : {}),
+      ...(connectZAiBillingModeForRequest
+        ? { zAiBillingMode: connectZAiBillingModeForRequest }
+        : {}),
+      ...(connectZhipuBillingModeForRequest
+        ? { zhipuBillingMode: connectZhipuBillingModeForRequest }
+        : {}),
       forceRefresh,
     });
     if (res.modelIds.length === 0) {
@@ -317,6 +343,12 @@ export function ProviderConnectDialog({
         : {}),
       ...(connectStepfunBillingModeForRequest
         ? { stepfunBillingMode: connectStepfunBillingModeForRequest }
+        : {}),
+      ...(connectZAiBillingModeForRequest
+        ? { zAiBillingMode: connectZAiBillingModeForRequest }
+        : {}),
+      ...(connectZhipuBillingModeForRequest
+        ? { zhipuBillingMode: connectZhipuBillingModeForRequest }
         : {}),
     };
     await onAddProviderModels(bulk);
@@ -602,6 +634,36 @@ export function ProviderConnectDialog({
                     </SelectItem>
                     <SelectItem value="step-plan">
                       {t('settings.stepfunBillingModeStepPlan')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : null}
+          {provider === "z-ai" || provider === "zhipu-ai" ? (
+            <div className="grid gap-2">
+              <Label htmlFor="connect-glm-coding-plan-billing-mode">
+                {t('settings.glmCodingPlanBillingMode')}
+              </Label>
+              <div className={DESKTOP_FORM_INPUT_SHELL}>
+                <Select
+                  value={connectGlmCodingPlanBillingMode}
+                  onValueChange={(value) =>
+                    setConnectGlmCodingPlanBillingMode(value as "standard" | "glm-coding-plan")
+                  }
+                >
+                  <SelectTrigger
+                    id="connect-glm-coding-plan-billing-mode"
+                    className={DESKTOP_FORM_FIELD_TRIGGER_INNER}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">
+                      {t('settings.glmCodingPlanBillingModeStandard')}
+                    </SelectItem>
+                    <SelectItem value="glm-coding-plan">
+                      {t('settings.glmCodingPlanBillingModeGlmCodingPlan')}
                     </SelectItem>
                   </SelectContent>
                 </Select>

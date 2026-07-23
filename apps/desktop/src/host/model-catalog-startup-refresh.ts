@@ -171,6 +171,8 @@ type StartupMergedProfile = {
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: import('../types.js').DesktopAlibabaBillingMode;
   stepfunBillingMode?: import('../types.js').DesktopStepfunBillingMode;
+  zAiBillingMode?: import('../types.js').DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: import('../types.js').DesktopGlmCodingPlanBillingMode;
   vertexProject?: string;
   vertexLocation?: string;
 };
@@ -242,6 +244,12 @@ export function mergeNewCatalogModelsIntoConfig(
     }
     if (provider === 'stepfun' && profile.stepfunBillingMode === 'step-plan') {
       merged.stepfunBillingMode = 'step-plan';
+    }
+    if (provider === 'z-ai' && profile.zAiBillingMode === 'glm-coding-plan') {
+      merged.zAiBillingMode = 'glm-coding-plan';
+    }
+    if (provider === 'zhipu-ai' && profile.zhipuBillingMode === 'glm-coding-plan') {
+      merged.zhipuBillingMode = 'glm-coding-plan';
     }
     if (provider === 'google-vertex-ai') {
       if (profile.vertexProject?.trim()) {

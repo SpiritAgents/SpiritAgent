@@ -168,6 +168,14 @@
     "compatibleApiBase": "https://api.stepfun.com/step_plan/v1",
     "docUrl": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api"
   },
+  "zAiGlmCodingPlan": {
+    "compatibleApiBase": "https://api.z.ai/api/coding/paas/v4",
+    "docUrl": "https://docs.z.ai/devpack/quick-start"
+  },
+  "zhipuAiGlmCodingPlan": {
+    "compatibleApiBase": "https://open.bigmodel.cn/api/coding/paas/v4",
+    "docUrl": "https://docs.bigmodel.cn/cn/coding-plan/quick-start"
+  },
   "pickerOrder": ["openai", "anthropic", "google", "xai", "vercel-ai-gateway", "cloudflare-ai-gateway", "deepseek", "openrouter", "fireworks-ai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "alibaba", "minimax", "xiaomi", "siliconflow", "stepfun", "volcengine", "meituan", "tencent-tokenhub", "azure", "amazon-bedrock", "google-vertex-ai", "custom"],
   "pickerLabels": {
     "deepseek": {

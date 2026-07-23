@@ -284,6 +284,13 @@ const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: &str =
 /// 与 `model-provider-presets.json` 中 `stepfunStepPlan.compatibleApiBase` 对齐。
 const STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE: &str = "https://api.stepfun.com/step_plan/v1";
 
+/// 与 `model-provider-presets.json` 中 `zAiGlmCodingPlan.compatibleApiBase` 对齐。
+const Z_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE: &str = "https://api.z.ai/api/coding/paas/v4";
+
+/// 与 `model-provider-presets.json` 中 `zhipuAiGlmCodingPlan.compatibleApiBase` 对齐。
+const ZHIPU_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE: &str =
+    "https://open.bigmodel.cn/api/coding/paas/v4";
+
 pub(crate) fn model_add_stepfun_api_base(
     transport_kind: ModelTransportKind,
     step_plan: bool,
@@ -305,6 +312,20 @@ pub(crate) fn model_add_stepfun_api_base(
         }
         _ => None,
     }
+}
+
+pub(crate) fn model_add_z_ai_api_base(glm_coding_plan: bool) -> Option<String> {
+    if glm_coding_plan {
+        return Some(Z_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE.to_string());
+    }
+    model_add_preset_api_base_by_provider(crate::model_registry::ModelProvider::ZAi)
+}
+
+pub(crate) fn model_add_zhipu_ai_api_base(glm_coding_plan: bool) -> Option<String> {
+    if glm_coding_plan {
+        return Some(ZHIPU_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE.to_string());
+    }
+    model_add_preset_api_base_by_provider(crate::model_registry::ModelProvider::ZhipuAi)
 }
 
 pub(crate) fn model_add_alibaba_token_plan_api_base(
@@ -465,6 +486,20 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
     if profile.provider == Some(ModelProvider::Stepfun) {
         let step_plan = profile.stepfun_billing_mode().as_deref() == Some("step-plan");
         if let Some(base) = model_add_stepfun_api_base(profile.transport_kind(), step_plan) {
+            return base;
+        }
+    }
+
+    if profile.provider == Some(ModelProvider::ZAi) {
+        let glm_coding_plan = profile.z_ai_billing_mode().as_deref() == Some("glm-coding-plan");
+        if let Some(base) = model_add_z_ai_api_base(glm_coding_plan) {
+            return base;
+        }
+    }
+
+    if profile.provider == Some(ModelProvider::ZhipuAi) {
+        let glm_coding_plan = profile.zhipu_billing_mode().as_deref() == Some("glm-coding-plan");
+        if let Some(base) = model_add_zhipu_ai_api_base(glm_coding_plan) {
             return base;
         }
     }
@@ -857,5 +892,25 @@ mod tests {
         assert!(super::is_valid_cloudflare_gateway_id("my-gateway"));
         assert!(!super::is_valid_cloudflare_gateway_id("-bad"));
         assert!(!super::is_valid_cloudflare_gateway_id("bad@host"));
+    }
+
+    #[test]
+    fn z_ai_and_zhipu_api_base_follow_glm_coding_plan() {
+        assert_eq!(
+            super::model_add_z_ai_api_base(false).as_deref(),
+            Some("https://api.z.ai/api/paas/v4")
+        );
+        assert_eq!(
+            super::model_add_z_ai_api_base(true).as_deref(),
+            Some("https://api.z.ai/api/coding/paas/v4")
+        );
+        assert_eq!(
+            super::model_add_zhipu_ai_api_base(false).as_deref(),
+            Some("https://open.bigmodel.cn/api/paas/v4")
+        );
+        assert_eq!(
+            super::model_add_zhipu_ai_api_base(true).as_deref(),
+            Some("https://open.bigmodel.cn/api/coding/paas/v4")
+        );
     }
 }

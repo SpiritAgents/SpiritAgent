@@ -165,6 +165,8 @@ export type DesktopAlibabaBillingMode = 'token-plan';
 
 export type DesktopStepfunBillingMode = 'step-plan';
 
+export type DesktopGlmCodingPlanBillingMode = 'glm-coding-plan';
+
 export interface PreviewModelCatalogEntry {
   id: string;
   displayName?: string;
@@ -189,6 +191,8 @@ export interface PreviewModelsRequest {
   /** Alibaba Token Plan；缺省为标准按量模式。 */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   awsRegion?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -224,6 +228,8 @@ export interface AddProviderModelsRequest {
   /** Alibaba Token Plan；缺省为标准按量模式。 */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   awsRegion?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -265,6 +271,8 @@ export interface AddModelRequest {
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   /** Azure 资源名；`azure` 必填。 */
   azureResourceName?: string;
   cloudflareAccountId?: string;
@@ -1336,6 +1344,10 @@ export interface ModelProfileSnapshot {
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   /** StepFun Step Plan；缺省为标准 API。 */
   stepfunBillingMode?: DesktopStepfunBillingMode;
+  /** Z.ai GLM Coding Plan；缺省为标准 API。 */
+  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+  /** 智谱 AI GLM Coding Plan；缺省为标准 API。 */
+  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   /** Amazon Bedrock AWS 区域（如 `us-east-1`）；仅 `amazon-bedrock` 使用。 */
   awsRegion?: string;
   /** Azure 资源名；仅 `azure` 使用。 */

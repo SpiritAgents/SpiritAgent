@@ -271,6 +271,20 @@ pub struct ProviderGroup {
     )]
     pub stepfun_billing_mode: Option<String>,
     #[serde(
+        rename = "zAiBillingMode",
+        alias = "z_ai_billing_mode",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub z_ai_billing_mode: Option<String>,
+    #[serde(
+        rename = "zhipuBillingMode",
+        alias = "zhipu_billing_mode",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub zhipu_billing_mode: Option<String>,
+    #[serde(
         rename = "awsRegion",
         alias = "aws_region",
         default,
@@ -475,6 +489,26 @@ impl ModelProfile {
             .map(ToOwned::to_owned)
     }
 
+    pub fn z_ai_billing_mode(&self) -> Option<String> {
+        self.extra
+            .get("zAiBillingMode")
+            .or_else(|| self.extra.get("z_ai_billing_mode"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
+    pub fn zhipu_billing_mode(&self) -> Option<String> {
+        self.extra
+            .get("zhipuBillingMode")
+            .or_else(|| self.extra.get("zhipu_billing_mode"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
     pub fn aws_region(&self) -> Option<String> {
         self.extra
             .get("awsRegion")
@@ -668,6 +702,28 @@ pub fn resolve_model_profile_from_parts(
     {
         extra.insert(
             "stepfunBillingMode".to_string(),
+            Value::String(billing_mode.to_string()),
+        );
+    }
+    if let Some(billing_mode) = group
+        .z_ai_billing_mode
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "zAiBillingMode".to_string(),
+            Value::String(billing_mode.to_string()),
+        );
+    }
+    if let Some(billing_mode) = group
+        .zhipu_billing_mode
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        extra.insert(
+            "zhipuBillingMode".to_string(),
             Value::String(billing_mode.to_string()),
         );
     }
@@ -1008,6 +1064,8 @@ impl AppConfig {
             alibaba_workspace_id: None,
             alibaba_billing_mode: None,
             stepfun_billing_mode: None,
+            z_ai_billing_mode: None,
+            zhipu_billing_mode: None,
             aws_region: None,
             azure_resource_name: None,
             cloudflare_account_id: None,
@@ -1057,6 +1115,8 @@ pub struct ProviderGroupConnectDraft {
     pub alibaba_workspace_id: Option<String>,
     pub alibaba_billing_mode: Option<String>,
     pub stepfun_billing_mode: Option<String>,
+    pub z_ai_billing_mode: Option<String>,
+    pub zhipu_billing_mode: Option<String>,
     pub aws_region: Option<String>,
     pub azure_resource_name: Option<String>,
     pub cloudflare_account_id: Option<String>,
@@ -1081,6 +1141,24 @@ impl ProviderGroupConnectDraft {
         }
         if let Some(value) = normalize_optional_string(self.stepfun_billing_mode.clone()) {
             group.stepfun_billing_mode = Some(value);
+        }
+        // Z.ai / 智谱：标准模式以字段缺失表示；重连时须用 None 清掉既有 glm-coding-plan。
+        match group.provider {
+            ModelProvider::ZAi => {
+                group.z_ai_billing_mode = normalize_optional_string(self.z_ai_billing_mode.clone());
+            }
+            ModelProvider::ZhipuAi => {
+                group.zhipu_billing_mode =
+                    normalize_optional_string(self.zhipu_billing_mode.clone());
+            }
+            _ => {
+                if let Some(value) = normalize_optional_string(self.z_ai_billing_mode.clone()) {
+                    group.z_ai_billing_mode = Some(value);
+                }
+                if let Some(value) = normalize_optional_string(self.zhipu_billing_mode.clone()) {
+                    group.zhipu_billing_mode = Some(value);
+                }
+            }
         }
         if let Some(value) = normalize_optional_string(self.aws_region.clone()) {
             group.aws_region = Some(value);
@@ -2078,6 +2156,54 @@ mod tests {
         assert_eq!(model.alibaba_billing_mode().as_deref(), Some("token-plan"));
         assert!(model.provider_site().is_none());
         assert!(model.alibaba_workspace_id().is_none());
+    }
+
+    #[test]
+    fn reconnect_z_ai_standard_clears_glm_coding_plan_billing_mode() {
+        let mut cfg = AppConfig::default();
+        cfg.add_model_to_group(
+            "z-ai",
+            ModelProvider::ZAi,
+            "https://api.z.ai/api/coding/paas/v4".to_string(),
+            ProviderGroupConnectDraft {
+                z_ai_billing_mode: Some("glm-coding-plan".to_string()),
+                ..ProviderGroupConnectDraft::default()
+            },
+            ModelEntry {
+                name: "glm-4.7".to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
+        assert_eq!(
+            cfg.provider_groups[0].z_ai_billing_mode.as_deref(),
+            Some("glm-coding-plan")
+        );
+
+        cfg.add_model_to_group(
+            "z-ai",
+            ModelProvider::ZAi,
+            "https://api.z.ai/api/paas/v4".to_string(),
+            ProviderGroupConnectDraft::default(),
+            ModelEntry {
+                name: "glm-4.7".to_string(),
+                reasoning_effort: None,
+                thinking_enabled: None,
+                supported_reasoning_efforts: None,
+                capabilities: None,
+                context_length: None,
+                supports_thinking_type: None,
+            },
+        );
+        assert!(cfg.provider_groups[0].z_ai_billing_mode.is_none());
+        assert_eq!(
+            cfg.provider_groups[0].api_base,
+            "https://api.z.ai/api/paas/v4"
+        );
     }
 
     #[test]

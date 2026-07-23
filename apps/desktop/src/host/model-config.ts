@@ -90,7 +90,7 @@ function inferProviderSiteFromStoredApiBase(
 export function resolveProfileApiBase(
   profile: Pick<
     ModelProfileSnapshot,
-    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'cloudflareAccountId' | 'cloudflareGatewayId' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode' | 'stepfunBillingMode'
+    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'cloudflareAccountId' | 'cloudflareGatewayId' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode' | 'stepfunBillingMode' | 'zAiBillingMode' | 'zhipuBillingMode'
   >,
 ): string {
   if (profile.provider === 'amazon-bedrock') {
@@ -145,6 +145,8 @@ export function resolveProfileApiBase(
       profile.alibabaWorkspaceId,
       profile.alibabaBillingMode,
       profile.stepfunBillingMode,
+      profile.zAiBillingMode,
+      profile.zhipuBillingMode,
     );
   }
 
@@ -185,6 +187,8 @@ export function defaultApiBaseForTransport(
   alibabaWorkspaceId?: string,
   alibabaBillingMode?: ModelProfileSnapshot['alibabaBillingMode'],
   stepfunBillingMode?: ModelProfileSnapshot['stepfunBillingMode'],
+  zAiBillingMode?: ModelProfileSnapshot['zAiBillingMode'],
+  zhipuBillingMode?: ModelProfileSnapshot['zhipuBillingMode'],
 ): string {
   if (!provider) {
     return DEFAULT_API_BASE;
@@ -196,6 +200,8 @@ export function defaultApiBaseForTransport(
     {
       ...(alibabaBillingMode === 'token-plan' ? { billingMode: 'token-plan' } : {}),
       ...(stepfunBillingMode === 'step-plan' ? { stepfunBillingMode: 'step-plan' } : {}),
+      ...(zAiBillingMode === 'glm-coding-plan' ? { zAiBillingMode: 'glm-coding-plan' } : {}),
+      ...(zhipuBillingMode === 'glm-coding-plan' ? { zhipuBillingMode: 'glm-coding-plan' } : {}),
       ...(alibabaBillingMode === 'token-plan'
         ? {}
         : {
