@@ -634,57 +634,6 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
             }
             _ => ModelTransportKind::OpenAiCompatible,
         },
-        ModelProvider::KimiCode => match form.fields.get(2).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
-                if *selected == 1 {
-                    ModelTransportKind::Anthropic
-                } else {
-                    ModelTransportKind::OpenAiCompatible
-                }
-            }
-            _ => ModelTransportKind::OpenAiCompatible,
-        },
-        ModelProvider::Minimax => match form.fields.get(3).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
-                if *selected == 1 {
-                    ModelTransportKind::Anthropic
-                } else {
-                    ModelTransportKind::OpenAiCompatible
-                }
-            }
-            _ => ModelTransportKind::OpenAiCompatible,
-        },
-        ModelProvider::Alibaba => {
-            let billing_token_plan = match form.fields.get(2).map(|f| &f.editor) {
-                Some(BottomFormFieldEditorView::Choice { selected, options })
-                    if options.len() == 2 =>
-                {
-                    *selected == 1
-                }
-                _ => false,
-            };
-            let transport_idx = if billing_token_plan { 3 } else { 4 };
-            match form.fields.get(transport_idx).map(|f| &f.editor) {
-                Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
-                    match *selected {
-                        1 => ModelTransportKind::OpenResponses,
-                        2 => ModelTransportKind::Anthropic,
-                        _ => ModelTransportKind::OpenAiCompatible,
-                    }
-                }
-                _ => ModelTransportKind::OpenAiCompatible,
-            }
-        },
-        ModelProvider::Stepfun => match form.fields.get(3).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
-                match *selected {
-                    1 => ModelTransportKind::OpenResponses,
-                    2 => ModelTransportKind::Anthropic,
-                    _ => ModelTransportKind::OpenAiCompatible,
-                }
-            }
-            _ => ModelTransportKind::OpenAiCompatible,
-        },
         ModelProvider::Custom => match form.fields.get(2).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
                 match *selected {
@@ -980,18 +929,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         _ => 0,
     };
 
-    let minimax_transport_selected = match form.fields.get(3).map(|f| &f.editor) {
-        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
-            (*selected).min(1)
-        }
-        _ => 0,
-    };
-    let kimi_code_transport_selected = match form.fields.get(2).map(|f| &f.editor) {
-        Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
-            (*selected).min(1)
-        }
-        _ => 0,
-    };
     let alibaba_billing_selected = match form.fields.get(2).map(|f| &f.editor) {
         Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
             (*selected).min(1)
@@ -1005,17 +942,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
                     if options.len() == 2 =>
                 {
                     (*selected).min(1)
-                }
-                _ => 0,
-            }
-        } else {
-            0
-        };
-    let stepfun_transport_selected =
-        if provider_idx == model_add_stepfun_provider_index() {
-            match form.fields.get(3).map(|f| &f.editor) {
-                Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
-                    (*selected).min(2)
                 }
                 _ => 0,
             }
@@ -1045,21 +971,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         match form.fields.get(3).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 4 => {
                 (*selected).min(3)
-            }
-            _ => 0,
-        }
-    };
-    let alibaba_transport_selected = if alibaba_is_token_plan {
-        match form.fields.get(3).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
-                (*selected).min(2)
-            }
-            _ => 0,
-        }
-    } else {
-        match form.fields.get(4).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
-                (*selected).min(2)
             }
             _ => 0,
         }
@@ -1143,8 +1054,15 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             ""
         };
     let alibaba_workspace_raw =
-        if old_len == 7 && provider_idx == model_add_alibaba_provider_index() {
-            bottom_form_text_value(form, 5)
+        if provider_idx == model_add_alibaba_provider_index() {
+            if old_len == 6 {
+                bottom_form_text_value(form, 4)
+            } else if old_len == 7 {
+                // 兼容旧布局（含 api_kind 字段时 workspace 在 index 5）
+                bottom_form_text_value(form, 5)
+            } else {
+                ""
+            }
         } else {
             ""
         };
@@ -1178,7 +1096,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         vec![
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),
-            model_add_siliconflow_transport_field(kimi_code_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
     } else if provider_idx == model_add_minimax_provider_index() {
@@ -1186,7 +1103,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),
             model_add_minimax_site_field(minimax_site_selected),
-            model_add_siliconflow_transport_field(minimax_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
     } else if provider_idx == model_add_alibaba_provider_index() {
@@ -1195,7 +1111,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
                 model_add_provider_field(provider_idx),
                 model_add_mode_field_preset(),
                 model_add_alibaba_billing_mode_field(alibaba_billing_selected),
-                model_add_transport_field(alibaba_transport_selected),
                 model_add_api_key_field(api_key_raw),
             ]
         } else {
@@ -1204,7 +1119,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
                 model_add_mode_field_preset(),
                 model_add_alibaba_billing_mode_field(alibaba_billing_selected),
                 model_add_alibaba_site_field(alibaba_site_selected),
-                model_add_transport_field(alibaba_transport_selected),
                 model_add_alibaba_workspace_id_field(alibaba_workspace_raw),
                 model_add_api_key_field(api_key_raw),
             ]
@@ -1214,7 +1128,6 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),
             model_add_stepfun_billing_mode_field(stepfun_billing_selected),
-            model_add_transport_field(stepfun_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
     } else if provider_idx == model_add_z_ai_provider_index()
@@ -2142,7 +2055,7 @@ pub(crate) fn parse_model_add_connection(
                 _ => 0,
             };
             let site = model_add_alibaba_site_id_from_choice(site_selected);
-            let workspace_id = bottom_form_text_value(form, 5).trim().to_string();
+            let workspace_id = bottom_form_text_value(form, 4).trim().to_string();
             if model_add_alibaba_site_requires_workspace_id(site) && workspace_id.is_empty() {
                 return Err(t!("form.model.validation.alibaba_workspace_id_required").into_owned());
             }
@@ -3090,14 +3003,15 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 7);
-        form.selected_field = 5;
+        assert_eq!(form.fields.len(), 6);
+        form.selected_field = 4;
         insert_text(&mut form, "ws-cn");
-        form.selected_field = 6;
+        form.selected_field = 5;
         insert_text(&mut form, "sk-ali");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::Alibaba);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
         assert_eq!(
@@ -3125,12 +3039,13 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 5);
-        form.selected_field = 4;
+        assert_eq!(form.fields.len(), 4);
+        form.selected_field = 3;
         insert_text(&mut form, "sk-ali-token");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::Alibaba);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert_eq!(
             parsed.api_base,
@@ -3173,26 +3088,21 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 5);
+        assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
                 *selected = 1;
             }
         }
-        if let Some(f) = form.fields.get_mut(3) {
-            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 2;
-            }
-        }
         sync_model_add_form_fields(&mut form);
-        form.selected_field = 4;
+        form.selected_field = 3;
         insert_text(&mut form, "sk-stepfun");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::Stepfun);
-        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
-        assert_eq!(parsed.api_base, "https://api.stepfun.com/step_plan");
+        assert_eq!(parsed.api_base, "https://api.stepfun.com/step_plan/v1");
         assert_eq!(parsed.api_key, "sk-stepfun");
         assert_eq!(parsed.stepfun_billing_mode.as_deref(), Some("step-plan"));
     }
@@ -3356,22 +3266,16 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 4);
-        if let Some(f) = form.fields.get_mut(2) {
-            if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
-        }
-        sync_model_add_form_fields(&mut form);
-        form.selected_field = 3;
+        assert_eq!(form.fields.len(), 3);
+        form.selected_field = 2;
         insert_text(&mut form, "sk-kimi-code");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::KimiCode);
-        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
-        assert_eq!(parsed.api_base, "https://api.kimi.com/coding");
+        assert_eq!(parsed.api_base, "https://api.kimi.com/coding/v1");
         assert_eq!(parsed.api_key, "sk-kimi-code");
     }
 
@@ -3384,22 +3288,22 @@ mod tests {
             }
         }
         sync_model_add_form_fields(&mut form);
-        assert_eq!(form.fields.len(), 5);
-        if let Some(f) = form.fields.get_mut(3) {
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
                 *selected = 1;
             }
         }
         sync_model_add_form_fields(&mut form);
-        form.selected_field = 4;
+        form.selected_field = 3;
         insert_text(&mut form, "sk-mm");
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::Minimax);
-        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
-        assert_eq!(parsed.api_base, "https://api.minimax.io/anthropic/v1");
+        assert_eq!(parsed.api_base, "https://api.minimax.io/v1");
         assert_eq!(parsed.provider_site.as_deref(), Some("intl"));
         assert_eq!(parsed.api_key, "sk-mm");
     }

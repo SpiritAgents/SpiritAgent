@@ -34,40 +34,24 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
   switch (provider) {
     case "openai":
       return [];
+    // 直接提供商：连接向导固定 Chat Completions，不暴露 API 类型选择。
     case "xai":
-      return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.responsesApi];
     case "google":
     case "google-vertex-ai":
-      return [connectTransportOptionCatalog.chatCompletions];
     case "minimax":
     case "deepseek":
     case "kimi-code":
     case "meituan":
-      return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
+    case "xiaomi":
+    case "alibaba":
+    case "stepfun":
+      return [connectTransportOptionCatalog.chatCompletions];
     // TokenHub 文档有 Chat web_search_options / Responses web_search 两套联网能力，实测 Chat 注入无效；
     // Responses 仅 hy3-preview 等少数模型支持，与 TokenHub 以 Chat Completions 为主的模型矩阵不匹配，故仅保留 Chat Completions。
     case "tencent-tokenhub":
       return [connectTransportOptionCatalog.chatCompletions];
     case "siliconflow":
       return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
-    case "xiaomi":
-      return [
-        connectTransportOptionCatalog.chatCompletions,
-        connectTransportOptionCatalog.messagesApi,
-        connectTransportOptionCatalog.openResponsesApi,
-      ];
-    case "alibaba":
-      return [
-        connectTransportOptionCatalog.chatCompletions,
-        connectTransportOptionCatalog.messagesApi,
-        connectTransportOptionCatalog.openResponsesApi,
-      ];
-    case "stepfun":
-      return [
-        connectTransportOptionCatalog.chatCompletions,
-        connectTransportOptionCatalog.messagesApi,
-        connectTransportOptionCatalog.openResponsesApi,
-      ];
     case "openrouter":
     case "cloudflare-ai-gateway":
     case "custom":
@@ -114,15 +98,7 @@ export function providerSupportsConnectTransportPicker(
   provider: DesktopModelProvider | null,
 ): provider is DesktopModelProvider {
   return (
-    provider === "xai" ||
-    provider === "minimax" ||
-    provider === "deepseek" ||
-    provider === "kimi-code" ||
-    provider === "meituan" ||
-    provider === "xiaomi" ||
     provider === "siliconflow" ||
-    provider === "alibaba" ||
-    provider === "stepfun" ||
     provider === "custom" ||
     provider === "openrouter" ||
     provider === "cloudflare-ai-gateway" ||
