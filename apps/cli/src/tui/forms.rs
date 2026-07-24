@@ -41,7 +41,7 @@ impl TuiShell {
             return true;
         }
         if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
-            workspace_trust::select_prev_row(form);
+            workspace_trust_form::select_prev_row(form);
             return true;
         }
         if matches!(form.kind, BottomFormKind::Rules) {
@@ -62,7 +62,7 @@ impl TuiShell {
             return true;
         }
         if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
-            workspace_trust::select_next_row(form);
+            workspace_trust_form::select_next_row(form);
             return true;
         }
         if matches!(form.kind, BottomFormKind::Rules) {
@@ -107,7 +107,7 @@ impl TuiShell {
             return;
         }
         if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
-            workspace_trust::select_next_row(form);
+            workspace_trust_form::select_next_row(form);
             return;
         }
         bottom_form::select_next_field(form);
@@ -122,7 +122,7 @@ impl TuiShell {
             return;
         }
         if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
-            workspace_trust::select_prev_row(form);
+            workspace_trust_form::select_prev_row(form);
             return;
         }
         bottom_form::select_prev_field(form);

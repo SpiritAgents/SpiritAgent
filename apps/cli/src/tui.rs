@@ -28,7 +28,10 @@ use crate::{
     rules::RuleEntry,
     runtime_handle::RuntimeHandle,
     subagent_display::parse_pending_subagent_status_text,
-    shell::{ask_questions, bottom_form, file_reference, manual_shell, slash, workspace_trust},
+    shell::{
+        ask_questions, bottom_form, file_reference, manual_shell, slash,
+        workspace_trust as workspace_trust_form,
+    },
     skills::{self, SkillEntry},
     ts_bridge::{
         CliExtensionCliUiHookEntry, CliExtensionEntry, CliMarketplaceCatalogItem,

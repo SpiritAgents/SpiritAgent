@@ -33,7 +33,7 @@ mod tests;
 pub(crate) use constants::{ENV_API_KEY, ENV_RUNTIME_BACKEND_NODE_PATH};
 use json_rpc::JsonRpcProcess;
 pub use types::*;
-use types::bridge::{BridgePendingApproval, WorkspaceCapabilityTrustPrompter};
+use types::bridge::BridgePendingApproval;
 
 pub struct TsBridgeRuntime {
     pub(crate) process: JsonRpcProcess,
