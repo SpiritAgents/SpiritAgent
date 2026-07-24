@@ -2,11 +2,15 @@ use anyhow::{Result, anyhow};
 use serde_json::{Value, json};
 
 use crate::{
+    logging,
     mcp::{McpServerConfig, McpScope, add_mcp_server},
     rewind,
     ts_bridge::{
         tool_ui::is_retired_builtin_host_method,
-        types::bridge::{LocalMcpToolFailedEvent, LocalMcpToolResultEvent},
+        types::bridge::{
+            LocalMcpToolFailedEvent, LocalMcpToolResultEvent, WorkspaceCapabilityTrustDecision,
+            WorkspaceCapabilityTrustRequest,
+        },
         TsBridgeRuntime,
     },
 };
@@ -96,6 +100,25 @@ impl TsBridgeRuntime {
                 let change: rewind::HostRecordedFileChange = serde_json::from_value(params)?;
                 self.record_host_file_change(change)?;
                 Ok(None)
+            }
+            "host.requestWorkspaceCapabilityTrust" => {
+                let params = params.ok_or_else(|| {
+                    anyhow!("host.requestWorkspaceCapabilityTrust 缺少 params")
+                })?;
+                let request: WorkspaceCapabilityTrustRequest = serde_json::from_value(params)?;
+                // Take the prompter out so the nested UI can redraw without holding it via self.
+                let mut prompter = self.workspace_capability_trust_prompter.take();
+                let decision = match prompter.as_mut() {
+                    Some(prompter) => prompter(request),
+                    None => {
+                        logging::log_event(
+                            "[workspace-trust] no interactive prompter registered; denying",
+                        );
+                        WorkspaceCapabilityTrustDecision::Deny
+                    }
+                };
+                self.workspace_capability_trust_prompter = prompter;
+                Ok(Some(json!({ "decision": decision.as_str() })))
             }
             _ => Err(anyhow!("未知 host callback: {}", method)),
         }

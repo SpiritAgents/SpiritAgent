@@ -40,6 +40,10 @@ impl TuiShell {
             ask_questions::select_prev_row(form);
             return true;
         }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            workspace_trust_form::select_prev_row(form);
+            return true;
+        }
         if matches!(form.kind, BottomFormKind::Rules) {
             form.scroll_offset = form.scroll_offset.saturating_sub(lines);
             return true;
@@ -55,6 +59,10 @@ impl TuiShell {
         };
         if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
             ask_questions::select_next_row(form);
+            return true;
+        }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            workspace_trust_form::select_next_row(form);
             return true;
         }
         if matches!(form.kind, BottomFormKind::Rules) {
@@ -79,7 +87,8 @@ impl TuiShell {
             BottomFormKind::AskQuestions { .. } => {
                 self.complete_ask_questions_form(ask_questions::dismiss_result());
             }
-            BottomFormKind::McpAdd
+            BottomFormKind::WorkspaceCapabilityTrust { .. }
+            | BottomFormKind::McpAdd
             | BottomFormKind::ModelAdd
             | BottomFormKind::HookAdd
             | BottomFormKind::McpPrompt { .. }
@@ -97,6 +106,10 @@ impl TuiShell {
             ask_questions::select_next_row(form);
             return;
         }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            workspace_trust_form::select_next_row(form);
+            return;
+        }
         bottom_form::select_next_field(form);
     }
 
@@ -106,6 +119,10 @@ impl TuiShell {
         };
         if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
             ask_questions::select_prev_row(form);
+            return;
+        }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            workspace_trust_form::select_prev_row(form);
             return;
         }
         bottom_form::select_prev_field(form);
@@ -119,6 +136,9 @@ impl TuiShell {
             ask_questions::move_left(form);
             return;
         }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            return;
+        }
         bottom_form::move_left(form);
     }
 
@@ -128,6 +148,9 @@ impl TuiShell {
         };
         if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
             ask_questions::move_right(form);
+            return;
+        }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
             return;
         }
         bottom_form::move_right(form);
@@ -141,6 +164,9 @@ impl TuiShell {
             ask_questions::move_home(form);
             return;
         }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            return;
+        }
         bottom_form::move_home(form);
     }
 
@@ -150,6 +176,9 @@ impl TuiShell {
         };
         if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
             ask_questions::move_end(form);
+            return;
+        }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
             return;
         }
         bottom_form::move_end(form);
@@ -163,6 +192,9 @@ impl TuiShell {
             ask_questions::insert_char(form, ch);
             return;
         }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            return;
+        }
         bottom_form::insert_char(form, ch);
     }
 
@@ -172,6 +204,9 @@ impl TuiShell {
         };
         if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
             ask_questions::insert_text(form, text);
+            return;
+        }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
             return;
         }
         bottom_form::insert_text(form, text);
@@ -185,6 +220,9 @@ impl TuiShell {
             ask_questions::backspace(form);
             return;
         }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+            return;
+        }
         bottom_form::backspace(form);
     }
 
@@ -194,6 +232,9 @@ impl TuiShell {
         };
         if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
             ask_questions::delete(form);
+            return;
+        }
+        if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
             return;
         }
         bottom_form::delete(form);
@@ -231,6 +272,8 @@ impl TuiShell {
                     }
                 }
             }
+            // Nested host prompt owns Enter/Esc; ignore if somehow left open in the main loop.
+            BottomFormKind::WorkspaceCapabilityTrust { .. } => {}
             BottomFormKind::McpAdd | BottomFormKind::ModelAdd => self.save_bottom_form(),
             BottomFormKind::HookAdd => {
                 let should_toggle = self

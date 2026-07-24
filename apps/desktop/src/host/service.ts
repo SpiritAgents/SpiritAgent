@@ -56,6 +56,8 @@ import {
   gitBranchLabelForBasicInfo,
   setGitHubFetchImplementation,
   type WorkLocationKind,
+  type WorkspaceCapabilityTrustDecision,
+  type WorkspaceCapabilityTrustRequest,
 } from '@spiritagent/host-internal';
 
 import type {
@@ -116,6 +118,7 @@ import type {
   RewindAndSubmitMessageRequest,
   ReplyPendingApprovalRequest,
   ReplyPendingQuestionsRequest,
+  ReplyWorkspaceCapabilityTrustRequest,
   ForkSessionRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
@@ -218,6 +221,7 @@ import {
   writeHostTextFileCommand,
   writeWorkspaceTextFileCommand,
   revealWorkspaceEntryCommand,
+  openPathInDefaultAppCommand,
   renameWorkspaceEntryCommand,
   createWorkspaceEntryCommand,
   moveWorkspaceEntryCommand,
@@ -689,6 +693,17 @@ class DesktopHostService {
   private lspSnapshot = defaultDesktopLspSnapshot();
   private visiblePaneSessionPaths: string[] = [];
   private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
+  private pendingWorkspaceCapabilityTrust: WorkspaceCapabilityTrustRequest | undefined;
+  private workspaceCapabilityTrustWaiter:
+    | {
+        resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
+        reject: (error: Error) => void;
+      }
+    | undefined;
+  /** Serialize trust prompts so one reply cannot authorize multiple workspaces. */
+  private workspaceCapabilityTrustTail: Promise<void> = Promise.resolve();
+  /** sessionStart may await interactive trust; never run it while holding runSerialized. */
+  private sessionStartTail: Promise<void> = Promise.resolve();
 
   private replaceVisiblePaneSessionPath(before: string, after: string): void {
     const beforeResolved = path.resolve(before);
@@ -921,8 +936,36 @@ class DesktopHostService {
     }
   }
 
+  private requestWorkspaceCapabilityTrust = (
+    request: WorkspaceCapabilityTrustRequest,
+  ): Promise<WorkspaceCapabilityTrustDecision> => {
+    return new Promise<WorkspaceCapabilityTrustDecision>((resolve, reject) => {
+      this.workspaceCapabilityTrustTail = this.workspaceCapabilityTrustTail
+        .catch(() => undefined)
+        .then(
+          () =>
+            new Promise<void>((slotDone) => {
+              this.pendingWorkspaceCapabilityTrust = request;
+              this.workspaceCapabilityTrustWaiter = {
+                resolve: (decision) => {
+                  resolve(decision);
+                  slotDone();
+                },
+                reject: (error) => {
+                  reject(error);
+                  slotDone();
+                },
+              };
+              this.emitLiveSnapshotUpdate();
+            }),
+        );
+    });
+  };
+
   private getHookRunner(workspaceRoot: string): HookRunner {
-    return createDesktopHookRunner(workspaceRoot);
+    return createDesktopHookRunner(workspaceRoot, {
+      requestWorkspaceCapabilityTrust: this.requestWorkspaceCapabilityTrust,
+    });
   }
 
   private async runSessionEndForBundle(
@@ -945,6 +988,34 @@ class DesktopHostService {
     const hookRunner = this.getHookRunner(workspaceRoot);
     const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
     await runDesktopSessionStartHook(bundle.runtime, hookRunner, context, source);
+  }
+
+  /**
+   * Queue sessionStart off the runSerialized critical section. Trust prompts await the
+   * user and must not hold the host mutex (otherwise openSession / bootstrap stall).
+   */
+  private scheduleSessionStartForBundle(
+    bundle: SessionBundle,
+    source: SessionStartHookInput['source'],
+  ): void {
+    const bundleId = bundle.id;
+    this.sessionStartTail = this.sessionStartTail
+      .catch(() => undefined)
+      .then(async () => {
+        const target = this.sessionRegistry.get(bundleId);
+        if (!target) {
+          return;
+        }
+        try {
+          await this.runSessionStartForBundle(target, source);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error('[desktop-host] sessionStart failed', { bundleId, source, error });
+          this.lastRuntimeError = message;
+          this.emitLiveSnapshotUpdate();
+        }
+      });
+    void this.sessionStartTail;
   }
 
   private sessionActivationContext(): SessionActivationContext {
@@ -982,7 +1053,9 @@ class DesktopHostService {
       buildSnapshotProjectedForBundle: (bundle) => this.buildSnapshotProjectedForBundle(bundle),
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
       runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
-      runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
+      runSessionStartForBundle: async (bundle, source) => {
+        this.scheduleSessionStartForBundle(bundle, source);
+      },
     };
   }
 
@@ -2215,6 +2288,20 @@ class DesktopHostService {
     return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
   }
 
+  async replyWorkspaceCapabilityTrust(
+    request: ReplyWorkspaceCapabilityTrustRequest,
+  ): Promise<DesktopSnapshot> {
+    if (!this.pendingWorkspaceCapabilityTrust || !this.workspaceCapabilityTrustWaiter) {
+      throw new Error('No pending workspace capability trust request');
+    }
+    const waiter = this.workspaceCapabilityTrustWaiter;
+    this.workspaceCapabilityTrustWaiter = undefined;
+    this.pendingWorkspaceCapabilityTrust = undefined;
+    waiter.resolve(request.decision);
+    this.emitLiveSnapshotUpdate();
+    return this.buildSnapshot();
+  }
+
   async resetSession(options?: { activate?: boolean }): Promise<DesktopSnapshot> {
     if (options?.activate === false) {
       return resetSessionBackgroundCommand(this.sessionActivationContext());
@@ -2421,6 +2508,10 @@ class DesktopHostService {
     );
   }
 
+  async openPathInDefaultApp(absolutePath: string): Promise<void> {
+    return openPathInDefaultAppCommand(this.workspaceGitCommandContext(), absolutePath);
+  }
+
   async renameWorkspaceEntry(
     relativePath: string,
     newName: string,
@@ -2620,8 +2711,11 @@ class DesktopHostService {
     const hadRuntime = bundle.runtime !== undefined;
     await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
-    if (hadRuntime && bundle.runtime) {
-      await this.runSessionStartForBundle(bundle, 'resume');
+    // First runtime creation (e.g. bootstrap) must still fire sessionStart so workspace
+    // hook trust can prompt; previously only re-refresh of an existing runtime did.
+    // Schedule unlocked: trust await must not hold runSerialized.
+    if (bundle.runtime) {
+      this.scheduleSessionStartForBundle(bundle, hadRuntime ? 'resume' : 'startup');
     }
   }
 
@@ -3706,6 +3800,9 @@ class DesktopHostService {
         const paneSessions = this.buildPaneSessionsSnapshot(activeBundle);
         return paneSessions ? { paneSessions } : {};
       })(),
+      ...(this.pendingWorkspaceCapabilityTrust
+        ? { pendingWorkspaceCapabilityTrust: this.pendingWorkspaceCapabilityTrust }
+        : {}),
     });
   }
 

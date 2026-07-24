@@ -100,6 +100,13 @@ pub struct McpPromptArgumentBinding {
 }
 
 #[derive(Clone, Debug)]
+pub struct WorkspaceCapabilityTrustHookView {
+    pub event: String,
+    pub command: String,
+    pub resolved_path: String,
+}
+
+#[derive(Clone, Debug)]
 pub enum BottomFormKind {
     McpAdd,
     ModelAdd,
@@ -109,6 +116,12 @@ pub enum BottomFormKind {
         request: AskQuestionsRequest,
         submit_selected: bool,
         validation_message: Option<String>,
+    },
+    WorkspaceCapabilityTrust {
+        hash_changed: bool,
+        hooks: Vec<WorkspaceCapabilityTrustHookView>,
+        /// 0 = allow once, 1 = deny, 2 = always trust
+        selected_row: usize,
     },
     McpPrompt {
         server: String,

@@ -50,6 +50,7 @@ impl TsBridgeRuntime {
             events: VecDeque::new(),
             bridge_failed: false,
             deferred_transport_replace: false,
+            workspace_capability_trust_prompter: None,
         };
         logging::log_event(&format!(
             "[ts-bridge-host] runtime init workspace_root={}",
@@ -88,6 +89,7 @@ impl TsBridgeRuntime {
             events: VecDeque::new(),
             bridge_failed: false,
             deferred_transport_replace: false,
+            workspace_capability_trust_prompter: None,
         };
         runtime.initialize_bridge_with_transport_config(transport::build_mcp_only_transport_config(
             &runtime.workspace_root,
@@ -201,6 +203,29 @@ impl TsBridgeRuntime {
 
     pub(crate) fn transport_config_will_change(&self, config: &AppConfig) -> bool {
         transport::transport_config_will_change(&self.config, config)
+    }
+
+    pub fn run_session_start(&mut self, source: &str) -> Result<()> {
+        if self.bridge_failed {
+            return Err(anyhow!("TS bridge 已失效，无法运行 sessionStart"));
+        }
+        let snapshot = self.call_bridge(
+            "runtime.runSessionStart",
+            Some(json!({ "source": source })),
+        )?;
+        self.apply_snapshot(serde_json::from_value(snapshot)?);
+        Ok(())
+    }
+
+    pub fn set_workspace_capability_trust_prompter(
+        &mut self,
+        prompter: Option<crate::ts_bridge::types::bridge::WorkspaceCapabilityTrustPrompter>,
+    ) {
+        self.workspace_capability_trust_prompter = prompter;
+    }
+
+    pub fn has_workspace_capability_trust_prompter(&self) -> bool {
+        self.workspace_capability_trust_prompter.is_some()
     }
 
     pub(crate) fn call_bridge(&mut self, method: &str, params: Option<Value>) -> Result<Value> {

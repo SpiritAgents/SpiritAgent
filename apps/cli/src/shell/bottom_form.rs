@@ -2467,6 +2467,7 @@ fn normalize_inserted_text(form: &BottomFormView, text: &str) -> String {
         BottomFormKind::McpAdd
         | BottomFormKind::HookAdd
         | BottomFormKind::AskQuestions { .. }
+        | BottomFormKind::WorkspaceCapabilityTrust { .. }
         | BottomFormKind::ModelAdd
         | BottomFormKind::Rules
         | BottomFormKind::Skills

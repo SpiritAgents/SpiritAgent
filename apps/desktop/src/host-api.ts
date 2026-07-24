@@ -73,6 +73,7 @@ import type {
   AbortConversationRequest,
   ReplyPendingApprovalRequest,
   ReplyPendingQuestionsRequest,
+  ReplyWorkspaceCapabilityTrustRequest,
   BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   BeginSideChatPaneSessionRequest,
@@ -221,6 +222,8 @@ export interface HostApi {
   subscribeSessionListUpdates?(callback: () => void): () => void;
   replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
   replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
+  replyWorkspaceCapabilityTrust(request: ReplyWorkspaceCapabilityTrustRequest): Promise<DesktopSnapshot>;
+  openPathInDefaultApp(absolutePath: string): Promise<void>;
   resetSession(): Promise<DesktopSnapshot>;
   listSessions(): Promise<SessionListItem[]>;
   openSession(path: string): Promise<DesktopSnapshot>;

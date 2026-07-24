@@ -59,6 +59,7 @@ import {
   forceDeleteWorkspaceEntry as forceDeleteWorkspaceEntryOnDisk,
   moveWorkspaceEntry as moveWorkspaceEntryOnDisk,
   renameWorkspaceEntry as renameWorkspaceEntryOnDisk,
+  openAbsolutePathInDefaultApp as openAbsolutePathInDefaultAppOnDisk,
   revealWorkspaceEntry as revealWorkspaceEntryOnDisk,
   trashWorkspaceEntry as trashWorkspaceEntryOnDisk,
   type WorkspaceEntryKind,
@@ -427,6 +428,15 @@ export async function revealWorkspaceEntryCommand(
   const state = ctx.requireState();
   const root = workspaceRoot?.trim() || state.workspaceRoot;
   await revealWorkspaceEntryOnDisk(root, relativePath);
+}
+
+export async function openPathInDefaultAppCommand(
+  ctx: HostWorkspaceGitCommandContext,
+  absolutePath: string,
+): Promise<void> {
+  await ctx.ensureInitialized(undefined, { fastPath: true });
+  const state = ctx.requireState();
+  await openAbsolutePathInDefaultAppOnDisk(state.workspaceRoot, absolutePath);
 }
 
 export async function renameWorkspaceEntryCommand(

@@ -52,6 +52,7 @@ export interface BuildDesktopSnapshotInput {
   subagentViewer?: DesktopSnapshot['subagentViewer'];
   automationsList: DesktopAutomationListItem[];
   paneSessions?: DesktopSnapshot['paneSessions'];
+  pendingWorkspaceCapabilityTrust?: DesktopSnapshot['pendingWorkspaceCapabilityTrust'];
 }
 
 function snapshotProviderGroups(config: DesktopConfigFile): DesktopConfigFile['providerGroups'] {
@@ -154,6 +155,9 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
     composerSessionKey: input.composerSessionKey,
     ...(input.subagentViewer ? { subagentViewer: input.subagentViewer } : {}),
     automationsList: input.automationsList.map((item) => ({ ...item })),
+    ...(input.pendingWorkspaceCapabilityTrust
+      ? { pendingWorkspaceCapabilityTrust: input.pendingWorkspaceCapabilityTrust }
+      : {}),
   };
 }
 

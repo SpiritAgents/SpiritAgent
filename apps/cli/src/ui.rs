@@ -39,7 +39,7 @@ use crate::{
     logging,
     ports::SubagentSessionStatus,
     session::PendingMcpResource,
-    shell::{ask_questions as ask_questions_form, manual_shell},
+    shell::{ask_questions as ask_questions_form, manual_shell, workspace_trust as workspace_trust_form},
     view::{
         AskQuestionsOptionView, AskQuestionsQuestionView, AssistantAuxKind,
         BottomFormFieldEditorView, BottomFormFieldView, BottomFormKind, BottomFormView,
@@ -49,6 +49,15 @@ use crate::{
         ToolUiBlock, ToolUiPhase, TuiViewModel,
     },
 };
+
+/// Nested host prompts (e.g. workspace capability trust) redraw via this entry.
+pub fn draw_nested_bottom_form(
+    frame: &mut ratatui::Frame<'_>,
+    area: ratatui::layout::Rect,
+    form: &BottomFormView,
+) {
+    let _ = draw_bottom_form(frame, area, form);
+}
 
 const SLASH_SUGGESTION_VISIBLE_ITEMS: usize = 10;
 const SLASH_SUGGESTION_BLOCK_HEIGHT: u16 = 12;

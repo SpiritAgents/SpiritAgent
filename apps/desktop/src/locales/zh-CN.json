@@ -1304,5 +1304,15 @@
     "ask": "只读协助：查阅、解释与搜索代码库",
     "debug": "系统化排查 Bug：先列假设与埋点，日志取证后迭代根因",
     "activateSkillPrompt": "请按 skill \"{{skillName}}\" 处理当前任务。"
+  },
+  "workspaceTrust": {
+    "title": "是否信任工作区能力？",
+    "risk": "此工作区定义了将执行项目内脚本的 Hooks。仅在你信任该代码库时继续。",
+    "hooksChanged": "自上次信任以来，工作区 Hooks 已变更。请在继续前复查列表。",
+    "allowOnce": "允许一次",
+    "deny": "拒绝",
+    "alwaysTrust": "始终信任",
+    "hooksSection": "将运行的 Hooks",
+    "openHookScript": "在默认编辑器中打开脚本"
   }
 }

@@ -14,6 +14,13 @@ import {
 
 import { runCommandHook } from './command-runner.js';
 import { listHookDefinitionsForInput, loadHooksConfig, type LoadedHooksConfig } from './loader.js';
+import {
+  applyWorkspaceCapabilityTrustDecision,
+  computeWorkspaceHooksContentHash,
+  evaluateWorkspaceHooksTrustGate,
+  filterDefinitionsByWorkspaceTrust,
+  type RequestWorkspaceCapabilityTrust,
+} from './trust.js';
 
 function applyPreEventPermission(
   aggregate: HookRunResult,
@@ -76,6 +83,11 @@ function applyOutput(
 export interface CreateHookRunnerOptions extends HookRunnerContext {
   logger?: (message: string) => void;
   reloadConfig?: () => LoadedHooksConfig;
+  /**
+   * When workspace hooks need a trust decision, hosts prompt the user.
+   * If omitted, workspace hooks are denied (safe default for non-interactive hosts).
+   */
+  requestWorkspaceCapabilityTrust?: RequestWorkspaceCapabilityTrust;
 }
 
 export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
@@ -85,6 +97,64 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
       workspaceRoot: options.workspaceRoot,
     });
 
+  let inFlightTrust: Promise<boolean> | undefined;
+
+  async function ensureWorkspaceHooksAllowed(loaded: LoadedHooksConfig): Promise<boolean> {
+    if (inFlightTrust) {
+      return inFlightTrust;
+    }
+
+    inFlightTrust = (async () => {
+      const gate = await evaluateWorkspaceHooksTrustGate({
+        spiritDataDir: options.spiritDataDir,
+        workspaceRoot: options.workspaceRoot,
+        loaded,
+      });
+
+      if (gate.status === 'noWorkspaceHooks') {
+        return false;
+      }
+      if (gate.status === 'allow') {
+        return true;
+      }
+
+      if (!options.requestWorkspaceCapabilityTrust) {
+        options.logger?.(
+          'Skipping workspace hooks: no trust prompt available (non-interactive default deny).',
+        );
+        return false;
+      }
+
+      const decision = await options.requestWorkspaceCapabilityTrust(gate.request);
+      if (decision === 'deny') {
+        options.logger?.('Skipping workspace hooks: user denied workspace capability trust.');
+        return false;
+      }
+
+      // Re-hash after the interactive prompt: scripts may have changed while the user decided.
+      const freshLoaded = getLoaded();
+      const currentHash = computeWorkspaceHooksContentHash(freshLoaded);
+      if (!currentHash || currentHash !== gate.request.contentHash) {
+        options.logger?.(
+          'Skipping workspace hooks: content hash changed while awaiting trust decision.',
+        );
+        return false;
+      }
+
+      await applyWorkspaceCapabilityTrustDecision({
+        spiritDataDir: options.spiritDataDir,
+        workspaceRoot: gate.request.workspaceRoot,
+        contentHash: currentHash,
+        decision,
+      });
+      return true;
+    })().finally(() => {
+      inFlightTrust = undefined;
+    });
+
+    return inFlightTrust;
+  }
+
   async function runEvent(input: HookInput): Promise<HookRunResult> {
     const loaded = getLoaded();
     const definitions = listHookDefinitionsForInput(loaded, input);
@@ -92,10 +162,19 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
       return emptyHookRunResult();
     }
 
+    const hasWorkspace = definitions.some((definition) => definition.scope === 'workspace');
+    const workspaceAllowed = hasWorkspace
+      ? await ensureWorkspaceHooksAllowed(loaded)
+      : false;
+    const runnable = filterDefinitionsByWorkspaceTrust(definitions, workspaceAllowed);
+    if (runnable.length === 0) {
+      return emptyHookRunResult();
+    }
+
     const inputJson = JSON.stringify(serializeHookInput(input));
     let aggregate = emptyHookRunResult();
 
-    for (const definition of definitions) {
+    for (const definition of runnable) {
       const hookOptions: Parameters<typeof runCommandHook>[0] = {
         definition,
         inputJson,

@@ -17,8 +17,18 @@ import type { ApprovalLevel } from '@spiritagent/host-internal/approval-level';
 import type { WorkLocationKind } from '@spiritagent/host-internal/work-location';
 import type { LocalFileComposerRoute } from '@spiritagent/host-internal/local-file-composer-route';
 import type { GitHubPullRequestCommit, GitHubPullRequestMergeMethod } from '@spiritagent/host-internal/github/types';
+import type {
+  WorkspaceCapabilityTrustDecision,
+  WorkspaceCapabilityTrustRequest,
+} from '@spiritagent/host-internal';
 
-export type { ApprovalLevel, WorkLocationKind, LocalFileComposerRoute };
+export type {
+  ApprovalLevel,
+  WorkLocationKind,
+  LocalFileComposerRoute,
+  WorkspaceCapabilityTrustDecision,
+  WorkspaceCapabilityTrustRequest,
+};
 
 import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
 import type { RichSegment } from './lib/composer-segment-model.js';
@@ -695,6 +705,10 @@ export interface ReplyPendingQuestionsRequest {
   sessionPath?: string;
 }
 
+export interface ReplyWorkspaceCapabilityTrustRequest {
+  decision: WorkspaceCapabilityTrustDecision;
+}
+
 export interface BeginSplitPaneSessionRequest {
   paneId: string;
   /** When true, only create the in-memory bundle; caller batches snapshot via syncSplitPaneSessions. */
@@ -978,6 +992,8 @@ export interface DesktopSnapshot {
   /** Active SubAgent viewer overlay; present while renderer has a tool card open in viewer mode. */
   subagentViewer?: SubagentViewerSnapshot;
   automationsList: DesktopAutomationListItem[];
+  /** Workspace hooks trust gate; blocks sessionStart workspace hooks until the user decides. */
+  pendingWorkspaceCapabilityTrust?: WorkspaceCapabilityTrustRequest;
 }
 
 export type SubagentViewerSessionStatus = 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked';

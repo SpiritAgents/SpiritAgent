@@ -6,16 +6,27 @@ import {
   type SessionEndHookInput,
   type SessionStartHookInput,
 } from '@spiritagent/agent-core';
-import { createHookRunner } from '@spiritagent/host-internal';
+import {
+  createHookRunner,
+  type RequestWorkspaceCapabilityTrust,
+} from '@spiritagent/host-internal';
 
 import type { SessionBundle } from './session-bundle.js';
 import type { DesktopRuntime } from './runtime.js';
 import { spiritAgentDataDir } from './storage.js';
 
-export function createDesktopHookRunner(workspaceRoot: string): HookRunner {
+export function createDesktopHookRunner(
+  workspaceRoot: string,
+  options?: {
+    requestWorkspaceCapabilityTrust?: RequestWorkspaceCapabilityTrust;
+  },
+): HookRunner {
   return createHookRunner({
     spiritDataDir: spiritAgentDataDir(),
     workspaceRoot,
+    ...(options?.requestWorkspaceCapabilityTrust
+      ? { requestWorkspaceCapabilityTrust: options.requestWorkspaceCapabilityTrust }
+      : {}),
   });
 }
 

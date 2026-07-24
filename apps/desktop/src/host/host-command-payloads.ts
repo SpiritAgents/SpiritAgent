@@ -40,6 +40,7 @@ import type {
   RewindAndSubmitMessageRequest,
   ReplyPendingApprovalRequest,
   ReplyPendingQuestionsRequest,
+  ReplyWorkspaceCapabilityTrustRequest,
   ForkSessionRequest,
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
@@ -151,6 +152,7 @@ export type CommandPayloads = {
   setAutomationEnabled: { automationId: string; enabled: boolean };
   replyPendingApproval: { request: ReplyPendingApprovalRequest };
   replyPendingQuestions: { request: ReplyPendingQuestionsRequest };
+  replyWorkspaceCapabilityTrust: { request: ReplyWorkspaceCapabilityTrustRequest };
   resetSession: { activate?: boolean } | undefined;
   listSessions: undefined;
   openSession: { path: string; activate?: boolean };
@@ -180,6 +182,7 @@ export type CommandPayloads = {
   searchWorkspaceContent: { request: import('../types.js').WorkspaceContentSearchRequest };
   writeWorkspaceTextFile: { request: WriteWorkspaceTextFileRequest };
   revealWorkspaceEntry: { relativePath: string; workspaceRoot?: string };
+  openPathInDefaultApp: { absolutePath: string };
   renameWorkspaceEntry: { relativePath: string; newName: string };
   createWorkspaceEntry: {
     parentDirectoryRel: string;

@@ -622,6 +622,12 @@ interface CliHostInternalModule {
     spiritDataDir: string;
     workspaceRoot: string | undefined;
     logger?: (message: string) => void;
+    requestWorkspaceCapabilityTrust?: (request: {
+      workspaceRoot: string;
+      contentHash: string;
+      hashChanged: boolean;
+      hooks: Array<{ event: string; command: string; resolvedPath: string }>;
+    }) => Promise<'allowOnce' | 'deny' | 'alwaysTrust'>;
   }) => HookRunner;
   validateHooksConfig?: (options: {
     spiritDataDir: string;
@@ -1671,6 +1677,16 @@ function resolveCliHookRunner(): HookRunner | undefined {
     spiritDataDir: cliHostInternal.spiritDataDir,
     workspaceRoot: cliHostInternal.workspaceRoot,
     logger: (message) => logBridge(message),
+    requestWorkspaceCapabilityTrust: async (request) => {
+      const result = (await peer.call('host.requestWorkspaceCapabilityTrust', request)) as {
+        decision?: unknown;
+      } | null;
+      const decision = result?.decision;
+      if (decision === 'allowOnce' || decision === 'deny' || decision === 'alwaysTrust') {
+        return decision;
+      }
+      return 'deny';
+    },
   });
 }
 
@@ -2000,9 +2016,8 @@ peer.on('runtime.init', async (rawParams) => {
   toolExecutor.setLoopToolExposure(bridgeLoopEnabled);
   toolExecutor.setAgentModeToolExposure(initAgentMode);
   runtime.setLoopEnabled(bridgeLoopEnabled);
-  const sessionStartSource: SessionStartHookInput['source'] =
-    (params.history?.length ?? 0) > 0 ? 'resume' : 'startup';
-  await runCliSessionStart(sessionStartSource);
+  // sessionStart (and workspace capability trust prompt) runs later via runtime.runSessionStart
+  // after the TUI can register an interactive host prompter.
   const workspaceRoot =
     params.transportConfig.workspaceRoot?.trim() || currentWorkspaceRoot();
   await dispatchCliExtensionEvent({
@@ -2010,6 +2025,17 @@ peer.on('runtime.init', async (rawParams) => {
     detail: { workspaceRoot },
   });
   return buildSnapshot(runtime);
+});
+
+peer.on('runtime.runSessionStart', async (rawParams) => {
+  const params = (rawParams ?? {}) as { source?: SessionStartHookInput['source'] };
+  const source = params.source;
+  if (source !== 'startup' && source !== 'resume' && source !== 'open') {
+    throw new Error(`runtime.runSessionStart invalid source: ${String(source)}`);
+  }
+  logBridge('runtime.runSessionStart', { source });
+  await runCliSessionStart(source);
+  return buildSnapshot(requireRuntime());
 });
 
 peer.on('runtime.replaceConfig', async (rawParams) => {
