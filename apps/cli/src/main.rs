@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, CommandFactory, Parser, Subcommand};
 use crossterm::{
     event::{
         self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -42,22 +42,27 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LSHIF
 #[derive(Parser)]
 #[command(name = "spirit")]
 #[command(version)]
+#[command(disable_version_flag = true)]
 #[command(about = "Spirit Agent — AI productivity agent", long_about = None)]
 struct Cli {
+    /// Print version
+    #[arg(short = 'v', long = "version", action = ArgAction::SetTrue)]
+    version: bool,
+
     /// Run a single headless turn and print the final assistant message.
-    #[arg(long)]
+    #[arg(long, value_name = "prompt")]
     prompt: Option<String>,
 
     /// Switch to this model (persisted). Used by headless and TUI.
-    #[arg(long)]
+    #[arg(long, value_name = "model")]
     model: Option<String>,
 
     /// Set approval level: default, auto-approval, full-approval (persisted for the session).
-    #[arg(long)]
+    #[arg(long, value_name = "approval")]
     approval: Option<String>,
 
     /// UI language: en, zh-CN (persisted).
-    #[arg(long = "language", short = 'L')]
+    #[arg(long = "language", short = 'l', value_name = "language")]
     language: Option<String>,
 
     #[command(subcommand)]
@@ -98,11 +103,15 @@ enum Commands {
 enum ScheduleAction {
     List,
     Add {
+        #[arg(value_name = "name")]
         name: String,
+        #[arg(value_name = "cron")]
         cron: String,
+        #[arg(value_name = "task")]
         task: String,
     },
     Remove {
+        #[arg(value_name = "name")]
         name: String,
     },
 }
@@ -111,32 +120,35 @@ enum ScheduleAction {
 enum ModelAction {
     List,
     Add {
+        #[arg(value_name = "name")]
         name: String,
-        #[arg(long)]
+        #[arg(long, value_name = "api_base")]
         api_base: Option<String>,
-        #[arg(long, value_parser = ["deepseek", "xai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "minimax", "xiaomi", "siliconflow", "alibaba", "anthropic", "vercel-ai-gateway", "openrouter", "fireworks-ai", "openai", "google", "volcengine", "azure", "amazon-bedrock", "custom"])]
+        #[arg(long, value_name = "provider", value_parser = ["deepseek", "xai", "moonshot-ai", "kimi-code", "z-ai", "zhipu-ai", "minimax", "xiaomi", "siliconflow", "alibaba", "anthropic", "vercel-ai-gateway", "openrouter", "fireworks-ai", "openai", "google", "volcengine", "azure", "amazon-bedrock", "custom"])]
         provider: Option<String>,
-        #[arg(long, value_parser = ["openai-compatible", "open-responses", "anthropic", "bedrock"])]
+        #[arg(long, value_name = "transport_kind", value_parser = ["openai-compatible", "open-responses", "anthropic", "bedrock"])]
         transport_kind: Option<String>,
-        #[arg(long)]
+        #[arg(long, value_name = "reasoning_effort")]
         reasoning_effort: Option<String>,
-        #[arg(long = "capability", value_parser = ["chat", "image", "imageGeneration", "video", "videoGeneration"])]
+        #[arg(long = "capability", value_name = "capability", value_parser = ["chat", "image", "imageGeneration", "video", "videoGeneration"])]
         capabilities: Vec<String>,
-        #[arg(long)]
+        #[arg(long, value_name = "context_length")]
         context_length: Option<u64>,
-        #[arg(long)]
+        #[arg(long, value_name = "key")]
         key: Option<String>,
-        #[arg(long)]
+        #[arg(long, value_name = "azure_resource_name")]
         azure_resource_name: Option<String>,
-        #[arg(long)]
+        #[arg(long, value_name = "provider_site")]
         provider_site: Option<String>,
-        #[arg(long)]
+        #[arg(long, value_name = "alibaba_workspace_id")]
         alibaba_workspace_id: Option<String>,
     },
     Remove {
+        #[arg(value_name = "name")]
         name: String,
     },
     Use {
+        #[arg(value_name = "name")]
         name: String,
     },
     Current,
@@ -146,13 +158,16 @@ enum ModelAction {
 enum ConfigAction {
     Show,
     SetBase {
+        #[arg(value_name = "url")]
         url: String,
     },
     SetImageModel {
+        #[arg(value_name = "name")]
         name: String,
     },
     ClearImageModel,
     SetVideoModel {
+        #[arg(value_name = "name")]
         name: String,
     },
     ClearVideoModel,
@@ -164,7 +179,10 @@ enum ConfigAction {
 
 #[derive(Subcommand)]
 enum KeyAction {
-    Set { value: Option<String> },
+    Set {
+        #[arg(value_name = "value")]
+        value: Option<String>,
+    },
     Remove,
     Status,
 }
@@ -178,37 +196,49 @@ enum McpAction {
         force: bool,
     },
     Enable {
+        #[arg(value_name = "name")]
         name: String,
     },
     Disable {
+        #[arg(value_name = "name")]
         name: String,
     },
     Inspect {
+        #[arg(value_name = "name")]
         name: String,
     },
     Tools {
+        #[arg(value_name = "name")]
         name: String,
     },
     CallTool {
+        #[arg(value_name = "name")]
         name: String,
+        #[arg(value_name = "tool")]
         tool: String,
-        #[arg(long)]
+        #[arg(long, value_name = "args_json")]
         args_json: Option<String>,
     },
     Resources {
+        #[arg(value_name = "name")]
         name: String,
     },
     Prompts {
+        #[arg(value_name = "name")]
         name: String,
     },
     ReadResource {
+        #[arg(value_name = "name")]
         name: String,
+        #[arg(value_name = "uri")]
         uri: String,
     },
     GetPrompt {
+        #[arg(value_name = "name")]
         name: String,
+        #[arg(value_name = "prompt")]
         prompt: String,
-        #[arg(long)]
+        #[arg(long, value_name = "args_json")]
         args_json: Option<String>,
     },
 }
@@ -216,11 +246,11 @@ enum McpAction {
 #[derive(Subcommand)]
 enum HookAction {
     List {
-        #[arg(long, value_name = "PATH")]
+        #[arg(long, value_name = "path")]
         workspace: Option<std::path::PathBuf>,
     },
     Validate {
-        #[arg(long, value_name = "PATH")]
+        #[arg(long, value_name = "path")]
         workspace: Option<std::path::PathBuf>,
     },
 }
@@ -229,9 +259,11 @@ enum HookAction {
 enum ExtensionAction {
     List,
     Import {
+        #[arg(value_name = "archive")]
         archive: String,
     },
     Remove {
+        #[arg(value_name = "id")]
         id: String,
     },
     Marketplace {
@@ -243,18 +275,21 @@ enum ExtensionAction {
 #[derive(Subcommand)]
 enum MarketplaceAction {
     List {
-        #[arg(value_name = "QUERY")]
+        #[arg(value_name = "query")]
         query: Vec<String>,
     },
     Detail {
+        #[arg(value_name = "id")]
         id: String,
     },
     Readme {
+        #[arg(value_name = "id")]
         id: String,
     },
     Install {
+        #[arg(value_name = "id")]
         id: String,
-        #[arg(long)]
+        #[arg(long, value_name = "version")]
         version: Option<String>,
         #[arg(long, default_value_t = false)]
         review_acknowledged: bool,
@@ -264,6 +299,10 @@ enum MarketplaceAction {
 fn main() -> Result<()> {
     spirit_agent::logging::init_logging();
     let cli = Cli::parse();
+    if cli.version {
+        print!("{}", Cli::command().render_version());
+        return Ok(());
+    }
     let options = GlobalCliOptions {
         prompt: cli.prompt.clone(),
         model: cli.model.clone(),
@@ -271,7 +310,6 @@ fn main() -> Result<()> {
         language: cli.language.clone(),
     };
 
-    // Locale + --model persistence before any user-facing output.
     let config = bootstrap_config(&options)?;
 
     // --prompt always wins (including when combined with `interactive`).
