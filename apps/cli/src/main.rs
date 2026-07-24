@@ -23,9 +23,11 @@ use std::{
 
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
-    ConfigCommand, ExtensionCommand, HookCommand, KeyCommand, MarketplaceCommand, McpCommand,
-    ModelCommand, TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli,
-    handle_mcp_cli, handle_model_cli, logging, ui,
+    bootstrap_config, print_schedule_added, print_schedule_list_header, print_schedule_removed,
+    print_skills_stub, print_verbose_enabled, run_headless_prompt, ConfigCommand, ExtensionCommand,
+    GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelCommand,
+    TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
+    handle_model_cli, logging, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -40,10 +42,26 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LSHIF
 #[derive(Parser)]
 #[command(name = "spirit")]
 #[command(version)]
-#[command(about = "Spirit Agent — AI 生产力 Agent 工具", long_about = None)]
+#[command(about = "Spirit Agent — AI productivity agent", long_about = None)]
 struct Cli {
     #[arg(short, long, default_value = "false")]
     verbose: bool,
+
+    /// Run a single headless turn and print the final assistant message.
+    #[arg(long)]
+    prompt: Option<String>,
+
+    /// Switch to this model (persisted). Used by headless and TUI.
+    #[arg(long)]
+    model: Option<String>,
+
+    /// Set approval level: default, auto-approval, full-approval (persisted for the session).
+    #[arg(long)]
+    approval: Option<String>,
+
+    /// UI language: en, zh-CN (persisted).
+    #[arg(long = "language", short = 'L')]
+    language: Option<String>,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -51,10 +69,6 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Run {
-        #[arg(short, long)]
-        task: String,
-    },
     Skills,
     Schedule {
         #[command(subcommand)]
@@ -253,29 +267,35 @@ enum MarketplaceAction {
 fn main() -> Result<()> {
     spirit_agent::logging::init_logging();
     let cli = Cli::parse();
+    let options = GlobalCliOptions {
+        prompt: cli.prompt.clone(),
+        model: cli.model.clone(),
+        approval: cli.approval.clone(),
+        language: cli.language.clone(),
+    };
+
+    // Locale + --model persistence before any user-facing output.
+    let config = bootstrap_config(&options)?;
 
     if cli.verbose {
-        println!("Verbose 模式已开启");
+        print_verbose_enabled();
+    }
+
+    // --prompt always wins (including when combined with `interactive`).
+    if let Some(prompt) = options.prompt.as_deref() {
+        return run_headless_prompt(prompt, &options, config);
     }
 
     match cli.command {
-        Some(Commands::Run { task }) => {
-            println!("执行任务: {}", task);
-        }
-        Some(Commands::Skills) => {
-            println!("可用技能:");
-            println!("  - file: 文件操作");
-            println!("  - shell: 执行 shell 命令");
-            println!("  - schedule: 定时任务");
-        }
+        Some(Commands::Skills) => print_skills_stub(),
         Some(Commands::Schedule { action }) => match action {
-            ScheduleAction::List => println!("定时任务列表:"),
+            ScheduleAction::List => print_schedule_list_header(),
             ScheduleAction::Add { name, cron, task } => {
-                println!("添加定时任务: {} ({}), 任务: {}", name, cron, task);
+                print_schedule_added(&name, &cron, &task);
             }
-            ScheduleAction::Remove { name } => println!("删除定时任务: {}", name),
+            ScheduleAction::Remove { name } => print_schedule_removed(&name),
         },
-        Some(Commands::Interactive) => run_tui()?,
+        Some(Commands::Interactive) | None => run_tui(&options)?,
         Some(Commands::Model { action }) => handle_model_cli(into_model_command(action))?,
         Some(Commands::Config { action }) => handle_config_cli(into_config_command(action))?,
         Some(Commands::Mcp { action }) => handle_mcp_cli(into_mcp_command(action))?,
@@ -283,7 +303,6 @@ fn main() -> Result<()> {
         Some(Commands::Extension { action }) => {
             handle_extension_cli(into_extension_command(action))?
         }
-        None => run_tui()?,
     }
 
     Ok(())
@@ -415,7 +434,7 @@ fn into_hook_command(action: HookAction) -> HookCommand {
     }
 }
 
-fn run_tui() -> Result<()> {
+fn run_tui(options: &GlobalCliOptions) -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -442,7 +461,7 @@ fn run_tui() -> Result<()> {
 
     execute!(terminal.backend_mut(), EnableBracketedPaste)?;
 
-    let run_result = run_app(&mut terminal);
+    let run_result = run_app(&mut terminal, options);
 
     let _ = disable_raw_mode();
     if supports_keyboard_enhancement {
@@ -465,8 +484,14 @@ fn run_tui() -> Result<()> {
     run_result
 }
 
-fn run_app<B: Backend + io::Write + 'static>(terminal: &mut Terminal<B>) -> Result<()> {
+fn run_app<B: Backend + io::Write + 'static>(
+    terminal: &mut Terminal<B>,
+    options: &GlobalCliOptions,
+) -> Result<()> {
     let mut shell = TuiShell::new()?;
+    if let Some(approval) = options.approval.as_deref() {
+        shell.apply_cli_approval_level(approval)?;
+    }
     shell.run_deferred_session_start(terminal)?;
     let mut paste_tracker = PasteReplayTracker::default();
     shell.refresh_suggestions();

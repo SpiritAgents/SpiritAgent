@@ -195,13 +195,28 @@ fn default_approval_level() -> String {
     "default".to_string()
 }
 
+/// Canonical approval levels shown in CLI help / unknown-value errors.
+pub const APPROVAL_LEVELS: [&str; 3] = ["default", "auto-approval", "full-approval"];
+
+pub fn available_approval_levels_csv() -> String {
+    APPROVAL_LEVELS.join(", ")
+}
+
+/// Soft normalize used by archives / internal paths: unknown values become `default`.
 pub fn normalize_approval_level(value: &str) -> String {
-    if value == "full-approval" || value == "full-access" {
-        "full-approval".to_string()
-    } else if value == "auto-approval" {
-        "auto-approval".to_string()
-    } else {
-        "default".to_string()
+    parse_approval_level_strict(value)
+        .unwrap_or_else(|| "default".to_string())
+}
+
+/// Strict parse for CLI flags: unknown values return `None` (do not fall back to default).
+pub fn parse_approval_level_strict(value: &str) -> Option<String> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "default" => Some("default".to_string()),
+        "auto-approval" | "auto_approval" | "auto" => Some("auto-approval".to_string()),
+        "full-approval" | "full_approval" | "full-access" | "full_access" | "full" => {
+            Some("full-approval".to_string())
+        }
+        _ => None,
     }
 }
 

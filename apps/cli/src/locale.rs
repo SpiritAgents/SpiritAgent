@@ -13,12 +13,28 @@ pub fn apply_ui_locale(config: &AppConfig) {
 }
 
 pub fn resolve_ui_locale(config: &AppConfig) -> String {
-    env::var(ENV_UI_LANG)
-        .ok()
-        .as_deref()
-        .or(config.ui_locale.as_deref())
+    resolve_ui_locale_with_override(config, None)
+}
+
+/// Priority: `cli_override` > `SPIRIT_UI_LANG` > `config.ui_locale` > default `en`.
+pub fn resolve_ui_locale_with_override(
+    config: &AppConfig,
+    cli_override: Option<&str>,
+) -> String {
+    cli_override
         .and_then(parse_ui_locale)
+        .or_else(|| {
+            env::var(ENV_UI_LANG)
+                .ok()
+                .as_deref()
+                .and_then(parse_ui_locale)
+        })
+        .or_else(|| config.ui_locale.as_deref().and_then(parse_ui_locale))
         .unwrap_or_else(|| DEFAULT_UI_LOCALE.to_string())
+}
+
+pub fn available_ui_locales_csv() -> String {
+    SUPPORTED_UI_LOCALES.join(", ")
 }
 
 pub fn normalize_ui_locale(locale: &str) -> String {

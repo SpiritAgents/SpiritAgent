@@ -4,8 +4,11 @@ pub mod bedrock_mantle;
 pub mod chat_store;
 pub mod chat_timeline;
 pub mod cli;
+pub mod cli_bootstrap;
 #[cfg(feature = "tui")]
 pub mod conversation_select;
+#[cfg(feature = "tui")]
+pub mod headless;
 pub mod hooks;
 pub mod hooks_types;
 pub mod host_runtime;
@@ -50,6 +53,12 @@ pub use cli::{
     ModelCommand, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
     handle_model_cli,
 };
+pub use cli_bootstrap::{
+    bootstrap_config, print_schedule_added, print_schedule_list_header, print_schedule_removed,
+    print_skills_stub, print_verbose_enabled, GlobalCliOptions,
+};
+#[cfg(feature = "tui")]
+pub use headless::run_headless_prompt;
 #[cfg(feature = "tui")]
 pub use tui::TuiShell;
 pub use view::{ChatMessage, MessageRole, ToolUiBlock, ToolUiPhase, TuiViewModel};
