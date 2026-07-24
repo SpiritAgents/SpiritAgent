@@ -12,6 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useHostApi } from "@/hooks/useHostApi";
+import { clickableToolCardTriggerClass } from "@/lib/file-tool-lsp-diagnostics-display";
+import { cn } from "@/lib/utils";
 import type {
   WorkspaceCapabilityTrustDecision,
   WorkspaceCapabilityTrustRequest,
@@ -29,6 +32,7 @@ export function WorkspaceCapabilityTrustDialog({
   onReply,
 }: WorkspaceCapabilityTrustDialogProps) {
   const { t } = useTranslation();
+  const { api } = useHostApi();
   const open = pending !== undefined;
 
   return (
@@ -60,15 +64,38 @@ export function WorkspaceCapabilityTrustDialog({
             </div>
             <ScrollArea
               type="always"
-              className="rounded-md border border-border/50 pr-3 [&>[data-radix-scroll-area-viewport]]:max-h-40"
+              className="pr-3 [&>[data-radix-scroll-area-viewport]]:max-h-40"
             >
-              <ul className="divide-y divide-border/40 px-2 py-1 text-xs">
-                {pending.hooks.map((hook) => (
-                  <li key={`${hook.event}:${hook.command}`} className="py-1.5">
-                    <div className="font-medium text-foreground">{hook.event}</div>
-                    <div className="break-all text-muted-foreground">{hook.command}</div>
-                  </li>
-                ))}
+              <ul className="grid gap-1.5">
+                {pending.hooks.map((hook) => {
+                  const canOpen = Boolean(api?.openPathInDefaultApp && hook.resolvedPath);
+                  return (
+                    <li key={`${hook.event}:${hook.command}`}>
+                      <button
+                        type="button"
+                        disabled={!canOpen || busy}
+                        title={t("workspaceTrust.openHookScript")}
+                        className={cn(
+                          "w-full min-w-0 rounded-md border border-border/40 bg-muted/15 px-2.5 py-2 text-left outline-none",
+                          "focus-visible:ring-2 focus-visible:ring-ring/50",
+                          canOpen && "cursor-pointer",
+                          canOpen && clickableToolCardTriggerClass,
+                        )}
+                        onClick={() => {
+                          if (!canOpen || !hook.resolvedPath) {
+                            return;
+                          }
+                          void api.openPathInDefaultApp(hook.resolvedPath);
+                        }}
+                      >
+                        <div className="font-medium text-foreground">{hook.event}</div>
+                        <div className="break-all font-mono text-[0.65rem] text-muted-foreground">
+                          {hook.command}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </ScrollArea>
           </div>

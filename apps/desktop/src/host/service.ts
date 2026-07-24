@@ -221,6 +221,7 @@ import {
   writeHostTextFileCommand,
   writeWorkspaceTextFileCommand,
   revealWorkspaceEntryCommand,
+  openPathInDefaultAppCommand,
   renameWorkspaceEntryCommand,
   createWorkspaceEntryCommand,
   moveWorkspaceEntryCommand,
@@ -2479,6 +2480,10 @@ class DesktopHostService {
       relativePath,
       workspaceRoot,
     );
+  }
+
+  async openPathInDefaultApp(absolutePath: string): Promise<void> {
+    return openPathInDefaultAppCommand(this.workspaceGitCommandContext(), absolutePath);
   }
 
   async renameWorkspaceEntry(

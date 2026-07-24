@@ -382,6 +382,9 @@ export function createWebHostApi(): HostApi {
     replyWorkspaceCapabilityTrust(request: import('../types').ReplyWorkspaceCapabilityTrustRequest) {
       return post<DesktopSnapshot>(baseUrl, '/api/workspace-capability-trust', request);
     },
+    openPathInDefaultApp() {
+      return Promise.reject(new Error('openPathInDefaultApp is not available on web host'));
+    },
     resetSession() {
       return post<DesktopSnapshot>(baseUrl, '/api/reset').then((snapshot) => {
         rememberWebViewingSession(snapshot);

@@ -119,6 +119,7 @@ export type HostCommandName =
   | 'searchWorkspaceContent'
   | 'writeWorkspaceTextFile'
   | 'revealWorkspaceEntry'
+  | 'openPathInDefaultApp'
   | 'renameWorkspaceEntry'
   | 'createWorkspaceEntry'
   | 'moveWorkspaceEntry'

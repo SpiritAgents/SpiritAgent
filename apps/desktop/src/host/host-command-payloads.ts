@@ -182,6 +182,7 @@ export type CommandPayloads = {
   searchWorkspaceContent: { request: import('../types.js').WorkspaceContentSearchRequest };
   writeWorkspaceTextFile: { request: WriteWorkspaceTextFileRequest };
   revealWorkspaceEntry: { relativePath: string; workspaceRoot?: string };
+  openPathInDefaultApp: { absolutePath: string };
   renameWorkspaceEntry: { relativePath: string; newName: string };
   createWorkspaceEntry: {
     parentDirectoryRel: string;

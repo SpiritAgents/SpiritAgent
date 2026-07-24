@@ -1,4 +1,4 @@
-import { lstat, mkdir, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, realpath, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import i18n from '../lib/i18n-host.js';
@@ -243,4 +243,34 @@ export async function revealWorkspaceEntry(
     return;
   }
   shell.showItemInFolder(absPath);
+}
+
+/** Open an absolute workspace file with the OS default application (not Spirit). */
+export async function openAbsolutePathInDefaultApp(
+  workspaceRoot: string,
+  absolutePath: string,
+): Promise<void> {
+  const trimmed = absolutePath.trim();
+  if (!trimmed || !path.isAbsolute(trimmed)) {
+    throw new Error(i18n.t('error.invalidPath'));
+  }
+
+  const root = path.resolve(workspaceRoot);
+  const canonicalRoot = await realpath(root);
+  const resolved = path.resolve(trimmed);
+  const entry = await stat(resolved);
+  if (!entry.isFile()) {
+    throw new Error(i18n.t('error.invalidPath'));
+  }
+  const canonicalTarget = await realpath(resolved);
+  const rel = path.relative(canonicalRoot, canonicalTarget);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    throw new Error(i18n.t('error.pathOutsideWorkspace'));
+  }
+
+  const { shell } = await import('electron');
+  const result = await shell.openPath(canonicalTarget);
+  if (result) {
+    throw new Error(result);
+  }
 }

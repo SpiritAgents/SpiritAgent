@@ -156,6 +156,7 @@ export interface HostCommandDelegate {
   ): Promise<unknown>;
   writeWorkspaceTextFile(request: CommandPayloads['writeWorkspaceTextFile']['request']): Promise<unknown>;
   revealWorkspaceEntry(relativePath: string, workspaceRoot?: string): Promise<unknown>;
+  openPathInDefaultApp(absolutePath: string): Promise<unknown>;
   renameWorkspaceEntry(
     relativePath: string,
     newName: string,
@@ -312,6 +313,7 @@ const hostCommandDispatch = {
   writeWorkspaceTextFile: (host, payload) => host.writeWorkspaceTextFile(payload.request),
   revealWorkspaceEntry: (host, payload) =>
     host.revealWorkspaceEntry(payload.relativePath, payload.workspaceRoot),
+  openPathInDefaultApp: (host, payload) => host.openPathInDefaultApp(payload.absolutePath),
   renameWorkspaceEntry: (host, payload) =>
     host.renameWorkspaceEntry(payload.relativePath, payload.newName),
   createWorkspaceEntry: (host, payload) =>

@@ -1312,6 +1312,7 @@
     "allowOnce": "允许一次",
     "deny": "拒绝",
     "alwaysTrust": "始终信任",
-    "hooksSection": "将运行的 Hooks"
+    "hooksSection": "将运行的 Hooks",
+    "openHookScript": "在默认编辑器中打开脚本"
   }
 }

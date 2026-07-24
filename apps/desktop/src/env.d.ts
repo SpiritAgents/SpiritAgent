@@ -133,6 +133,7 @@ declare global {
     replyWorkspaceCapabilityTrust(
       request: import('./types').ReplyWorkspaceCapabilityTrustRequest,
     ): Promise<DesktopSnapshot>;
+    openPathInDefaultApp(absolutePath: string): Promise<void>;
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;
     openSession(path: string): Promise<DesktopSnapshot>;
