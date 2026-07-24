@@ -7,8 +7,14 @@ import {
 } from "@/lib/managed-generated-asset";
 
 export const streamdownUrlTransform: StreamdownUrlTransform = (url, key) => {
-  if (key === "src" && (isManagedGeneratedImageRef(url) || isManagedGeneratedVideoRef(url))) {
-    return url;
+  if (key === "src") {
+    if (isManagedGeneratedImageRef(url) || isManagedGeneratedVideoRef(url)) {
+      return url;
+    }
+    const trimmed = typeof url === "string" ? url.trim() : "";
+    if (trimmed.startsWith("//") || /^https?:/iu.test(trimmed)) {
+      return "";
+    }
   }
   return streamdownDefaultUrlTransform(url, key, {} as never);
 };

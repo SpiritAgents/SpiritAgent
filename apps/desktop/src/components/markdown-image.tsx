@@ -1,100 +1,144 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { ReadLocalImagePreview } from "@/components/tool-call/tool-call-types";
+import {
+  classifyMarkdownImageSrc,
+  resolveMarkdownLocalImageFilePath,
+} from "@/lib/markdown-local-image-src";
 import { isManagedGeneratedImageRef } from "@/lib/managed-generated-asset";
 import { cn } from "@/lib/utils";
 
 export type ReadManagedImagePreviewDataUrl = (reference: string) => Promise<string | null>;
-type ManagedImageLoadState = "idle" | "loading" | "unavailable";
+type ImageLoadState = "idle" | "loading" | "unavailable";
 
 export function MarkdownImage({
   className,
   src,
   alt,
   readManagedImagePreviewDataUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
   ...props
 }: ComponentPropsWithoutRef<"img"> & {
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
 }) {
   const { t } = useTranslation();
   const normalizedSrc = typeof src === "string" && src.trim().length > 0 ? src.trim() : null;
-  const managedRef = normalizedSrc && isManagedGeneratedImageRef(normalizedSrc) ? normalizedSrc : null;
-  const [resolvedSrc, setResolvedSrc] = useState<string | null>(managedRef ? null : normalizedSrc);
-  const [managedLoadState, setManagedLoadState] = useState<ManagedImageLoadState>("idle");
+  const srcKind = normalizedSrc ? classifyMarkdownImageSrc(normalizedSrc) : "invalid";
+  const managedRef =
+    normalizedSrc && isManagedGeneratedImageRef(normalizedSrc) ? normalizedSrc : null;
+  const localFilePath =
+    srcKind === "local" && normalizedSrc
+      ? resolveMarkdownLocalImageFilePath(normalizedSrc, localImageBaseDir)
+      : null;
+
+  const [resolvedSrc, setResolvedSrc] = useState<string | null>(null);
+  const [loadState, setLoadState] = useState<ImageLoadState>("idle");
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!normalizedSrc) {
+    if (!normalizedSrc || srcKind === "invalid" || srcKind === "remote") {
       setResolvedSrc(null);
-      setManagedLoadState("idle");
+      setLoadState(srcKind === "remote" ? "unavailable" : "idle");
       return () => {
         cancelled = true;
       };
     }
 
-    if (!managedRef) {
-      setResolvedSrc(normalizedSrc);
-      setManagedLoadState("idle");
+    if (managedRef) {
+      if (!readManagedImagePreviewDataUrl) {
+        setResolvedSrc(null);
+        setLoadState("unavailable");
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      setResolvedSrc(null);
+      setLoadState("loading");
+      void readManagedImagePreviewDataUrl(managedRef)
+        .then((dataUrl: string | null) => {
+          if (!cancelled) {
+            if (dataUrl) {
+              setResolvedSrc(dataUrl);
+              setLoadState("idle");
+              return;
+            }
+            setResolvedSrc(null);
+            setLoadState("unavailable");
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setResolvedSrc(null);
+            setLoadState("unavailable");
+          }
+        });
+
       return () => {
         cancelled = true;
       };
     }
 
-    if (!readManagedImagePreviewDataUrl) {
+    if (!localFilePath || !readLocalImagePreviewDataUrl) {
       setResolvedSrc(null);
-      setManagedLoadState("unavailable");
+      setLoadState("unavailable");
       return () => {
         cancelled = true;
       };
     }
 
     setResolvedSrc(null);
-    setManagedLoadState("loading");
-    void readManagedImagePreviewDataUrl(managedRef)
+    setLoadState("loading");
+    void readLocalImagePreviewDataUrl(localFilePath)
       .then((dataUrl: string | null) => {
         if (!cancelled) {
           if (dataUrl) {
             setResolvedSrc(dataUrl);
-            setManagedLoadState("idle");
+            setLoadState("idle");
             return;
           }
           setResolvedSrc(null);
-          setManagedLoadState("unavailable");
+          setLoadState("unavailable");
         }
       })
       .catch(() => {
         if (!cancelled) {
           setResolvedSrc(null);
-          setManagedLoadState("unavailable");
+          setLoadState("unavailable");
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [managedRef, normalizedSrc, readManagedImagePreviewDataUrl]);
+  }, [
+    localFilePath,
+    managedRef,
+    normalizedSrc,
+    readLocalImagePreviewDataUrl,
+    readManagedImagePreviewDataUrl,
+    srcKind,
+  ]);
 
-  if (managedRef && !readManagedImagePreviewDataUrl) {
+  if (srcKind === "remote" || loadState === "unavailable") {
     return (
       <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
-        {t("error.hostNotSupported")}
+        {managedRef && !readManagedImagePreviewDataUrl
+          ? t("error.hostNotSupported")
+          : t("error.unavailable")}
       </div>
     );
   }
 
-  if (managedRef && managedLoadState === "loading") {
+  if (loadState === "loading") {
     return (
       <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
         {t("error.loading")}
-      </div>
-    );
-  }
-
-  if (managedRef && managedLoadState === "unavailable") {
-    return (
-      <div className="my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground">
-        {t("error.unavailable")}
       </div>
     );
   }
