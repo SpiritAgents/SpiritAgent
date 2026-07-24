@@ -697,6 +697,8 @@ class DesktopHostService {
     resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
     reject: (error: Error) => void;
   }> = [];
+  /** sessionStart may await interactive trust; never run it while holding runSerialized. */
+  private sessionStartTail: Promise<void> = Promise.resolve();
 
   private replaceVisiblePaneSessionPath(before: string, after: string): void {
     const beforeResolved = path.resolve(before);
@@ -967,6 +969,27 @@ class DesktopHostService {
     await runDesktopSessionStartHook(bundle.runtime, hookRunner, context, source);
   }
 
+  /**
+   * Queue sessionStart off the runSerialized critical section. Trust prompts await the
+   * user and must not hold the host mutex (otherwise openSession / bootstrap stall).
+   */
+  private scheduleSessionStartForBundle(
+    bundle: SessionBundle,
+    source: SessionStartHookInput['source'],
+  ): void {
+    const bundleId = bundle.id;
+    this.sessionStartTail = this.sessionStartTail
+      .catch(() => undefined)
+      .then(async () => {
+        const target = this.sessionRegistry.get(bundleId);
+        if (!target) {
+          return;
+        }
+        await this.runSessionStartForBundle(target, source);
+      });
+    void this.sessionStartTail;
+  }
+
   private sessionActivationContext(): SessionActivationContext {
     return {
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
@@ -1002,7 +1025,9 @@ class DesktopHostService {
       buildSnapshotProjectedForBundle: (bundle) => this.buildSnapshotProjectedForBundle(bundle),
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
       runSessionEndForBundle: (bundle, reason) => this.runSessionEndForBundle(bundle, reason),
-      runSessionStartForBundle: (bundle, source) => this.runSessionStartForBundle(bundle, source),
+      runSessionStartForBundle: async (bundle, source) => {
+        this.scheduleSessionStartForBundle(bundle, source);
+      },
     };
   }
 
@@ -2655,8 +2680,11 @@ class DesktopHostService {
     const hadRuntime = bundle.runtime !== undefined;
     await this.refreshRuntimeForBundle(bundle);
     this.syncActiveRuntimePointer();
-    if (hadRuntime && bundle.runtime) {
-      await this.runSessionStartForBundle(bundle, 'resume');
+    // First runtime creation (e.g. bootstrap) must still fire sessionStart so workspace
+    // hook trust can prompt; previously only re-refresh of an existing runtime did.
+    // Schedule unlocked: trust await must not hold runSerialized.
+    if (bundle.runtime) {
+      this.scheduleSessionStartForBundle(bundle, hadRuntime ? 'resume' : 'startup');
     }
   }
 
