@@ -130,6 +130,10 @@ pub struct TuiShell {
 }
 
 impl TuiShell {
+    pub fn apply_cli_approval_level(&mut self, raw: &str) -> Result<()> {
+        crate::cli_bootstrap::apply_approval_level(&mut self.runtime, raw)
+    }
+
     pub fn new() -> Result<Self> {
         let app_paths: Arc<dyn AppPaths> = Arc::new(DefaultAppPaths::new());
         let secret_store: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore);

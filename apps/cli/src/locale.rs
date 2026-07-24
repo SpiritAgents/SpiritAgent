@@ -13,12 +13,28 @@ pub fn apply_ui_locale(config: &AppConfig) {
 }
 
 pub fn resolve_ui_locale(config: &AppConfig) -> String {
-    env::var(ENV_UI_LANG)
-        .ok()
-        .as_deref()
-        .or(config.ui_locale.as_deref())
+    resolve_ui_locale_with_override(config, None)
+}
+
+/// Priority: `cli_override` > `SPIRIT_UI_LANG` > `config.ui_locale` > default `en`.
+pub fn resolve_ui_locale_with_override(
+    config: &AppConfig,
+    cli_override: Option<&str>,
+) -> String {
+    cli_override
         .and_then(parse_ui_locale)
+        .or_else(|| {
+            env::var(ENV_UI_LANG)
+                .ok()
+                .as_deref()
+                .and_then(parse_ui_locale)
+        })
+        .or_else(|| config.ui_locale.as_deref().and_then(parse_ui_locale))
         .unwrap_or_else(|| DEFAULT_UI_LOCALE.to_string())
+}
+
+pub fn available_ui_locales_csv() -> String {
+    SUPPORTED_UI_LOCALES.join(", ")
 }
 
 pub fn normalize_ui_locale(locale: &str) -> String {
@@ -48,4 +64,39 @@ pub fn is_welcome_message(content: &str) -> bool {
     supported_ui_locales()
         .iter()
         .any(|locale| content.starts_with(t!("tui.welcome.prefix", locale = *locale).as_ref()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model_registry::AppConfig;
+
+    #[test]
+    fn parse_ui_locale_accepts_aliases() {
+        assert_eq!(parse_ui_locale("zh").as_deref(), Some("zh-CN"));
+        assert_eq!(parse_ui_locale("en-US").as_deref(), Some("en"));
+    }
+
+    #[test]
+    fn parse_ui_locale_rejects_unknown() {
+        assert_eq!(parse_ui_locale("fr"), None);
+        assert_eq!(parse_ui_locale("ja-JP"), None);
+    }
+
+    #[test]
+    fn available_ui_locales_csv_uses_comma_space() {
+        assert_eq!(available_ui_locales_csv(), "en, zh-CN");
+    }
+
+    #[test]
+    fn resolve_ui_locale_with_override_prefers_cli_flag() {
+        let config = AppConfig {
+            ui_locale: Some("en".to_string()),
+            ..AppConfig::default()
+        };
+        assert_eq!(
+            resolve_ui_locale_with_override(&config, Some("zh-CN")),
+            "zh-CN"
+        );
+    }
 }

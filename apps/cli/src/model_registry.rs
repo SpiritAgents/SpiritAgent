@@ -951,26 +951,26 @@ impl AppConfig {
     pub fn parse_model_ref_selector(&self, selector: &str) -> Result<ModelRef, String> {
         let trimmed = selector.trim();
         if trimmed.is_empty() {
-            return Err("模型标识不能为空".to_string());
+            return Err("model id cannot be empty".to_string());
         }
         if let Some((group_id, name)) = trimmed.split_once("::") {
             let group_id = group_id.trim();
             let name = name.trim();
             if group_id.is_empty() || name.is_empty() {
-                return Err(format!("无效的模型标识: {}", trimmed));
+                return Err(format!("invalid model id: {}", trimmed));
             }
             let model_ref = ModelRef {
                 group_id: group_id.to_string(),
                 name: name.to_string(),
             };
             if !self.model_ref_exists(&model_ref) {
-                return Err(format!("模型不存在: {}", trimmed));
+                return Err(format!("model not found: {}", trimmed));
             }
             return Ok(model_ref);
         }
         let matches = self.find_model_refs_by_name(trimmed);
         match matches.len() {
-            0 => Err(format!("模型不存在，请先添加: {}", trimmed)),
+            0 => Err(format!("model not found: {}", trimmed)),
             1 => Ok(matches[0].clone()),
             _ => {
                 let examples = matches
@@ -980,7 +980,7 @@ impl AppConfig {
                     .collect::<Vec<_>>()
                     .join(", ");
                 Err(format!(
-                    "存在多个同名模型，请使用 groupId::name 指定，例如: {}",
+                    "ambiguous model name; use groupId::name, e.g. {}",
                     examples
                 ))
             }
