@@ -54,7 +54,7 @@ test("streamdown sanitize schema keeps spirit-agent video src", () => {
   assert.equal(video.properties.src, ref);
 });
 
-test("streamdown sanitize schema still allows https image src", () => {
+test("streamdown sanitize schema strips https image src", () => {
   const ref = "https://example.com/a.png";
   const tree = {
     type: "root",
@@ -63,6 +63,24 @@ test("streamdown sanitize schema still allows https image src", () => {
         type: "element",
         tagName: "img",
         properties: { src: ref, alt: "remote" },
+        children: [],
+      },
+    ],
+  };
+
+  const safe = sanitize(tree, streamdownSanitizeSchema);
+  assert.equal(safe.children[0].properties.src, undefined);
+});
+
+test("streamdown sanitize schema keeps relative image src", () => {
+  const ref = "./docs/diagram.png";
+  const tree = {
+    type: "root",
+    children: [
+      {
+        type: "element",
+        tagName: "img",
+        properties: { src: ref, alt: "local" },
         children: [],
       },
     ],
@@ -91,7 +109,7 @@ test("default github schema strips spirit-agent src", () => {
   assert.equal(MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL, "spirit");
 });
 
-test("streamdown sanitize schema keeps picture link structure", () => {
+test("streamdown sanitize schema keeps picture link structure but strips remote media", () => {
   const actionHref = "https://example.com/action?ref=pr-review";
   const badgeSrc = "https://example.com/assets/badge-dark.png";
   const tree = {
@@ -145,8 +163,9 @@ test("streamdown sanitize schema keeps picture link structure", () => {
   const picture = link.children[0];
   assert.equal(picture.tagName, "picture");
   assert.equal(picture.children[0].tagName, "source");
+  assert.equal(picture.children[0].properties.srcset, undefined);
   assert.equal(picture.children[1].tagName, "img");
-  assert.equal(picture.children[1].properties.src, badgeSrc);
+  assert.equal(picture.children[1].properties.src, undefined);
 });
 
 test("streamdown sanitize schema keeps sup footnotes and drops html comments", () => {
