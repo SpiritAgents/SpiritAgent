@@ -48,10 +48,6 @@ struct Cli {
     #[arg(short = 'v', long = "version", action = ArgAction::SetTrue)]
     version: bool,
 
-    /// Run a single headless turn and print the final assistant message.
-    #[arg(short = 'p', long, value_name = "prompt")]
-    prompt: Option<String>,
-
     /// Switch to this model (persisted). Used by headless and TUI.
     #[arg(short = 'm', long, value_name = "model")]
     model: Option<String>,
@@ -66,6 +62,18 @@ struct Cli {
 
     #[command(subcommand)]
     command: Option<Commands>,
+
+    /// Headless prompt (must be last). Remaining tokens after -p/--prompt are the prompt,
+    /// including values that look like flags (e.g. -a), so put -m/-a/-l before -p.
+    #[arg(
+        short = 'p',
+        long,
+        value_name = "prompt",
+        allow_hyphen_values = true,
+        trailing_var_arg = true,
+        num_args = 1..
+    )]
+    prompt: Vec<String>,
 }
 
 #[derive(Subcommand)]
@@ -281,8 +289,13 @@ fn main() -> Result<()> {
         print!("{}", Cli::command().render_version());
         return Ok(());
     }
+    let prompt = if cli.prompt.is_empty() {
+        None
+    } else {
+        Some(cli.prompt.join(" "))
+    };
     let options = GlobalCliOptions {
-        prompt: cli.prompt.clone(),
+        prompt: prompt.clone(),
         model: cli.model.clone(),
         approval: cli.approval.clone(),
         language: cli.language.clone(),
@@ -291,7 +304,7 @@ fn main() -> Result<()> {
     let config = bootstrap_config(&options)?;
 
     // --prompt always wins (including when combined with `interactive`).
-    if let Some(prompt) = options.prompt.as_deref() {
+    if let Some(prompt) = prompt.as_deref() {
         return run_headless_prompt(prompt, &options, config);
     }
 
@@ -1503,6 +1516,22 @@ fn maybe_log_event_batch(shell: &TuiShell, events: &[Event]) {
 mod tests {
     use super::*;
     use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
+
+    #[test]
+    fn prompt_trailing_absorbs_lookalike_flags() {
+        let cli = Cli::try_parse_from(["spirit", "-p", "x", "-a", "full-approval"])
+            .expect("trailing tokens after -p should parse as prompt");
+        assert_eq!(cli.prompt, vec!["x", "-a", "full-approval"]);
+        assert!(cli.approval.is_none());
+    }
+
+    #[test]
+    fn approval_before_prompt_still_applies() {
+        let cli = Cli::try_parse_from(["spirit", "-a", "full-approval", "-p", "hello"])
+            .expect("options before -p should parse normally");
+        assert_eq!(cli.approval.as_deref(), Some("full-approval"));
+        assert_eq!(cli.prompt, vec!["hello"]);
+    }
 
     fn key(code: KeyCode) -> KeyEvent {
         KeyEvent {
