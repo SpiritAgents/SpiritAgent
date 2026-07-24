@@ -51,6 +51,7 @@ pub fn run_headless_prompt(
         }
 
         runtime.poll();
+        runtime.handle_stream_stall_timeout();
         for event in runtime.drain_events() {
             match event {
                 RuntimeEvent::BeginAssistantResponse => {
@@ -58,6 +59,7 @@ pub fn run_headless_prompt(
                     has_pending_assistant = true;
                 }
                 RuntimeEvent::AssistantChunk(chunk) => {
+                    // Accumulate silently; headless never prints intermediate text.
                     if has_pending_assistant {
                         pending_assistant.push_str(&chunk);
                     }
@@ -79,16 +81,22 @@ pub fn run_headless_prompt(
                 RuntimeEvent::OpenAskQuestions { .. } => {
                     return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
-                RuntimeEvent::PushMessage(message) => {
-                    if message.tool_block.is_some() && runtime.has_pending_tool_approval() {
-                        return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
-                    }
+                RuntimeEvent::UpdatePendingAssistantThinking(_)
+                | RuntimeEvent::AssistantThinkingSegmentFinalized(_)
+                | RuntimeEvent::UpdatePendingAssistantCompaction(_)
+                | RuntimeEvent::UpsertToolPreview { .. }
+                | RuntimeEvent::PushMessage(_) => {
+                    // Intentionally ignored: no thinking / tool / process output on stdout.
                 }
                 _ => {}
             }
         }
 
         if runtime.has_pending_tool_approval() {
+            return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
+        }
+
+        if runtime.pending_subagent_approval().is_some() {
             return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
         }
 
