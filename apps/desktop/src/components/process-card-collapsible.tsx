@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import {
   ProcessGroupThinkingBlock,
 } from "@/components/process-group-blocks";
+import type { ReadLocalImagePreview } from "@/components/tool-call/tool-call-types";
 import {
   AnimatedCollapse,
   AnimatedCollapseContent,
@@ -35,6 +36,8 @@ export function ProcessCardCollapsible({
   renderToolBlock,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
 }: {
   groupId: string;
   messageIndices: readonly number[];
@@ -47,6 +50,8 @@ export function ProcessCardCollapsible({
   renderToolBlock: (message: ConversationMessageSnapshot, messageIndex: number) => ReactNode;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
 }) {
   const { t } = useTranslation();
   const summary = formatProcessGroupSummary(t, toolCounts, messages, messageIndices);
@@ -136,6 +141,8 @@ export function ProcessCardCollapsible({
                 )}
                 readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
                 readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+                readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+                localImageBaseDir={localImageBaseDir}
               />
             ) : null;
 

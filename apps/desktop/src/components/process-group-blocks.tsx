@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
+import type { ReadLocalImagePreview } from "@/components/tool-call/tool-call-types";
 import {
   AnimatedCollapse,
   AnimatedCollapseContent,
@@ -43,6 +44,8 @@ function ProcessGroupReasoningBlock({
   streaming,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
 }: {
   labelActive: boolean;
   activeLabel: string;
@@ -51,6 +54,8 @@ function ProcessGroupReasoningBlock({
   streaming: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -80,6 +85,8 @@ function ProcessGroupReasoningBlock({
             tone="muted"
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+            localImageBaseDir={localImageBaseDir}
           />
         </div>
       </AnimatedCollapseContent>
@@ -92,11 +99,15 @@ export function ProcessGroupThinkingBlock({
   thinkingActive,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
 }: {
   message: ConversationMessageSnapshot;
   thinkingActive: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
 }) {
   const { t } = useTranslation();
   const thinking = message.aux?.thinking?.trim() ?? "";
@@ -113,6 +124,8 @@ export function ProcessGroupThinkingBlock({
       streaming={thinkingActive}
       readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
       readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+      readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+      localImageBaseDir={localImageBaseDir}
     />
   );
 }

@@ -25,6 +25,7 @@ import {
   type WorkspaceMonacoEditorHandle,
   type WorkspaceMonacoSearchMatchRange,
 } from "@/components/workspace-monaco-editor";
+import { dirnameLocalPath } from "@/lib/markdown-local-image-src";
 import { cn } from "@/lib/utils";
 import { DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN, DESKTOP_SHELL_LAYOUT_TRANSITION } from "@/lib/desktop-chrome";
 import { desktopMicaFileDetailSurfaceClass } from "@/lib/desktop-mica-surface";
@@ -1129,6 +1130,10 @@ export function WorkspaceFilesTab({
                           allowHtml
                           singleLineBreaks={false}
                           readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                          readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+                          localImageBaseDir={
+                            doc.absolutePath ? dirnameLocalPath(doc.absolutePath) : workspaceRoot
+                          }
                         />
                       ) : (
                         <div

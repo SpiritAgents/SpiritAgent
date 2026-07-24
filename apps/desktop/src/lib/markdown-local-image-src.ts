@@ -100,6 +100,29 @@ function joinSplitPath({ root, parts, useBackslash }: SplitPath): string {
   return `${sep}${parts.join(sep)}`;
 }
 
+/** Parent directory of an absolute path (browser-safe; keeps drive / UNC style). */
+export function dirnameLocalPath(absolutePath: string): string {
+  const trimmed = absolutePath.trim();
+  if (!trimmed) {
+    return "";
+  }
+  const useBackslash = /\\/u.test(trimmed);
+  const normalized = trimmed.replace(/\\/gu, "/").replace(/\/+$/u, "");
+  const windowsDriveOnly = /^[A-Za-z]:$/u.exec(normalized);
+  if (windowsDriveOnly) {
+    return useBackslash ? `${normalized}\\` : `${normalized}/`;
+  }
+  const slash = normalized.lastIndexOf("/");
+  if (slash <= 0) {
+    return useBackslash ? normalized.replace(/\//gu, "\\") : normalized || "/";
+  }
+  const dir = normalized.slice(0, slash);
+  if (/^[A-Za-z]:$/u.test(dir)) {
+    return useBackslash ? `${dir}\\` : `${dir}/`;
+  }
+  return useBackslash ? dir.replace(/\//gu, "\\") : dir || "/";
+}
+
 function resolveRelativeAgainstBase(baseDir: string, relativePath: string): string {
   const base = splitAbsoluteBase(baseDir);
   const relativeSegments = relativePath
