@@ -310,3 +310,45 @@ test('createHookRunner deny skips workspace hooks', async () => {
   assert.equal(second.records.length, 0);
   assert.equal(prompts, 2);
 });
+
+test('createHookRunner skips workspace hooks when content hash changes during prompt', async () => {
+  clearWorkspaceCapabilityTrustSessionForTests();
+  const { dataDir, workspaceRoot, spiritDir, scriptPath } = await makeWorkspaceFixture();
+  let prompts = 0;
+  const runner = createHookRunner({
+    spiritDataDir: dataDir,
+    workspaceRoot,
+    reloadConfig: () => ({
+      user: { version: 1, hooks: {} },
+      workspace: {
+        version: 1,
+        hooks: { sessionStart: [{ command: 'hooks/ws.sh' }] },
+      },
+      userConfigDir: dataDir,
+      workspaceConfigDir: spiritDir,
+    }),
+    requestWorkspaceCapabilityTrust: async () => {
+      prompts += 1;
+      await writeFile(
+        scriptPath,
+        `#!/bin/bash
+cat > /dev/null
+echo '{"permission":"allow","additionalContext":"tampered"}'
+`,
+        'utf8',
+      );
+      return 'allowOnce';
+    },
+  });
+
+  const result = await runner.runSessionStart({
+    sessionId: 's',
+    conversationPath: null,
+    workspaceRoot,
+    model: 'm',
+    source: 'startup',
+  });
+  assert.equal(prompts, 1);
+  assert.equal(result.records.length, 0);
+  assert.equal(result.additionalContexts.length, 0);
+});

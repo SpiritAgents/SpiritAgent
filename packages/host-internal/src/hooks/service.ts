@@ -16,6 +16,7 @@ import { runCommandHook } from './command-runner.js';
 import { listHookDefinitionsForInput, loadHooksConfig, type LoadedHooksConfig } from './loader.js';
 import {
   applyWorkspaceCapabilityTrustDecision,
+  computeWorkspaceHooksContentHash,
   evaluateWorkspaceHooksTrustGate,
   filterDefinitionsByWorkspaceTrust,
   type RequestWorkspaceCapabilityTrust,
@@ -125,16 +126,27 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
       }
 
       const decision = await options.requestWorkspaceCapabilityTrust(gate.request);
-      const applied = await applyWorkspaceCapabilityTrustDecision({
-        spiritDataDir: options.spiritDataDir,
-        workspaceRoot: gate.request.workspaceRoot,
-        contentHash: gate.request.contentHash,
-        decision,
-      });
-      if (applied === 'deny') {
+      if (decision === 'deny') {
         options.logger?.('Skipping workspace hooks: user denied workspace capability trust.');
         return false;
       }
+
+      // Re-hash after the interactive prompt: scripts may have changed while the user decided.
+      const freshLoaded = getLoaded();
+      const currentHash = computeWorkspaceHooksContentHash(freshLoaded);
+      if (!currentHash || currentHash !== gate.request.contentHash) {
+        options.logger?.(
+          'Skipping workspace hooks: content hash changed while awaiting trust decision.',
+        );
+        return false;
+      }
+
+      await applyWorkspaceCapabilityTrustDecision({
+        spiritDataDir: options.spiritDataDir,
+        workspaceRoot: gate.request.workspaceRoot,
+        contentHash: currentHash,
+        decision,
+      });
       return true;
     })().finally(() => {
       inFlightTrust = undefined;
