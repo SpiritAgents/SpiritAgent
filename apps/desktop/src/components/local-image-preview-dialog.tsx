@@ -14,12 +14,40 @@ import { cn } from "@/lib/utils";
 // backdrop-filter 在祖先 opacity 动画期间无法正确合成；卡片 hover 渐显须与 blur 写在同一元素上。
 export const LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS = "spirit-floating-action-button";
 
+/**
+ * Cap preview CSS size at natural/devicePixelRatio (1:1 device pixels).
+ * Max-only sizing (viewport / 70rem) can upscale Retina screenshots and soften edges.
+ */
+function computeImagePreviewCssSize(
+  naturalWidth: number,
+  naturalHeight: number,
+): { width: number; height: number } {
+  const dpr = typeof window !== "undefined" && window.devicePixelRatio > 0
+    ? window.devicePixelRatio
+    : 1;
+  let cssW = Math.max(1, Math.floor(naturalWidth / dpr));
+  let cssH = Math.max(1, Math.floor(naturalHeight / dpr));
+
+  if (typeof window === "undefined") {
+    return { width: cssW, height: cssH };
+  }
+
+  const maxW = Math.max(1, Math.floor(Math.min(window.innerWidth - 32, 70 * 16)));
+  const maxH = Math.max(1, Math.floor(window.innerHeight - 32));
+  const fit = Math.min(1, maxW / cssW, maxH / cssH);
+  if (fit < 1) {
+    cssW = Math.max(1, Math.floor(cssW * fit));
+    cssH = Math.max(1, Math.floor(cssH * fit));
+  }
+  return { width: cssW, height: cssH };
+}
+
 export function useImagePreviewAspectRatio(previewDataUrl: string | null): CSSProperties | undefined {
-  const [previewAspectRatio, setPreviewAspectRatio] = useState<number | null>(null);
+  const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setPreviewAspectRatio(null);
+    setPreviewSize(null);
     if (!previewDataUrl) {
       return () => {
         cancelled = true;
@@ -29,27 +57,36 @@ export function useImagePreviewAspectRatio(previewDataUrl: string | null): CSSPr
     const image = new Image();
     image.onload = () => {
       if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
-        setPreviewAspectRatio(image.naturalWidth / image.naturalHeight);
+        setPreviewSize(computeImagePreviewCssSize(image.naturalWidth, image.naturalHeight));
       }
     };
     image.onerror = () => {
       if (!cancelled) {
-        setPreviewAspectRatio(null);
+        setPreviewSize(null);
       }
     };
     image.src = previewDataUrl;
+
+    const onViewportChange = () => {
+      if (cancelled || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+        return;
+      }
+      setPreviewSize(computeImagePreviewCssSize(image.naturalWidth, image.naturalHeight));
+    };
+    window.addEventListener("resize", onViewportChange);
 
     return () => {
       cancelled = true;
       image.onload = null;
       image.onerror = null;
+      window.removeEventListener("resize", onViewportChange);
     };
   }, [previewDataUrl]);
 
-  return previewAspectRatio
+  return previewSize
     ? {
-        aspectRatio: String(previewAspectRatio),
-        width: `min(calc(100dvw - 5rem), calc((100dvh - 6rem) * ${previewAspectRatio}), 70rem)`,
+        width: previewSize.width,
+        height: previewSize.height,
       }
     : undefined;
 }
@@ -79,7 +116,8 @@ export function LocalImagePreviewDialog({
       >
         {previewDataUrl ? (
           <div
-            className="pointer-events-auto relative inline-flex max-h-[calc(100dvh-2rem)] max-w-[calc(100dvw-2rem)] items-center justify-center overflow-hidden rounded-[1.1rem] border border-border/45"
+            // box-content：width/height 为内容盒，避免 1px border 吃掉 DPR 对齐尺寸
+            className="pointer-events-auto relative box-content inline-flex items-center justify-center overflow-hidden rounded-[1.1rem] border border-border/45"
             style={viewerFrameStyle}
           >
             <DialogClose asChild>
@@ -98,7 +136,7 @@ export function LocalImagePreviewDialog({
             <img
               src={previewDataUrl}
               alt=""
-              className="block size-full object-contain"
+              className="block size-full max-w-none object-fill"
               draggable={false}
             />
             {onSave ? (
