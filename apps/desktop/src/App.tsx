@@ -59,7 +59,7 @@ import {
   applyUiLayoutScaleToDocument,
   UI_LAYOUT_SCALE_ROOT_ID,
 } from "@/lib/ui-layout-scale";
-import { resolveOnboardingExpected } from "@/lib/onboarding";
+import { resolveOnboardingVisible } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 export default function App() {
@@ -212,16 +212,16 @@ export default function App() {
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [launchSplashPhase, setLaunchSplashPhase] = useState<ShellOverlayPhase>("gone");
   const [onboardingPhase, setOnboardingPhase] = useState<ShellOverlayPhase>("gone");
-  const onboardingExpected = resolveOnboardingExpected({
+  // snapshot 未就绪时 settings.onboardingCompleted 仍是默认 false，不可据此跳过 LaunchSplash / 挂 OOBE。
+  const onboardingVisible = resolveOnboardingVisible({
+    snapshotReady: snapshot != null,
     onboardingCompleted: runtime.settings.onboardingCompleted,
     dismissedThisSession: onboardingDismissed,
   });
-  const onboardingVisible = onboardingExpected;
   const launchSplashActive =
     snapshot === null &&
     !runtime.hostConnectionError.trim() &&
-    !runtime.runtimeError.trim() &&
-    !onboardingExpected;
+    !runtime.runtimeError.trim();
   const launchSplashOverlayUp =
     launchSplashPhase === "running" || launchSplashPhase === "leaving";
   const onboardingOverlayUp =
