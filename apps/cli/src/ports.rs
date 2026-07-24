@@ -372,3 +372,47 @@ pub trait ChatRepository: Send + Sync {
     fn save(&self, path: Option<&str>, archive: &ChatArchive) -> Result<PathBuf>;
     fn load(&self, path: &str) -> Result<ChatArchive>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_approval_level_strict_accepts_canonical_and_aliases() {
+        assert_eq!(
+            parse_approval_level_strict("default").as_deref(),
+            Some("default")
+        );
+        assert_eq!(
+            parse_approval_level_strict("auto-approval").as_deref(),
+            Some("auto-approval")
+        );
+        assert_eq!(
+            parse_approval_level_strict("full-access").as_deref(),
+            Some("full-approval")
+        );
+        assert_eq!(
+            parse_approval_level_strict("FULL").as_deref(),
+            Some("full-approval")
+        );
+    }
+
+    #[test]
+    fn parse_approval_level_strict_rejects_unknown() {
+        assert_eq!(parse_approval_level_strict("bogus"), None);
+        assert_eq!(parse_approval_level_strict(""), None);
+    }
+
+    #[test]
+    fn available_approval_levels_csv_uses_comma_space() {
+        assert_eq!(
+            available_approval_levels_csv(),
+            "default, auto-approval, full-approval"
+        );
+    }
+
+    #[test]
+    fn normalize_approval_level_falls_back_unknown_to_default() {
+        assert_eq!(normalize_approval_level("nope"), "default");
+    }
+}

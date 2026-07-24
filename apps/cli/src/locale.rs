@@ -65,3 +65,38 @@ pub fn is_welcome_message(content: &str) -> bool {
         .iter()
         .any(|locale| content.starts_with(t!("tui.welcome.prefix", locale = *locale).as_ref()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model_registry::AppConfig;
+
+    #[test]
+    fn parse_ui_locale_accepts_aliases() {
+        assert_eq!(parse_ui_locale("zh").as_deref(), Some("zh-CN"));
+        assert_eq!(parse_ui_locale("en-US").as_deref(), Some("en"));
+    }
+
+    #[test]
+    fn parse_ui_locale_rejects_unknown() {
+        assert_eq!(parse_ui_locale("fr"), None);
+        assert_eq!(parse_ui_locale("ja-JP"), None);
+    }
+
+    #[test]
+    fn available_ui_locales_csv_uses_comma_space() {
+        assert_eq!(available_ui_locales_csv(), "en, zh-CN");
+    }
+
+    #[test]
+    fn resolve_ui_locale_with_override_prefers_cli_flag() {
+        let config = AppConfig {
+            ui_locale: Some("en".to_string()),
+            ..AppConfig::default()
+        };
+        assert_eq!(
+            resolve_ui_locale_with_override(&config, Some("zh-CN")),
+            "zh-CN"
+        );
+    }
+}

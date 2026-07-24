@@ -88,7 +88,6 @@ pub fn run_headless_prompt(
                 | RuntimeEvent::PushMessage(_) => {
                     // Intentionally ignored: no thinking / tool / process output on stdout.
                 }
-                _ => {}
             }
         }
 
