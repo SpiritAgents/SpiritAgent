@@ -10,6 +10,43 @@ use crate::{
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WorkspaceCapabilityTrustHookEntry {
+    pub event: String,
+    pub command: String,
+    pub resolved_path: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceCapabilityTrustRequest {
+    pub workspace_root: String,
+    pub content_hash: String,
+    pub hash_changed: bool,
+    pub hooks: Vec<WorkspaceCapabilityTrustHookEntry>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WorkspaceCapabilityTrustDecision {
+    AllowOnce,
+    Deny,
+    AlwaysTrust,
+}
+
+impl WorkspaceCapabilityTrustDecision {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::AllowOnce => "allowOnce",
+            Self::Deny => "deny",
+            Self::AlwaysTrust => "alwaysTrust",
+        }
+    }
+}
+
+pub type WorkspaceCapabilityTrustPrompter =
+    Box<dyn FnMut(WorkspaceCapabilityTrustRequest) -> WorkspaceCapabilityTrustDecision>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct LocalMcpToolRequest {
     pub(crate) kind: String,
     pub(crate) name: String,

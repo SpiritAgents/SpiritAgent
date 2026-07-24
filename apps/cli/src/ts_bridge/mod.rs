@@ -33,7 +33,7 @@ mod tests;
 pub(crate) use constants::{ENV_API_KEY, ENV_RUNTIME_BACKEND_NODE_PATH};
 use json_rpc::JsonRpcProcess;
 pub use types::*;
-use types::bridge::BridgePendingApproval;
+use types::bridge::{BridgePendingApproval, WorkspaceCapabilityTrustPrompter};
 
 pub struct TsBridgeRuntime {
     pub(crate) process: JsonRpcProcess,
@@ -58,6 +58,8 @@ pub struct TsBridgeRuntime {
     pub(crate) bridge_failed: bool,
     /// 忙时切换模型/endpoint 已写入 `config`，但尚未对 TS `runtime.replaceConfig`；空闲后由 `flush_deferred_transport_replace` 应用。
     pub(crate) deferred_transport_replace: bool,
+    /// TUI 注册的交互式工作区能力信任提示；未注册时 host 回调默认 deny。
+    pub(crate) workspace_capability_trust_prompter: Option<WorkspaceCapabilityTrustPrompter>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -28,7 +28,7 @@ use crate::{
     rules::RuleEntry,
     runtime_handle::RuntimeHandle,
     subagent_display::parse_pending_subagent_status_text,
-    shell::{ask_questions, bottom_form, file_reference, manual_shell, slash},
+    shell::{ask_questions, bottom_form, file_reference, manual_shell, slash, workspace_trust},
     skills::{self, SkillEntry},
     ts_bridge::{
         CliExtensionCliUiHookEntry, CliExtensionEntry, CliMarketplaceCatalogItem,
@@ -59,6 +59,7 @@ mod pickers;
 mod projection;
 mod runtime_events;
 mod subagent;
+mod workspace_trust;
 
 use conversation::ConversationUiState;
 use forms::BottomFormUiState;

@@ -406,6 +406,22 @@ impl RuntimeHandle {
         self.runtime.reset_session()
     }
 
+    pub fn run_session_start(&mut self, source: &str) -> Result<()> {
+        self.runtime.run_session_start(source)
+    }
+
+    pub fn set_workspace_capability_trust_prompter(
+        &mut self,
+        prompter: Option<crate::ts_bridge::WorkspaceCapabilityTrustPrompter>,
+    ) {
+        self.runtime
+            .set_workspace_capability_trust_prompter(prompter)
+    }
+
+    pub fn has_workspace_capability_trust_prompter(&self) -> bool {
+        self.runtime.has_workspace_capability_trust_prompter()
+    }
+
     pub fn add_pending_image(&mut self, path: String) {
         self.runtime.add_pending_image(path)
     }

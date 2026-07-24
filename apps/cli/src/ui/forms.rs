@@ -118,6 +118,9 @@ pub(in crate::ui) fn bottom_form_block_height(form: &BottomFormView, panel_width
     if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
         return ask_questions_block_height(form, panel_width);
     }
+    if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+        return workspace_trust_block_height(form, panel_width);
+    }
 
     let text_inner_w = bottom_form_text_inner_width(panel_width);
     let content_w = bottom_form_content_width(panel_width);
@@ -633,6 +636,188 @@ pub(in crate::ui) fn draw_ask_questions_form(
     }
 }
 
+pub(in crate::ui) fn workspace_trust_block_height(form: &BottomFormView, panel_width: u16) -> u16 {
+    let content_w = bottom_form_content_width(panel_width);
+    let mut body_lines = 0u32;
+    for field in &form.fields {
+        match &field.editor {
+            BottomFormFieldEditorView::Section { text } => {
+                let section_lines = build_bottom_form_footer_lines(text, content_w).len().max(1) as u32;
+                let label_lines = if field.label.trim().is_empty() {
+                    0
+                } else {
+                    1
+                };
+                body_lines = body_lines.saturating_add(section_lines + label_lines);
+            }
+            _ => body_lines = body_lines.saturating_add(1),
+        }
+    }
+    let options_height = workspace_trust_form::OPTION_COUNT as u32;
+    let footer_height = bottom_form_footer_height(&form.footer_hint, content_w) as u32;
+    body_lines
+        .saturating_add(1) // gap before options
+        .saturating_add(options_height)
+        .saturating_add(1) // gap before footer
+        .saturating_add(footer_height)
+        .saturating_add(4) as u16
+}
+
+pub(in crate::ui) fn draw_workspace_trust_form(
+    frame: &mut ratatui::Frame<'_>,
+    area: Rect,
+    form: &BottomFormView,
+) -> BottomFormRenderResult {
+    let outer_border_style = subtle_aux_text_style();
+    let outer_title_style = subtle_aux_text_style();
+    let title = truncate_to_width(&form.title, area.width.saturating_sub(4) as usize);
+    let outer_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(outer_border_style)
+        .title(Line::from(Span::styled(title, outer_title_style)));
+    let inner_area = outer_block.inner(area);
+    frame.render_widget(outer_block, area);
+
+    let content_area = inset_rect(inner_area, 2, 1);
+    if content_area.width < 3 || content_area.height == 0 {
+        return BottomFormRenderResult {
+            cursor: None,
+            scroll_offset: Some(form.scroll_offset),
+        };
+    }
+
+    let footer_lines =
+        build_bottom_form_footer_lines(&form.footer_hint, content_area.width as usize);
+    let footer_height = footer_lines.len().max(1) as u16;
+    let options_height = workspace_trust_form::OPTION_COUNT as u16;
+    let options_y = content_area
+        .y
+        .saturating_add(content_area.height.saturating_sub(footer_height + 1 + options_height));
+    let info_height = options_y.saturating_sub(content_area.y);
+
+    let hash_changed = matches!(
+        &form.kind,
+        BottomFormKind::WorkspaceCapabilityTrust {
+            hash_changed: true,
+            ..
+        }
+    );
+    let mut cursor_y = content_area.y;
+    let mut drawn_info_height = 0u16;
+    for (field_index, field) in form.fields.iter().enumerate() {
+        if drawn_info_height >= info_height {
+            break;
+        }
+        if !field.label.trim().is_empty() && drawn_info_height + 1 <= info_height {
+            frame.render_widget(
+                Paragraph::new(Line::from(Span::styled(
+                    truncate_to_width(&field.label, content_area.width as usize),
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                ))),
+                Rect {
+                    x: content_area.x,
+                    y: cursor_y,
+                    width: content_area.width,
+                    height: 1,
+                },
+            );
+            cursor_y = cursor_y.saturating_add(1);
+            drawn_info_height = drawn_info_height.saturating_add(1);
+        }
+        if let BottomFormFieldEditorView::Section { text } = &field.editor {
+            let remaining = info_height.saturating_sub(drawn_info_height);
+            if remaining == 0 {
+                break;
+            }
+            let lines = build_bottom_form_footer_lines(text, content_area.width as usize);
+            let height = (lines.len().max(1) as u16).min(remaining);
+            // new_form inserts the hash-changed banner as field index 1 when present.
+            let is_banner = hash_changed && field_index == 1;
+            let style = if is_banner {
+                Style::default().fg(Color::Yellow)
+            } else {
+                subtle_aux_text_style()
+            };
+            let rendered = lines
+                .into_iter()
+                .take(height as usize)
+                .map(|line| {
+                    let content = line
+                        .spans
+                        .into_iter()
+                        .map(|span| span.content.into_owned())
+                        .collect::<String>();
+                    Line::from(Span::styled(content, style))
+                })
+                .collect::<Vec<_>>();
+            frame.render_widget(
+                Paragraph::new(rendered),
+                Rect {
+                    x: content_area.x,
+                    y: cursor_y,
+                    width: content_area.width,
+                    height,
+                },
+            );
+            cursor_y = cursor_y.saturating_add(height);
+            drawn_info_height = drawn_info_height.saturating_add(height);
+        }
+    }
+
+    let selected = workspace_trust_form::selected_row(form);
+    for index in 0..workspace_trust_form::OPTION_COUNT {
+        let row_y = options_y.saturating_add(index as u16);
+        if row_y >= content_area.y.saturating_add(content_area.height) {
+            break;
+        }
+        let selected_row = index == selected;
+        let label = workspace_trust_form::option_label(index);
+        let marker = if selected_row { ">" } else { " " };
+        let row_style = if selected_row {
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            subtle_aux_text_style()
+        };
+        frame.render_widget(
+            Paragraph::new(Line::from(Span::styled(
+                truncate_to_width(
+                    &format!("{marker} {label}"),
+                    content_area.width as usize,
+                ),
+                row_style,
+            ))),
+            Rect {
+                x: content_area.x,
+                y: row_y,
+                width: content_area.width,
+                height: 1,
+            },
+        );
+    }
+
+    let footer_y = content_area
+        .y
+        .saturating_add(content_area.height.saturating_sub(footer_height));
+    frame.render_widget(
+        Paragraph::new(footer_lines),
+        Rect {
+            x: content_area.x,
+            y: footer_y,
+            width: content_area.width,
+            height: footer_height,
+        },
+    );
+
+    BottomFormRenderResult {
+        cursor: None,
+        scroll_offset: Some(form.scroll_offset),
+    }
+}
+
 pub(in crate::ui) fn draw_ask_questions_option_row(
     frame: &mut ratatui::Frame<'_>,
     area: Rect,
@@ -864,6 +1049,9 @@ pub(in crate::ui) fn draw_bottom_form(
     }
     if matches!(form.kind, BottomFormKind::AskQuestions { .. }) {
         return draw_ask_questions_form(frame, area, form);
+    }
+    if matches!(form.kind, BottomFormKind::WorkspaceCapabilityTrust { .. }) {
+        return draw_workspace_trust_form(frame, area, form);
     }
 
     let outer_border_style = subtle_aux_text_style();

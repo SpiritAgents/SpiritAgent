@@ -467,6 +467,7 @@ fn run_tui() -> Result<()> {
 
 fn run_app<B: Backend + io::Write>(terminal: &mut Terminal<B>) -> Result<()> {
     let mut shell = TuiShell::new()?;
+    shell.run_deferred_session_start(terminal)?;
     let mut paste_tracker = PasteReplayTracker::default();
     shell.refresh_suggestions();
     execute!(terminal.backend_mut(), EnableMouseCapture)?;
