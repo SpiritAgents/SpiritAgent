@@ -140,27 +140,6 @@ pub fn print_skills_stub() {
     println!("{}", t!("cli.skills.header"));
     println!("{}", t!("cli.skills.file"));
     println!("{}", t!("cli.skills.shell"));
-    println!("{}", t!("cli.skills.schedule"));
-}
-
-pub fn print_schedule_list_header() {
-    println!("{}", t!("cli.schedule.list_header"));
-}
-
-pub fn print_schedule_added(name: &str, cron: &str, task: &str) {
-    println!(
-        "{}",
-        t!(
-            "cli.schedule.added",
-            name = name,
-            cron = cron,
-            task = task
-        )
-    );
-}
-
-pub fn print_schedule_removed(name: &str) {
-    println!("{}", t!("cli.schedule.removed", name = name));
 }
 
 #[cfg(test)]

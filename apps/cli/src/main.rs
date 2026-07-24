@@ -23,11 +23,10 @@ use std::{
 
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
-    bootstrap_config, print_schedule_added, print_schedule_list_header, print_schedule_removed,
-    print_skills_stub, run_headless_prompt, ConfigCommand, ExtensionCommand, GlobalCliOptions,
-    HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelCommand, TuiShell,
-    handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli,
-    logging, ui,
+    bootstrap_config, print_skills_stub, run_headless_prompt, ConfigCommand, ExtensionCommand,
+    GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelCommand,
+    TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
+    handle_model_cli, logging, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -72,10 +71,6 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Skills,
-    Schedule {
-        #[command(subcommand)]
-        action: ScheduleAction,
-    },
     Interactive,
     Model {
         #[command(subcommand)]
@@ -96,23 +91,6 @@ enum Commands {
     Hooks {
         #[command(subcommand)]
         action: HookAction,
-    },
-}
-
-#[derive(Subcommand)]
-enum ScheduleAction {
-    List,
-    Add {
-        #[arg(value_name = "name")]
-        name: String,
-        #[arg(value_name = "cron")]
-        cron: String,
-        #[arg(value_name = "task")]
-        task: String,
-    },
-    Remove {
-        #[arg(value_name = "name")]
-        name: String,
     },
 }
 
@@ -319,13 +297,6 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Commands::Skills) => print_skills_stub(),
-        Some(Commands::Schedule { action }) => match action {
-            ScheduleAction::List => print_schedule_list_header(),
-            ScheduleAction::Add { name, cron, task } => {
-                print_schedule_added(&name, &cron, &task);
-            }
-            ScheduleAction::Remove { name } => print_schedule_removed(&name),
-        },
         Some(Commands::Interactive) | None => run_tui(&options)?,
         Some(Commands::Model { action }) => handle_model_cli(into_model_command(action))?,
         Some(Commands::Config { action }) => handle_config_cli(into_config_command(action))?,

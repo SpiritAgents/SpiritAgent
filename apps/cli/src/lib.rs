@@ -53,10 +53,7 @@ pub use cli::{
     ModelCommand, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
     handle_model_cli,
 };
-pub use cli_bootstrap::{
-    bootstrap_config, print_schedule_added, print_schedule_list_header, print_schedule_removed,
-    print_skills_stub, GlobalCliOptions,
-};
+pub use cli_bootstrap::{bootstrap_config, print_skills_stub, GlobalCliOptions};
 #[cfg(feature = "tui")]
 pub use headless::run_headless_prompt;
 #[cfg(feature = "tui")]
