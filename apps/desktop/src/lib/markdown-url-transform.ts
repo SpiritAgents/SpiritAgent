@@ -5,14 +5,14 @@ import {
   isManagedGeneratedImageRef,
   isManagedGeneratedVideoRef,
 } from "@/lib/managed-generated-asset";
+import { isBlockedRemoteMarkdownMediaSrc } from "@/lib/markdown-local-image-src";
 
 export const streamdownUrlTransform: StreamdownUrlTransform = (url, key) => {
   if (key === "src") {
     if (isManagedGeneratedImageRef(url) || isManagedGeneratedVideoRef(url)) {
       return url;
     }
-    const trimmed = typeof url === "string" ? url.trim() : "";
-    if (trimmed.startsWith("//") || /^https?:/iu.test(trimmed)) {
+    if (typeof url === "string" && isBlockedRemoteMarkdownMediaSrc(url)) {
       return "";
     }
   }

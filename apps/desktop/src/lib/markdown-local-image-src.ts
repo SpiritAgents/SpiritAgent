@@ -5,6 +5,12 @@ export type MarkdownImageSrcKind = "managed" | "remote" | "local" | "invalid";
 
 const SCHEME_PATTERN = /^([a-zA-Z][a-zA-Z0-9+.-]*):/u;
 
+/** True for http(s) and protocol-relative URLs that must not load in Markdown media. */
+export function isBlockedRemoteMarkdownMediaSrc(src: string): boolean {
+  const trimmed = src.trim();
+  return trimmed.startsWith("//") || /^https?:/iu.test(trimmed);
+}
+
 export function classifyMarkdownImageSrc(src: string): MarkdownImageSrcKind {
   const trimmed = src.trim();
   if (!trimmed) {
@@ -13,7 +19,7 @@ export function classifyMarkdownImageSrc(src: string): MarkdownImageSrcKind {
   if (isManagedGeneratedImageRef(trimmed)) {
     return "managed";
   }
-  if (trimmed.startsWith("//")) {
+  if (isBlockedRemoteMarkdownMediaSrc(trimmed)) {
     return "remote";
   }
   // Windows drive / UNC paths look like they have a scheme; treat them as local first.
@@ -113,7 +119,10 @@ export function dirnameLocalPath(absolutePath: string): string {
     return useBackslash ? `${normalized}\\` : `${normalized}/`;
   }
   const slash = normalized.lastIndexOf("/");
-  if (slash <= 0) {
+  if (slash === 0) {
+    return "/";
+  }
+  if (slash < 0) {
     return useBackslash ? normalized.replace(/\//gu, "\\") : normalized || "/";
   }
   const dir = normalized.slice(0, slash);
