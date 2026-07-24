@@ -1006,7 +1006,14 @@ class DesktopHostService {
         if (!target) {
           return;
         }
-        await this.runSessionStartForBundle(target, source);
+        try {
+          await this.runSessionStartForBundle(target, source);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error('[desktop-host] sessionStart failed', { bundleId, source, error });
+          this.lastRuntimeError = message;
+          this.emitLiveSnapshotUpdate();
+        }
       });
     void this.sessionStartTail;
   }
