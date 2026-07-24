@@ -136,10 +136,6 @@ pub fn apply_approval_level(runtime: &mut RuntimeHandle, raw: &str) -> Result<()
     runtime.set_approval_level(&level)
 }
 
-pub fn print_verbose_enabled() {
-    println!("{}", t!("cli.verbose.enabled"));
-}
-
 pub fn print_skills_stub() {
     println!("{}", t!("cli.skills.header"));
     println!("{}", t!("cli.skills.file"));

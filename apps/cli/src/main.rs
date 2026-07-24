@@ -24,10 +24,10 @@ use std::{
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
     bootstrap_config, print_schedule_added, print_schedule_list_header, print_schedule_removed,
-    print_skills_stub, print_verbose_enabled, run_headless_prompt, ConfigCommand, ExtensionCommand,
-    GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelCommand,
-    TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
-    handle_model_cli, logging, ui,
+    print_skills_stub, run_headless_prompt, ConfigCommand, ExtensionCommand, GlobalCliOptions,
+    HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelCommand, TuiShell,
+    handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli,
+    logging, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -44,9 +44,6 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LSHIF
 #[command(version)]
 #[command(about = "Spirit Agent — AI productivity agent", long_about = None)]
 struct Cli {
-    #[arg(short, long, default_value = "false")]
-    verbose: bool,
-
     /// Run a single headless turn and print the final assistant message.
     #[arg(long)]
     prompt: Option<String>,
@@ -276,10 +273,6 @@ fn main() -> Result<()> {
 
     // Locale + --model persistence before any user-facing output.
     let config = bootstrap_config(&options)?;
-
-    if cli.verbose {
-        print_verbose_enabled();
-    }
 
     // --prompt always wins (including when combined with `interactive`).
     if let Some(prompt) = options.prompt.as_deref() {

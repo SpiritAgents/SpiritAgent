@@ -55,7 +55,7 @@ pub use cli::{
 };
 pub use cli_bootstrap::{
     bootstrap_config, print_schedule_added, print_schedule_list_header, print_schedule_removed,
-    print_skills_stub, print_verbose_enabled, GlobalCliOptions,
+    print_skills_stub, GlobalCliOptions,
 };
 #[cfg(feature = "tui")]
 pub use headless::run_headless_prompt;
