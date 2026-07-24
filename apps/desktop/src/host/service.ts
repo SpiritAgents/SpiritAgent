@@ -694,10 +694,14 @@ class DesktopHostService {
   private visiblePaneSessionPaths: string[] = [];
   private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
   private pendingWorkspaceCapabilityTrust: WorkspaceCapabilityTrustRequest | undefined;
-  private readonly workspaceCapabilityTrustWaiters: Array<{
-    resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
-    reject: (error: Error) => void;
-  }> = [];
+  private workspaceCapabilityTrustWaiter:
+    | {
+        resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
+        reject: (error: Error) => void;
+      }
+    | undefined;
+  /** Serialize trust prompts so one reply cannot authorize multiple workspaces. */
+  private workspaceCapabilityTrustTail: Promise<void> = Promise.resolve();
   /** sessionStart may await interactive trust; never run it while holding runSerialized. */
   private sessionStartTail: Promise<void> = Promise.resolve();
 
@@ -935,10 +939,26 @@ class DesktopHostService {
   private requestWorkspaceCapabilityTrust = (
     request: WorkspaceCapabilityTrustRequest,
   ): Promise<WorkspaceCapabilityTrustDecision> => {
-    this.pendingWorkspaceCapabilityTrust = request;
-    this.emitLiveSnapshotUpdate();
     return new Promise<WorkspaceCapabilityTrustDecision>((resolve, reject) => {
-      this.workspaceCapabilityTrustWaiters.push({ resolve, reject });
+      this.workspaceCapabilityTrustTail = this.workspaceCapabilityTrustTail
+        .catch(() => undefined)
+        .then(
+          () =>
+            new Promise<void>((slotDone) => {
+              this.pendingWorkspaceCapabilityTrust = request;
+              this.workspaceCapabilityTrustWaiter = {
+                resolve: (decision) => {
+                  resolve(decision);
+                  slotDone();
+                },
+                reject: (error) => {
+                  reject(error);
+                  slotDone();
+                },
+              };
+              this.emitLiveSnapshotUpdate();
+            }),
+        );
     });
   };
 
@@ -2264,14 +2284,13 @@ class DesktopHostService {
   async replyWorkspaceCapabilityTrust(
     request: ReplyWorkspaceCapabilityTrustRequest,
   ): Promise<DesktopSnapshot> {
-    if (!this.pendingWorkspaceCapabilityTrust || this.workspaceCapabilityTrustWaiters.length === 0) {
+    if (!this.pendingWorkspaceCapabilityTrust || !this.workspaceCapabilityTrustWaiter) {
       throw new Error('No pending workspace capability trust request');
     }
-    const waiters = this.workspaceCapabilityTrustWaiters.splice(0);
+    const waiter = this.workspaceCapabilityTrustWaiter;
+    this.workspaceCapabilityTrustWaiter = undefined;
     this.pendingWorkspaceCapabilityTrust = undefined;
-    for (const waiter of waiters) {
-      waiter.resolve(request.decision);
-    }
+    waiter.resolve(request.decision);
     this.emitLiveSnapshotUpdate();
     return this.buildSnapshot();
   }
