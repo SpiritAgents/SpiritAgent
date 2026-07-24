@@ -102,6 +102,28 @@ function isMarkdownPath(rel: string): boolean {
   return /\.(md|mdx|markdown|mdown|mkd|mkdn|mdwn)$/i.test(rel);
 }
 
+/** Directory of the open Markdown file; used as relative image base (not LoadedDoc.absolutePath). */
+function resolveMarkdownPreviewImageBaseDir(
+  selectedEntry: SelectedEntry,
+  workspaceRoot: string,
+  planPath: string,
+): string {
+  if (!selectedEntry) {
+    return workspaceRoot;
+  }
+  if (selectedEntry.kind === "external") {
+    return dirnameLocalPath(selectedEntry.absolutePath);
+  }
+  if (selectedEntry.kind === "workspace") {
+    return dirnameLocalPath(joinWorkspaceAbsolutePath(workspaceRoot, selectedEntry.relativePath));
+  }
+  const rel = planPath.trim();
+  if (!rel) {
+    return workspaceRoot;
+  }
+  return dirnameLocalPath(joinWorkspaceAbsolutePath(workspaceRoot, rel));
+}
+
 function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLElement | null {
   return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
 }
@@ -1131,9 +1153,11 @@ export function WorkspaceFilesTab({
                           singleLineBreaks={false}
                           readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
                           readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-                          localImageBaseDir={
-                            doc.absolutePath ? dirnameLocalPath(doc.absolutePath) : workspaceRoot
-                          }
+                          localImageBaseDir={resolveMarkdownPreviewImageBaseDir(
+                            selectedEntry,
+                            workspaceRoot,
+                            plan.path,
+                          )}
                         />
                       ) : (
                         <div
