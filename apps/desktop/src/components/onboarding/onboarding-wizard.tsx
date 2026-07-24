@@ -357,25 +357,14 @@ function OnboardingWelcomeStep({
     setTitleVisible(false);
     setContinueVisible(false);
 
-    let titleFrame = 0;
-    let titleTimeout = 0;
-    if (WELCOME_TITLE_DELAY_MS === 0) {
-      titleFrame = requestAnimationFrame(() => setTitleVisible(true));
-    } else {
-      titleTimeout = window.setTimeout(() => setTitleVisible(true), WELCOME_TITLE_DELAY_MS);
-    }
+    const titleTimeout = window.setTimeout(() => setTitleVisible(true), WELCOME_TITLE_DELAY_MS);
 
     const continueId = window.setTimeout(() => {
       setContinueVisible(true);
     }, WELCOME_CONTINUE_DELAY_MS);
 
     return () => {
-      if (titleFrame !== 0) {
-        cancelAnimationFrame(titleFrame);
-      }
-      if (titleTimeout !== 0) {
-        window.clearTimeout(titleTimeout);
-      }
+      window.clearTimeout(titleTimeout);
       window.clearTimeout(continueId);
     };
   }, []);

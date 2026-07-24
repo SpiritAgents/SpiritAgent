@@ -356,6 +356,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     },
                     context_length,
                     supports_thinking_type: None,
+                    supports_thinking_switch: None,
                 };
                 cfg.add_model_to_group(
                     &group_id,
@@ -649,7 +650,6 @@ fn parse_model_transport_kind(
                 | ModelProvider::FireworksAi
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
-                | ModelProvider::Siliconflow
                 | ModelProvider::CloudflareAiGateway
                 | ModelProvider::TencentTokenhub,
             ),

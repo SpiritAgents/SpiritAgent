@@ -18,13 +18,12 @@ export function bottomScrollFadeMaskStyle(
   hasMoreBelow: boolean,
   options?: { animate?: boolean },
 ): CSSProperties {
-  const style: CSSProperties = {
+  return {
     "--sidebar-mask-bottom-alpha": hasMoreBelow ? "0" : "1",
     maskImage: LIST_BOTTOM_SCROLL_FADE_MASK,
     WebkitMaskImage: LIST_BOTTOM_SCROLL_FADE_MASK,
-  };
-  if (options?.animate !== false) {
-    style.transition = "--sidebar-mask-bottom-alpha 150ms";
-  }
-  return style as CSSProperties;
+    ...(options?.animate !== false
+      ? { transition: "--sidebar-mask-bottom-alpha 150ms" }
+      : {}),
+  } as CSSProperties;
 }

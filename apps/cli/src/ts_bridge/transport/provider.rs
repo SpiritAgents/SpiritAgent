@@ -115,6 +115,8 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
             unreachable!("Amazon Bedrock 不应映射到 openai-compatible llmVendor")
         }
         ModelProvider::Stepfun => "stepfun",
+        ModelProvider::Meituan => "meituan",
+        ModelProvider::TencentTokenhub => "tencent-tokenhub",
         ModelProvider::Custom => "custom",
     }
 }

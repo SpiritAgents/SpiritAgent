@@ -188,6 +188,7 @@ fn validate_config_change_allows_non_transport_updates_while_busy() {
             capabilities: None,
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
 
@@ -250,6 +251,7 @@ fn resolve_transport_config_json_includes_video_generation_model_for_open_respon
             capabilities: Some(vec!["videoGeneration".to_string()]),
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
     next.video_generation_model = Some(ModelRef {
@@ -301,6 +303,7 @@ fn resolve_transport_config_json_includes_image_generation_model() {
             capabilities: Some(vec!["imageGeneration".to_string()]),
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
     next.image_generation_model = Some(ModelRef {
@@ -403,6 +406,7 @@ fn resolve_transport_config_json_uses_azure_official_responses_provider() {
             capabilities: None,
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
     next.active_model = ModelRef {
@@ -479,6 +483,7 @@ fn resolve_transport_config_json_recomputes_azure_base_url_from_resource_name() 
             capabilities: None,
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
     next.active_model = ModelRef {
@@ -532,6 +537,7 @@ fn resolve_transport_config_json_routes_bedrock_mantle_openai_to_open_responses(
             capabilities: None,
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
     next.active_model = ModelRef {
@@ -634,6 +640,7 @@ fn transport_config_change_detects_model_knobs() {
             capabilities: Some(vec!["imageGeneration".to_string()]),
             context_length: None,
             supports_thinking_type: None,
+            supports_thinking_switch: None,
         },
     );
     next.image_generation_model = Some(ModelRef {

@@ -28,7 +28,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { KEY_DOWN_COMMAND, COMMAND_PRIORITY_HIGH } from "lexical";
+import { KEY_DOWN_COMMAND, COMMAND_PRIORITY_HIGH, type LexicalEditor } from "lexical";
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
@@ -1000,7 +1000,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     useEffect(() => {
       return editor.registerCommand(
         KEY_DOWN_COMMAND,
-        (event: KeyboardEvent) => {
+        (event: globalThis.KeyboardEvent) => {
           if (
             event.key === "Enter"
             && !event.shiftKey

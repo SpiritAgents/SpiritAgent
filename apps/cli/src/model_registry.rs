@@ -405,8 +405,10 @@ impl ModelProfile {
             | Some(ModelProvider::GoogleVertexAi)
             | Some(ModelProvider::Volcengine)
             | Some(ModelProvider::Stepfun)
-            | Some(ModelProvider::AmazonBedrock)
+            |             Some(ModelProvider::AmazonBedrock)
             | Some(ModelProvider::Azure)
+            | Some(ModelProvider::Meituan)
+            | Some(ModelProvider::TencentTokenhub)
             | Some(ModelProvider::Custom)
             | None => true,
         }
@@ -1203,6 +1205,7 @@ pub fn make_test_app_config_with_models(
                 capabilities: None,
                 context_length: None,
                 supports_thinking_type: None,
+                supports_thinking_switch: None,
             },
         );
     }
@@ -1970,6 +1973,7 @@ mod tests {
                 capabilities: None,
                 context_length: None,
                 supports_thinking_type: None,
+                supports_thinking_switch: None,
             },
         );
         let serialized_without = serialize_config(&cfg).expect("serialize config");
@@ -2177,6 +2181,7 @@ mod tests {
                 capabilities: None,
                 context_length: None,
                 supports_thinking_type: None,
+                supports_thinking_switch: None,
             },
         );
         assert_eq!(
@@ -2197,6 +2202,7 @@ mod tests {
                 capabilities: None,
                 context_length: None,
                 supports_thinking_type: None,
+                supports_thinking_switch: None,
             },
         );
         assert!(cfg.provider_groups[0].z_ai_billing_mode.is_none());
@@ -2222,6 +2228,7 @@ mod tests {
                 capabilities: Some(vec!["chat".to_string()]),
                 context_length: None,
                 supports_thinking_type: None,
+                supports_thinking_switch: None,
             },
         );
         cfg.active_model = ModelRef {

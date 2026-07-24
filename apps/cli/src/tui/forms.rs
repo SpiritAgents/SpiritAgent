@@ -559,6 +559,7 @@ impl TuiShell {
                     capabilities: None,
                     context_length: None,
                     supports_thinking_type: None,
+                    supports_thinking_switch: None,
                 },
             );
             if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {

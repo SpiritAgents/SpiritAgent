@@ -1,9 +1,13 @@
-import type { TFunction } from "i18next";
-
 import type { DesktopAutomationTriggerFormatLabels } from "@/lib/automation-trigger";
 
+/** 兼容 react-i18next `t` 的最小签名，避免直接依赖 TFunction 泛型。 */
+export type AutomationTriggerTranslate = (
+  key: string,
+  options?: Record<string, unknown>,
+) => string;
+
 export function buildAutomationTriggerFormatLabels(
-  t: TFunction,
+  t: AutomationTriggerTranslate,
 ): DesktopAutomationTriggerFormatLabels {
   return {
     hourly: t("automations.schedule.hourly"),
