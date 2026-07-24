@@ -211,6 +211,9 @@ export async function createElectronHostApi(): Promise<HostApi> {
     replyPendingQuestions(request) {
       return bridge.replyPendingQuestions(request);
     },
+    replyWorkspaceCapabilityTrust(request) {
+      return bridge.replyWorkspaceCapabilityTrust(request);
+    },
     resetSession() {
       return bridge.resetSession();
     },

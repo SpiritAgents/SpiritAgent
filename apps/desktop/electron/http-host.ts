@@ -778,6 +778,27 @@ async function handleApiRequest({
     return;
   }
 
+  if (request.method === 'POST' && pathname === '/api/workspace-capability-trust') {
+    const decision = jsonBody?.decision;
+    if (
+      decision !== 'allowOnce'
+      && decision !== 'deny'
+      && decision !== 'alwaysTrust'
+    ) {
+      writeJson(request, response, 400, { error: 'invalid workspace capability trust decision' });
+      return;
+    }
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand('replyWorkspaceCapabilityTrust', {
+        request: { decision },
+      }),
+    );
+    return;
+  }
+
   if (request.method === 'POST' && pathname === '/api/git/pending-branch') {
     writeJson(
       request,

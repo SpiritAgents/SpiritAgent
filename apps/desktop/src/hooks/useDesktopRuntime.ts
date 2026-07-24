@@ -114,6 +114,7 @@ import type {
   ApprovalLevel,
   LocalFileComposerRoute,
   WorkLocationKind,
+  WorkspaceCapabilityTrustDecision,
 } from "@/types";
 
 type BusyAction =
@@ -125,6 +126,7 @@ type BusyAction =
   | "fork"
   | "side-chat"
   | "approve"
+  | "workspaceTrust"
   | "questions"
   | "reset"
   | "session"
@@ -2965,6 +2967,25 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot]);
 
+  const replyWorkspaceCapabilityTrust = useCallback(async (
+    decision: WorkspaceCapabilityTrustDecision,
+  ) => {
+    if (!api) {
+      return;
+    }
+
+    setBusyAction("workspaceTrust");
+    try {
+      const next = await api.replyWorkspaceCapabilityTrust({ decision });
+      applySnapshot(next);
+      setRuntimeError("");
+    } catch (error) {
+      setRuntimeError(describeError(error));
+    } finally {
+      setBusyAction("");
+    }
+  }, [api, applySnapshot]);
+
   useEffect(() => {
     const bridge = window.spiritDesktop;
     if (!bridge?.subscribeApprovalFromNotification) {
@@ -3860,6 +3881,7 @@ export function useDesktopRuntime() {
     submitStartImplementing,
     skipQuestions,
     submitApproval,
+    replyWorkspaceCapabilityTrust,
     submitQuestions,
   };
 }

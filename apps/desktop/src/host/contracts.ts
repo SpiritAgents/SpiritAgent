@@ -89,6 +89,7 @@ export type HostCommandName =
   | 'setAutomationEnabled'
   | 'replyPendingApproval'
   | 'replyPendingQuestions'
+  | 'replyWorkspaceCapabilityTrust'
   | 'resetSession'
   | 'listSessions'
   | 'openSession'

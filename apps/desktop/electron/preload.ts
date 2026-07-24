@@ -244,6 +244,9 @@ contextBridge.exposeInMainWorld('spiritDesktop', {
   replyPendingQuestions(request: unknown) {
     return ipcRenderer.invoke('desktop:invoke', 'replyPendingQuestions', { request });
   },
+  replyWorkspaceCapabilityTrust(request: unknown) {
+    return ipcRenderer.invoke('desktop:invoke', 'replyWorkspaceCapabilityTrust', { request });
+  },
   resetSession() {
     return ipcRenderer.invoke('desktop:invoke', 'resetSession');
   },

@@ -1361,5 +1361,14 @@
     "ask": "Read-only help: explain, browse, and search the codebase",
     "debug": "Systematic bug investigation: rank hypotheses, add log points, iterate root cause from logs",
     "activateSkillPrompt": "Please handle the current task according to skill \"{{skillName}}\"."
+  },
+  "workspaceTrust": {
+    "title": "Trust workspace capabilities?",
+    "risk": "This workspace defines hooks that run scripts from the project. Only continue if you trust this codebase.",
+    "hooksChanged": "Workspace hooks have changed since you last trusted them. Review the list before continuing.",
+    "allowOnce": "Allow once",
+    "deny": "Deny",
+    "alwaysTrust": "Always trust",
+    "hooksSection": "Hooks that will run"
   }
 }

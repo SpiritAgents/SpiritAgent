@@ -56,6 +56,8 @@ import {
   gitBranchLabelForBasicInfo,
   setGitHubFetchImplementation,
   type WorkLocationKind,
+  type WorkspaceCapabilityTrustDecision,
+  type WorkspaceCapabilityTrustRequest,
 } from '@spiritagent/host-internal';
 
 import type {
@@ -116,6 +118,7 @@ import type {
   RewindAndSubmitMessageRequest,
   ReplyPendingApprovalRequest,
   ReplyPendingQuestionsRequest,
+  ReplyWorkspaceCapabilityTrustRequest,
   ForkSessionRequest,
   RememberWorkspaceRequest,
   ForgetWorkspaceRequest,
@@ -689,6 +692,11 @@ class DesktopHostService {
   private lspSnapshot = defaultDesktopLspSnapshot();
   private visiblePaneSessionPaths: string[] = [];
   private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
+  private pendingWorkspaceCapabilityTrust: WorkspaceCapabilityTrustRequest | undefined;
+  private readonly workspaceCapabilityTrustWaiters: Array<{
+    resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
+    reject: (error: Error) => void;
+  }> = [];
 
   private replaceVisiblePaneSessionPath(before: string, after: string): void {
     const beforeResolved = path.resolve(before);
@@ -921,8 +929,20 @@ class DesktopHostService {
     }
   }
 
+  private requestWorkspaceCapabilityTrust = (
+    request: WorkspaceCapabilityTrustRequest,
+  ): Promise<WorkspaceCapabilityTrustDecision> => {
+    this.pendingWorkspaceCapabilityTrust = request;
+    this.emitLiveSnapshotUpdate();
+    return new Promise<WorkspaceCapabilityTrustDecision>((resolve, reject) => {
+      this.workspaceCapabilityTrustWaiters.push({ resolve, reject });
+    });
+  };
+
   private getHookRunner(workspaceRoot: string): HookRunner {
-    return createDesktopHookRunner(workspaceRoot);
+    return createDesktopHookRunner(workspaceRoot, {
+      requestWorkspaceCapabilityTrust: this.requestWorkspaceCapabilityTrust,
+    });
   }
 
   private async runSessionEndForBundle(
@@ -2213,6 +2233,21 @@ class DesktopHostService {
       return this.buildSnapshot();
     }
     return replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+  }
+
+  async replyWorkspaceCapabilityTrust(
+    request: ReplyWorkspaceCapabilityTrustRequest,
+  ): Promise<DesktopSnapshot> {
+    if (!this.pendingWorkspaceCapabilityTrust || this.workspaceCapabilityTrustWaiters.length === 0) {
+      throw new Error('No pending workspace capability trust request');
+    }
+    const waiters = this.workspaceCapabilityTrustWaiters.splice(0);
+    this.pendingWorkspaceCapabilityTrust = undefined;
+    for (const waiter of waiters) {
+      waiter.resolve(request.decision);
+    }
+    this.emitLiveSnapshotUpdate();
+    return this.buildSnapshot();
   }
 
   async resetSession(options?: { activate?: boolean }): Promise<DesktopSnapshot> {
@@ -3706,6 +3741,9 @@ class DesktopHostService {
         const paneSessions = this.buildPaneSessionsSnapshot(activeBundle);
         return paneSessions ? { paneSessions } : {};
       })(),
+      ...(this.pendingWorkspaceCapabilityTrust
+        ? { pendingWorkspaceCapabilityTrust: this.pendingWorkspaceCapabilityTrust }
+        : {}),
     });
   }
 

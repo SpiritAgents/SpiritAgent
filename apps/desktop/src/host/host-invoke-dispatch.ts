@@ -63,6 +63,9 @@ export interface HostCommandDelegate {
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<unknown>;
   replyPendingApproval(request: CommandPayloads['replyPendingApproval']['request']): Promise<unknown>;
   replyPendingQuestions(request: CommandPayloads['replyPendingQuestions']['request']): Promise<unknown>;
+  replyWorkspaceCapabilityTrust(
+    request: CommandPayloads['replyWorkspaceCapabilityTrust']['request'],
+  ): Promise<unknown>;
   resetSession(payload?: CommandPayloads['resetSession']): Promise<unknown>;
   listSessions(): Promise<unknown>;
   openSession(path: string, options?: { activate?: boolean }): Promise<unknown>;
@@ -245,6 +248,7 @@ const hostCommandDispatch = {
   setAutomationEnabled: (host, payload) => host.setAutomationEnabled(payload.automationId, payload.enabled),
   replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.request),
   replyPendingQuestions: (host, payload) => host.replyPendingQuestions(payload.request),
+  replyWorkspaceCapabilityTrust: (host, payload) => host.replyWorkspaceCapabilityTrust(payload.request),
   resetSession: (host, payload) => host.resetSession(
     payload && typeof payload === 'object' && payload.activate === false
       ? { activate: false }

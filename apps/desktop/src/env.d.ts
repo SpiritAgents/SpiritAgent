@@ -130,6 +130,9 @@ declare global {
     sessionListSubscribe(callback: () => void): () => void;
     replyPendingApproval(request: import('./types').ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
     replyPendingQuestions(request: import('./types').ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
+    replyWorkspaceCapabilityTrust(
+      request: import('./types').ReplyWorkspaceCapabilityTrustRequest,
+    ): Promise<DesktopSnapshot>;
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;
     openSession(path: string): Promise<DesktopSnapshot>;

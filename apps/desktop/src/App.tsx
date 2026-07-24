@@ -19,6 +19,7 @@ import { SessionSidebar } from "@/components/session-sidebar";
 import { SessionSidebarShell } from "@/components/session-sidebar-shell";
 import { SettingsView } from "@/components/settings-view";
 import { WebHostPairingGate } from "@/components/web-host-pairing-gate";
+import { WorkspaceCapabilityTrustDialog } from "@/components/workspace-capability-trust-dialog";
 import { WorkspaceFilePickerDialog } from "@/components/workspace-file-picker-dialog";
 import { WorkspaceMarkdownLinkProvider } from "@/components/workspace-markdown-link-context";
 import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
@@ -701,6 +702,14 @@ export default function App() {
         statHostTextFile={runtime.statHostTextFile}
         indexReady={composer.workspaceFileIndex.ready}
         searchWorkspaceFiles={composer.workspaceFileIndex.searchFilesOnly}
+      />
+
+      <WorkspaceCapabilityTrustDialog
+        pending={snapshot?.pendingWorkspaceCapabilityTrust}
+        busy={runtime.busyAction === "workspaceTrust"}
+        onReply={(decision) => {
+          void runtime.replyWorkspaceCapabilityTrust(decision);
+        }}
       />
 
     </div>
