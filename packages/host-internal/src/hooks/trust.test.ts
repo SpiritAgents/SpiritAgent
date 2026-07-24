@@ -270,6 +270,7 @@ test('createHookRunner prompts once then runs workspace hooks on allowOnce', asy
 test('createHookRunner deny skips workspace hooks', async () => {
   clearWorkspaceCapabilityTrustSessionForTests();
   const { dataDir, workspaceRoot, spiritDir } = await makeWorkspaceFixture();
+  let prompts = 0;
   const runner = createHookRunner({
     spiritDataDir: dataDir,
     workspaceRoot,
@@ -282,7 +283,10 @@ test('createHookRunner deny skips workspace hooks', async () => {
       userConfigDir: dataDir,
       workspaceConfigDir: spiritDir,
     }),
-    requestWorkspaceCapabilityTrust: async () => 'deny',
+    requestWorkspaceCapabilityTrust: async () => {
+      prompts += 1;
+      return 'deny';
+    },
   });
 
   const result = await runner.runSessionStart({
@@ -293,4 +297,16 @@ test('createHookRunner deny skips workspace hooks', async () => {
     source: 'open',
   });
   assert.equal(result.records.length, 0);
+  assert.equal(prompts, 1);
+
+  // Deny is not remembered: the next workspace-hook event asks again.
+  const second = await runner.runSessionStart({
+    sessionId: 's',
+    conversationPath: null,
+    workspaceRoot,
+    model: 'm',
+    source: 'resume',
+  });
+  assert.equal(second.records.length, 0);
+  assert.equal(prompts, 2);
 });
