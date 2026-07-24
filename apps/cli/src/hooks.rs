@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use rust_i18n::t;
 
 use crate::{
     adapters::{DefaultAppPaths, KeyringSecretStore},
@@ -43,21 +44,21 @@ pub fn handle_hooks_cli(action: HookCommand) -> Result<()> {
     Ok(())
 }
 
-fn hook_scope_label(scope: &str) -> &str {
+fn hook_scope_label(scope: &str) -> String {
     if scope == "workspace" {
-        "工作区"
+        t!("cli.hooks.scope.workspace").into_owned()
     } else {
-        "用户"
+        t!("cli.hooks.scope.user").into_owned()
     }
 }
 
 fn print_hooks_list(items: &[HookListItem]) {
     if items.is_empty() {
-        println!("未配置任何 Hook 条目。可在 TUI 中使用 /hooks add 添加。");
+        println!("{}", t!("cli.hooks.empty"));
         return;
     }
 
-    println!("已配置 Hook 条目 ({}):", items.len());
+    println!("{}", t!("cli.hooks.list_header", count = items.len()));
     for item in items {
         println!(
             "  - {} [{}] #{}  {}",
@@ -70,24 +71,30 @@ fn print_hooks_list(items: &[HookListItem]) {
 }
 
 fn print_hooks_validation_report(report: &HooksValidationReport) {
-    println!("用户 Hooks 配置: {}", report.user_config_path);
+    println!(
+        "{}",
+        t!("cli.hooks.user_config", path = report.user_config_path)
+    );
     if let Some(workspace_path) = &report.workspace_config_path {
-        println!("工作区 Hooks 配置: {workspace_path}");
+        println!(
+            "{}",
+            t!("cli.hooks.workspace_config", path = workspace_path)
+        );
     } else {
-        println!("工作区 Hooks 配置: (未绑定工作区)");
+        println!("{}", t!("cli.hooks.workspace_unbound"));
     }
     println!();
-    println!("事件条目统计:");
+    println!("{}", t!("cli.hooks.event_summary"));
     for (event, count) in &report.summary {
         println!("  - {event}: {count}");
     }
     println!();
     if report.entries.is_empty() {
-        println!("未配置任何 Hook 条目。");
+        println!("{}", t!("cli.hooks.empty"));
         return;
     }
 
-    println!("Hook 条目:");
+    println!("{}", t!("cli.hooks.entries_header"));
     for entry in &report.entries {
         let status = if entry.exists { "ok" } else { "missing" };
         println!(

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, anyhow};
+use rust_i18n::t;
 use std::fs;
 use std::{collections::BTreeMap, env, path::PathBuf, sync::Arc};
 
@@ -137,8 +138,11 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
 
     match action {
         ModelCommand::List => {
-            println!("当前模型: {}", cfg.active_model_name());
-            println!("模型列表:");
+            println!(
+                "{}",
+                t!("cli.model.current", model = cfg.active_model_name())
+            );
+            println!("{}", t!("cli.model.list_header"));
             for model in cfg.flatten_models() {
                 let key_saved = crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
                     .map(|value| !value.trim().is_empty())
@@ -146,14 +150,21 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                         secret_store.has_model_api_key(&model.name).unwrap_or(false)
                     });
                 println!(
-                    "  - {} ({})\n    api_base: {}\n    provider: {}\n    reasoning_effort: {}\n    capabilities: {}\n    key: {}",
-                    model.name,
-                    model.group_id,
-                    model.api_base,
-                    format_model_provider(model.provider),
-                    model.reasoning_effort.as_deref().unwrap_or("未设置"),
-                    format_model_capabilities(&model),
-                    if key_saved { "已保存" } else { "未保存" }
+                    "{}",
+                    t!(
+                        "cli.model.list_entry",
+                        name = model.name,
+                        group_id = model.group_id,
+                        api_base = model.api_base,
+                        provider = format_model_provider(model.provider),
+                        reasoning_effort = model
+                            .reasoning_effort
+                            .as_deref()
+                            .map(str::to_string)
+                            .unwrap_or_else(|| t!("cli.common.unset").into_owned()),
+                        capabilities = format_model_capabilities(&model),
+                        key_status = common_key_status(key_saved),
+                    )
                 );
             }
         }
@@ -171,7 +182,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             alibaba_workspace_id,
         } => {
             if cfg.has_model_name(&name) {
-                println!("模型已存在: {}", name);
+                println!("{}", t!("cli.model.already_exists", name = name));
             } else {
                 let provider = parse_model_provider(provider)?;
                 let transport_kind = parse_model_transport_kind(transport_kind, provider)?;
@@ -182,7 +193,8 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     .map(ToOwned::to_owned);
                 if provider == Some(ModelProvider::Azure) && azure_resource_name.is_none() {
                     return Err(anyhow!(
-                        "provider=azure 时必须指定 --azure-resource-name"
+                        "{}",
+                        t!("cli.model.error.azure_resource_name_required")
                     ));
                 }
                 if provider == Some(ModelProvider::Azure) {
@@ -193,7 +205,10 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 if provider == Some(ModelProvider::Azure)
                     && transport_kind != ModelTransportKind::OpenResponses
                 {
-                    return Err(anyhow!("provider=azure 仅支持 open-responses transport-kind"));
+                    return Err(anyhow!(
+                        "{}",
+                        t!("cli.model.error.azure_transport_only")
+                    ));
                 }
                 let reasoning_effort = parse_model_reasoning_effort(
                     &name,
@@ -204,7 +219,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 if provider == Some(ModelProvider::Custom)
                     && api_base.as_deref().map(str::trim).is_none_or(str::is_empty)
                 {
-                    return Err(anyhow!("端点不能为空"));
+                    return Err(anyhow!("{}", t!("cli.model.error.endpoint_empty")));
                 }
                 if provider == Some(ModelProvider::Alibaba) {
                     if let Some(site) = provider_site.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
@@ -212,7 +227,8 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                             && alibaba_workspace_id.as_deref().map(str::trim).is_none_or(str::is_empty)
                         {
                             return Err(anyhow!(
-                                "provider=alibaba 且 provider-site 为 ap-southeast-1 / eu-central-1 时必须指定 --alibaba-workspace-id"
+                                "{}",
+                                t!("cli.model.error.alibaba_workspace_id_required")
                             ));
                         }
                     }
@@ -312,15 +328,20 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 let capabilities = normalize_model_capabilities(capabilities);
                 let key_value = match key {
                     Some(v) => v,
-                    None => rpassword::prompt_password("请输入该模型 API Key: ")
-                        .context("读取 API Key 输入失败")?,
+                    None => rpassword::prompt_password(&t!("cli.model.prompt_api_key"))
+                        .context(t!("cli.model.api_key_read_failed").into_owned())?,
                 };
                 if key_value.trim().is_empty() {
-                    return Err(anyhow!("API Key 不能为空"));
+                    return Err(anyhow!("{}", t!("cli.model.error.api_key_empty")));
                 }
                 let context_length = match context_length {
                     None => None,
-                    Some(0) => return Err(anyhow!("上下文长度必须是正整数")),
+                    Some(0) => {
+                        return Err(anyhow!(
+                            "{}",
+                            t!("cli.model.error.context_length_positive")
+                        ));
+                    }
                     Some(value) => Some(value),
                 };
 
@@ -386,12 +407,15 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 cfg.active_model = model_ref;
                 save_group_api_key(&group_id, &key_value)?;
                 config_store.save(&cfg)?;
-                println!("已添加模型: {}，并已设为当前模型", name);
+                println!("{}", t!("cli.model.added_and_active", name = name));
                 println!("api_base: {}", api_base);
                 println!("provider: {}", format_model_provider(Some(resolved_provider)));
                 println!(
                     "reasoning_effort: {}",
-                    reasoning_effort.as_deref().unwrap_or("未设置")
+                    reasoning_effort
+                        .as_deref()
+                        .map(str::to_string)
+                        .unwrap_or_else(|| t!("cli.common.unset").into_owned())
                 );
                 println!(
                     "capabilities: {}",
@@ -400,7 +424,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                         name: name.clone(),
                     })
                     .map(|profile| format_model_capabilities(&profile))
-                    .unwrap_or_else(|| "未设置".to_string())
+                    .unwrap_or_else(|| t!("cli.common.unset").into_owned())
                 );
             }
         }
@@ -409,7 +433,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 .parse_model_ref_selector(&name)
                 .map_err(|err| anyhow!(err))?;
             if !cfg.remove_model(&model_ref) {
-                println!("模型不存在: {}", name);
+                println!("{}", t!("cli.model.not_found_name", name = name));
             } else {
                 if model_refs_equal(&cfg.active_model, &model_ref) {
                     cfg.active_model = cfg.first_model_ref();
@@ -430,19 +454,18 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 }
                 config_store.save(&cfg)?;
                 let _ = secret_store.remove_model_api_key(&model_ref.name);
-                println!("已删除模型: {}", name);
+                println!("{}", t!("cli.model.removed", name = name));
             }
         }
         ModelCommand::Use { name } => {
-            let model_ref = cfg
-                .parse_model_ref_selector(&name)
-                .map_err(|err| anyhow!(err))?;
-            cfg.active_model = model_ref;
-            config_store.save(&cfg)?;
-            println!("已切换当前模型为: {}", name);
+            crate::cli_bootstrap::apply_active_model(&name, &mut cfg, &config_store)?;
+            println!("{}", t!("cli.model.switched", name = name));
         }
         ModelCommand::Current => {
-            println!("当前模型: {}", cfg.active_model_name());
+            println!(
+                "{}",
+                t!("cli.model.current", model = cfg.active_model_name())
+            );
         }
     }
 
@@ -457,23 +480,40 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
 
     match action {
         ConfigCommand::Show => {
-            println!("配置文件: {}", app_paths.config_file().display());
-            println!("active_model: {}", cfg.active_model_name());
             println!(
-                "image_generation_model: {}",
-                cfg.image_generation_model
-                    .as_ref()
-                    .map(|model_ref| model_ref.name.as_str())
-                    .unwrap_or("未设置")
+                "{}",
+                t!(
+                    "cli.config.file",
+                    path = app_paths.config_file().display().to_string()
+                )
             );
             println!(
-                "video_generation_model: {}",
-                cfg.video_generation_model
-                    .as_ref()
-                    .map(|model_ref| model_ref.name.as_str())
-                    .unwrap_or("未设置")
+                "{}",
+                t!("cli.config.active_model", model = cfg.active_model_name())
             );
-            println!("models:");
+            println!(
+                "{}",
+                t!(
+                    "cli.config.image_generation_model",
+                    model = cfg
+                        .image_generation_model
+                        .as_ref()
+                        .map(|model_ref| model_ref.name.as_str())
+                        .unwrap_or(t!("cli.common.unset").as_ref())
+                )
+            );
+            println!(
+                "{}",
+                t!(
+                    "cli.config.video_generation_model",
+                    model = cfg
+                        .video_generation_model
+                        .as_ref()
+                        .map(|model_ref| model_ref.name.as_str())
+                        .unwrap_or(t!("cli.common.unset").as_ref())
+                )
+            );
+            println!("{}", t!("cli.config.models_header"));
             for model in cfg.flatten_models() {
                 let key_saved = crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
                     .map(|value| !value.trim().is_empty())
@@ -481,40 +521,49 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
                         secret_store.has_model_api_key(&model.name).unwrap_or(false)
                     });
                 println!(
-                    "  - {} ({})\n    api_base: {}\n    provider: {}\n    reasoning_effort: {}\n    capabilities: {}\n    key: {}",
-                    model.name,
-                    model.group_id,
-                    model.api_base,
-                    format_model_provider(model.provider),
-                    model.reasoning_effort.as_deref().unwrap_or("未设置"),
-                    format_model_capabilities(&model),
-                    if key_saved { "已保存" } else { "未保存" }
+                    "{}",
+                    t!(
+                        "cli.model.list_entry",
+                        name = model.name,
+                        group_id = model.group_id,
+                        api_base = model.api_base,
+                        provider = format_model_provider(model.provider),
+                        reasoning_effort = model
+                            .reasoning_effort
+                            .as_deref()
+                            .map(str::to_string)
+                            .unwrap_or_else(|| t!("cli.common.unset").into_owned()),
+                        capabilities = format_model_capabilities(&model),
+                        key_status = common_key_status(key_saved),
+                    )
                 );
             }
             println!(
-                "环境变量 {}: {}",
-                ENV_API_KEY,
-                if env::var(ENV_API_KEY).is_ok() {
-                    "已设置"
-                } else {
-                    "未设置"
-                }
+                "{}",
+                t!(
+                    "cli.config.env_var",
+                    name = ENV_API_KEY,
+                    status = if env::var(ENV_API_KEY).is_ok() {
+                        t!("cli.common.set").into_owned()
+                    } else {
+                        t!("cli.common.unset_env").into_owned()
+                    }
+                )
             );
             let keyring_saved = secret_store
                 .load_global_api_key()
                 .map(|v| v.is_some())
                 .unwrap_or(false);
             println!(
-                "系统安全凭据(keyring): {}",
-                if keyring_saved {
-                    "已保存"
-                } else {
-                    "未保存"
-                }
+                "{}",
+                t!(
+                    "cli.config.keyring",
+                    status = common_key_status(keyring_saved)
+                )
             );
             println!(
-                "API Key 读取优先级: {} > 模型专属 keyring > 全局 keyring",
-                ENV_API_KEY
+                "{}",
+                t!("cli.config.api_key_priority", env_var = ENV_API_KEY)
             );
         }
         ConfigCommand::SetBase { url } => {
@@ -522,51 +571,57 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
                 group.api_base = url.clone();
             }
             config_store.save(&cfg)?;
-            println!("已更新当前模型 API Base: {}", url);
+            println!("{}", t!("cli.config.api_base_updated", url = url));
         }
         ConfigCommand::SetImageModel { name } => {
             let model_ref = cfg
                 .parse_model_ref_selector(&name)
                 .map_err(|err| anyhow!(err))?;
             let Some(profile) = cfg.resolve_model_profile(&model_ref) else {
-                return Err(anyhow!("模型不存在，请先添加: {}", name));
+                return Err(anyhow!(
+                    "{}",
+                    crate::cli_bootstrap::model_not_found_message(&name, &cfg)
+                ));
             };
             if !profile.supports_image_generation() {
                 return Err(anyhow!(
-                    "模型 {} 未声明 imageGeneration capability，不能作为图片生成模型",
-                    name
+                    "{}",
+                    t!("cli.model.error.no_image_generation", name = name)
                 ));
             }
             cfg.image_generation_model = Some(model_ref);
             config_store.save(&cfg)?;
-            println!("已设置图片生成模型: {}", name);
+            println!("{}", t!("cli.config.image_model_set", name = name));
         }
         ConfigCommand::ClearImageModel => {
             cfg.image_generation_model = None;
             config_store.save(&cfg)?;
-            println!("已清除图片生成模型。CLI 当前仅在配置图片模型后暴露 generate_image 工具。");
+            println!("{}", t!("cli.config.image_model_cleared"));
         }
         ConfigCommand::SetVideoModel { name } => {
             let model_ref = cfg
                 .parse_model_ref_selector(&name)
                 .map_err(|err| anyhow!(err))?;
             let Some(profile) = cfg.resolve_model_profile(&model_ref) else {
-                return Err(anyhow!("模型不存在，请先添加: {}", name));
+                return Err(anyhow!(
+                    "{}",
+                    crate::cli_bootstrap::model_not_found_message(&name, &cfg)
+                ));
             };
             if !profile.supports_video_generation() {
                 return Err(anyhow!(
-                    "模型 {} 未声明 videoGeneration capability，不能作为视频生成模型",
-                    name
+                    "{}",
+                    t!("cli.model.error.no_video_generation", name = name)
                 ));
             }
             cfg.video_generation_model = Some(model_ref);
             config_store.save(&cfg)?;
-            println!("已设置视频生成模型: {}", name);
+            println!("{}", t!("cli.config.video_model_set", name = name));
         }
         ConfigCommand::ClearVideoModel => {
             cfg.video_generation_model = None;
             config_store.save(&cfg)?;
-            println!("已清除视频生成模型。CLI 当前仅在配置视频模型后暴露 generate_video 工具。");
+            println!("{}", t!("cli.config.video_model_cleared"));
         }
         ConfigCommand::Key { action } => handle_key_cli(action, &secret_store)?,
     }
@@ -602,7 +657,10 @@ fn parse_model_transport_kind(
 
     match (provider, parsed) {
         (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses) => {
-            Err(anyhow!("provider=anthropic 时 transport-kind 不能是 openai-compatible 或 open-responses"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.anthropic_invalid")
+            ))
         }
         (
             Some(
@@ -620,25 +678,44 @@ fn parse_model_transport_kind(
             ),
             ModelTransportKind::Anthropic | ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock,
         ) => Err(anyhow!(
-            "该 provider 仅支持 openai-compatible transport-kind"
+            "{}",
+            t!("cli.model.error.transport.provider_openai_compatible_only")
         )),
         (Some(ModelProvider::Siliconflow), ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock) => {
-            Err(anyhow!("provider=siliconflow 仅支持 openai-compatible 或 anthropic transport-kind"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.siliconflow_invalid")
+            ))
         }
         (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
-            Err(anyhow!("provider=openai 时 transport-kind 不能是 anthropic"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.openai_no_anthropic")
+            ))
         }
         (Some(ModelProvider::Openai), ModelTransportKind::OpenAiCompatible) => {
-            Err(anyhow!("provider=openai 仅支持 open-responses transport-kind"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.openai_open_responses_only")
+            ))
         }
         (Some(ModelProvider::Google), ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic) => {
-            Err(anyhow!("provider=google 仅支持 openai-compatible transport-kind"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.google_openai_compatible_only")
+            ))
         }
         (Some(ModelProvider::AmazonBedrock), transport_kind) if transport_kind != ModelTransportKind::Bedrock => {
-            Err(anyhow!("provider=amazon-bedrock 仅支持 bedrock transport-kind"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.bedrock_only")
+            ))
         }
         (Some(ModelProvider::Azure), transport_kind) if transport_kind != ModelTransportKind::OpenResponses => {
-            Err(anyhow!("provider=azure 仅支持 open-responses transport-kind"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.azure_transport_only")
+            ))
         }
         (
             Some(
@@ -654,12 +731,21 @@ fn parse_model_transport_kind(
                 | ModelProvider::TencentTokenhub,
             ),
             ModelTransportKind::Bedrock,
-        ) => Err(anyhow!("只有 provider=amazon-bedrock 时可以选择 bedrock transport-kind")),
+        ) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.bedrock_exclusive")
+        )),
         (None, ModelTransportKind::Anthropic) => {
-            Err(anyhow!("transport-kind=anthropic 需要同时指定 --provider custom 或 --provider anthropic"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.anthropic_requires_provider")
+            ))
         }
         (None, ModelTransportKind::OpenResponses) => {
-            Err(anyhow!("transport-kind=open-responses 需要同时指定 --provider openai 或 --provider custom"))
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.open_responses_requires_provider")
+            ))
         }
         _ => Ok(parsed),
     }
@@ -699,8 +785,12 @@ fn parse_model_reasoning_effort(
 
     let expected = allowed.join("|");
     Err(anyhow!(
-        "当前模型只支持 reasoning-effort={expected}，收到: {}",
-        normalized
+        "{}",
+        t!(
+            "cli.model.error.reasoning_effort_invalid",
+            expected = expected,
+            received = normalized
+        )
     ))
 }
 
@@ -718,8 +808,10 @@ fn is_deepseek_v4_reasoning_model(model_name: &str) -> bool {
     normalized == "deepseek-v4-pro" || normalized == "deepseek-v4-flash"
 }
 
-fn format_model_provider(provider: Option<ModelProvider>) -> &'static str {
-    provider.map(ModelProvider::as_str).unwrap_or("未设置")
+fn format_model_provider(provider: Option<ModelProvider>) -> String {
+    provider
+        .map(|value| value.as_str().to_string())
+        .unwrap_or_else(|| t!("cli.common.unset").into_owned())
 }
 
 fn normalize_model_capabilities(capabilities: Vec<String>) -> Vec<String> {
@@ -738,7 +830,7 @@ fn format_model_capabilities(model: &ModelProfile) -> String {
         .explicit_capabilities()
         .filter(|capabilities| !capabilities.is_empty())
         .map(|capabilities| capabilities.join(", "))
-        .unwrap_or_else(|| "未设置".to_string())
+        .unwrap_or_else(|| t!("cli.common.unset").into_owned())
 }
 
 pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
@@ -750,56 +842,102 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
             let mut runtime = new_mcp_cli_runtime(workspace_root.clone())?;
             let servers = runtime.list_mcp_servers()?;
 
-            println!("用户 MCP 配置: {}", user_mcp_config_path().display());
-            println!("工作区 MCP 配置: {}", workspace_mcp_config_path(&workspace_root).display());
+            println!(
+                "{}",
+                t!(
+                    "cli.mcp.user_config",
+                    path = user_mcp_config_path().display().to_string()
+                )
+            );
+            println!(
+                "{}",
+                t!(
+                    "cli.mcp.workspace_config",
+                    path = workspace_mcp_config_path(&workspace_root).display().to_string()
+                )
+            );
 
             if servers.is_empty() {
-                println!("未配置任何 MCP server。可先执行 `spirit mcp init` 生成模板。\n");
-                println!(
-                    "提示: 首个模板会生成 GitHub MCP 的 stdio 配置，并使用环境变量 GITHUB_PERSONAL_ACCESS_TOKEN。"
-                );
+                print!("{}", t!("cli.mcp.empty"));
+                println!("{}", t!("cli.mcp.empty_hint"));
                 return Ok(());
             }
 
-            println!("MCP servers:");
+            println!("{}", t!("cli.mcp.servers_header"));
             for server in servers {
                 println!(
-                    "  - {}\n    display: {}\n    state: {}\n    capabilities: {}\n    transport: {}",
-                    server.name,
-                    server.display_name,
-                    server.state.label(),
-                    server.capability_summary(),
-                    server.transport_summary(),
+                    "{}",
+                    t!(
+                        "cli.mcp.server_entry",
+                        name = server.name,
+                        display = server.display_name,
+                        state = server.state.label(),
+                        capabilities = server.capability_summary(),
+                        transport = server.transport_summary(),
+                    )
                 );
             }
         }
         McpCommand::Show => {
             let loaded = load_mcp_config(&workspace_root)?;
 
-            println!("用户 MCP 配置: {}", loaded.user_path.display());
-            println!("工作区 MCP 配置: {}", loaded.workspace_path.display());
+            println!(
+                "{}",
+                t!(
+                    "cli.mcp.user_config",
+                    path = loaded.user_path.display().to_string()
+                )
+            );
+            println!(
+                "{}",
+                t!(
+                    "cli.mcp.workspace_config",
+                    path = loaded.workspace_path.display().to_string()
+                )
+            );
             println!();
-            println!("server 数量: {}", loaded.config.servers.len());
+            println!(
+                "{}",
+                t!("cli.mcp.server_count", count = loaded.config.servers.len())
+            );
             println!();
-            println!("MCP 配置:");
+            println!("{}", t!("cli.mcp.config_header"));
             println!("{}", serde_json::to_string_pretty(&loaded.config)?);
         }
         McpCommand::Init { force } => {
             let path = user_mcp_config_path();
 
             save_mcp_config(&path, &example_github_mcp_config(), force)?;
-            println!("已生成 MCP 配置模板: {}", path.display());
             println!(
-                "模板默认包含 GitHub MCP 的 stdio 配置。\n请通过环境变量 GITHUB_PERSONAL_ACCESS_TOKEN 注入 PAT，不要把明文凭据提交到仓库。\n随后可执行 `spirit mcp list` 检查配置。"
+                "{}",
+                t!(
+                    "cli.mcp.init_created",
+                    path = path.display().to_string()
+                )
             );
+            println!("{}", t!("cli.mcp.init_hint"));
         }
         McpCommand::Enable { name } => {
             let path = set_server_enabled(&workspace_root, &name, true)?;
-            println!("已启用 MCP server: {}\n配置文件: {}", name, path.display(),);
+            println!(
+                "{}",
+                t!(
+                    "cli.mcp.enabled",
+                    name = name,
+                    path = path.display().to_string()
+                )
+            );
         }
         McpCommand::Disable { name } => {
             let path = set_server_enabled(&workspace_root, &name, false)?;
-            println!("已禁用 MCP server: {}\n配置文件: {}", name, path.display(),);
+            println!(
+                "{}",
+                t!(
+                    "cli.mcp.disabled",
+                    name = name,
+                    path = path.display().to_string()
+                )
+            );
         }
         McpCommand::Inspect { name } => {
             let mut runtime = new_mcp_cli_runtime(workspace_root)?;
@@ -849,9 +987,9 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
             let mut runtime = new_mcp_cli_runtime(workspace_root)?;
             let tools = runtime.list_mcp_tools(&name)?;
             if tools.is_empty() {
-                println!("MCP server {} 当前没有可见 tools。", name);
+                println!("{}", t!("cli.mcp.tools_empty", name = name));
             } else {
-                println!("tools ({}):", tools.len());
+                println!("{}", t!("cli.mcp.tools_header", count = tools.len()));
                 for tool in tools {
                     println!("  - {}", tool.name);
                     if let Some(title) = tool.title {
@@ -876,9 +1014,12 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
             let mut runtime = new_mcp_cli_runtime(workspace_root)?;
             let resources = runtime.list_mcp_resources(&name)?;
             if resources.is_empty() {
-                println!("MCP server {} 当前没有可见 resources。", name);
+                println!("{}", t!("cli.mcp.resources_empty", name = name));
             } else {
-                println!("resources ({}):", resources.len());
+                println!(
+                    "{}",
+                    t!("cli.mcp.resources_header", count = resources.len())
+                );
                 for resource in resources {
                     println!("  - {}", resource.uri);
                     println!("    name: {}", resource.name);
@@ -901,9 +1042,9 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
             let mut runtime = new_mcp_cli_runtime(workspace_root)?;
             let prompts = runtime.list_mcp_prompts(&name)?;
             if prompts.is_empty() {
-                println!("MCP server {} 当前没有可见 prompts。", name);
+                println!("{}", t!("cli.mcp.prompts_empty", name = name));
             } else {
-                println!("prompts ({}):", prompts.len());
+                println!("{}", t!("cli.mcp.prompts_header", count = prompts.len()));
                 for prompt in prompts {
                     println!("  - {}", prompt.name);
                     if let Some(title) = prompt.title {
@@ -960,11 +1101,11 @@ pub fn handle_extension_cli(action: ExtensionCommand) -> Result<()> {
             let extensions = runtime.list_extensions()?;
 
             if extensions.is_empty() {
-                println!("未安装扩展。");
+                println!("{}", t!("cli.extensions.none_installed"));
                 return Ok(());
             }
 
-            println!("扩展列表:");
+            println!("{}", t!("cli.extensions.list_header"));
             for extension in extensions {
                 println!(
                     "  - {}\n    id: {}\n    version: {}\n    installed_at: {}",
@@ -989,8 +1130,13 @@ pub fn handle_extension_cli(action: ExtensionCommand) -> Result<()> {
         }
         ExtensionCommand::Import { archive } => {
             let archive_path = PathBuf::from(&archive);
-            let archive_bytes = fs::read(&archive_path)
-                .with_context(|| format!("读取扩展 ZIP 失败: {}", archive_path.display()))?;
+            let archive_bytes = fs::read(&archive_path).with_context(|| {
+                t!(
+                    "cli.extensions.import_read_failed",
+                    path = archive_path.display().to_string()
+                )
+                .into_owned()
+            })?;
             let file_name = archive_path
                 .file_name()
                 .and_then(|value| value.to_str())
@@ -999,7 +1145,10 @@ pub fn handle_extension_cli(action: ExtensionCommand) -> Result<()> {
             let mut runtime = new_extension_cli_runtime(workspace_root)?;
             let extension =
                 runtime.import_extension_archive(&archive_bytes, file_name.as_deref())?;
-            println!("已导入扩展: {}", extension.display_name);
+            println!(
+                "{}",
+                t!("cli.extensions.imported", name = extension.display_name)
+            );
             println!("id: {}", extension.id);
             println!("version: {}", extension.version);
             if let Some(description) = extension.description {
@@ -1012,12 +1161,12 @@ pub fn handle_extension_cli(action: ExtensionCommand) -> Result<()> {
         ExtensionCommand::Remove { id } => {
             let trimmed_id = id.trim();
             if trimmed_id.is_empty() {
-                return Err(anyhow!("扩展 id 不能为空"));
+                return Err(anyhow!("{}", t!("cli.extensions.id_empty")));
             }
 
             let mut runtime = new_extension_cli_runtime(workspace_root)?;
             runtime.delete_extension(trimmed_id)?;
-            println!("已删除扩展: {}", trimmed_id);
+            println!("{}", t!("cli.extensions.removed", id = trimmed_id));
         }
         ExtensionCommand::Marketplace { action } => handle_marketplace_cli(action)?,
     }
@@ -1059,8 +1208,8 @@ pub fn handle_marketplace_cli(action: MarketplaceCommand) -> Result<()> {
                 let installed_label = installed
                     .get(&item.package_name)
                     .or_else(|| installed.get(&item.extension_id))
-                    .map(|version| format!("已安装 {}", version))
-                    .unwrap_or_else(|| "未安装".to_string());
+                    .map(|version| t!("cli.extensions.installed_version", version = version).into_owned())
+                    .unwrap_or_else(|| t!("cli.extensions.not_installed").into_owned());
                 println!(
                     "  - {}\n    id: {}\n    package: {}\n    version: {}\n    status: {}\n    review: {}\n    installed: {}",
                     item.display_name,
@@ -1103,9 +1252,12 @@ pub fn handle_marketplace_cli(action: MarketplaceCommand) -> Result<()> {
             let needs_ack = prepared.review_status != "verified";
             if needs_ack && !review_acknowledged {
                 return Err(anyhow!(
-                    "扩展 {}@{} 尚未验证，请加上 --review-acknowledged 继续。",
-                    prepared.extension_id,
-                    prepared.version
+                    "{}",
+                    t!(
+                        "cli.extensions.review_required",
+                        id = prepared.extension_id,
+                        version = prepared.version
+                    )
                 ));
             }
 
@@ -1114,7 +1266,13 @@ pub fn handle_marketplace_cli(action: MarketplaceCommand) -> Result<()> {
                 Some(&prepared.version),
                 review_acknowledged || needs_ack,
             )?;
-            println!("已安装 marketplace 扩展: {}", installed.display_name);
+            println!(
+                "{}",
+                t!(
+                    "cli.extensions.marketplace_installed",
+                    name = installed.display_name
+                )
+            );
             println!("id: {}", installed.id);
             println!("version: {}", installed.version);
             if let Some(description) = installed.description {
@@ -1164,28 +1322,36 @@ fn yes_no(flag: bool) -> &'static str {
     if flag { "yes" } else { "no" }
 }
 
+fn common_key_status(saved: bool) -> String {
+    if saved {
+        t!("cli.common.saved").into_owned()
+    } else {
+        t!("cli.common.unsaved").into_owned()
+    }
+}
+
 fn handle_key_cli(action: KeyCommand, secret_store: &KeyringSecretStore) -> Result<()> {
     match action {
         KeyCommand::Set { value } => {
             let key = match value {
                 Some(v) => v,
-                None => rpassword::prompt_password("请输入 API Key: ")
-                    .context("读取 API Key 输入失败")?,
+                None => rpassword::prompt_password(&t!("cli.key.prompt_api_key"))
+                    .context(t!("cli.key.api_key_read_failed").into_owned())?,
             };
 
             if key.trim().is_empty() {
-                return Err(anyhow!("API Key 不能为空"));
+                return Err(anyhow!("{}", t!("cli.key.api_key_empty")));
             }
 
             secret_store.save_global_api_key(key.trim())?;
             println!(
-                "已写入 API Key 到系统安全凭据。\n优先级仍为环境变量 {} > keyring。",
-                ENV_API_KEY
+                "{}",
+                t!("cli.key.saved", env_var = ENV_API_KEY)
             );
         }
         KeyCommand::Remove => {
             secret_store.remove_global_api_key()?;
-            println!("已删除 keyring 中保存的 API Key。");
+            println!("{}", t!("cli.key.removed"));
         }
         KeyCommand::Status => {
             let env_set = env::var(ENV_API_KEY)
@@ -1199,21 +1365,27 @@ fn handle_key_cli(action: KeyCommand, secret_store: &KeyringSecretStore) -> Resu
                 .unwrap_or(false);
 
             println!(
-                "{}: {}",
-                ENV_API_KEY,
-                if env_set { "已设置" } else { "未设置" }
+                "{}",
+                t!(
+                    "cli.key.env_var",
+                    name = ENV_API_KEY,
+                    status = if env_set {
+                        t!("cli.common.set").into_owned()
+                    } else {
+                        t!("cli.common.unset_env").into_owned()
+                    }
+                )
             );
             println!(
-                "系统安全凭据(keyring): {}",
-                if keyring_set {
-                    "已保存"
-                } else {
-                    "未保存"
-                }
+                "{}",
+                t!(
+                    "cli.key.keyring",
+                    status = common_key_status(keyring_set)
+                )
             );
             println!(
-                "当前读取优先级: {} > 模型专属 keyring > 全局 keyring",
-                ENV_API_KEY
+                "{}",
+                t!("cli.key.priority", env_var = ENV_API_KEY)
             );
         }
     }
