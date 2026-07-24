@@ -94,26 +94,37 @@ pub fn apply_active_model(
             Ok(())
         }
         Err(err) => {
-            let missing = if let Some((group_id, name)) = trimmed.split_once("::") {
+            let selector_failed = || {
+                anyhow!(
+                    "{}",
+                    t!(
+                        "cli.model.selector_failed",
+                        err = err.clone(),
+                        available = available_models_csv(config)
+                    )
+                )
+            };
+
+            // Invalid syntax (e.g. "::name", "group::") must not be reported as "not found".
+            if let Some((group_id, name)) = trimmed.split_once("::") {
+                if group_id.trim().is_empty() || name.trim().is_empty() {
+                    return Err(selector_failed());
+                }
                 let model_ref = crate::model_registry::ModelRef {
                     group_id: group_id.trim().to_string(),
                     name: name.trim().to_string(),
                 };
-                !config.model_ref_exists(&model_ref)
-            } else {
-                config.find_model_refs_by_name(trimmed).is_empty()
-            };
-            if missing {
+                if !config.model_ref_exists(&model_ref) {
+                    return Err(anyhow!("{}", model_not_found_message(trimmed, config)));
+                }
+                return Err(selector_failed());
+            }
+
+            if config.find_model_refs_by_name(trimmed).is_empty() {
                 return Err(anyhow!("{}", model_not_found_message(trimmed, config)));
             }
-            Err(anyhow!(
-                "{}",
-                t!(
-                    "cli.model.selector_failed",
-                    err = err,
-                    available = available_models_csv(config)
-                )
-            ))
+            // Ambiguous name or other selector errors.
+            Err(selector_failed())
         }
     }
 }
@@ -211,5 +222,34 @@ mod tests {
         let err = parse_cli_approval_level("nope").unwrap_err().to_string();
         assert!(err.contains("nope"));
         assert!(err.contains("default, auto-approval, full-approval"));
+    }
+
+    struct NoopConfigStore;
+
+    impl ConfigStore for NoopConfigStore {
+        fn load(&self) -> Result<AppConfig> {
+            unreachable!("load unused in apply_active_model tests")
+        }
+
+        fn save(&self, _config: &AppConfig) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn apply_active_model_keeps_invalid_selector_distinct_from_not_found() {
+        rust_i18n::set_locale("en");
+        let mut config = config_with_models(&["alpha"]);
+        let err = apply_active_model("::name", &mut config, &NoopConfigStore)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("invalid model id"),
+            "expected invalid selector error, got: {err}"
+        );
+        assert!(
+            !err.contains("Model not found"),
+            "invalid syntax must not be reported as not found: {err}"
+        );
     }
 }
