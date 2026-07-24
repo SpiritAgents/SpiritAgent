@@ -38,6 +38,7 @@ export function ProcessCardCollapsible({
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   groupId: string;
   messageIndices: readonly number[];
@@ -52,6 +53,7 @@ export function ProcessCardCollapsible({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const { t } = useTranslation();
   const summary = formatProcessGroupSummary(t, toolCounts, messages, messageIndices);
@@ -143,6 +145,7 @@ export function ProcessCardCollapsible({
                 readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
                 readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
                 localImageBaseDir={localImageBaseDir}
+                localImageAllowedRootDir={localImageAllowedRootDir}
               />
             ) : null;
 

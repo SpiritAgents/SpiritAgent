@@ -450,6 +450,7 @@ export function ConversationList({
               readManagedVideoPreviewUrl={runtime.readManagedVideoPreviewUrl}
               readLocalImagePreviewDataUrl={runtime.readLocalImagePreviewDataUrl}
               localImageBaseDir={workspaceRoot}
+              localImageAllowedRootDir={workspaceRoot}
             />
             {showProcessGroupContinue && turnContinue ? (
               <MessageTurnActions

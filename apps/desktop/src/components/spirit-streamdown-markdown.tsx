@@ -43,6 +43,7 @@ export type SpiritStreamdownMarkdownProps = {
   readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
   BlockComponent?: ComponentType<BlockProps>;
   isAnimating?: boolean;
   animated?: ComponentProps<typeof Streamdown>["animated"];
@@ -60,6 +61,7 @@ export function SpiritStreamdownMarkdown({
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
   BlockComponent,
   isAnimating = false,
   animated = false,
@@ -90,6 +92,7 @@ export function SpiritStreamdownMarkdown({
       allowHtml,
       readLocalImagePreviewDataUrl,
       localImageBaseDir,
+      localImageAllowedRootDir,
     );
     return {
       ...rest,
@@ -101,6 +104,7 @@ export function SpiritStreamdownMarkdown({
     };
   }, [
     allowHtml,
+    localImageAllowedRootDir,
     localImageBaseDir,
     onMarkdownLinkClick,
     readLocalImagePreviewDataUrl,

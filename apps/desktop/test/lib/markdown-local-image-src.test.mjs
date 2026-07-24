@@ -59,6 +59,26 @@ test("resolveMarkdownLocalImageFilePath rejects remote and requires base for rel
   assert.equal(resolveMarkdownLocalImageFilePath("./docs/a.png", "  "), null);
 });
 
+test("resolveMarkdownLocalImageFilePath enforces allowedRootDir containment", () => {
+  const root = "/Users/demo/project";
+  assert.equal(
+    resolveMarkdownLocalImageFilePath("../assets/a.png", `${root}/docs`, root),
+    `${root}/assets/a.png`,
+  );
+  assert.equal(
+    resolveMarkdownLocalImageFilePath("../../outside/a.png", `${root}/docs`, root),
+    null,
+  );
+  assert.equal(
+    resolveMarkdownLocalImageFilePath("/Users/demo/outside/secret.png", root, root),
+    null,
+  );
+  assert.equal(
+    resolveMarkdownLocalImageFilePath(`${root}/docs/a.png`, root, root),
+    `${root}/docs/a.png`,
+  );
+});
+
 test("dirnameLocalPath returns parent directory", () => {
   assert.equal(dirnameLocalPath("/Users/demo/project/README.md"), "/Users/demo/project");
   assert.equal(dirnameLocalPath("C:\\Users\\demo\\README.md"), "C:\\Users\\demo");

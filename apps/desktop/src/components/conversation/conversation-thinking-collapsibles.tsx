@@ -69,6 +69,7 @@ export function AssistantThinkingCollapsible({
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   message: ConversationMessageSnapshot;
   /** 由父级依据 messages/listIndex 计算（isAssistantReasoningLive），本组件不再持有整表引用 */
@@ -78,6 +79,7 @@ export function AssistantThinkingCollapsible({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const thinking = message.aux?.thinking?.trim() ?? "";
   const showThinkingBody = Boolean(thinking && !isGenericPendingThinkingStatusText(thinking));
@@ -143,6 +145,7 @@ export function AssistantThinkingCollapsible({
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
               readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
               localImageBaseDir={localImageBaseDir}
+              localImageAllowedRootDir={localImageAllowedRootDir}
             />
           </div>
         </AnimatedCollapseContent>
@@ -158,6 +161,7 @@ export function AssistantCompactionCollapsible({
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   message: ConversationMessageSnapshot;
   pendingAuxState?: PendingAssistantAux;
@@ -165,6 +169,7 @@ export function AssistantCompactionCollapsible({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const compaction = message.aux?.compaction?.trim() ?? "";
   const compactionLive = assistantCompactionLive(message, pendingAuxState);
@@ -226,6 +231,7 @@ export function AssistantCompactionCollapsible({
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
               readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
               localImageBaseDir={localImageBaseDir}
+              localImageAllowedRootDir={localImageAllowedRootDir}
             />
           </div>
         </AnimatedCollapseContent>

@@ -19,11 +19,13 @@ export function MarkdownImage({
   readManagedImagePreviewDataUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
   ...props
 }: ComponentPropsWithoutRef<"img"> & {
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const { t } = useTranslation();
   const normalizedSrc = typeof src === "string" && src.trim().length > 0 ? src.trim() : null;
@@ -32,7 +34,11 @@ export function MarkdownImage({
     normalizedSrc && isManagedGeneratedImageRef(normalizedSrc) ? normalizedSrc : null;
   const localFilePath =
     srcKind === "local" && normalizedSrc
-      ? resolveMarkdownLocalImageFilePath(normalizedSrc, localImageBaseDir)
+      ? resolveMarkdownLocalImageFilePath(
+          normalizedSrc,
+          localImageBaseDir,
+          localImageAllowedRootDir,
+        )
       : null;
 
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(null);

@@ -18,6 +18,7 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   readManagedImagePreviewDataUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   content: string;
   className?: string;
@@ -28,6 +29,7 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   return (
     <SpiritStreamdownMarkdown
@@ -41,6 +43,7 @@ export const MarkdownMessage = memo(function MarkdownMessage({
       readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
       readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
       localImageBaseDir={localImageBaseDir}
+      localImageAllowedRootDir={localImageAllowedRootDir}
     />
   );
 });

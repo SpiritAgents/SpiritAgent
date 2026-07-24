@@ -34,6 +34,7 @@ export function createMarkdownMessageComponents(
   allowHtml = false,
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview,
   localImageBaseDir?: string,
+  localImageAllowedRootDir?: string,
 ): Record<string, ComponentType<Record<string, unknown>>> {
   const compact = size === "compact";
   const muted = tone === "muted";
@@ -249,6 +250,7 @@ export function createMarkdownMessageComponents(
         readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
         readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
         localImageBaseDir={localImageBaseDir}
+        localImageAllowedRootDir={localImageAllowedRootDir}
         {...props}
       />
     ),

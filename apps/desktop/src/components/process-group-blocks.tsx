@@ -46,6 +46,7 @@ function ProcessGroupReasoningBlock({
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   labelActive: boolean;
   activeLabel: string;
@@ -56,6 +57,7 @@ function ProcessGroupReasoningBlock({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -87,6 +89,7 @@ function ProcessGroupReasoningBlock({
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
             localImageBaseDir={localImageBaseDir}
+            localImageAllowedRootDir={localImageAllowedRootDir}
           />
         </div>
       </AnimatedCollapseContent>
@@ -101,6 +104,7 @@ export function ProcessGroupThinkingBlock({
   readManagedVideoPreviewUrl,
   readLocalImagePreviewDataUrl,
   localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   message: ConversationMessageSnapshot;
   thinkingActive: boolean;
@@ -108,6 +112,7 @@ export function ProcessGroupThinkingBlock({
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
   readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
   localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const { t } = useTranslation();
   const thinking = message.aux?.thinking?.trim() ?? "";
@@ -126,6 +131,7 @@ export function ProcessGroupThinkingBlock({
       readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
       readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
       localImageBaseDir={localImageBaseDir}
+      localImageAllowedRootDir={localImageAllowedRootDir}
     />
   );
 }

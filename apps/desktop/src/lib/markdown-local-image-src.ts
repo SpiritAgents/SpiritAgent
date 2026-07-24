@@ -1,5 +1,6 @@
 import { looksLikeAbsolutePath, normalizeAbsolutePathInput } from "@/lib/file-picker-path";
 import { isManagedGeneratedImageRef } from "@/lib/managed-generated-asset";
+import { tryResolveWorkspaceRelativePath } from "@/lib/read-file-tool-navigation";
 
 export type MarkdownImageSrcKind = "managed" | "remote" | "local" | "invalid";
 
@@ -40,26 +41,40 @@ export function classifyMarkdownImageSrc(src: string): MarkdownImageSrcKind {
 /**
  * Resolve a Markdown image src to an absolute filesystem path for local IPC preview.
  * Relative paths require baseDir (Markdown file directory or workspace root).
+ * When allowedRootDir is set, the resolved path must stay under that root
+ * (blocks absolute paths and `..` escapes outside the workspace / allowed tree).
  */
 export function resolveMarkdownLocalImageFilePath(
   src: string,
   baseDir?: string,
+  allowedRootDir?: string,
 ): string | null {
   const trimmed = src.trim();
   if (!trimmed || classifyMarkdownImageSrc(trimmed) !== "local") {
     return null;
   }
 
+  let resolved: string | null;
   if (looksLikeAbsolutePath(trimmed)) {
-    return normalizeAbsolutePathInput(trimmed);
+    resolved = normalizeAbsolutePathInput(trimmed);
+  } else {
+    const base = baseDir?.trim();
+    if (!base) {
+      return null;
+    }
+    resolved = resolveRelativeAgainstBase(base, trimmed);
   }
 
-  const base = baseDir?.trim();
-  if (!base) {
+  if (!resolved) {
     return null;
   }
 
-  return resolveRelativeAgainstBase(base, trimmed);
+  const allowedRoot = allowedRootDir?.trim();
+  if (allowedRoot && tryResolveWorkspaceRelativePath(allowedRoot, resolved) === null) {
+    return null;
+  }
+
+  return resolved;
 }
 
 type SplitPath = {

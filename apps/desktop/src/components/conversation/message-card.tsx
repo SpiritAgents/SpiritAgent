@@ -299,6 +299,7 @@ function MessageCardImpl({
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
             localImageBaseDir={workspaceRoot}
+            localImageAllowedRootDir={workspaceRoot}
           />
         ) : null}
         {showCompactionCollapsible ? (
@@ -309,6 +310,7 @@ function MessageCardImpl({
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
             readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
             localImageBaseDir={workspaceRoot}
+            localImageAllowedRootDir={workspaceRoot}
           />
         ) : null}
         {isUser && !rewindSelected ? (
@@ -356,6 +358,7 @@ function MessageCardImpl({
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
               readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
               localImageBaseDir={workspaceRoot}
+              localImageAllowedRootDir={workspaceRoot}
             />
           </div>
           )

@@ -124,6 +124,18 @@ function resolveMarkdownPreviewImageBaseDir(
   return dirnameLocalPath(joinWorkspaceAbsolutePath(workspaceRoot, rel));
 }
 
+/** Containment root for Markdown local images: workspace for in-repo files, file dir for external. */
+function resolveMarkdownPreviewImageAllowedRootDir(
+  selectedEntry: SelectedEntry,
+  workspaceRoot: string,
+  imageBaseDir: string,
+): string {
+  if (selectedEntry?.kind === "external") {
+    return imageBaseDir;
+  }
+  return workspaceRoot;
+}
+
 function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLElement | null {
   return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
 }
@@ -545,6 +557,19 @@ export function WorkspaceFilesTab({
           : "");
   const headerSubtitle = doc?.subtitle ?? selectedPath;
   const isMarkdownDocument = Boolean(selectedPath && isMarkdownPath(selectedPath));
+  const markdownPreviewImageBaseDir = useMemo(
+    () => resolveMarkdownPreviewImageBaseDir(selectedEntry, workspaceRoot, plan.path),
+    [plan.path, selectedEntry, workspaceRoot],
+  );
+  const markdownPreviewImageAllowedRootDir = useMemo(
+    () =>
+      resolveMarkdownPreviewImageAllowedRootDir(
+        selectedEntry,
+        workspaceRoot,
+        markdownPreviewImageBaseDir,
+      ),
+    [markdownPreviewImageBaseDir, selectedEntry, workspaceRoot],
+  );
 
   useEffect(() => {
     if (!api || !selectedPath) {
@@ -1153,11 +1178,8 @@ export function WorkspaceFilesTab({
                           singleLineBreaks={false}
                           readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
                           readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-                          localImageBaseDir={resolveMarkdownPreviewImageBaseDir(
-                            selectedEntry,
-                            workspaceRoot,
-                            plan.path,
-                          )}
+                          localImageBaseDir={markdownPreviewImageBaseDir}
+                          localImageAllowedRootDir={markdownPreviewImageAllowedRootDir}
                         />
                       ) : (
                         <div
