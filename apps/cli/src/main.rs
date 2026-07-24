@@ -50,15 +50,15 @@ struct Cli {
     version: bool,
 
     /// Run a single headless turn and print the final assistant message.
-    #[arg(long, value_name = "prompt")]
+    #[arg(short = 'p', long, value_name = "prompt")]
     prompt: Option<String>,
 
     /// Switch to this model (persisted). Used by headless and TUI.
-    #[arg(long, value_name = "model")]
+    #[arg(short = 'm', long, value_name = "model")]
     model: Option<String>,
 
     /// Set approval level: default, auto-approval, full-approval (persisted for the session).
-    #[arg(long, value_name = "approval")]
+    #[arg(short = 'a', long, value_name = "approval")]
     approval: Option<String>,
 
     /// UI language: en, zh-CN (persisted).
