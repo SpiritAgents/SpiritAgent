@@ -38,6 +38,9 @@ pub fn run_headless_prompt(
         apply_approval_level(&mut runtime, approval)?;
     }
 
+    // Match TUI startup: run sessionStart hooks before the first user turn.
+    runtime.run_session_start("startup")?;
+
     runtime.submit_user_turn(trimmed.to_string(), None)?;
 
     let mut pending_assistant = String::new();
