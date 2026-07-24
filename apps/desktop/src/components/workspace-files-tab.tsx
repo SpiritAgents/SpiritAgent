@@ -25,6 +25,7 @@ import {
   type WorkspaceMonacoEditorHandle,
   type WorkspaceMonacoSearchMatchRange,
 } from "@/components/workspace-monaco-editor";
+import { dirnameLocalPath } from "@/lib/markdown-local-image-src";
 import { cn } from "@/lib/utils";
 import { DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN, DESKTOP_SHELL_LAYOUT_TRANSITION } from "@/lib/desktop-chrome";
 import { desktopMicaFileDetailSurfaceClass } from "@/lib/desktop-mica-surface";
@@ -99,6 +100,40 @@ function pathBasename(rel: string): string {
 
 function isMarkdownPath(rel: string): boolean {
   return /\.(md|mdx|markdown|mdown|mkd|mkdn|mdwn)$/i.test(rel);
+}
+
+/** Directory of the open Markdown file; used as relative image base (not LoadedDoc.absolutePath). */
+function resolveMarkdownPreviewImageBaseDir(
+  selectedEntry: SelectedEntry,
+  workspaceRoot: string,
+  planPath: string,
+): string {
+  if (!selectedEntry) {
+    return workspaceRoot;
+  }
+  if (selectedEntry.kind === "external") {
+    return dirnameLocalPath(selectedEntry.absolutePath);
+  }
+  if (selectedEntry.kind === "workspace") {
+    return dirnameLocalPath(joinWorkspaceAbsolutePath(workspaceRoot, selectedEntry.relativePath));
+  }
+  const rel = planPath.trim();
+  if (!rel) {
+    return workspaceRoot;
+  }
+  return dirnameLocalPath(joinWorkspaceAbsolutePath(workspaceRoot, rel));
+}
+
+/** Containment root for Markdown local images: workspace for in-repo files, file dir for external. */
+function resolveMarkdownPreviewImageAllowedRootDir(
+  selectedEntry: SelectedEntry,
+  workspaceRoot: string,
+  imageBaseDir: string,
+): string {
+  if (selectedEntry?.kind === "external") {
+    return imageBaseDir;
+  }
+  return workspaceRoot;
 }
 
 function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLElement | null {
@@ -522,6 +557,19 @@ export function WorkspaceFilesTab({
           : "");
   const headerSubtitle = doc?.subtitle ?? selectedPath;
   const isMarkdownDocument = Boolean(selectedPath && isMarkdownPath(selectedPath));
+  const markdownPreviewImageBaseDir = useMemo(
+    () => resolveMarkdownPreviewImageBaseDir(selectedEntry, workspaceRoot, plan.path),
+    [plan.path, selectedEntry, workspaceRoot],
+  );
+  const markdownPreviewImageAllowedRootDir = useMemo(
+    () =>
+      resolveMarkdownPreviewImageAllowedRootDir(
+        selectedEntry,
+        workspaceRoot,
+        markdownPreviewImageBaseDir,
+      ),
+    [markdownPreviewImageBaseDir, selectedEntry, workspaceRoot],
+  );
 
   useEffect(() => {
     if (!api || !selectedPath) {
@@ -1129,6 +1177,9 @@ export function WorkspaceFilesTab({
                           allowHtml
                           singleLineBreaks={false}
                           readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                          readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+                          localImageBaseDir={markdownPreviewImageBaseDir}
+                          localImageAllowedRootDir={markdownPreviewImageAllowedRootDir}
                         />
                       ) : (
                         <div

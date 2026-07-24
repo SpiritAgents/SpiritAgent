@@ -2,6 +2,7 @@ import { memo } from "react";
 
 import { SpiritStreamdownMarkdown } from "@/components/spirit-streamdown-markdown";
 import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
+import type { ReadLocalImagePreview } from "@/components/tool-call/tool-call-types";
 import type { MarkdownSize, MarkdownTone } from "@/lib/markdown-message-components";
 
 export type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
@@ -15,6 +16,9 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   allowHtml = false,
   singleLineBreaks = true,
   readManagedImagePreviewDataUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   content: string;
   className?: string;
@@ -23,6 +27,9 @@ export const MarkdownMessage = memo(function MarkdownMessage({
   allowHtml?: boolean;
   singleLineBreaks?: boolean;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   return (
     <SpiritStreamdownMarkdown
@@ -34,6 +41,9 @@ export const MarkdownMessage = memo(function MarkdownMessage({
       allowHtml={allowHtml}
       singleLineBreaks={singleLineBreaks}
       readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+      readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+      localImageBaseDir={localImageBaseDir}
+      localImageAllowedRootDir={localImageAllowedRootDir}
     />
   );
 });

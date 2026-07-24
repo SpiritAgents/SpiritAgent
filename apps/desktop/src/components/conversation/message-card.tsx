@@ -297,6 +297,9 @@ function MessageCardImpl({
             collapseDuringToolPreview={collapseThinkingDuringToolPreview}
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+            localImageBaseDir={workspaceRoot}
+            localImageAllowedRootDir={workspaceRoot}
           />
         ) : null}
         {showCompactionCollapsible ? (
@@ -305,6 +308,9 @@ function MessageCardImpl({
             pendingAuxState={pendingAuxState}
             readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
             readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+            localImageBaseDir={workspaceRoot}
+            localImageAllowedRootDir={workspaceRoot}
           />
         ) : null}
         {isUser && !rewindSelected ? (
@@ -350,6 +356,9 @@ function MessageCardImpl({
               className="font-sans"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+              readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+              localImageBaseDir={workspaceRoot}
+              localImageAllowedRootDir={workspaceRoot}
             />
           </div>
           )

@@ -148,6 +148,9 @@ export type AgentMarkdownMessageProps = Pick<
   | "allowHtml"
   | "readManagedImagePreviewDataUrl"
   | "readManagedVideoPreviewUrl"
+  | "readLocalImagePreviewDataUrl"
+  | "localImageBaseDir"
+  | "localImageAllowedRootDir"
 > & {
   streaming?: boolean;
 };
@@ -161,6 +164,9 @@ function AgentMarkdownMessageImpl({
   allowHtml = false,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
+  localImageAllowedRootDir,
 }: AgentMarkdownMessageProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const motionActive = streaming && !prefersReducedMotion;
@@ -212,6 +218,9 @@ function AgentMarkdownMessageImpl({
         allowHtml={allowHtml}
         readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
         readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+        readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+        localImageBaseDir={localImageBaseDir}
+        localImageAllowedRootDir={localImageAllowedRootDir}
         BlockComponent={motionActive ? StreamingAnimateBlock : undefined}
         isAnimating={motionActive}
         animated={motionActive ? streamingAnimateOptions : false}

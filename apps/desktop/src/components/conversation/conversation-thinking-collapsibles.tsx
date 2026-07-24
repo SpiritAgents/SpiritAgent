@@ -9,7 +9,11 @@ import {
   AnimatedCollapseContent,
   AnimatedCollapseTrigger,
 } from "@/components/ui/animated-collapse";
-import type { ReadManagedImagePreview, ReadManagedVideoPreview } from "@/components/tool-call/tool-call-types";
+import type {
+  ReadLocalImagePreview,
+  ReadManagedImagePreview,
+  ReadManagedVideoPreview,
+} from "@/components/tool-call/tool-call-types";
 import { assistantCompactionLive } from "@/lib/conversation-compaction-ui";
 import {
   isGenericPendingCompactionStatusText,
@@ -63,6 +67,9 @@ export function AssistantThinkingCollapsible({
   collapseDuringToolPreview,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   message: ConversationMessageSnapshot;
   /** 由父级依据 messages/listIndex 计算（isAssistantReasoningLive），本组件不再持有整表引用 */
@@ -70,6 +77,9 @@ export function AssistantThinkingCollapsible({
   collapseDuringToolPreview: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const thinking = message.aux?.thinking?.trim() ?? "";
   const showThinkingBody = Boolean(thinking && !isGenericPendingThinkingStatusText(thinking));
@@ -133,6 +143,9 @@ export function AssistantThinkingCollapsible({
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+              readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+              localImageBaseDir={localImageBaseDir}
+              localImageAllowedRootDir={localImageAllowedRootDir}
             />
           </div>
         </AnimatedCollapseContent>
@@ -146,11 +159,17 @@ export function AssistantCompactionCollapsible({
   pendingAuxState,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
+  localImageAllowedRootDir,
 }: {
   message: ConversationMessageSnapshot;
   pendingAuxState?: PendingAssistantAux;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
   readManagedVideoPreviewUrl: ReadManagedVideoPreview;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
 }) {
   const compaction = message.aux?.compaction?.trim() ?? "";
   const compactionLive = assistantCompactionLive(message, pendingAuxState);
@@ -210,6 +229,9 @@ export function AssistantCompactionCollapsible({
               tone="muted"
               readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
               readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+              readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+              localImageBaseDir={localImageBaseDir}
+              localImageAllowedRootDir={localImageAllowedRootDir}
             />
           </div>
         </AnimatedCollapseContent>

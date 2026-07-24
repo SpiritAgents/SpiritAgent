@@ -9,9 +9,9 @@ export const MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL = "spirit";
 const streamdownExtraTagNames = ["video", "picture", "source", "sup", "sub"] as const;
 
 /**
- * Streamdown's default sanitize schema only allows http/https src values.
- * Spirit-managed generated assets use spirit:// and must survive sanitization
- * before rehype-harden and our Markdown media resolvers run.
+ * Markdown media must not load remote http(s) resources from the renderer.
+ * Only Spirit-managed spirit:// assets keep a protocol allowlist entry; relative
+ * and absolute local paths have no scheme and still pass through for local IPC.
  */
 export const streamdownSanitizeSchema = {
   ...defaultSchema,
@@ -19,11 +19,8 @@ export const streamdownSanitizeSchema = {
   protocols: {
     ...defaultSchema.protocols,
     href: [...(defaultSchema.protocols?.href ?? []), "tel"],
-    src: [
-      ...(defaultSchema.protocols?.src ?? ["http", "https"]),
-      MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL,
-    ],
-    srcset: [...(defaultSchema.protocols?.srcset ?? ["http", "https"])],
+    src: [MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL],
+    srcset: [MANAGED_GENERATED_ASSET_SANITIZE_PROTOCOL],
   },
   attributes: {
     ...defaultSchema.attributes,

@@ -4,6 +4,7 @@ import { Streamdown, type BlockProps } from "streamdown";
 
 import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
 import type { ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
+import type { ReadLocalImagePreview } from "@/components/tool-call/tool-call-types";
 import { useWorkspaceMarkdownLinkClick } from "@/components/workspace-markdown-link-context";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -40,6 +41,9 @@ export type SpiritStreamdownMarkdownProps = {
   singleLineBreaks?: boolean;
   readManagedImagePreviewDataUrl?: ReadManagedImagePreviewDataUrl;
   readManagedVideoPreviewUrl?: ReadManagedVideoPreviewUrl;
+  readLocalImagePreviewDataUrl?: ReadLocalImagePreview;
+  localImageBaseDir?: string;
+  localImageAllowedRootDir?: string;
   BlockComponent?: ComponentType<BlockProps>;
   isAnimating?: boolean;
   animated?: ComponentProps<typeof Streamdown>["animated"];
@@ -55,6 +59,9 @@ export function SpiritStreamdownMarkdown({
   singleLineBreaks = true,
   readManagedImagePreviewDataUrl,
   readManagedVideoPreviewUrl,
+  readLocalImagePreviewDataUrl,
+  localImageBaseDir,
+  localImageAllowedRootDir,
   BlockComponent,
   isAnimating = false,
   animated = false,
@@ -83,6 +90,9 @@ export function SpiritStreamdownMarkdown({
       onMarkdownLinkClick,
       size,
       allowHtml,
+      readLocalImagePreviewDataUrl,
+      localImageBaseDir,
+      localImageAllowedRootDir,
     );
     return {
       ...rest,
@@ -94,7 +104,10 @@ export function SpiritStreamdownMarkdown({
     };
   }, [
     allowHtml,
+    localImageAllowedRootDir,
+    localImageBaseDir,
     onMarkdownLinkClick,
+    readLocalImagePreviewDataUrl,
     readManagedImagePreviewDataUrl,
     readManagedVideoPreviewUrl,
     resolvedDark,
