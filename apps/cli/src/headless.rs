@@ -43,6 +43,7 @@ pub fn run_headless_prompt(
     let mut pending_assistant = String::new();
     let mut final_assistant = String::new();
     let mut has_pending_assistant = false;
+    let mut runtime_notices: Vec<String> = Vec::new();
     let deadline = Instant::now() + DEFAULT_TURN_TIMEOUT;
 
     loop {
@@ -81,13 +82,19 @@ pub fn run_headless_prompt(
                 RuntimeEvent::OpenAskQuestions { .. } => {
                     return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
+                RuntimeEvent::PushMessage(message) => {
+                    // Tool cards stay off stdout; keep plain agent notices for failure reporting.
+                    if message.tool_block.is_none() {
+                        let content = message.content.trim();
+                        if !content.is_empty() {
+                            runtime_notices.push(content.to_string());
+                        }
+                    }
+                }
                 RuntimeEvent::UpdatePendingAssistantThinking(_)
                 | RuntimeEvent::AssistantThinkingSegmentFinalized(_)
                 | RuntimeEvent::UpdatePendingAssistantCompaction(_)
-                | RuntimeEvent::UpsertToolPreview { .. }
-                | RuntimeEvent::PushMessage(_) => {
-                    // Intentionally ignored: no thinking / tool / process output on stdout.
-                }
+                | RuntimeEvent::UpsertToolPreview { .. } => {}
             }
         }
 
@@ -111,6 +118,12 @@ pub fn run_headless_prompt(
     }
 
     if final_assistant.trim().is_empty() {
+        if let Some(notice) = runtime_notices.last() {
+            return Err(anyhow!(
+                "{}",
+                t!("cli.headless.runtime_failed", err = notice.as_str())
+            ));
+        }
         return Err(anyhow!("{}", t!("cli.headless.empty_response")));
     }
 
