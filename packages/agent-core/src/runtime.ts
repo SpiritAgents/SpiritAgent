@@ -774,7 +774,7 @@ export class AgentRuntime<
 
   replaceHistory(history: LlmMessage[]): void {
     this.historyStore = repairMissingToolResultsInHistory(cloneHistory(history));
-    this.sealedTranscriptMessagesStore = buildSessionTranscript(this.historyStore).messages;
+    // Keep sealedTranscriptMessagesStore: durable transcript must survive compaction reloads.
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -791,7 +791,7 @@ export class AgentRuntime<
     this.historyStore = repairMissingToolResultsInHistory(
       archive.llmHistory.map((message) => normalizeStoredLlmMessage(message)),
     );
-    this.sealedTranscriptMessagesStore = buildSessionTranscript(this.historyStore).messages;
+    // Keep sealedTranscriptMessagesStore: archive llmHistory may already be compacted.
     this.loopEnabledStore = archive.loopEnabled === true;
     this.options.toolExecutor.setLoopToolExposure?.(this.loopEnabledStore);
     this.requestTraceStore = [];

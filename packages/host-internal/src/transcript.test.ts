@@ -49,6 +49,49 @@ test('persistSessionTranscript writes transcript.json under transcripts/{session
   }
 });
 
+test('persistSessionTranscript merges with existing file and never shrinks durable history', async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-transcript-merge-'));
+
+  try {
+    const first = {
+      export_version: 1 as const,
+      kind: 'session_transcript' as const,
+      exported_at_unix_ms: 1,
+      message_count: 2,
+      messages: [
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'a' }] },
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'b' }] },
+      ],
+    };
+    const second = {
+      export_version: 1 as const,
+      kind: 'session_transcript' as const,
+      exported_at_unix_ms: 2,
+      message_count: 1,
+      messages: [
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'c' }] },
+      ],
+    };
+
+    await persistSessionTranscript(spiritDataDir, first, { sessionKey: 'sess-merge' });
+    const sessionDir = await persistSessionTranscript(spiritDataDir, second, {
+      sessionKey: 'sess-merge',
+    });
+    const written = JSON.parse(
+      await readFile(join(sessionDir, SESSION_TRANSCRIPT_FILE_NAME), 'utf8'),
+    ) as typeof first;
+    assert.equal(written.message_count, 3);
+    assert.deepEqual(
+      written.messages.map((message) => (
+        message.content[0]?.type === 'text' ? message.content[0].text : ''
+      )),
+      ['a', 'b', 'c'],
+    );
+  } finally {
+    await rm(spiritDataDir, { recursive: true, force: true });
+  }
+});
+
 test('persistSubagentTranscript writes under transcripts/{sessionKey}/subagents/', async () => {
   const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-transcript-sub-'));
 
