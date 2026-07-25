@@ -33,9 +33,8 @@ import {
   type SessionApprovalLevel,
 } from '@spiritagent/agent-core';
 import {
-  persistPreCompactionHistoryArchive,
+  persistSessionTranscript,
   persistToolOutputArchive,
-  removePreCompactionHistoryArchive,
 } from '@spiritagent/host-internal';
 
 import type { DesktopToolRequest } from './contracts.js';
@@ -169,11 +168,9 @@ export function createDesktopRuntime(input: {
     ...(input.reviewToolApproval ? { reviewToolApproval: input.reviewToolApproval } : {}),
     ...(input.flushPendingHostEvents ? { flushPendingHostEvents: input.flushPendingHostEvents } : {}),
     persistPreCompactionHistory: async ({ archive, sessionId }) =>
-      persistPreCompactionHistoryArchive(spiritAgentDataDir(), archive, {
-        ...(sessionId !== undefined ? { sessionId } : {}),
+      persistSessionTranscript(spiritAgentDataDir(), archive, {
+        ...(sessionId !== undefined ? { sessionKey: sessionId } : {}),
       }),
-    removePreCompactionHistoryArchive: async (archivePath) =>
-      removePreCompactionHistoryArchive(archivePath),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritAgentDataDir(), input),
   }, input.history.map((message) => normalizeStoredLlmMessage(message)));

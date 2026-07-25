@@ -1,4 +1,4 @@
-export * from './compaction-archive.js';
+export * from './transcript.js';
 export * from './compaction-ui-status.js';
 export * from './ports.js';
 export * from './runtime.js';

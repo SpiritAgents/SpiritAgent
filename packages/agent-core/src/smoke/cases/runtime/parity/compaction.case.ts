@@ -135,7 +135,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('polling compact smoke 缺少 compaction update 事件。');
   }
 
-  const archivePath = '/tmp/spirit-smoke-pre-compact.json';
+  const archivePath = '/tmp/spirit-smoke/transcripts/smoke-compact-archive';
   let persistedMessageCount = 0;
   const archiveRuntime = new AgentRuntime({
     config: undefined,

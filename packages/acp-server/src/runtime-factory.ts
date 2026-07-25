@@ -40,10 +40,9 @@ import {
   createNoopMcpAdapter,
   ensureBuiltinAuthoringSkills,
   loadHostInstructionMetadata,
-  persistPreCompactionHistoryArchive,
+  persistSessionTranscript,
   persistToolOutputArchive,
   readGitBranchLabelForBasicInfo,
-  removePreCompactionHistoryArchive,
 } from '@spiritagent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
@@ -218,11 +217,9 @@ export async function createAcpRuntime(
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
     persistPreCompactionHistory: async ({ archive, sessionId }) =>
-      persistPreCompactionHistoryArchive(spiritDataDir, archive, {
-        ...(sessionId !== undefined ? { sessionId } : {}),
+      persistSessionTranscript(spiritDataDir, archive, {
+        ...(sessionId !== undefined ? { sessionKey: sessionId } : {}),
       }),
-    removePreCompactionHistoryArchive: async (archivePath) =>
-      removePreCompactionHistoryArchive(archivePath),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritDataDir, input),
     onEvent,

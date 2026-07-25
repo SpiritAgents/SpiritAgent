@@ -1,6 +1,6 @@
 import { setImmediate as waitForImmediate } from 'node:timers/promises';
 
-import { buildPreCompactionHistoryArchive } from '../compaction-archive.js';
+import { buildSessionTranscript } from '../transcript.js';
 import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from '../compaction-ui-status.js';
 import type { CompactHistoryManualContext, LlmMessage } from '../ports.js';
 import { resolveHookSessionContext } from '../hooks/integration.js';
@@ -90,7 +90,7 @@ async function persistPreCompactionArchivePath<
   }
 
   try {
-    const archive = buildPreCompactionHistoryArchive(archiveSourceHistory);
+    const archive = buildSessionTranscript(archiveSourceHistory);
     const sessionId = resolveHookSessionContext(runtime.options).sessionId;
     return await persist({
       archive,

@@ -19,7 +19,7 @@ import type { AgentRuntimeOptions } from './types.js';
 type TestState = { messages: LlmMessage[] };
 
 test('compactHistoryImmediate persists archive without post-processing compact summary', async () => {
-  const archivePath = '/tmp/spirit/compaction-archives/pre-compact-s1.json';
+  const archivePath = '/tmp/spirit/transcripts/s1';
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('hello') },
     {
@@ -79,6 +79,7 @@ test('compactHistoryImmediate persists archive without post-processing compact s
     extractAssistantText: () => undefined,
     persistPreCompactionHistory: async ({ archive }) => {
       persisted = true;
+      assert.equal(archive.kind, 'session_transcript');
       assert.equal(archive.message_count, 2);
       assert.equal(archive.messages[1]?.toolCalls?.[0]?.name, 'read_file');
       return archivePath;
@@ -226,10 +227,11 @@ test('compactHistoryImmediate archives pre-truncation history and compacts post-
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
     persistPreCompactionHistory: async ({ archive }) => {
+      assert.equal(archive.kind, 'session_transcript');
       assert.equal(archive.message_count, 2);
       assert.equal(archive.messages[0]?.role, 'user');
       assert.equal(archive.messages[1]?.toolCalls?.[0]?.name, 'read_file');
-      return '/tmp/archive.json';
+      return '/tmp/spirit/transcripts/s1';
     },
   };
 
@@ -329,7 +331,7 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
 });
 
 test('compactHistoryImmediate removes orphan archive when compaction fails after persist', async () => {
-  const archivePath = '/tmp/spirit/compaction-archives/pre-compact-orphan.json';
+  const archivePath = '/tmp/spirit/transcripts/orphan-session';
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('hello') },
   ];

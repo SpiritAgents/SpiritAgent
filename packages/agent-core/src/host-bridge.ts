@@ -37,7 +37,7 @@ import {
 } from './llm-tool-agent.js';
 import { buildContributedHostToolDefinitions, buildTodoHostToolDefinitions } from './host-tools.js';
 import { createCliAutoApprovalReviewer } from './host-bridge/cli-auto-approval-review.js';
-import type { PreCompactionHistoryArchive } from './compaction-archive.js';
+import type { SessionTranscript } from './transcript.js';
 import {
   buildApplyPatchFileToolsPromptSection,
   shouldUseApplyPatchFileTools,
@@ -158,12 +158,11 @@ interface CliHostInternalModule {
     replaceAll(records: unknown[]): Promise<unknown[]>;
     purge(): Promise<void>;
   };
-  persistPreCompactionHistoryArchive?: (
+  persistSessionTranscript?: (
     spiritDataDir: string,
-    archive: PreCompactionHistoryArchive,
-    options?: { sessionId?: string },
+    transcript: SessionTranscript,
+    options?: { sessionKey?: string },
   ) => Promise<string>;
-  removePreCompactionHistoryArchive?: (archivePath: string) => Promise<void>;
   persistToolOutputArchive?: (
     spiritDataDir: string,
     input: {
@@ -1853,30 +1852,17 @@ async function createRuntime(
     bootstrapSubagentWorkspace: bootstrapCliSubagentWorkspace,
     persistPreCompactionHistory: async ({ archive, sessionId }) => {
       const hostInternal = await ensureCliHostInternal(workspaceRoot);
-      const persist = hostInternal?.module.persistPreCompactionHistoryArchive;
+      const persist = hostInternal?.module.persistSessionTranscript;
       if (!hostInternal || typeof persist !== 'function') {
         return undefined;
       }
 
       try {
         return await persist(hostInternal.spiritDataDir, archive, {
-          ...(sessionId !== undefined ? { sessionId } : {}),
+          ...(sessionId !== undefined ? { sessionKey: sessionId } : {}),
         });
       } catch {
         return undefined;
-      }
-    },
-    removePreCompactionHistoryArchive: async (archivePath) => {
-      const hostInternal = await ensureCliHostInternal(workspaceRoot);
-      const remove = hostInternal?.module.removePreCompactionHistoryArchive;
-      if (!hostInternal || typeof remove !== 'function') {
-        return;
-      }
-
-      try {
-        await remove(archivePath);
-      } catch {
-        // Best-effort orphan cleanup.
       }
     },
     persistToolOutputArchive: async (input) => {

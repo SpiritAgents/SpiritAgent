@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildPreCompactionHistoryArchive } from './compaction-archive.js';
+import { buildSessionTranscript } from './transcript.js';
 import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from './compaction-ui-status.js';
 import { wrapCompactSummaryBlock } from './llm-context-block.js';
 import {
@@ -11,8 +11,8 @@ import {
 } from './tool-agent.js';
 import { createLlmMessageContentFromText } from './ports.js';
 
-test('buildPreCompactionHistoryArchive keeps user and assistant messages with toolCalls', () => {
-  const archive = buildPreCompactionHistoryArchive(
+test('buildSessionTranscript keeps user and assistant messages with toolCalls', () => {
+  const transcript = buildSessionTranscript(
     [
       {
         role: 'system',
@@ -40,22 +40,22 @@ test('buildPreCompactionHistoryArchive keeps user and assistant messages with to
     1_700_000_000_000,
   );
 
-  assert.equal(archive.export_version, 1);
-  assert.equal(archive.kind, 'pre_compaction_history');
-  assert.equal(archive.exported_at_unix_ms, 1_700_000_000_000);
-  assert.equal(archive.message_count, 3);
-  assert.equal(archive.messages.length, 3);
-  assert.equal(archive.messages[0]?.role, 'user');
-  assert.equal(archive.messages[1]?.role, 'assistant');
-  assert.deepEqual(archive.messages[1]?.toolCalls, [
+  assert.equal(transcript.export_version, 1);
+  assert.equal(transcript.kind, 'session_transcript');
+  assert.equal(transcript.exported_at_unix_ms, 1_700_000_000_000);
+  assert.equal(transcript.message_count, 3);
+  assert.equal(transcript.messages.length, 3);
+  assert.equal(transcript.messages[0]?.role, 'user');
+  assert.equal(transcript.messages[1]?.role, 'assistant');
+  assert.deepEqual(transcript.messages[1]?.toolCalls, [
     { id: 'call-1', name: 'read_file', argumentsJson: '{"path":"a.ts"}' },
   ]);
-  assert.equal(archive.messages[2]?.role, 'assistant');
-  assert.equal(archive.messages[2]?.toolCalls, undefined);
+  assert.equal(transcript.messages[2]?.role, 'assistant');
+  assert.equal(transcript.messages[2]?.toolCalls, undefined);
 });
 
-test('buildPreCompactionHistoryArchive omits manual compaction UI status assistant messages', () => {
-  const archive = buildPreCompactionHistoryArchive(
+test('buildSessionTranscript omits manual compaction UI status assistant messages', () => {
+  const transcript = buildSessionTranscript(
     [
       {
         role: 'assistant',
@@ -73,9 +73,9 @@ test('buildPreCompactionHistoryArchive omits manual compaction UI status assista
     1_700_000_000_000,
   );
 
-  assert.equal(archive.message_count, 2);
-  assert.equal(archive.messages[0]?.role, 'user');
-  assert.equal(archive.messages[1]?.role, 'assistant');
+  assert.equal(transcript.message_count, 2);
+  assert.equal(transcript.messages[0]?.role, 'user');
+  assert.equal(transcript.messages[1]?.role, 'assistant');
 });
 
 test('buildCompactHistorySystemPrompt omits archive section when no path is provided', () => {

@@ -1,4 +1,4 @@
-import type { PreCompactionHistoryArchive } from '../compaction-archive.js';
+import type { SessionTranscript } from '../transcript.js';
 import type {
   AskQuestionsRequest,
   ImageGenerationRequest,
@@ -418,7 +418,7 @@ export interface AgentRuntimeOptions<
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
   persistPreCompactionHistory?: (input: {
-    archive: PreCompactionHistoryArchive;
+    archive: SessionTranscript;
     sessionId?: string;
   }) => Promise<string | undefined>;
   removePreCompactionHistoryArchive?: (archivePath: string) => Promise<void>;
