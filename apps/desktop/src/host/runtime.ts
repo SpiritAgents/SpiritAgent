@@ -34,6 +34,7 @@ import {
 } from '@spiritagent/agent-core';
 import {
   persistSessionTranscript,
+  persistSubagentTranscript,
   persistToolOutputArchive,
 } from '@spiritagent/host-internal';
 
@@ -171,6 +172,12 @@ export function createDesktopRuntime(input: {
       persistSessionTranscript(spiritAgentDataDir(), transcript, {
         ...(sessionKey !== undefined ? { sessionKey } : {}),
       }),
+    syncSubagentTranscript: async ({ transcript, sessionKey, subagentSessionId }) => {
+      await persistSubagentTranscript(spiritAgentDataDir(), transcript, {
+        subagentSessionId,
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
+      });
+    },
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritAgentDataDir(), input),
   }, input.history.map((message) => normalizeStoredLlmMessage(message)));

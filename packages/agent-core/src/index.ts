@@ -1,4 +1,5 @@
 export * from './transcript.js';
+export * from './transcript-sync.js';
 export * from './compaction-ui-status.js';
 export * from './ports.js';
 export * from './runtime.js';

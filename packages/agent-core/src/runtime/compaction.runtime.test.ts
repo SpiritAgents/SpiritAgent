@@ -15,8 +15,29 @@ import {
 } from '../ports.js';
 import { compactHistoryImmediate, type CompactionRuntime } from './compaction.js';
 import type { AgentRuntimeOptions } from './types.js';
+import { buildSessionTranscript } from '../transcript.js';
 
 type TestState = { messages: LlmMessage[] };
+
+async function syncSessionTranscriptFromHistoryForTest(
+  options: AgentRuntimeOptions<undefined, TestState, never>,
+  history: readonly LlmMessage[],
+  emitEvent: (event: { kind: string; error?: string }) => void = () => {},
+): Promise<string | undefined> {
+  const sync = options.syncSessionTranscript;
+  if (!sync) {
+    return undefined;
+  }
+  try {
+    return await sync({ transcript: buildSessionTranscript(history) });
+  } catch (error: unknown) {
+    emitEvent({
+      kind: 'session-transcript-sync-failed',
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+}
 
 test('compactHistoryImmediate persists archive without post-processing compact summary', async () => {
   const archivePath = '/tmp/spirit/transcripts/s1';
@@ -99,6 +120,12 @@ test('compactHistoryImmediate persists archive without post-processing compact s
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   const result = await compactHistoryImmediate(runtime);
@@ -167,6 +194,12 @@ test('compactHistoryImmediate emits event when session transcript sync fails', a
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   const result = await compactHistoryImmediate(runtime);
@@ -248,6 +281,12 @@ test('compactHistoryImmediate archives pre-truncation history and compacts post-
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   await compactHistoryImmediate(runtime);
@@ -321,6 +360,12 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   await compactHistoryImmediate(runtime);
@@ -380,6 +425,12 @@ test('compactHistoryImmediate keeps transcript when compaction fails after sync'
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   await assert.rejects(() => compactHistoryImmediate(runtime), /llm unavailable/);

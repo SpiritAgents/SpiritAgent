@@ -421,6 +421,11 @@ export interface AgentRuntimeOptions<
     transcript: SessionTranscript;
     sessionKey?: string;
   }) => Promise<string | undefined>;
+  syncSubagentTranscript?: (input: {
+    transcript: SessionTranscript;
+    sessionKey?: string;
+    subagentSessionId: string;
+  }) => Promise<void>;
   persistToolOutputArchive?: (input: {
     sessionId?: string;
     toolCallId?: string;

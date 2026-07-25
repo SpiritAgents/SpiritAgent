@@ -163,6 +163,11 @@ interface CliHostInternalModule {
     transcript: SessionTranscript,
     options?: { sessionKey?: string },
   ) => Promise<string>;
+  persistSubagentTranscript?: (
+    spiritDataDir: string,
+    transcript: SessionTranscript,
+    options: { sessionKey?: string; subagentSessionId: string },
+  ) => Promise<string>;
   persistToolOutputArchive?: (
     spiritDataDir: string,
     input: {
@@ -1863,6 +1868,22 @@ async function createRuntime(
         });
       } catch {
         return undefined;
+      }
+    },
+    syncSubagentTranscript: async ({ transcript, sessionKey, subagentSessionId }) => {
+      const hostInternal = await ensureCliHostInternal(workspaceRoot);
+      const persist = hostInternal?.module.persistSubagentTranscript;
+      if (!hostInternal || typeof persist !== 'function') {
+        return;
+      }
+
+      try {
+        await persist(hostInternal.spiritDataDir, transcript, {
+          subagentSessionId,
+          ...(sessionKey !== undefined ? { sessionKey } : {}),
+        });
+      } catch {
+        // Best-effort subagent transcript sync.
       }
     },
     persistToolOutputArchive: async (input) => {

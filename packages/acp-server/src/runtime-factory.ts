@@ -41,6 +41,7 @@ import {
   ensureBuiltinAuthoringSkills,
   loadHostInstructionMetadata,
   persistSessionTranscript,
+  persistSubagentTranscript,
   persistToolOutputArchive,
   readGitBranchLabelForBasicInfo,
 } from '@spiritagent/host-internal';
@@ -220,6 +221,12 @@ export async function createAcpRuntime(
       persistSessionTranscript(spiritDataDir, transcript, {
         ...(sessionKey !== undefined ? { sessionKey } : {}),
       }),
+    syncSubagentTranscript: async ({ transcript, sessionKey, subagentSessionId }) => {
+      await persistSubagentTranscript(spiritDataDir, transcript, {
+        subagentSessionId,
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
+      });
+    },
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritDataDir, input),
     onEvent,

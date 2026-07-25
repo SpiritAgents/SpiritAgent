@@ -1,6 +1,5 @@
 import { setImmediate as waitForImmediate } from 'node:timers/promises';
 
-import { buildSessionTranscript } from '../transcript.js';
 import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from '../compaction-ui-status.js';
 import type { CompactHistoryManualContext, LlmMessage } from '../ports.js';
 import { resolveHookSessionContext } from '../hooks/integration.js';
@@ -52,36 +51,7 @@ export interface CompactionRuntime<
   takeCompletedManualHistoryCompactionResult(): RuntimeManualHistoryCompactionResult | undefined;
   isBusy(): boolean;
   poll(): Promise<void>;
-}
-
-async function syncTranscriptDirPath<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
-  archiveSourceHistory: LlmMessage[],
-): Promise<string | undefined> {
-  const sync = runtime.options.syncSessionTranscript;
-  if (!sync) {
-    return undefined;
-  }
-
-  try {
-    const transcript = buildSessionTranscript(archiveSourceHistory);
-    const sessionKey = resolveHookSessionContext(runtime.options).sessionId;
-    return await sync({
-      transcript,
-      ...(sessionKey !== undefined ? { sessionKey } : {}),
-    });
-  } catch (error: unknown) {
-    runtime.emitEvent({
-      kind: 'session-transcript-sync-failed',
-      error: renderError(error),
-    });
-    return undefined;
-  }
+  syncSessionTranscriptFromHistory(history?: readonly LlmMessage[]): Promise<string | undefined>;
 }
 
 function buildCompactionRecord(
@@ -176,7 +146,7 @@ export async function compactHistoryImmediate<
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<RuntimeCompactionRecord> {
   const archiveSourceHistory = cloneHistory(runtime.historyStore);
-  const transcriptDirPath = await syncTranscriptDirPath(runtime, archiveSourceHistory);
+  const transcriptDirPath = await runtime.syncSessionTranscriptFromHistory(archiveSourceHistory);
   const historyForCompaction = await prepareHistoryForCompaction(runtime, archiveSourceHistory);
   runtime.historyStore = cloneHistory(historyForCompaction);
 
@@ -288,7 +258,7 @@ export function launchHistoryCompaction<
 
   void (async () => {
     try {
-      const transcriptDirPath = await syncTranscriptDirPath(runtime, archiveSourceHistory);
+      const transcriptDirPath = await runtime.syncSessionTranscriptFromHistory(archiveSourceHistory);
       const compactionContext: CompactHistoryManualContext | undefined =
         transcriptDirPath !== undefined
           ? { transcriptDirPath }

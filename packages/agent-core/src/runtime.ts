@@ -92,6 +92,8 @@ import {
   startManualHistoryCompactionAsync as startManualHistoryCompactionAsyncInternal,
   waitForCompletedManualHistoryCompactionResult as waitForCompletedManualHistoryCompactionResultInternal,
 } from './runtime/compaction.js';
+import { buildMergedSessionTranscript } from './transcript-sync.js';
+import { buildSessionTranscript, type SessionTranscriptMessage } from './transcript.js';
 import {
   clearPendingStreamingState as clearPendingStreamingStateInternal,
   clearStreamingUiState as clearStreamingUiStateInternal,
@@ -291,6 +293,8 @@ export class AgentRuntime<
   private loopEnabledStore: boolean;
   private readonly runtimeDepthStore: number;
   private childSessionCounterStore: number;
+  /** Durable transcript messages that survive compaction shrinking historyStore. */
+  private sealedTranscriptMessagesStore: SessionTranscriptMessage[] = [];
 
   constructor(
     options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
@@ -313,6 +317,7 @@ export class AgentRuntime<
     this.loopEnabledStore = false;
     this.runtimeDepthStore = runtimeDepth;
     this.childSessionCounterStore = 0;
+    this.sealedTranscriptMessagesStore = buildSessionTranscript(this.historyStore).messages;
   }
 
   private async appendToolResultMessageWithOutputTruncation(
@@ -769,6 +774,7 @@ export class AgentRuntime<
 
   replaceHistory(history: LlmMessage[]): void {
     this.historyStore = repairMissingToolResultsInHistory(cloneHistory(history));
+    this.sealedTranscriptMessagesStore = buildSessionTranscript(this.historyStore).messages;
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -785,6 +791,7 @@ export class AgentRuntime<
     this.historyStore = repairMissingToolResultsInHistory(
       archive.llmHistory.map((message) => normalizeStoredLlmMessage(message)),
     );
+    this.sealedTranscriptMessagesStore = buildSessionTranscript(this.historyStore).messages;
     this.loopEnabledStore = archive.loopEnabled === true;
     this.options.toolExecutor.setLoopToolExposure?.(this.loopEnabledStore);
     this.requestTraceStore = [];
@@ -801,6 +808,59 @@ export class AgentRuntime<
       summary: { ...entry.summary },
       llmHistory: entry.llmHistory.map((message) => normalizeStoredLlmMessage(message)),
     }));
+  }
+
+  async syncSessionTranscriptFromHistory(
+    history: readonly LlmMessage[] = this.historyStore,
+  ): Promise<string | undefined> {
+    const sync = this.options.syncSessionTranscript;
+    if (!sync) {
+      return undefined;
+    }
+
+    try {
+      const { transcript, sealedMessages } = buildMergedSessionTranscript(
+        this.sealedTranscriptMessagesStore,
+        history,
+      );
+      this.sealedTranscriptMessagesStore = sealedMessages;
+      const sessionKey = resolveHookSessionContext(this.options).sessionId;
+      return await sync({
+        transcript,
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
+      });
+    } catch (error: unknown) {
+      this.emitEvent({
+        kind: 'session-transcript-sync-failed',
+        error: renderError(error),
+      });
+      return undefined;
+    }
+  }
+
+  private async syncSubagentTranscriptBestEffort(
+    subagentSessionId: string,
+    history: readonly LlmMessage[],
+  ): Promise<void> {
+    const sync = this.options.syncSubagentTranscript;
+    if (!sync) {
+      return;
+    }
+
+    try {
+      const transcript = buildSessionTranscript(history);
+      const sessionKey = resolveHookSessionContext(this.options).sessionId;
+      await sync({
+        transcript,
+        subagentSessionId,
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
+      });
+    } catch (error: unknown) {
+      this.emitEvent({
+        kind: 'session-transcript-sync-failed',
+        error: renderError(error),
+      });
+    }
   }
 
   toArchive(
@@ -2231,6 +2291,9 @@ export class AgentRuntime<
   private completeTurn(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void {
     this.completedTurnResultStore = result;
     this.emitSyncTurnResultEvents(result);
+    if (this.runtimeDepthStore === 0) {
+      void this.syncSessionTranscriptFromHistory();
+    }
   }
 
   private completedViaFinishTask(
@@ -2990,11 +3053,9 @@ export class AgentRuntime<
       childWorkspaceRoot,
     );
     if (subagentStartDenied) {
-      record.summary.status = 'failed';
-      record.summary.updatedAtUnixMs = Date.now();
-      record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
       record.summary.latestMessage = truncateTextForSubagentSummary(subagentStartDenied, 180);
       record.summary.error = subagentStartDenied;
+      this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
       return { kind: 'completed', text: subagentStartDenied, failed: true };
     }
 
@@ -3025,12 +3086,10 @@ export class AgentRuntime<
         return { kind: 'started' };
       } catch (error) {
         const failed = `[subagent failed] ${renderError(error)}`;
-        record.summary.status = 'failed';
-        record.summary.updatedAtUnixMs = Date.now();
-        record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
         record.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
         delete record.summary.finalOutput;
         record.summary.error = failed;
+        this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
         return { kind: 'completed', text: failed, failed: true };
       }
     }
@@ -3041,12 +3100,10 @@ export class AgentRuntime<
 
       if (result.kind === 'completed') {
         const finalOutput = resolveSubagentResultText(result.assistantText, record, false);
-        record.summary.status = 'completed';
-        record.summary.updatedAtUnixMs = Date.now();
-        record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
         record.summary.latestMessage = truncateTextForSubagentSummary(finalOutput, 180);
         record.summary.finalOutput = finalOutput;
         delete record.summary.error;
+        this.markChildSessionTerminalAndSyncTranscript(record, 'completed');
         return { kind: 'completed', text: finalOutput, failed: false };
       }
 
@@ -3093,21 +3150,17 @@ export class AgentRuntime<
       }
 
       const failed = `[subagent failed] ${result.error}`;
-      record.summary.status = 'failed';
-      record.summary.updatedAtUnixMs = Date.now();
-      record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
       record.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
       delete record.summary.finalOutput;
       record.summary.error = failed;
+      this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
       return { kind: 'completed', text: failed, failed: true };
     } catch (error) {
       const failed = `[subagent failed] ${renderError(error)}`;
-      record.summary.status = 'failed';
-      record.summary.updatedAtUnixMs = Date.now();
-      record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
       record.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
       delete record.summary.finalOutput;
       record.summary.error = failed;
+      this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
       return { kind: 'completed', text: failed, failed: true };
     }
   }
@@ -3136,6 +3189,16 @@ export class AgentRuntime<
     } else {
       delete record.summary.latestMessage;
     }
+  }
+
+  private markChildSessionTerminalAndSyncTranscript(
+    record: RuntimeSubagentSessionArchiveEntry,
+    status: 'completed' | 'failed',
+  ): void {
+    record.summary.status = status;
+    record.summary.updatedAtUnixMs = Date.now();
+    record.summary.completedAtUnixMs = record.summary.updatedAtUnixMs;
+    void this.syncSubagentTranscriptBestEffort(record.summary.sessionId, record.llmHistory);
   }
 
   private async continuePendingSubagentApproval(
@@ -3216,11 +3279,6 @@ export class AgentRuntime<
       boot.workspaceRoot,
     );
     if (subagentStartDenied) {
-      pending.childRecord.summary.status = 'failed';
-      pending.childRecord.summary.updatedAtUnixMs = Date.now();
-      pending.childRecord.summary.completedAtUnixMs = pending.childRecord.summary.updatedAtUnixMs;
-      pending.childRecord.summary.latestMessage = truncateTextForSubagentSummary(subagentStartDenied, 180);
-      pending.childRecord.summary.error = subagentStartDenied;
       await this.finishFailedSubagentWorktreeBootstrap(pending, subagentStartDenied);
       return;
     }
@@ -3252,12 +3310,10 @@ export class AgentRuntime<
     errorText: string,
   ): Promise<void> {
     const failed = `[subagent failed] ${errorText}`;
-    pending.childRecord.summary.status = 'failed';
-    pending.childRecord.summary.updatedAtUnixMs = Date.now();
-    pending.childRecord.summary.completedAtUnixMs = pending.childRecord.summary.updatedAtUnixMs;
     pending.childRecord.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
     delete pending.childRecord.summary.finalOutput;
     pending.childRecord.summary.error = failed;
+    this.markChildSessionTerminalAndSyncTranscript(pending.childRecord, 'failed');
 
     const parentToolResultText = prependSubagentWorktreeMeta(
       buildParentSubagentToolResultText(
@@ -3408,9 +3464,6 @@ export class AgentRuntime<
       pending.childRecord.summary.worktreeBranch,
     );
 
-    pending.childRecord.summary.status = output.failed ? 'failed' : 'completed';
-    pending.childRecord.summary.updatedAtUnixMs = Date.now();
-    pending.childRecord.summary.completedAtUnixMs = pending.childRecord.summary.updatedAtUnixMs;
     pending.childRecord.summary.latestMessage = truncateTextForSubagentSummary(output.text, 180);
     if (output.failed) {
       pending.childRecord.summary.error = output.text;
@@ -3419,6 +3472,10 @@ export class AgentRuntime<
       pending.childRecord.summary.finalOutput = output.text;
       delete pending.childRecord.summary.error;
     }
+    this.markChildSessionTerminalAndSyncTranscript(
+      pending.childRecord,
+      output.failed ? 'failed' : 'completed',
+    );
 
     await this.subagentEndHook(
       pending,
@@ -3507,6 +3564,9 @@ export class AgentRuntime<
           subagentSessionId,
           subagentTitle,
         ),
+        // Parent owns transcript files; child must not overwrite the main session transcript.
+        syncSessionTranscript: undefined,
+        syncSubagentTranscript: undefined,
       },
       [],
       this.runtimeDepthStore + 1,

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { SessionTranscript } from '@spiritagent/agent-core';
@@ -53,4 +53,39 @@ export async function persistSessionTranscript(
   const filePath = path.join(sessionDir, SESSION_TRANSCRIPT_FILE_NAME);
   await writeFile(filePath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
   return sessionDir;
+}
+
+/**
+ * Writes a subagent transcript under `{session}/subagents/{subagentSessionId}.json`.
+ */
+export async function persistSubagentTranscript(
+  spiritDataDir: string,
+  transcript: SessionTranscript,
+  options: { sessionKey?: string; subagentSessionId: string },
+): Promise<string> {
+  const filePath = resolveSubagentTranscriptFilePath(
+    spiritDataDir,
+    options.sessionKey,
+    options.subagentSessionId,
+  );
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
+  return filePath;
+}
+
+export async function ensureTranscriptSessionDir(
+  spiritDataDir: string,
+  sessionKey: string | undefined,
+): Promise<string> {
+  const sessionDir = resolveTranscriptSessionDir(spiritDataDir, sessionKey);
+  await mkdir(sessionDir, { recursive: true });
+  return sessionDir;
+}
+
+export async function deleteTranscriptSessionDir(
+  spiritDataDir: string,
+  sessionKey: string | undefined,
+): Promise<void> {
+  const sessionDir = resolveTranscriptSessionDir(spiritDataDir, sessionKey);
+  await rm(sessionDir, { recursive: true, force: true });
 }
