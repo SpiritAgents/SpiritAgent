@@ -301,6 +301,13 @@ jobs:
             exit 1
           fi
 
+      # Self-hosted first: R2 failures must not leave GitHub Release / npm already public.
+      - name: Publish self-hosted downloads
+        run: |
+          npm run release:publish-selfhosted -- \
+            --input release-assets \
+            --version "$RELEASE_VERSION"
+
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -338,12 +345,6 @@ jobs:
           npm --prefix packages/agent-core publish --access public
           npm --prefix packages/host-internal publish --access public
           npm --prefix packages/acp-server publish --access public
-
-      - name: Publish self-hosted downloads
-        run: |
-          npm run release:publish-selfhosted -- \
-            --input release-assets \
-            --version "$RELEASE_VERSION"
 
   # After publish finishes, ensure archival tag X.Y.Z points at the built SHA.
   finalize-tag:
