@@ -278,9 +278,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          registry-url: https://registry.npmjs.org/
+          # No registry-url: Trusted Publishing uses OIDC. setup-node registry-url injects
+          # _authToken=${NODE_AUTH_TOKEN} (often GitHub token), which skips OIDC and breaks publish.
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Upgrade npm for Trusted Publishing
+        run: |
+          set -euo pipefail
+          # Node 22 ships npm 10.x; Trusted Publishing requires npm >= 11.5.1.
+          npm install -g npm@11
+          npm --version
 
       - name: Download release bundle
         uses: actions/download-artifact@v4
@@ -315,9 +323,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Allow re-runs after partial success (e.g. R2 + GitHub OK, npm failed).
           if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
-            echo "::error::GitHub Release $RELEASE_VERSION already exists; refusing to overwrite."
-            exit 1
+            echo "GitHub Release $RELEASE_VERSION already exists; skipping create."
+            exit 0
           fi
           mapfile -d '' -t assets < <(find release-assets -maxdepth 1 -type f -print0)
           if [ "${#assets[@]}" -eq 0 ]; then
@@ -341,11 +350,27 @@ jobs:
       - name: Publish npm packages
         run: |
           set -euo pipefail
+          # Trusted Publishing (OIDC): do not set NODE_AUTH_TOKEN (empty still blocks OIDC).
+          unset NODE_AUTH_TOKEN
+          if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
+            sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG" || true
+          fi
           # Dependency order: agent-core → host-internal → acp-server
           # npm Trusted Publishing: Environment name on npm must stay empty (OIDC matches workflow file).
-          npm --prefix packages/agent-core publish --access public
-          npm --prefix packages/host-internal publish --access public
-          npm --prefix packages/acp-server publish --access public
+          publish_one() {
+            local dir="$1"
+            local name
+            name="$(node -p "require('./${dir}/package.json').name")"
+            if npm view "${name}@${RELEASE_VERSION}" version >/dev/null 2>&1; then
+              echo "Already on npm: ${name}@${RELEASE_VERSION}; skipping."
+              return 0
+            fi
+            echo "Publishing ${name}@${RELEASE_VERSION} from ${dir}"
+            npm --prefix "$dir" publish --access public
+          }
+          publish_one packages/agent-core
+          publish_one packages/host-internal
+          publish_one packages/acp-server
 
   # After publish finishes, ensure archival tag X.Y.Z points at the built SHA.
   finalize-tag:
@@ -373,6 +398,11 @@ jobs:
           if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
             ACTUAL_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
             if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              # Recovery re-run after a prior partial publish may land on a newer workflow SHA.
+              if gh release view "$TAG" >/dev/null 2>&1; then
+                echo "Tag ${TAG} already at ${ACTUAL_SHA} and GitHub Release exists; leaving tag unchanged (run SHA ${EXPECTED_SHA})."
+                exit 0
+              fi
               echo "::error::Tag ${TAG} points to ${ACTUAL_SHA}, expected ${EXPECTED_SHA}"
               exit 1
             fi
