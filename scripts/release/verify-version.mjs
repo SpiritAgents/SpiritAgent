@@ -4,17 +4,24 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 function readArg(name) {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
-function normalizeTagVersion(value) {
-  if (!value) {
+function resolveExpectedVersion(raw) {
+  if (!raw) {
     return undefined;
   }
-  return value.startsWith('v') ? value.slice(1) : value;
+  if (!PURE_VERSION_RE.test(raw)) {
+    console.error(
+      `Invalid release version ${JSON.stringify(raw)}. Expected a pure semver patch form X.Y.Z (no "v" prefix).`,
+    );
+    process.exit(1);
+  }
+  return raw;
 }
 
 async function readJsonVersion(relativePath) {
@@ -43,9 +50,14 @@ async function readMcpClientVersion(relativePath) {
   return match[1];
 }
 
-const expectedVersion = normalizeTagVersion(
-  readArg('--version') ?? process.env.RELEASE_VERSION ?? process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME,
-);
+const explicitVersion = readArg('--version') ?? process.env.RELEASE_VERSION;
+const legacyVersion = process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME;
+const expectedVersion =
+  explicitVersion !== undefined
+    ? resolveExpectedVersion(explicitVersion)
+    : legacyVersion && PURE_VERSION_RE.test(legacyVersion)
+      ? legacyVersion
+      : undefined;
 
 const versions = [
   ['desktop', 'apps/desktop/package.json', await readJsonVersion('apps/desktop/package.json')],
@@ -57,6 +69,13 @@ const versions = [
 ];
 
 const baseline = expectedVersion ?? versions[0][2];
+if (!PURE_VERSION_RE.test(baseline)) {
+  console.error(
+    `Invalid baseline version ${JSON.stringify(baseline)}. Package versions must use pure X.Y.Z (no "v" prefix).`,
+  );
+  process.exit(1);
+}
+
 const mismatches = versions.filter(([, , version]) => version !== baseline);
 
 if (mismatches.length > 0) {
