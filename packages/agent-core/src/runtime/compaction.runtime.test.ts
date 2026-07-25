@@ -39,7 +39,7 @@ async function syncSessionTranscriptFromHistoryForTest(
   }
 }
 
-test('compactHistoryImmediate persists archive without post-processing compact summary', async () => {
+test('compactHistoryImmediate syncs transcript without post-processing compact summary', async () => {
   const archivePath = '/tmp/spirit/transcripts/s1';
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('hello') },
@@ -210,7 +210,7 @@ test('compactHistoryImmediate emits event when session transcript sync fails', a
   assert.match(events[0]?.error ?? '', /disk full/);
 });
 
-test('compactHistoryImmediate archives pre-truncation history and compacts post-truncation history', async () => {
+test('compactHistoryImmediate syncs pre-truncation history and compacts post-truncation history', async () => {
   const longToolOutput = 'x'.repeat(20_000);
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('investigate') },

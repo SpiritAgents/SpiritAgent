@@ -3556,17 +3556,20 @@ export class AgentRuntime<
     const scopedOptions = childWorkspaceRoot?.trim()
       ? scopeAgentRuntimeOptionsForSubagentWorkspace(this.options, childWorkspaceRoot)
       : this.options;
+    // Parent owns transcript files; child must not overwrite the main session transcript.
+    const {
+      syncSessionTranscript: _omitSyncSessionTranscript,
+      syncSubagentTranscript: _omitSyncSubagentTranscript,
+      ...childRuntimeOptions
+    } = scopedOptions;
     return new AgentRuntime<Config, State, ToolRequest, TrustTarget>(
       {
-        ...scopedOptions,
+        ...childRuntimeOptions,
         toolExecutor: createSubagentToolExecutor(
           baseExecutor,
           subagentSessionId,
           subagentTitle,
         ),
-        // Parent owns transcript files; child must not overwrite the main session transcript.
-        syncSessionTranscript: undefined,
-        syncSubagentTranscript: undefined,
       },
       [],
       this.runtimeDepthStore + 1,

@@ -135,9 +135,9 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     throw new Error('polling compact smoke 缺少 compaction update 事件。');
   }
 
-  const archivePath = '/tmp/spirit-smoke/transcripts/smoke-compact-archive';
+  const transcriptDirPath = '/tmp/spirit-smoke/transcripts/smoke-compact-transcript';
   let persistedMessageCount = 0;
-  const archiveRuntime = new AgentRuntime({
+  const transcriptRuntime = new AgentRuntime({
     config: undefined,
     llmTransport: new CompactTransport(),
     toolExecutor: new CompactExecutor(),
@@ -149,7 +149,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
     rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
     hookSessionContext: {
-      sessionId: 'smoke-compact-archive',
+      sessionId: 'smoke-compact-transcript',
       conversationPath: null,
       workspaceRoot: '/tmp',
       model: 'test-model',
@@ -159,7 +159,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
       if (transcript.messages.length === 0) {
         throw new Error('transcript smoke 未写入任何消息。');
       }
-      return archivePath;
+      return transcriptDirPath;
     },
   }, [
     {
@@ -169,12 +169,12 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     {
       role: 'assistant',
       content: [],
-      toolCalls: [{ id: 'call-archive', name: 'read_file', argumentsJson: '{"path":"a.ts"}' }],
+      toolCalls: [{ id: 'call-transcript', name: 'read_file', argumentsJson: '{"path":"a.ts"}' }],
     },
     {
       role: 'tool',
-      toolCallId: 'call-archive',
-      content: createLlmMessageContentFromText('tool output should be omitted from archive'),
+      toolCallId: 'call-transcript',
+      content: createLlmMessageContentFromText('tool output should be omitted from transcript'),
     },
     {
       role: 'assistant',
@@ -182,8 +182,8 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     },
   ]);
 
-  const archiveRecord = await archiveRuntime.compactHistory();
-  if (archiveRecord.transcriptDirPath !== archivePath) {
+  const transcriptRecord = await transcriptRuntime.compactHistory();
+  if (transcriptRecord.transcriptDirPath !== transcriptDirPath) {
     throw new Error('transcript smoke 未记录转录目录路径。');
   }
   if (persistedMessageCount !== 3) {
@@ -235,7 +235,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
   return {
     compactResult,
     pollingCompactResult,
-    archiveCompactionResult: archiveRecord,
+    transcriptCompactionResult: transcriptRecord,
     toolOutputArchiveCompactionResult: toolOutputArchiveRecord,
   };
 }
