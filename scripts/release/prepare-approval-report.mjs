@@ -180,6 +180,17 @@ const changelog = generateNotesViaGh(version, sha) ?? generateNotesViaGitLog(sha
 await writeFile(notesPath, `${changelog}\n`);
 
 const table = renderAssetTable(assets);
+const npmPackages = [
+  '@spiritagent/agent-core',
+  '@spiritagent/host-internal',
+  '@spiritagent/acp-server',
+];
+const npmTable = [
+  '| Package | Version |',
+  '| --- | --- |',
+  ...npmPackages.map((name) => `| \`${name}\` | \`${version}\` |`),
+].join('\n');
+
 const report = [
   `# Release approval — ${version}`,
   '',
@@ -194,6 +205,14 @@ const report = [
   'Channel status: **Will publish after approval**',
   '',
   table,
+  '',
+  '## npm',
+  '',
+  'Channel status: **Will publish after approval** (OIDC trusted publishing)',
+  '',
+  'Publish order: `agent-core` → `host-internal` → `acp-server`',
+  '',
+  npmTable,
   '',
   '## Self-hosted (`download.spirit.fast`)',
   '',
@@ -215,6 +234,7 @@ const manifest = {
   generatedAt: new Date().toISOString(),
   channels: {
     github: { publish: true },
+    npm: { publish: true, packages: npmPackages },
     selfhosted: { publish: false, host: 'download.spirit.fast' },
     msstore: { publish: false },
     homebrew: { publish: false },
@@ -226,7 +246,6 @@ const manifest = {
     checksums: 'SHA256SUMS.txt',
   },
 };
-
 await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
 // Keep a copy of checksums next to the report for the release-bundle artifact layout.
