@@ -208,9 +208,10 @@ jobs:
             apps/desktop/release/*.zip
           if-no-files-found: error
 
-  # Temporary publish path for Phase 2; Phase 3 inserts the approval gate before this job.
-  publish:
-    name: Publish GitHub Release
+  # prepare builds the English approval summary (changelog + per-channel asset tables).
+  # approve uses GitHub Environment "release" — configure Required reviewers in repo Settings.
+  prepare:
+    name: Prepare approval report
     needs:
       - cli
       - desktop
@@ -218,17 +219,76 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Download artifacts
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
 
-      - name: Generate checksums
-        run: node scripts/release/checksums.mjs release-assets release-assets/SHA256SUMS.txt
+      - name: Prepare approval report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          npm run release:prepare-approval-report -- \
+            --input release-assets \
+            --output-dir release-assets/approval \
+            --version "$RELEASE_VERSION" \
+            --sha "${{ github.sha }}"
 
-      - name: Publish release
+      - name: Write job summary
+        run: cat release-assets/approval/approval-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: release-assets/
+          if-no-files-found: error
+
+  approve:
+    name: Approve release
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - name: Download release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: release-assets
+
+      - name: Show approval report
+        run: |
+          echo "Review the English approval report below (also in the prepare job summary), then approve this environment deployment."
+          echo
+          cat release-assets/approval/approval-report.md >> "$GITHUB_STEP_SUMMARY"
+          cat release-assets/approval/approval-report.md
+
+  publish-github:
+    name: Publish GitHub Release
+    needs: approve
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: release-assets
+
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -238,8 +298,41 @@ jobs:
             echo "No release assets found under release-assets" >&2
             exit 1
           fi
+          notes_file="release-assets/approval/release-notes.md"
+          if [ ! -f "$notes_file" ]; then
+            echo "Missing approval release notes: $notes_file" >&2
+            exit 1
+          fi
           if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
             gh release upload "$RELEASE_VERSION" "${assets[@]}" --clobber
           else
-            gh release create "$RELEASE_VERSION" "${assets[@]}" --title "$RELEASE_VERSION" --target "${{ github.sha }}" --generate-notes
+            gh release create "$RELEASE_VERSION" "${assets[@]}" \
+              --title "$RELEASE_VERSION" \
+              --target "${{ github.sha }}" \
+              --notes-file "$notes_file"
           fi
+
+  # Reserved publish channels: no-op placeholders so the parallel fan-out graph stays stable.
+  publish-selfhosted:
+    name: Publish self-hosted (reserved)
+    needs: approve
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reserved
+        run: echo "Self-hosted publish to download.spirit.fast is reserved and not enabled in this run."
+
+  publish-msstore:
+    name: Publish MS Store (reserved)
+    needs: approve
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reserved
+        run: echo "MS Store publish is reserved and not enabled in this run."
+
+  publish-homebrew:
+    name: Publish Homebrew (reserved)
+    needs: approve
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reserved
+        run: echo "Homebrew publish is reserved and not enabled in this run."
