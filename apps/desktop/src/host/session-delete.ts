@@ -4,6 +4,7 @@ import path from 'node:path';
 import i18n from '../lib/i18n-host.js';
 import type { DesktopSnapshot } from '../types.js';
 import { deleteSessionRewindData } from './rewind.js';
+import { deleteDesktopTranscriptSessionDir } from './transcript-session.js';
 import {
   ensureStoredSessionBundleRegistered,
   finishSessionActivationCommand,
@@ -136,6 +137,7 @@ export async function deleteSessionCommand(
     }
     if (rewindSessionId) {
       await deleteSessionRewindData(spiritAgentDataDir(), rewindSessionId);
+      await deleteDesktopTranscriptSessionDir(rewindSessionId);
     }
     ctx.clearSessionTitleGeneration(resolvedPath);
 

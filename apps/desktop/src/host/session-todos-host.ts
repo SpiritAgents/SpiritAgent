@@ -15,6 +15,7 @@ import {
   resolveTodoSessionKey,
 } from './todos.js';
 import { provisionalNewSessionPath } from './storage.js';
+import { ensureDesktopTranscriptSessionDir } from './transcript-session.js';
 
 export interface PendingTodoClearing {
   untilUnixMs: number;
@@ -74,6 +75,7 @@ export async function finalizeTodoScopeForNewActiveBundle(
   const legacyProvisionalKey = path.resolve(provisionalNewSessionPath(workspaceRoot));
   cancelTodoClearing(ctx, legacyProvisionalKey);
   await purgeSessionTodos(legacyProvisionalKey);
+  await ensureDesktopTranscriptSessionDir(bundle.rewind.sessionId);
   await ctx.ensureToolExecutor(bundle);
   await refreshTodoSnapshotForBundle(ctx, bundle);
 }

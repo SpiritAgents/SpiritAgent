@@ -23,6 +23,7 @@ import type { PendingWorktreeBootstrap } from './worktree-bootstrap-card.js';
 import type { DesktopTimelineSegmentKind, DesktopMessageTimeline } from './message-timeline.js';
 import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
 import { createTodoSessionScopeKey } from './todos.js';
+import { ensureDesktopTranscriptSessionDir } from './transcript-session.js';
 import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
 import { nextMessageIdFromMessages, type RestoredSessionState } from './sessions.js';
 import type { SubagentConversationProjection } from './subagent-conversation-projection.js';
@@ -100,6 +101,8 @@ export interface SessionBundle {
 
 export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {
   const messages: ConversationMessageSnapshot[] = [];
+  const rewind = createDesktopRewindMetadata();
+  void ensureDesktopTranscriptSessionDir(rewind.sessionId);
   return {
     id,
     workspaceRoot,
@@ -113,7 +116,7 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     loopEnabled: false,
     approvalLevel: 'default',
     workLocation: 'local',
-    rewind: createDesktopRewindMetadata(),
+    rewind,
     rewindWarnings: [],
     messageIdCounter: 1,
     currentTurnSkills: [],
@@ -201,6 +204,7 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.pendingGitBranch = undefined;
   bundle.workLocation = 'local';
   bundle.rewind = createDesktopRewindMetadata();
+  void ensureDesktopTranscriptSessionDir(bundle.rewind.sessionId);
   bundle.rewindWarnings = [];
   bundle.messageIdCounter = 1;
   bundle.currentTurnSkills = [];
