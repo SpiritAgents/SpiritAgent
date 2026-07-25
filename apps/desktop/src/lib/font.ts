@@ -2,6 +2,9 @@ export const FONT_STORAGE_KEY = "spirit-agent-desktop-font" as const;
 export const SPIRIT_UI_FONT_STACK_VAR = "--spirit-ui-font-stack" as const;
 export const DEFAULT_FONT_ID = "geist" as const;
 export const DEFAULT_FONT_LABEL = "Geist" as const;
+export const SYSTEM_FONT_ID = "system" as const;
+/** system-ui 是 CSS 关键字，不能加引号，否则会被当成具体字体族名查找而静默回退。 */
+export const SYSTEM_FONT_STACK = "system-ui, sans-serif" as const;
 
 export type FontPreference = typeof DEFAULT_FONT_ID | string;
 
@@ -33,7 +36,11 @@ export function applyFontToDocument(pref: FontPreference): void {
     return;
   }
 
-  root.style.setProperty(SPIRIT_UI_FONT_STACK_VAR, toFontFamilyStack(normalized));
+  root.style.setProperty(SPIRIT_UI_FONT_STACK_VAR, toFontPreferenceStack(normalized));
+}
+
+export function toFontPreferenceStack(pref: FontPreference): string {
+  return pref === SYSTEM_FONT_ID ? SYSTEM_FONT_STACK : toFontFamilyStack(pref);
 }
 
 export function toFontFamilyStack(family: string): string {

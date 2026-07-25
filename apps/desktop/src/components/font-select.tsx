@@ -15,7 +15,9 @@ import {
 import {
   DEFAULT_FONT_ID,
   DEFAULT_FONT_LABEL,
-  toFontFamilyStack,
+  SYSTEM_FONT_ID,
+  SYSTEM_FONT_STACK,
+  toFontPreferenceStack,
   type FontPreference,
 } from "@/lib/font";
 import { cn } from "@/lib/utils";
@@ -99,11 +101,11 @@ export function FontSelect({
     const values = new Set<string>();
     for (const font of sourceFonts) {
       const trimmed = font.trim();
-      if (trimmed && trimmed !== DEFAULT_FONT_ID) {
+      if (trimmed && trimmed !== DEFAULT_FONT_ID && trimmed !== SYSTEM_FONT_ID) {
         values.add(trimmed);
       }
     }
-    if (value !== DEFAULT_FONT_ID && value.trim()) {
+    if (value !== DEFAULT_FONT_ID && value !== SYSTEM_FONT_ID && value.trim()) {
       values.add(value.trim());
     }
     return Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
@@ -112,13 +114,14 @@ export function FontSelect({
   const allOptions = useMemo<FontOption[]>(
     () => [
       { id: DEFAULT_FONT_ID, label: DEFAULT_FONT_LABEL },
+      { id: SYSTEM_FONT_ID, label: t("settings.fontSystem"), fontFamily: SYSTEM_FONT_STACK },
       ...fontOptions.map((font) => ({
         id: font,
         label: font,
-        fontFamily: toFontFamilyStack(font),
+        fontFamily: toFontPreferenceStack(font),
       })),
     ],
-    [fontOptions],
+    [fontOptions, t],
   );
 
   const normalizedFilter = filter.trim().toLowerCase();
@@ -129,7 +132,12 @@ export function FontSelect({
     return allOptions.filter((option) => option.label.toLowerCase().includes(normalizedFilter));
   }, [allOptions, normalizedFilter]);
 
-  const currentLabel = value === DEFAULT_FONT_ID ? DEFAULT_FONT_LABEL : value;
+  const currentLabel =
+    value === DEFAULT_FONT_ID
+      ? DEFAULT_FONT_LABEL
+      : value === SYSTEM_FONT_ID
+        ? t("settings.fontSystem")
+        : value;
 
   const selectValue = (next: FontPreference) => {
     onValueChange(next);
@@ -163,7 +171,7 @@ export function FontSelect({
             >
               <span
                 className="min-w-0 truncate text-left"
-                style={value === DEFAULT_FONT_ID ? undefined : { fontFamily: toFontFamilyStack(value) }}
+                style={value === DEFAULT_FONT_ID ? undefined : { fontFamily: toFontPreferenceStack(value) }}
               >
                 {currentLabel}
               </span>

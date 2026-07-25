@@ -166,6 +166,7 @@
     "font": "字体",
     "blurEffect": "模糊效果",
     "fontDescription": "默认 Geist。",
+    "fontSystem": "跟随系统",
     "selectTheme": "选择主题",
     "themeDescription": "立即生效。",
     "blurEffectDescription": "开启后主界面背景半透明模糊，可透出桌面。",

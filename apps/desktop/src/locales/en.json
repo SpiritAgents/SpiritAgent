@@ -166,6 +166,7 @@
     "font": "Font",
     "blurEffect": "Blur Effect",
     "fontDescription": "Defaults to Geist.",
+    "fontSystem": "System",
     "selectTheme": "Select Theme",
     "themeDescription": "Applied immediately.",
     "blurEffectDescription": "When enabled, the main UI uses a translucent blurred background.",
