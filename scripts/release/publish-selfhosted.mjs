@@ -127,14 +127,19 @@ if (primaries.length !== EXPECTED_PRIMARY_ASSET_COUNT) {
   process.exit(1);
 }
 
-for (const { filePath, mapped } of primaries) {
-  const body = await readFile(filePath);
-  const size = (await stat(filePath)).size;
-  if (size !== body.length) {
-    throw new Error(`Size mismatch reading ${filePath}`);
-  }
-
-  for (const versionSegment of [version, 'latest']) {
+/**
+ * Two-phase upload: all versioned keys first, then all `latest` keys.
+ * Avoids mixed old/new `latest` URLs if the job stops mid-loop.
+ * @param {'version' | 'latest'} phase
+ */
+async function uploadPhase(phase) {
+  const versionSegment = phase === 'version' ? version : 'latest';
+  for (const { filePath, mapped } of primaries) {
+    const body = await readFile(filePath);
+    const size = (await stat(filePath)).size;
+    if (size !== body.length) {
+      throw new Error(`Size mismatch reading ${filePath}`);
+    }
     const objectKey = objectKeyFor(mapped, versionSegment);
     const publicUrl = publicUrlFor(objectKey);
     console.log(`Uploading ${publicUrl} (${size} bytes)`);
@@ -142,4 +147,7 @@ for (const { filePath, mapped } of primaries) {
   }
 }
 
-console.log(`Self-hosted upload complete: ${primaries.length} primaries × 2 (version + latest)`);
+await uploadPhase('version');
+await uploadPhase('latest');
+
+console.log(`Self-hosted upload complete: ${primaries.length} primaries × 2 (version then latest)`);
