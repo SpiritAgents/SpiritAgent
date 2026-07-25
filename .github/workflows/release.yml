@@ -257,6 +257,7 @@ jobs:
 
   # Single approval gate: Environment "release" (Required reviewers + Cloudflare secrets).
   # After approval, publish GitHub Release, npm packages, and self-hosted CDN objects.
+  # npm Trusted Publisher on each package must use Environment name "release" (match this job).
   publish:
     name: Publish release channels
     needs: prepare
@@ -347,6 +348,13 @@ jobs:
       - name: Install dependencies for npm publish
         run: npm ci
 
+      - name: Build packages for npm publish
+        run: |
+          set -euo pipefail
+          npm --prefix packages/agent-core run build
+          npm --prefix packages/host-internal run build
+          npm --prefix packages/acp-server run build
+
       - name: Publish npm packages
         run: |
           set -euo pipefail
@@ -355,18 +363,36 @@ jobs:
           if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
             sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG" || true
           fi
+          # This job uses GitHub Environment "release". On npmjs.com → Trusted Publisher,
+          # each package MUST set Environment name to exactly "release" (not blank), or OIDC
+          # claim matching fails (often with a misleading error).
+          # Workflow filename must be release.yml. Provenance needs matching repository.url.
+          npm cache clean --force
+          mkdir -p npm-publish-logs
           # Dependency order: agent-core → host-internal → acp-server
-          # npm Trusted Publishing: Environment name on npm must stay empty (OIDC matches workflow file).
           publish_one() {
             local dir="$1"
-            local name
+            local name tarball
             name="$(node -p "require('./${dir}/package.json').name")"
             if npm view "${name}@${RELEASE_VERSION}" version >/dev/null 2>&1; then
               echo "Already on npm: ${name}@${RELEASE_VERSION}; skipping."
               return 0
             fi
-            echo "Publishing ${name}@${RELEASE_VERSION} from ${dir}"
-            npm --prefix "$dir" publish --access public
+            echo "Packing ${name}@${RELEASE_VERSION} from ${dir}"
+            # Publish a local tarball so pack failures are visible before OIDC upload.
+            tarball="$(npm pack "./${dir}" --pack-destination npm-publish-logs --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
+            echo "Publishing tarball ${tarball}"
+            if ! npm publish "npm-publish-logs/${tarball}" --access public --loglevel verbose 2>&1 | tee "npm-publish-logs/${name//\//_}.log"; then
+              echo "::error::npm publish failed for ${name}. Check Trusted Publisher: org/repo/workflow=release.yml/environment=release"
+              echo '--- last 80 lines of npm log ---' >> "$GITHUB_STEP_SUMMARY"
+              tail -n 80 "npm-publish-logs/${name//\//_}.log" >> "$GITHUB_STEP_SUMMARY" || true
+              if compgen -G "${HOME}/.npm/_logs/*-debug-0.log" > /dev/null; then
+                latest_debug="$(ls -t "${HOME}/.npm/_logs"/*-debug-0.log | head -1)"
+                echo "--- npm debug log: ${latest_debug} ---" >> "$GITHUB_STEP_SUMMARY"
+                tail -n 120 "$latest_debug" >> "$GITHUB_STEP_SUMMARY" || true
+              fi
+              return 1
+            fi
           }
           publish_one packages/agent-core
           publish_one packages/host-internal

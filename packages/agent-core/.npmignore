@@ -1,0 +1,1 @@
+# Prefer package "files" allowlist; keep root .gitignore from excluding dist via fallback.
