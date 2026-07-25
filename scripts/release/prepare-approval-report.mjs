@@ -5,7 +5,13 @@ import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { mapPrimaryAsset, objectKeyFor, publicUrlFor, PUBLIC_DOWNLOAD_HOST } from './selfhosted-paths.mjs';
+import {
+  EXPECTED_PRIMARY_ASSET_COUNT,
+  mapPrimaryAsset,
+  objectKeyFor,
+  publicUrlFor,
+  PUBLIC_DOWNLOAD_HOST,
+} from './selfhosted-paths.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
@@ -207,6 +213,16 @@ for (const asset of assets) {
   });
 }
 selfhostedRows.sort((left, right) => left.versionUrl.localeCompare(right.versionUrl));
+
+if (selfhostedRows.length !== EXPECTED_PRIMARY_ASSET_COUNT) {
+  console.error(
+    `Expected ${EXPECTED_PRIMARY_ASSET_COUNT} primary installers for self-hosted publish, found ${selfhostedRows.length}.`,
+  );
+  for (const row of selfhostedRows) {
+    console.error(`- ${row.source}`);
+  }
+  process.exit(1);
+}
 
 const selfhostedTable = [
   '| Source (GitHub asset) | Version URL | Latest URL |',
