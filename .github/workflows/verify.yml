@@ -1,0 +1,64 @@
+# Build-check all packages and apps on every branch push.
+name: Verify
+
+on:
+  push:
+    branches:
+      - '**'
+
+env:
+  NODE_VERSION: '22'
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build packages and apps
+    runs-on: ubuntu-latest
+    env:
+      SPIRIT_GITHUB_OAUTH_CLIENT_ID: ${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org/
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/desktop/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Require Desktop GitHub OAuth Client ID secret
+        run: |
+          if [ -z "${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}" ]; then
+            echo "::error::Repository secret SPIRIT_GITHUB_OAUTH_CLIENT_ID is required for Desktop build."
+            exit 1
+          fi
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install Desktop dependencies
+        run: npm ci --prefix apps/desktop
+
+      - name: Build TypeScript packages and Desktop
+        run: npm run build
+
+      - name: Build CLI
+        run: cargo build -p spirit-agent
