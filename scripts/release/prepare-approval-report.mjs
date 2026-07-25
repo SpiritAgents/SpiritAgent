@@ -236,8 +236,6 @@ const manifest = {
     github: { publish: true },
     npm: { publish: true, packages: npmPackages },
     selfhosted: { publish: false, host: 'download.spirit.fast' },
-    msstore: { publish: false },
-    homebrew: { publish: false },
   },
   assets,
   files: {

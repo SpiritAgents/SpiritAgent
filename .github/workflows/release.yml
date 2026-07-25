@@ -348,7 +348,7 @@ jobs:
           npm --prefix packages/host-internal publish --access public
           npm --prefix packages/acp-server publish --access public
 
-  # Reserved publish channels: no-op placeholders so the parallel fan-out graph stays stable.
+  # Reserved: self-hosted CDN upload (download.spirit.fast / R2) — not enabled yet.
   publish-selfhosted:
     name: Publish self-hosted (reserved)
     needs: approve
@@ -357,22 +357,6 @@ jobs:
       - name: Reserved
         run: echo "Self-hosted publish to download.spirit.fast is reserved and not enabled in this run."
 
-  publish-msstore:
-    name: Publish MS Store (reserved)
-    needs: approve
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reserved
-        run: echo "MS Store publish is reserved and not enabled in this run."
-
-  publish-homebrew:
-    name: Publish Homebrew (reserved)
-    needs: approve
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reserved
-        run: echo "Homebrew publish is reserved and not enabled in this run."
-
   # After every publish channel finishes, ensure archival tag X.Y.Z points at the built SHA.
   finalize-tag:
     name: Finalize release tag
@@ -380,8 +364,6 @@ jobs:
       - publish-github
       - publish-npm
       - publish-selfhosted
-      - publish-msstore
-      - publish-homebrew
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
