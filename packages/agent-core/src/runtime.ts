@@ -2308,6 +2308,10 @@ export class AgentRuntime<
     result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
   ): void {
     this.completedTurnResultStore = result;
+    // Streaming turns complete here (not via completeTurn); keep transcript in sync.
+    if (this.runtimeDepthStore === 0) {
+      void this.syncSessionTranscriptFromHistory();
+    }
   }
 
   async waitForCompletedTurnResult(): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
