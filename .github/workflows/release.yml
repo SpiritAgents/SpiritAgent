@@ -1,3 +1,5 @@
+# Manual release pipeline: build HEAD → English approval gate → publish channels → tag X.Y.Z.
+# Configure GitHub Environment "release" with Required reviewers before using Approve release.
 name: Release
 
 on:
@@ -7,7 +9,6 @@ on:
         description: 'Release version (pure X.Y.Z, for example 0.1.0)'
         required: true
         type: string
-
 permissions:
   contents: write
 
@@ -293,6 +294,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            echo "::error::GitHub Release $RELEASE_VERSION already exists; refusing to overwrite."
+            exit 1
+          fi
           mapfile -d '' -t assets < <(find release-assets -maxdepth 1 -type f -print0)
           if [ "${#assets[@]}" -eq 0 ]; then
             echo "No release assets found under release-assets" >&2
@@ -303,14 +309,11 @@ jobs:
             echo "Missing approval release notes: $notes_file" >&2
             exit 1
           fi
-          if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_VERSION" "${assets[@]}" --clobber
-          else
-            gh release create "$RELEASE_VERSION" "${assets[@]}" \
-              --title "$RELEASE_VERSION" \
-              --target "${{ github.sha }}" \
-              --notes-file "$notes_file"
-          fi
+          # Tag name is the pure version X.Y.Z (no "v" prefix).
+          gh release create "$RELEASE_VERSION" "${assets[@]}" \
+            --title "$RELEASE_VERSION" \
+            --target "${{ github.sha }}" \
+            --notes-file "$notes_file"
 
   # Reserved publish channels: no-op placeholders so the parallel fan-out graph stays stable.
   publish-selfhosted:
@@ -336,3 +339,42 @@ jobs:
     steps:
       - name: Reserved
         run: echo "Homebrew publish is reserved and not enabled in this run."
+
+  # After every publish channel finishes, ensure archival tag X.Y.Z points at the built SHA.
+  finalize-tag:
+    name: Finalize release tag
+    needs:
+      - publish-github
+      - publish-selfhosted
+      - publish-msstore
+      - publish-homebrew
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag at release SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="$RELEASE_VERSION"
+          EXPECTED_SHA="${{ github.sha }}"
+
+          git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}" 2>/dev/null || true
+
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            ACTUAL_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
+            if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "::error::Tag ${TAG} points to ${ACTUAL_SHA}, expected ${EXPECTED_SHA}"
+              exit 1
+            fi
+            echo "Tag ${TAG} already points at ${EXPECTED_SHA}"
+          else
+            git tag "$TAG" "$EXPECTED_SHA"
+            git push origin "refs/tags/${TAG}"
+            echo "Created and pushed tag ${TAG} at ${EXPECTED_SHA}"
+          fi
