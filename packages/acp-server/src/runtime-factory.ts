@@ -40,6 +40,7 @@ import {
   createNoopMcpAdapter,
   ensureBuiltinAuthoringSkills,
   loadHostInstructionMetadata,
+  ensureTranscriptSessionDir,
   persistSessionTranscript,
   persistSubagentTranscript,
   persistToolOutputArchive,
@@ -76,10 +77,15 @@ export async function createAcpRuntime(
   config: AcpServerConfig,
   onEvent: (event: RuntimeEvent<JsonValue>) => void,
   initialMode: SpiritAgentMode = 'agent',
+  transcriptSessionKey?: string,
 ): Promise<AcpRuntimeResult> {
   const transportConfig = resolveTransportConfig(config);
   const workspaceRoot = config.workspaceRoot;
   const spiritDataDir = config.spiritDataDir;
+  const sessionKey = transcriptSessionKey?.trim() || undefined;
+  if (sessionKey) {
+    await ensureTranscriptSessionDir(spiritDataDir, sessionKey);
+  }
 
   // 1. Create noop peer + tool executor (ACP doesn't use JSON-RPC peer)
   const noopPeer = createNoopPeer();
@@ -217,14 +223,24 @@ export async function createAcpRuntime(
         return saveGeneratedVideo.call(service, saveRequest);
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
-    syncSessionTranscript: async ({ transcript, sessionKey }) =>
+    ...(sessionKey
+      ? {
+          hookSessionContext: {
+            sessionId: sessionKey,
+            conversationPath: null,
+            workspaceRoot,
+            model: transportConfig.model,
+          },
+        }
+      : {}),
+    syncSessionTranscript: async ({ transcript, sessionKey: key }) =>
       persistSessionTranscript(spiritDataDir, transcript, {
-        ...(sessionKey !== undefined ? { sessionKey } : {}),
+        sessionKey: key ?? sessionKey,
       }),
-    syncSubagentTranscript: async ({ transcript, sessionKey, subagentSessionId }) => {
+    syncSubagentTranscript: async ({ transcript, sessionKey: key, subagentSessionId }) => {
       await persistSubagentTranscript(spiritDataDir, transcript, {
         subagentSessionId,
-        ...(sessionKey !== undefined ? { sessionKey } : {}),
+        sessionKey: key ?? sessionKey,
       });
     },
     persistToolOutputArchive: async (input) =>

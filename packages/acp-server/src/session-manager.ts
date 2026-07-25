@@ -1,5 +1,6 @@
 import type { JsonValue, RuntimeEvent, SpiritAgentMode } from '@spiritagent/agent-core';
 import type { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
+import { deleteTranscriptSessionDir } from '@spiritagent/host-internal';
 import type { AcpServerConfig, AcpSessionState } from './types.js';
 import { AVAILABLE_MODES, normalizeModeId } from './types.js';
 import { createAcpRuntime, type AcpHostRuntime, type AcpRuntimeResult } from './runtime-factory.js';
@@ -34,6 +35,7 @@ export class SessionManager {
       sessionConfig,
       (event) => onEvent(sessionId, event),
       initialMode,
+      sessionId,
     );
 
     this.sessions.set(sessionId, {
@@ -92,6 +94,7 @@ export class SessionManager {
     session.runtime.abort();
 
     this.sessions.delete(sessionId);
+    await deleteTranscriptSessionDir(this.globalConfig.spiritDataDir, sessionId);
   }
 
   /**

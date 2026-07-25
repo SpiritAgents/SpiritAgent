@@ -168,6 +168,10 @@ interface CliHostInternalModule {
     transcript: SessionTranscript,
     options: { sessionKey?: string; subagentSessionId: string },
   ) => Promise<string>;
+  ensureTranscriptSessionDir?: (
+    spiritDataDir: string,
+    sessionKey: string | undefined,
+  ) => Promise<string>;
   persistToolOutputArchive?: (
     spiritDataDir: string,
     input: {
@@ -791,20 +795,29 @@ async function readCliGitBranchLabelForBasicInfo(workspaceRoot: string): Promise
 
 async function updateCliTodoScope(sessionKey: string | undefined): Promise<void> {
   const normalized = sessionKey?.trim() || undefined;
-  if (currentTodoSessionKey === normalized) {
-    return;
-  }
-  currentTodoSessionKey = normalized;
-  toolExecutor.setTodoToolDefinitions(normalized ? buildTodoHostToolDefinitions() : []);
-  if (cliHostInternal) {
-    if (normalized) {
-      cliHostInternal.todoSessionKey = normalized;
-    } else {
-      delete cliHostInternal.todoSessionKey;
+  if (currentTodoSessionKey !== normalized) {
+    currentTodoSessionKey = normalized;
+    toolExecutor.setTodoToolDefinitions(normalized ? buildTodoHostToolDefinitions() : []);
+    if (cliHostInternal) {
+      if (normalized) {
+        cliHostInternal.todoSessionKey = normalized;
+      } else {
+        delete cliHostInternal.todoSessionKey;
+      }
+      cliHostInternal.service.setTodoScope?.(
+        normalized ? { sessionKey: normalized } : undefined,
+      );
     }
-    cliHostInternal.service.setTodoScope?.(
-      normalized ? { sessionKey: normalized } : undefined,
-    );
+  }
+  if (normalized && cliHostInternal?.module.ensureTranscriptSessionDir) {
+    try {
+      await cliHostInternal.module.ensureTranscriptSessionDir(
+        cliHostInternal.spiritDataDir,
+        normalized,
+      );
+    } catch {
+      // Best-effort transcript directory creation for new CLI sessions.
+    }
   }
 }
 
