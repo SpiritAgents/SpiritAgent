@@ -1,5 +1,5 @@
-# Manual release pipeline: build HEAD → English approval gate → publish channels → tag X.Y.Z.
-# Configure GitHub Environment "release" with Required reviewers before using Approve release.
+# Manual release pipeline: build HEAD → prepare report → single environment:release publish → tag X.Y.Z.
+# Configure GitHub Environment "release" with Required reviewers (and Cloudflare secrets) before publishing.
 name: Release
 
 on:
@@ -210,7 +210,6 @@ jobs:
           if-no-files-found: error
 
   # prepare builds the English approval summary (changelog + per-channel asset tables).
-  # approve uses GitHub Environment "release" — configure Required reviewers in repo Settings.
   prepare:
     name: Prepare approval report
     needs:
@@ -256,12 +255,32 @@ jobs:
           path: release-assets/
           if-no-files-found: error
 
-  approve:
-    name: Approve release
+  # Single approval gate: Environment "release" (Required reviewers + Cloudflare secrets).
+  # After approval, publish GitHub Release, npm packages, and self-hosted CDN objects.
+  publish:
+    name: Publish release channels
     needs: prepare
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      SPIRIT_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCOUNT_ID }}
+      SPIRIT_CLOUDFLARE_API_TOKEN: ${{ secrets.SPIRIT_CLOUDFLARE_API_TOKEN }}
+      SPIRIT_CLOUDFLARE_BUCKET_NAME: ${{ secrets.SPIRIT_CLOUDFLARE_BUCKET_NAME }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: https://registry.npmjs.org/
+          cache: npm
+          cache-dependency-path: package-lock.json
+
       - name: Download release bundle
         uses: actions/download-artifact@v4
         with:
@@ -270,24 +289,17 @@ jobs:
 
       - name: Show approval report
         run: |
-          echo "Review the English approval report below (also in the prepare job summary), then approve this environment deployment."
+          echo "Review the English approval report in the prepare job summary before approving this environment deployment."
           echo
           cat release-assets/approval/approval-report.md >> "$GITHUB_STEP_SUMMARY"
           cat release-assets/approval/approval-report.md
 
-  publish-github:
-    name: Publish GitHub Release
-    needs: approve
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download release bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: release-bundle
-          path: release-assets
+      - name: Require Cloudflare secrets
+        run: |
+          if [ -z "$SPIRIT_CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$SPIRIT_CLOUDFLARE_API_TOKEN" ] || [ -z "$SPIRIT_CLOUDFLARE_BUCKET_NAME" ]; then
+            echo "::error::Environment secrets SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_API_TOKEN, and SPIRIT_CLOUDFLARE_BUCKET_NAME are required."
+            exit 1
+          fi
 
       - name: Publish GitHub Release
         env:
@@ -315,55 +327,29 @@ jobs:
             --target "${{ github.sha }}" \
             --notes-file "$notes_file"
 
-  # npm Trusted Publishing (OIDC): no NPM_TOKEN.
-  # Leave Environment name empty on the npm trusted publisher so this job does not
-  # re-trigger GitHub Environment "release" approval (approve is the single gate).
-  publish-npm:
-    name: Publish npm packages
-    needs: approve
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          registry-url: https://registry.npmjs.org/
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
+      - name: Install dependencies for npm publish
         run: npm ci
 
-      - name: Publish packages
+      - name: Publish npm packages
         run: |
           set -euo pipefail
           # Dependency order: agent-core → host-internal → acp-server
+          # npm Trusted Publishing: Environment name on npm must stay empty (OIDC matches workflow file).
           npm --prefix packages/agent-core publish --access public
           npm --prefix packages/host-internal publish --access public
           npm --prefix packages/acp-server publish --access public
 
-  # Reserved: self-hosted CDN upload (download.spirit.fast / R2) — not enabled yet.
-  publish-selfhosted:
-    name: Publish self-hosted (reserved)
-    needs: approve
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reserved
-        run: echo "Self-hosted publish to download.spirit.fast is reserved and not enabled in this run."
+      - name: Publish self-hosted downloads
+        run: |
+          npm run release:publish-selfhosted -- \
+            --input release-assets \
+            --version "$RELEASE_VERSION"
 
-  # After every publish channel finishes, ensure archival tag X.Y.Z points at the built SHA.
+  # After publish finishes, ensure archival tag X.Y.Z points at the built SHA.
   finalize-tag:
     name: Finalize release tag
     needs:
-      - publish-github
-      - publish-npm
-      - publish-selfhosted
+      - publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

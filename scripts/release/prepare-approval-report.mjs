@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { mapPrimaryAsset, objectKeyFor, publicUrlFor, PUBLIC_DOWNLOAD_HOST } from './selfhosted-paths.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
@@ -191,6 +192,30 @@ const npmTable = [
   ...npmPackages.map((name) => `| \`${name}\` | \`${version}\` |`),
 ].join('\n');
 
+const selfhostedRows = [];
+for (const asset of assets) {
+  const mapped = mapPrimaryAsset(asset.file);
+  if (!mapped || mapped.version !== version) {
+    continue;
+  }
+  const versionKey = objectKeyFor(mapped, version);
+  const latestKey = objectKeyFor(mapped, 'latest');
+  selfhostedRows.push({
+    source: asset.file,
+    versionUrl: publicUrlFor(versionKey),
+    latestUrl: publicUrlFor(latestKey),
+  });
+}
+selfhostedRows.sort((left, right) => left.versionUrl.localeCompare(right.versionUrl));
+
+const selfhostedTable = [
+  '| Source (GitHub asset) | Version URL | Latest URL |',
+  '| --- | --- | --- |',
+  ...selfhostedRows.map(
+    (row) => `| \`${row.source}\` | \`${row.versionUrl}\` | \`${row.latestUrl}\` |`,
+  ),
+].join('\n');
+
 const report = [
   `# Release approval — ${version}`,
   '',
@@ -214,11 +239,13 @@ const report = [
   '',
   npmTable,
   '',
-  '## Self-hosted (`download.spirit.fast`)',
+  `## Self-hosted (\`${PUBLIC_DOWNLOAD_HOST}\`)`,
   '',
-  'Channel status: **Not publishing in this run** (architecture reserved)',
+  'Channel status: **Will publish after approval** (Cloudflare R2 via REST)',
   '',
-  table,
+  'Primary installers only (darwin `.dmg`, windows `.exe`, linux `.AppImage` for Desktop; CLI archives). Each object is written to both the version path and `latest`.',
+  '',
+  selfhostedRows.length > 0 ? selfhostedTable : '_No primary installers found in assets._',
   '',
   '## Checksums',
   '',
@@ -235,7 +262,11 @@ const manifest = {
   channels: {
     github: { publish: true },
     npm: { publish: true, packages: npmPackages },
-    selfhosted: { publish: false, host: 'download.spirit.fast' },
+    selfhosted: {
+      publish: true,
+      host: PUBLIC_DOWNLOAD_HOST,
+      uploads: selfhostedRows,
+    },
   },
   assets,
   files: {

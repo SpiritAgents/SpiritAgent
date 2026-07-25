@@ -15,6 +15,7 @@
     "release:cli:bundle": "node scripts/release/bundle-cli.mjs",
     "release:checksums": "node scripts/release/checksums.mjs",
     "release:prepare-approval-report": "node scripts/release/prepare-approval-report.mjs",
+    "release:publish-selfhosted": "node scripts/release/publish-selfhosted.mjs",
     "release:desktop": "npm --prefix apps/desktop run dist",
     "eval:compare": "npm run build:agent-core && npm run build:host-internal && node scripts/eval-compare.mjs",
     "eval:judge": "npm run build:agent-core && node scripts/eval-judge.mjs",
