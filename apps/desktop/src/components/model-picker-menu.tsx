@@ -272,7 +272,7 @@ export function ModelPickerMenu({
         }}
         filterValue={modelFilter}
         onFilterChange={handleModelFilterChange}
-        filterPlaceholder={t("app.filterModels")}
+        filterPlaceholder={t("app.searchModels")}
         trigger={
           <Tooltip
             open={suppressTooltip ? false : undefined}

@@ -665,7 +665,7 @@
     },
     "runMode": "Run Mode",
     "selectModel": "Select Model",
-    "filterModels": "Filter models",
+    "searchModels": "Search models",
     "modelPickerContextTokens": "Context: {{value}} tokens",
     "modelPickerReasoningEffort": "Reasoning Effort",
     "modelPickerEffort": "Effort",

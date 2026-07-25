@@ -662,7 +662,7 @@
     },
     "runMode": "运行方式",
     "selectModel": "选择模型",
-    "filterModels": "筛选模型",
+    "searchModels": "搜索模型",
     "modelPickerContextTokens": "上下文：{{value}} tokens",
     "modelPickerReasoningEffort": "推理强度",
     "modelPickerEffort": "强度",
