@@ -25,13 +25,17 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'desktop',
-    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-linux-(?<arch>x64|arm64)\.AppImage$/,
-    toKey: ({ arch, version }) => ({
-      os: 'linux',
-      arch,
-      version,
-      fileName: `SpiritAgent-linux-${arch}.AppImage`,
-    }),
+    // electron-builder AppImage uses x86_64 for linux x64 (arm64 stays arm64).
+    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-linux-(?<arch>x64|x86_64|arm64)\.AppImage$/,
+    toKey: ({ arch, version }) => {
+      const normalizedArch = arch === 'x86_64' ? 'x64' : arch;
+      return {
+        os: 'linux',
+        arch: normalizedArch,
+        version,
+        fileName: `SpiritAgent-linux-${normalizedArch}.AppImage`,
+      };
+    },
   },
   {
     channel: 'cli',
