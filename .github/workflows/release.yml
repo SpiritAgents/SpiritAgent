@@ -267,7 +267,8 @@ jobs:
       id-token: write
     env:
       SPIRIT_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCOUNT_ID }}
-      SPIRIT_CLOUDFLARE_API_TOKEN: ${{ secrets.SPIRIT_CLOUDFLARE_API_TOKEN }}
+      SPIRIT_CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCESS_KEY_ID }}
+      SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY }}
       SPIRIT_CLOUDFLARE_BUCKET_NAME: ${{ secrets.SPIRIT_CLOUDFLARE_BUCKET_NAME }}
     steps:
       - name: Checkout
@@ -296,8 +297,8 @@ jobs:
 
       - name: Require Cloudflare secrets
         run: |
-          if [ -z "$SPIRIT_CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$SPIRIT_CLOUDFLARE_API_TOKEN" ] || [ -z "$SPIRIT_CLOUDFLARE_BUCKET_NAME" ]; then
-            echo "::error::Environment secrets SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_API_TOKEN, and SPIRIT_CLOUDFLARE_BUCKET_NAME are required."
+          if [ -z "$SPIRIT_CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$SPIRIT_CLOUDFLARE_ACCESS_KEY_ID" ] || [ -z "$SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY" ] || [ -z "$SPIRIT_CLOUDFLARE_BUCKET_NAME" ]; then
+            echo "::error::Environment secrets SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_ACCESS_KEY_ID, SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY, and SPIRIT_CLOUDFLARE_BUCKET_NAME are required (R2 S3 API credentials)."
             exit 1
           fi
 

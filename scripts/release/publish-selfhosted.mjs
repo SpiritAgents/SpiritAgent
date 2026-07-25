@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash, createHmac } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +12,8 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
+const R2_REGION = 'auto';
+const R2_SERVICE = 's3';
 
 function readArg(name) {
   const index = process.argv.indexOf(name);
@@ -21,7 +24,8 @@ function usage() {
   console.error(
     [
       'Usage: node scripts/release/publish-selfhosted.mjs --input <dir> --version <X.Y.Z>',
-      'Env: SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_API_TOKEN, SPIRIT_CLOUDFLARE_BUCKET_NAME',
+      'Env: SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_ACCESS_KEY_ID,',
+      '     SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY, SPIRIT_CLOUDFLARE_BUCKET_NAME',
     ].join('\n'),
   );
 }
@@ -44,44 +48,134 @@ async function collectFiles(dir) {
 }
 
 /**
- * @param {string} accountId
- * @param {string} bucketName
- * @param {string} token
- * @param {string} objectKey
- * @param {Buffer} body
+ * @param {import('node:crypto').BinaryLike | NodeJS.ArrayBufferView} data
  */
-async function uploadObject(accountId, bucketName, token, objectKey, body) {
+function sha256Hex(data) {
+  return createHash('sha256').update(data).digest('hex');
+}
+
+/**
+ * @param {import('node:crypto').BinaryLike | NodeJS.ArrayBufferView} key
+ * @param {import('node:crypto').BinaryLike | NodeJS.ArrayBufferView} data
+ */
+function hmacSha256(key, data) {
+  return createHmac('sha256', key).update(data).digest();
+}
+
+/**
+ * @param {string} secretAccessKey
+ * @param {string} dateStamp
+ * @param {string} region
+ * @param {string} service
+ */
+function deriveSigningKey(secretAccessKey, dateStamp, region, service) {
+  const kDate = hmacSha256(`AWS4${secretAccessKey}`, dateStamp);
+  const kRegion = hmacSha256(kDate, region);
+  const kService = hmacSha256(kRegion, service);
+  return hmacSha256(kService, 'aws4_request');
+}
+
+/**
+ * R2 S3-compatible PutObject (single-part up to 5 GiB; avoids Cloudflare REST 300 MB limit).
+ * @param {{
+ *   accountId: string,
+ *   bucketName: string,
+ *   accessKeyId: string,
+ *   secretAccessKey: string,
+ *   objectKey: string,
+ *   body: Buffer,
+ * }} params
+ */
+async function uploadObject({
+  accountId,
+  bucketName,
+  accessKeyId,
+  secretAccessKey,
+  objectKey,
+  body,
+}) {
+  const host = `${accountId}.r2.cloudflarestorage.com`;
   const encodedKey = objectKey
     .split('/')
     .map((segment) => encodeURIComponent(segment))
     .join('/');
-  const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/r2/buckets/${encodeURIComponent(bucketName)}/objects/${encodedKey}`;
+  const canonicalUri = `/${encodeURIComponent(bucketName)}/${encodedKey}`;
+  const url = `https://${host}${canonicalUri}`;
+
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const payloadHash = sha256Hex(body);
+
+  /** @type {Record<string, string>} */
+  const signedHeaderMap = {
+    'content-length': String(body.length),
+    'content-type': 'application/octet-stream',
+    host,
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': amzDate,
+  };
+  const signedHeaderNames = Object.keys(signedHeaderMap).sort();
+  const canonicalHeaders = signedHeaderNames
+    .map((name) => `${name}:${signedHeaderMap[name]}\n`)
+    .join('');
+  const signedHeaders = signedHeaderNames.join(';');
+
+  const canonicalRequest = [
+    'PUT',
+    canonicalUri,
+    '',
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join('\n');
+
+  const credentialScope = `${dateStamp}/${R2_REGION}/${R2_SERVICE}/aws4_request`;
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n');
+
+  const signature = createHmac(
+    'sha256',
+    deriveSigningKey(secretAccessKey, dateStamp, R2_REGION, R2_SERVICE),
+  )
+    .update(stringToSign)
+    .digest('hex');
+
+  const authorization = [
+    `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}`,
+    `SignedHeaders=${signedHeaders}`,
+    `Signature=${signature}`,
+  ].join(', ');
+
+  // Node fetch forbids setting Host; it is included in the signature only.
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/octet-stream',
-      'Content-Length': String(body.length),
+      'Content-Length': signedHeaderMap['content-length'],
+      'Content-Type': signedHeaderMap['content-type'],
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+      Authorization: authorization,
     },
     body,
   });
-  const text = await response.text();
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    parsed = undefined;
-  }
-  if (!response.ok || parsed?.success === false) {
-    const detail = parsed ? JSON.stringify(parsed.errors ?? parsed) : text.slice(0, 500);
-    throw new Error(`Upload failed for ${publicUrlFor(objectKey)}: HTTP ${response.status} ${detail}`);
+
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
+    throw new Error(
+      `Upload failed for ${publicUrlFor(objectKey)}: HTTP ${response.status} ${detail}`,
+    );
   }
 }
 
 const inputDir = path.resolve(readArg('--input') ?? path.join(repoRoot, 'dist', 'release'));
 const version = readArg('--version') ?? process.env.RELEASE_VERSION;
 const accountId = process.env.SPIRIT_CLOUDFLARE_ACCOUNT_ID?.trim() ?? '';
-const apiToken = process.env.SPIRIT_CLOUDFLARE_API_TOKEN?.trim() ?? '';
+const accessKeyId = process.env.SPIRIT_CLOUDFLARE_ACCESS_KEY_ID?.trim() ?? '';
+const secretAccessKey = process.env.SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY?.trim() ?? '';
 const bucketName = process.env.SPIRIT_CLOUDFLARE_BUCKET_NAME?.trim() ?? '';
 
 if (!version || !PURE_VERSION_RE.test(version)) {
@@ -90,10 +184,10 @@ if (!version || !PURE_VERSION_RE.test(version)) {
   process.exit(1);
 }
 
-if (!accountId || !apiToken || !bucketName) {
+if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
   usage();
   console.error(
-    'Missing SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_API_TOKEN, or SPIRIT_CLOUDFLARE_BUCKET_NAME.',
+    'Missing SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_ACCESS_KEY_ID, SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY, or SPIRIT_CLOUDFLARE_BUCKET_NAME.',
   );
   process.exit(1);
 }
@@ -143,7 +237,14 @@ async function uploadPhase(phase) {
     const objectKey = objectKeyFor(mapped, versionSegment);
     const publicUrl = publicUrlFor(objectKey);
     console.log(`Uploading ${publicUrl} (${size} bytes)`);
-    await uploadObject(accountId, bucketName, apiToken, objectKey, body);
+    await uploadObject({
+      accountId,
+      bucketName,
+      accessKeyId,
+      secretAccessKey,
+      objectKey,
+      body,
+    });
   }
 }
 
