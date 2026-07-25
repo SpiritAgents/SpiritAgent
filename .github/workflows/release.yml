@@ -1,13 +1,10 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Release tag, for example v0.1.0'
+      version:
+        description: 'Release version (pure X.Y.Z, for example 0.1.0)'
         required: true
         type: string
 
@@ -15,7 +12,7 @@ permissions:
   contents: write
 
 env:
-  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  RELEASE_VERSION: ${{ inputs.version }}
   NODE_VERSION: '22'
   SPIRIT_RELEASE_NODE_MAJOR: '22'
   CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -27,8 +24,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,7 +39,7 @@ jobs:
           fi
 
       - name: Verify versions
-        run: npm run release:verify-version -- --version "$RELEASE_TAG"
+        run: npm run release:verify-version -- --version "$RELEASE_VERSION"
 
   cli:
     name: CLI ${{ matrix.package_target }}
@@ -85,8 +80,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -118,7 +111,7 @@ jobs:
         run: cross build -p spirit-agent --release --target ${{ matrix.rust_target }}
 
       - name: Bundle CLI
-        run: npm run release:cli:bundle -- --target ${{ matrix.rust_target }} --version ${RELEASE_TAG#v}
+        run: npm run release:cli:bundle -- --target ${{ matrix.rust_target }} --version "$RELEASE_VERSION"
         shell: bash
 
       - name: Upload CLI artifact
@@ -169,8 +162,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -217,6 +208,7 @@ jobs:
             apps/desktop/release/*.zip
           if-no-files-found: error
 
+  # Temporary publish path for Phase 2; Phase 3 inserts the approval gate before this job.
   publish:
     name: Publish GitHub Release
     needs:
@@ -226,8 +218,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_TAG }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -248,8 +238,8 @@ jobs:
             echo "No release assets found under release-assets" >&2
             exit 1
           fi
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_VERSION" "${assets[@]}" --clobber
           else
-            gh release create "$RELEASE_TAG" "${assets[@]}" --title "$RELEASE_TAG" --generate-notes
+            gh release create "$RELEASE_VERSION" "${assets[@]}" --title "$RELEASE_VERSION" --target "${{ github.sha }}" --generate-notes
           fi
