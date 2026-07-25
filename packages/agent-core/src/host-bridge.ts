@@ -1850,7 +1850,7 @@ async function createRuntime(
     ...(hookRunner ? { hookRunner } : {}),
     hookSessionContext: buildCliHookSessionContext(config),
     bootstrapSubagentWorkspace: bootstrapCliSubagentWorkspace,
-    persistPreCompactionHistory: async ({ archive, sessionId }) => {
+    syncSessionTranscript: async ({ transcript, sessionKey }) => {
       const hostInternal = await ensureCliHostInternal(workspaceRoot);
       const persist = hostInternal?.module.persistSessionTranscript;
       if (!hostInternal || typeof persist !== 'function') {
@@ -1858,8 +1858,8 @@ async function createRuntime(
       }
 
       try {
-        return await persist(hostInternal.spiritDataDir, archive, {
-          ...(sessionId !== undefined ? { sessionKey: sessionId } : {}),
+        return await persist(hostInternal.spiritDataDir, transcript, {
+          ...(sessionKey !== undefined ? { sessionKey } : {}),
         });
       } catch {
         return undefined;

@@ -602,7 +602,7 @@ export interface ToolExecutor<
 }
 
 export interface CompactHistoryManualContext {
-  preCompactionArchivePath?: string;
+  transcriptDirPath?: string;
 }
 
 export interface LlmTransport<Config, State = JsonValue> {

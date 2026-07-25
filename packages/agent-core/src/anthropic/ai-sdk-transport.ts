@@ -344,9 +344,9 @@ export class AiSdkAnthropicTransport
     const promptMessages = toolStateMessagesToAiSdkMessages(
       llmHistoryToOpenAiMessages(
         buildCompactHistoryPromptMessages(history, {
-          ...(context?.preCompactionArchivePath === undefined
+          ...(context?.transcriptDirPath === undefined
             ? {}
-            : { preCompactionArchivePath: context.preCompactionArchivePath }),
+            : { transcriptDirPath: context.transcriptDirPath }),
         }),
         anthropicTransportAssetRoot(config),
       ),

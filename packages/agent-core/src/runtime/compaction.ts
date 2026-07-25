@@ -54,28 +54,7 @@ export interface CompactionRuntime<
   poll(): Promise<void>;
 }
 
-async function removeOrphanPreCompactionArchive<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
-  archivePath: string | undefined,
-): Promise<void> {
-  const remove = runtime.options.removePreCompactionHistoryArchive;
-  if (!archivePath || !remove) {
-    return;
-  }
-
-  try {
-    await remove(archivePath);
-  } catch {
-    // Best-effort cleanup when compaction fails after a successful persist.
-  }
-}
-
-async function persistPreCompactionArchivePath<
+async function syncTranscriptDirPath<
   Config,
   State,
   ToolRequest,
@@ -84,21 +63,21 @@ async function persistPreCompactionArchivePath<
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
   archiveSourceHistory: LlmMessage[],
 ): Promise<string | undefined> {
-  const persist = runtime.options.persistPreCompactionHistory;
-  if (!persist) {
+  const sync = runtime.options.syncSessionTranscript;
+  if (!sync) {
     return undefined;
   }
 
   try {
-    const archive = buildSessionTranscript(archiveSourceHistory);
-    const sessionId = resolveHookSessionContext(runtime.options).sessionId;
-    return await persist({
-      archive,
-      ...(sessionId !== undefined ? { sessionId } : {}),
+    const transcript = buildSessionTranscript(archiveSourceHistory);
+    const sessionKey = resolveHookSessionContext(runtime.options).sessionId;
+    return await sync({
+      transcript,
+      ...(sessionKey !== undefined ? { sessionKey } : {}),
     });
   } catch (error: unknown) {
     runtime.emitEvent({
-      kind: 'pre-compaction-archive-persist-failed',
+      kind: 'session-transcript-sync-failed',
       error: renderError(error),
     });
     return undefined;
@@ -112,14 +91,14 @@ function buildCompactionRecord(
     afterLength: number;
   },
   summary: string | undefined,
-  preCompactionArchivePath: string | undefined,
+  transcriptDirPath: string | undefined,
 ): RuntimeCompactionRecord {
   return {
     droppedMessages: result.droppedMessages,
     beforeLength: result.beforeLength,
     afterLength: result.afterLength,
     ...(summary !== undefined ? { summary } : {}),
-    ...(preCompactionArchivePath !== undefined ? { preCompactionArchivePath } : {}),
+    ...(transcriptDirPath !== undefined ? { transcriptDirPath } : {}),
   };
 }
 
@@ -197,31 +176,23 @@ export async function compactHistoryImmediate<
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<RuntimeCompactionRecord> {
   const archiveSourceHistory = cloneHistory(runtime.historyStore);
-  const preCompactionArchivePath = await persistPreCompactionArchivePath(
-    runtime,
-    archiveSourceHistory,
-  );
+  const transcriptDirPath = await syncTranscriptDirPath(runtime, archiveSourceHistory);
   const historyForCompaction = await prepareHistoryForCompaction(runtime, archiveSourceHistory);
   runtime.historyStore = cloneHistory(historyForCompaction);
 
   const compactionContext: CompactHistoryManualContext | undefined =
-    preCompactionArchivePath !== undefined
-      ? { preCompactionArchivePath }
+    transcriptDirPath !== undefined
+      ? { transcriptDirPath }
       : undefined;
 
-  try {
-    const result = await runtime.options.llmTransport.compactHistoryManual(
-      runtime.options.config,
-      runtime.historyStore,
-      undefined,
-      compactionContext,
-    );
-    const summary = runtime.options.llmTransport.compactSummaryText(runtime.historyStore);
-    return buildCompactionRecord(result, summary, preCompactionArchivePath);
-  } catch (error: unknown) {
-    await removeOrphanPreCompactionArchive(runtime, preCompactionArchivePath);
-    throw error;
-  }
+  const result = await runtime.options.llmTransport.compactHistoryManual(
+    runtime.options.config,
+    runtime.historyStore,
+    undefined,
+    compactionContext,
+  );
+  const summary = runtime.options.llmTransport.compactSummaryText(runtime.historyStore);
+  return buildCompactionRecord(result, summary, transcriptDirPath);
 }
 
 export function startHistoryCompactionAsync<
@@ -316,15 +287,11 @@ export function launchHistoryCompaction<
   runtime.pendingHistoryCompaction = pending;
 
   void (async () => {
-    let preCompactionArchivePath: string | undefined;
     try {
-      preCompactionArchivePath = await persistPreCompactionArchivePath(
-        runtime,
-        archiveSourceHistory,
-      );
+      const transcriptDirPath = await syncTranscriptDirPath(runtime, archiveSourceHistory);
       const compactionContext: CompactHistoryManualContext | undefined =
-        preCompactionArchivePath !== undefined
-          ? { preCompactionArchivePath }
+        transcriptDirPath !== undefined
+          ? { transcriptDirPath }
           : undefined;
 
       const result = await runtime.options.llmTransport.compactHistoryManual(
@@ -350,10 +317,9 @@ export function launchHistoryCompaction<
 
       const summary = runtime.options.llmTransport.compactSummaryText(history);
       pending.compactedHistory = cloneHistory(history);
-      pending.result = buildCompactionRecord(result, summary, preCompactionArchivePath);
+      pending.result = buildCompactionRecord(result, summary, transcriptDirPath);
     } catch (error: unknown) {
       if (runtime.pendingHistoryCompaction === pending) {
-        await removeOrphanPreCompactionArchive(runtime, preCompactionArchivePath);
         pending.failure = renderError(error);
       }
     }

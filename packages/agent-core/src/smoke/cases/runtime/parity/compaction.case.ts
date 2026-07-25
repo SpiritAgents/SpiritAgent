@@ -154,10 +154,10 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
       workspaceRoot: '/tmp',
       model: 'test-model',
     },
-    persistPreCompactionHistory: async ({ archive }) => {
-      persistedMessageCount = archive.message_count;
-      if (archive.messages.length === 0) {
-        throw new Error('pre-compaction archive smoke 未写入任何消息。');
+    syncSessionTranscript: async ({ transcript }) => {
+      persistedMessageCount = transcript.message_count;
+      if (transcript.messages.length === 0) {
+        throw new Error('transcript smoke 未写入任何消息。');
       }
       return archivePath;
     },
@@ -183,11 +183,11 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
   ]);
 
   const archiveRecord = await archiveRuntime.compactHistory();
-  if (archiveRecord.preCompactionArchivePath !== archivePath) {
-    throw new Error('pre-compaction archive smoke 未记录归档路径。');
+  if (archiveRecord.transcriptDirPath !== archivePath) {
+    throw new Error('transcript smoke 未记录转录目录路径。');
   }
   if (persistedMessageCount !== 3) {
-    throw new Error(`pre-compaction archive smoke 归档消息数异常: ${persistedMessageCount}`);
+    throw new Error(`transcript smoke 转录消息数异常: ${persistedMessageCount}`);
   }
 
   const toolOutputArchivePath = '/tmp/spirit-smoke/tool-output-archives/smoke-tool-archive/call-archive-tool.txt';

@@ -74,7 +74,7 @@ export interface RuntimeCompactionRecord {
   beforeLength: number;
   afterLength: number;
   summary?: string;
-  preCompactionArchivePath?: string;
+  transcriptDirPath?: string;
 }
 
 export interface DeferredUserGuidance {
@@ -135,7 +135,7 @@ export type RuntimeEvent<ToolRequest> =
       summaryPreview?: string;
     }
   | {
-      kind: 'pre-compaction-archive-persist-failed';
+      kind: 'session-transcript-sync-failed';
       error: string;
     }
   | {
@@ -417,11 +417,10 @@ export interface AgentRuntimeOptions<
   flushPendingHostEvents?: () => void | Promise<void>;
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
-  persistPreCompactionHistory?: (input: {
-    archive: SessionTranscript;
-    sessionId?: string;
+  syncSessionTranscript?: (input: {
+    transcript: SessionTranscript;
+    sessionKey?: string;
   }) => Promise<string | undefined>;
-  removePreCompactionHistoryArchive?: (archivePath: string) => Promise<void>;
   persistToolOutputArchive?: (input: {
     sessionId?: string;
     toolCallId?: string;

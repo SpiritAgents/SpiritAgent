@@ -216,9 +216,9 @@ export async function createAcpRuntime(
         return saveGeneratedVideo.call(service, saveRequest);
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
-    persistPreCompactionHistory: async ({ archive, sessionId }) =>
-      persistSessionTranscript(spiritDataDir, archive, {
-        ...(sessionId !== undefined ? { sessionKey: sessionId } : {}),
+    syncSessionTranscript: async ({ transcript, sessionKey }) =>
+      persistSessionTranscript(spiritDataDir, transcript, {
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
       }),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritDataDir, input),

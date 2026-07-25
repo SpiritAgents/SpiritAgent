@@ -167,9 +167,9 @@ export function createDesktopRuntime(input: {
     ...(input.getApprovalLevel ? { getApprovalLevel: input.getApprovalLevel } : {}),
     ...(input.reviewToolApproval ? { reviewToolApproval: input.reviewToolApproval } : {}),
     ...(input.flushPendingHostEvents ? { flushPendingHostEvents: input.flushPendingHostEvents } : {}),
-    persistPreCompactionHistory: async ({ archive, sessionId }) =>
-      persistSessionTranscript(spiritAgentDataDir(), archive, {
-        ...(sessionId !== undefined ? { sessionKey: sessionId } : {}),
+    syncSessionTranscript: async ({ transcript, sessionKey }) =>
+      persistSessionTranscript(spiritAgentDataDir(), transcript, {
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
       }),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritAgentDataDir(), input),
