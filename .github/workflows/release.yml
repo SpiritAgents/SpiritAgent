@@ -380,9 +380,11 @@ jobs:
             fi
             echo "Packing ${name}@${RELEASE_VERSION} from ${dir}"
             # Publish a local tarball so pack failures are visible before OIDC upload.
-            tarball="$(npm pack "./${dir}" --pack-destination npm-publish-logs --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
-            echo "Publishing tarball ${tarball}"
-            if ! npm publish "npm-publish-logs/${tarball}" --access public --loglevel verbose 2>&1 | tee "npm-publish-logs/${name//\//_}.log"; then
+            # Paths MUST be ./relative — otherwise npm treats them as git remotes.
+            tarball="$(npm pack "./${dir}" --pack-destination ./npm-publish-logs --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
+            local tarball_path="./npm-publish-logs/${tarball}"
+            echo "Publishing tarball ${tarball_path}"
+            if ! npm publish "${tarball_path}" --access public --loglevel verbose 2>&1 | tee "npm-publish-logs/${name//\//_}.log"; then
               echo "::error::npm publish failed for ${name}. Check Trusted Publisher: org/repo/workflow=release.yml/environment=release"
               echo '--- last 80 lines of npm log ---' >> "$GITHUB_STEP_SUMMARY"
               tail -n 80 "npm-publish-logs/${name//\//_}.log" >> "$GITHUB_STEP_SUMMARY" || true
