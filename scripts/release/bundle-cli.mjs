@@ -49,7 +49,7 @@ const targetMap = {
     archiveExt: 'tar.gz',
   },
   'x86_64-apple-darwin': {
-    packageTarget: 'macos-x64',
+    packageTarget: 'darwin-x64',
     binaryName: 'spirit',
     nodePlatform: 'darwin',
     nodeArch: 'x64',
@@ -57,7 +57,7 @@ const targetMap = {
     archiveExt: 'tar.gz',
   },
   'aarch64-apple-darwin': {
-    packageTarget: 'macos-arm64',
+    packageTarget: 'darwin-arm64',
     binaryName: 'spirit',
     nodePlatform: 'darwin',
     nodeArch: 'arm64',

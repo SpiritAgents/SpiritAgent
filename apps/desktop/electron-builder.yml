@@ -42,6 +42,8 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
 mac:
+  # Prefer darwin over electron-builder's default ${os}=mac for release URL alignment.
+  artifactName: SpiritAgent-Desktop-${version}-darwin-${arch}.${ext}
   icon: build/icon.png
   target:
     - dmg

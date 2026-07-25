@@ -72,11 +72,11 @@ jobs:
             builder: cross
           - os: macos-15-intel
             rust_target: x86_64-apple-darwin
-            package_target: macos-x64
+            package_target: darwin-x64
             builder: cargo
           - os: macos-14
             rust_target: aarch64-apple-darwin
-            package_target: macos-arm64
+            package_target: darwin-arm64
             builder: cargo
     steps:
       - name: Checkout
@@ -155,11 +155,11 @@ jobs:
           - os: macos-15-intel
             platform: mac
             arch: x64
-            package_target: macos-x64
+            package_target: darwin-x64
           - os: macos-14
             platform: mac
             arch: arm64
-            package_target: macos-arm64
+            package_target: darwin-arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
