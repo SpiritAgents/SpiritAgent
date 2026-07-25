@@ -68,7 +68,8 @@ export function WorkspaceCapabilityTrustDialog({
             >
               <ul className="grid gap-1.5">
                 {pending.hooks.map((hook) => {
-                  const canOpen = Boolean(api?.openPathInDefaultApp && hook.resolvedPath);
+                  const openPathInDefaultApp = api?.openPathInDefaultApp;
+                  const canOpen = Boolean(openPathInDefaultApp && hook.resolvedPath);
                   return (
                     <li key={`${hook.event}:${hook.command}`}>
                       <button
@@ -82,10 +83,10 @@ export function WorkspaceCapabilityTrustDialog({
                           canOpen && clickableToolCardTriggerClass,
                         )}
                         onClick={() => {
-                          if (!canOpen || !hook.resolvedPath) {
+                          if (!openPathInDefaultApp || !hook.resolvedPath) {
                             return;
                           }
-                          void api.openPathInDefaultApp(hook.resolvedPath);
+                          void openPathInDefaultApp(hook.resolvedPath);
                         }}
                       >
                         <div className="font-medium text-foreground">{hook.event}</div>
