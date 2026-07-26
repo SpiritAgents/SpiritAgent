@@ -45,6 +45,11 @@ import {
 } from './notification-protocol.js';
 import { syncWindowsJumpList } from './sync-windows-jump-list.js';
 import {
+  bindStatusTrayDeps,
+  disposeStatusTray,
+  syncStatusTray,
+} from './status-tray.js';
+import {
   bindSpiritProtocolActionHandlers,
   flushPendingSpiritProtocolActions,
   handleSpiritNewSessionRequest,
@@ -100,6 +105,15 @@ function focusSpiritDesktopWindows(): void {
     window.show();
     window.focus();
   }
+}
+
+async function focusOrCreateSpiritDesktopWindows(): Promise<void> {
+  const windows = BrowserWindow.getAllWindows().filter((window) => !window.isDestroyed());
+  if (windows.length === 0) {
+    await createMainWindow();
+    return;
+  }
+  focusSpiritDesktopWindows();
 }
 
 import {
@@ -1333,6 +1347,18 @@ if (gotSpiritSingleInstanceLock) {
   await syncInitialDesktopWebHost();
   await createMainWindow();
   refreshWindowsJumpList();
+  bindStatusTrayDeps({
+    focusOrCreateMainWindow: focusOrCreateSpiritDesktopWindows,
+    openSession: async (sessionPath) => {
+      await focusOrCreateSpiritDesktopWindows();
+      await handleSpiritOpenSessionFromProtocol(sessionPath);
+    },
+    newSession: async () => {
+      await focusOrCreateSpiritDesktopWindows();
+      handleSpiritNewSessionRequest();
+    },
+  });
+  void syncStatusTray();
 
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -1343,6 +1369,7 @@ if (gotSpiritSingleInstanceLock) {
 }
 
 app.on('before-quit', (event) => {
+  disposeStatusTray();
   unsubscribeDesktopDreamUpdates?.();
   unsubscribeDesktopDreamUpdates = undefined;
   unsubscribeDesktopAutomationsUpdates?.();

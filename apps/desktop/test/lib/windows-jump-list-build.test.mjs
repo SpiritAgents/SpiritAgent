@@ -3,8 +3,10 @@ import test from 'node:test';
 
 import {
   JUMP_LIST_RECENT_LIMIT,
+  TRAY_MORE_LIMIT,
   buildJumpListLaunchArgs,
   buildWindowsJumpListCategories,
+  pickRecentSessions,
   pickRecentSessionsForJumpList,
   truncateJumpListTitle,
 } from '../../dist-electron/src/lib/windows-jump-list-build.js';
@@ -34,6 +36,16 @@ test('pickRecentSessionsForJumpList sorts by modifiedAt desc and caps at five', 
     picked.map((item) => item.path),
     ['f', 'd', 'e', 'b', 'c'],
   );
+});
+
+test('pickRecentSessions respects custom limit for tray more menu', () => {
+  const sessions = Array.from({ length: 12 }, (_, index) =>
+    session(`s${index}`, `S${index}`, index + 1),
+  );
+  const picked = pickRecentSessions(sessions, TRAY_MORE_LIMIT);
+  assert.equal(picked.length, TRAY_MORE_LIMIT);
+  assert.equal(picked[0]?.path, 's11');
+  assert.equal(picked[9]?.path, 's2');
 });
 
 test('buildJumpListLaunchArgs uses protocol only when packaged', () => {

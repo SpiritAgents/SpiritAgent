@@ -2,6 +2,8 @@ import type { SessionListItem } from '../types.js';
 import { buildNewSessionProtocolUrl, buildOpenSessionProtocolUrl } from './spirit-notification-protocol.js';
 
 export const JUMP_LIST_RECENT_LIMIT = 5;
+export const TRAY_RECENT_LIMIT = 5;
+export const TRAY_MORE_LIMIT = 10;
 export const JUMP_LIST_TITLE_MAX = 260;
 
 export type JumpListTaskItem = {
@@ -17,10 +19,18 @@ export type JumpListCategoryBuilt =
   | { type: 'custom'; name: string; items: JumpListTaskItem[] }
   | { type: 'tasks'; items: JumpListTaskItem[] };
 
-export function pickRecentSessionsForJumpList(sessions: readonly SessionListItem[]): SessionListItem[] {
+export function pickRecentSessions(
+  sessions: readonly SessionListItem[],
+  limit: number,
+): SessionListItem[] {
+  const capped = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0;
   return [...sessions]
     .sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs)
-    .slice(0, JUMP_LIST_RECENT_LIMIT);
+    .slice(0, capped);
+}
+
+export function pickRecentSessionsForJumpList(sessions: readonly SessionListItem[]): SessionListItem[] {
+  return pickRecentSessions(sessions, JUMP_LIST_RECENT_LIMIT);
 }
 
 export function truncateJumpListTitle(title: string, maxLength = JUMP_LIST_TITLE_MAX): string {

@@ -496,6 +496,7 @@
   "tray": {
     "recent": "最近",
     "more": "更多",
+    "newSession": "新会话",
     "openApp": "打开 Spirit Agent",
     "quitApp": "退出 Spirit Agent",
     "tooltip": "Spirit Agent"

@@ -499,6 +499,7 @@
   "tray": {
     "recent": "Recent",
     "more": "More",
+    "newSession": "New Session",
     "openApp": "Open Spirit Agent",
     "quitApp": "Quit Spirit Agent",
     "tooltip": "Spirit Agent"
