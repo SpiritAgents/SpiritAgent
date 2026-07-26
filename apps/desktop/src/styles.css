@@ -25,7 +25,8 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* 默认正文 / chrome 默认字色（非强调态） */
+  --foreground: #2b2b2b;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -56,8 +57,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  /* 侧栏内分级：交互按钮默认 / 交互项默认 / 列表正文 / 极淡说明（分区小标题等） */
-  --sidebar-action-foreground: #2b2b2b;
+  /* 侧栏内分级：交互项默认 / 列表正文 / 极淡说明（分区小标题等）；默认正文用 --foreground */
   --sidebar-item-foreground: oklch(0.42 0 0);
   --sidebar-list-foreground: oklch(0.4 0 0);
   --sidebar-faint-foreground: oklch(0.5 0 0);
@@ -96,7 +96,7 @@ html.dark,
 .dark,
 [data-spirit-theme="dark"] {
   --background: #000000;
-  --foreground: #ffffff;
+  --foreground: #d4d4d4;
   --card: #090909;
   --card-foreground: #d4d4d4;
   --popover: #090909;
@@ -128,7 +128,6 @@ html.dark,
   --sidebar-accent-foreground: #d4d4d4;
   --sidebar-border: #272727;
   --sidebar-ring: #3f3f3f;
-  --sidebar-action-foreground: #d4d4d4;
   --sidebar-item-foreground: #a3a3a3;
   --sidebar-list-foreground: #717171;
   --sidebar-faint-foreground: #525252;
@@ -378,7 +377,6 @@ html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-action-foreground: var(--sidebar-action-foreground);
   --color-sidebar-item-foreground: var(--sidebar-item-foreground);
   --color-sidebar-list-foreground: var(--sidebar-list-foreground);
   --color-sidebar-faint-foreground: var(--sidebar-faint-foreground);
