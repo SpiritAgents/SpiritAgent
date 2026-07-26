@@ -26,6 +26,10 @@ export type StatusTrayDeps = {
 let tray: Tray | undefined;
 let depsStore: StatusTrayDeps | undefined;
 let syncInFlight: Promise<void> | undefined;
+/** 退出后为 true；进行中的 sync 在 await 后不得再 ensureTray。 */
+let disposed = false;
+/** dispose 时递增，使过期的 sync 在完成前失效。 */
+let syncGeneration = 0;
 
 function deriveWorkspaceLabel(workspaceRoot: string | null | undefined): string {
   if (!workspaceRoot?.trim()) {
@@ -148,7 +152,17 @@ function ensureTray(iconPath: string, menu: Menu): Tray {
   return tray;
 }
 
-async function syncStatusTrayUnlocked(deps: StatusTrayDeps): Promise<void> {
+function isSyncStale(generation: number): boolean {
+  return disposed || generation !== syncGeneration;
+}
+
+async function syncStatusTrayUnlocked(
+  deps: StatusTrayDeps,
+  generation: number,
+): Promise<void> {
+  if (isSyncStale(generation)) {
+    return;
+  }
   if (process.platform !== 'darwin' && process.platform !== 'win32') {
     destroyTray();
     return;
@@ -160,6 +174,10 @@ async function syncStatusTrayUnlocked(deps: StatusTrayDeps): Promise<void> {
     enabled = config.trayIcon !== false;
   } catch (error) {
     console.warn('[spirit-desktop] status tray loadConfig failed:', error);
+  }
+
+  if (isSyncStale(generation)) {
+    return;
   }
 
   if (!enabled) {
@@ -182,15 +200,25 @@ async function syncStatusTrayUnlocked(deps: StatusTrayDeps): Promise<void> {
     console.warn('[spirit-desktop] status tray listSessions failed:', error);
   }
 
+  if (isSyncStale(generation)) {
+    return;
+  }
+
   const menu = buildTrayMenu(sessions, deps);
   ensureTray(iconPath, menu);
 }
 
 export function bindStatusTrayDeps(deps: StatusTrayDeps): void {
+  if (disposed) {
+    return;
+  }
   depsStore = deps;
 }
 
 export async function syncStatusTray(deps?: StatusTrayDeps): Promise<void> {
+  if (disposed) {
+    return;
+  }
   const resolved = deps ?? depsStore;
   if (!resolved) {
     return;
@@ -199,13 +227,19 @@ export async function syncStatusTray(deps?: StatusTrayDeps): Promise<void> {
   if (syncInFlight) {
     await syncInFlight;
   }
-  syncInFlight = syncStatusTrayUnlocked(resolved).finally(() => {
+  if (disposed) {
+    return;
+  }
+  const generation = syncGeneration;
+  syncInFlight = syncStatusTrayUnlocked(resolved, generation).finally(() => {
     syncInFlight = undefined;
   });
   await syncInFlight;
 }
 
 export function disposeStatusTray(): void {
+  disposed = true;
+  syncGeneration += 1;
   destroyTray();
   depsStore = undefined;
 }
