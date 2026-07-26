@@ -21,7 +21,7 @@ import {
 } from '@/components/session-list-git-tooltip';
 import {
   DESKTOP_CHROME_ACTIVE_TEXT,
-  DESKTOP_CONTENT_TEXT,
+  DESKTOP_CHROME_MUTED_TEXT,
   DESKTOP_SESSION_TITLE_HOVER_CLASS,
   SESSION_TITLE_RENAME_INPUT_CLASS,
 } from '@/lib/desktop-chrome';
@@ -47,7 +47,7 @@ const sessionTitleButtonClass = (interactive: boolean) =>
   cn(
     "electron-no-drag min-w-0 w-full truncate rounded-sm p-0 text-left",
     DESKTOP_SIDEBAR_TEXT_CLASS,
-    DESKTOP_CONTENT_TEXT,
+    DESKTOP_CHROME_MUTED_TEXT,
     interactive && cn(DESKTOP_SESSION_TITLE_HOVER_CLASS, "cursor-pointer"),
   );
 

@@ -45,9 +45,9 @@ const TITLE_BAR_ICON_PX = 14;
 /** 云母顶栏黑底标（`build/icon.png` 内图案更小，恢复迁移透明标前的 20px） */
 const TITLE_BAR_ICON_MICA_PX = 20;
 
-/** 与默认正文 / chrome 默认字色一致（`text-foreground`） */
+/** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */
 const TITLE_BAR_MENUBAR_TRIGGER_CLASS =
-  "px-2 py-1 text-[13px] text-foreground";
+  "px-2 py-1 text-[13px] text-sidebar-action-foreground";
 
 function execWindowAction(action: string): void {
   void window.spiritDesktop?.executeWindowAction(action);
