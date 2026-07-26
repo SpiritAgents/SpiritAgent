@@ -25,21 +25,21 @@ export const DESKTOP_INSTANT_HOVER_OVERLAY = cn(
 /** ghost 图标/紧凑按钮：侧栏同源半透明 hover + 字色变亮 */
 export const DESKTOP_INSTANT_HOVER_GHOST_BTN = cn(
   DESKTOP_INSTANT_HOVER_OVERLAY,
-  "hover:!text-foreground focus-visible:!text-foreground aria-expanded:!text-foreground",
+  "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground aria-expanded:!text-sidebar-foreground",
 );
 
 /** 侧栏壳层 / 顶栏槽位宽度过渡，与 SessionSidebarShell 一致 */
 export const DESKTOP_SHELL_LAYOUT_TRANSITION =
   "transition-[width,margin,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0";
 
-/** 顶栏默认字色/图标色，与侧栏 `sidebarItemDefaultTextClass` 对齐 */
-export const DESKTOP_CHROME_MUTED_TEXT = "text-sidebar-action-foreground";
+/** 默认正文 / chrome 默认字色（非强调态），与 `--foreground` 对齐 */
+export const DESKTOP_CONTENT_TEXT = "text-foreground";
 
 /** 会话标题内联重命名 input：ghost、无边框，字色与侧栏/顶栏会话名一致 */
 export const SESSION_TITLE_RENAME_INPUT_CLASS = cn(
   "min-w-0 rounded-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 focus-visible:ring-0",
   DESKTOP_SIDEBAR_TEXT_CLASS,
-  DESKTOP_CHROME_MUTED_TEXT,
+  DESKTOP_CONTENT_TEXT,
 );
 
 /** 顶栏会话标题 hover：仅字色变亮，无半透明铺底 */
@@ -54,10 +54,10 @@ export const DESKTOP_CHROME_ACTIVE_TEXT = "text-sidebar-foreground";
 /** ghost 在 aria-expanded 时默认带 bg-muted，顶栏图标按钮需全透明底 */
 export const DESKTOP_CHROME_TOGGLE_ICON_BTN = cn(
   "electron-no-drag size-7 shrink-0 bg-transparent",
-  DESKTOP_CHROME_MUTED_TEXT,
+  DESKTOP_CONTENT_TEXT,
   "hover:bg-foreground/[0.06] hover:text-sidebar-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-sidebar-foreground",
   "dark:hover:bg-white/[0.06] dark:focus-visible:bg-white/[0.06]",
-  "aria-expanded:bg-transparent dark:aria-expanded:bg-transparent aria-expanded:text-sidebar-action-foreground",
+  "aria-expanded:bg-transparent dark:aria-expanded:bg-transparent aria-expanded:text-foreground",
   "aria-expanded:hover:bg-foreground/[0.06] aria-expanded:hover:text-sidebar-foreground dark:aria-expanded:hover:bg-white/[0.06]",
   "[&_svg]:size-3.5",
   instantHoverMotionClass,
@@ -70,7 +70,7 @@ export const DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN = cn(
 );
 
 export const DESKTOP_CHROME_COMMIT_BTN = cn(
-  "h-7 rounded-md px-2 text-xs text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10",
+  "h-7 rounded-md px-2 text-xs text-foreground/90 hover:bg-foreground/[0.06] hover:text-sidebar-foreground dark:hover:bg-foreground/10",
   FONT_WEIGHT_NORMAL,
   instantHoverMotionClass,
 );

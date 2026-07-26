@@ -17,6 +17,7 @@ import {
   isMarkdownFragmentHref,
   scrollMarkdownFragmentIntoView,
 } from "@/lib/markdown-fragment-link";
+import { DESKTOP_CONTENT_TEXT } from "@/lib/desktop-chrome";
 import { slugifyMarkdownHeadingChildren } from "@/lib/markdown-heading-slug";
 import { FONT_WEIGHT_MEDIUM, FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
@@ -38,24 +39,23 @@ export function createMarkdownMessageComponents(
 ): Record<string, ComponentType<Record<string, unknown>>> {
   const compact = size === "compact";
   const muted = tone === "muted";
+  // 默认正文/标题与 chrome 默认字色一致（text-foreground）
+  const defaultText = DESKTOP_CONTENT_TEXT;
   const bodyText = muted
     ? compact
       ? "text-xs leading-relaxed text-foreground/80"
       : "text-sm leading-relaxed text-muted-foreground"
     : compact
-      ? "text-xs leading-relaxed text-foreground/90"
-      : "text-sm leading-relaxed text-foreground/95";
-  const headingText = muted ? (compact ? "text-foreground/85" : "text-muted-foreground") : "text-foreground";
-  const inlineCodeText = muted ? (compact ? "text-foreground/80" : "text-muted-foreground") : "text-foreground";
+      ? cn("text-xs leading-relaxed", defaultText)
+      : cn("text-sm leading-relaxed", defaultText);
+  const headingText = muted ? (compact ? "text-foreground/85" : "text-muted-foreground") : defaultText;
+  const inlineCodeText = muted ? (compact ? "text-foreground/80" : "text-muted-foreground") : defaultText;
   const blockCodeText = inlineCodeText;
   const tableCellText = muted
     ? compact
       ? "text-foreground/80"
       : "text-muted-foreground"
-    : compact
-      ? "text-foreground/90"
-      : "text-foreground/95";
-
+    : defaultText;
   return {
     h1: ({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
       <h1
@@ -160,7 +160,10 @@ export function createMarkdownMessageComponents(
         className={cn(
           muted
             ? "break-words text-muted-foreground underline underline-offset-2 hover:text-foreground/80"
-            : "break-words text-primary underline underline-offset-2 hover:opacity-90",
+            : cn(
+                "break-words underline underline-offset-2 hover:text-sidebar-foreground",
+                defaultText,
+              ),
           className,
         )}
         href={href}
@@ -185,7 +188,7 @@ export function createMarkdownMessageComponents(
     },
     strong: ({ className, ...props }: HTMLAttributes<HTMLElement>) => (
       <strong
-        className={cn(FONT_WEIGHT_MEDIUM, muted ? "text-muted-foreground" : "text-foreground", className)}
+        className={cn(FONT_WEIGHT_MEDIUM, muted ? "text-muted-foreground" : defaultText, className)}
         {...props}
       />
     ),
@@ -248,7 +251,7 @@ export function createMarkdownMessageComponents(
         className={cn(
           "border border-border/50 px-2 py-1.5 text-left",
           FONT_WEIGHT_NORMAL,
-          muted ? "text-muted-foreground" : "text-foreground",
+          muted ? "text-muted-foreground" : defaultText,
           className,
         )}
         {...props}
@@ -318,10 +321,10 @@ export function markdownMessageRootClassName(
     compact
       ? tone === "muted"
         ? "text-xs leading-relaxed text-foreground/80"
-        : "text-xs leading-relaxed text-foreground/90"
+        : cn("text-xs leading-relaxed", DESKTOP_CONTENT_TEXT)
       : tone === "muted"
         ? "font-sans text-sm leading-relaxed text-muted-foreground"
-        : "text-foreground/95",
+        : DESKTOP_CONTENT_TEXT,
     className,
   );
 }
