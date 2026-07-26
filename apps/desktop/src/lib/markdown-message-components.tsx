@@ -62,10 +62,10 @@ export function createMarkdownMessageComponents(
         id={slugifyMarkdownHeadingChildren(children)}
         className={cn(
           compact
-            ? cn("mt-2 mb-1.5 text-sm tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
+            ? cn("mt-2.5 mb-1.5 text-base tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
             : muted
-              ? cn("mt-2 mb-1.5 text-sm tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
-              : cn("mt-3 mb-2 text-lg tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM),
+              ? cn("mt-3 mb-2 text-xl tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
+              : cn("mt-4 mb-2 text-2xl tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM),
           headingText,
           className,
         )}
@@ -79,10 +79,10 @@ export function createMarkdownMessageComponents(
         id={slugifyMarkdownHeadingChildren(children)}
         className={cn(
           compact
-            ? cn("mt-2 mb-1 text-xs tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
+            ? cn("mt-2 mb-1 text-sm tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
             : muted
-              ? cn("mt-2 mb-1 text-sm tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
-              : cn("mt-3 mb-1.5 text-base tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM),
+              ? cn("mt-3 mb-1.5 text-lg tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM)
+              : cn("mt-3.5 mb-1.5 text-xl tracking-tight first:mt-0", FONT_WEIGHT_MEDIUM),
           headingText,
           className,
         )}
@@ -94,7 +94,15 @@ export function createMarkdownMessageComponents(
     h3: ({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
       <h3
         id={slugifyMarkdownHeadingChildren(children)}
-        className={cn("mt-2 mb-1 text-sm first:mt-0", FONT_WEIGHT_MEDIUM, headingText, className)}
+        className={cn(
+          compact
+            ? cn("mt-2 mb-1 text-sm first:mt-0", FONT_WEIGHT_MEDIUM)
+            : muted
+              ? cn("mt-2.5 mb-1 text-base first:mt-0", FONT_WEIGHT_MEDIUM)
+              : cn("mt-3 mb-1 text-lg first:mt-0", FONT_WEIGHT_MEDIUM),
+          headingText,
+          className,
+        )}
         {...props}
       >
         {children}
@@ -103,7 +111,15 @@ export function createMarkdownMessageComponents(
     h4: ({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
       <h4
         id={slugifyMarkdownHeadingChildren(children)}
-        className={cn("mt-2 mb-1 text-sm first:mt-0", FONT_WEIGHT_NORMAL, headingText, className)}
+        className={cn(
+          compact
+            ? cn("mt-2 mb-1 text-xs first:mt-0", FONT_WEIGHT_MEDIUM)
+            : muted
+              ? cn("mt-2 mb-1 text-sm first:mt-0", FONT_WEIGHT_MEDIUM)
+              : cn("mt-2.5 mb-1 text-base first:mt-0", FONT_WEIGHT_MEDIUM),
+          headingText,
+          className,
+        )}
         {...props}
       >
         {children}
