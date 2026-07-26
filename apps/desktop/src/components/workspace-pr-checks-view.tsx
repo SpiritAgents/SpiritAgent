@@ -46,7 +46,7 @@ function CheckStateIcon({
     );
   }
 
-  return <Spinner className="size-3 shrink-0 text-primary" aria-label={label} />;
+  return <Spinner className="size-3 shrink-0 text-foreground" aria-label={label} />;
 }
 
 function PrCheckRow({

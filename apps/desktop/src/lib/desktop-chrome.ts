@@ -25,7 +25,7 @@ export const DESKTOP_INSTANT_HOVER_OVERLAY = cn(
 /** ghost 图标/紧凑按钮：侧栏同源半透明 hover + 字色变亮 */
 export const DESKTOP_INSTANT_HOVER_GHOST_BTN = cn(
   DESKTOP_INSTANT_HOVER_OVERLAY,
-  "hover:!text-foreground focus-visible:!text-foreground aria-expanded:!text-foreground",
+  "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground aria-expanded:!text-sidebar-foreground",
 );
 
 /** 侧栏壳层 / 顶栏槽位宽度过渡，与 SessionSidebarShell 一致 */
@@ -70,7 +70,7 @@ export const DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN = cn(
 );
 
 export const DESKTOP_CHROME_COMMIT_BTN = cn(
-  "h-7 rounded-md px-2 text-xs text-foreground/90 hover:bg-foreground/[0.06] hover:text-foreground dark:hover:bg-foreground/10",
+  "h-7 rounded-md px-2 text-xs text-foreground/90 hover:bg-foreground/[0.06] hover:text-sidebar-foreground dark:hover:bg-foreground/10",
   FONT_WEIGHT_NORMAL,
   instantHoverMotionClass,
 );

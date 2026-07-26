@@ -756,7 +756,7 @@ const SessionListRow = memo(function SessionListRow({
     <span className="flex w-3.5 shrink-0 items-center justify-center" aria-hidden>
       {isBusy && !isBlocked ? (
         <Spinner
-          className="size-3 shrink-0 text-primary"
+          className="size-3 shrink-0 text-foreground"
           aria-label={t('common.running')}
         />
       ) : !selected && isBlocked ? (

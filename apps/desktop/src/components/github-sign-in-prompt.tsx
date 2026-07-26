@@ -21,7 +21,7 @@ export function GitHubSignInPrompt({
       <button
         type="button"
         className={cn(
-          "text-foreground underline underline-offset-2 hover:text-foreground/80",
+          "text-foreground underline underline-offset-2 hover:text-sidebar-foreground/80",
           linkClassName,
         )}
         onClick={onSignIn}

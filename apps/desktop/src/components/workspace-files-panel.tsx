@@ -154,7 +154,7 @@ type CreatingEntryState = {
 
 const EXPLORER_ROOT_CREATE_BUTTON_CLASS = cn(
   "inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground",
-  "hover:bg-foreground/[0.08] hover:text-foreground dark:hover:bg-foreground/12",
+  "hover:bg-foreground/[0.08] hover:text-sidebar-foreground dark:hover:bg-foreground/12",
 );
 
 export type WorkspaceFilesPanelProps = {

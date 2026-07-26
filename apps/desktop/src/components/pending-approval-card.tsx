@@ -104,7 +104,7 @@ export function PendingApprovalCard({
           <Button
             size="icon-sm"
             variant="outline"
-            className="h-auto w-9 self-stretch rounded-none border-0 border-l border-border/60 bg-transparent text-muted-foreground shadow-none hover:bg-muted/35 hover:text-foreground disabled:bg-transparent"
+            className="h-auto w-9 self-stretch rounded-none border-0 border-l border-border/60 bg-transparent text-muted-foreground shadow-none hover:bg-muted/35 hover:text-sidebar-foreground disabled:bg-transparent"
             onClick={() =>
               onSubmitApproval({
                 kind: "guidance",

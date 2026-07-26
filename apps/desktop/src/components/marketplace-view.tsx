@@ -535,7 +535,7 @@ export function MarketplaceView({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "-ml-2 h-8 gap-1 text-muted-foreground hover:text-foreground",
+                  "-ml-2 h-8 gap-1 text-muted-foreground hover:text-sidebar-foreground",
                   instantHoverMotionClass,
                 )}
                 onClick={closeDetail}
@@ -635,7 +635,7 @@ export function MarketplaceView({
                           "rounded-md px-3 py-2 text-sm",
                           activeTab === tabId
                             ? "font-normal text-foreground underline decoration-foreground/80 underline-offset-[10px]"
-                            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                            : "text-muted-foreground hover:bg-muted/60 hover:text-sidebar-foreground",
                         )}
                         onClick={() => setActiveTab(tabId)}
                       >
