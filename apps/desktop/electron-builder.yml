@@ -10,6 +10,7 @@ files:
   - .env
   - dist/**/*
   - dist-electron/**/*
+  - build/tray/**/*
   - node_modules/**/*
   - '!**/target/**/*'
   - from: node_modules/@vscode

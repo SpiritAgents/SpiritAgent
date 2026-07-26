@@ -148,6 +148,8 @@ export interface DesktopConfigFile {
   uiLocale?: string;
   windowsMica?: boolean;
   systemNotifications?: boolean;
+  /** 是否显示菜单栏 / 托盘状态图标；缺省为 true。 */
+  trayIcon?: boolean;
   /** 首启引导（OOBE）是否已完成；缺省按未完成处理。 */
   onboardingCompleted?: boolean;
   agentMode?: DesktopAgentMode;
@@ -845,6 +847,7 @@ function defaultConfig(): DesktopConfigFile {
     recentWorkspaces: [],
     windowsMica: true,
     systemNotifications: true,
+    trayIcon: true,
     onboardingCompleted: false,
     agentMode: 'agent',
     webHost: defaultWebHostConfig(),
@@ -1137,6 +1140,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
       : {}),
     windowsMica: raw.windowsMica !== false,
     systemNotifications: raw.systemNotifications !== false,
+    trayIcon: raw.trayIcon !== false,
     onboardingCompleted: raw.onboardingCompleted === true,
     agentMode: resolveDesktopAgentMode({ agentMode: raw.agentMode, planMode: raw.planMode }),
     webHost: normalizeWebHostConfig(raw.webHost),

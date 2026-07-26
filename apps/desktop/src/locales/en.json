@@ -126,6 +126,16 @@
     "general": "General",
     "systemNotifications": "System Notifications",
     "systemNotificationsDescription": "Shows system notifications when the agent finishes or needs your attention.",
+    "trayIcon": {
+      "win32": "System Tray Icon",
+      "darwin": "Menu Bar Icon",
+      "linux": "System Tray Icon"
+    },
+    "trayIconDescription": {
+      "win32": "Shows a status icon in the system tray",
+      "darwin": "Shows a status icon in the menu bar",
+      "linux": "Shows a status icon in the system tray"
+    },
     "appearance": "Appearance",
     "networks": "Networks",
     "integrations": "Integrations",
@@ -485,6 +495,14 @@
   "jumpList": {
     "recent": "Recent",
     "newSession": "New Session"
+  },
+  "tray": {
+    "recent": "Recent",
+    "more": "More",
+    "newSession": "New Session",
+    "openApp": "Open Spirit Agent",
+    "quitApp": "Quit Spirit Agent",
+    "tooltip": "Spirit Agent"
   },
   "titleBar": {
     "file": "File",

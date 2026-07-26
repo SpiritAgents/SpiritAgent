@@ -528,6 +528,9 @@ export async function updateConfigCommand(
     if (request.systemNotifications !== undefined) {
       state.config.systemNotifications = request.systemNotifications !== false;
     }
+    if (request.trayIcon !== undefined) {
+      state.config.trayIcon = request.trayIcon !== false;
+    }
     if (request.onboardingCompleted !== undefined) {
       state.config.onboardingCompleted = request.onboardingCompleted === true;
     }

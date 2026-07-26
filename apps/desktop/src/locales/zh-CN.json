@@ -126,6 +126,16 @@
     "general": "通用",
     "systemNotifications": "系统通知",
     "systemNotificationsDescription": "Agent 完成任务或需要处理时发送系统通知",
+    "trayIcon": {
+      "win32": "系统托盘图标",
+      "darwin": "菜单栏图标",
+      "linux": "系统托盘图标"
+    },
+    "trayIconDescription": {
+      "win32": "在系统托盘显示状态图标",
+      "darwin": "在菜单栏显示状态图标",
+      "linux": "在系统托盘显示状态图标"
+    },
     "appearance": "外观",
     "networks": "网络",
     "integrations": "集成",
@@ -482,6 +492,14 @@
   "jumpList": {
     "recent": "最近",
     "newSession": "新会话"
+  },
+  "tray": {
+    "recent": "最近",
+    "more": "更多",
+    "newSession": "新会话",
+    "openApp": "打开 Spirit Agent",
+    "quitApp": "退出 Spirit Agent",
+    "tooltip": "Spirit Agent"
   },
   "titleBar": {
     "file": "文件",

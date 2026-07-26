@@ -35,6 +35,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "start": "electron dist-electron/electron/main.js",
     "gen:icons": "node scripts/gen-app-icons.mjs",
+    "gen:tray-icons": "node scripts/gen-tray-icons.mjs",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production",
     "rebuild:pty": "electron-rebuild -f -w node-pty"
