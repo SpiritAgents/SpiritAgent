@@ -159,7 +159,7 @@ export function createMarkdownMessageComponents(
       <a
         className={cn(
           muted
-            ? "break-words text-muted-foreground underline underline-offset-2 hover:text-foreground/80"
+            ? "break-words text-muted-foreground underline underline-offset-2 hover:text-sidebar-foreground/80"
             : cn(
                 "break-words underline underline-offset-2 hover:text-sidebar-foreground",
                 defaultText,

@@ -771,7 +771,7 @@ export function ProviderConnectDialog({
                       DESKTOP_EDITOR_TAB_CLASS,
                       customConnectMode === value
                         ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
+                        : "text-muted-foreground hover:text-sidebar-foreground",
                     )}
                     disabled={busy || previewBusy}
                     onClick={() => setCustomConnectMode(value)}
@@ -862,7 +862,7 @@ export function ProviderConnectDialog({
                       DESKTOP_EDITOR_TAB_CLASS,
                       bedrockConnectMode === value
                         ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
+                        : "text-muted-foreground hover:text-sidebar-foreground",
                     )}
                     disabled={busy || previewBusy}
                     onClick={() => setBedrockConnectMode(value)}
@@ -1070,7 +1070,7 @@ export function ProviderConnectDialog({
                       DESKTOP_EDITOR_TAB_CLASS,
                       vertexConnectMode === value
                         ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
+                        : "text-muted-foreground hover:text-sidebar-foreground",
                     )}
                     disabled={busy || previewBusy}
                     onClick={() => setVertexConnectMode(value)}

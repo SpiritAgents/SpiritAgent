@@ -90,8 +90,8 @@ export function ComposerInsertMenu({
               aria-label={t('composer.openInsertPanel')}
               disabled={disabled}
               className={cn(
-                'size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-foreground',
-                'aria-expanded:bg-muted/35 aria-expanded:text-foreground aria-expanded:hover:bg-muted/50',
+                'size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground',
+                'aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50',
                 instantHoverMotionClass,
               )}
             >

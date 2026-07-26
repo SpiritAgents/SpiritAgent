@@ -359,7 +359,7 @@ function PrChangedFileCard({
                 {file.blobUrl && onOpenExternal ? (
                   <button
                     type="button"
-                    className="text-foreground underline underline-offset-2 hover:text-foreground/80"
+                    className="text-foreground underline underline-offset-2 hover:text-sidebar-foreground/80"
                     onClick={() => onOpenExternal(file.blobUrl!)}
                   >
                     {t("workspace.prChangesViewOnGitHub")}
