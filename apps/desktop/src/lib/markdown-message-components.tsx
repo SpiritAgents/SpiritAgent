@@ -17,7 +17,6 @@ import {
   isMarkdownFragmentHref,
   scrollMarkdownFragmentIntoView,
 } from "@/lib/markdown-fragment-link";
-import { DESKTOP_CONTENT_TEXT } from "@/lib/desktop-chrome";
 import { slugifyMarkdownHeadingChildren } from "@/lib/markdown-heading-slug";
 import { FONT_WEIGHT_MEDIUM, FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
@@ -39,15 +38,14 @@ export function createMarkdownMessageComponents(
 ): Record<string, ComponentType<Record<string, unknown>>> {
   const compact = size === "compact";
   const muted = tone === "muted";
-  // 默认正文/标题与 chrome 默认字色一致（text-foreground）
-  const defaultText = DESKTOP_CONTENT_TEXT;
+  const defaultText = "text-foreground";
   const bodyText = muted
     ? compact
       ? "text-xs leading-relaxed text-foreground/80"
       : "text-sm leading-relaxed text-muted-foreground"
     : compact
-      ? cn("text-xs leading-relaxed", defaultText)
-      : cn("text-sm leading-relaxed", defaultText);
+      ? "text-xs leading-relaxed text-foreground"
+      : "text-sm leading-relaxed text-foreground";
   const headingText = muted ? (compact ? "text-foreground/85" : "text-muted-foreground") : defaultText;
   const inlineCodeText = muted ? (compact ? "text-foreground/80" : "text-muted-foreground") : defaultText;
   const blockCodeText = inlineCodeText;
@@ -160,10 +158,7 @@ export function createMarkdownMessageComponents(
         className={cn(
           muted
             ? "break-words text-muted-foreground underline underline-offset-2 hover:text-sidebar-foreground/80"
-            : cn(
-                "break-words underline underline-offset-2 hover:text-sidebar-foreground",
-                defaultText,
-              ),
+            : "break-words text-foreground underline underline-offset-2 hover:text-sidebar-foreground",
           className,
         )}
         href={href}
@@ -321,10 +316,10 @@ export function markdownMessageRootClassName(
     compact
       ? tone === "muted"
         ? "text-xs leading-relaxed text-foreground/80"
-        : cn("text-xs leading-relaxed", DESKTOP_CONTENT_TEXT)
+        : "text-xs leading-relaxed text-foreground"
       : tone === "muted"
         ? "font-sans text-sm leading-relaxed text-muted-foreground"
-        : DESKTOP_CONTENT_TEXT,
+        : "text-foreground",
     className,
   );
 }
