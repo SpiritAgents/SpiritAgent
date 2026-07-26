@@ -37,6 +37,7 @@ export type SettingsFormState = {
   apiKey: string;
   windowsMica: boolean;
   systemNotifications: boolean;
+  trayIcon: boolean;
   /** 首启引导（OOBE）是否已完成。 */
   onboardingCompleted: boolean;
   agentMode: DesktopAgentMode;
