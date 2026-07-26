@@ -312,6 +312,8 @@ async function invokeMainDesktopHostCommand(
   if (isDesktopSnapshot(result) && (command === 'bootstrap' || command === 'updateConfig')) {
     const config = await loadConfig();
     await syncDesktopWebHostWithConfig(config.webHost);
+    // 开关托盘需立即生效，不走会话列表那条尾沿合并。
+    void syncStatusTray();
   }
   return result;
 }
@@ -472,6 +474,8 @@ function resolveWindowIconPath(): string | undefined {
 
 const WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS = 1_000;
 let windowsJumpListRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+const STATUS_TRAY_REFRESH_COALESCE_MS = 1_000;
+let statusTrayRefreshTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
  * 会话列表更新可能高频触发（每次都要 listSessions + app.setJumpList）；jump list
@@ -488,6 +492,20 @@ function refreshWindowsJumpList(): void {
     windowsJumpListRefreshTimer = undefined;
     void syncWindowsJumpList(resolveWindowIconPath());
   }, WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS);
+}
+
+/** 托盘菜单随会话 / 配置 / 语言变化刷新；尾沿合并避免高频 listSessions。 */
+function refreshStatusTray(): void {
+  if (process.platform !== 'darwin' && process.platform !== 'win32') {
+    return;
+  }
+  if (statusTrayRefreshTimer !== undefined) {
+    clearTimeout(statusTrayRefreshTimer);
+  }
+  statusTrayRefreshTimer = setTimeout(() => {
+    statusTrayRefreshTimer = undefined;
+    void syncStatusTray();
+  }, STATUS_TRAY_REFRESH_COALESCE_MS);
 }
 
 /** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
@@ -873,6 +891,7 @@ if (gotSpiritSingleInstanceLock) {
       }
     }
     refreshWindowsJumpList();
+    refreshStatusTray();
   });
 
   ipcMain.handle('desktop:invoke', (_event, command: Parameters<typeof invokeDesktopHostCommand>[0], payload?: unknown) =>
@@ -1179,6 +1198,7 @@ if (gotSpiritSingleInstanceLock) {
       setMacOSApplicationMenu();
     }
     refreshWindowsJumpList();
+    refreshStatusTray();
   });
 
   ipcMain.handle(
@@ -1358,6 +1378,14 @@ if (gotSpiritSingleInstanceLock) {
       handleSpiritNewSessionRequest();
     },
   });
+  try {
+    const config = await loadConfig();
+    if (typeof config.uiLocale === 'string' && config.uiLocale.trim()) {
+      await i18nHost.changeLanguage(config.uiLocale.trim());
+    }
+  } catch {
+    // ignore locale bootstrap errors
+  }
   void syncStatusTray();
 
   app.on('activate', async () => {
@@ -1369,6 +1397,10 @@ if (gotSpiritSingleInstanceLock) {
 }
 
 app.on('before-quit', (event) => {
+  if (statusTrayRefreshTimer !== undefined) {
+    clearTimeout(statusTrayRefreshTimer);
+    statusTrayRefreshTimer = undefined;
+  }
   disposeStatusTray();
   unsubscribeDesktopDreamUpdates?.();
   unsubscribeDesktopDreamUpdates = undefined;
