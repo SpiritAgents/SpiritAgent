@@ -49,6 +49,7 @@ jobs:
     name: CLI ${{ matrix.package_target }}
     needs: verify
     runs-on: ${{ matrix.os }}
+    environment: signing
     strategy:
       fail-fast: false
       matrix:
@@ -77,10 +78,12 @@ jobs:
             rust_target: x86_64-apple-darwin
             package_target: darwin-x64
             builder: cargo
+            apple: true
           - os: macos-14
             rust_target: aarch64-apple-darwin
             package_target: darwin-arm64
             builder: cargo
+            apple: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -114,9 +117,81 @@ jobs:
         if: matrix.builder == 'cross'
         run: cross build -p spirit-agent --release --target ${{ matrix.rust_target }}
 
+      # Bundle CLI signs the embedded Mach-O binaries when it sees these two vars, so the identity
+      # has to be in place before bundling rather than after the archive exists.
+      - name: Import signing certificate
+        if: matrix.apple
+        env:
+          APPLE_CSC_LINK: ${{ secrets.APPLE_CSC_LINK }}
+          APPLE_CSC_KEY_PASSWORD: ${{ secrets.APPLE_CSC_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/spirit-signing.keychain-db"
+          certificate="$RUNNER_TEMP/certificate.p12"
+          keychain_password="$(uuidgen)"
+          printf '%s' "$APPLE_CSC_LINK" | base64 --decode > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -k "$keychain" -P "$APPLE_CSC_KEY_PASSWORD" -T /usr/bin/codesign -x
+          rm -f "$certificate"
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
+          # codesign resolves the certificate chain through the search list, not through --keychain.
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity="$(security find-identity -v -p codesigning "$keychain" | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
+          if [ -z "$identity" ]; then
+            echo "::error::The imported keychain holds no Developer ID Application identity."
+            exit 1
+          fi
+          echo "SPIRIT_MACOS_SIGN_IDENTITY=$identity" >> "$GITHUB_ENV"
+          echo "SPIRIT_MACOS_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
       - name: Bundle CLI
         run: npm run release:cli:bundle -- --target ${{ matrix.rust_target }} --version "$RELEASE_VERSION"
         shell: bash
+
+      # The bundler only warns when no identity is configured, so this is the gate that turns an
+      # unsigned macOS archive into a failed job. It inspects the archive, not the staging directory.
+      - name: Verify CLI signature
+        if: matrix.apple
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          archive="dist/release/SpiritAgent-CLI-$RELEASE_VERSION-${{ matrix.package_target }}.tar.gz"
+          workdir="$RUNNER_TEMP/cli-verify"
+          rm -rf "$workdir"
+          mkdir -p "$workdir"
+          tar -xzf "$archive" -C "$workdir"
+          root="$workdir/SpiritAgent-CLI-$RELEASE_VERSION-${{ matrix.package_target }}"
+          for relative in bin/spirit node/bin/node packages/host-internal/node_modules/@vscode/ripgrep/bin/rg; do
+            binary="$root/$relative"
+            if [ ! -f "$binary" ]; then
+              echo "::error::$relative is missing from $archive."
+              exit 1
+            fi
+            codesign --verify --strict "$binary"
+            details="$(codesign --display --verbose=4 "$binary" 2>&1)"
+            if ! grep -q "^TeamIdentifier=$APPLE_TEAM_ID$" <<<"$details"; then
+              echo "::error::$relative is not signed by team $APPLE_TEAM_ID."
+              exit 1
+            fi
+            if ! grep -qE '^CodeDirectory .*flags=.*runtime' <<<"$details"; then
+              echo "::error::$relative is missing the Hardened Runtime flag."
+              exit 1
+            fi
+            echo "verified $relative"
+          done
+
+      - name: Remove signing keychain
+        if: always() && matrix.apple
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/spirit-signing.keychain-db"
+          if [ -f "$keychain" ]; then
+            security delete-keychain "$keychain"
+          fi
+          rm -f "$RUNNER_TEMP/certificate.p12"
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
