@@ -900,6 +900,35 @@ export class AgentRuntime<
     };
   }
 
+  /**
+   * Persist task + failure into a child session archive and sync its transcript
+   * before advertising sessionTranscript in the parent tool result.
+   */
+  private failSubagentSessionBeforeChildRun(
+    record: RuntimeSubagentSessionArchiveEntry,
+    request: SubagentRequest,
+    failed: string,
+  ): Extract<SubagentToolExecutionResult<ToolRequest, TrustTarget>, { kind: 'completed' }> {
+    const childUserTurn = buildSubagentUserTurn(request);
+    record.llmHistory = [
+      {
+        role: 'user',
+        content: createLlmMessageContentFromText(childUserTurn),
+      },
+      {
+        role: 'assistant',
+        content: createLlmMessageContentFromText(failed),
+      },
+    ];
+    record.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
+    record.summary.error = failed;
+    if (!this.childSessionsStore.some((entry) => entry.summary.sessionId === record.summary.sessionId)) {
+      this.childSessionsStore.push(record);
+    }
+    this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
+    return this.completedSubagentToolOutcome(record.summary.sessionId, failed, true);
+  }
+
   toArchive(
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
     assistantAux: AssistantAuxArchiveEntry[],
@@ -3033,10 +3062,10 @@ export class AgentRuntime<
       const bootstrap = this.options.bootstrapSubagentWorkspace;
       const parentWorkspaceRoot = resolveHookSessionContext(this.options).workspaceRoot?.trim() ?? '';
       if (!bootstrap) {
-        return this.completedSubagentToolOutcome(
-          sessionId,
+        return this.failSubagentSessionBeforeChildRun(
+          record,
+          request,
           '[subagent failed] worktree subagents are not supported on this host.',
-          true,
         );
       }
 
@@ -3072,10 +3101,10 @@ export class AgentRuntime<
         parentWorkspaceRoot,
       });
       if ('error' in boot) {
-        return this.completedSubagentToolOutcome(
-          sessionId,
+        return this.failSubagentSessionBeforeChildRun(
+          record,
+          request,
           `[subagent failed] ${boot.error}`,
-          true,
         );
       }
       if (boot.worktreePath) {
