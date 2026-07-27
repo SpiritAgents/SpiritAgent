@@ -15,11 +15,32 @@ import {
 } from '../ports.js';
 import { compactHistoryImmediate, type CompactionRuntime } from './compaction.js';
 import type { AgentRuntimeOptions } from './types.js';
+import { buildSessionTranscript } from '../transcript.js';
 
 type TestState = { messages: LlmMessage[] };
 
-test('compactHistoryImmediate persists archive without post-processing compact summary', async () => {
-  const archivePath = '/tmp/spirit/compaction-archives/pre-compact-s1.json';
+async function syncSessionTranscriptFromHistoryForTest(
+  options: AgentRuntimeOptions<undefined, TestState, never>,
+  history: readonly LlmMessage[],
+  emitEvent: (event: { kind: string; error?: string }) => void = () => {},
+): Promise<string | undefined> {
+  const sync = options.syncSessionTranscript;
+  if (!sync) {
+    return undefined;
+  }
+  try {
+    return await sync({ transcript: buildSessionTranscript(history) });
+  } catch (error: unknown) {
+    emitEvent({
+      kind: 'session-transcript-sync-failed',
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+}
+
+test('compactHistoryImmediate syncs transcript without post-processing compact summary', async () => {
+  const archivePath = '/tmp/spirit/transcripts/s1';
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('hello') },
     {
@@ -77,10 +98,11 @@ test('compactHistoryImmediate persists archive without post-processing compact s
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
-    persistPreCompactionHistory: async ({ archive }) => {
+    syncSessionTranscript: async ({ transcript }) => {
       persisted = true;
-      assert.equal(archive.message_count, 2);
-      assert.equal(archive.messages[1]?.toolCalls?.[0]?.name, 'read_file');
+      assert.equal(transcript.kind, 'session_transcript');
+      assert.equal(transcript.message_count, 2);
+      assert.equal(transcript.messages[1]?.toolCalls?.[0]?.name, 'read_file');
       return archivePath;
     },
   };
@@ -98,12 +120,18 @@ test('compactHistoryImmediate persists archive without post-processing compact s
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   const result = await compactHistoryImmediate(runtime);
 
   assert.equal(persisted, true);
-  assert.equal(result.preCompactionArchivePath, archivePath);
+  assert.equal(result.transcriptDirPath, archivePath);
   assert.equal(runtime.historyStore.length, 1);
   const compactText = runtime.historyStore[0]?.content
     .filter((part) => part.type === 'text')
@@ -112,7 +140,7 @@ test('compactHistoryImmediate persists archive without post-processing compact s
   assert.equal(compactText, wrapCompactSummaryBlock('compact summary'));
 });
 
-test('compactHistoryImmediate emits event when pre-compaction archive persist fails', async () => {
+test('compactHistoryImmediate emits event when session transcript sync fails', async () => {
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('hello') },
   ];
@@ -146,7 +174,7 @@ test('compactHistoryImmediate emits event when pre-compaction archive persist fa
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
-    persistPreCompactionHistory: async () => {
+    syncSessionTranscript: async () => {
       throw new Error('disk full');
     },
   };
@@ -166,17 +194,23 @@ test('compactHistoryImmediate emits event when pre-compaction archive persist fa
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   const result = await compactHistoryImmediate(runtime);
 
-  assert.equal(result.preCompactionArchivePath, undefined);
+  assert.equal(result.transcriptDirPath, undefined);
   assert.equal(events.length, 1);
-  assert.equal(events[0]?.kind, 'pre-compaction-archive-persist-failed');
+  assert.equal(events[0]?.kind, 'session-transcript-sync-failed');
   assert.match(events[0]?.error ?? '', /disk full/);
 });
 
-test('compactHistoryImmediate archives pre-truncation history and compacts post-truncation history', async () => {
+test('compactHistoryImmediate syncs pre-truncation history and compacts post-truncation history', async () => {
   const longToolOutput = 'x'.repeat(20_000);
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('investigate') },
@@ -225,11 +259,12 @@ test('compactHistoryImmediate archives pre-truncation history and compacts post-
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
-    persistPreCompactionHistory: async ({ archive }) => {
-      assert.equal(archive.message_count, 2);
-      assert.equal(archive.messages[0]?.role, 'user');
-      assert.equal(archive.messages[1]?.toolCalls?.[0]?.name, 'read_file');
-      return '/tmp/archive.json';
+    syncSessionTranscript: async ({ transcript }) => {
+      assert.equal(transcript.kind, 'session_transcript');
+      assert.equal(transcript.message_count, 2);
+      assert.equal(transcript.messages[0]?.role, 'user');
+      assert.equal(transcript.messages[1]?.toolCalls?.[0]?.name, 'read_file');
+      return '/tmp/spirit/transcripts/s1';
     },
   };
 
@@ -246,6 +281,12 @@ test('compactHistoryImmediate archives pre-truncation history and compacts post-
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   await compactHistoryImmediate(runtime);
@@ -319,6 +360,12 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   await compactHistoryImmediate(runtime);
@@ -328,8 +375,8 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
   assert.match(compactionToolText, /Use read_file on that path only when you need omitted details\./u);
 });
 
-test('compactHistoryImmediate removes orphan archive when compaction fails after persist', async () => {
-  const archivePath = '/tmp/spirit/compaction-archives/pre-compact-orphan.json';
+test('compactHistoryImmediate keeps transcript when compaction fails after sync', async () => {
+  const transcriptDirPath = '/tmp/spirit/transcripts/orphan-session';
   const history: LlmMessage[] = [
     { role: 'user', content: createLlmMessageContentFromText('hello') },
   ];
@@ -347,7 +394,7 @@ test('compactHistoryImmediate removes orphan archive when compaction fails after
     llmSystemPromptsForExport: () => ({}),
   };
 
-  const removedPaths: string[] = [];
+  let synced = false;
   const options: AgentRuntimeOptions<undefined, TestState, never> = {
     config: undefined,
     llmTransport,
@@ -359,9 +406,9 @@ test('compactHistoryImmediate removes orphan archive when compaction fails after
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
-    persistPreCompactionHistory: async () => archivePath,
-    removePreCompactionHistoryArchive: async (path) => {
-      removedPaths.push(path);
+    syncSessionTranscript: async () => {
+      synced = true;
+      return transcriptDirPath;
     },
   };
 
@@ -378,8 +425,14 @@ test('compactHistoryImmediate removes orphan archive when compaction fails after
     takeCompletedManualHistoryCompactionResult: () => undefined,
     isBusy: () => false,
     poll: async () => {},
+    syncSessionTranscriptFromHistory: async (history) =>
+      syncSessionTranscriptFromHistoryForTest(
+        options,
+        history ?? runtime.historyStore,
+        (event) => runtime.emitEvent(event as never),
+      ),
   };
 
   await assert.rejects(() => compactHistoryImmediate(runtime), /llm unavailable/);
-  assert.deepEqual(removedPaths, [archivePath]);
+  assert.equal(synced, true);
 });

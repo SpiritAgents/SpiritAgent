@@ -40,10 +40,13 @@ import {
   createNoopMcpAdapter,
   ensureBuiltinAuthoringSkills,
   loadHostInstructionMetadata,
-  persistPreCompactionHistoryArchive,
+  ensureTranscriptSessionDir,
+  persistSessionTranscript,
+  persistSubagentTranscript,
   persistToolOutputArchive,
   readGitBranchLabelForBasicInfo,
-  removePreCompactionHistoryArchive,
+  resolveSubagentTranscriptFilePath,
+  resolveTranscriptSessionDir,
 } from '@spiritagent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
@@ -76,10 +79,15 @@ export async function createAcpRuntime(
   config: AcpServerConfig,
   onEvent: (event: RuntimeEvent<JsonValue>) => void,
   initialMode: SpiritAgentMode = 'agent',
+  transcriptSessionKey?: string,
 ): Promise<AcpRuntimeResult> {
   const transportConfig = resolveTransportConfig(config);
   const workspaceRoot = config.workspaceRoot;
   const spiritDataDir = config.spiritDataDir;
+  const sessionKey = transcriptSessionKey?.trim() || undefined;
+  if (sessionKey) {
+    await ensureTranscriptSessionDir(spiritDataDir, sessionKey);
+  }
 
   // 1. Create noop peer + tool executor (ACP doesn't use JSON-RPC peer)
   const noopPeer = createNoopPeer();
@@ -112,10 +120,14 @@ export async function createAcpRuntime(
 
   // 5. Build runtime basic info
   const shell = service.toolDefinitionEnvironment();
+  const sessionTranscript = sessionKey?.trim()
+    ? resolveTranscriptSessionDir(spiritDataDir, sessionKey.trim())
+    : undefined;
   const basicInfo: LlmToolAgentBasicInfo = {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
     gitBranch: await readGitBranchLabelForBasicInfo(workspaceRoot),
+    ...(sessionTranscript ? { sessionTranscript } : {}),
     system: service.operatingSystemInfo?.() ?? {
       name: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform,
       version: osRelease(),
@@ -217,12 +229,31 @@ export async function createAcpRuntime(
         return saveGeneratedVideo.call(service, saveRequest);
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
-    persistPreCompactionHistory: async ({ archive, sessionId }) =>
-      persistPreCompactionHistoryArchive(spiritDataDir, archive, {
-        ...(sessionId !== undefined ? { sessionId } : {}),
-      }),
-    removePreCompactionHistoryArchive: async (archivePath) =>
-      removePreCompactionHistoryArchive(archivePath),
+    ...(sessionKey
+      ? {
+          hookSessionContext: {
+            sessionId: sessionKey,
+            conversationPath: null,
+            workspaceRoot,
+            model: transportConfig.model,
+          },
+        }
+      : {}),
+    syncSessionTranscript: async ({ transcript, sessionKey: key }) => {
+      const resolvedKey = key ?? sessionKey;
+      return persistSessionTranscript(spiritDataDir, transcript, {
+        ...(resolvedKey !== undefined ? { sessionKey: resolvedKey } : {}),
+      });
+    },
+    syncSubagentTranscript: async ({ transcript, sessionKey: key, subagentSessionId }) => {
+      const resolvedKey = key ?? sessionKey;
+      await persistSubagentTranscript(spiritDataDir, transcript, {
+        subagentSessionId,
+        ...(resolvedKey !== undefined ? { sessionKey: resolvedKey } : {}),
+      });
+    },
+    resolveSubagentTranscriptPath: ({ sessionKey: key, subagentSessionId }) =>
+      resolveSubagentTranscriptFilePath(spiritDataDir, key ?? sessionKey, subagentSessionId),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritDataDir, input),
     onEvent,

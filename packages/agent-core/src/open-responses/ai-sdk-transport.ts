@@ -421,9 +421,9 @@ export class AiSdkOpenResponsesTransport
     const promptMessages = openAiMessagesToResponsesAiSdkMessages(
       llmHistoryToOpenAiMessages(
         buildCompactHistoryPromptMessages(history, {
-          ...(context?.preCompactionArchivePath === undefined
+          ...(context?.transcriptDirPath === undefined
             ? {}
-            : { preCompactionArchivePath: context.preCompactionArchivePath }),
+            : { transcriptDirPath: context.transcriptDirPath }),
         }),
         config.workspaceRoot ?? process.cwd(),
       ),

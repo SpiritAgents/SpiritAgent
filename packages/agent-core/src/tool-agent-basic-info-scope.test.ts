@@ -23,6 +23,17 @@ test('buildBasicInfoSystemMessage includes non-git workspace label', () => {
   assert.match(message ?? '', /Current Git branch:\n- Current workspace is not a Git repository/);
 });
 
+test('buildBasicInfoSystemMessage includes current session transcript path', () => {
+  const message = buildBasicInfoSystemMessage({
+    workspaceRoot: '/tmp/project',
+    sessionTranscript: '/data/transcripts/session-1',
+  });
+  assert.match(
+    message ?? '',
+    /Current session transcript:\n- \/data\/transcripts\/session-1/,
+  );
+});
+
 test('patchBasicInfoWorkspaceRootInMessages rewrites Current workspace line', () => {
   const messages = [
     {

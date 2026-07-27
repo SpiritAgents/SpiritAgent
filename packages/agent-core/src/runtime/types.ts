@@ -1,4 +1,4 @@
-import type { PreCompactionHistoryArchive } from '../compaction-archive.js';
+import type { SessionTranscript } from '../transcript.js';
 import type {
   AskQuestionsRequest,
   ImageGenerationRequest,
@@ -74,7 +74,7 @@ export interface RuntimeCompactionRecord {
   beforeLength: number;
   afterLength: number;
   summary?: string;
-  preCompactionArchivePath?: string;
+  transcriptDirPath?: string;
 }
 
 export interface DeferredUserGuidance {
@@ -135,7 +135,7 @@ export type RuntimeEvent<ToolRequest> =
       summaryPreview?: string;
     }
   | {
-      kind: 'pre-compaction-archive-persist-failed';
+      kind: 'session-transcript-sync-failed';
       error: string;
     }
   | {
@@ -417,11 +417,20 @@ export interface AgentRuntimeOptions<
   flushPendingHostEvents?: () => void | Promise<void>;
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
-  persistPreCompactionHistory?: (input: {
-    archive: PreCompactionHistoryArchive;
-    sessionId?: string;
+  syncSessionTranscript?: (input: {
+    transcript: SessionTranscript;
+    sessionKey?: string;
   }) => Promise<string | undefined>;
-  removePreCompactionHistoryArchive?: (archivePath: string) => Promise<void>;
+  syncSubagentTranscript?: (input: {
+    transcript: SessionTranscript;
+    sessionKey?: string;
+    subagentSessionId: string;
+  }) => Promise<void>;
+  /** Absolute path for a subagent transcript file (for tool-result metadata). */
+  resolveSubagentTranscriptPath?: (input: {
+    sessionKey?: string;
+    subagentSessionId: string;
+  }) => string | undefined;
   persistToolOutputArchive?: (input: {
     sessionId?: string;
     toolCallId?: string;

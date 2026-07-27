@@ -561,9 +561,9 @@ export class AiSdkOpenAiCompatibleTransport
     const promptMessages = openAiMessagesToAiSdkMessages(
       llmHistoryToOpenAiMessages(
         buildCompactHistoryPromptMessages(history, {
-          ...(context?.preCompactionArchivePath === undefined
+          ...(context?.transcriptDirPath === undefined
             ? {}
-            : { preCompactionArchivePath: context.preCompactionArchivePath }),
+            : { transcriptDirPath: context.transcriptDirPath }),
         }),
         openAiTransportAssetRoot(config),
       ),

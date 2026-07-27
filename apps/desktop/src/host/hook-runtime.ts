@@ -35,7 +35,8 @@ export function buildDesktopHookSessionContext(
   model: string | undefined,
 ): HookSessionContext {
   return {
-    sessionId: bundle.id,
+    // Stable across provisional → chat promote; used as transcripts/{sessionKey}/ directory name.
+    sessionId: bundle.rewind.sessionId,
     conversationPath: bundle.activeSession?.filePath ?? null,
     workspaceRoot: bundle.workspaceRoot,
     model,

@@ -3,7 +3,7 @@ import { llmMessageTextContent, type LlmMessage } from './ports.js';
 export const MANUAL_COMPACTION_SKIPPED_STATUS_ZH =
   '当前可压缩历史较少，已跳过压缩。';
 
-/** UI-only manual compaction status lines; must not enter llmHistory or pre-compaction archives. */
+/** UI-only manual compaction status lines; must not enter llmHistory or session transcripts. */
 export function isManualCompactionUiStatusText(text: string): boolean {
   const normalized = text.trim();
   if (!normalized) {

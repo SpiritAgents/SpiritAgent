@@ -26,7 +26,7 @@ import {
   formatGrepToolOutput,
   runRipgrepSearch,
 } from './ripgrep-search.js';
-import { resolveCompactionArchivesDir } from './compaction-archive.js';
+import { resolveTranscriptsDir } from './transcript.js';
 import {
   defaultShellForPty,
   commandParameterDescriptionForResolvedShell,
@@ -2695,7 +2695,7 @@ function isWithinRoot(candidate: string, root: string): boolean {
 function isSpiritDataInternalReadPath(resolvedPath: string, spiritDataDir: string): boolean {
   const resolvedSpiritDataDir = path.resolve(spiritDataDir);
   const allowedRoots = [
-    resolveCompactionArchivesDir(resolvedSpiritDataDir),
+    resolveTranscriptsDir(resolvedSpiritDataDir),
     resolveToolOutputArchivesDir(resolvedSpiritDataDir),
   ];
   return allowedRoots.some((allowed) => pathHasPrefix(resolvedPath, allowed));

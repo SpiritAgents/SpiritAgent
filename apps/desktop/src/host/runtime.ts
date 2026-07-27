@@ -33,9 +33,11 @@ import {
   type SessionApprovalLevel,
 } from '@spiritagent/agent-core';
 import {
-  persistPreCompactionHistoryArchive,
+  persistSessionTranscript,
+  persistSubagentTranscript,
   persistToolOutputArchive,
-  removePreCompactionHistoryArchive,
+  resolveSubagentTranscriptFilePath,
+  resolveTranscriptSessionDir,
 } from '@spiritagent/host-internal';
 
 import type { DesktopToolRequest } from './contracts.js';
@@ -168,12 +170,18 @@ export function createDesktopRuntime(input: {
     ...(input.getApprovalLevel ? { getApprovalLevel: input.getApprovalLevel } : {}),
     ...(input.reviewToolApproval ? { reviewToolApproval: input.reviewToolApproval } : {}),
     ...(input.flushPendingHostEvents ? { flushPendingHostEvents: input.flushPendingHostEvents } : {}),
-    persistPreCompactionHistory: async ({ archive, sessionId }) =>
-      persistPreCompactionHistoryArchive(spiritAgentDataDir(), archive, {
-        ...(sessionId !== undefined ? { sessionId } : {}),
+    syncSessionTranscript: async ({ transcript, sessionKey }) =>
+      persistSessionTranscript(spiritAgentDataDir(), transcript, {
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
       }),
-    removePreCompactionHistoryArchive: async (archivePath) =>
-      removePreCompactionHistoryArchive(archivePath),
+    syncSubagentTranscript: async ({ transcript, sessionKey, subagentSessionId }) => {
+      await persistSubagentTranscript(spiritAgentDataDir(), transcript, {
+        subagentSessionId,
+        ...(sessionKey !== undefined ? { sessionKey } : {}),
+      });
+    },
+    resolveSubagentTranscriptPath: ({ sessionKey, subagentSessionId }) =>
+      resolveSubagentTranscriptFilePath(spiritAgentDataDir(), sessionKey, subagentSessionId),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritAgentDataDir(), input),
   }, input.history.map((message) => normalizeStoredLlmMessage(message)));
@@ -183,12 +191,18 @@ export function buildDesktopRuntimeBasicInfo(
   workspaceRoot: string,
   toolExecutor: DesktopToolExecutor,
   gitBranch?: string,
+  sessionKey?: string,
 ): LlmToolAgentBasicInfo {
   const shell = toolExecutor.toolDefinitionEnvironment();
   const normalizedGitBranch = gitBranch?.trim();
+  const normalizedSessionKey = sessionKey?.trim();
+  const sessionTranscript = normalizedSessionKey
+    ? resolveTranscriptSessionDir(spiritAgentDataDir(), normalizedSessionKey)
+    : undefined;
   return {
     workspaceRoot,
     ...(normalizedGitBranch ? { gitBranch: normalizedGitBranch } : {}),
+    ...(sessionTranscript ? { sessionTranscript } : {}),
     terminal: shell.shellDisplayName,
     system: toolExecutor.operatingSystemInfo(),
   };

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildPreCompactionHistoryArchive } from './compaction-archive.js';
+import { buildSessionTranscript } from './transcript.js';
 import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from './compaction-ui-status.js';
 import { wrapCompactSummaryBlock } from './llm-context-block.js';
 import {
@@ -11,8 +11,8 @@ import {
 } from './tool-agent.js';
 import { createLlmMessageContentFromText } from './ports.js';
 
-test('buildPreCompactionHistoryArchive keeps user and assistant messages with toolCalls', () => {
-  const archive = buildPreCompactionHistoryArchive(
+test('buildSessionTranscript keeps user and assistant messages with toolCalls', () => {
+  const transcript = buildSessionTranscript(
     [
       {
         role: 'system',
@@ -40,22 +40,22 @@ test('buildPreCompactionHistoryArchive keeps user and assistant messages with to
     1_700_000_000_000,
   );
 
-  assert.equal(archive.export_version, 1);
-  assert.equal(archive.kind, 'pre_compaction_history');
-  assert.equal(archive.exported_at_unix_ms, 1_700_000_000_000);
-  assert.equal(archive.message_count, 3);
-  assert.equal(archive.messages.length, 3);
-  assert.equal(archive.messages[0]?.role, 'user');
-  assert.equal(archive.messages[1]?.role, 'assistant');
-  assert.deepEqual(archive.messages[1]?.toolCalls, [
+  assert.equal(transcript.export_version, 1);
+  assert.equal(transcript.kind, 'session_transcript');
+  assert.equal(transcript.exported_at_unix_ms, 1_700_000_000_000);
+  assert.equal(transcript.message_count, 3);
+  assert.equal(transcript.messages.length, 3);
+  assert.equal(transcript.messages[0]?.role, 'user');
+  assert.equal(transcript.messages[1]?.role, 'assistant');
+  assert.deepEqual(transcript.messages[1]?.toolCalls, [
     { id: 'call-1', name: 'read_file', argumentsJson: '{"path":"a.ts"}' },
   ]);
-  assert.equal(archive.messages[2]?.role, 'assistant');
-  assert.equal(archive.messages[2]?.toolCalls, undefined);
+  assert.equal(transcript.messages[2]?.role, 'assistant');
+  assert.equal(transcript.messages[2]?.toolCalls, undefined);
 });
 
-test('buildPreCompactionHistoryArchive omits manual compaction UI status assistant messages', () => {
-  const archive = buildPreCompactionHistoryArchive(
+test('buildSessionTranscript omits manual compaction UI status assistant messages', () => {
+  const transcript = buildSessionTranscript(
     [
       {
         role: 'assistant',
@@ -73,29 +73,33 @@ test('buildPreCompactionHistoryArchive omits manual compaction UI status assista
     1_700_000_000_000,
   );
 
-  assert.equal(archive.message_count, 2);
-  assert.equal(archive.messages[0]?.role, 'user');
-  assert.equal(archive.messages[1]?.role, 'assistant');
+  assert.equal(transcript.message_count, 2);
+  assert.equal(transcript.messages[0]?.role, 'user');
+  assert.equal(transcript.messages[1]?.role, 'assistant');
 });
 
-test('buildCompactHistorySystemPrompt omits archive section when no path is provided', () => {
+test('buildCompactHistorySystemPrompt omits transcript section when no path is provided', () => {
   const prompt = buildCompactHistorySystemPrompt();
-  assert.doesNotMatch(prompt, /\[Pre-compaction Archive\]/);
+  assert.doesNotMatch(prompt, /\[Transcript\]/);
   assert.doesNotMatch(prompt, /Do not output only the path/);
   assert.match(prompt, /\[Open Items\]/);
 });
 
-test('buildCompactHistorySystemPrompt includes filled archive section example when provided', () => {
-  const path = '/data/compaction-archives/pre-compact-s1.json';
+test('buildCompactHistorySystemPrompt includes filled transcript section example when provided', () => {
+  const path = '/data/transcripts/s1';
   const prompt = buildCompactHistorySystemPrompt(path);
-  assert.match(prompt, /Example \[Pre-compaction Archive\] section shape/);
+  assert.match(prompt, /Example \[Transcript\] section shape/);
   assert.ok(
     prompt.includes(
-      '[Pre-compaction Archive]\n/path/to/compaction-archives/pre-compact-session-1234567890.json\nImportant details may be recovered by reading this file with read_file.',
+      '[Transcript]\n/path/to/transcripts/session-1234567890\nImportant details may be recovered by reading transcript.json and optional subagents/*.json under this directory with read_file.',
     ),
   );
-  assert.ok(prompt.includes(`Archive path for this compression (use this exact path on the archive line): ${path}`));
-  const exampleBlock = prompt.split('Archive path for this compression')[0] ?? '';
+  assert.ok(
+    prompt.includes(
+      `Transcript directory path for this compression (use this exact path on the transcript line): ${path}`,
+    ),
+  );
+  const exampleBlock = prompt.split('Transcript directory path for this compression')[0] ?? '';
   assert.doesNotMatch(exampleBlock, /\/Users\//);
   assert.match(prompt, /Do not output only the path/);
 });
@@ -115,12 +119,12 @@ test('buildCompactHistoryPromptMessages uses native history instead of flattened
     },
   ];
   const messages = buildCompactHistoryPromptMessages(history, {
-    preCompactionArchivePath: '/tmp/archive.json',
+    transcriptDirPath: '/tmp/transcripts/s1',
   });
 
   assert.equal(messages.length, 5);
   assert.equal(messages[0]?.role, 'system');
-  assert.match(messages[0]?.content[0]?.type === 'text' ? messages[0].content[0].text : '', /\/tmp\/archive\.json/);
+  assert.match(messages[0]?.content[0]?.type === 'text' ? messages[0].content[0].text : '', /\/tmp\/transcripts\/s1/);
   assert.deepEqual(messages.slice(1, 4), history);
   assert.equal(messages[4]?.role, 'user');
   assert.equal(

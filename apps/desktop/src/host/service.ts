@@ -1746,6 +1746,7 @@ class DesktopHostService {
           state.workspaceRoot,
           this.requireToolExecutor(),
           gitBranchLabelForBasicInfo(state.git),
+          this.activeBundle().rewind.sessionId,
         ),
       );
       const exportedAtUnixSecs = Math.floor(Date.now() / 1000);
@@ -3534,6 +3535,7 @@ class DesktopHostService {
         workspaceRoot,
         toolExecutor,
         gitBranchLabelForBasicInfo(this.requireState().git),
+        bundle.rewind.sessionId,
       ),
       getLoopEnabled: () => bundle.loopEnabled,
       getApprovalLevel: () => normalizeApprovalLevel(bundle.approvalLevel),

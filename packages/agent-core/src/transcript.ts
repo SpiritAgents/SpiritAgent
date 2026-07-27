@@ -6,27 +6,27 @@ import {
 } from './ports.js';
 import { isManualCompactionUiStatusLlmMessage } from './compaction-ui-status.js';
 
-export const PRE_COMPACTION_HISTORY_EXPORT_VERSION = 1;
+export const SESSION_TRANSCRIPT_EXPORT_VERSION = 1;
 
-export interface PreCompactionHistoryArchiveMessage {
+export interface SessionTranscriptMessage {
   role: 'user' | 'assistant';
   content: LlmMessageContent;
   toolCalls?: LlmToolCall[];
 }
 
-export interface PreCompactionHistoryArchive {
-  export_version: typeof PRE_COMPACTION_HISTORY_EXPORT_VERSION;
-  kind: 'pre_compaction_history';
+export interface SessionTranscript {
+  export_version: typeof SESSION_TRANSCRIPT_EXPORT_VERSION;
+  kind: 'session_transcript';
   exported_at_unix_ms: number;
   message_count: number;
-  messages: PreCompactionHistoryArchiveMessage[];
+  messages: SessionTranscriptMessage[];
 }
 
-export function buildPreCompactionHistoryArchive(
+export function buildSessionTranscript(
   history: readonly LlmMessage[],
   exportedAtUnixMs: number = Date.now(),
-): PreCompactionHistoryArchive {
-  const messages = history.flatMap((message): PreCompactionHistoryArchiveMessage[] => {
+): SessionTranscript {
+  const messages = history.flatMap((message): SessionTranscriptMessage[] => {
     if (message.role !== 'user' && message.role !== 'assistant') {
       return [];
     }
@@ -34,7 +34,7 @@ export function buildPreCompactionHistoryArchive(
       return [];
     }
 
-    const entry: PreCompactionHistoryArchiveMessage = {
+    const entry: SessionTranscriptMessage = {
       role: message.role,
       content: cloneLlmMessageContent(message.content),
     };
@@ -51,8 +51,8 @@ export function buildPreCompactionHistoryArchive(
   });
 
   return {
-    export_version: PRE_COMPACTION_HISTORY_EXPORT_VERSION,
-    kind: 'pre_compaction_history',
+    export_version: SESSION_TRANSCRIPT_EXPORT_VERSION,
+    kind: 'session_transcript',
     exported_at_unix_ms: exportedAtUnixMs,
     message_count: messages.length,
     messages,

@@ -37,7 +37,7 @@ import {
 } from './llm-tool-agent.js';
 import { buildContributedHostToolDefinitions, buildTodoHostToolDefinitions } from './host-tools.js';
 import { createCliAutoApprovalReviewer } from './host-bridge/cli-auto-approval-review.js';
-import type { PreCompactionHistoryArchive } from './compaction-archive.js';
+import type { SessionTranscript } from './transcript.js';
 import {
   buildApplyPatchFileToolsPromptSection,
   shouldUseApplyPatchFileTools,
@@ -158,12 +158,29 @@ interface CliHostInternalModule {
     replaceAll(records: unknown[]): Promise<unknown[]>;
     purge(): Promise<void>;
   };
-  persistPreCompactionHistoryArchive?: (
+  persistSessionTranscript?: (
     spiritDataDir: string,
-    archive: PreCompactionHistoryArchive,
-    options?: { sessionId?: string },
+    transcript: SessionTranscript,
+    options?: { sessionKey?: string },
   ) => Promise<string>;
-  removePreCompactionHistoryArchive?: (archivePath: string) => Promise<void>;
+  persistSubagentTranscript?: (
+    spiritDataDir: string,
+    transcript: SessionTranscript,
+    options: { sessionKey?: string; subagentSessionId: string },
+  ) => Promise<string>;
+  ensureTranscriptSessionDir?: (
+    spiritDataDir: string,
+    sessionKey: string | undefined,
+  ) => Promise<string>;
+  resolveTranscriptSessionDir?: (
+    spiritDataDir: string,
+    sessionKey: string | undefined,
+  ) => string;
+  resolveSubagentTranscriptFilePath?: (
+    spiritDataDir: string,
+    sessionKey: string | undefined,
+    subagentSessionId: string,
+  ) => string;
   persistToolOutputArchive?: (
     spiritDataDir: string,
     input: {
@@ -758,17 +775,29 @@ function currentOperatingSystemInfo(): { name: string; version: string } {
   };
 }
 
+function resolveCliSessionTranscriptDir(): string | undefined {
+  const sessionKey = currentTodoSessionKey?.trim();
+  const resolve = cliHostInternal?.module.resolveTranscriptSessionDir;
+  if (!sessionKey || !cliHostInternal || typeof resolve !== 'function') {
+    return undefined;
+  }
+  return resolve(cliHostInternal.spiritDataDir, sessionKey);
+}
+
 function buildRuntimeBasicInfo(
   workspaceRoot: string,
   service: LocalHostToolService | undefined,
   gitBranch?: string,
+  sessionTranscript?: string,
 ): LlmToolAgentBasicInfo {
   const shell = service?.toolDefinitionEnvironment();
   const normalizedGitBranch = gitBranch?.trim();
+  const normalizedTranscript = sessionTranscript?.trim();
   return {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
     ...(normalizedGitBranch ? { gitBranch: normalizedGitBranch } : {}),
+    ...(normalizedTranscript ? { sessionTranscript: normalizedTranscript } : {}),
     system: service?.operatingSystemInfo?.() ?? currentOperatingSystemInfo(),
   };
 }
@@ -787,20 +816,29 @@ async function readCliGitBranchLabelForBasicInfo(workspaceRoot: string): Promise
 
 async function updateCliTodoScope(sessionKey: string | undefined): Promise<void> {
   const normalized = sessionKey?.trim() || undefined;
-  if (currentTodoSessionKey === normalized) {
-    return;
-  }
-  currentTodoSessionKey = normalized;
-  toolExecutor.setTodoToolDefinitions(normalized ? buildTodoHostToolDefinitions() : []);
-  if (cliHostInternal) {
-    if (normalized) {
-      cliHostInternal.todoSessionKey = normalized;
-    } else {
-      delete cliHostInternal.todoSessionKey;
+  if (currentTodoSessionKey !== normalized) {
+    currentTodoSessionKey = normalized;
+    toolExecutor.setTodoToolDefinitions(normalized ? buildTodoHostToolDefinitions() : []);
+    if (cliHostInternal) {
+      if (normalized) {
+        cliHostInternal.todoSessionKey = normalized;
+      } else {
+        delete cliHostInternal.todoSessionKey;
+      }
+      cliHostInternal.service.setTodoScope?.(
+        normalized ? { sessionKey: normalized } : undefined,
+      );
     }
-    cliHostInternal.service.setTodoScope?.(
-      normalized ? { sessionKey: normalized } : undefined,
-    );
+  }
+  if (normalized && cliHostInternal?.module.ensureTranscriptSessionDir) {
+    try {
+      await cliHostInternal.module.ensureTranscriptSessionDir(
+        cliHostInternal.spiritDataDir,
+        normalized,
+      );
+    } catch {
+      // Best-effort transcript directory creation for new CLI sessions.
+    }
   }
 }
 
@@ -1734,6 +1772,7 @@ async function createRuntime(
     workspaceRoot,
     hostInternal?.service,
     await readCliGitBranchLabelForBasicInfo(workspaceRoot),
+    resolveCliSessionTranscriptDir(),
   );
   toolExecutor.setImageGenerationAvailable('imageGeneration' in config && config.imageGeneration !== undefined);
   toolExecutor.setVideoGenerationAvailable('videoGeneration' in config && config.videoGeneration !== undefined);
@@ -1851,33 +1890,48 @@ async function createRuntime(
     ...(hookRunner ? { hookRunner } : {}),
     hookSessionContext: buildCliHookSessionContext(config),
     bootstrapSubagentWorkspace: bootstrapCliSubagentWorkspace,
-    persistPreCompactionHistory: async ({ archive, sessionId }) => {
+    syncSessionTranscript: async ({ transcript, sessionKey }) => {
       const hostInternal = await ensureCliHostInternal(workspaceRoot);
-      const persist = hostInternal?.module.persistPreCompactionHistoryArchive;
+      const persist = hostInternal?.module.persistSessionTranscript;
       if (!hostInternal || typeof persist !== 'function') {
         return undefined;
       }
 
       try {
-        return await persist(hostInternal.spiritDataDir, archive, {
-          ...(sessionId !== undefined ? { sessionId } : {}),
+        return await persist(hostInternal.spiritDataDir, transcript, {
+          ...(sessionKey !== undefined ? { sessionKey } : {}),
         });
       } catch {
         return undefined;
       }
     },
-    removePreCompactionHistoryArchive: async (archivePath) => {
+    syncSubagentTranscript: async ({ transcript, sessionKey, subagentSessionId }) => {
       const hostInternal = await ensureCliHostInternal(workspaceRoot);
-      const remove = hostInternal?.module.removePreCompactionHistoryArchive;
-      if (!hostInternal || typeof remove !== 'function') {
+      const persist = hostInternal?.module.persistSubagentTranscript;
+      if (!hostInternal || typeof persist !== 'function') {
         return;
       }
 
       try {
-        await remove(archivePath);
+        await persist(hostInternal.spiritDataDir, transcript, {
+          subagentSessionId,
+          ...(sessionKey !== undefined ? { sessionKey } : {}),
+        });
       } catch {
-        // Best-effort orphan cleanup.
+        // Best-effort subagent transcript sync.
       }
+    },
+    resolveSubagentTranscriptPath: ({ sessionKey, subagentSessionId }) => {
+      const hostInternal = cliHostInternal;
+      const resolve = hostInternal?.module.resolveSubagentTranscriptFilePath;
+      if (!hostInternal || typeof resolve !== 'function') {
+        return undefined;
+      }
+      return resolve(
+        hostInternal.spiritDataDir,
+        sessionKey ?? currentTodoSessionKey,
+        subagentSessionId,
+      );
     },
     persistToolOutputArchive: async (input) => {
       const hostInternal = await ensureCliHostInternal(workspaceRoot);
@@ -2726,6 +2780,7 @@ peer.on('runtime.exportState', async () => {
       workspaceRoot,
       cliHostInternal?.service,
       await readCliGitBranchLabelForBasicInfo(workspaceRoot),
+      resolveCliSessionTranscriptDir(),
     ),
   );
 

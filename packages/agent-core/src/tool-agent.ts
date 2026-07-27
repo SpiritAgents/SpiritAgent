@@ -33,18 +33,17 @@ const SPIRIT_CONTEXT_BLOCK_TAGS = [
   LLM_CONTEXT_TAGS.basic_info,
 ] as const;
 
-export const PRE_COMPACTION_ARCHIVE_READ_FILE_GUIDANCE =
-  'Important details may be recovered by reading this file with read_file.';
+export const SESSION_TRANSCRIPT_READ_FILE_GUIDANCE =
+  'Important details may be recovered by reading transcript.json and optional subagents/*.json under this directory with read_file.';
 
 export const TOOL_OUTPUT_ARCHIVE_READ_FILE_GUIDANCE =
   'Use read_file on that path only when you need omitted details.';
 
 export const TOOL_OUTPUT_TRUNCATION_LABEL = '[tool output truncated for context retry]';
 
-const PRE_COMPACTION_ARCHIVE_EXAMPLE_PATH =
-  '/path/to/compaction-archives/pre-compact-session-1234567890.json';
+const SESSION_TRANSCRIPT_EXAMPLE_DIR_PATH = '/path/to/transcripts/session-1234567890';
 
-const COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE = `[Session Overview]
+const COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_TRANSCRIPT = `[Session Overview]
 <Summarize the current task and overall progress in 1–2 sentences>
 
 [User Messages]
@@ -68,27 +67,27 @@ const COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE = `[Session Overview]
 [Open Items]
 - <Remaining work, questions awaiting user confirmation, blockers>`;
 
-const COMPACT_HISTORY_ARCHIVE_OUTPUT_SECTION = `[Pre-compaction Archive]
-<the archive absolute path on this line>
-Important details may be recovered by reading this file with read_file.`;
+const COMPACT_HISTORY_TRANSCRIPT_OUTPUT_SECTION = `[Transcript]
+<the transcript directory absolute path on this line>
+Important details may be recovered by reading transcript.json and optional subagents/*.json under this directory with read_file.`;
 
-const COMPACT_HISTORY_OUTPUT_TEMPLATE = `${COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE}
+const COMPACT_HISTORY_OUTPUT_TEMPLATE = `${COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_TRANSCRIPT}
 
-${COMPACT_HISTORY_ARCHIVE_OUTPUT_SECTION}`;
+${COMPACT_HISTORY_TRANSCRIPT_OUTPUT_SECTION}`;
 
-const PRE_COMPACTION_ARCHIVE_HARD_REQUIREMENT = `6. The [Pre-compaction Archive] section must contain exactly three lines: the section title, then the archive absolute path alone on the next line, then this exact guidance sentence on the following line: ${PRE_COMPACTION_ARCHIVE_READ_FILE_GUIDANCE} Do not output only the path.`;
+const SESSION_TRANSCRIPT_HARD_REQUIREMENT = `6. The [Transcript] section must contain exactly three lines: the section title, then the transcript directory absolute path alone on the next line, then this exact guidance sentence on the following line: ${SESSION_TRANSCRIPT_READ_FILE_GUIDANCE} Do not output only the path.`;
 
 export const COMPACT_HISTORY_TRIGGER_USER_PROMPT =
   'Output the compression summary now. Follow the system message template exactly; do not call tools or ask questions.';
 
-function buildCompactHistorySystemPromptCore(includeArchiveSection: boolean): string {
+function buildCompactHistorySystemPromptCore(includeTranscriptSection: boolean): string {
   const hardRequirements = [
     '1. Output must strictly follow the section titles, order, and hierarchy in the output template; do not add, remove, or rename sections.',
     '2. The [User Messages] section must include every user message from the conversation above: one message per line, in order of appearance, preserving original wording; do not omit, merge, paraphrase, or rewrite. You may append [images attached] / [videos attached] annotations only when a message is extremely long.',
     '3. For sections other than [User Messages], summarize in concise bullet points, preserving decision rationale and verifiable details; avoid vague repetition.',
     '4. Omit small talk, thanks, repeated explanations, and low-information back-and-forth confirmations.',
     '5. Output only the summary body; do not wrap it in markdown code fences; do not add explanations, preambles, or closings.',
-    ...(includeArchiveSection ? [PRE_COMPACTION_ARCHIVE_HARD_REQUIREMENT] : []),
+    ...(includeTranscriptSection ? [SESSION_TRANSCRIPT_HARD_REQUIREMENT] : []),
   ];
 
   return [
@@ -101,14 +100,14 @@ function buildCompactHistorySystemPromptCore(includeArchiveSection: boolean): st
     '',
     'Output template:',
     '',
-    includeArchiveSection
+    includeTranscriptSection
       ? COMPACT_HISTORY_OUTPUT_TEMPLATE
-      : COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_ARCHIVE,
+      : COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_TRANSCRIPT,
   ].join('\n');
 }
 
-export function buildCompactHistorySystemPrompt(preCompactionArchivePath?: string): string {
-  const normalizedPath = preCompactionArchivePath?.trim();
+export function buildCompactHistorySystemPrompt(transcriptDirPath?: string): string {
+  const normalizedPath = transcriptDirPath?.trim();
   if (!normalizedPath) {
     return buildCompactHistorySystemPromptCore(false);
   }
@@ -116,20 +115,20 @@ export function buildCompactHistorySystemPrompt(preCompactionArchivePath?: strin
   return [
     buildCompactHistorySystemPromptCore(true),
     '',
-    'Example [Pre-compaction Archive] section shape (use the real archive path from below, not this placeholder path):',
+    'Example [Transcript] section shape (use the real transcript directory path from below, not this placeholder path):',
     '',
-    '[Pre-compaction Archive]',
-    PRE_COMPACTION_ARCHIVE_EXAMPLE_PATH,
-    PRE_COMPACTION_ARCHIVE_READ_FILE_GUIDANCE,
+    '[Transcript]',
+    SESSION_TRANSCRIPT_EXAMPLE_DIR_PATH,
+    SESSION_TRANSCRIPT_READ_FILE_GUIDANCE,
     '',
-    `Archive path for this compression (use this exact path on the archive line): ${normalizedPath}`,
+    `Transcript directory path for this compression (use this exact path on the transcript line): ${normalizedPath}`,
   ].join('\n');
 }
 
 export const COMPACT_HISTORY_SYSTEM_PROMPT = buildCompactHistorySystemPrompt();
 
 export interface BuildCompactHistoryPromptMessagesOptions {
-  preCompactionArchivePath?: string;
+  transcriptDirPath?: string;
 }
 
 function cloneLlmHistoryMessages(history: readonly LlmMessage[]): LlmMessage[] {
@@ -161,7 +160,7 @@ export function buildCompactHistoryPromptMessages(
     {
       role: 'system',
       content: createLlmMessageContentFromText(
-        buildCompactHistorySystemPrompt(options.preCompactionArchivePath),
+        buildCompactHistorySystemPrompt(options.transcriptDirPath),
       ),
     },
     ...cloneLlmHistoryMessages(history),
@@ -235,6 +234,8 @@ export interface ToolAgentBasicInfo {
   terminal?: string;
   system?: ToolAgentSystemInfo;
   gitBranch?: string;
+  /** Absolute path to this session's transcript directory under Spirit data. */
+  sessionTranscript?: string;
 }
 
 export interface ToolAgentState {
@@ -921,11 +922,12 @@ export function buildBasicInfoSystemMessage(
   const workspaceRoot = basicInfo?.workspaceRoot?.trim();
   const terminal = basicInfo?.terminal?.trim();
   const gitBranch = basicInfo?.gitBranch?.trim();
+  const sessionTranscript = basicInfo?.sessionTranscript?.trim();
   const systemName = basicInfo?.system?.name.trim();
   const systemVersion = basicInfo?.system?.version.trim();
   const hasSystem = Boolean(systemName || systemVersion);
 
-  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem) {
+  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem && !sessionTranscript) {
     return undefined;
   }
 
@@ -938,6 +940,9 @@ export function buildBasicInfoSystemMessage(
   }
   if (terminal) {
     lines.push('Current terminal:', `- ${terminal}`, '');
+  }
+  if (sessionTranscript) {
+    lines.push('Current session transcript:', `- ${sessionTranscript}`, '');
   }
   if (hasSystem) {
     lines.push('Operating system:');
