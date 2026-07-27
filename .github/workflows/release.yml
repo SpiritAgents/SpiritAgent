@@ -406,7 +406,7 @@ jobs:
           echo "SPIRIT_NOTARIZATION_ID=$id" >> "$GITHUB_ENV"
 
           status=""
-          for attempt in $(seq 1 120); do
+          for attempt in $(seq 1 240); do
             if info="$(xcrun notarytool info "$id" \
                 --key "$key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" \
                 --output-format json 2>&1)"; then
