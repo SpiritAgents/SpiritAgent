@@ -3051,19 +3051,30 @@ export class AgentRuntime<
     );
     this.childSessionsStore.push(record);
 
+    const childUserTurn = buildSubagentUserTurn(request);
     const subagentStartDenied = await this.subagentStartHook(
       sessionId,
       request,
       childWorkspaceRoot,
     );
     if (subagentStartDenied) {
+      // Persist task + denial before terminal sync; llmHistory is still empty at this point otherwise.
+      record.llmHistory = [
+        {
+          role: 'user',
+          content: createLlmMessageContentFromText(childUserTurn),
+        },
+        {
+          role: 'assistant',
+          content: createLlmMessageContentFromText(subagentStartDenied),
+        },
+      ];
       record.summary.latestMessage = truncateTextForSubagentSummary(subagentStartDenied, 180);
       record.summary.error = subagentStartDenied;
       this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
       return { kind: 'completed', text: subagentStartDenied, failed: true };
     }
 
-    const childUserTurn = buildSubagentUserTurn(request);
     record.llmHistory = [{
       role: 'user',
       content: createLlmMessageContentFromText(childUserTurn),
