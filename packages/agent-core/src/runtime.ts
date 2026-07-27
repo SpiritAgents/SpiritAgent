@@ -3100,6 +3100,8 @@ export class AgentRuntime<
         record.summary.status = childRuntime.currentPendingApproval() ? 'blocked' : 'running';
         return { kind: 'started' };
       } catch (error) {
+        // Pull any messages already written into the child runtime before terminal sync.
+        this.refreshChildSessionRecord(record, childRuntime);
         const failed = `[subagent failed] ${renderError(error)}`;
         record.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
         delete record.summary.finalOutput;
@@ -3316,6 +3318,7 @@ export class AgentRuntime<
       this.refreshChildSessionRecord(pending.childRecord, childRuntime);
       pending.childRecord.summary.status = childRuntime.currentPendingApproval() ? 'blocked' : 'running';
     } catch (error) {
+      this.refreshChildSessionRecord(pending.childRecord, childRuntime);
       await this.finishFailedSubagentWorktreeBootstrap(pending, renderError(error));
     }
   }
