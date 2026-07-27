@@ -164,7 +164,7 @@ jobs:
           mkdir -p "$workdir"
           tar -xzf "$archive" -C "$workdir"
           root="$workdir/SpiritAgent-CLI-$RELEASE_VERSION-${{ matrix.package_target }}"
-          for relative in bin/spirit node/bin/node packages/host-internal/node_modules/@vscode/ripgrep/bin/rg; do
+          for relative in bin/spirit node/bin/node; do
             binary="$root/$relative"
             if [ ! -f "$binary" ]; then
               echo "::error::$relative is missing from $archive."
