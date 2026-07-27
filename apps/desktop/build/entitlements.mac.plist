@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
-    <!-- V8 compiles to executable memory at runtime; both keys are required under Hardened Runtime. -->
+    <!-- Same set electron-builder ships as its default: V8 needs writable executable memory. -->
     <key>com.apple.security.cs.allow-jit</key>
     <true/>
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
-    <!-- node-pty, koffi, @napi-rs/keyring and ripgrep load from app.asar.unpacked outside the bundle's sealed resources. -->
+    <!-- Prebuilt .node addons load from app.asar.unpacked; see electron-builder#3940. -->
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
   </dict>

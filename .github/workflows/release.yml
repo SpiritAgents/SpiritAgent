@@ -182,6 +182,10 @@ jobs:
             fi
             echo "verified $relative"
           done
+          # A valid signature does not prove the binary still runs: re-signing stock Node with our
+          # own entitlements is the one change here that can kill V8 at startup.
+          "$root/node/bin/node" --version
+          "$root/bin/spirit" --version
 
       - name: Remove signing keychain
         if: always() && matrix.apple
