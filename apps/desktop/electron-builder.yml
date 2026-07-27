@@ -49,9 +49,13 @@ mac:
   target:
     - dmg
     - zip
-  hardenedRuntime: false
+  hardenedRuntime: true
   gatekeeperAssess: false
-  identity: null
+  # Helper processes need the same JIT entitlements as the main app; one plist covers both.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Activated by APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER; skipped when they are absent.
+  notarize: true
 linux:
   maintainer: Spirit Agent contributors <121384036+N123999@users.noreply.github.com>
   target:
