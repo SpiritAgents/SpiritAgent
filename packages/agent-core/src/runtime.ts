@@ -50,6 +50,7 @@ import {
 import { formatUserMessageContentForLlm } from './runtime/user-turn-timestamp.js';
 import type { ToolAgentActiveSkill } from './tool-agent.js';
 import { prependSubagentWorktreeMeta } from './runtime/subagent-worktree-meta.js';
+import { buildParentSubagentToolResultText } from './runtime/subagent-parent-tool-result.js';
 import { scopeAgentRuntimeOptionsForSubagentWorkspace } from './runtime/subagent-workspace-scope.js';
 import { prepareSubmittedUserTurn as prepareSubmittedUserTurnInternal } from './runtime/context.js';
 import {
@@ -219,7 +220,13 @@ interface PendingSubagentBatchContinuation<State, ToolRequest> {
 type SubagentToolExecutionResult<ToolRequest, TrustTarget> =
   | { kind: 'not-handled' }
   | { kind: 'started' }
-  | { kind: 'completed'; text: string; failed: boolean }
+  | {
+      kind: 'completed';
+      text: string;
+      failed: boolean;
+      sessionId?: string;
+      sessionTranscript?: string;
+    }
   | {
       kind: 'requires-approval';
       approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
@@ -861,6 +868,36 @@ export class AgentRuntime<
         error: renderError(error),
       });
     }
+  }
+
+  private resolveSubagentTranscriptPath(subagentSessionId: string): string | undefined {
+    const resolve = this.options.resolveSubagentTranscriptPath;
+    if (!resolve) {
+      return undefined;
+    }
+    const sessionKey = resolveHookSessionContext(this.options).sessionId;
+    const resolved = resolve({
+      subagentSessionId,
+      ...(sessionKey !== undefined ? { sessionKey } : {}),
+    })?.trim();
+    return resolved || undefined;
+  }
+
+  private completedSubagentToolOutcome(
+    sessionId: string | undefined,
+    text: string,
+    failed: boolean,
+  ): Extract<SubagentToolExecutionResult<ToolRequest, TrustTarget>, { kind: 'completed' }> {
+    const sessionTranscript = sessionId
+      ? this.resolveSubagentTranscriptPath(sessionId)
+      : undefined;
+    return {
+      kind: 'completed',
+      text,
+      failed,
+      ...(sessionId ? { sessionId } : {}),
+      ...(sessionTranscript ? { sessionTranscript } : {}),
+    };
   }
 
   toArchive(
@@ -1818,6 +1855,8 @@ export class AgentRuntime<
       request,
       outcome.text,
       outcome.failed,
+      outcome.sessionId,
+      outcome.sessionTranscript,
     );
 
     turn.toolExecutions.push({
@@ -2002,6 +2041,8 @@ export class AgentRuntime<
       request,
       outcome.text,
       outcome.failed,
+      outcome.sessionId,
+      outcome.sessionTranscript,
     );
 
     turn.toolExecutions.push({
@@ -2964,11 +3005,11 @@ export class AgentRuntime<
     streamingEmitBeginResponse = true,
   ): Promise<SubagentToolExecutionResult<ToolRequest, TrustTarget>> {
     if (this.runtimeDepthStore >= 1) {
-      return {
-        kind: 'completed',
-        text: '[subagent blocked] 当前版本仅支持主会话创建一层子会话，不支持继续嵌套。',
-        failed: true,
-      };
+      return this.completedSubagentToolOutcome(
+        undefined,
+        '[subagent blocked] 当前版本仅支持主会话创建一层子会话，不支持继续嵌套。',
+        true,
+      );
     }
 
     const sessionId = this.nextChildSessionId();
@@ -2992,11 +3033,11 @@ export class AgentRuntime<
       const bootstrap = this.options.bootstrapSubagentWorkspace;
       const parentWorkspaceRoot = resolveHookSessionContext(this.options).workspaceRoot?.trim() ?? '';
       if (!bootstrap) {
-        return {
-          kind: 'completed',
-          text: '[subagent failed] worktree subagents are not supported on this host.',
-          failed: true,
-        };
+        return this.completedSubagentToolOutcome(
+          sessionId,
+          '[subagent failed] worktree subagents are not supported on this host.',
+          true,
+        );
       }
 
       if (resumeAsStreaming) {
@@ -3031,7 +3072,11 @@ export class AgentRuntime<
         parentWorkspaceRoot,
       });
       if ('error' in boot) {
-        return { kind: 'completed', text: `[subagent failed] ${boot.error}`, failed: true };
+        return this.completedSubagentToolOutcome(
+          sessionId,
+          `[subagent failed] ${boot.error}`,
+          true,
+        );
       }
       if (boot.worktreePath) {
         record.summary.worktreePath = boot.worktreePath;
@@ -3072,7 +3117,7 @@ export class AgentRuntime<
       record.summary.latestMessage = truncateTextForSubagentSummary(subagentStartDenied, 180);
       record.summary.error = subagentStartDenied;
       this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
-      return { kind: 'completed', text: subagentStartDenied, failed: true };
+      return this.completedSubagentToolOutcome(sessionId, subagentStartDenied, true);
     }
 
     record.llmHistory = [{
@@ -3107,7 +3152,7 @@ export class AgentRuntime<
         delete record.summary.finalOutput;
         record.summary.error = failed;
         this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
-        return { kind: 'completed', text: failed, failed: true };
+        return this.completedSubagentToolOutcome(sessionId, failed, true);
       }
     }
 
@@ -3121,7 +3166,7 @@ export class AgentRuntime<
         record.summary.finalOutput = finalOutput;
         delete record.summary.error;
         this.markChildSessionTerminalAndSyncTranscript(record, 'completed');
-        return { kind: 'completed', text: finalOutput, failed: false };
+        return this.completedSubagentToolOutcome(sessionId, finalOutput, false);
       }
 
       if (result.kind === 'requires-approval') {
@@ -3171,14 +3216,14 @@ export class AgentRuntime<
       delete record.summary.finalOutput;
       record.summary.error = failed;
       this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
-      return { kind: 'completed', text: failed, failed: true };
+      return this.completedSubagentToolOutcome(sessionId, failed, true);
     } catch (error) {
       const failed = `[subagent failed] ${renderError(error)}`;
       record.summary.latestMessage = truncateTextForSubagentSummary(failed, 180);
       delete record.summary.finalOutput;
       record.summary.error = failed;
       this.markChildSessionTerminalAndSyncTranscript(record, 'failed');
-      return { kind: 'completed', text: failed, failed: true };
+      return this.completedSubagentToolOutcome(sessionId, failed, true);
     }
   }
 
@@ -3339,6 +3384,7 @@ export class AgentRuntime<
         failed,
         true,
         pending.childRecord.summary.sessionId,
+        this.resolveSubagentTranscriptPath(pending.childRecord.summary.sessionId),
       ),
       pending.childRecord.summary.worktreePath,
       pending.childRecord.summary.worktreeBranch,
@@ -3477,6 +3523,7 @@ export class AgentRuntime<
         output.text,
         output.failed,
         pending.childRecord.summary.sessionId,
+        this.resolveSubagentTranscriptPath(pending.childRecord.summary.sessionId),
       ),
       pending.childRecord.summary.worktreePath,
       pending.childRecord.summary.worktreeBranch,
@@ -3871,32 +3918,22 @@ function buildSubagentUserTurn(request: SubagentRequest): string {
   return sections.filter((section) => section.trim().length > 0).join('\n\n');
 }
 
-function buildParentSubagentToolResultText(
-  title: string,
-  outputText: string,
-  failed: boolean,
-  sessionId?: string,
-): string {
-  const normalizedTitle = title.trim() || 'SubAgent';
-  const normalizedOutput = outputText.trim();
-  const header = failed ? '[subagent failed]' : '[subagent completed]';
-  const sessionLine = sessionId?.trim() ? `sessionId=${sessionId}\n` : '';
-  if (!normalizedOutput) {
-    return `${header}\ntitle=${normalizedTitle}${sessionLine ? `\n${sessionLine.trimEnd()}` : ''}`;
-  }
-
-  const label = failed ? 'error:' : 'final_output:';
-  return `${header}\ntitle=${normalizedTitle}\n${sessionLine}${label}\n${normalizedOutput}`;
-}
-
 function buildParentSubagentToolResultTextFromRequest<ToolRequest>(
   request: ToolRequest,
   outputText: string,
   failed: boolean,
+  sessionId?: string,
+  sessionTranscript?: string,
 ): string {
   const subagent = extractSubagentRequest(request);
   const title = truncateTextForSubagentSummary(subagent?.task?.trim() ?? '', 72) || 'SubAgent';
-  return buildParentSubagentToolResultText(title, outputText, failed);
+  return buildParentSubagentToolResultText(
+    title,
+    outputText,
+    failed,
+    sessionId,
+    sessionTranscript,
+  );
 }
 
 function resolveSubagentResultText(

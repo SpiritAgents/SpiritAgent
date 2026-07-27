@@ -426,6 +426,11 @@ export interface AgentRuntimeOptions<
     sessionKey?: string;
     subagentSessionId: string;
   }) => Promise<void>;
+  /** Absolute path for a subagent transcript file (for tool-result metadata). */
+  resolveSubagentTranscriptPath?: (input: {
+    sessionKey?: string;
+    subagentSessionId: string;
+  }) => string | undefined;
   persistToolOutputArchive?: (input: {
     sessionId?: string;
     toolCallId?: string;

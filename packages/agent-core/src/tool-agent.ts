@@ -234,6 +234,8 @@ export interface ToolAgentBasicInfo {
   terminal?: string;
   system?: ToolAgentSystemInfo;
   gitBranch?: string;
+  /** Absolute path to this session's transcript directory under Spirit data. */
+  sessionTranscript?: string;
 }
 
 export interface ToolAgentState {
@@ -920,11 +922,12 @@ export function buildBasicInfoSystemMessage(
   const workspaceRoot = basicInfo?.workspaceRoot?.trim();
   const terminal = basicInfo?.terminal?.trim();
   const gitBranch = basicInfo?.gitBranch?.trim();
+  const sessionTranscript = basicInfo?.sessionTranscript?.trim();
   const systemName = basicInfo?.system?.name.trim();
   const systemVersion = basicInfo?.system?.version.trim();
   const hasSystem = Boolean(systemName || systemVersion);
 
-  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem) {
+  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem && !sessionTranscript) {
     return undefined;
   }
 
@@ -937,6 +940,9 @@ export function buildBasicInfoSystemMessage(
   }
   if (terminal) {
     lines.push('Current terminal:', `- ${terminal}`, '');
+  }
+  if (sessionTranscript) {
+    lines.push('Current session transcript:', `- ${sessionTranscript}`, '');
   }
   if (hasSystem) {
     lines.push('Operating system:');

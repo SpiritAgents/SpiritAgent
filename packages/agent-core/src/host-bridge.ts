@@ -172,6 +172,15 @@ interface CliHostInternalModule {
     spiritDataDir: string,
     sessionKey: string | undefined,
   ) => Promise<string>;
+  resolveTranscriptSessionDir?: (
+    spiritDataDir: string,
+    sessionKey: string | undefined,
+  ) => string;
+  resolveSubagentTranscriptFilePath?: (
+    spiritDataDir: string,
+    sessionKey: string | undefined,
+    subagentSessionId: string,
+  ) => string;
   persistToolOutputArchive?: (
     spiritDataDir: string,
     input: {
@@ -766,17 +775,29 @@ function currentOperatingSystemInfo(): { name: string; version: string } {
   };
 }
 
+function resolveCliSessionTranscriptDir(): string | undefined {
+  const sessionKey = currentTodoSessionKey?.trim();
+  const resolve = cliHostInternal?.module.resolveTranscriptSessionDir;
+  if (!sessionKey || !cliHostInternal || typeof resolve !== 'function') {
+    return undefined;
+  }
+  return resolve(cliHostInternal.spiritDataDir, sessionKey);
+}
+
 function buildRuntimeBasicInfo(
   workspaceRoot: string,
   service: LocalHostToolService | undefined,
   gitBranch?: string,
+  sessionTranscript?: string,
 ): LlmToolAgentBasicInfo {
   const shell = service?.toolDefinitionEnvironment();
   const normalizedGitBranch = gitBranch?.trim();
+  const normalizedTranscript = sessionTranscript?.trim();
   return {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
     ...(normalizedGitBranch ? { gitBranch: normalizedGitBranch } : {}),
+    ...(normalizedTranscript ? { sessionTranscript: normalizedTranscript } : {}),
     system: service?.operatingSystemInfo?.() ?? currentOperatingSystemInfo(),
   };
 }
@@ -1751,6 +1772,7 @@ async function createRuntime(
     workspaceRoot,
     hostInternal?.service,
     await readCliGitBranchLabelForBasicInfo(workspaceRoot),
+    resolveCliSessionTranscriptDir(),
   );
   toolExecutor.setImageGenerationAvailable('imageGeneration' in config && config.imageGeneration !== undefined);
   toolExecutor.setVideoGenerationAvailable('videoGeneration' in config && config.videoGeneration !== undefined);
@@ -1898,6 +1920,18 @@ async function createRuntime(
       } catch {
         // Best-effort subagent transcript sync.
       }
+    },
+    resolveSubagentTranscriptPath: ({ sessionKey, subagentSessionId }) => {
+      const hostInternal = cliHostInternal;
+      const resolve = hostInternal?.module.resolveSubagentTranscriptFilePath;
+      if (!hostInternal || typeof resolve !== 'function') {
+        return undefined;
+      }
+      return resolve(
+        hostInternal.spiritDataDir,
+        sessionKey ?? currentTodoSessionKey,
+        subagentSessionId,
+      );
     },
     persistToolOutputArchive: async (input) => {
       const hostInternal = await ensureCliHostInternal(workspaceRoot);
@@ -2746,6 +2780,7 @@ peer.on('runtime.exportState', async () => {
       workspaceRoot,
       cliHostInternal?.service,
       await readCliGitBranchLabelForBasicInfo(workspaceRoot),
+      resolveCliSessionTranscriptDir(),
     ),
   );
 

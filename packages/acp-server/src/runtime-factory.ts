@@ -45,6 +45,8 @@ import {
   persistSubagentTranscript,
   persistToolOutputArchive,
   readGitBranchLabelForBasicInfo,
+  resolveSubagentTranscriptFilePath,
+  resolveTranscriptSessionDir,
 } from '@spiritagent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
@@ -118,10 +120,14 @@ export async function createAcpRuntime(
 
   // 5. Build runtime basic info
   const shell = service.toolDefinitionEnvironment();
+  const sessionTranscript = sessionKey?.trim()
+    ? resolveTranscriptSessionDir(spiritDataDir, sessionKey.trim())
+    : undefined;
   const basicInfo: LlmToolAgentBasicInfo = {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
     gitBranch: await readGitBranchLabelForBasicInfo(workspaceRoot),
+    ...(sessionTranscript ? { sessionTranscript } : {}),
     system: service.operatingSystemInfo?.() ?? {
       name: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform,
       version: osRelease(),
@@ -233,16 +239,21 @@ export async function createAcpRuntime(
           },
         }
       : {}),
-    syncSessionTranscript: async ({ transcript, sessionKey: key }) =>
-      persistSessionTranscript(spiritDataDir, transcript, {
-        sessionKey: key ?? sessionKey,
-      }),
-    syncSubagentTranscript: async ({ transcript, sessionKey: key, subagentSessionId }) => {
-      await persistSubagentTranscript(spiritDataDir, transcript, {
-        subagentSessionId,
-        sessionKey: key ?? sessionKey,
+    syncSessionTranscript: async ({ transcript, sessionKey: key }) => {
+      const resolvedKey = key ?? sessionKey;
+      return persistSessionTranscript(spiritDataDir, transcript, {
+        ...(resolvedKey !== undefined ? { sessionKey: resolvedKey } : {}),
       });
     },
+    syncSubagentTranscript: async ({ transcript, sessionKey: key, subagentSessionId }) => {
+      const resolvedKey = key ?? sessionKey;
+      await persistSubagentTranscript(spiritDataDir, transcript, {
+        subagentSessionId,
+        ...(resolvedKey !== undefined ? { sessionKey: resolvedKey } : {}),
+      });
+    },
+    resolveSubagentTranscriptPath: ({ sessionKey: key, subagentSessionId }) =>
+      resolveSubagentTranscriptFilePath(spiritDataDir, key ?? sessionKey, subagentSessionId),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritDataDir, input),
     onEvent,

@@ -36,6 +36,8 @@ import {
   persistSessionTranscript,
   persistSubagentTranscript,
   persistToolOutputArchive,
+  resolveSubagentTranscriptFilePath,
+  resolveTranscriptSessionDir,
 } from '@spiritagent/host-internal';
 
 import type { DesktopToolRequest } from './contracts.js';
@@ -178,6 +180,8 @@ export function createDesktopRuntime(input: {
         ...(sessionKey !== undefined ? { sessionKey } : {}),
       });
     },
+    resolveSubagentTranscriptPath: ({ sessionKey, subagentSessionId }) =>
+      resolveSubagentTranscriptFilePath(spiritAgentDataDir(), sessionKey, subagentSessionId),
     persistToolOutputArchive: async (input) =>
       persistToolOutputArchive(spiritAgentDataDir(), input),
   }, input.history.map((message) => normalizeStoredLlmMessage(message)));
@@ -187,12 +191,18 @@ export function buildDesktopRuntimeBasicInfo(
   workspaceRoot: string,
   toolExecutor: DesktopToolExecutor,
   gitBranch?: string,
+  sessionKey?: string,
 ): LlmToolAgentBasicInfo {
   const shell = toolExecutor.toolDefinitionEnvironment();
   const normalizedGitBranch = gitBranch?.trim();
+  const normalizedSessionKey = sessionKey?.trim();
+  const sessionTranscript = normalizedSessionKey
+    ? resolveTranscriptSessionDir(spiritAgentDataDir(), normalizedSessionKey)
+    : undefined;
   return {
     workspaceRoot,
     ...(normalizedGitBranch ? { gitBranch: normalizedGitBranch } : {}),
+    ...(sessionTranscript ? { sessionTranscript } : {}),
     terminal: shell.shellDisplayName,
     system: toolExecutor.operatingSystemInfo(),
   };
