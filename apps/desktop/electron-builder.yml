@@ -54,8 +54,9 @@ mac:
   # Helper processes need the same JIT entitlements as the main app; one plist covers both.
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  # Activated by APPLE_API_KEY / APPLE_API_KEY_ID / APPLE_API_ISSUER; skipped when they are absent.
-  notarize: true
+  # Notarization runs as its own CI job against the finished dmg/zip: bundling it here ties a
+  # 35-minute Apple round trip to the build, so one network blip discards the signed output too.
+  notarize: false
 linux:
   maintainer: Spirit Agent contributors <121384036+N123999@users.noreply.github.com>
   target:
