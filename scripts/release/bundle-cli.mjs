@@ -3,6 +3,7 @@ import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { signCliBundle } from './sign-macos.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const releaseRoot = path.join(repoRoot, 'dist', 'release');
@@ -267,6 +268,11 @@ async function main() {
       2,
     )}\n`,
   );
+
+  // 必须早于 createArchive：归档一旦生成，再签名也只是改了归档外的副本。
+  if (targetInfo.nodePlatform === 'darwin') {
+    await signCliBundle(bundleRoot);
+  }
 
   const archivePath = path.join(releaseRoot, `${bundleName}.${targetInfo.archiveExt}`);
   await rm(archivePath, { force: true });
