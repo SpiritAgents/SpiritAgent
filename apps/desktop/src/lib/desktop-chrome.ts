@@ -4,7 +4,16 @@ import {
   DESKTOP_SIDEBAR_TEXT_CLASS,
   FONT_WEIGHT_NORMAL,
 } from "@/lib/desktop-typography";
+import { desktopComposerChipSurfaceClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
+
+export {
+  DESKTOP_COMPOSER_SURFACE_BACKDROP,
+  DESKTOP_COMPOSER_SURFACE_MICA_TINT,
+  DESKTOP_COMPOSER_SURFACE_SOLID,
+  desktopComposerChipSurfaceClass,
+  desktopComposerSurfaceBackdropClass,
+} from "@/lib/desktop-mica-surface";
 
 /**
  * Instant hover fill — exclude background-color from transitions (session-sidebar precedent).
@@ -237,16 +246,8 @@ export const DESKTOP_OVERLAY_LIST_DETAIL_WIDTH =
 export const DESKTOP_OVERLAY_LIST_WORKSPACE_PANEL =
   "flex h-[min(24rem,var(--radix-dropdown-menu-content-available-height))] w-[min(24rem,calc(100vw-1.25rem))] max-w-[min(19rem,calc(100vw-1.25rem))] flex-col overflow-hidden p-0 text-xs";
 
-/** Composer 输入框半透明底（暗色叠加 input 淡层）；PR 粘性头等浮层同源 */
-export const DESKTOP_COMPOSER_SURFACE_BACKDROP =
-  "bg-background/55 backdrop-blur-xl dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25";
-
-/** Composer 胶囊小卡片（Changes 等）：与输入框同源底/边框，hover 仅提亮边框 */
-export const DESKTOP_COMPOSER_CHIP_SURFACE = cn(
-  "border border-border/50 dark:border-white/10",
-  "hover:border-ring/60 dark:hover:border-white/12",
-  DESKTOP_COMPOSER_SURFACE_BACKDROP,
-);
+/** Composer 胶囊小卡片（Changes 等）：非 Mica 玻璃底；Mica 请用 {@link desktopComposerChipSurfaceClass} */
+export const DESKTOP_COMPOSER_CHIP_SURFACE = desktopComposerChipSurfaceClass(false);
 
 /** 阻止滚轮穿透到背后会话/列表 */
 export function stopOverlayScrollPropagation(event: {

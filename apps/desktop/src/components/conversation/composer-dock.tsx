@@ -1,9 +1,13 @@
 import {
   forwardRef,
+  useCallback,
+  useLayoutEffect,
   useRef,
   type ClipboardEvent as ReactClipboardEvent,
+  type CSSProperties,
   type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type Ref,
   type RefObject,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,6 +35,13 @@ import {
   CONVERSATION_MESSAGE_LIST_MAX_W,
 } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import {
+  buildConversationScrollOccludeMaskStyle,
+  conversationScrollOccludeShapeFromRects,
+  readElementTopBorderRadius,
+  readElementUniformBorderRadius,
+  type ConversationScrollOccludeShape,
+} from "@/lib/conversation-scroll-occlude-mask";
 import type { ActiveWorkspaceFileReferenceQuery, RichSegment } from "@/lib/composer-segment-model";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
@@ -113,7 +124,21 @@ export type ComposerDockProps = {
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
+  /** 会话滚动视口（用于把 dock 形状换算到 viewport 坐标做形状 mask） */
+  getScrollViewport?: () => HTMLElement | null;
+  /** Mica：按输入框/Changes/TODO 轮廓裁切消息；顶圆角空隙不裁 */
+  onScrollOccludeMaskStyleChange?: (style: CSSProperties | undefined) => void;
 };
+
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (typeof ref === "function") {
+    ref(value);
+    return;
+  }
+  if (ref) {
+    ref.current = value;
+  }
+}
 
 export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(function ComposerDock(
   {
@@ -176,11 +201,126 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     models,
     useMicaBackdrop,
     onOpenGitTab,
+    getScrollViewport,
+    onScrollOccludeMaskStyleChange,
   },
   ref,
 ) {
   const { t } = useTranslation();
   const composerRootRef = useRef<HTMLDivElement | null>(null);
+  const dockElementRef = useRef<HTMLDivElement | null>(null);
+  /** 含 Changes/Todo + 输入框的列 */
+  const composerChromeRef = useRef<HTMLDivElement | null>(null);
+  const setDockRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      dockElementRef.current = node;
+      assignRef(ref, node);
+    },
+    [ref],
+  );
+
+  useLayoutEffect(() => {
+    if (!onScrollOccludeMaskStyleChange) {
+      return;
+    }
+    if (isEmptySession || !useMicaBackdrop) {
+      onScrollOccludeMaskStyleChange(undefined);
+      return;
+    }
+    const dock = dockElementRef.current;
+    const chrome = composerChromeRef.current;
+    if (!dock || !chrome) {
+      onScrollOccludeMaskStyleChange(undefined);
+      return;
+    }
+
+    const syncOcclude = () => {
+      const viewport = getScrollViewport?.() ?? null;
+      if (!viewport) {
+        onScrollOccludeMaskStyleChange(undefined);
+        return;
+      }
+      const viewportRect = viewport.getBoundingClientRect();
+      const shapes: ConversationScrollOccludeShape[] = [];
+
+      const changes = chrome.querySelector<HTMLElement>(
+        '[data-spirit-surface="composer-changes-card"]',
+      );
+      if (changes) {
+        const radius = readElementUniformBorderRadius(changes);
+        shapes.push(
+          conversationScrollOccludeShapeFromRects(
+            viewportRect,
+            changes.getBoundingClientRect(),
+            radius,
+            radius,
+          ),
+        );
+      }
+
+      const todo = chrome.querySelector<HTMLElement>(
+        '[data-spirit-surface="composer-todo-card"]',
+      );
+      if (todo) {
+        const topRadius = readElementTopBorderRadius(todo);
+        shapes.push(
+          conversationScrollOccludeShapeFromRects(
+            viewportRect,
+            todo.getBoundingClientRect(),
+            topRadius,
+            topRadius,
+            { roundTopOnly: true },
+          ),
+        );
+      }
+
+      const surface = chrome.querySelector<HTMLElement>(
+        '[data-spirit-surface="composer-surface"]',
+      );
+      let bottomSlabFromY: number | undefined;
+      if (surface) {
+        const surfaceRect = surface.getBoundingClientRect();
+        const radius = readElementUniformBorderRadius(surface);
+        shapes.push(
+          conversationScrollOccludeShapeFromRects(
+            viewportRect,
+            surfaceRect,
+            radius,
+            radius,
+          ),
+        );
+        // 底带从「底圆角起点」起：封底圆角外侧空隙 + 审批栏；顶圆角空隙不进底带
+        bottomSlabFromY = surfaceRect.bottom - viewportRect.top - radius;
+      }
+
+      onScrollOccludeMaskStyleChange(
+        buildConversationScrollOccludeMaskStyle({
+          viewportWidth: viewport.clientWidth,
+          viewportHeight: viewport.clientHeight,
+          shapes,
+          bottomSlabFromY,
+        }),
+      );
+    };
+
+    syncOcclude();
+    const observer = new ResizeObserver(syncOcclude);
+    observer.observe(dock);
+    observer.observe(chrome);
+    const viewport = getScrollViewport?.() ?? null;
+    if (viewport) {
+      observer.observe(viewport);
+    }
+    return () => {
+      observer.disconnect();
+      onScrollOccludeMaskStyleChange(undefined);
+    };
+  }, [
+    getScrollViewport,
+    isEmptySession,
+    onScrollOccludeMaskStyleChange,
+    useMicaBackdrop,
+  ]);
   const fileReferenceAnchor = useComposerSuggestionAnchor(
     composerRichInputRef,
     activeFileReferenceQuery ? composerCursorCodeUnits : null,
@@ -206,7 +346,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
 
   return (
     <div
-      ref={ref}
+      ref={setDockRef}
       data-spirit-surface="composer-dock"
       className={cn(
         "pointer-events-none absolute inset-x-0 z-10 bg-transparent",
@@ -381,7 +521,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
           ) : null}
 
           <div className="relative" ref={composerRootRef}>
-            <div className="relative z-10 flex flex-col">
+            <div className="relative z-10 flex flex-col" ref={composerChromeRef}>
               {!isEmptySession && showChangesCard && changesLineDelta ? (
                 <div
                   className={cn(
@@ -389,7 +529,11 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     hasComposerTodos && "mx-4",
                   )}
                 >
-                  <ComposerChangesCard delta={changesLineDelta} onOpenGitTab={onOpenGitTab} />
+                  <ComposerChangesCard
+                    delta={changesLineDelta}
+                    onOpenGitTab={onOpenGitTab}
+                    useMicaBackdrop={useMicaBackdrop}
+                  />
                 </div>
               ) : null}
               {snapshot?.conversation.todos ? (
@@ -397,6 +541,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   <ComposerTodoCard
                     todos={snapshot.conversation.todos}
                     sessionKey={snapshot.composerSessionKey}
+                    useMicaBackdrop={useMicaBackdrop}
                   />
                 </div>
               ) : null}
@@ -458,6 +603,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 onDragOver={onComposerDragOver}
                 onDrop={onComposerDrop}
                 saveLocalImageAs={runtime.saveLocalImageAs}
+                useMicaBackdrop={useMicaBackdrop}
               />
             </div>
             <ComposerSuggestionDropdown

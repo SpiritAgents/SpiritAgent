@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { TFunction } from "i18next";
 
 import {
@@ -279,6 +280,20 @@ export function useConversationViewState({
           composerDockHeightPx + CONVERSATION_SCROLL_BED_EXTRA_PX,
         )
       : CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX;
+  /** Mica 下会话滚动形状 mask；由 ComposerDock 按输入框/Changes/TODO 轮廓回写 */
+  const [conversationScrollOccludeMaskStyle, setConversationScrollOccludeMaskStyle] = useState<
+    CSSProperties | undefined
+  >(undefined);
+  const onConversationScrollOccludeMaskStyleChange = useCallback(
+    (style: CSSProperties | undefined) => {
+      setConversationScrollOccludeMaskStyle((prev) => {
+        const prevKey = typeof prev?.maskImage === "string" ? prev.maskImage : "";
+        const nextKey = typeof style?.maskImage === "string" ? style.maskImage : "";
+        return prevKey === nextKey ? prev : style;
+      });
+    },
+    [],
+  );
 
   const panePendingQuestions = snapshot?.conversation.pendingQuestions ?? null;
   const pendingQuestions = useIsolatedPane
@@ -385,6 +400,8 @@ export function useConversationViewState({
     showPendingApprovalInComposer,
     composerDockRef,
     conversationScrollBedPaddingPx,
+    conversationScrollOccludeMaskStyle,
+    onConversationScrollOccludeMaskStyleChange,
     pendingQuestions,
     showPendingQuestionsInComposer,
     activeSessionReadOnly,

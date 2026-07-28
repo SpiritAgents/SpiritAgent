@@ -2,18 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, Circle, LoaderCircle } from "lucide-react";
 
 import type { ConversationTodoSnapshot } from "@/types";
+import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 
 type ComposerTodoCardProps = {
   todos: ConversationTodoSnapshot;
   sessionKey: string;
+  useMicaBackdrop?: boolean;
 };
 
 function storageKey(sessionKey: string): string {
   return `spirit-todo-expanded:${sessionKey}`;
 }
 
-export function ComposerTodoCard({ todos, sessionKey }: ComposerTodoCardProps) {
+export function ComposerTodoCard({
+  todos,
+  sessionKey,
+  useMicaBackdrop = false,
+}: ComposerTodoCardProps) {
   const [expanded, setExpanded] = useState(() => {
     if (typeof window === "undefined") {
       return true;
@@ -73,7 +79,8 @@ export function ComposerTodoCard({ todos, sessionKey }: ComposerTodoCardProps) {
     <div
       data-spirit-surface="composer-todo-card"
       className={cn(
-        "overflow-hidden rounded-t-2xl rounded-b-none border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl transition-[max-height] duration-300 ease-out dark:border-white/12 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25",
+        "overflow-hidden rounded-t-2xl rounded-b-none border border-border/50 shadow-sm transition-[max-height] duration-300 ease-out dark:border-white/12",
+        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
       )}
     >
       <button

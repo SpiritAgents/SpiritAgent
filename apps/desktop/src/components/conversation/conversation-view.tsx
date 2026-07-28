@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import type {
   ClipboardEvent as ReactClipboardEvent,
+  CSSProperties,
   DragEvent as ReactDragEvent,
   ComponentRef,
   KeyboardEvent as ReactKeyboardEvent,
@@ -144,6 +145,7 @@ export type ComposerDockSectionProps = {
   onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
   models: DesktopSnapshot["config"]["models"];
   onOpenGitTab: () => void;
+  onScrollOccludeMaskStyleChange?: (style: CSSProperties | undefined) => void;
 };
 
 export type BranchCheckoutSectionProps = {
@@ -177,6 +179,8 @@ export type ConversationViewProps = {
   rewindDraft: MessageRewindDraftState | null;
   onRewindDraftClear: () => void;
   conversationScrollBedPaddingPx: number;
+  /** Mica：按 dock 轮廓的视口 mask（顶圆角空隙不裁）；ScrollArea 仍全高 */
+  conversationScrollOccludeMaskStyle?: CSSProperties;
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
   branchCheckout?: BranchCheckoutSectionProps;
@@ -232,6 +236,7 @@ export function ConversationView({
   rewindDraft,
   onRewindDraftClear,
   conversationScrollBedPaddingPx,
+  conversationScrollOccludeMaskStyle,
   list,
   composerDock,
   branchCheckout,
@@ -278,6 +283,11 @@ export function ConversationView({
   );
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
+  // Mica：ScrollArea 仍全高；形状 mask 裁输入框/Changes/TODO 轮廓（顶圆角空隙保留）
+  const conversationScrollViewportStyle =
+    useMicaBackdrop && conversationMessagesVisible
+      ? conversationScrollOccludeMaskStyle
+      : undefined;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
   const sessionTooltip =
     sessionTitleVisible && snapshot?.activeSession
@@ -551,6 +561,7 @@ export function ConversationView({
             className={cn("min-h-0 flex-1", desktopMicaTintInnerClass(useMicaBackdrop))}
             type="hover"
             scrollHideDelay={450}
+            viewportStyle={conversationScrollViewportStyle}
           >
             {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
             <div
@@ -672,6 +683,8 @@ export function ConversationView({
             models={composerDock.models}
             useMicaBackdrop={useMicaBackdrop}
             onOpenGitTab={composerDock.onOpenGitTab}
+            getScrollViewport={getConversationScrollElement}
+            onScrollOccludeMaskStyleChange={composerDock.onScrollOccludeMaskStyleChange}
           />
           ) : null}
           {showComposerDock && branchCheckout ? (

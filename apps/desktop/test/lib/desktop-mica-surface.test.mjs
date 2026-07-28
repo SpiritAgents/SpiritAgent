@@ -2,11 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DESKTOP_COMPOSER_SURFACE_BACKDROP,
+  DESKTOP_COMPOSER_SURFACE_MICA_TINT,
   DESKTOP_MICA_BROWSER_TINT_CLASS,
   DESKTOP_MICA_CONTENT_TINT_CLASS,
   DESKTOP_MICA_TERMINAL_TINT_CLASS,
   DESKTOP_MICA_WORKSPACE_TAB_SELECTED_TINT_CLASS,
   DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS,
+  desktopComposerChipSurfaceClass,
+  desktopComposerSurfaceBackdropClass,
   desktopMicaBrowserTintClass,
   desktopMicaFileDetailSurfaceClass,
   desktopMicaTerminalTintClass,
@@ -57,4 +61,22 @@ test('desktopMicaWorkspaceTabSelectedClass uses light tint when Mica is on', () 
 test('desktopMicaFileDetailSurfaceClass avoids stacking tint under Mica', () => {
   assert.equal(desktopMicaFileDetailSurfaceClass(false), DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS);
   assert.equal(desktopMicaFileDetailSurfaceClass(true), 'bg-transparent');
+});
+
+test('desktopComposerSurfaceBackdropClass keeps glass when Mica is off', () => {
+  assert.equal(desktopComposerSurfaceBackdropClass(false), DESKTOP_COMPOSER_SURFACE_BACKDROP);
+  assert.match(DESKTOP_COMPOSER_SURFACE_BACKDROP, /backdrop-blur/);
+  assert.match(DESKTOP_COMPOSER_SURFACE_BACKDROP, /dark:bg-input/);
+});
+
+test('desktopComposerSurfaceBackdropClass uses translucent tint without blur when Mica is on', () => {
+  assert.equal(desktopComposerSurfaceBackdropClass(true), DESKTOP_COMPOSER_SURFACE_MICA_TINT);
+  assert.doesNotMatch(DESKTOP_COMPOSER_SURFACE_MICA_TINT, /backdrop-blur/);
+  assert.equal(DESKTOP_COMPOSER_SURFACE_MICA_TINT, 'bg-background/70');
+});
+
+test('desktopComposerChipSurfaceClass follows composer surface mica tint/glass', () => {
+  assert.match(desktopComposerChipSurfaceClass(false), /backdrop-blur/);
+  assert.doesNotMatch(desktopComposerChipSurfaceClass(true), /backdrop-blur/);
+  assert.match(desktopComposerChipSurfaceClass(true), /bg-background\/70/);
 });

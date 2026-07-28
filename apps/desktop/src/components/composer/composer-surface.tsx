@@ -32,10 +32,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import {
-  DESKTOP_COMPOSER_SURFACE_BACKDROP,
-  instantHoverMotionClass,
-} from "@/lib/desktop-chrome";
+import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
 import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelRef } from "@/types";
@@ -92,6 +90,8 @@ export type ComposerSurfaceProps = {
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
   saveLocalImageAs?: SaveLocalImageAs;
+  /** Mica 开启时输入框用实色底，避免 CSS blur 透出滚动消息 */
+  useMicaBackdrop?: boolean;
 };
 
 export function ComposerSurface({
@@ -135,6 +135,7 @@ export function ComposerSurface({
   agentModeChipDismissed = false,
   onAgentModeChipDismissChange,
   saveLocalImageAs,
+  useMicaBackdrop = false,
 }: ComposerSurfaceProps) {
   const { t } = useTranslation();
   const [fileDragOver, setFileDragOver] = useState(false);
@@ -189,7 +190,7 @@ export function ComposerSurface({
       className={cn(
         "relative overflow-hidden rounded-2xl border border-border/50 shadow-sm focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
         fileDragOver && "border-ring/60 dark:border-white/12",
-        DESKTOP_COMPOSER_SURFACE_BACKDROP,
+        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
       )}
       onDragOver={handleSurfaceDragOver}
       onDragLeave={handleSurfaceDragLeave}

@@ -33,6 +33,9 @@ const ScrollArea = React.forwardRef<
   React.ComponentRef<typeof Root>,
   React.ComponentPropsWithoutRef<typeof Root> & {
     scrollbars?: "vertical" | "horizontal" | "both";
+    /** 仅作用于 Viewport（滚动条为兄弟节点，不受 mask 影响） */
+    viewportClassName?: string;
+    viewportStyle?: React.CSSProperties;
   }
 >(
   (
@@ -42,6 +45,8 @@ const ScrollArea = React.forwardRef<
       type = "hover",
       scrollHideDelay = 500,
       scrollbars = "vertical",
+      viewportClassName,
+      viewportStyle,
       ...props
     },
     ref,
@@ -67,7 +72,9 @@ const ScrollArea = React.forwardRef<
           className={cn(
             "h-full w-full min-h-0 min-w-0 rounded-[inherit] [display:block]",
             viewportChildClass,
+            viewportClassName,
           )}
+          style={viewportStyle}
         >
           {children}
         </Viewport>

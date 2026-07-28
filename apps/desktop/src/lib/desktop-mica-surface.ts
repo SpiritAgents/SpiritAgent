@@ -1,6 +1,33 @@
 /** Mica 开启时主内容区背景不透明度（仅 tint，不叠加 CSS backdrop-blur）。 */
 export const DESKTOP_MICA_CONTENT_TINT_CLASS = "bg-background/70";
 
+/** Composer 输入框半透明底（暗色叠加 input 淡层）；非 Mica 浮层同源 */
+export const DESKTOP_COMPOSER_SURFACE_BACKDROP =
+  "bg-background/55 backdrop-blur-xl dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25";
+
+/**
+ * Mica 开启时 Composer 半透明 tint（不叠 CSS blur，透出窗级系统材质）。
+ * 消息叠穿由视口形状 mask 裁掉；深色用纯黑 background 带 alpha。
+ */
+export const DESKTOP_COMPOSER_SURFACE_MICA_TINT = "bg-background/30";
+
+/** @deprecated 使用 {@link DESKTOP_COMPOSER_SURFACE_MICA_TINT} */
+export const DESKTOP_COMPOSER_SURFACE_SOLID = DESKTOP_COMPOSER_SURFACE_MICA_TINT;
+
+/** Mica 下半透明 tint；关闭时保持玻璃拟态 */
+export function desktopComposerSurfaceBackdropClass(useMicaBackdrop: boolean): string {
+  return useMicaBackdrop ? DESKTOP_COMPOSER_SURFACE_MICA_TINT : DESKTOP_COMPOSER_SURFACE_BACKDROP;
+}
+
+/** Composer 胶囊（Changes 等）底/边框：与输入框同源，随 Mica 切换实色/玻璃 */
+export function desktopComposerChipSurfaceClass(useMicaBackdrop: boolean): string {
+  return [
+    "border border-border/50 dark:border-white/10",
+    "hover:border-ring/60 dark:hover:border-white/12",
+    desktopComposerSurfaceBackdropClass(useMicaBackdrop),
+  ].join(" ");
+}
+
 /** 侧边栏：Mica 下轻 tint，比内容区更浅，保留系统 blur 可读性。 */
 export const DESKTOP_MICA_SIDEBAR_TINT_CLASS = "bg-background/45";
 

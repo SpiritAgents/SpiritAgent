@@ -322,6 +322,7 @@ export function useConversationPaneController({
     onComposerDrop: composer.handleComposerDrop,
     models: conversation.models,
     onOpenGitTab: workspaceTools.openGitTab,
+    onScrollOccludeMaskStyleChange: conversation.onConversationScrollOccludeMaskStyleChange,
   };
 
   const composerInsertHandlers = useMemo(
@@ -374,6 +375,7 @@ export function useConversationPaneController({
       onDiscardAndCheckout: composer.discardBranchChangesAndCheckoutSend,
     },
     conversationScrollBedPaddingPx: conversation.conversationScrollBedPaddingPx,
+    conversationScrollOccludeMaskStyle: conversation.conversationScrollOccludeMaskStyle,
     rewindDraft: messageRewind.rewindDraft,
     onRewindDraftClear: () => messageRewind.setRewindDraft(null),
     onExitSubagentViewer: paneSubagentViewActive

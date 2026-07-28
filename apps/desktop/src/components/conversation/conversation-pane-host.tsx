@@ -232,6 +232,7 @@ export function ConversationPaneHost({
       rewindDraft={pane.rewindDraft}
       onRewindDraftClear={pane.onRewindDraftClear}
       conversationScrollBedPaddingPx={pane.conversationScrollBedPaddingPx}
+      conversationScrollOccludeMaskStyle={pane.conversationScrollOccludeMaskStyle}
       list={pane.list}
       composerDock={pane.composerDock}
       branchCheckout={pane.branchCheckout}
