@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   ArrowRightToLine,
+  Blocks,
   BookText,
   Bot,
   ArrowLeft,
@@ -29,7 +30,6 @@ import {
   LoaderCircle,
   MoonStar,
   Network,
-  Package,
   Palette,
   Pencil,
   Plug,
@@ -1166,7 +1166,7 @@ const settingsConnectTabs: Array<{
   {
     id: "extensions",
     labelKey: "settings.extensions",
-    icon: Package,
+    icon: Blocks,
   },
   ...(isViteDev
     ? [
@@ -1786,7 +1786,7 @@ function SessionSidebarInner({
             disabled={disabled}
             onClick={onOpenMarketplace}
           >
-            <Package className="size-3.5" aria-hidden />
+            <Blocks className="size-3.5" aria-hidden />
             <span className={cn(narrow && "sr-only")}>{t('sidebar.extensions')}</span>
           </Button>
           {onOpenAutomations ? (
@@ -1905,7 +1905,7 @@ function SessionSidebarInner({
                           narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
                         )}
                       >
-                        <Package className="size-3.5" aria-hidden />
+                        <Blocks className="size-3.5" aria-hidden />
                         <span className={cn("min-w-0 truncate", narrow && "sr-only")}>{item.label}</span>
                       </button>
                     );
