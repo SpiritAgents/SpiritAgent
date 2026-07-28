@@ -1,7 +1,10 @@
 import { Sparkles } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 
-import { modelsDevProviderLogoUrl } from '@/lib/models-dev-provider-logo';
+import {
+  modelsDevProviderLogoUrl,
+  probeModelsDevReachability,
+} from '@/lib/models-dev-provider-logo';
 import { cn } from '@/lib/utils';
 import type { DesktopModelProvider } from '@/types';
 
@@ -9,6 +12,15 @@ type ProviderIconProps = {
   providerId: DesktopModelProvider;
   className?: string;
 };
+
+function ProviderFallbackIcon({ className }: { className?: string }) {
+  return (
+    <Sparkles
+      aria-hidden
+      className={cn('size-4 shrink-0 text-muted-foreground', className)}
+    />
+  );
+}
 
 function modelsDevLogoMaskStyle(providerId: DesktopModelProvider): CSSProperties {
   const url = modelsDevProviderLogoUrl(providerId);
@@ -24,15 +36,32 @@ function modelsDevLogoMaskStyle(providerId: DesktopModelProvider): CSSProperties
   };
 }
 
-/** Provider logo from models.dev CDN; `custom` uses a local fallback icon. */
+/**
+ * Provider logo from models.dev CDN when reachable; otherwise local Sparkles fallback
+ * (`custom` always uses Sparkles).
+ */
 export function ProviderIcon({ providerId, className }: ProviderIconProps) {
-  if (providerId === 'custom') {
-    return (
-      <Sparkles
-        aria-hidden
-        className={cn('size-4 shrink-0 text-muted-foreground', className)}
-      />
-    );
+  const [modelsDevReachable, setModelsDevReachable] = useState(false);
+
+  useEffect(() => {
+    if (providerId === 'custom') {
+      return;
+    }
+
+    let cancelled = false;
+    void probeModelsDevReachability().then((reachable) => {
+      if (!cancelled && reachable) {
+        setModelsDevReachable(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [providerId]);
+
+  if (providerId === 'custom' || !modelsDevReachable) {
+    return <ProviderFallbackIcon className={className} />;
   }
 
   return (
