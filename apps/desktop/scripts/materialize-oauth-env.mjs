@@ -18,12 +18,14 @@ if (clientId) {
   process.exit(0);
 }
 
-if (ensureForPackaging) {
-  writeEnvFile('');
+// electron-builder bundles .env, so packaging needs the file to exist — but only create it when
+// it is missing. Overwriting here would wipe the client id a developer keeps in their local .env.
+if (existsSync(envPath)) {
   process.exit(0);
 }
 
-if (existsSync(envPath)) {
+if (ensureForPackaging) {
+  writeEnvFile('');
   process.exit(0);
 }
 
