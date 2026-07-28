@@ -669,6 +669,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::Minimax
                 | ModelProvider::KimiCode
                 | ModelProvider::Meituan
+                | ModelProvider::Mistral
                 | ModelProvider::Xiaomi
                 | ModelProvider::Alibaba
                 | ModelProvider::Stepfun

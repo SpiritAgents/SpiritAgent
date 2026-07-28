@@ -335,6 +335,7 @@ fn model_add_provider_label(id: &str) -> String {
         "volcengine" => t!("form.model.provider.volcengine"),
         "meituan" => t!("form.model.provider.meituan"),
         "tencent-tokenhub" => t!("form.model.provider.tencent-tokenhub"),
+        "mistral" => t!("form.model.provider.mistral"),
         "azure" => t!("form.model.provider.azure"),
         "amazon-bedrock" => t!("form.model.provider.amazon_bedrock"),
         "google-vertex-ai" => t!("form.model.provider.google_vertex_ai"),

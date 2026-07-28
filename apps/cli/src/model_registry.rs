@@ -49,6 +49,7 @@ pub enum ModelProvider {
     Meituan,
     #[serde(rename = "tencent-tokenhub")]
     TencentTokenhub,
+    Mistral,
     #[serde(rename = "amazon-bedrock")]
     AmazonBedrock,
     Azure,
@@ -80,6 +81,7 @@ impl ModelProvider {
             Self::Volcengine => "volcengine",
             Self::Meituan => "meituan",
             Self::TencentTokenhub => "tencent-tokenhub",
+            Self::Mistral => "mistral",
             Self::AmazonBedrock => "amazon-bedrock",
             Self::Azure => "azure",
             Self::Custom => "custom",
@@ -114,6 +116,7 @@ impl FromStr for ModelProvider {
             "volcengine" => Ok(Self::Volcengine),
             "meituan" => Ok(Self::Meituan),
             "tencent-tokenhub" => Ok(Self::TencentTokenhub),
+            "mistral" => Ok(Self::Mistral),
             "amazon-bedrock" => Ok(Self::AmazonBedrock),
             "azure" => Ok(Self::Azure),
             "custom" => Ok(Self::Custom),
@@ -409,6 +412,7 @@ impl ModelProfile {
             | Some(ModelProvider::Azure)
             | Some(ModelProvider::Meituan)
             | Some(ModelProvider::TencentTokenhub)
+            | Some(ModelProvider::Mistral)
             | Some(ModelProvider::Custom)
             | None => true,
         }
