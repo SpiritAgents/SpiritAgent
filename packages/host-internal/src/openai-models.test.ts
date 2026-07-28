@@ -17,6 +17,7 @@ import {
   parseMinimaxModelEntriesPayload,
   parseMeituanModelDetailPayload,
   parseTencentTokenHubModelEntriesPayload,
+  parseMistralModelEntriesPayload,
   openAiCompatibleModelDetailUrl,
   mergeFireworksAiGatewayModelPages,
   parseFireworksAiGatewayModelsPayload,
@@ -1187,4 +1188,90 @@ test('parseOpenAiCompatibleModelEntriesPayload routes tencent-tokenhub to dedica
   );
 
   assert.deepEqual(entries, [{ id: 'glm-5', displayName: 'GLM-5' }]);
+});
+
+test('parseMistralModelEntriesPayload keeps completion_chat models and maps vision metadata', () => {
+  const entries = parseMistralModelEntriesPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'mistral-large-latest',
+        object: 'model',
+        name: 'Mistral Large',
+        description: 'Flagship chat model',
+        max_context_length: 128000,
+        capabilities: {
+          completion_chat: true,
+          vision: false,
+          function_calling: true,
+        },
+      },
+      {
+        id: 'pixtral-large-latest',
+        object: 'model',
+        name: 'Pixtral Large',
+        description: 'Vision chat model',
+        max_context_length: 128000,
+        capabilities: {
+          completion_chat: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'mistral-embed',
+        object: 'model',
+        name: 'Mistral Embed',
+        capabilities: {
+          completion_chat: false,
+          vision: false,
+        },
+      },
+      {
+        id: 'no-capabilities',
+        object: 'model',
+        name: 'Missing Caps',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'mistral-large-latest',
+      displayName: 'Mistral Large',
+      description: 'Flagship chat model',
+      contextLength: 128000,
+    },
+    {
+      id: 'pixtral-large-latest',
+      displayName: 'Pixtral Large',
+      description: 'Vision chat model',
+      contextLength: 128000,
+      supportsImageInput: true,
+    },
+  ]);
+});
+
+test('parseOpenAiCompatibleModelEntriesPayload routes mistral to dedicated parser', () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload(
+    {
+      data: [
+        {
+          id: 'mistral-small-latest',
+          name: 'Mistral Small',
+          max_context_length: 32768,
+          capabilities: { completion_chat: true, vision: true },
+        },
+      ],
+    },
+    'mistral',
+  );
+
+  assert.deepEqual(entries, [
+    {
+      id: 'mistral-small-latest',
+      displayName: 'Mistral Small',
+      contextLength: 32768,
+      supportsImageInput: true,
+    },
+  ]);
 });

@@ -134,6 +134,10 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     return parseTencentTokenHubModelEntriesPayload(body);
   }
 
+  if (provider === 'mistral') {
+    return parseMistralModelEntriesPayload(body);
+  }
+
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
   }
@@ -185,6 +189,56 @@ export function parseTencentTokenHubModelEntriesPayload(body: unknown): Provider
     const displayName = readOptionalTrimmedString(record.name);
     if (displayName) {
       modelEntry.displayName = displayName;
+    }
+    entries.push(modelEntry);
+  }
+  return entries;
+}
+
+export function parseMistralModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  if (typeof body !== 'object' || body === null || !('data' in body)) {
+    return [];
+  }
+  const raw = (body as { data?: unknown }).data;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const id = record.id;
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      continue;
+    }
+
+    const capabilities = record.capabilities;
+    if (typeof capabilities !== 'object' || capabilities === null) {
+      continue;
+    }
+    const caps = capabilities as Record<string, unknown>;
+    if (caps.completion_chat !== true) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id: id.trim() };
+    const displayName = readOptionalTrimmedString(record.name);
+    if (displayName) {
+      modelEntry.displayName = displayName;
+    }
+    const description = readOptionalTrimmedString(record.description);
+    if (description) {
+      modelEntry.description = description;
+    }
+    const contextLength = readPositiveIntegerModelTrait(record, 'max_context_length');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+    if (caps.vision === true) {
+      modelEntry.supportsImageInput = true;
     }
     entries.push(modelEntry);
   }
@@ -1410,6 +1464,10 @@ export async function listProviderModels(
 
   if (options.provider === 'tencent-tokenhub') {
     return listOpenAiCompatibleModelsForProvider(options, 'tencent-tokenhub');
+  }
+
+  if (options.provider === 'mistral') {
+    return listOpenAiCompatibleModelsForProvider(options, 'mistral');
   }
 
   if (options.provider === 'google') {
