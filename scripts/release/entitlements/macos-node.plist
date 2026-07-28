@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- 取自 nodejs/node 的 tools/osx-entitlements.plist：上游按这套权限分发 node，重签会覆盖它，缺项会让 V8 在运行期崩。 -->
+    <!-- 有意剔除上游的 com.apple.security.get-task-allow：那是调试权限，会允许任意进程附加调试器。 -->
+    <!-- 仅用于发布包的 node/ 子树；spirit 与 rg 是纯 Rust 二进制，不需要任何豁免。 -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-executable-page-protection</key>
+    <true/>
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+  </dict>
+</plist>
