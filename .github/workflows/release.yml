@@ -49,7 +49,9 @@ jobs:
     name: CLI ${{ matrix.package_target }}
     needs: verify
     runs-on: ${{ matrix.os }}
-    environment: signing
+    # Only the macOS legs sign, so only they get the signing secrets; an empty name means no
+    # environment at all, which also keeps the Windows and Linux legs out of the deployment log.
+    environment: ${{ matrix.apple && 'signing' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -208,7 +210,9 @@ jobs:
     name: Desktop ${{ matrix.package_target }}
     needs: verify
     runs-on: ${{ matrix.os }}
-    environment: signing
+    # Same as the CLI job: the signing secrets are scoped to the macOS legs. The OAuth client id
+    # below is a repository secret, so the other legs still resolve it without any environment.
+    environment: ${{ matrix.platform == 'mac' && 'signing' || '' }}
     env:
       SPIRIT_GITHUB_OAUTH_CLIENT_ID: ${{ secrets.SPIRIT_GITHUB_OAUTH_CLIENT_ID }}
       npm_config_registry: https://registry.npmjs.org/
