@@ -7,13 +7,9 @@ import { Menu, Tray, app, nativeImage, type MenuItemConstructorOptions } from 'e
 import { invokeDesktopHostCommand } from '../src/host/service.js';
 import { loadConfig } from '../src/host/storage.js';
 import i18nHost from '../src/lib/i18n-host.js';
-import {
-  TRAY_MORE_LIMIT,
-  TRAY_RECENT_LIMIT,
-  pickRecentSessions,
-  truncateJumpListTitle,
-} from '../src/lib/windows-jump-list-build.js';
 import type { SessionListItem } from '../src/types.js';
+
+import { buildRecentSessionMenuItems } from './session-menu-items.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,15 +27,6 @@ let disposed = false;
 /** dispose 时递增，使过期的 sync 在完成前失效。 */
 let syncGeneration = 0;
 
-function deriveWorkspaceLabel(workspaceRoot: string | null | undefined): string {
-  if (!workspaceRoot?.trim()) {
-    return '';
-  }
-  const normalized = workspaceRoot.replace(/\\/g, '/').replace(/\/+$/g, '');
-  const lastSlash = normalized.lastIndexOf('/');
-  return lastSlash >= 0 ? normalized.slice(lastSlash + 1) || normalized : normalized;
-}
-
 function resolveTrayIconPath(): string | undefined {
   const fileName = process.platform === 'win32' ? 'iconTemplate-32.png' : 'iconTemplate.png';
   const candidates = [
@@ -54,37 +41,10 @@ function resolveTrayIconPath(): string | undefined {
   return undefined;
 }
 
-function buildSessionMenuItem(
-  session: SessionListItem,
-  onOpen: (sessionPath: string) => void,
-): MenuItemConstructorOptions {
-  const title = truncateJumpListTitle(session.displayName || session.path);
-  if (process.platform === 'darwin') {
-    const workspaceLabel = deriveWorkspaceLabel(session.workspaceRoot);
-    if (workspaceLabel) {
-      return {
-        label: title,
-        sublabel: workspaceLabel,
-        click: () => {
-          void onOpen(session.path);
-        },
-      };
-    }
-  }
-  return {
-    label: title,
-    click: () => {
-      void onOpen(session.path);
-    },
-  };
-}
-
 function buildTrayMenu(
   sessions: readonly SessionListItem[],
   deps: StatusTrayDeps,
 ): Menu {
-  const recent = pickRecentSessions(sessions, TRAY_RECENT_LIMIT);
-  const more = pickRecentSessions(sessions, TRAY_MORE_LIMIT);
   const openSession = (sessionPath: string) => {
     void deps.openSession(sessionPath);
   };
@@ -94,11 +54,7 @@ function buildTrayMenu(
       label: i18nHost.t('tray.recent'),
       enabled: false,
     },
-    ...recent.map((session) => buildSessionMenuItem(session, openSession)),
-    {
-      label: i18nHost.t('tray.more'),
-      submenu: more.map((session) => buildSessionMenuItem(session, openSession)),
-    },
+    ...buildRecentSessionMenuItems(sessions, openSession),
     { type: 'separator' },
     {
       label: i18nHost.t('tray.newSession'),

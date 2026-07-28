@@ -45,6 +45,11 @@ import {
 } from './notification-protocol.js';
 import { syncWindowsJumpList } from './sync-windows-jump-list.js';
 import {
+  bindMacOSDockMenuDeps,
+  disposeMacOSDockMenu,
+  syncMacOSDockMenu,
+} from './sync-macos-dock-menu.js';
+import {
   bindStatusTrayDeps,
   disposeStatusTray,
   syncStatusTray,
@@ -476,6 +481,8 @@ const WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS = 1_000;
 let windowsJumpListRefreshTimer: ReturnType<typeof setTimeout> | undefined;
 const STATUS_TRAY_REFRESH_COALESCE_MS = 1_000;
 let statusTrayRefreshTimer: ReturnType<typeof setTimeout> | undefined;
+const MACOS_DOCK_MENU_REFRESH_COALESCE_MS = 1_000;
+let macOSDockMenuRefreshTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
  * 会话列表更新可能高频触发（每次都要 listSessions + app.setJumpList）；jump list
@@ -506,6 +513,20 @@ function refreshStatusTray(): void {
     statusTrayRefreshTimer = undefined;
     void syncStatusTray();
   }, STATUS_TRAY_REFRESH_COALESCE_MS);
+}
+
+/** macOS Dock 右键会话列表；不跟随 trayIcon，尾沿合并避免高频 listSessions。 */
+function refreshMacOSDockMenu(): void {
+  if (process.platform !== 'darwin') {
+    return;
+  }
+  if (macOSDockMenuRefreshTimer !== undefined) {
+    clearTimeout(macOSDockMenuRefreshTimer);
+  }
+  macOSDockMenuRefreshTimer = setTimeout(() => {
+    macOSDockMenuRefreshTimer = undefined;
+    void syncMacOSDockMenu();
+  }, MACOS_DOCK_MENU_REFRESH_COALESCE_MS);
 }
 
 /** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
@@ -892,6 +913,7 @@ if (gotSpiritSingleInstanceLock) {
     }
     refreshWindowsJumpList();
     refreshStatusTray();
+    refreshMacOSDockMenu();
   });
 
   ipcMain.handle('desktop:invoke', (_event, command: Parameters<typeof invokeDesktopHostCommand>[0], payload?: unknown) =>
@@ -1199,6 +1221,7 @@ if (gotSpiritSingleInstanceLock) {
     }
     refreshWindowsJumpList();
     refreshStatusTray();
+    refreshMacOSDockMenu();
   });
 
   ipcMain.handle(
@@ -1367,16 +1390,20 @@ if (gotSpiritSingleInstanceLock) {
   await syncInitialDesktopWebHost();
   await createMainWindow();
   refreshWindowsJumpList();
+  const openSessionFromQuickMenu = async (sessionPath: string) => {
+    await focusOrCreateSpiritDesktopWindows();
+    await handleSpiritOpenSessionFromProtocol(sessionPath);
+  };
   bindStatusTrayDeps({
     focusOrCreateMainWindow: focusOrCreateSpiritDesktopWindows,
-    openSession: async (sessionPath) => {
-      await focusOrCreateSpiritDesktopWindows();
-      await handleSpiritOpenSessionFromProtocol(sessionPath);
-    },
+    openSession: openSessionFromQuickMenu,
     newSession: async () => {
       await focusOrCreateSpiritDesktopWindows();
       handleSpiritNewSessionRequest();
     },
+  });
+  bindMacOSDockMenuDeps({
+    openSession: openSessionFromQuickMenu,
   });
   try {
     const config = await loadConfig();
@@ -1387,6 +1414,7 @@ if (gotSpiritSingleInstanceLock) {
     // ignore locale bootstrap errors
   }
   void syncStatusTray();
+  void syncMacOSDockMenu();
 
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -1401,7 +1429,12 @@ app.on('before-quit', (event) => {
     clearTimeout(statusTrayRefreshTimer);
     statusTrayRefreshTimer = undefined;
   }
+  if (macOSDockMenuRefreshTimer !== undefined) {
+    clearTimeout(macOSDockMenuRefreshTimer);
+    macOSDockMenuRefreshTimer = undefined;
+  }
   disposeStatusTray();
+  disposeMacOSDockMenu();
   unsubscribeDesktopDreamUpdates?.();
   unsubscribeDesktopDreamUpdates = undefined;
   unsubscribeDesktopAutomationsUpdates?.();
