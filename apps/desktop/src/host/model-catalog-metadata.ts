@@ -61,6 +61,9 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (input.provider === 'tencent-tokenhub') {
     return true;
   }
+  if (input.provider === 'mistral') {
+    return true;
+  }
   if (input.provider === 'xiaomi') {
     return true;
   }
