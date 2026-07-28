@@ -81,6 +81,7 @@
       "cn": "广州",
       "intl": "新加坡"
     },
+    "mistral": "Mistral",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "自定义"

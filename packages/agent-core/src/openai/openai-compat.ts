@@ -32,6 +32,7 @@ export type OpenAiLlmVendor =
   | 'volcengine'
   | 'meituan'
   | 'tencent-tokenhub'
+  | 'mistral'
   | 'azure'
   | 'custom';
 

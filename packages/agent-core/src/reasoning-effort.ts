@@ -41,6 +41,7 @@ export type ModelReasoningProvider =
   | 'volcengine'
   | 'meituan'
   | 'tencent-tokenhub'
+  | 'mistral'
   | 'azure'
   | 'amazon-bedrock'
   | 'custom';

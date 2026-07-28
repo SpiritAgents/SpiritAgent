@@ -81,6 +81,7 @@
       "cn": "Guangzhou",
       "intl": "Singapore"
     },
+    "mistral": "Mistral",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "Custom"

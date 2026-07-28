@@ -496,6 +496,34 @@ test('tencent-tokenhub provider preserves upstream displayName from models catal
   ]);
 });
 
+test('mistral provider maps catalog metadata including vision and context length', () => {
+  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'mistral' }), true);
+
+  const preview = previewModelCatalogForTransport({
+    provider: 'mistral',
+    transportKind: 'openai-compatible',
+    listedModels: [
+      {
+        id: 'pixtral-large-latest',
+        displayName: 'Pixtral Large',
+        description: 'Vision chat model',
+        contextLength: 128000,
+        supportsImageInput: true,
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'pixtral-large-latest',
+      displayName: 'Pixtral Large',
+      description: 'Vision chat model',
+      contextLength: 128000,
+      capabilities: ['chat', 'image'],
+    },
+  ]);
+});
+
 test('google provider uses upstream display metadata from native models catalog', () => {
   assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'google' }), true);
 

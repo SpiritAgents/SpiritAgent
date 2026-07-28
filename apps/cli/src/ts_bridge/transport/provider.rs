@@ -117,6 +117,7 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Stepfun => "stepfun",
         ModelProvider::Meituan => "meituan",
         ModelProvider::TencentTokenhub => "tencent-tokenhub",
+        ModelProvider::Mistral => "mistral",
         ModelProvider::Custom => "custom",
     }
 }

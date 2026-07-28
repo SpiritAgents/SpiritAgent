@@ -16,6 +16,7 @@ test('modelsDevProviderLogoId maps Spirit ids to models.dev provider folders', (
   assert.equal(modelsDevProviderLogoId('google-vertex-ai'), 'google-vertex');
   assert.equal(modelsDevProviderLogoId('fireworks-ai'), 'fireworks-ai');
   assert.equal(modelsDevProviderLogoId('meituan'), 'meituan');
+  assert.equal(modelsDevProviderLogoId('mistral'), 'mistral');
 });
 
 test('modelsDevProviderLogoUrl uses aliased provider id', () => {
