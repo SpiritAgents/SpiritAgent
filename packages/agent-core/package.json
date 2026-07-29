@@ -1,6 +1,6 @@
 {
   "name": "@spiritagent/agent-core",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "TypeScript core runtime for Spirit Agent",
   "license": "MIT",
   "repository": {
