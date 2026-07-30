@@ -55,6 +55,8 @@ pub enum ModelProvider {
     #[serde(rename = "tencent-tokenhub")]
     TencentTokenhub,
     Mistral,
+    #[serde(rename = "cohere")]
+    Cohere,
     #[serde(rename = "amazon-bedrock")]
     AmazonBedrock,
     Azure,
@@ -90,6 +92,7 @@ impl ModelProvider {
             Self::Meituan => "meituan",
             Self::TencentTokenhub => "tencent-tokenhub",
             Self::Mistral => "mistral",
+            Self::Cohere => "cohere",
             Self::AmazonBedrock => "amazon-bedrock",
             Self::Azure => "azure",
             Self::Custom => "custom",
@@ -128,6 +131,7 @@ impl FromStr for ModelProvider {
             "meituan" => Ok(Self::Meituan),
             "tencent-tokenhub" => Ok(Self::TencentTokenhub),
             "mistral" => Ok(Self::Mistral),
+            "cohere" => Ok(Self::Cohere),
             "amazon-bedrock" => Ok(Self::AmazonBedrock),
             "azure" => Ok(Self::Azure),
             "custom" => Ok(Self::Custom),
@@ -418,6 +422,7 @@ impl ModelProfile {
             | Some(ModelProvider::TogetherAi)
             | Some(ModelProvider::HuggingFace)
             | Some(ModelProvider::Baseten)
+            | Some(ModelProvider::Cohere)
             | Some(ModelProvider::Openai)
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)

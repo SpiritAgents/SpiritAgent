@@ -1503,8 +1503,6 @@ test('parseOpenAiCompatibleModelEntriesPayload routes mistral to dedicated parse
   ]);
 });
 
-});
-
 test('parseHuggingFaceRouterModelsPayload maps modalities pricing and display name', () => {
   const entries = parseHuggingFaceRouterModelsPayload({
     object: 'list',

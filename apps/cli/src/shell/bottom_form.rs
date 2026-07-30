@@ -81,6 +81,20 @@ fn model_add_cloudflare_provider_index() -> usize {
         .unwrap_or(10)
 }
 
+fn model_add_deepseek_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "deepseek")
+        .unwrap_or(6)
+}
+
+fn model_add_azure_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "azure")
+        .unwrap_or(24)
+}
+
 fn model_add_siliconflow_provider_index() -> usize {
     model_add_picker_order_ids()
         .iter()
@@ -338,6 +352,7 @@ fn model_add_provider_label(id: &str) -> String {
         "meituan" => t!("form.model.provider.meituan"),
         "tencent-tokenhub" => t!("form.model.provider.tencent-tokenhub"),
         "mistral" => t!("form.model.provider.mistral"),
+        "cohere" => t!("form.model.provider.cohere"),
         "azure" => t!("form.model.provider.azure"),
         "amazon-bedrock" => t!("form.model.provider.amazon_bedrock"),
         "google-vertex-ai" => t!("form.model.provider.google_vertex_ai"),
@@ -2861,7 +2876,12 @@ mod tests {
         assert_eq!(value, "line1 line2");
     }
 
-    const MODEL_ADD_CUSTOM_PROVIDER_INDEX: usize = 20;
+    fn model_add_custom_provider_index() -> usize {
+        super::model_add_picker_order_ids()
+            .iter()
+            .position(|id| id == "custom")
+            .expect("custom provider in picker order")
+    }
 
     #[test]
     fn model_add_form_parses_preset_connection() {
@@ -2869,7 +2889,7 @@ mod tests {
         assert!(matches!(form.kind, crate::view::BottomFormKind::ModelAdd));
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 5;
+                *selected = super::model_add_deepseek_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -2897,7 +2917,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
+                *selected = model_add_custom_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -2922,7 +2942,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
+                *selected = model_add_custom_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -2943,7 +2963,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
+                *selected = model_add_custom_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -2975,7 +2995,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = MODEL_ADD_CUSTOM_PROVIDER_INDEX;
+                *selected = model_add_custom_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3003,7 +3023,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 12;
+                *selected = super::model_add_alibaba_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3033,7 +3053,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 12;
+                *selected = super::model_add_alibaba_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3208,7 +3228,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 15;
+                *selected = super::model_add_siliconflow_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3237,7 +3257,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 8;
+                *selected = super::model_add_moonshot_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3266,7 +3286,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 9;
+                *selected = super::model_add_kimi_code_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3288,7 +3308,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 13;
+                *selected = super::model_add_minimax_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3317,7 +3337,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 17;
+                *selected = super::model_add_azure_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
@@ -3349,7 +3369,7 @@ mod tests {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0) {
             if let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 5;
+                *selected = super::model_add_cloudflare_provider_index();
             }
         }
         sync_model_add_form_fields(&mut form);
