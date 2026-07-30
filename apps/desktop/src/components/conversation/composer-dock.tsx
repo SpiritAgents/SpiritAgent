@@ -47,6 +47,9 @@ import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-sl
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import { shouldShowComposerChangesCard } from "@/lib/composer-changes-card-visibility";
+import {
+  viewportLengthToScaleRootLocal,
+} from "@/lib/ui-layout-scale";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
@@ -293,12 +296,24 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         bottomSlabFromY = surfaceRect.bottom - viewportRect.top - radius;
       }
 
+      const localShapes: ConversationScrollOccludeShape[] = shapes.map((shape) => ({
+        ...shape,
+        x: viewportLengthToScaleRootLocal(shape.x),
+        y: viewportLengthToScaleRootLocal(shape.y),
+        width: viewportLengthToScaleRootLocal(shape.width),
+        height: viewportLengthToScaleRootLocal(shape.height),
+      }));
+      const localBottomSlabFromY =
+        bottomSlabFromY == null
+          ? undefined
+          : viewportLengthToScaleRootLocal(bottomSlabFromY);
+
       onScrollOccludeMaskStyleChange(
         buildConversationScrollOccludeMaskStyle({
           viewportWidth: viewport.clientWidth,
           viewportHeight: viewport.clientHeight,
-          shapes,
-          bottomSlabFromY,
+          shapes: localShapes,
+          bottomSlabFromY: localBottomSlabFromY,
         }),
       );
     };
@@ -311,8 +326,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     if (viewport) {
       observer.observe(viewport);
     }
+    window.addEventListener("resize", syncOcclude);
     return () => {
       observer.disconnect();
+      window.removeEventListener("resize", syncOcclude);
       onScrollOccludeMaskStyleChange(undefined);
     };
   }, [
