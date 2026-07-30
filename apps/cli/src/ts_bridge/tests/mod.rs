@@ -347,6 +347,63 @@ fn resolve_transport_config_json_includes_image_generation_model() {
 }
 
 #[test]
+fn resolve_transport_config_json_includes_image_generation_for_open_responses() {
+    let Some(runtime) = make_test_runtime() else {
+        return;
+    };
+
+    let mut next = runtime.config().clone();
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::HuggingFace;
+        group.transport_kind = Some("open-responses".to_string());
+        group.api_base = "https://router.huggingface.co/v1".to_string();
+    }
+    if let Some(entry) = next.active_model_entry_mut() {
+        entry.capabilities = Some(vec!["chat".to_string()]);
+    }
+    next.add_model_to_group(
+        "custom",
+        ModelProvider::HuggingFace,
+        "https://router.huggingface.co/v1".to_string(),
+        ProviderGroupConnectDraft::default(),
+        ModelEntry {
+            name: "black-forest-labs/FLUX.1-schnell".to_string(),
+            reasoning_effort: None,
+            thinking_enabled: None,
+            supported_reasoning_efforts: None,
+            capabilities: Some(vec!["imageGeneration".to_string()]),
+            context_length: None,
+            supports_thinking_type: None,
+            supports_thinking_switch: None,
+        },
+    );
+    next.image_generation_model = Some(ModelRef {
+        group_id: "custom".to_string(),
+        name: "black-forest-labs/FLUX.1-schnell".to_string(),
+    });
+
+    let transport = runtime
+        .resolve_transport_config_json_for(&next)
+        .expect("resolve transport config");
+
+    assert_eq!(
+        transport.get("transportKind").and_then(Value::as_str),
+        Some("open-responses")
+    );
+    let image_generation = transport
+        .get("imageGeneration")
+        .expect("image generation config");
+    assert_eq!(
+        image_generation.get("model").and_then(Value::as_str),
+        Some("black-forest-labs/FLUX.1-schnell")
+    );
+    assert_eq!(
+        image_generation.get("llmVendor").and_then(Value::as_str),
+        Some("hugging-face")
+    );
+}
+
+#[test]
 fn resolve_transport_config_json_uses_xai_official_responses_provider() {
     let Some(runtime) = make_test_runtime() else {
         return;
