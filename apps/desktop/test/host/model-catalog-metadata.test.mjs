@@ -627,3 +627,26 @@ test('kimi-code provider maps catalog traits including displayName and supportsT
     },
   ]);
 });
+
+test('hugging-face provider preserves inferenceProvider in preview catalog', () => {
+  const preview = previewModelCatalogForTransport({
+    provider: 'hugging-face',
+    transportKind: 'open-responses',
+    listedModels: [
+      {
+        id: 'org/flux-model',
+        supportsImageGeneration: true,
+        inferenceProvider: 'fal-ai',
+      },
+    ],
+  });
+
+  assert.deepEqual(preview, [
+    {
+      id: 'org/flux-model',
+      displayName: 'Org Flux Model',
+      capabilities: ['imageGeneration'],
+      inferenceProvider: 'fal-ai',
+    },
+  ]);
+});

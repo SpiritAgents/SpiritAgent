@@ -83,6 +83,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'openrouter'
     || input.provider === 'fireworks-ai'
     || input.provider === 'together-ai'
+    || input.provider === 'hugging-face'
     || input.provider === 'volcengine'
     || input.provider === 'stepfun'
     || input.provider === 'google'
@@ -115,6 +116,7 @@ export function previewModelCatalogForTransport(input: {
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
     ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
+    ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
   }));
 }
 
@@ -152,6 +154,7 @@ export function previewCatalogMapForTransport(input: {
           ? { supportsThinkingType: entry.supportsThinkingType }
           : {}),
         ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
+        ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
       },
     ]);
   }

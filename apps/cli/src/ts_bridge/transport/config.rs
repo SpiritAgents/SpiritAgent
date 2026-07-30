@@ -116,6 +116,51 @@ pub(crate) fn transport_config_will_change(stored_config: &AppConfig, config: &A
             })
 }
 
+pub(crate) fn attach_image_generation_config(
+    host: &TransportHost<'_>,
+    transport: &mut Value,
+    config: &AppConfig,
+) -> Result<()> {
+    let Some(image_profile) = config.image_generation_model_profile() else {
+        return Ok(());
+    };
+    if !image_profile.supports_image_generation() {
+        return Ok(());
+    }
+    let Some(image_api_key) = resolve_optional_key_from_store(
+        host,
+        &image_profile.group_id,
+        &image_profile.name,
+        image_profile.provider,
+    )?
+    else {
+        return Ok(());
+    };
+
+    let mut image_generation = serde_json::json!({
+        "apiKey": image_api_key,
+        "model": image_profile.name,
+        "baseUrl": resolve_profile_api_base(&image_profile),
+    });
+    if let Some(provider) = image_profile.provider {
+        if let Some(obj) = image_generation.as_object_mut() {
+            obj.insert(
+                "llmVendor".to_string(),
+                json!(model_provider_vendor(provider)),
+            );
+        }
+    }
+    if let Some(model_capabilities) = model_capabilities_json(&image_profile) {
+        if let Some(obj) = image_generation.as_object_mut() {
+            obj.insert("modelCapabilities".to_string(), model_capabilities);
+        }
+    }
+    if let Some(obj) = transport.as_object_mut() {
+        obj.insert("imageGeneration".to_string(), image_generation);
+    }
+    Ok(())
+}
+
 pub(crate) fn attach_video_generation_config(
     host: &TransportHost<'_>,
     transport: &mut Value,
@@ -386,40 +431,8 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
                 obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
             }
         }
-        if let Some(image_profile) = config.image_generation_model_profile() {
-            if image_profile.supports_image_generation() {
-                    if let Some(image_api_key) = resolve_optional_key_from_store(
-                        host,
-                        &image_profile.group_id,
-                        &image_profile.name,
-                        image_profile.provider,
-                    )?
-                {
-                    let mut image_generation = serde_json::json!({
-                        "apiKey": image_api_key,
-                        "model": image_profile.name,
-                        "baseUrl": resolve_profile_api_base(&image_profile),
-                    });
-                    if let Some(provider) = image_profile.provider {
-                        if let Some(obj) = image_generation.as_object_mut() {
-                            obj.insert(
-                                "llmVendor".to_string(),
-                                json!(model_provider_vendor(provider)),
-                            );
-                        }
-                    }
-                    if let Some(model_capabilities) = model_capabilities_json(&image_profile) {
-                        if let Some(obj) = image_generation.as_object_mut() {
-                            obj.insert("modelCapabilities".to_string(), model_capabilities);
-                        }
-                    }
-                    if let Some(obj) = transport.as_object_mut() {
-                        obj.insert("imageGeneration".to_string(), image_generation);
-                    }
-                }
-            }
-        }
     }
+    attach_image_generation_config(host, &mut transport, config)?;
     attach_google_vertex_transport_fields(&mut transport, &active)?;
     attach_cloudflare_ai_gateway_transport_fields(&mut transport, &active)?;
     attach_video_generation_config(host, &mut transport, config)?;

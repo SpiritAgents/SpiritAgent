@@ -27,6 +27,7 @@ export type OpenAiLlmVendor =
   | 'openrouter'
   | 'fireworks-ai'
   | 'together-ai'
+  | 'hugging-face'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'
@@ -63,6 +64,8 @@ export interface OpenAiImageGenerationConfig {
   project?: string;
   llmVendor?: OpenAiLlmVendor;
   modelCapabilities?: OpenAiModelCapabilities;
+  /** Hugging Face Inference Providers 路由 hint（Hub catalog 解析）。 */
+  inferenceProvider?: string;
 }
 
 export interface OpenAiVideoGenerationConfig {
@@ -73,6 +76,8 @@ export interface OpenAiVideoGenerationConfig {
   project?: string;
   llmVendor?: OpenAiLlmVendor;
   modelCapabilities?: OpenAiModelCapabilities;
+  /** Hugging Face Inference Providers 路由 hint（Hub catalog 解析）。 */
+  inferenceProvider?: string;
 }
 
 export interface OpenAiTransportConfig {

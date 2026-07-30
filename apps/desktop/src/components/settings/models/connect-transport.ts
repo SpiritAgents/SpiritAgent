@@ -52,6 +52,8 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "mistral":
     case "together-ai":
       return [connectTransportOptionCatalog.chatCompletions];
+    case "hugging-face":
+      return [connectTransportOptionCatalog.openResponsesApi];
     case "siliconflow":
       return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
     case "openrouter":

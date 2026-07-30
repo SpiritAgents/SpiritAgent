@@ -2850,10 +2850,12 @@ class DesktopHostService {
     runtimeTransportConfig = attachImageGenerationToTransportConfig(runtimeTransportConfig, {
       profile: imageGenerationProfile,
       apiKey: imageGenerationApiKey,
+      catalogHints: buildModelCatalogHints(state.config),
     });
     runtimeTransportConfig = attachVideoGenerationToTransportConfig(runtimeTransportConfig, {
       profile: videoGenerationProfile,
       apiKey: videoGenerationApiKey,
+      catalogHints: buildModelCatalogHints(state.config),
     });
     bundle.runtimeTransport = createLlmTransport(runtimeTransportConfig);
 

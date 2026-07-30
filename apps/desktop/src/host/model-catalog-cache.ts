@@ -19,6 +19,20 @@ import { spiritAgentDataDir } from './storage.js';
 /** 模型目录缓存 TTL（24h）。 */
 export const MODEL_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+/** Hugging Face catalog 波动较大，使用更短 TTL。 */
+export const HUGGING_FACE_MODEL_CATALOG_CACHE_TTL_MS = 15 * 60 * 1000;
+
+const PROVIDER_MODEL_CATALOG_CACHE_TTL_MS: Partial<Record<DesktopModelProvider, number>> = {
+  'hugging-face': HUGGING_FACE_MODEL_CATALOG_CACHE_TTL_MS,
+};
+
+function modelCatalogCacheTtlMs(provider?: DesktopModelProvider): number {
+  if (provider && PROVIDER_MODEL_CATALOG_CACHE_TTL_MS[provider] !== undefined) {
+    return PROVIDER_MODEL_CATALOG_CACHE_TTL_MS[provider] as number;
+  }
+  return MODEL_CATALOG_CACHE_TTL_MS;
+}
+
 /** 与 `writeModelCatalogCache` 写入的 `apiKeyFingerprint` 一致，供调用方比对。 */
 export function modelCatalogApiKeyFingerprint(apiKey: string): string {
   return createHash('sha256').update(apiKey.trim(), 'utf8').digest('hex').slice(0, 24);
@@ -229,7 +243,8 @@ export function isModelCatalogCacheFresh(
   if (forceRefresh) {
     return false;
   }
-  return nowMs - entry.fetchedAtUnixMs < MODEL_CATALOG_CACHE_TTL_MS;
+  const ttlMs = modelCatalogCacheTtlMs(entry.provider);
+  return nowMs - entry.fetchedAtUnixMs < ttlMs;
 }
 
 function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[] | undefined {
@@ -266,6 +281,10 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
         : undefined;
     const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
     const supportsThinkingSwitch = record.supportsThinkingSwitch === true ? true as const : undefined;
+    const inferenceProvider =
+      typeof record.inferenceProvider === 'string' && record.inferenceProvider.trim().length > 0
+        ? record.inferenceProvider.trim()
+        : undefined;
     normalized.push({
       id,
       ...(displayName !== undefined ? { displayName } : {}),
@@ -276,6 +295,7 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
       ...(contextLength !== undefined ? { contextLength } : {}),
       ...(supportsThinkingType !== undefined ? { supportsThinkingType } : {}),
       ...(supportsThinkingSwitch !== undefined ? { supportsThinkingSwitch } : {}),
+      ...(inferenceProvider !== undefined ? { inferenceProvider } : {}),
     });
   }
 
@@ -449,5 +469,6 @@ function clonePreviewModelCatalog(
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
     ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
+    ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
   }));
 }

@@ -431,3 +431,21 @@ test('buildResponsesProviderOptions disables Gateway DeepSeek V4 thinking via de
     },
   );
 });
+
+test('buildResponsesProviderOptions maps hugging-face reasoningEffort to huggingface namespace', () => {
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: 'open-responses',
+      apiKey: 'hf_test',
+      model: 'deepseek-ai/DeepSeek-R1',
+      baseUrl: 'https://router.huggingface.co/v1',
+      llmVendor: 'hugging-face',
+      reasoningEffort: 'high',
+    }),
+    {
+      huggingface: {
+        reasoningEffort: 'high',
+      },
+    },
+  );
+});

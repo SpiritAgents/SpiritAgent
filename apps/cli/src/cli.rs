@@ -650,7 +650,7 @@ fn parse_model_transport_kind(
         None => match provider {
             Some(ModelProvider::Anthropic) => ModelTransportKind::Anthropic,
             Some(ModelProvider::AmazonBedrock) => ModelTransportKind::Bedrock,
-            Some(ModelProvider::Azure | ModelProvider::Openai) => ModelTransportKind::OpenResponses,
+            Some(ModelProvider::Azure | ModelProvider::Openai | ModelProvider::HuggingFace) => ModelTransportKind::OpenResponses,
             _ => ModelTransportKind::OpenAiCompatible,
         },
     };
@@ -718,6 +718,12 @@ fn parse_model_transport_kind(
                 t!("cli.model.error.azure_transport_only")
             ))
         }
+        (Some(ModelProvider::HuggingFace), transport_kind) if transport_kind != ModelTransportKind::OpenResponses => {
+            Err(anyhow!(
+                "{}",
+                t!("cli.model.error.transport.hugging_face_open_responses_only")
+            ))
+        }
         (
             Some(
                 ModelProvider::Anthropic
@@ -727,6 +733,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::Openrouter
                 | ModelProvider::FireworksAi
                 | ModelProvider::TogetherAi
+                | ModelProvider::HuggingFace
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway

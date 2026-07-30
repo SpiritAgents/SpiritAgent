@@ -23,6 +23,11 @@ import {
   parseFireworksAiGatewayModelsPayload,
   fireworksAiGatewayModelsListUrl,
   parseTogetherAiModelEntriesPayload,
+  parseHuggingFaceRouterModelsPayload,
+  parseHuggingFaceHubMediaModelsPayload,
+  parseHuggingFaceHubLinkHeaderNextUrl,
+  mergeHuggingFaceListedModelEntries,
+  resolveHuggingFaceDisplayNameFromId,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -1406,4 +1411,105 @@ test('parseOpenAiCompatibleModelEntriesPayload routes mistral to dedicated parse
       supportsImageInput: true,
     },
   ]);
+});
+
+test('parseHuggingFaceRouterModelsPayload maps modalities pricing and display name', () => {
+  const entries = parseHuggingFaceRouterModelsPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'moonshotai/Kimi-K3:fastest',
+        architecture: {
+          input_modalities: ['text', 'image'],
+          output_modalities: ['text'],
+        },
+        providers: [
+          {
+            provider: 'together',
+            status: 'live',
+            context_length: 1000000,
+            pricing: { input: 3, output: 15 },
+            supports_tools: true,
+            supports_structured_output: true,
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0]?.id, 'moonshotai/Kimi-K3:fastest');
+  assert.equal(entries[0]?.displayName, 'Kimi-K3');
+  assert.equal(entries[0]?.supportsImageInput, true);
+  assert.equal(entries[0]?.contextLength, 1000000);
+  assert.equal(entries[0]?.pricing?.inputPerTokenUsd, String(3 / 1_000_000));
+  assert.equal(entries[0]?.pricing?.outputPerTokenUsd, String(15 / 1_000_000));
+});
+
+test('parseHuggingFaceHubMediaModelsPayload maps pipeline tags without pricing', () => {
+  const entries = parseHuggingFaceHubMediaModelsPayload([
+    {
+      id: 'black-forest-labs/FLUX.1-schnell',
+      pipeline_tag: 'text-to-image',
+      inferenceProviderMapping: [
+        { provider: 'fal-ai', providerId: 'flux', status: 'live', task: 'text-to-image' },
+      ],
+    },
+    {
+      id: 'tencent/HunyuanVideo',
+      pipeline_tag: 'text-to-video',
+      inferenceProviderMapping: [
+        { provider: 'wavespeed', providerId: 'hunyuan', status: 'live', task: 'text-to-video' },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(entries, [
+    {
+      id: 'black-forest-labs/FLUX.1-schnell',
+      displayName: 'FLUX.1-schnell',
+      supportsImageGeneration: true,
+      inferenceProvider: 'fal-ai',
+    },
+    {
+      id: 'tencent/HunyuanVideo',
+      displayName: 'HunyuanVideo',
+      supportsVideoGeneration: true,
+      inferenceProvider: 'wavespeed',
+    },
+  ]);
+  assert.equal(entries.length, 2);
+  assert.equal('pricing' in entries[0]!, false);
+  assert.equal('pricing' in entries[1]!, false);
+});
+
+test('parseHuggingFaceHubLinkHeaderNextUrl extracts rel=next url', () => {
+  assert.equal(
+    parseHuggingFaceHubLinkHeaderNextUrl(
+      '<https://huggingface.co/api/models?cursor=abc>; rel="next", <https://huggingface.co/api/models>; rel="prev"',
+    ),
+    'https://huggingface.co/api/models?cursor=abc',
+  );
+});
+
+test('mergeHuggingFaceListedModelEntries dedupes and merges capabilities', () => {
+  const merged = mergeHuggingFaceListedModelEntries([
+    { id: 'org/model', supportsImageInput: true, pricing: { inputPerTokenUsd: '0.000001' } },
+    { id: 'org/model', supportsImageGeneration: true, inferenceProvider: 'fal-ai' },
+  ]);
+
+  assert.deepEqual(merged, [
+    {
+      id: 'org/model',
+      supportsImageInput: true,
+      supportsImageGeneration: true,
+      pricing: { inputPerTokenUsd: '0.000001' },
+      inferenceProvider: 'fal-ai',
+    },
+  ]);
+});
+
+test('resolveHuggingFaceDisplayNameFromId uses last path segment without routing suffix', () => {
+  assert.equal(resolveHuggingFaceDisplayNameFromId('moonshotai/Kimi-K3:fastest'), 'Kimi-K3');
+  assert.equal(resolveHuggingFaceDisplayNameFromId('FLUX.1-schnell'), 'FLUX.1-schnell');
 });

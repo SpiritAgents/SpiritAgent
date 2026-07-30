@@ -6,6 +6,7 @@ import {
   createXai,
   type XaiLanguageModelResponsesOptions,
 } from '@ai-sdk/xai';
+import { createHuggingFace } from '@ai-sdk/huggingface';
 
 import { getLlmFetch } from '../llm-fetch.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
@@ -140,8 +141,17 @@ export function createOpenAIResponsesProvider(
 }
 
 export function createResponsesLanguageModel(config: OpenResponsesTransportConfig): unknown {
-  const provider = resolveOpenResponsesSdkProvider(config);
   const languageModelId = resolveOpenResponsesLanguageModelId(config);
+
+  if (config.llmVendor === 'hugging-face') {
+    return createHuggingFace({
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl ?? 'https://router.huggingface.co/v1',
+      fetch: getLlmFetch(),
+    }).responses(languageModelId);
+  }
+
+  const provider = resolveOpenResponsesSdkProvider(config);
   if (provider === 'openai') {
     const openai = createOpenAIResponsesProvider(config);
     if (!openai) {
@@ -378,6 +388,14 @@ export function buildResponsesProviderOptions(
       if (Object.keys(xiaomiOptions).length > 0) {
         return xiaomiOptions;
       }
+    }
+
+    if (config.llmVendor === 'hugging-face') {
+      const huggingfaceOptions: JsonObject = {};
+      if (reasoningEffort !== undefined) {
+        huggingfaceOptions.reasoningEffort = reasoningEffort;
+      }
+      return Object.keys(huggingfaceOptions).length > 0 ? { huggingface: huggingfaceOptions } : {};
     }
 
     const providerOptions: JsonObject = {

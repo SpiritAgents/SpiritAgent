@@ -43,6 +43,8 @@ pub enum ModelProvider {
     FireworksAi,
     #[serde(rename = "together-ai")]
     TogetherAi,
+    #[serde(rename = "hugging-face")]
+    HuggingFace,
     Openai,
     Google,
     #[serde(rename = "google-vertex-ai")]
@@ -78,6 +80,7 @@ impl ModelProvider {
             Self::Openrouter => "openrouter",
             Self::FireworksAi => "fireworks-ai",
             Self::TogetherAi => "together-ai",
+            Self::HuggingFace => "hugging-face",
             Self::Openai => "openai",
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
@@ -114,6 +117,7 @@ impl FromStr for ModelProvider {
             "openrouter" => Ok(Self::Openrouter),
             "fireworks-ai" => Ok(Self::FireworksAi),
             "together-ai" => Ok(Self::TogetherAi),
+            "hugging-face" => Ok(Self::HuggingFace),
             "openai" => Ok(Self::Openai),
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
@@ -374,6 +378,7 @@ impl ModelProfile {
         match self.provider {
             Some(ModelProvider::Openai) => ModelTransportKind::OpenResponses,
             Some(ModelProvider::Azure) => ModelTransportKind::OpenResponses,
+            Some(ModelProvider::HuggingFace) => ModelTransportKind::OpenResponses,
             Some(ModelProvider::Anthropic) => {
                 parsed.unwrap_or(ModelTransportKind::Anthropic)
             }
@@ -408,6 +413,7 @@ impl ModelProfile {
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::FireworksAi)
             | Some(ModelProvider::TogetherAi)
+            | Some(ModelProvider::HuggingFace)
             | Some(ModelProvider::Openai)
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)
