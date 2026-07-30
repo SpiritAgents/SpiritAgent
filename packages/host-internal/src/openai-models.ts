@@ -63,6 +63,8 @@ export interface ProviderListedModelEntry {
   supportsThinkingType?: KimiCodeSupportsThinkingType;
   contextLength?: number;
   supportedReasoningEfforts?: string[];
+  /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint（供 backend 可选使用）。 */
+  inferenceProvider?: string;
 }
 
 export const OPENAI_MODELS_PATH = '/models';
@@ -822,6 +824,380 @@ export async function listTogetherAiModels(
   return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/** Hugging Face Inference Providers router catalog root。 */
+export const HUGGING_FACE_ROUTER_API_ROOT = 'https://router.huggingface.co';
+
+export const HUGGING_FACE_ROUTER_MODELS_URL = `${HUGGING_FACE_ROUTER_API_ROOT}/v1/models`;
+
+const HUGGING_FACE_HUB_API_ROOT = 'https://huggingface.co';
+
+const HUGGING_FACE_HUB_MEDIA_PIPELINE_TAGS = [
+  'text-to-image',
+  'text-to-video',
+  'image-to-video',
+] as const;
+
+const HUGGING_FACE_IMAGE_PIPELINE_TAGS = new Set(['text-to-image']);
+
+const HUGGING_FACE_VIDEO_PIPELINE_TAGS = new Set(['text-to-video', 'image-to-video']);
+
+export function resolveHuggingFaceDisplayNameFromId(modelId: string): string {
+  const trimmed = modelId.trim();
+  const withoutRoutingSuffix = trimmed.includes(':')
+    ? trimmed.slice(0, trimmed.lastIndexOf(':'))
+    : trimmed;
+  const lastSlash = withoutRoutingSuffix.lastIndexOf('/');
+  const segment = lastSlash >= 0
+    ? withoutRoutingSuffix.slice(lastSlash + 1)
+    : withoutRoutingSuffix;
+  return segment.trim();
+}
+
+function readHuggingFaceModalities(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
+}
+
+function readHuggingFaceRouterProviderPricing(
+  providerRecord: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(providerRecord.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+
+  const inputPerMillion = readTogetherAiPositiveNumber(pricing.input);
+  const outputPerMillion = readTogetherAiPositiveNumber(pricing.output);
+  const inputPerTokenUsd =
+    inputPerMillion !== undefined ? String(inputPerMillion / 1_000_000) : undefined;
+  const outputPerTokenUsd =
+    outputPerMillion !== undefined ? String(outputPerMillion / 1_000_000) : undefined;
+
+  return buildProviderListedModelPricing({
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+  });
+}
+
+function pickHuggingFaceRouterProviderRecord(
+  providers: unknown,
+): Record<string, unknown> | undefined {
+  if (!Array.isArray(providers) || providers.length === 0) {
+    return undefined;
+  }
+
+  const liveProviders = providers
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== undefined)
+    .filter((item) => readOptionalTrimmedString(item.status)?.toLowerCase() === 'live');
+
+  const candidates = liveProviders.length > 0
+    ? liveProviders
+    : providers
+        .map((item) => asRecord(item))
+        .filter((item): item is Record<string, unknown> => item !== undefined);
+
+  if (candidates.length === 0) {
+    return undefined;
+  }
+
+  return candidates.reduce((best, current) => {
+    const bestContext = readPositiveIntegerModelTrait(best, 'context_length') ?? 0;
+    const currentContext = readPositiveIntegerModelTrait(current, 'context_length') ?? 0;
+    return currentContext > bestContext ? current : best;
+  });
+}
+
+function readHuggingFaceHubInferenceProvider(
+  record: Record<string, unknown>,
+): string | undefined {
+  const mappings = record.inferenceProviderMapping;
+  if (!Array.isArray(mappings)) {
+    return undefined;
+  }
+
+  for (const item of mappings) {
+    const mapping = asRecord(item);
+    if (!mapping) {
+      continue;
+    }
+    const status = readOptionalTrimmedString(mapping.status)?.toLowerCase();
+    if (status && status !== 'live') {
+      continue;
+    }
+    const provider = readOptionalTrimmedString(mapping.provider);
+    if (provider) {
+      return provider;
+    }
+  }
+
+  return undefined;
+}
+
+export function parseHuggingFaceRouterModelsPayload(body: unknown): ProviderListedModelEntry[] {
+  if (!isJsonObject(body) || !Array.isArray(body.data)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const item of body.data) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+
+    const id = readOptionalTrimmedString(item.id);
+    if (!id) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = {
+      id,
+      displayName: resolveHuggingFaceDisplayNameFromId(id),
+    };
+
+    const architecture = asRecord(item.architecture);
+    if (architecture) {
+      const inputModalities = readHuggingFaceModalities(architecture.input_modalities);
+      const outputModalities = readHuggingFaceModalities(architecture.output_modalities);
+      if (inputModalities.includes('image')) {
+        modelEntry.supportsImageInput = true;
+      }
+      if (outputModalities.includes('text') || outputModalities.length === 0) {
+        // Conversational models from router source 1.
+      }
+    }
+
+    const providerRecord = pickHuggingFaceRouterProviderRecord(item.providers);
+    if (providerRecord) {
+      const contextLength = readPositiveIntegerModelTrait(providerRecord, 'context_length');
+      if (contextLength !== undefined) {
+        modelEntry.contextLength = contextLength;
+      }
+      const pricing = readHuggingFaceRouterProviderPricing(providerRecord);
+      if (pricing) {
+        modelEntry.pricing = pricing;
+      }
+    }
+
+    const normalizedId = id.toLowerCase();
+    if (normalizedId.includes('deepseek-r1') || normalizedId.includes('/r1')) {
+      modelEntry.supportsReasoning = true;
+    }
+
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export function parseHuggingFaceHubMediaModelsPayload(body: unknown): ProviderListedModelEntry[] {
+  const raw = Array.isArray(body) ? body : [];
+  const entries: ProviderListedModelEntry[] = [];
+
+  for (const item of raw) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+
+    const id = readOptionalTrimmedString(item.id);
+    const pipelineTag = readOptionalTrimmedString(item.pipeline_tag)?.toLowerCase();
+    if (!id || !pipelineTag) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = {
+      id,
+      displayName: resolveHuggingFaceDisplayNameFromId(id),
+    };
+
+    if (HUGGING_FACE_IMAGE_PIPELINE_TAGS.has(pipelineTag)) {
+      modelEntry.supportsImageGeneration = true;
+    }
+    if (HUGGING_FACE_VIDEO_PIPELINE_TAGS.has(pipelineTag)) {
+      modelEntry.supportsVideoGeneration = true;
+    }
+
+    const inferenceProvider = readHuggingFaceHubInferenceProvider(item);
+    if (inferenceProvider) {
+      modelEntry.inferenceProvider = inferenceProvider;
+    }
+
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export function parseHuggingFaceHubLinkHeaderNextUrl(linkHeader: string | null): string | undefined {
+  if (!linkHeader) {
+    return undefined;
+  }
+
+  for (const part of linkHeader.split(',')) {
+    const match = part.match(/<([^>]+)>\s*;\s*rel="next"/i);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return undefined;
+}
+
+export function mergeHuggingFaceListedModelEntries(
+  entries: readonly ProviderListedModelEntry[],
+): ProviderListedModelEntry[] {
+  const byId = new Map<string, ProviderListedModelEntry>();
+  for (const entry of entries) {
+    const existing = byId.get(entry.id);
+    if (!existing) {
+      byId.set(entry.id, { ...entry });
+      continue;
+    }
+
+    byId.set(entry.id, {
+      ...existing,
+      ...entry,
+      ...(existing.displayName ?? entry.displayName
+        ? { displayName: existing.displayName ?? entry.displayName }
+        : {}),
+      ...(existing.pricing ?? entry.pricing
+        ? { pricing: existing.pricing ?? entry.pricing }
+        : {}),
+      ...(existing.contextLength ?? entry.contextLength
+        ? { contextLength: existing.contextLength ?? entry.contextLength }
+        : {}),
+      ...(existing.inferenceProvider ?? entry.inferenceProvider
+        ? { inferenceProvider: existing.inferenceProvider ?? entry.inferenceProvider }
+        : {}),
+      ...(existing.supportsImageInput || entry.supportsImageInput
+        ? { supportsImageInput: true }
+        : {}),
+      ...(existing.supportsVideoInput || entry.supportsVideoInput
+        ? { supportsVideoInput: true }
+        : {}),
+      ...(existing.supportsImageGeneration || entry.supportsImageGeneration
+        ? { supportsImageGeneration: true }
+        : {}),
+      ...(existing.supportsVideoGeneration || entry.supportsVideoGeneration
+        ? { supportsVideoGeneration: true }
+        : {}),
+      ...(existing.supportsReasoning || entry.supportsReasoning
+        ? { supportsReasoning: true }
+        : {}),
+    });
+  }
+
+  return [...byId.values()];
+}
+
+function huggingFaceCatalogRequestHeaders(apiKey: string | undefined): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const key = apiKey?.trim();
+  if (key) {
+    headers.Authorization = `Bearer ${key}`;
+  }
+  return headers;
+}
+
+async function fetchHuggingFaceRouterModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const init: RequestInit = {
+    method: 'GET',
+    headers: huggingFaceCatalogRequestHeaders(options.apiKey),
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  const json = await fetchModelsListJson(HUGGING_FACE_ROUTER_MODELS_URL, init);
+  return parseHuggingFaceRouterModelsPayload(json);
+}
+
+async function fetchHuggingFaceHubMediaModelsPage(
+  url: string,
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<{ entries: ProviderListedModelEntry[]; nextUrl?: string }> {
+  const init: RequestInit = {
+    method: 'GET',
+    headers: huggingFaceCatalogRequestHeaders(options.apiKey),
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(url, init);
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    throw new Error(`列模型请求失败：${message}`);
+  }
+
+  const text = await response.text();
+  let json: unknown;
+  try {
+    json = text.length > 0 ? (JSON.parse(text) as unknown) : [];
+  } catch {
+    throw new Error(
+      response.ok
+        ? '列模型响应不是合法 JSON。'
+        : `列模型失败（HTTP ${String(response.status)}）。`,
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(`列模型失败（HTTP ${String(response.status)}）。`);
+  }
+
+  const nextUrl = parseHuggingFaceHubLinkHeaderNextUrl(response.headers.get('link'));
+  return {
+    entries: parseHuggingFaceHubMediaModelsPayload(json),
+    ...(nextUrl ? { nextUrl } : {}),
+  };
+}
+
+async function listHuggingFaceHubMediaModelsForPipelineTag(
+  pipelineTag: string,
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const allEntries: ProviderListedModelEntry[] = [];
+  let nextUrl: string | undefined =
+    `${HUGGING_FACE_HUB_API_ROOT}/api/models?inference_provider=all&pipeline_tag=${encodeURIComponent(pipelineTag)}`;
+
+  while (nextUrl) {
+    const page = await fetchHuggingFaceHubMediaModelsPage(nextUrl, options);
+    allEntries.push(...page.entries);
+    nextUrl = page.nextUrl;
+  }
+
+  return allEntries;
+}
+
+export async function listHuggingFaceModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const mediaLists = await Promise.all(
+    HUGGING_FACE_HUB_MEDIA_PIPELINE_TAGS.map((pipelineTag) =>
+      listHuggingFaceHubMediaModelsForPipelineTag(pipelineTag, options),
+    ),
+  );
+
+  let chatModels: ProviderListedModelEntry[] = [];
+  try {
+    chatModels = await fetchHuggingFaceRouterModels(options);
+  } catch (error) {
+    console.error('[host-internal][list-models] hugging-face.router.failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  return mergeHuggingFaceListedModelEntries([
+    ...chatModels,
+    ...mediaLists.flat(),
+  ]).sort((a, b) => a.id.localeCompare(b.id));
+}
+
 /** Xiaomi Mimo：上游 /models 不返回能力字段，多模态模型需维护 allowlist。 */
 const XIAOMI_MULTIMODAL_MODEL_IDS = new Set(['mimo-v2.5', 'mimo-v2-omni']);
 
@@ -1564,6 +1940,10 @@ export async function listProviderModels(
 
   if (options.provider === 'together-ai') {
     return listTogetherAiModels(options);
+  }
+
+  if (options.provider === 'hugging-face') {
+    return listHuggingFaceModels(options);
   }
 
   if (
