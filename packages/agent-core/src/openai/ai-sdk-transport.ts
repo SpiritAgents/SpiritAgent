@@ -7,6 +7,9 @@ import {
   createFireworks,
 } from '@ai-sdk/fireworks';
 import {
+  createTogetherAI,
+} from '@ai-sdk/togetherai';
+import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
@@ -772,6 +775,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkFireworksProvider(config)(config.model);
   }
 
+  if (isTogetherOfficialAiSdkProvider(config)) {
+    return createAiSdkTogetherProvider(config)(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
@@ -779,6 +786,10 @@ function createAiSdkImageModel(config: OpenAiImageGenerationConfig): any {
   if (isVercelAiGatewayImageConfig(config)) {
     // Gateway 生图走 v3 image-model 协议，不能复用 chat 预设的 /v1 baseUrl。
     return createGateway({ apiKey: config.apiKey, fetch: getLlmFetch() }).image(config.model);
+  }
+
+  if (isTogetherOfficialAiSdkImageConfig(config)) {
+    return createAiSdkTogetherProvider(config).image(config.model);
   }
 
   return createAiSdkOpenAiCompatibleProvider(config, { includeChatVendorExtras: false }).imageModel(config.model);
@@ -987,6 +998,17 @@ function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: fetchWrapper,
+  });
+}
+
+function createAiSdkTogetherProvider(
+  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'> | OpenAiImageGenerationConfig,
+) {
+  // SDK 默认 api.together.xyz；连接配置的 api.together.ai/v1 必须显式覆盖。
+  return createTogetherAI({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    fetch: getLlmFetch(),
   });
 }
 
@@ -1948,6 +1970,14 @@ function isFireworksOfficialAiSdkProvider(config: OpenAiTransportConfig): boolea
   return config.llmVendor === 'fireworks-ai';
 }
 
+function isTogetherOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'together-ai';
+}
+
+function isTogetherOfficialAiSdkImageConfig(config: OpenAiImageGenerationConfig): boolean {
+  return config.llmVendor === 'together-ai';
+}
+
 function usesStructuredReasoningStreamEvents(config: OpenAiTransportConfig): boolean {
   return isDeepSeekOfficialAiSdkProvider(config) || isMoonshotOfficialAiSdkProvider(config);
 }
@@ -1989,7 +2019,11 @@ function logAiSdkImageGenerationStart(
   requestUrl: string,
 ): void {
   console.error('[agent-core][generate-image] request.start', {
-    adapter: isVercelAiGatewayImageConfig(config) ? 'ai-sdk-gateway-image' : 'openai-compatible-image',
+    adapter: isVercelAiGatewayImageConfig(config)
+      ? 'ai-sdk-gateway-image'
+      : isTogetherOfficialAiSdkImageConfig(config)
+        ? 'ai-sdk-togetherai-image'
+        : 'openai-compatible-image',
     vendor: config.llmVendor ?? 'custom',
     model: config.model,
     baseUrl: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,

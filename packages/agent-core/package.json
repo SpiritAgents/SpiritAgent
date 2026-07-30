@@ -110,6 +110,7 @@
     "@ai-sdk/open-responses": "^2.0.0",
     "@ai-sdk/openai": "^4.0.1",
     "@ai-sdk/openai-compatible": "^3.0.0",
+    "@ai-sdk/togetherai": "^2.0.69",
     "@ai-sdk/xai": "^4.0.1",
     "@aws/bedrock-token-generator": "^1.1.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
