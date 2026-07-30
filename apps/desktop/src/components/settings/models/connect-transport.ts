@@ -50,6 +50,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     // Responses 仅 hy3-preview 等少数模型支持，与 TokenHub 以 Chat Completions 为主的模型矩阵不匹配，故仅保留 Chat Completions。
     case "tencent-tokenhub":
     case "mistral":
+    case "cohere":
     case "together-ai":
     case "baseten":
       return [connectTransportOptionCatalog.chatCompletions];
