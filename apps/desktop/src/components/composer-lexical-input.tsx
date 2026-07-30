@@ -97,6 +97,9 @@ import { AgentModeChipPlugin } from "@/lib/composer-lexical/plugins/agent-mode-c
 import { LoopChipPlugin } from "@/lib/composer-lexical/plugins/loop-chip-plugin";
 import { normalizeComposerSegmentsPolicy } from "@/lib/composer-lexical/composer-lexical-policy";
 import { cn } from "@/lib/utils";
+import {
+  viewportLengthToScaleRootLocal,
+} from "@/lib/ui-layout-scale";
 
 export type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 export type { RichSegment } from "@/lib/composer-segment-model";
@@ -111,6 +114,11 @@ const COMPOSER_PLACEHOLDER_CLASS =
 
 const AGENT_MODE_CHIP_SELECTOR =
   "[data-chip-kind='plan'],[data-chip-kind='ask'],[data-chip-kind='debug']";
+
+/** Shell 内 absolute `left`：getBoundingClientRect 差值为视口长度，须换为缩放根本地 px。 */
+function shellLocalLeftFromViewportDelta(delta: number): number {
+  return viewportLengthToScaleRootLocal(delta);
+}
 
 function isLexicalChipDomNode(node: Node): boolean {
   return node instanceof HTMLElement && node.querySelector(AGENT_MODE_CHIP_SELECTOR) !== null;
@@ -226,7 +234,7 @@ function measureReadOnlyDomCaretLeft(
   }
 
   const left = range.getBoundingClientRect().left - shellRect.left;
-  return left >= chipRightInShell - 1 ? left : null;
+  return left >= chipRightInShell - 1 ? shellLocalLeftFromViewportDelta(left) : null;
 }
 
 function measureAgentModeChipPlaceholderLeft(
@@ -261,7 +269,8 @@ function measureAgentModeChipPlaceholderLeft(
   const shellRect = shell.getBoundingClientRect();
   const editorRect = editorEl.getBoundingClientRect();
   const editorPaddingLeft = parseFloat(getComputedStyle(editorEl).paddingLeft) || 0;
-  const defaultPlaceholderLeft = editorPaddingLeft + (editorRect.left - shellRect.left);
+  const defaultPlaceholderLeft =
+    editorPaddingLeft + shellLocalLeftFromViewportDelta(editorRect.left - shellRect.left);
   const chipRect = chip.getBoundingClientRect();
   const chipRightInShell = chipRect.right - shellRect.left;
   const chipWidth = chipRect.width;
@@ -276,7 +285,7 @@ function measureAgentModeChipPlaceholderLeft(
       selection.getRangeAt(0).cloneRange().getBoundingClientRect().left - shellRect.left;
     if (selectionLeftInShell >= chipRightInShell - 1) {
       return {
-        left: selectionLeftInShell,
+        left: shellLocalLeftFromViewportDelta(selectionLeftInShell),
         source: "selection",
         chipWidth,
         selectionLeftInShell,
@@ -307,7 +316,7 @@ function measureAgentModeChipPlaceholderLeft(
 
   if (chipWidth > 0) {
     return {
-      left: chipRightInShell,
+      left: shellLocalLeftFromViewportDelta(chipRightInShell),
       source: "chip-right-fallback",
       chipWidth,
       selectionLeftInShell: null,
