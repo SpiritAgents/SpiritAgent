@@ -734,6 +734,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::FireworksAi
                 | ModelProvider::TogetherAi
                 | ModelProvider::HuggingFace
+                | ModelProvider::Baseten
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway

@@ -108,6 +108,7 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::FireworksAi => "fireworks-ai",
         ModelProvider::TogetherAi => "together-ai",
         ModelProvider::HuggingFace => "hugging-face",
+        ModelProvider::Baseten => "baseten",
         ModelProvider::Openai => "openai",
         ModelProvider::Google => "google",
         ModelProvider::GoogleVertexAi => "google-vertex-ai",

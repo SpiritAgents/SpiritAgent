@@ -55,6 +55,7 @@
     "fireworksAi": "Fireworks AI",
     "togetherAi": "Together AI",
     "huggingFace": "Hugging Face",
+    "baseten": "Baseten",
     "moonshotAi": "Moonshot AI",
     "kimiCode": "Kimi Code",
     "moonshotAiSite": {
@@ -316,8 +317,10 @@
     "modelDetailPricingImageMegapixel": "{{value}} / megapixel",
     "modelDetailPricingExample": "{{value}}（{{description}}）",
     "modelDetailLabelContext": "上下文",
+    "modelDetailLabelMaxOutput": "最大输出",
     "modelDetailLabelInput": "输入",
     "modelDetailLabelOutput": "输出",
+    "modelDetailLabelCachedInput": "缓存输入",
     "modelDetailLabelImage": "图片",
     "modelDetailLabelRequest": "请求",
     "modelDetailLabelVideo": "视频",

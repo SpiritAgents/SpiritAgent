@@ -7,6 +7,9 @@ import {
   createFireworks,
 } from '@ai-sdk/fireworks';
 import {
+  createBaseten,
+} from '@ai-sdk/baseten';
+import {
   createTogetherAI,
 } from '@ai-sdk/togetherai';
 import {
@@ -784,6 +787,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkTogetherProvider(config)(config.model);
   }
 
+  if (isBasetenOfficialAiSdkProvider(config)) {
+    return createAiSdkBasetenProvider(config)(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
@@ -1011,6 +1018,16 @@ function createAiSdkTogetherProvider(
 ) {
   // SDK 默认 api.together.xyz；连接配置的 api.together.ai/v1 必须显式覆盖。
   return createTogetherAI({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    fetch: getLlmFetch(),
+  });
+}
+
+function createAiSdkBasetenProvider(
+  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
+) {
+  return createBaseten({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: getLlmFetch(),
@@ -1977,6 +1994,10 @@ function isFireworksOfficialAiSdkProvider(config: OpenAiTransportConfig): boolea
 
 function isTogetherOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'together-ai';
+}
+
+function isBasetenOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'baseten';
 }
 
 function isTogetherOfficialAiSdkImageConfig(config: OpenAiImageGenerationConfig): boolean {

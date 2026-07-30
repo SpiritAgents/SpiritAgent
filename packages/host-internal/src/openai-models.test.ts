@@ -28,6 +28,7 @@ import {
   parseHuggingFaceHubLinkHeaderNextUrl,
   mergeHuggingFaceListedModelEntries,
   resolveHuggingFaceDisplayNameFromId,
+  parseBasetenModelEntriesPayload,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -1179,6 +1180,92 @@ test('parseTogetherAiModelEntriesPayload accepts OpenAI-shaped data wrapper', ()
     {
       id: 'org/model',
       displayName: 'Model',
+      supportsImageInput: true,
+    },
+  ]);
+});
+
+test('parseBasetenModelEntriesPayload maps chat models pricing vision and reasoning', () => {
+  const entries = parseBasetenModelEntriesPayload({
+    data: [
+      {
+        id: 'moonshotai/Kimi-K3',
+        object: 'model',
+        name: 'Kimi K3',
+        context_length: 1048000,
+        max_completion_tokens: 262144,
+        pricing: {
+          prompt: '0.000003',
+          completion: '0.000015',
+          input_cache_read: '0.0000003',
+        },
+        supported_features: ['vision', 'reasoning', 'reasoning_effort'],
+      },
+      {
+        id: 'meta-llama/Llama-3',
+        object: 'model',
+        name: 'Llama 3',
+        context_length: 8192,
+        pricing: {
+          prompt: 3,
+          completion: 15,
+        },
+        supported_features: ['reasoning'],
+      },
+      {
+        id: 'org/embedding-model',
+        object: 'model',
+        type: 'embedding',
+        name: 'Embedding',
+      },
+      {
+        id: '',
+        object: 'model',
+        name: 'Missing id',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'moonshotai/Kimi-K3',
+      displayName: 'Kimi K3',
+      contextLength: 1048000,
+      maxCompletionTokens: 262144,
+      supportsImageInput: true,
+      supportsReasoning: true,
+      supportedReasoningEfforts: moonshotK3SupportedReasoningEfforts(),
+      pricing: {
+        inputPerTokenUsd: '0.000003',
+        outputPerTokenUsd: '0.000015',
+        cachedInputPerTokenUsd: '0.0000003',
+      },
+    },
+    {
+      id: 'meta-llama/Llama-3',
+      displayName: 'Llama 3',
+      contextLength: 8192,
+      supportsImageInput: true,
+      supportsReasoning: true,
+      supportedReasoningEfforts: ['low', 'medium', 'high'],
+      pricing: {
+        inputPerTokenUsd: '0.000003',
+        outputPerTokenUsd: '0.000015',
+      },
+    },
+  ]);
+});
+
+test('parseBasetenModelEntriesPayload accepts bare array and falls back display name to id', () => {
+  const entries = parseBasetenModelEntriesPayload([
+    {
+      id: 'org/model',
+      object: 'model',
+    },
+  ]);
+  assert.deepEqual(entries, [
+    {
+      id: 'org/model',
       supportsImageInput: true,
     },
   ]);

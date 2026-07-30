@@ -55,6 +55,7 @@
     "fireworksAi": "Fireworks AI",
     "togetherAi": "Together AI",
     "huggingFace": "Hugging Face",
+    "baseten": "Baseten",
     "moonshotAi": "Moonshot AI",
     "kimiCode": "Kimi Code",
     "moonshotAiSite": {
@@ -316,8 +317,10 @@
     "modelDetailPricingImageMegapixel": "{{value}} / megapixel",
     "modelDetailPricingExample": "{{value}} ({{description}})",
     "modelDetailLabelContext": "Context",
+    "modelDetailLabelMaxOutput": "Max output",
     "modelDetailLabelInput": "Input",
     "modelDetailLabelOutput": "Output",
+    "modelDetailLabelCachedInput": "Cached input",
     "modelDetailLabelImage": "Image",
     "modelDetailLabelRequest": "Request",
     "modelDetailLabelVideo": "Video",

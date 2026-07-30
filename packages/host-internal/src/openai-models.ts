@@ -37,6 +37,7 @@ export interface ProviderListedModelExamplePricing {
 export interface ProviderListedModelPricing {
   inputPerTokenUsd?: string;
   outputPerTokenUsd?: string;
+  cachedInputPerTokenUsd?: string;
   imagePerUnitUsd?: string;
   requestPerCallUsd?: string;
   videoDurationPricing?: ProviderListedModelVideoDurationPricing[];
@@ -62,6 +63,7 @@ export interface ProviderListedModelEntry {
   supportsThinkingSwitch?: boolean;
   supportsThinkingType?: KimiCodeSupportsThinkingType;
   contextLength?: number;
+  maxCompletionTokens?: number;
   supportedReasoningEfforts?: string[];
   /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint（供 backend 可选使用）。 */
   inferenceProvider?: string;
@@ -821,6 +823,185 @@ export async function listTogetherAiModels(
   };
   const json = await fetchModelsListJson(url, init);
   const entries = parseTogetherAiModelEntriesPayload(json);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function readBasetenModelsArray(body: unknown): unknown[] {
+  if (Array.isArray(body)) {
+    return body;
+  }
+  if (isJsonObject(body) && Array.isArray(body.data)) {
+    return body.data;
+  }
+  return [];
+}
+
+function readBasetenSupportedFeatures(value: unknown): Set<string> {
+  if (!Array.isArray(value)) {
+    return new Set();
+  }
+  const features = new Set<string>();
+  for (const item of value) {
+    if (typeof item === 'string' && item.trim().length > 0) {
+      features.add(item.trim().toLowerCase());
+    }
+  }
+  return features;
+}
+
+function readBasetenPerTokenUsd(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return undefined;
+    }
+    const amount = Number(trimmed);
+    if (!Number.isFinite(amount) || amount < 0) {
+      return undefined;
+    }
+    const perToken = amount >= 1 ? amount / 1_000_000 : amount;
+    if (perToken <= 0) {
+      return undefined;
+    }
+    if (amount < 1) {
+      return trimmed;
+    }
+    return formatBasetenPerTokenUsdNumber(perToken);
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || value < 0) {
+      return undefined;
+    }
+    const perToken = value >= 1 ? value / 1_000_000 : value;
+    if (perToken <= 0) {
+      return undefined;
+    }
+    return formatBasetenPerTokenUsdNumber(perToken);
+  }
+  return undefined;
+}
+
+function formatBasetenPerTokenUsdNumber(value: number): string {
+  const fixed = value.toFixed(12);
+  return fixed.replace(/\.?0+$/, '');
+}
+
+function isBasetenChatModel(record: Record<string, unknown>): boolean {
+  const object = readOptionalTrimmedString(record.object)?.toLowerCase();
+  if (object && object !== 'model') {
+    return false;
+  }
+  const type = readOptionalTrimmedString(record.type)?.toLowerCase();
+  if (type && type !== 'chat') {
+    return false;
+  }
+  return true;
+}
+
+function readBasetenPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(record.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+  const inputPerTokenUsd = readBasetenPerTokenUsd(pricing.prompt);
+  const outputPerTokenUsd = readBasetenPerTokenUsd(pricing.completion);
+  const cachedInputPerTokenUsd = readBasetenPerTokenUsd(pricing.input_cache_read);
+  return buildProviderListedModelPricing({
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+    ...(cachedInputPerTokenUsd ? { cachedInputPerTokenUsd } : {}),
+  });
+}
+
+function basetenSupportedReasoningEfforts(
+  modelId: string,
+  features: ReadonlySet<string>,
+): string[] | undefined {
+  if (!features.has('reasoning') && !features.has('reasoning_effort')) {
+    return undefined;
+  }
+  const normalizedId = modelId.trim().toLowerCase();
+  const bareId = normalizedId.includes('/')
+    ? normalizedId.slice(normalizedId.lastIndexOf('/') + 1)
+    : normalizedId;
+  if (/^kimi-k3(?:-|$)/.test(bareId)) {
+    return moonshotK3SupportedReasoningEfforts();
+  }
+  return ['low', 'medium', 'high'];
+}
+
+export function parseBasetenModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  const raw = readBasetenModelsArray(body);
+  const entries: ProviderListedModelEntry[] = [];
+
+  for (const item of raw) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+    if (!isBasetenChatModel(item)) {
+      continue;
+    }
+
+    const id = readOptionalTrimmedString(item.id);
+    if (!id) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id };
+    const displayName = readOptionalTrimmedString(item.name);
+    if (displayName) {
+      modelEntry.displayName = displayName;
+    }
+    const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+    const maxCompletionTokens = readPositiveIntegerModelTrait(item, 'max_completion_tokens');
+    if (maxCompletionTokens !== undefined) {
+      modelEntry.maxCompletionTokens = maxCompletionTokens;
+    }
+
+    modelEntry.supportsImageInput = true;
+    const features = readBasetenSupportedFeatures(item.supported_features);
+    if (features.has('vision')) {
+      modelEntry.supportsImageInput = true;
+    }
+
+    const supportedReasoningEfforts = basetenSupportedReasoningEfforts(id, features);
+    if (supportedReasoningEfforts !== undefined) {
+      modelEntry.supportsReasoning = true;
+      modelEntry.supportedReasoningEfforts = supportedReasoningEfforts;
+    }
+
+    const pricing = readBasetenPricing(item);
+    if (pricing) {
+      modelEntry.pricing = pricing;
+    }
+
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export async function listBasetenModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const url = openAiCompatibleModelsListUrl(options.baseUrl);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const init: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${key}`,
+    },
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  const json = await fetchModelsListJson(url, init);
+  const entries = parseBasetenModelEntriesPayload(json);
   return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -1942,6 +2123,10 @@ export async function listProviderModels(
     return listTogetherAiModels(options);
   }
 
+  if (options.provider === 'baseten') {
+    return listBasetenModels(options);
+  }
+
   if (options.provider === 'hugging-face') {
     return listHuggingFaceModels(options);
   }
@@ -2328,6 +2513,7 @@ function buildProviderListedModelPricing(fields: ProviderListedModelPricing): Pr
   const hasTokenPricing =
     fields.inputPerTokenUsd
     || fields.outputPerTokenUsd
+    || fields.cachedInputPerTokenUsd
     || fields.imagePerUnitUsd
     || fields.requestPerCallUsd
     || fields.imagePerMegapixelUsd;
@@ -2340,6 +2526,7 @@ function buildProviderListedModelPricing(fields: ProviderListedModelPricing): Pr
   return {
     ...(fields.inputPerTokenUsd ? { inputPerTokenUsd: fields.inputPerTokenUsd } : {}),
     ...(fields.outputPerTokenUsd ? { outputPerTokenUsd: fields.outputPerTokenUsd } : {}),
+    ...(fields.cachedInputPerTokenUsd ? { cachedInputPerTokenUsd: fields.cachedInputPerTokenUsd } : {}),
     ...(fields.imagePerUnitUsd ? { imagePerUnitUsd: fields.imagePerUnitUsd } : {}),
     ...(fields.requestPerCallUsd ? { requestPerCallUsd: fields.requestPerCallUsd } : {}),
     ...(hasVideoDurationPricing ? { videoDurationPricing: fields.videoDurationPricing } : {}),
