@@ -107,7 +107,7 @@
     "cross-env": "^10.0.0",
     "electron": "^38.8.6",
     "electron-builder": "^26.12.1",
-    "license-checker-rseidelsohn": "^4.4.2",
+    "license-checker-rseidelsohn": "^5.0.1",
     "linkedom": "^0.18.12",
     "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
