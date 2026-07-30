@@ -45,6 +45,7 @@ pub enum ModelProvider {
     TogetherAi,
     #[serde(rename = "hugging-face")]
     HuggingFace,
+    Baseten,
     Openai,
     Google,
     #[serde(rename = "google-vertex-ai")]
@@ -81,6 +82,7 @@ impl ModelProvider {
             Self::FireworksAi => "fireworks-ai",
             Self::TogetherAi => "together-ai",
             Self::HuggingFace => "hugging-face",
+            Self::Baseten => "baseten",
             Self::Openai => "openai",
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
@@ -118,6 +120,7 @@ impl FromStr for ModelProvider {
             "fireworks-ai" => Ok(Self::FireworksAi),
             "together-ai" => Ok(Self::TogetherAi),
             "hugging-face" => Ok(Self::HuggingFace),
+            "baseten" => Ok(Self::Baseten),
             "openai" => Ok(Self::Openai),
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
@@ -414,6 +417,7 @@ impl ModelProfile {
             | Some(ModelProvider::FireworksAi)
             | Some(ModelProvider::TogetherAi)
             | Some(ModelProvider::HuggingFace)
+            | Some(ModelProvider::Baseten)
             | Some(ModelProvider::Openai)
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)

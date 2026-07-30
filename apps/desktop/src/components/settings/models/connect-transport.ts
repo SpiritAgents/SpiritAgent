@@ -51,6 +51,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "tencent-tokenhub":
     case "mistral":
     case "together-ai":
+    case "baseten":
       return [connectTransportOptionCatalog.chatCompletions];
     case "hugging-face":
       return [connectTransportOptionCatalog.openResponsesApi];

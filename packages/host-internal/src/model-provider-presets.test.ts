@@ -34,6 +34,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('fireworks-ai'), 'fireworks-ai');
   assert.equal(parseModelProviderId('together-ai'), 'together-ai');
   assert.equal(parseModelProviderId('hugging-face'), 'hugging-face');
+  assert.equal(parseModelProviderId('baseten'), 'baseten');
   assert.equal(parseModelProviderId('azure'), 'azure');
   assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
@@ -124,6 +125,13 @@ test('resolveProviderConnectApiBase uses transport-specific preset bases', () =>
   assert.equal(
     resolveProviderConnectApiBase('azure', 'open-responses'),
     'https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Baseten preset base', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('baseten', 'openai-compatible'),
+    'https://inference.baseten.co/v1',
   );
 });
 
