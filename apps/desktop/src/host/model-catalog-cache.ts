@@ -291,12 +291,18 @@ function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | un
   const outputPerTokenUsd = readCachedPricingField(record, 'outputPerTokenUsd');
   const imagePerUnitUsd = readCachedPricingField(record, 'imagePerUnitUsd');
   const requestPerCallUsd = readCachedPricingField(record, 'requestPerCallUsd');
+  const imagePerMegapixelUsd = readCachedPricingField(record, 'imagePerMegapixelUsd');
+  const imageExamplePricing = normalizeCachedExamplePricing(record.imageExamplePricing);
+  const videoExamplePricing = normalizeCachedExamplePricing(record.videoExamplePricing);
   const videoDurationPricing = normalizeCachedVideoDurationPricing(record.videoDurationPricing);
   if (
     !inputPerTokenUsd
     && !outputPerTokenUsd
     && !imagePerUnitUsd
     && requestPerCallUsd === undefined
+    && !imagePerMegapixelUsd
+    && imageExamplePricing === undefined
+    && videoExamplePricing === undefined
     && videoDurationPricing === undefined
   ) {
     return undefined;
@@ -306,8 +312,32 @@ function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | un
     ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
     ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
     ...(requestPerCallUsd !== undefined ? { requestPerCallUsd } : {}),
+    ...(imagePerMegapixelUsd ? { imagePerMegapixelUsd } : {}),
+    ...(imageExamplePricing ? { imageExamplePricing } : {}),
+    ...(videoExamplePricing ? { videoExamplePricing } : {}),
     ...(videoDurationPricing ? { videoDurationPricing } : {}),
   };
+}
+
+function normalizeCachedExamplePricing(
+  value: unknown,
+): NonNullable<PreviewModelCatalogPricing['imageExamplePricing']> | undefined {
+  if (typeof value !== 'object' || value === null) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const priceUsd =
+    typeof record.priceUsd === 'string' && record.priceUsd.trim().length > 0
+      ? record.priceUsd.trim()
+      : undefined;
+  const description =
+    typeof record.description === 'string' && record.description.trim().length > 0
+      ? record.description.trim()
+      : undefined;
+  if (!priceUsd || !description) {
+    return undefined;
+  }
+  return { priceUsd, description };
 }
 
 function normalizeCachedVideoDurationPricing(
