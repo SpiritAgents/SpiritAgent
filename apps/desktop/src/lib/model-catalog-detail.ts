@@ -1,8 +1,8 @@
 import { resolveModelDisplayTitle } from '@spiritagent/host-internal/model-display-name';
 import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
 
-import { formatCompactTokenCount } from '@/lib/format-compact-token-count';
-import { parseModelContextLength } from '@/lib/model-context-length';
+import { formatCompactTokenCount } from './format-compact-token-count.js';
+import { parseModelContextLength } from './model-context-length.js';
 
 import type {
   DesktopModelCatalogHint,
@@ -11,7 +11,7 @@ import type {
   PreviewModelCatalogEntry,
   PreviewModelCatalogPricing,
   PreviewModelCatalogVideoDurationPricing,
-} from '@/types';
+} from '../types.js';
 
 const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProvider>([
   'vercel-ai-gateway',
