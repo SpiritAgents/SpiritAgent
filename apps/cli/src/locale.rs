@@ -6,7 +6,7 @@ use crate::model_registry::AppConfig;
 
 pub const DEFAULT_UI_LOCALE: &str = "en";
 pub const ENV_UI_LANG: &str = "SPIRIT_UI_LANG";
-pub const SUPPORTED_UI_LOCALES: [&str; 3] = ["en", "zh-CN", "zh-TW"];
+pub const SUPPORTED_UI_LOCALES: [&str; 4] = ["en", "zh-CN", "zh-TW", "ja"];
 
 pub fn apply_ui_locale(config: &AppConfig) {
     rust_i18n::set_locale(&resolve_ui_locale(config));
@@ -45,6 +45,7 @@ pub fn parse_ui_locale(locale: &str) -> Option<String> {
     match locale.trim().to_ascii_lowercase().as_str() {
         "zh" | "zh-cn" | "zh_cn" | "zh-hans" | "zh_hans" => Some("zh-CN".to_string()),
         "zh-tw" | "zh_tw" | "zh-hant" | "zh_hant" => Some("zh-TW".to_string()),
+        "ja" | "ja-jp" | "ja_jp" => Some("ja".to_string()),
         "en" | "en-us" | "en_us" | "en-gb" | "en_gb" => Some("en".to_string()),
         _ => None,
     }
@@ -58,6 +59,7 @@ pub fn language_display_name(locale: &str) -> String {
     match normalize_ui_locale(locale).as_str() {
         "zh-CN" => t!("ui.picker.languages.simplified_chinese").into_owned(),
         "zh-TW" => t!("ui.picker.languages.traditional_chinese").into_owned(),
+        "ja" => t!("ui.picker.languages.japanese").into_owned(),
         _ => t!("ui.picker.languages.english").into_owned(),
     }
 }
@@ -77,18 +79,19 @@ mod tests {
     fn parse_ui_locale_accepts_aliases() {
         assert_eq!(parse_ui_locale("zh").as_deref(), Some("zh-CN"));
         assert_eq!(parse_ui_locale("zh-Hant").as_deref(), Some("zh-TW"));
+        assert_eq!(parse_ui_locale("ja-JP").as_deref(), Some("ja"));
         assert_eq!(parse_ui_locale("en-US").as_deref(), Some("en"));
     }
 
     #[test]
     fn parse_ui_locale_rejects_unknown() {
         assert_eq!(parse_ui_locale("fr"), None);
-        assert_eq!(parse_ui_locale("ja-JP"), None);
+        assert_eq!(parse_ui_locale("xx"), None);
     }
 
     #[test]
     fn available_ui_locales_csv_uses_comma_space() {
-        assert_eq!(available_ui_locales_csv(), "en, zh-CN, zh-TW");
+        assert_eq!(available_ui_locales_csv(), "en, zh-CN, zh-TW, ja");
     }
 
     #[test]
