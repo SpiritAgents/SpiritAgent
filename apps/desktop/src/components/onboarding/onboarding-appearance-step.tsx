@@ -12,7 +12,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { isNativeBackdropBlurSupported } from "@/lib/desktop-shell";
 import { DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
-import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
+import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -79,7 +79,7 @@ export function OnboardingAppearanceControls({
           <SelectContent>
             {VALID_LANGUAGES.map((lang) => (
               <SelectItem key={lang} value={lang}>
-                {lang === "zh-CN" ? t("settings.langZhCN") : t("settings.langEn")}
+                {t(LOCALE_LABEL_KEYS[lang])}
               </SelectItem>
             ))}
           </SelectContent>

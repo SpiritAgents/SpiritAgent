@@ -56,7 +56,7 @@ struct Cli {
     #[arg(short = 'a', long, value_name = "approval")]
     approval: Option<String>,
 
-    /// UI language: en, zh-CN (persisted).
+    /// UI language locale code (persisted).
     #[arg(long = "language", short = 'l', value_name = "language")]
     language: Option<String>,
 

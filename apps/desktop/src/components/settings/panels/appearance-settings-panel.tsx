@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { changeLanguage, VALID_LANGUAGES } from "@/lib/i18n";
+import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
 import { isNativeBackdropBlurSupported } from "@/lib/desktop-shell";
 import type { ThemePreference } from "@/lib/theme";
 
@@ -92,7 +92,7 @@ export function AppearanceSettingsPanel({
           <SelectContent>
             {VALID_LANGUAGES.map((lang) => (
               <SelectItem key={lang} value={lang}>
-                {lang === "zh-CN" ? t("settings.langZhCN") : t("settings.langEn")}
+                {t(LOCALE_LABEL_KEYS[lang])}
               </SelectItem>
             ))}
           </SelectContent>

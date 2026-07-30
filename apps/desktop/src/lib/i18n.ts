@@ -1,15 +1,47 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
+import de from '../locales/de.json';
 import en from '../locales/en.json';
+import es from '../locales/es.json';
+import fr from '../locales/fr.json';
+import ja from '../locales/ja.json';
+import ko from '../locales/ko.json';
+import ptBR from '../locales/pt-BR.json';
+import ru from '../locales/ru.json';
 import zhCN from '../locales/zh-CN.json';
+import zhTW from '../locales/zh-TW.json';
 
 export const DEFAULT_LANGUAGE = 'zh-CN';
-export const VALID_LANGUAGES: readonly string[] = ['zh-CN', 'en'];
+export const VALID_LANGUAGES = [
+  'zh-CN',
+  'en',
+  'zh-TW',
+  'ja',
+  'ko',
+  'de',
+  'fr',
+  'es',
+  'pt-BR',
+  'ru',
+] as const;
+export type ValidLanguage = (typeof VALID_LANGUAGES)[number];
+export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
+  'zh-CN': 'settings.langZhCN',
+  en: 'settings.langEn',
+  'zh-TW': 'settings.langZhTW',
+  ja: 'settings.langJa',
+  ko: 'settings.langKo',
+  de: 'settings.langDe',
+  fr: 'settings.langFr',
+  es: 'settings.langEs',
+  'pt-BR': 'settings.langPtBR',
+  ru: 'settings.langRu',
+};
 export const LANGUAGE_STORAGE_KEY = 'spirit-agent-desktop-language' as const;
 
-export function isValidLanguage(v: string): v is 'zh-CN' | 'en' {
-  return VALID_LANGUAGES.includes(v);
+export function isValidLanguage(v: string): v is ValidLanguage {
+  return VALID_LANGUAGES.includes(v as ValidLanguage);
 }
 
 export function detectSystemLanguage(): string {
@@ -20,8 +52,32 @@ export function detectSystemLanguage(): string {
   if (isValidLanguage(lang)) {
     return lang;
   }
+  if (lang.startsWith('zh-TW-')) {
+    return 'zh-TW';
+  }
   if (lang.startsWith('zh')) {
     return 'zh-CN';
+  }
+  if (lang.startsWith('ja-')) {
+    return 'ja';
+  }
+  if (lang.startsWith('ko-')) {
+    return 'ko';
+  }
+  if (lang.startsWith('de-')) {
+    return 'de';
+  }
+  if (lang.startsWith('fr-')) {
+    return 'fr';
+  }
+  if (lang.startsWith('es-')) {
+    return 'es';
+  }
+  if (lang.startsWith('pt-BR-')) {
+    return 'pt-BR';
+  }
+  if (lang.startsWith('ru-')) {
+    return 'ru';
   }
   return DEFAULT_LANGUAGE;
 }
@@ -58,6 +114,14 @@ i18n.use(initReactI18next).init({
   resources: {
     'zh-CN': { translation: zhCN },
     en: { translation: en },
+    'zh-TW': { translation: zhTW },
+    ja: { translation: ja },
+    ko: { translation: ko },
+    de: { translation: de },
+    fr: { translation: fr },
+    es: { translation: es },
+    'pt-BR': { translation: ptBR },
+    ru: { translation: ru },
   },
   lng: getStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,

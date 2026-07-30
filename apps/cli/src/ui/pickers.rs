@@ -392,12 +392,18 @@ pub(in crate::ui) fn suggestion_usage_lines(suggestion: &InputSuggestion) -> Vec
             "    /log export".to_string(),
             "    /log session export".to_string(),
         ],
-        "/language" => vec![
-            t!("ui.suggestion.usage.heading").into_owned(),
-            "    /language".to_string(),
-            "    /language en".to_string(),
-            "    /language zh-CN".to_string(),
-        ],
+        "/language" => {
+            let mut lines = vec![
+                t!("ui.suggestion.usage.heading").into_owned(),
+                "    /language".to_string(),
+            ];
+            lines.extend(
+                crate::locale::supported_ui_locales()
+                    .iter()
+                    .map(|locale| format!("    /language {locale}")),
+            );
+            lines
+        }
         "/approval" => vec![
             t!("ui.suggestion.usage.heading").into_owned(),
             "    /approval".to_string(),

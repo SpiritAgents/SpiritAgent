@@ -98,7 +98,7 @@ Agent Core 决定模型如何「看见」项目上下文：
 
 - **停靠面板** — 带 Monaco 编辑器的文件浏览器、嵌入式终端（Electron）、Git 变更与历史、用于本地开发服务器的应用内浏览器。
 - **会话** — 多对话历史、按会话隔离的 worktree 工作流、工具审批、子智能体查看器、结构化问卷、上下文用量与回退（rewind）。
-- **配置** — 模型提供商与 API 密钥、Skills 与 Rules、MCP 服务器、扩展市场、Dreams（beta）、LSP、主题，以及 UI 语言（英文 / 简体中文）。
+- **配置** — 模型提供商与 API 密钥、Skills 与 Rules、MCP 服务器、扩展市场、Dreams（beta）、LSP、主题，以及 UI 语言（含英文、简体中文等 10 种语言）。
 - **平台** — Windows、macOS、Linux 上的 Electron；可选带远程配对的 Web 宿主。
 
 Desktop 专属开发与目录说明见 [apps/desktop/README.md](../apps/desktop/README.md)。
