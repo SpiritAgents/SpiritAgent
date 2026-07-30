@@ -37,6 +37,7 @@ export type ModelReasoningProvider =
   | 'fireworks-ai'
   | 'together-ai'
   | 'hugging-face'
+  | 'baseten'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'

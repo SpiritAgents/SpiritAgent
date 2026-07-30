@@ -99,6 +99,7 @@
   "dependencies": {
     "@ai-sdk/alibaba": "^2.0.1",
     "@ai-sdk/amazon-bedrock": "^5.0.1",
+    "@ai-sdk/baseten": "^2.0.17",
     "@ai-sdk/anthropic": "^4.0.0",
     "@ai-sdk/azure": "^4.0.1",
     "@ai-sdk/deepseek": "^3.0.0",
