@@ -28,6 +28,7 @@ export type ModelProviderId =
   | 'meituan'
   | 'tencent-tokenhub'
   | 'mistral'
+  | 'cohere'
   | 'azure'
   | 'amazon-bedrock'
   | 'custom';
@@ -73,6 +74,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'meituan',
   'tencent-tokenhub',
   'mistral',
+  'cohere',
   'azure',
   'amazon-bedrock',
   'google-vertex-ai',
@@ -94,7 +96,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","together-ai","baseten","hugging-face","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","mistral","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","together-ai","baseten","hugging-face","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","mistral","cohere","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -202,6 +204,7 @@ interface ParsedModelProviderPresets {
     | 'meituan'
     | 'tencent-tokenhub'
     | 'mistral'
+    | 'cohere'
     | 'azure'
     | 'amazon-bedrock',
     string
@@ -413,6 +416,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     meituan: requireStringField(presetRaw, 'meituan'),
     'tencent-tokenhub': requireStringField(presetRaw, 'tencent-tokenhub'),
     mistral: requireStringField(presetRaw, 'mistral'),
+    cohere: requireStringField(presetRaw, 'cohere'),
     azure: requireStringField(presetRaw, 'azure'),
     'amazon-bedrock': requireStringField(presetRaw, 'amazon-bedrock'),
   };
@@ -499,6 +503,7 @@ const volcengineBase = raw.presetApiBaseByProvider.volcengine;
 const meituanBase = raw.presetApiBaseByProvider.meituan;
 const tencentTokenhubBase = raw.presetApiBaseByProvider['tencent-tokenhub'];
 const mistralBase = raw.presetApiBaseByProvider.mistral;
+const cohereBase = raw.presetApiBaseByProvider.cohere;
 const azureBase = raw.presetApiBaseByProvider.azure;
 const amazonBedrockBase = raw.presetApiBaseByProvider['amazon-bedrock'];
 
@@ -529,6 +534,7 @@ export const PROVIDER_PRESET_API_BASE = {
   meituan: meituanBase,
   'tencent-tokenhub': tencentTokenhubBase,
   mistral: mistralBase,
+  cohere: cohereBase,
   azure: azureBase,
   'amazon-bedrock': amazonBedrockBase,
 } as const satisfies Record<Exclude<ModelProviderId, 'custom'>, string>;
@@ -803,6 +809,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE['tencent-tokenhub'];
     case 'mistral':
       return PROVIDER_PRESET_API_BASE.mistral;
+    case 'cohere':
+      return PROVIDER_PRESET_API_BASE.cohere;
     case 'azure':
       return PROVIDER_PRESET_API_BASE.azure;
     case 'amazon-bedrock':

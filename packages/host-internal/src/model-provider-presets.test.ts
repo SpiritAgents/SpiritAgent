@@ -35,6 +35,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('together-ai'), 'together-ai');
   assert.equal(parseModelProviderId('hugging-face'), 'hugging-face');
   assert.equal(parseModelProviderId('baseten'), 'baseten');
+  assert.equal(parseModelProviderId('cohere'), 'cohere');
   assert.equal(parseModelProviderId('azure'), 'azure');
   assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
@@ -195,6 +196,13 @@ test('resolveProviderConnectApiBase returns Hugging Face preset base', () => {
   assert.equal(
     resolveProviderConnectApiBase('hugging-face', 'open-responses'),
     'https://router.huggingface.co/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Cohere preset base', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('cohere', 'openai-compatible'),
+    'https://api.cohere.com/v2',
   );
 });
 
