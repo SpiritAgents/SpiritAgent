@@ -7,11 +7,22 @@ import es from '../locales/es.json';
 import fr from '../locales/fr.json';
 import ja from '../locales/ja.json';
 import ko from '../locales/ko.json';
+import ptBR from '../locales/pt-BR.json';
 import zhCN from '../locales/zh-CN.json';
 import zhTW from '../locales/zh-TW.json';
 
 export const DEFAULT_LANGUAGE = 'zh-CN';
-export const VALID_LANGUAGES = ['zh-CN', 'en', 'zh-TW', 'ja', 'ko', 'de', 'fr', 'es'] as const;
+export const VALID_LANGUAGES = [
+  'zh-CN',
+  'en',
+  'zh-TW',
+  'ja',
+  'ko',
+  'de',
+  'fr',
+  'es',
+  'pt-BR',
+] as const;
 export type ValidLanguage = (typeof VALID_LANGUAGES)[number];
 export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
   'zh-CN': 'settings.langZhCN',
@@ -22,6 +33,7 @@ export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
   de: 'settings.langDe',
   fr: 'settings.langFr',
   es: 'settings.langEs',
+  'pt-BR': 'settings.langPtBR',
 };
 export const LANGUAGE_STORAGE_KEY = 'spirit-agent-desktop-language' as const;
 
@@ -57,6 +69,9 @@ export function detectSystemLanguage(): string {
   }
   if (lang.startsWith('es-')) {
     return 'es';
+  }
+  if (lang.startsWith('pt-BR-')) {
+    return 'pt-BR';
   }
   return DEFAULT_LANGUAGE;
 }
@@ -99,6 +114,7 @@ i18n.use(initReactI18next).init({
     de: { translation: de },
     fr: { translation: fr },
     es: { translation: es },
+    'pt-BR': { translation: ptBR },
   },
   lng: getStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,

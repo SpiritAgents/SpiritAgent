@@ -6,6 +6,7 @@ import es from '../locales/es.json' with { type: 'json' };
 import fr from '../locales/fr.json' with { type: 'json' };
 import ja from '../locales/ja.json' with { type: 'json' };
 import ko from '../locales/ko.json' with { type: 'json' };
+import ptBR from '../locales/pt-BR.json' with { type: 'json' };
 import zhCN from '../locales/zh-CN.json' with { type: 'json' };
 import zhTW from '../locales/zh-TW.json' with { type: 'json' };
 
@@ -18,6 +19,7 @@ const resources = {
   de: { translation: de },
   fr: { translation: fr },
   es: { translation: es },
+  'pt-BR': { translation: ptBR },
 };
 
 const instance = i18n.createInstance();
