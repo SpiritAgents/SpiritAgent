@@ -136,6 +136,7 @@ import {
 } from './gateway-google-thinking.js';
 import { isOpenRouterAnthropicClaudeModel } from './openrouter-anthropic-reasoning.js';
 import { generateSiliconFlowImage } from '../image-generation/siliconflow-backend.js';
+import { generateHuggingFaceImage } from '../image-generation/huggingface-backend.js';
 import { generateStepfunImage } from '../image-generation/stepfun-backend.js';
 import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { generateVideoWithRouter } from '../video-generation/router.js';
@@ -275,6 +276,10 @@ export class AiSdkOpenAiCompatibleTransport
 
     if (imageConfig.llmVendor === 'siliconflow') {
       return generateSiliconFlowImage(imageConfig, request, saveGeneratedImage);
+    }
+
+    if (imageConfig.llmVendor === 'hugging-face') {
+      return generateHuggingFaceImage(imageConfig, request, saveGeneratedImage);
     }
 
     if (imageConfig.llmVendor === 'stepfun') {
