@@ -726,6 +726,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::VercelAiGateway
                 | ModelProvider::Openrouter
                 | ModelProvider::FireworksAi
+                | ModelProvider::TogetherAi
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway
