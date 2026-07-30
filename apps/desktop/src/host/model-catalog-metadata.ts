@@ -84,6 +84,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'fireworks-ai'
     || input.provider === 'together-ai'
     || input.provider === 'hugging-face'
+    || input.provider === 'baseten'
     || input.provider === 'volcengine'
     || input.provider === 'stepfun'
     || input.provider === 'google'
@@ -112,6 +113,9 @@ export function previewModelCatalogForTransport(input: {
     ...(entry.pricing !== undefined ? { pricing: { ...entry.pricing } } : {}),
     ...resolvePreviewSupportedReasoningEffortsForEntry(input.provider, entry),
     ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
+    ...(entry.maxCompletionTokens !== undefined
+      ? { maxCompletionTokens: entry.maxCompletionTokens }
+      : {}),
     ...(entry.supportsThinkingType !== undefined
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
@@ -150,6 +154,9 @@ export function previewCatalogMapForTransport(input: {
           ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
           : {}),
         ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
+        ...(entry.maxCompletionTokens !== undefined
+          ? { maxCompletionTokens: entry.maxCompletionTokens }
+          : {}),
         ...(entry.supportsThinkingType !== undefined
           ? { supportsThinkingType: entry.supportsThinkingType }
           : {}),

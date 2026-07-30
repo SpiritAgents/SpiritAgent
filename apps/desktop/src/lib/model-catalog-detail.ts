@@ -19,6 +19,7 @@ const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProv
   'fireworks-ai',
   'together-ai',
   'hugging-face',
+  'baseten',
   'moonshot-ai',
   'kimi-code',
 ]);
@@ -189,8 +190,10 @@ type PricingLabelKey =
 
 type ModelCatalogDetailFieldLabelKey =
   | 'settings.modelDetailLabelContext'
+  | 'settings.modelDetailLabelMaxOutput'
   | 'settings.modelDetailLabelInput'
   | 'settings.modelDetailLabelOutput'
+  | 'settings.modelDetailLabelCachedInput'
   | 'settings.modelDetailLabelImage'
   | 'settings.modelDetailLabelRequest'
   | 'settings.modelDetailLabelVideo';
@@ -217,8 +220,11 @@ export function modelCatalogHasDetailBody(input: {
   const contextLength =
     parseModelContextLength(input.model.contextLength)
     ?? parseModelContextLength(input.catalogEntry?.contextLength);
+  const maxCompletionTokens =
+    input.catalogEntry?.maxCompletionTokens;
   return buildModelCatalogDetailFields({
     ...(contextLength !== undefined ? { contextLength } : {}),
+    ...(maxCompletionTokens !== undefined ? { maxCompletionTokens } : {}),
     pricing: input.catalogEntry?.pricing,
     t: (key) => key,
   }).length > 0;
@@ -226,6 +232,7 @@ export function modelCatalogHasDetailBody(input: {
 
 export function buildModelCatalogDetailFields(input: {
   contextLength?: number;
+  maxCompletionTokens?: number;
   pricing?: PreviewModelCatalogPricing;
   t: (
     key: ModelCatalogDetailFieldLabelKey | ModelCatalogDetailFieldValueKey,
@@ -238,6 +245,13 @@ export function buildModelCatalogDetailFields(input: {
       id: 'context',
       label: input.t('settings.modelDetailLabelContext'),
       value: `${formatCompactTokenCount(input.contextLength)} tokens`,
+    });
+  }
+  if (input.maxCompletionTokens !== undefined) {
+    fields.push({
+      id: 'max-output',
+      label: input.t('settings.modelDetailLabelMaxOutput'),
+      value: `${formatCompactTokenCount(input.maxCompletionTokens)} tokens`,
     });
   }
   const pricing = input.pricing;
@@ -256,6 +270,14 @@ export function buildModelCatalogDetailFields(input: {
         id: 'output',
         label: input.t('settings.modelDetailLabelOutput'),
         value: `${outputPrice} / M tokens`,
+      });
+    }
+    const cachedInputPrice = formatUsdPerMillionTokens(pricing.cachedInputPerTokenUsd);
+    if (cachedInputPrice) {
+      fields.push({
+        id: 'cached-input',
+        label: input.t('settings.modelDetailLabelCachedInput'),
+        value: `${cachedInputPrice} / M tokens`,
       });
     }
     const imagePrice = formatUsdFlatRate(pricing.imagePerUnitUsd);

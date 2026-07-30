@@ -173,6 +173,7 @@ export interface PreviewModelCatalogExamplePricing {
 export interface PreviewModelCatalogPricing {
   inputPerTokenUsd?: string;
   outputPerTokenUsd?: string;
+  cachedInputPerTokenUsd?: string;
   imagePerUnitUsd?: string;
   requestPerCallUsd?: string;
   videoDurationPricing?: PreviewModelCatalogVideoDurationPricing[];
@@ -195,6 +196,7 @@ export interface PreviewModelCatalogEntry {
   capabilities?: DesktopModelCapability[];
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];
   contextLength?: number;
+  maxCompletionTokens?: number;
   supportsThinkingType?: 'only';
   supportsThinkingSwitch?: boolean;
   /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint。 */
