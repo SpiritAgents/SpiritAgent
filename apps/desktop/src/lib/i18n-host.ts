@@ -2,10 +2,12 @@ import i18n from 'i18next';
 
 import en from '../locales/en.json' with { type: 'json' };
 import zhCN from '../locales/zh-CN.json' with { type: 'json' };
+import zhTW from '../locales/zh-TW.json' with { type: 'json' };
 
 const resources = {
   'zh-CN': { translation: zhCN },
   en: { translation: en },
+  'zh-TW': { translation: zhTW },
 };
 
 const instance = i18n.createInstance();

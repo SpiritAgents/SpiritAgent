@@ -1,6 +1,7 @@
 //! TUI slash command helpers.
 
 use crate::{
+    locale,
     mcp_types::McpDiscoveredPrompt,
     tui::TuiShell,
     view::{InputSuggestion, MainInputMode},
@@ -404,7 +405,7 @@ pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> 
         "- /extensions [list|import <zip>|remove <id>|marketplace [query]]".to_string(),
         "- /<skill-name> [补充说明]".to_string(),
         "- /log（或 /log export、/log session export）".to_string(),
-        "- /language [en|zh-CN]".to_string(),
+        format!("- /language [{}]", locale::available_ui_locales_csv()),
         "".to_string(),
         "说明:".to_string(),
     ]);

@@ -701,7 +701,10 @@ impl TuiShell {
                 };
                 self.switch_ui_locale(&normalized);
             }
-            _ => self.push_agent_message("用法: /language [en|zh-CN]"),
+            _ => self.push_agent_message(format!(
+                "用法: /language [{}]",
+                locale::available_ui_locales_csv()
+            )),
         }
     }
 

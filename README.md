@@ -11,7 +11,7 @@
 
 > This project is under active development. Behavior and APIs may change between releases.
 
-[Simplified Chinese](docs/README_zh-CN.md)
+[Simplified Chinese](docs/README_zh-CN.md) · [Traditional Chinese](docs/README_zh-TW.md)
 
 <img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
