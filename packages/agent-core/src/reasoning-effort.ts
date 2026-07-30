@@ -445,7 +445,7 @@ export function isMoonshotK3ReasoningEffortModel(
   if (!isMoonshotKimiK3Model(context?.model ?? '')) {
     return false;
   }
-  if (context?.provider === 'moonshot-ai') {
+  if (context?.provider === 'moonshot-ai' || context?.provider === 'baseten') {
     return true;
   }
   return context?.provider === 'vercel-ai-gateway'
