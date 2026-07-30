@@ -41,6 +41,8 @@ pub enum ModelProvider {
     Openrouter,
     #[serde(rename = "fireworks-ai")]
     FireworksAi,
+    #[serde(rename = "together-ai")]
+    TogetherAi,
     Openai,
     Google,
     #[serde(rename = "google-vertex-ai")]
@@ -75,6 +77,7 @@ impl ModelProvider {
             Self::CloudflareAiGateway => "cloudflare-ai-gateway",
             Self::Openrouter => "openrouter",
             Self::FireworksAi => "fireworks-ai",
+            Self::TogetherAi => "together-ai",
             Self::Openai => "openai",
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
@@ -110,6 +113,7 @@ impl FromStr for ModelProvider {
             "cloudflare-ai-gateway" => Ok(Self::CloudflareAiGateway),
             "openrouter" => Ok(Self::Openrouter),
             "fireworks-ai" => Ok(Self::FireworksAi),
+            "together-ai" => Ok(Self::TogetherAi),
             "openai" => Ok(Self::Openai),
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
@@ -403,6 +407,7 @@ impl ModelProfile {
             | Some(ModelProvider::CloudflareAiGateway)
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::FireworksAi)
+            | Some(ModelProvider::TogetherAi)
             | Some(ModelProvider::Openai)
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)

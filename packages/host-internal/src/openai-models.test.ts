@@ -22,6 +22,7 @@ import {
   mergeFireworksAiGatewayModelPages,
   parseFireworksAiGatewayModelsPayload,
   fireworksAiGatewayModelsListUrl,
+  parseTogetherAiModelEntriesPayload,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -1043,6 +1044,137 @@ test('parseFireworksAiGatewayModelsPayload maps chat models and filters non-chat
     {
       id: 'accounts/fireworks/models/kimi-k2-thinking',
       displayName: 'Kimi K2 Thinking',
+    },
+  ]);
+});
+
+test('parseTogetherAiModelEntriesPayload maps chat/language/image/video and pricing shapes', () => {
+  const entries = parseTogetherAiModelEntriesPayload([
+    {
+      id: 'moonshotai/Kimi-K3',
+      type: 'chat',
+      display_name: 'Kimi K3',
+      context_length: 1000000,
+      pricing: {
+        input: 3,
+        output: 15,
+        image_pixel: 0,
+        image: 0,
+        video: 0,
+      },
+    },
+    {
+      id: 'meta-llama/Meta-Llama-3.1-8B',
+      type: 'language',
+      display_name: 'Meta Llama 3.1 8B',
+      context_length: 16384,
+      pricing: { input: 0, output: 0 },
+    },
+    {
+      id: 'black-forest-labs/FLUX.1.1-pro',
+      type: 'image',
+      display_name: 'FLUX1.1 [pro]',
+      pricing: {
+        image_pixel: {
+          price_per_megapixel: 0.04,
+          min_steps: 0,
+        },
+      },
+    },
+    {
+      id: 'ByteDance-Seed/Seedream-3.0',
+      type: 'image',
+      display_name: 'ByteDance Seedream 3.0',
+      pricing: {
+        image: {
+          example_price: 0.018,
+          example_description: '720x1280',
+        },
+      },
+    },
+    {
+      id: 'kwaivgi/kling-2.1-master',
+      type: 'video',
+      display_name: 'Kling 2.1 Master',
+      pricing: {
+        video: {
+          example_price: 0.924,
+          example_description: '1080p / 5s',
+        },
+      },
+    },
+    {
+      id: 'BAAI/bge-large-en-v1.5',
+      type: 'embedding',
+      display_name: 'BGE Large',
+    },
+  ]);
+
+  assert.deepEqual(entries, [
+    {
+      id: 'moonshotai/Kimi-K3',
+      displayName: 'Kimi K3',
+      contextLength: 1000000,
+      supportsImageInput: true,
+      pricing: {
+        inputPerTokenUsd: '0.000003',
+        outputPerTokenUsd: '0.000015',
+      },
+    },
+    {
+      id: 'meta-llama/Meta-Llama-3.1-8B',
+      displayName: 'Meta Llama 3.1 8B',
+      contextLength: 16384,
+      supportsImageInput: true,
+    },
+    {
+      id: 'black-forest-labs/FLUX.1.1-pro',
+      displayName: 'FLUX1.1 [pro]',
+      supportsImageGeneration: true,
+      pricing: {
+        imagePerMegapixelUsd: '0.04',
+      },
+    },
+    {
+      id: 'ByteDance-Seed/Seedream-3.0',
+      displayName: 'ByteDance Seedream 3.0',
+      supportsImageGeneration: true,
+      pricing: {
+        imageExamplePricing: {
+          priceUsd: '0.018',
+          description: '720x1280',
+        },
+      },
+    },
+    {
+      id: 'kwaivgi/kling-2.1-master',
+      displayName: 'Kling 2.1 Master',
+      supportsVideoGeneration: true,
+      pricing: {
+        videoExamplePricing: {
+          priceUsd: '0.924',
+          description: '1080p / 5s',
+        },
+      },
+    },
+  ]);
+});
+
+test('parseTogetherAiModelEntriesPayload accepts OpenAI-shaped data wrapper', () => {
+  const entries = parseTogetherAiModelEntriesPayload({
+    data: [
+      {
+        id: 'org/model',
+        type: 'chat',
+        display_name: 'Model',
+      },
+    ],
+  });
+  assert.deepEqual(entries, [
+    {
+      id: 'org/model',
+      displayName: 'Model',
+      supportsImageInput: true,
     },
   ]);
 });

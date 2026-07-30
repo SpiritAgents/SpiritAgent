@@ -9,12 +9,14 @@ import { AiSdkGatewayVideoBackend } from './ai-sdk-gateway-backend.js';
 import { OpenRouterVideosBackend } from './openrouter-videos-backend.js';
 import { VolcengineArkVideoBackend } from './volcengine-ark-backend.js';
 import { SiliconFlowVideoBackend } from './siliconflow-backend.js';
+import { TogetherVideosBackend } from './together-videos-backend.js';
 import type { VideoGenerationBackend } from './types.js';
 
 const volcengineArkBackend = new VolcengineArkVideoBackend();
 const openRouterVideosBackend = new OpenRouterVideosBackend();
 const aiSdkGatewayBackend = new AiSdkGatewayVideoBackend();
 const siliconFlowVideoBackend = new SiliconFlowVideoBackend();
+const togetherVideosBackend = new TogetherVideosBackend();
 
 export function isSiliconFlowApiBase(baseUrl: string | undefined): boolean {
   if (!baseUrl) {
@@ -42,6 +44,19 @@ export function isVolcengineArkApiBase(baseUrl: string | undefined): boolean {
   }
 }
 
+export function isTogetherAiApiBase(baseUrl: string | undefined): boolean {
+  if (!baseUrl) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(baseUrl).hostname.toLowerCase();
+    return hostname.includes('together.ai') || hostname.includes('together.xyz');
+  } catch {
+    return false;
+  }
+}
+
 export function resolveVideoGenerationBackend(
   config: OpenAiVideoGenerationConfig,
 ): VideoGenerationBackend {
@@ -53,6 +68,10 @@ export function resolveVideoGenerationBackend(
     return openRouterVideosBackend;
   }
 
+  if (config.llmVendor === 'together-ai' || isTogetherAiApiBase(config.baseUrl)) {
+    return togetherVideosBackend;
+  }
+
   if (config.llmVendor === 'siliconflow' || isSiliconFlowApiBase(config.baseUrl)) {
     return siliconFlowVideoBackend;
   }
@@ -62,7 +81,7 @@ export function resolveVideoGenerationBackend(
   }
 
   throw new Error(
-    'No video generation backend is configured for the selected video model. Use Volcengine Ark, Vercel AI Gateway, OpenRouter, or SiliconFlow.',
+    'No video generation backend is configured for the selected video model. Use Volcengine Ark, Vercel AI Gateway, OpenRouter, SiliconFlow, or Together AI.',
   );
 }
 

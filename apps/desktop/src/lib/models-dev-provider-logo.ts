@@ -23,6 +23,7 @@ const MODELS_DEV_LOGO_ID_ALIASES: Partial<Record<DesktopModelProvider, string>> 
   'z-ai': 'zai',
   'zhipu-ai': 'zhipuai',
   'google-vertex-ai': 'google-vertex',
+  'together-ai': 'togetherai',
 };
 
 let modelsDevReachableCache: boolean | null = null;

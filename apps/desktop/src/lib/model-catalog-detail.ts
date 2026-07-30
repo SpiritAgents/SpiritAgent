@@ -17,6 +17,7 @@ const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProv
   'vercel-ai-gateway',
   'openrouter',
   'fireworks-ai',
+  'together-ai',
   'moonshot-ai',
   'kimi-code',
 ]);
@@ -109,7 +110,10 @@ export function modelHasCatalogDetail(entry: PreviewModelCatalogEntry | undefine
     pricing.inputPerTokenUsd?.trim()
       || pricing.outputPerTokenUsd?.trim()
       || pricing.imagePerUnitUsd?.trim()
-      || pricing.requestPerCallUsd?.trim(),
+      || pricing.requestPerCallUsd?.trim()
+      || pricing.imagePerMegapixelUsd?.trim()
+      || pricing.imageExamplePricing?.priceUsd?.trim()
+      || pricing.videoExamplePricing?.priceUsd?.trim(),
   );
 }
 
@@ -178,18 +182,23 @@ type PricingLabelKey =
   | 'settings.modelDetailPricingImage'
   | 'settings.modelDetailPricingRequest'
   | 'settings.modelDetailPricingVideoPerSecond'
-  | 'settings.modelDetailPricingVideoResolutionWithAudio';
+  | 'settings.modelDetailPricingVideoResolutionWithAudio'
+  | 'settings.modelDetailPricingImageMegapixel'
+  | 'settings.modelDetailPricingExample';
 
 type ModelCatalogDetailFieldLabelKey =
   | 'settings.modelDetailLabelContext'
   | 'settings.modelDetailLabelInput'
   | 'settings.modelDetailLabelOutput'
   | 'settings.modelDetailLabelImage'
-  | 'settings.modelDetailLabelRequest';
+  | 'settings.modelDetailLabelRequest'
+  | 'settings.modelDetailLabelVideo';
 
 type ModelCatalogDetailFieldValueKey =
   | 'settings.modelDetailPricingVideoPerSecond'
-  | 'settings.modelDetailPricingVideoResolutionWithAudio';
+  | 'settings.modelDetailPricingVideoResolutionWithAudio'
+  | 'settings.modelDetailPricingImageMegapixel'
+  | 'settings.modelDetailPricingExample';
 
 export type ModelCatalogDetailField = {
   id: string;
@@ -217,7 +226,10 @@ export function modelCatalogHasDetailBody(input: {
 export function buildModelCatalogDetailFields(input: {
   contextLength?: number;
   pricing?: PreviewModelCatalogPricing;
-  t: (key: ModelCatalogDetailFieldLabelKey | ModelCatalogDetailFieldValueKey, options?: { value?: string; resolution?: string }) => string;
+  t: (
+    key: ModelCatalogDetailFieldLabelKey | ModelCatalogDetailFieldValueKey,
+    options?: { value?: string; resolution?: string; description?: string },
+  ) => string;
 }): ModelCatalogDetailField[] {
   const fields: ModelCatalogDetailField[] = [];
   if (input.contextLength !== undefined) {
@@ -253,6 +265,22 @@ export function buildModelCatalogDetailFields(input: {
         value: imagePrice,
       });
     }
+    const imageMegapixelPrice = formatUsdFlatRate(pricing.imagePerMegapixelUsd);
+    if (imageMegapixelPrice) {
+      fields.push({
+        id: 'image-megapixel',
+        label: input.t('settings.modelDetailLabelImage'),
+        value: input.t('settings.modelDetailPricingImageMegapixel', { value: imageMegapixelPrice }),
+      });
+    }
+    const imageExample = formatExamplePricing(pricing.imageExamplePricing, input.t);
+    if (imageExample) {
+      fields.push({
+        id: 'image-example',
+        label: input.t('settings.modelDetailLabelImage'),
+        value: imageExample,
+      });
+    }
     const requestPrice = formatUsdFlatRate(pricing.requestPerCallUsd);
     if (requestPrice) {
       fields.push({
@@ -270,6 +298,14 @@ export function buildModelCatalogDetailFields(input: {
         id: videoDurationPricingFieldId(index, tier),
         label: videoDurationPricingRowLabel(tier, input.t),
         value: input.t('settings.modelDetailPricingVideoPerSecond', { value: costPerSecond }),
+      });
+    }
+    const videoExample = formatExamplePricing(pricing.videoExamplePricing, input.t);
+    if (videoExample) {
+      fields.push({
+        id: 'video-example',
+        label: input.t('settings.modelDetailLabelVideo'),
+        value: videoExample,
       });
     }
   }
@@ -297,6 +333,16 @@ export function formatModelCatalogPricingLines(
   if (image) {
     lines.push(t('settings.modelDetailPricingImage', { value: image }));
   }
+  const imageMegapixel = formatUsdFlatRate(pricing.imagePerMegapixelUsd);
+  if (imageMegapixel) {
+    lines.push(t('settings.modelDetailPricingImage', {
+      value: t('settings.modelDetailPricingImageMegapixel', { value: imageMegapixel }),
+    }));
+  }
+  const imageExample = formatExamplePricing(pricing.imageExamplePricing, t);
+  if (imageExample) {
+    lines.push(t('settings.modelDetailPricingImage', { value: imageExample }));
+  }
   const request = formatUsdFlatRate(pricing.requestPerCallUsd);
   if (request) {
     lines.push(t('settings.modelDetailPricingRequest', { value: request }));
@@ -309,7 +355,26 @@ export function formatModelCatalogPricingLines(
     const label = videoDurationPricingRowLabel(tier, t);
     lines.push(`${label}: ${t('settings.modelDetailPricingVideoPerSecond', { value: costPerSecond })}`);
   }
+  const videoExample = formatExamplePricing(pricing.videoExamplePricing, t);
+  if (videoExample) {
+    lines.push(videoExample);
+  }
   return lines;
+}
+
+function formatExamplePricing(
+  example: PreviewModelCatalogPricing['imageExamplePricing'] | PreviewModelCatalogPricing['videoExamplePricing'],
+  t: (key: 'settings.modelDetailPricingExample', options?: { value?: string; description?: string }) => string,
+): string | undefined {
+  if (!example) {
+    return undefined;
+  }
+  const price = formatUsdFlatRate(example.priceUsd);
+  const description = example.description.trim();
+  if (!price || !description) {
+    return undefined;
+  }
+  return t('settings.modelDetailPricingExample', { value: price, description });
 }
 
 function videoDurationPricingRowLabel(

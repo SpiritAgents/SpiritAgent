@@ -165,12 +165,20 @@ export interface PreviewModelCatalogVideoDurationPricing {
   audio?: boolean;
 }
 
+export interface PreviewModelCatalogExamplePricing {
+  priceUsd: string;
+  description: string;
+}
+
 export interface PreviewModelCatalogPricing {
   inputPerTokenUsd?: string;
   outputPerTokenUsd?: string;
   imagePerUnitUsd?: string;
   requestPerCallUsd?: string;
   videoDurationPricing?: PreviewModelCatalogVideoDurationPricing[];
+  imagePerMegapixelUsd?: string;
+  imageExamplePricing?: PreviewModelCatalogExamplePricing;
+  videoExamplePricing?: PreviewModelCatalogExamplePricing;
 }
 
 export type DesktopAlibabaBillingMode = 'token-plan';

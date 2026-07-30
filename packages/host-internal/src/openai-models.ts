@@ -28,12 +28,22 @@ export interface ProviderListedModelVideoDurationPricing {
   audio?: boolean;
 }
 
+/** Together 等：示例价 + 适用规格说明（如 720x1280、1080p / 5s）。 */
+export interface ProviderListedModelExamplePricing {
+  priceUsd: string;
+  description: string;
+}
+
 export interface ProviderListedModelPricing {
   inputPerTokenUsd?: string;
   outputPerTokenUsd?: string;
   imagePerUnitUsd?: string;
   requestPerCallUsd?: string;
   videoDurationPricing?: ProviderListedModelVideoDurationPricing[];
+  /** Together `pricing.image_pixel.price_per_megapixel`。 */
+  imagePerMegapixelUsd?: string;
+  imageExamplePricing?: ProviderListedModelExamplePricing;
+  videoExamplePricing?: ProviderListedModelExamplePricing;
 }
 
 export type KimiCodeSupportsThinkingType = 'only';
@@ -667,6 +677,149 @@ export async function listFireworksAiModels(
   } while (pageToken);
 
   return mergeFireworksAiGatewayModelPages(pages);
+}
+
+const TOGETHER_AI_LISTED_MODEL_TYPES = new Set(['chat', 'language', 'image', 'video']);
+
+function readTogetherAiModelsArray(body: unknown): unknown[] {
+  if (Array.isArray(body)) {
+    return body;
+  }
+  if (isJsonObject(body) && Array.isArray(body.data)) {
+    return body.data;
+  }
+  return [];
+}
+
+function readTogetherAiPositiveNumber(value: unknown): number | undefined {
+  const amount =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim().length > 0
+        ? Number(value)
+        : Number.NaN;
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return undefined;
+  }
+  return amount;
+}
+
+function readTogetherAiExamplePricing(value: unknown): ProviderListedModelExamplePricing | undefined {
+  const record = asRecord(value);
+  if (!record) {
+    return undefined;
+  }
+  const price = readTogetherAiPositiveNumber(record.example_price);
+  const description = readOptionalTrimmedString(record.example_description);
+  if (price === undefined || !description) {
+    return undefined;
+  }
+  return {
+    priceUsd: String(price),
+    description,
+  };
+}
+
+function readTogetherAiPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(record.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+
+  const inputPerMillion = readTogetherAiPositiveNumber(pricing.input);
+  const outputPerMillion = readTogetherAiPositiveNumber(pricing.output);
+  const inputPerTokenUsd =
+    inputPerMillion !== undefined ? String(inputPerMillion / 1_000_000) : undefined;
+  const outputPerTokenUsd =
+    outputPerMillion !== undefined ? String(outputPerMillion / 1_000_000) : undefined;
+
+  const imagePixel = asRecord(pricing.image_pixel);
+  const imagePerMegapixel =
+    imagePixel !== undefined
+      ? readTogetherAiPositiveNumber(imagePixel.price_per_megapixel)
+      : undefined;
+  const imagePerMegapixelUsd =
+    imagePerMegapixel !== undefined ? String(imagePerMegapixel) : undefined;
+
+  const imageExamplePricing = readTogetherAiExamplePricing(pricing.image);
+  const videoExamplePricing = readTogetherAiExamplePricing(pricing.video);
+
+  return buildProviderListedModelPricing({
+    ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+    ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+    ...(imagePerMegapixelUsd ? { imagePerMegapixelUsd } : {}),
+    ...(imageExamplePricing ? { imageExamplePricing } : {}),
+    ...(videoExamplePricing ? { videoExamplePricing } : {}),
+  });
+}
+
+export function parseTogetherAiModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  const raw = readTogetherAiModelsArray(body);
+  const entries: ProviderListedModelEntry[] = [];
+
+  for (const item of raw) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+
+    const type = readOptionalTrimmedString(item.type)?.toLowerCase();
+    if (!type || !TOGETHER_AI_LISTED_MODEL_TYPES.has(type)) {
+      continue;
+    }
+
+    const id = readOptionalTrimmedString(item.id);
+    if (!id) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id };
+    const displayName = readOptionalTrimmedString(item.display_name);
+    if (displayName) {
+      modelEntry.displayName = displayName;
+    }
+    const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+
+    if (type === 'chat' || type === 'language') {
+      modelEntry.supportsImageInput = true;
+    } else if (type === 'image') {
+      modelEntry.supportsImageGeneration = true;
+    } else if (type === 'video') {
+      modelEntry.supportsVideoGeneration = true;
+    }
+
+    const pricing = readTogetherAiPricing(item);
+    if (pricing) {
+      modelEntry.pricing = pricing;
+    }
+
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export async function listTogetherAiModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const url = openAiCompatibleModelsListUrl(options.baseUrl);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const init: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${key}`,
+    },
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  const json = await fetchModelsListJson(url, init);
+  const entries = parseTogetherAiModelEntriesPayload(json);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /** Xiaomi Mimo：上游 /models 不返回能力字段，多模态模型需维护 allowlist。 */
@@ -1409,6 +1562,10 @@ export async function listProviderModels(
     return listFireworksAiModels(options);
   }
 
+  if (options.provider === 'together-ai') {
+    return listTogetherAiModels(options);
+  }
+
   if (
     options.transportKind === 'anthropic'
     || options.provider === 'anthropic'
@@ -1792,10 +1949,12 @@ function buildProviderListedModelPricing(fields: ProviderListedModelPricing): Pr
     fields.inputPerTokenUsd
     || fields.outputPerTokenUsd
     || fields.imagePerUnitUsd
-    || fields.requestPerCallUsd;
+    || fields.requestPerCallUsd
+    || fields.imagePerMegapixelUsd;
   const hasVideoDurationPricing =
     fields.videoDurationPricing !== undefined && fields.videoDurationPricing.length > 0;
-  if (!hasTokenPricing && !hasVideoDurationPricing) {
+  const hasExamplePricing = fields.imageExamplePricing || fields.videoExamplePricing;
+  if (!hasTokenPricing && !hasVideoDurationPricing && !hasExamplePricing) {
     return undefined;
   }
   return {
@@ -1804,6 +1963,9 @@ function buildProviderListedModelPricing(fields: ProviderListedModelPricing): Pr
     ...(fields.imagePerUnitUsd ? { imagePerUnitUsd: fields.imagePerUnitUsd } : {}),
     ...(fields.requestPerCallUsd ? { requestPerCallUsd: fields.requestPerCallUsd } : {}),
     ...(hasVideoDurationPricing ? { videoDurationPricing: fields.videoDurationPricing } : {}),
+    ...(fields.imagePerMegapixelUsd ? { imagePerMegapixelUsd: fields.imagePerMegapixelUsd } : {}),
+    ...(fields.imageExamplePricing ? { imageExamplePricing: fields.imageExamplePricing } : {}),
+    ...(fields.videoExamplePricing ? { videoExamplePricing: fields.videoExamplePricing } : {}),
   };
 }
 

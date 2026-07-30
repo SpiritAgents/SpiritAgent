@@ -82,6 +82,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'vercel-ai-gateway'
     || input.provider === 'openrouter'
     || input.provider === 'fireworks-ai'
+    || input.provider === 'together-ai'
     || input.provider === 'volcengine'
     || input.provider === 'stepfun'
     || input.provider === 'google'

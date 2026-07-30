@@ -32,6 +32,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('mistral'), 'mistral');
   assert.equal(parseModelProviderId('siliconflow'), 'siliconflow');
   assert.equal(parseModelProviderId('fireworks-ai'), 'fireworks-ai');
+  assert.equal(parseModelProviderId('together-ai'), 'together-ai');
   assert.equal(parseModelProviderId('azure'), 'azure');
   assert.equal(parseModelProviderId('kimi'), undefined);
   assert.equal(parseModelProviderId('unknown'), undefined);
@@ -171,6 +172,13 @@ test('resolveProviderConnectApiBase returns Fireworks transport-specific preset 
   assert.equal(
     resolveProviderConnectApiBase('fireworks-ai', 'anthropic'),
     'https://api.fireworks.ai/inference',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Together AI preset base', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('together-ai', 'openai-compatible'),
+    'https://api.together.ai/v1',
   );
 });
 

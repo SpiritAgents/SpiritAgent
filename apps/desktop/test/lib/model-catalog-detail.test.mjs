@@ -89,6 +89,33 @@ test('buildModelCatalogDetailFields renders video duration pricing rows', () => 
   ]);
 });
 
+test('buildModelCatalogDetailFields renders Together megapixel and example pricing', () => {
+  const fields = buildModelCatalogDetailFields({
+    pricing: {
+      imagePerMegapixelUsd: '0.04',
+      imageExamplePricing: { priceUsd: '0.018', description: '720x1280' },
+      videoExamplePricing: { priceUsd: '0.924', description: '1080p / 5s' },
+    },
+    t: (key, options) => {
+      if (key === 'settings.modelDetailLabelImage') return 'Image';
+      if (key === 'settings.modelDetailLabelVideo') return 'Video';
+      if (key === 'settings.modelDetailPricingImageMegapixel') {
+        return `${options.value} / megapixel`;
+      }
+      if (key === 'settings.modelDetailPricingExample') {
+        return `${options.value} (${options.description})`;
+      }
+      return key;
+    },
+  });
+
+  assert.deepEqual(fields, [
+    { id: 'image-megapixel', label: 'Image', value: '$0.04 / megapixel' },
+    { id: 'image-example', label: 'Image', value: '$0.02 (720x1280)' },
+    { id: 'video-example', label: 'Video', value: '$0.92 (1080p / 5s)' },
+  ]);
+});
+
 test('buildModelCatalogDetailFields appends audio suffix to video duration pricing labels', () => {
   const fields = buildModelCatalogDetailFields({
     pricing: {
