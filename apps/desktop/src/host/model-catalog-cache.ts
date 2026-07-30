@@ -281,6 +281,10 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
         : undefined;
     const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
     const supportsThinkingSwitch = record.supportsThinkingSwitch === true ? true as const : undefined;
+    const inferenceProvider =
+      typeof record.inferenceProvider === 'string' && record.inferenceProvider.trim().length > 0
+        ? record.inferenceProvider.trim()
+        : undefined;
     normalized.push({
       id,
       ...(displayName !== undefined ? { displayName } : {}),
@@ -291,6 +295,7 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
       ...(contextLength !== undefined ? { contextLength } : {}),
       ...(supportsThinkingType !== undefined ? { supportsThinkingType } : {}),
       ...(supportsThinkingSwitch !== undefined ? { supportsThinkingSwitch } : {}),
+      ...(inferenceProvider !== undefined ? { inferenceProvider } : {}),
     });
   }
 
@@ -464,5 +469,6 @@ function clonePreviewModelCatalog(
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
     ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
+    ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
   }));
 }

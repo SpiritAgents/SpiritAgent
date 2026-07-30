@@ -197,6 +197,8 @@ export interface PreviewModelCatalogEntry {
   contextLength?: number;
   supportsThinkingType?: 'only';
   supportsThinkingSwitch?: boolean;
+  /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint。 */
+  inferenceProvider?: string;
 }
 
 /** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */

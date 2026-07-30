@@ -36,6 +36,7 @@ import type {
   AddProviderModelsRequest,
   DesktopAgentMode,
   DesktopModelCapability,
+  DesktopModelCatalogHint,
   DesktopModelProvider,
   DesktopTransportKind,
   ModelProfileSnapshot,
@@ -54,6 +55,7 @@ import {
   previewModelCatalogForTransport,
   usesProviderListedModelCatalogMetadata,
 } from './model-catalog-metadata.js';
+import { findModelCatalogEntry } from '../lib/model-catalog-detail.js';
 import {
   resolveComposerDirectMediaTool,
   type DirectMediaTool,
@@ -594,8 +596,9 @@ export function supportsVideoGeneration(model: { capabilities?: readonly Desktop
 }
 
 export function buildImageGenerationSubConfig(input: {
-  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
+  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities' | 'transportKind'>;
   apiKey: string;
+  inferenceProvider?: string;
 }) {
   const imageGenerationVendor = openAiCompatibleVendorFromProvider(input.profile.provider);
   return {
@@ -606,12 +609,14 @@ export function buildImageGenerationSubConfig(input: {
     ...(input.profile.capabilities
       ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
       : {}),
+    ...(input.inferenceProvider ? { inferenceProvider: input.inferenceProvider } : {}),
   };
 }
 
 export function buildVideoGenerationSubConfig(input: {
-  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
+  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities' | 'transportKind'>;
   apiKey: string;
+  inferenceProvider?: string;
 }) {
   const videoGenerationVendor = openAiCompatibleVendorFromProvider(input.profile.provider);
   return {
@@ -622,6 +627,7 @@ export function buildVideoGenerationSubConfig(input: {
     ...(input.profile.capabilities
       ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
       : {}),
+    ...(input.inferenceProvider ? { inferenceProvider: input.inferenceProvider } : {}),
   };
 }
 
@@ -652,11 +658,19 @@ export function buildMediaOnlyTransportConfig(
   } as LlmTransportConfig;
 }
 
+function resolveMediaInferenceProvider(
+  profile: ModelProfileSnapshot,
+  catalogHints: readonly DesktopModelCatalogHint[] | undefined,
+): string | undefined {
+  return findModelCatalogEntry(profile, catalogHints)?.inferenceProvider;
+}
+
 export function attachVideoGenerationToTransportConfig(
   transportConfig: LlmTransportConfig,
   input: {
     profile?: ModelProfileSnapshot;
     apiKey?: string;
+    catalogHints?: readonly DesktopModelCatalogHint[];
   },
 ): LlmTransportConfig {
   if (!input.profile || !input.apiKey || !supportsVideoGeneration(input.profile)) {
@@ -671,6 +685,7 @@ export function attachVideoGenerationToTransportConfig(
     videoGeneration: buildVideoGenerationSubConfig({
       profile: input.profile,
       apiKey: input.apiKey,
+      inferenceProvider: resolveMediaInferenceProvider(input.profile, input.catalogHints),
     }),
   } as LlmTransportConfig;
 }
@@ -680,6 +695,7 @@ export function attachImageGenerationToTransportConfig(
   input: {
     profile?: ModelProfileSnapshot;
     apiKey?: string;
+    catalogHints?: readonly DesktopModelCatalogHint[];
   },
 ): LlmTransportConfig {
   if (!input.profile || !input.apiKey || !supportsImageGeneration(input.profile)) {
@@ -694,6 +710,7 @@ export function attachImageGenerationToTransportConfig(
     imageGeneration: buildImageGenerationSubConfig({
       profile: input.profile,
       apiKey: input.apiKey,
+      inferenceProvider: resolveMediaInferenceProvider(input.profile, input.catalogHints),
     }),
   } as LlmTransportConfig;
 }
