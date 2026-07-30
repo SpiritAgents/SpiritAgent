@@ -18,6 +18,7 @@ export type ModelProviderId =
   | 'cloudflare-ai-gateway'
   | 'openrouter'
   | 'fireworks-ai'
+  | 'together-ai'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'
@@ -54,6 +55,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'deepseek',
   'openrouter',
   'fireworks-ai',
+  'together-ai',
   'moonshot-ai',
   'kimi-code',
   'z-ai',
@@ -88,7 +90,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","mistral","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","together-ai","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","mistral","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -186,6 +188,7 @@ interface ParsedModelProviderPresets {
     | 'cloudflare-ai-gateway'
     | 'openrouter'
     | 'fireworks-ai'
+    | 'together-ai'
     | 'openai'
     | 'google'
     | 'google-vertex-ai'
@@ -394,6 +397,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     'cloudflare-ai-gateway': requireStringField(presetRaw, 'cloudflare-ai-gateway'),
     openrouter: requireStringField(presetRaw, 'openrouter'),
     'fireworks-ai': requireStringField(presetRaw, 'fireworks-ai'),
+    'together-ai': requireStringField(presetRaw, 'together-ai'),
     openai: requireStringField(presetRaw, 'openai'),
     google: requireStringField(presetRaw, 'google'),
     'google-vertex-ai': requireStringField(presetRaw, 'google-vertex-ai'),
@@ -477,6 +481,7 @@ const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
 const cloudflareAiGatewayBase = raw.presetApiBaseByProvider['cloudflare-ai-gateway'];
 const openrouterBase = raw.presetApiBaseByProvider.openrouter;
 const fireworksAiBase = raw.presetApiBaseByProvider['fireworks-ai'];
+const togetherAiBase = raw.presetApiBaseByProvider['together-ai'];
 const openaiBase = raw.presetApiBaseByProvider.openai;
 const googleBase = raw.presetApiBaseByProvider.google;
 const googleVertexAiBase = raw.presetApiBaseByProvider['google-vertex-ai'];
@@ -504,6 +509,7 @@ export const PROVIDER_PRESET_API_BASE = {
   'cloudflare-ai-gateway': cloudflareAiGatewayBase,
   openrouter: openrouterBase,
   'fireworks-ai': fireworksAiBase,
+  'together-ai': togetherAiBase,
   openai: openaiBase,
   google: googleBase,
   'google-vertex-ai': googleVertexAiBase,
@@ -765,6 +771,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE.openrouter;
     case 'fireworks-ai':
       return PROVIDER_PRESET_API_BASE['fireworks-ai'];
+    case 'together-ai':
+      return PROVIDER_PRESET_API_BASE['together-ai'];
     case 'openai':
       return PROVIDER_PRESET_API_BASE.openai;
     case 'google':

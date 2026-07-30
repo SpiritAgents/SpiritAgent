@@ -323,6 +323,7 @@ fn model_add_provider_label(id: &str) -> String {
         "cloudflare-ai-gateway" => t!("form.model.provider.cloudflare_ai_gateway"),
         "openrouter" => t!("form.model.provider.openrouter"),
         "fireworks-ai" => t!("form.model.provider.fireworks-ai"),
+        "together-ai" => t!("form.model.provider.together-ai"),
         "moonshot-ai" => t!("form.model.provider.moonshot-ai"),
         "kimi-code" => t!("form.model.provider.kimi-code"),
         "z-ai" => t!("form.model.provider.z-ai"),

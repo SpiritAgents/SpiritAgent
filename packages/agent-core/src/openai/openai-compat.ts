@@ -26,6 +26,7 @@ export type OpenAiLlmVendor =
   | 'cloudflare-ai-gateway'
   | 'openrouter'
   | 'fireworks-ai'
+  | 'together-ai'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'
