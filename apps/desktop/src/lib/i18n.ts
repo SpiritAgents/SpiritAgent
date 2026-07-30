@@ -3,17 +3,19 @@ import { initReactI18next } from 'react-i18next';
 
 import en from '../locales/en.json';
 import ja from '../locales/ja.json';
+import ko from '../locales/ko.json';
 import zhCN from '../locales/zh-CN.json';
 import zhTW from '../locales/zh-TW.json';
 
 export const DEFAULT_LANGUAGE = 'zh-CN';
-export const VALID_LANGUAGES = ['zh-CN', 'en', 'zh-TW', 'ja'] as const;
+export const VALID_LANGUAGES = ['zh-CN', 'en', 'zh-TW', 'ja', 'ko'] as const;
 export type ValidLanguage = (typeof VALID_LANGUAGES)[number];
 export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
   'zh-CN': 'settings.langZhCN',
   en: 'settings.langEn',
   'zh-TW': 'settings.langZhTW',
   ja: 'settings.langJa',
+  ko: 'settings.langKo',
 };
 export const LANGUAGE_STORAGE_KEY = 'spirit-agent-desktop-language' as const;
 
@@ -37,6 +39,9 @@ export function detectSystemLanguage(): string {
   }
   if (lang.startsWith('ja-')) {
     return 'ja';
+  }
+  if (lang.startsWith('ko-')) {
+    return 'ko';
   }
   return DEFAULT_LANGUAGE;
 }
@@ -75,6 +80,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     'zh-TW': { translation: zhTW },
     ja: { translation: ja },
+    ko: { translation: ko },
   },
   lng: getStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
