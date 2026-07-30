@@ -38,6 +38,7 @@ export type ModelReasoningProvider =
   | 'together-ai'
   | 'hugging-face'
   | 'baseten'
+  | 'cohere'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'

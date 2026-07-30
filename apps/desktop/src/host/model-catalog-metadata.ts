@@ -64,6 +64,9 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (input.provider === 'mistral') {
     return true;
   }
+  if (input.provider === 'cohere') {
+    return true;
+  }
   if (input.provider === 'xiaomi') {
     return true;
   }

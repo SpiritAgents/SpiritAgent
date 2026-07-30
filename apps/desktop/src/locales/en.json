@@ -85,6 +85,7 @@
       "intl": "Singapore"
     },
     "mistral": "Mistral",
+    "cohere": "Cohere",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "Custom"

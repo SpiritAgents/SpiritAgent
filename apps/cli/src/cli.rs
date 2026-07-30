@@ -670,6 +670,8 @@ fn parse_model_transport_kind(
                 | ModelProvider::KimiCode
                 | ModelProvider::Meituan
                 | ModelProvider::Mistral
+                | ModelProvider::Cohere
+                | ModelProvider::TogetherAi
                 | ModelProvider::Xiaomi
                 | ModelProvider::Alibaba
                 | ModelProvider::Stepfun
@@ -735,6 +737,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::TogetherAi
                 | ModelProvider::HuggingFace
                 | ModelProvider::Baseten
+                | ModelProvider::Cohere
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway

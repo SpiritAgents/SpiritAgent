@@ -683,6 +683,125 @@ export async function listFireworksAiModels(
   return mergeFireworksAiGatewayModelPages(pages);
 }
 
+/** Cohere 模型目录 API root（v1/models；与 Chat v2 base 不同）。 */
+export const COHERE_CATALOG_API_ROOT = 'https://api.cohere.com';
+
+const COHERE_MODELS_PAGE_SIZE = '1000';
+
+export function cohereModelsListUrl(pageToken?: string): string {
+  const url = new URL(`${COHERE_CATALOG_API_ROOT}/v1/models`);
+  url.searchParams.set('endpoint', 'chat');
+  url.searchParams.set('page_size', COHERE_MODELS_PAGE_SIZE);
+  if (pageToken?.trim()) {
+    url.searchParams.set('page_token', pageToken.trim());
+  }
+  return url.toString();
+}
+
+function cohereModelHasChatEndpoint(endpoints: unknown): boolean {
+  if (!Array.isArray(endpoints)) {
+    return false;
+  }
+  return endpoints.some(
+    (endpoint) => typeof endpoint === 'string' && endpoint.trim().toLowerCase() === 'chat',
+  );
+}
+
+function cohereModelFeaturesIncludeVision(features: unknown): boolean {
+  if (!Array.isArray(features)) {
+    return false;
+  }
+  return features.some(
+    (feature) => typeof feature === 'string' && feature.trim().toLowerCase() === 'vision',
+  );
+}
+
+export function parseCohereModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  if (!isJsonObject(body) || !Array.isArray(body.models)) {
+    return [];
+  }
+
+  const entries: ProviderListedModelEntry[] = [];
+  for (const item of body.models) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+    if (item.is_deprecated === true) {
+      continue;
+    }
+    if (!cohereModelHasChatEndpoint(item.endpoints)) {
+      continue;
+    }
+
+    const name = readOptionalTrimmedString(item.name);
+    if (!name) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = {
+      id: name,
+      supportsImageInput: true,
+    };
+    const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+    if (cohereModelFeaturesIncludeVision(item.features)) {
+      modelEntry.supportsImageInput = true;
+    }
+    entries.push(modelEntry);
+  }
+  return entries;
+}
+
+export function mergeCohereModelPages(pages: readonly unknown[]): ProviderListedModelEntry[] {
+  const allEntries: ProviderListedModelEntry[] = [];
+  for (const page of pages) {
+    allEntries.push(...parseCohereModelEntriesPayload(page));
+  }
+  return dedupeProviderListedModelEntries(allEntries).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+async function fetchCohereModelsPage(
+  options: ListOpenAiCompatibleModelIdsOptions,
+  pageToken?: string,
+): Promise<unknown> {
+  const url = cohereModelsListUrl(pageToken);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const init: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${key}`,
+    },
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  return fetchModelsListJson(url, init);
+}
+
+export async function listCohereModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const pages: unknown[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const json = await fetchCohereModelsPage(options, pageToken);
+    pages.push(json);
+    pageToken =
+      isJsonObject(json)
+      && typeof json.next_page_token === 'string'
+      && json.next_page_token.trim().length > 0
+        ? json.next_page_token.trim()
+        : undefined;
+  } while (pageToken);
+
+  return mergeCohereModelPages(pages);
+}
+
 const TOGETHER_AI_LISTED_MODEL_TYPES = new Set(['chat', 'language', 'image', 'video']);
 
 function readTogetherAiModelsArray(body: unknown): unknown[] {
@@ -2129,6 +2248,10 @@ export async function listProviderModels(
 
   if (options.provider === 'hugging-face') {
     return listHuggingFaceModels(options);
+  }
+
+  if (options.provider === 'cohere') {
+    return listCohereModels(options);
   }
 
   if (

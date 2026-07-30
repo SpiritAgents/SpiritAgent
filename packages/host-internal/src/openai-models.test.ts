@@ -29,6 +29,9 @@ import {
   mergeHuggingFaceListedModelEntries,
   resolveHuggingFaceDisplayNameFromId,
   parseBasetenModelEntriesPayload,
+  cohereModelsListUrl,
+  mergeCohereModelPages,
+  parseCohereModelEntriesPayload,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -1599,4 +1602,87 @@ test('mergeHuggingFaceListedModelEntries dedupes and merges capabilities', () =>
 test('resolveHuggingFaceDisplayNameFromId uses last path segment without routing suffix', () => {
   assert.equal(resolveHuggingFaceDisplayNameFromId('moonshotai/Kimi-K3:fastest'), 'Kimi-K3');
   assert.equal(resolveHuggingFaceDisplayNameFromId('FLUX.1-schnell'), 'FLUX.1-schnell');
+});
+
+test('cohereModelsListUrl builds v1 chat catalog endpoint with pagination', () => {
+  assert.equal(
+    cohereModelsListUrl(),
+    'https://api.cohere.com/v1/models?endpoint=chat&page_size=1000',
+  );
+  assert.equal(
+    cohereModelsListUrl('page-abc'),
+    'https://api.cohere.com/v1/models?endpoint=chat&page_size=1000&page_token=page-abc',
+  );
+});
+
+test('parseCohereModelEntriesPayload keeps chat models and skips deprecated or non-chat', () => {
+  const entries = parseCohereModelEntriesPayload({
+    models: [
+      {
+        name: 'command-a-plus-05-2026',
+        is_deprecated: false,
+        endpoints: ['chat'],
+        context_length: 128000,
+        features: ['vision'],
+      },
+      {
+        name: 'embed-english-v3.0',
+        is_deprecated: false,
+        endpoints: ['embed'],
+        context_length: 512,
+      },
+      {
+        name: 'command-r-plus',
+        is_deprecated: true,
+        endpoints: ['chat'],
+        context_length: 128000,
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'command-a-plus-05-2026',
+      contextLength: 128000,
+      supportsImageInput: true,
+    },
+  ]);
+  assert.equal('pricing' in (entries[0] ?? {}), false);
+});
+
+test('mergeCohereModelPages dedupes models across paginated responses', () => {
+  const merged = mergeCohereModelPages([
+    {
+      models: [
+        {
+          name: 'command-a-plus-05-2026',
+          is_deprecated: false,
+          endpoints: ['chat'],
+          context_length: 128000,
+        },
+      ],
+      next_page_token: 'page-2',
+    },
+    {
+      models: [
+        {
+          name: 'command-a-plus-05-2026',
+          is_deprecated: false,
+          endpoints: ['chat'],
+          context_length: 128000,
+        },
+        {
+          name: 'command-r7b-12-2024',
+          is_deprecated: false,
+          endpoints: ['chat'],
+          context_length: 128000,
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(
+    merged.map((entry) => entry.id),
+    ['command-a-plus-05-2026', 'command-r7b-12-2024'],
+  );
 });

@@ -85,6 +85,7 @@
       "intl": "新加坡"
     },
     "mistral": "Mistral",
+    "cohere": "Cohere",
     "azure": "Azure",
     "amazonBedrock": "Amazon Bedrock",
     "custom": "自定义"

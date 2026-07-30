@@ -13,6 +13,9 @@ import {
   createTogetherAI,
 } from '@ai-sdk/togetherai';
 import {
+  createCohere,
+} from '@ai-sdk/cohere';
+import {
   createDeepSeek,
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
@@ -791,6 +794,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkBasetenProvider(config)(config.model);
   }
 
+  if (isCohereOfficialAiSdkProvider(config)) {
+    return createAiSdkCohereProvider(config)(config.model);
+  }
+
   return createAiSdkOpenAiCompatibleProvider(config).chatModel(config.model);
 }
 
@@ -1028,6 +1035,16 @@ function createAiSdkBasetenProvider(
   config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
 ) {
   return createBaseten({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    fetch: getLlmFetch(),
+  });
+}
+
+function createAiSdkCohereProvider(
+  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
+) {
+  return createCohere({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: getLlmFetch(),
@@ -1998,6 +2015,10 @@ function isTogetherOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean
 
 function isBasetenOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'baseten';
+}
+
+function isCohereOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'cohere';
 }
 
 function isTogetherOfficialAiSdkImageConfig(config: OpenAiImageGenerationConfig): boolean {
