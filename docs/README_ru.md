@@ -1,0 +1,187 @@
+<div align="center">
+
+<img width="128" height="128" alt="Spirit Agent Dark" src="https://github.com/user-attachments/assets/e424b9ab-4429-406a-8d6d-764bdc02759c" />
+
+
+# Spirit Agent
+
+**Открытый AI-агент, созданный умножать вашу продуктивность** — привязанный к рабочему пространству, оснащённый реальными инструментами и готовый планировать, выполнять и доставлять результат вместе с вами.
+
+[Desktop-приложение](#desktop) · [CLI](#cli) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Разработка](#разработка)
+
+> Проект активно развивается. Поведение и API могут меняться между релизами.
+
+[English](../README.md)
+
+<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+
+</div>
+
+## Обзор
+
+Spirit Agent — **агент для кодирования с инструментами**, работающий от корня реального проекта. Один и тот же runtime питает нативный Desktop workspace и терминальный UI. Общая логика живёт в TypeScript-пакетах; хосты добавляют платформенное выполнение, discovery и UI.
+
+```
+┌───────────────────────────────────────────────────────┐
+│  Hosts                                                │
+│  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
+│  │   Desktop    │ │   CLI    │ │    ACP Server     │  │
+│  │  (Electron)  │ │  (Rust)  │ │  stdio / ndJSON   │  │
+│  └──────┬───────┘ └─────┬────┘ └───────────┬───────┘  │
+│         └───────────────┼──────────────────┘          │
+│                         ▼                             │
+│               packages/host-internal                  │
+│            discovery, tools, workspace                │
+│                         │                             │
+│                         ▼                             │
+│                packages/agent-core                    │
+│          runtime, prompts, tool contracts             │
+└───────────────────────────────────────────────────────┘
+```
+
+## Agent Core
+
+[`packages/agent-core`](../packages/agent-core) — **единственный источник семантики агента** в этом репозитории. Хосты его потребляют.
+
+### Runtime и режимы
+
+- **Turn machine** — потоковый вывод ассистента, раунды инструментов, компактирование и учёт использования контекста.
+- **Режимы Agent / Plan / Ask** — полный доступ к инструментам, только планирование или read-only Q&A без edit-инструментов на уровне контракта.
+- **Subagents** — `subagent` делегирует сфокусированную работу дочерним запускам со своей поверхностью инструментов.
+- **Управление циклом** — опциональный `finish_task` при включённом multitask-цикле.
+- **История с поддержкой rewind** — форматы архива для отката и повторной отправки на стороне хоста.
+
+### Транспорты моделей
+
+Agent Core маршрутизирует inference через несколько транспортов за единым runtime:
+
+| Транспорт | Типичные провайдеры |
+| --- | --- |
+| **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, пользовательские endpoints |
+| **Open Responses** | OpenAI, xAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
+| **Anthropic** | Claude через Messages API |
+
+Нативные возможности провайдера (веб-поиск Open Responses, встроенный поиск и интерпретатор кода Alibaba и т. д.) инжектируются через поле `tools`.
+
+### Контракты инструментов хоста
+
+Встроенные инструменты определяются один раз в Agent Core (имя, описание, JSON Schema). Хосты выполняют:
+
+- **Workspace** — `read_file`, `write_file` / `create_file` / `edit_file` / `delete_file`, `apply_patch` (V4A на поддерживаемых транспортах), `glob`, `grep`, `ls`
+- **Shell** — `shell` с одобрением, контролируемым хостом
+- **Web** — `web_fetch`; поиск через инструменты провайдера или настроенный host search
+- **Delegation** — `subagent`
+- **Planning** — `create_plan`, session TODO tools (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Multimodal** — `generate_image`, `generate_video`
+- **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` для сводок памяти workspace
+- **LSP** — диагностика language server после правок
+
+### Сборка системного контекста
+
+Agent Core определяет, как модель видит контекст проекта:
+
+- **Rules** — `AGENTS.md`, `.spirit/rule.md` и пользовательские rule-слоты в system-секциях.
+- **Skills** — каталог и инъекция активного skill; хосты находят файлы на диске.
+- **MCP** — клиент Model Context Protocol, реестр и мост tool/resource/prompt.
+- **Mode prompts** — границы Agent, Plan и Ask без повторного перечисления инструментов в system-тексте.
+
+### Качество и оценка
+
+- **Smoke-наборы** — проверки контракта, runtime и live-провайдера в `packages/agent-core/src/smoke`.
+- **Eval harness** — сравнение сценариев при изменении prompts или определений инструментов (`npm run eval:compare` из корня репозитория).
+
+`@spiritagent/agent-core` публикуется в npm; [`packages/host-internal`](../packages/host-internal) содержит общий host discovery, extensions, marketplace, workspace helpers и оркестрацию LSP для Desktop.
+
+## Desktop
+
+[Desktop-приложение](../apps/desktop) — основной графический хост: IDE-поверхность, привязанная к workspace, с conversational agent.
+
+- **Dock-панели** — проводник файлов с Monaco, встроенный терминал (Electron), Git changes и history, in-app browser для локальных dev-серверов.
+- **Сессии** — история нескольких диалогов, worktree-per-session workflows, одобрение инструментов, subagent viewer, структурированные опросники, использование контекста и rewind.
+- **Настройки** — провайдеры моделей и API keys, Skills и Rules, MCP servers, marketplace расширений, Dreams (beta), LSP, темы и язык UI (английский / упрощённый китайский / русский и др.).
+- **Платформы** — Electron на Windows, macOS и Linux; опциональный web host с remote pairing.
+
+См. [apps/desktop/README.md](../apps/desktop/README.md) для разработки Desktop.
+
+## CLI
+
+<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+
+
+[Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Делит тот же Agent Core runtime через Node bridge; подходит для скриптов, SSH-сессий и минимальных окружений.
+
+```bash
+npm run dev:cli    # сборка TS-пакетов, затем cargo run -p spirit-agent
+```
+
+## ACP Server
+
+[`packages/acp-server`](../packages/acp-server) — тонкий адаптер, предоставляющий Spirit Agent как [Agent Client Protocol](https://agentclientprotocol.com) (ACP) server через stdio / ndJSON. Любой ACP-совместимый редактор — например **Zed** или **JetBrains Junie** — может подключить Spirit Agent как AI coding engine без кастомной интеграции.
+
+- **Terminal Auth** — `initialize` объявляет auth `type: "terminal"`; клиенты запускают `spirit-agent-acp --setup` для интерактивной настройки provider, затем `authenticate` перед `session/new`.
+- **Поверхность протокола** — `initialize`, `authenticate`, `logout`, `session/new`, `session/prompt`, `session/cancel`, `session/close`, `session/set_mode`.
+- **Streaming & thinking** — realtime `agent_message_chunk` и `agent_thought_chunk` для reasoning модели.
+- **Permission bridge** — одобрение инструментов через ACP `request_permission` (allow-once / always-allow / reject).
+- **Slash-команды** — workspace и user Skills через `available_commands_update`; `/skill-name` активирует skill и инжектирует инструкции.
+- **Локальное выполнение** — инструменты in-process через `NodeHostToolService` (stdio зарезервирован для ACP ndJSON).
+
+### Быстрый старт (Zed)
+
+1. Сборка сервера: `npm run build:acp-server`
+2. Добавить в `settings.json` Zed (без API key в `env`):
+
+```json
+"agent_servers": {
+  "Spirit Agent": {
+    "command": "node",
+    "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
+  }
+}
+```
+
+3. При аутентификации выбрать **Run in terminal** → `--setup`: provider, credentials, model.
+4. Setup пишет в общий Spirit data directory (`config.json` + OS keyring — как Desktop/CLI). Затем `authenticate`, затем `session/new`.
+
+Ручной setup вне редактора:
+
+```bash
+node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
+```
+
+| Переменная окружения | Обязательна | Описание |
+| --- | --- | --- |
+| `SPIRIT_ACP_WORKSPACE` | Нет | Корень workspace (по умолчанию: `cwd` клиента) |
+| `SPIRIT_ACP_DATA_DIR` | Нет | Каталог данных Spirit (по умолчанию: `%APPDATA%/SpiritAgent` или `~/.spirit-agent`) |
+
+## Разработка
+
+**Требования:** Node.js 22+, npm. Для сборки CLI нужен Rust toolchain.
+
+| Команда | Описание |
+| --- | --- |
+| `npm run dev:desktop` | Сборка shared packages и запуск Desktop (Vite + Electron) |
+| `npm run dev:desktop:web` | Desktop renderer с browser web host |
+| `npm run dev:cli` | CLI с TUI |
+| `npm run build` | Production build agent-core, host-internal, acp-server и Desktop |
+| `npm run eval:compare` | Eval-сравнение после изменений agent-core |
+
+### Структура репозитория
+
+```
+apps/
+  desktop/           Electron + React host
+  cli/               Rust CLI и TUI
+packages/
+  agent-core/        Agent runtime, prompts, tool definitions, transports, MCP, eval
+  host-internal/     Shared host discovery, tools, extensions, LSP helpers
+  acp-server/        ACP server adapter для интеграции с редакторами
+scripts/             Release, eval и автоматизация репозитория
+```
+
+## Участие в разработке
+
+Границы архитектуры, соглашения о коммитах и руководство по agent-core: [AGENTS.md](../AGENTS.md) и [`.github/copilot-instructions.md`](../.github/copilot-instructions.md).
+
+## Лицензия
+
+[MIT](../LICENSE)

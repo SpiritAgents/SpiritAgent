@@ -8,6 +8,7 @@ import fr from '../locales/fr.json';
 import ja from '../locales/ja.json';
 import ko from '../locales/ko.json';
 import ptBR from '../locales/pt-BR.json';
+import ru from '../locales/ru.json';
 import zhCN from '../locales/zh-CN.json';
 import zhTW from '../locales/zh-TW.json';
 
@@ -22,6 +23,7 @@ export const VALID_LANGUAGES = [
   'fr',
   'es',
   'pt-BR',
+  'ru',
 ] as const;
 export type ValidLanguage = (typeof VALID_LANGUAGES)[number];
 export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
@@ -34,6 +36,7 @@ export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
   fr: 'settings.langFr',
   es: 'settings.langEs',
   'pt-BR': 'settings.langPtBR',
+  ru: 'settings.langRu',
 };
 export const LANGUAGE_STORAGE_KEY = 'spirit-agent-desktop-language' as const;
 
@@ -72,6 +75,9 @@ export function detectSystemLanguage(): string {
   }
   if (lang.startsWith('pt-BR-')) {
     return 'pt-BR';
+  }
+  if (lang.startsWith('ru-')) {
+    return 'ru';
   }
   return DEFAULT_LANGUAGE;
 }
@@ -115,6 +121,7 @@ i18n.use(initReactI18next).init({
     fr: { translation: fr },
     es: { translation: es },
     'pt-BR': { translation: ptBR },
+    ru: { translation: ru },
   },
   lng: getStoredLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,

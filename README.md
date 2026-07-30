@@ -11,7 +11,7 @@
 
 > This project is under active development. Behavior and APIs may change between releases.
 
-[Simplified Chinese](docs/README_zh-CN.md) · [Traditional Chinese](docs/README_zh-TW.md) · [Japanese](docs/README_ja.md) · [Korean](docs/README_ko.md) · [German](docs/README_de.md) · [French](docs/README_fr.md) · [Spanish](docs/README_es.md) · [Brazilian Portuguese](docs/README_pt-BR.md)
+[Simplified Chinese](docs/README_zh-CN.md) · [Traditional Chinese](docs/README_zh-TW.md) · [Japanese](docs/README_ja.md) · [Korean](docs/README_ko.md) · [German](docs/README_de.md) · [French](docs/README_fr.md) · [Spanish](docs/README_es.md) · [Brazilian Portuguese](docs/README_pt-BR.md) · [Russian](docs/README_ru.md)
 
 <img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
@@ -98,7 +98,7 @@ The [Desktop app](apps/desktop) is the primary graphical host: a workspace-bound
 
 - **Docked panels** — file explorer with Monaco editor, embedded terminal (Electron), Git changes and history, in-app browser for local dev servers.
 - **Sessions** — multi-conversation history, worktree-per-session workflows, tool approval, subagent viewer, structured questionnaires, context usage, and rewind.
-- **Configuration** — model providers and API keys, Skills and Rules, MCP servers, extensions marketplace, Dreams (beta), LSP, themes, and UI locale (English / Simplified Chinese).
+- **Configuration** — model providers and API keys, Skills and Rules, MCP servers, extensions marketplace, Dreams (beta), LSP, themes, and UI locale (10 languages including English and Simplified Chinese).
 - **Platforms** — Electron on Windows, macOS, and Linux; optional web host with remote pairing.
 
 See [apps/desktop/README.md](apps/desktop/README.md) for Desktop-specific development and layout.
