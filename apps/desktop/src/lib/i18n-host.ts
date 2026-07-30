@@ -2,6 +2,7 @@ import i18n from 'i18next';
 
 import de from '../locales/de.json' with { type: 'json' };
 import en from '../locales/en.json' with { type: 'json' };
+import fr from '../locales/fr.json' with { type: 'json' };
 import ja from '../locales/ja.json' with { type: 'json' };
 import ko from '../locales/ko.json' with { type: 'json' };
 import zhCN from '../locales/zh-CN.json' with { type: 'json' };
@@ -14,6 +15,7 @@ const resources = {
   ja: { translation: ja },
   ko: { translation: ko },
   de: { translation: de },
+  fr: { translation: fr },
 };
 
 const instance = i18n.createInstance();
