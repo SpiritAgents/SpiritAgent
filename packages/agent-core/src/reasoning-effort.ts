@@ -36,6 +36,7 @@ export type ModelReasoningProvider =
   | 'openrouter'
   | 'fireworks-ai'
   | 'together-ai'
+  | 'hugging-face'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'

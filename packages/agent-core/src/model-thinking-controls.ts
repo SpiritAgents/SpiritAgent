@@ -43,6 +43,7 @@ const GATEWAY_REASONING_EFFORT_SLUGS = new Set([
 /** 聚合商：目录能力字段不全，推理强度 UI 与 OpenAI 兼容档位全开。 */
 const AGGREGATED_REASONING_EFFORT_PRIMARY_PROVIDERS = new Set<ModelReasoningProvider>([
   'fireworks-ai',
+  'hugging-face',
   'openrouter',
   'cloudflare-ai-gateway',
 ]);
