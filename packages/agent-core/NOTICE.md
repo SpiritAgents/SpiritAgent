@@ -6,47 +6,63 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 ## Summary
 
-- Apache-2.0: 14 package(s)
-- MIT: 3 package(s)
+- Apache-2.0: 21 package(s)
+- MIT: 4 package(s)
 - BSD-3-Clause: 1 package(s)
 
 ## Components
 
-- **@ai-sdk/alibaba** 1.0.22 — Apache-2.0
+- **@ai-sdk/alibaba** 2.0.1 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/amazon-bedrock** 4.0.117 — Apache-2.0
+- **@ai-sdk/amazon-bedrock** 5.0.1 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/anthropic** 2.0.82 — Apache-2.0
+- **@ai-sdk/anthropic** 4.0.0 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/gateway** 3.0.121 — Apache-2.0
+- **@ai-sdk/azure** 4.0.1 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/google** 3.0.82 — Apache-2.0
+- **@ai-sdk/baseten** 2.0.17 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/google-vertex** 3.0.142 — Apache-2.0
+- **@ai-sdk/cohere** 4.0.15 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/moonshotai** 2.0.23 — Apache-2.0
+- **@ai-sdk/deepseek** 3.0.0 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/open-responses** 1.0.16 — Apache-2.0
+- **@ai-sdk/fireworks** 3.0.8 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/openai** 3.0.71 — Apache-2.0
+- **@ai-sdk/gateway** 4.0.3 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/openai-compatible** 2.0.46 — Apache-2.0
+- **@ai-sdk/google** 4.0.1 — Apache-2.0
   - https://github.com/vercel/ai
-- **@ai-sdk/xai** 3.0.93 — Apache-2.0
+- **@ai-sdk/google-vertex** 5.0.1 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/huggingface** 2.0.17 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/moonshotai** 3.0.1 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/open-responses** 2.0.0 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/openai** 4.0.1 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/openai-compatible** 3.0.0 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/togetherai** 3.0.18 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/xai** 4.0.1 — Apache-2.0
   - https://github.com/vercel/ai
 - **@aws/bedrock-token-generator** 1.1.0 — Apache-2.0
   - https://github.com/aws/aws-bedrock-token-generator-js
-- **@modelcontextprotocol/sdk** 1.29.0 — MIT
+- **@huggingface/inference** 4.13.23 — MIT
+  - https://github.com/huggingface/huggingface.js
+- **@modelcontextprotocol/sdk** 1.30.0 — MIT
   - https://github.com/modelcontextprotocol/typescript-sdk
-- **@types/node** 25.5.2 — MIT
+- **@types/node** 25.9.3 — MIT
   - https://github.com/DefinitelyTyped/DefinitelyTyped
-- **ai** 6.0.175 — Apache-2.0
+- **ai** 7.0.3 — Apache-2.0
   - https://github.com/vercel/ai
-- **license-checker-rseidelsohn** 4.4.2 — BSD-3-Clause
+- **license-checker-rseidelsohn** 5.0.1 — BSD-3-Clause
   - https://github.com/RSeidelsohn/license-checker-rseidelsohn
 - **typescript** 5.9.3 — Apache-2.0
   - https://github.com/microsoft/TypeScript
-- **undici** 7.27.2 — MIT
+- **undici** 7.28.0 — MIT
   - https://github.com/nodejs/undici
 
 ## License texts
@@ -54,18 +70,25 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 ### Apache-2.0
 
 **Used by:**
-- @ai-sdk/alibaba 1.0.22
-- @ai-sdk/amazon-bedrock 4.0.117
-- @ai-sdk/anthropic 2.0.82
-- @ai-sdk/gateway 3.0.121
-- @ai-sdk/google 3.0.82
-- @ai-sdk/google-vertex 3.0.142
-- @ai-sdk/moonshotai 2.0.23
-- @ai-sdk/open-responses 1.0.16
-- @ai-sdk/openai 3.0.71
-- @ai-sdk/openai-compatible 2.0.46
-- @ai-sdk/xai 3.0.93
-- ai 6.0.175
+- @ai-sdk/alibaba 2.0.1
+- @ai-sdk/amazon-bedrock 5.0.1
+- @ai-sdk/anthropic 4.0.0
+- @ai-sdk/azure 4.0.1
+- @ai-sdk/baseten 2.0.17
+- @ai-sdk/cohere 4.0.15
+- @ai-sdk/deepseek 3.0.0
+- @ai-sdk/fireworks 3.0.8
+- @ai-sdk/gateway 4.0.3
+- @ai-sdk/google 4.0.1
+- @ai-sdk/google-vertex 5.0.1
+- @ai-sdk/huggingface 2.0.17
+- @ai-sdk/moonshotai 3.0.1
+- @ai-sdk/open-responses 2.0.0
+- @ai-sdk/openai 4.0.1
+- @ai-sdk/openai-compatible 3.0.0
+- @ai-sdk/togetherai 3.0.18
+- @ai-sdk/xai 4.0.1
+- ai 7.0.3
 
 ```
 Copyright 2023 Vercel, Inc.
@@ -334,7 +357,7 @@ END OF TERMS AND CONDITIONS
 ### BSD-3-Clause
 
 **Used by:**
-- license-checker-rseidelsohn 4.4.2
+- license-checker-rseidelsohn 5.0.1
 
 ```
 Copyright 2012 Yahoo Inc.
@@ -365,7 +388,36 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### MIT
 
 **Used by:**
-- @modelcontextprotocol/sdk 1.29.0
+- @huggingface/inference 4.13.23
+
+```
+MIT License
+
+Copyright (c) 2022 Tim Mikeladze and the Hugging Face team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### MIT
+
+**Used by:**
+- @modelcontextprotocol/sdk 1.30.0
 
 ```
 MIT License
@@ -394,7 +446,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @types/node 25.5.2
+- @types/node 25.9.3
 
 ```
     MIT License
@@ -423,7 +475,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- undici 7.27.2
+- undici 7.28.0
 
 ```
 MIT License
