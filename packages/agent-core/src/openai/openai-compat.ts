@@ -29,6 +29,7 @@ export type OpenAiLlmVendor =
   | 'together-ai'
   | 'hugging-face'
   | 'baseten'
+  | 'cohere'
   | 'openai'
   | 'google'
   | 'google-vertex-ai'
