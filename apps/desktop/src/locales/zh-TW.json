@@ -65,19 +65,19 @@
     "zAi": "Z.ai",
     "zhipuAi": "智譜 AI",
     "alibaba": "阿里巴巴",
-    "stepfun": "階梯科技",
+    "stepfun": "StepFun",
     "minimax": "MiniMax",
     "minimaxSite": {
       "cn": "中國站",
       "intl": "國際站"
     },
     "xiaomi": "小米",
-    "siliconflow": "矽基流動",
+    "siliconflow": "SiliconFlow",
     "siliconflowSite": {
       "cn": "中國站",
       "intl": "國際站"
     },
-    "volcengine": "火山引擎",
+    "volcengine": "Volcengine",
     "meituan": "美團",
     "tencentTokenhub": "騰訊 TokenHub",
     "tencentTokenhubSite": {
