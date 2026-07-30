@@ -58,10 +58,10 @@ Agent Core 在統一執行時背後路由多種推理傳輸層：
 | 傳輸層 | 典型提供商 |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI、DeepSeek、Moonshot、MiniMax、Volcengine、自訂端點 |
-| **Open Responses** | OpenAI、xAI、Vercel AI Gateway、OpenRouter、Alibaba（百煉） |
+| **Open Responses** | OpenAI、xAI、Vercel AI Gateway、OpenRouter、阿里巴巴（百煉） |
 | **Anthropic** | 透過 Messages API 的 Claude |
 
-提供商原生能力（例如 Open Responses 上的網頁搜尋、Alibaba 內建搜尋與程式碼解釋器）透過請求中的 `tools` 欄位注入。
+提供商原生能力（例如 Open Responses 上的網頁搜尋、阿里巴巴內建搜尋與程式碼解釋器）透過請求中的 `tools` 欄位注入。
 
 ### 宿主工具契約
 
