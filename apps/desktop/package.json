@@ -104,7 +104,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.0.0",
-    "electron": "^38.8.6",
+    "electron": "^43.2.0",
     "electron-builder": "^26.15.3",
     "license-checker-rseidelsohn": "^5.0.1",
     "linkedom": "^0.18.12",
