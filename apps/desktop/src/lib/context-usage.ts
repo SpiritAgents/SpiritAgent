@@ -29,6 +29,7 @@ const CONTEXT_USAGE_PROVIDERS = new Set<DesktopModelProvider>([
   'cloudflare-ai-gateway',
   'moonshot-ai',
   'kimi-code',
+  'volcengine',
 ]);
 
 export function supportsContextUsageProvider(provider: DesktopModelProvider | undefined): boolean {

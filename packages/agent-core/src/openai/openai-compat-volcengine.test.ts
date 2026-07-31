@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { applyCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
-import { openAiVendorChatCompletionBodyExtras } from './openai-compat.js';
+import {
+  openAiStreamingUsageBodyExtras,
+  openAiVendorChatCompletionBodyExtras,
+} from './openai-compat.js';
 
 test('Volcengine code-completion profile disables thinking via thinking.type', () => {
   const config = applyCodeCompletionTransportProfile({
@@ -16,5 +19,25 @@ test('Volcengine code-completion profile disables thinking via thinking.type', (
     {
       thinking: { type: 'disabled' },
     },
+  );
+});
+
+test('Volcengine streaming chat completions request includes stream_options.include_usage', () => {
+  const config = {
+    llmVendor: 'volcengine',
+  } as import('./openai-compat.js').OpenAiTransportConfig;
+
+  assert.deepEqual(openAiStreamingUsageBodyExtras(config, true), {
+    stream_options: {
+      include_usage: true,
+    },
+  });
+  assert.deepEqual(openAiStreamingUsageBodyExtras(config, false), {});
+  assert.deepEqual(
+    openAiStreamingUsageBodyExtras(
+      { llmVendor: 'deepseek' } as import('./openai-compat.js').OpenAiTransportConfig,
+      true,
+    ),
+    {},
   );
 });

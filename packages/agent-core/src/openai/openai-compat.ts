@@ -279,6 +279,22 @@ export function openAiVendorChatCompletionBodyExtras(
   return extras;
 }
 
+/** Volcengine Ark 流式 Chat Completions 须在请求体携带 stream_options 才会在末 chunk 返回 usage。 */
+export function openAiStreamingUsageBodyExtras(
+  config: Pick<OpenAiTransportConfig, 'llmVendor'>,
+  stream: boolean,
+): Record<string, unknown> {
+  if (!stream || config.llmVendor !== 'volcengine') {
+    return {};
+  }
+
+  return {
+    stream_options: {
+      include_usage: true,
+    },
+  };
+}
+
 export function buildOpenAiRequestTrace(
   config: OpenAiTransportConfig,
   stepIndex: number,
@@ -289,6 +305,7 @@ export function buildOpenAiRequestTrace(
   const openRouterClaude = isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model);
   const reasoningEffort = openRouterClaude ? undefined : openAiReasoningEffort(config);
   const vendorExtras = openAiVendorChatCompletionBodyExtras(config);
+  const streamingUsageExtras = openAiStreamingUsageBodyExtras(config, stream);
   const trace: OpenAiRequestTrace = {
     kind: 'openai_sdk_chat_completions',
     stepIndex,
@@ -307,6 +324,9 @@ export function buildOpenAiRequestTrace(
       : {}),
     ...(Object.keys(vendorExtras).length > 0
       ? { vendorExtras: vendorExtras as JsonValue }
+      : {}),
+    ...(Object.keys(streamingUsageExtras).length > 0
+      ? { streamingUsageExtras: streamingUsageExtras as JsonValue }
       : {}),
   };
 

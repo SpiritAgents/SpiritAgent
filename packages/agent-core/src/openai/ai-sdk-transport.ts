@@ -92,6 +92,7 @@ import {
   buildOpenAiRequestTrace,
   openAiReasoningEffort,
   openAiVendorChatCompletionBodyExtras,
+  openAiStreamingUsageBodyExtras,
   resolveOpenAiModelCompatibilityProfile,
   type OpenAiImageGenerationConfig,
   type OpenAiTransportConfig,
@@ -847,6 +848,7 @@ function createAiSdkOpenAiCompatibleProvider(
           body: JSON.stringify({
             ...body,
             ...vendorExtras,
+            ...openAiStreamingUsageBodyExtras(transportConfig, body.stream === true),
             ...(stashedMessages ? { messages: stashedMessages } : {}),
           }),
         });
