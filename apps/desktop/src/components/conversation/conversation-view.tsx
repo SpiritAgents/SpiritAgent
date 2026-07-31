@@ -284,8 +284,10 @@ export function ConversationView({
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   // Mica：ScrollArea 仍全高；形状 mask 裁输入框/Changes/TODO 轮廓（顶圆角空隙保留）
+  // Rewind 模式下禁用 mask：mask-image 会让 viewport 形成新的 stacking context，
+  // 导致 viewport 内部的 rewind composer（z-40）无法跨出来与 fixed 的 rewind 遮罩（z-30）竞争。
   const conversationScrollViewportStyle =
-    useMicaBackdrop && conversationMessagesVisible
+    useMicaBackdrop && conversationMessagesVisible && !rewindDraft
       ? conversationScrollOccludeMaskStyle
       : undefined;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
