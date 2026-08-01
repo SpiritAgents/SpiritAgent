@@ -1,5 +1,3 @@
-import { parseOpenAiGptModelVersion } from '../open-responses/apply-patch-eligibility.js';
-import { normalizeGatewayOpenAiModelId } from '../open-responses/responses-compat.js';
 import type { ModelReasoningEffortContext, ModelReasoningProvider } from '../reasoning-effort.js';
 
 export type ModelReasoningMode = 'standard' | 'pro';
@@ -22,6 +20,45 @@ const OPENAI_GPT56_ROUTED_PROVIDERS = new Set<ModelReasoningProvider>([
   'cloudflare-ai-gateway',
   'openrouter',
 ]);
+
+/** Renderer-safe：勿从 responses-compat 导入，避免 Desktop 前端拉入 AI SDK 依赖链。 */
+function normalizeGatewayOpenAiModelId(model: string): string | undefined {
+  const trimmed = model.trim();
+  const lower = trimmed.toLowerCase();
+  const prefix = 'openai/';
+  if (!lower.startsWith(prefix)) {
+    return undefined;
+  }
+
+  return trimmed.slice(prefix.length).trim();
+}
+
+/** Renderer-safe：与 apply-patch-eligibility 逻辑对齐，独立副本避免 import 传递依赖。 */
+function parseOpenAiGptModelVersion(modelId: string): { major: number; minor: number } | undefined {
+  const trimmed = modelId.trim().toLowerCase();
+  const bedrockMantle = /^openai\.(gpt-\d+(?:\.\d+)?)/.exec(trimmed);
+  if (bedrockMantle?.[1]) {
+    return parseOpenAiGptModelVersion(bedrockMantle[1]);
+  }
+
+  const versioned = /^gpt-(\d+)\.(\d+)/.exec(trimmed);
+  if (versioned) {
+    return {
+      major: Number.parseInt(versioned[1] ?? '', 10),
+      minor: Number.parseInt(versioned[2] ?? '', 10),
+    };
+  }
+
+  const majorOnly = /^gpt-(\d+)(?:$|[-_])/.exec(trimmed);
+  if (majorOnly) {
+    return {
+      major: Number.parseInt(majorOnly[1] ?? '', 10),
+      minor: 0,
+    };
+  }
+
+  return undefined;
+}
 
 function resolveOpenAiModelIdForVersionCheck(modelId: string): string {
   const trimmed = modelId.trim();
