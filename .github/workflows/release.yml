@@ -18,8 +18,8 @@ permissions:
 
 env:
   RELEASE_VERSION: ${{ inputs.version }}
-  NODE_VERSION: '22'
-  SPIRIT_RELEASE_NODE_MAJOR: '22'
+  NODE_VERSION: '24'
+  SPIRIT_RELEASE_NODE_MAJOR: '24'
 
 jobs:
   verify:
@@ -574,13 +574,6 @@ jobs:
           # _authToken=${NODE_AUTH_TOKEN} (often GitHub token), which skips OIDC and breaks publish.
           cache: npm
           cache-dependency-path: package-lock.json
-
-      - name: Upgrade npm for Trusted Publishing
-        run: |
-          set -euo pipefail
-          # Node 22 ships npm 10.x; Trusted Publishing requires npm >= 11.5.1.
-          npm install -g npm@11
-          npm --version
 
       - name: Download release bundle
         uses: actions/download-artifact@v4
