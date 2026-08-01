@@ -10,6 +10,30 @@ export function resolveAiGatewayVideoProviderOptions(
 ): { apiKey: string } {
   return { apiKey: config.apiKey };
 }
+
+/** MiniMax H3 文生视频经 Gateway 省略 ratio 时会回落为 adaptive，上游返回 2013。其它 Gateway 视频模型可正常省略 ratio。 */
+export const MINIMAX_H3_GATEWAY_DEFAULT_ASPECT_RATIO = '16:9' as const;
+
+export function isMinimaxH3GatewayVideoModel(model: string): boolean {
+  const normalized = model.trim().toLowerCase();
+  return normalized === 'minimax/minimax-h3' || normalized.endsWith('/minimax-h3');
+}
+
+export function resolveAiGatewayVideoAspectRatio(
+  model: string,
+  aspectRatio: string | undefined,
+): `${number}:${number}` | undefined {
+  const trimmed = aspectRatio?.trim();
+  if (trimmed) {
+    return trimmed as `${number}:${number}`;
+  }
+
+  if (isMinimaxH3GatewayVideoModel(model)) {
+    return MINIMAX_H3_GATEWAY_DEFAULT_ASPECT_RATIO;
+  }
+
+  return undefined;
+}
 import {
   DEFAULT_VIDEO_GENERATION_DURATION,
   type GeneratedVideoFile,
@@ -40,13 +64,13 @@ export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
       profileBaseUrl: config.baseUrl,
     });
 
+    const aspectRatio = resolveAiGatewayVideoAspectRatio(config.model, request.aspectRatio);
+
     const result = await generateVideo({
       model: provider.video(config.model as GatewayVideoModelId),
       prompt: request.prompt,
       duration: request.duration ?? DEFAULT_VIDEO_GENERATION_DURATION,
-      ...(request.aspectRatio
-        ? { aspectRatio: request.aspectRatio as `${number}:${number}` }
-        : {}),
+      ...(aspectRatio ? { aspectRatio } : {}),
       // Gateway Seedance 使用 720p/1080p 等标签，SDK 类型仍写 WxH。
       ...(request.resolution ? { resolution: request.resolution as never } : {}),
       maxRetries: 0,
