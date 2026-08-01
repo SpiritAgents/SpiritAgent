@@ -119,6 +119,13 @@ export interface RuntimeSetLoopEnabledParams {
   enabled: boolean;
 }
 
+export interface RuntimeSetAttributionParams {
+  attribution?: {
+    commitEnabled?: boolean;
+    prEnabled?: boolean;
+  };
+}
+
 export interface RuntimeSubmitUserTurnParams {
   text: string;
   explicitImages?: string[];

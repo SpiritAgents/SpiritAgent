@@ -2601,6 +2601,12 @@ peer.on('runtime.setLoopEnabled', async (rawParams) => {
   return buildSnapshot(requireRuntime());
 });
 
+peer.on('runtime.setAttribution', async (rawParams) => {
+  const params = rawParams as import('./host-bridge/protocol.js').RuntimeSetAttributionParams;
+  bridgeAttribution = params.attribution;
+  return null;
+});
+
 peer.on('runtime.setApprovalLevel', async (rawParams) => {
   const params = rawParams as import('./host-bridge/protocol.js').RuntimeSetApprovalLevelParams;
   applyCliApprovalLevel(normalizeBridgeApprovalLevel(params.approvalLevel));
