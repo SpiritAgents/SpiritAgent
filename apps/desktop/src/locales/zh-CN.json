@@ -1276,6 +1276,7 @@
     "codeInterpreter": "代码解释器",
     "match": "匹配",
     "fetch": "抓取",
+    "findInPage": "页内查找",
     "ls": "列出",
     "askQuestions": "询问",
     "nQuestions": "{{count}} 个问题",

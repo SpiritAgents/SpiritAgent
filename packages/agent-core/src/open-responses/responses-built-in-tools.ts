@@ -15,22 +15,30 @@ const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<
 /** Embedded in streaming-tool-preview argumentsJson for Desktop UI mapping. */
 export const RESPONSES_BUILT_IN_SPIRIT_UI_KEY = "_spiritUi";
 
+export type DeepSeekInternalWebSearchActionType = 'search' | 'open_page' | 'find_in_page';
+
 export type ResponsesBuiltInToolSpiritUi = {
   headlineDetail?: string;
+  /** DeepSeek Responses internal action; drives Desktop headline (search vs fetch vs find-in-page). */
+  internalActionType?: DeepSeekInternalWebSearchActionType;
   /** Set for completed web_search when action.sources is present (Bailian often omits real query text). */
   sourceCount?: number;
   inputExcerpt: string;
   outputExcerpt?: string;
   detailLines?: string[];
+  /** DeepSeek / Moonshot-style compact cards: no expand, headline + detail only. */
+  suppressExpand?: boolean;
 };
 
 export type ResponsesBuiltInToolCardData = {
   status?: string;
   headlineDetail?: string;
+  internalActionType?: DeepSeekInternalWebSearchActionType;
   sourceCount?: number;
   inputExcerpt: string;
   outputExcerpt?: string;
   detailLines?: string[];
+  suppressExpand?: boolean;
 };
 
 const HEADLINE_DETAIL_MAX = 80;
@@ -119,12 +127,16 @@ export function parseResponsesBuiltInToolUiFromArgumentsJson(
       typeof ui.sourceCount === "number" && Number.isFinite(ui.sourceCount) && ui.sourceCount > 0
         ? Math.floor(ui.sourceCount)
         : undefined;
+    const suppressExpand = ui.suppressExpand === true;
+    const internalActionType = readDeepSeekInternalWebSearchActionType(ui.internalActionType);
     return {
       ...(headlineDetail ? { headlineDetail } : {}),
+      ...(internalActionType ? { internalActionType } : {}),
       ...(sourceCount !== undefined ? { sourceCount } : {}),
       inputExcerpt,
       ...(outputExcerpt ? { outputExcerpt } : {}),
       ...(detailLines && detailLines.length > 0 ? { detailLines } : {}),
+      ...(suppressExpand ? { suppressExpand: true } : {}),
     };
   } catch {
     return undefined;
@@ -160,6 +172,22 @@ function buildWebSearchCardData(
     readStringField(item, "search_query");
   const sources = formatWebSearchSources(action);
   const streamPhase = resolveResponsesBuiltInToolStreamPhase(item);
+  const deepSeekCompactDetail =
+    action && sources.sourceCount === 0
+      ? formatDeepSeekInternalWebSearchDetail(action)
+      : undefined;
+  if (deepSeekCompactDetail) {
+    const actionType = readDeepSeekInternalWebSearchActionType(
+      readStringField(action ?? {}, 'type'),
+    );
+    return {
+      ...(status ? { status } : {}),
+      headlineDetail: deepSeekCompactDetail,
+      inputExcerpt: deepSeekCompactDetail,
+      suppressExpand: true,
+      ...(actionType ? { internalActionType: actionType } : {}),
+    };
+  }
   const inputPayload: JsonObject = {
     ...(query && !isGenericProviderWebSearchQuery(query) ? { query } : {}),
     ...(status ? { status } : {}),
@@ -180,6 +208,59 @@ function buildWebSearchCardData(
 export function isGenericProviderWebSearchQuery(query: string): boolean {
   const normalized = query.trim().toLowerCase().replace(/\s+/g, " ");
   return normalized === "web search" || normalized === "websearch";
+}
+
+function isDeepSeekInternalWebSearchActionType(
+  actionType: string | undefined,
+): actionType is DeepSeekInternalWebSearchActionType {
+  return actionType === 'search' || actionType === 'open_page' || actionType === 'find_in_page';
+}
+
+function readDeepSeekInternalWebSearchActionType(
+  value: JsonValue | undefined,
+): DeepSeekInternalWebSearchActionType | undefined {
+  return typeof value === 'string' && isDeepSeekInternalWebSearchActionType(value)
+    ? value
+    : undefined;
+}
+
+function stripDeepSeekWebSearchCallIdSuffix(value: string): string {
+  return value.replace(/#ws_call_id=[^#\s]+$/u, '').trim();
+}
+
+function isDeepSeekWebSearchCallIdQuery(value: string): boolean {
+  return value.trim().startsWith('ws_call_id=');
+}
+
+/** DeepSeek Responses internal actions omit client-visible sources; show compact headline detail like Moonshot. */
+export function formatDeepSeekInternalWebSearchDetail(action: JsonObject): string | undefined {
+  const actionType = readStringField(action, 'type');
+  if (!isDeepSeekInternalWebSearchActionType(actionType)) {
+    return undefined;
+  }
+
+  if (actionType === 'open_page' || actionType === 'find_in_page') {
+    const url = readStringField(action, 'url');
+    return url ? stripDeepSeekWebSearchCallIdSuffix(url) : undefined;
+  }
+
+  const queries = action.queries;
+  if (Array.isArray(queries)) {
+    const parts = queries
+      .filter((entry): entry is string => typeof entry === 'string')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0 && !isDeepSeekWebSearchCallIdQuery(entry));
+    if (parts.length > 0) {
+      return parts.join(' ');
+    }
+  }
+
+  const query = readStringField(action, 'query');
+  if (query && !isGenericProviderWebSearchQuery(query)) {
+    return query;
+  }
+
+  return undefined;
 }
 
 function buildCodeInterpreterCardData(
@@ -314,9 +395,11 @@ export function buildResponsesBuiltInToolArgumentsJson(
   const spiritUi: JsonObject = {
     inputExcerpt: card.inputExcerpt,
     ...(card.headlineDetail ? { headlineDetail: card.headlineDetail } : {}),
+    ...(card.internalActionType ? { internalActionType: card.internalActionType } : {}),
     ...(card.sourceCount ? { sourceCount: card.sourceCount } : {}),
     ...(card.outputExcerpt ? { outputExcerpt: card.outputExcerpt } : {}),
     ...(card.detailLines && card.detailLines.length > 0 ? { detailLines: card.detailLines } : {}),
+    ...(card.suppressExpand ? { suppressExpand: true } : {}),
   };
   payload[RESPONSES_BUILT_IN_SPIRIT_UI_KEY] = spiritUi;
 

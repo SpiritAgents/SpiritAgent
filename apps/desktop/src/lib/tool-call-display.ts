@@ -290,6 +290,14 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
     }
   }
 
+  // Provider built-in web_search compact cards (DeepSeek/Moonshot): orchestrator sets headline.
+  if (tool.toolName === 'web_search' && tool.suppressExpand) {
+    return {
+      headline,
+      ...(snapshotDetail ? { detail: snapshotDetail } : {}),
+    };
+  }
+
   const verbKey = TOOL_VERB_KEY_MAP[tool.toolName];
   if (verbKey) {
     const ctx = phaseToVerbContext(tool.phase);
