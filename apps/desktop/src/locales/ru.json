@@ -96,7 +96,8 @@
     "back": "Назад",
     "done": "Готово",
     "appearanceTitle": "Внешний вид",
-    "connectTitle": "Подключить провайдера"
+    "connectTitle": "Подключить провайдера",
+    "attributionTitle": "Атрибуция"
   },
   "settings": {
     "title": "Настройки",
@@ -155,8 +156,14 @@
     "developer": "Разработчик",
     "agents": "Агенты",
     "tab": "Tab",
+    "lspSection": "LSP",
     "lspEnabled": "Language Server (LSP)",
     "lspEnabledDescription": "Если выключено, отключает диагностику lint и автоматические проверки ошибок после редактирования файлов.",
+    "attributionSection": "Атрибуция",
+    "commitAttribution": "Атрибуция коммитов",
+    "commitAttributionDescription": "Указывать Spirit Agent в коммитах агента.",
+    "prAttribution": "Атрибуция PR",
+    "prAttributionDescription": "Указывать Spirit Agent в pull request агента.",
     "editorTabCompletion": "Автодополнение по Tab в редакторе",
     "editorTabCompletionDescription": "Использовать встроенное автодополнение в редакторе файлов.",
     "lspStatusReady": "Готов",

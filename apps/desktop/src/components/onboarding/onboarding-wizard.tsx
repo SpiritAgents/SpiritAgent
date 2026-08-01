@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { useTranslation } from "react-i18next";
 
 import { OnboardingAppearanceControls } from "@/components/onboarding/onboarding-appearance-step";
+import { OnboardingAttributionControls } from "@/components/onboarding/onboarding-attribution-step";
 import { OnboardingConnectControls } from "@/components/onboarding/onboarding-connect-step";
 import type { SettingsFormState } from "@/components/settings/types";
 import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
@@ -50,7 +51,7 @@ function readShimmerRemainingMs(el: HTMLElement): number {
 }
 
 type WizardPhase = "running" | "leaving" | "gone";
-type OnboardingStep = 1 | 2 | 3;
+type OnboardingStep = 1 | 2 | 3 | 4;
 type StepDirection = "forward" | "backward";
 
 type LeavingStepState = {
@@ -214,10 +215,19 @@ export function OnboardingWizard({
             onAddProviderModels={onAddProviderModels}
             onPreviewModels={onPreviewModels}
             onBack={() => goToStep(2)}
-            onDone={onDone}
+            onContinue={() => goToStep(4)}
             onBottomFadeChange={options?.leaving ? undefined : handleConnectBottomFadeChange}
             pinnedBottomFade={options?.leaving ? options.connectBottomFade : undefined}
             freezeBottomFade={options?.leaving === true}
+          />
+        );
+      case 4:
+        return (
+          <OnboardingAttributionStep
+            settings={settings}
+            onSavePatch={onSavePatch}
+            onBack={() => goToStep(3)}
+            onDone={onDone}
           />
         );
     }
@@ -468,7 +478,7 @@ function OnboardingConnectStep({
   onAddProviderModels,
   onPreviewModels,
   onBack,
-  onDone,
+  onContinue,
   onBottomFadeChange,
   pinnedBottomFade,
   freezeBottomFade = false,
@@ -479,7 +489,7 @@ function OnboardingConnectStep({
   onAddProviderModels: (request: AddProviderModelsRequest) => Promise<void>;
   onPreviewModels: (request: PreviewModelsRequest) => Promise<PreviewModelsResponse>;
   onBack: () => void;
-  onDone: () => void;
+  onContinue: () => void;
   onBottomFadeChange?: (hasMoreBelow: boolean) => void;
   /** 离场 remount 时恢复离开前的底缘渐隐可见性。 */
   pinnedBottomFade?: boolean;
@@ -495,8 +505,8 @@ function OnboardingConnectStep({
           <Button type="button" variant="outline" className="min-w-28" onClick={onBack}>
             {t("onboarding.back")}
           </Button>
-          <Button type="button" className="min-w-28" onClick={onDone}>
-            {t("onboarding.done")}
+          <Button type="button" className="min-w-28" onClick={onContinue}>
+            {t("onboarding.continue")}
           </Button>
         </>
       }
@@ -511,6 +521,39 @@ function OnboardingConnectStep({
         pinnedBottomFade={pinnedBottomFade}
         freezeBottomFade={freezeBottomFade}
       />
+    </OnboardingStepShell>
+  );
+}
+
+/** Step 4：Attribution（可选，默认开启）。 */
+function OnboardingAttributionStep({
+  settings,
+  onSavePatch,
+  onBack,
+  onDone,
+}: {
+  settings: SettingsFormState;
+  onSavePatch: (patch: Partial<SettingsFormState>) => Promise<void>;
+  onBack: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <OnboardingStepShell
+      contentLayout="centered"
+      title={t("onboarding.attributionTitle")}
+      footer={
+        <>
+          <Button type="button" variant="outline" className="min-w-28" onClick={onBack}>
+            {t("onboarding.back")}
+          </Button>
+          <Button type="button" className="min-w-28" onClick={onDone}>
+            {t("onboarding.done")}
+          </Button>
+        </>
+      }
+    >
+      <OnboardingAttributionControls settings={settings} onSavePatch={onSavePatch} />
     </OnboardingStepShell>
   );
 }

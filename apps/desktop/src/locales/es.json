@@ -96,7 +96,8 @@
     "back": "Atrás",
     "done": "Listo",
     "appearanceTitle": "Apariencia",
-    "connectTitle": "Conectar un Proveedor"
+    "connectTitle": "Conectar un Proveedor",
+    "attributionTitle": "Atribución"
   },
   "settings": {
     "title": "Configuración",
@@ -155,8 +156,14 @@
     "developer": "Desarrollador",
     "agents": "Agentes",
     "tab": "Tabulación",
+    "lspSection": "LSP",
     "lspEnabled": "Servidor de lenguaje (LSP)",
     "lspEnabledDescription": "Al desactivarlo, se deshabilitan los diagnósticos y la verificación automática de errores tras editar archivos.",
+    "attributionSection": "Atribución",
+    "commitAttribution": "Atribución en commits",
+    "commitAttributionDescription": "Acreditar a Spirit Agent en los commits del agente.",
+    "prAttribution": "Atribución en PR",
+    "prAttributionDescription": "Acreditar a Spirit Agent en los pull requests del agente.",
     "editorTabCompletion": "Autocompletar con tabulador en el editor",
     "editorTabCompletionDescription": "Usar autocompletado en línea en el editor de archivos.",
     "lspStatusReady": "Listo",
