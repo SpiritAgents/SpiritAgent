@@ -1550,6 +1550,8 @@ export interface MessageAuxSnapshot {
   compaction?: string;
   /** Loop finish_task：不展示工具卡，在助手正文下方显示一行灰色说明 */
   finishTaskNotice?: string;
+  /** 回合级 LLM/transport 失败：以卡片展示错误文案，而非普通 Agent 正文 */
+  turnError?: boolean;
 }
 
 export interface PendingToolApprovalSnapshot {

@@ -102,7 +102,6 @@ export function ImageGenerationToolCard({
         className={cn(
           "group/image-card relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200",
           canInteract && "cursor-zoom-in hover:border-border/70",
-          tool.phase === "failed" && "border-destructive/45 bg-destructive/5",
         )}
         role={canInteract ? "button" : undefined}
         tabIndex={canInteract ? 0 : undefined}
@@ -185,7 +184,7 @@ export function ImageGenerationToolCard({
         </p>
       ) : null}
       {tool.phase === "failed" && tool.outputExcerpt ? (
-        <pre className="mt-2 whitespace-pre-wrap rounded-md border border-destructive/20 bg-destructive/5 p-2 font-mono text-xs leading-relaxed text-destructive">
+        <pre className="mt-2 whitespace-pre-wrap rounded-md border border-border/45 bg-muted/20 p-2 font-mono text-xs leading-relaxed text-muted-foreground">
           {tool.outputExcerpt}
         </pre>
       ) : null}

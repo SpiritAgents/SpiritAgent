@@ -67,6 +67,7 @@ function cloneAux(aux: MessageAuxSnapshot | undefined): MessageAuxSnapshot | und
     ...(aux.thinking ? { thinking: aux.thinking } : {}),
     ...(aux.compaction ? { compaction: aux.compaction } : {}),
     ...(aux.finishTaskNotice ? { finishTaskNotice: aux.finishTaskNotice } : {}),
+    ...(aux.turnError ? { turnError: true } : {}),
   };
 }
 

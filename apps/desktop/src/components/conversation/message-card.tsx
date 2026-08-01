@@ -9,6 +9,7 @@ import {
   AssistantCompactionCollapsible,
   AssistantThinkingCollapsible,
 } from "@/components/conversation/conversation-thinking-collapsibles";
+import { TurnErrorMessageCard } from "@/components/conversation/turn-error-message-card";
 import { QueuedUserMessageHoverActions } from "@/components/queued-user-message-hover-actions";
 import { ToolCallCollapsible } from "@/components/tool-call/tool-call-collapsible";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
@@ -22,9 +23,8 @@ import type {
 } from "@/components/tool-call/tool-call-types";
 import { MessageTurnActions } from "@/components/conversation/message-turn-actions";
 import { UserMessageBubble } from "@/components/user-message-bubble";
-import {
-  shouldShowAssistantCompactionCollapsible,
-} from "@/lib/conversation-compaction-ui";
+import { shouldShowAssistantCompactionCollapsible } from "@/lib/conversation-compaction-ui";
+import { isTurnErrorAssistantMessage } from "@/lib/conversation-turn-error-ui";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
 import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
 import { cn } from "@/lib/utils";
@@ -191,6 +191,7 @@ function MessageCardImpl({
     "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
   const subagentStatusSurface =
     !isUser && message.content.trim() ? isSubagentStatusSurfaceMessage(message) : false;
+  const turnErrorSurface = !isUser && isTurnErrorAssistantMessage(message);
   const showThinkingCollapsible = !hiddenByProcessGroup && showThinkingCollapsibleEligible;
   const showCompactionCollapsible =
     !hiddenByProcessGroup &&
@@ -346,7 +347,9 @@ function MessageCardImpl({
           )
         ) : null}
         {!isUser && message.content.trim() ? (
-          subagentStatusSurface ? (
+          turnErrorSurface ? (
+            <TurnErrorMessageCard content={message.content} />
+          ) : subagentStatusSurface ? (
             <p className="text-sm leading-relaxed text-muted-foreground">{message.content}</p>
           ) : (
           <div data-spirit-surface="message-bubble">

@@ -375,12 +375,13 @@ export class DesktopAssistantMessageStateMachine {
       if (message.content.trim() !== normalized) {
         continue;
       }
-      if (finalAux) {
+      if (finalAux || aux?.turnError) {
         message.aux = normalizeMessageAuxSnapshot({
           ...(message.aux?.thinking ? { thinking: message.aux.thinking } : {}),
           ...(message.aux?.compaction ? { compaction: message.aux.compaction } : {}),
-          ...(finalAux.thinking ? { thinking: finalAux.thinking } : {}),
-          ...(finalAux.compaction ? { compaction: finalAux.compaction } : {}),
+          ...(finalAux?.thinking ? { thinking: finalAux.thinking } : {}),
+          ...(finalAux?.compaction ? { compaction: finalAux.compaction } : {}),
+          ...(finalAux?.turnError || aux?.turnError ? { turnError: true } : {}),
         });
       }
       if (hasStandaloneThinkingMessageInCurrentTurn(messages)) {

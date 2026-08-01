@@ -990,7 +990,8 @@ export function normalizeMessageAuxSnapshot(
   const finishTaskNotice = aux.finishTaskNotice?.trim()
     ? aux.finishTaskNotice
     : undefined;
-  if (!thinking && !compaction && !finishTaskNotice) {
+  const turnError = aux.turnError === true ? true : undefined;
+  if (!thinking && !compaction && !finishTaskNotice && !turnError) {
     return undefined;
   }
 
@@ -998,6 +999,7 @@ export function normalizeMessageAuxSnapshot(
     ...(thinking ? { thinking } : {}),
     ...(compaction ? { compaction } : {}),
     ...(finishTaskNotice ? { finishTaskNotice } : {}),
+    ...(turnError ? { turnError: true } : {}),
   };
 }
 

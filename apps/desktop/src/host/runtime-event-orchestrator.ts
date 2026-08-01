@@ -297,10 +297,14 @@ export class DesktopRuntimeEventOrchestrator {
         this.options.clearCurrentTurnSkills();
         {
           const aux = this.options.assistantMessages.takeLatestPendingAux();
-          if (!this.options.assistantMessages.materializeExistingCompletedAssistantMessage(result.error, aux)) {
-            this.options.assistantMessages.appendAssistantMessage(result.error, aux);
+          const errorAux = {
+            ...(aux ?? {}),
+            turnError: true as const,
+          };
+          if (!this.options.assistantMessages.materializeExistingCompletedAssistantMessage(result.error, errorAux)) {
+            this.options.assistantMessages.appendAssistantMessage(result.error, errorAux);
           }
-          this.options.messageTimeline?.()?.materializeCompletedAssistantText(result.error, aux);
+          this.options.messageTimeline?.()?.materializeCompletedAssistantText(result.error, errorAux);
         }
         this.options.setLastRuntimeError(result.error);
         break;
