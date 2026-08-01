@@ -950,7 +950,7 @@ export class DesktopMessageTimeline {
       return undefined;
     }
     this.removeStaleBeforeToolsEmptyPendingRows(segment);
-    const existing = this.findAfterToolsAssistantTextRow(segment);
+    const existing = this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true });
     if (existing) {
       if (!existing.content.trim() && !hasRowAux(existing)) {
         existing.pending = true;
@@ -1383,7 +1383,7 @@ export class DesktopMessageTimeline {
   private ensureStreamingAssistantTextRowAfterTools(
     segment: DesktopTimelineSegment,
   ): DesktopTimelineRow {
-    const existing = this.findAfterToolsAssistantTextRow(segment);
+    const existing = this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true });
     if (existing) {
       segment.activeAssistantTextRowId = existing.rowId;
       return existing;
@@ -1404,7 +1404,7 @@ export class DesktopMessageTimeline {
 
   /** Gateway multi-search: drop empty after-tools placeholder seeded before the next tool preview. */
   private clearPrematureAfterToolsThinkingPlaceholder(segment: DesktopTimelineSegment): void {
-    const afterToolsRow = this.findAfterToolsAssistantTextRow(segment);
+    const afterToolsRow = this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true });
     if (!afterToolsRow?.pending || afterToolsRow.content.trim() || hasRowAux(afterToolsRow)) {
       return;
     }
@@ -1414,10 +1414,40 @@ export class DesktopMessageTimeline {
     }
   }
 
+  private lastToolRowIndex(segment: DesktopTimelineSegment): number {
+    let lastIndex = -1;
+    for (let index = 0; index < segment.rows.length; index += 1) {
+      if (segment.rows[index]?.kind === "tool") {
+        lastIndex = index;
+      }
+    }
+    return lastIndex;
+  }
+
+  private segmentRowsNeedInsertionOrder(segment: DesktopTimelineSegment): boolean {
+    let lastAfterToolsTextIndex = -1;
+    for (let index = 0; index < segment.rows.length; index += 1) {
+      const row = segment.rows[index];
+      if (
+        row?.kind === "assistant-text" &&
+        row.section === "after-tools" &&
+        row.content.trim()
+      ) {
+        lastAfterToolsTextIndex = index;
+      }
+      if (lastAfterToolsTextIndex >= 0 && row?.kind === 'tool' && index > lastAfterToolsTextIndex) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private findAfterToolsAssistantTextRow(
     segment: DesktopTimelineSegment,
+    options: { afterLastTool?: boolean } = {},
   ): DesktopTimelineRow | undefined {
-    for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
+    const minIndex = options.afterLastTool ? this.lastToolRowIndex(segment) : -1;
+    for (let index = segment.rows.length - 1; index > minIndex; index -= 1) {
       const row = segment.rows[index];
       if (row?.kind === "assistant-text" && row.section === "after-tools") {
         return row;
@@ -1442,7 +1472,8 @@ export class DesktopMessageTimeline {
           if (existing.content.trim() && segmentAllToolsTerminal(segment)) {
             // Gateway provider-search resume：工具前前缀已落在 before-tools 行，全部工具完成后合成思考须写到 after-tools。
             const afterToolsRow =
-              this.findAfterToolsAssistantTextRow(segment) ??
+            const afterToolsRow =
+              this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true }) ??
               this.createAssistantTextRow(segment, "after-tools", true);
             segment.activeAssistantTextRowId = afterToolsRow.rowId;
             return afterToolsRow;
@@ -1706,6 +1737,9 @@ export class DesktopMessageTimeline {
   }
 
   private orderedSegmentRows(segment: DesktopTimelineSegment): DesktopTimelineRow[] {
+    if (this.segmentRowsNeedInsertionOrder(segment)) {
+      return [...segment.rows];
+    }
     return [...segment.rows].sort((left, right) => {
       const leftSection = left.section ? ROW_SECTION_ORDER[left.section] : 0;
       const rightSection = right.section ? ROW_SECTION_ORDER[right.section] : 0;

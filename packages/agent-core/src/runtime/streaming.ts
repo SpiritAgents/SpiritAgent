@@ -76,6 +76,8 @@ export interface StreamingRuntime<Config, State, ToolRequest, TrustTarget = stri
   toolPreviewSeenInStreamRoundStore: boolean;
   /** Set when a provider built-in tool reaches a terminal preview in the current streaming round. */
   providerBuiltinToolTerminalSeenInStreamRoundStore: boolean;
+  /** Same-stream gap after terminal built-in tool preview, before the next text/thinking delta. */
+  awaitingPostBuiltInToolStreamDeltaStore: boolean;
   compactionTextStore: string;
   pendingStartedAtStore: number | undefined;
   pendingLastEventAtStore: number | undefined;
@@ -342,9 +344,14 @@ export function currentAuxKind<Config, State, ToolRequest, TrustTarget = string>
       runtime.pendingAssistantTextStore.trim() &&
       !runtime.thinkingTextStore.trim() &&
       !runtime.compactionTextStore.trim() &&
-      !runtime.pendingBackgroundToolStatusStore?.trim() &&
-      !runtime.providerBuiltinToolTerminalSeenInStreamRoundStore
+      !runtime.pendingBackgroundToolStatusStore?.trim()
     ) {
+      if (
+        runtime.providerBuiltinToolTerminalSeenInStreamRoundStore ||
+        runtime.awaitingPostBuiltInToolStreamDeltaStore
+      ) {
+        return "thinking";
+      }
       return undefined;
     }
     if (
@@ -424,6 +431,7 @@ export function clearStreamingUiState<Config, State, ToolRequest, TrustTarget = 
   runtime.compactionTextStore = "";
   runtime.toolPreviewSeenInStreamRoundStore = false;
   runtime.providerBuiltinToolTerminalSeenInStreamRoundStore = false;
+  runtime.awaitingPostBuiltInToolStreamDeltaStore = false;
 }
 
 export function clearPendingStreamingState<Config, State, ToolRequest, TrustTarget = string>(
@@ -461,6 +469,7 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
   runtime.pendingLastEventAtStore = Date.now();
 
   if (event.kind === "thinking-chunk") {
+    runtime.awaitingPostBuiltInToolStreamDeltaStore = false;
     runtime.thinkingTextStore += event.text;
     runtime.emitEvent({
       kind: "update-pending-assistant-thinking",
@@ -473,9 +482,11 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
     runtime.toolPreviewSeenInStreamRoundStore = true;
     if (isResponsesBuiltInToolName(event.toolName)) {
       const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
-      if (phase === "succeeded" || phase === "failed") {
+      const isTerminal = phase === "succeeded" || phase === "failed";
+      if (isTerminal) {
         runtime.providerBuiltinToolTerminalSeenInStreamRoundStore = true;
       }
+      runtime.awaitingPostBuiltInToolStreamDeltaStore = isTerminal;
     }
     if (runtime.thinkingTextStore.trim()) {
       finalizeInFlightStreamThinking(runtime);
@@ -531,6 +542,7 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
   }
 
   if (event.kind === "assistant-chunk") {
+    runtime.awaitingPostBuiltInToolStreamDeltaStore = false;
     if (runtime.thinkingTextStore.trim()) {
       finalizeInFlightStreamThinking(runtime);
     }

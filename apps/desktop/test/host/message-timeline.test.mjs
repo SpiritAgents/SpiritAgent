@@ -312,6 +312,41 @@ test("assistant text splits around tool rows inside a segment", () => {
   ]);
 });
 
+test("built-in tool round-trip keeps interleaved body-tool-body order in one segment", () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn("find in page");
+  timeline.beginAssistantSegment("initial");
+  timeline.appendAssistantTextChunk("好，试试就试试！");
+  timeline.upsertToolMessage("find-1", {
+    toolCallId: "find-1",
+    toolName: "web_search",
+    phase: "failed",
+    headline: "页内查找 spirit.fast failed",
+    detailLines: [],
+    argsExcerpt: "{}",
+  });
+  timeline.appendAssistantTextChunk("失败了，再试一次：");
+  timeline.upsertToolMessage("find-2", {
+    toolCallId: "find-2",
+    toolName: "web_search",
+    phase: "succeeded",
+    headline: "页内查找 https://spirit.fast",
+    detailLines: [],
+    argsExcerpt: "{}",
+  });
+  timeline.appendAssistantTextChunk("第二次调用成功了。");
+  timeline.completeActiveAssistantSegment();
+
+  assert.deepEqual(timeline.toMessages().map(rowToken), [
+    "user:find in page",
+    "assistant:好，试试就试试！",
+    "tool:find-1:failed",
+    "assistant:失败了，再试一次：",
+    "tool:find-2:succeeded",
+    "assistant:第二次调用成功了。",
+  ]);
+});
+
 test("finish_task notice clears duplicate completion text instead of adding a second row", () => {
   const timeline = createTimeline();
   timeline.beginUserTurn("你好啊");
