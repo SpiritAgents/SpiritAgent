@@ -15,7 +15,7 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'desktop',
-    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-win-(?<arch>x64|ia32|arm64)\.exe$/,
+    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-win-(?<arch>x64|arm64)\.exe$/,
     toKey: ({ arch, version }) => ({
       os: 'windows',
       arch,
@@ -49,7 +49,7 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'cli',
-    re: /^SpiritAgent-CLI-(?<version>\d+\.\d+\.\d+)-windows-(?<arch>x64|ia32|arm64)\.zip$/,
+    re: /^SpiritAgent-CLI-(?<version>\d+\.\d+\.\d+)-windows-(?<arch>x64|arm64)\.zip$/,
     toKey: ({ arch, version }) => ({
       os: 'windows',
       arch,
@@ -70,7 +70,7 @@ const PRIMARY_PATTERNS = [
 ];
 
 /** Expected primary installer count for a full multi-arch release matrix. */
-export const EXPECTED_PRIMARY_ASSET_COUNT = 14;
+export const EXPECTED_PRIMARY_ASSET_COUNT = 12;
 
 /**
  * @param {string} fileName basename of a GitHub release asset

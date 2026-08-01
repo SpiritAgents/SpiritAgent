@@ -61,10 +61,6 @@ jobs:
             package_target: windows-x64
             builder: cargo
           - os: windows-latest
-            rust_target: i686-pc-windows-msvc
-            package_target: windows-ia32
-            builder: cargo
-          - os: windows-latest
             rust_target: aarch64-pc-windows-msvc
             package_target: windows-arm64
             builder: cargo
@@ -228,10 +224,6 @@ jobs:
             platform: win
             arch: x64
             package_target: windows-x64
-          - os: windows-latest
-            platform: win
-            arch: ia32
-            package_target: windows-ia32
           - os: windows-latest
             platform: win
             arch: arm64

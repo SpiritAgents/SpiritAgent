@@ -17,14 +17,6 @@ const targetMap = {
     nodeArchiveExt: 'zip',
     archiveExt: 'zip',
   },
-  'i686-pc-windows-msvc': {
-    packageTarget: 'windows-ia32',
-    binaryName: 'spirit.exe',
-    nodePlatform: 'win',
-    nodeArch: 'x86',
-    nodeArchiveExt: 'zip',
-    archiveExt: 'zip',
-  },
   'aarch64-pc-windows-msvc': {
     packageTarget: 'windows-arm64',
     binaryName: 'spirit.exe',
