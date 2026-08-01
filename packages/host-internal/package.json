@@ -150,7 +150,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "npm --prefix ../agent-core run build && npm run build:tsc",
