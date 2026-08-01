@@ -48,6 +48,8 @@ export type SettingsFormState = {
   dreamDebugMode: boolean;
   lspEnabled: boolean;
   codeCompletionEnabled: boolean;
+  commitAttributionEnabled: boolean;
+  prAttributionEnabled: boolean;
   llmHttpVersion: "http1.1" | "http2";
 };
 

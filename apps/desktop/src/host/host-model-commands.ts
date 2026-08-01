@@ -577,6 +577,21 @@ export async function updateConfigCommand(
         },
       });
     }
+    if (request.agents?.attribution !== undefined) {
+      state.config.agents = normalizeAgentsConfig({
+        ...state.config.agents,
+        attribution: {
+          commit: {
+            ...state.config.agents.attribution.commit,
+            ...request.agents.attribution.commit,
+          },
+          pr: {
+            ...state.config.agents.attribution.pr,
+            ...request.agents.attribution.pr,
+          },
+        },
+      });
+    }
     if (request.networks?.llmHttpVersion !== undefined) {
       state.config.networks = normalizeNetworksConfig({
         ...state.config.networks,

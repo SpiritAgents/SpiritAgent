@@ -249,6 +249,14 @@ function updateConfigFromSettingsForm(
       codeCompletion: {
         enabled: s.codeCompletionEnabled,
       },
+      attribution: {
+        commit: {
+          enabled: s.commitAttributionEnabled,
+        },
+        pr: {
+          enabled: s.prAttributionEnabled,
+        },
+      },
     },
     networks: {
       llmHttpVersion: s.llmHttpVersion,
@@ -424,6 +432,8 @@ export function useDesktopRuntime() {
     dreamDebugMode: false,
     lspEnabled: true,
     codeCompletionEnabled: true,
+    commitAttributionEnabled: true,
+    prAttributionEnabled: true,
     llmHttpVersion: "http2",
   });
   const [busyAction, setBusyAction] = useState<BusyAction>("");
@@ -798,6 +808,8 @@ export function useDesktopRuntime() {
         dreamDebugMode: next.dreams.settings.debugMode,
         lspEnabled: next.lsp.userEnabled,
         codeCompletionEnabled: next.codeCompletion.userEnabled,
+        commitAttributionEnabled: next.attribution.commitEnabled,
+        prAttributionEnabled: next.attribution.prEnabled,
         llmHttpVersion: next.config.networks.llmHttpVersion,
       };
     });

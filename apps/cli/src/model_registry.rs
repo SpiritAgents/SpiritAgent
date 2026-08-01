@@ -614,6 +614,43 @@ impl Default for NetworksConfig {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AgentsAttributionToggleConfig {
+    #[serde(default)]
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AgentsAttributionConfig {
+    #[serde(default)]
+    pub commit: AgentsAttributionToggleConfig,
+    #[serde(default)]
+    pub pr: AgentsAttributionToggleConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AgentsConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lsp: Option<Value>,
+    #[serde(rename = "codeCompletion", default, skip_serializing_if = "Option::is_none")]
+    pub code_completion: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attribution: Option<AgentsAttributionConfig>,
+    #[serde(flatten, default, skip_serializing_if = "Map::is_empty")]
+    pub extra: Map<String, Value>,
+}
+
+/// CLI 解析 Attribution 开关。
+///
+/// 字段缺失时两者均为 false（关闭）。CLI 没有 Desktop OOBE，若缺省按开启会
+/// 在用户不知情时往 commit / PR 注入署名，故必须显式在 config.json 中 opt-in。
+pub fn resolve_cli_attribution(config: &AppConfig) -> (bool, bool) {
+    let Some(attribution) = config.agents.attribution.as_ref() else {
+        return (false, false);
+    };
+    (attribution.commit.enabled, attribution.pr.enabled)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     #[serde(rename = "schemaVersion", alias = "schema_version", default = "default_schema_version")]
@@ -652,6 +689,8 @@ pub struct AppConfig {
     pub ui_locale: Option<String>,
     #[serde(default)]
     pub networks: NetworksConfig,
+    #[serde(default)]
+    pub agents: AgentsConfig,
     #[serde(flatten, default, skip_serializing_if = "Map::is_empty")]
     pub extra: Map<String, Value>,
 }
@@ -671,6 +710,7 @@ impl Default for AppConfig {
             lightweight_chat_model: None,
             ui_locale: None,
             networks: NetworksConfig::default(),
+            agents: AgentsConfig::default(),
             extra: Map::new(),
         }
     }
@@ -1501,8 +1541,8 @@ fn is_deepseek_v4_reasoning_model(model: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        deserialize_config, normalize_reasoning_effort_value, serialize_config, AppConfig,
-        ModelEntry, ModelProvider, ModelRef, ModelTransportKind,
+        deserialize_config, normalize_reasoning_effort_value, resolve_cli_attribution,
+        serialize_config, AppConfig, ModelEntry, ModelProvider, ModelRef, ModelTransportKind,
         ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION,
     };
     use serde_json::Value;
@@ -2012,6 +2052,52 @@ mod tests {
                 .and_then(|models| models.first())
                 .and_then(|model| model.get("contextLength")),
             None
+        );
+    }
+
+    #[test]
+    fn cli_attribution_defaults_off_when_missing() {
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [],
+  "activeModel": { "groupId": "", "name": "" }
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        assert_eq!(resolve_cli_attribution(&parsed), (false, false));
+        assert!(parsed.agents.attribution.is_none());
+    }
+
+    #[test]
+    fn cli_attribution_honors_explicit_enabled() {
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [],
+  "activeModel": { "groupId": "", "name": "" },
+  "agents": {
+    "attribution": {
+      "commit": { "enabled": true },
+      "pr": { "enabled": false }
+    }
+  }
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        assert_eq!(resolve_cli_attribution(&parsed), (true, false));
+
+        let serialized = serialize_config(&parsed).expect("serialize config");
+        let json: Value = serde_json::from_str(&serialized).expect("json value");
+        assert_eq!(
+            json.pointer("/agents/attribution/commit/enabled")
+                .and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            json.pointer("/agents/attribution/pr/enabled")
+                .and_then(Value::as_bool),
+            Some(false)
         );
     }
 

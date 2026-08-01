@@ -124,9 +124,19 @@ export interface DesktopCodeCompletionConfigFile {
   enabled: boolean;
 }
 
+export interface DesktopAttributionToggleConfigFile {
+  enabled: boolean;
+}
+
+export interface DesktopAttributionConfigFile {
+  commit: DesktopAttributionToggleConfigFile;
+  pr: DesktopAttributionToggleConfigFile;
+}
+
 export interface DesktopAgentsConfigFile {
   lsp: DesktopLspConfigFile;
   codeCompletion: DesktopCodeCompletionConfigFile;
+  attribution: DesktopAttributionConfigFile;
 }
 
 export interface DesktopNetworksConfigFile {
@@ -884,6 +894,14 @@ export function defaultAgentsConfig(): DesktopAgentsConfigFile {
     codeCompletion: {
       enabled: true,
     },
+    attribution: {
+      commit: {
+        enabled: true,
+      },
+      pr: {
+        enabled: true,
+      },
+    },
   };
 }
 
@@ -941,12 +959,33 @@ export function normalizeAgentsConfig(raw: unknown): DesktopAgentsConfigFile {
     typeof record.codeCompletion === 'object' && record.codeCompletion !== null
       ? (record.codeCompletion as Partial<DesktopCodeCompletionConfigFile>)
       : {};
+  const attributionRaw =
+    typeof record.attribution === 'object' && record.attribution !== null
+      ? (record.attribution as Partial<DesktopAttributionConfigFile>)
+      : {};
+  const commitRaw =
+    typeof attributionRaw.commit === 'object' && attributionRaw.commit !== null
+      ? (attributionRaw.commit as Partial<DesktopAttributionToggleConfigFile>)
+      : {};
+  const prRaw =
+    typeof attributionRaw.pr === 'object' && attributionRaw.pr !== null
+      ? (attributionRaw.pr as Partial<DesktopAttributionToggleConfigFile>)
+      : {};
   return {
     lsp: {
       enabled: lspRaw.enabled !== false,
     },
     codeCompletion: {
       enabled: codeCompletionRaw.enabled !== false,
+    },
+    // Desktop：缺省 / OOBE 默认开启（opt-out）；CLI 侧缺省字段另按 OFF 处理
+    attribution: {
+      commit: {
+        enabled: commitRaw.enabled !== false,
+      },
+      pr: {
+        enabled: prRaw.enabled !== false,
+      },
     },
   };
 }
