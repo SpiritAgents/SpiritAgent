@@ -11,6 +11,10 @@ import { wrapFetchForCloudflareAiGateway } from "../cloudflare-ai-gateway-fetch.
 import type { JsonObject } from "../ports.js";
 import { createAlibabaResponsesAwareFetch } from "./alibaba-responses-fetch.js";
 import {
+  createDeepSeekResponsesAwareFetch,
+  resolveDeepSeekResponsesReasoningEffort,
+} from "./deepseek-responses-fetch.js";
+import {
   createResponsesStoredStateAwareFetch,
   shouldUseResponsesStoredStateFetch,
 } from "./responses-stored-state-fetch.js";
@@ -114,6 +118,9 @@ function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof f
   let fetchFn: typeof fetch = getLlmFetch();
   if (shouldUseAlibabaResponsesBuiltInTools(config)) {
     fetchFn = createAlibabaResponsesAwareFetch(config, fetchFn);
+  }
+  if (config.llmVendor === "deepseek") {
+    fetchFn = createDeepSeekResponsesAwareFetch(config, fetchFn);
   }
   if (shouldUseResponsesStoredStateFetch(config)) {
     fetchFn = createResponsesStoredStateAwareFetch(config, fetchFn);
@@ -399,6 +406,16 @@ export function buildResponsesProviderOptions(
         huggingfaceOptions.reasoningEffort = reasoningEffort;
       }
       return Object.keys(huggingfaceOptions).length > 0 ? { huggingface: huggingfaceOptions } : {};
+    }
+
+    if (config.llmVendor === "deepseek") {
+      const effort = resolveDeepSeekResponsesReasoningEffort(config);
+      if (effort === undefined) {
+        return {};
+      }
+      return {
+        deepseek: { reasoningEffort: effort },
+      };
     }
 
     const providerOptions: JsonObject = {

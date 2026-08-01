@@ -84,7 +84,8 @@ export type OpenResponsesRequestTraceKind =
   | "xai_sdk_responses"
   | "azure_sdk_responses"
   | "open_responses_sdk_responses"
-  | "alibaba_open_responses";
+  | "alibaba_open_responses"
+  | "deepseek_open_responses";
 
 export interface OpenResponsesRequestTrace extends JsonObject {
   kind: OpenResponsesRequestTraceKind;
@@ -214,7 +215,11 @@ export function resolveOpenResponsesReasoningSummary(
   }
 
   // Ark Responses 仅支持 reasoning.effort，拒绝 OpenAI 式 reasoning.summary。
-  if (isArkLlmVendor(config.llmVendor) || config.llmVendor === "stepfun") {
+  if (
+    isArkLlmVendor(config.llmVendor) ||
+    config.llmVendor === "stepfun" ||
+    config.llmVendor === "deepseek"
+  ) {
     return undefined;
   }
 
@@ -294,15 +299,17 @@ export function buildOpenResponsesRequestTrace(
 ): JsonValue[] {
   const provider = resolveOpenResponsesSdkProvider(config);
   const kind: OpenResponsesRequestTraceKind =
-    config.llmVendor === "alibaba" && provider === "open-responses-compatible"
-      ? "alibaba_open_responses"
-      : provider === "openai"
-        ? "openai_sdk_responses"
-        : provider === "xai"
-          ? "xai_sdk_responses"
-          : provider === "azure"
-            ? "azure_sdk_responses"
-            : "open_responses_sdk_responses";
+    config.llmVendor === "deepseek" && provider === "open-responses-compatible"
+      ? "deepseek_open_responses"
+      : config.llmVendor === "alibaba" && provider === "open-responses-compatible"
+        ? "alibaba_open_responses"
+        : provider === "openai"
+          ? "openai_sdk_responses"
+          : provider === "xai"
+            ? "xai_sdk_responses"
+            : provider === "azure"
+              ? "azure_sdk_responses"
+              : "open_responses_sdk_responses";
 
   const trace: OpenResponsesRequestTrace = {
     kind,
