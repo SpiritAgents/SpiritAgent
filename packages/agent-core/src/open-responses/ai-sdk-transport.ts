@@ -161,7 +161,7 @@ export class AiSdkOpenResponsesTransport
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
         providerOptions: buildResponsesProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       const output = cloneJsonValue(result.object as JsonValue) as T;
 
@@ -225,7 +225,7 @@ export class AiSdkOpenResponsesTransport
             : {}),
           ...(sdkWebSearchStopWhen ? { stopWhen: sdkWebSearchStopWhen } : {}),
           providerOptions: buildResponsesProviderOptions(config, roundInput.previousResponseId),
-          maxRetries: 0,
+          maxRetries: 2,
         });
 
         const applyPatchCalls = shouldUseOpenAiSdkApplyPatchTool(config)
@@ -361,7 +361,7 @@ export class AiSdkOpenResponsesTransport
           ...(sdkWebSearchStopWhen ? { stopWhen: sdkWebSearchStopWhen } : {}),
           providerOptions,
           include: { rawChunks: true },
-          maxRetries: 0,
+          maxRetries: 2,
           abortSignal: abortController.signal,
         }),
       );
@@ -442,7 +442,7 @@ export class AiSdkOpenResponsesTransport
           messages: promptMessages as any,
           allowSystemInMessages: true,
           providerOptions: buildResponsesProviderOptions(compactConfig),
-          maxRetries: 0,
+          maxRetries: 2,
         });
 
         for await (const part of streamed.stream) {
@@ -472,7 +472,7 @@ export class AiSdkOpenResponsesTransport
         messages: promptMessages as any,
         allowSystemInMessages: true,
         providerOptions: buildResponsesProviderOptions(compactConfig),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       summary = result.text;
     }

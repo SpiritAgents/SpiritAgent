@@ -187,6 +187,15 @@ export type RuntimeEvent<ToolRequest> =
   | {
       kind: 'context-usage-updated';
       usage: LlmTokenUsage;
+    }
+  | {
+      kind: 'turn-error-retry';
+      attempt: number;
+      maxAttempts: number;
+      error: string;
+    }
+  | {
+      kind: 'turn-error-retry-cleared';
     };
 
 export interface RuntimePendingApproval<ToolRequest, TrustTarget> {

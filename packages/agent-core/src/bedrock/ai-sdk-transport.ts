@@ -141,7 +141,7 @@ export class AiSdkBedrockTransport
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
         providerOptions: buildBedrockProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       const output = cloneJsonValue(result.object as JsonValue) as T;
 
@@ -187,7 +187,7 @@ export class AiSdkBedrockTransport
               toolChoice: 'auto' as const,
             }),
         providerOptions: buildBedrockProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
 
       nextState.messages.push(
@@ -266,7 +266,7 @@ export class AiSdkBedrockTransport
             }),
         providerOptions: buildBedrockProviderOptions(config),
         include: { rawChunks: false },
-        maxRetries: 0,
+        maxRetries: 2,
         abortSignal: abortController.signal,
       });
       const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
@@ -338,7 +338,7 @@ export class AiSdkBedrockTransport
           messages: promptMessages as any,
           allowSystemInMessages: true,
           providerOptions: buildBedrockProviderOptions(compactConfig),
-          maxRetries: 0,
+          maxRetries: 2,
         });
 
         for await (const part of streamed.stream) {
@@ -368,7 +368,7 @@ export class AiSdkBedrockTransport
         messages: promptMessages as any,
         allowSystemInMessages: true,
         providerOptions: buildBedrockProviderOptions(compactConfig),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       summary = result.text;
     }

@@ -305,7 +305,7 @@ export class AiSdkOpenAiCompatibleTransport
         model: createAiSdkImageModel(imageConfig),
         prompt: request.prompt,
         size: request.size as `${number}x${number}`,
-        maxRetries: 0,
+        maxRetries: 2,
       });
     } catch (error) {
       logAiSdkImageGenerationFailure(imageConfig, request, requestUrl, error);
@@ -372,7 +372,7 @@ export class AiSdkOpenAiCompatibleTransport
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
         providerOptions: buildAiSdkProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       const output = cloneJsonValue(result.object as JsonValue) as T;
 
@@ -424,7 +424,7 @@ export class AiSdkOpenAiCompatibleTransport
               toolChoice: 'auto' as const,
             }),
         providerOptions: buildAiSdkProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
 
       const assistantMessage = buildAssistantMessageFromGenerateTextResult(
@@ -515,7 +515,7 @@ export class AiSdkOpenAiCompatibleTransport
             }),
         providerOptions: buildAiSdkProviderOptions(config),
         include: { rawChunks: true },
-        maxRetries: 0,
+        maxRetries: 2,
         abortSignal: abortController.signal,
       });
       const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
@@ -597,7 +597,7 @@ export class AiSdkOpenAiCompatibleTransport
           messages: promptMessages as any,
           allowSystemInMessages: true,
           providerOptions: buildAiSdkProviderOptions(compactConfig),
-          maxRetries: 0,
+          maxRetries: 2,
         });
 
         for await (const part of streamed.stream) {
@@ -627,7 +627,7 @@ export class AiSdkOpenAiCompatibleTransport
         messages: promptMessages as any,
         allowSystemInMessages: true,
         providerOptions: buildAiSdkProviderOptions(compactConfig),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       summary = result.text;
     }

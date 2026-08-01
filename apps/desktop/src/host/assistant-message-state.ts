@@ -3,6 +3,7 @@ import type {
   MessageAuxSnapshot,
   ToolBlockSnapshot,
 } from '../types.js';
+import { formatTurnErrorRetryProgress } from '../lib/conversation-turn-error-ui.js';
 import {
   describeAuxForDebug,
   describeOptionalAuxForDebug,
@@ -126,6 +127,94 @@ export class DesktopAssistantMessageStateMachine {
       aux: message.aux,
       content,
     });
+  }
+
+  upsertTurnErrorRetryMessage(
+    retry: NonNullable<MessageAuxSnapshot['turnErrorRetry']>,
+    messageId: number | undefined,
+  ): number {
+    const messages = this.messages();
+    const aux = normalizeMessageAuxSnapshot({
+      turnError: true,
+      turnErrorRetry: retry,
+    });
+    const content = formatTurnErrorRetryProgress(retry);
+    if (messageId !== undefined) {
+      const existing = messages.find((message) => message.id === messageId);
+      if (existing && existing.role === 'assistant') {
+        existing.content = content;
+        existing.aux = aux;
+        existing.pending = false;
+        this.logAssistantAuxDecision('upsert-turn-error-retry', {
+          messageId: existing.id,
+          aux: existing.aux,
+          content,
+        });
+        return existing.id;
+      }
+    }
+
+    const message: ConversationMessageSnapshot = {
+      id: this.options.allocateMessageId(),
+      role: 'assistant',
+      content,
+      ...(aux ? { aux } : {}),
+      pending: false,
+    };
+    messages.push(message);
+    this.logAssistantAuxDecision('append-turn-error-retry', {
+      messageId: message.id,
+      aux: message.aux,
+      content,
+    });
+    return message.id;
+  }
+
+  removeTurnErrorRetryMessage(messageId: number | undefined): boolean {
+    if (messageId === undefined) {
+      return false;
+    }
+    const messages = this.messages();
+    const index = messages.findIndex((message) => message.id === messageId);
+    if (index < 0) {
+      return false;
+    }
+    const message = messages[index]!;
+    if (message.role !== 'assistant' || message.aux?.turnErrorRetry === undefined) {
+      return false;
+    }
+    this.handleMessageRemoved(index, message.id, 'remove-turn-error-retry');
+    messages.splice(index, 1);
+    return true;
+  }
+
+  materializeTurnErrorFailureMessage(
+    messageId: number | undefined,
+    content: string,
+    aux?: MessageAuxSnapshot,
+  ): boolean {
+    const messages = this.messages();
+    const normalized = content.trim();
+    const finalAux = this.normalizeCompletedAssistantAux(aux);
+    if (messageId !== undefined) {
+      const existing = messages.find((message) => message.id === messageId);
+      if (existing && existing.role === 'assistant') {
+        existing.content = content;
+        existing.aux = finalAux;
+        existing.pending = false;
+        this.logAssistantAuxDecision('materialize-turn-error-failure', {
+          messageId: existing.id,
+          aux: existing.aux,
+          content,
+        });
+        return true;
+      }
+    }
+    if (!normalized) {
+      return false;
+    }
+    this.appendAssistantMessage(content, aux);
+    return true;
   }
 
   appendAssistantThinkingSegment(text: string): void {

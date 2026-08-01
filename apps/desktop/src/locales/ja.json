@@ -722,6 +722,7 @@
     "continue": "続行",
     "forkChat": "チャットを分岐",
     "messageActions": "メッセージ操作",
+    "turnErrorRetrying": "再試行中 {{attempt}}/{{maxAttempts}}",
     "required": "必須",
     "firstTimePairing": "初回ペアリング",
     "pairingDescription": "デスクトップ設定ページに表示されるペアリングコードを入力してください。",

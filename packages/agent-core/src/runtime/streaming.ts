@@ -15,6 +15,7 @@ import {
   renderError,
   resolveFinalAssistantHistoryMessage,
 } from './helpers.js';
+import { runInLlmRetryObservationContext } from '../llm-retry.js';
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
@@ -207,71 +208,87 @@ export async function startStreamingRound<
   }
 
   const transport = runtime.options.llmTransport;
-  if (transport.startToolAgentRoundStreaming) {
-    void transport.startToolAgentRoundStreaming(
-      runtime.options.config,
-      state,
-      runtime.options.toolExecutor.toolDefinitionsJson(),
-    )
-      .then((started) => {
-        if (runtime.pendingStreamingRound !== pending) {
-          started.cancel?.();
-          return;
-        }
 
-        pending.cancel = started.cancel;
-        void consumeStreamEvents(runtime, pending, started.eventStream);
-        void started.completion
-          .then((completion) => {
-            pending.completion = completion;
-          })
-          .catch((error: unknown) => {
-            pending.completion = {
-              kind: 'failure',
-              error: renderError(error),
-              requestTrace: [],
-            };
-          });
+  runInLlmRetryObservationContext({
+    observer: (event) => {
+      if (event.kind === 'retry') {
+        runtime.emitEvent({
+          kind: 'turn-error-retry',
+          attempt: event.attempt,
+          maxAttempts: event.maxAttempts,
+          error: event.error,
+        });
+        return;
+      }
+      runtime.emitEvent({ kind: 'turn-error-retry-cleared' });
+    },
+  }, () => {
+    if (transport.startToolAgentRoundStreaming) {
+      void transport.startToolAgentRoundStreaming(
+        runtime.options.config,
+        state,
+        runtime.options.toolExecutor.toolDefinitionsJson(),
+      )
+        .then((started) => {
+          if (runtime.pendingStreamingRound !== pending) {
+            started.cancel?.();
+            return;
+          }
+
+          pending.cancel = started.cancel;
+          void consumeStreamEvents(runtime, pending, started.eventStream);
+          void started.completion
+            .then((completion) => {
+              pending.completion = completion;
+            })
+            .catch((error: unknown) => {
+              pending.completion = {
+                kind: 'failure',
+                error: renderError(error),
+                requestTrace: [],
+              };
+            });
+        })
+        .catch((error: unknown) => {
+          if (runtime.pendingStreamingRound !== pending) {
+            return;
+          }
+
+          pending.completion = {
+            kind: 'failure',
+            error: renderError(error),
+            requestTrace: [],
+          };
+        });
+      return;
+    }
+
+    void runtime.options.llmTransport
+      .startToolAgentRound(
+        runtime.options.config,
+        state,
+        runtime.options.toolExecutor.toolDefinitionsJson(),
+      )
+      .then((completion) => {
+        pending.completion = completion;
+        pending.streamConsumerFinished = true;
+        if (completion.kind === 'success' && completion.result.step.kind === 'final-response-ready') {
+          const assistantText = runtime.options.extractAssistantText(completion.result.state)?.trim();
+          if (assistantText) {
+            pending.rawEvents.push({ kind: 'assistant-chunk', text: assistantText });
+          }
+          pending.rawEvents.push({ kind: 'done' });
+        }
       })
       .catch((error: unknown) => {
-        if (runtime.pendingStreamingRound !== pending) {
-          return;
-        }
-
         pending.completion = {
           kind: 'failure',
           error: renderError(error),
           requestTrace: [],
         };
+        pending.streamConsumerFinished = true;
       });
-    return;
-  }
-
-  void runtime.options.llmTransport
-    .startToolAgentRound(
-      runtime.options.config,
-      state,
-      runtime.options.toolExecutor.toolDefinitionsJson(),
-    )
-    .then((completion) => {
-      pending.completion = completion;
-      pending.streamConsumerFinished = true;
-      if (completion.kind === 'success' && completion.result.step.kind === 'final-response-ready') {
-        const assistantText = runtime.options.extractAssistantText(completion.result.state)?.trim();
-        if (assistantText) {
-          pending.rawEvents.push({ kind: 'assistant-chunk', text: assistantText });
-        }
-        pending.rawEvents.push({ kind: 'done' });
-      }
-    })
-    .catch((error: unknown) => {
-      pending.completion = {
-        kind: 'failure',
-        error: renderError(error),
-        requestTrace: [],
-      };
-      pending.streamConsumerFinished = true;
-    });
+  });
 }
 
 export async function pollPendingStreamingRound<
@@ -648,17 +665,7 @@ export async function handlePendingStreamEvent<
   }
 
   if (!runtime.pendingAssistantTextStore.trim()) {
-    runtime.emitEvent({
-      kind: 'replace-pending-assistant',
-      text: event.error,
-    });
-  } else {
-    const suffix = `\n\n${event.error}`;
-    runtime.pendingAssistantTextStore += suffix;
-    runtime.emitEvent({
-      kind: 'assistant-chunk',
-      text: suffix,
-    });
+    runtime.emitEvent({ kind: 'remove-pending-assistant' });
   }
 
   runtime.pendingUserTurnStore = undefined;
@@ -715,10 +722,7 @@ export async function handlePendingStreamingCompletion<
     }
 
     if (!runtime.pendingAssistantTextStore.trim()) {
-      runtime.emitEvent({
-        kind: 'replace-pending-assistant',
-        text: completion.error,
-      });
+      runtime.emitEvent({ kind: 'remove-pending-assistant' });
     }
     runtime.pendingUserTurnStore = undefined;
     clearPendingStreamingState(runtime);

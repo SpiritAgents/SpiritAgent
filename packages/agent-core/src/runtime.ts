@@ -2589,10 +2589,7 @@ export class AgentRuntime<
       return;
     }
 
-    this.emitEvent({
-      kind: 'replace-pending-assistant',
-      text: result.error,
-    });
+    this.emitEvent({ kind: 'remove-pending-assistant' });
     this.emitEvent({ kind: 'assistant-response-completed' });
   }
 

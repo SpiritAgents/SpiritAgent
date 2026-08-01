@@ -120,8 +120,17 @@ export class DesktopRuntimeEventOrchestrator {
    * 同一个 AnimatedCollapse 实例上收起；本段 completed 时再拆成独立思考行。
    */
   private deferredAfterStreamThinking: string | undefined;
+  private turnErrorRetryMessageId: number | undefined;
 
   constructor(private readonly options: DesktopRuntimeEventOrchestratorOptions) {}
+
+  private clearTurnErrorRetryUi(): void {
+    if (this.turnErrorRetryMessageId !== undefined) {
+      this.options.assistantMessages.removeTurnErrorRetryMessage(this.turnErrorRetryMessageId);
+      this.turnErrorRetryMessageId = undefined;
+    }
+    this.options.messageTimeline?.()?.removeTurnErrorRetryMessage();
+  }
 
   private toolSummaryOptions() {
     const workspaceRoot = this.options.currentWorkspaceRoot?.().trim();
@@ -280,6 +289,7 @@ export class DesktopRuntimeEventOrchestrator {
         } else if (failedFinishTask) {
           this.clearFinishTaskNoticePreview();
         } else if (result.assistantText.trim()) {
+          this.clearTurnErrorRetryUi();
           if (!this.options.assistantMessages.materializeExistingCompletedAssistantMessage(result.assistantText, aux)) {
             this.options.assistantMessages.appendAssistantMessage(result.assistantText, aux);
           }
@@ -301,10 +311,17 @@ export class DesktopRuntimeEventOrchestrator {
             ...(aux ?? {}),
             turnError: true as const,
           };
-          if (!this.options.assistantMessages.materializeExistingCompletedAssistantMessage(result.error, errorAux)) {
+          if (this.turnErrorRetryMessageId !== undefined) {
+            this.options.assistantMessages.materializeTurnErrorFailureMessage(
+              this.turnErrorRetryMessageId,
+              result.error,
+              errorAux,
+            );
+            this.turnErrorRetryMessageId = undefined;
+          } else if (!this.options.assistantMessages.materializeExistingCompletedAssistantMessage(result.error, errorAux)) {
             this.options.assistantMessages.appendAssistantMessage(result.error, errorAux);
           }
-          this.options.messageTimeline?.()?.materializeCompletedAssistantText(result.error, errorAux);
+          this.options.messageTimeline?.()?.materializeTurnErrorFailureMessage(result.error, errorAux);
         }
         this.options.setLastRuntimeError(result.error);
         break;
@@ -377,6 +394,21 @@ export class DesktopRuntimeEventOrchestrator {
             percent: buildContextUsagePercent(event.usage.inputTokens, contextLength),
           });
         }
+        continue;
+      }
+      if (event.kind === 'turn-error-retry') {
+        this.turnErrorRetryMessageId = this.options.assistantMessages.upsertTurnErrorRetryMessage(
+          { attempt: event.attempt, maxAttempts: event.maxAttempts },
+          this.turnErrorRetryMessageId,
+        );
+        this.options.messageTimeline?.()?.upsertTurnErrorRetryMessage({
+          attempt: event.attempt,
+          maxAttempts: event.maxAttempts,
+        });
+        continue;
+      }
+      if (event.kind === 'turn-error-retry-cleared') {
+        this.clearTurnErrorRetryUi();
         continue;
       }
       if (event.kind === 'update-pending-assistant-thinking') {

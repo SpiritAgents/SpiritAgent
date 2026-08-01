@@ -1552,6 +1552,11 @@ export interface MessageAuxSnapshot {
   finishTaskNotice?: string;
   /** 回合级 LLM/transport 失败：以卡片展示错误文案，而非普通 Agent 正文 */
   turnError?: boolean;
+  /** 429 等可重试错误：展示 Loading 环与重试进度 (attempt/maxAttempts) */
+  turnErrorRetry?: {
+    attempt: number;
+    maxAttempts: number;
+  };
 }
 
 export interface PendingToolApprovalSnapshot {

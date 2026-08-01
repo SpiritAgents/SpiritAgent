@@ -348,7 +348,10 @@ function MessageCardImpl({
         ) : null}
         {!isUser && message.content.trim() ? (
           turnErrorSurface ? (
-            <TurnErrorMessageCard content={message.content} />
+            <TurnErrorMessageCard
+              content={message.content}
+              retry={message.aux?.turnErrorRetry}
+            />
           ) : subagentStatusSurface ? (
             <p className="text-sm leading-relaxed text-muted-foreground">{message.content}</p>
           ) : (
