@@ -144,6 +144,8 @@ export async function createAcpRuntime(
   const activeSkills: LlmActiveSkill[] = [];
 
   // 8. State factory functions
+  const attribution = { commitEnabled: false, prEnabled: false };
+
   const createToolAgentState = (messages: LlmMessage[], userInput: string) =>
     startLlmToolAgentState(
       messages,
@@ -159,6 +161,8 @@ export async function createAcpRuntime(
       applyPatchPromptSection,
       providerWebSearchPromptSection,
       false, // loopEnabled
+      undefined, // mcpToolCatalog
+      attribution,
     );
 
   const createContinuationState = (messages: LlmMessage[]) =>
@@ -175,6 +179,8 @@ export async function createAcpRuntime(
       applyPatchPromptSection,
       providerWebSearchPromptSection,
       false, // loopEnabled
+      undefined, // mcpToolCatalog
+      attribution,
     );
 
   // 8. Create LLM transport
@@ -211,6 +217,8 @@ export async function createAcpRuntime(
         applyPatchPromptSection,
         providerWebSearchPromptSection,
         false, // loopEnabled
+        undefined, // mcpToolCatalog
+        attribution,
       ),
     generateImage: (request) =>
       llmTransport.generateImage(transportConfig, request, async (saveRequest: GeneratedImageSaveRequest) => {

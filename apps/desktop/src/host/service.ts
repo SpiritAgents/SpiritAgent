@@ -447,6 +447,7 @@ import {
   saveConfig,
   removeModelApiKey,
   spiritAgentDataDir,
+  normalizeAgentsConfig,
   normalizeWorkspaceBinding,
   resolveDesktopHomeDirectory,
   mergeRecentWorkspaceRoots,
@@ -3521,6 +3522,7 @@ class DesktopHostService {
     toolExecutor.setActiveTransportConfig(transportConfig);
     const hookRunner = this.getHookRunner(workspaceRoot);
     const hookSessionContext = buildDesktopHookSessionContext(bundle, transportConfig.model);
+    const agents = normalizeAgentsConfig(this.requireState().config.agents);
     return createDesktopRuntime({
       transportConfig,
       history,
@@ -3539,6 +3541,10 @@ class DesktopHostService {
         gitBranchLabelForBasicInfo(this.requireState().git),
         bundle.rewind.sessionId,
       ),
+      attribution: {
+        commitEnabled: agents.attribution.commit.enabled,
+        prEnabled: agents.attribution.pr.enabled,
+      },
       getLoopEnabled: () => bundle.loopEnabled,
       getApprovalLevel: () => normalizeApprovalLevel(bundle.approvalLevel),
       reviewToolApproval: createDesktopAutoApprovalReviewer({

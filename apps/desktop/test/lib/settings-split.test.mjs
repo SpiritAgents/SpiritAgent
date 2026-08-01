@@ -63,3 +63,18 @@ test("AgentsSettingsRow uses grid layout without shared SettingsRow border", () 
   assert.match(html, /text-sm text-muted-foreground/);
   assert.match(html, /for="settings-lsp-enabled"/);
 });
+
+test("AgentsSettingsPanel includes LSP section label and Attribution rows", async () => {
+  const source = await readFile(
+    join(srcRoot, "panels/agents-settings-panel.tsx"),
+    "utf8",
+  );
+  assert.match(source, /settings\.lspSection/);
+  assert.match(source, /settings\.attributionSection/);
+  assert.match(source, /settings\.commitAttribution/);
+  assert.match(source, /settings\.prAttribution/);
+  assert.match(source, /commitAttributionEnabled/);
+  assert.match(source, /prAttributionEnabled/);
+  assert.match(source, /settings-commit-attribution/);
+  assert.match(source, /settings-pr-attribution/);
+});

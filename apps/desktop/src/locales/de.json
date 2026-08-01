@@ -96,7 +96,8 @@
     "back": "Zurück",
     "done": "Fertig",
     "appearanceTitle": "Erscheinungsbild",
-    "connectTitle": "Anbieter verbinden"
+    "connectTitle": "Anbieter verbinden",
+    "attributionTitle": "Attribution"
   },
   "settings": {
     "title": "Einstellungen",
@@ -155,8 +156,14 @@
     "developer": "Entwickler",
     "agents": "Agents",
     "tab": "Tab",
+    "lspSection": "LSP",
     "lspEnabled": "Language Server (LSP)",
     "lspEnabledDescription": "Wenn deaktiviert, werden Lint-Diagnosen und automatische Fehlerprüfungen nach Dateibearbeitungen ausgeschaltet.",
+    "attributionSection": "Attribution",
+    "commitAttribution": "Commit-Attribution",
+    "commitAttributionDescription": "Spirit Agent bei Agent-Commits nennen.",
+    "prAttribution": "PR-Attribution",
+    "prAttributionDescription": "Spirit Agent bei Agent-Pull-Requests nennen.",
     "editorTabCompletion": "Editor Tab-Vervollständigung",
     "editorTabCompletionDescription": "Inline-Vervollständigung im Datei-Editor verwenden.",
     "lspStatusReady": "Bereit",

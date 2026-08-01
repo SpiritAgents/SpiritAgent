@@ -81,63 +81,104 @@ export function AgentsSettingsPanel({
     <div className="space-y-6">
       <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("settings.agents")}</h1>
 
-      <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-        <AgentsSettingsRow
-          label={t("settings.lspEnabled")}
-          description={t("settings.lspEnabledDescription")}
-          htmlFor="settings-lsp-enabled"
-        >
-          <div className="flex justify-end">
-            <Checkbox
-              id="settings-lsp-enabled"
-              checked={settings.lspEnabled}
-              onCheckedChange={(value) => void onSavePatch({ lspEnabled: value === true })}
-              className="size-5"
-            />
-          </div>
-        </AgentsSettingsRow>
-
-        {(lsp?.providers ?? []).map((provider) => (
-          <div
-            key={provider.id}
-            className={cn(
-              "flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between",
-              listDisabled && "pointer-events-none opacity-50",
-            )}
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">{t("settings.lspSection")}</p>
+        <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+          <AgentsSettingsRow
+            label={t("settings.lspEnabled")}
+            description={t("settings.lspEnabledDescription")}
+            htmlFor="settings-lsp-enabled"
           >
-            <div className="min-w-0 space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{provider.displayName}</p>
-                {providerStatusBadge(provider, t)}
+            <div className="flex justify-end">
+              <Checkbox
+                id="settings-lsp-enabled"
+                checked={settings.lspEnabled}
+                onCheckedChange={(value) => void onSavePatch({ lspEnabled: value === true })}
+                className="size-5"
+              />
+            </div>
+          </AgentsSettingsRow>
+
+          {(lsp?.providers ?? []).map((provider) => (
+            <div
+              key={provider.id}
+              className={cn(
+                "flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between",
+                listDisabled && "pointer-events-none opacity-50",
+              )}
+            >
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{provider.displayName}</p>
+                  {providerStatusBadge(provider, t)}
+                </div>
+                <p className="text-xs text-muted-foreground">{provider.languages.join(" · ")}</p>
+                {provider.command ? (
+                  <p className="truncate font-mono text-[11px] text-muted-foreground/80" title={provider.command}>
+                    {provider.command}
+                  </p>
+                ) : null}
               </div>
-              <p className="text-xs text-muted-foreground">{provider.languages.join(" · ")}</p>
-              {provider.command ? (
-                <p className="truncate font-mono text-[11px] text-muted-foreground/80" title={provider.command}>
-                  {provider.command}
-                </p>
+              {provider.status === "not_found" && settings.lspEnabled && isDesktopInstallableProvider(provider) ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  disabled={lspInstallBusy}
+                  onClick={() => setInstallTarget(provider)}
+                >
+                  {lspInstallBusy ? (
+                    <>
+                      <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+                      {t("settings.lspInstalling")}
+                    </>
+                  ) : (
+                    t("settings.lspInstall")
+                  )}
+                </Button>
               ) : null}
             </div>
-            {provider.status === "not_found" && settings.lspEnabled && isDesktopInstallableProvider(provider) ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                disabled={lspInstallBusy}
-                onClick={() => setInstallTarget(provider)}
-              >
-                {lspInstallBusy ? (
-                  <>
-                    <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
-                    {t("settings.lspInstalling")}
-                  </>
-                ) : (
-                  t("settings.lspInstall")
-                )}
-              </Button>
-            ) : null}
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">{t("settings.attributionSection")}</p>
+        <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+          <AgentsSettingsRow
+            label={t("settings.commitAttribution")}
+            description={t("settings.commitAttributionDescription")}
+            htmlFor="settings-commit-attribution"
+          >
+            <div className="flex justify-end">
+              <Checkbox
+                id="settings-commit-attribution"
+                checked={settings.commitAttributionEnabled}
+                onCheckedChange={(value) =>
+                  void onSavePatch({ commitAttributionEnabled: value === true })
+                }
+                className="size-5"
+              />
+            </div>
+          </AgentsSettingsRow>
+          <AgentsSettingsRow
+            label={t("settings.prAttribution")}
+            description={t("settings.prAttributionDescription")}
+            htmlFor="settings-pr-attribution"
+          >
+            <div className="flex justify-end">
+              <Checkbox
+                id="settings-pr-attribution"
+                checked={settings.prAttributionEnabled}
+                onCheckedChange={(value) =>
+                  void onSavePatch({ prAttributionEnabled: value === true })
+                }
+                className="size-5"
+              />
+            </div>
+          </AgentsSettingsRow>
+        </div>
       </div>
 
       <Dialog

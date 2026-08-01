@@ -96,7 +96,8 @@
     "back": "戻る",
     "done": "完了",
     "appearanceTitle": "外観",
-    "connectTitle": "プロバイダに接続"
+    "connectTitle": "プロバイダに接続",
+    "attributionTitle": "アトリビューション"
   },
   "settings": {
     "title": "設定",
@@ -155,8 +156,14 @@
     "developer": "開発者",
     "agents": "エージェント",
     "tab": "タブ",
+    "lspSection": "LSP",
     "lspEnabled": "言語サーバー (LSP)",
     "lspEnabledDescription": "オフにすると、lint 診断とファイル編集後の自動エラーチェックが無効になります。",
+    "attributionSection": "アトリビューション",
+    "commitAttribution": "コミットのアトリビューション",
+    "commitAttributionDescription": "エージェントのコミットに Spirit Agent をクレジットします。",
+    "prAttribution": "PR のアトリビューション",
+    "prAttributionDescription": "エージェントのプルリクエストに Spirit Agent をクレジットします。",
     "editorTabCompletion": "エディタの Tab 補完",
     "editorTabCompletionDescription": "ファイルエディタでインライン補完を使用します。",
     "lspStatusReady": "準備完了",

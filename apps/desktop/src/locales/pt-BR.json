@@ -96,7 +96,8 @@
     "back": "Voltar",
     "done": "Concluído",
     "appearanceTitle": "Aparência",
-    "connectTitle": "Conectar um Provedor"
+    "connectTitle": "Conectar um Provedor",
+    "attributionTitle": "Atribuição"
   },
   "settings": {
     "title": "Configurações",
@@ -155,8 +156,14 @@
     "developer": "Desenvolvedor",
     "agents": "Agentes",
     "tab": "Tab",
+    "lspSection": "LSP",
     "lspEnabled": "Servidor de Linguagem (LSP)",
     "lspEnabledDescription": "Quando desligado, diagnósticos de lint e verificações automáticas de erro após edições são desativados.",
+    "attributionSection": "Atribuição",
+    "commitAttribution": "Atribuição em commits",
+    "commitAttributionDescription": "Creditar o Spirit Agent em commits do agente.",
+    "prAttribution": "Atribuição em PRs",
+    "prAttributionDescription": "Creditar o Spirit Agent em pull requests do agente.",
     "editorTabCompletion": "Preenchimento com Tab no Editor",
     "editorTabCompletionDescription": "Usar preenchimento inline no editor de arquivos.",
     "lspStatusReady": "Pronto",

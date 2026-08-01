@@ -28,10 +28,16 @@ const SPIRIT_CONTEXT_BLOCK_TAGS = [
   LLM_CONTEXT_TAGS.mcp_catalog,
   LLM_CONTEXT_TAGS.agent_mode,
   LLM_CONTEXT_TAGS.loop_mode,
+  LLM_CONTEXT_TAGS.attribution,
   LLM_CONTEXT_TAGS.extensions,
   LLM_CONTEXT_TAGS.dreams,
   LLM_CONTEXT_TAGS.basic_info,
 ] as const;
+
+export type ToolAgentAttributionFlags = {
+  commitEnabled?: boolean;
+  prEnabled?: boolean;
+};
 
 export const SESSION_TRANSCRIPT_READ_FILE_GUIDANCE =
   'Important details may be recovered by reading transcript.json and optional subagents/*.json under this directory with read_file.';
@@ -302,12 +308,14 @@ export function buildToolAgentMessages(input: {
   applyPatchFileToolsPromptSection?: string;
   providerWebSearchPromptSection?: string;
   loopEnabled?: boolean;
+  attribution?: ToolAgentAttributionFlags;
 }): JsonValue[] {
   const rulesSystemMessage = buildRulesSystemMessage(input.enabledRules ?? []);
   const skillsCatalogSystemMessage = buildSkillsCatalogSystemMessage(input.enabledSkillCatalog ?? []);
   const mcpCatalogSystemMessage = buildMcpCatalogSystemMessage(input.mcpToolCatalog);
   const agentModeSystemMessage = buildAgentModeSystemMessage(input.planMetadata);
   const loopModeSystemMessage = buildLoopModeSystemMessage(input.loopEnabled);
+  const attributionSystemMessage = buildAttributionSystemMessage(input.attribution);
   const extensionsSystemMessage = buildExtensionsSystemMessage(input.extensionSystemPrompts ?? []);
   const dreamsSystemMessage = buildDreamsSystemMessage(input.dreamsContextText);
   const basicInfoSystemMessage = buildBasicInfoSystemMessage(input.basicInfo);
@@ -322,6 +330,7 @@ export function buildToolAgentMessages(input: {
         mcpCatalogSystemMessage,
         agentModeSystemMessage,
         loopModeSystemMessage,
+        attributionSystemMessage,
         extensionsSystemMessage,
         dreamsSystemMessage,
         basicInfoSystemMessage,
@@ -822,6 +831,33 @@ export function buildLoopModeSystemMessage(loopEnabled?: boolean): string | unde
 
 export function hasLoopModeSystemMessage(content: string): boolean {
   return includesLlmContextBlock(content, LLM_CONTEXT_TAGS.loop_mode);
+}
+
+export function buildAttributionSystemMessage(
+  attribution?: ToolAgentAttributionFlags,
+): string | undefined {
+  const commitEnabled = attribution?.commitEnabled === true;
+  const prEnabled = attribution?.prEnabled === true;
+  if (!commitEnabled && !prEnabled) {
+    return undefined;
+  }
+
+  const lines: string[] = [];
+  if (commitEnabled) {
+    lines.push(
+      'When you create git commits, append this trailer at the end of the commit message body (after subject/body): Co-authored-by: Spirit Agent <agent@spirit.fast>. Do not change the user\'s primary author or signing identity.',
+    );
+  }
+  if (prEnabled) {
+    lines.push(
+      'When you create GitHub pull requests with gh pr create, append this line at the end of the PR body: Made with [Spirit Agent](https://spirit.fast)',
+    );
+  }
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.attribution, lines.join('\n'));
+}
+
+export function hasAttributionSystemMessage(content: string): boolean {
+  return includesLlmContextBlock(content, LLM_CONTEXT_TAGS.attribution);
 }
 
 export function buildActiveSkillsBlockContent(

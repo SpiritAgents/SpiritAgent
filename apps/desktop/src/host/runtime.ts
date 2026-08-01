@@ -64,6 +64,7 @@ export function createDesktopRuntime(input: {
   llmTransport: SpiritLlmTransport;
   workspaceRoot: string;
   basicInfo: LlmToolAgentBasicInfo;
+  attribution?: { commitEnabled?: boolean; prEnabled?: boolean };
   getLoopEnabled?: () => boolean;
   hookRunner?: HookRunner;
   hookSessionContext?: HookSessionContext;
@@ -73,6 +74,7 @@ export function createDesktopRuntime(input: {
   flushPendingHostEvents?: () => void | Promise<void>;
 }): DesktopRuntime {
   const resolveLoopEnabled = () => input.getLoopEnabled?.() === true;
+  const attribution = input.attribution;
   const applyPatchFileToolsPromptSection = resolveApplyPatchFileToolsPromptSection(
     input.transportConfig,
     input.planMetadata,
@@ -106,6 +108,7 @@ export function createDesktopRuntime(input: {
         providerWebSearchPromptSection,
         resolveLoopEnabled(),
         input.mcpToolCatalog,
+        attribution,
       ),
     createContinuationState: (messages) =>
       continueLlmToolAgentState(
@@ -122,6 +125,7 @@ export function createDesktopRuntime(input: {
         providerWebSearchPromptSection,
         resolveLoopEnabled(),
         input.mcpToolCatalog,
+        attribution,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -148,6 +152,7 @@ export function createDesktopRuntime(input: {
         providerWebSearchPromptSection,
         resolveLoopEnabled(),
         input.mcpToolCatalog,
+        attribution,
       ),
     resolveWorkspaceFilesFromInput: async () => [],
     generateImage: (request) =>

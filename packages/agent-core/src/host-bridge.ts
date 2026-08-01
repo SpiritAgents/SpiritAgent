@@ -724,6 +724,7 @@ interface CliHostInternalState {
 let cliHostInternal: CliHostInternalState | undefined;
 let currentApprovalLevel: import('./host-bridge/protocol.js').BridgeApprovalLevel = 'default';
 let bridgeLoopEnabled = false;
+let bridgeAttribution: { commitEnabled?: boolean; prEnabled?: boolean } | undefined;
 
 function normalizeBridgeApprovalLevel(value: unknown): import('./host-bridge/protocol.js').BridgeApprovalLevel {
   if (value === 'full-approval' || value === 'full-access') {
@@ -1804,6 +1805,7 @@ async function createRuntime(
       providerWebSearchPromptSection,
       bridgeLoopEnabled,
       toolExecutor.mcpToolCatalogSnapshot(),
+      bridgeAttribution,
     );
   const llmTransport = createLlmTransport(config);
   const hookRunner = resolveCliHookRunner();
@@ -1828,6 +1830,7 @@ async function createRuntime(
         providerWebSearchPromptSection,
         bridgeLoopEnabled,
         toolExecutor.mcpToolCatalogSnapshot(),
+        bridgeAttribution,
       ),
     appendToolResultMessage: appendLlmToolResultMessage,
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
@@ -1854,6 +1857,7 @@ async function createRuntime(
         providerWebSearchPromptSection,
         bridgeLoopEnabled,
         toolExecutor.mcpToolCatalogSnapshot(),
+        bridgeAttribution,
       ),
     generateImage: (request) =>
       llmTransport.generateImage(config, request, async (saveRequest: GeneratedImageSaveRequest) => {
@@ -2066,6 +2070,7 @@ peer.on('runtime.init', async (rawParams) => {
     await updateCliTodoScope(params.todoSessionKey.trim());
   }
   bridgeLoopEnabled = params.loopEnabled === true;
+  bridgeAttribution = params.attribution;
   runtime = await createRuntime(params.transportConfig, params.history ?? []);
   toolExecutor.setLoopToolExposure(bridgeLoopEnabled);
   toolExecutor.setAgentModeToolExposure(initAgentMode);
@@ -2594,6 +2599,12 @@ peer.on('runtime.setLoopEnabled', async (rawParams) => {
   bridgeLoopEnabled = params.enabled === true;
   requireRuntime().setLoopEnabled(bridgeLoopEnabled);
   return buildSnapshot(requireRuntime());
+});
+
+peer.on('runtime.setAttribution', async (rawParams) => {
+  const params = rawParams as import('./host-bridge/protocol.js').RuntimeSetAttributionParams;
+  bridgeAttribution = params.attribution;
+  return null;
 });
 
 peer.on('runtime.setApprovalLevel', async (rawParams) => {

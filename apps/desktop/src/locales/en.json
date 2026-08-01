@@ -96,7 +96,8 @@
     "back": "Back",
     "done": "Done",
     "appearanceTitle": "Appearance",
-    "connectTitle": "Connect a Provider"
+    "connectTitle": "Connect a Provider",
+    "attributionTitle": "Attribution"
   },
   "settings": {
     "title": "Settings",
@@ -155,8 +156,14 @@
     "developer": "Developer",
     "agents": "Agents",
     "tab": "Tab",
+    "lspSection": "LSP",
     "lspEnabled": "Language Server (LSP)",
     "lspEnabledDescription": "When off, lint diagnostics and automatic error checks after file edits are disabled.",
+    "attributionSection": "Attribution",
+    "commitAttribution": "Commit attribution",
+    "commitAttributionDescription": "Credit Spirit Agent on agent commits.",
+    "prAttribution": "PR attribution",
+    "prAttributionDescription": "Credit Spirit Agent on agent pull requests.",
     "editorTabCompletion": "Editor Tab completion",
     "editorTabCompletionDescription": "Use inline completion in the file editor.",
     "lspStatusReady": "Ready",

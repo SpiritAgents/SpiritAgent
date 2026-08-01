@@ -96,7 +96,8 @@
     "back": "返回",
     "done": "完成",
     "appearanceTitle": "外观",
-    "connectTitle": "连接提供商"
+    "connectTitle": "连接提供商",
+    "attributionTitle": "署名"
   },
   "settings": {
     "title": "设置",
@@ -155,8 +156,14 @@
     "developer": "开发者",
     "agents": "智能体",
     "tab": "Tab",
+    "lspSection": "LSP",
     "lspEnabled": "语言服务器（LSP）",
     "lspEnabledDescription": "关闭后将禁用 lint 诊断与写文件后的自动错误检查。",
+    "attributionSection": "署名",
+    "commitAttribution": "提交署名",
+    "commitAttributionDescription": "在智能体创建的提交中标注 Spirit Agent。",
+    "prAttribution": "PR 署名",
+    "prAttributionDescription": "在智能体创建的 Pull Request 中标注 Spirit Agent。",
     "editorTabCompletion": "编辑器 Tab 补全",
     "editorTabCompletionDescription": "在文件编辑器中使用内联补全。",
     "lspStatusReady": "就绪",

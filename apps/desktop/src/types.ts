@@ -106,6 +106,14 @@ export interface DesktopAgentsConfigUpdate {
   codeCompletion?: {
     enabled?: boolean;
   };
+  attribution?: {
+    commit?: {
+      enabled?: boolean;
+    };
+    pr?: {
+      enabled?: boolean;
+    };
+  };
 }
 
 export interface InstallLspProviderRequest {
@@ -132,6 +140,11 @@ export interface DesktopLspSnapshot {
 
 export interface DesktopCodeCompletionSnapshot {
   userEnabled: boolean;
+}
+
+export interface DesktopAttributionSnapshot {
+  commitEnabled: boolean;
+  prEnabled: boolean;
 }
 
 export interface DesktopWebHostConfigUpdate {
@@ -996,6 +1009,7 @@ export interface DesktopSnapshot {
   hooksList: DesktopHookListItem[];
   lsp: DesktopLspSnapshot;
   codeCompletion: DesktopCodeCompletionSnapshot;
+  attribution: DesktopAttributionSnapshot;
   conversation: ConversationSnapshot;
   /** Per split-pane session projection keyed by resolved session file path. */
   paneSessions?: Record<string, PaneSessionSlice>;

@@ -96,7 +96,8 @@
     "back": "返回",
     "done": "完成",
     "appearanceTitle": "外觀",
-    "connectTitle": "連接一個提供者"
+    "connectTitle": "連接一個提供者",
+    "attributionTitle": "署名"
   },
   "settings": {
     "title": "設定",
@@ -155,8 +156,14 @@
     "developer": "開發者",
     "agents": "Agents",
     "tab": "Tab",
+    "lspSection": "LSP",
     "lspEnabled": "語言伺服器 (LSP)",
     "lspEnabledDescription": "關閉時，將停用 lint 診斷和檔案編輯後的自動錯誤檢查。",
+    "attributionSection": "署名",
+    "commitAttribution": "提交署名",
+    "commitAttributionDescription": "在智能體建立的提交中標註 Spirit Agent。",
+    "prAttribution": "PR 署名",
+    "prAttributionDescription": "在智能體建立的 Pull Request 中標註 Spirit Agent。",
     "editorTabCompletion": "編輯器 Tab 補全",
     "editorTabCompletionDescription": "在檔案編輯器中使用行內補全。",
     "lspStatusReady": "就緒",

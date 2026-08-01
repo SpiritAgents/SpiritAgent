@@ -64,6 +64,7 @@ function snapshotProviderGroups(config: DesktopConfigFile): DesktopConfigFile['p
 
 export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopSnapshot {
   const flattenedModels = flattenProviderGroups(input.config);
+  const agents = normalizeAgentsConfig(input.config.agents);
 
   return {
     workspaceRoot: input.workspaceRoot,
@@ -148,7 +149,11 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
     hooksList: input.hooksList,
     lsp: input.lsp,
     codeCompletion: {
-      userEnabled: normalizeAgentsConfig(input.config.agents).codeCompletion.enabled,
+      userEnabled: agents.codeCompletion.enabled,
+    },
+    attribution: {
+      commitEnabled: agents.attribution.commit.enabled,
+      prEnabled: agents.attribution.pr.enabled,
     },
     conversation: input.conversation,
     ...(input.paneSessions ? { paneSessions: input.paneSessions } : {}),

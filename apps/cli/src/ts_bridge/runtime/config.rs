@@ -74,12 +74,18 @@ impl TsBridgeRuntime {
             if let Err(err) = self.apply_llm_http_version_from_config() {
                 self.handle_bridge_error(err);
             }
+            if let Err(err) = self.apply_attribution_to_bridge() {
+                self.handle_bridge_error(err);
+            }
             return;
         }
 
         let busy_defer = self.is_busy_cache || self.session.pending_user_turn().is_some();
         self.config = config;
         if let Err(err) = self.apply_llm_http_version_from_config() {
+            self.handle_bridge_error(err);
+        }
+        if let Err(err) = self.apply_attribution_to_bridge() {
             self.handle_bridge_error(err);
         }
 
@@ -109,6 +115,24 @@ impl TsBridgeRuntime {
 
     pub fn store_config(&mut self, config: AppConfig) {
         self.config = config;
+    }
+
+    pub(crate) fn apply_attribution_to_bridge(&mut self) -> Result<()> {
+        if self.bridge_failed {
+            return Err(anyhow!("TS bridge 已处于失败状态。"));
+        }
+        let (commit_attribution, pr_attribution) =
+            crate::model_registry::resolve_cli_attribution(&self.config);
+        self.call_bridge(
+            "runtime.setAttribution",
+            Some(json!({
+                "attribution": {
+                    "commitEnabled": commit_attribution,
+                    "prEnabled": pr_attribution,
+                },
+            })),
+        )?;
+        Ok(())
     }
 
     pub fn set_llm_http_version(&mut self, llm_http_version: &str) -> Result<()> {

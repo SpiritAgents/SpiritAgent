@@ -1,6 +1,7 @@
 export {
   buildActiveSkillsBlockContent,
   buildAgentModeSystemMessage,
+  buildAttributionSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
   buildLoopModeSystemMessage,
@@ -32,6 +33,7 @@ export {
 export type {
   OpenAiActiveSkill as LlmActiveSkill,
   OpenAiActiveSkillResourceEntry as LlmActiveSkillResourceEntry,
+  OpenAiAttributionFlags as LlmAttributionFlags,
   OpenAiEnabledRule as LlmEnabledRule,
   OpenAiEnabledSkillCatalogEntry as LlmEnabledSkillCatalogEntry,
   OpenAiExtensionSystemPrompt as LlmExtensionSystemPrompt,

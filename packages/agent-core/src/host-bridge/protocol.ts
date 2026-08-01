@@ -94,6 +94,10 @@ export interface RuntimeInitParams {
   planMetadata?: LlmPlanMetadata;
   extensionToolDefinitions?: JsonValue[];
   loopEnabled?: boolean;
+  attribution?: {
+    commitEnabled?: boolean;
+    prEnabled?: boolean;
+  };
   approvalLevel?: BridgeApprovalLevel;
   /** CLI: must be set before createRuntime so session todo tools are registered on the executor. */
   todoSessionKey?: string;
@@ -113,6 +117,13 @@ export interface RuntimeSetLlmClientVersionParams {
 
 export interface RuntimeSetLoopEnabledParams {
   enabled: boolean;
+}
+
+export interface RuntimeSetAttributionParams {
+  attribution?: {
+    commitEnabled?: boolean;
+    prEnabled?: boolean;
+  };
 }
 
 export interface RuntimeSubmitUserTurnParams {
