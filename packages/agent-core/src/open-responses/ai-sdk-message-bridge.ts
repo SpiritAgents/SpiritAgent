@@ -1,6 +1,7 @@
 import { jsonSchema, tool } from 'ai';
 
 import { buildAiSdkUserImageFilePartFromUrl } from '../ai-sdk-image-url-part.js';
+import { renderAiSdkProviderError } from '../openai/ai-sdk-provider-error.js';
 
 import type { JsonObject, JsonValue, ToolCallRequest } from '../ports.js';
 import { cloneJsonValue, isJsonObject } from '../tool-agent.js';
@@ -150,11 +151,7 @@ export function extractToolCallsFromAiSdk(toolCalls: readonly AiSdkToolCall[]): 
 }
 
 export function renderResponsesTransportError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
+  return renderAiSdkProviderError(error);
 }
 
 function openAiUserContentToAiSdkContent(

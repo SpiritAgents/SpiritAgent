@@ -81,10 +81,7 @@ export function VideoGenerationToolCard({
   return (
     <div className="w-full max-w-[min(28rem,100%)] py-1">
       <div
-        className={cn(
-          "relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200",
-          tool.phase === "failed" && "border-destructive/45 bg-destructive/5",
-        )}
+        className="relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200"
       >
         {previewUrl ? (
           <video
@@ -112,7 +109,7 @@ export function VideoGenerationToolCard({
         </p>
       ) : null}
       {tool.phase === "failed" && tool.outputExcerpt ? (
-        <pre className="mt-2 whitespace-pre-wrap rounded-md border border-destructive/20 bg-destructive/5 p-2 font-mono text-xs leading-relaxed text-destructive">
+        <pre className="mt-2 whitespace-pre-wrap rounded-md border border-border/45 bg-muted/20 p-2 font-mono text-xs leading-relaxed text-muted-foreground">
           {tool.outputExcerpt}
         </pre>
       ) : null}

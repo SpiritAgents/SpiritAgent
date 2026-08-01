@@ -722,6 +722,7 @@
     "continue": "Continuar",
     "forkChat": "Bifurcar chat",
     "messageActions": "Acciones del mensaje",
+    "turnErrorRetrying": "Reintentando {{attempt}}/{{maxAttempts}}",
     "required": "Obligatorio",
     "firstTimePairing": "Vinculación inicial",
     "pairingDescription": "Introduce el código de vinculación que aparece en la página de configuración del escritorio.",

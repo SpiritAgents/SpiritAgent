@@ -990,7 +990,19 @@ export function normalizeMessageAuxSnapshot(
   const finishTaskNotice = aux.finishTaskNotice?.trim()
     ? aux.finishTaskNotice
     : undefined;
-  if (!thinking && !compaction && !finishTaskNotice) {
+  const turnError = aux.turnError === true ? true : undefined;
+  const turnErrorRetry =
+    aux.turnErrorRetry
+    && Number.isInteger(aux.turnErrorRetry.attempt)
+    && aux.turnErrorRetry.attempt > 0
+    && Number.isInteger(aux.turnErrorRetry.maxAttempts)
+    && aux.turnErrorRetry.maxAttempts > 0
+      ? {
+          attempt: aux.turnErrorRetry.attempt,
+          maxAttempts: aux.turnErrorRetry.maxAttempts,
+        }
+      : undefined;
+  if (!thinking && !compaction && !finishTaskNotice && !turnError && !turnErrorRetry) {
     return undefined;
   }
 
@@ -998,6 +1010,8 @@ export function normalizeMessageAuxSnapshot(
     ...(thinking ? { thinking } : {}),
     ...(compaction ? { compaction } : {}),
     ...(finishTaskNotice ? { finishTaskNotice } : {}),
+    ...(turnError ? { turnError: true } : {}),
+    ...(turnErrorRetry ? { turnErrorRetry } : {}),
   };
 }
 

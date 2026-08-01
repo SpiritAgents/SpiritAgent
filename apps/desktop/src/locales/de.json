@@ -722,6 +722,7 @@
     "continue": "Fortfahren",
     "forkChat": "Chat abzweigen",
     "messageActions": "Nachrichtenaktionen",
+    "turnErrorRetrying": "Wiederholung {{attempt}}/{{maxAttempts}}",
     "required": "Erforderlich",
     "firstTimePairing": "Erstmaliges Koppeln",
     "pairingDescription": "Geben Sie den auf der Desktop-Einstellungsseite angezeigten Kopplungscode ein.",

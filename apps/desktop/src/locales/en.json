@@ -722,6 +722,7 @@
     "continue": "Continue",
     "forkChat": "Fork Chat",
     "messageActions": "Message actions",
+    "turnErrorRetrying": "Retrying {{attempt}}/{{maxAttempts}}",
     "required": "Required",
     "firstTimePairing": "First-Time Pairing",
     "pairingDescription": "Enter the pairing code shown on the Desktop settings page.",

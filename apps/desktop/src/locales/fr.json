@@ -722,6 +722,7 @@
     "continue": "Continuer",
     "forkChat": "Bifurquer la discussion",
     "messageActions": "Actions du message",
+    "turnErrorRetrying": "Nouvelle tentative {{attempt}}/{{maxAttempts}}",
     "required": "Requis",
     "firstTimePairing": "Premier appairage",
     "pairingDescription": "Saisissez le code d’appairage affiché dans la page des paramètres du Bureau.",

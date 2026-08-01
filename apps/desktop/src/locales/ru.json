@@ -722,6 +722,7 @@
     "continue": "Продолжить",
     "forkChat": "Ответвить чат",
     "messageActions": "Действия с сообщением",
+    "turnErrorRetrying": "Повтор {{attempt}}/{{maxAttempts}}",
     "required": "Обязательно",
     "firstTimePairing": "Первичная привязка",
     "pairingDescription": "Введите код привязки, показанный на странице настроек Desktop.",

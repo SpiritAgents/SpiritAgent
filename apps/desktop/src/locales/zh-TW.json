@@ -722,6 +722,7 @@
     "continue": "繼續",
     "forkChat": "分岔對話",
     "messageActions": "訊息操作",
+    "turnErrorRetrying": "重試中 {{attempt}}/{{maxAttempts}}",
     "required": "必填",
     "firstTimePairing": "首次配對",
     "pairingDescription": "請輸入桌面設定頁面上顯示的配對碼。",

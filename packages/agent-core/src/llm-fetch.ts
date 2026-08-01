@@ -2,6 +2,8 @@ import { createRequire } from 'node:module';
 
 import { Agent, fetch as undiciFetch } from 'undici';
 
+import { observeLlmFetchResponse } from './llm-retry.js';
+
 export type LlmHttpVersion = 'http1.1' | 'http2';
 
 export const SPIRIT_AGENT_UA_PRODUCT = 'SpiritAgent';
@@ -103,15 +105,16 @@ function llmDispatcherInstance(): Agent {
 /** LLM 出站请求：undici fetch；HTTP/2 由配置决定（TLS ALPN，对端不支持时回退 HTTP/1.1）。 */
 export function getLlmFetch(): typeof fetch {
   const dispatcher = llmDispatcherInstance();
-  const fetchWithDispatcher = (input: RequestInfo | URL, init?: RequestInit) => {
+  const fetchWithDispatcher = async (input: RequestInfo | URL, init?: RequestInit) => {
     const mergedInit = mergeLlmFetchInit(init);
     if (llmFetchTransportOverride) {
-      return llmFetchTransportOverride(input, mergedInit);
+      return observeLlmFetchResponse(await llmFetchTransportOverride(input, mergedInit) as Response);
     }
-    return undiciFetch(
+    const response = await undiciFetch(
       input as Parameters<typeof undiciFetch>[0],
       { ...mergedInit, dispatcher } as Parameters<typeof undiciFetch>[1],
     );
+    return observeLlmFetchResponse(response as unknown as Response);
   };
   return fetchWithDispatcher as unknown as typeof fetch;
 }

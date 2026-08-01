@@ -158,7 +158,7 @@ export class AiSdkAnthropicTransport
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
         providerOptions: buildAnthropicProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       const output = cloneJsonValue(result.object as JsonValue) as T;
 
@@ -209,7 +209,7 @@ export class AiSdkAnthropicTransport
               toolChoice: 'auto' as const,
             }),
         providerOptions: buildAnthropicProviderOptions(config),
-        maxRetries: 0,
+        maxRetries: 2,
       });
 
       nextState.messages.push(
@@ -293,7 +293,7 @@ export class AiSdkAnthropicTransport
             }),
         providerOptions: buildAnthropicProviderOptions(config),
         include: { rawChunks: false },
-        maxRetries: 0,
+        maxRetries: 2,
         abortSignal: abortController.signal,
       });
       const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
@@ -366,7 +366,7 @@ export class AiSdkAnthropicTransport
           messages: promptMessages as any,
           allowSystemInMessages: true,
           providerOptions: buildAnthropicProviderOptions(compactConfig),
-          maxRetries: 0,
+          maxRetries: 2,
         });
 
         for await (const part of streamed.stream) {
@@ -396,7 +396,7 @@ export class AiSdkAnthropicTransport
         messages: promptMessages as any,
         allowSystemInMessages: true,
         providerOptions: buildAnthropicProviderOptions(compactConfig),
-        maxRetries: 0,
+        maxRetries: 2,
       });
       summary = result.text;
     }

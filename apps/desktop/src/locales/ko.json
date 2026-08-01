@@ -722,6 +722,7 @@
     "continue": "계속",
     "forkChat": "채팅 분기",
     "messageActions": "메시지 작업",
+    "turnErrorRetrying": "재시도 중 {{attempt}}/{{maxAttempts}}",
     "required": "필수",
     "firstTimePairing": "최초 페어링",
     "pairingDescription": "데스크톱 설정 페이지에 표시된 페어링 코드를 입력하세요.",

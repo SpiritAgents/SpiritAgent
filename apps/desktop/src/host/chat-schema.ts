@@ -67,6 +67,7 @@ function cloneAux(aux: MessageAuxSnapshot | undefined): MessageAuxSnapshot | und
     ...(aux.thinking ? { thinking: aux.thinking } : {}),
     ...(aux.compaction ? { compaction: aux.compaction } : {}),
     ...(aux.finishTaskNotice ? { finishTaskNotice: aux.finishTaskNotice } : {}),
+    ...(aux.turnError ? { turnError: true } : {}),
   };
 }
 
@@ -86,6 +87,9 @@ function cloneRowForPersistence(row: DesktopTimelineRowSnapshot): PersistedDeskt
   };
 
   if (row.kind === 'assistant-text') {
+    if (row.aux?.turnErrorRetry !== undefined) {
+      return undefined;
+    }
     if (!hasTrimmedContent(row.content)) {
       return undefined;
     }

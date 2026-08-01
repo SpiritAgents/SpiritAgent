@@ -18,6 +18,7 @@
     "src/host/**/*.ts",
     "src/lib/composer-draft-store.ts",
     "src/lib/conversation-thinking-ui.ts",
+    "src/lib/conversation-turn-error-ui.ts",
     "src/lib/conversation-compaction-ui.ts",
     "src/lib/subagent-display.ts",
     "src/lib/git-changes-menu-items.ts",

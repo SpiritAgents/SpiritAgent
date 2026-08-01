@@ -722,6 +722,7 @@
     "continue": "Continuar",
     "forkChat": "Bifurcar Chat",
     "messageActions": "Ações da mensagem",
+    "turnErrorRetrying": "Tentando novamente {{attempt}}/{{maxAttempts}}",
     "required": "Obrigatório",
     "firstTimePairing": "Primeiro Pareamento",
     "pairingDescription": "Insira o código de pareamento exibido na página de configurações do Desktop.",

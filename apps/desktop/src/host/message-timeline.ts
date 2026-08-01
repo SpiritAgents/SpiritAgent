@@ -4,6 +4,7 @@ import type {
   MessageAuxSnapshot,
   ToolBlockSnapshot,
 } from '../types.js';
+import { formatTurnErrorRetryProgress } from '../lib/conversation-turn-error-ui.js';
 import { isSubagentStatusSurfaceText } from '../lib/subagent-display.js';
 import {
   messageOrderDebugLevel,
@@ -114,6 +115,7 @@ export class DesktopMessageTimeline {
   private toMessagesCache:
     | { revision: number; messages: ConversationMessageSnapshot[] }
     | undefined;
+  private turnErrorRetryRowId: string | undefined;
 
   constructor(private readonly options: DesktopMessageTimelineOptions) {}
 
@@ -763,6 +765,80 @@ export class DesktopMessageTimeline {
     segment.status = 'completed';
     segment.activeAssistantTextRowId = undefined;
     this.logCompletedAssistantMaterialization(segment, row, reused, content);
+    this.logSegmentRows('complete-text', segment);
+    return rowToMessage(row);
+  }
+
+  upsertTurnErrorRetryMessage(
+    retry: NonNullable<MessageAuxSnapshot['turnErrorRetry']>,
+  ): ConversationMessageSnapshot | undefined {
+    this.markMutated();
+    const segment = this.ensureActiveSegment();
+    const aux = normalizeMessageAuxSnapshot({
+      turnError: true,
+      turnErrorRetry: retry,
+    });
+    const content = formatTurnErrorRetryProgress(retry);
+    let row = this.turnErrorRetryRowId
+      ? segment.rows.find((candidate) => candidate.rowId === this.turnErrorRetryRowId)
+      : undefined;
+    if (!row) {
+      row = this.createAssistantTextRow(
+        segment,
+        segmentHasToolRows(segment) ? 'after-tools' : 'before-tools',
+        false,
+      );
+      this.turnErrorRetryRowId = row.rowId;
+    }
+    row.content = content;
+    row.pending = false;
+    row.aux = aux;
+    return rowToMessage(row);
+  }
+
+  removeTurnErrorRetryMessage(): void {
+    if (!this.turnErrorRetryRowId) {
+      return;
+    }
+    this.markMutated();
+    const segment = this.activeSegment();
+    if (!segment) {
+      this.turnErrorRetryRowId = undefined;
+      return;
+    }
+    segment.rows = segment.rows.filter((row) => row.rowId !== this.turnErrorRetryRowId);
+    this.turnErrorRetryRowId = undefined;
+  }
+
+  materializeTurnErrorFailureMessage(
+    content: string,
+    aux?: MessageAuxSnapshot,
+  ): ConversationMessageSnapshot | undefined {
+    if (!content.trim() && !normalizeMessageAuxSnapshot(aux)) {
+      return undefined;
+    }
+    this.markMutated();
+    const segment = this.ensureActiveSegment();
+    const retryRowId = this.turnErrorRetryRowId;
+    let row = retryRowId
+      ? segment.rows.find((candidate) => candidate.rowId === retryRowId)
+      : undefined;
+    if (!row) {
+      return this.materializeCompletedAssistantText(content, aux);
+    }
+
+    row.content = content;
+    row.pending = false;
+    const nextAux = normalizeMessageAuxSnapshot(aux);
+    if (nextAux) {
+      row.aux = nextAux;
+    } else {
+      delete row.aux;
+    }
+    this.turnErrorRetryRowId = undefined;
+    segment.status = 'completed';
+    segment.activeAssistantTextRowId = undefined;
+    this.logCompletedAssistantMaterialization(segment, row, true, content);
     this.logSegmentRows('complete-text', segment);
     return rowToMessage(row);
   }
@@ -1888,6 +1964,8 @@ function cloneAux(aux: MessageAuxSnapshot): MessageAuxSnapshot {
     ...(aux.thinking ? { thinking: aux.thinking } : {}),
     ...(aux.compaction ? { compaction: aux.compaction } : {}),
     ...(aux.finishTaskNotice ? { finishTaskNotice: aux.finishTaskNotice } : {}),
+    ...(aux.turnError ? { turnError: true } : {}),
+    ...(aux.turnErrorRetry ? { turnErrorRetry: { ...aux.turnErrorRetry } } : {}),
   };
 }
 
