@@ -88,6 +88,27 @@ test("resolveProviderWebSearchMode alibaba open-responses", () => {
   );
 });
 
+test("resolveProviderWebSearchMode deepseek open-responses", () => {
+  assert.equal(
+    resolveProviderWebSearchMode({
+      transportKind: "open-responses",
+      apiKey: "k",
+      model: "deepseek-v4-flash",
+      llmVendor: "deepseek",
+    }),
+    "deepseek-responses-built-in-tools",
+  );
+  assert.equal(
+    shouldUseProviderWebSearch({
+      transportKind: "open-responses",
+      apiKey: "k",
+      model: "deepseek-v4-pro",
+      llmVendor: "deepseek",
+    }),
+    true,
+  );
+});
+
 test("resolveProviderWebSearchMode excludes Bedrock Mantle openai.gpt models", () => {
   assert.equal(
     resolveProviderWebSearchMode({

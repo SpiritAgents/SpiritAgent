@@ -380,3 +380,30 @@ test("groq qwen transport preserves default reasoning effort for API", () => {
   assert.equal(resolveGroqTransportReasoningEffortForContext("default", context), "default");
   assert.equal(resolveGroqTransportReasoningEffortForContext(undefined, context), "default");
 });
+
+test("deepseek v4 open-responses maps reasoning effort for transport context", () => {
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext("max", {
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      transportKind: "open-responses",
+    }),
+    "max",
+  );
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext("low", {
+      provider: "deepseek",
+      model: "deepseek-v4-pro",
+      transportKind: "open-responses",
+    }),
+    "high",
+  );
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext("none", {
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      transportKind: "open-responses",
+    }),
+    undefined,
+  );
+});
