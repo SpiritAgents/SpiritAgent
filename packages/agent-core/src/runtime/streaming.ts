@@ -424,6 +424,19 @@ function finalizeInFlightStreamThinking<
   runtime.thinkingTextStore = '';
 }
 
+function discardPendingAssistantBubbleOnTurnFailure<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+): void {
+  runtime.pendingAssistantTextStore = '';
+  runtime.emitEvent({ kind: 'replace-pending-assistant', text: '' });
+  runtime.emitEvent({ kind: 'remove-pending-assistant' });
+}
+
 export function clearStreamingUiState<
   Config,
   State,
@@ -664,9 +677,7 @@ export async function handlePendingStreamEvent<
     return true;
   }
 
-  if (!runtime.pendingAssistantTextStore.trim()) {
-    runtime.emitEvent({ kind: 'remove-pending-assistant' });
-  }
+  discardPendingAssistantBubbleOnTurnFailure(runtime);
 
   runtime.pendingUserTurnStore = undefined;
   runtime.storeCompletedTurnResult({
@@ -721,9 +732,7 @@ export async function handlePendingStreamingCompletion<
       return;
     }
 
-    if (!runtime.pendingAssistantTextStore.trim()) {
-      runtime.emitEvent({ kind: 'remove-pending-assistant' });
-    }
+    discardPendingAssistantBubbleOnTurnFailure(runtime);
     runtime.pendingUserTurnStore = undefined;
     clearPendingStreamingState(runtime);
     runtime.storeCompletedTurnResult({
