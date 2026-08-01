@@ -4,6 +4,7 @@ export const LLM_CONTEXT_TAGS = {
   mcp_catalog: 'mcp_catalog',
   agent_mode: 'agent_mode',
   loop_mode: 'loop_mode',
+  attribution: 'attribution',
   extensions: 'extensions',
   dreams: 'dreams',
   basic_info: 'basic_info',

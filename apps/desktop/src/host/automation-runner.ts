@@ -36,6 +36,7 @@ import { modelProviderKeyScope } from './provider-api-key.js';
 import {
   chatsDirPath,
   loadHostMetadata,
+  normalizeAgentsConfig,
   readBedrockProviderCredentialsFromKeyring,
   resolveApiKeyForConfigModel,
   saveStoredSession,
@@ -123,6 +124,7 @@ export async function runDesktopAutomationOnce(
     const toolExecutor = new DesktopToolExecutor(input.definition.workspaceRoot);
     toolExecutor.setApprovalLevel(input.definition.approvalLevel);
     toolExecutor.setActiveTransportConfig(transportConfig);
+    const agents = normalizeAgentsConfig(input.config.agents);
     const runtime = createDesktopRuntime({
       transportConfig,
       history: [],
@@ -138,6 +140,10 @@ export async function runDesktopAutomationOnce(
         toolExecutor,
         gitBranchLabelForBasicInfo(gitSnapshot),
       ),
+      attribution: {
+        commitEnabled: agents.attribution.commit.enabled,
+        prEnabled: agents.attribution.pr.enabled,
+      },
     });
     const triggerContext = input.triggerContext ?? defaultAutomationRunTriggerContext(input.definition);
     const llmUserMessage = buildAutomationTriggerMessage({

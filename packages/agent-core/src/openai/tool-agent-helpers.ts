@@ -11,6 +11,7 @@ import {
   appendToolResultMessage,
   appendToolResultMessages,
   appendUserMessage,
+  buildAttributionSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
   buildLoopModeSystemMessage,
@@ -21,6 +22,7 @@ import {
   extractLastAssistantText,
   findLastMatchingIndex,
   findSpiritSystemMessageContent,
+  hasAttributionSystemMessage,
   hasBasicInfoSystemMessage,
   hasDreamsSystemMessage,
   hasLoopModeSystemMessage,
@@ -29,6 +31,7 @@ import {
   truncateHistoryForCompaction,
   truncateToolAgentStateForContextRetry,
   type ToolAgentActiveSkill,
+  type ToolAgentAttributionFlags,
   type ToolAgentEnabledRule,
   type ToolAgentEnabledSkillCatalogEntry,
   type ToolAgentExtensionSystemPrompt,
@@ -43,6 +46,7 @@ import { userMessageContentMatchesInput } from '../runtime/user-turn-timestamp.j
 export {
   buildActiveSkillsBlockContent,
   buildAgentModeSystemMessage,
+  buildAttributionSystemMessage,
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
   buildLoopModeSystemMessage,
@@ -63,6 +67,7 @@ export type OpenAiExtensionSystemPrompt = ToolAgentExtensionSystemPrompt;
 export type OpenAiToolAgentBasicInfo = ToolAgentBasicInfo;
 export type OpenAiToolAgentState = ToolAgentState;
 export type OpenAiToolResult = ToolAgentToolResult;
+export type OpenAiAttributionFlags = ToolAgentAttributionFlags;
 
 export function startOpenAiToolAgentState(
   history: LlmMessage[],
@@ -79,6 +84,7 @@ export function startOpenAiToolAgentState(
   providerWebSearchPromptSection?: string,
   loopEnabled?: boolean,
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
+  attribution?: OpenAiAttributionFlags,
 ): OpenAiToolAgentState {
   return startToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -95,6 +101,7 @@ export function startOpenAiToolAgentState(
       providerWebSearchPromptSection,
       loopEnabled,
       mcpToolCatalog,
+      attribution,
     ),
     userInput,
   );
@@ -114,6 +121,7 @@ export function continueOpenAiToolAgentState(
   providerWebSearchPromptSection?: string,
   loopEnabled?: boolean,
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
+  attribution?: OpenAiAttributionFlags,
 ): OpenAiToolAgentState {
   return continueToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -130,6 +138,7 @@ export function continueOpenAiToolAgentState(
       providerWebSearchPromptSection,
       loopEnabled,
       mcpToolCatalog,
+      attribution,
     ),
   );
 }
@@ -148,6 +157,7 @@ function buildOpenAiToolAgentMessages(
   providerWebSearchPromptSection: string | undefined,
   loopEnabled: boolean | undefined,
   mcpToolCatalog: ToolAgentMcpToolCatalogSnapshot | undefined,
+  attribution: OpenAiAttributionFlags | undefined,
 ): JsonValue[] {
   return buildToolAgentMessages({
     historyMessages: llmHistoryToOpenAiMessages(history, assetRoot),
@@ -166,6 +176,7 @@ function buildOpenAiToolAgentMessages(
       ? {}
       : { providerWebSearchPromptSection }),
     ...(loopEnabled === true ? { loopEnabled: true } : {}),
+    ...(attribution === undefined ? {} : { attribution }),
   });
 }
 
@@ -243,6 +254,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
   providerWebSearchPromptSection?: string,
   loopEnabled?: boolean,
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
+  attribution?: OpenAiAttributionFlags,
 ): OpenAiToolAgentState {
   const preservedSpiritSystemMessage = findSpiritSystemMessageContent(retryState.messages);
   const rebuilt = startOpenAiToolAgentState(
@@ -260,11 +272,13 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     providerWebSearchPromptSection,
     loopEnabled,
     preservedSpiritSystemMessage === undefined ? mcpToolCatalog : undefined,
+    attribution,
   );
   if (preservedSpiritSystemMessage !== undefined) {
     const preservedDreams = hasDreamsSystemMessage(preservedSpiritSystemMessage);
     const preservedBasicInfo = hasBasicInfoSystemMessage(preservedSpiritSystemMessage);
     const preservedLoop = hasLoopModeSystemMessage(preservedSpiritSystemMessage);
+    const preservedAttribution = hasAttributionSystemMessage(preservedSpiritSystemMessage);
     rebuilt.messages[0] = {
       role: 'system',
       content: buildToolAgentSystemMessage(
@@ -272,6 +286,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
         preservedSpiritSystemMessage,
         preservedDreams ? undefined : buildDreamsSystemMessage(dreamsContextText),
         preservedLoop ? undefined : buildLoopModeSystemMessage(loopEnabled),
+        preservedAttribution ? undefined : buildAttributionSystemMessage(attribution),
         preservedBasicInfo ? undefined : buildBasicInfoSystemMessage(basicInfo),
       ),
     };

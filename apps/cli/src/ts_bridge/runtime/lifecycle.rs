@@ -171,6 +171,8 @@ impl TsBridgeRuntime {
     }
 
     fn initialize_bridge_with_transport_config(&mut self, transport_config: Value) -> Result<()> {
+        let (commit_attribution, pr_attribution) =
+            crate::model_registry::resolve_cli_attribution(&self.config);
         let snapshot = self.call_bridge(
             "runtime.init",
             Some(json!({
@@ -180,6 +182,10 @@ impl TsBridgeRuntime {
                 "enabledSkillCatalog": self.enabled_skill_catalog,
                 "planMetadata": self.plan_metadata,
                 "loopEnabled": self.session.loop_enabled(),
+                "attribution": {
+                    "commitEnabled": commit_attribution,
+                    "prEnabled": pr_attribution,
+                },
                 "approvalLevel": self.session.approval_level(),
                 "todoSessionKey": self.rewind.session_id,
             })),
