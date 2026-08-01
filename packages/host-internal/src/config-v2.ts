@@ -16,13 +16,16 @@ export type SpiritModelCapabilityV2 =
   | 'imageGeneration'
   | 'videoGeneration';
 
+export type SpiritModelReasoningModeV2 = 'standard' | 'pro';
+
 export type SpiritModelReasoningEffortV2 =
   | 'none'
   | 'minimal'
   | 'low'
   | 'medium'
   | 'high'
-  | 'xhigh';
+  | 'xhigh'
+  | 'max';
 
 export type SpiritTransportKindV2 =
   | 'openai-compatible'
@@ -39,6 +42,7 @@ export type SpiritGlmCodingPlanBillingModeV2 = 'glm-coding-plan';
 export interface ModelEntryV2 {
   name: string;
   reasoningEffort: SpiritModelReasoningEffortV2;
+  reasoningMode?: SpiritModelReasoningModeV2;
   thinkingEnabled?: boolean;
   supportedReasoningEfforts?: SpiritModelReasoningEffortV2[];
   capabilities?: SpiritModelCapabilityV2[];
