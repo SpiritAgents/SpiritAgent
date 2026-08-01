@@ -18,6 +18,12 @@ pub struct DefaultAppPaths {
     workspace_root: PathBuf,
 }
 
+impl Default for DefaultAppPaths {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefaultAppPaths {
     pub fn new() -> Self {
         Self {

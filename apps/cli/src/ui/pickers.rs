@@ -615,11 +615,7 @@ pub(in crate::ui) fn build_language_picker_lines(
         .min(locales.len().saturating_sub(1));
     let total = locales.len();
     let window = max_items.max(1);
-    let start = if selected + 1 > window {
-        selected + 1 - window
-    } else {
-        0
-    };
+    let start = (selected + 1).saturating_sub(window);
     let end = (start + window).min(total);
 
     let current_locale = rust_i18n::locale().to_string();
@@ -671,11 +667,7 @@ pub(in crate::ui) fn build_image_picker_lines(
         .min(app.image_picker_files.len().saturating_sub(1));
     let total = app.image_picker_files.len();
     let window = max_items.max(1);
-    let start = if selected + 1 > window {
-        selected + 1 - window
-    } else {
-        0
-    };
+    let start = (selected + 1).saturating_sub(window);
     let end = (start + window).min(total);
 
     let mut lines = Vec::new();

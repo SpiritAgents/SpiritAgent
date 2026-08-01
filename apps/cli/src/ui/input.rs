@@ -3,7 +3,7 @@ use rust_i18n::t;
 use std::{cell::RefCell, path::Path};
 
 thread_local! {
-    static INPUT_CURSOR_DEBUG_SIGNATURE: RefCell<Option<String>> = RefCell::new(None);
+    static INPUT_CURSOR_DEBUG_SIGNATURE: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 pub(in crate::ui) fn input_mode_title(input_mode: MainInputMode) -> String {
@@ -344,7 +344,7 @@ pub(in crate::ui) fn maybe_log_input_cursor_diagnostics(
 ) {
     let input_chars = app.input.chars().count();
     let should_log =
-        app.input.contains('\n') || input_chars >= 48 || app.input.chars().any(|ch| !ch.is_ascii());
+        app.input.contains('\n') || input_chars >= 48 || !app.input.is_ascii();
     if !should_log {
         return;
     }

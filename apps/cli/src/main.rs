@@ -1109,13 +1109,12 @@ fn process_key_event(
             shell.clamp_cursor();
             shell.refresh_suggestions();
         }
-        KeyCode::Char(ch) => {
-            if !key.modifiers.contains(KeyModifiers::CONTROL) {
+        KeyCode::Char(ch)
+            if !key.modifiers.contains(KeyModifiers::CONTROL) => {
                 shell.insert_char_at_cursor(ch);
                 shell.clamp_cursor();
                 shell.refresh_suggestions();
             }
-        }
         _ => {}
     }
 }
@@ -1512,6 +1511,19 @@ fn maybe_log_event_batch(shell: &TuiShell, events: &[Event]) {
     ));
 }
 
+#[cfg(target_os = "windows")]
+fn shift_pressed_fallback() -> bool {
+    unsafe {
+        (GetAsyncKeyState(VK_LSHIFT as i32) as u16 & 0x8000) != 0
+            || (GetAsyncKeyState(VK_RSHIFT as i32) as u16 & 0x8000) != 0
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn shift_pressed_fallback() -> bool {
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1764,17 +1776,4 @@ mod tests {
             PasteKeyHandling::Suppress
         );
     }
-}
-
-#[cfg(target_os = "windows")]
-fn shift_pressed_fallback() -> bool {
-    unsafe {
-        (GetAsyncKeyState(VK_LSHIFT as i32) as u16 & 0x8000) != 0
-            || (GetAsyncKeyState(VK_RSHIFT as i32) as u16 & 0x8000) != 0
-    }
-}
-
-#[cfg(not(target_os = "windows"))]
-fn shift_pressed_fallback() -> bool {
-    false
 }

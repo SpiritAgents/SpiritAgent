@@ -425,9 +425,8 @@ impl TuiShell {
         };
         self.runtime
             .prepare_marketplace_extension_install(&extension_id, Some(&selected_version))
-            .map_err(|err| {
+            .inspect_err(|err| {
                 self.marketplace.error = Some(err.to_string());
-                err
             })
             .ok()
     }
@@ -686,7 +685,7 @@ impl TuiShell {
                 versions: detail
                     .versions
                     .iter()
-                    .map(|version| Self::marketplace_version_view(version))
+                    .map(Self::marketplace_version_view)
                     .collect(),
             }
         });

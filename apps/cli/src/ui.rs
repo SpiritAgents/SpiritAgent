@@ -279,7 +279,7 @@ pub fn draw_ui(
         .split(frame.area());
     let content_area = root_chunks[0];
     let input_inner_width = content_area.width.saturating_sub(2) as usize;
-    let input_height = input_block_height(&app, input_inner_width);
+    let input_height = input_block_height(app, input_inner_width);
     let bottom_form_height = app
         .bottom_form
         .as_ref()
@@ -336,7 +336,7 @@ pub fn draw_ui(
         .split(content_area);
 
     let history_render =
-        build_history_render_result(&app, chunks[0].width.saturating_sub(1) as usize);
+        build_history_render_result(app, chunks[0].width.saturating_sub(1) as usize);
     let history_image_blocks = history_render.image_blocks.clone();
     let history_message_ranges = history_render.message_ranges.clone();
     let history_lines = history_render.lines;
@@ -389,9 +389,9 @@ pub fn draw_ui(
     });
 
     let (input_cursor_row, input_cursor_col) =
-        input_cursor_position(&app, chunks[1].width.saturating_sub(2) as usize);
+        input_cursor_position(app, chunks[1].width.saturating_sub(2) as usize);
     maybe_log_input_cursor_diagnostics(
-        &app,
+        app,
         chunks[1].width.saturating_sub(2) as usize,
         input_cursor_row,
         input_cursor_col,
@@ -404,7 +404,7 @@ pub fn draw_ui(
         input_mode_title(app.input_mode)
     };
     let input = Paragraph::new(build_input_lines(
-        &app,
+        app,
         chunks[1].width.saturating_sub(2) as usize,
         show_bottom_form,
     ))
@@ -440,16 +440,16 @@ pub fn draw_ui(
     }
 
     if show_model_picker {
-        let picker_lines = build_model_picker_lines(&app, 5);
+        let picker_lines = build_model_picker_lines(app, 5);
         draw_inline_picker(frame, chunks[2], picker_lines);
     } else if show_approval_picker {
-        let picker_lines = build_approval_picker_lines(&app, 5);
+        let picker_lines = build_approval_picker_lines(app, 5);
         draw_inline_picker(frame, chunks[2], picker_lines);
     } else if show_network_picker {
-        let picker_lines = build_network_picker_lines(&app, 5);
+        let picker_lines = build_network_picker_lines(app, 5);
         draw_inline_picker(frame, chunks[2], picker_lines);
     } else if show_language_picker {
-        let picker_lines = build_language_picker_lines(&app, 5);
+        let picker_lines = build_language_picker_lines(app, 5);
         let picker_widget = Paragraph::new(picker_lines)
             .block(
                 Block::default()
@@ -459,13 +459,13 @@ pub fn draw_ui(
             .wrap(Wrap { trim: true });
         frame.render_widget(picker_widget, chunks[2]);
     } else if show_chat_picker {
-        let picker_lines = build_chat_picker_lines(&app, 5);
+        let picker_lines = build_chat_picker_lines(app, 5);
         draw_inline_picker(frame, chunks[2], picker_lines);
     } else if show_subagent_picker {
-        let picker_lines = build_subagent_picker_lines(&app, 5);
+        let picker_lines = build_subagent_picker_lines(app, 5);
         draw_inline_picker(frame, chunks[2], picker_lines);
     } else if show_image_picker {
-        let picker_lines = build_image_picker_lines(&app, 5);
+        let picker_lines = build_image_picker_lines(app, 5);
         let picker_widget = Paragraph::new(picker_lines)
             .block(
                 Block::default()
@@ -475,14 +475,14 @@ pub fn draw_ui(
             .wrap(Wrap { trim: true });
         frame.render_widget(picker_widget, chunks[2]);
     } else if show_suggestions {
-        let use_inline_suggestions = suggestions_use_inline_picker(&app);
+        let use_inline_suggestions = suggestions_use_inline_picker(app);
         let suggestion_content_width = if use_inline_suggestions {
             inline_picker_area(chunks[2]).width as usize
         } else {
             chunks[2].width.saturating_sub(2) as usize
         };
         let suggestions = build_suggestion_lines(
-            &app,
+            app,
             SLASH_SUGGESTION_VISIBLE_ITEMS,
             suggestion_content_width,
         );
@@ -494,7 +494,7 @@ pub fn draw_ui(
                 cli_ui_border_color(CliUiHookSlot::SlashSuggestions)
                     .or(cli_ui_accent_color(CliUiHookSlot::SlashSuggestions)),
             );
-            let suggestion_title = input_suggestion_title(&app);
+            let suggestion_title = input_suggestion_title(app);
             let suggestions_widget = Paragraph::new(suggestions)
                 .block(
                     Block::default()
@@ -512,7 +512,7 @@ pub fn draw_ui(
 
     if !show_suggestions && !show_bottom_form && !show_marketplace && !show_inline_picker {
         let help_idx = if show_picker { 3 } else { 2 };
-        let footer = Paragraph::new(build_footer_line(&app, chunks[help_idx].width as usize));
+        let footer = Paragraph::new(build_footer_line(app, chunks[help_idx].width as usize));
         frame.render_widget(footer, chunks[help_idx]);
         frame.render_widget(Clear, root_chunks[1]);
     }

@@ -77,11 +77,10 @@ impl TsBridgeRuntime {
         let mut params = json!({
             "extensionId": extension_id,
         });
-        if let Some(version) = version {
-            if !version.trim().is_empty() {
+        if let Some(version) = version
+            && !version.trim().is_empty() {
                 params["version"] = Value::String(version.trim().to_string());
             }
-        }
         let value = self.call_bridge(
             "hostInternal.prepareMarketplaceExtensionInstall",
             Some(params),
@@ -98,11 +97,10 @@ impl TsBridgeRuntime {
         let mut params = json!({
             "extensionId": extension_id,
         });
-        if let Some(version) = version {
-            if !version.trim().is_empty() {
+        if let Some(version) = version
+            && !version.trim().is_empty() {
                 params["version"] = Value::String(version.trim().to_string());
             }
-        }
         if review_acknowledged {
             params["reviewAcknowledged"] = Value::Bool(true);
         }

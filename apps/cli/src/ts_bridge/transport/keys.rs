@@ -29,8 +29,8 @@ pub(crate) fn resolve_key_from_store(
                 return Ok(trimmed.to_string());
             }
         }
-        if let Some(profile) = host.stored_config.active_model_profile() {
-            if crate::model_registry::has_google_vertex_runtime_credentials(
+        if let Some(profile) = host.stored_config.active_model_profile()
+            && crate::model_registry::has_google_vertex_runtime_credentials(
                 "",
                 profile.vertex_project().as_deref(),
                 profile.vertex_location().as_deref(),
@@ -38,15 +38,13 @@ pub(crate) fn resolve_key_from_store(
             ) {
                 return Ok(String::new());
             }
-        }
-    } else if !group_id.trim().is_empty() {
-        if let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
+    } else if !group_id.trim().is_empty()
+        && let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(trimmed.to_string());
             }
         }
-    }
     if let Some(value) = host.secret_store.load_model_api_key(model_name)? {
         return Ok(value);
     }
@@ -88,14 +86,13 @@ pub(crate) fn resolve_optional_key_from_store(
             return Ok(Some(trimmed.to_string()));
         }
     }
-    if !group_id.trim().is_empty() {
-        if let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
+    if !group_id.trim().is_empty()
+        && let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 return Ok(Some(trimmed.to_string()));
             }
         }
-    }
     if let Some(value) = host.secret_store.load_model_api_key(model_name)? {
         return Ok(Some(value));
     }

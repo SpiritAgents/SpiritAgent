@@ -613,15 +613,14 @@ impl TuiShell {
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
-                } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some() {
-                    if let Err(err) = crate::model_registry::save_group_vertex_credentials(
+                } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some()
+                    && let Err(err) = crate::model_registry::save_group_vertex_credentials(
                         &group_id,
                         parsed.vertex_client_email.as_deref().unwrap_or(""),
                         parsed.vertex_private_key.as_deref().unwrap_or(""),
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
-                }
             } else if let Err(err) =
                 crate::model_registry::save_group_api_key(&group_id, parsed.api_key.as_str())
             {

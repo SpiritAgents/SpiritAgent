@@ -185,11 +185,10 @@ impl TsBridgeRuntime {
         request: &crate::hooks_types::SaveHookEntryRequest,
     ) -> Result<()> {
         let mut params = json!({ "request": request });
-        if let Some(obj) = params.as_object_mut() {
-            if let Some(binding) = workspace_binding {
+        if let Some(obj) = params.as_object_mut()
+            && let Some(binding) = workspace_binding {
                 obj.insert("workspaceBinding".to_string(), json!(binding));
             }
-        }
         self.call_bridge("hostInternal.saveHookEntry", Some(params))?;
         Ok(())
     }

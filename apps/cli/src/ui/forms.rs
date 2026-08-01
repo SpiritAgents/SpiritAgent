@@ -708,7 +708,7 @@ pub(in crate::ui) fn draw_workspace_trust_form(
         if drawn_info_height >= info_height {
             break;
         }
-        if !field.label.trim().is_empty() && drawn_info_height + 1 <= info_height {
+        if !field.label.trim().is_empty() && drawn_info_height < info_height {
             frame.render_widget(
                 Paragraph::new(Line::from(Span::styled(
                     truncate_to_width(&field.label, content_area.width as usize),

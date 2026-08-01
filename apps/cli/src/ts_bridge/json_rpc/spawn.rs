@@ -21,14 +21,13 @@ use super::framing::read_framed_message;
 
 fn release_bundle_roots() -> Vec<PathBuf> {
     let mut roots = Vec::new();
-    if let Ok(exe_path) = env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
+    if let Ok(exe_path) = env::current_exe()
+        && let Some(exe_dir) = exe_path.parent() {
             roots.push(exe_dir.to_path_buf());
             if let Some(parent) = exe_dir.parent() {
                 roots.push(parent.to_path_buf());
             }
         }
-    }
     roots
 }
 

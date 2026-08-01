@@ -233,11 +233,10 @@ pub fn hydrate_desktop_messages_from_timeline(
 ) -> Vec<ConversationMessageSnapshot> {
     let mut messages = Vec::new();
     for turn in timeline {
-        if let Some(user_row) = turn.user_row.as_ref() {
-            if let Some(message) = row_to_message(user_row) {
+        if let Some(user_row) = turn.user_row.as_ref()
+            && let Some(message) = row_to_message(user_row) {
                 messages.push(message);
             }
-        }
         for segment in &turn.segments {
             for row in &segment.rows {
                 if let Some(message) = row_to_message(row) {

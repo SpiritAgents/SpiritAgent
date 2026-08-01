@@ -1092,9 +1092,7 @@ fn next_persisted_standalone_pending_aux_anchor(
         return anchor_source_msg_index.or(persisted_standalone_pending_aux_anchor);
     }
 
-    if persisted_standalone_pending_aux.is_none() {
-        return None;
-    }
+    persisted_standalone_pending_aux?;
 
     if !persisted_standalone_pending_aux.is_some_and(is_standalone_subagent_status_aux) {
         return None;
@@ -1120,6 +1118,157 @@ fn should_toggle_aux_details_on_exit_rewind_picker(
     previous_show_aux_details: Option<bool>,
 ) -> bool {
     previous_show_aux_details.is_some_and(|previous| previous != show_aux_details)
+}
+
+fn welcome_message(active_model: &str, mcp_status_line: &str) -> ChatMessage {
+    ChatMessage {
+        role: MessageRole::Agent,
+        content: welcome_message_text(active_model, mcp_status_line),
+        tool_block: None,
+    }
+}
+
+fn welcome_message_text(active_model: &str, mcp_status_line: &str) -> String {
+    t!(
+        "tui.welcome.body",
+        model = active_model,
+        mcp_status = mcp_status_line
+    )
+    .into_owned()
+}
+
+fn is_subagents_command(message: &str) -> bool {
+    message == "/subagents" || message.starts_with("/subagents ")
+}
+
+fn cursor_byte_index_for_text(text: &str, cursor_chars: usize) -> usize {
+    if cursor_chars == 0 {
+        return 0;
+    }
+
+    text.char_indices()
+        .nth(cursor_chars)
+        .map(|(idx, _)| idx)
+        .unwrap_or(text.len())
+}
+
+fn should_log_input_edit(text: &str) -> bool {
+    text.contains('\n')
+        || text.chars().count() >= 16
+        || text.chars().filter(|ch| !ch.is_ascii()).count() >= 8
+}
+
+fn truncate_input_log_preview(text: &str, max_chars: usize) -> String {
+    let mut preview = String::new();
+    let mut emitted = 0usize;
+    for ch in text.chars() {
+        if emitted >= max_chars {
+            preview.push('…');
+            break;
+        }
+        match ch {
+            '\n' => preview.push_str("\\n"),
+            '\r' => preview.push_str("\\r"),
+            _ => preview.push(ch),
+        }
+        emitted += 1;
+    }
+    preview
+}
+
+fn compile_cli_ui_hooks(entries: &[CliExtensionEntry]) -> Vec<CliUiHookView> {
+    let mut hooks = Vec::new();
+
+    for entry in entries {
+        let contributed = entry
+            .contributes
+            .as_ref()
+            .and_then(|contributes| contributes.cli.as_ref())
+            .and_then(|cli| cli.hooks.as_ref());
+        let Some(contributed) = contributed else {
+            continue;
+        };
+
+        for hook in contributed {
+            if let Some(compiled) = compile_cli_ui_hook(hook) {
+                hooks.push(compiled);
+            }
+        }
+    }
+
+    hooks
+}
+
+fn compile_cli_ui_hook(hook: &CliExtensionCliUiHookEntry) -> Option<CliUiHookView> {
+    let slot = parse_cli_ui_hook_slot(&hook.slot)?;
+    let variant = hook.variant.as_deref().and_then(parse_cli_ui_hook_variant);
+    let tokens = CliUiHookTokensView {
+        foreground: hook
+            .tokens
+            .as_ref()
+            .and_then(|tokens| tokens.foreground.as_deref())
+            .and_then(parse_cli_ui_hook_token_role),
+        border: hook
+            .tokens
+            .as_ref()
+            .and_then(|tokens| tokens.border.as_deref())
+            .and_then(parse_cli_ui_hook_token_role),
+        accent: hook
+            .tokens
+            .as_ref()
+            .and_then(|tokens| tokens.accent.as_deref())
+            .and_then(parse_cli_ui_hook_token_role),
+    };
+
+    Some(CliUiHookView {
+        slot,
+        variant,
+        tokens,
+        prefix: hook.prefix.clone(),
+        suffix: hook.suffix.clone(),
+    })
+}
+
+fn parse_cli_ui_hook_slot(slot: &str) -> Option<CliUiHookSlot> {
+    match slot {
+        "message.user" => Some(CliUiHookSlot::MessageUser),
+        "message.assistant" => Some(CliUiHookSlot::MessageAssistant),
+        "message.tool" => Some(CliUiHookSlot::MessageTool),
+        "assistant.thinking" => Some(CliUiHookSlot::AssistantThinking),
+        "input.frame" => Some(CliUiHookSlot::InputFrame),
+        "bottom_form" => Some(CliUiHookSlot::BottomForm),
+        "bottom_form.section" => Some(CliUiHookSlot::BottomFormSection),
+        "slash_suggestions" => Some(CliUiHookSlot::SlashSuggestions),
+        "approval.panel" => Some(CliUiHookSlot::ApprovalPanel),
+        "questions.panel" => Some(CliUiHookSlot::QuestionsPanel),
+        _ => None,
+    }
+}
+
+fn parse_cli_ui_hook_variant(variant: &str) -> Option<CliUiHookVariant> {
+    match variant {
+        "default" => Some(CliUiHookVariant::Default),
+        "accented" => Some(CliUiHookVariant::Accented),
+        "muted" => Some(CliUiHookVariant::Muted),
+        "warning" => Some(CliUiHookVariant::Warning),
+        "success" => Some(CliUiHookVariant::Success),
+        "danger" => Some(CliUiHookVariant::Danger),
+        _ => None,
+    }
+}
+
+fn parse_cli_ui_hook_token_role(role: &str) -> Option<CliUiHookTokenRole> {
+    match role {
+        "default" => Some(CliUiHookTokenRole::Default),
+        "primary" => Some(CliUiHookTokenRole::Primary),
+        "secondary" => Some(CliUiHookTokenRole::Secondary),
+        "muted" => Some(CliUiHookTokenRole::Muted),
+        "accent" => Some(CliUiHookTokenRole::Accent),
+        "success" => Some(CliUiHookTokenRole::Success),
+        "warning" => Some(CliUiHookTokenRole::Warning),
+        "danger" => Some(CliUiHookTokenRole::Danger),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
@@ -1338,156 +1487,5 @@ mod tests {
             Some(true)
         ));
         assert!(!should_toggle_aux_details_on_exit_rewind_picker(true, None));
-    }
-}
-
-fn welcome_message(active_model: &str, mcp_status_line: &str) -> ChatMessage {
-    ChatMessage {
-        role: MessageRole::Agent,
-        content: welcome_message_text(active_model, mcp_status_line),
-        tool_block: None,
-    }
-}
-
-fn welcome_message_text(active_model: &str, mcp_status_line: &str) -> String {
-    t!(
-        "tui.welcome.body",
-        model = active_model,
-        mcp_status = mcp_status_line
-    )
-    .into_owned()
-}
-
-fn is_subagents_command(message: &str) -> bool {
-    message == "/subagents" || message.starts_with("/subagents ")
-}
-
-fn cursor_byte_index_for_text(text: &str, cursor_chars: usize) -> usize {
-    if cursor_chars == 0 {
-        return 0;
-    }
-
-    text.char_indices()
-        .nth(cursor_chars)
-        .map(|(idx, _)| idx)
-        .unwrap_or(text.len())
-}
-
-fn should_log_input_edit(text: &str) -> bool {
-    text.contains('\n')
-        || text.chars().count() >= 16
-        || text.chars().filter(|ch| !ch.is_ascii()).count() >= 8
-}
-
-fn truncate_input_log_preview(text: &str, max_chars: usize) -> String {
-    let mut preview = String::new();
-    let mut emitted = 0usize;
-    for ch in text.chars() {
-        if emitted >= max_chars {
-            preview.push('…');
-            break;
-        }
-        match ch {
-            '\n' => preview.push_str("\\n"),
-            '\r' => preview.push_str("\\r"),
-            _ => preview.push(ch),
-        }
-        emitted += 1;
-    }
-    preview
-}
-
-fn compile_cli_ui_hooks(entries: &[CliExtensionEntry]) -> Vec<CliUiHookView> {
-    let mut hooks = Vec::new();
-
-    for entry in entries {
-        let contributed = entry
-            .contributes
-            .as_ref()
-            .and_then(|contributes| contributes.cli.as_ref())
-            .and_then(|cli| cli.hooks.as_ref());
-        let Some(contributed) = contributed else {
-            continue;
-        };
-
-        for hook in contributed {
-            if let Some(compiled) = compile_cli_ui_hook(hook) {
-                hooks.push(compiled);
-            }
-        }
-    }
-
-    hooks
-}
-
-fn compile_cli_ui_hook(hook: &CliExtensionCliUiHookEntry) -> Option<CliUiHookView> {
-    let slot = parse_cli_ui_hook_slot(&hook.slot)?;
-    let variant = hook.variant.as_deref().and_then(parse_cli_ui_hook_variant);
-    let tokens = CliUiHookTokensView {
-        foreground: hook
-            .tokens
-            .as_ref()
-            .and_then(|tokens| tokens.foreground.as_deref())
-            .and_then(parse_cli_ui_hook_token_role),
-        border: hook
-            .tokens
-            .as_ref()
-            .and_then(|tokens| tokens.border.as_deref())
-            .and_then(parse_cli_ui_hook_token_role),
-        accent: hook
-            .tokens
-            .as_ref()
-            .and_then(|tokens| tokens.accent.as_deref())
-            .and_then(parse_cli_ui_hook_token_role),
-    };
-
-    Some(CliUiHookView {
-        slot,
-        variant,
-        tokens,
-        prefix: hook.prefix.clone(),
-        suffix: hook.suffix.clone(),
-    })
-}
-
-fn parse_cli_ui_hook_slot(slot: &str) -> Option<CliUiHookSlot> {
-    match slot {
-        "message.user" => Some(CliUiHookSlot::MessageUser),
-        "message.assistant" => Some(CliUiHookSlot::MessageAssistant),
-        "message.tool" => Some(CliUiHookSlot::MessageTool),
-        "assistant.thinking" => Some(CliUiHookSlot::AssistantThinking),
-        "input.frame" => Some(CliUiHookSlot::InputFrame),
-        "bottom_form" => Some(CliUiHookSlot::BottomForm),
-        "bottom_form.section" => Some(CliUiHookSlot::BottomFormSection),
-        "slash_suggestions" => Some(CliUiHookSlot::SlashSuggestions),
-        "approval.panel" => Some(CliUiHookSlot::ApprovalPanel),
-        "questions.panel" => Some(CliUiHookSlot::QuestionsPanel),
-        _ => None,
-    }
-}
-
-fn parse_cli_ui_hook_variant(variant: &str) -> Option<CliUiHookVariant> {
-    match variant {
-        "default" => Some(CliUiHookVariant::Default),
-        "accented" => Some(CliUiHookVariant::Accented),
-        "muted" => Some(CliUiHookVariant::Muted),
-        "warning" => Some(CliUiHookVariant::Warning),
-        "success" => Some(CliUiHookVariant::Success),
-        "danger" => Some(CliUiHookVariant::Danger),
-        _ => None,
-    }
-}
-
-fn parse_cli_ui_hook_token_role(role: &str) -> Option<CliUiHookTokenRole> {
-    match role {
-        "default" => Some(CliUiHookTokenRole::Default),
-        "primary" => Some(CliUiHookTokenRole::Primary),
-        "secondary" => Some(CliUiHookTokenRole::Secondary),
-        "muted" => Some(CliUiHookTokenRole::Muted),
-        "accent" => Some(CliUiHookTokenRole::Accent),
-        "success" => Some(CliUiHookTokenRole::Success),
-        "warning" => Some(CliUiHookTokenRole::Warning),
-        "danger" => Some(CliUiHookTokenRole::Danger),
-        _ => None,
     }
 }

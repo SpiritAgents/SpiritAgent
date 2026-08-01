@@ -119,82 +119,6 @@ impl InputState {
         self.set_value(value);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::InputState;
-
-    #[test]
-    fn cursor_byte_index_handles_multibyte_input() {
-        let mut input = InputState::new();
-        input.value = "a你b".to_string();
-        input.cursor = 2;
-
-        assert_eq!(input.cursor_byte_index(), "a你".len());
-    }
-
-    #[test]
-    fn set_value_moves_cursor_to_end() {
-        let mut input = InputState::new();
-
-        input.set_value("计划".to_string());
-
-        assert_eq!(input.cursor, 2);
-    }
-
-    #[test]
-    fn recall_previous_history_walks_backward_and_restores_draft() {
-        let mut input = InputState::new();
-        input.push_history_entry("这是什么".to_string());
-        input.push_history_entry("再解释一下".to_string());
-        input.set_value("临时草稿".to_string());
-
-        assert!(input.recall_previous_history());
-        assert_eq!(input.value, "再解释一下");
-
-        assert!(input.recall_previous_history());
-        assert_eq!(input.value, "这是什么");
-
-        assert!(input.recall_next_history());
-        assert_eq!(input.value, "再解释一下");
-
-        assert!(input.recall_next_history());
-        assert_eq!(input.value, "临时草稿");
-
-        assert!(!input.recall_next_history());
-    }
-
-    #[test]
-    fn manual_edit_cancels_history_navigation() {
-        let mut input = InputState::new();
-        input.push_history_entry("第一条".to_string());
-        input.push_history_entry("第二条".to_string());
-
-        assert!(input.recall_previous_history());
-        assert_eq!(input.value, "第二条");
-
-        input.prepare_for_user_edit();
-        input.value.push('!');
-        input.cursor = input.len_chars();
-
-        assert!(!input.recall_next_history());
-        assert_eq!(input.value, "第二条!");
-    }
-
-    #[test]
-    fn clear_history_resets_entries_and_navigation() {
-        let mut input = InputState::new();
-        input.push_history_entry("之前的问题".to_string());
-        input.set_value("草稿".to_string());
-        assert!(input.recall_previous_history());
-
-        input.clear_history();
-
-        assert_eq!(input.value, "之前的问题");
-        assert!(!input.recall_previous_history());
-        assert!(!input.recall_next_history());
-    }
-}
 use super::*;
 
 impl TuiShell {
@@ -690,5 +614,81 @@ impl TuiShell {
         self.input.value = next_input;
         self.input.cursor = next_cursor;
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::InputState;
+
+    #[test]
+    fn cursor_byte_index_handles_multibyte_input() {
+        let mut input = InputState::new();
+        input.value = "a你b".to_string();
+        input.cursor = 2;
+
+        assert_eq!(input.cursor_byte_index(), "a你".len());
+    }
+
+    #[test]
+    fn set_value_moves_cursor_to_end() {
+        let mut input = InputState::new();
+
+        input.set_value("计划".to_string());
+
+        assert_eq!(input.cursor, 2);
+    }
+
+    #[test]
+    fn recall_previous_history_walks_backward_and_restores_draft() {
+        let mut input = InputState::new();
+        input.push_history_entry("这是什么".to_string());
+        input.push_history_entry("再解释一下".to_string());
+        input.set_value("临时草稿".to_string());
+
+        assert!(input.recall_previous_history());
+        assert_eq!(input.value, "再解释一下");
+
+        assert!(input.recall_previous_history());
+        assert_eq!(input.value, "这是什么");
+
+        assert!(input.recall_next_history());
+        assert_eq!(input.value, "再解释一下");
+
+        assert!(input.recall_next_history());
+        assert_eq!(input.value, "临时草稿");
+
+        assert!(!input.recall_next_history());
+    }
+
+    #[test]
+    fn manual_edit_cancels_history_navigation() {
+        let mut input = InputState::new();
+        input.push_history_entry("第一条".to_string());
+        input.push_history_entry("第二条".to_string());
+
+        assert!(input.recall_previous_history());
+        assert_eq!(input.value, "第二条");
+
+        input.prepare_for_user_edit();
+        input.value.push('!');
+        input.cursor = input.len_chars();
+
+        assert!(!input.recall_next_history());
+        assert_eq!(input.value, "第二条!");
+    }
+
+    #[test]
+    fn clear_history_resets_entries_and_navigation() {
+        let mut input = InputState::new();
+        input.push_history_entry("之前的问题".to_string());
+        input.set_value("草稿".to_string());
+        assert!(input.recall_previous_history());
+
+        input.clear_history();
+
+        assert_eq!(input.value, "之前的问题");
+        assert!(!input.recall_previous_history());
+        assert!(!input.recall_next_history());
     }
 }

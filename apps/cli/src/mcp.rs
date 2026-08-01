@@ -250,16 +250,14 @@ pub fn assert_mcp_server_name_available(workspace_root: &Path, name: &str) -> Re
 fn resolve_mcp_server_scope(workspace_root: &Path, name: &str) -> Result<(McpScope, PathBuf)> {
     let user_path = user_mcp_config_path();
     let workspace_path = workspace_mcp_config_path(workspace_root);
-    if let Some(config) = load_mcp_config_file(&user_path)? {
-        if config.servers.contains_key(name) {
+    if let Some(config) = load_mcp_config_file(&user_path)?
+        && config.servers.contains_key(name) {
             return Ok((McpScope::User, user_path));
         }
-    }
-    if let Some(config) = load_mcp_config_file(&workspace_path)? {
-        if config.servers.contains_key(name) {
+    if let Some(config) = load_mcp_config_file(&workspace_path)?
+        && config.servers.contains_key(name) {
             return Ok((McpScope::Workspace, workspace_path));
         }
-    }
     Err(anyhow!("未找到 MCP server: {}", name))
 }
 
@@ -420,6 +418,30 @@ fn load_mcp_config_file(path: &Path) -> Result<Option<McpConfigFile>> {
 
 fn default_true() -> bool {
     true
+}
+
+fn github_preset_config() -> McpServerConfig {
+    let mut env = BTreeMap::new();
+    env.insert(
+        "GITHUB_PERSONAL_ACCESS_TOKEN".to_string(),
+        "${env:GITHUB_PERSONAL_ACCESS_TOKEN}".to_string(),
+    );
+
+    McpServerConfig {
+        display_name: Some("GitHub MCP".to_string()),
+        enabled: true,
+        capabilities: McpCapabilityToggles::default(),
+        transport: McpTransportConfig::Stdio {
+            command: "npx".to_string(),
+            args: vec![
+                "-y".to_string(),
+                "@modelcontextprotocol/server-github".to_string(),
+            ],
+            env,
+            cwd: None,
+            timeout_ms: Some(20_000),
+        },
+    }
 }
 
 #[cfg(test)]
@@ -598,29 +620,5 @@ mod tests {
             .expect("time ok")
             .as_nanos();
         std::env::temp_dir().join(format!("spirit-agent-{tag}-{nanos}"))
-    }
-}
-
-fn github_preset_config() -> McpServerConfig {
-    let mut env = BTreeMap::new();
-    env.insert(
-        "GITHUB_PERSONAL_ACCESS_TOKEN".to_string(),
-        "${env:GITHUB_PERSONAL_ACCESS_TOKEN}".to_string(),
-    );
-
-    McpServerConfig {
-        display_name: Some("GitHub MCP".to_string()),
-        enabled: true,
-        capabilities: McpCapabilityToggles::default(),
-        transport: McpTransportConfig::Stdio {
-            command: "npx".to_string(),
-            args: vec![
-                "-y".to_string(),
-                "@modelcontextprotocol/server-github".to_string(),
-            ],
-            env,
-            cwd: None,
-            timeout_ms: Some(20_000),
-        },
     }
 }
