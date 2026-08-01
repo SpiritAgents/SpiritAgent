@@ -180,7 +180,11 @@ export function resolveDesktopTransportKind(
     ) {
       return "openai-compatible";
     }
-    if (profile?.provider === "azure" || profile?.provider === "openai") {
+    if (
+      profile?.provider === "azure" ||
+      profile?.provider === "openai" ||
+      profile?.provider === "deepseek"
+    ) {
       return "open-responses";
     }
     return requested;
@@ -192,7 +196,9 @@ export function resolveDesktopTransportKind(
       ? "anthropic"
       : profile?.provider === "amazon-bedrock"
         ? "bedrock"
-        : profile?.provider === "azure" || profile?.provider === "openai"
+        : profile?.provider === "azure" ||
+            profile?.provider === "openai" ||
+            profile?.provider === "deepseek"
           ? "open-responses"
           : "openai-compatible";
 }

@@ -41,7 +41,8 @@
     },
     "deepseek": {
       "openai-compatible": "https://api.deepseek.com/v1",
-      "anthropic": "https://api.deepseek.com/anthropic"
+      "anthropic": "https://api.deepseek.com/anthropic",
+      "open-responses": "https://api.deepseek.com"
     },
     "kimi-code": {
       "openai-compatible": "https://api.kimi.com/coding/v1",
