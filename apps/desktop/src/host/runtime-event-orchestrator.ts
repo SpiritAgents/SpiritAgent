@@ -132,6 +132,10 @@ export class DesktopRuntimeEventOrchestrator {
     this.options.messageTimeline?.()?.removeTurnErrorRetryMessage();
   }
 
+  clearTurnErrorRetryState(): void {
+    this.clearTurnErrorRetryUi();
+  }
+
   private toolSummaryOptions() {
     const workspaceRoot = this.options.currentWorkspaceRoot?.().trim();
     const todosBeforeWrite = this.options.todoItemsBeforeWrite?.();

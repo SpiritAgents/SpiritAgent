@@ -56,6 +56,7 @@ type RuntimeEventsFacade = {
   consumeCompletedTurnResult(): void;
   syncPendingToolStates(): void;
   syncAssistantPrefixFromHistoryBeforeToolRow(): void;
+  clearTurnErrorRetryState(): void;
 };
 
 type AssistantMessagesFacade = {
@@ -444,6 +445,7 @@ export async function abortConversationInContext(
   ctx.activeBundle().currentTurnSkills = [];
   const orchestration = ctx.orchestrationFor(ctx.activeBundle());
   orchestration.runtimeEvents.applyRuntimeHostEvents(runtime.drainEvents());
+  orchestration.runtimeEvents.clearTurnErrorRetryState();
   orchestration.runtimeEvents.finalizeInterruptedDeferredThinking({
     thinkingText: interruptedThinkingText,
     compactionText: interruptedCompactionText,
